@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_ENTER_PASS_H_
-#define GE_GRAPH_PASSES_ENTER_PASS_H_
+#ifndef GE_GRAPH_PASSES_CONST_PASS_H_
+#define GE_GRAPH_PASSES_CONST_PASS_H_
 
 #include "graph/passes/base_pass.h"
 
 namespace ge {
-class EnterPass : public BaseNodePass {
+class ConstPass : public BaseNodePass {
  public:
   Status Run(NodePtr &node) override;
-
- private:
-  Status OptimizeEnterWithOnlyOutData(NodePtr &node, NodePtr &in_node);
-  Status UnlinkCtrlEdgeBeforeConst(NodePtr &node);
 };
 }  // namespace ge
-#endif  // GE_GRAPH_PASSES_ENTER_PASS_H_
+
+#endif  // GE_GRAPH_PASSES_CONST_PASS_H_

@@ -1,0 +1,20 @@
+#!/bin/bash
+#-------------------------------------------------------------------
+# Purpose:
+# Copyright 2020 Huawei Technologies Co., Ltd. All rights reserved.
+#-------------------------------------------------------------------
+
+LOCAL_PATH=$(cd "$(dirname "$0")"; pwd)
+PKG_PATH=$(cd ${LOCAL_PATH}/..; pwd)
+LIB_P="/lib64"
+PYTHON_P="/python/site-packages"
+LIB64_PATH="${PKG_PATH}${LIB_P}"
+PYTHON_PATH="${PKG_PATH}${PYTHON_P}"
+export LD_LIBRARY_PATH="${LIB64_PATH}:${LD_LIBRARY_PATH}"
+export PYTHONPATH="${PYTHON_PATH}:${PYTHONPATH}"
+
+if [ -f "${PKG_PATH}/bin/atc.bin" ];then
+    atc.bin $@
+else
+    fwk_atc.bin $@
+fi

@@ -225,7 +225,8 @@ class Impl {
   ~Impl() { (void)generator_.Finalize(); };
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
   graphStatus CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs);
-  graphStatus Init(const std::map<std::string, std::string> &options);
+  graphStatus GetDefaultInputShape(const Graph &graph, string &default_shape);
+  graphStatus Init(const Graph &graph, const std::map<std::string, std::string> &options);
   graphStatus BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                          ModelBufferData &ge_models);
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
@@ -278,7 +279,41 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   return GRAPH_SUCCESS;
 }
 
-graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
+graphStatus Impl::GetDefaultInputShape(const Graph &graph, string &default_shape) {
+  auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    ge::OpDescPtr op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      string data_op_name = op->GetName();
+      GELOGD("Data op name: %s, data op inputDesc size: %zu", data_op_name.c_str(), op->GetAllInputsDesc().size());
+      ge::GeTensorDesc tensor = op->GetInputDesc(0);
+      ge::GeShape data_shape = tensor.GetShape();
+      GELOGD("Data op get shape from InputDesc in ge ir graph.");
+
+      string tmp_shape_str;
+      std::vector<int64_t> tmp_shape = data_shape.GetDims();
+      if (tmp_shape.size() == 0) {
+        GELOGE(GRAPH_PARAM_INVALID, "Data op: %s has zero shapr dims!", data_op_name.c_str());
+        return GRAPH_PARAM_INVALID;
+      }
+
+      tmp_shape_str += data_op_name + ":";
+      for (auto tmp_dim : tmp_shape) {
+        tmp_shape_str += to_string((long)tmp_dim) + ",";
+      }
+      tmp_shape_str = tmp_shape_str.substr(0, tmp_shape_str.size() - 1);
+      tmp_shape_str += ";";
+      default_shape += tmp_shape_str();
+      GELOGD("Data op name: %s, data shape: %s", data_op_name.c_str(), tmp_shape_str.c_str());
+    }
+  }
+  GELOGI("Get default data op shape from ge ir graph: %s", default_shape.c_str());
+}
+
+graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::string> &options) {
   // 1. check options
   graphStatus ret = CheckOptions(options);
   if (ret != GRAPH_SUCCESS) {
@@ -296,7 +331,12 @@ graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
   GE_CHK_BOOL_RET_STATUS_NOLOG(ge::CheckLogParamValidAndSetLogLevel(log) == 0, GRAPH_PARAM_INVALID);
   options_[ge::ir_option::LOG_LEVEL] = log;
 
-  string input_shape = options_.find("input_shape") == options_.end() ? "" : options_["input_shape"];
+  string input_shape;
+  if (options_.find("input_shape") == options_.end()) {
+    GE_CHK_BOOL_RET_STATUS_NOLOG(GetDefaultInputShape(graph, input_shape), GRAPH_PARAM_INVALID);
+  } else {
+    input_shape = options_["input_shape"];
+  }
   string input_format = options_.find("input_format") == options_.end() ? "" : options_["input_format"];
   string net_format = options_.find("net_format") == options_.end() ? "" : options_["net_format"];
   string dynamic_batch_size = options_.find(ge::ir_option::DYNAMIC_BATCH_SIZE) == options_.end()
@@ -416,7 +456,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
 graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                              ModelBufferData &model) {
   // 1. init GeGenerator with user optios
-  graphStatus ret = Init(options);
+  graphStatus ret = Init(graph, options);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "Build ir model Init failed!");
     return ret;

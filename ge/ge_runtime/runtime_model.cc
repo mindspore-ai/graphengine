@@ -307,8 +307,8 @@ bool RuntimeModel::Run() {
 
   ret = rtStreamSynchronize(rt_model_stream_);
   if (ret != RT_ERROR_NONE) {
-    if (ret == RT_ERROR_END_OF_SEQUENCE) {
-      GELOGI("Model stream RT_ERROR_END_OF_SEQUENCE signal received, ret = 0x%X", ret);
+    if (ret == ACL_ERROR_RT_END_OF_SEQUENCE) {
+      GELOGI("Model stream ACL_ERROR_RT_END_OF_SEQUENCE signal received, ret = 0x%X", ret);
       return true;
     }
     GELOGE(RT_FAILED, "Model stream sync failed, ret = 0x%X", ret);

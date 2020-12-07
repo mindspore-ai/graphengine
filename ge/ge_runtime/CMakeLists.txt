@@ -13,6 +13,9 @@ set(GE_SRC_LIST
     "task/hccl_task.cc"
     "task/memcpy_async_task.cc"
     "task/profiler_task.cc"
+    "task/label_goto_task.cc"
+    "task/label_set_task.cc"
+    "task/label_switch_task.cc"
 )
 
 add_library(ge_runtime SHARED ${GE_SRC_LIST})

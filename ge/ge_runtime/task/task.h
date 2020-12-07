@@ -24,6 +24,7 @@
 #include "runtime/rt_model.h"
 #include "ge_runtime/model_context.h"
 #include "ge_runtime/task_info.h"
+#include "external/runtime/rt_error_codes.h"
 
 namespace ge {
 namespace model_runner {

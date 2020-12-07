@@ -183,11 +183,11 @@ target_link_libraries(fwk_atc.bin PRIVATE
     c_sec
     graph
     error_manager
-    ge_compiler
+    ge_runner
     parser_common
     gflags
     json
-    runtime_compile
+    runtime
     slog
     static_mmpa
     -lrt

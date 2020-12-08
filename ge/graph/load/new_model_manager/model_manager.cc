@@ -1289,8 +1289,8 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name) {
-  GELOGI("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name, bool &loaded) {
+  GELOGD("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
@@ -1313,18 +1313,24 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
     std::map<string, CustAICPUKernelPtr> new_so_name;
     new_so_name.insert({so_name, aicpu_kernel});
     cust_aicpu_so_[resource_id] = new_so_name;
-    GELOGI("LoadCustAicpuSo new aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo new aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
     return SUCCESS;
   }
   auto it_so_name = it->second.find(so_name);
   if (it_so_name == it->second.end()) {
     it->second.insert({so_name, aicpu_kernel});
-    GELOGI("LoadCustAicpuSo add aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo add aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
+    return SUCCESS;
   }
+  loaded = true;
+  GELOGD("LoadCustAicpuSo so name %s has been loaded.", so_name.c_str());
   return SUCCESS;
 }
 
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
+  GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   if (cust_aicpu_so_.size() == 0) return SUCCESS;
   // get current context

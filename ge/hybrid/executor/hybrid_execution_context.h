@@ -77,7 +77,7 @@ do { \
   RECORD_PROFILING_EVENT((context), HybridProfiler::EXECUTION, fmt, "Execution", name,  ##__VA_ARGS__)
 
 #define RECORD_CALLBACK_EVENT(context, name, fmt, ...) \
-  RECORD_PROFILING_EVENT((context), HybridProfiler::CALLBACK, fmt, "Callback", name,  ##__VA_ARGS__)
+  RECORD_PROFILING_EVENT((context), HybridProfiler::CALLBACKS, fmt, "Callback", name,  ##__VA_ARGS__)
 }  // namespace hybrid
 }  // namespace ge
 #endif // GE_HYBRID_EXECUTOR_HYBRID_EXECUTION_CONTEXT_H_

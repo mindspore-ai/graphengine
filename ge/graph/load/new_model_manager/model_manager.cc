@@ -31,6 +31,7 @@
 #include "model/ge_root_model.h"
 #include "graph/common/local_context.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "hybrid/hybrid_davinci_model.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -204,6 +205,13 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
 
 ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
+  auto hybrid_davinci_model = hybrid_model_map_.find(model_id);
+  if (hybrid_davinci_model != hybrid_model_map_.end()) {
+    uint64_t session_id = hybrid_davinci_model->second->GetSessionId();
+    DestroyAicpuSession(session_id);
+    return SUCCESS;
+  }
+
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
     GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
@@ -216,7 +224,7 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
 ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
@@ -229,7 +237,7 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
 }
 
 ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
@@ -925,6 +933,12 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
                                             vector<InputOutputDescInfo> &output_desc,
                                             std::vector<uint32_t> &inputFormats, std::vector<uint32_t> &outputFormats,
                                             bool new_model_desc) {
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    hybrid_davinci_model->SetModelDescVersion(new_model_desc);
+    return hybrid_davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
@@ -943,6 +957,11 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
 ///
 Status ModelManager::GetDynamicBatchInfo(const uint32_t model_id, std::vector<std::vector<int64_t>> &batch_info,
                                          int32_t &dynamic_type) {
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    return hybrid_davinci_model->GetDynamicBatchInfo(batch_info, dynamic_type);
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetDynamicBatchInfo failed, Invalid model id %u!", model_id);
@@ -975,6 +994,12 @@ Status ModelManager::GetCombinedDynamicDims(const uint32_t model_id, vector<vect
 ///
 Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
                                                 std::vector<std::string> &user_input_shape_order) {
+  auto hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    hybrid_davinci_model->GetUserDesignateShapeOrder(user_input_shape_order);
+    return SUCCESS;
+  }
+
   auto davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetUserDesignateShapeOrder Failed, Invalid Model ID %u!", model_id)
@@ -990,6 +1015,12 @@ Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &
 }
 
 Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    hybrid_davinci_model->GetModelAttr(dynamic_output_shape_info);
+    return SUCCESS;
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHECK_NOTNULL(davinci_model);
   davinci_model->GetModelAttr(dynamic_output_shape_info);
@@ -1201,10 +1232,25 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
 /// @param [in] stream   model stream
 /// @param [in] async_mode  is asynchronize mode.
 /// @param [in] input_data  input data
+/// @param [in] input_desc  description of input data
 /// @param [out] output_data  output data
+/// @param [out] output_desc  description of output data
 ///
 Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool async_mode, const InputData &input_data,
-                                  OutputData &output_data) {
+                                  const std::vector<GeTensorDesc> &input_desc, OutputData &output_data,
+                                  std::vector<GeTensorDesc> &output_desc) {
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    auto inputs = input_data.blobs;
+    auto outputs = output_data.blobs;
+
+    Status status = hybrid_davinci_model->Execute(inputs, input_desc, outputs, output_desc, stream);
+    if (status == SUCCESS) {
+      GELOGI("Execute model %u success.", model_id);
+    }
+    return status;
+  }
+
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u.", model_id);
 
@@ -1243,8 +1289,8 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name) {
-  GELOGI("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name, bool &loaded) {
+  GELOGD("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
@@ -1267,18 +1313,24 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
     std::map<string, CustAICPUKernelPtr> new_so_name;
     new_so_name.insert({so_name, aicpu_kernel});
     cust_aicpu_so_[resource_id] = new_so_name;
-    GELOGI("LoadCustAicpuSo new aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo new aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
     return SUCCESS;
   }
   auto it_so_name = it->second.find(so_name);
   if (it_so_name == it->second.end()) {
     it->second.insert({so_name, aicpu_kernel});
-    GELOGI("LoadCustAicpuSo add aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo add aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
+    return SUCCESS;
   }
+  loaded = true;
+  GELOGD("LoadCustAicpuSo so name %s has been loaded.", so_name.c_str());
   return SUCCESS;
 }
 
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
+  GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   if (cust_aicpu_so_.size() == 0) return SUCCESS;
   // get current context

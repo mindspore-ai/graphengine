@@ -37,10 +37,6 @@
 #include "graph/utils/type_utils.h"
 
 namespace ge {
-namespace {
-const uint32_t kShapeDimSize = 1;
-const uint32_t DIM_SIZE_TWO = 2;
-}  // namespace
 
 Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std::vector<int64_t> &data,
                                               std::vector<GeTensorPtr> &v_output, const bool scalar_output) {

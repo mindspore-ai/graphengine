@@ -38,6 +38,14 @@ class HybridDavinciModel::Impl {
     return SUCCESS;
   }
 
+  Status Execute(const std::vector<DataBuffer> &inputs,
+                 const std::vector<GeTensorDesc> &input_desc,
+                 std::vector<DataBuffer> &outputs,
+                 std::vector<GeTensorDesc> &output_desc,
+                 rtStream_t stream) {
+    return executor_.Execute(inputs, input_desc, outputs, output_desc);
+  }
+
   Status Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
     return executor_.Execute(inputs, outputs);
   }
@@ -68,6 +76,33 @@ class HybridDavinciModel::Impl {
     executor_.SetDeviceId(device_id);
   }
 
+  uint64_t GetSessionId() {
+    return model_.GetSessionId();
+  }
+
+  Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
+    return model_.GetDynamicBatchInfo(batch_info, dynamic_type);
+  }
+
+  void GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order) {
+    model_.GetUserDesignateShapeOrder(user_input_shape_order);
+  }
+
+  void GetModelAttr(std::vector<std::string> &dynamic_output_shape_info) {
+    model_.GetModelAttr(dynamic_output_shape_info);
+  }
+
+  Status GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
+                                vector<InputOutputDescInfo> &output_desc,
+                                std::vector<uint32_t> &input_formats,
+                                std::vector<uint32_t> &output_formats) {
+    return model_.GetInputOutputDescInfo(input_desc, output_desc, input_formats, output_formats);
+  }
+
+  void SetModelDescVersion(bool is_new_model_desc) {
+    model_.SetModelDescVersion(is_new_model_desc);
+  }
+
  private:
   std::shared_ptr<ModelListener> listener_;
   HybridModel model_;
@@ -78,8 +113,8 @@ HybridDavinciModel::~HybridDavinciModel() {
   delete impl_;
 }
 
-unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &ge_root_model) {
-  auto instance = unique_ptr<HybridDavinciModel>(new (std::nothrow)HybridDavinciModel());
+std::unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &ge_root_model) {
+  auto instance = std::unique_ptr<HybridDavinciModel>(new (std::nothrow)HybridDavinciModel());
   if (instance != nullptr) {
     instance->impl_ = new (std::nothrow) HybridDavinciModel::Impl(ge_root_model);
     if (instance->impl_ != nullptr) {
@@ -93,6 +128,14 @@ unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &
 Status HybridDavinciModel::Init() {
   GE_CHECK_NOTNULL(impl_);
   return impl_->Init();
+}
+
+Status HybridDavinciModel::Execute(const std::vector<DataBuffer> &inputs,
+                                   const std::vector<GeTensorDesc> &input_desc,
+                                   std::vector<DataBuffer> &outputs,
+                                   std::vector<GeTensorDesc> &output_desc, rtStream_t stream) {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->Execute(inputs, input_desc, outputs, output_desc, stream);
 }
 
 Status HybridDavinciModel::Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
@@ -131,6 +174,42 @@ void HybridDavinciModel::SetDeviceId(uint32_t device_id) {
   if (impl_ != nullptr) {
     impl_->SetDeviceId(device_id);
   }
+}
+
+Status HybridDavinciModel::GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetDynamicBatchInfo(batch_info, dynamic_type);
+}
+
+void HybridDavinciModel::GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order) {
+  if (impl_ != nullptr) {
+    impl_->GetUserDesignateShapeOrder(user_input_shape_order);
+  }
+}
+
+void HybridDavinciModel::GetModelAttr(std::vector<std::string> &dynamic_output_shape_info) {
+  if (impl_ != nullptr) {
+    impl_->GetModelAttr(dynamic_output_shape_info);
+  }
+}
+
+Status HybridDavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
+                                                  vector<InputOutputDescInfo> &output_desc,
+                                                  std::vector<uint32_t> &input_formats,
+                                                  std::vector<uint32_t> &output_formats) {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetInputOutputDescInfo(input_desc, output_desc, input_formats, output_formats);
+}
+
+void HybridDavinciModel::SetModelDescVersion(bool is_new_model_desc) {
+  if (impl_ != nullptr) {
+    impl_->SetModelDescVersion(is_new_model_desc);
+  }
+}
+
+uint64_t HybridDavinciModel::GetSessionId() {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetSessionId();
 }
 }  // namespace hybrid
 }  // namespace ge

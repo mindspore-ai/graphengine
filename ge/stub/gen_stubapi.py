@@ -1,3 +1,10 @@
+#!/usr/bin/python3.7
+# -*- coding: UTF-8 -*-
+#-------------------------------------------------------------------
+# Purpose:
+# Copyright 2020 Huawei Technologies Co., Ltd. All rights reserved.
+#-------------------------------------------------------------------
+
 import os
 import re
 import sys

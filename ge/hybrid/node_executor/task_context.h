@@ -29,7 +29,7 @@
 
 namespace ge {
 namespace hybrid {
-class GraphExecutionContext;
+struct GraphExecutionContext;
 class SubgraphContext;
 
 class TaskContext {

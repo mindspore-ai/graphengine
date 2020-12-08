@@ -63,8 +63,8 @@ struct RuntimeParam {
 };
 
 typedef struct FusionOpInfo {
-  vector<string> original_op_names;
-  string op_name;
+  std::vector<std::string> original_op_names;
+  std::string op_name;
   uint32_t op_index;
   uint32_t stream_id;
 } FusionOpInfo;

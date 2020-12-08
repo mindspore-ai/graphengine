@@ -25,6 +25,7 @@ namespace ge {
 namespace hybrid {
 class ControlOpNodeTask : public NodeTask {
  public:
+  using NodeTask::Init;
   virtual Status Init(const NodePtr &node, const HybridModel &model) = 0;
   Status UpdateArgs(TaskContext &context) override;
 

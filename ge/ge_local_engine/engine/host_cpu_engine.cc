@@ -95,8 +95,8 @@ Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
 
 void HostCpuEngine::CloseSo() {
   for (auto handle : lib_handles_) {
-    if (dlclose(handle) != 0) {
-      GELOGW("failed to close handle, message: %s", dlerror());
+    if (mmDlclose(handle) != 0) {
+      GELOGW("failed to close handle, message: %s", mmDlerror());
     }
   }
   lib_handles_.clear();
@@ -322,13 +322,13 @@ Status HostCpuEngine::LoadLibs(std::vector<std::string> &lib_paths) {
 
 Status HostCpuEngine::LoadLib(const std::string &lib_path) {
   GELOGI("To invoke dlopen on lib: %s", lib_path.c_str());
-  auto handle = dlopen(lib_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  auto handle = mmDlopen(lib_path.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
   if (handle == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), dlerror());
+    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), mmDlerror());
     return INTERNAL_ERROR;
   }
 
-  auto initialize = (Status (*)(const HostCpuContext &))dlsym(handle, "Initialize");
+  auto initialize = (Status (*)(const HostCpuContext &))mmDlsym(handle, "Initialize");
   if (initialize != nullptr) {
     GELOGI("Invoke function Initialize in lib: %s", lib_path.c_str());
     if (initialize(HostCpuContext()) != SUCCESS) {

@@ -27,15 +27,40 @@
 #include "graph/utils/graph_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "framework/common/debug/ge_log.h"
+#include "graph/utils/attr_utils.h"
 
 namespace ge {
 namespace hybrid {
 namespace {
 const uint32_t kSubgraphIndex = 0U;
 const uint32_t kVarOutputIndex = 0U;
-const uint32_t kAlignment = 32;
 const int kBytes = 8;
 const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
+
+Status SetOutputNameAttr(ComputeGraph &graph) {
+  vector<string> output_names;
+  for (const auto &node : graph.GetDirectNode()) {
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    auto op_type = op_desc->GetType();
+    if (op_type == NETOUTPUT) {
+      for (InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
+        const OutDataAnchorPtr &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+        GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+        NodePtr in_node = peer_out_anchor->GetOwnerNode();
+        GE_CHECK_NOTNULL(in_node);
+        output_names.push_back(in_node->GetName());
+      }
+    }
+  }
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&graph, ATTR_MODEL_OUT_NODES_NAME, output_names),
+                   GELOGE(FAILED, "SetListStr of ATTR_MODEL_OUT_NODES_NAME failed.");
+                   return FAILED);
+  return SUCCESS;
+}
 
 int64_t CalcVarSizeInBytes(const GeTensorDesc &desc) {
   int64_t var_size = 0;
@@ -939,6 +964,10 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
 
 Status HybridModelBuilder::IndexTaskDefs() {
   const auto &root_graph = ge_root_model_->GetRootGraph();
+  if (SetOutputNameAttr(*root_graph) != SUCCESS) {
+    GELOGW("Set output name attr failed.");
+  }
+
   for (auto &it : ge_root_model_->GetSubgraphInstanceNameToModel()) {
     auto &name = it.first;
     auto &ge_model = it.second;

@@ -187,7 +187,7 @@ Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint32_t aspect_ratios_size, uin
     return PARAM_INVALID;
   }
 
-  uint tmp_value = aspect_ratios_size * min_sizes_size;
+  uint32_t tmp_value = aspect_ratios_size * min_sizes_size;
   if (ge::CheckUint32AddOverflow(tmp_value, max_sizes_size) != SUCCESS) {
     GELOGW("Failed to get list param.");
     return PARAM_INVALID;
@@ -199,7 +199,7 @@ Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint32_t aspect_ratios_size, uin
     return PARAM_INVALID;
   }
   num_priors = static_cast<int>(tmp_value);
-  
+
   if (ge::CheckIntMulOverflow(layer_width, layer_height) != SUCCESS) {
     GELOGW("Failed to get list param.");
     return PARAM_INVALID;
@@ -288,7 +288,7 @@ std::unique_ptr<float[]> SsdPriorboxKernel::BoundaryCalulate(int dim_size, int l
     }
   }
 
-  return std::move(output_data);
+  return output_data;
 }
 
 Status SsdPriorboxKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_output) {

@@ -19,6 +19,7 @@
 #include "framework/common/debug/log.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
+#include "graph/load/new_model_manager/tbe_handle_store.h"
 
 using optiling::OpRunInfo;
 
@@ -36,6 +37,58 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
   return SUCCESS;
 }
 
+Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
+  auto op_desc_ptr = std::make_shared<OpDesc>(op_desc);
+  GE_CHECK_NOTNULL(op_desc_ptr);
+  auto tbe_kernel = op_desc_ptr->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+  if (tbe_kernel == nullptr) {
+    GELOGE(INTERNAL_ERROR, "TBE: %s can't find tvm bin file!", op_desc_ptr->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
+  rtError_t rt_ret = rtQueryFunctionRegistered(stub_name_.c_str());
+  if (rt_ret != RT_ERROR_NONE) {
+    void *bin_handle = nullptr;
+    if (!kernel_store.FindTBEHandle(stub_name_.c_str(), bin_handle)) {
+      GELOGI("TBE: can't find the kernel_name[%s] in HandleMap", stub_name_.c_str());
+      rtDevBinary_t binary;
+      std::string json_string;
+      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, TVM_ATTR_NAME_MAGIC, json_string),
+                      GELOGI("Get original type of session_graph_id."));
+      if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICPU") {
+        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICPU;
+      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF") {
+        binary.magic = RT_DEV_BINARY_MAGIC_ELF;
+      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
+        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+      } else {
+        GELOGE(PARAM_INVALID, "TBE: Invalid parameter magic number! json: %s", json_string.c_str());
+        return PARAM_INVALID;
+      }
+      binary.version = 0;
+      binary.data = tbe_kernel->GetBinData();
+      binary.length = tbe_kernel->GetBinDataSize();
+      GELOGI("TBE: binary.length: %lu", binary.length);
+      GE_CHK_RT_RET(rtDevBinaryRegister(&binary, &bin_handle));
+      std::string meta_data;
+      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, TVM_ATTR_NAME_METADATA, meta_data),
+                      GELOGI("Get original type of json_string"));
+      GELOGI("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
+      GE_IF_BOOL_EXEC(!meta_data.empty(), GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
+      kernel_store.StoreTBEHandle(stub_name_.c_str(), bin_handle, tbe_kernel);
+    } else {
+      GELOGI("TBE: find the kernel_name[%s] in HandleMap", stub_name_.c_str());
+      kernel_store.ReferTBEHandle(stub_name_.c_str());
+    }
+    std::string kernel_name;
+    GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, op_desc_ptr->GetName() + "_kernelname", kernel_name),
+                    GELOGI("Get original type of kernel_name"));
+    GELOGI("TBE: binfile_key=%s, kernel_name=%s", stub_name_.c_str(), kernel_name.c_str());
+    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_name_.c_str(), stub_name_.c_str(), kernel_name.c_str(), 0));
+  }
+  return SUCCESS;
+}
+
 Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   GE_CHK_STATUS_RET(ValidateTaskDef(task_def),
                     "[%s] Failed to validate task def: [%s]",
@@ -45,6 +98,9 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
   const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
   stub_name_ = kernel_def.stub_func();
+
+  GE_CHK_STATUS_RET(RegisterTbeHandle(op_desc));
+
   GE_CHK_RT_RET(rtGetFunctionByName(stub_name_.c_str(), &stub_func_));
   args_size_ = kernel_def.args_size();
   block_dim_ = kernel_def.block_dim();

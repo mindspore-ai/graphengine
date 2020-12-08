@@ -353,6 +353,44 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
   return SUCCESS;
 }
 
+Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,
+                                         const std::vector<GeTensorDesc> &input_desc,
+                                         std::vector<DataBuffer> &outputs,
+                                         std::vector<GeTensorDesc> &output_desc) {
+  GELOGI("Start to execute model.");
+
+  HybridModelExecutor::ExecuteArgs args;
+  args.inputs.resize(inputs.size());
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    TensorValue tensor_value(inputs[i].data, inputs[i].length);
+    args.inputs[i] = tensor_value;
+  }
+  GE_CHK_STATUS_RET(executor_->Execute(args), "Failed to execute model.");
+  for (const auto &output_tensor_desc : args.output_desc) {
+    output_desc.emplace_back(*output_tensor_desc);
+  }
+
+  for (size_t i = 0; i < args.outputs.size(); ++i) {
+    int64_t output_real_size = 0;
+    ge::graphStatus graph_status = TensorUtils::GetTensorSizeInBytes(output_desc[i], output_real_size);
+    if (graph_status != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "Get tensor size in bytes failed.");
+      return FAILED;
+    }
+    if (output_real_size > 0) {
+      if (outputs[i].length < static_cast<uint64_t>(output_real_size)) {
+        GELOGE(FAILED, "output idx[%zu], the memory size of output[%lu] given by user should be greater than or equal to the real size of output[%ld]",
+               i, outputs[i].length, output_real_size);
+        return FAILED;
+      }
+      GE_CHK_RT_RET(rtMemcpy(outputs[i].data, outputs[i].length, args.outputs[i].GetData(), output_real_size, RT_MEMCPY_DEVICE_TO_DEVICE));
+    }
+    outputs[i].length = output_real_size;
+  }
+
+  return SUCCESS;
+}
+
 Status HybridModelAsyncExecutor::Execute(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
   GELOGD("Start to execute model.");
   // prepare inputs

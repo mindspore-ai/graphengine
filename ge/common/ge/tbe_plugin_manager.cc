@@ -37,6 +37,8 @@
 #include "graph/utils/type_utils.h"
 
 namespace ge {
+const int kBaseInt = 10;
+
 std::map<string, string> TBEPluginManager::options_ = {};
 
 // Get Singleton Instance
@@ -155,7 +157,7 @@ void TBEPluginManager::GetCustomOpPath(std::string &customop_path) {
   domi::FrameworkType type = domi::TENSORFLOW;
   auto it = options_.find(FRAMEWORK_TYPE);
   if (it != options_.end()) {
-    type = static_cast<domi::FrameworkType>(std::strtol(it->second.c_str(), nullptr, 10));
+    type = static_cast<domi::FrameworkType>(std::strtol(it->second.c_str(), nullptr, kBaseInt));
   }
   fmk_type = ge::TypeUtils::FmkTypeToSerialString(type);
   GELOGI("Framework type is %s.", fmk_type.c_str());

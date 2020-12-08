@@ -29,6 +29,8 @@
 
 namespace ge {
 const int kValueIndexOutputIndex = 1;
+const size_t kCaseNoInput = 0;
+const size_t kCaseOneInput = 1;
 
 Status MergePass::Run(NodePtr &node) {
   GELOGD("MergePass running");
@@ -50,7 +52,7 @@ Status MergePass::Run(NodePtr &node) {
 
   const auto &in_data_nodes = node->GetInDataNodes();
   switch (in_data_nodes.size()) {
-    case 0: {
+    case kCaseNoInput: {
       /// Case A: input_count = 0, the output of merge node is inactive as well
       /// In which case the output branch can be removed
       /// until another merge node is met
@@ -65,7 +67,7 @@ Status MergePass::Run(NodePtr &node) {
       }
       return ret;
     }
-    case 1: {  // Case B: input_count = 1, the merge node can be optimized out
+    case kCaseOneInput: {  // Case B: input_count = 1, the merge node can be optimized out
       std::vector<int> merge_io_map = {PassUtils::GetUniqueInDataAnchorIndex(node), -1};
       if (merge_io_map[0] != -1 && IsNeedChangeIndexToConstant(node)) {
         int index = merge_io_map[0];

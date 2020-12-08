@@ -25,13 +25,13 @@
 
 namespace ge {
 const size_t bin_ranges[kNumBins] = {kRoundBlockSize * kKByteSize,
-                                     8 * kMByteSize,
-                                     32 * kMByteSize,
-                                     128 * kMByteSize,
+                                     kBinSizeUnit8 * kMByteSize,
+                                     kBinSizeUnit32 * kMByteSize,
+                                     kBinSizeUnit128 * kMByteSize,
                                      kGByteSize,
-                                     4 * kGByteSize,
-                                     16 * kGByteSize,
-                                     26 * kGByteSize};
+                                     kBinSizeUnit4 * kGByteSize,
+                                     kBinSizeUnit16 * kGByteSize,
+                                     kBinSizeUnit26 * kGByteSize};
 
 static bool BlockComparator(const Block *left, const Block *right) {
   if (left->size != right->size) {

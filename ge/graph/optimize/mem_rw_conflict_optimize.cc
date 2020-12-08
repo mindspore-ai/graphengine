@@ -26,6 +26,13 @@
 namespace {
 using namespace ge;
 const int kIdentityAnchorIndex = 0;
+const size_t kSerialStringVecSize = 4;
+
+const int kCaseReadOnly = 0;
+const int kCaseScopeWriteable = 2;
+const int kCaseWriteable = 3;
+const int kCaseInvalidRWType = 5;
+
 // rw type of input.
 enum class InputRWType {
   kReadOnly,        // Normal op input only read
@@ -55,7 +62,7 @@ thread_local map<string, NodeInputOutputRWType> node_rwtype_map_;
 /// @return rw_type_name
 ///
 static std::string InputRWTypeToSerialString(InputRWType rw_type) {
-  const static char *names[4] = {"ReadOnly", "Writeable", "ScopeWriteable", "InvalidRWType"};
+  const static char *names[kSerialStringVecSize] = {"ReadOnly", "Writeable", "ScopeWriteable", "InvalidRWType"};
   return names[static_cast<int>(rw_type)];
 }
 
@@ -65,7 +72,7 @@ static std::string InputRWTypeToSerialString(InputRWType rw_type) {
 /// @return rw_type_name
 ///
 static std::string OutputRWTypeToSerialString(OutputRWType rw_type) {
-  const static char *names[4] = {"ReadOnly", "SoftRead", "Writeable", "InvalidRWType"};
+  const static char *names[kSerialStringVecSize] = {"ReadOnly", "SoftRead", "Writeable", "InvalidRWType"};
   return names[static_cast<int>(rw_type)];
 }
 
@@ -118,13 +125,13 @@ InputRWType GetInputRwTypeInConflict(const std::set<int> &rw_type_set) {
   }
 
   switch (total_rw_type) {
-    case 0:
+    case kCaseReadOnly:
       return InputRWType::kReadOnly;  // all input rw type is readonly
-    case 2:
+    case kCaseScopeWriteable:
       return InputRWType::kScopeWriteable;  // readonly 2 scope_writeable
-    case 3:
+    case kCaseWriteable:
       return InputRWType::kWriteable;  // all input rw type is writeable or readonly 2 writeable
-    case 5:
+    case kCaseInvalidRWType:
       return InputRWType::kInvalidRWType;  // writeable 2 scope_writeable
     default:
       return InputRWType::kInvalidRWType;

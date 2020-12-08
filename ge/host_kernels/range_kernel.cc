@@ -32,6 +32,9 @@ namespace ge {
 namespace {
 constexpr size_t kRangeInputNum = 3;
 constexpr uint32_t kRangeDimNum = 0;
+constexpr size_t kStartIndex = 0;
+constexpr size_t kLimitIndex = 1;
+constexpr size_t kDeltaIndex = 2;
 const std::set<DataType> kRangeSupportedType = {DT_INT32, DT_FLOAT};
 }  // namespace
 
@@ -53,9 +56,9 @@ Status RangeKernel::Compute(const OpDescPtr op_desc_ptr, const std::vector<Const
     return MEMALLOC_FAILED;
   }
 
-  ConstGeTensorPtr start = input.at(0);
-  ConstGeTensorPtr limit = input.at(1);
-  ConstGeTensorPtr delta = input.at(2);
+  ConstGeTensorPtr start = input.at(kStartIndex);
+  ConstGeTensorPtr limit = input.at(kLimitIndex);
+  ConstGeTensorPtr delta = input.at(kDeltaIndex);
   DataType data_type = delta->GetTensorDesc().GetDataType();
   if (data_type == DT_FLOAT) {
     if (GetRange(*reinterpret_cast<const float *>(start->GetData().data()),

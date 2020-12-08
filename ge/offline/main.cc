@@ -68,7 +68,7 @@ const char *const kModeSupport = "only support 0(model to framework model), "
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
 
 // limit available mem size 2G
-const long kMinAvailableMem = 2 * 1024 * 1024;
+const long kMinAvailableMem = 2097152;  // 2 * 1024 * 1024
 
 DEFINE_string(model, "", "The model file.");
 DEFINE_string(output, "", "The output file path&name.");

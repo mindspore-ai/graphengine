@@ -19,6 +19,7 @@
 #include <securec.h>
 #include <memory>
 
+#include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
@@ -29,21 +30,21 @@ namespace formats {
 namespace {
 std::map<Format, std::map<Format, std::vector<int64_t>>> perm_args{
     {FORMAT_NCHW,
-     {{FORMAT_NHWC, std::vector<int64_t>({0, 2, 3, 1})},
-      {FORMAT_HWCN, std::vector<int64_t>({2, 3, 1, 0})},
-      {FORMAT_CHWN, std::vector<int64_t>({1, 2, 3, 0})}}},
+     {{FORMAT_NHWC, std::vector<int64_t>({kNchwN, kNchwH, kNchwW, kNchwC})},
+      {FORMAT_HWCN, std::vector<int64_t>({kNchwH, kNchwW, kNchwC, kNchwN})},
+      {FORMAT_CHWN, std::vector<int64_t>({kNchwC, kNchwH, kNchwW, kNchwN})}}},
     {FORMAT_NHWC,
-     {{FORMAT_NCHW, std::vector<int64_t>({0, 3, 1, 2})},
-      {FORMAT_CHWN, std::vector<int64_t>({3, 1, 2, 0})},
-      {FORMAT_HWCN, std::vector<int64_t>({1, 2, 3, 0})}}},
+     {{FORMAT_NCHW, std::vector<int64_t>({kNhwcN, kNhwcC, kNhwcH, kNhwcW})},
+      {FORMAT_CHWN, std::vector<int64_t>({kNhwcC, kNhwcH, kNhwcW, kNhwcN})},
+      {FORMAT_HWCN, std::vector<int64_t>({kNhwcH, kNhwcW, kNhwcC, kNhwcN})}}},
     {FORMAT_HWCN,
-     {{FORMAT_NCHW, std::vector<int64_t>({3, 2, 0, 1})},
-      {FORMAT_NHWC, std::vector<int64_t>({3, 0, 1, 2})},
-      {FORMAT_CHWN, std::vector<int64_t>({2, 0, 1, 3})}}},
+     {{FORMAT_NCHW, std::vector<int64_t>({kHwcnN, kHwcnC, kHwcnH, kHwcnW})},
+      {FORMAT_NHWC, std::vector<int64_t>({kHwcnN, kHwcnH, kHwcnW, kHwcnC})},
+      {FORMAT_CHWN, std::vector<int64_t>({kHwcnC, kHwcnH, kHwcnW, kHwcnN})}}},
     {FORMAT_CHWN,
-     {{FORMAT_NCHW, std::vector<int64_t>({3, 0, 1, 2})},
-      {FORMAT_NHWC, std::vector<int64_t>({3, 1, 2, 0})},
-      {FORMAT_HWCN, std::vector<int64_t>({1, 2, 0, 3})}}},
+     {{FORMAT_NCHW, std::vector<int64_t>({kChwnN, kChwnC, kChwnH, kChwnW})},
+      {FORMAT_NHWC, std::vector<int64_t>({kChwnN, kChwnH, kChwnW, kChwnC})},
+      {FORMAT_HWCN, std::vector<int64_t>({kChwnH, kChwnW, kChwnC, kChwnN})}}},
 };
 
 bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<int64_t> &perm_arg) {

@@ -30,9 +30,10 @@
 namespace ge {
 namespace {
 const size_t kDataMemAlignSize = 32;
+const size_t kDataMemAlignUnit = 2;
 
 size_t GetAlignedSize(size_t size) {
-  size_t aligned_size = (size + 2 * kDataMemAlignSize - 1) / kDataMemAlignSize * kDataMemAlignSize;
+  size_t aligned_size = (size + kDataMemAlignUnit * kDataMemAlignSize - 1) / kDataMemAlignSize * kDataMemAlignSize;
   return aligned_size;
 }
 

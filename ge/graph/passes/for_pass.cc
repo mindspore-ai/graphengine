@@ -37,6 +37,7 @@ namespace {
   const uint32_t kSubgraphLoopVarInputIndex = 0;
   const uint32_t kSubgraphInputIndex = 1;
   const uint32_t kWhileOutputIndex = 5;
+  const size_t kIDiffValue = 2;
   const std::string kAbs = "Abs";
 }
 
@@ -694,7 +695,7 @@ Status ForPass::UpdateForBodyInputMapping(const WhileInfo &while_info) {
     } else if ((i == FOR_LIMIT_INPUT) || (i == FOR_DELTA_INPUT)) {
       continue;
     } else {
-      input_mapping[i] = i - 2;
+      input_mapping[i] = i - kIDiffValue;
     }
   }
   for_body->UpdateInputMapping(input_mapping);

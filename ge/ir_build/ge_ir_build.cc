@@ -334,7 +334,8 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
 
   string input_shape;
   if (options_.find("input_shape") == options_.end()) {
-    GE_CHK_BOOL_RET_STATUS_NOLOG(GetDefaultInputShape(graph, input_shape), GRAPH_PARAM_INVALID);
+    GE_CHK_BOOL_EXEC(GetDefaultInputShape(graph, input_shape) == ge::SUCCESS, return ge::GRAPH_PARAM_INVALID,
+                     "Get defaule data op shape from graph failed!");
   } else {
     input_shape = options_["input_shape"];
   }

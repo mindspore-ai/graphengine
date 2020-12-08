@@ -461,7 +461,6 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
     auto input_desc = node_op_desc->MutableInputDesc(in_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(input_desc);
     (void) ge::TensorUtils::SetSize(*input_desc, size);
-    GE_CHK_STATUS_RET(node_op_desc->UpdateInputDesc(in_data_anchor->GetIdx(), *input_desc));
     GELOGD("%s input desc, dim_size: %zu, mem_size: %ld, format: %s, type: %s.", node_ptr->GetName().c_str(),
            input_desc->GetShape().GetDimNum(), size, TypeUtils::FormatToSerialString(input_desc->GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str());

@@ -311,6 +311,7 @@ graphStatus Impl::GetDefaultInputShape(const Graph &graph, string &default_shape
     }
   }
   GELOGI("Get default data op shape from ge ir graph: %s", default_shape.c_str());
+  return GRAPH_SUCCESS;
 }
 
 graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::string> &options) {

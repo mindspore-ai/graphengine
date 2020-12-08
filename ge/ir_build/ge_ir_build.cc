@@ -295,8 +295,8 @@ graphStatus Impl::GetDefaultInputShapeAndFormat(const Graph &graph, string &defa
       GELOGD("Data op get shape from InputDesc in ge ir graph.");
 
       string tmp_shape_str;
-      std::vector<int64_t> tmp_shape = data_shape.GetDims();
-      if (tmp_shape.size() == 0) {
+      const std::vector<int64_t> &tmp_shape = data_shape.GetDims();
+      if (tmp_shape.empty()) {
         GELOGW("Data op: %s has zero shape dims!", data_op_name.c_str());
       } else {
         tmp_shape_str += data_op_name + ":";
@@ -341,7 +341,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   string tmp_input_format;
   if (options_.find("input_shape") == options_.end()) {
     GE_CHK_BOOL_EXEC(GetDefaultInputShapeAndFormat(graph, input_shape, tmp_input_format) == ge::SUCCESS,
-                     return ge::GRAPH_PARAM_INVALID, "Get defaule data op shape from graph failed!");
+                     return ge::GRAPH_PARAM_INVALID, "Get default data op shape from graph failed!");
   } else {
     input_shape = options_["input_shape"];
   }

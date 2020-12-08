@@ -310,6 +310,7 @@ graphStatus Impl::GetDefaultInputShape(const Graph &graph, string &default_shape
       GELOGD("Data op name: %s, data shape: %s", data_op_name.c_str(), tmp_shape_str.c_str());
     }
   }
+  default_shape = (default_shape.empty() ? default_shape : default_shape.substr(0, default_shape.size() - 1));
   GELOGI("Get default data op shape from ge ir graph: %s", default_shape.c_str());
   return GRAPH_SUCCESS;
 }

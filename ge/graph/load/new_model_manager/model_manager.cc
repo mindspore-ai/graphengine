@@ -216,7 +216,7 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
 ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
@@ -229,7 +229,7 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
 }
 
 ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {

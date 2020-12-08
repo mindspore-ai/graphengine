@@ -297,17 +297,16 @@ graphStatus Impl::GetDefaultInputShapeAndFormat(const Graph &graph, string &defa
       string tmp_shape_str;
       std::vector<int64_t> tmp_shape = data_shape.GetDims();
       if (tmp_shape.size() == 0) {
-        GELOGE(GRAPH_PARAM_INVALID, "Data op: %s has zero shapr dims!", data_op_name.c_str());
-        return GRAPH_PARAM_INVALID;
+        GELOGW("Data op: %s has zero shape dims!", data_op_name.c_str());
+      } else {
+        tmp_shape_str += data_op_name + ":";
+        for (auto tmp_dim : tmp_shape) {
+          tmp_shape_str += to_string((long)tmp_dim) + ",";
+        }
+        tmp_shape_str = tmp_shape_str.substr(0, tmp_shape_str.size() - 1);
+        tmp_shape_str += ";";
+        default_shape += tmp_shape_str;
       }
-
-      tmp_shape_str += data_op_name + ":";
-      for (auto tmp_dim : tmp_shape) {
-        tmp_shape_str += to_string((long)tmp_dim) + ",";
-      }
-      tmp_shape_str = tmp_shape_str.substr(0, tmp_shape_str.size() - 1);
-      tmp_shape_str += ";";
-      default_shape += tmp_shape_str;
 
       ge::Format data_format = tensor.GetFormat();
       input_format.assign(ge::TypeUtils::FormatToSerialString(data_format));
@@ -316,7 +315,7 @@ graphStatus Impl::GetDefaultInputShapeAndFormat(const Graph &graph, string &defa
     }
   }
   default_shape = (default_shape.empty() ? default_shape : default_shape.substr(0, default_shape.size() - 1));
-  GELOGI("Get default data op shape from ge ir graph: %s", default_shape.c_str());
+  GELOGI("Get default data op shape: %s, format: %s from ge ir graph.", default_shape.c_str(), input_format.c_str());
   return GRAPH_SUCCESS;
 }
 

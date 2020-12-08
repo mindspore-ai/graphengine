@@ -124,7 +124,7 @@ Status ModelHelper::SaveModelTbeKernel(std::shared_ptr<OmFileSaveHelper> &om_fil
                                          ModelPartitionType::TBE_KERNELS,
                                          ge_model->GetTBEKernelStore().Data(),
                                          ge_model->GetTBEKernelStore().DataSize(), model_index), 
-                                         "Add tbe kernel partition failed");
+                      "Add tbe kernel partition failed");
   }
   // no need to check value, DATA->NetOutput
   (void)tbe_kernel_store.Load(tbe_kernel_store.Data(), tbe_kernel_store.DataSize());

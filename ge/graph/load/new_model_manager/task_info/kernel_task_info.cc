@@ -877,7 +877,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
     bool loaded = false;
     GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name_, loaded),
-            "launch cust aicpu so failed");
+        "launch cust aicpu so failed");
   }
 
   // copy args to new host memory

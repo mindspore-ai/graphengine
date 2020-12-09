@@ -2695,8 +2695,9 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
       is_getnext_sink_dynamic_ = true;
       cur_dynamic_dims_.clear();
       cur_dynamic_dims_.resize(shape_of_cur_dynamic_dims_);
-      GE_CHK_RT_RET(rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int64_t),
-                             netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST));
+      auto ret = rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int64_t),
+                          netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST);
+      GE_CHK_RT_RET(ret);
     }
     GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims_).c_str());
     if (GenOutputTensorInfo(op_desc, data_index, output_data, outputs) != SUCCESS) {

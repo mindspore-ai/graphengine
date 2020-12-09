@@ -385,7 +385,6 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
 
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
-  options_.insert(std::pair<string, string>(string(IR_OPTION_TARGET), "mini"));
   options_.insert(std::pair<string, string>(string(ge::RUN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::TRAIN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::SAVE_ORIGINAL_MODEL), to_string(0)));
@@ -425,39 +424,52 @@ void Impl::UpdateThreadContext() {
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
-  int64_t index = 0;
   for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
-      (void)AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
       GELOGD("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
-      ge::GeTensorDesc tensor = op->GetInputDesc(0);
+      auto tensor = op->MutableInputDesc(0);
       string data_op_name = op->GetName();
       GELOGD("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;
       auto iter = omg_context_.input_dims.find(data_op_name);
       if (iter != omg_context_.input_dims.end()) {
         data_shape = ge::GeShape(iter->second);
-        GELOGD("Data op get shape from Context.");
+        tensor->SetShape(data_shape);
+        GELOGD("Data op get shape from Context and update [%s] shape info", data_op_name.c_str());
       } else {
-        data_shape = tensor.GetShape();
+        data_shape = tensor->GetShape();
         GELOGD("Data op get shape from InputDesc in ge ir graph.");
       }
       // If user point input format, do work for all data ops; else do according to tensor_desc
       auto data_format = omg_context_.format != domi::DOMI_TENSOR_ND ?
-        ge::TypeUtils::DomiFormatToFormat(omg_context_.format) : tensor.GetFormat();
-      ge::DataType data_type = tensor.GetDataType();
+        ge::TypeUtils::DomiFormatToFormat(omg_context_.format) : tensor->GetFormat();
+      ge::DataType data_type = tensor->GetDataType();
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
       GELOGD("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
       ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);
       inputTensor.SetTensorDesc(desc);
-      inputs.push_back(inputTensor);
+      int64_t index = 0;
+      if (AttrUtils::GetInt(op, ATTR_NAME_INDEX, index)) {
+        AttrUtils::SetInt(desc, ATTR_NAME_INDEX, index);
+      } else {
+        GELOGE(GRAPH_PARAM_INVALID, "Get attr name idx failed!");
+        return GRAPH_PARAM_INVALID;
+      }
+      inputs.emplace_back(inputTensor);
     }
   }
+  std::sort(inputs.begin(), input.end(), [](ge::GeTensor &a, ge::GeTensor &b) {
+    int64_t data_idx_a = 0;
+    int64_t data_idx_b = 0;
+    AttrUtils::GetInt(a.MutableTensorDesc(), ATTR_NAME_INDEX, data_idx_a);
+    AttrUtils::GetInt(b.MutableTensorDesc(), ATTR_NAME_INDEX, data_idx_b);
+    return data_idx_a <= data_idx_b;
+  });
   GELOGD("CreateInputsForIRBuild, inputs size: %zu", inputs.size());
   return GRAPH_SUCCESS;
 }

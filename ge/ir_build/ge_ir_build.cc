@@ -235,7 +235,7 @@ class Impl {
                          ModelBufferData &ge_models);
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                  bool is_dynamic_input);
-  graphStatus UpdateDataOp(const Graph &graph);
+  graphStatus UpdateDataOpAttr(const Graph &graph);
   void SetRtSocVersion();
   void UpdateThreadContext();
   void LoadOpsProto();

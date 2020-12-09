@@ -262,11 +262,13 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
-      auto tensor = op->MutableInputDesc(0);
+      auto tensor_input = op->MutableInputDesc(0);
+      auto tensor_output = op->MutableOutputDesc(0);
       string data_op_name = op->GetName();
       auto iter = shape_map.find(data_op_name);
       if (iter != shape_map.end()) {
-        tensor->SetShape(ge::GeShape(iter->second));
+        tensor_input->SetShape(ge::GeShape(iter->second));
+        tensor_output->SetShape(ge::GeShape(iter->second));
         GELOGD("update input [%s] shape info", data_op_name.c_str());
       } else {
         GELOGI("no need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
@@ -360,7 +362,10 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
     GELOGE(ret, "User input options are illegal! Please check!");
     return ret;
   }
-
+  ret = UpdateDataOpAttr(graph);
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
                            ? "" : options_[BUILD_MODE];
   options_[BUILD_MODE] = build_mode;

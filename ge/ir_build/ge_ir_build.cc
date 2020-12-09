@@ -463,7 +463,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
       inputs.emplace_back(inputTensor);
     }
   }
-  std::sort(inputs.begin(), input.end(), [](ge::GeTensor &a, ge::GeTensor &b) {
+  std::sort(inputs.begin(), inputs.end(), [](ge::GeTensor &a, ge::GeTensor &b) {
     int64_t data_idx_a = 0;
     int64_t data_idx_b = 0;
     AttrUtils::GetInt(a.MutableTensorDesc(), ATTR_NAME_INDEX, data_idx_a);

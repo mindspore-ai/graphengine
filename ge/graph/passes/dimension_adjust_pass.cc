@@ -80,7 +80,71 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     }
   }
 
+  ret = DealWithInNodes(node);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "DealWithInNodes of %s failed.", node->GetName().c_str());
+    return ret;
+  }
+
   std::vector<int> data_relink_io_map = {kDataInputIndex};
   return IsolateAndDeleteNode(node, data_relink_io_map);
+}
+
+Status DimensionAdjustPass::DealWithInNodes(NodePtr &node) {
+  GE_CHECK_NOTNULL(node);
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  auto graph = node->GetOwnerComputeGraph();
+  auto in_data_anchors = node->GetAllInDataAnchors();
+  for (auto &in_data_anchor : in_data_anchors) {
+    if (in_data_anchor == nullptr) {
+      continue;
+    }
+    auto in_node_anchor = in_data_anchor->GetPeerOutAnchor();
+    if (in_node_anchor == nullptr) {
+      continue;
+    }
+    auto in_node = in_node_anchor->GetOwnerNode();
+    if (in_node->GetType() == SWITCHN) {
+      GELOGI("The in_node name is %s, and node type is %s.", in_node->GetName().c_str(), in_node->GetType().c_str());
+      auto identity_name = node->GetName() + "_ctrl_identity_" + std::to_string(in_data_anchor->GetIdx());
+      auto identity =
+          AddIdentityNodeToGraph(identity_name, node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx()), graph);
+      GE_CHECK_NOTNULL(identity);
+      GELOGI("Create new identity node[%s] success.", identity->GetName().c_str());
+      GE_CHK_STATUS_RET(GraphUtils::AddEdge(in_node_anchor, identity->GetInDataAnchor(0)))
+      GE_CHECK_NOTNULL(identity->GetOutControlAnchor());
+      if (identity->GetOutControlAnchor()->IsLinkedWith(node->GetInControlAnchor())) {
+        continue;
+      }
+      GE_CHK_STATUS_RET(GraphUtils::AddEdge(identity->GetOutControlAnchor(), node->GetInControlAnchor()))
+    }
+  }
+
+  return SUCCESS;
+}
+
+NodePtr DimensionAdjustPass::AddIdentityNodeToGraph(const string &name, const GeTensorDesc &tensor,
+                                                    ComputeGraphPtr &graph) {
+  if (graph == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Comput graph ptr is null in creating identity node.");
+    return nullptr;
+  }
+
+  OpDescPtr desc = MakeShared<OpDesc>("", "");
+  if (desc == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "Failed to create op desc.");
+    return nullptr;
+  }
+
+  desc->SetName(name);
+  desc->SetType(IDENTITY);
+  auto ret = desc->AddInputDesc(tensor);
+  auto ret2 = desc->AddOutputDesc(tensor);
+  if ((ret != GRAPH_SUCCESS) || (ret2 != GRAPH_SUCCESS)) {
+    GELOGE(INTERNAL_ERROR, "Failed to add input/output desc in creating identity.");
+    return nullptr;
+  }
+
+  return graph->AddNodeFront(desc);
 }
 }  // namespace ge

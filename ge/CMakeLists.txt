@@ -154,6 +154,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/compile_nodes_pass.cc"
     "graph/passes/constant_folding_pass.cc"
     "graph/passes/constant_fuse_same_pass.cc"
+    
     "graph/passes/control_trigger_pass.cc"
     "graph/passes/dimension_adjust_pass.cc"
     "graph/passes/dimension_compute_pass.cc"

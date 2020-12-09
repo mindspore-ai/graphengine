@@ -56,7 +56,7 @@
 #include "graph/passes/cond_remove_pass.h"
 #include "graph/passes/constant_folding_pass.h"
 #include "graph/passes/constant_fuse_same_pass.h"
-#include "graph/passes/const_pass.cc"
+#include "graph/passes/const_pass.h"
 #include "graph/passes/control_trigger_pass.h"
 #include "graph/passes/ctrl_edge_transfer_pass.h"
 #include "graph/passes/dimension_adjust_pass.h"

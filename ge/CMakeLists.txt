@@ -154,7 +154,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/compile_nodes_pass.cc"
     "graph/passes/constant_folding_pass.cc"
     "graph/passes/constant_fuse_same_pass.cc"
-    
+    "graph/passes/const_pass.cc"
     "graph/passes/control_trigger_pass.cc"
     "graph/passes/dimension_adjust_pass.cc"
     "graph/passes/dimension_compute_pass.cc"
@@ -513,6 +513,7 @@ set(INFER_SRC_LIST
     "graph/passes/control_trigger_pass.cc"
     "graph/passes/cond_pass.cc"
     "graph/passes/cond_remove_pass.cc"
+    "graph/passes/const_pass.cc"
     "graph/passes/for_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_pass.cc"

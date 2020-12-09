@@ -37,7 +37,7 @@ set(ATLAS_MS_RUNTIME_PATH ${ATLAS_RUNTIME_DIR} ${ATLAS_ACL_DIR} ${ATLAS_ATC_DIR}
 option(ENABLE_OPEN_SRC "Enable graphengine compile in opensource." FALSE)
 
 if (ENABLE_OPEN_SRC)
-    set(HI_PYTHON python3.7)
+    set(HI_PYTHON python3)
 
     include(cmake/external_libs/protobuf_shared.cmake)
     include(cmake/external_libs/protobuf_static.cmake)

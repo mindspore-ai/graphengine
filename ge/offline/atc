@@ -14,7 +14,7 @@ export LD_LIBRARY_PATH="${LIB64_PATH}:${LD_LIBRARY_PATH}"
 export PYTHONPATH="${PYTHON_PATH}:${PYTHONPATH}"
 
 if [ -f "${PKG_PATH}/bin/atc.bin" ];then
-    atc.bin $@
+    ${PKG_PATH}/bin/atc.bin/atc.bin $@
 else
-    fwk_atc.bin $@
+    ${PKG_PATH}/bin/atc.bin/fwk_atc.bin $@
 fi

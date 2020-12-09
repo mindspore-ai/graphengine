@@ -120,11 +120,11 @@ Status ModelHelper::SaveModelTbeKernel(std::shared_ptr<OmFileSaveHelper> &om_fil
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
   GELOGD("TBE_KERNELS size is %zu", tbe_kernel_store.DataSize());
   if (tbe_kernel_store.DataSize() > 0) {
-    GE_CHK_STATUS_RET(SaveModelPartition(om_file_save_helper,
-                                         ModelPartitionType::TBE_KERNELS,
-                                         ge_model->GetTBEKernelStore().Data(),
-                                         ge_model->GetTBEKernelStore().DataSize(), model_index), 
-                      "Add tbe kernel partition failed");
+    GE_CHK_STATUS_RET(
+        SaveModelPartition(om_file_save_helper, ModelPartitionType::TBE_KERNELS,
+        ge_model->GetTBEKernelStore().Data(), 
+        ge_model->GetTBEKernelStore().DataSize(), model_index), 
+        "Add tbe kernel partition failed");
   }
   // no need to check value, DATA->NetOutput
   (void)tbe_kernel_store.Load(tbe_kernel_store.Data(), tbe_kernel_store.DataSize());

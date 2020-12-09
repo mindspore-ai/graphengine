@@ -272,6 +272,10 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
 void StridedSliceKernel::ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_tensor, const size_t x_dims_num,
                                                vector<int64_t> &x_dims) {
   auto begin_data_type_size = GetSizeByDataType(begin_tensor->GetTensorDesc().GetDataType());
+  if (begin_data_type_size == 0) {
+    GELOGW("Param begin_data_type_size should not be zero.");
+    return;
+  }
   size_t begin_vec_size = begin_tensor->GetData().size() / begin_data_type_size;
   auto final_dim_num = x_dims_num < begin_vec_size ? begin_vec_size : x_dims_num;
   for (size_t i = 0; i < final_dim_num; i++) {

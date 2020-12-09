@@ -19,6 +19,8 @@
 #include "graph/utils/tensor_utils.h"
 
 namespace ge {
+const size_t kTwoInputNodesSize = 2;
+
 Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     auto node_type = NodeUtils::GetNodeType(*node);
@@ -52,7 +54,7 @@ Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
       /// Enter-----------+
       ///                 +-> Merge
       /// NextIteration---+
-      if (input_nodes.size() == 2) {
+      if (input_nodes.size() == kTwoInputNodesSize) {
         if (input_nodes.at(0)->GetType() == ENTER && input_nodes.at(1)->GetType() == NEXTITERATION) {
           continue;
         }

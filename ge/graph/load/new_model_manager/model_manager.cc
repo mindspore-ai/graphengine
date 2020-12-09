@@ -51,6 +51,9 @@ const std::string kCmdTypeProfModelSubscribe = "prof_model_subscribe";
 const std::string kCmdTypeProfModelUnsubscribe = "prof_model_cancel_subscribe";
 const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
 const char *const kDeleteCustOp = "deleteCustOp";
+const int kTimeSpecNano = 1000000000;
+const int kTimeSpecMiro = 1000000;
+const int kSessionMaxBias = 100;
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
   uint32_t kernelSoBufLen;
@@ -345,7 +348,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
 
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                      timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     davinci_model->SetProfileTime(MODEL_LOAD_END);
   } while (0);
@@ -1072,12 +1075,12 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }
-  session_id = static_cast<uint64_t>(tv.tv_sec * 1000000 + tv.tv_usec);  // 1000000us
+  session_id = static_cast<uint64_t>(tv.tv_sec * kTimeSpecMiro + tv.tv_usec);  // 1000000us
 
   session_id_bias_++;
   // max bais 100.
-  session_id_bias_ = session_id_bias_ % 100;
-  session_id = session_id * 100 + session_id_bias_;
+  session_id_bias_ = session_id_bias_ % kSessionMaxBias;
+  session_id = session_id * kSessionMaxBias + session_id_bias_;
 
   GELOGD("Generate new session id: %lu.", session_id);
   return SUCCESS;
@@ -1148,7 +1151,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 
     GELOGI("Parse model %u success.", model_id);
 
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                      timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     davinci_model->SetProfileTime(MODEL_LOAD_END);
 

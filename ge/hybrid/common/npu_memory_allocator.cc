@@ -23,6 +23,8 @@
 
 namespace ge {
 namespace hybrid {
+const size_t kPaddingUnit = 2;
+
 size_t kMaxHbmMemorySize = 1024UL * 1024UL * 1024UL * 1024UL; // 1024G
 
 std::map<uint32_t, std::unique_ptr<NpuMemoryAllocator>> NpuMemoryAllocator::allocators_;
@@ -77,7 +79,7 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
       }
     }
     // padding up to multiple of padding, and add extra padding
-    allocate_size = (size + 2 * padding - 1) / padding * padding;
+    allocate_size = (size + kPaddingUnit * padding - 1) / padding * padding;
     GELOGD("Padding size %ld by %d. final size = %zu.", size, padding, allocate_size);
     buffer = MemManager::Instance()
                  .CachingInstance(RT_MEMORY_HBM)

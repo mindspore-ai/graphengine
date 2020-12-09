@@ -43,6 +43,13 @@ const char *kIsLastNode = "is_last_node";
 const char *kIsFirstNode = "is_first_node";
 const int64_t kCloseSkt = 100;
 const uint32_t kAddrLen = sizeof(void *);
+const int kBaseInt = 10;
+const int kStrtolFail = 0;
+const int kArgsInputDesc = 0;
+const int kArgsInputAddr = 1;
+const int kArgsOutputDesc = 2;
+const int kArgsOutputAddr = 3;
+const int kArgsAttrHandle = 4;
 }  // namespace
 
 namespace ge {
@@ -371,7 +378,7 @@ Status KernelTaskInfo::Distribute() {
   rtError_t rt_ret = RT_ERROR_NONE;
   char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
   INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
-  int64_t env_flag = (res == EN_OK) ? strtol(skt_enable_env, nullptr, 10) : 0;
+  int64_t env_flag = (res == EN_OK) ? strtol(skt_enable_env, nullptr, kBaseInt) : kStrtolFail;
   bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
   if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
     GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
@@ -749,15 +756,15 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
       return FAILED;
     }
   }
-  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[0])) =
+  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[kArgsInputDesc])) =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_descs));  // arg 0
-  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[1])) =
+  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[kArgsInputAddr])) =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.input_addrs));  // arg 1
-  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[2])) =
+  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[kArgsOutputDesc])) =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_descs));  // arg 2
-  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[3])) =
+  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[kArgsOutputAddr])) =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.output_addrs));  // arg 3
-  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[4])) =
+  *(reinterpret_cast<uint64_t *>(args + ctx_.argsOffset[kArgsAttrHandle])) =
       static_cast<uint64_t>(reinterpret_cast<uintptr_t>(custom_info_.attr_handle));  // arg 4
 
   rt_ret = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);

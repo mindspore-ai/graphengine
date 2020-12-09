@@ -280,9 +280,9 @@ Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uin
     return PARAM_INVALID;
   }
   uint64_t free_size = total_size_ - var_mem_size_;
-  if (free_size < (size + kSessionMemAlignSize * 2)) {
+  if (free_size < (size + kSessionMemAlignSize * kSessionMemAlignUnit)) {
     GELOGE(PARAM_INVALID, "Out of memory : current var size[%lu] exceeds total var size[%lu]",
-           size + kSessionMemAlignSize * 2 + var_mem_size_, total_size_);
+           size + kSessionMemAlignSize * kSessionMemAlignUnit + var_mem_size_, total_size_);
     return PARAM_INVALID;
   }
 

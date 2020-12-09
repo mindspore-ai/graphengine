@@ -23,12 +23,30 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
+#include "framework/common/types.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
 namespace formats {
 namespace {
 const int kDimSize4D = 4;
+
+const size_t kSingleDim = 1;
+
+const size_t kNdDimIndexN = 0;
+const size_t kNdDimIndexH = 1;
+const size_t kNdDimIndexW = 2;
+
+const size_t kDimDValueBNdFNz = 2;  // dim d-value between Nd and FractalZz
+
+const size_t kNdDimCountBackwardsW = 1;
+const size_t kNdDimCountBackwardsWH = 2;
+
+const size_t kFNzDimCountBackwardsW0 = 1;
+const size_t kFNzDimCountBackwardsW0H0 = 2;
+const size_t kFNzDimCountBackwardsW0H0H1 = 3;
+const size_t kFNzDimCountBackwardsW0H0H1W1 = 4;
+
 bool IsDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_type) > 0; }
 
 using ShapeVector = std::vector<int64_t>;
@@ -60,14 +78,14 @@ Status TransShapeToFracNz(const ShapeVector &src_shape, DataType data_type, Shap
   auto w0 = GetCubeSizeByDataType(data_type);
   int64_t h0 = kCubeSize;
   switch (src_shape.size()) {
-    case 1:
-      dst_shape.push_back(Ceil(src_shape[0], w0));
-      dst_shape.push_back(1);
+    case kSingleDim:
+      dst_shape.push_back(Ceil(src_shape[kNdDimIndexN], w0));
+      dst_shape.push_back(DIM_DEFAULT_VALUE);
       dst_shape.push_back(h0);
       dst_shape.push_back(w0);
-      hw_shape.push_back(1);
-      hw_shape.push_back(1);
-      hw_shape.push_back(src_shape[0]);
+      hw_shape.push_back(DIM_DEFAULT_VALUE);
+      hw_shape.push_back(DIM_DEFAULT_VALUE);
+      hw_shape.push_back(src_shape[kNdDimIndexN]);
       if (!IsShapeValid(dst_shape)) {
         GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
         return PARAM_INVALID;
@@ -76,17 +94,17 @@ Status TransShapeToFracNz(const ShapeVector &src_shape, DataType data_type, Shap
     default:
       auto size = src_shape.size();
       int64_t times = 1;
-      for (size_t i = 0; i != size - 2; i++) {
+      for (size_t i = 0; i != size - kDimDValueBNdFNz; i++) {
         dst_shape.push_back(src_shape[i]);
         times *= src_shape[i];
       }
-      dst_shape.push_back(Ceil(src_shape[size - 1], w0));
-      dst_shape.push_back(Ceil(src_shape[size - 2], h0));
+      dst_shape.push_back(Ceil(src_shape[size - kNdDimCountBackwardsW], w0));
+      dst_shape.push_back(Ceil(src_shape[size - kNdDimCountBackwardsWH], h0));
       dst_shape.push_back(h0);
       dst_shape.push_back(w0);
       hw_shape.push_back(times);
-      hw_shape.push_back(src_shape[size - 2]);
-      hw_shape.push_back(src_shape[size - 1]);
+      hw_shape.push_back(src_shape[size - kNdDimCountBackwardsWH]);
+      hw_shape.push_back(src_shape[size - kNdDimCountBackwardsW]);
       if (!IsShapeValid(dst_shape)) {
         GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
         return PARAM_INVALID;
@@ -128,16 +146,16 @@ Status TransFormatFromNdToFracNz(const TransArgs &args, TransResult &result, con
   }
 
   // src&dst_shape can be written as times*H*W & times*W1*H1*H0*W0, respectively. dst_shape_size >= kDimNum4D
-  auto times = hw_shape.at(0);
-  auto h = hw_shape.at(1);
-  auto w = hw_shape.at(2);
+  auto times = hw_shape.at(kNdDimIndexN);
+  auto h = hw_shape.at(kNdDimIndexH);
+  auto w = hw_shape.at(kNdDimIndexW);
   auto hw = h * w;
 
   auto shape_size = args.dst_shape.size();
-  auto w1 = args.dst_shape[shape_size - 4];
-  auto h1 = args.dst_shape[shape_size - 3];
-  auto h0 = args.dst_shape[shape_size - 2];
-  auto w0 = args.dst_shape[shape_size - 1];
+  auto w1 = args.dst_shape[shape_size - kFNzDimCountBackwardsW0H0H1W1];
+  auto h1 = args.dst_shape[shape_size - kFNzDimCountBackwardsW0H0H1];
+  auto h0 = args.dst_shape[shape_size - kFNzDimCountBackwardsW0H0];
+  auto w0 = args.dst_shape[shape_size - kFNzDimCountBackwardsW0];
   auto h1h0 = h1 * h0;
   auto h1h0w0 = h1h0 * w0;
   auto w1h1h0w0 = w1 * h1h0w0;
@@ -198,16 +216,16 @@ Status TransFormatFromFracNzToNd(const TransArgs &args, TransResult &result, con
     return OUT_OF_MEMORY;
   }
 
-  auto times = dst_hw_shape.at(0);
-  auto h = dst_hw_shape.at(1);
-  auto w = dst_hw_shape.at(2);
+  auto times = dst_hw_shape.at(kNdDimIndexN);
+  auto h = dst_hw_shape.at(kNdDimIndexH);
+  auto w = dst_hw_shape.at(kNdDimIndexW);
   auto hw = h * w;
 
   auto shape_size = args.src_shape.size();
-  auto w1 = args.src_shape[shape_size - 4];
-  auto h1 = args.src_shape[shape_size - 3];
-  auto h0 = args.src_shape[shape_size - 2];
-  auto w0 = args.src_shape[shape_size - 1];
+  auto w1 = args.src_shape[shape_size - kFNzDimCountBackwardsW0H0H1W1];
+  auto h1 = args.src_shape[shape_size - kFNzDimCountBackwardsW0H0H1];
+  auto h0 = args.src_shape[shape_size - kFNzDimCountBackwardsW0H0];
+  auto w0 = args.src_shape[shape_size - kFNzDimCountBackwardsW0];
   auto h1h0 = h1 * h0;
   auto h1h0w0 = h1h0 * w0;
   auto w1h1h0w0 = w1 * h1h0w0;

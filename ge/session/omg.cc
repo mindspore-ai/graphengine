@@ -68,6 +68,9 @@ const std::string kScopeIdAttr = "fusion_scope";
 const char *const kOutputTypeSample = "correct sample is \"opname:index:dtype\"";
 const char *const kOutputTypeSupport = "only support FP32, FP16, UINT8";
 const char *const kOutputTypeError = "The multiple out nodes set in output_type must be found in out_nodes.";
+const size_t kNodeNameIndex = 0;
+const size_t kIndexStrIndex = 1;
+const size_t kDTValueIndex = 2;
 }  // namespace
 
 // When the model is converted to a JSON file, the following operator attributes in the blacklist will be ignored
@@ -381,14 +384,14 @@ Status ParseOutputType(const std::string &output_type, std::map<std::string, vec
       return domi::FAILED;
     }
     ge::DataType tmp_dt;
-    std::string node_name = StringUtils::Trim(node_index_type_v[0]);
-    std::string index_str = StringUtils::Trim(node_index_type_v[1]);
+    std::string node_name = StringUtils::Trim(node_index_type_v[kNodeNameIndex]);
+    std::string index_str = StringUtils::Trim(node_index_type_v[kIndexStrIndex]);
     int32_t index;
     if (StringToInt(index_str, index) != SUCCESS) {
       GELOGE(PARAM_INVALID, "This str must be digit string, while the actual input is %s.", index_str.c_str());
       return domi::FAILED;
     }
-    std::string dt_value = StringUtils::Trim(node_index_type_v[2]);
+    std::string dt_value = StringUtils::Trim(node_index_type_v[kDTValueIndex]);
     auto it = output_type_str_to_datatype.find(dt_value);
     if (it == output_type_str_to_datatype.end()) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},

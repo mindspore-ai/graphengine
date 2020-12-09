@@ -21,6 +21,7 @@
 
 namespace ge {
 namespace {
+const int kDataIndexOffset = 2;
 Status MappingSubgraphInput(const ComputeGraphPtr &graph, const std::function<int(int data_index)> &input) {
   for (const auto &node : graph->GetDirectNode()) {
     if (node->GetType() != DATA) {
@@ -111,7 +112,7 @@ Status ParseSubgraphPostFnWhile(const string &subgraph_name, const ComputeGraphP
 
 Status ParseSubgraphPostFnFor(const string &subgraph_name, const ComputeGraphPtr &graph) {
   return MappingSubgraphIndex(graph,
-      [](int data_index) { return (data_index == 0) ? 0 : data_index + 2; },
+      [](int data_index) { return (data_index == 0) ? 0 : data_index + kDataIndexOffset; },
       [](int retval_index) { return retval_index; });
 }
 

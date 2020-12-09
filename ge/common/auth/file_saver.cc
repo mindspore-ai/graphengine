@@ -54,8 +54,8 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
 Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size == 0 || data == nullptr, return PARAM_INVALID);
   mmSsize_t write_count;
-  uint32_t size_2g = ((uint32_t) 0x1 << 31);
-  uint32_t size_1g = ((uint32_t) 0x1 << 30);
+  uint32_t size_2g = 2147483648;  // 0x1 << 31
+  uint32_t size_1g = 1073741824;  // 0x1 << 30
   // Write data
   if (size > size_2g) {
     auto seek = reinterpret_cast<uint8_t *>(const_cast<void *>(data));

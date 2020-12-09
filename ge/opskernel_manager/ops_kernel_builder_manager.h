@@ -48,7 +48,7 @@ class OpsKernelBuilderManager {
 
  private:
   OpsKernelBuilderManager() = default;
-  static Status GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths, bool is_train);
+  static Status GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths);
 
   std::unique_ptr<PluginManager> plugin_manager_;
   std::map<std::string, OpsKernelBuilderPtr> ops_kernel_builders_{};

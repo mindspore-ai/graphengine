@@ -74,22 +74,22 @@ target_link_libraries(atc PRIVATE
     -ldl
 )
 
-############ atc.bin ############
-add_executable(atc.bin ${SRC_LIST} ${PROTO_HDRS})
+############ atc_atc.bin ############
+add_executable(atc_atc.bin ${SRC_LIST} ${PROTO_HDRS})
 
-target_compile_options(atc.bin PRIVATE
+target_compile_options(atc_atc.bin PRIVATE
     -Werror
     -O2
     -Wno-deprecated-declarations
 )
 
-target_compile_definitions(atc.bin PRIVATE
+target_compile_definitions(atc_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     COMPILE_OMG_PACKAGE
     google=ascend_private
 )
 
-target_include_directories(atc.bin PRIVATE
+target_include_directories(atc_atc.bin PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
@@ -115,7 +115,7 @@ target_include_directories(atc.bin PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(atc.bin PRIVATE
+target_link_libraries(atc_atc.bin PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
     ge_common
@@ -132,6 +132,11 @@ target_link_libraries(atc.bin PRIVATE
     static_mmpa
     -lrt
     -ldl
+)
+
+set_target_properties(atc_atc.bin PROPERTIES
+    OUTPUT_NAME atc.bin
+    RUNTIME_OUTPUT_DIRECTORY atclib
 )
 
 ############ fwk_atc.bin ############
@@ -194,10 +199,23 @@ target_link_libraries(fwk_atc.bin PRIVATE
     -ldl
 )
 
+set_target_properties(fwk_atc.bin PROPERTIES
+    OUTPUT_NAME atc.bin
+    RUNTIME_OUTPUT_DIRECTORY fwkacl
+)
+
 ############ install ############
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)
 
-install(TARGETS atc atc.bin fwk_atc.bin OPTIONAL
+install(TARGETS atc OPTIONAL
     LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
+)
+
+install(TARGETS atc_atc.bin OPTIONAL
+    RUNTIME DESTINATION ${INSTALL_LIBRARY_DIR}/atclib
+)
+
+install(TARGETS fwk_atc.bin OPTIONAL
+    RUNTIME DESTINATION ${INSTALL_LIBRARY_DIR}/fwkacl
 )

@@ -56,7 +56,7 @@ include $(BUILD_HOST_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := atc.bin
+LOCAL_MODULE := atclib/atc.bin
 
 LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dgoogle=ascend_private
@@ -109,7 +109,7 @@ include $(BUILD_HOST_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := fwk_atc.bin
+LOCAL_MODULE := fwkacl/atc.bin
 
 LOCAL_CFLAGS += -Werror -Wno-deprecated-declarations
 LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dgoogle=ascend_private

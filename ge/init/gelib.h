@@ -48,13 +48,13 @@ class GELib {
   Status Finalize();
 
   // get DNNEngineManager object
-  DNNEngineManager &DNNEngineManagerObj() { return engineManager_; }
+  DNNEngineManager &DNNEngineManagerObj() const { return engineManager_; }
 
   // get OpsKernelManager object
-  OpsKernelManager &OpsKernelManagerObj() { return opsManager_; }
+  OpsKernelManager &OpsKernelManagerObj() const { return opsManager_; }
 
   // get SessionManager object
-  SessionManager &SessionManagerObj() { return sessionManager_; }
+  SessionManager &SessionManagerObj() const { return sessionManager_; }
 
   // get Initial flag
   bool InitFlag() const { return init_flag_; }

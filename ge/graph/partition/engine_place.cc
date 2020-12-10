@@ -56,7 +56,7 @@ Status EnginePlacer::Run() {
   }
   bool is_check_support_success = true;
   // Assign engine for each node in the graph
-  ge::GELib::GetInstance()->DNNEngineManagerObj().InitPerformanceStaistic();
+  ge::GELib::GetInstance()->().InitPerformanceStaistic();
   for (const auto &node_ptr : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(node_ptr);
     auto op_desc = node_ptr->GetOpDesc();

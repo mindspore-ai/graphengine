@@ -151,7 +151,7 @@ ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
       return rt_ret;
     }
     // Pass MsprofReporterCallback to hccl in opskernel so initialize
-    rt_ret = ge::OpsKernelBuilderManager::Instance().RegProfReporterCallBack(func);
+    rt_ret = ge::OpsKernelBuilderManager::Instance().RegProfReporterCallBack(reinterpret_cast<void *>(func));
     if (rt_ret != ge::SUCCESS) {
       GELOGE(rt_ret, "Pass MsprofReporterCallback to hccl failed.");
       return rt_ret;

@@ -50,6 +50,11 @@ const std::string IR_OPTION_LOG_LEVEL_DEFAULT = "default";
 const std::string IR_OPTION_BUFFER_OPTIMIZE_DEFAULT = "l2_optimize";
 const std::string IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT = "0";
 const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
+
+const std::string kInputShape = "input_shape";
+const std::string kInputFormat = "input_format";
+const std::string kReUseMemEnable = "1";
+const std::string kReUseMemDisEnable = "0";
 }  // namespace
 
 static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
@@ -232,6 +237,7 @@ class Impl {
                          ModelBufferData &ge_models);
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                  bool is_dynamic_input);
+  graphStatus UpdateDataOpAttr(const Graph &graph);
   void SetRtSocVersion();
   void UpdateThreadContext();
   void LoadOpsProto();
@@ -241,6 +247,40 @@ class Impl {
   bool is_dynamic_input_ = false;
   OmgContext omg_context_;
 };
+
+graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
+  GELOGD("Enter Update Data Attr Process!");
+  if (options_.find(kInputShape) == options_.end()) {
+    return GRAPH_SUCCESS;
+  }
+  unordered_map<string, vector<int64_t>> shape_map;
+  vector<pair<string, vector<int64_t>>> user_shape_map;
+  GE_CHK_BOOL_EXEC(ParseInputShape(options_[kInputShape], shape_map, user_shape_map, true),
+    return GRAPH_PARAM_INVALID, "parse input shape failed!");
+  auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    ge::OpDescPtr op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      auto tensor_input = op->MutableInputDesc(0);
+      auto tensor_output = op->MutableOutputDesc(0);
+      GE_CHECK_NOTNULL(tensor_input);
+      GE_CHECK_NOTNULL(tensor_output);
+      string data_op_name = op->GetName();
+      auto iter = shape_map.find(data_op_name);
+      if (iter != shape_map.end()) {
+        tensor_input->SetShape(ge::GeShape(iter->second));
+        tensor_output->SetShape(ge::GeShape(iter->second));
+        GELOGD("update input [%s] shape info", data_op_name.c_str());
+      } else {
+        GELOGI("no need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
+      }
+    }
+  }
+  return GRAPH_SUCCESS;
+}
 
 graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options) {
   for (auto &ele : options) {
@@ -276,6 +316,11 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
       GELOGE(GRAPH_PARAM_INVALID, "Build mode tuning must specify build step. Please check!");
       return GRAPH_PARAM_INVALID;
     }
+  }
+  // Check option EXEC_DISABLE_REUSED_MEMORY
+  it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
+  if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
+    return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;
 }
@@ -323,7 +368,10 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
     GELOGE(ret, "User input options are illegal! Please check!");
     return ret;
   }
-
+  ret = UpdateDataOpAttr(graph);
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
                            ? "" : options_[BUILD_MODE];
   options_[BUILD_MODE] = build_mode;
@@ -381,7 +429,6 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
 
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
-  options_.insert(std::pair<string, string>(string(IR_OPTION_TARGET), "mini"));
   options_.insert(std::pair<string, string>(string(ge::RUN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::TRAIN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::SAVE_ORIGINAL_MODEL), to_string(0)));
@@ -421,39 +468,52 @@ void Impl::UpdateThreadContext() {
 graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
-  int64_t index = 0;
   for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
-      (void)AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
       GELOGD("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
-      ge::GeTensorDesc tensor = op->GetInputDesc(0);
+      auto tensor = op->MutableInputDesc(0);
+      GE_CHECK_NOTNULL(tensor);
       string data_op_name = op->GetName();
       GELOGD("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;
       auto iter = omg_context_.input_dims.find(data_op_name);
       if (iter != omg_context_.input_dims.end()) {
         data_shape = ge::GeShape(iter->second);
-        GELOGD("Data op get shape from Context.");
+        GELOGD("Data op get shape from Context and update [%s] shape info", data_op_name.c_str());
       } else {
-        data_shape = tensor.GetShape();
+        data_shape = tensor->GetShape();
         GELOGD("Data op get shape from InputDesc in ge ir graph.");
       }
       // If user point input format, do work for all data ops; else do according to tensor_desc
       auto data_format = omg_context_.format != domi::DOMI_TENSOR_ND ?
-        ge::TypeUtils::DomiFormatToFormat(omg_context_.format) : tensor.GetFormat();
-      ge::DataType data_type = tensor.GetDataType();
+        ge::TypeUtils::DomiFormatToFormat(omg_context_.format) : tensor->GetFormat();
+      ge::DataType data_type = tensor->GetDataType();
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
       GELOGD("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
       ge::GeTensor inputTensor;
       ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);
       inputTensor.SetTensorDesc(desc);
-      inputs.push_back(inputTensor);
+      int64_t index = 0;
+      if (AttrUtils::GetInt(op, ATTR_NAME_INDEX, index)) {
+        AttrUtils::SetInt(desc, ATTR_NAME_INDEX, index);
+      } else {
+        GELOGE(GRAPH_PARAM_INVALID, "Get attr name idx failed!");
+        return GRAPH_PARAM_INVALID;
+      }
+      inputs.emplace_back(inputTensor);
     }
   }
+  std::sort(inputs.begin(), inputs.end(), [](ge::GeTensor a, ge::GeTensor b) {
+    int64_t data_idx_a = 0;
+    int64_t data_idx_b = 0;
+    AttrUtils::GetInt(a.MutableTensorDesc(), ATTR_NAME_INDEX, data_idx_a);
+    AttrUtils::GetInt(b.MutableTensorDesc(), ATTR_NAME_INDEX, data_idx_b);
+    return data_idx_a <= data_idx_b;
+  });
   GELOGD("CreateInputsForIRBuild, inputs size: %zu", inputs.size());
   return GRAPH_SUCCESS;
 }

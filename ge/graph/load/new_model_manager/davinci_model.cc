@@ -2251,7 +2251,7 @@ inline int64_t SumSize(const vector<int64_t> &size_list) {
 Status DavinciModel::SinkModelProfile() {
   // profiling plugin must be registered
   auto &prof_mgr = ProfilingManager::Instance();
-  ReporterData reporter_data;
+  ReporterData reporter_data{};
   // report model data tag name
   std::string tag_name;
   tag_name.append("model_load_info_").append(std::to_string(this->Id()));
@@ -2424,7 +2424,7 @@ Status DavinciModel::SinkModelProfile() {
 Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   // profiling plugin must be registered
   auto &prof_mgr = ProfilingManager::Instance();
-  ReporterData reporter_data;
+  ReporterData reporter_data{};
   // report model data tag name
   std::string tag_name;
   tag_name.append("model_time_info_")

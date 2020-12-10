@@ -139,7 +139,7 @@ ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
     GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
     return ge::PARAM_INVALID;
   }
-  if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofCtrlCallback != nullptr) {
+  if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofReporterCallback != nullptr) {
     GELOGW("Msprof reporter callback is exist, just ignore it.");
   } else {
     GELOGI("GE register Msprof reporter callback.");
@@ -151,7 +151,7 @@ ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
       return rt_ret;
     }
     // Pass MsprofReporterCallback to hccl in opskernel so initialize
-    rt_ret = OpskernelBuilderManager::Instance().RegProfReporterCallback(func);
+    rt_ret = OpsKernelBuilderManager::Instance().RegProfReporterCallBack(func);
     if (rt_ret != ge::SUCCESS) {
       GELOGE(rt_ret, "Pass MsprofReporterCallback to hccl failed.");
       return rt_ret;
@@ -164,7 +164,7 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   if (type != kProfCommandhandleFinalize) {
     GE_CHECK_NOTNULL(data);
   }
-  MsprofCommandHandleData *prof_config_param = (MsprofCommandHandleData *)data;
+  ProfCommandHandleData *prof_config_param = (ProfCommandHandleData *)data;
   auto iter = kProfCommandTypeMap.find(type);
   if (iter == kProfCommandTypeMap.end()) {
     GELOGW("The prof comand type is invalid.");

@@ -76,7 +76,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
         static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS),
         static_cast<void *>(&prof_conf), sizeof(MsprofGeOptions));
     if (cb_ret != 0) {
-      GELOGE(FAILED, "call msprofCtrlCallback failed, type:%u, return:%d",
+      GELOGE(FAILED, "Call msprofCtrlCallback failed, type:%u, return:%d",
              static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS), cb_ret);
       return FAILED;
     }
@@ -110,7 +110,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     // The env is invalid
     if ((env_profiling_mode == nullptr) || (strcmp("true", env_profiling_mode) != 0)
       || (strcmp(prof_conf.options, "\0") == 0)) {
-       return SUCCESS;
+      return SUCCESS;
     }
     // enable profiling by env
     is_execute_profiling_ = true;
@@ -157,8 +157,8 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
       GELOGE(ge::PARAM_INVALID, "Training trace param:%s is invalid.", training_trace.c_str());
       return ge::PARAM_INVALID;
     }
-    fp_point = prof_options[kFpPoint];
-    bp_point = prof_options[kBpPoint];
+    fp_point_ = prof_options[kFpPoint];
+    bp_point_ = prof_options[kBpPoint];
     if (!fp_point_.empty() && !bp_point_.empty()) {
       GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
     }
@@ -175,7 +175,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   // The following if case will not be executed in normal case, inc case of ProfStopProfiling is abnormal
   int32_t device_num = static_cast<int32_t>(device_id_.size());
   if (device_num != 0) {
-     auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
+    auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
     if (device_id_ptr == nullptr) {
       GELOGE(FAILED, "Stop profiling: device id ptr is null.");
       return;
@@ -499,7 +499,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfIn
       GELOGE(FAILED, "Runtime profiler start failed.");
       return FAILED;
     }
-    Status hccl_ret = OpskernelBuilderManager::Instance().ProfStart(model_load_mask);
+    Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStart(model_load_mask);
     if (hccl_ret != SUCCESS) {
       GELOGE(FAILED, "Hccl profiler start failed.");
       return FAILED;
@@ -534,7 +534,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
     return FAILED;
   }
 
-  Status hccl_ret = OpskernelBuilderManager::Instance().ProfStop(PROF_MODEL_LOAD_MASK);
+  Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStop(PROF_MODEL_LOAD_MASK);
   if (hccl_ret != SUCCESS) {
     GELOGE(FAILED, "Hccl profiler stop failed.");
     return FAILED;
@@ -663,7 +663,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     return FAILED;
   }
   
-  Status hccl_ret = OpskernelBuilderManager::Instance().ProfStart(module);
+  Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStart(module);
   if (hccl_ret != SUCCESS) {
     GELOGE(FAILED, "Hccl profiler start failed.");
     return FAILED;
@@ -709,7 +709,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
     return FAILED;
   }
-  Status hccl_ret = OpskernelBuilderManager::Instance().ProfStop(module);
+  Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStop(module);
   if (hccl_ret != SUCCESS) {
     GELOGE(FAILED, "Hccl profiler stop failed.");
     return FAILED;
@@ -796,7 +796,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUn
 #ifdef DAVINCI_SUPPORT_PROFILING
   if (prof_cb_.msprofReporterCallback == nullptr) {
     GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
-    return ge::PARAM_INVALID;
+    return;
   }
   int32_t cb_ret = prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
@@ -827,7 +827,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
     GELOGI("Bp Fp have been initialized in env or options");
     fp_point = fp_point_;
     bp_point = bp_point_;
-    GELOGI("Bp Fp have been initailized in env or options, bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());
+    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());
     return;
   }
   // ProfApi mode and training trace is set

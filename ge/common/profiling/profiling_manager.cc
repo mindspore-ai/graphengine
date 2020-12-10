@@ -142,7 +142,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
 
 ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   if (options.empty()) {
-    GELOGE(ge::PARAM_INVALID, "Profiling options is empty.")
+    GELOGE(ge::PARAM_INVALID, "Profiling options is empty.");
     return ge::PARAM_INVALID;
   }
   try {

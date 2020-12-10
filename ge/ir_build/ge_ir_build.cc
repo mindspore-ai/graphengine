@@ -316,7 +316,7 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
     }
   }
   // Check option EXEC_DISABLE_REUSED_MEMORY
-  it = options_.find(EXEC_DISABLE_REUSED_MEMORY);
+  it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
   if (it != options_.end() && it->second != kReUseMemEnable && it->second != kReUseMemDisEnable) {
     GELOGE(GRAPH_PARAM_INVALID, "option(EXEC_DISABLE_REUSED_MEMORY) value[%s] is invalid ", it->second.c_str());
     return GRAPH_PARAM_INVALID;

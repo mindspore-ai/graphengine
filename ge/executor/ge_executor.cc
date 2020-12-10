@@ -304,7 +304,7 @@ Status GeExecutor::Finalize() {
   // Stop profiling
   if (ProfilingManager::Instance().ProfilingOn()) {
     ProfilingManager::Instance().StopProfiling();
-    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+    ProfilingManager::Instance().PluginUnInit();
   }
 
   GELOGI("Uninit GeExecutor over.");

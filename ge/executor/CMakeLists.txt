@@ -17,6 +17,7 @@ set(SRC_LIST
     "../common/dump/dump_properties.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
+    "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
     "../omm/csa_interact.cc"

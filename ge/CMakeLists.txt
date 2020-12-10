@@ -60,6 +60,8 @@ set(TRAIN_SRC_LIST
     "common/dump/dump_manager.cc"
     "common/dump/dump_properties.cc"
     "common/dump/dump_op.cc"
+    "common/profiling/ge_profiling.cc"
+    "common/profiling/ge_profiling_cb.cc"
     "engine_manager/dnnengine_manager.cc"
     "ge_local_engine/engine/host_cpu_engine.cc"
     "generator/ge_generator.cc"
@@ -332,7 +334,6 @@ set(TRAIN_SRC_LIST
     "hybrid/hybrid_davinci_model.cc"
     "executor/ge_executor.cc"
     "client/ge_api.cc"
-    "client/ge_prof.cc"
     "analyzer/analyzer.cc"
     "ir_build/ge_ir_build.cc"
     "ir_build/atc_ir_common.cc"
@@ -649,7 +650,7 @@ target_link_libraries(ge_runner
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     adump_server
-    msprofiler
+    msprofiler_fwk
     static_mmpa
     -Wl,--no-as-needed
     graph
@@ -658,7 +659,6 @@ target_link_libraries(ge_runner
     register
     c_sec
     slog
-    msprof
     runtime
     resource
     error_manager
@@ -777,13 +777,12 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      register_static
                      error_manager_static
                      adump_server
-                     msprofiler
+                     msprofiler_fwk
                      -Wl,--no-whole-archive
                      -Wl,--no-as-needed
                      c_sec
                      runtime
                      slog
-                     msprof
                      ascend_hal_stub
                      -Wl,--as-needed
                      -lrt
@@ -799,12 +798,10 @@ set_target_properties(opensrc_ascendcl PROPERTIES
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stub_ge_ir_build.cc
            ${CMAKE_CURRENT_BINARY_DIR}/stub_ge_api.cc
-           ${CMAKE_CURRENT_BINARY_DIR}/stub_ge_prof.cc
     COMMAND echo "Generating stub files."
             && ${HI_PYTHON} ${CMAKE_CURRENT_LIST_DIR}/stub/gen_stubapi.py ${GE_CODE_DIR}/inc/external ${CMAKE_CURRENT_BINARY_DIR}
             && mv ge_ir_build.cc stub_ge_ir_build.cc
             && mv ge_api.cc stub_ge_api.cc
-            && mv ge_prof.cc stub_ge_prof.cc
             &&  echo "Generating stub files end."
     #WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     #DEPENDS stub/gen_stubapi.py ${TOP_DIR}/inc/external ${CMAKE_CURRENT_BINARY_DIR}
@@ -813,7 +810,6 @@ add_custom_command(
 add_custom_target(ge_stub
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stub_ge_ir_build.cc
             ${CMAKE_CURRENT_BINARY_DIR}/stub_ge_api.cc
-            ${CMAKE_CURRENT_BINARY_DIR}/stub_ge_prof.cc
 )
 
 ##################################################################
@@ -855,7 +851,6 @@ target_include_directories(atc_stub_ge_compiler PRIVATE
 ############ stub/libge_runner.so ############
 add_library(fwk_stub_ge_runner SHARED
     stub_ge_api.cc
-    stub_ge_prof.cc
     stub_ge_ir_build.cc
 )
 

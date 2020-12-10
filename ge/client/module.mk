@@ -4,7 +4,6 @@ LOCAL_PATH := $(call my-dir)
 COMMON_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
     ge_api.cc \
-    ge_prof.cc \
 
 
 COMMON_LOCAL_C_INCLUDES := \

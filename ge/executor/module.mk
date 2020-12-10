@@ -8,6 +8,7 @@ local_ge_executor_src_files :=  \
     ../common/dump/dump_op.cc \
     ../common/ge/plugin_manager.cc \
     ../common/ge/op_tiling_manager.cc \
+    ../common/profiling/ge_profiling.cc \
     ../graph/load/graph_loader.cc \
     ../graph/execute/graph_execute.cc \
     ../omm/csa_interact.cc \

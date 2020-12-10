@@ -40,9 +40,7 @@ const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
 const std::size_t kProfCmdParaMaxSize = 1000;
 const std::size_t kProfStartCmdParaSize = 2;
-const std::string kCmdTypeProfile = "profile";
 const std::string kCmdTypeDump = "dump";
-const std::string kCmdTypeProfiling = "profiling";
 const std::string kCmdTypeProfInit = "prof_init";
 const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
@@ -632,8 +630,7 @@ Status ModelManager::Stop(uint32_t model_id) {
 ///
 Status ModelManager::HandleCommand(const Command &command) {
   static const std::map<std::string, std::function<uint32_t(const Command &)>> cmds = {
-      {kCmdTypeProfile, HandleProfileCommand}, {kCmdTypeDump, HandleDumpCommand},
-      {kCmdTypeProfiling, HandleAclProfilingCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
+      {kCmdTypeDump, HandleDumpCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
       {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
       {kCmdTypeProfStop, HandleProfStopCommand},
       {kCmdTypeProfModelSubscribe, HandleProfModelSubscribeCommand},
@@ -646,21 +643,6 @@ Status ModelManager::HandleCommand(const Command &command) {
   } else {
     return iter->second(command);
   }
-}
-
-Status ModelManager::HandleAclProfilingCommand(const Command &command) {
-  if (command.cmd_params.size() < kCmdParSize) {
-    GELOGE(PARAM_INVALID, "When the cmd_type is 'profiling', the size of cmd_params must larger than 2.");
-    return PARAM_INVALID;
-  }
-
-  std::string map_key = command.cmd_params[0];
-  std::string value = command.cmd_params[1];
-  if (map_key == PROFILE_CONFIG) {
-    ProfilingManager::Instance().SetProfilingConfig(value);
-  }
-
-  return SUCCESS;
 }
 
 Status ModelManager::GetModelByCmd(const Command &command,
@@ -805,29 +787,6 @@ Status ModelManager::HandleProfStopCommand(const Command &command) {
   if (ProfilingManager::Instance().ProfStopProfiling(module_index, cmd_params_map) != SUCCESS) {
     GELOGE(FAILED, "Handle prof finalize failed.");
     return FAILED;
-  }
-  return SUCCESS;
-}
-
-Status ModelManager::HandleProfileCommand(const Command &command) {
-  if (command.cmd_params.size() < kCmdParSize) {
-    GELOGE(PARAM_INVALID, "When the cmd_type is 'profile', the size of cmd_params must larger than 2.");
-    return PARAM_INVALID;
-  }
-
-  std::string map_key = command.cmd_params[0];
-  std::string value = command.cmd_params[1];
-
-  GELOGI("Profiling mode, Command key:%s , value:%s ", map_key.c_str(), value.c_str());
-
-  auto iter = PROFILE_COMPONENT_MAP.find(map_key);
-  if (iter != PROFILE_COMPONENT_MAP.end()) {
-    std::string property_value = (value == "on") ? "1" : "0";
-    PropertiesManager::Instance().SetPropertyValue(iter->second, property_value);
-  }
-
-  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
-    PropertiesManager::Instance().SetPropertyValue(map_key, value);
   }
   return SUCCESS;
 }

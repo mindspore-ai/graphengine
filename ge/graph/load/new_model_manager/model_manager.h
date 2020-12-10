@@ -169,8 +169,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @brief comment handle function
   ///
   ge::Status HandleCommand(const Command &command);
-  static ge::Status HandleAclProfilingCommand(const Command &command);
-  static ge::Status HandleProfileCommand(const Command &command);
   static ge::Status HandleDumpCommand(const Command &command);
   static ge::Status HandleProfModelSubscribeCommand(const Command &command);
   static ge::Status HandleProfModelUnsubscribeCommand(const Command &command);

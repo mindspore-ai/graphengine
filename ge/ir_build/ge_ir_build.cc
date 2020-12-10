@@ -470,6 +470,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
     if (op->GetType() == DATA) {
       GELOGD("Data op inputDesc size: %zu", op->GetAllInputsDesc().size());
       auto tensor = op->MutableInputDesc(0);
+      GE_CHECK_NOTNULL(tensor);
       string data_op_name = op->GetName();
       GELOGD("Data op name: %s", data_op_name.c_str());
       ge::GeShape data_shape;

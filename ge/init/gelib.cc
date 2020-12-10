@@ -145,6 +145,10 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initOpsBuilderStatus;
   }
 
+  if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
+    GE_CHK_RT_RET(rtSetDevice(options.device_id));
+  }
+
   GELOGI("sessionManager initial.");
   GE_TIMESTAMP_START(SessionManagerInitialize);
   Status initSmStatus = sessionManager_.Initialize(options);
@@ -338,7 +342,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   // set device id
   GELOGI("set logical device id:%u", options.device_id);
   GetContext().SetCtxDeviceId(static_cast<uint32_t>(options.device_id));
-  GE_CHK_RT_RET(rtSetDevice(options.device_id));
+  // GE_CHK_RT_RET(rtSetDevice(options.device_id));
 
   // In the scenario that the automatic add fusion is set, but there is no cleanaddr operator,
   // maybe need to check it

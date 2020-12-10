@@ -167,4 +167,32 @@ Status OpsKernelBuilderManager::GenerateTask(const Node &node,
   GELOGD("Done invoking GenerateTask successfully");
   return SUCCESS;
 }
+
+Status OpsKernelBuilderManager::RegProfReporterCallBack(void *func) const {
+  GE_CHECK_NOTNULL(func);
+  for (auto it = ops_kernel_builders_.begin(); it != ops_kernel_builders_.end(); it++) {
+    GE_CHK_STATUS_RET(it->second->RegProfReporterCallBack(func),
+                      "Failed to invoke RegProfReporterCallBack.");
+  }
+  GELOGD("Done invoking RegProfReporterCallBack successfully");
+  return SUCCESS;
+}
+
+Status OpsKernelBuilderManager::ProfStart(uint64_t prof_config) const {
+  for (auto it = ops_kernel_builders_.begin(); it != ops_kernel_builders_.end(); it++) {
+    GE_CHK_STATUS_RET(it->second->ProfStart(prof_config),
+                      "Failed to invoke ProfStart.");
+  }
+  GELOGD("Done invoking ProfStart successfully");
+  return SUCCESS;
+}
+
+Status OpsKernelBuilderManager::ProfStop((uint64_t prof_config) const {
+  for (auto it = ops_kernel_builders_.begin(); it != ops_kernel_builders_.end(); it++) {
+    GE_CHK_STATUS_RET(it->second->ProfStop(prof_config),
+                      "Failed to invoke ProfStop.");
+  }
+  GELOGD("Done invoking ProfStop successfully");
+  return SUCCESS;
+}
 }  // namespace ge

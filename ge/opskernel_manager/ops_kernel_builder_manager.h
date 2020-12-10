@@ -50,7 +50,7 @@ class OpsKernelBuilderManager {
 
   Status ProfStart(uint64_t prof_config) const;
 
-  Status ProfStop((uint64_t prof_config) const;
+  Status ProfStop(uint64_t prof_config) const;
 
  private:
   OpsKernelBuilderManager() = default;

@@ -192,7 +192,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   // stop profiling
   if (prof_cb_.msprofCtrlCallback == nullptr) {
       GELOGE(ge::PARAM_INVALID, "MsprofCtrlCallback callback is nullptr.");
-      return ge::PARAM_INVALID;
+      return;
   }
   int32_t cb_ret = prof_cb_.msprofCtrlCallback(static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_FINALIZE),
                                                nullptr, 0);
@@ -824,7 +824,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
     std::string &fp_point, std::string &bp_point) {
   // Env or options mode, fp_point_/bp_point_ have initiliazed on profiling init
   if (!fp_point_.empty() && !bp_point_.empty()) {
-    GELOGI("Bp Fp have been initialized in env or options");
     fp_point = fp_point_;
     bp_point = bp_point_;
     GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());

@@ -31,11 +31,11 @@ enum ProfCommandHandleType {
 };
 
 struct ProfCommandHandleData {
-  unit64_t profSwitch;
+  uint64_t profSwitch;
   uint32_t devNums; // length of device id list
   uint32_t devIdList[MAX_DEV_NUM];
   uint32_t modelId;
-}
+};
 
 ge::Status RegProfCtrlCallback(MsprofCtrlCallback func);
 ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func);

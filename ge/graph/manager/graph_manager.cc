@@ -56,7 +56,6 @@
 #include "graph/passes/cond_remove_pass.h"
 #include "graph/passes/constant_folding_pass.h"
 #include "graph/passes/constant_fuse_same_pass.h"
-#include "graph/passes/const_pass.cc"
 #include "graph/passes/control_trigger_pass.h"
 #include "graph/passes/ctrl_edge_transfer_pass.h"
 #include "graph/passes/dimension_adjust_pass.h"
@@ -2138,7 +2137,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   TransposeTransDataPass transpose_transdata_pass;
   TransOpSymmetryEliminationPass symmetry_elimination_pass;
   DimensionComputePass dimension_compute_pass;
-  ConstPass const_pass;
   names_to_passes.emplace_back("EnterPass", &enter_pass);
   names_to_passes.emplace_back("AddNPass", &addn_pass);
   names_to_passes.emplace_back("SwitchDeadBranchElimination", &switch_dead_branch_elimination);
@@ -2152,7 +2150,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("DimensionAdjustPass", &dimension_adjust_pass);
-  names_to_passes.emplace_back("ConstPass", &const_pass);
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "GraphManager::OptimizeStage1_2");
@@ -2193,8 +2190,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::VariableRefUselessControlOutDeletePass",
                                        new (std::nothrow) VariableRefUselessControlOutDeletePass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ReshapeRecoveryPass", new (std::nothrow) ReshapeRecoveryPass))
-  GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::CommonSubexpressionEliminationPass",
-                                       new (std::nothrow) CommonSubexpressionEliminationPass));
   if (options_.train_graph_flag) {
     // Priority: The GlobalStepInsertPass should work before graph partitioner.
     // Reason: Make sure that the var "global_step" can be partitioned to known sub graph and allocated memory

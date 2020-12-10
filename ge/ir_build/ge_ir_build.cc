@@ -266,6 +266,8 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
     if (op->GetType() == DATA) {
       auto tensor_input = op->MutableInputDesc(0);
       auto tensor_output = op->MutableOutputDesc(0);
+      GE_CHECK_NOTNULL(tensor_input);
+      GE_CHECK_NOTNULL(tensor_output);
       string data_op_name = op->GetName();
       auto iter = shape_map.find(data_op_name);
       if (iter != shape_map.end()) {
@@ -317,8 +319,7 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   }
   // Check option EXEC_DISABLE_REUSED_MEMORY
   it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
-  if (it != options_.end() && it->second != kReUseMemEnable && it->second != kReUseMemDisEnable) {
-    GELOGE(GRAPH_PARAM_INVALID, "option(EXEC_DISABLE_REUSED_MEMORY) value[%s] is invalid ", it->second.c_str());
+  if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
     return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;

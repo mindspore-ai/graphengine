@@ -63,7 +63,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   bool ProfilingTrainingTraceOn() const { return is_training_trace_; }
   bool ProfilingModelLoadOn() const { return is_load_profiling_; }
   bool ProfilingModelExecuteOn() const;
-  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; } // only used  by command pattern
+  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; } // is_execute_profiling_ only used by ge option and env
   void ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
                            const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
   void ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
@@ -76,8 +76,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   struct MsprofCallback &GetMsprofCallback() { return prof_cb_; }
   void SetMsprofCtrlCallback(MsprofCtrlCallback func) { prof_cb_.msprofCtrlCallback = func; }
   void SetMsprofReporterCallback(MsprofReporterCallback func) { prof_cb_.msprofReporterCallback = func; }
+  void GetFpBpPoint(std::string &fp_point, std::string &bp_point);
  private:
   Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
+  Status ParseOptions(const std::string &options);
   Status ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
                         vector<int32_t> &device_list);
   Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para,
@@ -96,6 +98,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   uint32_t subscribe_count_;
   std::mutex mutex_;
   MsprofCallback prof_cb_;
+  std::string fp_point_;
+  std::string bp_point_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

@@ -24,16 +24,9 @@
 #include "graph/load/new_model_manager/davinci_model.h"
 
 namespace {
-const char *const kJobID = "jobID";
-const char *const kDeviceID = "deviceID";
-const char *const kStartCfg = "startCfg";
-const char *const kFeatures = "features";
-const char *const kConf = "conf";
-const char *const kEvents = "events";
-const char *const kAiCoreEvents = "ai_core_events";
-const char *const kName = "name";
-const char *const kTraceID = "traceId";
-const char *const kProfDir = "resultPath";
+const char *const kTrainingTrace = "training_trace";
+const char *const kFpPoint = "fp_point";
+const char *const kBpPoint = "bp_point";
 const size_t kReportMaxLen = 2048;
 const int32_t kMaxDeviceNum = 256;
 const std::string kConfigNumsdev = "devNums";
@@ -70,7 +63,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
     return ret;
   }
 
-  if (is_load_profiling_) {
+  if (is_execute_profiling_) {
     int32_t cb_ret = prof_cb_.msprofCtrlCallback(
         static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS),
         static_cast<void *>(&prof_conf), sizeof(MsprofGeOptions));
@@ -91,35 +84,40 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
 #ifdef DAVINCI_SUPPORT_PROFILING
   // enable profiling by env
   char env_profiling_mode[MMPA_MAX_PATH] = { 0x00 };
-  is_load_profiling_ = false;
+  is_load_profiling_ = false; // Change in ProfInit
   is_execute_profiling_ = false;
 
-  (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
-  (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, sizeof(MsprofGeOptions));
-
-  if ((env_profiling_mode != nullptr) && (strcmp("true", env_profiling_mode) == 0)
-      && (strcmp(prof_conf.options, "\0") != 0)) {
-    // enable profiling by env
-    is_load_profiling_ = true;
-    is_execute_profiling_ = true;
-    GELOGI("The profiling in env is %s, %s", env_profiling_mode, prof_conf.options);
-  } else {
-    if (options.profiling_mode != "1" || options.profiling_options.empty()) {
-      return SUCCESS;
-    }
+  if (options.profiling_mode == "1" && !options.profiling_options.empty()) {
     // enable profiling by ge option
-    if (memcpy_s(prof_conf.options, sizeof(prof_conf.options), options.profiling_options.c_str(),
+    if (memcpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
                  sizeof(options.profiling_options.c_str())) != EOK) {
       GELOGE(INTERNAL_ERROR, "copy profiling_options failed.");
       return INTERNAL_ERROR;
     }
-    is_load_profiling_ = true;
     is_execute_profiling_ = true;
     GELOGI("The profiling in options is %s, %s", options.profiling_mode.c_str(), prof_conf.options);
+  } else {
+    (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
+    (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);
+    // The env is invalid
+    if ((env_profiling_mode == nullptr) || (strcmp("true", env_profiling_mode) != 0)
+      || (strcmp(prof_conf.options, "\0") == 0)) {
+       return SUCCESS;
+    }
+    // enable profiling by env
+    is_execute_profiling_ = true;
+    GELOGI("The profiling in env is %s, %s", env_profiling_mode, prof_conf.options); 
   }
 
-  if (!is_load_profiling_) {
+  if (!is_execute_profiling_) {
     return SUCCESS;
+  }
+
+  // Parse json str for bp fp
+  Status ret = ParseOptions(prof_conf.options);
+  if (ret != ge::SUCCESS) {
+    GELOGE(ge::PARAM_INVALID, "Parse taining trace param failed.");
+    return ge::PARAM_INVALID;
   }
 
   if (memcpy_s(prof_conf.jobId, sizeof(prof_conf.jobId), options.job_id.c_str(),
@@ -134,23 +132,55 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
   return ge::SUCCESS;
 }
 
+ge::Status ProfilingManager::ParseOptions(const std::string &options) {
+  if (options.empty()) {
+    GELOGE(ge::PARAM_INVALID, "Profiling options is empty.")
+    return ge::PARAM_INVALID;
+  }
+  try {
+    Json prof_options = Json::parse(options);
+    const std::string training_trace = prof_options[kTrainingTrace];
+    if (training_trace.empty()) {
+      GELOGI("Training trace will not take effect.");
+      return ge::SUCCESS;
+    }
+    GELOGI("GE profiling training trace:%s", training_trace.c_str());
+    if (training_trace != "on") {
+      GELOGE(ge::PARAM_INVALID, "Training trace param:%s is invalid.", training_trace.c_str());
+      return ge::PARAM_INVALID;
+    }
+    fp_point = prof_options[kFpPoint];
+    bp_point = prof_options[kBpPoint];
+    if (!fp_point_.empty() && !bp_point_.empty()) {
+      GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
+    }
+  } catch (...) {
+    GELOGE(FAILED, "Json prof_conf options is invalid.");
+    return ge::PARAM_INVALID;
+  }
+  return ge::SUCCESS;
+}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProfiling() {
 #ifdef DAVINCI_SUPPORT_PROFILING
   uint64_t module = GetProfilingModule();
+  // The following if case will not be executed in normal case, inc case of ProfStopProfiling is abnormal
   int32_t device_num = static_cast<int32_t>(device_id_.size());
-  auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
-  if (device_id_ptr == nullptr) {
-    GELOGE(FAILED, "Stop profiling: device id ptr is null.");
-    return;
+  if (device_num != 0) {
+     auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
+    if (device_id_ptr == nullptr) {
+      GELOGE(FAILED, "Stop profiling: device id ptr is null.");
+      return;
+    }
+    for (int32_t i = 0; i < device_num; i++) {
+      device_id_ptr[i] = static_cast<uint32_t>(device_id_[i]);
+    }
+    rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGW("Call rtProfilerStop failed, ret:%d", rt_ret);
+    }
   }
-  for (int32_t i = 0; i < device_num; i++) {
-    device_id_ptr[i] = static_cast<uint32_t>(device_id_[i]);
-  }
-  rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGW("Call rtProfilerStop failed, ret:%d", rt_ret);
-  }
-
+ 
   // stop profiling
   int32_t cb_ret = prof_cb_.msprofCtrlCallback(static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_FINALIZE),
                                                nullptr, 0);
@@ -475,6 +505,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   std::lock_guard<std::mutex> lock(mutex_);
   is_load_profiling_ = false;
   is_training_trace_ = false;
+  is_execute_profiling_ = false;
 
   // profiling plugin uninit
   PluginUnInit();
@@ -714,7 +745,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
     execute_model_prof_on = true;
   }
   GELOGI("Flag is_execute_profiling: %d, execute_model_prof_on: %d", is_execute_profiling_, execute_model_prof_on);
-  return is_execute_profiling_ || execute_model_prof_on;
+  return  execute_model_prof_on;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::PluginInit() const {
@@ -742,6 +773,41 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMs
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_REPORT),
       static_cast<void *>(&reporter_data), sizeof(ReporterData));
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpPoint(
+    std::string &fp_point, std::string &bp_point) {
+  // Env or options mode, fp_point_/bp_point_ have initiliazed on profiling init
+  if (!fp_point_.empty() && !bp_point_.empty()) {
+    GELOGI("Bp Fp have been initialized in env or options");
+    fp_point = fp_point_;
+    bp_point = bp_point_;
+    GELOGI("Bp Fp have been initailized in env or options, bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());
+    return;
+  }
+  // ProfApi mode and training trace is set
+  try {
+    char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = { 0x00 };
+    INT32 ret = mmGetEnv("PROFILING_OPTIONS", env_profiling_options, MSPROF_OPTIONS_DEF_LEN_MAX);
+    if (ret != EN_OK) {
+      GELOGI("PROFILING_OPTIONS env is not exist.");
+      return;
+    }
+    GELOGI("Parse env PROFILING_OPTIONS:%s.", env_profiling_options);
+    Json prof_options = Json::parse(env_profiling_options);
+
+    fp_point_ = prof_options[kFpPoint];
+    bp_point_ = prof_options[kBpPoint];
+
+    fp_point = fp_point_;
+    bp_point = bp_point_;
+    if (!fp_point_.empty() && !bp_point_.empty()) {
+      GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
+    }
+  } catch (...) {
+    GELOGE(FAILED, "Json prof options is invalid.");
+    return ge::PARAM_INVALID;
+  }
 }
 
 

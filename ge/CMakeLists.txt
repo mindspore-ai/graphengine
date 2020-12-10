@@ -648,9 +648,11 @@ target_include_directories(ge_runner PRIVATE
 
 target_link_libraries(ge_runner
     $<BUILD_INTERFACE:intf_pub>
+    -Wl,--whole-archive
+    msprofiler_fwk
+    -Wl,--no-whole-archive
     ge_memory
     adump_server
-    msprofiler_fwk
     static_mmpa
     -Wl,--no-as-needed
     graph

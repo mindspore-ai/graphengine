@@ -125,8 +125,9 @@ ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
 
 ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
   if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofCtrlCallback != nullptr) {
-    GELOGW("Msprof ctrl callback is exist, just ignore it.");
+    GELOGW("Msprof reporter callback is exist, just ignore it.");
   } else {
+    GELOGI("GE register Msprof reporter callback.");
     ge::ProfilingManager::Instance().SetMsprofReporterCallback(func);
   }
   // Pass MsprofReporterCallback to runtime

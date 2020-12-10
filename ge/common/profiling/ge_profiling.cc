@@ -22,6 +22,7 @@
 #include "graph/load/graph_loader.h"
 #include "init/gelib.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace {
 const uint32_t kDeviceListIndex = 3;
@@ -44,7 +45,7 @@ const std::map<ProfCommandHandleType, std::string> kProfCommandTypeMap = {
     {kProfCommandhandleModelUnsubscribe, kProfModelUnsubscribe}};
 }  // namespace
 
-bool TransProfConfigToParam(const MsprofCommandHandle &profCommand, vector<string> &prof_config_params) {
+bool TransProfConfigToParam(const ProfCommandHandleData &profCommand, vector<string> &prof_config_params) {
   prof_config_params.clear();
   prof_config_params.emplace_back(kDeviceNums);
   prof_config_params.emplace_back(std::to_string(profCommand.devNums));
@@ -71,7 +72,7 @@ bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
     return false;
   }
   if (device_nums == 0 || device_nums > MAX_DEV_NUM) {
-    GELOGE(ge::PARAM_INVALID, "The device nums is invalid.");
+    GELOGE(ge::PARAM_INVALID, "The device nums: %u is invalid.", device_nums);
     return false;
   }
 
@@ -105,16 +106,26 @@ bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
 }
 
 ge::Status RegProfCtrlCallback(MsprofCtrlCallback func) {
+  if (func == nullptr) {
+    GELOGE(ge::PARAM_INVALID, "Msprof ctrl callback is nullptr.");
+    return ge::PARAM_INVALID;
+  }
   if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofCtrlCallback != nullptr) {
     GELOGW("Msprof ctrl callback is exist, just ignore it.");
   } else {
+    GELOGI("GE register Msprof ctrl callback.");
     ge::ProfilingManager::Instance().SetMsprofCtrlCallback(func);
   }
   return ge::SUCCESS;
 }
 
 ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
+  if (func == nullptr) {
+    GELOGE(ge::PARAM_INVALID, "MsprofSetDeviceCallback callback is nullptr.");
+    return ge::PARAM_INVALID;
+  }
   // Pass MsprofSetDeviceCallback to runtime
+  GELOGI("GE pass setdevice callback to runtime.");
   ge::Status rt_ret = rtRegDeviceStateCallback(kRtSetDeviceRegName.c_str(), static_cast<rtDeviceStateCallback>(func));
   if (rt_ret != ge::SUCCESS) {
     GELOGE(rt_ret, "Pass MsprofSetDeviceCallback to runtime failed!");
@@ -124,54 +135,71 @@ ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
 }
 
 ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
+  if (func == nullptr) {
+    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    return ge::PARAM_INVALID;
+  }
   if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofCtrlCallback != nullptr) {
     GELOGW("Msprof reporter callback is exist, just ignore it.");
   } else {
     GELOGI("GE register Msprof reporter callback.");
     ge::ProfilingManager::Instance().SetMsprofReporterCallback(func);
+    // Pass MsprofReporterCallback to runtime
+    ge::Status rt_ret = rtSetMsprofReporterCallback(func);
+    if (rt_ret != ge::SUCCESS) {
+      GELOGE(rt_ret, "Pass MsprofReporterCallback to runtime failed!!");
+      return rt_ret;
+    }
+    // Pass MsprofReporterCallback to hccl in opskernel so initialize
+    rt_ret = OpskernelBuilderManager::Instance().RegProfReporterCallback(func);
+    if (rt_ret != ge::SUCCESS) {
+      GELOGE(rt_ret, "Pass MsprofReporterCallback to hccl failed.");
+      return rt_ret;
+    }
   }
-  // Pass MsprofReporterCallback to runtime
-  ge::Status rt_ret = rtSetMsprofReporterCallback(func);
-  if (rt_ret != ge::SUCCESS) {
-    GELOGE(rt_ret, "Pass MsprofReporterCallback to runtime failed!!");
-    return rt_ret;
-  }
-  // Pass MsprofReporterCallback to hccl in opskernel so initialize
-
   return ge::SUCCESS;
 }
 
 ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t len) {
-  GE_CHECK_NOTNULL(data);
-  MsprofCommandHandle *prof_config_param = (MsprofCommandHandle *)data;
-  if (!isProfConfigValid(prof_config_param->devIdList, prof_config_param->devNums)) {
-    return ge::FAILED;
+  if (type != kProfCommandhandleFinalize) {
+    GE_CHECK_NOTNULL(data);
   }
-  std::vector<string> prof_params;
-  if (!TransProfConfigToParam(*prof_config_param, prof_params)) {
-    GELOGE(ge::PARAM_INVALID, "Transfer profilerConfig to string vector failed");
-    return ge::PARAM_INVALID;
-  }
+  MsprofCommandHandleData *prof_config_param = (MsprofCommandHandleData *)data;
   auto iter = kProfCommandTypeMap.find(type);
   if (iter == kProfCommandTypeMap.end()) {
     GELOGW("The prof comand type is invalid.");
     return ge::PARAM_INVALID;
+  }
+  std::vector<string> prof_params;
+  if (type == kProfCommandhandleStart || type == kProfCommandhandleStop) {
+    if (!isProfConfigValid(prof_config_param->devIdList, prof_config_param->devNums)) {
+      return ge::FAILED;
+    }
+  
+    if (!TransProfConfigToParam(*prof_config_param, prof_params)) {
+      GELOGE(ge::PARAM_INVALID, "Transfer profilerConfig to string vector failed");
+      return ge::PARAM_INVALID;
+    }
   }
   ge::GraphLoader graph_loader;
   ge::Command command;
   command.cmd_params.clear();
   command.cmd_type = iter->second;
   command.cmd_params = prof_params;
-  command.module_index = prof_config_param->profSwitch;
-  GELOGI("GE commandhandle execute, device nums:%s , deviceID:[%s], data type config: 0x%llx", prof_params[0].c_str(),
-         prof_params[kDeviceListIndex].c_str(), command.module_index);
+  if (type != kProfCommandhandleFinalize) {
+    command.module_index = prof_config_param->profSwitch;
+  }
+  GELOGI("GE commandhandle execute, Command Type: %d, data type config: 0x%llx", type, command.module_index);
+  if (type == kProfCommandhandleStart || type == kProfCommandhandleStop) {
+    GELOGI("Profiling device nums:%s , deviceID:[%s]", prof_params[0].c_str(), prof_params[kDeviceListIndex].c_str());
+  }
   ge::Status ret = graph_loader.CommandHandle(command);
   if (ret != ge::SUCCESS) {
     GELOGE(ret, "Handle profiling command failed");
     return ge::FAILED;
   }
 
-  GELOGI("Successfully execute profiling command 0x%llx.", command.module_index);
+  GELOGI("Successfully execute profiling command type: %d, command 0x%llx.", type, command.module_index);
   return ge::SUCCESS;
 }
 

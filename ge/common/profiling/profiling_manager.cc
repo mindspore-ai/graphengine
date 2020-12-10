@@ -22,6 +22,7 @@
 #include "graph/ge_context.h"
 #include "runtime/base.h"
 #include "graph/load/new_model_manager/davinci_model.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace {
 const char *const kTrainingTrace = "training_trace";
@@ -41,7 +42,10 @@ namespace ge {
 ProfilingManager::ProfilingManager() : is_load_profiling_(false),
                                        is_execute_profiling_(false),
                                        is_training_trace_(false),
-                                       subscribe_count_(0) {}
+                                       subscribe_count_(0) {
+  prof_cb_.msprofCtrlCallback = nullptr;
+  prof_cb_.msprofReporterCallback = nullptr;
+}
 
 ProfilingManager::~ProfilingManager() {}
 
@@ -64,6 +68,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   }
 
   if (is_execute_profiling_) {
+    if (prof_cb_.msprofCtrlCallback == nullptr) {
+      GELOGE(ge::PARAM_INVALID, "MsprofCtrlCallback callback is nullptr.");
+      return ge::PARAM_INVALID;
+    }
     int32_t cb_ret = prof_cb_.msprofCtrlCallback(
         static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS),
         static_cast<void *>(&prof_conf), sizeof(MsprofGeOptions));
@@ -116,7 +124,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
   // Parse json str for bp fp
   Status ret = ParseOptions(prof_conf.options);
   if (ret != ge::SUCCESS) {
-    GELOGE(ge::PARAM_INVALID, "Parse taining trace param failed.");
+    GELOGE(ge::PARAM_INVALID, "Parse training trace param failed.");
     return ge::PARAM_INVALID;
   }
 
@@ -182,6 +190,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   }
  
   // stop profiling
+  if (prof_cb_.msprofCtrlCallback == nullptr) {
+      GELOGE(ge::PARAM_INVALID, "MsprofCtrlCallback callback is nullptr.");
+      return ge::PARAM_INVALID;
+  }
   int32_t cb_ret = prof_cb_.msprofCtrlCallback(static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_FINALIZE),
                                                nullptr, 0);
   if (cb_ret != 0) {
@@ -210,7 +222,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
                      .append(std::to_string(stream_id)).append(" ")
                      .append(std::to_string(model_id)).append("\n"));
 
-    ReporterData reporter_data;
+    ReporterData reporter_data{};
     reporter_data.deviceId = device_id;
     reporter_data.data = (unsigned char *)data.c_str();
     reporter_data.dataLen = data.size();
@@ -298,7 +310,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 
 void ProfilingManager::GraphDescReport(const int32_t &device_id, const string &data) {
 #ifdef DAVINCI_SUPPORT_PROFILING
-  ReporterData reporter_data;
+  ReporterData reporter_data{};
   int ret = -1;
   int32_t cb_ret = -1;
   size_t index = data.size() / kReportMaxLen;
@@ -487,6 +499,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfIn
       GELOGE(FAILED, "Runtime profiler start failed.");
       return FAILED;
     }
+    Status hccl_ret = OpskernelBuilderManager::Instance().ProfStart(model_load_mask);
+    if (hccl_ret != SUCCESS) {
+      GELOGE(FAILED, "Hccl profiler start failed.");
+      return FAILED;
+    }
     is_load_profiling_ = true;
     GELOGI("Prof init: model load profiling on.");
   }
@@ -517,6 +534,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
     return FAILED;
   }
 
+  Status hccl_ret = OpskernelBuilderManager::Instance().ProfStop(PROF_MODEL_LOAD_MASK);
+  if (hccl_ret != SUCCESS) {
+    GELOGE(FAILED, "Hccl profiler stop failed.");
+    return FAILED;
+  }
   for (auto device_id_module : device_id_module_map_) {
     if (device_id_module.second != 0) {
       uint32_t device_id = static_cast<uint32_t>(device_id_module.first);
@@ -640,6 +662,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     GELOGE(FAILED, "Runtime profiler config proc failed.");
     return FAILED;
   }
+  
+  Status hccl_ret = OpskernelBuilderManager::Instance().ProfStart(module);
+  if (hccl_ret != SUCCESS) {
+    GELOGE(FAILED, "Hccl profiler start failed.");
+    return FAILED;
+  }
   if ((module & PROF_MODEL_EXECUTE_MASK) == PROF_MODEL_EXECUTE_MASK) {
     for (int32_t i = 0; i < device_num; i++) {
       if (std::find(device_id_.begin(), device_id_.end(), device_list[i]) == device_id_.end()) {
@@ -679,6 +707,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
+    return FAILED;
+  }
+  Status hccl_ret = OpskernelBuilderManager::Instance().ProfStop(module);
+  if (hccl_ret != SUCCESS) {
+    GELOGE(FAILED, "Hccl profiler stop failed.");
     return FAILED;
   }
   uint64_t execute_model_mask = module & PROF_MODEL_EXECUTE_MASK;
@@ -749,6 +782,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::PluginInit() const {
+  if (prof_cb_.msprofReporterCallback == nullptr) {
+    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    return ge::PARAM_INVALID;
+  }
   return prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_INIT),
@@ -757,6 +794,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUnInit() const {
 #ifdef DAVINCI_SUPPORT_PROFILING
+  if (prof_cb_.msprofReporterCallback == nullptr) {
+    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    return ge::PARAM_INVALID;
+  }
   int32_t cb_ret = prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_UNINIT),
@@ -769,6 +810,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUn
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMsprofReport(
     ReporterData &reporter_data) const {
+  if (prof_cb_.msprofReporterCallback == nullptr) {
+    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    return ge::PARAM_INVALID;
+  }    
   return prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_REPORT),
@@ -806,8 +851,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
     }
   } catch (...) {
     GELOGE(FAILED, "Json prof options is invalid.");
-    return ge::PARAM_INVALID;
+    return;
   }
+  return;
 }
 
 

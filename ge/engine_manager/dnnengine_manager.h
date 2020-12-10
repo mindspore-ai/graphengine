@@ -61,9 +61,9 @@ class DNNEngineManager {
  public:
   friend class GELib;
   std::shared_ptr<ge::DNNEngine> GetEngine(const std::string &name) const;
-  bool IsEngineRegistered(const std::string &name);
+  bool IsEngineRegistered(const std::string &name) const;
   // If can't find appropriate engine name, return "", report error
-  string GetDNNEngineName(const ge::NodePtr &node_ptr);
+  string GetDNNEngineName(const ge::NodePtr &node_ptr) const;
   const map<string, SchedulerConf> &GetSchedulers() const;
   const map<string, uint64_t> &GetCheckSupportCost() const;
   void InitPerformanceStaistic();

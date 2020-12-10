@@ -158,7 +158,7 @@ std::shared_ptr<ge::DNNEngine> DNNEngineManager::GetEngine(const std::string &na
   return nullptr;
 }
 
-bool DNNEngineManager::IsEngineRegistered(const std::string &name) {
+bool DNNEngineManager::IsEngineRegistered(const std::string &name) const {
   auto iter = engines_map_.find(name);
   if (iter != engines_map_.end()) {
     return true;
@@ -177,7 +177,7 @@ const map<string, uint64_t> &DNNEngineManager::GetCheckSupportCost() const {
   return checksupport_cost_;
 }
 
-std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
+std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) const {
   std::lock_guard<std::mutex> lock(mutex_);
 
   GE_IF_BOOL_EXEC(node_ptr == nullptr, GELOGE(GE_CLI_GE_NOT_INITIALIZED, "DNNEngineManager: node_ptr is nullptr");

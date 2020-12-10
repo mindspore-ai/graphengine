@@ -58,8 +58,7 @@ std::string GetCseKey(const NodePtr &node) {
 /// To avoid delete wrong nodes(e.g. stateful nodes),
 /// only nodes have folding kernel will be considered for the CSE process
 bool IsNodeSupportCse(const NodePtr &node) {
-  if (HostCpuEngine::CheckSupported(NodeUtils::GetNodeType(*node)) || node->GetType() == CONSTANT ||
-      node->GetType() == CONSTANTOP) {
+  if (HostCpuEngine::CheckSupported(NodeUtils::GetNodeType(*node))) {
     return true;
   }
   return folding_pass::GetKernelByType(node) != nullptr;

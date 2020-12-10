@@ -224,7 +224,6 @@ Status ModelBuilder::AdjustConstWeightSize(const ge::NodePtr &node, size_t &mem_
     GeTensorDesc &tensor_desc = weight->MutableTensorDesc();
     size_t output_size = weight->GetData().size();
     TensorUtils::SetDataOffset(tensor_desc, mem_offset);
-    GELOGD("Node: %s, weight size: %zu.", node->GetName().c_str(), output_size);
     mem_offset += output_size;
   }
   return SUCCESS;

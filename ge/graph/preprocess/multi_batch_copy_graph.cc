@@ -44,8 +44,6 @@
 using std::set;
 using std::string;
 using std::vector;
-using std::map;
-using std::queue;
 
 namespace ge {
 namespace multibatch {
@@ -59,14 +57,9 @@ const int kDataInIndex = 0;
 const int kMergeDataOutIndex = 0;
 const int kStaticOutput = -1;
 const int kDivisionConst = 2;
-const int32_t kOneInDataNode = 1;
-const int32_t kFindNoMatch = 0;
 
 
 inline bool IsDataLikeType(const std::string &node_type) { return (node_type == DATA) || (node_type == AIPP); }
-
-inline bool IsEnterType(const string &node_type) { return (node_type == ENTER) || (node_type == REFENTER); }
-const set<string> unchange_types({CONSTANT, CONSTANTOP, ENTER, REFENTER});
 
 inline bool IsGetNextType(const NodePtr &node) {
   std::string original_type;
@@ -225,6 +218,12 @@ Status MultiBatchGraphCopyer::CopyGraph() {
     return ret;
   }
 
+  ret = InsertIdentityAfterSwitchN();
+  if (ret != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Failed to insert identity nodes after switchn node.");
+    return INTERNAL_ERROR;
+  }
+
   GELOGI("Begin to remove useless nodes by prune pass after copy process");
   PrunePass prune_pass;
   ret = prune_pass.Run(graph_);
@@ -241,18 +240,6 @@ Status MultiBatchGraphCopyer::Init() {
     return ret;
   }
 
-  ret = RelinkConstCtrlEdge();
-  if (ret != SUCCESS) {
-    GELOGE(FAILED, "Relink const's control edge failed.");
-    return FAILED;
-  }
-
-  ret = ExtractUnchangedStructureOutofCycle();
-  if (ret != SUCCESS) {
-    GELOGE(FAILED, "Extract unchanged structure out of cycle failed.");
-    return FAILED;
-  }
-
   for (auto &node : graph_->GetAllNodes()) {
     origin_all_nodes_.emplace_back(node);
     if (IsDataLikeType(node->GetType())) {
@@ -262,281 +249,6 @@ Status MultiBatchGraphCopyer::Init() {
       origin_data_nodes_.emplace_back(node);
     }
   }
-  return SUCCESS;
-}
-
-Status MultiBatchGraphCopyer::RelinkConstCtrlEdge() {
-  for (auto &node : graph_->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node);
-    if ((node->GetType() == CONSTANT) || (node->GetType() == CONSTANTOP)) {
-      if (node->GetOutDataNodes().empty()) {
-        continue;
-      }
-      if (!node->GetInControlNodes().empty()) {
-        auto in_ctrl_nodes = node->GetInControlNodes();
-        auto out_nodes = node->GetOutAllNodes();
-        bool has_merge = false;
-        for (const auto &out_node : out_nodes) {
-          GE_CHECK_NOTNULL(out_node);
-          if (out_node->GetType() == MERGE || out_node->GetType() == REFMERGE) {
-            has_merge = true;
-            break;
-          }
-        }
-        if (has_merge) {
-          continue;
-        }
-        auto in_ctrl_anchor = node->GetInControlAnchor();
-        GE_CHECK_NOTNULL(in_ctrl_anchor);
-        in_ctrl_anchor->UnlinkAll();
-        for (auto &in_ctrl_node : in_ctrl_nodes) {
-          auto out_ctrl_anchor_of_in_ctrl_node = in_ctrl_node->GetOutControlAnchor();
-          GE_CHECK_NOTNULL(out_ctrl_anchor_of_in_ctrl_node);
-          for (auto &out_node : out_nodes) {
-            if (IsEnterType(out_node->GetType())) {
-              continue;
-            }
-            if (!out_ctrl_anchor_of_in_ctrl_node->IsLinkedWith(out_node->GetInControlAnchor())) {
-              GE_CHK_STATUS_RET(out_ctrl_anchor_of_in_ctrl_node->LinkTo(out_node->GetInControlAnchor()))
-            }
-          }
-        }
-      }
-      auto out_ctrl_anchor = node->GetOutControlAnchor();
-      if (out_ctrl_anchor != nullptr) {
-        out_ctrl_anchor->UnlinkAll();
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
-Status MultiBatchGraphCopyer::ExtractUnchangedStructureOutofCycle() {
-  map<string, vector<NodePtr>> frame_enter;
-  if (GetEnterNodesGroupByFrame(frame_enter) != SUCCESS) {
-    GELOGE(FAILED, "Get enter nodes grouped by frame_name failed.");
-    return FAILED;
-  }
-
-  queue<NodePtr> nodes_to_extract;
-  if (GetNodeNeedExtract(frame_enter, nodes_to_extract) != SUCCESS) {
-    GELOGE(FAILED, "Get nodes needed to extract failed.");
-    return FAILED;
-  }
-
-  while (!nodes_to_extract.empty()) {
-    auto node = nodes_to_extract.front();
-    nodes_to_extract.pop();
-    OpDescPtr enter_desc = nullptr;
-    if (MoveInEntersInDataAnchorDown(node, enter_desc) != SUCCESS) {
-      GELOGE(FAILED, "Move in enter nodes' in data anchors down of %s failed.", node->GetName().c_str());
-      return FAILED;
-    }
-    set<NodePtr> out_nodes;
-    if (InsertEnterAfterNode(node, enter_desc, out_nodes) != SUCCESS) {
-      GELOGE(FAILED, "Insert enter node after %s failed.", node->GetName().c_str());
-      return FAILED;
-    }
-
-    if (MoveCtrlEdgeToOutNodes(node, out_nodes) != SUCCESS) {
-      GELOGE(FAILED, "Move %s's control edge to out nodes failed.", node->GetName().c_str());
-      return FAILED;
-    }
-
-    for (auto &out_node : out_nodes) {
-      GE_CHECK_NOTNULL(out_node);
-      if (AllInDataNodesUnchangeAndNoMergeOut(out_node)) {
-        nodes_to_extract.push(out_node);
-      }
-    }
-  }
-
-  if (DeleteEnterWithoutDataOut() != SUCCESS) {
-    GELOGE(FAILED, "Delete enter node without out data nodes failed.");
-    return FAILED;
-  }
-
-  return SUCCESS;
-}
-
-Status MultiBatchGraphCopyer::GetEnterNodesGroupByFrame(map<string, vector<NodePtr>> &frame_enter) {
-  for (auto &node : graph_->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node);
-    if (IsEnterType(node->GetType())) {
-      if (!node->GetInControlNodes().empty() || !node->GetOutControlNodes().empty()) {
-        continue;
-      }
-      auto op_desc = node->GetOpDesc();
-      GE_CHECK_NOTNULL(op_desc);
-      string frame_name;
-      if (!AttrUtils::GetStr(op_desc, ENTER_ATTR_FRAME_NAME, frame_name)) {
-        GELOGE(FAILED, "Get attr frame_name of enter[%] failed.", node->GetName().c_str());
-        return FAILED;
-      }
-      frame_enter[frame_name].emplace_back(node);
-    }
-  }
-
-  return SUCCESS;
-}
-
-Status MultiBatchGraphCopyer::GetNodeNeedExtract(const map<string, vector<NodePtr>> &frame_enter,
-                                                 queue<NodePtr> &nodes_to_extract) {
-  for (const auto &one_group : frame_enter) {
-    auto enters = one_group.second;
-    for (const auto &enter : enters) {
-      auto out_data_nodes = enter->GetOutDataNodes();
-      for (const auto &out_data_node : out_data_nodes) {
-        GE_CHECK_NOTNULL(out_data_node);
-        if (AllInDataNodesUnchangeAndNoMergeOut(out_data_node)) {
-          nodes_to_extract.push(out_data_node);
-        }
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
-bool MultiBatchGraphCopyer::AllInDataNodesUnchangeAndNoMergeOut(const NodePtr &node) {
-  auto out_data_nodes = node->GetOutDataNodes();
-  for (const auto &out_data_node : out_data_nodes) {
-    if (out_data_node == nullptr) {
-      return false;
-    }
-
-    if (out_data_node->GetType() == MERGE || out_data_node->GetType() == REFMERGE) {
-      return false;
-    }
-  }
-
-  auto in_data_nodes = node->GetInDataNodes();
-  if (in_data_nodes.size() == kOneInDataNode) {
-    return true;
-  }
-
-  for (const auto &in_data_node : in_data_nodes) {
-    if (in_data_node == nullptr) {
-      return false;
-    }
-    if (unchange_types.count(in_data_node->GetType()) == kFindNoMatch) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-Status MultiBatchGraphCopyer::MoveInEntersInDataAnchorDown(NodePtr &node, OpDescPtr &enter_desc) {
-  auto in_data_anchors = node->GetAllInDataAnchors();
-  for (auto &in_data_anchor : in_data_anchors) {
-    auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(peer_out_data_anchor);
-    auto peer_in_data_node = peer_out_data_anchor->GetOwnerNode();
-    if (IsEnterType(peer_in_data_node->GetType())) {
-      GE_CHK_STATUS_RET(peer_out_data_anchor->Unlink(in_data_anchor))
-      GELOGD("Unlink data edge from %s to %s.", peer_in_data_node->GetName().c_str(), node->GetName().c_str());
-      auto enter_in_data_anchors = peer_in_data_node->GetAllInDataAnchors();
-      for (auto &enter_in_data_anchor : enter_in_data_anchors) {
-        auto peer_out_data_anchor_of_enter = enter_in_data_anchor->GetPeerOutAnchor();
-        GE_CHECK_NOTNULL(peer_out_data_anchor_of_enter);
-        if (peer_out_data_anchor_of_enter->IsLinkedWith(in_data_anchor)) {
-          continue;
-        }
-        GE_CHK_STATUS_RET(peer_out_data_anchor_of_enter->LinkTo(in_data_anchor))
-        GELOGD("Relink data edge from %s to %s.", peer_out_data_anchor_of_enter->GetOwnerNode()->GetName().c_str(),
-               node->GetName().c_str());
-      }
-      enter_desc = peer_in_data_node->GetOpDesc();
-      GE_CHECK_NOTNULL(enter_desc);
-    }
-  }
-
-  return SUCCESS;
-}
-
-Status MultiBatchGraphCopyer::InsertEnterAfterNode(NodePtr &node, const OpDescPtr &copy_desc, set<NodePtr> &out_nodes) {
-  if (copy_desc == nullptr) {
-    return SUCCESS;
-  }
-  map<OutDataAnchorPtr, vector<std::pair<InDataAnchorPtr, NodePtr>>> outanchors_inanchors_nodes;
-  auto out_data_anchors = node->GetAllOutDataAnchors();
-  for (auto &out_data_anchor : out_data_anchors) {
-    auto peer_in_data_anchors = out_data_anchor->GetPeerInDataAnchors();
-    for (auto peer_in_data_anchor : peer_in_data_anchors) {
-      GE_CHECK_NOTNULL(peer_in_data_anchor);
-      auto peer_in_data_node = peer_in_data_anchor->GetOwnerNode();
-      out_nodes.emplace(peer_in_data_node);
-      outanchors_inanchors_nodes[out_data_anchor].emplace_back(std::make_pair(peer_in_data_anchor, peer_in_data_node));
-    }
-  }
-
-  int32_t i = 0;
-  auto node_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(node_desc);
-  // Insert one enter node after node's per out data anchor
-  for (auto &outanchor_inanchors_nodes : outanchors_inanchors_nodes) {
-    string name = node->GetName() + "_" + ENTER + "_" + std::to_string(i++);
-    GELOGD("Create Enter op %s after %s.", name.c_str(), node->GetName().c_str());
-    auto enter_desc = AttrUtils::CopyOpDesc(copy_desc);
-    enter_desc->SetName(name);
-    GE_CHK_STATUS_RET(
-        enter_desc->UpdateInputDesc("x", node_desc->GetOutputDesc(outanchor_inanchors_nodes.first->GetIdx())))
-    GE_CHK_STATUS_RET(
-        enter_desc->UpdateOutputDesc("y", node_desc->GetOutputDesc(outanchor_inanchors_nodes.first->GetIdx())))
-    auto enter_node = graph_->AddNode(enter_desc);
-    GE_CHECK_NOTNULL(enter_node);
-    GE_CHK_STATUS_RET(outanchor_inanchors_nodes.first->LinkTo(enter_node->GetInDataAnchor(kDataInIndex)))
-    GE_CHECK_NOTNULL(enter_node->GetOutDataAnchor(kDataInIndex));
-    for (auto &inanchor_node : outanchor_inanchors_nodes.second) {
-      GE_CHK_STATUS_RET(outanchor_inanchors_nodes.first->Unlink(inanchor_node.first))
-      GE_CHK_STATUS_RET(enter_node->GetOutDataAnchor(kDataInIndex)->LinkTo(inanchor_node.first))
-      GELOGD("Unlink from %s to %s, link from %s to %s then to %s.", node->GetName().c_str(),
-             inanchor_node.second->GetName().c_str(), node->GetName().c_str(), enter_node->GetName().c_str(),
-             inanchor_node.second->GetName().c_str());
-    }
-  }
-
-  return SUCCESS;
-}
-
-// Move node's in control edges to out data nodes
-Status MultiBatchGraphCopyer::MoveCtrlEdgeToOutNodes(NodePtr &node, set<NodePtr> &out_nodes) {
-  auto in_ctrl_anchor = node->GetInControlAnchor();
-  GE_CHECK_NOTNULL(in_ctrl_anchor);
-  auto peer_out_ctrl_anchors = in_ctrl_anchor->GetPeerOutControlAnchors();
-  for (auto &peer_out_ctrl_anchor : peer_out_ctrl_anchors) {
-    GE_CHK_STATUS_RET(peer_out_ctrl_anchor->Unlink(in_ctrl_anchor))
-    GELOGD("Unlink control edge from %s to %s.", peer_out_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
-           node->GetName().c_str());
-    for (auto &out_node : out_nodes) {
-      auto in_ctrl_anchor_of_out_node = out_node->GetInControlAnchor();
-      GE_CHECK_NOTNULL(in_ctrl_anchor_of_out_node);
-      if (!peer_out_ctrl_anchor->IsLinkedWith(in_ctrl_anchor_of_out_node)) {
-        GE_CHK_STATUS_RET(peer_out_ctrl_anchor->LinkTo(in_ctrl_anchor_of_out_node))
-        GELOGD("Link control edge from %s to %s.", peer_out_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
-               out_node->GetName().c_str());
-      }
-    }
-  }
-
-  return SUCCESS;
-}
-
-Status MultiBatchGraphCopyer::DeleteEnterWithoutDataOut() {
-  for (auto &node : graph_->GetAllNodes()) {
-    GE_CHECK_NOTNULL(node);
-    if (IsEnterType(node->GetType())) {
-      auto out_nodes = node->GetOutAllNodes();
-      if (out_nodes.empty()) {
-        GELOGD("Delete enter node: %s which has no output.", node->GetName().c_str());
-        GE_CHK_STATUS_RET(GraphUtils::IsolateNode(node, {}))
-        GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph_, node))
-      }
-    }
-  }
-
   return SUCCESS;
 }
 
@@ -585,9 +297,6 @@ Status MultiBatchGraphCopyer::LabelInBatchBranchStatus() {
       LabelStatusForGetNextSink(data);
     }
   }
-
-  map<string, vector<NodePtr>> frame_enters;
-  InitStatus(frame_enters);
   bool changed = true;
   // If anyone of in node is kNodeInBatchBranch, it is also kNodeInBatchBranch
   while (changed) {
@@ -597,58 +306,18 @@ Status MultiBatchGraphCopyer::LabelInBatchBranchStatus() {
       if (iter != origin_nodes_status_.end()) {
         continue;
       }
-      for (auto &in_node : node->GetInDataNodes()) {
-        if (origin_nodes_status_.find(in_node.get()) != origin_nodes_status_.end()) {
-          if (origin_nodes_status_.find(node.get()) == origin_nodes_status_.end()) {
-            origin_nodes_status_[node.get()] == kNodeInBatchBranch;
-            ResetEnterStatus(frame_enters, node);
-            changed = true;
-          }
+      for (auto &in_node : node->GetInAllNodes()) {
+        bool is_in_batch = origin_nodes_status_.find(in_node.get()) != origin_nodes_status_.end() &&
+                           origin_nodes_status_[in_node.get()] == kNodeInBatchBranch;
+        if (is_in_batch) {
+          origin_nodes_status_[node.get()] = kNodeInBatchBranch;
+          changed = true;
           break;
         }
       }
     }
   }
   return SUCCESS;
-}
-
-void MultiBatchGraphCopyer::InitStatus(map<string, vector<NodePtr>> &frame_enters) {
-  for (const auto &node : origin_all_nodes_) {
-    if (!IsEnterType(node->GetType())) {
-      continue;
-    }
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      continue;
-    }
-    string frame_name;
-    if (AttrUtils::GetStr(op_desc, ENTER_ATTR_FRAME_NAME, frame_name)) {
-      frame_enters[frame_name].emplace_back(node);
-    }
-  }
-
-  for (const auto &data : origin_data_nodes_) {
-    auto data_shape = NodeUtils::GetOutputDesc(*data, kDataOutIndex).GetShape();
-    if (!IsAllDimsPositive(data_shape.GetDims())) {
-      origin_nodes_status_[data.get()] = kNodeInBatchBranch;
-    }
-  }
-}
-
-void MultiBatchGraphCopyer::ResetEnterStatus(map<string, vector<NodePtr>> &frame_enters, const NodePtr &node) {
-  if (!IsEnterType(node->GetType())) {
-    return;
-  }
-
-  for (const auto &frame_enter : frame_enters) {
-    auto &enters = frame_enter.second;
-    if (std::find(enters.begin(), enters.end(), node) != enters.end()) {
-      for (const auto &enter : enters) {
-        origin_nodes_status_[enter.get()] = kNodeInBatchBranch;
-      }
-      break;
-    }
-  }
 }
 
 Status MultiBatchGraphCopyer::LabelStatus() {
@@ -1686,6 +1355,52 @@ Status MultiBatchGraphCopyer::LinkToNodeOutBranch(const NodePtr &node) {
                     return INTERNAL_ERROR);
     GELOGI("Link control edge from merge %s(from %s) to %s", merge_node->GetName().c_str(), in_node->GetName().c_str(),
            node->GetName().c_str());
+  }
+
+  return SUCCESS;
+}
+
+Status MultiBatchGraphCopyer::InsertIdentityAfterSwitchN() {
+  for (auto &node : graph_->GetAllNodes()) {
+    if (node->GetType() != SWITCHN) {
+      continue;
+    }
+    auto switchn_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(switchn_desc);
+    size_t i = 0;
+    for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
+      for (auto &in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+        auto out_node = in_data_anchor->GetOwnerNode();
+        auto op_desc = out_node->GetOpDesc();
+        GE_CHECK_NOTNULL(op_desc);
+        if ((out_node->GetType() == MERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
+          GELOGD("No need to insert identity between %s and %s.", node->GetName().c_str(), out_node->GetName().c_str());
+          continue;
+        }
+
+        auto identity_desc = MakeShared<OpDesc>(node->GetName() + "_identity_" + std::to_string(i), IDENTITY);
+        GE_CHECK_NOTNULL(identity_desc);
+
+        string batch_label;
+        if (AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
+          if (!AttrUtils::SetStr(identity_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
+            GELOGE(FAILED, "Set attr ATTR_NAME_BATCH_LABEL failed, node:%s.", identity_desc->GetName().c_str());
+            return FAILED;
+          }
+        }
+
+        auto data_desc = switchn_desc->GetOutputDesc(i);
+        i++;
+        GE_CHK_STATUS_RET(identity_desc->AddInputDesc("x", data_desc));
+        GE_CHK_STATUS_RET(identity_desc->AddOutputDesc("y", data_desc));
+
+        auto identity_node = graph_->AddNode(identity_desc);
+        GE_CHECK_NOTNULL(identity_node);
+        GE_CHK_STATUS_RET(out_data_anchor->LinkTo(identity_node->GetInDataAnchor(0)));
+        GE_CHECK_NOTNULL(identity_node->GetOutControlAnchor());
+        GE_CHK_STATUS_RET(identity_node->GetOutControlAnchor()->LinkTo(out_node->GetInControlAnchor()));
+      }
+    }
   }
 
   return SUCCESS;

@@ -18,8 +18,6 @@
 #include "ge/ge_api_types.h"
 #include "graph/common/omg_util.h"
 
-using std::string;
-
 namespace ge {
 Status AttachStreamLabelPass::Run(ComputeGraphPtr graph) {
   GELOGD("AttachStreamLabelPass Enter.");
@@ -189,10 +187,21 @@ Status AttachStreamLabelPass::UpdateEnterNode() {
     }
 
     std::stack<NodePtr> enter_nodes;
+    std::string batch_label;
     for (const auto &enter_node : pair.second) {
       enter_nodes.emplace(enter_node);
+      std::string tmp_label;
+      (void)AttrUtils::GetStr(enter_node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, tmp_label);
+      if (!tmp_label.empty()) {
+        if (batch_label.empty()) {
+          batch_label = tmp_label;
+        } else if (batch_label != tmp_label) {
+          GELOGE(FAILED, "multi batch_label exist, label1=%s, label2=%s.", batch_label.c_str(), tmp_label.c_str());
+          return FAILED;
+        }
+      }
     }
-    if (UpdateLoopBranch(enter_nodes, active_label_list[0]) != SUCCESS) {
+    if (UpdateLoopBranch(enter_nodes, active_label_list[0], batch_label) != SUCCESS) {
       GELOGE(FAILED, "Update stream_label for loop_branch failed.");
       return FAILED;
     }
@@ -217,7 +226,10 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
   }
 
   for (const auto &enter_node : enter_nodes) {
-    GE_CHK_STATUS_RET(SetStreamLabel(enter_node, stream_label), "Set stream label failed.");
+    GE_CHECK_NOTNULL(enter_node->GetOpDesc());
+    if (enter_node->GetOpDesc()->HasAttr(ATTR_NAME_STREAM_LABEL)) {
+      GE_CHK_STATUS_RET(SetStreamLabel(enter_node, stream_label), "Set stream label failed.");
+    }
   }
   return SUCCESS;
 }
@@ -229,7 +241,8 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
 /// @param [in] batch_label
 /// @return Status
 ///
-Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const string &stream_label) {
+Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const std::string &stream_label,
+                                               const std::string &batch_label) {
   std::stack<NodePtr> nodes(enter_nodes);
   NodePtr cur_node = nullptr;
   while (!nodes.empty()) {
@@ -238,6 +251,11 @@ Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_
     for (const NodePtr &out_node : cur_node->GetOutAllNodes()) {
       OpDescPtr out_desc = out_node->GetOpDesc();
       GE_CHECK_NOTNULL(out_desc);
+      std::string tmp_label;
+      (void)AttrUtils::GetStr(out_desc, ATTR_NAME_BATCH_LABEL, tmp_label);
+      if (!tmp_label.empty() && (tmp_label != batch_label)) {
+        continue;
+      }
       std::string out_type = out_desc->GetType();
       bool need_skip =
           out_desc->HasAttr(ATTR_NAME_STREAM_LABEL) || (out_type == ENTER) || (out_type == REFENTER) ||

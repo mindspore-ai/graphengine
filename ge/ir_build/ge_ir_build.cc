@@ -53,6 +53,8 @@ const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
 
 const std::string kInputShape = "input_shape";
 const std::string kInputFormat = "input_format";
+const std::string kReUseMemEnable = "1";
+const std::string kReUseMemDisEnable = "0";
 }  // namespace
 
 static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
@@ -312,6 +314,12 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
       GELOGE(GRAPH_PARAM_INVALID, "Build mode tuning must specify build step. Please check!");
       return GRAPH_PARAM_INVALID;
     }
+  }
+  // Check option EXEC_DISABLE_REUSED_MEMORY
+  it = options_.find(EXEC_DISABLE_REUSED_MEMORY);
+  if (it != options_.end() && it->second != kReUseMemEnable && it->second != kReUseMemDisEnable) {
+    GELOGE(GRAPH_PARAM_INVALID, "option(EXEC_DISABLE_REUSED_MEMORY) value[%s] is invalid ", it->second.c_str());
+    return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;
 }

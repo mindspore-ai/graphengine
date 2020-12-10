@@ -588,6 +588,7 @@ Status ProfilingManager::ProfParseDeviceId(const std::map<std::string, std::stri
         return FAILED;
       } catch (std::out_of_range &) {
         GELOGE(FAILED, "Device id: %s is  out of range.", decvice_id[i].c_str());
+        return FAILED;
       } catch (...) {
         GELOGE(FAILED, "Device id: %s cannot change to int.", decvice_id[i].c_str());
         return FAILED;
@@ -614,6 +615,7 @@ Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string>
       return FAILED;
     } catch (std::out_of_range &) {
       GELOGE(FAILED, "Device num: %s is  out of range.", iter->second.c_str());
+      return FAILED;
     } catch (...) {
       GELOGE(FAILED, "Device num: %s cannot change to int.", iter->second.c_str());
       return FAILED;

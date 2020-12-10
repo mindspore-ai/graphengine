@@ -2819,15 +2819,20 @@ void *DavinciModel::Run(DavinciModel *model) {
     GE_TIMESTAMP_START(rtStreamSynchronize);
     GELOGI("rtStreamSynchronize start.");
     rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-    if (rt_ret == RT_ERROR_END_OF_SEQUENCE) {
+    if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
       seq_end_flag = true;
     }
-    GE_IF_BOOL_EXEC(
+    if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
+      GELOGI("The model with multiple datasets aborts normally.");
+    } else {
+      GE_IF_BOOL_EXEC(
         rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
         (void)model->ReturnResult(current_data.index, false, seq_end_flag,
                                   data_wrapper->GetOutput());  // [No need to check value]
         CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
         continue);
+    }
+
     GELOGI("rtStreamSynchronize end.");
     GE_IF_BOOL_EXEC(model->is_first_execute_,
                     GE_TIMESTAMP_EVENT_END(rtStreamSynchronize, "GraphExcute::Wait for rtStreamSynchronize"));

@@ -1621,7 +1621,8 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
 
       for (size_t i = 0; i < desc.GetShape().GetDimNum(); ++i) {
         if (desc.GetShape().GetDim(i) < 0) {
-          std::string situation = "data dim[" + std::to_string(i) + "][" + std::to_string(desc.GetShape().GetDim(i)) + "]" ;
+          std::string situation = "data dim[" + std::to_string(i) + "][" +
+                  std::to_string(desc.GetShape().GetDim(i)) + "]" ;
           std::string reason = "it need >= 0";
           ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
           GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need >= 0, real:%ld.", i,

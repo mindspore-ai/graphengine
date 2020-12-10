@@ -21,7 +21,7 @@
 namespace {
 const uint32_t kRangeCeilInterval = 2;
 const uint32_t kLogBase = 2;
-const int64_t kLargeBlockSize = 8 * 1024 * 1024;
+const int64_t kLargeBlockSize = 8 * 1024 * 1024;  // 8M
 const int64_t kLargeBlockRangeSize = 2;
 }  // namespace
 

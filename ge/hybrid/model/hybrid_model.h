@@ -104,7 +104,8 @@ class HybridModel {
 
   void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
 
-  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
+  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims,
+                                      std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
                                       InputOutputDescInfo &input);
 
  private:

@@ -149,10 +149,10 @@ Status SubgraphPass::SubgraphOutputNode(const ComputeGraphPtr &graph, const Node
     //   5. While->NetOutput in known subgraph
     std::string op_type;
     bool insert_flag = NodeUtils::GetConstOpType(in_node, op_type) ||
-                       IsAtomicRequired(in_node, peer_out_anchor->GetIdx()) || IsOutputContinuesRequired(in_node) ||
-                       ((in_node->GetType() == DATA) && (kWhileOpTypes.count(graph->GetParentNode()->GetType()) == 0)) ||
-                       (!graph->GetGraphUnknownFlag() && NodeUtils::IsDynamicShape(node) &&
-                        (kWhileOpTypes.count(in_node->GetType()) != 0));
+        IsAtomicRequired(in_node, peer_out_anchor->GetIdx()) || IsOutputContinuesRequired(in_node) ||
+        ((in_node->GetType() == DATA) && (kWhileOpTypes.count(graph->GetParentNode()->GetType()) == 0)) ||
+        (!graph->GetGraphUnknownFlag() && NodeUtils::IsDynamicShape(node) &&
+            (kWhileOpTypes.count(in_node->GetType()) != 0));
     if (insert_flag) {
       GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
       std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";

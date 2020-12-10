@@ -263,7 +263,8 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         task->SetModelArgs(model_name_, model_id_);
         single_op.tasks_.emplace_back(task);
       } else {
-        GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID, "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
+        GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
+               "Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", context.kernel_type());
         return ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID;
       }
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {

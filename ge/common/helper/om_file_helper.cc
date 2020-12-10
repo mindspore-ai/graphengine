@@ -180,7 +180,8 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
     context_.partition_datas_.push_back(partition);
 
     if (partition.size > model_data_size || mem_offset > model_data_size - partition.size) {
-      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %zu is greater than the model data size %u.",
+      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
+             "The partition size %zu is greater than the model data size %u.",
              partition.size + mem_offset, model_data_size);
       return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
     }

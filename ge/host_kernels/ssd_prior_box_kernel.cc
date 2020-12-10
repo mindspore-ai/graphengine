@@ -180,8 +180,12 @@ Status SsdPriorboxKernel::SetVariance(const vector<float> &variance, const int d
   return SUCCESS;
 }
 
-Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint32_t aspect_ratios_size, uint32_t min_sizes_size, uint32_t max_sizes_size,
-                                                int layer_width, int layer_height, int &num_priors,
+Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint32_t aspect_ratios_size,
+                                                uint32_t min_sizes_size,
+                                                uint32_t max_sizes_size,
+                                                int layer_width,
+                                                int layer_height,
+                                                int &num_priors,
                                                 int &dim_size) const {
   if (ge::CheckUint32MulOverflow(min_sizes_size, aspect_ratios_size) != SUCCESS) {
     return PARAM_INVALID;

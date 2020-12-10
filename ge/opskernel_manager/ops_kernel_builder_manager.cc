@@ -187,7 +187,7 @@ Status OpsKernelBuilderManager::ProfStart(uint64_t prof_config) const {
   return SUCCESS;
 }
 
-Status OpsKernelBuilderManager::ProfStop((uint64_t prof_config) const {
+Status OpsKernelBuilderManager::ProfStop(uint64_t prof_config) const {
   for (auto it = ops_kernel_builders_.begin(); it != ops_kernel_builders_.end(); it++) {
     GE_CHK_STATUS_RET(it->second->ProfStop(prof_config),
                       "Failed to invoke ProfStop.");

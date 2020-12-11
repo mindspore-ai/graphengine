@@ -133,9 +133,6 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     GELOGE(INTERNAL_ERROR, "copy job_id failed.");
     return INTERNAL_ERROR;
   }
-
-  // get traceId from options
-  prof_conf.traceId = GetContext().TraceId();
 #endif
   return ge::SUCCESS;
 }

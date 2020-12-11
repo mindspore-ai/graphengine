@@ -736,8 +736,12 @@ void TransOpWithoutReshapeFusionPass::RemoveNousedNodes(const ComputeGraphPtr &g
 
       GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true), GELOGE(INTERNAL_ERROR, "set ext attr failed"); return);
       GELOGI("remove node:%s", node->GetName().c_str());
-      if (graph->RemoveNode(node) != GRAPH_SUCCESS) {
-        GELOGW("remove node failed!node:%s", node->GetName().c_str());
+      if (GraphUtils::IsolateNode(node, {0}) != GRAPH_SUCCESS) {
+        GELOGW("Isolate node: %s failed.", node->GetName().c_str());
+        continue;
+      }
+      if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
+        GELOGW("Remove node: %s failed.", node->GetName().c_str());
         continue;
       }
     }

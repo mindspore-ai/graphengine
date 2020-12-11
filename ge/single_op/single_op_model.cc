@@ -381,7 +381,7 @@ Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTa
   }
 
   auto builder = AiCpuCCTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpucc_task, kernel_id);
+  auto ret = builder.BuildTask(*aicpucc_task, kernel_id, model_params_);
   if (ret != SUCCESS) {
     GELOGE(ret, "build aicpu_CC op task failed");
     return ret;

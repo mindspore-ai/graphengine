@@ -36,7 +36,6 @@
 #include "model/ge_model.h"
 #include "graph/shape_refiner.h"
 #include "graph/opsproto_manager.h"
-#include "graph/utils/type_utils.h"
 
 using std::string;
 using namespace std;
@@ -50,6 +49,8 @@ const std::string IR_OPTION_LOG_LEVEL_DEFAULT = "default";
 const std::string IR_OPTION_BUFFER_OPTIMIZE_DEFAULT = "l2_optimize";
 const std::string IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT = "0";
 const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
+const std::string kInputShape = "input_shape";
+const std::string kInputFormat = "input_format";
 }  // namespace
 
 static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
@@ -227,6 +228,7 @@ class Impl {
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
   graphStatus CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs);
   graphStatus GetDefaultInputShape(const Graph &graph, string &default_shape);
+  graphStatus UpdateDataOpAttr(const Graph &graph);
   graphStatus Init(const Graph &graph, const std::map<std::string, std::string> &options);
   graphStatus BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                          ModelBufferData &ge_models);
@@ -241,6 +243,40 @@ class Impl {
   bool is_dynamic_input_ = false;
   OmgContext omg_context_;
 };
+
+graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
+  GELOGD("Enter Update Data Attr Process!");
+  if (options_.find(kInputShape) == options_.end()) {
+    return GRAPH_SUCCESS;
+  }
+  unordered_map<string, vector<int64_t>> shape_map;
+  vector<pair<string, vector<int64_t>>> user_shape_map;
+  GE_CHK_BOOL_EXEC(ParseInputShape(options_[kInputShape], shape_map, user_shape_map, true),
+    return GRAPH_PARAM_INVALID, "parse input shape failed!");
+  auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    ge::OpDescPtr op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      auto tensor_input = op->MutableInputDesc(0);
+      auto tensor_output = op->MutableOutputDesc(0);
+      GE_CHECK_NOTNULL(tensor_input);
+      GE_CHECK_NOTNULL(tensor_output);
+      string data_op_name = op->GetName();
+      auto iter = shape_map.find(data_op_name);
+      if (iter != shape_map.end()) {
+        tensor_input->SetShape(ge::GeShape(iter->second));
+        tensor_output->SetShape(ge::GeShape(iter->second));
+        GELOGD("update input [%s] shape info", data_op_name.c_str());
+      } else {
+        GELOGI("no need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
+      }
+    }
+  }
+  return GRAPH_SUCCESS;
+}
 
 graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options) {
   for (auto &ele : options) {
@@ -276,6 +312,11 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
       GELOGE(GRAPH_PARAM_INVALID, "Build mode tuning must specify build step. Please check!");
       return GRAPH_PARAM_INVALID;
     }
+  }
+  // Check option EXEC_DISABLE_REUSED_MEMORY
+  it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
+  if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
+    return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;
 }
@@ -323,7 +364,10 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
     GELOGE(ret, "User input options are illegal! Please check!");
     return ret;
   }
-
+  ret = UpdateDataOpAttr(graph);
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
                            ? "" : options_[BUILD_MODE];
   options_[BUILD_MODE] = build_mode;

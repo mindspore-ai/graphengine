@@ -103,7 +103,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
       return INTERNAL_ERROR;
     }
     is_execute_profiling_ = true;
-    GELOGI("The profiling in options is %s, %s", options.profiling_mode.c_str(), prof_conf.options);
+    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(),
+          prof_conf.options, options.profiling_options.c_str());
   } else {
     (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
     (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);

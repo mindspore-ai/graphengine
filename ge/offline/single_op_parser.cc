@@ -27,6 +27,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/utils/type_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/operator_factory_impl.h"
 

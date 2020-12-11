@@ -2466,7 +2466,6 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
     GetContext().SetSessionId(session_id);
     GetThreadLocalContext() = ge_context;
     graph_manager->UpdateLocalOmgContext(root_graph_id);
-
     ComputeGraphPtr compute_graph_tmp = sub_graph_info_ptr->GetSubGraph();
     const std::string &engine_name = sub_graph_info_ptr->GetEngineName();
     GELOGD("ProcessSubGraphWithMultiThreads start, graph name is %s, engine_name is %s, thread id is %lu",
@@ -2474,6 +2473,10 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
            pthread_self());
     GE_DUMP(compute_graph_tmp, "OptimizeSubGraphBefore");
     GE_CHECK_NOTNULL(compute_graph_tmp);
+    if (!AttrUtils::SetInt(*compute_graph_tmp, ATTR_NAME_ROOT_GRAPH_ID, root_graph_id)) {
+      GELOGE(FAILED, "Failed to set attr ATTR_NAME_ROOT_GRAPH_ID for subgraph, graph_id: %u.", root_graph_id);
+      return FAILED;
+    }
     compute_graph_tmp->SetSessionID(session_id);
     Status ret = graph_manager->GetCompilerStages(root_graph_id).optimizer.OptimizeSubGraph(compute_graph_tmp,
                                                                                             compute_graph,

@@ -146,7 +146,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   }
 
   if (is_train_mode_ || (options_.device_id != kDefaultDeviceIdForInfer)) {
-    GE_CHK_RT_RET(rtSetDevice(options.device_id));
+    GE_CHK_RT_RET(rtSetDevice(options_.device_id));
   }
 
   GELOGI("sessionManager initial.");

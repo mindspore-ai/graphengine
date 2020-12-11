@@ -1797,12 +1797,12 @@ Status GraphPrepare::PrepareOptimize() {
 }
 
 void GraphPrepare::TypeConversionOfConstant() {
-  bool is_acl_comlpile = false;
+  bool is_acl_compile = false;
   for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {
     // This can ensure that n is not a null pointer
     // No Conversion when called by aclOpCompile
-    (void)AttrUtils::GetBool(n->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, is_acl_comlpile));
-    if (is_acl_comlpile) {
+    (void)AttrUtils::GetBool(n->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, is_acl_compile));
+    if (is_acl_compile) {
       return;
     }
   }

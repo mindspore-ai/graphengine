@@ -710,4 +710,52 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
   return GRAPH_SUCCESS;
 }
 
+graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<TensorDesc> &inputs,
+                                 const vector<TensorDesc> &outputs, Graph &graph) {
+  auto op_type_str = std::string(op_type.GetString());
+  auto op_name = op_type_str + "_" + std::to_string(ge::GetCurrentTimestamp());
+  auto op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type_str);
+  GE_CHECK_NOTNULL(op_desc);
+
+  // convert input tensordesc to getensor
+  std::vector<ge::GeTensor> input_tensors;
+  for (const auto &input : inputs) {
+    ge::GeTensorDesc tensor_desc(ge::GeShape(input.GetShape().GetDims()), input.GetFormat(), input.GetDataType());
+
+    tensor_desc.SetOriginFormat(input.GetFormat());
+    ge::TensorUtils::SetRealDimCnt(tensor_desc, static_cast<uint32_t>(input.GetShape().GetDims().size()));
+    ge::TensorUtils::SetInputTensor(tensor_desc, true);
+    ge::TensorUtils::SetOutputTensor(tensor_desc, false);
+
+    if (op_desc->AddInputDesc(tensor_desc) != ge::GRAPH_SUCCESS) {
+      GELOGE(ge::FAILED, "AddInputDesc fail.");
+      return ge::FAILED;
+    }
+    input_tensors.emplace_back(tensor_desc);
+  }
+
+  // convert output tensordesc to getensor
+  std::vector<ge::GeTensor> output_tensors;
+  for (const auto &output : outputs) {
+    ge::GeTensorDesc tensor_desc(ge::GeShape(output.GetShape().GetDims()), output.GetFormat(), output.GetDataType());
+
+    tensor_desc.SetOriginFormat(output.GetFormat());
+    ge::TensorUtils::SetRealDimCnt(tensor_desc, static_cast<uint32_t>(output.GetShape().GetDims().size()));
+    ge::TensorUtils::SetInputTensor(tensor_desc, false);
+    ge::TensorUtils::SetOutputTensor(tensor_desc, true);
+
+    (void)op_desc->AddOutputDesc(tensor_desc);
+    output_tensors.emplace_back(tensor_desc);
+  }
+
+  // call api to get graph
+  ge::GeGenerator generator;
+  std::string graph_name = ge::CurrentTimeInStr() + "_graph";
+  if (generator.BuildSingleOpGraph(op_desc, input_tensors, output_tensors, graph_name, graph) != ge::SUCCESS) {
+    GELOGE(GRAPH_FAILED, "make graph fail.");
+    return GRAPH_FAILED;
+  }
+  return GRAPH_SUCCESS;
+}
+
 }  // namespace ge

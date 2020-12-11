@@ -60,7 +60,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   subscribe_count_ = 0;
   GELOGI("ProfilingManager::Init  job_id:%s", options.job_id.c_str());
 
-  struct MsprofGeOptions prof_conf = { 0 };
+  struct MsprofGeOptions prof_conf = {{ 0 }};
   Status ret = InitFromOptions(options, prof_conf);
   if (ret != SUCCESS) {
     GELOGE(ret, "Failed to init profiling.");
@@ -108,8 +108,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
     (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);
     // The env is invalid
-    if ((env_profiling_mode == nullptr) || (strcmp("true", env_profiling_mode) != 0)
-      || (strcmp(prof_conf.options, "\0") == 0)) {
+    if ((strcmp("true", env_profiling_mode) != 0) || (strcmp(prof_conf.options, "\0") == 0)) {
       return SUCCESS;
     }
     // enable profiling by env

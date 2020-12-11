@@ -1801,11 +1801,9 @@ void GraphPrepare::TypeConversionOfConstant() {
   for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {
     // This can ensure that n is not a null pointer
     // No Conversion when called by aclOpCompile
-    if (n->GetOpDesc()->GetType() == CONSTANT) {
-      (void)AttrUtils::GetBool(n->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, is_acl_comlpile));
-      if ( is_acl_comlpile) {
-        return;
-      }
+    (void)AttrUtils::GetBool(n->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, is_acl_comlpile));
+    if (is_acl_comlpile) {
+      return;
     }
   }
 

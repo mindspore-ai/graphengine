@@ -157,7 +157,7 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
 
   string op_type;
   bool is_const = false;
-  (void)AttrUtils::GetBool(tensor, CONST_ATTR_NAME_INPUT, in_const);
+  (void)AttrUtils::GetBool(tensor, CONST_ATTR_NAME_INPUT, is_const);
   if (is_const) {
     GELOGD("Get input[%d] is const", index);
     op_type = CONSTANTOP;
@@ -172,11 +172,11 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
   }
   if (is_const) {
     ConstGeTensorPtr tensor_value;
-    if(!AttrUtils::GetTensor(tensor, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
+    if (!AttrUtils::GetTensor(tensor, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
       GELOGE(FAILED, "Get value failed, node name:%s.", tensor.GetName().c_str());
       return FAILED;
     }
-    if(!AttrUtils::SetTensor(data_op, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
+    if (!AttrUtils::SetTensor(data_op, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
       GELOGE(FAILED, "Set attr ATTR_NAME_WEIGHTS fail.");
       return FAILED;
     }

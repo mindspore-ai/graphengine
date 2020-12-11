@@ -164,6 +164,7 @@ OMG_HOST_SRC_FILES := \
     host_kernels/slice_d_kernel.cc \
     host_kernels/dynamic_stitch_kernel.cc \
     host_kernels/identity_kernel.cc \
+    host_kernels/reformat_kernel.cc \
     graph/passes/stop_gradient_pass.cc \
     graph/passes/prevent_gradient_pass.cc \
     graph/passes/identity_pass.cc \

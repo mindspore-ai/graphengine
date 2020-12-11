@@ -65,6 +65,7 @@ class MemoryBlock {
         stream_id_(stream_id),
         deleted_block_(false),
         reuse_mem_(reuse_mem),
+        same_stream_(true),
         input_index_(0),
         continuous_block_(false),
         first_continuous_block_(false),
@@ -85,10 +86,14 @@ class MemoryBlock {
     symbol_list_.clear();
   }
 
-  void Init(size_t real_size, OpMemoryType type, const ge::NodePtr &node, uint32_t out_index, size_t no_align_size) {
+  void Init(size_t real_size, OpMemoryType type, const ge::NodePtr &node, uint32_t out_index, size_t no_align_size,
+            int64_t stream_id) {
     real_size_list_.emplace_back(real_size);
     no_align_size_list_.emplace_back(no_align_size);
     node_type_index_list_.emplace_back(node, type, out_index, false);
+    if (stream_id != stream_id_) {
+        same_stream_ = false;
+    }
   }
   size_t Size() const { return block_size_; }
 
@@ -106,6 +111,12 @@ class MemoryBlock {
     node_type_index_list_.emplace_back(node_type_index);
     real_size_list_.emplace_back(real_size);
     no_align_size_list_.emplace_back(no_align_size);
+    if ((node_type_index.node != nullptr) && (node_type_index.node->GetOpDesc() != nullptr)) {
+      auto stream_id = node_type_index.node->GetOpDesc()->GetStreamId();
+      if (stream_id != stream_id_) {
+        same_stream_ = false;
+      }
+    }
   }
 
   void AddSymbol(const std::string &symbol) {
@@ -122,7 +133,7 @@ class MemoryBlock {
 
   std::string String();
 
-  bool IsSameLabel(std::string &first_batch_label);
+  bool IsSameBatchLabel();
 
   void AddContinuousLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life);
 
@@ -142,6 +153,7 @@ class MemoryBlock {
   int64_t stream_id_;
   bool deleted_block_;
   bool reuse_mem_;
+  bool same_stream_;
   uint32_t input_index_;
   bool continuous_block_;
   bool first_continuous_block_;
@@ -149,6 +161,7 @@ class MemoryBlock {
   bool is_zero_copy_;
   std::map<int64_t, size_t> depend_stream_life_;
   int64_t memory_type_;
+  std::string batch_label_;
  private:
   size_t block_size_;
   std::vector<size_t> real_size_list_;
@@ -209,7 +222,7 @@ class BlockMemAssigner : public MemAssigner {
 
   void GetOutAndWorkSpaceMem(std::vector<int64_t> &all_memory_size);
 
-  void GetNodeWorkSpaceSize(const ge::NodePtr &node, std::vector<int64_t> &workspace_memory);
+  void GetNodeWorkSpaceSize(const ge::NodePtr &node, std::vector<int64_t> &workspace_memory, int64_t &total_size);
 
   ///
   /// @ingroup GE
@@ -353,7 +366,7 @@ class BlockMemAssigner : public MemAssigner {
   /// @return void
   /// @author
   ///
-  void ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory);
+  void ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory, bool same_stream = true);
 
   ///
   /// @ingroup GE
@@ -379,11 +392,11 @@ class BlockMemAssigner : public MemAssigner {
 
   ///
   /// @ingroup GE
-  /// @brief Merge memory blocks between different batchs
+  /// @brief Resize memory blocks for each batchs
   /// @return merge or not
   /// @author
   ///
-  bool MergeDynamicBatchBlocks();
+  void ResizeDynamicBatchBlocks();
 
   void AssignContinuousBlocks();
 
@@ -436,6 +449,17 @@ class BlockMemAssigner : public MemAssigner {
 
   int64_t atomic_addr_clean_id_ = 0;
 
+  size_t theory_min_memory_size_ = 0;
+
+  size_t theory_memory_size_ = 0;
+
+  std::string max_batch_label_;
+
+  ///
+  /// @          [stream1][nodeid]
+  /// @[nodeid]  [stream2][nodeid]
+  /// @          [stream2][nodeid]
+  ///
   DependStreamLife total_node_depend_stream_life_;
 };
 }  // namespace ge

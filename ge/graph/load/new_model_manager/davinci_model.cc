@@ -2202,7 +2202,7 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
     void *mem_addr = data.second.GetBasicAddr();
     void *data_buf_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data_buf.data));
     uint64_t data_buf_length = data_buf.length;
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] input[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
+    GELOGI("CopyPlainData memcpy graph_%u type[F] input[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
            runtime_param_.graph_id, data.first, mem_addr, data_buf_addr, data_size, data_buf_length);
     GE_CHK_RT_RET(rtMemcpy(mem_addr, data_size, data_buf_addr, data_buf_length, kind));
   }

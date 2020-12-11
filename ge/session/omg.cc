@@ -644,7 +644,8 @@ Status ParseOutNodes(const string &out_nodes) {
         if (!domi::GetContext().user_out_nodes_top_vec.empty()) {
           ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
                                                           {"--out_nodes", out_nodes, "is not all index or top_name"});
-          GELOGE(PARAM_INVALID, "This out_nodes str must be all index or top_name, while the actual input is %s", out_nodes.c_str());
+          GELOGE(PARAM_INVALID,
+                 "This out_nodes str must be all index or top_name, while the actual input is %s", out_nodes.c_str());
           return PARAM_INVALID;
         }
         // stoi: The method may throw an exception: invalid_argument/out_of_range

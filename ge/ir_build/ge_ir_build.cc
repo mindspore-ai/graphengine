@@ -590,7 +590,7 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
     GELOGE(GRAPH_PARAM_INVALID, "input model is illegal");
     return GRAPH_PARAM_INVALID;
   }
-  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
+  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 
@@ -605,7 +605,7 @@ graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &mod
     return GRAPH_PARAM_INVALID;
   }
   std::string str_output_file = output_file;
-  return FileSaver::SaveToFile((str_output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
+  return FileSaver::SaveToFile((str_output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 

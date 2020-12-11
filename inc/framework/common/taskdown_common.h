@@ -21,7 +21,7 @@
 
 namespace ge {
 
-#define CC_FUSION_OP_MAX 32
+const int CC_FUSION_OP_MAX = 32;
 
 typedef enum tagCcStatus {
   CC_STATUS_SUCCESS = 0,         /**< succ */

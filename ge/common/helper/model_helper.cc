@@ -189,7 +189,8 @@ Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_s
   err = memcpy_s(model_header.platform_version, PLATFORM_VERSION_LEN, platform_version.c_str(),
                  platform_version.size() + 1);
   if (err != EOK) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelHelper SaveModel failed while allocating memory for platform_version.");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "ModelHelper SaveModel failed while allocating memory for platform_version.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   string version = reinterpret_cast<char *>(model_header.platform_version);

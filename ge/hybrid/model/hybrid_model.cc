@@ -176,7 +176,8 @@ Status HybridModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_de
   return SUCCESS;
 }
 
-void HybridModel::SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t,int64_t>> &shape_ranges,
+void HybridModel::SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims,
+                                                 std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
                                                  InputOutputDescInfo &input) {
   for (auto model_input_dim : model_input_dims) {
     input.shape_info.dims.push_back(model_input_dim);
@@ -245,7 +246,8 @@ Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, st
   return SUCCESS;
 }
 
-void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc, InputOutputDescInfo &output_desc_info, uint32_t &format_result) {
+void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc,
+                               InputOutputDescInfo &output_desc_info, uint32_t &format_result) {
   GE_IF_BOOL_EXEC(output_desc == nullptr, GELOGE(FAILED, "output desc ptr is nullptr"); return );
   Format format = output_desc->GetFormat();
   GeShape shape = output_desc->GetShape();
@@ -283,7 +285,8 @@ void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc, InputOutputDes
 
 Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats) {
   std::vector<ConstGeTensorDescPtr> output_desc_list;
-  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list), "get output desc info failed");  // output_desc_list contains vaild input desc
+  // output_desc_list contains vaild input desc
+  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list), "get output desc info failed");
 
   vector<std::string> out_node_names;
   (void)ge::AttrUtils::GetListStr(ge_root_model_->GetRootGraph(), ATTR_MODEL_OUT_NODES_NAME, out_node_names);
@@ -293,7 +296,8 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
   GE_CHECK_NOTNULL(op_desc);
 
   auto out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
-  GE_CHK_BOOL_RET_STATUS(out_size == output_desc_list.size(), FAILED, "output size[%u] not match output_desc_list size[%zu]", out_size, output_desc_list.size());
+  GE_CHK_BOOL_RET_STATUS(out_size == output_desc_list.size(),
+      FAILED, "output size[%u] not match output_desc_list size[%zu]", out_size, output_desc_list.size());
 
   for (uint32_t index = 0; index < out_size; ++index) {
     string output_name;
@@ -301,9 +305,11 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
     std::vector<int64_t> src_index = op_desc->GetSrcIndex();
     if (out_size == out_node_names.size()) {
       bool contains_colon = out_node_names[index].find(":") != std::string::npos;
-      output_name = contains_colon ? out_node_names[index] : out_node_names[index] + ":" + std::to_string(src_index[index]);
+      output_name = contains_colon ? out_node_names[index] : out_node_names[index] +
+          ":" + std::to_string(src_index[index]);
     } else {
-      output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" + std::to_string(src_index[index]);
+      output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] +
+          "_" + std::to_string(src_index[index]);
     }
 
     InputOutputDescInfo output_desc_info;

@@ -83,7 +83,7 @@ const uint32_t kAddrLen = sizeof(void *);
 const int kDecimal = 10;
 const int kBytes = 8;
 const uint32_t kDataMemAlignSizeCompare = 64;
-const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
+const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024; // 2M
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
 const char *const kGetDynamicDimsName = "ascend_mbatch_get_dynamic_dims_node";
@@ -330,8 +330,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
       GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
       return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
     }
-    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-            mem_base_, data_size);
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
+            runtime_param_.graph_id, mem_base_, data_size);
 
     if (!is_inner_weight_base_) {
       weights_mem_base_ = mem_base_;
@@ -1543,7 +1543,8 @@ Status DavinciModel::LoadWithQueue() {
   }
 
   if (output_queue_ids_.size() != new_output_data_info_.size()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Output queue ids not match model: output_queue=%zu output_data=%zu",
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID,
+           "Output queue ids not match model: output_queue=%zu output_data=%zu",
            output_queue_ids_.size(), new_output_data_info_.size());
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
@@ -3391,14 +3392,14 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
 ///
 Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &output_data, bool is_dynamic) {
   if (UpdateIoTaskArgs(new_input_data_info_, true, input_data.blobs, is_dynamic, input_data.batch_label) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "[ZCPY] Update input data to model failed.");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update input data to model failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (UpdateIoTaskArgs(new_output_data_info_, false, output_data.blobs, is_dynamic, input_data.batch_label) !=
       SUCCESS) {
-    GELOGE(PARAM_INVALID, "[ZCPY] Update output data to model failed.");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update output data to model failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   for (ZeroCopyTask &task : zero_copy_tasks_) {
@@ -3861,7 +3862,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   if (!is_async_mode_) {
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_START));
     ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Copy Output data to user failed.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
+        "Copy Output data to user failed.");
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_END));
   }
 
@@ -4061,7 +4063,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
   data_dumper_.SetDeviceId(device_id);
 
   // set loop count addr
-  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void * {
+  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void *{
     if (op != nullptr) {
       auto v_output_size = ModelUtils::GetOutputSize(op);
       auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param, op);

@@ -1416,7 +1416,8 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     bool no_need_assign_memory = ((size == 0) || CheckIsZeroMemNodeType(node->GetType()));
     if (!no_need_assign_memory) {
       out_node_set_continuous_input =
-          IsOutNodeSetContinuousInput(node, i, peer_name, peer_input_index, no_need_assign_memory, reset_zero_copy_flag);
+          IsOutNodeSetContinuousInput(node, i, peer_name, peer_input_index,
+                                      no_need_assign_memory, reset_zero_copy_flag);
       GE_IF_BOOL_EXEC(!no_need_assign_memory,
           no_need_assign_memory = IsAtomicOutputMemory(node, i, is_atomic, out_node_set_continuous_input););
     }
@@ -1499,7 +1500,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
       bool workspace_skip_flag = false;
       if (has_tvm_workspace_mem_type_attr && tvm_workspace_memory_type[i] == RT_MEMORY_L1) {
         GELOGI(
-            "fusion: node[%s]workspace index[%zu] is not hbm type, add to zero_memory_list, workspace memory type [%ld]",
+            "fusion:node[%s]workspace index[%zu] is not hbm type, add to zero_memory_list, workspace memory type [%ld]",
             node_op_desc->GetName().c_str(), i, tvm_workspace_memory_type[i]);
         workspace_skip_flag = true;
       }

@@ -109,7 +109,8 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
 
   auto num_outputs = outputs.size();
   if (num_outputs != output_sizes_.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "output num mismatch. model expect %zu, but given %zu", output_sizes_.size(), outputs.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "output num mismatch. model expect %zu, but given %zu",
+           output_sizes_.size(), outputs.size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -248,12 +249,14 @@ Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
   }
 
   if (input_desc.size() != num_inputs_) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Input number mismatches. expect %zu, but given %zu", num_inputs_, input_desc.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Input number mismatches. expect %zu, but given %zu",
+           num_inputs_, input_desc.size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (output_desc.size() != num_outputs_) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Output number mismatches. expect %zu, but given %zu", num_outputs_, output_desc.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Output number mismatches. expect %zu, but given %zu",
+           num_outputs_, output_desc.size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 

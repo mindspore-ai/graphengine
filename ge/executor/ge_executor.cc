@@ -639,7 +639,8 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = ModelManager::GetInstance()->GetHybridModel(model_id);
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model =
+      ModelManager::GetInstance()->GetHybridModel(model_id);
   if (hybrid_davinci_model != nullptr) {
     uint64_t session_id = hybrid_davinci_model->GetSessionId();
     VarManagerPool::Instance().RemoveVarManager(session_id);

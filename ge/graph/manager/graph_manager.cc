@@ -549,8 +549,13 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     if (!op_compile_strategy.empty()) {
       (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
     }
-    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
-                                            compute_graph->GetGraphID(), subgraph, compute_graph, session_id, GetThreadLocalContext());
+    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads,
+                                            this,
+                                            compute_graph->GetGraphID(),
+                                            subgraph,
+                                            compute_graph,
+                                            session_id,
+                                            GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
       return FAILED;

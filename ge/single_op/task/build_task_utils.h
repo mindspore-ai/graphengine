@@ -27,15 +27,17 @@
 namespace ge {
 class BuildTaskUtils {
  public:
+  static constexpr int kAddressIndexOutput = 1;
   static constexpr int kAddressIndexWorkspace = 2;
 
-  static std::vector<std::vector<void *>> GetAddresses(const OpDescPtr &op_desc, const SingleOpModelParam &param);
+  static std::vector<std::vector<void *>> GetAddresses(const OpDescPtr &op_desc,
+                                                       const SingleOpModelParam &param,
+                                                       bool keep_workspace = true);
   static std::vector<void *> JoinAddresses(const std::vector<std::vector<void *>> &addresses);
   static std::vector<void *> GetKernelArgs(const OpDescPtr &op_desc, const SingleOpModelParam &param);
   static std::string GetTaskInfo(const OpDescPtr &op_desc);
   template<typename T>
-  static std::string VectorToString(const std::vector<T> &values)
-  {
+  static std::string VectorToString(const std::vector<T> &values) {
     std::stringstream ss;
     ss << '[';
     auto size = values.size();

@@ -92,7 +92,8 @@ Status SingleOpModel::InitModelMem(StreamResource &res) {
   if (model_params_.memory_size > model_params_.zero_copy_mem_size) {
     const string purpose("malloc feature map memory on model execute.");
     GELOGI("total memory: %lu, zero_copy_mem: %lu", model_params_.memory_size, model_params_.zero_copy_mem_size);
-    model_params_.mem_base = res.MallocMemory(purpose, model_params_.memory_size - model_params_.zero_copy_mem_size);
+    model_params_.mem_base =
+        res.MallocMemory(purpose, model_params_.memory_size - model_params_.zero_copy_mem_size, false);
     if (model_params_.mem_base == nullptr) {
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
@@ -226,9 +227,10 @@ Status SingleOpModel::SetInputsAndOutputs(SingleOp &single_op) {
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
+Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &single_op) {
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
+  single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   for (int i = 0; i < tasks.size(); ++i) {
     const TaskDef &task_def = tasks[i];
@@ -247,9 +249,11 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
           return ret;
         }
 
-        single_op.arg_table_.resize(single_op.input_sizes_.size() + single_op.output_sizes_.size());
         ParseArgTable(tbe_task, single_op);
         tbe_task->SetModelArgs(model_name_, model_id_);
+        if (tbe_task->tiling_buffer_ != nullptr) {
+          tbe_task->stream_resource_ = stream_resource;
+        }
         single_op.tasks_.emplace_back(tbe_task);
       } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
         GELOGD("Building AICPU_CC task");
@@ -261,6 +265,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
           return ret;
         }
         task->SetModelArgs(model_name_, model_id_);
+        ParseArgTable(task, single_op);
         single_op.tasks_.emplace_back(task);
       } else {
         GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
@@ -278,6 +283,7 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
         return ret;
       }
       aicpu_task->SetModelArgs(model_name_, model_id_);
+      ParseArgTable(aicpu_task, single_op);
       single_op.tasks_.emplace_back(aicpu_task);
     } else {
       // skip
@@ -287,21 +293,23 @@ Status SingleOpModel::BuildTaskList(SingleOp &single_op) {
   return SUCCESS;
 }
 
-void SingleOpModel::ParseArgTable(TbeOpTask *task, SingleOp &op) {
+void SingleOpModel::ParseArgTable(OpTask *task, SingleOp &op) {
   if (task == nullptr) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "tbe op task is nullptr");
     return;
   }
+
   // args: addr1, addr2, addr3 ...
-  auto *args = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task->GetArgs()));
-  size_t arg_size = task->GetArgSize();
-  for (size_t i = 0; i < arg_size / sizeof(void *); ++i) {
-    uintptr_t *ptr_to_addr = args + i;
+  uintptr_t *arg_base = nullptr;
+  size_t arg_num = 0;
+  task->GetIoAddr(arg_base, arg_num);
+  for (size_t i = 0; i < arg_num; ++i) {
+    uintptr_t *ptr_to_addr = arg_base + i;
     uintptr_t addr = *ptr_to_addr;
     auto iter = model_params_.addr_mapping_.find(addr);
     if (iter != model_params_.addr_mapping_.end()) {
       int arg_index = iter->second;
-      GELOGI("%s args[%zu] mapped to user designated args[%d]", task->GetStubName().c_str(), i, arg_index);
+      GELOGI("%s args[%zu] mapped to user designated args[%d]", task->GetOpdesc()->GetName().c_str(), i, arg_index);
       op.arg_table_[iter->second].emplace_back(ptr_to_addr);
     }
   }
@@ -386,8 +394,10 @@ Status SingleOpModel::BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTa
 Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
   GE_CHK_STATUS_RET_NOLOG(ParseInputsAndOutputs());
   GE_CHK_STATUS_RET_NOLOG(InitModelMem(resource));
+  single_op.running_param_.reset(new (std::nothrow)SingleOpModelParam(model_params_));
+  GE_CHECK_NOTNULL(single_op.running_param_);
   GE_CHK_STATUS_RET_NOLOG(SetInputsAndOutputs(single_op));
-  return BuildTaskList(single_op);
+  return BuildTaskList(&resource, single_op);
 }
 
 Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingleOp &single_op) {

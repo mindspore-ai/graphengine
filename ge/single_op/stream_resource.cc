@@ -69,9 +69,23 @@ uint8_t *StreamResource::DoMallocMemory(const std::string &purpose,
                                         size_t size,
                                         size_t &max_allocated,
                                         std::vector<uint8_t *> &allocated) {
+  if (size == 0) {
+    GELOGD("Mem size == 0");
+    return nullptr;
+  }
+
   if (size <= max_allocated && !allocated.empty()) {
     GELOGD("reuse last memory");
     return allocated.back();
+  }
+
+  if (!allocated.empty()) {
+    uint8_t *current_buffer = allocated.back();
+    allocated.pop_back();
+    if (rtStreamSynchronize(stream_) != RT_ERROR_NONE) {
+      GELOGW("Failed to invoke rtStreamSynchronize");
+    }
+    (void) rtFree(current_buffer);
   }
 
   uint8_t *buffer = nullptr;
@@ -96,10 +110,14 @@ uint8_t *StreamResource::DoMallocMemory(const std::string &purpose,
   return buffer;
 }
 
-uint8_t *StreamResource::MallocMemory(const std::string &purpose, size_t size) {
+uint8_t *StreamResource::MallocMemory(const std::string &purpose, size_t size, bool holding_lock) {
   GELOGD("To Malloc memory, size = %zu", size);
-  uint8_t *buffer = DoMallocMemory(purpose, size, max_memory_size_, memory_list_);
-  return buffer;
+  if (holding_lock) {
+    return DoMallocMemory(purpose, size, max_memory_size_, memory_list_);
+  } else {
+    std::lock_guard<std::mutex> lk(stream_mu_);
+    return DoMallocMemory(purpose, size, max_memory_size_, memory_list_);
+  }
 }
 
 uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
@@ -158,7 +176,7 @@ Status StreamResource::BuildOperator(const string &model_name, const ModelData &
     return ret;
   }
 
-  auto new_op = std::unique_ptr<SingleOp>(new(std::nothrow) SingleOp(&stream_mu_, stream_));
+  auto new_op = std::unique_ptr<SingleOp>(new(std::nothrow) SingleOp(this, &stream_mu_, stream_));
   if (new_op == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "new SingleOp failed");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
@@ -170,5 +188,13 @@ Status StreamResource::BuildOperator(const string &model_name, const ModelData &
   *single_op = new_op.get();
   op_map_[model_data.model_data] = std::move(new_op);
   return SUCCESS;
+}
+
+const uint8_t *StreamResource::GetMemoryBase() const {
+  if (memory_list_.empty()) {
+    return nullptr;
+  }
+
+  return memory_list_.back();
 }
 }  // namespace ge

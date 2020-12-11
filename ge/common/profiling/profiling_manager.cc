@@ -98,7 +98,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
   if (options.profiling_mode == "1" && !options.profiling_options.empty()) {
     // enable profiling by ge option
     if (memcpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
-                 sizeof(options.profiling_options.c_str())) != EOK) {
+                 options.profiling_options.size()) != EOK) {
       GELOGE(INTERNAL_ERROR, "copy profiling_options failed.");
       return INTERNAL_ERROR;
     }

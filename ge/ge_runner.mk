@@ -170,6 +170,7 @@ LIBGE_LOCAL_SRC_FILES := \
     host_kernels/sub_kernel.cc \
     host_kernels/transdata_kernel.cc \
     host_kernels/unpack_kernel.cc \
+    host_kernels/reformat_kernel.cc \
     graph/passes/folding_pass.cc \
     graph/passes/get_original_format_pass.cc \
     graph/passes/guarantee_const_pass.cc \

@@ -162,10 +162,10 @@ build_graphengine()
   TARGET=${COMMON_TARGET}
   if [ "x${PLATFORM}" = "xtrain" ]
   then
-    TARGET="ge_runner ge_local_engine host_cpu_engine ${TARGET}"
+    TARGET="ge_runner ge_local_engine host_cpu_engine ge_compiler atc_ge_local_engine atc_host_cpu_engine atc ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    TARGET="ge_compiler atc_ge_local_engine atc_host_cpu_engine atc opensrc_ascendcl ${TARGET}"
+    TARGET="opensrc_ascendcl ${TARGET}"
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
@@ -301,10 +301,10 @@ generate_package()
   
   if [ "x${PLATFORM}" = "xtrain" ]
   then
-    tar -cf graphengine_lib.tar fwkacllib
+    tar -cf graphengine_lib.tar fwkacllib atc
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    tar -cf graphengine_lib.tar acllib atc
+    tar -cf graphengine_lib.tar acllib 
   elif [ "x${PLATFORM}" = "xall" ]
   then
     tar -cf graphengine_lib.tar fwkacllib acllib atc

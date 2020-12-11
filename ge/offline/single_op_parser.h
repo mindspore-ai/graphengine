@@ -28,6 +28,10 @@
 
 namespace ge {
 struct SingleOpTensorDesc {
+public:
+  bool GetValidFlag() const { return is_valid_; }
+  void SetValidFlag(bool is_valid) { is_valid_ = is_valid; }
+public:
   std::string name;
   std::vector<int64_t> dims;
   std::vector<int64_t> ori_dims;
@@ -36,6 +40,8 @@ struct SingleOpTensorDesc {
   ge::Format ori_format = ge::FORMAT_RESERVED;
   ge::DataType type = ge::DT_UNDEFINED;
   std::string dynamic_input_name;
+private:
+  bool is_valid_ = true;
 };
 
 struct SingleOpAttr {

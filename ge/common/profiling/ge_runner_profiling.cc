@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef INC_FRAMEWORK_COMMON_GE_PROFILING_CB_H_
-#define INC_FRAMEWORK_COMMON_GE_PROFILING_CB_H_
+#include "common/profiling/ge_runner_profiling.h"
+#include "init/gelib.h"
 
-#include "profiling/ge_profiling.h"
-
-bool IsInitialize();
-
-#endif  // INC_FRAMEWORK_COMMON_GE_PROFILING_CB_H_
+bool IsInitialize() {
+  std::shared_ptr<ge::GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || instance_ptr->InitFlag() == false) {
+    return false;
+  }
+  return true;
+}

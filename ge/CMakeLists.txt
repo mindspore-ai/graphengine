@@ -61,7 +61,7 @@ set(TRAIN_SRC_LIST
     "common/dump/dump_properties.cc"
     "common/dump/dump_op.cc"
     "common/profiling/ge_profiling.cc"
-    "common/profiling/ge_profiling_cb.cc"
+    "common/profiling/ge_runner_profiling.cc"
     "engine_manager/dnnengine_manager.cc"
     "ge_local_engine/engine/host_cpu_engine.cc"
     "generator/ge_generator.cc"

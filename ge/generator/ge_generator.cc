@@ -584,40 +584,11 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   // 2. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
-  ge::ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(name);
-  GE_CHECK_NOTNULL_EXEC(compute_graph, return INTERNAL_ERROR);
-
-  // 3. Add Node to ComputeGraph.
-  NodePtr op_node = compute_graph->AddNode(op_desc);
-  GE_CHECK_NOTNULL_EXEC(op_node, return INTERNAL_ERROR);
-
-  // 4. Create InputData node.
-  int32_t arg_index = 0;
-  if (inputs.empty()) {
-    for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
-      GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
-      if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
-        continue;
-      }
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
-      arg_index++;
-    }
-  } else {
-    for (const auto &in_desc : inputs) {
-      GeTensorDesc input_desc = in_desc.GetTensorDesc();
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
-      arg_index++;
-    }
+  Graph graph;
+  if (BuildSingleOpGraph(op_desc, inputs, outputs, name, graph) != ge::SUCCESS) {
+    GELOGE(GRAPH_FAILED, "make graph fail.");
+    return GRAPH_FAILED;
   }
-
-  // 5. Create Output node.
-  if (!outputs.empty()) {
-    GE_CHK_STATUS_RET_NOLOG(AddOutputs(compute_graph, op_node, outputs));
-  }
-
-  // dump ComputeGraph.
-  compute_graph->Dump();
-  Graph graph = ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
@@ -671,6 +642,46 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
                                        ModelBufferData &model_buff) {
   GELOGI("Start to build single op online");
   return BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
+}
+
+Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
+                                       const vector<GeTensor> &outputs, std::string graph_name, Graph &graph) {
+  ge::ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(graph_name);
+  GE_CHECK_NOTNULL_EXEC(compute_graph, return INTERNAL_ERROR);
+
+  // 1. Add Node to ComputeGraph.
+  NodePtr op_node = compute_graph->AddNode(op_desc);
+  GE_CHECK_NOTNULL_EXEC(op_node, return INTERNAL_ERROR);
+
+  // 2. Create InputData node.
+  int32_t arg_index = 0;
+  if (inputs.empty()) {
+    for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
+      GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
+      if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
+        continue;
+      }
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
+      arg_index++;
+    }
+  } else {
+    for (const auto &in_desc : inputs) {
+      GeTensorDesc input_desc = in_desc.GetTensorDesc();
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
+      arg_index++;
+    }
+  }
+
+  // 3. Create Output node.
+  if (!outputs.empty()) {
+    GE_CHK_STATUS_RET_NOLOG(AddOutputs(compute_graph, op_node, outputs));
+  }
+
+  // dump ComputeGraph node.
+  compute_graph->Dump();
+  graph = ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+
+  return SUCCESS;
 }
 
 Status GeGenerator::Impl::SaveParams(GeModelPtr &ge_model, const string &type, const map<string, GeAttrValue> &attrs,

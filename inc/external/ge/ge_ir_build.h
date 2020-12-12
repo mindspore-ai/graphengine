@@ -121,5 +121,20 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph);
  * @retval OtherValues Failure
  */
 graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
+
+/**
+ * @ingroup AscendCL
+ * @brief create single op graph
+ *
+ * @param op_type[IN] the op_type
+ * @param inputs[IN] the inputdesc
+ * @param outputs[IN] the outputdesc
+ * @param graph[OUT] the graph
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+graphStatus aclgrphGenerateForOp(const AscendString &op_type, const std::vector<TensorDesc> &inputs,
+                                 const std::vector<TensorDesc> &outputs, Graph &graph);
+
 };      // namespace ge
 #endif  // INC_EXTERNAL_GE_IR_BUILD_H_

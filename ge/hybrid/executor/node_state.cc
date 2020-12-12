@@ -122,7 +122,7 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
     GE_CHECK_NOTNULL(input_desc);
     int64_t tensor_size = -1;
     (void) TensorUtils::GetSize(*src_tensor_desc, tensor_size);
-    GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s]",
+    GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s], index = %zu",
            node_item.NodeName().c_str(),
            idx,
            src_tensor_desc->GetShape().ToString().c_str(),

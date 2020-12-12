@@ -127,12 +127,7 @@ Status NodeItem::Create(const NodePtr &node, std::unique_ptr<NodeItem> &node_ite
   return SUCCESS;
 }
 
-Status NodeItem::Init() {
-  GE_CHECK_LE(op_desc->GetInputsSize(), INT32_MAX);
-  GE_CHECK_LE(op_desc->GetOutputsSize(), INT32_MAX);
-  num_inputs = static_cast<int>(op_desc->GetInputsSize());
-  num_outputs = static_cast<int>(op_desc->GetOutputsSize());
-
+void NodeItem::ResolveOptionalInputs() {
   if (op_desc->GetAllInputsSize() != op_desc->GetInputsSize()) {
     has_optional_inputs = true;
     for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
@@ -144,7 +139,18 @@ Status NodeItem::Init() {
       }
     }
   }
+}
 
+Status NodeItem::InitInputsAndOutputs() {
+  GE_CHECK_LE(op_desc->GetInputsSize(), INT32_MAX);
+  GE_CHECK_LE(op_desc->GetOutputsSize(), INT32_MAX);
+  num_inputs = static_cast<int>(op_desc->GetInputsSize());
+  num_outputs = static_cast<int>(op_desc->GetOutputsSize());
+  ResolveOptionalInputs();
+  return SUCCESS;
+}
+
+Status NodeItem::ResolveDynamicState() {
   (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
   GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
   if (!is_dynamic) {
@@ -152,42 +158,54 @@ Status NodeItem::Init() {
                       "[%s] Failed to get shape status.",
                       node->GetName().c_str());
   }
+  return SUCCESS;
+}
 
-  if (is_dynamic) {
-    for (int i = 0; i < num_inputs; ++i) {
-      const auto &input_desc = MutableInputDesc(i);
-      GE_CHECK_NOTNULL(input_desc);
-      if (input_desc->MutableShape().IsUnknownShape()) {
-        is_input_shape_static_.push_back(false);
-      } else {
-        num_static_input_shapes++;
-        is_input_shape_static_.push_back(true);
-        GELOGD("[%s] The shape of input[%d] is static. shape = [%s]",
-               NodeName().c_str(), i, input_desc->MutableShape().ToString().c_str());
-      }
-    }
-
-    for (int i = 0; i < num_outputs; ++i) {
-      const auto &output_desc = op_desc->MutableOutputDesc(i);
-      GE_CHECK_NOTNULL(output_desc);
-      if (output_desc->MutableShape().IsUnknownShape()) {
-        is_output_shape_static = false;
-        break;
-      }
-    }
-
-    if (is_output_shape_static) {
-      GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(*this));
-    }
-
-    if (IsControlOp() || node_type == PARTITIONEDCALL) {
-      shape_inference_type = DEPEND_COMPUTE;
+Status NodeItem::ResolveStaticInputsAndOutputs() {
+  for (int i = 0; i < num_inputs; ++i) {
+    const auto &input_desc = MutableInputDesc(i);
+    GE_CHECK_NOTNULL(input_desc);
+    if (input_desc->MutableShape().IsUnknownShape()) {
+      is_input_shape_static_.push_back(false);
     } else {
-      int32_t unknown_shape_type_val = 0;
-      (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
-      shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+      num_static_input_shapes++;
+      is_input_shape_static_.push_back(true);
+      GELOGD("[%s] The shape of input[%d] is static. shape = [%s]",
+             NodeName().c_str(), i, input_desc->MutableShape().ToString().c_str());
     }
+  }
 
+  for (int i = 0; i < num_outputs; ++i) {
+    const auto &output_desc = op_desc->MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(output_desc);
+    if (output_desc->MutableShape().IsUnknownShape()) {
+      is_output_shape_static = false;
+      break;
+    }
+  }
+
+  if (is_output_shape_static) {
+    GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(*this));
+  }
+  return SUCCESS;
+}
+
+void NodeItem::ResolveUnknownShapeType() {
+  if (IsControlOp() || node_type == PARTITIONEDCALL) {
+    shape_inference_type = DEPEND_COMPUTE;
+  } else {
+    int32_t unknown_shape_type_val = 0;
+    (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+    shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+  }
+}
+
+Status NodeItem::Init() {
+  GE_CHK_STATUS_RET_NOLOG(InitInputsAndOutputs());
+  GE_CHK_STATUS_RET_NOLOG(ResolveDynamicState());
+  if (is_dynamic) {
+    ResolveUnknownShapeType();
+    GE_CHK_STATUS_RET_NOLOG(ResolveStaticInputsAndOutputs());
     GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   }
 

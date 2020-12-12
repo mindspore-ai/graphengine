@@ -37,6 +37,8 @@ class ShapeInferenceEngine {
   static Status CalcOutputTensorSizes(const NodeItem &node_item, bool fallback_with_range = false);
 
  private:
+  static Status CanonicalizeShape(GeTensorDesc &tensor_desc, std::vector<int64_t> &shape, bool fallback_with_range);
+  static Status CalcTensorSize(DataType data_type, const std::vector<int64_t> &shape, int64_t &tensor_size);
   static Status UpdatePeerNodeShape(const Node &node);
   Status AwaitDependentNodes(NodeState &node_state);
 

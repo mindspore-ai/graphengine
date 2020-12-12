@@ -71,7 +71,7 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
     std::lock_guard<std::mutex> lk(mu_);
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndTypeForRunning(node_item.node, true),
-        "Invoke InferShapeAndType failed.");
+                      "Invoke InferShapeAndType failed.");
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] End");
   }
 
@@ -229,66 +229,87 @@ Status ShapeInferenceEngine::UpdatePeerNodeShape(const Node &node) {
   return SUCCESS;
 }
 
+Status ShapeInferenceEngine::CanonicalizeShape(GeTensorDesc &tensor_desc,
+                                               std::vector<int64_t> &shape,
+                                               bool fallback_with_range) {
+  const auto &tensor_shape = tensor_desc.MutableShape();
+  if (tensor_shape.IsUnknownShape()) {
+    if (!fallback_with_range) {
+      GELOGE(INTERNAL_ERROR, "Output shape is still unknown after shape inference. shape = [%s]",
+             tensor_shape.ToString().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    GELOGD("Calc output size by range");
+    std::vector<std::pair<int64_t, int64_t>> shape_range;
+    GE_CHK_GRAPH_STATUS_RET(tensor_desc.GetShapeRange(shape_range), "Failed to get shape range");
+    if (shape_range.size() != shape.size()) {
+      GELOGE(INTERNAL_ERROR, "Number of shape ranges (%zu) mismatches that of dims (%zu)",
+             shape_range.size(),
+             shape.size());
+      return INTERNAL_ERROR;
+    }
+
+    for (size_t dim_index = 0; dim_index < shape.size(); ++dim_index) {
+      if (shape[dim_index] == ge::UNKNOWN_DIM) {
+        shape[dim_index] = shape_range[dim_index].second;
+      }
+    }
+
+    GELOGD("After canonicalization, shape = [%s], before = [%s]",
+           GeShape(shape).ToString().c_str(),
+           tensor_shape.ToString().c_str());
+  }
+
+  return SUCCESS;
+}
+
+Status ShapeInferenceEngine::CalcTensorSize(DataType data_type,
+                                            const std::vector<int64_t> &shape,
+                                            int64_t &tensor_size) {
+  GELOGD("To calc tensor size by shape = [%s]", GeShape(shape).ToString().c_str());
+  uint32_t type_size;
+  if (!TypeUtils::GetDataTypeLength(data_type, type_size)) {
+    GELOGE(INTERNAL_ERROR, "Failed to get data type size");
+    return INTERNAL_ERROR;
+  }
+
+  tensor_size = type_size;
+  for (const auto &dim : shape) {
+    GE_CHECK_GE(dim, 0);
+    GE_CHK_STATUS_RET(Int64MulCheckOverflow(tensor_size, dim),
+                      "Shape size overflow, shape = [%s]",
+                      GeShape(shape).ToString().c_str());
+    tensor_size *= dim;
+  }
+
+  GE_CHK_STATUS_RET(CheckInt64AddOverflow(tensor_size, kAlignment - 1),
+                    "Tensor size is too large: %ld, shape = [%s]",
+                    tensor_size,
+                    GeShape(shape).ToString().c_str());
+  tensor_size = (tensor_size + kAlignment - 1) / kAlignment * kAlignment;
+  return SUCCESS;
+}
+
 Status ShapeInferenceEngine::CalcOutputTensorSizes(const NodeItem &node_item, bool fallback_with_range) {
   auto op_desc = node_item.GetOpDesc();
   for (size_t output_index = 0; output_index < op_desc->GetOutputsSize(); ++output_index) {
     auto tensor_desc = op_desc->MutableOutputDesc(output_index);
     GE_CHECK_NOTNULL(tensor_desc);
     const auto &shape = tensor_desc->MutableShape();
+    // modify on copy
     auto dims = shape.GetDims();
-    auto dim_num = dims.size();
-    if (shape.IsUnknownShape()) {
-      if (!fallback_with_range) {
-        GELOGE(INTERNAL_ERROR, "[%s] Shape of output[%zu] is still unknown after shape inference. shape = [%s]",
-               node_item.NodeName().c_str(),
-               output_index,
-               shape.ToString().c_str());
-        return INTERNAL_ERROR;
-      }
-
-      GELOGD("[%s] Calc output[%zu] size by range", node_item.NodeName().c_str(), output_index);
-      std::vector<std::pair<int64_t, int64_t>> shape_range;
-      GE_CHK_GRAPH_STATUS_RET(tensor_desc->GetShapeRange(shape_range),
-                              "[$s] Failed to get shape range for output: %zu",
-                              node_item.NodeName().c_str(),
-                              output_index);
-      if (shape_range.size() != dim_num) {
-        GELOGE(INTERNAL_ERROR, "[%s] Number of shape ranges (%zu) mismatches that of dims (%zu), index = %zu",
-               node_item.NodeName().c_str(),
-               shape_range.size(),
-               dim_num,
-               output_index);
-        return INTERNAL_ERROR;
-      }
-
-      for (size_t dim_index = 0; dim_index < dim_num; ++dim_index) {
-        if (dims[dim_index] == ge::UNKNOWN_DIM) {
-          dims[dim_index] = shape_range[dim_index].second;
-        }
-      }
-    }
-
-    uint32_t type_size = 0;
-    if (!TypeUtils::GetDataTypeLength(tensor_desc->GetDataType(), type_size)) {
-      GELOGE(INTERNAL_ERROR, "Failed to get data type size");
-      return INTERNAL_ERROR;
-    }
-    int64_t tensor_size = type_size;
-    for (const auto &dim : dims) {
-      GE_CHECK_GE(dim, 0);
-      GE_CHK_STATUS_RET(Int64MulCheckOverflow(tensor_size, dim),
-                        "[%s] Shape size overflow, shape = [%s]",
-                        node_item.NodeName().c_str(),
-                        shape.ToString().c_str());
-      tensor_size *= dim;
-    }
-
-    GE_CHK_STATUS_RET(CheckInt64AddOverflow(tensor_size, kAlignment - 1),
-                      "[%s] Output[%zu] Tensor size too large, shape = [%s]",
+    GE_CHK_STATUS_RET(CanonicalizeShape(*tensor_desc, dims, fallback_with_range),
+                      "[%s] Failed to canonicalize shape for output %zu",
                       node_item.NodeName().c_str(),
-                      output_index,
-                      shape.ToString().c_str());
-    tensor_size = (tensor_size + kAlignment - 1) / kAlignment * kAlignment;
+                      output_index);
+
+    int64_t tensor_size;
+    GE_CHK_STATUS_RET(CalcTensorSize(tensor_desc->GetDataType(), dims, tensor_size),
+                      "[%s] Failed to calc tensor size for output %zu",
+                      node_item.NodeName().c_str(),
+                      output_index);
+    GELOGD("[%s] Tensor size of output %zu = %ld", node_item.NodeName().c_str(), output_index, tensor_size);
     (void) TensorUtils::SetSize(*tensor_desc, tensor_size);
   }
 

@@ -533,9 +533,8 @@ Status GraphManager::CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_gr
   return SUCCESS;
 }
 
-Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph,
-                                                      Graph2SubGraphInfoList &sub_graph_map,
-                                                      uint64_t session_id) {
+Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph, 
+                                                      Graph2SubGraphInfoList &sub_graph_map, uint64_t session_id) {
   GE_CHECK_NOTNULL(compute_graph);
   // use default 16 multi thread
   const uint32_t thread_num = 16;
@@ -549,12 +548,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     if (!op_compile_strategy.empty()) {
       (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
     }
-    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads,
-                                            this,
-                                            compute_graph->GetGraphID(),
-                                            subgraph,
-                                            compute_graph,
-                                            session_id,
+    std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
+                                            compute_graph->GetGraphID(), subgraph, compute_graph, session_id,
                                             GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
@@ -562,7 +557,6 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     }
     vector_future.emplace_back(std::move(f));
   }
-
   for (auto &function_graph : compute_graph->GetAllSubgraphs()) {
     auto subgraph_list = sub_graph_map[function_graph];
     for (const auto &subgraph : subgraph_list) {

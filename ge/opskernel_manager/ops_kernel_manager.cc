@@ -176,7 +176,7 @@ Status OpsKernelManager::ParsePluginOptions(const map<string, string> &options, 
         enable_flag = true;
       } else {
         GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:%s, its value %s is invalid, it must be 0 or 1.",
-                plugin_name.c_str(), iter->second.c_str());
+               plugin_name.c_str(), iter->second.c_str());
         return GE_GRAPH_OPTIONS_INVALID;
       }
     } catch (std::invalid_argument &) {

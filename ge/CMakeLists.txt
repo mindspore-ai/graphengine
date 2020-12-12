@@ -779,7 +779,7 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      register_static
                      error_manager_static
                      adump_server
-                     msprofiler_fwk
+                     msprofiler
                      -Wl,--no-whole-archive
                      -Wl,--no-as-needed
                      c_sec

@@ -68,9 +68,9 @@ LOCAL_SHARED_LIBRARIES := \
     libgraph \
     libregister \
     libge_compiler \
-    libge_common \
-    libmsprof
+    libge_common
 
+LOCAL_STATIC_LIBRARIES += libmsprofiler_fwk \
 
 
 LOCAL_LDFLAGS := -lrt -ldl
@@ -103,8 +103,10 @@ LOCAL_SHARED_LIBRARIES := \
     libregister \
     libruntime \
     libge_compiler \
-    libge_common \
-    libmsprof
+    libge_common
+
+
+LOCAL_STATIC_LIBRARIES += libmsprofiler_fwk \
 
 
 LOCAL_LDFLAGS := -lrt -ldl

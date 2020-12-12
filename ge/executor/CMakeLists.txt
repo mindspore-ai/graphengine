@@ -245,7 +245,6 @@ target_link_libraries(ge_executor_shared PRIVATE
     mmpa
     graph
     register
-    msprof
     error_manager
     ascend_hal_stub
     ascend_protobuf

@@ -178,7 +178,6 @@ local_ge_executor_shared_library :=        \
     libmmpa                                \
     libgraph                               \
     libregister                            \
-    libmsprof                              \
     liberror_manager                       \
 
 local_ge_executor_ldflags := -lrt -ldl     \
@@ -235,7 +234,6 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libmmpa                                \
     libgraph                               \
     libregister                            \
-    libmsprof                              \
     liberror_manager                       \
     stub/libascend_hal                     \
 
@@ -273,7 +271,6 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libruntime                             \
     libslog                                \
     libmmpa                                \
-    libmsprof                              \
 
 LOCAL_LDFLAGS += $(local_ge_executor_ldflags)
 
@@ -305,7 +302,6 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libruntime                             \
     libslog                                \
     libmmpa                                \
-    libmsprof                              \
 
 ifeq ($(device_os),android)
 LOCAL_LDFLAGS += -ldl

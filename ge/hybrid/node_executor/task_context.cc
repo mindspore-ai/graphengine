@@ -392,13 +392,13 @@ void TaskContext::ReleaseInputsAndOutputs() {
   for (int i = 0; i < node_item_->num_inputs; ++i) {
     auto tensor = inputs_start_ + i;
     tensor->Destroy();
-    GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), index);
+    GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), i);
   }
 
   for (int i = 0; i < node_item_->num_outputs; ++i) {
     auto tensor = outputs_start_ + i;
     tensor->Destroy();
-    GELOGD("[%s] Tensor of output[%d] released", GetNodeName(), index);
+    GELOGD("[%s] Tensor of output[%d] released", GetNodeName(), i);
   }
 }
 

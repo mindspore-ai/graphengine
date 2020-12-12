@@ -35,6 +35,7 @@ class ShapeFuture {
   ShapeFuture(NodePtr src_node, uint32_t src_index, SubgraphContext *subgraph_context);
   ~ShapeFuture() = default;
   Status Get(GeShape &ori_shape, GeShape &shape);
+  GeTensorDescPtr GetTensorDesc();
 
  private:
   NodePtr src_node_;
@@ -45,7 +46,7 @@ class ShapeFuture {
 struct ShapeInferenceState {
   explicit ShapeInferenceState(const NodeItem &node_item);
 
-  Status UpdateInputShape(int idx, const GeShape &ori_shape, const GeShape &shape);
+  Status UpdateInputShape(int idx, const GeTensorDesc &tensor_desc);
 
   void UpdateInputShapeFuture(int idx, ShapeFuture &&future);
 

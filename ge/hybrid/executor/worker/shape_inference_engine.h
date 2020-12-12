@@ -34,6 +34,8 @@ class ShapeInferenceEngine {
 
   Status PropagateOutputShapes(const NodeItem &node_item);
 
+  static Status CalcOutputTensorSizes(const NodeItem &node_item, bool fallback_with_range = false);
+
  private:
   static Status UpdatePeerNodeShape(const Node &node);
   Status AwaitDependentNodes(NodeState &node_state);

@@ -22,6 +22,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "hybrid/executor/worker/shape_inference_engine.h"
 
 namespace ge {
 namespace hybrid {
@@ -47,7 +48,7 @@ Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgr
     GE_CHECK_NOTNULL(dst_op_desc);
     auto in_idx = node_and_anchor.second->GetIdx();
     auto tensor_desc = dst_op_desc->MutableInputDesc(in_idx);
-    fused_subgraph.input_mapping[parent_index].emplace_back(tensor_desc);
+    fused_subgraph.input_mapping[static_cast<int>(parent_index)].emplace_back(tensor_desc);
     GELOGD("Input[%u] mapped to [%s:%u]", parent_index, dst_op_desc->GetName().c_str(), in_idx);
   }
 
@@ -64,7 +65,7 @@ Status ParseOutputMapping(const OpDescPtr &op_desc, FusedSubgraph &fused_subgrap
     return FAILED;
   }
 
-  fused_subgraph.output_mapping.emplace(parent_index, op_desc);
+  fused_subgraph.output_mapping.emplace(static_cast<int>(parent_index), op_desc);
   return SUCCESS;
 }
 
@@ -173,6 +174,10 @@ Status NodeItem::Init() {
         is_output_shape_static = false;
         break;
       }
+    }
+
+    if (is_output_shape_static) {
+      GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(*this));
     }
 
     if (IsControlOp() || node_type == PARTITIONEDCALL) {

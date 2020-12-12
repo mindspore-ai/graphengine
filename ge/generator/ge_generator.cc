@@ -156,7 +156,12 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
   }
 
   string op_type;
-  if (!AttrUtils::GetStr(tensor, kAttrOpType, op_type) || op_type.empty()) {
+  bool is_const = false;
+  (void)AttrUtils::GetBool(tensor, CONST_ATTR_NAME_INPUT, is_const);
+  if (is_const) {
+    GELOGD("Get input[%d] is const", index);
+    op_type = CONSTANTOP;
+  } else if (!AttrUtils::GetStr(tensor, kAttrOpType, op_type) || op_type.empty()) {
     op_type = DATA;
   }
 
@@ -165,6 +170,18 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
   if (data_op == nullptr) {
     return FAILED;
   }
+  if (is_const) {
+    ConstGeTensorPtr tensor_value;
+    if (!AttrUtils::GetTensor(tensor, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
+      GELOGE(FAILED, "Get value failed, node name:%s.", tensor.GetName().c_str());
+      return FAILED;
+    }
+    if (!AttrUtils::SetTensor(data_op, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
+      GELOGE(FAILED, "Set attr ATTR_NAME_WEIGHTS fail.");
+      return FAILED;
+    }
+  }
+
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
   GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail.");
@@ -557,6 +574,9 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
+  if (!is_offline) {
+    (void)AttrUtils::SetBool(op_desc, ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, true);
+  }
 
   if (CheckForSingleOp(op_desc, inputs, outputs) != SUCCESS) {
     GELOGE(PARAM_INVALID, "input param is invalid when build single op!");

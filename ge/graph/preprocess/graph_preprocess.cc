@@ -1797,6 +1797,16 @@ Status GraphPrepare::PrepareOptimize() {
 }
 
 void GraphPrepare::TypeConversionOfConstant() {
+  bool is_acl_compile = false;
+  for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {
+    // This can ensure that n is not a null pointer
+    // No Conversion when called by aclOpCompile
+    (void)AttrUtils::GetBool(n->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, is_acl_compile);
+    if (is_acl_compile) {
+      return;
+    }
+  }
+
   if (options_.train_graph_flag) {
     GELOGD("trans CONSTANT to CONSTANTOP in train.");
     for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {

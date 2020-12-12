@@ -22,7 +22,6 @@
 #include "graph/ge_context.h"
 #include "runtime/base.h"
 #include "graph/load/new_model_manager/davinci_model.h"
-#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace {
 const char *const kTrainingTrace = "training_trace";
@@ -496,11 +495,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfIn
       GELOGE(FAILED, "Runtime profiler start failed.");
       return FAILED;
     }
-    Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStart(model_load_mask);
-    if (hccl_ret != SUCCESS) {
-      GELOGE(FAILED, "Hccl profiler start failed.");
-      return FAILED;
-    }
     is_load_profiling_ = true;
     GELOGI("Prof init: model load profiling on.");
   }
@@ -528,12 +522,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   rtError_t rt_ret = rtProfilerStop(PROF_MODEL_LOAD_MASK, dev_num, nullptr);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "Runtime profiler stop failed.");
-    return FAILED;
-  }
-
-  Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStop(PROF_MODEL_LOAD_MASK);
-  if (hccl_ret != SUCCESS) {
-    GELOGE(FAILED, "Hccl profiler stop failed.");
     return FAILED;
   }
   for (auto device_id_module : device_id_module_map_) {
@@ -661,12 +649,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     GELOGE(FAILED, "Runtime profiler config proc failed.");
     return FAILED;
   }
-  
-  Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStart(module);
-  if (hccl_ret != SUCCESS) {
-    GELOGE(FAILED, "Hccl profiler start failed.");
-    return FAILED;
-  }
   if ((module & PROF_MODEL_EXECUTE_MASK) == PROF_MODEL_EXECUTE_MASK) {
     for (int32_t i = 0; i < device_num; i++) {
       if (std::find(device_id_.begin(), device_id_.end(), device_list[i]) == device_id_.end()) {
@@ -706,11 +688,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
-    return FAILED;
-  }
-  Status hccl_ret = OpsKernelBuilderManager::Instance().ProfStop(module);
-  if (hccl_ret != SUCCESS) {
-    GELOGE(FAILED, "Hccl profiler stop failed.");
     return FAILED;
   }
   uint64_t execute_model_mask = module & PROF_MODEL_EXECUTE_MASK;

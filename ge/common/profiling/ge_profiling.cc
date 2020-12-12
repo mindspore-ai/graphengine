@@ -22,7 +22,6 @@
 #include "graph/load/graph_loader.h"
 #include "init/gelib.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "opskernel_manager/ops_kernel_builder_manager.h"
 
 namespace {
 const uint32_t kDeviceListIndex = 3;
@@ -150,12 +149,7 @@ ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
       GELOGE(rt_ret, "Pass MsprofReporterCallback to runtime failed!!");
       return rt_ret;
     }
-    // Pass MsprofReporterCallback to hccl in opskernel so initialize
-    rt_ret = ge::OpsKernelBuilderManager::Instance().RegProfReporterCallBack(reinterpret_cast<void *>(func));
-    if (rt_ret != ge::SUCCESS) {
-      GELOGE(rt_ret, "Pass MsprofReporterCallback to hccl failed.");
-      return rt_ret;
-    }
+    // Pass MsprofReporterCallback to hccl
   }
   return ge::SUCCESS;
 }

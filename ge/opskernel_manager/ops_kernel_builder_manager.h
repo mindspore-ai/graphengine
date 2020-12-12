@@ -46,12 +46,6 @@ class OpsKernelBuilderManager {
   Status GenerateTask(const Node &node, RunContext &context,
                       std::vector<domi::TaskDef> &tasks) const;
 
-  Status RegProfReporterCallBack(void *func) const;
-
-  Status ProfStart(uint64_t prof_config) const;
-
-  Status ProfStop(uint64_t prof_config) const;
-
  private:
   OpsKernelBuilderManager() = default;
   static Status GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths);

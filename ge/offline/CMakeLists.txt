@@ -63,14 +63,12 @@ target_link_libraries(atc PRIVATE
     c_sec
     graph
     error_manager
-    -Wl,--start-group
-    slog
     ge_compiler
-    -Wl,--end-group
     parser_common
     gflags
     json
     runtime_compile
+    slog
     static_mmpa
     -lrt
     -ldl
@@ -125,14 +123,12 @@ target_link_libraries(atc_atc.bin PRIVATE
     c_sec
     graph
     error_manager
-    -Wl,--start-group
-    slog
     ge_compiler
-    -Wl,--end-group
     parser_common
     gflags
     json
     runtime_compile
+    slog
     static_mmpa
     -lrt
     -ldl
@@ -192,14 +188,12 @@ target_link_libraries(fwk_atc.bin PRIVATE
     c_sec
     graph
     error_manager
-    -Wl,--start-group
-    slog
     ge_runner
-    -Wl,--end-group
     parser_common
     gflags
     json
     runtime
+    slog
     static_mmpa
     -lrt
     -ldl

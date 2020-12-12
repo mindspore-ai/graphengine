@@ -25,6 +25,7 @@
 #include "graph/load/new_model_manager/model_utils.h"
 #include "runtime/mem.h"
 #include "single_op/single_op_manager.h"
+#include "single_op/task/build_task_utils.h"
 #include "graph/load/new_model_manager/model_manager.h"
 
 namespace ge {
@@ -77,7 +78,8 @@ Status ProfilingTaskInfo(OpTask *op_task) {
 }
 }  // namespace
 
-SingleOp::SingleOp(std::mutex *stream_mutex, rtStream_t stream) : stream_mutex_(stream_mutex), stream_(stream) {
+SingleOp::SingleOp(StreamResource *stream_resource, std::mutex *stream_mutex, rtStream_t stream)
+    : stream_resource_(stream_resource), stream_mutex_(stream_mutex), stream_(stream) {
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOp::~SingleOp() {
@@ -159,37 +161,6 @@ Status SingleOp::UpdateArgs(const std::vector<DataBuffer> &inputs, const std::ve
       *arg_addr = args_[i];
     }
   }
-  // update aicpu_TF or aicpu_CC args
-  for (auto &task : tasks_) {
-    size_t io_addr_num = args_.size();
-    if (task->GetOpTaskType() == OP_TASK_AICPU) {
-      GELOGD("Update aicpu_TF task args");
-      task->SetIoAddrsForDump(args_);
-      auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(task->GetIOAddr()));
-      GE_CHECK_NOTNULL(dst_io_addr);
-      auto rt_ret = rtMemcpyAsync(dst_io_addr,
-                                  sizeof(uint64_t) * args_.size(),
-                                  &args_[0],
-                                  sizeof(uint64_t) * args_.size(),
-                                  RT_MEMCPY_HOST_TO_DEVICE_EX,
-                                  stream_);
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(rt_ret, "rtMemcpyAsync addresses failed, ret = %d", rt_ret);
-        return rt_ret;
-      }
-    } else if (task->GetOpTaskType() == OP_TASK_AICPUCC) {
-      GELOGD("Update aicpu_CC task args");
-      const uintptr_t *task_io_addr = reinterpret_cast<const uintptr_t *>(task->GetIOAddr());
-      GE_CHECK_NOTNULL(task_io_addr);
-      auto io_addr = reinterpret_cast<uint64_t *>(const_cast<uintptr_t *>(task_io_addr));
-      for (size_t i = 0; i < io_addr_num; ++i) {
-        io_addr[i] = static_cast<uintptr_t>(args_[i]);
-      }
-    } else {
-      GELOGW("Only TF_kernel aicpu and aicpu_CC are supported, but got %u", task->GetOpTaskType());
-      continue;
-    }
-  }
   return SUCCESS;
 }
 
@@ -200,7 +171,19 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     return ret;
   }
 
+  GE_CHECK_NOTNULL(stream_resource_);
   std::lock_guard<std::mutex> lk(*stream_mutex_);
+  auto current_mem_base = stream_resource_->GetMemoryBase();
+  if (running_param_->mem_base != current_mem_base) {
+    running_param_->mem_base = const_cast<uint8_t *>(current_mem_base);
+    GELOGD("Memory base changed, new memory base = %p", current_mem_base);
+    for (auto &task : tasks_) {
+      auto new_address = BuildTaskUtils::GetAddresses(task->GetOpdesc(), *running_param_);
+      GE_CHK_STATUS_RET(task->UpdateArgTable(*running_param_),
+                        "[%s] Failed to update arg table",
+                        task->GetOpdesc()->GetName().c_str());
+    }
+  }
   ret = UpdateArgs(inputs, outputs);
   if (ret != SUCCESS) {
     return ret;
@@ -225,9 +208,6 @@ DynamicSingleOp::DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex
     : resource_id_(resource_id), stream_mutex_(stream_mutex), stream_(stream) {
 }
 
-DynamicSingleOp::~DynamicSingleOp() {
-}
-
 Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
                                        const std::vector<DataBuffer> &inputs,
                                        std::vector<GeTensorDesc> &output_desc,
@@ -249,63 +229,22 @@ Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
   }
 
   if (input_desc.size() != num_inputs_) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Input number mismatches. expect %zu, but given %zu",
-           num_inputs_, input_desc.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "Input number mismatches. expect %zu, but given %zu",
+           num_inputs_,
+           input_desc.size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (output_desc.size() != num_outputs_) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Output number mismatches. expect %zu, but given %zu",
-           num_outputs_, output_desc.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "Output number mismatches. expect %zu, but given %zu",
+           num_outputs_,
+           output_desc.size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   return SUCCESS;
-}
-
-Status DynamicSingleOp::AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes,
-                                           std::vector<void *> &workspaces) {
-  static const std::string kPurpose("malloc workspace memory for dynamic op.");
-  if (workspace_sizes.empty()) {
-    GELOGD("No need to allocate workspace.");
-    return SUCCESS;
-  }
-  int64_t total_size = 0;
-  std::vector<int64_t> ws_offsets;
-  for (auto ws_size : workspace_sizes) {
-    // alignment and padding should be done in OpParaCalculate
-    GE_CHK_STATUS_RET_NOLOG(CheckInt64AddOverflow(total_size, ws_size));
-    ws_offsets.emplace_back(total_size);
-    total_size += ws_size;
-  }
-
-  GELOGD("Total workspace size is %ld", total_size);
-  StreamResource *stream_resource = SingleOpManager::GetInstance().GetResource(resource_id_, stream_);
-  GE_CHECK_NOTNULL(stream_resource);
-  auto ws_base = stream_resource->MallocMemory(kPurpose, static_cast<size_t>(total_size));
-  if (ws_base == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to allocate memory of size: %ld", total_size);
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
-  }
-  GELOGD("Done allocating workspace memory successfully.");
-
-  for (auto ws_offset : ws_offsets) {
-    workspaces.emplace_back(ws_base + ws_offset);
-  }
-
-  return SUCCESS;
-}
-
-Status DynamicSingleOp::ExecuteTbeTask(const vector<GeTensorDesc> &input_desc,
-                                       const vector<void *> &inputs,
-                                       vector<GeTensorDesc> &output_desc,
-                                       vector<void *> &outputs) {
-  GE_CHK_STATUS_RET_NOLOG(op_task_->UpdateRunInfo(input_desc, output_desc));
-
-  std::vector<void *> workspace_buffers;
-  GE_CHK_STATUS_RET_NOLOG(AllocateWorkspaces(op_task_->GetWorkspaceSizes(), workspace_buffers));
-
-  return op_task_->LaunchKernel(inputs, outputs, workspace_buffers, stream_);
 }
 
 Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
@@ -316,32 +255,8 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
   std::lock_guard<std::mutex> lk(*stream_mutex_);
 
-  std::vector<void *> inputs;
-  std::vector<void *> outputs;
-  for (auto &buffer : input_buffers) {
-    inputs.emplace_back(buffer.data);
-  }
-  for (auto &buffer : output_buffers) {
-    outputs.emplace_back(buffer.data);
-  }
-
-  if (op_task_->GetOpTaskType() == OP_TASK_TBE) {
-    auto ret = ExecuteTbeTask(input_desc, inputs, output_desc, outputs);
-    if (ret == SUCCESS) {
-      GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get()));
-    }
-    return ret;
-  } else if (op_task_->GetOpTaskType() == OP_TASK_AICPU || op_task_->GetOpTaskType() == OP_TASK_AICPUCC) {
-    auto aicpu_ret = op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_);
-    if (aicpu_ret == SUCCESS) {
-      GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get()));
-    }
-    return aicpu_ret;
-  } else {
-    GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID,
-           "Only TBE_Task, AI_CPU_Task and AI_CPUCC_Task are supported, but got %u",
-           op_task_->GetOpTaskType());
-    return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;
-  }
+  GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
+  GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get()));
+  return SUCCESS;
 }
 }  // namespace ge

@@ -17,17 +17,22 @@
 #include "single_op/task/aicpu_kernel_task_builder.h"
 #include "framework/common/taskdown_common.h"
 #include "graph/load/new_model_manager/model_manager.h"
+#include "build_task_utils.h"
 
 namespace ge {
 AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def)
     : op_desc_(op_desc), kernel_def_(kernel_def) {}
 
-Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
+Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task, const SingleOpModelParam &param) {
   size_t aicpu_arg_size = kernel_def_.args_size();
-  if (aicpu_arg_size <= 0) {
+  if (aicpu_arg_size <= sizeof(aicpu::AicpuParamHead)) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
     return ACL_ERROR_GE_PARAM_INVALID;
   }
+
+  task.io_addr_num_ = op_desc_->GetInputsSize() + op_desc_->GetOutputsSize();
+  GE_CHECK_GE(aicpu_arg_size - sizeof(aicpu::AicpuParamHead), task.io_addr_num_ * sizeof(void *));
+
   std::unique_ptr<uint8_t[]> aicpu_args;
   aicpu_args.reset(new(std::nothrow) uint8_t[aicpu_arg_size]());
   if (aicpu_args == nullptr) {
@@ -41,13 +46,19 @@ Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
-  task.SetIoAddr(aicpu_args.get() + sizeof(aicpu::AicpuParamHead));
+  task.SetIoAddr(reinterpret_cast<uintptr_t *>(aicpu_args.get() + sizeof(aicpu::AicpuParamHead)));
   task.SetKernelArgs(std::move(aicpu_args), aicpu_arg_size);
+
+  auto addresses = BuildTaskUtils::GetKernelArgs(op_desc_, param);
+  GE_CHECK_GE(addresses.size(), task.io_addr_num_);
+  for (size_t i = 0; i < task.io_addr_num_; ++i) {
+    task.io_addr_[i] = reinterpret_cast<uintptr_t>(addresses[i]);
+  }
   return SUCCESS;
 }
 
-Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id) {
-  auto ret = SetKernelArgs(task);
+Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id, const SingleOpModelParam &param) {
+  auto ret = SetKernelArgs(task, param);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -86,6 +97,10 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id) {
     return ret;
   }
 
+  if (task.GetUnknownType() == DEPEND_COMPUTE) {
+    GELOGE(FAILED, "AiCpuCCTask unknown type is depend compute, it's not supported now.");
+    return FAILED;
+  }
   auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(task.args_.get());
   if (task.ext_info_addr_dev_ != nullptr) {
     aicpu_param_head->extInfoLength = kernel_ext_info.size();

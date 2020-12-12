@@ -32,7 +32,8 @@ const uint64_t kVarSize = 0;
 }
 
 std::vector<std::vector<void *>> BuildTaskUtils::GetAddresses(const OpDescPtr &op_desc,
-                                                              const SingleOpModelParam &param) {
+                                                              const SingleOpModelParam &param,
+                                                              bool keep_workspace) {
   std::vector<std::vector<void *>> ret;
   RuntimeParam runtime_para;
   runtime_para.mem_size = param.memory_size;
@@ -49,7 +50,9 @@ std::vector<std::vector<void *>> BuildTaskUtils::GetAddresses(const OpDescPtr &o
 
   ret.emplace_back(ModelUtils::GetInputDataAddrs(runtime_para, op_desc));
   ret.emplace_back(ModelUtils::GetOutputDataAddrs(runtime_para, op_desc));
-  ret.emplace_back(ModelUtils::GetWorkspaceDataAddrs(runtime_para, op_desc));
+  if (keep_workspace) {
+    ret.emplace_back(ModelUtils::GetWorkspaceDataAddrs(runtime_para, op_desc));
+  }
   return ret;
 }
 

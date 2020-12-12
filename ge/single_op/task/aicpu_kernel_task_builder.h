@@ -30,10 +30,10 @@ class AiCpuCCTaskBuilder {
   explicit AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::KernelDef &kernel_def);
   ~AiCpuCCTaskBuilder() = default;
 
-  Status BuildTask(AiCpuCCTask &task, uint64_t kernel_id);
+  Status BuildTask(AiCpuCCTask &task, uint64_t kernel_id, const SingleOpModelParam &param);
 
  private:
-  Status SetKernelArgs(AiCpuCCTask &task);
+  Status SetKernelArgs(AiCpuCCTask &task, const SingleOpModelParam &param);
   const OpDescPtr op_desc_;
   const domi::KernelDef &kernel_def_;
 };

@@ -35,6 +35,7 @@ Status ZeroCopyOffset::InitInputDataInfo(int64_t output_size, void *virtual_addr
   GELOGI("[ZCPY] Start to InitInputDataInfo of %s, total_data_size is %ld, virtual_addr is %p",
          op_desc->GetName().c_str(), output_size, virtual_addr);
   basic_addr_ = virtual_addr;
+  op_name_ = op_desc->GetName();
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset_);
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset_);
   GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,
@@ -82,6 +83,7 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
   GELOGD("Tensor data size: GetSize=%ld, GetTensorSizeInBytes=%ld", input_size_list[idx], size);
 
   basic_addr_ = virtual_addr_list[idx];
+  op_name_ = op_desc->GetName();
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset_);
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset_);
   GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,

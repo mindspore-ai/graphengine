@@ -112,6 +112,7 @@ class AiCpuBaseTask : public OpTask {
   UnknowShapeOpType GetUnknownType() const { return unknown_type_; }
 
  protected:
+  Status UpdateIoAddr(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   Status SetExtInfoAndType(const std::string &kernel_ext_info, uint64_t kernel_id);
 
   Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
@@ -145,8 +146,6 @@ class AiCpuTask : public AiCpuBaseTask {
   Status SetMemCopyTask(const domi::KernelExDef &kernel_def);
 
  private:
-  Status SetIO(const vector<void *> &inputs, vector<void *> &outputs);
-
   // for copy task.
   Status InitForSummaryAndCopy();
   Status UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc,

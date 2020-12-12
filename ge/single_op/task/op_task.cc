@@ -454,6 +454,29 @@ Status AiCpuBaseTask::UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensor
   return SUCCESS;
 }
 
+Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+  uintptr_t *arg_base = nullptr;
+  size_t arg_num = 0;
+  GetIoAddr(arg_base, arg_num);
+
+  // input number and output number was check in ValidateParams
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    auto addr = inputs[i].data;
+    GE_CHECK_NOTNULL(addr);
+    GELOGD("AICpuTask input[%zu] addr = %p", i, addr);
+    *arg_base++ = reinterpret_cast<uintptr_t>(addr);
+  }
+
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    auto addr = outputs[i].data;
+    GE_CHECK_NOTNULL(addr);
+    GELOGD("AICpuTask output[%zu] addr = %p", i, addr);
+    *arg_base++ = reinterpret_cast<uintptr_t>(addr);
+  }
+
+  return SUCCESS;
+}
+
 AiCpuTask::~AiCpuTask() {
   FreeHbm(args_);
   FreeHbm(io_addr_);
@@ -631,40 +654,6 @@ Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output
   return SUCCESS;
 }
 
-Status AiCpuTask::SetIO(const vector<void *> &inputs, vector<void *> &outputs) {
-  vector<uint64_t> io_addrs;
-  io_addrs.reserve(num_inputs_ + num_outputs_);
-  for (size_t i = 0; i < num_inputs_; ++i) {
-    GE_CHECK_NOTNULL(inputs[i]);
-    GELOGD("AiCpuTask input[%zu] addr = %p", i, inputs[i]);
-    io_addrs.emplace_back(reinterpret_cast<uintptr_t>(inputs[i]));
-  }
-
-  if (unknown_type_ != DEPEND_COMPUTE) {
-    for (size_t i = 0; i < num_outputs_; ++i) {
-      GE_CHECK_NOTNULL(outputs[i]);
-      GELOGD("AiCpuTask output[%zu] addr = %p", i, outputs[i]);
-      io_addrs.emplace_back(reinterpret_cast<uintptr_t>(outputs[i]));
-    }
-  } else {
-    for (size_t i = 0; i < num_outputs_; ++i) {
-      void *summary_addr = output_summary_[i];
-      io_addrs.emplace_back(reinterpret_cast<uintptr_t>(summary_addr));
-    }
-  }
-
-  if (!io_addrs.empty()) {
-    auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(io_addr_));
-    GE_CHK_RT_RET(rtMemcpy(dst_io_addr,
-                           sizeof(uint64_t) * io_addrs.size(),
-                           &io_addrs[0],
-                           sizeof(uint64_t) * io_addrs.size(),
-                           RT_MEMCPY_HOST_TO_DEVICE));
-    GE_CHECK_NOTNULL(dst_io_addr);
-  };
-  return SUCCESS;
-}
-
 Status AiCpuTask::InitForSummaryAndCopy() {
   if (unknown_type_ != DEPEND_COMPUTE || num_outputs_ == 0) {
     GELOGI("Unknown_type is %d, output num is %d.", unknown_type_, num_outputs_);
@@ -736,17 +725,17 @@ Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
                                std::vector<DataBuffer> &output_buffers,
                                rtStream_t stream) {
   GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc, stream));
-  std::vector<void *> inputs;
-  std::vector<void *> outputs;
-  for (auto &buffer : input_buffers) {
-    inputs.emplace_back(buffer.data);
+  if (unknown_type_ == DEPEND_COMPUTE) {
+    std::vector<DataBuffer> summary_buffers;
+    for (size_t i = 0; i < num_outputs_; ++i) {
+      summary_buffers.emplace_back(output_summary_[i], sizeof(aicpu::FWKAdapter::ResultSummary), false);
+    }
+    GE_CHK_STATUS_RET_NOLOG(UpdateIoAddr(input_buffers, summary_buffers));
+  } else {
+    GE_CHK_STATUS_RET_NOLOG(UpdateIoAddr(input_buffers, output_buffers));
   }
-  for (auto &buffer : output_buffers) {
-    outputs.emplace_back(buffer.data);
-  }
-  GE_CHK_STATUS_RET_NOLOG(SetIO(inputs, outputs));
-  GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
 
+  GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
     GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateOutputShape(output_desc));
@@ -817,24 +806,9 @@ Status AiCpuCCTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
                                  std::vector<GeTensorDesc> &output_desc,
                                  std::vector<DataBuffer> &output_buffers,
                                  rtStream_t stream) {
-  GE_CHK_BOOL_RET_STATUS(unknown_type_ != DEPEND_COMPUTE, FAILED,
-                         "AiCpuCCTask unknown type[%d] is depend compute, it's not supported now.",
-                         unknown_type_);
-
   GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc, stream));
-
-  size_t arg_index = 0;
-  auto *task_io_addr = reinterpret_cast<uintptr_t *>(io_addr_);
-  GE_CHECK_NOTNULL(task_io_addr);
-  for (auto &input : input_buffers) {
-    task_io_addr[arg_index++] = reinterpret_cast<uintptr_t>(input.data);
-  }
-  for (auto &output : output_buffers) {
-    task_io_addr[arg_index++] = reinterpret_cast<uintptr_t>(output.data);
-  }
-
+  GE_CHK_STATUS_RET_NOLOG(UpdateIoAddr(input_buffers, output_buffers));
   GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
-
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
     GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateOutputShape(output_desc));

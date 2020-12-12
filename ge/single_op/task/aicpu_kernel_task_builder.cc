@@ -97,6 +97,10 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id, cons
     return ret;
   }
 
+  if (task.GetUnknownType() == DEPEND_COMPUTE) {
+    GELOGE(FAILED, "AiCpuCCTask unknown type is depend compute, it's not supported now.");
+    return FAILED;
+  }
   auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(task.args_.get());
   if (task.ext_info_addr_dev_ != nullptr) {
     aicpu_param_head->extInfoLength = kernel_ext_info.size();

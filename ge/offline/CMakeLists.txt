@@ -58,6 +58,7 @@ target_include_directories(atc PRIVATE
 target_link_libraries(atc PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
+    slog
     ge_common
     register
     c_sec
@@ -68,7 +69,6 @@ target_link_libraries(atc PRIVATE
     gflags
     json
     runtime_compile
-    slog
     static_mmpa
     -lrt
     -ldl
@@ -118,6 +118,7 @@ target_include_directories(atc_atc.bin PRIVATE
 target_link_libraries(atc_atc.bin PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
+    slog
     ge_common
     register
     c_sec
@@ -128,7 +129,6 @@ target_link_libraries(atc_atc.bin PRIVATE
     gflags
     json
     runtime_compile
-    slog
     static_mmpa
     -lrt
     -ldl
@@ -183,6 +183,7 @@ target_include_directories(fwk_atc.bin PRIVATE
 target_link_libraries(fwk_atc.bin PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
+    slog
     ge_common
     register
     c_sec
@@ -193,7 +194,6 @@ target_link_libraries(fwk_atc.bin PRIVATE
     gflags
     json
     runtime
-    slog
     static_mmpa
     -lrt
     -ldl

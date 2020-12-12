@@ -3173,21 +3173,29 @@ Status DavinciModel::DistributeTask() {
 
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
   for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
+    auto &task_def = model_task_def->task(task_index);
     auto &task = task_list_.at(task_index);
     GE_CHK_STATUS_RET(task->Distribute(), "Task[%zu] distribute fail", task_index);
     // for data dump
-    auto op_index = std::max(model_task_def->task(task_index).kernel().context().op_index(),
-                             model_task_def->task(task_index).kernel_ex().op_index());
+    auto op_index = std::max(task_def.kernel().context().op_index(),
+                             task_def.kernel_ex().op_index());
     OpDescPtr op = GetOpByIndex(op_index);
     GE_CHECK_NOTNULL(op);
 
-    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
       bool call_dump = GetDumpProperties().IsLayerNeedDump(name_, om_name_, op->GetName()) && task->CallSaveDumpInfo();
       if (call_dump || is_op_debug_reg_) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
+
+    auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+    bool no_need_profiling = (task_type != RT_MODEL_TASK_KERNEL)
+        && (task_type != RT_MODEL_TASK_KERNEL_EX)
+        && (task_type != RT_MODEL_TASK_HCCL);
+    GE_IF_BOOL_EXEC(no_need_profiling, continue);
+
+    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     // Load task info for profiling
     TaskDescInfo task_desc_info;
     if (!om_name_.empty()) {
@@ -3196,7 +3204,7 @@ Status DavinciModel::DistributeTask() {
       task_desc_info.model_name = name_;
     }
     task_desc_info.op_name = op->GetName();
-    task_desc_info.block_dim = model_task_def->task(task_index).kernel().block_dim();
+    task_desc_info.block_dim = task_def.kernel().block_dim();
     task_desc_info.task_id = task->GetTaskID();
     task_desc_info.stream_id = task->GetStreamId();
     task_desc_info_.emplace_back(task_desc_info);

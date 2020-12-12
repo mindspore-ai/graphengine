@@ -614,32 +614,32 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
     }
     // flush parent node of subgraph
     sub_graph->SetParentNode(compute_graph->GetParentNode());
-    (void) AttrUtils::SetStr(*sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
-      auto sgi = MakeShared<SubGraphInfo>();
-      if (sgi == nullptr) {
-        GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MakeShared sub graph info failed.");
-        return FAILED;
-      }
-      // set engine name
-      sgi->SetEngineName(engine_name);
-      // set stream label
-      string sub_graph_stream;
-      if (AttrUtils::GetStr(sub_graph->GetDirectNode().at(0)->GetOpDesc(), ATTR_NAME_STREAM_LABEL, sub_graph_stream)) {
-        sgi->SetStreamLabel(sub_graph_stream);
-      }
-      /// for now inputFlag is the same before and after partition. It should
-      /// be changed according to the real partition
-      std::vector<bool> sub_graph_input(graph_info_.input_size_, true);
-      std::vector<bool> sub_graph_output(graph_info_.output_size_, true);
-      sgi->SetSubGraph(sub_graph);
-      sgi->SetOutputFlag(sub_graph_output);
-      sgi->SetInputFlag(sub_graph_input);
-      sgi->SetOutputContext(graph_info_.output_name_);
-      AddEndPldInformationToSubGraphInfo(sgi);
-      GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s",
-             engine_name.c_str(),
-             sub_graph->GetName().c_str(),
-             sgi->GetStreamLabel().empty() ? "null" : sgi->GetStreamLabel().c_str());
+    (void)AttrUtils::SetStr(*sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
+    GELOGD("set attr success. subgraph(%s) with parent graph(%s)", sub_graph->GetName().c_str(),
+           compute_graph->GetName().c_str());
+    auto sgi = MakeShared<SubGraphInfo>();
+    if (sgi == nullptr) {
+      GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MakeShared sub graph info failed.");
+      return FAILED;
+    }
+    // set engine name
+    sgi->SetEngineName(engine_name);
+    // set stream label
+    string sub_graph_stream;
+    if (AttrUtils::GetStr(sub_graph->GetDirectNode().at(0)->GetOpDesc(), ATTR_NAME_STREAM_LABEL, sub_graph_stream)) {
+      sgi->SetStreamLabel(sub_graph_stream);
+    }
+    /// for now inputFlag is the same before and after partition. It should
+    /// be changed according to the real partition
+    std::vector<bool> sub_graph_input(graph_info_.input_size_, true);
+    std::vector<bool> sub_graph_output(graph_info_.output_size_, true);
+    sgi->SetSubGraph(sub_graph);
+    sgi->SetOutputFlag(sub_graph_output);
+    sgi->SetInputFlag(sub_graph_input);
+    sgi->SetOutputContext(graph_info_.output_name_);
+    AddEndPldInformationToSubGraphInfo(sgi);
+    GELOGI("[GraphPartitioner]: subGraph engine name is %s, graph name is %s, stream label is %s", engine_name.c_str(),
+           sub_graph->GetName().c_str(), sgi->GetStreamLabel().empty() ? "null" : sgi->GetStreamLabel().c_str());
     if (engine_name != input_subgraph_name) {  // do not add Data subGraph into SubGraphInfo
       output_subgraphs.push_back(sgi);
     } else {

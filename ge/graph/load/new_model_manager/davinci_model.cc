@@ -2185,8 +2185,9 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
   const std::vector<DataBuffer> &blobs = input_data.blobs;
   for (const auto &data : new_input_data_info_) {
     if (data.first >= blobs.size()) {
-      GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld", blobs.size(),
-             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first);
+      GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld, op_name(%s)", blobs.size(),
+             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first,
+             data.second.GetOpName().c_str());
       return FAILED;
     }
 
@@ -2197,13 +2198,14 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
     }
     uint64_t data_size = data.second.GetDataSize();
     GE_CHK_BOOL_RET_STATUS(data_size >= data_buf.length, PARAM_INVALID,
-                           "input data size(%lu) does not match model required size(%lu), ret failed.", data_buf.length,
-                           data_size);
+                           "input data size(%lu) does not match model required size(%lu), op_name(%s) ret failed.",
+                           data_buf.length, data_size, data.second.GetOpName().c_str());
     void *mem_addr = data.second.GetBasicAddr();
     void *data_buf_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data_buf.data));
     uint64_t data_buf_length = data_buf.length;
-    GELOGI("CopyPlainData memcpy graph_%u type[F] input[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
-           runtime_param_.graph_id, data.first, mem_addr, data_buf_addr, data_size, data_buf_length);
+    GELOGI("CopyPlainData memcpy graph_%u type[F] input[%s] rank[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
+           runtime_param_.graph_id, data.second.GetOpName().c_str(), data.first, mem_addr, data_buf_addr, data_size,
+           data_buf_length);
     GE_CHK_RT_RET(rtMemcpy(mem_addr, data_size, data_buf_addr, data_buf_length, kind));
   }
 
@@ -3444,7 +3446,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     }
 
     if (!CheckInputAndModelSize(buffer.length, data.second.GetDataSize(), is_dynamic)) {
-      GELOGE(FAILED, "Check input size and model size failed");
+      GELOGE(FAILED, "Check input size and model size failed, op[%s]", data.second.GetOpName().c_str());
       return FAILED;
     }
 

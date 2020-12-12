@@ -58,13 +58,15 @@ target_include_directories(atc PRIVATE
 target_link_libraries(atc PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
-    slog
     ge_common
     register
     c_sec
     graph
     error_manager
+    -Wl,--start-group
+    slog
     ge_compiler
+    -Wl,--end-group
     parser_common
     gflags
     json
@@ -118,13 +120,15 @@ target_include_directories(atc_atc.bin PRIVATE
 target_link_libraries(atc_atc.bin PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
-    slog
     ge_common
     register
     c_sec
     graph
     error_manager
+    -Wl,--start-group
+    slog
     ge_compiler
+    -Wl,--end-group
     parser_common
     gflags
     json
@@ -183,13 +187,15 @@ target_include_directories(fwk_atc.bin PRIVATE
 target_link_libraries(fwk_atc.bin PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
-    slog
     ge_common
     register
     c_sec
     graph
     error_manager
+    -Wl,--start-group
+    slog
     ge_runner
+    -Wl,--end-group
     parser_common
     gflags
     json

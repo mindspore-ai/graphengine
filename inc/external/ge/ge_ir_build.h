@@ -24,9 +24,9 @@
 #include "graph/ge_error_codes.h"
 
 namespace {
-#define IR_MAJOR_VERSION (int(1))
-#define IR_MINOR_VERSION (int(0))
-#define IR_PATCH_VERSION (int(0))
+const int IR_MAJOR_VERSION = 1;
+const int IR_MINOR_VERSION = 0;
+const int IR_PATCH_VERSION = 0;
 }  // namespace
 
 namespace ge {

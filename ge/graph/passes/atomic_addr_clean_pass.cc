@@ -93,7 +93,8 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
             in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
           auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
           if (peer_in_node->GetType() == DATA) {
-            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", node->GetName().c_str(), op_info.engine.c_str());
+            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", node->GetName().c_str(), 
+                   op_info.engine.c_str());
             return false;
           }
         }

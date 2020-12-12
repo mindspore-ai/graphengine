@@ -57,7 +57,8 @@ struct GraphExecutionContext {
 do { \
   if ((context != nullptr) && (context)->profiler != nullptr) { \
     if (node_name != nullptr) { \
-      context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GeLog::GetTid(), node_name, category, ##__VA_ARGS__);\
+      context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GeLog::GetTid(), node_name, category, \
+                                     ##__VA_ARGS__); \
     } else { \
       context->profiler->RecordEvent(evt_type, "tid:%lu [%s] " fmt, GeLog::GetTid(), category, ##__VA_ARGS__); \
     }\

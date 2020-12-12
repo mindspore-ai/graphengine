@@ -25,7 +25,7 @@
 
 namespace {
 const int IR_MAJOR_VERSION = 1;
-cosnt int IR_MINOR_VERSION = 0;
+const int IR_MINOR_VERSION = 0;
 const int IR_PATCH_VERSION = 0;
 }  // namespace
 

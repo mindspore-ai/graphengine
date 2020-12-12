@@ -586,7 +586,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
   Graph graph;
   if (BuildSingleOpGraph(op_desc, inputs, outputs, name, graph) != ge::SUCCESS) {
-   GELOGE(GRAPH_FAILED, "make graph fail.");
+    GELOGE(GRAPH_FAILED, "make graph fail.");
     return GRAPH_FAILED;
   }
   GELOGI("ATC parser success in single op build.");

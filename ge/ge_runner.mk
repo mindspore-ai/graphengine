@@ -29,6 +29,8 @@ LIBGE_LOCAL_SRC_FILES := \
     common/dump/dump_manager.cc \
     common/dump/dump_properties.cc \
     common/dump/dump_op.cc \
+    common/profiling/ge_profiling.cc \
+    common/profiling/ge_runner_profiling.cc \
     engine_manager/dnnengine_manager.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
     generator/ge_generator.cc \
@@ -307,7 +309,6 @@ LIBGE_LOCAL_SRC_FILES := \
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
     client/ge_api.cc \
-    client/ge_prof.cc \
 
 RUNNER_LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) ./ \
@@ -372,7 +373,7 @@ LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
                           libadump_server \
-                          libmsprofiler \
+                          libmsprofiler_fwk \
                           libmmpa \
 
 LOCAL_SHARED_LIBRARIES := \
@@ -382,7 +383,6 @@ LOCAL_SHARED_LIBRARIES := \
     libgraph \
     libregister \
     libge_common \
-    libmsprof \
     liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
@@ -409,7 +409,6 @@ endif
 LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
 LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc \
-                   ../../out/ge/lib64/stub/ge_prof.cc \
                    ../../out/ge/lib64/stub/ge_ir_build.cc \
 
 LOCAL_SHARED_LIBRARIES :=
@@ -465,7 +464,6 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libslog \
     libmmpa \
-    libmsprof \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -498,7 +496,6 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libslog \
     libmmpa \
-    libmsprof \
 
 LOCAL_LDFLAGS := -lrt -ldl
 

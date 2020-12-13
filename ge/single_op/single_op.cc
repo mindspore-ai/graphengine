@@ -72,8 +72,7 @@ Status ProfilingTaskInfo(OpTask *op_task) {
   std::vector<ComputeGraphDescInfo> compute_graph_info;
 
   auto &profiling_manager = ProfilingManager::Instance();
-  profiling_manager.ReportProfilingData(model_id, task_desc_info, compute_graph_info,
-                                        !profiling_manager.IsAclApiMode());
+  profiling_manager.ReportProfilingData(model_id, task_desc_info, compute_graph_info);
   return SUCCESS;
 }
 }  // namespace

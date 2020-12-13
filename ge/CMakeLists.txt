@@ -605,7 +605,7 @@ set(INFER_SRC_LIST
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
+add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} $<TARGET_OBJECTS:msprofiler_fwk>)
 
 target_compile_definitions(ge_runner PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -648,7 +648,6 @@ target_include_directories(ge_runner PRIVATE
 
 target_link_libraries(ge_runner
     $<BUILD_INTERFACE:intf_pub>
-    msprofiler_fwk
     ge_memory
     adump_server
     static_mmpa

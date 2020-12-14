@@ -27,6 +27,7 @@ target_compile_definitions(atc PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     COMPILE_OMG_PACKAGE
     google=ascend_private
+    LOG_CPP
 )
 
 target_include_directories(atc PRIVATE
@@ -87,6 +88,7 @@ target_compile_definitions(atc_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     COMPILE_OMG_PACKAGE
     google=ascend_private
+    LOG_CPP
 )
 
 target_include_directories(atc_atc.bin PRIVATE
@@ -152,6 +154,7 @@ target_compile_definitions(fwk_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     COMPILE_OMG_PACKAGE
     google=ascend_private
+    LOG_CPP
 )
 
 target_include_directories(fwk_atc.bin PRIVATE

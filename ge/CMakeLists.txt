@@ -603,6 +603,21 @@ set(INFER_SRC_LIST
     "analyzer/analyzer.cc"
 )
 
+if (ENABLE_OPEN_SRC)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object)
+    if(EXISTS ${ASCEND_RUNTIME_DIR}/libmsprofiler_fwk.a)
+        execute_process(
+            COMMAND ar x  ${ASCEND_RUNTIME_DIR}/libmsprofiler_fwk.a
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object    
+        )
+        file(GLOB msprof_file ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
+    else()
+        file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/msprofiler_fwk.cc CONTENT "")
+        set(msprof_file ${CMAKE_BINARY_DIR}/msprofiler_fwk.cc)
+    endif()
+    add_library(msprofiler_fwk OBJECT ${msprof_file})
+endif()
+
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
 add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} $<TARGET_OBJECTS:msprofiler_fwk>)

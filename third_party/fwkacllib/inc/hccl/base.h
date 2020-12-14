@@ -22,7 +22,8 @@
 
 #ifndef HCCL_BASE_H_
 #define HCCL_BASE_H_
-
+#include <hccl/hccl_types.h>
+#include <string>
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
@@ -94,6 +95,33 @@ typedef void *rtStream_t;
 * @brief model handle.
 */
 typedef void *rtModel_t;
+
+struct HcomOperation {
+    std::string hcclType;
+    void *inputPtr;
+    void *outputPtr;
+    u64 count;
+    HcclDataType dataType;
+    HcclReduceOp opType;
+    u32 root;
+
+    HcomOperation()
+    {
+        inputPtr = nullptr;
+        outputPtr = nullptr;
+        count = 0;
+        dataType = HCCL_DATA_TYPE_RESERVED;
+        opType = HCCL_REDUCE_RESERVED;
+        root = 0;
+    }
+};
+
+struct HcomRemoteAccessAddrInfo {
+    u32 remotetRankID;
+    u64 remoteAddr;  // host embedding table address
+    u64 localAddr;  // device HBM address
+    u64 length;   // Memory Length in Bytes 
+};
 
 #ifdef __cplusplus
 }

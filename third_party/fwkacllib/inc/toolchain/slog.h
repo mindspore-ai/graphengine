@@ -18,7 +18,9 @@
 #define D_SYSLOG_H_
 
 #ifdef __cplusplus
+#ifndef LOG_CPP
 extern "C" {
+#endif
 #endif // __cplusplus
 
 #ifndef LINUX
@@ -105,6 +107,7 @@ extern "C" {
 #define SECURITY_LOG_MASK   (0x00100000)
 #define RUN_LOG_MASK        (0x01000000)
 #define OPERATION_LOG_MASK  (0x10000000)
+#define RESERVERD_LENGTH 52
 
 typedef struct tagDCODE {
   const char *cName;
@@ -115,6 +118,18 @@ typedef struct tagKV {
   char *kname;
   char *value;
 } KeyValue;
+
+typedef enum {
+    APPLICATION = 0,
+    SYSTEM
+} ProcessType;
+
+typedef struct {
+    ProcessType type;
+    unsigned int pid;
+    unsigned int deviceId;
+    char reserved[RESERVERD_LENGTH];
+} LogAttr;
 
 /**
  * @ingroup slog
@@ -227,6 +242,14 @@ DLL_EXPORT int dlog_setlevel(int moduleId, int level, int enableEvent);
  * @return: 1:enable, 0:disable
  */
 DLL_EXPORT int CheckLogLevel(int moduleId, int logLevel);
+
+/**
+ * @ingroup slog
+ * @brief DlogSetAttr: set log attr, default pid is 0, default device id is 0, default process type is APPLICATION
+ * @param [in]logAttr: attr info, include pid(must be larger than 0), process type and device id(chip ID)
+ * @return: 0: SUCCEED, others: FAILED
+ */
+DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
 
 /**
  * @ingroup slog
@@ -367,6 +390,8 @@ void DlogInner(int moduleId, int level, const char *fmt, ...);
 void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
+#ifndef LOG_CPP
 }
+#endif // LOG_CPP
 #endif // __cplusplus
 #endif // D_SYSLOG_H_

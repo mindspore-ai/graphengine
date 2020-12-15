@@ -414,7 +414,7 @@ graphStatus Impl::GetDefaultInputShape(const Graph &graph, string &default_shape
       if (is_dynamic_input) {
         dynamic_shape_flag = true;
         default_shape += tmp_shape_str;
-        GELOGD("Data op name: %s, data shape: %s.", data_op_name.c_str(), tmp_shape_str.c_str(),);
+        GELOGD("Data op name: %s, data shape: %s.", data_op_name.c_str(), tmp_shape_str.c_str());
       }
     }
   }

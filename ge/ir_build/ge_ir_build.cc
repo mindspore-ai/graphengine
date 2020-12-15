@@ -378,7 +378,7 @@ graphStatus Impl::GetDefaultInputFormat(const Graph &graph, string &default_form
   return GRAPH_SUCCESS;
 }
 
-graphStatus Impl::Init(const Graph &graph, string &default_shape, bool &dynamic_shape_flag) {
+graphStatus Impl::GetDefaultInputShape(const Graph &graph, string &default_shape, bool &dynamic_shape_flag) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {

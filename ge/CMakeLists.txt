@@ -767,7 +767,14 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,--allow-multiple-definition
     -Wl,-z,muldefs
     -Wl,-Bsymbolic
-    -Wl,--exclude-libs,ALL
+    -Wl,--exclude-libs,libascend_protobuf.a
+    -Wl,--exclude-libs,libge_executor.a
+    -Wl,--exclude-libs,libge_common.a
+    -Wl,--exclude-libs,libgraph.a
+    -Wl,--exclude-libs,libmmpa.a
+    -Wl,--exclude-libs,libregister.a
+    -Wl,--exclude-libs,liberror_manager.a
+    -Wl,--exclude-libs,libadump_server.a
 )
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive

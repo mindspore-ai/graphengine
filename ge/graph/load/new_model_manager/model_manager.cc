@@ -1223,7 +1223,7 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "Invalid model id %u, check weather model has been loaded or not.", model_id);
+                         "Invalid model id %u, check whether model has been loaded or not.", model_id);
 
   if (davinci_model->NeedDestroyAicpuKernel()) {
     GELOGI("Start to destroy specified aicpu kernel.");

@@ -620,6 +620,12 @@ set(INFER_SRC_LIST
 #    add_library(msprofiler_fwk OBJECT ${msprof_file})
 #endif()
 
+if (ENABLE_OPEN_SRC)
+    add_library(msprofiler_fwk STATIC IMPORTED)
+    set_target_properties(msprofiler_fwk PROPERTIES
+           IMPORTED_LOCATION ${ASCEND_RUNTIME_DIR}/libmsprofiler_fwk.a)
+endif()
+
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
 add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} $<TARGET_OBJECTS:msprofiler_fwk>)

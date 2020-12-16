@@ -713,7 +713,7 @@ target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(ge_compiler
+target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     static_mmpa

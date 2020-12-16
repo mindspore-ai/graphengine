@@ -603,32 +603,9 @@ set(INFER_SRC_LIST
     "analyzer/analyzer.cc"
 )
 
-#if (ENABLE_OPEN_SRC)
-#    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object)
-#    if(EXISTS ${ASCEND_RUNTIME_DIR}/libmsprofiler_fwk.a)
-#        message(status "libmsprofiler_fwk.a has been found!")
-#        execute_process(
-#            COMMAND ar x  ${ASCEND_RUNTIME_DIR}/libmsprofiler_fwk.a
-#            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object    
-#        )
-#        file(GLOB msprof_file ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
-#    else()
-#        message(status "libmsprofiler_fwk.a can not be found!")
-#        file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/msprofiler_fwk.cc CONTENT "")
-#        set(msprof_file ${CMAKE_BINARY_DIR}/msprofiler_fwk.cc)
-#    endif()
-#    add_library(msprofiler_fwk OBJECT ${msprof_file})
-#endif()
-
-if (ENABLE_OPEN_SRC)
-    add_library(msprofiler_fwk STATIC IMPORTED)
-    set_target_properties(msprofiler_fwk PROPERTIES
-           IMPORTED_LOCATION ${ASCEND_RUNTIME_DIR}/libmsprofiler_fwk.a)
-endif()
-
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} $<TARGET_OBJECTS:msprofiler_fwk>)
+add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
 
 target_compile_definitions(ge_runner PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -674,6 +651,9 @@ target_link_libraries(ge_runner
     ge_memory
     adump_server
     static_mmpa
+    -Wl,--whole-archive
+    msprofiler_fwk
+    -Wl,--no-whole-archive
     -Wl,--no-as-needed
     graph
     ge_common

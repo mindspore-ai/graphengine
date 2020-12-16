@@ -1055,7 +1055,16 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
   mmTimespec timespec = mmGetTickCount();
 
   ModelHelper model_helper;
-  Status ret = model_helper.LoadModel(model);
+  Status ret = model_helper.LoadRootModel(model);
+  if (model_helper.GetModelType()) {
+    bool is_shape_unknown = false;
+    GE_CHK_STATUS_RET(model_helper.GetGeRootModel()->CheckIsUnknownShape(is_shape_unknown),
+                      "CheckIsUnknownShape failed, model id:%u",
+                      model_id);
+    if (is_shape_unknown || GetContext().GetHostExecFlag()) {
+      return DoLoadHybridModelOnline(model_id, model_helper.GetGeRootModel(), listener);
+    }
+  }
   if (ret != SUCCESS) {
     GELOGE(ret, "load model failed.");
     return ret;

@@ -646,7 +646,7 @@ target_include_directories(ge_runner PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(ge_runner
+target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     adump_server

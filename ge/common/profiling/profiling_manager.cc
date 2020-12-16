@@ -143,6 +143,9 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   }
   try {
     Json prof_options = Json::parse(options);
+    if (options.find(kTrainingTrace) == std::string::npos) {
+      return ge::SUCCESS;
+    }
     const std::string training_trace = prof_options[kTrainingTrace];
     if (training_trace.empty()) {
       GELOGI("Training trace will not take effect.");

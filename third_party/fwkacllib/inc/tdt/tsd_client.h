@@ -23,6 +23,7 @@
 #include <mutex>
 #include "tdt/status.h"
 #include "tdt/data_common.h"
+#include "toolchain/prof_callback.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,7 +38,7 @@ extern "C" {
 * Used for the Framework process to communicate with the TSDDaemon process,
 * and notify TSD to complete the initialization of other processes
 *
-* @param phyDeviceId [IN] type #unsigned int. Physical device ID
+* @param logicDeviceId [IN] type #unsigned int. Logic device ID
 * @param rankSize [IN] type #unsigned int. The rankSize of the training.
 * The default value is 1. When rankSize is greater than 1,
 * HCCP will be pulled to perform set communication related operations.
@@ -49,7 +50,7 @@ extern "C" {
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT TDT_StatusT TsdOpen(const uint32_t phyDeviceId, const uint32_t rankSize);
+TDT_LIB_EXPORT TDT_StatusT TsdOpen(const uint32_t logicDeviceId, const uint32_t rankSize);
 
 /**
 * @ingroup Close
@@ -67,7 +68,7 @@ TDT_LIB_EXPORT TDT_StatusT TsdOpen(const uint32_t phyDeviceId, const uint32_t ra
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT TDT_StatusT TsdClose(const uint32_t phyDeviceId);
+TDT_LIB_EXPORT TDT_StatusT TsdClose(const uint32_t logicDeviceId);
 
 /**
 * @ingroup UpdateProfilingMode
@@ -85,7 +86,26 @@ TDT_LIB_EXPORT TDT_StatusT TsdClose(const uint32_t phyDeviceId);
 * @li tsd_client.h: Header file where the interface declaration is located.
 * @li data_common.h: Header file where 'TDT_StatusT' defined
 */
-TDT_LIB_EXPORT TDT_StatusT UpdateProfilingMode(const uint32_t phyDeviceId, const uint32_t flag);
+TDT_LIB_EXPORT TDT_StatusT UpdateProfilingMode(const uint32_t logicDeviceId, const uint32_t flag);
+
+/**
+* @ingroup TsdSetMsprofReporterCallback
+* @brief 用于推理场景下设置aicpu的profilng的callback函数
+*
+* @par Function
+* 设置offline模式下aicpu_sd进程的profiling的callback函数
+*
+* @param callback [IN] type #MsprofReporterCallback. 回调函数
+* @retval TDT_OK Success
+* @retval OtherValues Failure
+*
+* @par Dependency
+* @li libtsdclient.so: Library to which the interface belongs.
+* @li tsd_client.h: Header file where the interface declaration is located.
+* @li data_common.h: Header file where 'TDT_StatusT' defined
+* @li prof_callback.h: Headerfile where 'MsprofReporterCallback' defined
+*/
+TDT_LIB_EXPORT TDT_StatusT TsdSetMsprofReporterCallback(MsprofReporterCallback callback);
 
 /**
 * @ingroup CreateCmdParameterObj

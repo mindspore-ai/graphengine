@@ -34,8 +34,15 @@ using TDT_StatusT = uint32_t;
 typedef uint32_t TDT_StatusT;
 #endif
 
+#define LINUX 0
+#define WINDOWS 1
+
 #ifndef TDT_LIB_EXPORT
+#if(TARGET_SYSTEM_NAME == WINDOWS)
+#define TDT_LIB_EXPORT __declspec(dllexport)
+#else
 #define TDT_LIB_EXPORT __attribute__((visibility("default")))
+#endif
 #endif
 /**
  * @ingroup  tdt status.

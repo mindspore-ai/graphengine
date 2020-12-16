@@ -215,6 +215,10 @@ typedef struct {
 #define S_IWRITE S_IWUSR
 #endif
 
+#define mm_no_argument        no_argument
+#define mm_required_argument  required_argument
+#define mm_optional_argument  optional_argument
+
 #define M_FILE_RDONLY O_RDONLY
 #define M_FILE_WRONLY O_WRONLY
 #define M_FILE_RDWR O_RDWR
@@ -227,6 +231,7 @@ typedef struct {
 #define M_BINARY O_RDONLY
 #define M_TRUNC O_TRUNC
 #define M_IRWXU S_IRWXU
+#define M_APPEND O_APPEND
 
 #define M_IN_CREATE IN_CREATE
 #define M_IN_CLOSE_WRITE IN_CLOSE_WRITE
@@ -342,17 +347,17 @@ MMPA_FUNC_VISIBILITY INT32 mmCloseSocket(mmSockHandle sockFd);
 MMPA_FUNC_VISIBILITY mmSsize_t mmSocketSend(mmSockHandle sockFd, VOID *sendBuf, INT32 sendLen, INT32 sendFlag);
 MMPA_FUNC_VISIBILITY mmSsize_t mmSocketRecv(mmSockHandle sockFd, VOID *recvBuf, INT32 recvLen, INT32 recvFlag);
 MMPA_FUNC_VISIBILITY INT32 mmSocketSendTo(mmSockHandle sockFd,
-                            VOID *sendMsg,
-                            INT32 sendLen,
-                            UINT32 sendFlag,
-                            const mmSockAddr* addr,
-                            INT32 tolen);
+                                          VOID *sendMsg,
+                                          INT32 sendLen,
+                                          UINT32 sendFlag,
+                                          const mmSockAddr* addr,
+                                          INT32 tolen);
 MMPA_FUNC_VISIBILITY mmSsize_t mmSocketRecvFrom(mmSockHandle sockFd,
-                                  VOID *recvBuf,
-                                  mmSize recvLen,
-                                  UINT32 recvFlag,
-                                  mmSockAddr* addr,
-                                  mmSocklen_t *FromLen);
+                                                VOID *recvBuf,
+                                                mmSize recvLen,
+                                                UINT32 recvFlag,
+                                                mmSockAddr* addr,
+                                                mmSocklen_t *FromLen);
 MMPA_FUNC_VISIBILITY INT32 mmSAStartup();
 MMPA_FUNC_VISIBILITY INT32 mmSACleanup();
 MMPA_FUNC_VISIBILITY VOID *mmDlopen(const CHAR *fileName, INT32 mode);
@@ -360,7 +365,10 @@ MMPA_FUNC_VISIBILITY INT32 mmDladdr(VOID *addr, mmDlInfo *info);
 MMPA_FUNC_VISIBILITY VOID *mmDlsym(VOID *handle, const CHAR *funcName);
 MMPA_FUNC_VISIBILITY INT32 mmDlclose(VOID *handle);
 MMPA_FUNC_VISIBILITY CHAR *mmDlerror();
-MMPA_FUNC_VISIBILITY INT32 mmCreateAndSetTimer(mmTimer *timerHandle, mmUserBlock_t *timerBlock, UINT milliSecond, UINT period);
+MMPA_FUNC_VISIBILITY INT32 mmCreateAndSetTimer(mmTimer *timerHandle,
+                                               mmUserBlock_t *timerBlock,
+                                               UINT milliSecond,
+                                               UINT period);
 MMPA_FUNC_VISIBILITY INT32 mmDeleteTimer(mmTimer timerHandle);
 MMPA_FUNC_VISIBILITY INT32 mmStatGet(const CHAR *path, mmStat_t *buffer);
 MMPA_FUNC_VISIBILITY INT32 mmStat64Get(const CHAR *path, mmStat64_t *buffer);
@@ -408,8 +416,12 @@ MMPA_FUNC_VISIBILITY VOID mmClosePipe(mmPipeHandle pipe[], UINT32 pipeCount);
 // Poll related interface
 MMPA_FUNC_VISIBILITY mmCompletionHandle mmCreateCompletionPort();
 MMPA_FUNC_VISIBILITY VOID mmCloseCompletionPort(mmCompletionHandle handle);
-MMPA_FUNC_VISIBILITY INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, mmCompletionHandle handleIOCP,
-                                    pmmPollData polledData, mmPollBack pollBack);
+MMPA_FUNC_VISIBILITY INT32 mmPoll(mmPollfd *fds,
+                                  INT32 fdCount,
+                                  INT32 timeout,
+                                  mmCompletionHandle handleIOCP,
+                                  pmmPollData polledData,
+                                  mmPollBack pollBack);
 MMPA_FUNC_VISIBILITY INT32 mmGetErrorCode();
 MMPA_FUNC_VISIBILITY CHAR *mmGetErrorFormatMessage(mmErrorMsg errnum, CHAR *buf, mmSize size);
 MMPA_FUNC_VISIBILITY INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone);
@@ -454,8 +466,11 @@ MMPA_FUNC_VISIBILITY VOID mmSetOpOpt(INT32 mmOptOpt);
 MMPA_FUNC_VISIBILITY CHAR *mmGetOptArg();
 MMPA_FUNC_VISIBILITY VOID mmSetOptArg(CHAR *mmOptArg);
 MMPA_FUNC_VISIBILITY INT32 mmGetOpt(INT32 argc, char *const *argv, const char *opts);
-MMPA_FUNC_VISIBILITY INT32 mmGetOptLong(INT32 argc, char *const *argv, const char *opts, const mmStructOption *longOpts,
-                                          INT32 *longIndex);
+MMPA_FUNC_VISIBILITY INT32 mmGetOptLong(INT32 argc,
+                                        char *const *argv,
+                                        const char *opts,
+                                        const mmStructOption *longOpts,
+                                        INT32 *longIndex);
 
 MMPA_FUNC_VISIBILITY LONG mmLseek(INT32 fd, INT64 offset, INT32 seekFlag);
 MMPA_FUNC_VISIBILITY INT32 mmFtruncate(mmProcess fd, UINT32 length);
@@ -521,11 +536,14 @@ MMPA_FUNC_VISIBILITY INT32 mmGetMac(mmMacInfo **list, INT32 *count);
 MMPA_FUNC_VISIBILITY INT32 mmGetMacFree(mmMacInfo *list, INT32 count);
 MMPA_FUNC_VISIBILITY INT32 mmGetCpuInfo(mmCpuDesc **cpuInfo, INT32 *count);
 MMPA_FUNC_VISIBILITY INT32 mmCpuInfoFree(mmCpuDesc *cpuInfo, INT32 count);
-MMPA_FUNC_VISIBILITY INT32 mmCreateProcess(const CHAR *fileName, const mmArgvEnv *env, const char *stdoutRedirectFile,
-                                            mmProcess *id);
+MMPA_FUNC_VISIBILITY INT32 mmCreateProcess(const CHAR *fileName,
+                                           const mmArgvEnv *env,
+                                           const char *stdoutRedirectFile,
+                                           mmProcess *id);
 
-MMPA_FUNC_VISIBILITY INT32 mmCreateTaskWithThreadAttr(mmThread *threadHandle, const mmUserBlock_t *funcBlock,
-                                                        const mmThreadAttr *threadAttr);
+MMPA_FUNC_VISIBILITY INT32 mmCreateTaskWithThreadAttr(mmThread *threadHandle,
+                                                      const mmUserBlock_t *funcBlock,
+                                                      const mmThreadAttr *threadAttr);
 MMPA_FUNC_VISIBILITY mmFileHandle mmShmOpen(const CHAR *name, INT32 oflag, mmMode_t mode);
 MMPA_FUNC_VISIBILITY INT32 mmShmUnlink(const CHAR *name);
 MMPA_FUNC_VISIBILITY VOID *mmMmap(mmFd_t fd, mmSize_t size, mmOfft_t offset, mmFd_t *extra, INT32 prot, INT32 flags);

@@ -524,6 +524,19 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
 
   GE_CHECK_NOTNULL(ge_root_model);
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  ModelHelper model_helper;
+  string model_name = "";
+  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
+                                                                 model_name);
+  if (name_ret != SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
+    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
+    return PARAM_INVALID;
+  }
+  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
+  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
+  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
+  ge_model->SetName(model_name);
   ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");

@@ -184,20 +184,12 @@ void TBEPluginManager::GetCustomOpPath(std::string &customop_path) {
 void TBEPluginManager::LoadCustomOpLib() {
   LoadPluginSo(options_);
 
-  std::string fmk_type = std::to_string(domi::TENSORFLOW);
-  auto it = options_.find(ge::FRAMEWORK_TYPE);
-  if (it != options_.end()) {
-   fmk_type = it->second;
-  }
-  GELOGD("frameworkType is %s", fmk_type.c_str());
   std::vector<OpRegistrationData> registration_datas = domi::OpRegistry::Instance()->registrationDatas;
   GELOGI("The size of registration_datas is: %zu", registration_datas.size());
   for (OpRegistrationData reg_data : registration_datas) {
-    if (std::to_string(reg_data.GetFrameworkType()) == fmk_type) {
-      GELOGD("Begin to register optype: %s, imply_type: %s", reg_data.GetOmOptype().c_str(),
-             TypeUtils::ImplyTypeToSerialString(reg_data.GetImplyType()).c_str());
-      domi::OpRegistry::Instance()->Register(reg_data);
-    }
+    GELOGD("Begin to register optype: %s, imply_type: %s", reg_data.GetOmOptype().c_str(),
+           TypeUtils::ImplyTypeToSerialString(reg_data.GetImplyType()).c_str());
+    domi::OpRegistry::Instance()->Register(reg_data);
   }
 }
 

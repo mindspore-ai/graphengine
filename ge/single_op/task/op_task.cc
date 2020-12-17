@@ -406,7 +406,7 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
       auto const_input_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(input_index));
       GE_CHECK_NOTNULL(const_input_desc);
       GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, *const_input_desc),
-                        "Input[%zu] update input shape failed.", i);
+                        "Input[%zu] update input shape failed.", input_index);
       continue;
     }
     GE_CHK_BOOL_RET_STATUS(non_const_index < input_desc.size(), PARAM_INVALID,

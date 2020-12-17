@@ -20,12 +20,9 @@
 #include "graph/utils/tensor_adapter.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "common/dump/dump_manager.h"
+#include "hybrid/executor//worker//shape_inference_engine.h"
 #include "common/dump/dump_op.h"
-#include "common/types.h"
-#include "common/ge_types.h"
 #include "common/profiling/profiling_manager.h"
-#include "runtime/base.h"
 
 namespace ge {
 namespace hybrid {
@@ -348,6 +345,10 @@ Status NodeDoneCallback::OnNodeDone() {
   }
 
   GE_CHK_STATUS_RET_NOLOG(PrepareConstInputs(node_item));
+  if (node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE) {
+    // update output tensor sizes
+    GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(node_item));
+  }
   // PropagateOutputs for type == DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {
     if (graph_context_->trace_enabled) {

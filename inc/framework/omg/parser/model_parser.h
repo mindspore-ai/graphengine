@@ -36,7 +36,7 @@ using Status = domi::Status;
 
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
-    const google::protobuf::Message *root_proto, const std::string &graph)>;
+  const google::protobuf::Message *root_proto, const std::string &graph)>;
 class ModelParser {
  public:
   ModelParser() {}
@@ -44,19 +44,20 @@ class ModelParser {
   virtual ~ModelParser() {}
 
   /**
-  * @ingroup domi_omg
-  * @brief Analyze network model data
-  * @param [in] file  Network model file path
-  * @param [in|out]  graph Save the network information after analysis
-  * @return SUCCESS
-  * @return Others failed
-  */
+   * @ingroup domi_omg
+   * @brief Analyze network model data
+   * @param [in] file  Network model file path
+   * @param [in|out]  graph Save the network information after analysis
+   * @return SUCCESS
+   * @return Others failed
+   */
   virtual Status Parse(const char *file, ge::Graph &graph) = 0;
 
   /**
    * @ingroup domi_omg
    * @brief Parse relevant data from memory and save it to graph
    * @param [in] input Model file memory data
+   * @param [in] input Model file memory size
    * @param [in|out] graph A graph for saving the model information after analysis
    * @return SUCCESS
    * @return FAILED
@@ -64,36 +65,49 @@ class ModelParser {
    */
   virtual Status ParseFromMemory(const char *data, uint32_t size, ge::ComputeGraphPtr &graph) = 0;
 
+#ifndef ONLY_COMPILE_OPEN_SRC
   /**
-  * @ingroup domi_omg
-  * @brief Analyze network model data
-  * @param [in] proto  network model
-  * @param [in|out]  graph Save the network information after analysis
-  * @return SUCCESS
-  * @return Others failed
-  */
+   * @ingroup domi_omg
+   * @brief Parse relevant data from memory and save it to graph
+   * @param [in] input Model file memory data
+   * @param [in] input Model file memory size
+   * @param [in|out] graph A graph for saving the model information after analysis
+   * @return SUCCESS
+   * @return FAILED
+   * @author
+   */
+  virtual Status ParseFromMemory(const char *data, uint32_t size, ge::Graph &graph) = 0;
+#endif
+
+  /**
+   * @ingroup domi_omg
+   * @brief Analyze network model data
+   * @param [in] proto  network model
+   * @param [in|out]  graph Save the network information after analysis
+   * @return SUCCESS
+   * @return Others failed
+   */
   virtual Status ParseProto(const google::protobuf::Message *proto, ge::ComputeGraphPtr &graph) = 0;
 
   /**
-  * @ingroup domi_omg
-  * @brief Analyze callback model data in subgraph
-  * @param [in] proto network model
-  * @param [in] callback callback of subgraph
-  * @param [in|out] graph Save the network information after analysis
-  * @return SUCCESS
-  * @return Others failed
-  */
-  virtual Status ParseProtoWithSubgraph(const google::protobuf::Message *proto,
-                                        GetGraphCallback callback,
+   * @ingroup domi_omg
+   * @brief Analyze callback model data in subgraph
+   * @param [in] proto network model
+   * @param [in] callback callback of subgraph
+   * @param [in|out] graph Save the network information after analysis
+   * @return SUCCESS
+   * @return Others failed
+   */
+  virtual Status ParseProtoWithSubgraph(const google::protobuf::Message *proto, GetGraphCallback callback,
                                         ge::ComputeGraphPtr &graph) = 0;
   /**
-  * @ingroup domi_omg
-  * @brief Convert model files to JSON format
-  * @param [in] model_file  Model file path to be converted
-  * @param [out] json_file Converted JSON file path
-  * @return SUCCESS
-  * @return Others failed
-  */
+   * @ingroup domi_omg
+   * @brief Convert model files to JSON format
+   * @param [in] model_file  Model file path to be converted
+   * @param [out] json_file Converted JSON file path
+   * @return SUCCESS
+   * @return Others failed
+   */
   virtual Status ToJson(const char *model_file, const char *json_file) { return domi::SUCCESS; }
 
   /*

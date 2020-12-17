@@ -369,10 +369,10 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   return SUCCESS;
 }
 
-Status SetInputConst() {
+Status AiCpuTask::SetInputConst() {
   input_is_const_.clear();
   const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
-  for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+  for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {
     const GeTensorDescPtr tensor_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(i));
     if (tensor_desc == nullptr) {
       GELOGD("SingleOp: %s, Index: %zu, has no input", op_desc_->GetName().c_str(), i);
@@ -381,7 +381,7 @@ Status SetInputConst() {
     if (i < v_is_input_const.size() && v_is_input_const[i]) {
       GELOGD("SingleOp: %s, Index: %zu, input is const", op_desc_->GetName().c_str(), i);
       input_is_const_.push_back(true);
-      continue;    
+      continue;
     }
     input_is_const_.push_back(false);
   }
@@ -405,7 +405,7 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
       // get input_desc from op_desc if const input, num_inputs_ is op_desc_ input_size
       auto const_input_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(input_index));
       GE_CHECK_NOTNULL(const_input_desc);
-      GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(i, *const_input_desc),
+      GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, *const_input_desc),
                         "Input[%zu] update input shape failed.", i);
       continue;
     }
@@ -498,8 +498,8 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
     if (input_index < input_is_const_.size() && input_is_const_[input_index]) {
       // const input no need update addr
       GE_CHECK_NOTNULL(arg_base);
-      GELOGD("AICpuTask input[%zu] addr = %p", input_index, *arg_base);
-      *arg_base;
+      GELOGD("AICpuTask input[%zu] addr = %u", input_index, *arg_base);
+      arg_base++;
       continue;
     }
     GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), PARAM_INVALID,

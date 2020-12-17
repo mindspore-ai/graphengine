@@ -369,7 +369,7 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   return SUCCESS;
 }
 
-Status AiCpuTask::SetInputConst() {
+Status AiCpuBaseTask::SetInputConst() {
   input_is_const_.clear();
   const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
   for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {

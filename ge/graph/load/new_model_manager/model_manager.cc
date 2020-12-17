@@ -1296,8 +1296,8 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
-    GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
-    return INTERNAL_ERROR;
+    GELOGI("cust aicpu op %s has no corresponding kernel!", op_desc->GetName().c_str());
+    return SUCCESS;
   }
 
   // get current context

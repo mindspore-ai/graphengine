@@ -97,7 +97,7 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id, cons
     GELOGE(ret, "Init ext info failed.");
     return ret;
   }
-  GE_CHK_STATUS_RET(task.SetInputConst(), "AicpuCCTask set input_const failed.");
+  GE_CHK_STATUS_RET(task.SetInputConst(), "AiCpuCCTask set input_const failed.");
 
   if (task.GetUnknownType() == DEPEND_COMPUTE) {
     GELOGE(FAILED, "AiCpuCCTask unknown type is depend compute, it's not supported now.");

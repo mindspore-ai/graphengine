@@ -88,6 +88,7 @@ namespace ge {
       return ret;
     }
 
+    GE_CHECK_NOTNULL(op_desc_);
     task.op_desc_ = op_desc_;
     task.num_inputs_ = op_desc_->GetInputsSize();
     task.num_outputs_ = op_desc_->GetOutputsSize();
@@ -104,6 +105,7 @@ namespace ge {
       fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr =  reinterpret_cast<uintptr_t>(task.ext_info_addr_dev_);
       fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = kernel_ext_info_size;
     }
+    GE_CHK_STATUS_RET(task.SetInputConst(), "AicpuTask set input_const failed.");
     GE_CHK_STATUS_RET(task.InitForSummaryAndCopy(), "AiCpuTask init for summary and copy task failed.");
 
     fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID = ULLONG_MAX;

@@ -473,10 +473,10 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildDynamicOp(DynamicSingleOp &single_op) {
+Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &single_op) {
   single_op.num_inputs_ = data_ops_.size();
   single_op.num_outputs_ = netoutput_op_->GetAllInputsSize();
-  ParseOpModelParams(model_helper_, model_params_);
+  GE_CHK_STATUS_RET_NOLOG(InitModelMem(resource));
   return BuildTaskListForDynamicOp(single_op);
 }
 }  // namespace ge

@@ -369,6 +369,25 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   return SUCCESS;
 }
 
+Status SetInputConst() {
+  input_is_const_.clear();
+  const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
+  for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+    const GeTensorDescPtr tensor_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(i));
+    if (tensor_desc == nullptr) {
+      GELOGD("SingleOp: %s, Index: %zu, has no input", op_desc_->GetName().c_str(), i);
+      continue;
+    }
+    if (i < v_is_input_const.size() && v_is_input_const[i]) {
+      GELOGD("SingleOp: %s, Index: %zu, input is const", op_desc_->GetName().c_str(), i);
+      input_is_const_.push_back(true);
+      continue;    
+    }
+    input_is_const_.push_back(false);
+  }
+  return SUCCESS;
+}
+
 Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, 
                                     std::vector<GeTensorDesc> &output_desc,
                                     rtStream_t stream) {
@@ -379,9 +398,23 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
   }
 
   GE_CHECK_NOTNULL(aicpu_ext_handle_);
-  for (size_t i = 0; i < num_inputs_; ++i) {
-    GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(i, input_desc[i]),
-                      "Input[%zu] update input shape failed.", i);
+
+  size_t non_const_index = 0;
+  for (size_t input_index = 0; input_index < num_inputs_; input_index++) {
+    if (input_index < input_is_const_.size() && input_is_const_[input_index]) {
+      // get input_desc from op_desc if const input, num_inputs_ is op_desc_ input_size
+      auto const_input_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(input_index));
+      GE_CHECK_NOTNULL(const_input_desc);
+      GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(i, *const_input_desc),
+                        "Input[%zu] update input shape failed.", i);
+      continue;
+    }
+    GE_CHK_BOOL_RET_STATUS(non_const_index < input_desc.size(), PARAM_INVALID,
+                           "Input_desc size is %zu, but get non_const_index is %zu",
+                           input_desc.size(), non_const_index);
+    GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, input_desc[non_const_index]),
+                      "Input[%zu] update input shape failed.", input_index);
+    non_const_index++;
   }
 
   if (unknown_type_ != DEPEND_COMPUTE) {
@@ -460,11 +493,23 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
   GetIoAddr(arg_base, arg_num);
 
   // input number and output number was check in ValidateParams
-  for (size_t i = 0; i < inputs.size(); ++i) {
-    auto addr = inputs[i].data;
+  size_t non_const_index = 0;
+  for (size_t input_index = 0; input_index < num_inputs_; input_index++) {
+    if (input_index < input_is_const_.size() && input_is_const_[input_index]) {
+      // const input no need update addr
+      GE_CHECK_NOTNULL(arg_base);
+      GELOGD("AICpuTask input[%zu] addr = %p", input_index, *arg_base);
+      *arg_base;
+      continue;
+    }
+    GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), PARAM_INVALID,
+                           "Input size is %zu, but get non_const_index is %zu",
+                           inputs.size(), non_const_index);
+    auto addr = inputs[non_const_index].data;
     GE_CHECK_NOTNULL(addr);
-    GELOGD("AICpuTask input[%zu] addr = %p", i, addr);
+    GELOGD("AICpuTask input[%zu] addr = %p", input_index, addr);
     *arg_base++ = reinterpret_cast<uintptr_t>(addr);
+    non_const_index++;
   }
 
   for (size_t i = 0; i < outputs.size(); ++i) {

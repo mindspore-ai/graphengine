@@ -155,7 +155,8 @@ Status StreamResource::BuildDynamicOperator(const string &model_name,
   GE_CHECK_NOTNULL(new_op);
 
   GELOGI("To build operator: %s", model_name.c_str());
-  GE_CHK_STATUS_RET(model.BuildDynamicOp(*new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
+  GE_CHK_STATUS_RET(model.BuildDynamicOp(*this, *new_op),
+                    "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
   *single_op = new_op.get();
   dynamic_op_map_[model_data.model_data] = std::move(new_op);
   return SUCCESS;

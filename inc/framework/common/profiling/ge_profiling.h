@@ -21,6 +21,7 @@
 #include "toolchain/prof_callback.h"
 
 const int MAX_DEV_NUM = 64;
+
 enum ProfCommandHandleType {
   kProfCommandhandleInit = 0,
   kProfCommandhandleStart,

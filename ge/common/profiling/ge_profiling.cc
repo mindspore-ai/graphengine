@@ -181,7 +181,8 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   if (type != kProfCommandhandleFinalize) {
     command.module_index = prof_config_param->profSwitch;
   }
-  GELOGI("GE commandhandle execute, Command Type: %d, data type config: 0x%llx", type, command.module_index);
+  GELOGI("GE commandhandle execute, Command Type: %s, data type config: 0x%llx", iter->second.c_str(),
+         command.module_index);
   if (type == kProfCommandhandleStart || type == kProfCommandhandleStop) {
     GELOGI("Profiling device nums:%s , deviceID:[%s]", prof_params[0].c_str(), prof_params[kDeviceListIndex].c_str());
   }

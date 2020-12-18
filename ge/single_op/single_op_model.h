@@ -52,7 +52,7 @@ class SingleOpModel {
 
   Status Init();
   Status BuildOp(StreamResource &resource, SingleOp &single_op);
-  Status BuildDynamicOp(DynamicSingleOp &single_op);
+  Status BuildDynamicOp(StreamResource &resource, DynamicSingleOp &single_op);
 
  private:
   Status InitModel();

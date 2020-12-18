@@ -113,6 +113,7 @@ class AiCpuBaseTask : public OpTask {
 
  protected:
   Status UpdateIoAddr(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
+  Status SetInputConst();
   Status SetExtInfoAndType(const std::string &kernel_ext_info, uint64_t kernel_id);
 
   Status UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
@@ -127,6 +128,7 @@ class AiCpuBaseTask : public OpTask {
   UnknowShapeOpType unknown_type_ = DEPEND_IN_SHAPE;
   std::unique_ptr<ge::hybrid::AicpuExtInfoHandler> aicpu_ext_handle_;
   void *ext_info_addr_dev_ = nullptr;
+  vector<bool> input_is_const_;
 };
 
 class AiCpuTask : public AiCpuBaseTask {

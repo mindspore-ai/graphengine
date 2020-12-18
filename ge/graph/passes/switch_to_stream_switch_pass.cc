@@ -17,13 +17,8 @@
 #include "graph/passes/switch_to_stream_switch_pass.h"
 #include <stack>
 #include "common/ge/ge_util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/debug/log.h"
-#include "framework/common/ge_inner_error_codes.h"
-#include "framework/common/types.h"
 #include "ge/ge_api_types.h"
 #include "graph/common/omg_util.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/utils/type_utils.h"
 
@@ -125,12 +120,13 @@ void SwitchToStreamSwitchPass::MarkCycleDependence(
       if (visited.count(tmp_node) > 0) {
         continue;
       }
-      GELOGD("MarkCycleDependence: tmp_node=%s.", tmp_node->GetName().c_str());
       for (const NodePtr &out_node : tmp_node->GetOutAllNodes()) {
         if (switch_nodes.find(out_node) == switch_nodes.end()) {
           out_nodes.push(out_node);
           continue;
         }
+        GELOGD("MarkCycleDependence: tmp_node=%s, switch_node=%s.",
+               tmp_node->GetName().c_str(), out_node->GetName().c_str());
         GE_IF_BOOL_EXEC(SetCyclicDependenceFlag(out_node) != SUCCESS,
                         GELOGW("set cyclic dependence attr failed."); return );
         auto map_iter = switch_cyclic_map_.find(out_node);
@@ -602,7 +598,7 @@ Status SwitchToStreamSwitchPass::AddConstNode(const ComputeGraphPtr &graph, cons
 ///
 Status SwitchToStreamSwitchPass::ModifySwitchInCtlEdges(const NodePtr &switch_node, const NodePtr &cast_node,
                                                         const std::set<NodePtr> &same_cond_switch) {
-  GELOGI("ModifySwitchInCtlEdges: switch_node=%s, active_node=%s", switch_node->GetName().c_str(),
+  GELOGD("ModifySwitchInCtlEdges: switch_node=%s, active_node=%s", switch_node->GetName().c_str(),
          cast_node->GetName().c_str());
   std::string orig_switch_name = switch_node->GetName();
   OpDescPtr switch_desc = switch_node->GetOpDesc();
@@ -653,7 +649,7 @@ Status SwitchToStreamSwitchPass::ModifySwitchInCtlEdges(const NodePtr &switch_no
 ///
 Status SwitchToStreamSwitchPass::ModifySwitchOutCtlEdges(const NodePtr &switch_node, const NodePtr &stream_switch,
                                                          const NodePtr &active_node) {
-  GELOGI("ModifySwitchOutCtlEdges: switch_node=%s, stream_switch=%s, active_node=%s", switch_node->GetName().c_str(),
+  GELOGD("ModifySwitchOutCtlEdges: switch_node=%s, stream_switch=%s, active_node=%s", switch_node->GetName().c_str(),
          stream_switch->GetName().c_str(), active_node->GetName().c_str());
   auto find_res = switch_node_map_.find(switch_node);
   GE_IF_BOOL_EXEC(find_res == switch_node_map_.end(), {

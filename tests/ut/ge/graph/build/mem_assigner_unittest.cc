@@ -147,6 +147,7 @@ class UtestMemoryAssignerTest : public testing::Test {
   void TearDown() { GetContext().out_nodes_map.clear(); }
 };
 
+/*
 TEST_F(UtestMemoryAssignerTest, MemoryBlock_Resize_RealSizeList_is_empty) {
   ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
   ge::OpDescPtr op_def_a = createOpWithWsSize("A", 6000);
@@ -160,6 +161,7 @@ TEST_F(UtestMemoryAssignerTest, MemoryBlock_Resize_RealSizeList_is_empty) {
 
   delete memory_block;
 }
+*/
 
 namespace ge {
 

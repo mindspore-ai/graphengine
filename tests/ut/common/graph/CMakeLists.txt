@@ -61,45 +61,52 @@ set(UT_FILES
 )
 
 set(SRC_FILES
-    #"${GE_CODE_DIR}/metadef/graph/option/ge_local_context.cc"
-    #"${GE_CODE_DIR}/metadef/graph/option/ge_context.cc"
-    #"${GE_CODE_DIR}/metadef/graph/anchor.cc"
-    #"${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
-    #"${GE_CODE_DIR}/metadef/graph/attr_value.cc"
-    #"${GE_CODE_DIR}/metadef/graph/buffer.cc"
-    #"${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
-    #"${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
-    #"${GE_CODE_DIR}/metadef/graph/graph.cc"
-    #"${GE_CODE_DIR}/metadef/graph/gnode.cc"
-    #"${GE_CODE_DIR}/metadef/graph/ascend_string.cc"
-    #"${GE_CODE_DIR}/metadef/graph/model.cc"
-    #"${GE_CODE_DIR}/metadef/graph/model_serialize.cc"
-    #"${GE_CODE_DIR}/metadef/graph/node.cc"
-    #"${GE_CODE_DIR}/metadef/graph/op_desc.cc"
-    #"${GE_CODE_DIR}/metadef/graph/operator.cc"
-    #"${GE_CODE_DIR}/metadef/graph/operator_reg.cc"
-    #"${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
-    #"${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
-    #"${GE_CODE_DIR}/metadef/graph/range_vistor.cc"
-    #"${GE_CODE_DIR}/metadef/graph/tensor.cc"
-    #"${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
-    #"${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
-    #"${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
-    #"${GE_CODE_DIR}/metadef/graph/inference_context.cc"
-    #"${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/node_utils.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/ge_ir_utils.cc"
-    #"${GE_CODE_DIR}/metadef/graph/utils/tensor_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/option/ge_local_context.cc"
+    "${GE_CODE_DIR}/metadef/graph/option/ge_context.cc"
+    "${GE_CODE_DIR}/metadef/graph/anchor.cc"
+    "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
+    "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
+    "${GE_CODE_DIR}/metadef/graph/buffer.cc"
+    "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
+    "${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
+    "${GE_CODE_DIR}/metadef/graph/graph.cc"
+    "${GE_CODE_DIR}/metadef/graph/gnode.cc"
+    "${GE_CODE_DIR}/metadef/graph/ascend_string.cc"
+    "${GE_CODE_DIR}/metadef/graph/model.cc"
+    "${GE_CODE_DIR}/metadef/graph/model_serialize.cc"
+    "${GE_CODE_DIR}/metadef/graph/node.cc"
+    "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
+    "${GE_CODE_DIR}/metadef/graph/operator.cc"
+    "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
+    "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
+    "${GE_CODE_DIR}/metadef/graph/tensor.cc"
+    "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
+    "${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
+    "${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
+    "${GE_CODE_DIR}/metadef/graph/inference_context.cc"
+    "${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/node_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/ge_ir_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/tensor_utils.cc"
     "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
-    #"${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
+    "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/transformer_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
+    "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cpp"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cpp"
 )
 
 #add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+target_compile_options(ut_libgraph PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+)
 
 target_compile_definitions(ut_libgraph PRIVATE
     google=ascend_private
@@ -107,12 +114,14 @@ target_compile_definitions(ut_libgraph PRIVATE
 
 target_link_libraries(ut_libgraph 
     $<BUILD_INTERFACE:intf_pub>
-    graph
     gtest
     gtest_main
     slog_stub
     ascend_protobuf
     c_sec
+    error_manager_stub
+    mmpa_stub
     -lrt
     -ldl
+    -lgcov
 )

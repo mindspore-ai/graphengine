@@ -224,12 +224,14 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
 #     fi
 
 #     if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
-#         echo "Generating coverage statistics, please wait..."
-#         cd ${BASEPATH}
-#         rm -rf ${BASEPATH}/cov
-#         mkdir ${BASEPATH}/cov
-#         gcovr -r ./ --exclude 'third_party' --exclude 'build' --exclude 'tests' --exclude 'prebuild' --exclude 'inc' --print-summary --html --html-details -d -o cov/index.html
-#     fi
+         echo "Generating coverage statistics, please wait..."
+         cd ${BASEPATH}
+         rm -rf ${BASEPATH}/cov
+         mkdir ${BASEPATH}/cov
+         lcov -c -d build/tests/ut/ge -d build/tests/ut/common/graph/ -o cov/tmp.info
+	 lcov --remove cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' -o cov/coverage.info
+	 cd ${BASEPATH}/cov
+	 genhtml coverage.info
 fi
 
 # generate output package in tar form, including ut/st libraries/executables

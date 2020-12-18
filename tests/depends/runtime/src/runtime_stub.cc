@@ -384,3 +384,8 @@ rtError_t rtModelExit(rtModel_t model, rtStream_t stream)
 {
  return RT_ERROR_NONE;
 }
+
+rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId)
+{
+ return RT_ERROR_NONE;
+}

@@ -112,8 +112,9 @@ Status OpTask::GetProfilingArgs(std::string &model_name, std::string &op_name, u
 Status OpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
   return UNSUPPORTED;
 }
-Status OpTask::UpdateArgTable(const SingleOpModelParam &param) {
-  auto addresses = BuildTaskUtils::GetAddresses(op_desc_, param);
+
+Status OpTask::DoUpdateArgTable(const SingleOpModelParam &param, bool keep_workspace) {
+  auto addresses = BuildTaskUtils::GetAddresses(op_desc_, param, keep_workspace);
   auto all_addresses = BuildTaskUtils::JoinAddresses(addresses);
   uintptr_t *arg_base = nullptr;
   size_t arg_num = 0;
@@ -130,6 +131,10 @@ Status OpTask::UpdateArgTable(const SingleOpModelParam &param) {
     *arg_base++ = reinterpret_cast<uintptr_t >(addr);
   }
   return SUCCESS;
+}
+
+Status OpTask::UpdateArgTable(const SingleOpModelParam &param) {
+  return DoUpdateArgTable(param, true);
 }
 
 Status OpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
@@ -792,10 +797,9 @@ Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
   return SUCCESS;
 }
 
-Status AiCpuTask::UpdateArgTable(const SingleOpModelParam &param) {
-  auto addresses = BuildTaskUtils::GetAddresses(op_desc_, param, false);
-  io_addr_host_ = BuildTaskUtils::JoinAddresses(addresses);
-  return SUCCESS;
+Status AiCpuBaseTask::UpdateArgTable(const SingleOpModelParam &param) {
+  // aicpu do not have workspace, for now
+  return DoUpdateArgTable(param, false);
 }
 
 void AiCpuTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {

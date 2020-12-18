@@ -33,7 +33,7 @@ enum ProfCommandHandleType {
 
 struct ProfCommandHandleData {
   uint64_t profSwitch;
-  uint32_t devNums; // length of device id list
+  uint32_t devNums;  // length of device id list
   uint32_t devIdList[MAX_DEV_NUM];
   uint32_t modelId;
 };

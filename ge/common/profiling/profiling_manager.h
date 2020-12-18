@@ -36,21 +36,21 @@ using Json = nlohmann::json;
 namespace {
   const std::string GE_PROFILING_MODULE = "Framework";
   // DataTypeConfig MASK
-  const int PROF_ACL_API_MASK = 0x0001;
-  const int PROF_TASK_TIME_MASK = 0x0002;
-  const int PROF_AICORE_METRICS_MASK = 0x0004;
-  const int PROF_AICPU_TRACE_MASK = 0x0008;
-  const int PROF_MODEL_EXECUTE_MASK = 0x0010;
-  const int PROF_RUNTIME_API_MASK = 0x0020;
-  const int PROF_RUNTIME_TRACE_MASK = 0x0040;
-  const int PROF_SCHEDULE_TIMELINE_MASK = 0x0080;
-  const int PROF_SCHEDULE_TRACE_MASK = 0x0100;
-  const int PROF_AIVECTORCORE_METRICS_MASK = 0x0200;
-  const int PROF_SUBTASK_TIME_MASK = 0x0400;
-  const int PROF_TRAINING_TRACE_MASK = 0x0800;
-  const int PROF_HCCL_TRACE_MASK = 0x1000;
-  const int PROF_DATA_PROCESS_MASK = 0x2000;
-  const int PROF_MODEL_LOAD_MASK = 0x8000000000000000;
+  const uint64_t PROF_ACL_API_MASK = 0x0001;
+  const uint64_t PROF_TASK_TIME_MASK = 0x0002;
+  const uint64_t PROF_AICORE_METRICS_MASK = 0x0004;
+  const uint64_t PROF_AICPU_TRACE_MASK = 0x0008;
+  const uint64_t PROF_MODEL_EXECUTE_MASK = 0x0010;
+  const uint64_t PROF_RUNTIME_API_MASK = 0x0020;
+  const uint64_t PROF_RUNTIME_TRACE_MASK = 0x0040;
+  const uint64_t PROF_SCHEDULE_TIMELINE_MASK = 0x0080;
+  const uint64_t PROF_SCHEDULE_TRACE_MASK = 0x0100;
+  const uint64_t PROF_AIVECTORCORE_METRICS_MASK = 0x0200;
+  const uint64_t PROF_SUBTASK_TIME_MASK = 0x0400;
+  const uint64_t PROF_TRAINING_TRACE_MASK = 0x0800;
+  const uint64_t PROF_HCCL_TRACE_MASK = 0x1000;
+  const uint64_t PROF_DATA_PROCESS_MASK = 0x2000;
+  const uint64_t PROF_MODEL_LOAD_MASK = 0x8000000000000000;
 
 }  // namespace
 namespace ge {

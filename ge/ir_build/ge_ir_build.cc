@@ -320,10 +320,7 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   }
   // Check Input Format
   if (options_.find(kInputFormat) != options_.end()) {
-    if (!options_[kInputFormat].empty() && !ge::TypeUtils::IsFormatValid(options_[kInputFormat].c_str())) {
-      GELOGE(ge::PARAM_INVALID, "user input format [%s] is not found!", options_[kInputFormat].c_str());
-      return GRAPH_PARAM_INVALID;
-    }
+    return CheckInputFormat(options_[kInputFormat]);
   }
   return GRAPH_SUCCESS;
 }

@@ -63,6 +63,17 @@ vector<string> SplitInputShape(const std::string &input_shape) {
 }
 }  // namespace
 
+Status CheckInputFormat(string &input_format) {
+  if (input_format.empty()) {
+    return ge::SUCCESS;
+  }
+  if (!ge::TypeUtils::IsFormatValid(input_format.c_str())) {
+    GELOGE(ge::PARAM_INVALID, "user input format [%s] is not found!", input_format.c_str());
+    return ge::PARAM_INVALID;
+  }
+  return ge::SUCCESS;
+}
+
 bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
                                           std::string &dynamic_batch_size) {
   int32_t size = 0;

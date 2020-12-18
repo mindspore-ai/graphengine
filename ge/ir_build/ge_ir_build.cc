@@ -317,6 +317,10 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
     return GRAPH_PARAM_INVALID;
   }
+  // Check Input Format
+  if (options_.find(kInputFormat) != options_.end()) {
+    return CheckInputFormat(options_[kInputFormat]);
+  }
   return GRAPH_SUCCESS;
 }
 

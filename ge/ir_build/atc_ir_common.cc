@@ -63,12 +63,14 @@ vector<string> SplitInputShape(const std::string &input_shape) {
 }
 }  // namespace
 
-Status CheckInputFormat(string &input_format) {
+Status CheckInputFormat(const string &input_format) {
   if (input_format.empty()) {
     return ge::SUCCESS;
   }
   if (!ge::TypeUtils::IsFormatValid(input_format.c_str())) {
-    GELOGE(ge::PARAM_INVALID, "user input format [%s] is not found!", input_format.c_str());
+    ErrorManager::GetInstance().ATCReportErrMessage(
+      "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, "input format is invalid!"});
+    GELOGE(ge::PARAM_INVALID, "input format [%s] is invalid!", input_format.c_str());
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;

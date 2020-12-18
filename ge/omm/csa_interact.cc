@@ -202,7 +202,7 @@ Status CsaInteract::WriteFile(const std::string &file_name, const std::string &c
     }
   }
 
-  mmSsize_t ret = mmWrite(fd, (void *)content.c_str(), content.length());
+  mmSsize_t ret = mmWrite(fd, reinterpret_cast<void *>(const_cast<char *>(content.c_str())), content.length());
   if (ret == EN_ERROR) {
     GELOGE(INTERNAL_ERROR, "write file fail, errno is %d", errno);
     ret = mmClose(fd);

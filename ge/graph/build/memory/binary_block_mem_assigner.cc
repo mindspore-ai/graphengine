@@ -21,8 +21,8 @@
 namespace {
 const uint32_t kRangeCeilInterval = 2;
 const uint32_t kLogBase = 2;
-const int64_t kLargeBlockSize = 8 * 1024 * 1024;
-const int64_t kLargeBlockRangeSize = 10;
+const int64_t kLargeBlockSize = 8388608;   // 8 * 1024 * 1024
+const int64_t kLargeBlockRangeSize = 2;
 }  // namespace
 
 namespace ge {
@@ -73,15 +73,17 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
     GELOGE(FAILED, "dividend is 0!");
     return FAILED;
   }
+  // Memory size is 512 aligned, so it is not necessary to take less than 512
+  int64_t min_memory_size = (all_memory_size.back() > MEM_ALIGN_SIZE) ? MEM_ALIGN_SIZE : all_memory_size.front();
   auto range_number = static_cast<size_t>(
-    ceil(log(all_memory_size.back() / static_cast<double>(all_memory_size.front())) / log(kLogBase)));
+    ceil(log(all_memory_size.back() / static_cast<double>(min_memory_size)) / log(kLogBase)));
   range_number = (range_number == 0) ? 1 : range_number;
   GELOGD("Range number: %zu", range_number);
 
   vector<vector<int64_t>> ranges(range_number);
   GE_CHK_BOOL_EXEC((range_number != 0), return PARAM_INVALID, "range_number can't be 0.");
   size_t range_number_limit = all_memory_size.size() / range_number;
-  int64_t range_ceil = all_memory_size[0];
+  int64_t range_ceil = min_memory_size;
   for (size_t i = 1; i <= range_number; i++) {
     GE_IF_BOOL_EXEC(TypeUtils::CheckUint64MulOverflow(static_cast<uint64_t>(range_ceil), kRangeCeilInterval),
                     GELOGE(FAILED, "Multiply result is out of range.");
@@ -114,7 +116,7 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
       range_ceils.push_back(range.back());
     }
   }
-  GELOGD("Range ceils: %s", ToString(range_ceils).c_str());
+  GELOGI("Range ceils: %s", ToString(range_ceils).c_str());
 
   return SUCCESS;
 }

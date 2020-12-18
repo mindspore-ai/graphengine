@@ -30,9 +30,11 @@
 #include "cce/aicpu_engine_struct.h"
 
 namespace ge {
+class StreamResource;
+struct SingleOpModelParam;
 class SingleOp {
  public:
-  SingleOp(std::mutex *stream_mutex, rtStream_t stream);
+  SingleOp(StreamResource *stream_resource, std::mutex *stream_mutex, rtStream_t stream);
   ~SingleOp();
 
   Status ExecuteAsync(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
@@ -44,6 +46,7 @@ class SingleOp {
   Status GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
 
   friend class SingleOpModel;
+  StreamResource *stream_resource_;
   std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;
   std::vector<void *> input_addr_list_;
@@ -54,12 +57,13 @@ class SingleOp {
 
   std::vector<OpTask *> tasks_;
   std::vector<std::vector<uintptr_t *>> arg_table_;
+  std::unique_ptr<SingleOpModelParam> running_param_;
 };
 
 class DynamicSingleOp {
  public:
   DynamicSingleOp(uintptr_t resource_id, std::mutex *stream_mutex_, rtStream_t stream);
-  ~DynamicSingleOp();
+  ~DynamicSingleOp() = default;
   Status ExecuteAsync(const vector<GeTensorDesc> &input_desc,
                       const std::vector<DataBuffer> &inputs,
                       std::vector<GeTensorDesc> &output_desc,
@@ -71,14 +75,6 @@ class DynamicSingleOp {
                         const std::vector<DataBuffer> &inputs,
                         std::vector<GeTensorDesc> &output_desc,
                         std::vector<DataBuffer> &outputs) const;
-
-  Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes,
-                            std::vector<void *> &workspaces);
-
-  Status ExecuteTbeTask(const vector<GeTensorDesc> &input_desc,
-                        const vector<void *> &inputs,
-                        vector<GeTensorDesc> &output_desc,
-                        vector<void *> &outputs);
 
   std::unique_ptr<OpTask> op_task_;
   uintptr_t resource_id_ = 0;

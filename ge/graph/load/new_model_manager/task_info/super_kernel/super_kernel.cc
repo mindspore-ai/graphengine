@@ -25,10 +25,11 @@ Status SuperKernel::Launch(rtStream_t stream, uint32_t dump_flag) {
   const void *args[] = {this->GetNavTablePtr(),
                         reinterpret_cast<const void *>(static_cast<uintptr_t>(this->GetNavTableSize()))};
 
-  rtError_t rt_ret = rtMalloc((void **)&(device_args_addr_), sizeof(args), RT_MEMORY_HBM);
-  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc failied. error: 0x%X", rt_ret); return
-                  RT_ERROR_TO_GE_STATUS(rt_ret);)
-  rt_ret = rtMemcpy((void *)device_args_addr_, sizeof(args), (void *)args, sizeof(args), RT_MEMCPY_HOST_TO_DEVICE);
+  rtError_t rt_ret = rtMalloc(reinterpret_cast<void **>(&device_args_addr_), sizeof(args), RT_MEMORY_HBM);
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc failied. error: 0x%X", rt_ret);
+                  return RT_ERROR_TO_GE_STATUS(rt_ret);)
+  rt_ret = rtMemcpy(reinterpret_cast<void *>(device_args_addr_), sizeof(args), reinterpret_cast<void *>(args),
+                    sizeof(args), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy failied. error: 0x%X", rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
   rt_ret = rtKernelLaunchWithFlag((void *const)func_stub_, block_dim_, device_args_addr_, sizeof(args), NULL, stream,

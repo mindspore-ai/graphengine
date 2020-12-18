@@ -106,7 +106,7 @@ Status HostMemManager::QueryVarMemInfo(const string &op_name, uint64_t &base_add
     GELOGE(INTERNAL_ERROR, "Find host base base_addr failed,node name:%s!", op_name.c_str());
     return INTERNAL_ERROR;
   }
-  base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].device_address));
+  base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].device_address));
   data_size = var_memory_base_map_[op_name].mem_size;
   return SUCCESS;
 }

@@ -349,7 +349,8 @@ static Status GenerateTaskForConstant(const std::shared_ptr<ComputeGraph> &graph
           GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
           std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
           if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
-            GELOGE(FAILED, "Insert memcpy between %s and %s failed.", in_node->GetName().c_str(), node->GetName().c_str());
+            GELOGE(FAILED, "Insert memcpy between %s and %s failed.",
+                   in_node->GetName().c_str(), node->GetName().c_str());
             return FAILED;
           }
         }
@@ -475,7 +476,7 @@ Status GraphBuilder::GetTaskInfo(const ge::ModelBuilder &builder, const ModelPtr
 }
 
 Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
-  // set input_desc.size = src_node.output_desc.size
+  // Set the size of input_desc to 'src_node.output_desc.size'
   if (node_ptr->GetType() == DATA) {
     bool is_unknown_shape = false;
     GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node_ptr, is_unknown_shape),
@@ -498,7 +499,7 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
     GE_IF_BOOL_EXEC(src_op == nullptr, continue);
     auto node_op_desc = node_ptr->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
-    // set dst_node.input_desc = src_node.output_desc
+    // Set the input_desc of dst_node to 'src_node.output_desc'
     auto output_desc = src_op->GetOutputDescPtr(peer_out_anchor->GetIdx());
     int64_t size = 0;
     GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_desc, size) != SUCCESS, GELOGI("Get size failed!"));
@@ -512,7 +513,6 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
     auto input_desc = node_op_desc->MutableInputDesc(in_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(input_desc);
     (void) ge::TensorUtils::SetSize(*input_desc, size);
-    GE_CHK_STATUS_RET(node_op_desc->UpdateInputDesc(in_data_anchor->GetIdx(), *input_desc));
     GELOGD("%s input desc, dim_size: %zu, mem_size: %ld, format: %s, type: %s.", node_ptr->GetName().c_str(),
            input_desc->GetShape().GetDimNum(), size, TypeUtils::FormatToSerialString(input_desc->GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str());

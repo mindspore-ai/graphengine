@@ -15,7 +15,7 @@
  */
 
 #include "hybrid/node_executor/aicpu/aicpu_node_executor.h"
-#include "cce/taskdown_common.hpp"
+#include "framework/common/taskdown_common.h"
 #include "common/formats/formats.h"
 #include "aicpu/common/aicpu_task_struct.h"
 #include "graph/load/new_model_manager/model_manager.h"
@@ -642,10 +642,14 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
   const std::string &so_name = kernel_def.so_name();
   const OpDescPtr op_desc = node_item_->GetOpDesc();
   const auto &context = kernel_def.context();
-  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-  if (kernel_type == cce::ccKernelType::CUST_AI_CPU) {
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name), "load cust aicpu so failed.");
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+  auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
+  if (kernel_type == ccKernelType::CUST_AI_CPU) {
+    bool loaded = false;
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name, loaded), 
+                      "load cust aicpu so failed.");
+    if (!loaded) {
+      GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+    }
   }
 
   GE_CHK_BOOL_RET_STATUS(args.size() == args_size_, FAILED,
@@ -723,9 +727,9 @@ Status AicpuNodeTask::UpdateIoAddr(TaskContext &context) {
 
   auto io_addr = args_.get() + sizeof(aicpu::AicpuParamHead);
   // if has input and output, need copy to ioaddr
-  error_t cpy_ret = memcpy_s(io_addr, args_size_ - sizeof(aicpu::AicpuParamHead),
-                             &io_addrs[0], sizeof(uint64_t) * io_addrs.size());
-  GE_CHK_BOOL_RET_STATUS(cpy_ret == EOK, INTERNAL_ERROR,
+  int cpy_ret = memcpy_s(io_addr, args_size_ - sizeof(aicpu::AicpuParamHead),
+                         &io_addrs[0], sizeof(uint64_t) * io_addrs.size());
+  GE_CHK_BOOL_RET_STATUS(cpy_ret == 0, INTERNAL_ERROR,
                          "Node[%s] memcpy io addr to AicpuParamHead failed, ret=%d, args_size=%u, io nums=%zu.",
                          node_name_.c_str(), cpy_ret, args_size_, io_addrs.size());
   return SUCCESS;
@@ -736,9 +740,9 @@ Status AicpuNodeTask::LaunchTask(TaskContext &context) {
   const auto &so_name = task_def_.kernel().so_name();
   const auto &kernel_name = task_def_.kernel().kernel_name();
   const auto &kcontext = task_def_.kernel().context();
-  auto kernel_type = static_cast<cce::ccKernelType>(kcontext.kernel_type());
+  auto kernel_type = static_cast<ccKernelType>(kcontext.kernel_type());
   uint32_t flag = RT_KERNEL_DEFAULT;
-  if (kernel_type == cce::ccKernelType::CUST_AI_CPU) {
+  if (kernel_type == ccKernelType::CUST_AI_CPU) {
     flag |= static_cast<uint32_t>(RT_KERNEL_CUSTOM_AICPU);
   }
   auto rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name.c_str()),

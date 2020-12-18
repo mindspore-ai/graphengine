@@ -23,7 +23,7 @@ export BUILD_PATH="${BASEPATH}/build/"
 usage()
 {
   echo "Usage:"
-  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off]"
+  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off] [-M]"
   echo ""
   echo "Options:"
   echo "    -h Print usage"
@@ -35,6 +35,7 @@ usage()
   echo "    -p Build inference or train"
   echo "    -v Display build command"
   echo "    -S Enable enable download cmake compile dependency from gitee , default off"
+  echo "    -M build MindSpore mode"
   echo "to be continued ..."
 }
 
@@ -62,8 +63,9 @@ checkopts()
   PLATFORM=""
   PRODUCT="normal"
   ENABLE_GITEE="off"
+  MINDSPORE_MODE="off"
   # Process the options
-  while getopts 'ustchj:p:g:vS:' opt
+  while getopts 'ustchj:p:g:vS:M' opt
   do
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
@@ -104,6 +106,9 @@ checkopts()
         ENABLE_GITEE="$OPTARG"
         echo "enable download from gitee"
         ;;
+      M)
+        MINDSPORE_MODE="on"
+        ;;
       *)
         echo "Undefined option: ${opt}"
         usage
@@ -113,8 +118,8 @@ checkopts()
 }
 checkopts "$@"
 
-git submodule update --init metadef
-git submodule update --init parser
+#git submodule update --init metadef
+#git submodule update --init parser
 
 mk_dir() {
     local create_dir="$1"  # the target to make
@@ -150,7 +155,13 @@ build_graphengine()
   if [[ "X$ENABLE_GITEE" = "Xon" ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GITEE=ON"
   fi
-  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
+
+  if [[ "X$MINDSPORE_MODE" = "Xoff" ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
+  else
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_D=ON -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
+  fi
+
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ..
   if [ $? -ne 0 ]
@@ -169,6 +180,9 @@ build_graphengine()
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
+  elif [ "X$MINDSPORE_MODE" = "Xon" ]
+  then
+    TARGET="ge_common graph"
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
@@ -314,7 +328,13 @@ generate_package()
   fi
 }
 
-if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then
+if [[ "X$ENABLE_GE_UT" = "Xoff" && "X$MINDSPORE_MODE" = "Xoff" ]]; then
   generate_package
+  echo "---------------- GraphEngine package archive generated ----------------"
+elif [ "X$MINDSPORE_MODE" = "Xon" ]
+then
+  cd "${OUTPUT_PATH}"
+  find ./ -name graphengine_lib.tar -exec rm {} \;
+  tar -cf graphengine_lib.tar lib
 fi
-echo "---------------- GraphEngine package archive generated ----------------"
+

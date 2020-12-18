@@ -50,7 +50,7 @@ typedef int (*mmFilter)(const mmDirent *entry);
 typedef int (*mmFilter2)(const mmDirent2 *entry);
 typedef int (*mmSort)(const mmDirent **a, const mmDirent **b);
 typedef int (*mmSort2)(const mmDirent2 **a, const mmDirent2 **b);
-typedef size_t mmSize_t;
+typedef size_t mmSize_t; //lint !e410 !e1051
 typedef off_t mmOfft_t;
 typedef pid_t mmPid_t;
 typedef long MM_LONG;
@@ -214,6 +214,10 @@ typedef struct {
 #define S_IREAD S_IRUSR
 #define S_IWRITE S_IWUSR
 #endif
+
+#define mm_no_argument        no_argument
+#define mm_required_argument  required_argument
+#define mm_optional_argument  optional_argument
 
 #define M_FILE_RDONLY O_RDONLY
 #define M_FILE_WRONLY O_WRONLY
@@ -412,8 +416,12 @@ MMPA_FUNC_VISIBILITY VOID mmClosePipe(mmPipeHandle pipe[], UINT32 pipeCount);
 // Poll related interface
 MMPA_FUNC_VISIBILITY mmCompletionHandle mmCreateCompletionPort();
 MMPA_FUNC_VISIBILITY VOID mmCloseCompletionPort(mmCompletionHandle handle);
-MMPA_FUNC_VISIBILITY INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, mmCompletionHandle handleIOCP,
-                                    pmmPollData polledData, mmPollBack pollBack);
+MMPA_FUNC_VISIBILITY INT32 mmPoll(mmPollfd *fds,
+                                  INT32 fdCount,
+                                  INT32 timeout,
+                                  mmCompletionHandle handleIOCP,
+                                  pmmPollData polledData,
+                                  mmPollBack pollBack);
 MMPA_FUNC_VISIBILITY INT32 mmGetErrorCode();
 MMPA_FUNC_VISIBILITY CHAR *mmGetErrorFormatMessage(mmErrorMsg errnum, CHAR *buf, mmSize size);
 MMPA_FUNC_VISIBILITY INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone);

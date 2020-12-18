@@ -72,25 +72,26 @@ Status SwitchToStreamSwitchPass::CheckCycleDependence(const ComputeGraphPtr &gra
   std::unordered_map<NodePtr, std::vector<NodePtr>> cond_switch_map;
   for (const NodePtr &node : graph->GetDirectNode()) {
     GE_CHK_STATUS_RET(GetOriginalType(node, type), "Get node type failed.");
-    if ((type == SWITCH) || (type == REFSWITCH)) {
-      InDataAnchorPtr in_cond_anchor = node->GetInDataAnchor(SWITCH_PRED_INPUT);
-      GE_CHECK_NOTNULL(in_cond_anchor);
-      OutDataAnchorPtr peer_out_anchor = in_cond_anchor->GetPeerOutAnchor();
-      GE_CHECK_NOTNULL(peer_out_anchor);
-      if (FindSwitchCondInput(true, peer_out_anchor) != SUCCESS) {
-        GELOGE(FAILED, "Find pred_input for switch_node %s failed.", node->GetName().c_str());
-        return FAILED;
-      }
-
-      NodePtr cond_node = peer_out_anchor->GetOwnerNode();
-      auto iter = cond_switch_map.find(cond_node);
-      if (iter == cond_switch_map.end()) {
-        cond_switch_map[cond_node] = { node };
-      } else {
-        iter->second.emplace_back(node);
-      }
-      switch_nodes_.emplace_back(node);
+    if ((type != SWITCH) && (type != REFSWITCH)) {
+      continue;
     }
+    InDataAnchorPtr in_cond_anchor = node->GetInDataAnchor(SWITCH_PRED_INPUT);
+    GE_CHECK_NOTNULL(in_cond_anchor);
+    OutDataAnchorPtr peer_out_anchor = in_cond_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out_anchor);
+    if (FindSwitchCondInput(peer_out_anchor) != SUCCESS) {
+      GELOGE(FAILED, "Find pred_input for switch_node %s failed.", node->GetName().c_str());
+      return FAILED;
+    }
+
+    NodePtr cond_node = peer_out_anchor->GetOwnerNode();
+    auto iter = cond_switch_map.find(cond_node);
+    if (iter == cond_switch_map.end()) {
+      cond_switch_map[cond_node] = { node };
+    } else {
+      iter->second.emplace_back(node);
+    }
+    switch_nodes_.emplace_back(node);
   }
 
   MarkCycleDependence(cond_switch_map);
@@ -241,10 +242,6 @@ Status SwitchToStreamSwitchPass::BypassSwitchNode(const NodePtr &switch_node, Ou
     if (idx == SWITCH_DATA_INPUT) {
       peer_data_anchor = peer_out_anchor;
     } else {
-      if (FindSwitchCondInput(false, peer_out_anchor) != SUCCESS) {
-        GELOGE(FAILED, "Find pred_input for switch_node %s failed.", switch_node->GetName().c_str());
-        return FAILED;
-      }
       peer_cond_anchor = peer_out_anchor;
     }
   }
@@ -254,15 +251,14 @@ Status SwitchToStreamSwitchPass::BypassSwitchNode(const NodePtr &switch_node, Ou
 
 ///
 /// @brief Find Switch cond input
-/// @param [in] pass_switch_flag
 /// @param [out] peer_cond_anchor
 /// @return Status
 ///
-Status SwitchToStreamSwitchPass::FindSwitchCondInput(bool pass_switch_flag, OutDataAnchorPtr &peer_cond_anchor) {
+Status SwitchToStreamSwitchPass::FindSwitchCondInput(OutDataAnchorPtr &peer_cond_anchor) {
   NodePtr tmp_node = nullptr;
-  string type;
-  bool need_pass_type = true;
-  while (need_pass_type) {
+  std::string type;
+  bool pass_flag = true;
+  while (pass_flag) {
     if (tmp_node == nullptr) {
       tmp_node = peer_cond_anchor->GetOwnerNode();
     } else {
@@ -274,7 +270,7 @@ Status SwitchToStreamSwitchPass::FindSwitchCondInput(bool pass_switch_flag, OutD
     }
 
     GE_CHK_STATUS_RET(GetOriginalType(tmp_node, type), "Get node type failed.");
-    need_pass_type = (pass_switch_flag && ((type == SWITCH) || (type == REFSWITCH)));
+    pass_flag = ((type == SWITCH) || (type == REFSWITCH));
   }
 
   return SUCCESS;
@@ -369,7 +365,7 @@ Status SwitchToStreamSwitchPass::MarkBranches(const OutDataAnchorPtr &peer_cond_
     }
   } else {
     int64_t switch_group_id = GetGroupId(stream_switch);
-    map<int64_t, std::vector<std::list<NodePtr>>> switch_group_map;
+    std::map<int64_t, std::vector<std::list<NodePtr>>> switch_group_map;
     std::list<NodePtr> false_node_list;
     std::list<NodePtr> true_node_list;
     std::list<NodePtr> &node_list = true_branch_flag ? true_node_list : false_node_list;
@@ -389,7 +385,7 @@ Status SwitchToStreamSwitchPass::MarkBranches(const OutDataAnchorPtr &peer_cond_
 /// @return group_id
 ///
 int64_t SwitchToStreamSwitchPass::GetGroupId(const NodePtr &node) {
-  string tailing_optimization_option;
+  std::string tailing_optimization_option;
   bool is_tailing_optimization = false;
   if (GetContext().GetOption(OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION, tailing_optimization_option) == GRAPH_SUCCESS) {
     // "1" means it's True from frontend option
@@ -400,7 +396,7 @@ int64_t SwitchToStreamSwitchPass::GetGroupId(const NodePtr &node) {
     return 0;
   }
 
-  string hccl_group_id;
+  std::string hccl_group_id;
   if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_HCCL_FUSED_GROUP, hccl_group_id)) {
     GELOGI("Node %s can not find hccl group id.", node->GetName().c_str());
     return 0;
@@ -432,6 +428,7 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
       same_cond_switch.insert(true_switch_list.begin(), true_switch_list.end());
 
       OutDataAnchorPtr peer_cond_anchor = iter->first;
+      GE_CHECK_NOTNULL(peer_cond_anchor);
       NodePtr cond_node = peer_cond_anchor->GetOwnerNode();
       GELOGI("CombineSwitchNode: cond_node=%s.", cond_node->GetName().c_str());
 
@@ -549,6 +546,7 @@ NodePtr SwitchToStreamSwitchPass::CreateCastOp(const ComputeGraphPtr &graph, con
 
   NodePtr cast_node = graph->AddNode(cast_desc);
   GE_CHK_BOOL_EXEC(cast_node != nullptr, return nullptr, "Create cast_node failed.");
+  // Cast node has and only has one input
   GE_CHK_STATUS(GraphUtils::AddEdge(peer_cond_anchor, cast_node->GetInDataAnchor(0)), "Cast add data edge failed.");
 
   return cast_node;
@@ -614,24 +612,24 @@ Status SwitchToStreamSwitchPass::ModifySwitchInCtlEdges(const NodePtr &switch_no
     return INTERNAL_ERROR;
   }
 
-  for (const NodePtr &in_ctl_node : switch_node->GetInControlNodes()) {
-    GE_CHK_STATUS(GraphUtils::RemoveEdge(in_ctl_node->GetOutControlAnchor(), switch_node->GetInControlAnchor()),
+  for (const NodePtr &in_ctrl_node : switch_node->GetInControlNodes()) {
+    GE_CHK_STATUS(GraphUtils::RemoveEdge(in_ctrl_node->GetOutControlAnchor(), switch_node->GetInControlAnchor()),
                   "Remove ctl edge failed.");
-    GE_IF_BOOL_EXEC(!in_ctl_node->GetOutControlAnchor()->IsLinkedWith(cast_node->GetInControlAnchor()), {
-      GE_CHK_STATUS(GraphUtils::AddEdge(in_ctl_node->GetOutControlAnchor(), cast_node->GetInControlAnchor()),
+    GE_IF_BOOL_EXEC(!in_ctrl_node->GetOutControlAnchor()->IsLinkedWith(cast_node->GetInControlAnchor()), {
+      GE_CHK_STATUS(GraphUtils::AddEdge(in_ctrl_node->GetOutControlAnchor(), cast_node->GetInControlAnchor()),
                     "Add ctl edge failed.");
     });
 
-    GE_IF_BOOL_EXEC(in_ctl_node->GetType() != STREAMSWITCH, continue);
-    if (same_cond_switch.count(in_ctl_node) > 0) {
-      GE_CHK_STATUS(GraphUtils::RemoveEdge(in_ctl_node->GetOutControlAnchor(), cast_node->GetInControlAnchor()),
+    GE_IF_BOOL_EXEC(in_ctrl_node->GetType() != STREAMSWITCH, continue);
+    if (same_cond_switch.count(in_ctrl_node) > 0) {
+      GE_CHK_STATUS(GraphUtils::RemoveEdge(in_ctrl_node->GetOutControlAnchor(), cast_node->GetInControlAnchor()),
                     "Remove ctl edge failed.");
       continue;
     }
 
-    auto find_res1 = switch_node_map_.find(in_ctl_node);
+    auto find_res1 = switch_node_map_.find(in_ctrl_node);
     GE_IF_BOOL_EXEC(find_res1 == switch_node_map_.end(), {
-      GELOGE(INTERNAL_ERROR, "StreamSwitch node %s not found in switch_node_map_.", in_ctl_node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "StreamSwitch node %s not found in switch_node_map_.", in_ctrl_node->GetName().c_str());
       return INTERNAL_ERROR;
     });
     auto find_res2 = find_res1->second.find(orig_switch_name);

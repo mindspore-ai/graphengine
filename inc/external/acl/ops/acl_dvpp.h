@@ -130,6 +130,23 @@ enum acldvppChannelMode { DVPP_CHNMODE_VPC = 1, DVPP_CHNMODE_JPEGD = 2, DVPP_CHN
 // Supported Border Type
 enum acldvppBorderType { BORDER_CONSTANT = 0, BORDER_REPLICATE, BORDER_REFLECT, BORDER_REFLECT_101 };
 
+// Venc parameter type
+enum aclvencChannelDescParamType {
+  ACL_VENC_THREAD_ID_UINT64 = 0,
+  ACL_VENC_CALLBACK_PTR,
+  ACL_VENC_PIXEL_FORMAT_UINT32,
+  ACL_VENC_ENCODE_TYPE_UINT32,
+  ACL_VENC_PIC_WIDTH_UINT32,
+  ACL_VENC_PIC_HEIGHT_UINT32,
+  ACL_VENC_KEY_FRAME_INTERVAL_UINT32,
+  ACL_VENC_BUF_ADDR_PTR,
+  ACL_VENC_BUF_SIZE_UINT32,
+  ACL_VENC_RC_MODE_UINT32,
+  ACL_VENC_SRC_RATE_UINT32,
+  ACL_VENC_MAX_BITRATE_UINT32,
+  ACL_VENC_MAX_IP_PROP_UINT32
+};
+
 /**
  * @ingroup AscendCL
  * @brief alloc device memory for dvpp.
@@ -1039,6 +1056,21 @@ ACL_FUNC_VISIBILITY aclError aclvencSetChannelDescMaxBitRate(aclvencChannelDesc 
 
 /**
  * @ingroup AscendCL
+ * @brief Set venc parameter for venc channel desc.
+ *
+ * @param channelDesc [OUT] venc channel desc
+ * @param paramType [IN]    parameter type
+ * @param length [IN]       parameter length
+ * @param param [IN]        pointer to parameter value
+ *
+ * @retval ACL_SUCCESS for success, other for failure
+ */
+ACL_FUNC_VISIBILITY aclError aclvencSetChannelDescParam(aclvencChannelDesc *channelDesc,
+                                                        aclvencChannelDescParamType paramType, size_t length,
+                                                        const void *param);
+
+/**
+ * @ingroup AscendCL
  * @brief Get output buffer address for venc channel desc.
  *
  * @param channelDesc[IN] venc channel desc
@@ -1169,6 +1201,23 @@ ACL_FUNC_VISIBILITY uint32_t aclvencGetChannelDescSrcRate(const aclvencChannelDe
  * @retval max bit rate, default 0
  */
 ACL_FUNC_VISIBILITY uint32_t aclvencGetChannelDescMaxBitRate(const aclvencChannelDesc *channelDesc);
+
+/**
+ * @ingroup AscendCL
+ *
+ * @brief Get venc parameter for venc channel desc.
+ *
+ * @param channelDesc [IN]   venc channel desc
+ * @param paramType [IN]     parameter type
+ * @param length [IN]        parameter length
+ * @param paramRetSize [OUT] pointer to parameter real length
+ * @param param [OUT]        pointer to parameter value
+ *
+ * @retval ACL_SUCCESS for success, other for failure
+ */
+ACL_FUNC_VISIBILITY aclError aclvencGetChannelDescParam(const aclvencChannelDesc *channelDesc,
+                                                        aclvencChannelDescParamType paramType, size_t length,
+                                                        size_t *paramRetSize, void *param);
 
 /**
  * @ingroup AscendCL

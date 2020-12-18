@@ -52,7 +52,7 @@ class SingleOpModel {
 
   Status Init();
   Status BuildOp(StreamResource &resource, SingleOp &single_op);
-  Status BuildDynamicOp(DynamicSingleOp &single_op);
+  Status BuildDynamicOp(StreamResource &resource, DynamicSingleOp &single_op);
 
  private:
   Status InitModel();
@@ -65,7 +65,7 @@ class SingleOpModel {
   Status ParseInputNode(const OpDescPtr &op_desc);
   void ParseOutputNode(const OpDescPtr &op_desc);
 
-  Status BuildTaskList(SingleOp &single_op);
+  Status BuildTaskList(StreamResource *stream_resource, SingleOp &single_op);
   Status BuildTaskListForDynamicOp(DynamicSingleOp &dynamic_single_op);
   Status BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTask **task);
   Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
@@ -74,9 +74,10 @@ class SingleOpModel {
   Status BuildModelTaskKernel(const domi::TaskDef &task_def, DynamicSingleOp &single_op);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
-  void ParseArgTable(TbeOpTask *task, SingleOp &op);
+  void ParseArgTable(OpTask *task, SingleOp &op);
 
   std::string model_name_;
+  uint32_t model_id_ = 0;
   const void *ori_model_data_;
   uint32_t ori_model_size_;
 

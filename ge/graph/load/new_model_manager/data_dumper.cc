@@ -919,11 +919,11 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
       ReplaceStringElem(op_name);
       ReplaceStringElem(op_type);
       string dump_file_path =
-          "./" + op_type + "." + op_name + "." + to_string(op_desc_info.task_id) + "." + to_string(now_time);
+          "./" + op_type + "." + op_name + "." + std::to_string(op_desc_info.task_id) + "." + std::to_string(now_time);
       GELOGI("The exception dump file path is %s", dump_file_path.c_str());
 
       uint64_t proto_size = dump_data.ByteSizeLong();
-      unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
+      std::unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
       bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);
       if (!ret || proto_size == 0) {
         GELOGE(PARAM_INVALID, "Dump data proto serialize failed");

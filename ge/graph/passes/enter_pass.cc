@@ -16,6 +16,7 @@
 
 #include "graph/passes/enter_pass.h"
 
+#include "graph/debug/ge_attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/graph_utils.h"
@@ -72,33 +73,25 @@ Status EnterPass::Run(NodePtr &node) {
 }
 
 Status EnterPass::OptimizeEnter(NodePtr &node, NodePtr &in_node) {
-  auto out_nodes_of_in_node = in_node->GetOutAllNodes();
-  if (out_nodes_of_in_node.size() != kOutNodesNum) {
+  if ((in_node->GetOutAllNodes().size() != kOutNodesNum) || !node->GetOutControlNodes().empty()) {
     return SUCCESS;
   }
-
-  if (!node->GetOutControlNodes().empty()) {
+  bool is_constant_flag = true;
+  (void)AttrUtils::GetBool(node->GetOpDesc(), ENTER_ATTR_CONSTANT_FLAG, is_constant_flag);
+  if (!is_constant_flag) {
     return SUCCESS;
-  }
-
-  for (const auto &out_node : node->GetOutDataNodes()) {
-    GE_CHECK_NOTNULL(out_node);
-    if (out_node->GetType() == MERGE) {
-      return SUCCESS;
-    }
   }
 
   GE_CHECK_NOTNULL(in_node->GetOutDataAnchor(0));
   GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->Unlink(node->GetInDataAnchor(0)));
-  auto out_data_anchor = node->GetOutDataAnchor(0);
+  const auto &out_data_anchor = node->GetOutDataAnchor(0);
   GE_CHECK_NOTNULL(out_data_anchor);
-  for (auto peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+  for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     GE_CHK_STATUS_RET(out_data_anchor->Unlink(peer_in_data_anchor));
     GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->LinkTo(peer_in_data_anchor));
   }
-
-  auto graph = node->GetOwnerComputeGraph();
-  GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, node))
+  GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node));
+  AddNodeDeleted(node);
   AddRePassNodesWithInOut(in_node);
 
   return SUCCESS;

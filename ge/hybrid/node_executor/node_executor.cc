@@ -34,7 +34,6 @@ const char *const kEngineNameAiCpuTf = "aicpu_tf_kernel";
 const char *const kEngineNameHccl = "ops_kernel_info_hccl";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
 const char *const kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
-const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 }
 Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());

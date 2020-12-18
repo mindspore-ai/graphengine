@@ -37,6 +37,8 @@ class AicpuNodeTaskBase : public NodeTask {
 
   ~AicpuNodeTaskBase() override = default;
 
+  using NodeTask::Init;
+
   virtual Status Init(const HybridModel &model) = 0;
 
   Status UpdateArgs(TaskContext &context) override;

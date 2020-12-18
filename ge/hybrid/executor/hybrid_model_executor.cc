@@ -82,7 +82,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
 Status HybridModelExecutor::Cleanup() {
   GELOGD("Start to cleanup.");
   context_.callback_manager->Destroy();
-  RuntimeInferenceContext::DestroyContext(to_string(context_.session_id));
+  RuntimeInferenceContext::DestroyContext(std::to_string(context_.session_id));
   GELOGD("Cleanup successfully.");
   return SUCCESS;
 }

@@ -10,7 +10,10 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
     message(STATUS "No install prefix selected, default to ${CMAKE_INSTALL_PREFIX}.")
 endif()
 
-if (ENABLE_GITEE)
+if (GE_PB_PKG)
+    set(REQ_URL "${GE_PB_PKG}/libs/gtest/release-1.8.0.tar.gz")
+    set(MD5 "")
+elseif (ENABLE_GITEE)
     set(REQ_URL "https://gitee.com/mirrors/googletest/repository/archive/release-1.8.0.tar.gz")
     set(MD5 "")
 else()
@@ -22,8 +25,9 @@ set (gtest_CXXFLAGS "-D_GLIBCXX_USE_CXX11_ABI=0 -D_FORTIFY_SOURCE=2 -O2 -fstack-
 set (gtest_CFLAGS "-D_GLIBCXX_USE_CXX11_ABI=0 -D_FORTIFY_SOURCE=2 -O2 -fstack-protector-all -Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(gtest_build
                     URL ${REQ_URL}
+                    TLS_VERIFY OFF
                     CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_CXX_FLAGS=${gtest_CXXFLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/gtest <SOURCE_DIR>
-		    -DBUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_MACOSX_RPATH=TRUE -Dgtest_disable_pthreads=ON
+                -DBUILD_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_MACOSX_RPATH=TRUE -Dgtest_disable_pthreads=ON
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install
                     EXCLUDE_FROM_ALL TRUE 

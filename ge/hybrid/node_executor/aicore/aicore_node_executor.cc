@@ -15,7 +15,7 @@
  */
 
 #include "aicore_node_executor.h"
-#include "cce/taskdown_common.hpp"
+#include "framework/common/taskdown_common.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 
 namespace ge {

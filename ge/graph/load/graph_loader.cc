@@ -283,7 +283,8 @@ Status GraphLoader::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asyn
                                  std::vector<GeTensorDesc> &output_desc) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->ExecuteModel(model_id, stream, async_mode, input_data, input_desc, output_data, output_desc);
+  Status ret = model_manager->ExecuteModel(model_id, stream, async_mode,
+                                           input_data, input_desc, output_data, output_desc);
   if (ret != SUCCESS) {
     GELOGE(ret, "Execute model failed, model_id:%u.", model_id);
     return ret;

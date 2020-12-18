@@ -57,7 +57,8 @@ struct GraphExecutionContext {
 do { \
   if ((context != nullptr) && (context)->profiler != nullptr) { \
     if (node_name != nullptr) { \
-      context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GeLog::GetTid(), node_name, category, ##__VA_ARGS__);\
+      context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GeLog::GetTid(), node_name, category, \
+                                     ##__VA_ARGS__); \
     } else { \
       context->profiler->RecordEvent(evt_type, "tid:%lu [%s] " fmt, GeLog::GetTid(), category, ##__VA_ARGS__); \
     }\
@@ -77,7 +78,7 @@ do { \
   RECORD_PROFILING_EVENT((context), HybridProfiler::EXECUTION, fmt, "Execution", name,  ##__VA_ARGS__)
 
 #define RECORD_CALLBACK_EVENT(context, name, fmt, ...) \
-  RECORD_PROFILING_EVENT((context), HybridProfiler::CALLBACK, fmt, "Callback", name,  ##__VA_ARGS__)
+  RECORD_PROFILING_EVENT((context), HybridProfiler::CALLBACKS, fmt, "Callback", name,  ##__VA_ARGS__)
 }  // namespace hybrid
 }  // namespace ge
 #endif // GE_HYBRID_EXECUTOR_HYBRID_EXECUTION_CONTEXT_H_

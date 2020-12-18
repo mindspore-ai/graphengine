@@ -23,12 +23,29 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
+#include "framework/common/types.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {
 namespace formats {
 namespace {
 const int kDimSize4D = 4;
+
+const size_t kSingleDim = 1;
+
+const size_t kNdDimIndexN = 0;
+const size_t kNdDimIndexH = 1;
+const size_t kNdDimIndexW = 2;
+
+const size_t kDimDValueBNdFZz = 2;  // dim d-value between Nd and FractalZz
+
+const size_t kNdDimCountBackwardsW = 1;
+const size_t kNdDimCountBackwardsWH = 2;
+
+const size_t kFZzDimCountBackwardsW0 = 1;
+const size_t kFZzDimCountBackwardsW0H0 = 2;
+const size_t kFZzDimCountBackwardsW0H0W1 = 3;
+const size_t kFZzDimCountBackwardsW0H0W1H1 = 4;
 bool IsDataTypeSupport(DataType d_type) { return GetSizeByDataType(d_type) > 0; }
 
 using ShapeVector = std::vector<int64_t>;
@@ -40,8 +57,8 @@ bool CheckShape(Format format, const ShapeVector &shape) {
     case FORMAT_NHWC:
       return CheckShapeValid(shape, kDimSize4D);
     default:
-      std::string error = "Trans format between " +  FmtToStr(TypeUtils::FormatToSerialString(format)) +
-          " and FORMAT_FRACTAL_ZZ is not supported.";
+      std::string error = "Trans format between " + FmtToStr(TypeUtils::FormatToSerialString(format)) +
+                          " and FORMAT_FRACTAL_ZZ is not supported.";
       GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
       return false;
   }
@@ -60,14 +77,14 @@ Status TransShapeToFracZz(const ShapeVector &src_shape, DataType data_type, Shap
   auto w0 = GetCubeSizeByDataType(data_type);
   auto h0 = GetCubeSizeByDataType(data_type);
   switch (src_shape.size()) {
-    case 1:
-      dst_shape.push_back(1);
-      dst_shape.push_back(Ceil(src_shape[0], w0));
+    case kSingleDim:
+      dst_shape.push_back(DIM_DEFAULT_VALUE);
+      dst_shape.push_back(Ceil(src_shape[kNdDimIndexN], w0));
       dst_shape.push_back(h0);
       dst_shape.push_back(w0);
-      hw_shape.push_back(1);
-      hw_shape.push_back(1);
-      hw_shape.push_back(src_shape[0]);
+      hw_shape.push_back(DIM_DEFAULT_VALUE);
+      hw_shape.push_back(DIM_DEFAULT_VALUE);
+      hw_shape.push_back(src_shape[kNdDimIndexN]);
       if (!IsShapeValid(dst_shape)) {
         GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
         return PARAM_INVALID;
@@ -76,17 +93,17 @@ Status TransShapeToFracZz(const ShapeVector &src_shape, DataType data_type, Shap
     default:
       auto size = src_shape.size();
       int64_t times = 1;
-      for (size_t i = 0; i != size - 2; i++) {
+      for (size_t i = 0; i != size - kDimDValueBNdFZz; i++) {
         dst_shape.push_back(src_shape[i]);
         times *= src_shape[i];
       }
-      dst_shape.push_back(Ceil(src_shape[size - 2], h0));
-      dst_shape.push_back(Ceil(src_shape[size - 1], w0));
+      dst_shape.push_back(Ceil(src_shape[size - kNdDimCountBackwardsWH], h0));
+      dst_shape.push_back(Ceil(src_shape[size - kNdDimCountBackwardsW], w0));
       dst_shape.push_back(h0);
       dst_shape.push_back(w0);
       hw_shape.push_back(times);
-      hw_shape.push_back(src_shape[size - 2]);
-      hw_shape.push_back(src_shape[size - 1]);
+      hw_shape.push_back(src_shape[size - kNdDimCountBackwardsWH]);
+      hw_shape.push_back(src_shape[size - kNdDimCountBackwardsW]);
       if (!IsShapeValid(dst_shape)) {
         GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
         return PARAM_INVALID;
@@ -127,16 +144,16 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
     return OUT_OF_MEMORY;
   }
   // The src&dst_shape can be written as times*H*W & times*H1*W1*H0*W0, respectively. dst_shape_size >= kDimNum4D
-  auto times = hw_shape.at(0);
-  auto h = hw_shape.at(1);
-  auto w = hw_shape.at(2);
+  auto times = hw_shape.at(kNdDimIndexN);
+  auto h = hw_shape.at(kNdDimIndexH);
+  auto w = hw_shape.at(kNdDimIndexW);
   auto hw = h * w;
 
   auto shape_size = args.dst_shape.size();
-  auto h1 = args.dst_shape[shape_size - 4];
-  auto w1 = args.dst_shape[shape_size - 3];
-  auto h0 = args.dst_shape[shape_size - 2];
-  auto w0 = args.dst_shape[shape_size - 1];
+  auto h1 = args.dst_shape[shape_size - kFZzDimCountBackwardsW0H0W1H1];
+  auto w1 = args.dst_shape[shape_size - kFZzDimCountBackwardsW0H0W1];
+  auto h0 = args.dst_shape[shape_size - kFZzDimCountBackwardsW0H0];
+  auto w0 = args.dst_shape[shape_size - kFZzDimCountBackwardsW0];
   auto h0w0 = h0 * w0;
   auto w1h0w0 = w1 * h0w0;
   auto h1w1h0w0 = h1 * w1h0w0;
@@ -155,8 +172,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto src_offset = (src_h_head + w1_idx * w0) * size;
           auto dst_offset = (h0_head + w1_idx * h0w0) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
@@ -171,8 +188,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto src_offset = (src_h_head + src_w_idx) * size;
           auto dst_offset = (w0_head + w0_idx) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
@@ -205,16 +222,16 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
   }
 
   // The src&dst_shape can be written as times*H*W & times*H1*W1*H0*W0, respectively. dst_shape_size >= kDimNum4D
-  auto times = dst_hw_shape.at(0);
-  auto h = dst_hw_shape.at(1);
-  auto w = dst_hw_shape.at(2);
+  auto times = dst_hw_shape.at(kNdDimIndexN);
+  auto h = dst_hw_shape.at(kNdDimIndexH);
+  auto w = dst_hw_shape.at(kNdDimIndexW);
   auto hw = h * w;
 
   auto shape_size = args.src_shape.size();
-  auto h1 = args.src_shape[shape_size - 4];
-  auto w1 = args.src_shape[shape_size - 3];
-  auto h0 = args.src_shape[shape_size - 2];
-  auto w0 = args.src_shape[shape_size - 1];
+  auto h1 = args.src_shape[shape_size - kFZzDimCountBackwardsW0H0W1H1];
+  auto w1 = args.src_shape[shape_size - kFZzDimCountBackwardsW0H0W1];
+  auto h0 = args.src_shape[shape_size - kFZzDimCountBackwardsW0H0];
+  auto w0 = args.src_shape[shape_size - kFZzDimCountBackwardsW0];
   auto h0w0 = h0 * w0;
   auto w1h0w0 = w1 * h0w0;
   auto h1w1h0w0 = h1 * w1h0w0;
@@ -233,8 +250,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto src_offset = (h0_head + w1_idx * h0w0) * size;
           auto dst_offset = (dst_h_head + w1_idx * w0) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
@@ -249,8 +266,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto dst_w_idx = w1_head + w0_idx;
           auto dst_offset = (dst_h_head + dst_w_idx) * size;
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
-                                    ? dst_size - dst_offset
-                                    : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+                                  ? dst_size - dst_offset
+                                  : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {

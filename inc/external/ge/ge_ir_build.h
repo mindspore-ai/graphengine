@@ -24,9 +24,9 @@
 #include "graph/ge_error_codes.h"
 
 namespace {
-#define IR_MAJOR_VERSION (int(1))
-#define IR_MINOR_VERSION (int(0))
-#define IR_PATCH_VERSION (int(0))
+const int IR_MAJOR_VERSION = 1;
+const int IR_MINOR_VERSION = 0;
+const int IR_PATCH_VERSION = 0;
 }  // namespace
 
 namespace ge {
@@ -121,5 +121,20 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph);
  * @retval OtherValues Failure
  */
 graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
+
+/**
+ * @ingroup AscendCL
+ * @brief create single op graph
+ *
+ * @param op_type[IN] the op_type
+ * @param inputs[IN] the inputdesc
+ * @param outputs[IN] the outputdesc
+ * @param graph[OUT] the graph
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+graphStatus aclgrphGenerateForOp(const AscendString &op_type, const std::vector<TensorDesc> &inputs,
+                                 const std::vector<TensorDesc> &outputs, Graph &graph);
+
 };      // namespace ge
 #endif  // INC_EXTERNAL_GE_IR_BUILD_H_

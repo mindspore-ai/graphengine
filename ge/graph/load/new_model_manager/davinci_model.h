@@ -440,7 +440,7 @@ class DavinciModel {
 
   Status SinkTimeProfile(const InputData &current_data);
 
-  Status ReportProfilingData(bool check_device = true);
+  Status ReportProfilingData();
 
   void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
     data_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);

@@ -29,6 +29,8 @@ LIBGE_LOCAL_SRC_FILES := \
     common/dump/dump_manager.cc \
     common/dump/dump_properties.cc \
     common/dump/dump_op.cc \
+    common/profiling/ge_profiling.cc \
+    common/profiling/ge_runner_profiling.cc \
     engine_manager/dnnengine_manager.cc \
     ge_local_engine/engine/host_cpu_engine.cc \
     generator/ge_generator.cc \
@@ -111,6 +113,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
+    graph/passes/dynamic_single_op_reset_shape_pass.cc \
     graph/passes/mark_agnostic_pass.cc \
     graph/partition/dynamic_shape_partition.cc \
     graph/partition/stage_partition.cc \
@@ -170,6 +173,7 @@ LIBGE_LOCAL_SRC_FILES := \
     host_kernels/sub_kernel.cc \
     host_kernels/transdata_kernel.cc \
     host_kernels/unpack_kernel.cc \
+    host_kernels/reformat_kernel.cc \
     graph/passes/folding_pass.cc \
     graph/passes/get_original_format_pass.cc \
     graph/passes/guarantee_const_pass.cc \
@@ -306,7 +310,6 @@ LIBGE_LOCAL_SRC_FILES := \
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \
     client/ge_api.cc \
-    client/ge_prof.cc \
 
 RUNNER_LOCAL_C_INCLUDES := \
     $(LOCAL_PATH) ./ \
@@ -371,7 +374,7 @@ LOCAL_SRC_FILES += $(LIBCLIENT_LOCAL_SRC_FILES)
 
 LOCAL_STATIC_LIBRARIES := libge_memory \
                           libadump_server \
-                          libmsprofiler \
+                          libmsprofiler_fwk \
                           libmmpa \
 
 LOCAL_SHARED_LIBRARIES := \
@@ -381,7 +384,6 @@ LOCAL_SHARED_LIBRARIES := \
     libgraph \
     libregister \
     libge_common \
-    libmsprof \
     liberror_manager \
 
 LOCAL_LDFLAGS := -lrt -ldl
@@ -408,7 +410,6 @@ endif
 LOCAL_C_INCLUDES := $(RUNNER_LOCAL_C_INCLUDES)
 
 LOCAL_SRC_FILES := ../../out/ge/lib64/stub/ge_api.cc \
-                   ../../out/ge/lib64/stub/ge_prof.cc \
                    ../../out/ge/lib64/stub/ge_ir_build.cc \
 
 LOCAL_SHARED_LIBRARIES :=
@@ -464,7 +465,6 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libslog \
     libmmpa \
-    libmsprof \
 
 LOCAL_LDFLAGS := -lrt -ldl
 
@@ -497,7 +497,6 @@ LOCAL_SHARED_LIBRARIES := \
     libc_sec \
     libslog \
     libmmpa \
-    libmsprof \
 
 LOCAL_LDFLAGS := -lrt -ldl
 

@@ -15,7 +15,7 @@
  */
 
 #include "hybrid/node_executor/aicore/aicore_op_task.h"
-#include "cce/taskdown_common.hpp"
+#include "framework/common/taskdown_common.h"
 #include "framework/common/debug/log.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
@@ -38,7 +38,7 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
 }
 
 Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
-  auto op_desc_ptr = make_shared<OpDesc>(op_desc);
+  auto op_desc_ptr = std::make_shared<OpDesc>(op_desc);
   GE_CHECK_NOTNULL(op_desc_ptr);
   auto tbe_kernel = op_desc_ptr->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
   if (tbe_kernel == nullptr) {
@@ -151,8 +151,8 @@ Status AiCoreOpTask::ValidateTaskDef(const domi::TaskDef &task_def) {
 
   const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
-  auto kernel_type = static_cast<cce::ccKernelType>(context.kernel_type());
-  if (kernel_type != cce::ccKernelType::TE) {
+  auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
+  if (kernel_type != ccKernelType::TE) {
     GELOGE(INTERNAL_ERROR, "Invalid kernel type(%d) in AiCore TaskDef.", static_cast<int>(kernel_type));
     return INTERNAL_ERROR;
   }

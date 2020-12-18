@@ -27,7 +27,7 @@
 namespace ge {
 namespace hybrid {
 class NodeTask;
-class GraphExecutionContext;
+struct GraphExecutionContext;
 class SubgraphContext;
 
 class ShapeFuture {

@@ -21,18 +21,16 @@
 #include <vector>
 
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
 #include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
 
-using domi::PARAM_INVALID;
-using domi::SUCCESS;
-
 namespace ge {
 const int kValueIndexOutputIndex = 1;
+const size_t kCaseNoInput = 0;
+const size_t kCaseOneInput = 1;
 
 Status MergePass::Run(NodePtr &node) {
   GELOGD("MergePass running");
@@ -47,15 +45,14 @@ Status MergePass::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  auto out_data_anchors = node->GetAllOutDataAnchors();
-  if (out_data_anchors.empty()) {
+  if (node->GetAllOutDataAnchors().empty()) {
     GELOGE(PARAM_INVALID, "[%s] Merge node output anchor is empty", node->GetName().c_str());
     return PARAM_INVALID;
   }
 
-  auto in_data_nodes = node->GetInDataNodes();
+  const auto &in_data_nodes = node->GetInDataNodes();
   switch (in_data_nodes.size()) {
-    case 0: {
+    case kCaseNoInput: {
       /// Case A: input_count = 0, the output of merge node is inactive as well
       /// In which case the output branch can be removed
       /// until another merge node is met
@@ -70,7 +67,7 @@ Status MergePass::Run(NodePtr &node) {
       }
       return ret;
     }
-    case 1: {  // Case B: input_count = 1, the merge node can be optimized out
+    case kCaseOneInput: {  // Case B: input_count = 1, the merge node can be optimized out
       std::vector<int> merge_io_map = {PassUtils::GetUniqueInDataAnchorIndex(node), -1};
       if (merge_io_map[0] != -1 && IsNeedChangeIndexToConstant(node)) {
         int index = merge_io_map[0];

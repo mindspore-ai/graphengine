@@ -233,9 +233,7 @@ Status TaskContext::AllocateOutput(int index,
       } else {
         GE_CHK_STATUS_RET_NOLOG(AllocateTensor(tensor_desc, outputs_start_[index], attr));
         GELOGD("Allocating output successfully. node: %s. index = %d, size = %zu",
-              node_item_->NodeName().c_str(),
-              index,
-              outputs_start_[index].GetSize());
+               node_item_->NodeName().c_str(), index, outputs_start_[index].GetSize());
       }
     }
   }

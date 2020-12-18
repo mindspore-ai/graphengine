@@ -43,7 +43,7 @@ class KernelTaskInfo : public TaskInfo {
         stream_id_(0),
         so_name_(""),
         kernel_name_(""),
-        kernel_type_(cce::ccKernelType::CCE_AI_CORE),
+        kernel_type_(ccKernelType::CCE_AI_CORE),
         dump_flag_(RT_KERNEL_DEFAULT),
         dump_args_(nullptr),
         op_desc_(nullptr),
@@ -75,7 +75,7 @@ class KernelTaskInfo : public TaskInfo {
 
   Status Release() override;
 
-  cce::ccOpContext *GetCtx() override { return &ctx_; }
+  ccOpContext *GetCtx() override { return &ctx_; }
 
   FusionOpInfo *GetFusionOpInfo() override { return &fusion_op_info_; }
 
@@ -92,7 +92,7 @@ class KernelTaskInfo : public TaskInfo {
 
   bool CallSaveDumpInfo() override  { return call_save_dump_; };
 
-  cce::ccOpContext ctx_;
+  ccOpContext ctx_;
   FusionOpInfo fusion_op_info_;
 
  private:
@@ -153,7 +153,7 @@ class KernelTaskInfo : public TaskInfo {
   uint32_t stream_id_;
   std::string so_name_;
   std::string kernel_name_;
-  cce::ccKernelType kernel_type_;
+  ccKernelType kernel_type_;
   uint32_t dump_flag_;
   void *dump_args_;
   OpDescPtr op_desc_;

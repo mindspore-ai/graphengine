@@ -93,6 +93,7 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       GELOGD("[%s] Start to update input[%zu] for subgraph data node.", graph_item_->GetName().c_str(), i);
       GE_CHECK_LE(i + 1, input_desc.size());
       const auto &tensor_desc = input_desc[i];
+      GE_CHECK_NOTNULL(tensor_desc);
       auto node_state = subgraph_context_->GetOrCreateNodeState(input_node);
       GE_CHECK_NOTNULL(node_state);
       node_state->GetShapeInferenceState().UpdateInputShape(0, tensor_desc->GetOriginShape(), tensor_desc->GetShape());

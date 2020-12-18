@@ -61,7 +61,7 @@ vector<int64_t> ModelUtils::GetInputSize(ConstOpDescPtr op_desc) {
       GELOGI("Get size from TensorDesc failed, op : %s, input index : %zu", op_desc->GetName().c_str(), i);
       continue);
 
-    GELOGI("[IMAS]GetInputSize op: %s, index: %zu, size:%ld", op_desc->GetName().c_str(), i, tensor_size);
+    GELOGI("GetInputSize op: %s, index: %zu, size:%ld", op_desc->GetName().c_str(), i, tensor_size);
     v_input_size.push_back(tensor_size);
   }
 
@@ -96,7 +96,7 @@ vector<int64_t> ModelUtils::GetOutputSize(ConstOpDescPtr op_desc) {
       GELOGI("Get size from TensorDesc failed, op : %s, output index : %zu", op_desc->GetName().c_str(), i);
       continue);
 
-    GELOGI("[IMAS]GetOutputSize op: %s, index: %zu, size:%ld", op_desc->GetName().c_str(), i, tensor_size);
+    GELOGI("GetOutputSize op: %s, index: %zu, size:%ld", op_desc->GetName().c_str(), i, tensor_size);
     v_output_size.push_back(tensor_size);
   }
 

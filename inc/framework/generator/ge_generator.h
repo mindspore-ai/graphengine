@@ -74,11 +74,22 @@ class GeGenerator {
   /// @param [in] op_desc: the OP description.
   /// @param [in] inputs: input tensors.
   /// @param [in] outputs: output tensors.
-  /// @param [in] engine_type: specific engine.
-  /// @param [out] model_buff: model buff of single op.
+  /// @param [in] engine_type: engine type.
+  /// @param [out] model_buff: model buff of op.
   /// @return SUCCESS or FAILED
   Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                             OpEngineType engine_type, ModelBufferData &model_buff);
+  ///
+  /// @ingroup ge
+  /// @brief: Build single Op into model buff.
+  /// @param [in] op_desc: the OP description.
+  /// @param [in] inputs: input tensors.
+  /// @param [in] outputs: output tensors.
+  /// @param [in] graph_name: graph name.
+  /// @param [out] graph: graph of single op.
+  /// @return SUCCESS or FAILED
+  Status BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
+                            std::string graph_name, Graph &graph);
 
  private:
   Status GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,

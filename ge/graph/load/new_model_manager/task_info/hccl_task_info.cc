@@ -279,9 +279,10 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
       output_data_addr = output_data_addrs_.empty() ? nullptr : output_data_addrs_[i];
     }
     kernel_hccl_infos[i].inputDataAddr = input_data_addr;
-    if (hccl_type == HCOMALLGATHER || hccl_type == HCOMRECEIVE || hccl_type == HVDCALLBACKALLGATHER || hccl_type == HCOMREDUCE) {
+    if (hccl_type == HCOMALLGATHER || hccl_type == HCOMRECEIVE || hccl_type == HVDCALLBACKALLGATHER) {
       kernel_hccl_infos[i].outputDataAddr = output_data_addr;
-    } else if (hccl_type == HCOMALLREDUCE || hccl_type == HCOMREDUCESCATTER || hccl_type == HVDCALLBACKALLREDUCE) {
+    } else if (hccl_type == HCOMALLREDUCE ||
+               hccl_type == HCOMREDUCESCATTER || hccl_type == HVDCALLBACKALLREDUCE || hccl_type == HCOMREDUCE) {
       GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclOperationType(op_desc, op_type),
                         "davinci_model: GetHcomOperationType fail!");
       kernel_hccl_infos[i].outputDataAddr = output_data_addr;

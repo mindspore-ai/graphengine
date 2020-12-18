@@ -37,6 +37,12 @@ Status CondRemovePass::Run(NodePtr &node) {
   OutDataAnchorPtr cond_out_anchor = nullptr;
   InDataAnchorPtr cond_in_anchor = nullptr;
   Status ret = GetCondInfo(node, graph, cond_out_anchor, cond_in_anchor);
+  if (ret == NOT_CHANGED) {
+    return SUCCESS;
+  } else if (ret != SUCCESS) {
+    GELOGE(FAILED, "Get cond_info for node %s failed.", node->GetName().c_str());
+    return FAILED;
+  }
   int32_t cond_index = 0;
   GELOGD("Handle cond remove for node %s.", node->GetOpDesc()->GetName().c_str());
   bool if_cond_const = CheckIfCondConstInput(cond_out_anchor, cond_in_anchor, cond_index);
@@ -322,11 +328,11 @@ Status CondRemovePass::GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, 
   std::string type = node->GetType();
   if ((kIfOpTypes.count(type) != 0) || (kCaseOpTypes.count(type) != 0)) {
     if (GetCondInfoForIfCase(node, graph, cond_out_anchor, cond_in_anchor) != SUCCESS) {
-      GELOGE(FAILED, "Get cond_info for if node failed.");
+      GELOGE(FAILED, "Get cond_info for if/case node failed.");
       return FAILED;
     }
   } else {
-    GELOGD("no need cond_pass for node %s.", node->GetName().c_str());
+    GELOGD("no need cond_remove_pass for node %s.", node->GetName().c_str());
     return NOT_CHANGED;
   }
 

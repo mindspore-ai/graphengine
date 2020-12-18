@@ -54,7 +54,6 @@
         |       c       |
         +---------------+
 *******************************************************************************/
-
 namespace ge {
 class PartitionedCallLabelMaker : public LabelMaker {
  public:

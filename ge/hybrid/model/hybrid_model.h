@@ -100,12 +100,13 @@ class HybridModel {
 
   Status GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats);
 
-  void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
+  void CreateInputDimsInfo(const OpDescPtr &op_desc, InputOutputDescInfo &input);
 
   void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
 
-  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
-                                      Format &format, InputOutputDescInfo &input);
+  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims,
+                                      std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
+                                      InputOutputDescInfo &input);
 
  private:
   friend class HybridModelBuilder;

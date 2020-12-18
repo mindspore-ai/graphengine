@@ -193,6 +193,7 @@ target_compile_options(host_cpu_opskernel_builder_static PRIVATE
 
 target_compile_definitions(host_cpu_opskernel_builder_static PRIVATE
     google=ascend_private
+    LOG_CPP
 )
 
 target_include_directories(host_cpu_opskernel_builder_static PRIVATE

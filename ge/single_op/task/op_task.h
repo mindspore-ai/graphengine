@@ -54,6 +54,8 @@ class OpTask {
                               rtStream_t stream);
 
  protected:
+  Status DoUpdateArgTable(const SingleOpModelParam &param, bool keep_workspace);
+
   DumpProperties dump_properties_;
   DumpOp dump_op_;
   OpDescPtr op_desc_;
@@ -110,7 +112,7 @@ class AiCpuBaseTask : public OpTask {
   AiCpuBaseTask() = default;
   ~AiCpuBaseTask() override;
   UnknowShapeOpType GetUnknownType() const { return unknown_type_; }
-
+  Status UpdateArgTable(const SingleOpModelParam &param) override;
  protected:
   Status UpdateIoAddr(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   Status SetInputConst();
@@ -137,7 +139,6 @@ class AiCpuTask : public AiCpuBaseTask {
   ~AiCpuTask() override;
 
   Status LaunchKernel(rtStream_t stream) override;
-  Status UpdateArgTable(const SingleOpModelParam &param) override;
   void GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) override;
 
   Status LaunchKernel(const std::vector<GeTensorDesc> &input_desc,

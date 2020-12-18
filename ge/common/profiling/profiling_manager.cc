@@ -805,7 +805,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   if (!fp_point_.empty() && !bp_point_.empty()) {
     fp_point = fp_point_;
     bp_point = bp_point_;
-    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());
+    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(),
+           fp_point.c_str());
     return;
   }
   // ProfApi mode and training trace is set

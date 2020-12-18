@@ -112,7 +112,6 @@ ge::Status RegProfCtrlCallback(MsprofCtrlCallback func) {
   if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofCtrlCallback != nullptr) {
     GELOGW("Msprof ctrl callback is exist, just ignore it.");
   } else {
-    GELOGI("GE register Msprof ctrl callback.");
     ge::ProfilingManager::Instance().SetMsprofCtrlCallback(func);
   }
   return ge::SUCCESS;
@@ -124,7 +123,6 @@ ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
     return ge::PARAM_INVALID;
   }
   // Pass MsprofSetDeviceCallback to runtime
-  GELOGI("GE pass setdevice callback to runtime.");
   ge::Status rt_ret = rtRegDeviceStateCallback(kRtSetDeviceRegName.c_str(), static_cast<rtDeviceStateCallback>(func));
   if (rt_ret != ge::SUCCESS) {
     GELOGE(rt_ret, "Pass MsprofSetDeviceCallback to runtime failed!");
@@ -158,7 +156,7 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   if (type != kProfCommandhandleFinalize) {
     GE_CHECK_NOTNULL(data);
   }
-  ProfCommandHandleData *prof_config_param = (ProfCommandHandleData *)data;
+  ProfCommandHandleData *prof_config_param = reinterpret_cast<ProfCommandHandleData *>(data);
   auto iter = kProfCommandTypeMap.find(type);
   if (iter == kProfCommandTypeMap.end()) {
     GELOGW("The prof comand type is invalid.");

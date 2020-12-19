@@ -63,7 +63,7 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
   });
 
   auto hcom_remote_mem_register =
-      (HcclResult(*)(const MemRegisterAddr *, uint32_t))dlsym(handle, "hcom_remote_access_mem_register");
+      (HcclResult(*)(const MemRegisterAddr *, uint32_t))dlsym(handle, "HcomRegRemoteAccessMem");
   if (hcom_remote_mem_register == nullptr) {
     GELOGE(FAILED, "Failed to invoke hcom_remote_mem_register function.");
     return FAILED;

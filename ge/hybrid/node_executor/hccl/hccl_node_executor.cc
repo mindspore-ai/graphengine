@@ -42,10 +42,10 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
     GELOGE(FAILED, "hccl handle is nullptr! ");
     return FAILED;
   }
-  auto EnqueueHcomOpertion = (HcclResult(*)(HcomOpertion, std::function<void(HcclResult status)>))dlsym(
-      context.handle_, "EnqueueHcomOpertion");
-  if (EnqueueHcomOpertion == nullptr) {
-    GELOGE(FAILED, "Failed to invoke EnqueueHcomOpertion hcom unknown node function.");
+  auto HcomExecEnqueueOperation = (HcclResult(*)(HcomOperation, std::function<void(HcclResult status)>))dlsym(
+      context.handle_, "HcomExecEnqueueOperation");
+  if (HcomExecEnqueueOperation == nullptr) {
+    GELOGE(FAILED, "Failed to invoke HcomExecEnqueueOperation hcom unknown node function.");
     if (dlclose(context.handle_) != 0) {
       GELOGW("Failed to close handle %s", dlerror());
     }
@@ -70,7 +70,7 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   const OpDescPtr op_desc = node_item.GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
 
-  HcomOpertion op_info;
+  HcomOperation op_info;
   op_info.hcclType = op_desc->GetType();
   op_info.inputPtr = inputs.empty() ? nullptr : inputs[0];
   op_info.outputPtr = outputs.empty() ? nullptr : outputs[0];
@@ -96,7 +96,7 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   op_info.root = root_id;
   auto callback = [this, op_desc](HcclResult status) {
     if (status != HCCL_SUCCESS) {
-      GELOGE(HCCL_E_INTERNAL, "node %s call EnqueueHcomOpertion failed, ret: 0x%X", op_desc->GetName().c_str(), status);
+      GELOGE(HCCL_E_INTERNAL, "node %s call HcomExecEnqueueOperation failed, ret: 0x%X", op_desc->GetName().c_str(), status);
     }
     std::lock_guard<std::mutex> lock(this->hccl_mutex_);
     this->cond_.notify_all();
@@ -110,9 +110,9 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
          context.GetNodeName(), op_info.hcclType.c_str(), count, op_info.dataType, op_info.opType, op_info.root);
   op_info.count = count;
 
-  HcclResult hccl_ret = EnqueueHcomOpertion(op_info, callback);
+  HcclResult hccl_ret = HcomExecEnqueueOperation(op_info, callback);
   if (hccl_ret != HCCL_SUCCESS) {
-    GELOGE(HCCL_E_INTERNAL, "Call HcomExcutorInitialize failed, ret: 0x%X", hccl_ret);
+    GELOGE(HCCL_E_INTERNAL, "Call HcomExecInitialize failed, ret: 0x%X", hccl_ret);
     return HCCL_E_INTERNAL;
   }
 
@@ -213,11 +213,11 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
 
 Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGI("[%s] RdmaNodeTask::ExecuteAsync in.", context.GetNodeName());
-  auto EnqueueRemoteAccess =
+  auto HcomExecEnqueueRemoteAccess =
       (HcclResult(*)(const string &, const vector<HcomRemoteAccessAddrInfo> &,
-                     std::function<void(HcclResult status)>))dlsym(context.handle_, "EnqueueRemoteAccess");
-  if (EnqueueRemoteAccess == nullptr) {
-    GELOGE(FAILED, "Failed to invoke EnqueueRemoteAccess hcom unknown node function.");
+                     std::function<void(HcclResult status)>))dlsym(context.handle_, "HcomExecEnqueueRemoteAccess");
+  if (HcomExecEnqueueRemoteAccess == nullptr) {
+    GELOGE(FAILED, "Failed to invoke HcomExecEnqueueRemoteAccess hcom unknown node function.");
     if (dlclose(context.handle_) != 0) {
       GELOGW("Failed to close handle %s", dlerror());
     }
@@ -228,15 +228,15 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
 
   auto callback = [this](HcclResult status) {
     if (status != HCCL_SUCCESS) {
-      GELOGE(HCCL_E_INTERNAL, "Call HcomExcutorInitialize failed, ret: 0x%X", status);
+      GELOGE(HCCL_E_INTERNAL, "Call HcomExecInitialize failed, ret: 0x%X", status);
     }
     std::lock_guard<std::mutex> lock(this->hccl_mutex_);
     this->cond_.notify_all();
     GELOGI("rdma callback success.");
   };
-  HcclResult hccl_ret = EnqueueRemoteAccess(context.GetNodeItem().NodeType(), addr_infos, callback);
+  HcclResult hccl_ret = HcomExecEnqueueRemoteAccess(context.GetNodeItem().NodeType(), addr_infos, callback);
   if (hccl_ret != HCCL_SUCCESS) {
-    GELOGE(HCCL_E_INTERNAL, "Call HcomExcutorInitialize failed, ret: 0x%X", hccl_ret);
+    GELOGE(HCCL_E_INTERNAL, "Call HcomExecInitialize failed, ret: 0x%X", hccl_ret);
     return HCCL_E_INTERNAL;
   }
 
@@ -307,32 +307,32 @@ Status HcclNodeExecutor::Initialize() {
     GELOGE(GE_PLGMGR_SO_NOT_EXIST, "Failed in dlopen %s! ", dlerror());
     return FAILED;
   }
-  auto HcomExcutorInitialize = (HcclResult(*)())dlsym(handle_, "HcomExcutorInitialize");
-  if (HcomExcutorInitialize == nullptr) {
-    GELOGE(FAILED, "Failed to invoke HcomExcutorInitialize hcom unknown node function.");
+  auto HcomExecInitialize = (HcclResult(*)())dlsym(handle_, "HcomExecInitialize");
+  if (HcomExecInitialize == nullptr) {
+    GELOGE(FAILED, "Failed to invoke HcomExecInitialize hcom unknown node function.");
     return FAILED;
   }
-  HcclResult hccl_ret = HcomExcutorInitialize();
+  HcclResult hccl_ret = HcomExecInitialize();
   if (hccl_ret == HCCL_E_PTR) {
     GELOGI("Hccl comm is null, hcom executor initialize is not required.");
   } else if (hccl_ret == HCCL_SUCCESS) {
     GELOGI("Hcom executor initialize success.");
   } else {
-    GELOGE(FAILED, "Call HcomExcutorInitialize failed, ret: 0x%X", hccl_ret);
+    GELOGE(FAILED, "Call HcomExecInitialize failed, ret: 0x%X", hccl_ret);
     return FAILED;
   }
   return SUCCESS;
 }
 
 Status HcclNodeExecutor::Finalize() {
-  auto HcomExcutorFinalize = (HcclResult(*)())dlsym(handle_, "HcomExcutorFinalize");
-  if (HcomExcutorFinalize == nullptr) {
-    GELOGE(FAILED, "Failed to invoke HcomExcutorFinalize hcom unknown node function.");
+  auto HcomExecFinalize = (HcclResult(*)())dlsym(handle_, "HcomExecFinalize");
+  if (HcomExecFinalize == nullptr) {
+    GELOGE(FAILED, "Failed to invoke HcomExecFinalize hcom unknown node function.");
     return FAILED;
   }
-  HcclResult hccl_ret = HcomExcutorFinalize();
+  HcclResult hccl_ret = HcomExecFinalize();
   if (hccl_ret != HCCL_SUCCESS) {
-    GELOGE(FAILED, "Call HcomExcutorFinalize failed, ret: 0x%X", hccl_ret);
+    GELOGE(FAILED, "Call HcomExecFinalize failed, ret: 0x%X", hccl_ret);
     return FAILED;
   }
   // dlclose file handle

@@ -40,6 +40,10 @@ const size_t kGatherV2InpotNum = 3;
 const size_t kMaxIndicatesDims = 1;  // only support scalar and 1 dims indicates_
 const std::set<DataType> supported_type = {DT_FLOAT16, DT_DOUBLE, DT_INT8,   DT_INT16,  DT_INT16, DT_INT32,
                                            DT_INT64,   DT_UINT8,  DT_UINT16, DT_UINT32, DT_UINT64};
+const int64_t DIM_AXIS_0 = 0;
+const int64_t DIM_AXIS_1 = 1;
+const int64_t DIM_AXIS_2 = 2;
+const int64_t DIM_AXIS_3 = 3;
 }  // namespace
 template <typename T>
 Status GatherV2Kernel::ProcessAxis0(ConstGeTensorPtr tensor_x, GeTensorPtr output) {
@@ -191,16 +195,16 @@ Status GatherV2Kernel::GenData(const int64_t data_num, ConstGeTensorPtr tensor_x
 
   Status ret = SUCCESS;
   switch (axis) {
-    case 0:
+    case DIM_AXIS_0:
       ret = ProcessAxis0<T>(tensor_x, output);
       break;
-    case 1:
+    case DIM_AXIS_1:
       ret = ProcessAxis1<T>(tensor_x, output);
       break;
-    case 2:
+    case DIM_AXIS_2:
       ret = ProcessAxis2<T>(tensor_x, output);
       break;
-    case 3:
+    case DIM_AXIS_3:
       ret = ProcessAxis3<T>(tensor_x, output);
       break;
     default:

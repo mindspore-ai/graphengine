@@ -379,11 +379,13 @@ Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,
     }
     if (output_real_size > 0) {
       if (outputs[i].length < static_cast<uint64_t>(output_real_size)) {
-        GELOGE(FAILED, "output idx[%zu], the memory size of output[%lu] given by user should be greater than or equal to the real size of output[%ld]",
+        GELOGE(FAILED, "output idx[%zu], the memory size of output[%lu] given by "
+                       "user should be greater than or equal to the real size of output[%ld]",
                i, outputs[i].length, output_real_size);
         return FAILED;
       }
-      GE_CHK_RT_RET(rtMemcpy(outputs[i].data, outputs[i].length, args.outputs[i].GetData(), output_real_size, RT_MEMCPY_DEVICE_TO_DEVICE));
+      GE_CHK_RT_RET(rtMemcpy(outputs[i].data, outputs[i].length, args.outputs[i].GetData(), output_real_size, 
+                    RT_MEMCPY_DEVICE_TO_DEVICE));
     }
     outputs[i].length = output_real_size;
   }

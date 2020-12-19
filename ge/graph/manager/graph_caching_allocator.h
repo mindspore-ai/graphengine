@@ -34,10 +34,17 @@
 
 namespace ge {
 constexpr size_t kRoundBlockSize = 512;         // all block sizes are rounded to at least 512 bytes
+constexpr size_t kBinSizeUnit4 = 4;
+constexpr size_t kBinSizeUnit8 = 8;
+constexpr size_t kBinSizeUnit16 = 16;
+constexpr size_t kBinSizeUnit26 = 26;
+constexpr size_t kBinSizeUnit32 = 32;
+constexpr size_t kBinSizeUnit128 = 128;
+
 constexpr double kSplitThreshold = 0.75;         // split when malloc size <= small block size * kSpliThreshold
 constexpr size_t kKByteSize = 1024;
-constexpr size_t kMByteSize = 1024 * 1024;
-constexpr size_t kGByteSize = 1024 * 1024 * 1024;
+constexpr size_t kMByteSize = 1048576;   // 1024 * 1024
+constexpr size_t kGByteSize = 1073741824;   // 1024 * 1024 * 1024
 
 static const uint32_t kNumBins = 8;
 

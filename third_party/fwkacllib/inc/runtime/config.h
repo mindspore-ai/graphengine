@@ -123,14 +123,6 @@ typedef struct tagRtPlatformConfig { uint32_t platformConfig; } rtPlatformConfig
 
 /**
  * @ingroup
- * @brief get platform
- * @param [in] platForm
- * @return platForm
- */
-RTS_API rtError_t rtGetPlatformConfig(rtPlatformConfig_t *platForm);
-
-/**
- * @ingroup
  * @brief get AI core count
  * @param [in] aiCoreCnt
  * @return aiCoreCnt
@@ -169,13 +161,6 @@ RTS_API rtError_t rtGetAiCoreMemoryRates(rtAiCoreMemoryRates_t *aiCoreMemoryRate
  */
 RTS_API rtError_t rtGetMemoryConfig(rtMemoryConfig_t *memoryConfig);
 
-/**
- * @ingroup
- * @brief set platform in gen ctx
- * @param [in] platForm
- * @return RT_ERROR_NONE for ok, errno for failed
- */
-RTS_API rtError_t rtSetPlatformType(rtPlatformType_t platformType);
 
 /**
  * @ingroup

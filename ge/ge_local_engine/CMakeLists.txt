@@ -203,6 +203,7 @@ target_compile_options(ge_local_opskernel_builder_static PRIVATE
 
 target_compile_definitions(ge_local_opskernel_builder_static PRIVATE
     google=ascend_private
+    LOG_CPP
 )
 
 target_include_directories(ge_local_opskernel_builder_static PRIVATE

@@ -225,6 +225,29 @@ ACL_FUNC_VISIBILITY aclError aclDestroyDataBuffer(const aclDataBuffer *dataBuffe
 
 /**
  * @ingroup AscendCL
+ * @brief update new data of aclDataBuffer
+ *
+ * @param dataBuffer [OUT]    pointer to aclDataBuffer
+ * @li The old data need to be released by the user, otherwise it may occur memory leak leakage
+ *  call aclGetDataBufferAddr interface to get old data address
+ *  call aclrtFree interface to release memory
+ *
+ * @param data [IN]    pointer to new data
+ * @li Need to be managed by the user,
+ *  call aclrtMalloc interface to apply for memory,
+ *  call aclrtFree interface to release memory
+ *
+ * @param size [IN]    size of data in bytes
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see aclrtMalloc | aclrtFree | aclGetDataBufferAddr
+ */
+ACL_FUNC_VISIBILITY aclError aclUpdateDataBuffer(aclDataBuffer *dataBuffer, void *data, size_t size);
+
+/**
+ * @ingroup AscendCL
  * @brief get data address from aclDataBuffer
  *
  * @param dataBuffer [IN]    pointer to the data of aclDataBuffer
@@ -546,6 +569,19 @@ ACL_FUNC_VISIBILITY void *aclGetTensorDescAddress(const aclTensorDesc *desc);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclSetTensorDynamicInput(aclTensorDesc *desc, const char *dynamicInputName);
+
+/**
+ * @ingroup AscendCL
+ * @brief Set const data specified by the tensor description
+ *
+ * @param  desc [OUT]      pointer to the instance of aclTensorDesc
+ * @param  dataBuffer [IN]       pointer to the const databuffer
+ * @param  length [IN]       the length of const databuffer
+ *
+ * @retval ACL_SUCCESS     The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclSetTensorConst(aclTensorDesc *desc, void *dataBuffer, size_t length);
 
 /**
  * @ingroup AscendCL

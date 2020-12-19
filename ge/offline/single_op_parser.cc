@@ -27,6 +27,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/utils/type_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/operator_factory_impl.h"
 
@@ -176,6 +177,7 @@ T GetValue(const map<string, T> &dict, string &key, T default_val) {
 }
 
 void from_json(const Json &j, SingleOpTensorDesc &desc) {
+  bool is_tensor_valid = true;
   desc.dims = j.at(kKeyShape).get<vector<int64_t>>();
   auto it = j.find(kKeyShapeRange);
   if (it != j.end()) {
@@ -189,9 +191,12 @@ void from_json(const Json &j, SingleOpTensorDesc &desc) {
   string type_str = j.at(kKeyType).get<string>();
   desc.format = GetValue(kFormatDict, format_str, FORMAT_RESERVED);
   desc.type = GetValue(kDataTypeDict, type_str, DT_UNDEFINED);
+  is_tensor_valid = is_tensor_valid && ge::TypeUtils::IsFormatValid(format_str);
+  is_tensor_valid = is_tensor_valid && ge::TypeUtils::IsDataTypeValid(type_str);
   it = j.find(kKeyOriginFormat);
   if (it != j.end()) {
     string origin_format_str = j.at(kKeyOriginFormat).get<string>();
+    is_tensor_valid = is_tensor_valid && ge::TypeUtils::IsFormatValid(origin_format_str);
     desc.ori_format = GetValue(kFormatDict, origin_format_str, FORMAT_RESERVED);
   }
   auto tensor_name = j.find(kKeyName);
@@ -201,6 +206,9 @@ void from_json(const Json &j, SingleOpTensorDesc &desc) {
   auto dynamic_input_name = j.find(kKeyDynamicInput);
   if (dynamic_input_name != j.end()) {
     desc.dynamic_input_name = dynamic_input_name->get<string>();
+  }
+  if (!is_tensor_valid) {
+    desc.SetValidFlag(is_tensor_valid);
   }
 }
 
@@ -305,6 +313,12 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
 
   int index = 0;
   for (auto &tensor_desc : op_desc.input_desc) {
+    if (!tensor_desc.GetValidFlag()) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
+          {"intput", "datatype or format", std::to_string(index)});
+      GELOGE(PARAM_INVALID, "Input's dataType or format is invalid when the index is %d", index);
+      return false;
+    }
     if ((tensor_desc.type == DT_UNDEFINED && tensor_desc.format != FORMAT_RESERVED) ||
         (tensor_desc.type != DT_UNDEFINED && tensor_desc.format == FORMAT_RESERVED)){
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
@@ -317,6 +331,12 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
 
   index = 0;
   for (auto &tensor_desc : op_desc.output_desc) {
+    if (!tensor_desc.GetValidFlag()) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
+          {"output", "datatype", std::to_string(index)});
+      GELOGE(PARAM_INVALID, "Output's dataType is invalid when the index is %d", index);
+      return false;
+    }
     if (tensor_desc.type == DT_UNDEFINED) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
           {"output", "datatype", std::to_string(index)});

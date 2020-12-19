@@ -112,8 +112,8 @@ void FloorDivKernel::ShapeCal(const std::vector<ge::ConstGeTensorPtr> &input, Ge
 template <typename T>
 T FloorDivKernel::DivCal(const T &x_i, const T &y_i) {
   if ((x_i < static_cast<T>(0)) != (y_i < static_cast<T>(0))) {
-    T abs_x_i = std::abs(x_i);
-    T abs_y_i = std::abs(y_i);
+    T abs_x_i = x_i < 0 ? -x_i : x_i;
+    T abs_y_i = y_i < 0 ? -y_i : y_i;
     return static_cast<T>(static_cast<int32_t>(-(abs_x_i + abs_y_i - 1) / abs_y_i));
   } else {
     return static_cast<T>(static_cast<int32_t>(x_i / y_i));

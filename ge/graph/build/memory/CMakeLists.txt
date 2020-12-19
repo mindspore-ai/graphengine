@@ -18,6 +18,7 @@ target_compile_options(ge_memory PRIVATE
 
 target_compile_definitions(ge_memory PRIVATE
     google=ascend_private
+    LOG_CPP
 )
 
 target_link_libraries(ge_memory PRIVATE

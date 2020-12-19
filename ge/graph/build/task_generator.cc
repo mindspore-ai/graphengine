@@ -49,8 +49,6 @@ const char *const kIsLastNode = "is_last_node";
 const char *const kIsInputVar = "INPUT_IS_VAR";
 const char *const kIsOutputVar = "OUTPUT_IS_VAR";
 const char *const kProfilingMode = "PROFILING_MODE";
-const char *const kProfilingFpPoint = "FP_POINT";
-const char *const kProfilingBpPoint = "BP_POINT";
 const uint32_t kProfilingArStep = 2;
 const uint64_t kProfilingFpStartLogid = 1;
 const uint64_t kProfilingBpEndLogid = 2;
@@ -810,35 +808,23 @@ Status TaskGenerator::GetFpBpIndex(const ComputeGraphPtr &graph, ProfilingPoint 
                                    vector<uint32_t> &all_reduce_nodes, std::string &fp_point_str,
                                    std::string &bp_point_str) const {
 
-  if (ge::GetContext().GetOption(OPTION_EXEC_PROFILING_FPPONIT_OPTIONS, fp_point_str) == SUCCESS &&
-      ge::GetContext().GetOption(OPTION_EXEC_PROFILING_BPPONIT_OPTIONS, bp_point_str) == SUCCESS &&
-      !fp_point_str.empty() && !bp_point_str.empty()) {
-      return SUCCESS;
-  }
+  ProfilingManager::Instance().GetFpBpPoint(fp_point_str, bp_point_str);
 
   Status ret = SUCCESS;
-  const char *fp_point = std::getenv(kProfilingFpPoint);
-  if (fp_point == nullptr) {
+  if (fp_point_str.empty()) {
     ret = AutoFindFpOpIndex(graph, profiling_point);
     if (ret != SUCCESS) {
       GELOGW("First forward profiling op_index not set and FindFpOpIndex failed.");
       return FAILED;
     }
-  } else {
-    fp_point_str = string(fp_point);
-    GELOGI("Get fp_point_str from env %s", fp_point_str.c_str());
   }
 
-  const char *bp_point = std::getenv(kProfilingBpPoint);
-  if (bp_point == nullptr) {
+  if (bp_point_str.empty()) {
     ret = AutoFindBpOpIndex(graph, profiling_point, all_reduce_nodes);
     if (ret != SUCCESS) {
       GELOGW("Last backward profiling op_index not set and FindBpOpIndex failed.");
       return FAILED;
     }
-  } else {
-    bp_point_str = string(bp_point);
-    GELOGI("Get bp_point_str from env %s", bp_point_str.c_str());
   }
 
   return SUCCESS;

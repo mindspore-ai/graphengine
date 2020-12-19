@@ -35,7 +35,6 @@
  *      Padding to (N, ceil(Z/16)*16)
  *  Last Step: View the (N, ceil(Z/16)*16) as 4D (N/16, 16, C/16, 16) and transpose to (C/16, N/16, 16, 16)
  */
-
 namespace ge {
 namespace formats {
 namespace {

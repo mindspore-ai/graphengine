@@ -419,7 +419,8 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     GE_IF_BOOL_EXEC(is_peer_output_continuous && (peer_output_size != 1),
                     std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
                         " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
-                        " requires continuous output. There may be conflict between the two. This node is not supported now.";
+                        " requires continuous output. There may be conflict between the two." +
+                        "This node is not supported now.";
                     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
                     return PARAM_INVALID;);
 
@@ -429,7 +430,8 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     GE_IF_BOOL_EXEC(is_peer_reference,
                     std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
                         " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
-                        " requires continuous output. There may be conflict between the two. This node is not supported now.";
+                        " requires continuous output. There may be conflict between the two." +
+                        "This node is not supported now.";
                     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
                     return PARAM_INVALID;);
 
@@ -1646,9 +1648,9 @@ ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &node, const ve
     }
     string atomic_mem_size_str = ss.str();
 
-    GELOGI("[IMAS]SetAtomicCleanAttr : Set graph[%s] atomic_node[%s] output offset [%s] size[%s] streamid[%ld]",
+    GELOGI("[IMAS]SetAtomicCleanAttr : Set %s atomic_node name[%s] output[0] offset to [%s] streamid[%ld] size[%s]",
            node->GetOwnerComputeGraph()->GetName().c_str(), node_op_desc->GetName().c_str(),
-           atomic_mem_start_str.c_str(), atomic_mem_size_str.c_str(), node->GetOpDesc()->GetStreamId());
+           atomic_mem_start_str.c_str(), node->GetOpDesc()->GetStreamId(), atomic_mem_size_str.c_str());
   }
   return SUCCESS;
 }

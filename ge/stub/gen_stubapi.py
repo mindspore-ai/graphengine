@@ -1,3 +1,10 @@
+#!/usr/bin/python3.7
+# -*- coding: UTF-8 -*-
+#-------------------------------------------------------------------
+# Purpose:
+# Copyright 2020 Huawei Technologies Co., Ltd. All rights reserved.
+#-------------------------------------------------------------------
+
 import os
 import re
 import sys
@@ -64,7 +71,7 @@ max_code_len_per_line = 100
     when DEBUG on
 """
 white_list_for_debug = ["attr_value.h", "operator.h", "tensor.h", "graph.h", "operator_factory.h",
-                        "ge_ir_build.h", "ge_api.h", "ge_prof.h", "tensorflow_parser.h", "caffe_parser.h"]
+                        "ge_ir_build.h", "ge_api.h", "tensorflow_parser.h", "caffe_parser.h"]
 include_dir_key_words = ["ge", "graph", "parser"]
 DEBUG = True
 

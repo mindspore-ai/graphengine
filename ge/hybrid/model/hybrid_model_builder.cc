@@ -35,7 +35,6 @@ namespace hybrid {
 namespace {
 const uint32_t kSubgraphIndex = 0U;
 const uint32_t kVarOutputIndex = 0U;
-const uint32_t kAlignment = 32;
 const int kBytes = 8;
 const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 
@@ -339,9 +338,9 @@ Status HybridModelBuilder::ParseDependentForFusedSubgraph(NodeItem &node_item) {
     uint32_t parent_index = 0;
     if (!AttrUtils::GetInt(*op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
       GELOGE(INTERNAL_ERROR,
-            "[%s] Failed to get attr [%s]",
-            op_desc->GetName().c_str(),
-            ATTR_NAME_PARENT_NODE_INDEX.c_str());
+             "[%s] Failed to get attr [%s]",
+             op_desc->GetName().c_str(),
+             ATTR_NAME_PARENT_NODE_INDEX.c_str());
       return INTERNAL_ERROR;
     }
 
@@ -793,7 +792,7 @@ Status HybridModelBuilder::HandleDtString(const GeTensor &tensor, void *var_addr
                            "Shape size is invalid");
     auto offset = static_cast<uint64_t>(elem_num * kBytes);
     auto hbm_raw_data_base_addr =
-        reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
+        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
     for (int64_t i = elem_num - 1; i >= 0; --i) {
       buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
     }
@@ -987,7 +986,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
 
     // index task defs
     GELOGD("To index tasks for subgraph: %s", name.c_str());
-    unordered_map<int64_t, NodePtr> node_map;
+    std::unordered_map<int64_t, NodePtr> node_map;
     for (const auto &node : sub_graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node);
       GE_CHECK_NOTNULL(node->GetOpDesc());

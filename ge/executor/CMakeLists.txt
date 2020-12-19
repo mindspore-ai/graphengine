@@ -17,6 +17,7 @@ set(SRC_LIST
     "../common/dump/dump_properties.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
+    "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
     "../omm/csa_interact.cc"
@@ -172,6 +173,7 @@ target_compile_definitions(ge_executor PRIVATE
     google=ascend_private
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    LOG_CPP
 )
 
 target_include_directories(ge_executor PRIVATE
@@ -244,7 +246,6 @@ target_link_libraries(ge_executor_shared PRIVATE
     mmpa
     graph
     register
-    msprof
     error_manager
     ascend_hal_stub
     ascend_protobuf

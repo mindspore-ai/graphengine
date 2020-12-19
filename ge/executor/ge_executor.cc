@@ -283,7 +283,8 @@ Status GeExecutor::Initialize() {
   // Start profiling
   Options profiling_options;
   profiling_options.device_id = 0;
-  profiling_options.job_id = "";
+  // job id need to be set, the value is meaningless;
+  profiling_options.job_id = "1";
   ProfilingManager::Instance().Init(profiling_options);
 
   isInit_ = true;
@@ -303,7 +304,7 @@ Status GeExecutor::Finalize() {
   // Stop profiling
   if (ProfilingManager::Instance().ProfilingOn()) {
     ProfilingManager::Instance().StopProfiling();
-    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+    ProfilingManager::Instance().PluginUnInit();
   }
 
   GELOGI("Uninit GeExecutor over.");
@@ -638,7 +639,8 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = ModelManager::GetInstance()->GetHybridModel(model_id);
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model =
+      ModelManager::GetInstance()->GetHybridModel(model_id);
   if (hybrid_davinci_model != nullptr) {
     uint64_t session_id = hybrid_davinci_model->GetSessionId();
     VarManagerPool::Instance().RemoveVarManager(session_id);

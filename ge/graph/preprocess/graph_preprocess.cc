@@ -1621,7 +1621,8 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
 
       for (size_t i = 0; i < desc.GetShape().GetDimNum(); ++i) {
         if (desc.GetShape().GetDim(i) < 0) {
-          std::string situation = "data dim[" + std::to_string(i) + "][" + std::to_string(desc.GetShape().GetDim(i)) + "]" ;
+          std::string situation = "data dim[" + std::to_string(i) + "][" +
+                  std::to_string(desc.GetShape().GetDim(i)) + "]" ;
           std::string reason = "it need >= 0";
           ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {situation, reason});
           GELOGE(GE_GRAPH_INIT_FAILED, "data dim %zu is not supported, need >= 0, real:%ld.", i,
@@ -1701,7 +1702,7 @@ Status GraphPrepare::PrepareOptimize() {
   try {
     (void)original_graph_passes.AddPass("PrepareOptimize::ShapeOperateOpRemovePass", new ShapeOperateOpRemovePass);
     (void)original_graph_passes.AddPass("PrepareOptimize::ReplaceTransShapePass", new ReplaceTransShapePass);
-    (void)original_graph_passes.AddPass("PrepareOptimize::MarkAgnosticPass" , new MarkAgnosticPass);
+    (void)original_graph_passes.AddPass("PrepareOptimize::MarkAgnosticPass", new MarkAgnosticPass);
   } catch (std::bad_alloc &e) {
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
     return INTERNAL_ERROR;
@@ -1796,6 +1797,16 @@ Status GraphPrepare::PrepareOptimize() {
 }
 
 void GraphPrepare::TypeConversionOfConstant() {
+  bool is_acl_compile = false;
+  for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {
+    // This can ensure that n is not a null pointer
+    // No Conversion when called by aclOpCompile
+    (void)AttrUtils::GetBool(n->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, is_acl_compile);
+    if (is_acl_compile) {
+      return;
+    }
+  }
+
   if (options_.train_graph_flag) {
     GELOGD("trans CONSTANT to CONSTANTOP in train.");
     for (ge::NodePtr &n : compute_graph_->GetAllNodes()) {

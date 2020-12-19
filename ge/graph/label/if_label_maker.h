@@ -70,7 +70,6 @@
                                                                 |    Node    |
                                                                 +------------+
 *******************************************************************************/
-
 namespace ge {
 class IfOpLabelMaker : public LabelMaker {
  public:

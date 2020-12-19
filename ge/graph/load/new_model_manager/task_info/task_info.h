@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "cce/customize.h"
-#include "cce/taskdown_common.hpp"
+#include "framework/common/taskdown_common.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/load/new_model_manager/ts_mem_mall.h"
 #include "graph/load/new_model_manager/task_info/task_info_factory.h"
@@ -63,8 +63,8 @@ struct RuntimeParam {
 };
 
 typedef struct FusionOpInfo {
-  vector<string> original_op_names;
-  string op_name;
+  std::vector<std::string> original_op_names;
+  std::string op_name;
   uint32_t op_index;
   uint32_t stream_id;
 } FusionOpInfo;
@@ -87,7 +87,7 @@ class TaskInfo {
 
   virtual Status Release() { return SUCCESS; }
 
-  virtual cce::ccOpContext *GetCtx() { return nullptr; }
+  virtual ccOpContext *GetCtx() { return nullptr; }
 
   virtual uint32_t GetTaskID() { return 0xFFFFFFFF; }
 

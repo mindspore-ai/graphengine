@@ -167,4 +167,5 @@ Status OpsKernelBuilderManager::GenerateTask(const Node &node,
   GELOGD("Done invoking GenerateTask successfully");
   return SUCCESS;
 }
+
 }  // namespace ge

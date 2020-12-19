@@ -42,9 +42,9 @@ namespace ge {
   +-----------+                +-----------+
   |   Const   |                | VariableV2|
   +-----------+                +-----------+
-*/
 
-/* Switch branch op optimize, Switches in same case merge to one StreamSwitch, update following nodes' input
+
+  Switch branch op optimize, Switches in same case merge to one StreamSwitch, update following nodes' input
 
                                             +-----------+
                                           / |   task2   | \
@@ -131,11 +131,10 @@ class SwitchToStreamSwitchPass : public GraphPass {
 
   ///
   /// @brief Find Switch cond input
-  /// @param [in] pass_switch_flag
   /// @param [out] peer_cond_anchor
   /// @return Status
   ///
-  Status FindSwitchCondInput(bool pass_switch_flag, OutDataAnchorPtr &peer_cond_anchor);
+  Status FindSwitchCondInput(OutDataAnchorPtr &peer_cond_anchor);
 
   ///
   /// @brief Create StreamSwitch Node

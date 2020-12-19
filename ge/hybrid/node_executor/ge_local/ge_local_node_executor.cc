@@ -61,18 +61,18 @@ Status RefInputTask::Execute(TaskContext &context) {
 
 Status RefInputTask::RefOneByOne(TaskContext &context) {
   GELOGI("node %s type %s ref input one by one begin.", node_name_.c_str(), node_type_.c_str());
-  uint32_t input_num = context.NumInputs();
-  uint32_t output_num = context.NumOutputs();
+  int input_num = context.NumInputs();
+  int output_num = context.NumOutputs();
   if (output_num > input_num) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %u outputs but only %u inputs, can't ref one by one.",
+    GELOGE(INTERNAL_ERROR, "node %s type %s has %d outputs but only %d inputs, can't ref one by one.",
            node_name_.c_str(), node_type_.c_str(), output_num, input_num);
     return INTERNAL_ERROR;
   }
-  for (uint32_t out_index = 0; out_index < output_num; ++out_index) {
+  for (uint32_t out_index = 0; out_index < static_cast<uint32_t>(output_num); ++out_index) {
     auto input = context.GetInput(out_index);
     GE_CHECK_NOTNULL(input);
     GE_CHK_STATUS_RET(context.SetOutput(out_index, *input));
-    GELOGD("node %s type %s output[%u] ref input[%u] addr=%p.",
+    GELOGD("node %s type %s output[%d] ref input[%d] addr=%p.",
            node_name_.c_str(), node_type_.c_str(), out_index, out_index, input->GetData());
   }
   GELOGI("node %s type %s ref input one by one end.", node_name_.c_str(), node_type_.c_str());

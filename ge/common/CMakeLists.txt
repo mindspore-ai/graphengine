@@ -24,6 +24,7 @@ set(SRC_LIST
     "helper/om_file_helper.cc"
     "helper/model_helper.cc"
     "../model/ge_model.cc"
+    "../model/ge_root_model.cc"
     "auth/file_saver.cc"
     "fp16_t.cc"
     "math/fp16_math.cc"
@@ -129,6 +130,7 @@ target_compile_definitions(ge_common_static PRIVATE
     google=ascend_private
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    LOG_CPP
 )
 
 target_compile_options(ge_common_static PRIVATE
@@ -183,6 +185,7 @@ target_compile_options(ge_common PRIVATE
     -fvisibility=hidden
     -O2
     -Werror
+    -Wno-deprecated-declarations
 )
 
 target_include_directories(ge_common PRIVATE

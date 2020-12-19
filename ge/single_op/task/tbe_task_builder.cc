@@ -173,7 +173,8 @@ Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task, const SingleOpModelParam 
 
     auto tbe_kernel = GetTbeKernel(op_desc_);
     if (tbe_kernel == nullptr) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "OP EXT ATTR NAME TBE_KERNEL not found. op = %s", op_desc_->GetName().c_str());
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
+             op_desc_->GetName().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
 

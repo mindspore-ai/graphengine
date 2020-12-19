@@ -25,7 +25,7 @@
 #include "framework/common/debug/ge_log.h"
 
 namespace {
-constexpr uint32_t kMaxTsMemBlock = 2 * 1024 * 1024;   // Max block 2M
+constexpr uint32_t kMaxTsMemBlock = 2097152;   // Max block 2M 2 * 1024 * 1024
 constexpr uint32_t kTsMemAligment = 64;   // Malloc for 64 bits align
 constexpr uint32_t kTsMemAlignMask = kTsMemAligment - 1;
 }

@@ -26,9 +26,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/ge_types.h"
 #include "external/register/register_types.h"
-#include "toolchain/prof_engine.h"
-#include "toolchain/prof_mgr_core.h"
-#include "toolchain/prof_acl_api.h"
+#include "toolchain/prof_callback.h"
 
 using std::map;
 using std::string;
@@ -37,35 +35,33 @@ using Json = nlohmann::json;
 
 namespace {
   const std::string GE_PROFILING_MODULE = "Framework";
+  // DataTypeConfig MASK
+  #define PROF_ACL_API_MASK                0x0001
+  #define PROF_TASK_TIME_MASK              0x0002
+  #define PROF_AICORE_METRICS_MASK         0x0004
+  #define PROF_AICPU_TRACE_MASK            0x0008
+  #define PROF_MODEL_EXECUTE_MASK          0x0010
+  #define PROF_RUNTIME_API_MASK            0x0020
+  #define PROF_RUNTIME_TRACE_MASK          0x0040
+  #define PROF_SCHEDULE_TIMELINE_MASK      0x0080
+  #define PROF_SCHEDULE_TRACE_MASK         0x0100
+  #define PROF_AIVECTORCORE_METRICS_MASK   0x0200
+  #define PROF_SUBTASK_TIME_MASK           0x0400
+  #define PROF_TRAINING_TRACE_MASK         0x0800
+  #define PROF_HCCL_TRACE_MASK             0x1000
+  #define PROF_DATA_PROCESS_MASK           0x2000
+  #define PROF_MODEL_LOAD_MASK             0x8000000000000000
+
 }  // namespace
 namespace ge {
 struct DeviceSubsInfo {
   uint64_t module;
   uint32_t subscribe_count;
 };
-// register Plugin
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY PluginImpl : public Msprof::Engine::PluginIntf {
- public:
-  explicit PluginImpl(const std::string &module);
-  ~PluginImpl() {}
 
-  int Init(const Msprof::Engine::Reporter *reporter);
-  int UnInit();
-  static Msprof::Engine::Reporter *GetPluginReporter() { return reporter_; }
-
- private:
-  static Msprof::Engine::Reporter *reporter_;
-  std::string module_;
-};
-
-// register Engine
-class ProfilingEngineImpl : public Msprof::Engine::EngineIntf {
- public:
-  ProfilingEngineImpl() {}
-  ~ProfilingEngineImpl() {}
-
-  Msprof::Engine::PluginIntf *CreatePlugin();
-  int ReleasePlugin(Msprof::Engine::PluginIntf *plugin);
+struct MsprofCallback {
+  MsprofCtrlCallback msprofCtrlCallback;
+  MsprofReporterCallback msprofReporterCallback;
 };
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
@@ -73,68 +69,54 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   ProfilingManager();
   virtual ~ProfilingManager();
   static ProfilingManager &Instance();
-  ge::Status Init(const Options &options);
-  ge::Status InitFromOptions(const Options &options);
-  ge::Status InitFromAclCfg(const std::string &config);
-  ge::Status StartProfiling(int32_t iter, int32_t device_id);
-  void UpdateSubscribeDeviceModuleMap(std::string prof_type, uint32_t device_id, uint64_t module);
-  ge::Status ProfModelSubscribe(uint64_t module, void *model);
-  ge::Status ProfModelUnsubscribe(void *model);
-  ge::Status ProfInit(uint64_t module);
-  ge::Status ProfFinalize();
-  ge::Status ProfStartProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
-  ge::Status ProfStopProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
+  Status Init(const Options &options);
+  Status ProfInit(uint64_t module);
+  Status ProfFinalize();
+  Status ProfStartProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
+  Status ProfStopProfiling(uint64_t module, const std::map<std::string, std::string> &config_para);
+  Status ProfModelSubscribe(uint64_t module, void *model);
+  Status ProfModelUnsubscribe(void *model);
   void StopProfiling();
-  bool ProfilingOpTraceOn() const { return is_op_trace_; }
-  bool ProfilingLoadFlag() const { return is_load_; }
   bool ProfilingTrainingTraceOn() const { return is_training_trace_; }
   bool ProfilingModelLoadOn() const { return is_load_profiling_; }
   bool ProfilingModelExecuteOn() const;
-  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; } // only used  by command pattern
-  bool IsAclApiMode() const { return is_acl_api_mode_; }
-  int32_t GetOpTraceIterNum() const { return op_trace_iter_num_; }
+  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; } // is_execute_profiling_ only used by ge option and env
   void ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
-                           const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
-                           bool check_device);
-  void Report(const int32_t &device_id, const string &data, Msprof::Engine::Reporter &reporter,
-              Msprof::Engine::ReporterData &reporter_data);
+                           const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
   void ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
                              const int32_t &device_id);
   void ProfilingGraphDescInfo(uint32_t model_id, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
                               const int32_t &device_id);
-  void SetProfilingConfig(const string &profiling_cfg);
-  vector<int32_t> GetProfilingDeviceId() const { return  device_id_; }
-  void PluginUnInit(const std::string &module) const;
+  Status PluginInit() const;
+  void PluginUnInit() const;
+  Status CallMsprofReport(ReporterData &reporter_data) const;
+  struct MsprofCallback &GetMsprofCallback() { return prof_cb_; }
+  void SetMsprofCtrlCallback(MsprofCtrlCallback func) { prof_cb_.msprofCtrlCallback = func; }
+  void SetMsprofReporterCallback(MsprofReporterCallback func) { prof_cb_.msprofReporterCallback = func; }
+  void GetFpBpPoint(std::string &fp_point, std::string &bp_point);
  private:
-  ge::Status ParseFeaturesFromAclCfg(const Json &feature);
-  ge::Status ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
-                            vector<int32_t> &device_list);
-  ge::Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para,
+  Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
+  Status ParseOptions(const std::string &options);
+  Status ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
+                        vector<int32_t> &device_list);
+  Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para,
                                vector<int32_t> &device_list);
   uint64_t GetProfilingModule();
+  void GraphDescReport(const int32_t &device_id, const string &data);
   void UpdateDeviceIdModuleMap(string prof_type, uint64_t module, const vector<int32_t> &device_list);
-  bool is_load_profiling_ = false;
-  bool is_execute_profiling_ = false;
-  bool is_op_trace_ = false;
-  bool is_load_ = false;
-  bool is_training_trace_ = false;
-  bool is_acl_api_mode_ = false;
-  int32_t op_trace_iter_num_ = 0;
-  string job_id_;
-  string prof_dir_;
+  void UpdateSubscribeDeviceModuleMap(std::string prof_type, uint32_t device_id, uint64_t module);
+
+  bool is_load_profiling_;
+  bool is_execute_profiling_;
+  bool is_training_trace_;
   vector<int32_t> device_id_;
-  vector<string> op_trace_conf_;
-  vector<string> profiling_opts_;
-  vector<void *> prof_handle_vec_;
-  string recv_profiling_config_;
-  string send_profiling_config_;
-  string system_trace_conf_;
-  string task_trace_conf_;
-  const ProfilingEngineImpl engine_;
   map<int32_t, uint64_t> device_id_module_map_; // key: device_id, value: profiling on module
   map<uint32_t, DeviceSubsInfo> subs_dev_module_; // key: device_id, value: profiling on module
   uint32_t subscribe_count_;
   std::mutex mutex_;
+  MsprofCallback prof_cb_;
+  std::string fp_point_;
+  std::string bp_point_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

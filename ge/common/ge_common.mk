@@ -7,6 +7,7 @@ GE_COMMON_LOCAL_SRC_FILES := \
     helper/om_file_helper.cc \
     helper/model_helper.cc \
     ../model/ge_model.cc \
+    ../model/ge_root_model.cc \
     auth/file_saver.cc \
     fp16_t.cc \
     math/fp16_math.cc \

@@ -260,8 +260,7 @@ Status NodeDoneCallback::ProfilingReport() {
   }
 
   auto &profiling_manager = ProfilingManager::Instance();
-  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info, compute_graph_info,
-                                        !profiling_manager.IsAclApiMode());
+  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info, compute_graph_info);
   return SUCCESS;
 }
 

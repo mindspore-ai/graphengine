@@ -113,8 +113,8 @@ HybridDavinciModel::~HybridDavinciModel() {
   delete impl_;
 }
 
-unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &ge_root_model) {
-  auto instance = unique_ptr<HybridDavinciModel>(new (std::nothrow)HybridDavinciModel());
+std::unique_ptr<HybridDavinciModel> HybridDavinciModel::Create(const GeRootModelPtr &ge_root_model) {
+  auto instance = std::unique_ptr<HybridDavinciModel>(new (std::nothrow)HybridDavinciModel());
   if (instance != nullptr) {
     instance->impl_ = new (std::nothrow) HybridDavinciModel::Impl(ge_root_model);
     if (instance->impl_ != nullptr) {

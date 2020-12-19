@@ -485,11 +485,9 @@ Status GELib::Finalize() {
 void GELib::ShutDownProfiling() {
   std::lock_guard<std::mutex> lock(status_mutex_);
 
-  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().StopProfiling();
-  }
   if (ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+    ProfilingManager::Instance().StopProfiling();
+    ProfilingManager::Instance().PluginUnInit();
   }
 }
 

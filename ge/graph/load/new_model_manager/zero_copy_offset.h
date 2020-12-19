@@ -66,9 +66,12 @@ class ZeroCopyOffset {
   int64_t GetDataSize() const { return data_size_; }
   // value of *outside_addrs_ from davinci_model
   std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() { return outside_addrs_; }
+  // name of op
+  std::string GetOpName() const { return op_name_; }
 
  private:
   void *basic_addr_ = nullptr;
+  std::string op_name_;
   uint32_t data_count_ = 0;
   std::vector<std::pair<int64_t, void *>> data_info_;
   vector<int64_t> relative_offset_;

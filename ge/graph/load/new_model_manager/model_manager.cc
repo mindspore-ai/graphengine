@@ -40,9 +40,7 @@ const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
 const std::size_t kProfCmdParaMaxSize = 1000;
 const std::size_t kProfStartCmdParaSize = 2;
-const std::string kCmdTypeProfile = "profile";
 const std::string kCmdTypeDump = "dump";
-const std::string kCmdTypeProfiling = "profiling";
 const std::string kCmdTypeProfInit = "prof_init";
 const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
@@ -51,6 +49,9 @@ const std::string kCmdTypeProfModelSubscribe = "prof_model_subscribe";
 const std::string kCmdTypeProfModelUnsubscribe = "prof_model_cancel_subscribe";
 const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
 const char *const kDeleteCustOp = "deleteCustOp";
+const int kTimeSpecNano = 1000000000;
+const int kTimeSpecMiro = 1000000;
+const int kSessionMaxBias = 100;
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
   uint32_t kernelSoBufLen;
@@ -224,7 +225,7 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
 ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
@@ -237,7 +238,7 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
 }
 
 ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
@@ -345,7 +346,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
 
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                      timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     davinci_model->SetProfileTime(MODEL_LOAD_END);
   } while (0);
@@ -629,8 +630,7 @@ Status ModelManager::Stop(uint32_t model_id) {
 ///
 Status ModelManager::HandleCommand(const Command &command) {
   static const std::map<std::string, std::function<uint32_t(const Command &)>> cmds = {
-      {kCmdTypeProfile, HandleProfileCommand}, {kCmdTypeDump, HandleDumpCommand},
-      {kCmdTypeProfiling, HandleAclProfilingCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
+      {kCmdTypeDump, HandleDumpCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
       {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
       {kCmdTypeProfStop, HandleProfStopCommand},
       {kCmdTypeProfModelSubscribe, HandleProfModelSubscribeCommand},
@@ -643,21 +643,6 @@ Status ModelManager::HandleCommand(const Command &command) {
   } else {
     return iter->second(command);
   }
-}
-
-Status ModelManager::HandleAclProfilingCommand(const Command &command) {
-  if (command.cmd_params.size() < kCmdParSize) {
-    GELOGE(PARAM_INVALID, "When the cmd_type is 'profiling', the size of cmd_params must larger than 2.");
-    return PARAM_INVALID;
-  }
-
-  std::string map_key = command.cmd_params[0];
-  std::string value = command.cmd_params[1];
-  if (map_key == PROFILE_CONFIG) {
-    ProfilingManager::Instance().SetProfilingConfig(value);
-  }
-
-  return SUCCESS;
 }
 
 Status ModelManager::GetModelByCmd(const Command &command,
@@ -802,29 +787,6 @@ Status ModelManager::HandleProfStopCommand(const Command &command) {
   if (ProfilingManager::Instance().ProfStopProfiling(module_index, cmd_params_map) != SUCCESS) {
     GELOGE(FAILED, "Handle prof finalize failed.");
     return FAILED;
-  }
-  return SUCCESS;
-}
-
-Status ModelManager::HandleProfileCommand(const Command &command) {
-  if (command.cmd_params.size() < kCmdParSize) {
-    GELOGE(PARAM_INVALID, "When the cmd_type is 'profile', the size of cmd_params must larger than 2.");
-    return PARAM_INVALID;
-  }
-
-  std::string map_key = command.cmd_params[0];
-  std::string value = command.cmd_params[1];
-
-  GELOGI("Profiling mode, Command key:%s , value:%s ", map_key.c_str(), value.c_str());
-
-  auto iter = PROFILE_COMPONENT_MAP.find(map_key);
-  if (iter != PROFILE_COMPONENT_MAP.end()) {
-    std::string property_value = (value == "on") ? "1" : "0";
-    PropertiesManager::Instance().SetPropertyValue(iter->second, property_value);
-  }
-
-  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
-    PropertiesManager::Instance().SetPropertyValue(map_key, value);
   }
   return SUCCESS;
 }
@@ -1072,12 +1034,12 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }
-  session_id = static_cast<uint64_t>(tv.tv_sec * 1000000 + tv.tv_usec);  // 1000000us
+  session_id = static_cast<uint64_t>(tv.tv_sec * kTimeSpecMiro + tv.tv_usec);  // 1000000us
 
   session_id_bias_++;
   // max bais 100.
-  session_id_bias_ = session_id_bias_ % 100;
-  session_id = session_id * 100 + session_id_bias_;
+  session_id_bias_ = session_id_bias_ % kSessionMaxBias;
+  session_id = session_id * kSessionMaxBias + session_id_bias_;
 
   GELOGD("Generate new session id: %lu.", session_id);
   return SUCCESS;
@@ -1086,8 +1048,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   GE_CHK_BOOL_RET_STATUS(model.key.empty() || mmAccess2(model.key.c_str(), M_F_OK) == EN_OK,
-	                 ACL_ERROR_GE_PARAM_INVALID,
-                         "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
+      ACL_ERROR_GE_PARAM_INVALID, "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
   shared_ptr<DavinciModel> davinci_model = nullptr;
@@ -1148,7 +1109,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 
     GELOGI("Parse model %u success.", model_id);
 
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                      timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     davinci_model->SetProfileTime(MODEL_LOAD_END);
 
@@ -1252,7 +1213,8 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u.", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "Invalid model id %u, check weather model has been loaded or not.", model_id);
 
   if (davinci_model->NeedDestroyAicpuKernel()) {
     GELOGI("Start to destroy specified aicpu kernel.");
@@ -1289,13 +1251,13 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name) {
-  GELOGI("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name, bool &loaded) {
+  GELOGD("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
-    GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
-    return INTERNAL_ERROR;
+    GELOGI("cust aicpu op %s has no corresponding kernel!", op_desc->GetName().c_str());
+    return SUCCESS;
   }
 
   // get current context
@@ -1313,18 +1275,24 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
     std::map<string, CustAICPUKernelPtr> new_so_name;
     new_so_name.insert({so_name, aicpu_kernel});
     cust_aicpu_so_[resource_id] = new_so_name;
-    GELOGI("LoadCustAicpuSo new aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo new aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
     return SUCCESS;
   }
   auto it_so_name = it->second.find(so_name);
   if (it_so_name == it->second.end()) {
     it->second.insert({so_name, aicpu_kernel});
-    GELOGI("LoadCustAicpuSo add aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo add aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
+    return SUCCESS;
   }
+  loaded = true;
+  GELOGD("LoadCustAicpuSo so name %s has been loaded.", so_name.c_str());
   return SUCCESS;
 }
 
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
+  GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   if (cust_aicpu_so_.size() == 0) return SUCCESS;
   // get current context

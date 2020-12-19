@@ -42,6 +42,7 @@ const size_t kGraphMemoryBuffer = 4UL * 1024UL * 1024UL * 1024UL;
 const size_t kMaxMemorySize = 256UL * 1024UL * 1024UL * 1024UL;
 const char kEnvGeuseStaticMemory[] = "GE_USE_STATIC_MEMORY";
 const uint64_t kSessionMemAlignSize = 512;
+const size_t kSessionMemAlignUnit = 2;
 
 enum MemStatus {
   NORMAL = 0,

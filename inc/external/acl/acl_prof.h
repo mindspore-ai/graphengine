@@ -32,12 +32,11 @@ extern "C" {
 #define ACL_PROF_MAX_OP_TYPE_LEN 65
 
 typedef enum {
-  ACL_AICORE_ARITHMATIC_THROUGHPUT = 0,
-  ACL_AICORE_PIPELINE = 1,
-  ACL_AICORE_SYNCHRONIZATION = 2,
-  ACL_AICORE_MEMORY = 3,
-  ACL_AICORE_INTERNAL_MEMORY = 4,
-  ACL_AICORE_STALL = 5,
+  ACL_AICORE_ARITHMETIC_UTILIZATION = 0,
+  ACL_AICORE_PIPE_UTILIZATION = 1,
+  ACL_AICORE_MEMORY_BANDWIDTH = 2,
+  ACL_AICORE_L0B_AND_WIDTH = 3,
+  ACL_AICORE_RESOURCE_CONFLICT_RATIO = 4,
   ACL_AICORE_NONE = 0xFF
 } aclprofAicoreMetrics;
 
@@ -289,6 +288,32 @@ ACL_FUNC_VISIBILITY uint64_t aclprofGetOpDuration(const void *opInfo, size_t opI
  * @retval 0 for failed
  */
 ACL_FUNC_VISIBILITY size_t aclprofGetModelId(const void *opInfo, size_t opInfoLen, uint32_t index);
+
+/**
+ * @ingroup AscendCL
+ * @brief get cube ops from subscription data
+ *
+ * @param  opInfo [IN]     pointer to subscription data
+ * @param  opInfoLen [IN]  memory size of subscription data
+ * @param  index [IN]      index of op array in opInfo
+ *
+ * @retval cube ops of subscription data
+ * @retval 0 for failed
+ */
+ACL_FUNC_VISIBILITY uint64_t aclprofGetOpCubeOps(const void *opInfo, size_t opInfoLen, uint32_t index);
+
+/**
+ * @ingroup AscendCL
+ * @brief get vector ops from subscription data
+ *
+ * @param  opInfo [IN]      pointer to subscription data
+ * @param  opInfoLen [IN]   memory size of subscription data
+ * @param  index [IN]       index of op array in opInfo
+ *
+ * @retval vector ops of subscription data
+ * @retval 0 for failed
+ */
+ACL_FUNC_VISIBILITY uint64_t aclprofGetOpVectorOps(const void *opInfo, size_t opInfoLen, uint32_t index);
 
 #ifdef __cplusplus
 }

@@ -18,6 +18,7 @@
 #define __CCE_RUNTIME_BASE_H__
 
 #include <stdint.h>
+#include "toolchain/prof_callback.h"
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
@@ -86,9 +87,19 @@ typedef struct rtExceptionInfo {
     uint32_t deviceid;
 } rtExceptionInfo;
 
+typedef struct rtTaskFailInfo {
+    uint32_t taskid;
+    uint32_t streamid;
+    uint32_t tid;
+    uint32_t deviceid;
+    uint32_t retcode;
+} rtTaskFailInfo;
+
 typedef void (*rtErrorCallback)(rtExceptionType);
 
 typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
+
+typedef void (*rtTaskFailCallbackByModule)(rtTaskFailInfo *exceptionInfo);
 
 typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 
@@ -147,6 +158,12 @@ RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t*
 RTS_API rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtStream_t stream);
 
 /**
+ * @ingroup profiling_base
+ * @brief ts set profiling reporter callback.
+ */
+RTS_API rtError_t rtSetMsprofReporterCallback(MsprofReporterCallback callback);
+
+/**
  * @ingroup dvrt_base
  * @brief Returns the last error from a runtime call.
  */
@@ -183,6 +200,16 @@ RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCallback callback);
+
+/**
+ * @ingroup dvrt_base
+ * @brief register callback for fail task 
+ * @param [in] uniName unique register name, can't be null
+ * @param [in] callback fail task callback function
+ * @param [out] NA
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtRegTaskFailCallbackByModule(const char *moduleName, rtTaskFailCallbackByModule callback);
 
 /**
  * @ingroup dvrt_base

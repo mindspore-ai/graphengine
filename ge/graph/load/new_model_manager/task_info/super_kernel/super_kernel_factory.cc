@@ -19,6 +19,8 @@
 
 namespace ge {
 namespace skt {
+const size_t kFusedKernelMinimumSize = 2;
+const size_t kFusedKernelSizeUnit = 2;
 SuperKernelFactory &SuperKernelFactory::GetInstance() {
   static SuperKernelFactory factory;
   return factory;
@@ -79,17 +81,17 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
     return FAILED;
   }
 
-  if (super_kernel_size < 2) {
+  if (super_kernel_size < kFusedKernelMinimumSize) {
     GELOGW(
       "SKT: the number of kernels being fused must be greater than or "
       "equal to 2");
     return FAILED;
   }
   GELOGI("SKT: superkernel start fuse, superkernel size %zu.", stub_func_list.size());
-  const size_t nav_table_len = 2 * stub_func_list.size();
+  const size_t nav_table_len = kFusedKernelSizeUnit * stub_func_list.size();
   std::unique_ptr<uint64_t[]> nav_table(new(std::nothrow) uint64_t[nav_table_len]);
   GE_CHECK_NOTNULL(nav_table);
-  uint64_t nav_table_size = 2 * stub_func_list.size() * sizeof(int64_t);
+  uint64_t nav_table_size = kFusedKernelSizeUnit * stub_func_list.size() * sizeof(int64_t);
 
   rtError_t rt_ret;
   void *hbm_nav_table_addr = nullptr;
@@ -101,21 +103,21 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
     GELOGD("SKT: fuseKernels subFunc %p, device func address %p", stub_func_list[i], sub_device_func);
     // store two uint64_t address
     // address divided by 4 because of 32bits encoding, call offset will *4 when calculating
-    nav_table[i * 2] = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(sub_device_func)) / 4;
-    GELOGD("SKT: CALL offet %lu", nav_table[i * 2]);
-    nav_table[i * 2 + 1] = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args_addr_list[i]));
-    GELOGD("SKT: fuseKernels args base address %lu", nav_table[i * 2 + 1]);
+    nav_table[i * kFusedKernelSizeUnit] = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(sub_device_func)) / 4;
+    GELOGD("SKT: CALL offet %lu", nav_table[i * kFusedKernelSizeUnit]);
+    nav_table[i * kFusedKernelSizeUnit + 1] = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args_addr_list[i]));
+    GELOGD("SKT: fuseKernels args base address %lu", nav_table[i * kFusedKernelSizeUnit + 1]);
   }
-  rt_ret = rtMalloc((void **)&hbm_nav_table_addr, nav_table_size, RT_MEMORY_HBM);
+  rt_ret = rtMalloc(reinterpret_cast<void **>(&hbm_nav_table_addr), nav_table_size, RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc failed. error: 0x%X", rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
-  rt_ret =
-    rtMemcpy((void *)hbm_nav_table_addr, nav_table_size, (void *)nav_table.get(), nav_table_size, RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(reinterpret_cast<void *>(hbm_nav_table_addr), nav_table_size,
+                    reinterpret_cast<void *>(nav_table.get()), nav_table_size, RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy failed. error: 0x%X", rt_ret);
                   GE_CHK_RT(rtFree(hbm_nav_table_addr)); return RT_ERROR_TO_GE_STATUS(rt_ret);)
   // Create the necessary metadata for the super kernel
-  h = std::unique_ptr<skt::SuperKernel>(
-      new SuperKernel(this->func_stub_, hbm_nav_table_addr, nav_table_size, block_dim));
+  h =
+    std::unique_ptr<skt::SuperKernel>(new SuperKernel(this->func_stub_, hbm_nav_table_addr, nav_table_size, block_dim));
   return SUCCESS;
 }
 }  // namespace skt

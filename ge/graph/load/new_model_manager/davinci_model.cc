@@ -16,7 +16,6 @@
 
 #include "graph/load/new_model_manager/davinci_model.h"
 
-#include <cce/dnn.h>
 #include <graph/utils/node_utils.h>
 #include <algorithm>
 #include <map>
@@ -84,7 +83,7 @@ const uint32_t kAddrLen = sizeof(void *);
 const int kDecimal = 10;
 const int kBytes = 8;
 const uint32_t kDataMemAlignSizeCompare = 64;
-const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
+const uint32_t kDumpL1FusionOpMByteSize = 2097152;   // 2 * 1024 * 1024
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
 const char *const kGetDynamicDimsName = "ascend_mbatch_get_dynamic_dims_node";
@@ -331,8 +330,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
       GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
       return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
     }
-    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-            mem_base_, data_size);
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
+            runtime_param_.graph_id, mem_base_, data_size);
 
     if (!is_inner_weight_base_) {
       weights_mem_base_ = mem_base_;
@@ -713,7 +712,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   // collect profiling for ge
   auto &profiling_manager = ProfilingManager::Instance();
   if (profiling_manager.ProfilingModelLoadOn()) {
-    Status p_ret = ReportProfilingData(!profiling_manager.IsAclApiMode());
+    Status p_ret = ReportProfilingData();
     if (p_ret != SUCCESS) {
       GELOGE(p_ret, "Report profiling data failed.");
       return p_ret;
@@ -724,14 +723,14 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   return ret;
 }
 
-Status DavinciModel::ReportProfilingData(bool check_device) {
+Status DavinciModel::ReportProfilingData() {
   std::vector<ComputeGraphDescInfo> compute_graph_desc_info;
   Status ret = GetComputeGraphInfo(compute_graph_desc_info);
   if (ret != SUCCESS) {
     GELOGE(ret, "GetComputeGraphInfo failed.");
     return ret;
   }
-  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info, check_device);
+  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info);
   GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
   op_list_.clear();
 
@@ -1544,7 +1543,8 @@ Status DavinciModel::LoadWithQueue() {
   }
 
   if (output_queue_ids_.size() != new_output_data_info_.size()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Output queue ids not match model: output_queue=%zu output_data=%zu",
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID,
+           "Output queue ids not match model: output_queue=%zu output_data=%zu",
            output_queue_ids_.size(), new_output_data_info_.size());
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
@@ -2186,8 +2186,9 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
   const std::vector<DataBuffer> &blobs = input_data.blobs;
   for (const auto &data : new_input_data_info_) {
     if (data.first >= blobs.size()) {
-      GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld", blobs.size(),
-             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first);
+      GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld, op_name(%s)", blobs.size(),
+             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first,
+             data.second.GetOpName().c_str());
       return FAILED;
     }
 
@@ -2198,13 +2199,14 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
     }
     uint64_t data_size = data.second.GetDataSize();
     GE_CHK_BOOL_RET_STATUS(data_size >= data_buf.length, PARAM_INVALID,
-                           "input data size(%lu) does not match model required size(%lu), ret failed.", data_buf.length,
-                           data_size);
+                           "input data size(%lu) does not match model required size(%lu), op_name(%s) ret failed.",
+                           data_buf.length, data_size, data.second.GetOpName().c_str());
     void *mem_addr = data.second.GetBasicAddr();
     void *data_buf_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data_buf.data));
     uint64_t data_buf_length = data_buf.length;
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] input[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
-           runtime_param_.graph_id, data.first, mem_addr, data_buf_addr, data_size, data_buf_length);
+    GELOGI("CopyPlainData memcpy graph_%u type[F] input[%s] rank[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
+           runtime_param_.graph_id, data.second.GetOpName().c_str(), data.first, mem_addr, data_buf_addr, data_size,
+           data_buf_length);
     GE_CHK_RT_RET(rtMemcpy(mem_addr, data_size, data_buf_addr, data_buf_length, kind));
   }
 
@@ -2248,10 +2250,8 @@ inline int64_t SumSize(const vector<int64_t> &size_list) {
 
 Status DavinciModel::SinkModelProfile() {
   // profiling plugin must be registered
-  Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
-  GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return SUCCESS);
-
-  Msprof::Engine::ReporterData reporter_data{};
+  auto &prof_mgr = ProfilingManager::Instance();
+  ReporterData reporter_data{};
   // report model data tag name
   std::string tag_name;
   tag_name.append("model_load_info_").append(std::to_string(this->Id()));
@@ -2269,32 +2269,32 @@ Status DavinciModel::SinkModelProfile() {
   reporter_data.deviceId = device_id_;
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   reporter_data.data = (unsigned char *)name.c_str();
   reporter_data.dataLen = name.size();
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   uint32_t model_id = this->Id();
   reporter_data.data = (unsigned char *)&model_id;
   reporter_data.dataLen = sizeof(uint32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   // Load Start/End Time
   int64_t start_time = this->GetLoadBeginTime();
   reporter_data.data = (unsigned char *)&start_time;
   reporter_data.dataLen = sizeof(int64_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   int64_t end_time = this->GetLoadEndTime();
   reporter_data.data = (unsigned char *)&end_time;
   reporter_data.dataLen = sizeof(int64_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   int32_t task_num = task_list_.size();
   std::multimap<uint32_t, uint32_t> op_id_map;
@@ -2308,6 +2308,7 @@ Status DavinciModel::SinkModelProfile() {
       uint32_t op_num = fusion_op_info->original_op_names.size();
       uint32_t task_id = task->GetTaskID();
       if (op_num > 0) {
+        GELOGI("task.id = %u, opNum = %u", task_id, op_num);
         op_id_map.insert(std::make_pair(fusion_op_info->op_index, task_id));
       }
     }
@@ -2350,39 +2351,39 @@ Status DavinciModel::SinkModelProfile() {
       int32_t fusion_op_name_len = fusion_op_name.size() == 0 ? 1 : fusion_op_name.size();
       reporter_data.data = (unsigned char *)&fusion_op_name_len;
       reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
 
       reporter_data.data = (unsigned char *)fusion_op_name.c_str();
       reporter_data.dataLen = fusion_op_name_len;
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
 
       // original op name before fusion
       reporter_data.data = (unsigned char *)&op_num;
       reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
 
       for (uint32_t k = 0; k < op_num; k++) {
         std::string op_name = fusion_op_info->original_op_names[k];
         int32_t op_name_len = op_name.size() == 0 ? 1 : op_name.size();
         reporter_data.data = (unsigned char *)&op_name_len;
         reporter_data.dataLen = sizeof(int32_t);
-        GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                         this->Id());
+        GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                         "Reporter data fail, model id:%u.", this->Id());
         reporter_data.data = (unsigned char *)op_name.c_str();
         reporter_data.dataLen = op_name_len;
-        GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                         this->Id());
+        GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                         "Reporter data fail, model id:%u.", this->Id());
       }
 
       // stream id info
       uint32_t streamId = task->GetStreamId();
       reporter_data.data = (unsigned char *)&streamId;
       reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
 
       // memory info
       struct memoryInfo memory_info;
@@ -2398,22 +2399,22 @@ Status DavinciModel::SinkModelProfile() {
           memory_info.weight_size + memory_info.input_size + memory_info.output_size + memory_info.workspace_size;
       reporter_data.data = (unsigned char *)&memory_info;
       reporter_data.dataLen = sizeof(struct memoryInfo);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
 
       // task info
       reporter_data.data = (unsigned char *)&task_count;
       reporter_data.dataLen = sizeof(uint32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
 
       Range task_range = op_id_map.equal_range(op_id);
       for (CIT idx = task_range.first; idx != task_range.second; ++idx) {
         uint32_t task_id = idx->second;
         reporter_data.data = (unsigned char *)&task_id;
         reporter_data.dataLen = sizeof(uint32_t);
-        GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                         this->Id());
+        GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                         "Reporter data fail, model id:%u.", this->Id());
       }
     }
   }
@@ -2422,10 +2423,8 @@ Status DavinciModel::SinkModelProfile() {
 
 Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   // profiling plugin must be registered
-  Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
-  GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return SUCCESS);
-
-  Msprof::Engine::ReporterData reporter_data{};
+  auto &prof_mgr = ProfilingManager::Instance();
+  ReporterData reporter_data{};
   // report model data tag name
   std::string tag_name;
   tag_name.append("model_time_info_")
@@ -2448,33 +2447,33 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   size_t name_len = name.size();
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   reporter_data.data = (unsigned char *)name.c_str();
   reporter_data.dataLen = name.size();
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   // request id
   uint64_t request_id = current_data.request_id;
   reporter_data.data = (unsigned char *)&request_id;
   reporter_data.dataLen = sizeof(uint32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED,
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
 
   // thread id
   int32_t thread_id = GetDataInputTid();
   reporter_data.data = (unsigned char *)&thread_id;
   reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED,
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
 
   // time info
   time_info_.modelId = this->Id();
   reporter_data.data = (unsigned char *)&time_info_;
   reporter_data.dataLen = sizeof(struct timeInfo);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED,
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
 
   return SUCCESS;
@@ -2696,8 +2695,9 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
       is_getnext_sink_dynamic_ = true;
       cur_dynamic_dims_.clear();
       cur_dynamic_dims_.resize(shape_of_cur_dynamic_dims_);
-      GE_CHK_RT_RET(rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int64_t),
-                                netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST));
+      auto ret = rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int64_t),
+                          netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST);
+      GE_CHK_RT_RET(ret);
     }
     GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims_).c_str());
     if (GenOutputTensorInfo(op_desc, data_index, output_data, outputs) != SUCCESS) {
@@ -2801,76 +2801,42 @@ void *DavinciModel::Run(DavinciModel *model) {
                                       reinterpret_cast<int64_t *>(shape_data_buffer_data) +
                                       shape_data_buffer_length / sizeof(int64_t));
       GELOGD("Data: cur dynamic dims is %s", formats::JoinToString(model->cur_dynamic_dims_).c_str());
-      delete[] (int64_t *)current_data.blobs.back().data;
+      delete[] reinterpret_cast<int64_t *>(current_data.blobs.back().data);
       current_data.blobs.pop_back();
     }
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_PRE_PROC_END));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_START));
-    if (ProfilingManager::Instance().ProfilingOpTraceOn()) {
-      GELOGI("GetOpTraceIterNum:%d", ProfilingManager::Instance().GetOpTraceIterNum());
-      for (int32_t i = 0; i < ProfilingManager::Instance().GetOpTraceIterNum(); i++) {
-        if (!ProfilingManager::Instance().ProfilingLoadFlag()) {
-          vector<int32_t> prof_device_id_vec = ProfilingManager::Instance().GetProfilingDeviceId();
-          for (size_t j = 0; j < prof_device_id_vec.size(); ++j) {
-            // just profiling, no need to check value
-            (void)ProfilingManager::Instance().StartProfiling(i, prof_device_id_vec[j]);
-          }
-        }
+    GE_TIMESTAMP_START(rtModelExecute);
+    GELOGI("rtModelExecute start.");
+    rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
+                    (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
+                    CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
+                    continue);
+    GELOGI("rtModelExecute end");
+    GE_IF_BOOL_EXEC(model->is_first_execute_, GE_TIMESTAMP_EVENT_END(rtModelExecute, "GraphExcute::rtModelExecute"));
 
-        GELOGI("rtModelExecute start.");
-        rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
-        GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
-                        (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-                        continue);  // [No need to check value]
-        GELOGI("rtModelExecute end");
-
-        GELOGI("rtStreamSynchronize start.");
-        rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-        if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
-          GELOGI("The model with multiple datasets aborts normally.");
-        } else {
-          GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
-                          (void)model->ReturnResult(current_data.index, false, seq_end_flag, data_wrapper->GetOutput());
-                          continue);  // [No need to check value]
-        }
-
-        GELOGI("rtStreamSynchronize end.");
-        (void)ProfilingManager::Instance().StopProfiling();  // just profiling, no need to check value
-      }
+    GE_TIMESTAMP_START(rtStreamSynchronize);
+    GELOGI("rtStreamSynchronize start.");
+    rt_ret = rtStreamSynchronize(model->rt_model_stream_);
+    if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
+      seq_end_flag = true;
+    }
+    if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
+      GELOGI("The model with multiple datasets aborts normally.");
     } else {
-      GE_TIMESTAMP_START(rtModelExecute);
-      GELOGI("rtModelExecute start.");
-      rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
-                      (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-                      CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
-                      continue);
-      GELOGI("rtModelExecute end");
-      GE_IF_BOOL_EXEC(model->is_first_execute_, GE_TIMESTAMP_EVENT_END(rtModelExecute, "GraphExcute::rtModelExecute"));
-
-      GE_TIMESTAMP_START(rtStreamSynchronize);
-      GELOGI("rtStreamSynchronize start.");
-      rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-      if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
-        seq_end_flag = true;
-      }
-      if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
-        GELOGI("The model with multiple datasets aborts normally.");
-      } else {
-        GE_IF_BOOL_EXEC(
-          rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
-          (void)model->ReturnResult(current_data.index, false, seq_end_flag,
-                                    data_wrapper->GetOutput());  // [No need to check value]
-          CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
-          continue);
-      }
-
-      GELOGI("rtStreamSynchronize end.");
-      GE_IF_BOOL_EXEC(model->is_first_execute_,
-                      GE_TIMESTAMP_EVENT_END(rtStreamSynchronize, "GraphExcute::Wait for rtStreamSynchronize"));
-      GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_END));
+      GE_IF_BOOL_EXEC(
+        rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
+        (void)model->ReturnResult(current_data.index, false, seq_end_flag,
+                                  data_wrapper->GetOutput());  // [No need to check value]
+        CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
+        continue);
     }
 
+    GELOGI("rtStreamSynchronize end.");
+    GE_IF_BOOL_EXEC(model->is_first_execute_,
+                    GE_TIMESTAMP_EVENT_END(rtStreamSynchronize, "GraphExcute::Wait for rtStreamSynchronize"));
+    GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_END));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(),
                     model->SetProfileTime(MODEL_AFTER_PROC_START));
     GE_TIMESTAMP_START(ReturnResult3);
@@ -3170,21 +3136,29 @@ Status DavinciModel::DistributeTask() {
 
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
   for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
+    auto &task_def = model_task_def->task(task_index);
     auto &task = task_list_.at(task_index);
     GE_CHK_STATUS_RET(task->Distribute(), "Task[%zu] distribute fail", task_index);
     // for data dump
-    auto op_index = std::max(model_task_def->task(task_index).kernel().context().op_index(),
-                             model_task_def->task(task_index).kernel_ex().op_index());
+    auto op_index = std::max(task_def.kernel().context().op_index(),
+                             task_def.kernel_ex().op_index());
     OpDescPtr op = GetOpByIndex(op_index);
     GE_CHECK_NOTNULL(op);
 
-    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
       bool call_dump = GetDumpProperties().IsLayerNeedDump(name_, om_name_, op->GetName()) && task->CallSaveDumpInfo();
       if (call_dump || is_op_debug_reg_) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
+
+    auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+    bool no_need_profiling = (task_type != RT_MODEL_TASK_KERNEL)
+        && (task_type != RT_MODEL_TASK_KERNEL_EX)
+        && (task_type != RT_MODEL_TASK_HCCL);
+    GE_IF_BOOL_EXEC(no_need_profiling, continue);
+
+    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     // Load task info for profiling
     TaskDescInfo task_desc_info;
     if (!om_name_.empty()) {
@@ -3193,7 +3167,7 @@ Status DavinciModel::DistributeTask() {
       task_desc_info.model_name = name_;
     }
     task_desc_info.op_name = op->GetName();
-    task_desc_info.block_dim = model_task_def->task(task_index).kernel().block_dim();
+    task_desc_info.block_dim = task_def.kernel().block_dim();
     task_desc_info.task_id = task->GetTaskID();
     task_desc_info.stream_id = task->GetStreamId();
     task_desc_info_.emplace_back(task_desc_info);
@@ -3391,14 +3365,14 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
 ///
 Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &output_data, bool is_dynamic) {
   if (UpdateIoTaskArgs(new_input_data_info_, true, input_data.blobs, is_dynamic, input_data.batch_label) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "[ZCPY] Update input data to model failed.");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update input data to model failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (UpdateIoTaskArgs(new_output_data_info_, false, output_data.blobs, is_dynamic, input_data.batch_label) !=
       SUCCESS) {
-    GELOGE(PARAM_INVALID, "[ZCPY] Update output data to model failed.");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update output data to model failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   for (ZeroCopyTask &task : zero_copy_tasks_) {
@@ -3444,7 +3418,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     }
 
     if (!CheckInputAndModelSize(buffer.length, data.second.GetDataSize(), is_dynamic)) {
-      GELOGE(FAILED, "Check input size and model size failed");
+      GELOGE(FAILED, "Check input size and model size failed, op[%s]", data.second.GetOpName().c_str());
       return FAILED;
     }
 
@@ -3861,7 +3835,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   if (!is_async_mode_) {
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_START));
     ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Copy Output data to user failed.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
+        "Copy Output data to user failed.");
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_END));
   }
 
@@ -4061,7 +4036,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
   data_dumper_.SetDeviceId(device_id);
 
   // set loop count addr
-  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void * {
+  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void *{
     if (op != nullptr) {
       auto v_output_size = ModelUtils::GetOutputSize(op);
       auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param, op);

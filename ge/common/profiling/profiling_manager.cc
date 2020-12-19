@@ -805,32 +805,46 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   if (!fp_point_.empty() && !bp_point_.empty()) {
     fp_point = fp_point_;
     bp_point = bp_point_;
-    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());
+    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(),
+           fp_point.c_str());
     return;
   }
   // ProfApi mode and training trace is set
-  try {
-    char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = { 0x00 };
+  // Parse options first
+  char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = { 0x00 };
+  bool is_profiling_valid = false;
+  std::string profiling_options;
+  if (ge::GetContext().GetOption(OPTION_EXEC_PROFILING_OPTIONS, profiling_options) == SUCCESS &&
+      !profiling_options.empty()) {
+    is_profiling_valid = true;
+  } else {
     INT32 ret = mmGetEnv("PROFILING_OPTIONS", env_profiling_options, MSPROF_OPTIONS_DEF_LEN_MAX);
     if (ret != EN_OK) {
       GELOGI("PROFILING_OPTIONS env is not exist.");
       return;
     }
     GELOGI("Parse env PROFILING_OPTIONS:%s.", env_profiling_options);
-    Json prof_options = Json::parse(env_profiling_options);
-
-    fp_point_ = prof_options[kFpPoint];
-    bp_point_ = prof_options[kBpPoint];
-
-    fp_point = fp_point_;
-    bp_point = bp_point_;
-    if (!fp_point_.empty() && !bp_point_.empty()) {
-      GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
-    }
-  } catch (...) {
-    GELOGE(FAILED, "Json prof options is invalid.");
-    return;
+    profiling_options = env_profiling_options;
+    is_profiling_valid = true;
   }
+  if (is_profiling_valid) {
+    try {
+      Json prof_options = Json::parse(profiling_options);
+
+      fp_point_ = prof_options[kFpPoint];
+      bp_point_ = prof_options[kBpPoint];
+
+      fp_point = fp_point_;
+      bp_point = bp_point_;
+      if (!fp_point_.empty() && !bp_point_.empty()) {
+        GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
+      }
+    } catch (...) {
+      GELOGW("Json prof options is invalid.");
+      return;
+    }
+  }
+  
   return;
 }
 

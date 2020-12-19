@@ -73,7 +73,6 @@ bool StreamGraphOptimizer::IsSameStreamIdOrBatchLabel(const ComputeGraphPtr &com
 
     GELOGD("Node %s in subgraph %s stream id: %ld, node num: %zu", cur_node->GetName().c_str(),
            comp_graph->GetName().c_str(), stream_id, comp_graph->GetDirectNodesSize());
-    stream_set.insert(stream_id);
   }
   if (stream_set.size() > 1 || label_set.size() > 1) {
     GELOGI("Nodes of graph: %s have different stream id or batch_label, node num: %zu, different stream num: %zu.",

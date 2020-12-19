@@ -118,7 +118,8 @@ const std::map<std::string, Format> kDataFormatMap = {
   {"NCDHW", FORMAT_NCDHW},
   {"ND",   FORMAT_ND}};
 
-const std::map<std::string, Format> kStringToFormatMap = {
+const std::map<std::string, Format> kStringToFormatMap =
+  {
     {"NCHW", FORMAT_NCHW},
     {"NHWC", FORMAT_NHWC},
     {"ND", FORMAT_ND},
@@ -160,7 +161,11 @@ const std::map<std::string, Format> kStringToFormatMap = {
     {"FRACTAL_Z_G", FORMAT_FRACTAL_Z_G},
     {"FORMAT_RESERVED", FORMAT_RESERVED},
     {"ALL", FORMAT_ALL},
-    {"NULL", FORMAT_NULL}};
+    {"NULL", FORMAT_NULL},
+    // add for json input
+    {"RESERVED", FORMAT_RESERVED},
+    {"UNDEFINED", FORMAT_RESERVED},
+  };
 
 const std::map<DataType, std::string> kDataTypeToStringMap = {
     {DT_UNDEFINED, "DT_UNDEFINED"},            // Used to indicate a DataType field has not been set.

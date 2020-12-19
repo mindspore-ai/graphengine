@@ -27,6 +27,7 @@ target_compile_options(ge_runtime PRIVATE
 
 target_compile_definitions(ge_runtime PRIVATE 
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    LOG_CPP
 )
 
 target_include_directories(ge_runtime PRIVATE

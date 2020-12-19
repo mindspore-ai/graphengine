@@ -56,6 +56,7 @@
 #include "graph/passes/iterator_op_pass.h"
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 #include "graph/passes/mark_graph_unknown_status_pass.h"
+#include "graph/passes/dynamic_single_op_reset_shape_pass.h"
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/merge_input_memcpy_pass.h"
 #include "graph/passes/merge_to_stream_merge_pass.h"
@@ -631,11 +632,22 @@ Status GraphManager::ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_
 
 Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_graph, GraphPartitioner &partitioner) {
   GE_CHECK_NOTNULL(compute_graph);
+  PassManager pass_for_dynamic_shape_reset_optimize;
+  GE_CHK_STATUS_RET(pass_for_dynamic_shape_reset_optimize.AddPass(
+    "SetSubgraph::AfterSetSubgraph::DynamicSingleOpResetShapePass", new (std::nothrow) DynamicSingleOpResetShapePass))
+  GE_TIMESTAMP_START(pass_for_dynamic_shape_reset_optimize);
+  Status ret = pass_for_dynamic_shape_reset_optimize.Run(compute_graph);
+  GE_TIMESTAMP_END(pass_for_dynamic_shape_reset_optimize, "SetSubgraph::AfterSetSubgraph");
+  if (ret != SUCCESS && ret != NOT_CHANGED) {
+    GELOGE(ret, "Run passes when optimize subgraph failed");
+    return ret;
+  }
+
   auto sub_graph_map = partitioner.GetSubGraphMap();
   GELOGD("Directly optimize subgraph with build mode:%s, and step:%s.",
          options_.build_mode.c_str(),
          options_.build_step.c_str());
-  Status ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
+  ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "Multiply optimize subgraph failed");
     return ret;

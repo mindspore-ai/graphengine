@@ -47,6 +47,8 @@ const char *const kEngineNameDefault = "default";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kFileNameSuffix = "online";
+const size_t kDynamicDimSize = 1;
+const int64_t kDynamicDimValue = -2;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
     {ge::ENGINE_SYS, kEngineNameDefault}, {ge::ENGINE_AICORE, kAIcoreEngine}, {ge::ENGINE_VECTOR, kVectorEngine}};
@@ -246,6 +248,43 @@ static void GetOpsProtoPath(string &opsproto_path) {
   path_base = path_base.substr(0, path_base.rfind('/'));
   path_base = path_base.substr(0, path_base.rfind('/') + 1);
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
+}
+
+static Status CheckShapeReset(const OpDescPtr &op_desc, bool &change_shape_flag) {
+  GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
+  change_shape_flag = false;
+  for (size_t i = 0; i < op_desc->GetAllInputsDesc().size(); i++) {
+    auto input_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(input_desc);
+    // pass scalar input desc
+    auto dims = input_desc->GetShape().GetDims();
+    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
+      change_shape_flag = true;
+    }
+  }
+  return SUCCESS;
+}
+
+static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
+  for (auto input : inputs) {
+    auto input_desc = input.GetTensorDesc();
+    GeShape shape_ori = input_desc.GetShape();
+
+    std::vector<int64_t> dynamic_shape_dims = {kDynamicDimValue};
+    GeShape dynamic_shape(dynamic_shape_dims);
+
+    ge::GeTensor inputTensor;
+    ge::GeTensorDesc desc(input_desc);
+
+    bool is_const = false;
+    (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
+    if (!is_const && shape_ori.GetDims().size() > 0) {
+      desc.SetShape(dynamic_shape);
+    }
+
+    inputTensor.SetTensorDesc(desc);
+    inputs_dynamic.push_back(inputTensor);
+  }
 }
 
 class GeGenerator::Impl {
@@ -638,7 +677,18 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   }
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
   GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
-  GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
+
+  bool dynamic_flag = false;
+  if (CheckShapeReset(op_desc, dynamic_flag) == SUCCESS && dynamic_flag) {
+    vector<GeTensor> inputs_dynamic;
+    vector<GeTensor> outputs_dynamic;
+    ResetTensorVecShape(inputs, inputs_dynamic);
+    ResetTensorVecShape(outputs, outputs_dynamic);
+    GE_CHK_STATUS_RET_NOLOG(
+      impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
+  } else {
+    GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
+  }
   GE_CHK_STATUS_RET_NOLOG(impl_->SaveModel(model_file_name, ge_model, model_buff));
   return SUCCESS;
 }

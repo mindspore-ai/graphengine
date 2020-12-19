@@ -182,6 +182,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/atomic_addr_clean_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_same_addr_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_graph_unknown_status_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/dynamic_single_op_reset_shape_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_agnostic_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dimension_compute_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dimension_adjust_pass.cc"

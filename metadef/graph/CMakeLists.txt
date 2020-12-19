@@ -366,7 +366,9 @@ target_compile_definitions(graph PRIVATE
         $<$<STREQUAL:${PRODUCT_SIDE},host>:FMK_SUPPORT_DUMP>
         $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
         google=ascend_private
+        LOG_CPP
         )
+
 
 target_include_directories(graph PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}

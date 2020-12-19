@@ -289,8 +289,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
     if (weight_ptr == nullptr) {
       weights_mem_base_ = MallocWeightsMem(weights_size);
       if (weights_mem_base_ == nullptr) {
-        GELOGE(GE_EXEC_ALLOC_WEIGHT_MEM_FAILED, "Alloc weight memory failed. size: %zu", weights_size);
-        return GE_EXEC_ALLOC_WEIGHT_MEM_FAILED;
+        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc weight memory failed. size: %zu", weights_size);
+        return ACL_ERROR_GE_MEMORY_ALLOCATION;
       }
       is_inner_weight_base_ = true;
     }
@@ -307,8 +307,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(FAILED, "call InitFeatureMapMem more than once .");
-    return FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "call InitFeatureMapMem more than once .");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   is_feature_map_mem_has_inited_ = true;
 
@@ -316,8 +316,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
 
   if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
-    GELOGE(FAILED, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
-    return FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   mem_base_ = static_cast<uint8_t *>(dev_ptr);
@@ -327,8 +327,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (TotalMemSize() && mem_base_ == nullptr) {
     mem_base_ = MallocFeatureMapMem(data_size);
     if (mem_base_ == nullptr) {
-      GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
-      return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
             runtime_param_.graph_id, mem_base_, data_size);
@@ -343,8 +343,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (p2p_data_size != 0) {
     p2p_mem_base_ = MallocP2PMem(p2p_data_size);
     if (p2p_mem_base_ == nullptr) {
-      GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
-      return GE_EXEC_ALLOC_P2P_MEM_FAILED;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc p2p memory failed,size: %zu", p2p_data_size);
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     GELOGI("InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
            p2p_mem_base_, p2p_data_size);

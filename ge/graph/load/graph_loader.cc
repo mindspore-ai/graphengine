@@ -122,14 +122,14 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
                                      ModelData &model_data) {
   Status ret;
   if (!CheckInputPathValid(path)) {
-    GELOGE(GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
-    return GE_EXEC_MODEL_PATH_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
+    return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   GELOGI("Load model begin, model path is: %s", path.c_str());
   if (!key_path.empty() && !CheckInputPathValid(key_path)) {
-    GELOGE(GE_EXEC_MODEL_KEY_PATH_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
-    return GE_EXEC_MODEL_KEY_PATH_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   ret = DavinciModelParser::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
@@ -186,13 +186,13 @@ Status GraphLoader::LoadModel(const ModelData &model_data, const std::shared_ptr
   Status ret = model_manager->LoadModelOffline(model_id, model_data, listener);
   if (ret != SUCCESS) {
     GE_CHK_RT(rtDeviceReset(0));
-    GELOGE(ret, "LoadModel: Load failed.");
-    return ret;
+    GELOGE(ACL_ERROR_GE_LOAD_MODEL, "LoadModel: Load failed.");
+    return ACL_ERROR_GE_LOAD_MODEL;
   }
   ret = model_manager->Start(model_id);
   if (ret != SUCCESS) {
     if (model_manager->Unload(model_id) != SUCCESS) {
-      GELOGE(FAILED, "LoadModel: Unload failed while trying to unload after a failed start.");
+      GELOGE(ACL_ERROR_GE_UNLOAD_MODEL, "LoadModel: Unload failed while trying to unload after a failed start.");
     }
     GELOGE(ret, "LoadModel: Start failed.");
     return ret;
@@ -233,8 +233,8 @@ Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model
   Status ret = model_manager->LoadModelOffline(
       model_id, model_data, nullptr, dev_ptr, memsize, weight_ptr, weightsize);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Load model failed, model_id:%u.", model_id);
-    return ret;
+    GELOGE(ACL_ERROR_GE_LOAD_MODEL, "Load model failed, model_id:%u.", model_id);
+    return ACL_ERROR_GE_LOAD_MODEL;
   }
   GELOGI("Load model success, model_id:%u.", model_id);
   return SUCCESS;
@@ -259,8 +259,8 @@ Status GraphLoader::LoadModelWithQ(uint32_t &model_id, const ModelData &model_da
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->LoadModelWithQ(model_id, model_data, input_queue_ids, output_queue_ids);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Load model with queue failed, model_id:%u.", model_id);
-    return ret;
+    GELOGE(ACL_ERROR_GE_LOAD_MODEL, "Load model with queue failed, model_id:%u.", model_id);
+    return ACL_ERROR_GE_LOAD_MODEL;
   }
 
   GELOGI("Load model with queue success, model_id:%u.", model_id);

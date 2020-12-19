@@ -215,8 +215,8 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
-    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
-    return GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
+    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
   DestroyAicpuSession(session_id);
@@ -384,8 +384,8 @@ Status ModelManager::DeleteModel(uint32_t id) {
   } else if (hybrid_model_it != hybrid_model_map_.end()) {
     (void)hybrid_model_map_.erase(hybrid_model_it);
   } else {
-    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
-    return GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
+    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
 
   return SUCCESS;
@@ -902,7 +902,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
   davinci_model->SetModelDescVersion(new_model_desc);
@@ -970,8 +970,9 @@ Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
 }
 
 Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
-  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHECK_NOTNULL(davinci_model);
+  auto davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetCurShape Failed, Invalid Model ID %u!", model_id);
   davinci_model->GetCurShape(batch_info, dynamic_type);
   return SUCCESS;
 }
@@ -984,7 +985,8 @@ Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynami
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHECK_NOTNULL(davinci_model);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetModelAttr Failed, Invalid Model ID %u!", model_id);
   davinci_model->GetModelAttr(dynamic_output_shape_info);
   return SUCCESS;
 }
@@ -994,9 +996,8 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
                                                        std::vector<uint32_t> &inputFormats,
                                                        std::vector<uint32_t> &outputFormats) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetInputOutputDescInfo Failed, Invalid model id %u!",
-                         model_id);
-
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+      "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
   return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
 }
 
@@ -1011,18 +1012,14 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "GetAIPPInfo failed, invalid model_id is %u.",
-                         model_id);
-
+      "GetAIPPInfo failed, invalid model_id is %u.", model_id);
   return davinci_model->GetAIPPInfo(index, aipp_info);
 }
 
 Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "GetAIPPInfo failed, invalid model_id is %u.",
-                         model_id);
-
+      "GetAIPPInfo failed, invalid model_id is %u.", model_id);
   return davinci_model->GetAippType(index, type, aipp_index);
 }
 
@@ -1059,8 +1056,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
   if (model_helper.GetModelType()) {
     bool is_shape_unknown = false;
     GE_CHK_STATUS_RET(model_helper.GetGeRootModel()->CheckIsUnknownShape(is_shape_unknown),
-                      "CheckIsUnknownShape failed, model id:%u",
-                      model_id);
+                      "CheckIsUnknownShape failed, model id:%u", model_id);
     if (is_shape_unknown || GetContext().GetHostExecFlag()) {
       return DoLoadHybridModelOnline(model_id, model_helper.GetGeRootModel(), listener);
     }
@@ -1078,8 +1074,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     } catch (...) {
-      GELOGE(INTERNAL_ERROR, "Make shared failed since other exception raise");
-      return INTERNAL_ERROR;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed since other exception raise");
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     ret = davinci_model->Assign(ge_model);
     if (ret != SUCCESS) {
@@ -1091,7 +1087,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     int32_t device_id = 0;
     rtError_t rt_ret = rtGetDevice(&device_id);
     if (rt_ret != RT_ERROR_NONE || device_id < 0) {
-      GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+      GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     davinci_model->SetDeviceId(device_id);

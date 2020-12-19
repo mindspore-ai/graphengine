@@ -970,7 +970,7 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
   uint32_t parent_index = 0;  // Ignore subgraph Data Node.
   if (AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
     GELOGI("Init zero copy by subgraph Data node: %s.", op_desc->GetName().c_str());
-    return InitInputBatchLabel(node);
+    return SUCCESS;
   }
 
   data_op_list_.push_back(op_desc);
@@ -1011,10 +1011,6 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
   }
 
   data_op_index++;
-  if (InitInputZeroCopyNodes(node) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Input zero copy nodes init failed!");
-    return PARAM_INVALID;
-  }
   return SUCCESS;
 }
 
@@ -1034,39 +1030,6 @@ void DavinciModel::AdjustDataOpList(const map<uint32_t, OpDescPtr> &data_by_inde
   for (auto &item : data_by_index) {
     data_op_list_.emplace_back(item.second);
   }
-}
-
-///
-/// @ingroup ge
-/// @brief input zero copy node Initialize.
-/// @param [in] NodePtr: Data Op.
-/// @return Status
-///
-Status DavinciModel::InitInputZeroCopyNodes(const NodePtr &node) {
-  auto out_data_anchor = node->GetOutDataAnchor(kDataIndex);
-  if (out_data_anchor == nullptr) {
-    GELOGE(FAILED, "Out data anchor is nullptr");
-    return FAILED;
-  }
-  for (auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    auto node = peer_in_data_anchor->GetOwnerNode();
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(FAILED, "Op desc is nullptr");
-      return FAILED;
-    }
-    string batch_label;
-    (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
-    if (batch_label.empty()) {
-      batch_label = kDefaultBatchLable;
-    }
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_.emplace(pair<int64_t, string>(op_desc->GetId(), batch_label));
-      GELOGD("Init input zero copy nodes success, op name:%s, op id: %ld, batch label: %s.", op_desc->GetName().c_str(),
-             op_desc->GetId(), batch_label.c_str());
-    }
-  }
-  return SUCCESS;
 }
 
 bool DavinciModel::IsGetNextSinkDynamic(const OpDescPtr &op_desc) {
@@ -1094,7 +1057,7 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
   if (owner_graph->GetParentGraph() != nullptr) {
     GELOGI("Init zero copy by subgraph NetOutput node: %s.", op_desc->GetName().c_str());
     op_list_.erase(op_desc->GetId());
-    return InitOutputBatchLabel(node);
+    return SUCCESS;
   }
 
   output_op_list_.push_back(op_desc);
@@ -1146,8 +1109,6 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
     }
   }
 
-  GE_IF_BOOL_EXEC(InitOutputZeroCopyNodes(node) != SUCCESS,
-                  GELOGE(PARAM_INVALID, "Output zero copy nodes init failed!"); return PARAM_INVALID;);
   GetAllGearsInfo(node);
   if (is_getnext_sink_dynamic_) {
     GE_IF_BOOL_EXEC(GetGetDynamicDimsNodeInfo(node) != SUCCESS,
@@ -1341,121 +1302,6 @@ void DavinciModel::ParseDynamicOutShape(const std::vector<std::string> &str_info
     GELOGI("Shape from attr is %s.", formats::JoinToString(shape).c_str());
     vec_info.emplace_back(shape);
   }
-}
-
-///
-/// @ingroup ge
-/// @brief output zero copy node Initialize.
-/// @param [in] NodePtr: netoutput Op.
-/// @return Status
-///
-Status DavinciModel::InitOutputZeroCopyNodes(const NodePtr &node) {
-  set<NodePtr> nodes_need_record;
-  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
-    auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    if (peer_out_data_anchor == nullptr) {
-      continue;
-    }
-    auto peer_node = peer_out_data_anchor->GetOwnerNode();
-    nodes_need_record.emplace(peer_node);
-
-    // Merge node output multiplexed input, upstream nodes need to be considered in multiple batch scenarios
-    if (peer_node->GetType() == MERGE) {
-      for (const auto &merge_peer_in_data_anchor : peer_node->GetAllInDataAnchors()) {
-        auto merge_peer_out_data_anchor = merge_peer_in_data_anchor->GetPeerOutAnchor();
-        if (merge_peer_out_data_anchor == nullptr) {
-          continue;
-        }
-        auto merge_peer_node = merge_peer_out_data_anchor->GetOwnerNode();
-        nodes_need_record.emplace(merge_peer_node);
-      }
-    } else {
-      for (const auto &other_in_data_anchor : peer_out_data_anchor->GetPeerInDataAnchors()) {
-        auto other_in_node = other_in_data_anchor->GetOwnerNode();
-        if (other_in_node->GetType() != NETOUTPUT) {
-          nodes_need_record.emplace(other_in_node);
-        }
-      }
-    }
-  }
-
-  for (const auto &node_need_record : nodes_need_record) {
-    auto op_desc = node_need_record->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    string batch_label;
-    (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
-    if (batch_label.empty()) {
-      batch_label = kDefaultBatchLable;
-    }
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_.emplace(pair<int64_t, string>(op_desc->GetId(), batch_label));
-      GELOGD("Init Output zero copy nodes success, op name:%s, op id: %ld, batch label: %s.",
-             op_desc->GetName().c_str(), op_desc->GetId(), batch_label.c_str());
-    }
-  }
-  return SUCCESS;
-}
-
-///
-/// @ingroup ge
-/// @brief input zero copy node Initialize.
-/// @param [in] NodePtr: Data Op.
-/// @return Status
-///
-Status DavinciModel::InitInputBatchLabel(const NodePtr &node) {
-  string batch_label;
-  if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-    return SUCCESS;  // Not Multi-batch.
-  }
-
-  const auto &out_data_anchor = node->GetOutDataAnchor(kDataIndex);
-  GE_CHECK_NOTNULL(out_data_anchor);
-
-  for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    const auto &node = peer_in_data_anchor->GetOwnerNode();
-    const auto &op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_[op_desc->GetId()] = batch_label;
-      GELOGD("Init input zero copy nodes success, op name: %s, op id: %ld, batch label: %s", op_desc->GetName().c_str(),
-             op_desc->GetId(), batch_label.c_str());
-    }
-  }
-
-  return SUCCESS;
-}
-
-///
-/// @ingroup ge
-/// @brief output zero copy node Initialize for Case.
-/// @param [in] NodePtr: netoutput Op.
-/// @return Status
-///
-Status DavinciModel::InitOutputBatchLabel(const NodePtr &node) {
-  string batch_label;
-  if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-    return SUCCESS;  // Not Multi-batch.
-  }
-
-  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
-    const auto &peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    if (peer_out_data_anchor == nullptr) {
-      continue;
-    }
-
-    const auto &peer_node = peer_out_data_anchor->GetOwnerNode();
-    const auto &op_desc = peer_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_[op_desc->GetId()] = batch_label;
-      GELOGD("Init Output zero copy nodes success, op name: %s, op id: %ld, batch label: %s",
-             op_desc->GetName().c_str(), op_desc->GetId(), batch_label.c_str());
-    }
-  }
-
-  return SUCCESS;
 }
 
 /// @ingroup ge
@@ -3264,54 +3110,26 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
 
     for (auto &input_outside_addrs : new_input_outside_addrs_) {
       ZeroCopyOffset &input_outside = input_outside_addrs.second;
-      bool ret = input_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
-      if (ret) {
-        void *args_val = static_cast<uint8_t *>(args) + offset + i * kAddrLen;
-        SetBatchLabelAddr(op_desc, reinterpret_cast<uintptr_t>(args_val));
-      }
+      input_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
     }
 
     for (auto &output_outside_addrs : new_output_outside_addrs_) {
       ZeroCopyOffset &output_outside = output_outside_addrs.second;
-      bool ret = output_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
-      if (ret) {
-        void *args_val = static_cast<uint8_t *>(args) + offset + i * kAddrLen;
-        SetBatchLabelAddr(op_desc, reinterpret_cast<uintptr_t>(args_val));
-      }
+      output_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
     }
   }
-  auto it = zero_copy_op_id_batch_label_.find(op_desc->GetId());
-  if (it == zero_copy_op_id_batch_label_.end()) {
+
+  string batch_label;
+  if (!AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label) || batch_label.empty()) {
     zero_copy_task.SetBatchLabel(kDefaultBatchLable);
   } else {
-    zero_copy_task.SetBatchLabel(it->second);
+    zero_copy_task.SetBatchLabel(batch_label);
   }
 
   std::lock_guard<std::mutex> lock(outside_addrs_mutex_);
   if (zero_copy_task.IsTaskArgsSet()) {
     zero_copy_task.SetOriginalArgs(info, offset + nums * kAddrLen);
     zero_copy_tasks_.emplace_back(zero_copy_task);
-  }
-}
-
-void DavinciModel::SetBatchLabelAddr(const OpDescPtr &op_desc, uintptr_t addr) {
-  // Establish a mapping between batch label and zero copy address for multi-batch scenes
-  auto it = zero_copy_op_id_batch_label_.find(op_desc->GetId());
-  if (it == zero_copy_op_id_batch_label_.end()) {
-    return;
-  }
-
-  const string &batch_label = it->second;
-  auto iter = zero_copy_batch_label_addrs_.find(batch_label);
-  if (iter != zero_copy_batch_label_addrs_.end()) {
-    iter->second.insert(addr);
-    GELOGD("[ZCPY] Set zero copy batch label and addrs success, batch label: %s, op name:%s.", batch_label.c_str(),
-           op_desc->GetName().c_str());
-  } else {
-    set<uintptr_t> addrs = {addr};
-    zero_copy_batch_label_addrs_.emplace(pair<string, set<uintptr_t>>(batch_label, addrs));
-    GELOGD("[ZCPY] New added zero copy batch label and addrs success, batch label: %s, op name:%s.",
-           batch_label.c_str(), op_desc->GetName().c_str());
   }
 }
 

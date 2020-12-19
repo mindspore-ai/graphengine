@@ -51,7 +51,7 @@ class ZeroCopyOffset {
                             const OpDescPtr &op_desc, const size_t &idx, bool &fusion_flag);
   void SetOutputOutsideAddrs(const int64_t &input_offset, const bool &fusion_flag, void *addr,
                              std::vector<void *> &tensor_addrs);
-  bool SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset);
+  void SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset);
 
   // basic_addr of l2-fusion
   void *GetBasicAddr() const { return basic_addr_; }

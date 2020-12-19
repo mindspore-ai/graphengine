@@ -539,15 +539,6 @@ class DavinciModel {
 
   ///
   /// @ingroup ge
-  /// @brief Save Batch label Info.
-  /// @param [in] const OpDescPtr &op_desc
-  /// @param [in] uintptr_t addr: address value in args block.
-  /// @return None.
-  ///
-  void SetBatchLabelAddr(const OpDescPtr &op_desc, uintptr_t addr);
-
-  ///
-  /// @ingroup ge
   /// @brief Copy Check input size and model op size.
   /// @param [in] const int64_t &input_size: input size.
   /// @param [in] const int64_t &op_size: model op size.
@@ -659,43 +650,11 @@ class DavinciModel {
 
   ///
   /// @ingroup ge
-  /// @brief input zero copy node Initialize.
-  /// @param [in] NodePtr: Data Op.
-  /// @return Status
-  ///
-  Status InitInputZeroCopyNodes(const NodePtr &node);
-
-  ///
-  /// @ingroup ge
   /// @brief NetOutput Op Initialize.
   /// @param [in] NodePtr: NetOutput Op.
   /// @return Status
   ///
   Status InitNetOutput(const NodePtr &node);
-
-  ///
-  /// @ingroup ge
-  /// @brief output zero copy node Initialize.
-  /// @param [in] NodePtr: Data Op.
-  /// @return Status
-  ///
-  Status InitOutputZeroCopyNodes(const NodePtr &node);
-
-  ///
-  /// @ingroup ge
-  /// @brief input zero copy node Initialize for Case.
-  /// @param [in] NodePtr: Data Op.
-  /// @return Status
-  ///
-  Status InitInputBatchLabel(const NodePtr &node);
-
-  ///
-  /// @ingroup ge
-  /// @brief output zero copy node Initialize for Case.
-  /// @param [in] NodePtr: netoutput Op.
-  /// @return Status
-  ///
-  Status InitOutputBatchLabel(const NodePtr &node);
 
   ///
   /// @ingroup ge
@@ -921,11 +880,6 @@ class DavinciModel {
   std::mutex outside_addrs_mutex_;
   std::vector<ZeroCopyTask> zero_copy_tasks_;  // Task used Data or NetOutput addr.
   std::set<const void *> copy_only_addrs_;     // Address need copy to original place.
-
-  // {op_id, batch_label}
-  std::map<int64_t, std::string> zero_copy_op_id_batch_label_;
-  // {batch_label, addrs}
-  std::map<std::string, std::set<uintptr_t>> zero_copy_batch_label_addrs_;
 
   std::vector<TaskInfoPtr> task_list_;
   // rt_moodel_handle

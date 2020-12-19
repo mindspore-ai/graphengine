@@ -183,22 +183,18 @@ void ZeroCopyOffset::SetOutputOutsideAddrs(const int64_t &input_offset, const bo
   addr_count_ = out_count;
 }
 
-bool ZeroCopyOffset::SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset) {
+void ZeroCopyOffset::SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset) {
   const auto addr_val = reinterpret_cast<uintptr_t>(outside_addr);
-  bool set_batch_label_flag = false;
   for (uint32_t out_count = 0; out_count < GetAddrCount(); ++out_count) {
-    auto &addrs_mapping_list = GetOutsideAddrs();
-    auto args_addrs = addrs_mapping_list[out_count].find(outside_addr);
-    if (args_addrs != addrs_mapping_list[out_count].end()) {
+    auto args_addrs = outside_addrs_[out_count].find(outside_addr);
+    if (args_addrs != outside_addrs_[out_count].end()) {
       GE_CHK_STATUS(zero_copy_task.SetTaskArgsOffset(addr_val, offset), "Input args invalid.");
       void *args_val = static_cast<uint8_t *>(args) + offset;
       args_addrs->second.push_back(args_val);
       GELOGD("[ZCPY] set copy input: virtual_addr: 0x%lx, task_addr: %p, args: %p, offset: %zu.", addr_val, args_val,
              args, offset);
-      set_batch_label_flag = true;
     }
   }
-  return set_batch_label_flag;
 }
 
 }  // namespace ge

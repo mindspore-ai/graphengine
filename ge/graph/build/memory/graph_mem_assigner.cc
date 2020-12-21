@@ -99,7 +99,7 @@ Status GraphMemoryAssigner::AssignMemory() {
   MemoryOffset memory_offset(RT_MEMORY_HBM, mem_assigner->GetMemOffset());
   memory_offset_.emplace(RT_MEMORY_HBM, memory_offset);
 
-  if (mem_assigner->GetP2PMemOffset() > 0) {
+  if (mem_assigner->GetP2PMemOffset() >= 0) {
     MemoryOffset p2p_memory_offset(RT_MEMORY_P2P_DDR, mem_assigner->GetP2PMemOffset());
     memory_offset_.emplace(RT_MEMORY_P2P_DDR, p2p_memory_offset);
   }

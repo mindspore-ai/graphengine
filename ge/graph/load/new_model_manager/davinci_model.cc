@@ -2090,7 +2090,7 @@ Status DavinciModel::SyncVarData() {
 Status DavinciModel::InitModelProfile() {
   for (const auto &task : task_list_) {
     GE_CHECK_NOTNULL(task);
-    const auto &fusion_op_info = task->GetFusionOpInfo();
+    const FusionOpInfo *fusion_op_info = task->GetFusionOpInfo();
     // when type is RT_MODEL_TASK_KERNEL, ctx is not null
     if ((fusion_op_info == nullptr) || fusion_op_info->original_op_names.empty()) {
       continue;
@@ -2105,20 +2105,17 @@ Status DavinciModel::InitModelProfile() {
   using Range = std::pair<CIT, CIT>;
   for (const auto &task : task_list_) {
     GE_CHECK_NOTNULL(task);
-    const auto &fusion_op_info = task->GetFusionOpInfo();
+    const FusionOpInfo *fusion_op_info = task->GetFusionOpInfo();
     if ((fusion_op_info == nullptr) || fusion_op_info->original_op_names.empty()) {
       continue;
     }
 
-    uint32_t task_id = task->GetTaskID();
-    uint32_t op_num = fusion_op_info->original_op_names.size();
-    uint32_t task_count = 0;
-    if (task_id_set.count(task->GetTaskID()) != 0) {
+    if (task_id_set.count(task->GetTaskID()) > 0) {
       continue;
     }
 
     const auto &op_desc = GetOpByIndex(fusion_op_info->op_index);
-    GE_CHK_BOOL_EXEC(op_desc != nullptr, return FAILED, "index is out of range, index: %u", fusion_op_info->op_index);
+    GE_CHK_BOOL_EXEC(op_desc != nullptr, return FAILED, "index: %u out of range", fusion_op_info->op_index);
 
     ProfileInfo profile;
     profile.fusion_info = *fusion_op_info;
@@ -2142,6 +2139,8 @@ Status DavinciModel::InitModelProfile() {
 
     profile_list_.emplace_back(profile);
   }
+
+  GELOGI("fusion task size: %zu, profile info size: %zu", op_id_map_.size(), profile_list_.size());
   return SUCCESS;
 }
 
@@ -2206,7 +2205,7 @@ Status DavinciModel::SinkModelProfile() {
     // original op name before fusion
     uint32_t op_num = profile.fusion_info.original_op_names.size();
     reporter_data.data = (unsigned char *)&op_num;
-    reporter_data.dataLen = sizeof(uint32_t);
+    reporter_data.dataLen = sizeof(int32_t);
     GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                      "Reporter data fail, model id:%u.", this->Id());
 
@@ -2230,6 +2229,7 @@ Status DavinciModel::SinkModelProfile() {
     GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                      "Reporter data fail, model id:%u.", this->Id());
 
+    // memory info
     reporter_data.data = (unsigned char *)&profile.memory_info;
     reporter_data.dataLen = sizeof(profile.memory_info);
     GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
@@ -2250,6 +2250,7 @@ Status DavinciModel::SinkModelProfile() {
                        "Reporter data fail, model id:%u.", this->Id());
     }
   }
+
   return SUCCESS;
 }
 

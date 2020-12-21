@@ -997,7 +997,7 @@ class DavinciModel {
   std::vector<std::vector<int64_t>> all_gears_info_;
 
   std::multimap<uint32_t, uint32_t> op_id_map_;
-  std::vecotr<ProfileInfo> profile_list_;
+  std::vector<ProfileInfo> profile_list_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

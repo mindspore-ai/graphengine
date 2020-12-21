@@ -38,10 +38,8 @@ const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
 }  // namespace
 
 namespace ge {
-ProfilingManager::ProfilingManager() : is_load_profiling_(false),
-                                       is_execute_profiling_(false),
-                                       is_training_trace_(false),
-                                       subscribe_count_(0) {
+ProfilingManager::ProfilingManager()
+    : is_load_profiling_(false), is_execute_profiling_(false), is_training_trace_(false), subscribe_count_(0) {
   prof_cb_.msprofCtrlCallback = nullptr;
   prof_cb_.msprofReporterCallback = nullptr;
 }
@@ -102,8 +100,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
       return INTERNAL_ERROR;
     }
     is_execute_profiling_ = true;
-    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(),
-          prof_conf.options, options.profiling_options.c_str());
+    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(), prof_conf.options,
+           options.profiling_options.c_str());
   } else {
     (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
     (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);

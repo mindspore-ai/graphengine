@@ -65,6 +65,7 @@
 #include "graph/passes/permute_pass.h"
 #include "graph/passes/prune_pass.h"
 #include "graph/passes/ref_identity_delete_op_pass.h"
+#include "graph/passes/remove_same_const_pass.h"
 #include "graph/passes/reshape_recovery_pass.h"
 #include "graph/passes/reshape_remove_pass.h"
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
@@ -78,6 +79,7 @@
 #include "graph/passes/transop_symmetry_elimination_pass.h"
 #include "graph/passes/transop_without_reshape_fusion_pass.h"
 #include "graph/passes/transpose_transdata_pass.h"
+#include "graph/passes/useless_control_out_remove_pass.h"
 #include "graph/passes/variable_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
 #include "graph/passes/variable_ref_useless_control_out_delete_pass.h"
@@ -2130,6 +2132,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   TransposeTransDataPass transpose_transdata_pass;
   TransOpSymmetryEliminationPass symmetry_elimination_pass;
   DimensionComputePass dimension_compute_pass;
+  UselessControlOutRemovePass useless_control_out_remove_pass;
   names_to_passes.emplace_back("EnterPass", &enter_pass);
   names_to_passes.emplace_back("AddNPass", &addn_pass);
   names_to_passes.emplace_back("SwitchDeadBranchElimination", &switch_dead_branch_elimination);
@@ -2143,6 +2146,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("DimensionAdjustPass", &dimension_adjust_pass);
+  names_to_passes.emplace_back("UselessControlOutRemovePass", &useless_control_out_remove_pass);
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "GraphManager::OptimizeStage1_2");
@@ -2183,6 +2187,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::VariableRefUselessControlOutDeletePass",
                                        new (std::nothrow) VariableRefUselessControlOutDeletePass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ReshapeRecoveryPass", new (std::nothrow) ReshapeRecoveryPass))
+  GE_CHK_STATUS_RET(
+      graph_pass.AddPass("OptimizeStage1_3::RemoveSameConstPass", new (std::nothrow) RemoveSameConstPass))
   if (options_.train_graph_flag) {
     // Priority: The GlobalStepInsertPass should work before graph partitioner.
     // Reason: Make sure that the var "global_step" can be partitioned to known sub graph and allocated memory

@@ -240,8 +240,6 @@ class DavinciModel {
   const vector<OpDescPtr> &GetDataList() const { return data_op_list_; }
 
   // get Op
-  const map<uint32_t, OpDescPtr> &GetOpList() const { return op_list_; }
-
   OpDescPtr GetOpByIndex(uint32_t index) const {
     if (op_list_.find(index) == op_list_.end()) {
       return nullptr;

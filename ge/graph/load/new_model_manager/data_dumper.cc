@@ -319,6 +319,9 @@ Status DataDumper::GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vis
   for (auto dim : tensor_descs.at(index).GetShape().GetDims()) {
     output.mutable_shape()->add_dim(dim);
   }
+  for (auto dim : tensor_descs.at(index).GetOriginShape().GetDims()) {
+    output.mutable_origin_shape()->add_dim(dim);
+  }
   int64_t output_size = 0;
   if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(index), output_size) != SUCCESS) {
     GELOGE(PARAM_INVALID, "Get output size filed");
@@ -475,6 +478,9 @@ Status DataDumper::GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor
 
   for (auto dim : tensor_descs.at(index).GetShape().GetDims()) {
     input.mutable_shape()->add_dim(dim);
+  }
+  for (auto dim : tensor_descs.at(index).GetOriginShape().GetDims()) {
+    input.mutable_origin_shape()->add_dim(dim);
   }
   int64_t input_size = 0;
   if (AttrUtils::GetInt(tensor_descs.at(index), ATTR_NAME_INPUT_ORIGIN_SIZE, input_size)) {

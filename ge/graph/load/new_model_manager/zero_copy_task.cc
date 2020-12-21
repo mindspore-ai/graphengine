@@ -22,8 +22,6 @@
 #include "common/ge_compiler_options.h"
 
 namespace ge {
-const char *const kDefaultBatchLable = "Batch_default";
-
 ZeroCopyTask::ZeroCopyTask(const string &name, uint8_t *args, size_t size)
     : name_(name), args_addr_(args), args_size_(size), is_updated_(false) {}
 

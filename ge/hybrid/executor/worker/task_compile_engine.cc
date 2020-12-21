@@ -26,6 +26,9 @@ Status TaskCompileEngine::Compile(NodeState &node_state, GraphExecutionContext *
   RECORD_COMPILE_EVENT(context, node_item.NodeName().c_str(), "[Compile] Start");
   GE_CHK_RT_RET(rtCtxSetCurrent(context->rt_gen_context));
 
+  if (context->ge_context != nullptr) {
+    GetThreadLocalContext() = *context->ge_context;
+  }
   shared_ptr<NodeTask> kernel_task;
   auto ret = node_item.node_executor->CompileTask(*context->model, node_item.node, kernel_task);
   RECORD_COMPILE_EVENT(context, node_state.GetName().c_str(), "[Compile] End");

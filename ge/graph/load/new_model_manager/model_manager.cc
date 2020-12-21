@@ -89,6 +89,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   if (op_type == aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY) {
     std::vector<uint64_t> v_aicpu_kernel;
     std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+    std::lock_guard<std::recursive_mutex> lock(map_mutex_);
     auto iter = model_aicpu_kernel_.find(model_key);
     if (iter != model_aicpu_kernel_.end()) {
       GELOGD("kernel destroy session_id %lu, model_id %u.", session_id, model_id);
@@ -176,7 +177,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 }
 
 void ModelManager::DestroyAicpuSession(uint64_t session_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   auto it = sess_ids_.find(session_id);
   if (it == sess_ids_.end()) {
     GELOGI("The session: %lu not created.", session_id);
@@ -205,7 +206,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
 }
 
 ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   auto hybrid_davinci_model = hybrid_model_map_.find(model_id);
   if (hybrid_davinci_model != hybrid_model_map_.end()) {
     uint64_t session_id = hybrid_davinci_model->second->GetSessionId();
@@ -225,7 +226,7 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
 ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
@@ -238,7 +239,7 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
 }
 
 ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
@@ -250,7 +251,7 @@ ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_i
 }
 
 ModelManager::~ModelManager() {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   model_map_.clear();
   model_aicpu_kernel_.clear();
   cust_aicpu_so_.clear();
@@ -358,18 +359,18 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
 void ModelManager::InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davinci_model) {
   GE_CHK_BOOL_EXEC(davinci_model != nullptr, return, "davinci_model ptr is null, id: %u", id);
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   model_map_[id] = davinci_model;
 }
 
 void ModelManager::InsertModel(uint32_t id, shared_ptr<hybrid::HybridDavinciModel> &hybrid_model) {
   GE_CHK_BOOL_EXEC(hybrid_model != nullptr, return, "hybrid_model ptr is null, id: %u", id);
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   hybrid_model_map_[id] = hybrid_model;
 }
 
 Status ModelManager::DeleteModel(uint32_t id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
   auto hybrid_model_it = hybrid_model_map_.find(id);
@@ -392,14 +393,14 @@ Status ModelManager::DeleteModel(uint32_t id) {
 }
 
 std::shared_ptr<DavinciModel> ModelManager::GetModel(uint32_t id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
   return (it == model_map_.end()) ? nullptr : it->second;
 }
 
 std::shared_ptr<hybrid::HybridDavinciModel> ModelManager::GetHybridModel(uint32_t id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
   auto it = hybrid_model_map_.find(id);
   return (it == hybrid_model_map_.end()) ? nullptr : it->second;
@@ -1242,7 +1243,7 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
 }
 
 Status ModelManager::CreateAicpuSession(uint64_t session_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   auto it = sess_ids_.find(session_id);
   // never been created by any model
   if (it == sess_ids_.end()) {
@@ -1461,8 +1462,7 @@ void ModelManager::GenModelId(uint32_t *id) {
   if (id == nullptr) {
     return;
   }
-
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   *id = ++max_model_id_;
 }
 

@@ -28,6 +28,7 @@ enum OutputDataType {
     DT_RESOURCE = 23;
     DT_STRING_REF = 24;
     DT_DUAL = 25;
+    DT_VARIANT = 26;
 }
 
 enum OutputFormat {

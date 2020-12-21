@@ -209,19 +209,6 @@ bool IsDynmaicDimsSizeMatchModel(const vector<uint64_t> cur_dynamic_dims,
 
 namespace ge {
 bool GeExecutor::isInit_ = false;
-class ModelListenerAdapter : public ModelListener {
- public:
-  domi::Status OnComputeDone(uint32_t model_id, uint32_t dataIndex, uint32_t resultCode,
-                             std::vector<ge::OutputTensorInfo> &outputs) {
-    if (listener == nullptr) {
-      GELOGE(ge::FAILED, "listener is null.");
-      return FAILED;
-    }
-    return listener->OnComputeDone(model_id, dataIndex, resultCode, outputs);
-  }
-
-  std::shared_ptr<ge::ModelListener> listener;
-};
 
 static void InitOpsProtoManger() {
   string opsproto_path;
@@ -573,60 +560,6 @@ Status GeExecutor::SetDynamicAippData(uint32_t model_id, void *dynamic_input_add
   return SUCCESS;
 }
 
-// Load model
-Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path, const std::string &key,
-                                    int32_t priority, std::shared_ptr<ge::ModelListener> listener) {
-  GELOGI("load model offline begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  string filePath = RealPath(path.c_str());
-  if (filePath.empty()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID,
-           "File path is invalid. please check your text file '%s'.", path.c_str());
-    return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
-  }
-
-  std::shared_ptr<ModelListenerAdapter> listener_adapter = MakeShared<ModelListenerAdapter>();
-  if (listener_adapter == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelListenerAdapter make shared failed!");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
-  }
-  listener_adapter->listener = listener;
-
-  Status ret = GraphLoader::LoadModelFromFile(path, key, priority, listener_adapter, model_id);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[GeExecutor] LoadModelFromFile failed");
-    return ACL_ERROR_GE_LOAD_MODEL;
-  }
-  return SUCCESS;
-}
-
-Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
-                             std::shared_ptr<ge::ModelListener> listener) {
-  GELOGI("Load model begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  std::shared_ptr<ModelListenerAdapter> listener_adapter = MakeShared<ModelListenerAdapter>();
-  if (listener_adapter == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelListenerAdapter make shared failed!");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
-  }
-  listener_adapter->listener = listener;
-
-  Status ret = GraphLoader::LoadModel(model_data, listener_adapter, model_id);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[GeExecutor] LoadModel failed.");
-    return ACL_ERROR_GE_LOAD_MODEL;
-  }
-  return ret;
-}
-
 Status GeExecutor::UnloadModel(uint32_t model_id) {
   GELOGD("unload model %u begin.", model_id);
   if (!isInit_) {
@@ -657,21 +590,6 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
     return ACL_ERROR_GE_UNLOAD_MODEL;
   }
   return SUCCESS;
-}
-
-Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData &output_data) {
-  GELOGI("run model begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  InputData inputs;
-  GetDomiInputData(input_data, inputs);
-  OutputData outputs;
-  GetDomiOutputData(output_data, outputs);
-
-  return GraphExecutor::DataInput(inputs, outputs);
 }
 
 // Get input and output descriptor

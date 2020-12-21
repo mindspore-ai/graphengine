@@ -90,20 +90,18 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
                   fusion_op_info_.op_index = context.op_index(); fusion_op_info_.original_op_names = original_op_names;
                   fusion_op_info_.op_name = op_desc_->GetName());
 
-  string session_graph_model_id;
-  davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
-  // get bin_file_key
-  const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
   if (kernel_type_ == ccKernelType::CCE_AI_CORE) {
-    rtError_t rt_ret;
-    rt_ret = rtGetFunctionByName(const_cast<char *>(kernel_def.stub_func().c_str()), &stub_func_);
+    rtError_t rt_ret = rtGetFunctionByName(const_cast<char *>(kernel_def.stub_func().c_str()), &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. stub_func: %s",
                                                     kernel_def.stub_func().c_str());
                     return RT_ERROR_TO_GE_STATUS(rt_ret););
   } else if (kernel_type_ == ccKernelType::TE) {
-    rtError_t rt_ret;
-    rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
+    // get bin_file_key
+    string session_graph_model_id;
+    davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
+    const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
+    rtError_t rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. bin_file_key: %s", bin_file_key);
                     return RT_ERROR_TO_GE_STATUS(rt_ret););

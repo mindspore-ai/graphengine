@@ -224,7 +224,7 @@ Status DumpOp::LaunchDumpOp() {
   uint32_t stream_id = 0;
   rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "call rtGetTaskIdAndStreamID failed, ret = 0x%X", rt_ret);
+    GELOGW("call rtGetTaskIdAndStreamID failed, ret = 0x%X", rt_ret);
   }
   aicpu::dump::Task task;
   task.set_task_id(task_id);

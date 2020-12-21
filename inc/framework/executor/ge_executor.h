@@ -30,8 +30,6 @@
 #include "runtime/base.h"
 
 namespace ge {
-class ModelListenerAdapter;
-
 class SingleOp;
 class DynamicSingleOp;
 
@@ -55,13 +53,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   ge::Status Initialize();
   ge::Status Finalize();
 
-  // Load model
-  ge::Status LoadModelOffline(uint32_t &model_id, const std::string &path, const std::string &key, int32_t priority,
-                              std::shared_ptr<ge::ModelListener> listener);
-
   ge::Status UnloadModel(uint32_t modelId);
-
-  ge::Status RunModel(const ge::RunModelData &input_data, ge::RunModelData &output_data);
 
   // Get input and output descriptor
   ge::Status GetModelDescInfo(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
@@ -167,9 +159,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
 
   ge::Status GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
                                          std::vector<ge::TensorDesc> &output_desc);
-
-  ge::Status LoadModel(uint32_t &model_id, const ge::ModelData &model_data,
-                       std::shared_ptr<ge::ModelListener> listener);
 
   ge::Status CommandHandle(const ge::Command &command);
 
@@ -297,8 +286,6 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
  private:
   static bool isInit_;
 };
-
-ge::Status ModelInfoParser(const ge::ModelData &model, ge::ModelInfo &model_info);
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_EXECUTOR_GE_EXECUTOR_H_

@@ -173,6 +173,7 @@ target_compile_definitions(ge_executor PRIVATE
     google=ascend_private
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    LOG_CPP
 )
 
 target_include_directories(ge_executor PRIVATE

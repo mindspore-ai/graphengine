@@ -76,6 +76,20 @@ struct timeInfo {
   int64_t dumpEndTime;
 };
 
+struct TaskMemInfo {
+  int64_t input_size{0};
+  int64_t output_size{0};
+  int64_t weight_size{0};
+  int64_t workspace_size{0};
+  int64_t total_size{0};
+};
+
+struct ProfileInfo {
+  FusionOpInfo fusion_info;
+  TaskMemInfo memory_info;
+  uint32_t task_count{0};
+};
+
 enum ExecuteMode {
   INITIALIZATION,
   SYNCHRONIZATION,
@@ -435,10 +449,6 @@ class DavinciModel {
   int64_t GetLoadBeginTime() { return load_begin_time_; }
 
   int64_t GetLoadEndTime() { return load_end_time_; }
-
-  Status SinkModelProfile();
-
-  Status SinkTimeProfile(const InputData &current_data);
 
   Status ReportProfilingData();
 
@@ -804,6 +814,11 @@ class DavinciModel {
 
   void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
 
+  Status InitModelProfile();
+  Status SinkModelProfile();
+
+  Status SinkTimeProfile(const InputData &current_data);
+
   Status GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data_index, OutputData *output_data,
                              std::vector<ge::OutputTensorInfo> &outputs);
 
@@ -980,6 +995,9 @@ class DavinciModel {
   // key: input_index: input is merge node; value: each gear info and each output shape
   std::map<size_t, std::map<vector<int64_t>, vector<int64_t>>> merge_nodes_gear_and_real_out_shape_info_;
   std::vector<std::vector<int64_t>> all_gears_info_;
+
+  std::multimap<uint32_t, uint32_t> op_id_map_;
+  std::vecotr<ProfileInfo> profile_list_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

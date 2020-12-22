@@ -125,6 +125,7 @@ set(TRAIN_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:graph/manager/host_mem_allocator.cc>
     "graph/manager/memory_api.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/trans_var_data_utils.cc"
@@ -166,6 +167,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/hccl_group_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_pass.cc"
+    "graph/passes/inplace_support_check_pass.cc"
     "graph/passes/flow_ctrl_pass.cc"
     "graph/passes/global_step_insert_pass.cc"
     "host_kernels/transpose_kernel.cc"
@@ -401,6 +403,7 @@ set(INFER_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:graph/manager/host_mem_allocator.cc>
     "graph/manager/graph_mem_allocator.cc"
     "graph/manager/graph_caching_allocator.cc"
     "model/ge_model.cc"
@@ -522,6 +525,7 @@ set(INFER_SRC_LIST
     "graph/passes/for_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_pass.cc"
+    "graph/passes/inplace_support_check_pass.cc"
     "graph/passes/addn_pass.cc"
     "graph/passes/common_subexpression_elimination_pass.cc"
     "graph/passes/remove_same_const_pass.cc"

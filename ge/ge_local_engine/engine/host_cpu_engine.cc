@@ -26,6 +26,33 @@
 #include "common/math/math_util.h"
 
 namespace {
+#if (ENABLE_OPEN_SRC != True)
+#define CREATE_OUTPUT_CASE(DTYPE, TYPE)                                                                                \
+  case (DTYPE): {                                                                                                      \
+    GeTensorPtr ge_tensor = nullptr;                                                                                   \
+    if (need_create_flag) {                                                                                            \
+      uint64_t size = data_num * sizeof(TYPE);                                                                         \
+      ge_tensor = MakeShared<GeTensor>(out_desc, size);                                                                \
+      GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
+      GELOGD("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, size);                   \
+      ge_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());                                              \
+      ge_tensor->MutableTensorDesc().SetShape(out_desc.GetShape());                                                    \
+      outputs.emplace_back(ge_tensor);                                                                                 \
+    } else {                                                                                                           \
+      ge_tensor = outputs[i];                                                                                          \
+      GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
+      GELOGD("node:%s existed output %zu", op_desc->GetName().c_str(), i);                                             \
+    }                                                                                                                  \
+    auto tensor = TensorAdapter::AsTensor(*ge_tensor);                                                                 \
+    auto tensor_name = op_desc->GetOutputNameByIndex(i);                                                               \
+    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",               \
+                               op_desc->GetName().c_str(), i);                                                         \
+    GELOGD("Successfully inserted output tensor. node = %s, index = %zu, output name = %s, addr = %p, size = %zu",     \
+           op_desc->GetName().c_str(), i, tensor_name.c_str(), tensor.GetData(), tensor.GetSize());                    \
+    named_outputs.emplace(tensor_name, tensor);                                                                        \
+    break;                                                                                                             \
+  }
+#else
 #define CREATE_OUTPUT_CASE(DTYPE, TYPE)                                                                                \
   case (DTYPE): {                                                                                                      \
     GeTensorPtr ge_tensor = nullptr;                                                                                   \
@@ -61,6 +88,7 @@ namespace {
     named_outputs.emplace(tensor_name, tensor);                                                                        \
     break;                                                                                                             \
   }
+#endif
 }
 
 namespace ge {

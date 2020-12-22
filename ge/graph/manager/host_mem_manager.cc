@@ -43,16 +43,32 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
     return GE_GRAPH_MEMORY_ALLOC_FAILED;
   }
   mem_info.fd = output_para.fd;
+#if (ENABLE_OPEN_SRC != True)
+  mem_info.host_aligned_ptr = AlignedPtr::BuildAlignedPtr(mem_info.mem_size,
+                                                          [&output_para](std::unique_ptr<uint8_t[], deleter> &ptr) {
+                                                              GELOGD("set aligned_ptr, addr=%p", output_para.ptr);
+                                                              ptr.reset(reinterpret_cast<uint8_t *>(output_para.ptr));
+                                                          },
+                                                          [](uint8_t *ptr) {
+                                                              GELOGD("reset aligned_ptr in SharedMemAllocator, addr=%p", ptr);
+                                                              ptr = nullptr;
+                                                          }, 0);
+#else
   mem_info.host_address = reinterpret_cast<uint8_t *>(output_para.ptr);
+#endif
   mem_info.device_address = reinterpret_cast<uint8_t *>(output_para.devPtr);
   return SUCCESS;
 }
 
 Status SharedMemAllocator::DeAllocate(SharedMemInfo &mem_info) {
   GELOGD("SharedMemAllocator::DeAllocate");
+#if (ENABLE_OPEN_SRC != True)
+  rtFreeHostSharedMemoryIn free_para = {mem_info.shm_name.c_str(), mem_info.mem_size, mem_info.fd,
+                                        mem_info.host_aligned_ptr->MutableGet(), mem_info.device_address};
+#else
   rtFreeHostSharedMemoryIn free_para = {mem_info.shm_name.c_str(), mem_info.mem_size, mem_info.fd,
                                         mem_info.host_address, mem_info.device_address};
-
+#endif
   rtError_t rt_ret = rtFreeHostSharedMemory(&free_para);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api(rtFreeHostSharedMemory) failed, ret: 0x%X.", rt_ret);

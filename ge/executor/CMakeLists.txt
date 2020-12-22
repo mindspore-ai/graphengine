@@ -28,6 +28,7 @@ set(SRC_LIST
     "../graph/manager/trans_var_data_utils.cc"
     "../graph/manager/util/debug.cc"
     "../graph/manager/rdma_pool_allocator.cc"
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:../graph/manager/host_mem_allocator.cc>
     "../hybrid/node_executor/aicpu/aicpu_ext_info.cc"
     "../model/ge_model.cc"
     "../model/ge_root_model.cc"

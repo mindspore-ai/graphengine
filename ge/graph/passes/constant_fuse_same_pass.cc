@@ -19,13 +19,7 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
-
-#include "common/ge/ge_util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/ge_inner_error_codes.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 
@@ -121,11 +115,21 @@ void ConstantFuseSamePass::GetFuseConstNodes(ComputeGraphPtr &graph,
              TypeUtils::DataTypeToSerialString(data_type).c_str());
       continue;
     }
+#if (ENABLE_OPEN_SRC != True)
+    if ((type_size != 0) && (weight->MutableData().GetAlignedPtr() == nullptr)) {
+      GELOGW("aligned_ptr is null while size is not 0");
+      continue;
+    }
+#endif
     ++insert_const_nums;
 
     SameConstKey map_key;
     map_key.data_size = type_size;
+#if (ENABLE_OPEN_SRC != True)
+    map_key.aligned_ptr = weight->MutableData().GetAlignedPtr();
+#else
     map_key.data = weight->GetData().GetData();
+#endif
     map_key.data_type = data_type;
     map_key.format = output_tensor->GetFormat();
     map_key.shape = output_tensor->GetShape().GetDims();

@@ -704,6 +704,7 @@ add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common PRIVATE
     google=ascend_private
+	$<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_ut_common PRIVATE
@@ -718,6 +719,7 @@ add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_F
 
 target_compile_definitions(ge_ut_common_format PRIVATE
     google=ascend_private
+	$<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_ut_common_format PRIVATE

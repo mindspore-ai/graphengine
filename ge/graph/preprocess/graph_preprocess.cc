@@ -37,6 +37,9 @@
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/aicpu_constant_folding_pass.h"
 #include "graph/passes/assert_pass.h"
+#if (ENABLE_OPEN_SRC == True)
+#include "graph/passes/assign_pass.h"
+#endif
 #include "graph/passes/common_subexpression_elimination_pass.h"
 #include "graph/passes/cond_pass.h"
 #include "graph/passes/cond_remove_pass.h"

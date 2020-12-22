@@ -125,7 +125,7 @@ set(TRAIN_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:graph/manager/host_mem_allocator.cc>
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},FALSE>:graph/manager/host_mem_allocator.cc>
     "graph/manager/memory_api.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/trans_var_data_utils.cc"
@@ -403,7 +403,7 @@ set(INFER_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:graph/manager/host_mem_allocator.cc>
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},FALSE>:graph/manager/host_mem_allocator.cc>
     "graph/manager/graph_mem_allocator.cc"
     "graph/manager/graph_caching_allocator.cc"
     "model/ge_model.cc"

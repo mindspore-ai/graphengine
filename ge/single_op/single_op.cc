@@ -32,13 +32,15 @@ namespace ge {
 namespace {
 const size_t kDataMemAlignSize = 32;
 const size_t kDataMemAlignUnit = 2;
+const string kShapeTypeDynamic = "dynamic";
+const string kShapeTypeStatic = "static";
 
 size_t GetAlignedSize(size_t size) {
   size_t aligned_size = (size + kDataMemAlignUnit * kDataMemAlignSize - 1) / kDataMemAlignSize * kDataMemAlignSize;
   return aligned_size;
 }
 
-Status ProfilingTaskInfo(OpTask *op_task) {
+Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
   if (!ProfilingManager::Instance().ProfilingModelLoadOn()) {
     return SUCCESS;
   }
@@ -66,6 +68,8 @@ Status ProfilingTaskInfo(OpTask *op_task) {
   tmp_task_desc_info.block_dim = block_dim;
   tmp_task_desc_info.task_id = task_id;
   tmp_task_desc_info.stream_id = stream_id;
+  tmp_task_desc_info.shape_type = shape_type;
+  tmp_task_desc_info.cur_iter_num = 0;
   GELOGD("GetTaskDescInfo of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
   task_desc_info.emplace_back(tmp_task_desc_info);
 
@@ -193,7 +197,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     if (ret != SUCCESS) {
       return ret;
     }
-    GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(task));
+    GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(task, kShapeTypeStatic));
   }
 
   return ret;
@@ -255,7 +259,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   std::lock_guard<std::mutex> lk(*stream_mutex_);
 
   GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
-  GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get()));
+  GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;
 }
 }  // namespace ge

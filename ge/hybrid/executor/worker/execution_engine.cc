@@ -151,18 +151,19 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(model);
 
+  // only report aicpu and aicore node
+  bool is_profiling_report = context_->GetNodeItem().is_profiling_report;
+  if (!is_profiling_report) {
+    GELOGD("Node[%s] is not aicore or aicpu, and no need to report data.", node->GetName().c_str());
+    return SUCCESS;
+  }
+
   GELOGD("GetTaskDescInfo of node [%s] start.", node->GetName().c_str());
   auto op_desc = node->GetOpDesc();
   std::string op_name = op_desc->GetName();
   std::string dynamic_model_name = model->GetModelName();
-
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  if (rtGetTaskIdAndStreamID(&task_id, &stream_id) != RT_ERROR_NONE) {
-    GELOGE(PARAM_INVALID, "Get task_id and stream_id failed.");
-    return PARAM_INVALID;
-  }
-
+  uint32_t task_id = context_->GetTaskId();
+  uint32_t stream_id = context_->GetStreamId();
   TaskDescInfo tmp_task_desc_info;
   tmp_task_desc_info.model_name = dynamic_model_name;
   tmp_task_desc_info.op_name = op_name;
@@ -174,6 +175,8 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
   }
   tmp_task_desc_info.task_id = task_id;
   tmp_task_desc_info.stream_id = stream_id;
+  tmp_task_desc_info.shape_type = "dynamic";
+  tmp_task_desc_info.cur_iter_num = graph_context_->iteration;
   GELOGD("GetTaskDescInfo of node [%s] end, task_id[%u], stream_id[%u]",
          node->GetName().c_str(), task_id, stream_id);
   task_desc_info.emplace_back(tmp_task_desc_info);

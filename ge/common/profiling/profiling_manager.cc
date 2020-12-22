@@ -212,12 +212,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     uint32_t block_dim = task.block_dim;
     uint32_t task_id = task.task_id;
     uint32_t stream_id = task.stream_id;
+    std::string shape_type = task.shape_type;
+    int64_t cur_iter_num = task.cur_iter_num;
     data = model_name.append(" ")
                      .append(op_name).append(" ")
-                     .append(std::to_string(block_dim).append(" ")
+                     .append(std::to_string(block_dim)).append(" ")
                      .append(std::to_string(task_id)).append(" ")
                      .append(std::to_string(stream_id)).append(" ")
-                     .append(std::to_string(model_id)).append("\n"));
+                     .append(std::to_string(model_id)).append(" ")
+                     .append(shape_type).append(" ")
+                     .append(std::to_string(cur_iter_num)).append("\n");
 
     ReporterData reporter_data{};
     reporter_data.deviceId = device_id;

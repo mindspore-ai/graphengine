@@ -226,7 +226,10 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
   new_node->node_id = node_index;
   new_node->op_desc->SetId(node_index);
   node_index += 1;
-
+  NodeExecutorManager::ExecutorType executor_type = NodeExecutorManager::GetInstance().ResolveExecutorType(*node);
+  new_node->is_profiling_report = (executor_type == NodeExecutorManager::ExecutorType::AICORE) ||
+                                  (executor_type == NodeExecutorManager::ExecutorType::AICPU_TF) ||
+                                  (executor_type == NodeExecutorManager::ExecutorType::AICPU_CUSTOM);
   *node_item = new_node.get();
   node_items[node] = std::move(new_node);
   return SUCCESS;

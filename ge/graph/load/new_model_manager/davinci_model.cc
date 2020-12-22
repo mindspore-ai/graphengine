@@ -2993,9 +2993,7 @@ Status DavinciModel::DistributeTask() {
     }
 
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-    bool no_need_profiling = (task_type != RT_MODEL_TASK_KERNEL)
-        && (task_type != RT_MODEL_TASK_KERNEL_EX)
-        && (task_type != RT_MODEL_TASK_HCCL);
+    bool no_need_profiling = (task_type != RT_MODEL_TASK_KERNEL) && (task_type != RT_MODEL_TASK_KERNEL_EX);
     GE_IF_BOOL_EXEC(no_need_profiling, continue);
 
     SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
@@ -3010,6 +3008,8 @@ Status DavinciModel::DistributeTask() {
     task_desc_info.block_dim = task_def.kernel().block_dim();
     task_desc_info.task_id = task->GetTaskID();
     task_desc_info.stream_id = task->GetStreamId();
+    task_desc_info.shape_type = "static";
+    task_desc_info.cur_iter_num = 0;
     task_desc_info_.emplace_back(task_desc_info);
     if (flag) {
       if (task->GetSktTaskID() != 0xFFFFFFFF) {

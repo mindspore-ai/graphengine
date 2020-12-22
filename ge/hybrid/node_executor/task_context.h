@@ -96,6 +96,12 @@ class TaskContext {
 
   void SetStatus(Status status);
 
+  uint32_t GetTaskId() const;
+  void SetTaskId(uint32_t task_id);
+
+  uint32_t GetStreamId() const;
+  void SetStreamId(uint32_t stream_id);
+
   bool IsForceInferShape() const;
   void SetForceInferShape(bool force_infer_shape);
   void *handle_ = nullptr;
@@ -117,6 +123,8 @@ class TaskContext {
   Status status_ = SUCCESS;
   std::vector<void *> workspaces_;
   uint64_t iteration_ = 0;
+  uint32_t task_id_= 0;
+  uint32_t stream_id_ = 0;
 };
 }  // namespace hybrid
 }  // namespace ge

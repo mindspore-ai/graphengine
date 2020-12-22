@@ -248,6 +248,8 @@ struct TaskDescInfo {
   uint32_t block_dim;
   uint32_t task_id;
   uint32_t stream_id;
+  std::string shape_type;
+  int64_t cur_iter_num;
 };
 
 // Profiling info of graph

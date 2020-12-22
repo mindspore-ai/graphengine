@@ -319,6 +319,22 @@ void TaskContext::SetStatus(Status status) {
   }
 }
 
+uint32_t TaskContext::GetTaskId() const {
+  return task_id_;
+}
+
+void TaskContext::SetTaskId(uint32_t task_id) {
+  task_id_ = task_id;
+}
+
+uint32_t TaskContext::GetStreamId() const {
+  return stream_id_;
+}
+
+void TaskContext::SetStreamId(uint32_t stream_id) {
+  stream_id_ = stream_id;
+}
+
 Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr) {
   GE_CHECK_NOTNULL(buffer);
   if (ori_addr == nullptr) {

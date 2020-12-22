@@ -167,7 +167,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/hccl_group_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_pass.cc"
-    "graph/passes/inplace_support_check_pass.cc"
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},FALSE>:graph/passes/inplace_support_check_pass.cc>
     "graph/passes/flow_ctrl_pass.cc"
     "graph/passes/global_step_insert_pass.cc"
     "host_kernels/transpose_kernel.cc"
@@ -525,7 +525,7 @@ set(INFER_SRC_LIST
     "graph/passes/for_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_pass.cc"
-    "graph/passes/inplace_support_check_pass.cc"
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},FALSE>:graph/passes/inplace_support_check_pass.cc>
     "graph/passes/addn_pass.cc"
     "graph/passes/common_subexpression_elimination_pass.cc"
     "graph/passes/remove_same_const_pass.cc"

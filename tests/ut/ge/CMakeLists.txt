@@ -776,6 +776,7 @@ add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_SRCS} $
 
 target_compile_definitions(ge_load_common PRIVATE
     google=ascend_private
+	$<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_load_common PRIVATE
@@ -790,6 +791,7 @@ add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_S
 
 target_compile_definitions(ge_execute_common PRIVATE
     google=ascend_private
+	$<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_execute_common PRIVATE
@@ -856,7 +858,6 @@ target_compile_options(ut_libge_multiparts_utest PRIVATE
 
 target_compile_definitions(ut_libge_multiparts_utest PRIVATE
     google=ascend_private
-	$<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libge_multiparts_utest

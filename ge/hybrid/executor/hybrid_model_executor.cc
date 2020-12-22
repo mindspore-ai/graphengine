@@ -95,6 +95,7 @@ Status HybridModelExecutor::InitExecutionContext() {
   context_.stream = stream_;
   context_.model = model_;
   context_.session_id = ::ge::GetContext().SessionId();
+  context_.ge_context = &GetThreadLocalContext();
   GELOGD("session id from model = %lu, from context = %lu", model_->GetSessionId(), context_.session_id);
   context_.allocator = NpuMemoryAllocator::GetAllocator(device_id_);
   GE_CHECK_NOTNULL(context_.allocator);

@@ -22,6 +22,7 @@
 #include "common/blocking_queue.h"
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
+#include "graph/ge_local_context.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/executor/hybrid_profiler.h"
@@ -38,6 +39,7 @@ struct GraphExecutionContext {
 
   uint64_t session_id = 0;
   const HybridModel *model = nullptr;
+  const GEThreadLocalContext *ge_context = nullptr;
   rtStream_t stream = nullptr;
   rtContext_t rt_context = nullptr;
   rtContext_t rt_gen_context = nullptr;

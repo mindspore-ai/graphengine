@@ -78,6 +78,7 @@ Status InplaceSupportCheckPass::Run(NodePtr &node) {
       return FAILED;
     }
     AddRePassNode(node);
+    break;
   }
 
   GELOGD("InplaceSupportCheckPass success");

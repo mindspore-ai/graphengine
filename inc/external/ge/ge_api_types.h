@@ -395,13 +395,9 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              OP_BANK_UPDATE};
 
 // for interface: aclgrphParse
-const std::set<std::string> ir_parser_suppported_options = {INPUT_FP16_NODES,
-                                                            IS_INPUT_ADJUST_HW_LAYOUT,
-                                                            IS_OUTPUT_ADJUST_HW_LAYOUT,
-                                                            OUTPUT,
-                                                            OUT_NODES,
-                                                            COMPRESS_WEIGHT_CONF,
-                                                            ENABLE_SCOPE_FUSION_PASSES};
+const std::set<std::string> ir_parser_suppported_options = {
+  INPUT_FP16_NODES, IS_INPUT_ADJUST_HW_LAYOUT, IS_OUTPUT_ADJUST_HW_LAYOUT, OUTPUT,
+  OUT_NODES,        COMPRESS_WEIGHT_CONF,      ENABLE_SCOPE_FUSION_PASSES};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,

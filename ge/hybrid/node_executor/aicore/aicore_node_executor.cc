@@ -165,6 +165,16 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     }
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
+    uint32_t task_id = 0;
+    uint32_t stream_id = 0;
+    rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(rt_ret, "Get task_id and stream_id failed.");
+      return rt_ret;
+    }
+    context.SetTaskId(task_id);
+    context.SetStreamId(stream_id);
+    GELOGD("AiCore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }

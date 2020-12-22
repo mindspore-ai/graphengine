@@ -25,7 +25,7 @@ class AssignPass : public BaseNodePass {
   Status Run(NodePtr &node) override;
 
  private:
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   ///
   /// @brief Optimize for assign_node
   /// @param [in] assign_node

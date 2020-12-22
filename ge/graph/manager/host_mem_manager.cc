@@ -43,7 +43,7 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
     return GE_GRAPH_MEMORY_ALLOC_FAILED;
   }
   mem_info.fd = output_para.fd;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   mem_info.host_aligned_ptr = AlignedPtr::BuildAlignedPtr(mem_info.mem_size,
                                                           [&output_para](std::unique_ptr<uint8_t[], deleter> &ptr) {
                                                               GELOGD("set aligned_ptr, addr=%p", output_para.ptr);
@@ -62,7 +62,7 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
 
 Status SharedMemAllocator::DeAllocate(SharedMemInfo &mem_info) {
   GELOGD("SharedMemAllocator::DeAllocate");
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   rtFreeHostSharedMemoryIn free_para = {mem_info.shm_name.c_str(), mem_info.mem_size, mem_info.fd,
                                         mem_info.host_aligned_ptr->MutableGet(), mem_info.device_address};
 #else

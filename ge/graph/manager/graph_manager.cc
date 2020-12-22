@@ -38,7 +38,7 @@
 #include "graph/partition/stage_partition.h"
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/bitcast_pass.h"
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 #include "graph/passes/assign_pass.h"
 #include "graph/passes/inplace_support_check_pass.h"
 #endif
@@ -2241,7 +2241,7 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   ReshapeRemovePass reshape_remove_pass;
   CondRemovePass condition_remove_pass;
   BitcastPass bitcast_pass;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   AssignPass assign_pass;
   InplaceSupportCheckPass inplace_support_check_pass;
 #endif
@@ -2249,7 +2249,7 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("CondRemovePass", &condition_remove_pass);
   names_to_passes.emplace_back("BitcastPass", &bitcast_pass);
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   if (GetContext().GetHostExecFlag()) {
     names_to_passes.emplace_back("AssignPass", &assign_pass);
     names_to_passes.emplace_back("InplaceSupportCheckPass", &inplace_support_check_pass);

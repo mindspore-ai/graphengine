@@ -37,7 +37,7 @@
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/aicpu_constant_folding_pass.h"
 #include "graph/passes/assert_pass.h"
-#if (ENABLE_OPEN_SRC == True)
+#ifdef ONLY_COMPILE_OPEN_SRC
 #include "graph/passes/assign_pass.h"
 #endif
 #include "graph/passes/common_subexpression_elimination_pass.h"
@@ -1700,7 +1700,7 @@ Status GraphPrepare::PrepareOptimize() {
   VarIsInitializedOpPass var_is_initialized_pass;
   ParallelConcatStartOpPass parallel_concat_start_op_pass;
   IdentityPass identity_pass(false);
-#if (ENABLE_OPEN_SRC == True)
+#ifdef ONLY_COMPILE_OPEN_SRC
   AssignPass assign_pass;
 #endif
   SnapshotPass snapshot_pass;
@@ -1717,7 +1717,7 @@ Status GraphPrepare::PrepareOptimize() {
   names_to_passes.emplace_back("VarIsInitializedOpPass", &var_is_initialized_pass);
   names_to_passes.emplace_back("ParallelConcatStartOpPass", &parallel_concat_start_op_pass);
   names_to_passes.emplace_back("IdentityPass", &identity_pass);
-#if (ENABLE_OPEN_SRC == True)
+#ifdef ONLY_COMPILE_OPEN_SRC
   if (GetContext().GetHostExecFlag()) {
     names_to_passes.emplace_back("AssignPass", &assign_pass);
   }

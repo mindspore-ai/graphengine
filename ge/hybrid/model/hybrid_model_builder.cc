@@ -24,7 +24,7 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/host_mem_allocator.h"
 #endif
@@ -853,7 +853,7 @@ Status HybridModelBuilder::InitConstantOps() {
 
     std::unique_ptr<TensorValue> var_tensor;
     if (GetContext().GetHostExecFlag()) {
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
       GE_CHECK_NOTNULL(ge_tensor);
       // Address for eigen kernel should be aligned with 16 bytes
       // Tensors return by api GetWeights share data with proto, whose addr is not confirmed to be aligned
@@ -925,7 +925,7 @@ Status HybridModelBuilder::InitVariableTensors() {
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Host variable [%s] malloc failed.", it.first.c_str());
       return GE_GRAPH_MALLOC_FAILED;
     }
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(mem_info.host_aligned_ptr,
                                                                      tensor_size) == nullptr) {
       GELOGE(MEMALLOC_FAILED, "Malloc host memory for an existed GeTensor failed.");

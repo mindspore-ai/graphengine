@@ -139,7 +139,7 @@ class MemoryAllocator {
 using MemoryAllocatorPtr = std::shared_ptr<MemoryAllocator>;
 class CachingAllocator;
 class RdmaPoolAllocator;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 class HostMemAllocator;
 #endif
 class MemManager {
@@ -150,7 +150,7 @@ class MemManager {
   static MemoryAllocator *Instance(rtMemType_t memory_type);
   CachingAllocator &CachingInstance(rtMemType_t memory_type);
   RdmaPoolAllocator &RdmaPoolInstance(rtMemType_t memory_type);
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   HostMemAllocator &HostMemInstance(rtMemType_t memory_type);
 #endif
   MemManager(const MemManager &) = delete;
@@ -240,7 +240,7 @@ class MemManager {
   std::map<rtMemType_t, MemoryAllocator *> memory_allocator_map_;
   std::map<rtMemType_t, CachingAllocator *> caching_allocator_map_;
   std::map<rtMemType_t, RdmaPoolAllocator *> rdma_allocator_map_;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   std::map<rtMemType_t, HostMemAllocator *> host_allocator_map_;
 #endif
   std::recursive_mutex allocator_mutex_;

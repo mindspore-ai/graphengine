@@ -21,7 +21,7 @@
 #include <set>
 #include <utility>
 #include <vector>
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 #include "graph/aligned_ptr.h"
 #endif
 #include "graph/types.h"
@@ -30,7 +30,7 @@
 namespace ge {
 struct SameConstKey {
   int data_size;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   std::shared_ptr<AlignedPtr> aligned_ptr;
 #else
   const uint8_t *data;
@@ -44,7 +44,7 @@ struct SameConstKey {
     if (data_size != key.data_size) {
       return data_size < key.data_size;
     }
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     if (data_size != 0) {
       int ret = memcmp(aligned_ptr->Get(), key.aligned_ptr->Get(), data_size);
       if (ret != 0) {

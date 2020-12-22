@@ -26,7 +26,7 @@
 #include "common/math/math_util.h"
 
 namespace {
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 #define CREATE_OUTPUT_CASE(DTYPE, TYPE)                                                                                \
   case (DTYPE): {                                                                                                      \
     GeTensorPtr ge_tensor = nullptr;                                                                                   \

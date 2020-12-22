@@ -20,7 +20,7 @@
 #include "graph/manager/graph_caching_allocator.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/rdma_pool_allocator.h"
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 #include "graph/manager/host_mem_allocator.h"
 #endif
 
@@ -67,7 +67,7 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   if (mem_type == RDMA_HBM) {
     buffer = MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Malloc(allocate_size, device_id_);
   } else if (mem_type == HOST_DDR) {
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     buffer = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(allocate_size);
 #else
     buffer = malloc(allocate_size);
@@ -108,7 +108,7 @@ void NpuMemoryAllocator::Deallocate(void *data, MemStorageType mem_type) {
     if (mem_type == RDMA_HBM) {
       MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Free(reinterpret_cast<uint8_t *>(data), device_id_);
     } else if (mem_type == HOST_DDR) {
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
       MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Free(data);
 #else
       free(data);

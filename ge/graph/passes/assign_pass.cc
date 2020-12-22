@@ -26,7 +26,7 @@ const int32_t kAssignValueInputIndex = 1;
 }
 
 namespace ge {
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 Status AssignPass::Run(NodePtr &node) {
   GELOGD("AssignPass running");
 

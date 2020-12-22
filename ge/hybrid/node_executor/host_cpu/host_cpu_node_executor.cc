@@ -18,7 +18,7 @@
 #include "hybrid/node_executor/host_cpu/kernel_factory.h"
 #include "graph/passes/folding_pass.h"
 #include "hybrid/model/hybrid_model.h"
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/host_mem_allocator.h"
 #endif
@@ -54,7 +54,7 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     auto input_desc_ptr = context.GetInputDesc(i);
     GE_CHECK_NOTNULL(input_desc_ptr);
     const auto &input_desc = *input_desc_ptr;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     auto tensor = context.GetInput(i);
     GE_CHECK_NOTNULL(tensor);
     auto item = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).GetAlignedPtr(tensor->GetData());
@@ -84,7 +84,7 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     }
     auto tensor = context.GetOutput(i);
     GE_CHECK_NOTNULL(tensor);
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     auto item = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).GetAlignedPtr(tensor->GetData());
     GE_CHECK_NOTNULL(item.second);
     auto out_tensor = MakeShared<GeTensor>(output_desc, item.second, item.first);

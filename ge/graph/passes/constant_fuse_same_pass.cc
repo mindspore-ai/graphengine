@@ -115,7 +115,7 @@ void ConstantFuseSamePass::GetFuseConstNodes(ComputeGraphPtr &graph,
              TypeUtils::DataTypeToSerialString(data_type).c_str());
       continue;
     }
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     if ((type_size != 0) && (weight->MutableData().GetAlignedPtr() == nullptr)) {
       GELOGW("aligned_ptr is null while size is not 0");
       continue;
@@ -125,7 +125,7 @@ void ConstantFuseSamePass::GetFuseConstNodes(ComputeGraphPtr &graph,
 
     SameConstKey map_key;
     map_key.data_size = type_size;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
     map_key.aligned_ptr = weight->MutableData().GetAlignedPtr();
 #else
     map_key.data = weight->GetData().GetData();

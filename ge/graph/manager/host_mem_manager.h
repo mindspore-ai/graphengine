@@ -42,7 +42,7 @@ struct SharedMemInfo {
   uint64_t mem_size = 0;
   int fd = 0;
   uint8_t *device_address = nullptr;
-#if (ENABLE_OPEN_SRC != True)
+#ifndef ONLY_COMPILE_OPEN_SRC
   std::shared_ptr<AlignedPtr> host_aligned_ptr = nullptr;
 #else
   uint8_t *host_address = nullptr;

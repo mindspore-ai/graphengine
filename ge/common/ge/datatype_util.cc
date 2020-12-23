@@ -62,6 +62,7 @@ std::map<ge::DataType, ge::proto::DataType> g_dump_data_type_map = {
     {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
     {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
     {ge::DT_STRING, ge::proto::DT_STRING},
+    {ge::DT_VARIANT, ge::proto::DT_VARIANT},
 };
 }  // namespace
 

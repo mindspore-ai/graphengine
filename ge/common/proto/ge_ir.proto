@@ -30,6 +30,7 @@ enum DataType
     DT_RESOURCE  = 23;         // resource type
     DT_STRING_REF = 24;        // string_ref type
     DT_DUAL      = 25;              /**< dual output type */
+    DT_VARIANT = 26;           // variant type
 }
 
 message AttrDef

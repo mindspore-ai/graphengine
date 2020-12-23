@@ -1698,7 +1698,7 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
     if (multi_batch_with_switchn == nullptr) {
       PassManager pass_manager;
       GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
-      GE_CHK_STATUS_RET(pass_manager.AddPass("DataPass", new (std::nothrow) DataPass));
+      GE_CHK_STATUS_RET(pass_manager.AddPass("DataPass", new (std::nothrow) DataPass)); // 子图分配parent index
       return pass_manager.Run(graph);
     }
   }

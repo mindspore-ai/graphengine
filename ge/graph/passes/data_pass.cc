@@ -194,7 +194,7 @@ Status DataPass::Run(ComputeGraphPtr compute_graph) {
         continue;
       }
 
-     node->GetOpDesc()->SetName(parent_node->GetName() + "_" + compute_graph->GetName() + "/" + node->GetName());
+      node->GetOpDesc()->SetName(parent_node->GetName() + "_" + compute_graph->GetName() + "/" + node->GetName());
     }
   }
 

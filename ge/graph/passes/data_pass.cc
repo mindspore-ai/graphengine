@@ -185,13 +185,17 @@ Status DataPass::Run(ComputeGraphPtr compute_graph) {
 
   const auto &parent_graph = compute_graph->GetParentGraph();
   GE_CHECK_NOTNULL(parent_graph);
-  for (const NodePtr &node : compute_graph->GetDirectNode()) {
-    GE_CHECK_NOTNULL(node->GetOpDesc());
-    if ((node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2) || (node->GetType() == NETOUTPUT)) {
-      continue;
-    }
+  bool flag = false;
+  (void)AttrUtils::GetBool(compute_graph, "_no_reset_name", flag);
+  if (!flag) {
+    for (const NodePtr &node : compute_graph->GetDirectNode()) {
+      GE_CHECK_NOTNULL(node->GetOpDesc());
+      if ((node->GetType() == VARIABLE) || (node->GetType() == VARIABLEV2) || (node->GetType() == NETOUTPUT)) {
+        continue;
+      }
 
-    node->GetOpDesc()->SetName(parent_node->GetName() + "_" + compute_graph->GetName() + "/" + node->GetName());
+     node->GetOpDesc()->SetName(parent_node->GetName() + "_" + compute_graph->GetName() + "/" + node->GetName());
+    }
   }
 
   return PostParseSubgraph(compute_graph, subgraph_name, parent_node);

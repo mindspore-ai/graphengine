@@ -133,14 +133,6 @@ class MultiBatchClonePass : public GraphPass {
 
   ///
   /// @ingroup ge
-  /// @brief Assign parent index for branches.
-  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
-  /// @return 0: SUCCESS / others: FAILED
-  ///
-  Status PostProcSubgraph(const ComputeGraphPtr &graph);
-
-  ///
-  /// @ingroup ge
   /// @brief Remove subgraph supend output anchor.
   /// @param [in] ComputeGraphPtr &graph: Parent compute graph.
   /// @return 0: SUCCESS / others: FAILED

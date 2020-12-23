@@ -76,6 +76,25 @@ struct timeInfo {
   int64_t dumpEndTime;
 };
 
+// For super kernel
+struct SuperKernelTaskInfo {
+  uint32_t last_block_dim;
+  uint32_t last_args_size;
+  uint32_t last_task_id;
+  uint32_t last_stream_id;
+  void *last_stream;
+  void *last_sm_desc;
+  std::vector<void *> kernel_list;
+  std::vector<void *> arg_list;
+  std::vector<uint32_t> dump_flag_list;
+  std::vector<OpDescPtr> op_desc_list;
+  std::vector<uintptr_t> dump_args_list;
+  uint32_t last_dump_flag;
+  int64_t last_group_key;
+  uintptr_t last_dump_args;
+  OpDescPtr last_op;
+};
+
 struct TaskMemInfo {
   int64_t input_size{0};
   int64_t output_size{0};
@@ -204,13 +223,14 @@ class DavinciModel {
   // get total mem size
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
 
-  const std::map<uint32_t, MemInfo> &P2PMemInfos() const {return runtime_param_.memory_infos;}
+  const std::map<uint32_t, MemInfo> &P2PMemInfos() const { return runtime_param_.memory_infos; }
 
   // model name
   string Name() const { return name_; }
 
   // om_name
   string OmName() const { return om_name_; }
+
   // version
   uint32_t Version() const { return version_; }
 
@@ -255,11 +275,15 @@ class DavinciModel {
     }
     return nullptr;
   }
+
   // get task info for profiling
   const std::vector<TaskDescInfo> &GetTaskDescInfo() const { return task_desc_info_; }
 
   // get updated task info list
   std::vector<TaskInfoPtr> GetTaskList() { return task_list_; }
+
+  // Modified from KernelTaskInfo.
+  SuperKernelTaskInfo &GetSuperKernelTaskInfo() { return skt_info_; }
 
   ///
   /// @ingroup ge
@@ -610,7 +634,7 @@ class DavinciModel {
 
   uint8_t *MallocWeightsMem(size_t weights_size);
 
-  uint8_t* MallocP2PMem(size_t p2p_data_size);
+  uint8_t *MallocP2PMem(size_t p2p_data_size);
 
   void FreeFeatureMapMem();
 
@@ -996,6 +1020,9 @@ class DavinciModel {
 
   std::multimap<uint32_t, uint32_t> op_id_map_;
   std::vector<ProfileInfo> profile_list_;
+
+  // For super kernel.
+  SuperKernelTaskInfo skt_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

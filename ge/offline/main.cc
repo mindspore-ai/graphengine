@@ -43,6 +43,7 @@
 #include "parser/common/register_tbe.h"
 #include "register/op_registry.h"
 #include "single_op_parser.h"
+#include "keep_dtype_option.h"
 
 using domi::BuildMode;
 using domi::OpRegistrationData;
@@ -108,6 +109,9 @@ DEFINE_string(out_nodes, "",
 DEFINE_string(precision_mode, "force_fp16",
               "Optional; precision mode."
               "Support force_fp16, allow_mix_precision, allow_fp32_to_fp16, must_keep_origin_dtype.");
+
+DEFINE_string(keep_dtype, "",
+              "Optional; config file to specify the precision used by the operator during compilation.");
 
 DEFINE_string(input_format, "",
               "Optional; input_format, format of input data, NCHW;NHWC."
@@ -420,6 +424,9 @@ class GFlagUtils {
     GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(
         FLAGS_enable_compress_weight, FLAGS_compress_weight_conf) == ge::SUCCESS,
         ret = ge::FAILED, "check compress weight failed!");
+
+    GE_CHK_BOOL_EXEC(ge::CheckKeepTypeParamValid(FLAGS_keep_dtype) == ge::SUCCESS,
+        ret = ge::FAILED, "check keep dtype failed!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         !ge::CheckOutputPathValid(FLAGS_check_report, "--check_report"), ret = ge::FAILED,
@@ -977,6 +984,11 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
       (void)ge::GELib::GetInstance()->Finalize();
       return domi::FAILED;
     }
+  }
+
+  Status ret = ge::DealKeepDtypeOption(ge::GraphUtils::GetComputeGraph(graph), FLAGS_keep_dtype);
+  if (ret != SUCCESS) {
+    return ret;
   }
 
   geRet = ge_generator.GenerateOfflineModel(graph, output, inputs);

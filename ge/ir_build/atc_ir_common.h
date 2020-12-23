@@ -76,6 +76,7 @@ Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory)
 Status CheckEnableSingleStreamParamValid(const std::string enable_single_stream);
 Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::string &op_select_implmode);
 Status CheckInputFormat(const string &input_format);
+Status CheckKeepTypeParamValid(const std::string &keep_dtype);
 void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips);
 void EraseEndSemicolon(std::string &param);
 }

@@ -96,7 +96,8 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   op_info.root = root_id;
   auto callback = [this, op_desc](HcclResult status) {
     if (status != HCCL_SUCCESS) {
-      GELOGE(HCCL_E_INTERNAL, "node %s call HcomExecEnqueueOperation failed, ret: 0x%X", op_desc->GetName().c_str(), status);
+      GELOGE(HCCL_E_INTERNAL, "node %s call HcomExecEnqueueOperation failed, ret: 0x%X",
+             op_desc->GetName().c_str(), status);
     }
     std::lock_guard<std::mutex> lock(this->hccl_mutex_);
     this->cond_.notify_all();

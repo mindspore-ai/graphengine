@@ -305,7 +305,7 @@ class GFlagUtils {
         "  --debug_dir                Set the save path of operator compilation intermediate files.\n"
         "Default value: ./kernel_meta\n"
         "  --op_compiler_cache_dir    Set the save path of operator compilation cache files.\n"
-        "Default value: $HOME/atc_data/kernel_cache\n"
+        "Default value: $HOME/atc_data\n"
         "  --op_compiler_cache_mode   Set the operator compilation cache mode."
         "Options are disable(default), enable and force(force to refresh the cache)");
 

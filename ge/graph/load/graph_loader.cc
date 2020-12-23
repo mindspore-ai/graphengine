@@ -176,8 +176,8 @@ Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model
   Status ret = model_manager->LoadModelOffline(
       model_id, model_data, nullptr, dev_ptr, mem_size, weight_ptr, weight_size);
   if (ret != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_LOAD_MODEL, "Load model failed, model_id:%u.", model_id);
-    return ACL_ERROR_GE_LOAD_MODEL;
+    GELOGE(ret, "Load model failed, model_id:%u.", model_id);
+    return ret;
   }
   GELOGI("Load model success, model_id:%u.", model_id);
   return SUCCESS;
@@ -202,8 +202,8 @@ Status GraphLoader::LoadModelWithQ(uint32_t &model_id, const ModelData &model_da
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->LoadModelWithQ(model_id, model_data, input_queue_ids, output_queue_ids);
   if (ret != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_LOAD_MODEL, "Load model with queue failed, model_id:%u.", model_id);
-    return ACL_ERROR_GE_LOAD_MODEL;
+    GELOGE(ret, "Load model with queue failed, model_id:%u.", model_id);
+    return ret;
   }
 
   GELOGI("Load model with queue success, model_id:%u.", model_id);

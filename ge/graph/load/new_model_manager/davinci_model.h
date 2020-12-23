@@ -76,6 +76,25 @@ struct timeInfo {
   int64_t dumpEndTime;
 };
 
+// For super kernel
+static struct SuperKernelTaskInfo {
+  uint32_t last_block_dim;
+  uint32_t last_args_size;
+  uint32_t last_task_id;
+  uint32_t last_stream_id;
+  void *last_stream;
+  void *last_sm_desc;
+  std::vector<void *> kernel_list;
+  std::vector<void *> arg_list;
+  std::vector<uint32_t> dump_flag_list;
+  std::vector<OpDescPtr> op_desc_list;
+  std::vector<uintptr_t> dump_args_list;
+  uint32_t last_dump_flag;
+  int64_t last_group_key;
+  uintptr_t last_dump_args;
+  OpDescPtr last_op;
+};
+
 struct TaskMemInfo {
   int64_t input_size{0};
   int64_t output_size{0};
@@ -98,7 +117,7 @@ enum ExecuteMode {
 
 // comments
 class DavinciModel {
- public:
+public:
   ///
   /// @ingroup ge
   /// @brief DavinciModel constructor
@@ -204,13 +223,14 @@ class DavinciModel {
   // get total mem size
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
 
-  const std::map<uint32_t, MemInfo> &P2PMemInfos() const {return runtime_param_.memory_infos;}
+  const std::map<uint32_t, MemInfo> &P2PMemInfos() const { return runtime_param_.memory_infos; }
 
   // model name
   string Name() const { return name_; }
 
   // om_name
   string OmName() const { return om_name_; }
+
   // version
   uint32_t Version() const { return version_; }
 
@@ -255,11 +275,15 @@ class DavinciModel {
     }
     return nullptr;
   }
+
   // get task info for profiling
   const std::vector<TaskDescInfo> &GetTaskDescInfo() const { return task_desc_info_; }
 
   // get updated task info list
   std::vector<TaskInfoPtr> GetTaskList() { return task_list_; }
+
+  // Modified from KernelTaskInfo.
+  SuperKernelTaskInfo &GetSupperKernelTaskInfo() { return skt_info_; }
 
   ///
   /// @ingroup ge
@@ -421,6 +445,7 @@ class DavinciModel {
   const RuntimeParam &GetRuntimeParam() { return runtime_param_; }
 
   int32_t GetDataInputTid() const { return dataInputTid; }
+
   void SetDataInputTid(int32_t data_input_tid) { dataInputTid = data_input_tid; }
 
   void DisableZeroCopy(const void *addr);
@@ -459,6 +484,7 @@ class DavinciModel {
   }
 
   void SetEndGraphId(uint32_t task_id, uint32_t stream_id);
+
   DavinciModel &operator=(const DavinciModel &model) = delete;
 
   DavinciModel(const DavinciModel &model) = delete;
@@ -466,34 +492,46 @@ class DavinciModel {
   const map<int64_t, std::vector<rtStream_t>> &GetHcclFolowStream() {
     return main_follow_stream_mapping_;
   }
+
   void SaveHcclFollowStream(int64_t main_stream_id, rtStream_t stream);
 
   void InitRuntimeParams();
+
   Status InitVariableMem();
 
   void UpdateMemBase(uint8_t *mem_base) {
     runtime_param_.mem_base = mem_base;
     mem_base_ = mem_base;
   }
+
   void SetTotalArgsSize(uint32_t args_size) { total_args_size_ += args_size; }
+
   uint32_t GetTotalArgsSize() { return total_args_size_; }
+
   void *GetCurrentArgsAddr(uint32_t offset) {
     void *cur_args = static_cast<char *>(args_) + offset;
     return cur_args;
   }
+
   void SetTotalIOAddrs(vector<void *> &io_addrs) {
     total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
   }
+
   void SetHybridArgsSize(uint32_t args_size) { total_hybrid_args_size_ += args_size; }
+
   uint32_t GetHybridArgsSize() {
     return total_hybrid_args_size_;
   }
+
   void *GetCurrentHybridArgsAddr(uint32_t offset) {
     void *cur_args = static_cast<char *>(hybrid_addrs_) + offset;
     return cur_args;
   }
+
   void SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size);
+
   int64_t GetFixedAddrsSize(string tensor_name);
+
   void *GetCurrentFixedAddr(int64_t offset) const {
     void *cur_addr = static_cast<char *>(fixed_addrs_) + offset;
     return cur_addr;
@@ -505,30 +543,42 @@ class DavinciModel {
     }
     return UINT32_MAX;
   }
+
   void SetKnownNode(bool known_node) { known_node_ = known_node; }
+
   bool IsKnownNode() { return known_node_; }
+
   Status MallocKnownArgs();
+
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
+
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
+
   Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs);
+
   void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
+
   Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
                                    std::vector<InputOutputDims> &output_dims);
+
   void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
+
   // om file name
   void SetOmName(string om_name) { om_name_ = om_name; }
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
+
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
 
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
     return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
   }
+
   Status InitInputOutputForDynamic(const ComputeGraphPtr &compute_graph);
 
- private:
+private:
   // memory address of weights
   uint8_t *weights_mem_base_;
   uint8_t *var_mem_base_;
@@ -592,6 +642,7 @@ class DavinciModel {
   Status SyncVarData();
 
   Status InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size);
+
   Status InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size);
 
   void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
@@ -610,7 +661,7 @@ class DavinciModel {
 
   uint8_t *MallocWeightsMem(size_t weights_size);
 
-  uint8_t* MallocP2PMem(size_t p2p_data_size);
+  uint8_t *MallocP2PMem(size_t p2p_data_size);
 
   void FreeFeatureMapMem();
 
@@ -702,6 +753,7 @@ class DavinciModel {
   Status InitTbeHandle(const OpDescPtr &op_desc);
 
   void StoreTbeHandle(const std::string &handle_key);
+
   void CleanTbeHandle();
 
   ///
@@ -740,6 +792,7 @@ class DavinciModel {
   /// @return: 0 for success / others for fail
   ///
   Status BindOutputQueue();
+
   Status CpuModelPrepareOutput(uintptr_t addr, uint32_t size);
 
   ///
@@ -777,7 +830,9 @@ class DavinciModel {
   Status CpuWaitEndGraph();
 
   Status BindEnqueue();
+
   Status CpuModelEnqueue(uint32_t queue_id, uintptr_t out_mbuf);
+
   ///
   /// @ingroup ge
   /// @brief definiteness queue schedule, repeat run model.
@@ -786,6 +841,7 @@ class DavinciModel {
   Status CpuModelRepeat();
 
   Status InitEntryTask();
+
   Status AddHeadStream();
 
   ///
@@ -813,6 +869,7 @@ class DavinciModel {
   void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
 
   Status InitModelProfile();
+
   Status SinkModelProfile();
 
   Status SinkTimeProfile(const InputData &current_data);
@@ -821,14 +878,21 @@ class DavinciModel {
                              std::vector<ge::OutputTensorInfo> &outputs);
 
   void ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_info);
+
   void SetLabelForDynamic(const NodePtr &node);
 
   void ParseDynamicOutShape(const std::vector<std::string> &str_info, std::vector<vector<int64_t>> &vec_info);
+
   bool IsGetNextSinkDynamic(const OpDescPtr &op_desc);
+
   void GetAllGearsInfo(const NodePtr &node);
+
   Status GetGetDynamicDimsNodeInfo(const NodePtr &node);
+
   Status GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr &node);
+
   Status GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node);
+
   Status GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc);
 
   bool is_weight_mem_has_inited_;
@@ -996,6 +1060,9 @@ class DavinciModel {
 
   std::multimap<uint32_t, uint32_t> op_id_map_;
   std::vector<ProfileInfo> profile_list_;
+
+  // For super kernel.
+  SuperKernelTaskInfo skt_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

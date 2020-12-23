@@ -128,6 +128,7 @@ class KernelTaskInfo : public TaskInfo {
 
   Status SuperKernelDistribute();
   bool IsL1FusionOp(const OpDescPtr &op_desc);
+  void SetIoAddrs(const OpDescPtr &op_desc);
 
   // For super kernel
   Status SaveSKTDumpInfo();
@@ -156,7 +157,8 @@ class KernelTaskInfo : public TaskInfo {
   ccKernelType kernel_type_;
   uint32_t dump_flag_;
   void *dump_args_;
-  OpDescPtr op_desc_;
+  OpDescPtr op_desc_;   // Clear after distribute.
+  vector<void *> io_addrs_;
   DavinciModel *davinci_model_;
   uint32_t args_offset_ = 0;
   uint32_t hybrid_args_offset_ = 0;
@@ -186,25 +188,6 @@ class KernelTaskInfo : public TaskInfo {
     void *output_addrs = nullptr;
     void *attr_handle = nullptr;
   } custom_info_;
-
-  // For super kernel
-  static struct SuperKernelTaskInfo {
-    uint32_t last_block_dim;
-    uint32_t last_args_size;
-    uint32_t last_task_id;
-    uint32_t last_stream_id;
-    void *last_stream;
-    void *last_sm_desc;
-    std::vector<void *> kernel_list;
-    std::vector<void *> arg_list;
-    std::vector<uint32_t> dump_flag_list;
-    std::vector<OpDescPtr> op_desc_list;
-    std::vector<uintptr_t> dump_args_list;
-    uint32_t last_dump_flag;
-    int64_t last_group_key;
-    uintptr_t last_dump_args;
-    OpDescPtr last_op;
-  } skt_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_TASK_INFO_H_

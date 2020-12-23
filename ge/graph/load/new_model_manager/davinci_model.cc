@@ -139,6 +139,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       is_l1_fusion_enable_(false),
       is_first_execute_(true) {
   op_list_.clear();
+  skt_info_ = {0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, -1, 0, nullptr};
 }
 
 DavinciModel::~DavinciModel() {
@@ -261,6 +262,7 @@ Status DavinciModel::Assign(const GeModelPtr &ge_model) {
 /// @return: void
 ///
 void DavinciModel::Shrink() {
+  skt_info_ = {0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, -1, 0, nullptr};
   ge_model_.reset();  // delete object.
 }
 

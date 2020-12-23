@@ -38,7 +38,6 @@ class KernelTaskInfo : public TaskInfo {
         flowtable_(nullptr),
         block_dim_(0),
         args_size_(0),
-        flowtable_size_(0),
         task_id_(0),
         stream_id_(0),
         so_name_(""),
@@ -46,7 +45,6 @@ class KernelTaskInfo : public TaskInfo {
         kernel_type_(ccKernelType::CCE_AI_CORE),
         dump_flag_(RT_KERNEL_DEFAULT),
         dump_args_(nullptr),
-        op_desc_(nullptr),
         davinci_model_(nullptr),
         skt_id_(0),
         stub_func_name_(""),
@@ -149,7 +147,6 @@ class KernelTaskInfo : public TaskInfo {
   void *flowtable_;
   uint32_t block_dim_;
   uint32_t args_size_;
-  uint32_t flowtable_size_;
   uint32_t task_id_;
   uint32_t stream_id_;
   std::string so_name_;

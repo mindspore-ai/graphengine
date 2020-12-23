@@ -35,7 +35,6 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   kind_ = memcpy_async.kind();
   dst_max_ = memcpy_async.dst_max();
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async.op_index());
-  op_desc_ = op_desc;
   if (op_desc == nullptr) {
     GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
     return INTERNAL_ERROR;

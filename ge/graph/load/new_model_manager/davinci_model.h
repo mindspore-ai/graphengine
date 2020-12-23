@@ -77,7 +77,7 @@ struct timeInfo {
 };
 
 // For super kernel
-static struct SuperKernelTaskInfo {
+struct SuperKernelTaskInfo {
   uint32_t last_block_dim;
   uint32_t last_args_size;
   uint32_t last_task_id;
@@ -117,7 +117,7 @@ enum ExecuteMode {
 
 // comments
 class DavinciModel {
-public:
+ public:
   ///
   /// @ingroup ge
   /// @brief DavinciModel constructor
@@ -283,7 +283,7 @@ public:
   std::vector<TaskInfoPtr> GetTaskList() { return task_list_; }
 
   // Modified from KernelTaskInfo.
-  SuperKernelTaskInfo &GetSupperKernelTaskInfo() { return skt_info_; }
+  SuperKernelTaskInfo &GetSuperKernelTaskInfo() { return skt_info_; }
 
   ///
   /// @ingroup ge
@@ -445,7 +445,6 @@ public:
   const RuntimeParam &GetRuntimeParam() { return runtime_param_; }
 
   int32_t GetDataInputTid() const { return dataInputTid; }
-
   void SetDataInputTid(int32_t data_input_tid) { dataInputTid = data_input_tid; }
 
   void DisableZeroCopy(const void *addr);
@@ -484,7 +483,6 @@ public:
   }
 
   void SetEndGraphId(uint32_t task_id, uint32_t stream_id);
-
   DavinciModel &operator=(const DavinciModel &model) = delete;
 
   DavinciModel(const DavinciModel &model) = delete;
@@ -492,46 +490,34 @@ public:
   const map<int64_t, std::vector<rtStream_t>> &GetHcclFolowStream() {
     return main_follow_stream_mapping_;
   }
-
   void SaveHcclFollowStream(int64_t main_stream_id, rtStream_t stream);
 
   void InitRuntimeParams();
-
   Status InitVariableMem();
 
   void UpdateMemBase(uint8_t *mem_base) {
     runtime_param_.mem_base = mem_base;
     mem_base_ = mem_base;
   }
-
   void SetTotalArgsSize(uint32_t args_size) { total_args_size_ += args_size; }
-
   uint32_t GetTotalArgsSize() { return total_args_size_; }
-
   void *GetCurrentArgsAddr(uint32_t offset) {
     void *cur_args = static_cast<char *>(args_) + offset;
     return cur_args;
   }
-
   void SetTotalIOAddrs(vector<void *> &io_addrs) {
     total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
   }
-
   void SetHybridArgsSize(uint32_t args_size) { total_hybrid_args_size_ += args_size; }
-
   uint32_t GetHybridArgsSize() {
     return total_hybrid_args_size_;
   }
-
   void *GetCurrentHybridArgsAddr(uint32_t offset) {
     void *cur_args = static_cast<char *>(hybrid_addrs_) + offset;
     return cur_args;
   }
-
   void SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size);
-
   int64_t GetFixedAddrsSize(string tensor_name);
-
   void *GetCurrentFixedAddr(int64_t offset) const {
     void *cur_addr = static_cast<char *>(fixed_addrs_) + offset;
     return cur_addr;
@@ -543,42 +529,30 @@ public:
     }
     return UINT32_MAX;
   }
-
   void SetKnownNode(bool known_node) { known_node_ = known_node; }
-
   bool IsKnownNode() { return known_node_; }
-
   Status MallocKnownArgs();
-
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
-
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
-
   Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs);
-
   void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
-
   Status GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
                                    std::vector<InputOutputDims> &output_dims);
-
   void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
-
   // om file name
   void SetOmName(string om_name) { om_name_ = om_name; }
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
-
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
 
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
     return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
   }
-
   Status InitInputOutputForDynamic(const ComputeGraphPtr &compute_graph);
 
-private:
+ private:
   // memory address of weights
   uint8_t *weights_mem_base_;
   uint8_t *var_mem_base_;
@@ -753,7 +727,6 @@ private:
   Status InitTbeHandle(const OpDescPtr &op_desc);
 
   void StoreTbeHandle(const std::string &handle_key);
-
   void CleanTbeHandle();
 
   ///
@@ -792,7 +765,6 @@ private:
   /// @return: 0 for success / others for fail
   ///
   Status BindOutputQueue();
-
   Status CpuModelPrepareOutput(uintptr_t addr, uint32_t size);
 
   ///
@@ -830,9 +802,7 @@ private:
   Status CpuWaitEndGraph();
 
   Status BindEnqueue();
-
   Status CpuModelEnqueue(uint32_t queue_id, uintptr_t out_mbuf);
-
   ///
   /// @ingroup ge
   /// @brief definiteness queue schedule, repeat run model.
@@ -841,7 +811,6 @@ private:
   Status CpuModelRepeat();
 
   Status InitEntryTask();
-
   Status AddHeadStream();
 
   ///
@@ -869,7 +838,6 @@ private:
   void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
 
   Status InitModelProfile();
-
   Status SinkModelProfile();
 
   Status SinkTimeProfile(const InputData &current_data);
@@ -878,21 +846,14 @@ private:
                              std::vector<ge::OutputTensorInfo> &outputs);
 
   void ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_info);
-
   void SetLabelForDynamic(const NodePtr &node);
 
   void ParseDynamicOutShape(const std::vector<std::string> &str_info, std::vector<vector<int64_t>> &vec_info);
-
   bool IsGetNextSinkDynamic(const OpDescPtr &op_desc);
-
   void GetAllGearsInfo(const NodePtr &node);
-
   Status GetGetDynamicDimsNodeInfo(const NodePtr &node);
-
   Status GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr &node);
-
   Status GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node);
-
   Status GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc);
 
   bool is_weight_mem_has_inited_;

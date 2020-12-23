@@ -76,9 +76,7 @@ class HcclTaskInfo : public TaskInfo {
   uint32_t private_def_len_;
   static std::mutex hccl_follow_stream_mutex_;
   vector<GETaskKernelHcclInfo> kernel_hccl_infos_;
-  vector<void *> input_data_addrs_;
-  vector<void *> output_data_addrs_;
-  vector<void *> workspace_data_addrs_;
+  vector<void *> io_addrs_;
   OpDescPtr op_desc_;
   void *args_;
   uint32_t args_offset_;

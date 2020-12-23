@@ -146,7 +146,7 @@ Status KernelTaskInfo::SaveSKTDumpInfo() {
     return SUCCESS;
   }
   // all op in super kernel share one taskid and streamid
-  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   for (size_t i = 0; i < skt_info.op_desc_list.size(); i++) {
     davinci_model_->SaveDumpTask(skt_info.last_task_id, skt_info.last_stream_id, skt_info.op_desc_list[i],
                                  skt_info.dump_args_list[i]);
@@ -163,7 +163,7 @@ void KernelTaskInfo::UpdateSKTTaskId() {
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return;
     }
-    SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+    SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
     skt_info.last_task_id = task_id;
     skt_info.last_stream_id = stream_id;
     skt_id_ = skt_info.last_task_id;
@@ -191,7 +191,7 @@ Status KernelTaskInfo::SKTFinalize() {
   UpdateSKTTaskId();
   GE_CHK_STATUS_RET(SaveSKTDumpInfo(), "skt save dump info failed");
   GELOGI("SuperKernel Distribute [skt_id:%u]", skt_id_);
-  SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+  SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   skt_info.kernel_list.clear();
   skt_info.arg_list.clear();
   skt_info.dump_flag_list.clear();
@@ -208,7 +208,7 @@ Status KernelTaskInfo::SKTFinalize() {
 }
 
 uint32_t KernelTaskInfo::GetDumpFlag() {
-  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   for (auto flag : skt_info.dump_flag_list) {
     if (flag == RT_KERNEL_DUMPFLAG) {
       return RT_KERNEL_DUMPFLAG;
@@ -218,7 +218,7 @@ uint32_t KernelTaskInfo::GetDumpFlag() {
 }
 
 Status KernelTaskInfo::SuperKernelLaunch() {
-  SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+  SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   if (skt_info.kernel_list.empty()) {
     GELOGI("SuperKernelLaunch: Skt_kernel_list has no task, just return");
     return SUCCESS;
@@ -272,7 +272,7 @@ Status KernelTaskInfo::SuperKernelLaunch() {
 }
 
 Status KernelTaskInfo::SaveSuperKernelInfo() {
-  SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+  SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   skt_info.kernel_list.push_back(stub_func_);
   skt_info.arg_list.push_back(args_);
   skt_info.last_stream = stream_;
@@ -328,7 +328,7 @@ bool KernelTaskInfo::IsMarkedFirstNode() {
 // then may be saved to skt task list; else
 // call skt launch those saved tasks before
 bool KernelTaskInfo::FirstCallSKTLaunchCheck() {
-  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   return ((block_dim_ != skt_info.last_block_dim) || (stream_ != skt_info.last_stream) ||
           (has_group_key_ && (group_key_ != skt_info.last_group_key)));
 }
@@ -397,7 +397,7 @@ Status KernelTaskInfo::Distribute() {
     call_save_dump_ = true;
   } else {
     /* default: not skt launch */
-    const SuperKernelTaskInfo &skt_info = davinci_model_->GetSupperKernelTaskInfo();
+    const SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
     GELOGD(
         "KernelTaskInfo Distribute Start, sktenable:%d taskid:%u sktid:%u last_sktid:%u stubfunc_name:%s "
         "stubfunc:%p blockdim:%u stream:%p",
@@ -803,7 +803,6 @@ Status KernelTaskInfo::InitCceTask(const domi::KernelDef &kernel_def) {
       GELOGE(FAILED, "flowtable is null.");
       return FAILED;
     }
-    flowtable_size_ = flowtable.size();
   }
 
   // get smDesc stored in model
@@ -899,8 +898,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     GELOGE(init_ret, "Init aicpu task ext info failed, ext_info size=%zu", ext_info.size());
     return init_ret;
   }
-  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, aicpu_ext_info_addr_=%p", op_desc_->GetName().c_str(),
-         op_desc_->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, aicpu_ext_info_addr_=%p", op_desc->GetName().c_str(),
+         op_desc->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
 
   aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
   aicpu_param_head->extInfoLength = static_cast<uintptr_t>(ext_info.size());

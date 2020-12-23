@@ -85,6 +85,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   } else {
     io_addrs_.emplace_back(reinterpret_cast<void *>(dst_));
   }
+
   return SUCCESS;
 }
 

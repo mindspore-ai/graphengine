@@ -616,7 +616,6 @@ class DavinciModel {
   Status SyncVarData();
 
   Status InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size);
-
   Status InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size);
 
   void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);

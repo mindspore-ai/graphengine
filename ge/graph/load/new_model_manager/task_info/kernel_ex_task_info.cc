@@ -128,7 +128,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     GELOGI("KernelExTaskInfo knonw node Init Success.");
-    return SetIoAddr(op_desc);
+    return SetIoAddrs(op_desc);
   }
 
   // 3. Set workspaceaddr, inputOutputDataAddr
@@ -192,7 +192,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, io_addrs.data(), input_output_addr_, addrs_size, 0);
 
   GELOGI("KernelExTaskInfo Init Success. session id: %lu", session_id);
-  return SetIoAddr(op_desc);
+  return SetIoAddrs(op_desc);
 }
 
 Status KernelExTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
@@ -231,7 +231,7 @@ Status KernelExTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciMod
   return SUCCESS;
 }
 
-Status KernelExTaskInfo::SetIoAddr(const OpDescPtr &op_desc) {
+Status KernelExTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
   vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
   vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);

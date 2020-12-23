@@ -59,7 +59,7 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   GELOGI("HcclTaskInfo Init, op_index is: %u", op_index);
 
   // Get HCCL op
-  const auto op_desc = davinci_model->GetOpByIndex(op_index);
+  const auto op_desc = davinci_model_->GetOpByIndex(op_index);
   GE_CHECK_NOTNULL(op_desc);
 
   // Create the kernel hccl infos

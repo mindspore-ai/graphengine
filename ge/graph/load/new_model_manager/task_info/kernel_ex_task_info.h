@@ -59,7 +59,7 @@ class KernelExTaskInfo : public TaskInfo {
   };
  private:
   Status CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param, const OpDescPtr &op_desc);
-  Status SetIoAddr(const OpDescPtr &op_desc);
+  Status SetIoAddrs(const OpDescPtr &op_desc);
 
   uint32_t task_id_;
   uint32_t stream_id_;

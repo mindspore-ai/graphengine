@@ -71,8 +71,7 @@ class ZeroCopyTask {
    * @param [in] batch_label: batch label.
    * @return: 0 SUCCESS / others FAILED
    */
-  ge::Status UpdateTaskParam(uintptr_t addr, void *buffer_addr, const map<string, set<uintptr_t>> &batch_addrs,
-                             const string &batch_label);
+  ge::Status UpdateTaskParam(uintptr_t addr, void *buffer_addr);
 
   /**
    * @ingroup ge
@@ -90,9 +89,6 @@ class ZeroCopyTask {
   const string& GetBatchLabel() const {
     return batch_label_;
   }
-
- protected:
-  bool CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_addrs, const string &batch_label, uintptr_t addr);
 
  private:
   const string name_;

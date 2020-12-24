@@ -607,7 +607,7 @@ set(INFER_SRC_LIST
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} $<TARGET_OBJECTS:msprofiler_fwk>)
+add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
 
 target_compile_definitions(ge_runner PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -648,11 +648,14 @@ target_include_directories(ge_runner PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(ge_runner
+target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     adump_server
     static_mmpa
+    -Wl,--whole-archive
+    msprofiler_fwk
+    -Wl,--no-whole-archive
     -Wl,--no-as-needed
     graph
     ge_common
@@ -712,7 +715,7 @@ target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(ge_compiler
+target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     static_mmpa
@@ -766,7 +769,14 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,--allow-multiple-definition
     -Wl,-z,muldefs
     -Wl,-Bsymbolic
-    -Wl,--exclude-libs,ALL
+    -Wl,--exclude-libs,libascend_protobuf.a
+    -Wl,--exclude-libs,libge_executor.a
+    -Wl,--exclude-libs,libge_common.a
+    -Wl,--exclude-libs,libgraph.a
+    -Wl,--exclude-libs,libmmpa.a
+    -Wl,--exclude-libs,libregister.a
+    -Wl,--exclude-libs,liberror_manager.a
+    -Wl,--exclude-libs,libadump_server.a
 )
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive

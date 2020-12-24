@@ -616,11 +616,11 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper) {
 }
 
 void ModelHelper::SetModelToGeModel(GeModelPtr &ge_model, Model &model) {
-  model_->SetGraph(model.GetGraph());
-  model_->SetName(model.GetName());
-  model_->SetVersion(model.GetVersion());
-  model_->SetPlatformVersion(model.GetPlatformVersion());
-  model_->SetAttr(model.MutableAttrMap());
+  ge_model->SetGraph(model.GetGraph());
+  ge_model->SetName(model.GetName());
+  ge_model->SetVersion(model.GetVersion());
+  ge_model->SetPlatformVersion(model.GetPlatformVersion());
+  ge_model->SetAttr(model.MutableAttrMap());
 }
 
 Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index) {

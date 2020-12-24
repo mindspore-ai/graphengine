@@ -682,7 +682,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
   SetDataDumperArgs(compute_graph);
   GE_TIMESTAMP_START(DoTaskSink);
-  auto ret = DoTaskSink();
+  GE_CHK_STATUS_RET(DoTaskSink(), "Task sink failed");
   GE_TIMESTAMP_END(DoTaskSink, "GraphLoader::DoTaskSink");
 
   auto all_dump_model = GetDumpProperties().GetAllDumpModel();
@@ -723,7 +723,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   }
 
   Shrink();
-  return ret;
+  return SUCCESS;
 }
 
 Status DavinciModel::ReportProfilingData() {

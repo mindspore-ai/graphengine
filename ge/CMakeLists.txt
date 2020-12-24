@@ -157,8 +157,6 @@ set(TRAIN_SRC_LIST
     "graph/passes/compile_nodes_pass.cc"
     "graph/passes/constant_folding_pass.cc"
     "graph/passes/constant_fuse_same_pass.cc"
-    "graph/passes/remove_same_const_pass.cc"
-    "graph/passes/useless_control_out_remove_pass.cc"
     "graph/passes/control_trigger_pass.cc"
     "graph/passes/dimension_adjust_pass.cc"
     "graph/passes/dimension_compute_pass.cc"
@@ -524,8 +522,6 @@ set(INFER_SRC_LIST
     "graph/passes/assign_pass.cc"
     "graph/passes/addn_pass.cc"
     "graph/passes/common_subexpression_elimination_pass.cc"
-    "graph/passes/remove_same_const_pass.cc"
-    "graph/passes/useless_control_out_remove_pass.cc"
     "graph/passes/transop_symmetry_elimination_pass.cc"
     "graph/passes/save_pass.cc"
     "graph/passes/switch_dead_branch_elimination.cc"
@@ -611,7 +607,7 @@ set(INFER_SRC_LIST
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
+add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS} $<TARGET_OBJECTS:msprofiler_fwk>)
 
 target_compile_definitions(ge_runner PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -652,14 +648,11 @@ target_include_directories(ge_runner PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(ge_runner PRIVATE
+target_link_libraries(ge_runner
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     adump_server
     static_mmpa
-    -Wl,--whole-archive
-    msprofiler_fwk
-    -Wl,--no-whole-archive
     -Wl,--no-as-needed
     graph
     ge_common
@@ -719,7 +712,7 @@ target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
-target_link_libraries(ge_compiler PRIVATE
+target_link_libraries(ge_compiler
     $<BUILD_INTERFACE:intf_pub>
     ge_memory
     static_mmpa
@@ -773,14 +766,7 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,--allow-multiple-definition
     -Wl,-z,muldefs
     -Wl,-Bsymbolic
-    -Wl,--exclude-libs,libascend_protobuf.a
-    -Wl,--exclude-libs,libge_executor.a
-    -Wl,--exclude-libs,libge_common.a
-    -Wl,--exclude-libs,libgraph.a
-    -Wl,--exclude-libs,libmmpa.a
-    -Wl,--exclude-libs,libregister.a
-    -Wl,--exclude-libs,liberror_manager.a
-    -Wl,--exclude-libs,libadump_server.a
+    -Wl,--exclude-libs,ALL
 )
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive

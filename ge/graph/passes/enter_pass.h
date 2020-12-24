@@ -25,8 +25,7 @@ class EnterPass : public BaseNodePass {
   Status Run(NodePtr &node) override;
 
  private:
-  Status OptimizeEnterWithOnlyDataOut(NodePtr &node, NodePtr &in_node);
-  Status UnlinkCtrlEdgeBeforeConst(NodePtr &node);
+  Status OptimizeEnter(NodePtr &node, NodePtr &in_node);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_ENTER_PASS_H_

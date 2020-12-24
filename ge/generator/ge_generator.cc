@@ -272,7 +272,6 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
 
     std::vector<int64_t> dynamic_shape_dims = {kDynamicDimValue};
     GeShape dynamic_shape(dynamic_shape_dims);
-    std::vector<std::pair<int64_t, int64_t>> dynamic_shape_range;
 
     ge::GeTensor inputTensor;
     ge::GeTensorDesc desc(input_desc);
@@ -281,7 +280,6 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
     if (!is_const && shape_ori.GetDims().size() > 0) {
       desc.SetShape(dynamic_shape);
-      desc.SetShapeRange(dynamic_shape_range);
     }
 
     inputTensor.SetTensorDesc(desc);
@@ -530,6 +528,24 @@ bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
   return true;
 }
 
+static Status SetModelNameForDump(GeRootModelPtr ge_root_model) {
+  ModelHelper model_helper;
+  string model_name = "";
+  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
+                                                                 model_name);
+  if (name_ret != SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
+    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
+    return PARAM_INVALID;
+  }
+  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
+  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
+  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
+  ge_model->SetName(model_name);
+  return SUCCESS;
+}
+
 Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                                   ModelBufferData &model, bool is_offline) {
   rtContext_t ctx = nullptr;
@@ -538,7 +554,6 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     GELOGD("Current ctx is null.");
     ctx = nullptr;
   }
-
   GeRootModelPtr ge_root_model = nullptr;
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   impl_->is_offline_ = is_offline;
@@ -562,22 +577,11 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
            impl_->build_step_.c_str());
     return SUCCESS;
   }
-
   GE_CHECK_NOTNULL(ge_root_model);
-  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
-  ModelHelper model_helper;
-  string model_name = "";
-  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
-                                                                 model_name);
-  if (name_ret != SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
-    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
-    return PARAM_INVALID;
+  ret = SetModelNameForDump(ge_root_model);
+  if (ret != SUCCESS) {
+    return ret;
   }
-  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
-  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
-  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
-  ge_model->SetName(model_name);
   ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");
@@ -586,11 +590,9 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     }
     return ret;
   }
-
   if (ctx != nullptr) {
     (void)rtCtxSetCurrent(ctx);
   }
-
   return SUCCESS;
 }
 

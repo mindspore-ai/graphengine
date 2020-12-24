@@ -245,8 +245,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/hccl_group_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/set_input_output_offset_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/model_utils.cc"
@@ -477,8 +475,6 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/reshape_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_add_control_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_remove_control_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_breadth_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_without_reshape_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_depth_fusion_pass.cc"
@@ -487,7 +483,7 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/compile_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/common/transop_util.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
-    #"${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/folding_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/variable_op_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transpose_transdata_pass.cc"
@@ -675,13 +671,13 @@ set(MULTI_PARTS_TEST_FILES
 )
 
 set(SINGLE_OP_TEST_FILES
-    #"single_op/single_op_model_unittest.cc"
+    "single_op/single_op_model_unittest.cc"
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
 )
 
 set(PROFILING_MNG_TEST_FILES
-    #"profiling/ge_profiling_manager_unittest.cc"
+    "profiling/ge_profiling_manager_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES
@@ -848,17 +844,13 @@ add_executable(ut_libge_multiparts_utest
     ${MULTI_PARTS_TEST_FILES}
 )
 
-target_compile_options(ut_libge_multiparts_utest PRIVATE
-    -g --coverage -fprofile-arcs -ftest-coverage
-)
-
 target_compile_definitions(ut_libge_multiparts_utest PRIVATE
     google=ascend_private
 )
 
 target_link_libraries(ut_libge_multiparts_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
+    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl 
 )
 
 # libge_others_utest
@@ -869,14 +861,9 @@ add_executable(ut_libge_others_utest
     ${EXECUTE_TEST_FILES}
     ${OTHERS_TEST_FILES}
 )
-
-target_compile_options(ut_libge_others_utest PRIVATE
-    -g --coverage -fprofile-arcs -ftest-coverage
-)
-
 target_link_libraries(ut_libge_others_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
+    ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
 )
 
 # libge_kernel_utest
@@ -886,14 +873,9 @@ add_executable(ut_libge_kernel_utest
         ${KERNEL_TEST_FILES}
         ${KERNEL_SRC_FILES}
 )
-
-target_compile_options(ut_libge_kernel_utest PRIVATE
-    -g --coverage -fprofile-arcs -ftest-coverage
-)
-
 target_link_libraries(ut_libge_kernel_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
+    ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
 )
 
 # libge_distinct_load_utest
@@ -903,10 +885,6 @@ add_executable(ut_libge_distinct_load_utest
         ${DISTINCT_GRAPH_LOAD_SRC_FILES}
         ${SINGLE_OP_TEST_FILES}
         ${PROFILING_MNG_TEST_FILES}
-)
-
-target_compile_options(ut_libge_distinct_load_utest PRIVATE
-    -g --coverage -fprofile-arcs -ftest-coverage
 )
 
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
@@ -919,5 +897,5 @@ target_link_libraries(ut_libge_distinct_load_utest
         ge_execute_common ge_ut_common_format ge_load_common
         ge_single_op   ge_prepare_common
         ge_optimize_common  ge_build_common ge_partition_common ge_ut_common
-        gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread -lgcov
+        gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread
 )

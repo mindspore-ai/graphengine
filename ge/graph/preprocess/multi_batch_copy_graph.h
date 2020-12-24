@@ -18,7 +18,6 @@
 #include <map>
 #include <queue>
 #include <vector>
-#include <set>
 
 #include "external/ge/ge_api_error_codes.h"
 
@@ -65,26 +64,12 @@ class MultiBatchGraphCopyer {
  private:
   Status Init();
   Status CheckArguments();
-  Status RelinkConstCtrlEdge();
-
-  Status ExtractUnchangedStructureOutofCycle();
-  Status GetEnterNodesGroupByFrame(std::map<std::string, std::vector<NodePtr>> &frame_enter);
-  Status GetNodeNeedExtract(const std::map<std::string, std::vector<NodePtr>> &frame_enter,
-                            std::queue<NodePtr> &nodes_to_extract);
-  bool AllInDataNodesUnchangeAndNoMergeOut(const NodePtr &node);
-  Status MoveInEntersInDataAnchorDown(NodePtr &node, OpDescPtr &enter_desc);
-  Status InsertEnterAfterNode(NodePtr &node, const OpDescPtr &enter_desc, std::set<NodePtr> &out_nodes);
-  Status MoveCtrlEdgeToOutNodes(NodePtr &node, std::set<NodePtr> &out_nodes);
-  Status DeleteEnterWithoutDataOut();
 
   // label status for origin_all_nodes_
   Status LabelStatus();
   Status LabelInBatchBranchStatus();
   void LabelStatusForData(const NodePtr &data);
   void LabelStatusForGetNextSink(const NodePtr &data);
-  void InitStatus(std::map<std::string, std::vector<NodePtr>> &frame_enters);
-  void ResetEnterStatus(std::map<std::string, std::vector<NodePtr>> &frame_enters, const NodePtr &node);
-
   // add nodes functions
   Status CreateNewNodes();
 
@@ -96,6 +81,7 @@ class MultiBatchGraphCopyer {
   Status InsertSwitchNForData(const NodePtr &node, const size_t &out_anchor_index, const size_t &peer_in_anchor_index,
                               std::vector<std::pair<Node *, NodePtr>> &dynamic_out_to_switchn);
 
+  Status InsertIdentityAfterSwitchN();
   Status UpdateMaxShapeToData(const NodePtr &node, size_t out_anchor_index);
   Status UpdateShapeOfShapeNode(const NodePtr &node, size_t out_anchor_index);
 

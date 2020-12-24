@@ -89,6 +89,16 @@ Status MergeToStreamMergePass::ReplaceMergeNode(const ComputeGraphPtr &graph, co
     GE_CHK_STATUS_RET(SetNextIteration(stream_merge, next_iteration_name), "Set next iteration failed");
   }
 
+  if (merge_op_desc->HasAttr(ATTR_NAME_BATCH_LABEL)) {
+    string batch_label;
+    (void)AttrUtils::GetStr(merge_op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
+    if (!batch_label.empty()) {
+      auto stream_merge_desc = stream_merge->GetOpDesc();
+      GE_CHECK_NOTNULL(stream_merge_desc);
+      (void)AttrUtils::SetStr(stream_merge_desc, ATTR_NAME_BATCH_LABEL, batch_label);
+    }
+  }
+
   return AddActiveNodes(graph, stream_merge);
 }
 

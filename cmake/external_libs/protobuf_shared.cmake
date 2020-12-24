@@ -26,7 +26,6 @@ set(protobuf_CXXFLAGS "-Wno-maybe-uninitialized -Wno-unused-parameter -fPIC -fst
 set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 ExternalProject_Add(protobuf_build
                     URL ${REQ_URL}
-                    TLS_VERIFY OFF
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -Dprotobuf_WITH_ZLIB=OFF
                     -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}

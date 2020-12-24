@@ -16,7 +16,10 @@
 
 #include "graph/manager/graph_mem_allocator.h"
 
+#include <set>
 #include <string>
+
+#include "framework/common/debug/ge_log.h"
 #include "graph/manager/graph_caching_allocator.h"
 #include "graph/manager/rdma_pool_allocator.h"
 

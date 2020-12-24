@@ -42,7 +42,8 @@ class GraphOptimize {
   ~GraphOptimize() = default;
 
   // subgraph optimize
-  Status OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std::string &engine_name);
+  Status OptimizeSubGraph(ComputeGraphPtr &compute_graph, const ComputeGraphPtr &parent_graph,
+                          const std::string &engine_name);
 
   // original graph optimize
   Status OptimizeOriginalGraph(ComputeGraphPtr &compute_graph);

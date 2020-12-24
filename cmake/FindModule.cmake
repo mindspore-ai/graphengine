@@ -21,7 +21,7 @@ function(find_module module name)
     if ("${${module}_LIBRARY_DIR}" STREQUAL "${module}_LIBRARY_DIR-NOTFOUND")
       message(FATAL_ERROR "${name} not found in ${path}")
     endif()
-
+    
     add_library(${module} SHARED IMPORTED)
     set_target_properties(${module} PROPERTIES
       IMPORTED_LOCATION ${${module}_LIBRARY_DIR}

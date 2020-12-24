@@ -58,7 +58,6 @@ TEST_F(UtestStreamResource, test_malloc_memory) {
   ASSERT_NE(res.MallocMemory(purpose, 100), nullptr);
 }
 
-/*
 TEST_F(UtestStreamResource, test_do_malloc_memory) {
   size_t max_allocated = 0;
   vector<uint8_t *> allocated;
@@ -84,4 +83,3 @@ TEST_F(UtestStreamResource, test_do_malloc_memory) {
       rtFree(res);
   }
 }
-*/

@@ -94,9 +94,6 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
     for (auto dim : output_descs.at(i).GetShape().GetDims()) {
       output.mutable_shape()->add_dim(dim);
     }
-    for (auto dim : output_descs.at(i).GetOriginShape().GetDims()) {
-      output.mutable_origin_shape()->add_dim(dim);
-    }
     int64_t output_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
       GELOGE(PARAM_INVALID, "Get output size filed");
@@ -120,9 +117,6 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
 
     for (auto dim : input_descs.at(i).GetShape().GetDims()) {
       input.mutable_shape()->add_dim(dim);
-    }
-    for (auto dim : input_descs.at(i).GetOriginShape().GetDims()) {
-      input.mutable_origin_shape()->add_dim(dim);
     }
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
@@ -220,15 +214,8 @@ Status DumpOp::LaunchDumpOp() {
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
   GELOGI("Dump step is %s ,dump path is %s ,in Launch dump op", dump_properties_.GetDumpStep().c_str(),
          dump_path.c_str());
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGW("call rtGetTaskIdAndStreamID failed, ret = 0x%X", rt_ret);
-  }
+
   aicpu::dump::Task task;
-  task.set_task_id(task_id);
-  task.set_stream_id(stream_id);
   task.mutable_op()->set_op_name(op_desc_->GetName());
   task.mutable_op()->set_op_type(op_desc_->GetType());
   if (dump_properties_.GetDumpMode() == kDumpOutput) {

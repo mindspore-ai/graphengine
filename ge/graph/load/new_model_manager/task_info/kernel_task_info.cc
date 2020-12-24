@@ -566,6 +566,8 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(ctx_.opIndex);
   GE_CHECK_NOTNULL(op_desc);
   if (davinci_model_->IsKnownNode()) {
+    args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
+    InitDumpTask(offset);
     return SUCCESS;
   }
 
@@ -630,15 +632,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     return FAILED;
   }
   skt_dump_args_ = static_cast<char *>(args_) + offset;
-  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                          op_desc->GetName())) {
-    if (IsL1FusionOp(op_desc)) {
-      dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
-    } else {
-      dump_flag_ = RT_KERNEL_DUMPFLAG;
-    }
-    dump_args_ = static_cast<char *>(args_) + offset;
-  }
+  InitDumpTask(offset);
 
   GE_CHK_BOOL_TRUE_EXEC_INFO(davinci_model_->GetOpDugReg(), dump_args_ = static_cast<char *>(args_) + offset,
                              "Op debug is open in TVM task info");
@@ -904,6 +898,8 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   aicpu_param_head->extInfoLength = static_cast<uintptr_t>(ext_info.size());
 
   if (davinci_model_->IsKnownNode()) {
+    args_ = davinci_model_->GetCurrentHybridArgsAddr(hybrid_args_offset_);
+    InitDumpTask(sizeof(aicpu::AicpuParamHead));
     return SUCCESS;
   }
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
@@ -937,16 +933,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-
-  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                          op_desc->GetName())) {
-    if (IsL1FusionOp(op_desc)) {
-      dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
-    } else {
-      dump_flag_ = RT_KERNEL_DUMPFLAG;
-    }
-    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
-  }
+  InitDumpTask(sizeof(aicpu::AicpuParamHead));
   if (davinci_model_->GetOpDugReg()) {
     GELOGI("Op debug is open in aicpu task info");
     dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
@@ -958,6 +945,18 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
 
   return SUCCESS;
+}
+
+void KernelTaskInfo::InitDumpTask(uint32_t offset) {
+  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                          op_desc_->GetName())) {
+    if (IsL1FusionOp(op_desc_)) {
+      dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
+    } else {
+      dump_flag_ = RT_KERNEL_DUMPFLAG;
+    }
+    dump_args_ = static_cast<char *>(args_) + offset;
+  }
 }
 
 Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {

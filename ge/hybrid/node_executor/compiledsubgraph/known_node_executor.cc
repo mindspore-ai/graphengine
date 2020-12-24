@@ -123,6 +123,10 @@ Status KnownNodeTask::Init(TaskContext &context) {
            davinci_model_->GetRuntimeParam().mem_base, davinci_model_->GetRuntimeParam().mem_size);
   }
   if (!load_flag_) {
+    auto dump_properties = context.GetDumpProperties();
+    if (dump_properties.IsDumpOpen()) {
+      davinci_model_->SetDumpProperties(dump_properties);
+    }
     GE_CHK_STATUS_RET(davinci_model_->Init(), "KnownNodeExecutor::InitDavinciModel failed.");
     load_flag_ = true;
   } else {

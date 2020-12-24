@@ -34,7 +34,7 @@ target_include_directories(engine PRIVATE
 target_link_libraries(engine PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    slog
+    alog
     -Wl,--as-needed
     -lrt
     -ldl

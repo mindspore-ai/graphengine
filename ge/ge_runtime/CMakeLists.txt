@@ -53,7 +53,7 @@ target_include_directories(ge_runtime PRIVATE
 target_link_libraries(ge_runtime PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    slog
+    alog
     runtime
     c_sec
     graph

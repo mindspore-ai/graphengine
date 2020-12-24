@@ -113,7 +113,7 @@ target_link_libraries(ge_common PRIVATE
     register
     c_sec
     error_manager
-    slog
+    alog
     -Wl,--as-needed
     json
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
@@ -212,7 +212,7 @@ target_link_libraries(ge_common PRIVATE
     register
     c_sec
     error_manager
-    slog
+    alog
     static_mmpa
     -Wl,--as-needed
     json

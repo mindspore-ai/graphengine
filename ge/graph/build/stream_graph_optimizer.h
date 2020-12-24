@@ -41,7 +41,7 @@ class StreamGraphOptimizer {
  private:
   void RefreshNodeId(const ComputeGraphPtr &comp_graph, Graph2SubGraphInfoList &subgraph_map);
 
-  bool IsSameStreamId(const ComputeGraphPtr &comp_graph);
+  bool IsSameStreamIdOrBatchLabel(const ComputeGraphPtr &comp_graph);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_OPTIMIZE_STREAM_GRAPH_H_

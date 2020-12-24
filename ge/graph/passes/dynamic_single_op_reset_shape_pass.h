@@ -27,6 +27,8 @@ class DynamicSingleOpResetShapePass : public GraphPass {
 
  private:
   Status ResetOpShape(OpDescPtr &op_desc);
+  Status ResetInputTensorShape(OpDescPtr &op_desc, const GeShape &dynamic_shape, bool &reset_shape_flag);
+  Status ResetOutputTensorShape(OpDescPtr &op_desc, const GeShape &dynamic_shape);
   Status CheckAllAicpuNodes(const ComputeGraphPtr &graph, bool &is_not_aicpu);
   bool CheckIfConstInput(const GeTensorDescPtr &input_tensor_desc);
 };

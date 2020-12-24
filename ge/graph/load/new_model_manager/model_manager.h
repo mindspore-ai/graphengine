@@ -353,8 +353,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
   std::map<std::string, std::vector<uint64_t>> model_aicpu_kernel_;
   uint32_t max_model_id_;
-  std::mutex map_mutex_;
-  std::mutex sess_ids_mutex_;
+  std::recursive_mutex map_mutex_;
   std::mutex session_id_create_mutex_;
   static::std::mutex exeception_infos_mutex_;
   uint64_t session_id_bias_;

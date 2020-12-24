@@ -129,6 +129,9 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
 
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
+  if (DlogReportInitialize() != SUCCESS) {
+    GELOGW("Dlog report device log initialize failed.");
+  }
   return GEInitializeImpl(options);
 }
 
@@ -186,6 +189,10 @@ Status GEFinalize() {
 
   // to avoid memory fragment, use malloc_trim to back free stack to system
   malloc_trim(0);
+
+  if (DlogReportFinalize() != SUCCESS) {
+    GELOGW("Dlog report device log finalize failed.");
+  }
 
   GELOGT(TRACE_STOP, "GEFinalize finished");
   return ret;

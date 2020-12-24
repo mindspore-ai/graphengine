@@ -89,7 +89,6 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   if (op_type == aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY) {
     std::vector<uint64_t> v_aicpu_kernel;
     std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
-    std::lock_guard<std::recursive_mutex> lock(map_mutex_);
     auto iter = model_aicpu_kernel_.find(model_key);
     if (iter != model_aicpu_kernel_.end()) {
       GELOGD("kernel destroy session_id %lu, model_id %u.", session_id, model_id);
@@ -177,7 +176,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 }
 
 void ModelManager::DestroyAicpuSession(uint64_t session_id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
   auto it = sess_ids_.find(session_id);
   if (it == sess_ids_.end()) {
     GELOGI("The session: %lu not created.", session_id);
@@ -206,7 +205,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
 }
 
 ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   auto hybrid_davinci_model = hybrid_model_map_.find(model_id);
   if (hybrid_davinci_model != hybrid_model_map_.end()) {
     uint64_t session_id = hybrid_davinci_model->second->GetSessionId();
@@ -216,8 +215,8 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
-    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
+    return GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
   DestroyAicpuSession(session_id);
@@ -226,7 +225,7 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
 ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
@@ -239,7 +238,7 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
 }
 
 ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
   std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
@@ -251,7 +250,7 @@ ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_i
 }
 
 ModelManager::~ModelManager() {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   model_map_.clear();
   model_aicpu_kernel_.clear();
   cust_aicpu_so_.clear();
@@ -359,18 +358,18 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
 void ModelManager::InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davinci_model) {
   GE_CHK_BOOL_EXEC(davinci_model != nullptr, return, "davinci_model ptr is null, id: %u", id);
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   model_map_[id] = davinci_model;
 }
 
 void ModelManager::InsertModel(uint32_t id, shared_ptr<hybrid::HybridDavinciModel> &hybrid_model) {
   GE_CHK_BOOL_EXEC(hybrid_model != nullptr, return, "hybrid_model ptr is null, id: %u", id);
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
   hybrid_model_map_[id] = hybrid_model;
 }
 
 Status ModelManager::DeleteModel(uint32_t id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
   auto hybrid_model_it = hybrid_model_map_.find(id);
@@ -385,22 +384,22 @@ Status ModelManager::DeleteModel(uint32_t id) {
   } else if (hybrid_model_it != hybrid_model_map_.end()) {
     (void)hybrid_model_map_.erase(hybrid_model_it);
   } else {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
-    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
+    return GE_EXEC_MODEL_ID_INVALID;
   }
 
   return SUCCESS;
 }
 
 std::shared_ptr<DavinciModel> ModelManager::GetModel(uint32_t id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
   return (it == model_map_.end()) ? nullptr : it->second;
 }
 
 std::shared_ptr<hybrid::HybridDavinciModel> ModelManager::GetHybridModel(uint32_t id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(map_mutex_);
 
   auto it = hybrid_model_map_.find(id);
   return (it == hybrid_model_map_.end()) ? nullptr : it->second;
@@ -903,7 +902,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
   davinci_model->SetModelDescVersion(new_model_desc);
@@ -971,9 +970,8 @@ Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
 }
 
 Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
-  auto davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "GetCurShape Failed, Invalid Model ID %u!", model_id);
+  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
+  GE_CHECK_NOTNULL(davinci_model);
   davinci_model->GetCurShape(batch_info, dynamic_type);
   return SUCCESS;
 }
@@ -986,8 +984,7 @@ Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynami
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "GetModelAttr Failed, Invalid Model ID %u!", model_id);
+  GE_CHECK_NOTNULL(davinci_model);
   davinci_model->GetModelAttr(dynamic_output_shape_info);
   return SUCCESS;
 }
@@ -997,8 +994,9 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
                                                        std::vector<uint32_t> &inputFormats,
                                                        std::vector<uint32_t> &outputFormats) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-      "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetInputOutputDescInfo Failed, Invalid model id %u!",
+                         model_id);
+
   return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
 }
 
@@ -1013,14 +1011,18 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-      "GetAIPPInfo failed, invalid model_id is %u.", model_id);
+                         "GetAIPPInfo failed, invalid model_id is %u.",
+                         model_id);
+
   return davinci_model->GetAIPPInfo(index, aipp_info);
 }
 
 Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-      "GetAIPPInfo failed, invalid model_id is %u.", model_id);
+                         "GetAIPPInfo failed, invalid model_id is %u.",
+                         model_id);
+
   return davinci_model->GetAippType(index, type, aipp_index);
 }
 
@@ -1053,15 +1055,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
   mmTimespec timespec = mmGetTickCount();
 
   ModelHelper model_helper;
-  Status ret = model_helper.LoadRootModel(model);
-  if (model_helper.GetModelType()) {
-    bool is_shape_unknown = false;
-    GE_CHK_STATUS_RET(model_helper.GetGeRootModel()->CheckIsUnknownShape(is_shape_unknown),
-                      "CheckIsUnknownShape failed, model id:%u", model_id);
-    if (is_shape_unknown || GetContext().GetHostExecFlag()) {
-      return DoLoadHybridModelOnline(model_id, model_helper.GetGeRootModel(), listener);
-    }
-  }
+  Status ret = model_helper.LoadModel(model);
   if (ret != SUCCESS) {
     GELOGE(ret, "load model failed.");
     return ret;
@@ -1075,8 +1069,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     } catch (...) {
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed since other exception raise");
-      return ACL_ERROR_GE_MEMORY_ALLOCATION;
+      GELOGE(INTERNAL_ERROR, "Make shared failed since other exception raise");
+      return INTERNAL_ERROR;
     }
     ret = davinci_model->Assign(ge_model);
     if (ret != SUCCESS) {
@@ -1088,7 +1082,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     int32_t device_id = 0;
     rtError_t rt_ret = rtGetDevice(&device_id);
     if (rt_ret != RT_ERROR_NONE || device_id < 0) {
-      GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+      GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     davinci_model->SetDeviceId(device_id);
@@ -1220,7 +1214,7 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "Invalid model id %u, check whether model has been loaded or not.", model_id);
+                         "Invalid model id %u, check weather model has been loaded or not.", model_id);
 
   if (davinci_model->NeedDestroyAicpuKernel()) {
     GELOGI("Start to destroy specified aicpu kernel.");
@@ -1243,7 +1237,7 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
 }
 
 Status ModelManager::CreateAicpuSession(uint64_t session_id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
   auto it = sess_ids_.find(session_id);
   // never been created by any model
   if (it == sess_ids_.end()) {
@@ -1462,7 +1456,8 @@ void ModelManager::GenModelId(uint32_t *id) {
   if (id == nullptr) {
     return;
   }
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+
+  std::lock_guard<std::mutex> lock(map_mutex_);
   *id = ++max_model_id_;
 }
 

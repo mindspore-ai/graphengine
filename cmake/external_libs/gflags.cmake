@@ -23,7 +23,6 @@ ExternalProject_Add(gflags_build
                     URL ${REQ_URL}
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
                     #SOURCE_DIR ${GE_CODE_DIR}/../../third_party/gflags/src/gflags-2.2.2 
-                    TLS_VERIFY OFF
                     CONFIGURE_COMMAND ${CMAKE_COMMAND} -DCMAKE_CXX_FLAGS=${gflags_CXXFLAGS} -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}/gflags <SOURCE_DIR>
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install

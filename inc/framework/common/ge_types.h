@@ -37,9 +37,7 @@ enum FrameworkType {
   MINDSPORE = 1,
   TENSORFLOW = 3,
   ANDROID_NN,
-#ifndef ONLY_COMPILE_OPEN_SRC
   ONNX,
-#endif
   FRAMEWORK_RESERVED,
 };
 
@@ -248,8 +246,6 @@ struct TaskDescInfo {
   uint32_t block_dim;
   uint32_t task_id;
   uint32_t stream_id;
-  std::string shape_type;
-  int64_t cur_iter_num;
 };
 
 // Profiling info of graph

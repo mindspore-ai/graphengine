@@ -66,13 +66,13 @@ bool StreamGraphOptimizer::IsSameStreamIdOrBatchLabel(const ComputeGraphPtr &com
     if (AttrUtils::GetStr(cur_node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
       label_set.insert(batch_label);
     } else {
-      GELOGD("Node %s[%s] has no batch label, subgraph %s, stream id: %ld", cur_node->GetName().c_str(),
+      GELOGD("Node %s[%s] has no batch_label, subgraph %s, stream id: %ld ", cur_node->GetName().c_str(),
              cur_node->GetType().c_str(), comp_graph->GetName().c_str(), stream_id);
       continue;
     }
 
-    GELOGD("Node %s in subgraph %s stream id: %ld, node num: %zu", cur_node->GetName().c_str(),
-           comp_graph->GetName().c_str(), stream_id, comp_graph->GetDirectNodesSize());
+    GELOGD("Node %s in subgraph %s stream id: %ld, batch_label: %s, node num: %zu", cur_node->GetName().c_str(),
+           comp_graph->GetName().c_str(), stream_id, batch_label.c_str(), comp_graph->GetDirectNodesSize());
   }
   if (stream_set.size() > 1 || label_set.size() > 1) {
     GELOGI("Nodes of graph: %s have different stream id or batch_label, node num: %zu, different stream num: %zu.",
@@ -126,12 +126,14 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
                  run_context.graphStreamList.size());
           return FAILED;
         }
+
         run_context.stream = run_context.graphStreamList[stream_id];
-	std::string batch_label;
-	(void)AttrUtils::GetStr(subgraph, ATTR_NAME_BATCH_LABEL, batch_label);
+        std::string batch_label;
+        (void)AttrUtils::GetStr(subgraph, ATTR_NAME_BATCH_LABEL, batch_label);
         GELOGD("Subgraph has same stream id, subgraph: %s, engine_name: %s, stream_id: %ld, rtstream: %lu, "
-	       "batch_label: %s", subgraph->GetName().c_str(), engine_name.c_str(), stream_id,
+               "batch_label: %s", subgraph->GetName().c_str(), engine_name.c_str(), stream_id,
                static_cast<uint64_t>(reinterpret_cast<uintptr_t>(run_context.stream)), batch_label.c_str());
+
         for (auto iter = graph_optimizers.begin(); iter != graph_optimizers.end(); ++iter) {
           GE_CHECK_NOTNULL(*iter);
           Status ret = (*iter)->OptimizeStreamGraph(*subgraph, run_context);

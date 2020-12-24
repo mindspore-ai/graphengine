@@ -6,10 +6,7 @@ set(ONNX_PROTO_DIR ${CMAKE_BINARY_DIR}/onnx)
 set(ONNX_PROTO_FILE ${ONNX_PROTO_DIR}/onnx.proto)
 file(MAKE_DIRECTORY ${ONNX_PROTO_DIR})
 
-if (GE_PB_PKG)
-    set(REQ_URL "${GE_PB_PKG}/libs/onnx/onnx-1.6.0.tar.gz")
-    set(MD5 "512f2779d6215d4a36f366b6b9acdf1e")
-elseif (ENABLE_GITEE)
+if (ENABLE_GITEE)
     set(REQ_URL "https://gitee.com/mirrors/ONNX/repository/archive/v1.6.0.tar.gz")
     set(MD5 "1bdbcecdd68ea8392630467646776e02")
 else()
@@ -22,7 +19,6 @@ ExternalProject_Add(onnx
                     #URL /home/txd/workspace/cloud_code/pkg/onnx-1.6.0.tar.gz
                     #URL_HASH SHA256=3b88c3fe521151651a0403c4d131cb2e0311bd28b753ef692020a432a81ce345
                     #SOURCE_DIR ${ONNX_SRC_DIR}
-                    TLS_VERIFY OFF
                     CONFIGURE_COMMAND ""
                     BUILD_COMMAND ""
                     #INSTALL_COMMAND "" 

@@ -38,8 +38,10 @@ const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
 }  // namespace
 
 namespace ge {
-ProfilingManager::ProfilingManager()
-    : is_load_profiling_(false), is_execute_profiling_(false), is_training_trace_(false), subscribe_count_(0) {
+ProfilingManager::ProfilingManager() : is_load_profiling_(false),
+                                       is_execute_profiling_(false),
+                                       is_training_trace_(false),
+                                       subscribe_count_(0) {
   prof_cb_.msprofCtrlCallback = nullptr;
   prof_cb_.msprofReporterCallback = nullptr;
 }
@@ -100,8 +102,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
       return INTERNAL_ERROR;
     }
     is_execute_profiling_ = true;
-    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(), prof_conf.options,
-           options.profiling_options.c_str());
+    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(),
+          prof_conf.options, options.profiling_options.c_str());
   } else {
     (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
     (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);
@@ -141,9 +143,6 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   }
   try {
     Json prof_options = Json::parse(options);
-    if (options.find(kTrainingTrace) == std::string::npos) {
-      return ge::SUCCESS;
-    }
     const std::string training_trace = prof_options[kTrainingTrace];
     if (training_trace.empty()) {
       GELOGI("Training trace will not take effect.");
@@ -212,16 +211,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     uint32_t block_dim = task.block_dim;
     uint32_t task_id = task.task_id;
     uint32_t stream_id = task.stream_id;
-    std::string shape_type = task.shape_type;
-    int64_t cur_iter_num = task.cur_iter_num;
     data = model_name.append(" ")
                      .append(op_name).append(" ")
-                     .append(std::to_string(block_dim)).append(" ")
+                     .append(std::to_string(block_dim).append(" ")
                      .append(std::to_string(task_id)).append(" ")
                      .append(std::to_string(stream_id)).append(" ")
-                     .append(std::to_string(model_id)).append(" ")
-                     .append(shape_type).append(" ")
-                     .append(std::to_string(cur_iter_num)).append("\n");
+                     .append(std::to_string(model_id)).append("\n"));
 
     ReporterData reporter_data{};
     reporter_data.deviceId = device_id;
@@ -846,7 +841,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
       return;
     }
   }
-  
   return;
 }
 

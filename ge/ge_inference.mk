@@ -191,8 +191,6 @@ OMG_HOST_SRC_FILES := \
     graph/passes/control_trigger_pass.cc \
     graph/passes/cond_pass.cc \
     graph/passes/cond_remove_pass.cc \
-    graph/passes/remove_same_const_pass.cc \
-    graph/passes/useless_control_out_remove_pass.cc \
     graph/passes/for_pass.cc \
     graph/passes/enter_pass.cc \
     graph/passes/assign_pass.cc \

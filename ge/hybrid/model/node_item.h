@@ -99,16 +99,10 @@ struct NodeItem {
   std::map<int, int> reuse_inputs;
   std::map<int, int> reuse_outputs;
   int num_static_input_shapes = 0;
-  bool is_profiling_report = false;
 
  private:
   explicit NodeItem(NodePtr node);
   Status Init();
-  Status InitInputsAndOutputs();
-  void ResolveOptionalInputs();
-  Status ResolveDynamicState();
-  Status ResolveStaticInputsAndOutputs();
-  void ResolveUnknownShapeType();
 
   std::vector<bool> is_input_shape_static_;
   std::vector<uint32_t> input_desc_indices_;

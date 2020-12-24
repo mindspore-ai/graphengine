@@ -84,7 +84,7 @@ TEST(UtestGeOperatorFactory, register_func) {
   status = OperatorFactoryImpl::RegisterVerifyFunc("ABC", nullptr);
   EXPECT_EQ(GRAPH_SUCCESS, status);
 }
-/*
+
 TEST(UtestGeOperatorFactory, get_ops_type_list_fail) {
   auto operator_creators_temp = OperatorFactoryImpl::operator_creators_;
   OperatorFactoryImpl::operator_creators_ = nullptr;
@@ -93,4 +93,3 @@ TEST(UtestGeOperatorFactory, get_ops_type_list_fail) {
   EXPECT_EQ(GRAPH_FAILED, status);
   OperatorFactoryImpl::operator_creators_ = operator_creators_temp;
 }
-*/

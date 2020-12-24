@@ -173,7 +173,10 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
       continue;
     }
     auto in_node = in_node_anchor->GetOwnerNode();
-    if ((in_node->GetType() == SWITCH) || (in_node->GetType() == REFSWITCH) || (in_node->GetType() == SWITCHN)) {
+    if (in_node == nullptr) {
+      continue;
+    }
+    if ((in_node->GetType() == SWITCH) || (in_node->GetType() == REFSWITCH)) {
       GELOGI("The in_node name is %s, and node type is %s.", in_node->GetName().c_str(), in_node->GetType().c_str());
       auto ret = in_node_anchor->Unlink(in_data_anchor);
       if (ret != SUCCESS) {

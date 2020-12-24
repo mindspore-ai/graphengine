@@ -119,11 +119,11 @@ Status OpTask::DoUpdateArgTable(const SingleOpModelParam &param, bool keep_works
   uintptr_t *arg_base = nullptr;
   size_t arg_num = 0;
   GetIoAddr(arg_base, arg_num);
-  if (arg_num !=  all_addresses.size()) {
-    GELOGE(INTERNAL_ERROR, "[%s] arg number mismatches, expect = %zu, but got = %zu",
+  if (arg_num < all_addresses.size()) {
+    GELOGE(INTERNAL_ERROR, "[%s] arg number mismatches, expect at least = %zu, but got = %zu",
            op_desc_->GetName().c_str(),
-           arg_num,
-           all_addresses.size());
+           all_addresses.size(),
+           arg_num);
     return INTERNAL_ERROR;
   }
 

@@ -272,6 +272,7 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
 
     std::vector<int64_t> dynamic_shape_dims = {kDynamicDimValue};
     GeShape dynamic_shape(dynamic_shape_dims);
+    std::vector<std::pair<int64_t, int64_t>> dynamic_shape_range;
 
     ge::GeTensor inputTensor;
     ge::GeTensorDesc desc(input_desc);
@@ -280,6 +281,7 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
     if (!is_const && shape_ori.GetDims().size() > 0) {
       desc.SetShape(dynamic_shape);
+      desc.SetShapeRange(dynamic_shape_range);
     }
 
     inputTensor.SetTensorDesc(desc);

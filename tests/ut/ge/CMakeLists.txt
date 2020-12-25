@@ -681,7 +681,7 @@ set(SINGLE_OP_TEST_FILES
 )
 
 set(PROFILING_MNG_TEST_FILES
-    #"profiling/ge_profiling_manager_unittest.cc"
+    "profiling/ge_profiling_manager_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

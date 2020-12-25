@@ -21,6 +21,7 @@
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
@@ -954,6 +955,7 @@ Status HybridModelBuilder::InitWeights() {
 }
 
 Status HybridModelBuilder::LoadTasks() {
+  GE_CHK_STATUS_RET(CheckAicpuOpList(), "Check Aicpu op failed.");
   for (auto &it : hybrid_model_.node_items_) {
     auto &node_item = it.second;
     auto &node_ptr = node_item->node;
@@ -1588,6 +1590,30 @@ Status HybridModelBuilder::BuildInputMapping(GraphItem &graph_item,
     graph_item.input_nodes_[data_index] = node_item;
   }
 
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CheckAicpuOpList() {
+  std::vector<std::string> aicpu_optype_list;
+  std::vector<std::string> aicpu_tf_optype_list;
+  std::set<std::string> aicpu_optype_set;
+  std::set<std::string> aicpu_tf_optype_set;
+  for (auto &it : ge_root_model_->GetSubgraphInstanceNameToModel()) {
+    auto &ge_model = it.second;
+    GE_CHECK_NOTNULL(ge_model);
+    if (ge::AttrUtils::GetListStr(*ge_model, "needCheckCpu", aicpu_optype_list)) {
+      aicpu_optype_set.insert(aicpu_optype_list.begin(), aicpu_optype_list.end());
+    }
+
+    if (ge::AttrUtils::GetListStr(*ge_model, "needCheckTf", aicpu_tf_optype_list)) {
+      aicpu_tf_optype_set.insert(aicpu_tf_optype_list.begin(), aicpu_tf_optype_list.end());
+    }
+  }
+  // reset list with set
+  aicpu_optype_list.assign(aicpu_optype_set.begin(), aicpu_optype_set.end());
+  aicpu_tf_optype_list.assign(aicpu_tf_optype_set.begin(), aicpu_tf_optype_set.end());
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchKernelCheckAicpuOp(aicpu_optype_list, aicpu_tf_optype_list),
+                    "Launch check aicpu op type failed.");
   return SUCCESS;
 }
 }  // namespace hybrid

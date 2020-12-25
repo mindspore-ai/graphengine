@@ -120,6 +120,7 @@ static int32_t GetIrDataType(ge::DataType data_type) {
       {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
       {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
       {ge::DT_STRING, ge::proto::DT_STRING},
+      {ge::DT_VARIANT, ge::proto::DT_VARIANT},
   };
 
   auto iter = data_type_map.find(data_type);

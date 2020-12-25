@@ -538,7 +538,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
       (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
     }
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
-                                            compute_graph->GetGraphID(), subgraph, compute_graph, session_id,
+                                            compute_graph->GetGraphID(), subgraph,
+                                            compute_graph->GetName(), session_id,
                                             GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
@@ -553,7 +554,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
         (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
       }
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
-                                              compute_graph->GetGraphID(), subgraph, compute_graph, session_id,
+                                              compute_graph->GetGraphID(), subgraph,
+                                              compute_graph->GetName(), session_id,
                                               GetThreadLocalContext());
       if (!f.valid()) {
         GELOGE(FAILED, "Future is invalid");
@@ -2473,7 +2475,8 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
 
 Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, GraphId root_graph_id,
                                                      const SubGraphInfoPtr &sub_graph_info_ptr,
-                                                     const ComputeGraphPtr &compute_graph, uint64_t session_id,
+                                                     const std::string &root_graph_name,
+                                                     uint64_t session_id,
                                                      const GEThreadLocalContext &ge_context) {
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
     GetContext().SetSessionId(session_id);
@@ -2490,9 +2493,13 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
       GELOGE(FAILED, "Failed to set attr ATTR_NAME_ROOT_GRAPH_ID for subgraph, graph_id: %u.", root_graph_id);
       return FAILED;
     }
+    if (!AttrUtils::SetStr(*compute_graph_tmp, ATTR_NAME_ROOT_GRAPH_NAME, root_graph_name)) {
+      GELOGE(FAILED, "Failed to set attr ATTR_NAME_ROOT_GRAPH_NAME for subgraph, \
+             root_graph_name: %s.", root_graph_name.c_str());
+      return FAILED;
+    }
     compute_graph_tmp->SetSessionID(session_id);
     Status ret = graph_manager->GetCompilerStages(root_graph_id).optimizer.OptimizeSubGraph(compute_graph_tmp,
-                                                                                            compute_graph,
                                                                                             engine_name);
     if (ret != SUCCESS) {
       GELOGE(ret, "SubGraph optimize Failed %s", engine_name.c_str());

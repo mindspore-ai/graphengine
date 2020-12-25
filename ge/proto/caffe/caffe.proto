@@ -1,3 +1,11 @@
+/**
+ * This file is part of Open Source Software caffe, version 1.0 https://github.com/BVLC/caffe
+ *
+ * This file is included by GraphEngine so as to support model format conversion from caffe model to GraphEngine model.
+ * This file in this distribution may have been modified by Huawei Technologies Co., Ltd ("Huawei Modifications").
+ * All Huawei Modifications are Copyright 2019-2020 Huawei Technologies Co., Ltd.
+ */
+
 syntax = "proto2";
 
 package domi.caffe;

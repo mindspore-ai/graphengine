@@ -52,7 +52,6 @@
 
 using namespace testing;
 using namespace ge;
-using namespace cce;
 
 class UtestBroadcastGradientArgsKernel : public testing::Test {
  protected:

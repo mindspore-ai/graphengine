@@ -307,8 +307,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "call InitFeatureMapMem more than once .");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once.");
+    return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
 
@@ -316,8 +316,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
 
   if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    GELOGE(PARAM_INVALID, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
+    return PARAM_INVALID;
   }
 
   mem_base_ = static_cast<uint8_t *>(dev_ptr);

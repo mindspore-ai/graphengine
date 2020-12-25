@@ -458,3 +458,76 @@ Copyright (c) Facebook Inc. and Microsoft Corporation.
 
 License: MIT License
 Please see above.
+
+
+
+Software: caffe 1.0
+
+License: BSD 2-Clause License
+
+Open Source Software Licensed Under the BSD 2-Clause License
+
+GraphEngine uses source code files from caffe so as to support model format conversion from caffe model to GraphEngine model.
+Please see below for the full list of source code files from caffe that are used by GraphEngine.
+The below software in this distribution may have been modified by Huawei Technologies Co., Ltd ("Huawei Modifications"). All Huawei Modifications are Copyright 2019-2020 Huawei Technologies Co., Ltd.
+----------------------------------------------------------------------------------------
+1. caffe.proto  master
+All contributions by the University of California:
+Copyright (c) 2014-2017 The Regents of the University of California (Regents)
+All rights reserved.
+
+
+Terms of the BSD 2-Clause License:
+--------------------------------------------------------------------
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+Software: tensorflow 1.15.0
+
+License: Apache-2.0 License
+
+Open Source Software Licensed Under the Apache-2.0 License
+
+
+GraphEngine uses source code files from tensorflow so as to support model format conversion from tensorflow model to GraphEngine model.
+Please see below for the full list of source code files from tensorflow that are used by GraphEngine.
+The below software in this distribution may have been modified by Huawei Technologies Co., Ltd ("Huawei Modifications"). All Huawei Modifications are Copyright 2019-2020 Huawei Technologies Co., Ltd.
+----------------------------------------------------------------------------------------
+1. attr_value.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+2. function.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+3. graph.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+4. node_def.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+5. op_def.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+6. resource_handle.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+7. tensor.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+8. tensor_shape.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+9. types.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+10. versions.proto  master
+Copyright 2015 The TensorFlow Authors. All Rights Reserved.
+
+Terms of the Apache-2.0 License:
+Please see above.

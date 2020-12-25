@@ -69,7 +69,7 @@ target_link_libraries(atc PRIVATE
     gflags
     json
     runtime_compile
-    alog
+    slog
     static_mmpa
     -lrt
     -ldl
@@ -130,7 +130,7 @@ target_link_libraries(atc_atc.bin PRIVATE
     gflags
     json
     runtime_compile
-    alog
+    slog
     static_mmpa
     -lrt
     -ldl
@@ -196,7 +196,7 @@ target_link_libraries(fwk_atc.bin PRIVATE
     gflags
     json
     runtime
-    alog
+    slog
     static_mmpa
     -lrt
     -ldl

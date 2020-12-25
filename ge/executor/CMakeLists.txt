@@ -242,7 +242,7 @@ target_link_libraries(ge_executor_shared PRIVATE
     -Wl,--no-as-needed
     ge_common
     runtime
-    alog
+    slog
     mmpa
     graph
     register

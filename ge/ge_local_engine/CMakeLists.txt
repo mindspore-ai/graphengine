@@ -57,7 +57,7 @@ target_link_libraries(ge_local_engine PRIVATE
     ascend_protobuf
     register
     c_sec
-    alog
+    slog
     runtime
     -Wl,--as-needed
 )
@@ -99,7 +99,7 @@ target_link_libraries(atc_ge_local_engine PRIVATE
     ascend_protobuf
     register
     c_sec
-    alog
+    slog
     runtime_compile
     -Wl,--as-needed
 )
@@ -143,7 +143,7 @@ target_link_libraries(ge_local_opskernel_builder PRIVATE
     -Wl,--no-as-needed
     ascend_protobuf
     c_sec
-    alog
+    slog
     register
     graph
     -Wl,--as-needed
@@ -183,7 +183,7 @@ target_link_libraries(atc_ge_local_opskernel_builder PRIVATE
     -Wl,--no-as-needed
     ascend_protobuf
     c_sec
-    alog
+    slog
     register
     graph
     -Wl,--as-needed

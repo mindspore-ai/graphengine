@@ -50,7 +50,7 @@ target_link_libraries(host_cpu_engine PRIVATE
     c_sec
     graph
     register
-    alog
+    slog
     runtime
     -Wl,--as-needed
 )
@@ -91,7 +91,7 @@ target_link_libraries(atc_host_cpu_engine PRIVATE
     c_sec
     graph
     register
-    alog
+    slog
     runtime_compile
     -Wl,--as-needed
 )
@@ -134,7 +134,7 @@ target_link_libraries(host_cpu_opskernel_builder PRIVATE
     -Wl,--no-as-needed
     ascend_protobuf
     c_sec
-    alog
+    slog
     graph
     register
     -Wl,--as-needed
@@ -173,7 +173,7 @@ target_link_libraries(atc_host_cpu_opskernel_builder PRIVATE
     -Wl,--no-as-needed
     ascend_protobuf
     c_sec
-    alog
+    slog
     graph
     register
     -Wl,--as-needed

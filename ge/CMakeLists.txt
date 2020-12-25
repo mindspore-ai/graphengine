@@ -662,7 +662,7 @@ target_link_libraries(ge_runner PRIVATE
     ascend_protobuf
     register
     c_sec
-    alog
+    slog
     runtime
     resource
     error_manager
@@ -726,7 +726,7 @@ target_link_libraries(ge_compiler PRIVATE
     register
     c_sec
     error_manager
-    alog
+    slog
     runtime_compile
     resource
     -Wl,--as-needed
@@ -793,7 +793,7 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--no-as-needed
                      c_sec
                      runtime
-                     alog
+                     slog
                      ascend_hal_stub
                      -Wl,--as-needed
                      -lrt

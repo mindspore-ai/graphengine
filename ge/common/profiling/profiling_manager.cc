@@ -38,10 +38,8 @@ const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
 }  // namespace
 
 namespace ge {
-ProfilingManager::ProfilingManager() : is_load_profiling_(false),
-                                       is_execute_profiling_(false),
-                                       is_training_trace_(false),
-                                       subscribe_count_(0) {
+ProfilingManager::ProfilingManager()
+    : is_load_profiling_(false), is_execute_profiling_(false), is_training_trace_(false), subscribe_count_(0) {
   prof_cb_.msprofCtrlCallback = nullptr;
   prof_cb_.msprofReporterCallback = nullptr;
 }
@@ -102,8 +100,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
       return INTERNAL_ERROR;
     }
     is_execute_profiling_ = true;
-    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(),
-          prof_conf.options, options.profiling_options.c_str());
+    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(), prof_conf.options,
+           options.profiling_options.c_str());
   } else {
     (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
     (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);
@@ -143,6 +141,9 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   }
   try {
     Json prof_options = Json::parse(options);
+    if (options.find(kTrainingTrace) == std::string::npos) {
+      return ge::SUCCESS;
+    }
     const std::string training_trace = prof_options[kTrainingTrace];
     if (training_trace.empty()) {
       GELOGI("Training trace will not take effect.");
@@ -802,32 +803,46 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   if (!fp_point_.empty() && !bp_point_.empty()) {
     fp_point = fp_point_;
     bp_point = bp_point_;
-    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(), fp_point.c_str());
+    GELOGI("Bp Fp have been initialized in env or options. bp_point: %s, fp_point: %s", bp_point.c_str(),
+           fp_point.c_str());
     return;
   }
   // ProfApi mode and training trace is set
-  try {
-    char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = { 0x00 };
+  // Parse options first
+  char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = { 0x00 };
+  bool is_profiling_valid = false;
+  std::string profiling_options;
+  if (ge::GetContext().GetOption(OPTION_EXEC_PROFILING_OPTIONS, profiling_options) == SUCCESS &&
+      !profiling_options.empty()) {
+    is_profiling_valid = true;
+  } else {
     INT32 ret = mmGetEnv("PROFILING_OPTIONS", env_profiling_options, MSPROF_OPTIONS_DEF_LEN_MAX);
     if (ret != EN_OK) {
       GELOGI("PROFILING_OPTIONS env is not exist.");
       return;
     }
     GELOGI("Parse env PROFILING_OPTIONS:%s.", env_profiling_options);
-    Json prof_options = Json::parse(env_profiling_options);
-
-    fp_point_ = prof_options[kFpPoint];
-    bp_point_ = prof_options[kBpPoint];
-
-    fp_point = fp_point_;
-    bp_point = bp_point_;
-    if (!fp_point_.empty() && !bp_point_.empty()) {
-      GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
-    }
-  } catch (...) {
-    GELOGE(FAILED, "Json prof options is invalid.");
-    return;
+    profiling_options = env_profiling_options;
+    is_profiling_valid = true;
   }
+  if (is_profiling_valid) {
+    try {
+      Json prof_options = Json::parse(profiling_options);
+
+      fp_point_ = prof_options[kFpPoint];
+      bp_point_ = prof_options[kBpPoint];
+
+      fp_point = fp_point_;
+      bp_point = bp_point_;
+      if (!fp_point_.empty() && !bp_point_.empty()) {
+        GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
+      }
+    } catch (...) {
+      GELOGW("Json prof options is invalid.");
+      return;
+    }
+  }
+  
   return;
 }
 

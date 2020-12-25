@@ -44,12 +44,6 @@ class GraphLoader {
 
   static Status GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size);
 
-  static Status LoadModel(const ModelData &model_data, const std::shared_ptr<ModelListener> &listener,
-                          uint32_t &model_id);
-
-  static Status LoadModelFromFile(const std::string &path, const std::string &key_path, int32_t priority,
-                                  const std::shared_ptr<ModelListener> &listener, uint32_t &model_id);
-
   static Status CommandHandle(const Command &command);
 
   static Status GetMemoryInfo(int64_t &free);

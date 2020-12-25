@@ -20,7 +20,8 @@
 #include "ge/ge_api_error_codes.h"
 #include "toolchain/prof_callback.h"
 
-#define MAX_DEV_NUM (64)
+const int MAX_DEV_NUM = 64;
+
 enum ProfCommandHandleType {
   kProfCommandhandleInit = 0,
   kProfCommandhandleStart,

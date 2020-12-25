@@ -293,6 +293,7 @@ const std::string MDL_BANK_PATH_FLAG = "ge.mdl_bank_path";
 
 // Configure op bank path
 const std::string OP_BANK_PATH_FLAG = "ge.op_bank_path";
+const std::string OP_BANK_UPDATE_FLAG = "ge.op_bank_update";
 
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
@@ -366,6 +367,7 @@ static const char *const OP_COMPILER_CACHE_DIR = ge::OP_COMPILER_CACHE_DIR;
 static const char *const OP_COMPILER_CACHE_MODE = ge::OP_COMPILER_CACHE_MODE;
 static const char *const MDL_BANK_PATH = ge::MDL_BANK_PATH_FLAG.c_str();
 static const char *const OP_BANK_PATH = ge::OP_BANK_PATH_FLAG.c_str();
+static const char *const OP_BANK_UPDATE = ge::OP_BANK_UPDATE_FLAG.c_str();
 static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 
 // for interface: aclgrphBuildModel
@@ -389,22 +391,13 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              OP_COMPILER_CACHE_DIR,
                                                              OP_COMPILER_CACHE_MODE,
                                                              MDL_BANK_PATH,
-                                                             OP_BANK_PATH};
+                                                             OP_BANK_PATH,
+                                                             OP_BANK_UPDATE};
 
 // for interface: aclgrphParse
-const std::set<std::string> ir_parser_suppported_options = {INPUT_FORMAT,
-                                                            INPUT_SHAPE,
-                                                            OP_NAME_MAP,
-                                                            IS_DYNAMIC_INPUT,
-                                                            INPUT_FP16_NODES,
-                                                            IS_INPUT_ADJUST_HW_LAYOUT,
-                                                            IS_OUTPUT_ADJUST_HW_LAYOUT,
-                                                            OUTPUT,
-                                                            OUTPUT_TYPE,
-                                                            OUT_NODES,
-                                                            COMPRESS_WEIGHT_CONF,
-                                                            ENABLE_SCOPE_FUSION_PASSES,
-                                                            LOG_LEVEL};
+const std::set<std::string> ir_parser_suppported_options = {
+  INPUT_FP16_NODES, IS_INPUT_ADJUST_HW_LAYOUT, IS_OUTPUT_ADJUST_HW_LAYOUT, OUTPUT,
+  OUT_NODES,        COMPRESS_WEIGHT_CONF,      ENABLE_SCOPE_FUSION_PASSES};
 
 // for interface: aclgrphBuildInitialize
 const std::set<std::string> global_options = {CORE_TYPE,

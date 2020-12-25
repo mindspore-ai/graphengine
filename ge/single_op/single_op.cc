@@ -39,7 +39,7 @@ size_t GetAlignedSize(size_t size) {
 }
 
 Status ProfilingTaskInfo(OpTask *op_task) {
-  if (!ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+  if (!ProfilingManager::Instance().ProfilingModelLoadOn()) {
     return SUCCESS;
   }
 

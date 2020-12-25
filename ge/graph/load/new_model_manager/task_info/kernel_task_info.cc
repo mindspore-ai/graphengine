@@ -90,20 +90,18 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
                   fusion_op_info_.op_index = context.op_index(); fusion_op_info_.original_op_names = original_op_names;
                   fusion_op_info_.op_name = op_desc_->GetName());
 
-  string session_graph_model_id;
-  davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
-  // get bin_file_key
-  const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
   // new aicpu kernel(rtCpuKernelLaunch) no need to check function
   if (kernel_type_ == ccKernelType::CCE_AI_CORE) {
-    rtError_t rt_ret;
-    rt_ret = rtGetFunctionByName(const_cast<char *>(kernel_def.stub_func().c_str()), &stub_func_);
+    rtError_t rt_ret = rtGetFunctionByName(const_cast<char *>(kernel_def.stub_func().c_str()), &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. stub_func: %s",
                                                     kernel_def.stub_func().c_str());
                     return RT_ERROR_TO_GE_STATUS(rt_ret););
   } else if (kernel_type_ == ccKernelType::TE) {
-    rtError_t rt_ret;
-    rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
+    // get bin_file_key
+    string session_graph_model_id;
+    davinci_model_->GetUniqueId(op_desc_, session_graph_model_id);
+    const char *bin_file_key = davinci_model_->GetRegisterStub(op_desc_->GetName(), session_graph_model_id);
+    rtError_t rt_ret = rtGetFunctionByName(bin_file_key, &stub_func_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     GELOGE(RT_FAILED, "execute rtGetFunctionByName failed. bin_file_key: %s", bin_file_key);
                     return RT_ERROR_TO_GE_STATUS(rt_ret););
@@ -372,7 +370,11 @@ Status KernelTaskInfo::SuperKernelDistribute() {
 Status KernelTaskInfo::Distribute() {
   GELOGD("KernelTaskInfo Distribute Start.");
   if (davinci_model_->IsKnownNode()) {
-    args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
+    if (kernel_type_ == ccKernelType::TE) {
+      args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
+    } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
+      args_ = davinci_model_->GetCurrentHybridArgsAddr(hybrid_args_offset_);
+    }
     GELOGI("Known node %s args addr %p, offset %u.", op_desc_->GetName().c_str(), args_, args_offset_);
   }
   rtError_t rt_ret = RT_ERROR_NONE;
@@ -428,36 +430,31 @@ Status KernelTaskInfo::UpdateArgs() {
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
   vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc_);
   vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc_);
-  vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc_);
 
   vector<void *> io_addrs;
-  if (!op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
-    io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
-    io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+  io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+  io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+  if (kernel_type_ == ccKernelType::TE) {
+    vector<void *> workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc_);
     io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
-  } else {
-    string peer_input_name;
-    if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name)) {
-      uint32_t output_index = davinci_model_->GetFixedAddrOutputIndex(peer_input_name);
-      if (output_index > output_data_addrs.size()) {
-        GELOGE(FAILED, "The output data addr size[%zu] and output index[%u] are inconsistent.",
-               output_data_addrs.size(), output_index);
-        return FAILED;
-      }
-      io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
-      for (size_t i = 0; i < output_data_addrs.size(); ++i) {
-        if (i == output_index) {
-          void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
-          io_addrs.emplace_back(fixed_addr);
-          continue;
-        }
-        io_addrs.emplace_back(output_data_addrs[i]);
-      }
-      io_addrs.insert(io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
+    davinci_model_->SetTotalIOAddrs(io_addrs);
+  } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
+    davinci_model_->UpdateKnownZeroCopyAddr(io_addrs);
+    uintptr_t io_addr = reinterpret_cast<uintptr_t>(args_addr.get()) + sizeof(aicpu::AicpuParamHead);
+    auto addrs_size = sizeof(uint64_t) * io_addrs.size();
+    errno_t sec_ret = memcpy_s(reinterpret_cast<void *>(io_addr), addrs_size, io_addrs.data(), addrs_size);
+    if (sec_ret != EOK) {
+      GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
+      return FAILED;
+    }
+    // copy args to device
+    rtError_t rt_ret = rtMemcpy(args_, args_size_, args_addr.get(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
 
-  davinci_model_->SetTotalIOAddrs(io_addrs);
   GELOGI("KernelTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }
@@ -533,33 +530,18 @@ Status KernelTaskInfo::UpdateL2Data(const domi::KernelDef &kernel_def) {
 }
 
 Status KernelTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
-  domi::KernelDef kernel_def = task_def.kernel();
-  uint32_t args_size = kernel_def.args_size();
-  args_offset_ = davinci_model->GetTotalArgsSize();
-  davinci_model->SetTotalArgsSize(args_size);
-  GELOGI("kernel task name , args_size %u, args_offset %u", args_size, args_offset_);
-
-  // get opcontext stored in model
+  const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
-  // get opdesc
-  op_desc_ = davinci_model->GetOpByIndex(context.op_index());
-  GE_CHECK_NOTNULL(op_desc_);
-  // alloc fixed addr
-  string peer_input_name;
-  if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name) && !peer_input_name.empty()) {
-    uint32_t output_index = davinci_model->GetFixedAddrOutputIndex(peer_input_name);
-    if (output_index > op_desc_->GetOutputsSize()) {
-      GELOGE(FAILED, "The output size[%zu] and output index[%u] are inconsistent.", op_desc_->GetOutputsSize(),
-             output_index);
-      return FAILED;
-    }
-    fixed_addr_offset_ = davinci_model->GetFixedAddrsSize(peer_input_name);
-    auto tensor_desc = op_desc_->GetOutputDesc(output_index);
-    int64_t tensor_size = 0;
-    GE_CHK_STATUS(TensorUtils::GetSize(tensor_desc, tensor_size));
-    davinci_model->SetTotalFixedAddrsSize(peer_input_name, tensor_size);
-    GELOGI("Calculate stream switch task args , tensor size is %ld, fixed addr offset %ld", tensor_size,
-           fixed_addr_offset_);
+  kernel_type_ = static_cast<ccKernelType>(context.kernel_type());
+  if (kernel_type_ == ccKernelType::TE) {
+    uint32_t args_size = kernel_def.args_size();
+    args_offset_ = davinci_model->GetTotalArgsSize();
+    davinci_model->SetTotalArgsSize(args_size);
+    GELOGI("kernel task name , args_size %u, args_offset %u", args_size, args_offset_);
+  } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
+    hybrid_args_offset_ = davinci_model->GetHybridArgsSize();
+    davinci_model->SetHybridArgsSize(kernel_def.args_size());
+    GELOGI("aicpu kernel task name , args_size %u, args_offset %u", kernel_def.args_size(), hybrid_args_offset_);
   }
   return SUCCESS;
 }
@@ -888,7 +870,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   }
 
   // copy args to new host memory
-  std::unique_ptr<uint8_t[]> args_addr(new (std::nothrow) uint8_t[args_size_]);
+  args_addr = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[args_size_]);
   GE_PRINT_DYNAMIC_MEMORY(new, "cce task physical memory.", sizeof(uint8_t) * args_size_)
   errno_t sec_ret = memcpy_s(args_addr.get(), args_size_, kernel_def.args().data(), args_size_);
   if (sec_ret != EOK) {
@@ -896,8 +878,23 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return FAILED;
   }
 
-  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
+  auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(args_addr.get());
+  const auto &ext_info = kernel_def.kernel_ext_info();
+  auto init_ret = InitAicpuTaskExtInfo(ext_info);
+  if (init_ret != SUCCESS) {
+    GELOGE(init_ret, "Init aicpu task ext info failed, ext_info size=%zu", ext_info.size());
+    return init_ret;
+  }
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, aicpu_ext_info_addr_=%p", op_desc_->GetName().c_str(),
+         op_desc_->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
 
+  aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
+  aicpu_param_head->extInfoLength = static_cast<uintptr_t>(ext_info.size());
+
+  if (davinci_model_->IsKnownNode()) {
+    return SUCCESS;
+  }
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
   vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
   vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
   vector<void *> io_addrs;
@@ -913,19 +910,6 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
       return FAILED;
     }
   }
-
-  auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(args_addr.get());
-  const auto &ext_info = kernel_def.kernel_ext_info();
-  auto init_ret = InitAicpuTaskExtInfo(ext_info);
-  if (init_ret != SUCCESS) {
-    GELOGE(init_ret, "Init aicpu task ext info failed, ext_info size=%zu", ext_info.size());
-    return init_ret;
-  }
-  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, aicpu_ext_info_addr_=%p", op_desc_->GetName().c_str(),
-         op_desc_->GetType().c_str(), ext_info.size(), aicpu_ext_info_addr_);
-
-  aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(aicpu_ext_info_addr_);
-  aicpu_param_head->extInfoLength = static_cast<uintptr_t>(ext_info.size());
 
   // malloc device memory for args
   rtError_t rt_ret = rtMalloc(static_cast<void **>(&args_), args_size_, RT_MEMORY_HBM);

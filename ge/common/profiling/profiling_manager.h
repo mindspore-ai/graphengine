@@ -36,21 +36,21 @@ using Json = nlohmann::json;
 namespace {
   const std::string GE_PROFILING_MODULE = "Framework";
   // DataTypeConfig MASK
-  #define PROF_ACL_API_MASK                0x0001
-  #define PROF_TASK_TIME_MASK              0x0002
-  #define PROF_AICORE_METRICS_MASK         0x0004
-  #define PROF_AICPU_TRACE_MASK            0x0008
-  #define PROF_MODEL_EXECUTE_MASK          0x0010
-  #define PROF_RUNTIME_API_MASK            0x0020
-  #define PROF_RUNTIME_TRACE_MASK          0x0040
-  #define PROF_SCHEDULE_TIMELINE_MASK      0x0080
-  #define PROF_SCHEDULE_TRACE_MASK         0x0100
-  #define PROF_AIVECTORCORE_METRICS_MASK   0x0200
-  #define PROF_SUBTASK_TIME_MASK           0x0400
-  #define PROF_TRAINING_TRACE_MASK         0x0800
-  #define PROF_HCCL_TRACE_MASK             0x1000
-  #define PROF_DATA_PROCESS_MASK           0x2000
-  #define PROF_MODEL_LOAD_MASK             0x8000000000000000
+  const uint64_t PROF_ACL_API_MASK = 0x0001;
+  const uint64_t PROF_TASK_TIME_MASK = 0x0002;
+  const uint64_t PROF_AICORE_METRICS_MASK = 0x0004;
+  const uint64_t PROF_AICPU_TRACE_MASK = 0x0008;
+  const uint64_t PROF_MODEL_EXECUTE_MASK = 0x0010;
+  const uint64_t PROF_RUNTIME_API_MASK = 0x0020;
+  const uint64_t PROF_RUNTIME_TRACE_MASK = 0x0040;
+  const uint64_t PROF_SCHEDULE_TIMELINE_MASK = 0x0080;
+  const uint64_t PROF_SCHEDULE_TRACE_MASK = 0x0100;
+  const uint64_t PROF_AIVECTORCORE_METRICS_MASK = 0x0200;
+  const uint64_t PROF_SUBTASK_TIME_MASK = 0x0400;
+  const uint64_t PROF_TRAINING_TRACE_MASK = 0x0800;
+  const uint64_t PROF_HCCL_TRACE_MASK = 0x1000;
+  const uint64_t PROF_DATA_PROCESS_MASK = 0x2000;
+  const uint64_t PROF_MODEL_LOAD_MASK = 0x8000000000000000;
 
 }  // namespace
 namespace ge {
@@ -80,7 +80,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   bool ProfilingTrainingTraceOn() const { return is_training_trace_; }
   bool ProfilingModelLoadOn() const { return is_load_profiling_; }
   bool ProfilingModelExecuteOn() const;
-  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; } // is_execute_profiling_ only used by ge option and env
+  // is_execute_profiling_ only used by ge option and env
+  bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; }
   void ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
                            const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
   void ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,

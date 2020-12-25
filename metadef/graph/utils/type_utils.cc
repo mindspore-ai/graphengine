@@ -118,8 +118,7 @@ const std::map<std::string, Format> kDataFormatMap = {
   {"NCDHW", FORMAT_NCDHW},
   {"ND",   FORMAT_ND}};
 
-const std::map<std::string, Format> kStringToFormatMap =
-  {
+const std::map<std::string, Format> kStringToFormatMap = {
     {"NCHW", FORMAT_NCHW},
     {"NHWC", FORMAT_NHWC},
     {"ND", FORMAT_ND},
@@ -164,7 +163,7 @@ const std::map<std::string, Format> kStringToFormatMap =
     {"NULL", FORMAT_NULL},
     // add for json input
     {"RESERVED", FORMAT_RESERVED},
-    {"UNDEFINED", FORMAT_RESERVED},
+    {"UNDEFINED", FORMAT_RESERVED}
   };
 
 const std::map<DataType, std::string> kDataTypeToStringMap = {

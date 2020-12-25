@@ -29,7 +29,6 @@
 #include "framework/omg/omg_inner_types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
-#include "graph/passes/data_pass.h"
 #include "graph/passes/multi_batch_clone_pass.h"
 #include "graph/passes/prune_pass.h"
 #include "graph/preprocess/multi_batch_options.h"
@@ -1698,7 +1697,6 @@ Status ProcessMultiBatch(ComputeGraphPtr &graph) {
     if (multi_batch_with_switchn == nullptr) {
       PassManager pass_manager;
       GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
-      GE_CHK_STATUS_RET(pass_manager.AddPass("DataPass", new (std::nothrow) DataPass)); // set subgraph parent index
       return pass_manager.Run(graph);
     }
   }

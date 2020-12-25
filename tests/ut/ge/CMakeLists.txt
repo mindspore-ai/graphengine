@@ -483,7 +483,6 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/compile_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/common/transop_util.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
-    "${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/folding_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/variable_op_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transpose_transdata_pass.cc"

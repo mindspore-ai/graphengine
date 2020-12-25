@@ -44,10 +44,11 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
   uint8_t *src_;
   uint64_t count_;
   uint32_t kind_;
-  vector<void *> io_addrs_;
+  OpDescPtr op_desc_;
   int64_t fixed_addr_offset_;
   DavinciModel *davinci_model_ = nullptr;
   uint32_t args_offset_ = 0;
+  domi::MemcpyAsyncDef memcpy_async_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MEMCPY_ASYNC_TASK_INFO_H_

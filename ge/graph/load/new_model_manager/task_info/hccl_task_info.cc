@@ -59,40 +59,40 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   GELOGI("HcclTaskInfo Init, op_index is: %u", op_index);
 
   // Get HCCL op
-  const auto op_desc = davinci_model_->GetOpByIndex(op_index);
-  GE_CHECK_NOTNULL(op_desc);
+  op_desc_ = davinci_model->GetOpByIndex(op_index);
+  GE_CHECK_NOTNULL(op_desc_);
 
   // Create the kernel hccl infos
-  CreateKernelHcclInfo(op_desc);
+  CreateKernelHcclInfo(op_desc_);
 
   // Initialize the hccl_type of all kernel hccl info
   HcomOmeUtil::GetHcclType(task_def, kernel_hccl_infos_);
 
   // Only in Horovod scenario should get the inputName and GeShape
-  ret = HcomOmeUtil::GetHorovodInputs(op_desc, kernel_hccl_infos_);
+  ret = HcomOmeUtil::GetHorovodInputs(op_desc_, kernel_hccl_infos_);
   if (ret != SUCCESS) {
     GELOGE(ret, "davinci_model: GetHorovodInputs fail! domi error: %u", ret);
     return ret;
   }
-  Status dmrt = HcomOmeUtil::GetHcclDataType(op_desc, kernel_hccl_infos_);
+  Status dmrt = HcomOmeUtil::GetHcclDataType(op_desc_, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
     GELOGE(dmrt, "davinci_model: GetHcomDataType fail! domi error: %u", dmrt);
     return dmrt;
   }
-  dmrt = HcomOmeUtil::GetHcclCount(op_desc, kernel_hccl_infos_);
+  dmrt = HcomOmeUtil::GetHcclCount(op_desc_, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
     GELOGE(dmrt, "davinci_model: GetHcomCount fail! domi error: %u", dmrt);
     return dmrt;
   }
   // Only HCOMBROADCAST and HVDCALLBACKBROADCAST need to get the rootId
-  dmrt = HcomOmeUtil::GetAllRootId(op_desc, kernel_hccl_infos_);
+  dmrt = HcomOmeUtil::GetAllRootId(op_desc_, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
     GELOGE(dmrt, "davinci_model: Get rootId fail! domi error: %u", dmrt);
     return dmrt;
   }
 
   // GE's new process: hccl declares the number of streams required, creates a stream by GE, and sends it to hccl
-  ret = SetFollowStream(op_desc, davinci_model);
+  ret = SetFollowStream(op_desc_, davinci_model);
   if (ret != SUCCESS) {
     GELOGE(ret, "SetStream Fail.");
     return ret;
@@ -100,28 +100,21 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
 
   if (davinci_model_->IsKnownNode()) {
     args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
-    GELOGI("Known node %s args addr %p, offset %u.", op_desc->GetName().c_str(), args_, args_offset_);
+    GELOGI("Known node %s args addr %p, offset %u.", op_desc_->GetName().c_str(), args_, args_offset_);
   }
 
-  ret = SetAddrs(op_desc, kernel_hccl_infos_);
+  ret = SetAddrs(op_desc_, kernel_hccl_infos_);
   if (ret != SUCCESS) {
     GELOGE(ret, "Setaddrs Fail.");
     return ret;
   }
   // GE's new process: hccl declares the need for Workspace size, and GE allocates Workspace
-  ret = SetWorkspace(op_desc, kernel_hccl_infos_);
+  ret = SetWorkspace(op_desc_, kernel_hccl_infos_);
   if (ret != SUCCESS) {
     GELOGE(ret, "SetWorkspace Fail.");
     return ret;
   }
 
-  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
-  const auto input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
-  const auto output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
-  const auto workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc);
-  io_addrs_.insert(io_addrs_.end(), input_data_addrs.begin(), input_data_addrs.end());
-  io_addrs_.insert(io_addrs_.end(), output_data_addrs.begin(), output_data_addrs.end());
-  io_addrs_.insert(io_addrs_.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
   GELOGI("HcclTaskInfo Init Success");
   return SUCCESS;
 }
@@ -238,7 +231,18 @@ Status HcclTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *
 
 Status HcclTaskInfo::UpdateArgs() {
   GELOGI("HcclTaskInfo::UpdateArgs in.");
-  davinci_model_->SetTotalIOAddrs(io_addrs_);
+  const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
+  input_data_addrs_ = ModelUtils::GetInputDataAddrs(rts_param, op_desc_);
+  output_data_addrs_ = ModelUtils::GetOutputDataAddrs(rts_param, op_desc_);
+  workspace_data_addrs_ = ModelUtils::GetWorkspaceDataAddrs(rts_param, op_desc_);
+
+  vector<void *> io_addrs;
+  io_addrs.insert(io_addrs.end(), input_data_addrs_.begin(), input_data_addrs_.end());
+  io_addrs.insert(io_addrs.end(), output_data_addrs_.begin(), output_data_addrs_.end());
+  io_addrs.insert(io_addrs.end(), workspace_data_addrs_.begin(), workspace_data_addrs_.end());
+
+  davinci_model_->SetTotalIOAddrs(io_addrs);
+
   GELOGI("HcclTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }
@@ -257,11 +261,9 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
   HcclReduceOp op_type = HCCL_REDUCE_SUM;
   GE_CHECK_NOTNULL(davinci_model_);
   GELOGI("Calc opType[%s] input address before. Node name[%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
-  vector<void *> input_data_addrs;
-  vector<void *> output_data_addrs;
   if (!davinci_model_->IsKnownNode()) {
-    input_data_addrs = ModelUtils::GetInputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
-    output_data_addrs = ModelUtils::GetOutputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
+    input_data_addrs_ = ModelUtils::GetInputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
+    output_data_addrs_ = ModelUtils::GetOutputDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
   }
   void *input_data_addr = nullptr;
   void *output_data_addr = nullptr;
@@ -273,8 +275,8 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
       output_data_addr = reinterpret_cast<void *>(reinterpret_cast<uint64_t *>(args_) + op_desc->GetInputsSize() + i);
       GELOGI("Hccl task info known input addr %p, output addr %p.", input_data_addr, output_data_addr);
     } else {
-      input_data_addr = input_data_addrs.empty() ? nullptr : input_data_addrs[i];
-      output_data_addr = output_data_addrs.empty() ? nullptr : output_data_addrs[i];
+      input_data_addr = input_data_addrs_.empty() ? nullptr : input_data_addrs_[i];
+      output_data_addr = output_data_addrs_.empty() ? nullptr : output_data_addrs_[i];
     }
     kernel_hccl_infos[i].inputDataAddr = input_data_addr;
     if (hccl_type == HCOMALLGATHER || hccl_type == HCOMRECEIVE || hccl_type == HVDCALLBACKALLGATHER) {
@@ -364,8 +366,8 @@ Status HcclTaskInfo::SetWorkspace(const std::shared_ptr<OpDesc> &op_desc,
         workspace_addr = reinterpret_cast<void *>(reinterpret_cast<uint64_t *>(args_) + op_desc->GetInputsSize() +
                                                   op_desc->GetOutputsSize());
       } else {
-        const auto workspace_data_addrs = ModelUtils::GetWorkspaceDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
-        workspace_addr = workspace_data_addrs.empty() ? nullptr : workspace_data_addrs[0];
+        workspace_data_addrs_ = ModelUtils::GetWorkspaceDataAddrs(davinci_model_->GetRuntimeParam(), op_desc);
+        workspace_addr = workspace_data_addrs_.empty() ? nullptr : workspace_data_addrs_[0];
       }
     }
   }

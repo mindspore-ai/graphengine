@@ -73,7 +73,6 @@ target_compile_definitions(ge_common PRIVATE
     FMK_SUPPORT_DUMP
     OS_CENTOS
     google=ascend_private
-    LOG_CPP
 )
 
 target_compile_options(ge_common PRIVATE

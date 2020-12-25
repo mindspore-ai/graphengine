@@ -69,7 +69,7 @@ class ModelHelper {
   Status GenerateGeModel(OmFileLoadHelper &om_load_helper);
   Status GenerateGeRootModel(OmFileLoadHelper &om_load_helper);
   Status LoadModelData(OmFileLoadHelper &om_load_helper);
-  void SetModelToGeModel(ge::Model &model);
+  void SetModelToGeModel(GeModelPtr &ge_model, Model &model);
   Status LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);
   Status LoadWeights(OmFileLoadHelper &om_load_helper);
   Status LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index);

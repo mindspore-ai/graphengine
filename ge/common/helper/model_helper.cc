@@ -122,7 +122,7 @@ Status ModelHelper::SaveModelTbeKernel(std::shared_ptr<OmFileSaveHelper> &om_fil
   if (tbe_kernel_store.DataSize() > 0) {
     GE_CHK_STATUS_RET(
         SaveModelPartition(om_file_save_helper, ModelPartitionType::TBE_KERNELS,
-                           ge_model->GetTBEKernelStore().Data(), ge_model->GetTBEKernelStore().DataSize(), 
+                           ge_model->GetTBEKernelStore().Data(), ge_model->GetTBEKernelStore().DataSize(),
                            model_index), "Add tbe kernel partition failed");
   }
   // no need to check value, DATA->NetOutput
@@ -306,7 +306,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
       model_names.emplace_back(item.first);
     }
   }
-  
+
   vector<ge::Buffer> model_buffers(model_names.size());
   vector<ge::Buffer> task_buffers(model_names.size());
 
@@ -611,17 +611,16 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper) {
     return INTERNAL_ERROR;
   }
 
-  SetModelToGeModel(model);
-
+  SetModelToGeModel(model_, model);
   return SUCCESS;
 }
 
-void ModelHelper::SetModelToGeModel(ge::Model &model) {
-  model_->SetGraph(model.GetGraph());
-  model_->SetName(model.GetName());
-  model_->SetVersion(model.GetVersion());
-  model_->SetPlatformVersion(model.GetPlatformVersion());
-  model_->SetAttr(model.MutableAttrMap());
+void ModelHelper::SetModelToGeModel(GeModelPtr &ge_model, Model &model) {
+  ge_model->SetGraph(model.GetGraph());
+  ge_model->SetName(model.GetName());
+  ge_model->SetVersion(model.GetVersion());
+  ge_model->SetPlatformVersion(model.GetPlatformVersion());
+  ge_model->SetAttr(model.MutableAttrMap());
 }
 
 Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index) {
@@ -636,12 +635,7 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &
     return INTERNAL_ERROR;
   }
 
-  cur_model->SetGraph(model.GetGraph());
-  cur_model->SetName(model.GetName());
-  cur_model->SetVersion(model.GetVersion());
-  cur_model->SetPlatformVersion(model.GetPlatformVersion());
-  cur_model->SetAttr(model.MutableAttrMap());
-
+  SetModelToGeModel(cur_model, model);
   return SUCCESS;
 }
 

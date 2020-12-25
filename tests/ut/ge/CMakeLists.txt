@@ -475,8 +475,6 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/reshape_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_add_control_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_remove_control_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_breadth_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_without_reshape_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_depth_fusion_pass.cc"

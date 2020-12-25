@@ -115,7 +115,7 @@ class MultiBatchClonePass : public GraphPass {
   ///
   /// @ingroup ge
   /// @brief Update output_node in Subgraph.
-  /// @param [in] const NodePtr &data: output_node in Subgraph.
+  /// @param [in] const NodePtr &output_node: output_node in Subgraph.
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status UpdateSubgraphOutput(const NodePtr &output_node);

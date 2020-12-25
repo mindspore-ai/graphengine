@@ -590,7 +590,6 @@ Status MultiBatchClonePass::CreateSubgraphs(const ComputeGraphPtr &graph, const 
     subgraph->SetName("Batch_" + std::to_string(i));
     subgraph->SetParentNode(case_node_);
     subgraph->SetParentGraph(graph);
-    (void)AttrUtils::SetBool(subgraph, "_no_reset_name", true);
     graph->AddSubgraph(subgraph->GetName(), subgraph);
     all_branch_output_[subgraph] = subgraph->FindFirstNodeMatchType(NETOUTPUT);
     GE_CHK_STATUS_RET(UpdateSubgraphOutput(all_branch_output_[subgraph]),
@@ -620,7 +619,7 @@ Status MultiBatchClonePass::CreateSubgraphs(const ComputeGraphPtr &graph, const 
 ///
 /// @ingroup ge
 /// @brief Update output_node in Subgraph.
-/// @param [in] const NodePtr &data: output_node in Subgraph.
+/// @param [in] const NodePtr &output_node: output_node in Subgraph.
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status MultiBatchClonePass::UpdateSubgraphOutput(const NodePtr &output_node) {

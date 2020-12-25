@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef GE_GRAPH_PASSES_REMOVE_SAME_CONST_PASS_H_
+#define GE_GRAPH_PASSES_REMOVE_SAME_CONST_PASS_H_
 
-#ifndef GE_GRAPH_PASSES_ENTER_PASS_H_
-#define GE_GRAPH_PASSES_ENTER_PASS_H_
-
-#include "graph/passes/base_pass.h"
+#include "graph/types.h"
+#include "inc/graph_pass.h"
 
 namespace ge {
-class EnterPass : public BaseNodePass {
+class RemoveSameConstPass : public GraphPass {
  public:
-  Status Run(NodePtr &node) override;
-
- private:
-  Status OptimizeEnterWithOnlyDataOut(NodePtr &node, NodePtr &in_node);
-  Status UnlinkCtrlEdgeBeforeConst(NodePtr &node);
+  Status Run(ge::ComputeGraphPtr graph) override ;
 };
 }  // namespace ge
-#endif  // GE_GRAPH_PASSES_ENTER_PASS_H_
+#endif //GE_GRAPH_PASSES_REMOVE_SAME_CONST_PASS_H_

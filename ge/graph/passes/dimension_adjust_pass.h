@@ -34,6 +34,10 @@ namespace ge {
 class DimensionAdjustPass : public BaseNodePass {
  public:
   Status Run(ge::NodePtr &node) override;
+
+ private:
+  Status DealWithInNodes(ge::NodePtr &node);
+  NodePtr AddIdentityNodeToGraph(const std::string &name, const GeTensorDesc &tensor, ComputeGraphPtr &graph);
 };
 }  // namespace ge
 

@@ -113,16 +113,13 @@ Status DynamicSingleOpResetShapePass::ResetOpShape(OpDescPtr &op_desc) {
   GE_CHECK_NOTNULL(op_desc);
   std::vector<int64_t> dynamic_shape_dims = {kDynamicShapeDim};
   GeShape dynamic_shape(dynamic_shape_dims);
-  bool reset_shape_flag = false;
-  if (ResetInputTensorShape(op_desc, dynamic_shape, reset_shape_flag) == SUCCESS && reset_shape_flag) {
-    (void)ResetOutputTensorShape(op_desc, dynamic_shape);
-  }
+  (void)ResetInputTensorShape(op_desc, dynamic_shape);
+  (void)ResetOutputTensorShape(op_desc, dynamic_shape);
   return SUCCESS;
 }
 
-Status DynamicSingleOpResetShapePass::ResetInputTensorShape(OpDescPtr &op_desc, const GeShape &dynamic_shape,
-                                                            bool &reset_shape_flag) {
-  reset_shape_flag = false;
+Status DynamicSingleOpResetShapePass::ResetInputTensorShape(OpDescPtr &op_desc,
+                                                            const GeShape &dynamic_shape) {
   GE_CHECK_NOTNULL(op_desc);
   for (size_t i = 0; i < op_desc->GetAllInputsDesc().size(); i++) {
     auto input_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
@@ -136,7 +133,6 @@ Status DynamicSingleOpResetShapePass::ResetInputTensorShape(OpDescPtr &op_desc, 
     if (CheckIfConstInput(input_desc)) {
       continue;
     }
-    reset_shape_flag = true;
     input_desc->SetShape(dynamic_shape);
   }
   return SUCCESS;

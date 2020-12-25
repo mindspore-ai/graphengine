@@ -75,6 +75,12 @@ class NodeTask {
   virtual Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) = 0;
 };
 
+class NoOpTask : public NodeTask {
+ public:
+  Status UpdateArgs(TaskContext &context) override;
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+};
+
 // Node executor
 class NodeExecutor {
  public:

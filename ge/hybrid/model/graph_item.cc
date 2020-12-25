@@ -71,5 +71,8 @@ int GraphItem::GetParentOutputIndex(size_t index) const {
 const NodeItem *GraphItem::GetOutputNode() const {
   return output_node_;
 }
+const vector<std::pair<const NodeItem *, int>> &GraphItem::GetOutputEdges() const {
+  return output_edges_;
+}
 }  // namespace hybrid
 }  // namespace ge

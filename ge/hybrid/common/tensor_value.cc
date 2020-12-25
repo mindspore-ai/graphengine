@@ -56,7 +56,7 @@ std::unique_ptr<TensorBuffer> TensorBuffer::Create(void *buffer, size_t size) {
 }
 
 TensorBuffer::~TensorBuffer() {
-  if (allocator_ != nullptr && buffer_ != nullptr) {
+  if (allocator_ != nullptr) {
     allocator_->Deallocate(buffer_, mem_type_);
     buffer_ = nullptr;
   }

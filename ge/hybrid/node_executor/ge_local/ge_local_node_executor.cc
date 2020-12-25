@@ -224,9 +224,9 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
              node->GetName().c_str(), node_type.c_str());
       return MEMALLOC_FAILED;
     }
-  } else if (node_type == CONSTANTOP || node_type == VARIABLE) {
+  } else if (node_type == CONSTANT || node_type == CONSTANTOP || node_type == VARIABLE) {
     GELOGI("node %s type %s, use ConstantNodeTask.", node->GetName().c_str(), node_type.c_str());
-    auto tensor = model.GetVariable(node->GetName());
+    auto tensor = model.GetTensor(node);
     if (tensor == nullptr) {
       GELOGE(INTERNAL_ERROR, "Failed to get tensor by name: %s", node->GetName().c_str());
       return INTERNAL_ERROR;

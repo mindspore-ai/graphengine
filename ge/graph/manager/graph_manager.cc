@@ -518,7 +518,7 @@ Status GraphManager::CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_gr
   return SUCCESS;
 }
 
-Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph, 
+Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph,
                                                       Graph2SubGraphInfoList &sub_graph_map, uint64_t session_id) {
   GE_CHECK_NOTNULL(compute_graph);
   // use default 16 multi thread
@@ -2421,6 +2421,13 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
       continue;
     }
     auto model_id = model->GetModelId();
+    // unload model not release
+    bool is_unknown_shape = false;
+    GE_CHK_STATUS_RET(model->CheckIsUnknownShape(is_unknown_shape));
+    if (is_unknown_shape) {
+      GELOGD("model_id[%u] graph_id[%u] is unknown model, not release memory", model_id, graph_id);
+      continue;
+    }
     // not loaded,no need unload
     if (!it.second->GetLoadFlag()) {
       GELOGI("CheckAndReleaseMemory graph[%u] has not been loaded.", graph_id);

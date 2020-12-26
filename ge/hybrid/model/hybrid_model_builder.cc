@@ -944,9 +944,9 @@ Status HybridModelBuilder::InitWeights() {
            constant_node->GetName().c_str(),
            tensor_size);
 
-    std::shared_ptr<TensorBuffer> tensor_buffer(TensorBuffer::Create(allocator, tensor_size).release());
+    auto tensor_buffer = TensorBuffer::Create(allocator, tensor_size);
     GE_CHECK_NOTNULL(tensor_buffer);
-    std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(tensor_buffer));
+    std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(std::move(tensor_buffer)));
     GE_CHECK_NOTNULL(constant_tensor);
     constant_tensor->SetName("Constant_" + op_desc->GetName());
     if (tensor_size > 0) {

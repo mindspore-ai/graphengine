@@ -341,7 +341,7 @@ TensorValue *HybridModel::GetConstant(const NodePtr &node) const {
   return it->second.get();
 }
 
-TensorValue * HybridModel::GetTensor(const NodePtr &node) const {
+TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
   if (node == nullptr) {
     GELOGE(PARAM_INVALID, "Param is null");
     return nullptr;

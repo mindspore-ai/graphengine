@@ -67,8 +67,6 @@ class ZeroCopyTask {
    * @brief Set user data addr to Task param.
    * @param [in] addr: virtual address value from Op.
    * @param [in] buffer_addr: data buffer_addr from user.
-   * @param [in] batch_addrs: dynamic batch addr info.
-   * @param [in] batch_label: batch label.
    * @return: 0 SUCCESS / others FAILED
    */
   ge::Status UpdateTaskParam(uintptr_t addr, void *buffer_addr);

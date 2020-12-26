@@ -43,8 +43,7 @@
 #undef protected
 
 using namespace std;
-using namespace ge;
-
+namespace ge {
 class UtestGeExecutor : public testing::Test {
  protected:
   static void InitModelDefault(ge::Model &model) {
@@ -67,6 +66,19 @@ class UtestGeExecutor : public testing::Test {
   }
 };
 
+class DModelListener : public ge::ModelListener {
+ public:
+  DModelListener() {
+  };
+  Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode,
+                       std::vector<ge::OutputTensorInfo> &outputs) {
+    GELOGI("In Call back. OnComputeDone");
+    return SUCCESS;
+  }
+};
+
+shared_ptr<ge::ModelListener> g_label_call_back(new DModelListener());
+
 /*
 TEST_F(UtestGeExecutor, fail_UnloadModel_model_manager_stop_unload_error) {
   uint32_t model_id = 1;
@@ -87,3 +99,9 @@ TEST_F(UtestGeExecutor, fail_CommandHandle_model_manager_HandleCommand_error) {
   EXPECT_EQ(ge::PARAM_INVALID, ret);
 }
 */
+TEST_F(UtestGeExecutor, InitFeatureMapAndP2PMem_failed) {
+  DavinciModel model(0, g_label_call_back);
+  model.is_feature_map_mem_has_inited_ = true;
+  EXPECT_EQ(model.InitFeatureMapAndP2PMem(nullptr, 0), PARAM_INVALID);
+}
+}

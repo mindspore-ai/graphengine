@@ -76,6 +76,25 @@ struct timeInfo {
   int64_t dumpEndTime;
 };
 
+// For super kernel
+struct SuperKernelTaskInfo {
+  uint32_t last_block_dim;
+  uint32_t last_args_size;
+  uint32_t last_task_id;
+  uint32_t last_stream_id;
+  void *last_stream;
+  void *last_sm_desc;
+  std::vector<void *> kernel_list;
+  std::vector<void *> arg_list;
+  std::vector<uint32_t> dump_flag_list;
+  std::vector<OpDescPtr> op_desc_list;
+  std::vector<uintptr_t> dump_args_list;
+  uint32_t last_dump_flag;
+  int64_t last_group_key;
+  uintptr_t last_dump_args;
+  OpDescPtr last_op;
+};
+
 struct TaskMemInfo {
   int64_t input_size{0};
   int64_t output_size{0};
@@ -260,6 +279,9 @@ class DavinciModel {
 
   // get updated task info list
   std::vector<TaskInfoPtr> GetTaskList() { return task_list_; }
+
+  // Modified from KernelTaskInfo.
+  SuperKernelTaskInfo &GetSuperKernelTaskInfo() { return skt_info_; }
 
   ///
   /// @ingroup ge
@@ -996,6 +1018,9 @@ class DavinciModel {
 
   std::multimap<uint32_t, uint32_t> op_id_map_;
   std::vector<ProfileInfo> profile_list_;
+
+  // For super kernel.
+  SuperKernelTaskInfo skt_info_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

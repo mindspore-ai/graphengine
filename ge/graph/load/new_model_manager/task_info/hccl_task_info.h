@@ -35,7 +35,6 @@ class HcclTaskInfo : public TaskInfo {
         ops_kernel_store_(nullptr),
         private_def_(nullptr),
         private_def_len_(0),
-        op_desc_(nullptr),
         args_(nullptr),
         args_offset_(0) {}
 
@@ -52,7 +51,7 @@ class HcclTaskInfo : public TaskInfo {
   Status UpdateArgs() override;
 
  private:
-  ge::Status SetAddrs(const std::string &hccl_type, const std::shared_ptr<OpDesc> &op);
+  void SetIoAddrs(const OpDescPtr &op_desc);
 
   Status SetAddrs(const std::shared_ptr<OpDesc> &op_desc, std::vector<GETaskKernelHcclInfo> &kernel_hccl_infos);
 
@@ -76,10 +75,7 @@ class HcclTaskInfo : public TaskInfo {
   uint32_t private_def_len_;
   static std::mutex hccl_follow_stream_mutex_;
   vector<GETaskKernelHcclInfo> kernel_hccl_infos_;
-  vector<void *> input_data_addrs_;
-  vector<void *> output_data_addrs_;
-  vector<void *> workspace_data_addrs_;
-  OpDescPtr op_desc_;
+  vector<void *> io_addrs_;
   void *args_;
   uint32_t args_offset_;
 };

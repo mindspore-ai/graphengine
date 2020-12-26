@@ -30,11 +30,7 @@
 namespace ge {
 Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("KernelExTaskInfo Init Start.");
-  if (davinci_model == nullptr) {
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
-    return PARAM_INVALID;
-  }
-
+  GE_CHECK_NOTNULL(davinci_model);
   davinci_model_ = davinci_model;
   Status ret = SetStream(task_def.stream_id(), davinci_model_->GetStreamList());
   if (ret != SUCCESS) {
@@ -51,7 +47,6 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     GELOGE(INTERNAL_ERROR, "Init aicpu task info error, index is out of range!");
     return INTERNAL_ERROR;
   }
-  op_desc_ = op_desc;
 
   // 2. Reconstruct kernelExDef.args to STR_FWK_OP_KERNEL
   STR_FWK_OP_KERNEL fwk_op_kernel = {0};
@@ -79,8 +74,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
   }
 
-  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, ext_info_addr_=%p", op_desc_->GetName().c_str(),
-         op_desc_->GetType().c_str(), ext_info.size(), ext_info_addr_);
+  GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, ext_info_addr_=%p", op_desc->GetName().c_str(),
+         op_desc->GetType().c_str(), ext_info.size(), ext_info_addr_);
 
   // 2.1 get loop cond variable for tensor array write
   uint64_t step_id_addr = 0;
@@ -132,6 +127,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
+    SetIoAddrs(op_desc);
     GELOGI("KernelExTaskInfo knonw node Init Success.");
     return SUCCESS;
   }
@@ -195,7 +191,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
   davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, io_addrs.data(), input_output_addr_, addrs_size, 0);
-
+  SetIoAddrs(op_desc);
   GELOGI("KernelExTaskInfo Init Success. session id: %lu", session_id);
   return SUCCESS;
 }
@@ -236,36 +232,38 @@ Status KernelExTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciMod
   return SUCCESS;
 }
 
-Status KernelExTaskInfo::UpdateArgs() {
-  GELOGI("KernelExTaskInfo::UpdateArgs in.");
+void KernelExTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
-  vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc_);
-  vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc_);
-  vector<void *> io_addrs;
-  if (!op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
-    io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
-    io_addrs.insert(io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
+  vector<void *> input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
+  vector<void *> output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);
+  if (!op_desc->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
+    io_addrs_.insert(io_addrs_.end(), input_data_addrs.begin(), input_data_addrs.end());
+    io_addrs_.insert(io_addrs_.end(), output_data_addrs.begin(), output_data_addrs.end());
   } else {
     string peer_input_name;
-    if (AttrUtils::GetStr(op_desc_, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name)) {
+    if (AttrUtils::GetStr(op_desc, ATTR_DYNAMIC_SHAPE_FIXED_ADDR, peer_input_name)) {
       uint32_t output_index = davinci_model_->GetFixedAddrOutputIndex(peer_input_name);
       if (output_index > output_data_addrs.size()) {
         GELOGE(FAILED, "The output data addr size[%zu] and output index[%u] are inconsistent.",
                output_data_addrs.size(), output_index);
-        return FAILED;
+        return;
       }
-      io_addrs.insert(io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
+      io_addrs_.insert(io_addrs_.end(), input_data_addrs.begin(), input_data_addrs.end());
       for (size_t i = 0; i < output_data_addrs.size(); ++i) {
         if (i == output_index) {
           void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
-          io_addrs.emplace_back(fixed_addr);
+          io_addrs_.emplace_back(fixed_addr);
           continue;
         }
-        io_addrs.emplace_back(output_data_addrs[i]);
+        io_addrs_.emplace_back(output_data_addrs[i]);
       }
     }
   }
-  davinci_model_->SetTotalIOAddrs(io_addrs);
+}
+
+Status KernelExTaskInfo::UpdateArgs() {
+  GELOGI("KernelExTaskInfo::UpdateArgs in.");
+  davinci_model_->SetTotalIOAddrs(io_addrs_);
   GELOGI("KernelExTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }

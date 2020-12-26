@@ -599,7 +599,7 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
   Status ret = GraphLoader::DestroyAicpuSessionForInfer(model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed. model id: %u", model_id);
-    return ACL_ERROR_GE_INTERNAL_ERROR;
+    return ret;
   }
 
   std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model =
@@ -617,7 +617,7 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
   ret = GraphLoader::UnloadModel(model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed. model id: %u", model_id);
-    return ACL_ERROR_GE_UNLOAD_MODEL;
+    return ret;
   }
   return SUCCESS;
 }

@@ -262,6 +262,15 @@ static Status CheckShapeReset(const OpDescPtr &op_desc, bool &change_shape_flag)
       change_shape_flag = true;
     }
   }
+  for (size_t i = 0; i < op_desc->GetAllOutputsDesc().size(); i++) {
+    auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(output_desc);
+    // pass scalar output desc
+    auto dims = output_desc->GetShape().GetDims();
+    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
+      change_shape_flag = true;
+    }
+  }
   return SUCCESS;
 }
 

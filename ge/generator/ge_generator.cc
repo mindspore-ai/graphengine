@@ -265,7 +265,7 @@ static Status CheckShapeReset(const OpDescPtr &op_desc, bool &change_shape_flag)
   return SUCCESS;
 }
 
-static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
+static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
   for (auto input : inputs) {
     auto input_desc = input.GetTensorDesc();
     GeShape shape_ori = input_desc.GetShape();
@@ -280,6 +280,12 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
     bool is_const = false;
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
     if (!is_const && shape_ori.GetDims().size() > 0) {
+      int64_t storage_format = FORMAT_NCHW;
+      if (ge::AttrUtils::GetInt(desc, ge::ATTR_NAME_STORAGE_FORMAT, storage_format) &&
+          !ge::AttrUtils::SetListInt(desc, ge::ATTR_NAME_STORAGE_SHAPE, dynamic_shape_dims)) {
+        GELOGE(FAILED, "Set attr ATTR_NAME_STORAGE_SHAPE fail.");
+        return FAILED;
+      }
       desc.SetShape(dynamic_shape);
       desc.SetShapeRange(dynamic_shape_range);
     }
@@ -287,6 +293,7 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
     inputTensor.SetTensorDesc(desc);
     inputs_dynamic.push_back(inputTensor);
   }
+  return SUCCESS;
 }
 
 class GeGenerator::Impl {
@@ -688,8 +695,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   if (CheckShapeReset(op_desc, dynamic_flag) == SUCCESS && dynamic_flag) {
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;
-    ResetTensorVecShape(inputs, inputs_dynamic);
-    ResetTensorVecShape(outputs, outputs_dynamic);
+    GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(inputs, inputs_dynamic));
+    GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(outputs, outputs_dynamic));
     GE_CHK_STATUS_RET_NOLOG(
       impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
   } else {

@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.l
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -20,9 +20,12 @@
 #include "graph/debug/ge_attr_define.h"
 
 namespace {
-const uint32_t kValidInputNodeOutputNum = 1;
-const int32_t kAssignRefInputIndex = 0;
-const int32_t kAssignValueInputIndex = 1;
+constexpr uint32_t kValidInputNodeOutputNum = 1;
+constexpr int32_t kAssignRefInputIndex = 0;
+constexpr int32_t kAssignValueInputIndex = 1;
+static const std::set<std::string> kNoTaskNodeTypes = { ge::DATA, ge::ANN_DATA, ge::AIPPDATA,
+                                                        ge::CONSTANT, ge::CONSTANTOP,
+                                                        ge::VARIABLE, ge::VARIABLEV2 };
 }
 
 namespace ge {
@@ -80,7 +83,6 @@ Status AssignPass::OptimizedAssignNode(NodePtr &assign_node) {
       GELOGE(FAILED, "Isolate and delete assign_node %s failed.", assign_node->GetName().c_str());
       return FAILED;
     }
-    AddNodeDeleted(assign_node);
 
     const auto &ref_input = ref_peer_anchor->GetOwnerNode()->GetOpDesc();
     const auto &value_input = value_peer_anchor->GetOwnerNode()->GetOpDesc();
@@ -221,9 +223,8 @@ bool AssignPass::IsCondMatch(const NodePtr &node, const OutDataAnchorPtr &ref_pe
          node->GetName().c_str(), ref_peer_anchor->GetOwnerNode()->GetName().c_str(),
          value_peer_anchor->GetOwnerNode()->GetName().c_str());
 
-  const std::string &value_type = value_peer_anchor->GetOwnerNode()->GetType();
-  if ((value_type == CONSTANTOP) || (value_type == CONSTANT)) {
-    GELOGD("value input is const");
+  if (kNoTaskNodeTypes.count(value_peer_anchor->GetOwnerNode()->GetType()) > 0) {
+    GELOGD("value input is not calculate node");
     return false;
   }
 

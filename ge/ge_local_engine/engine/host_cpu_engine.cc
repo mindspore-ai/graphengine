@@ -47,8 +47,6 @@ namespace {
     auto tensor_name = op_desc->GetOutputNameByIndex(i);                                                               \
     GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",               \
                                op_desc->GetName().c_str(), i);                                                         \
-    GELOGD("Successfully inserted output tensor. node = %s, index = %zu, output name = %s, addr = %p, size = %zu",     \
-           op_desc->GetName().c_str(), i, tensor_name.c_str(), tensor.GetData(), tensor.GetSize());                    \
     named_outputs.emplace(tensor_name, tensor);                                                                        \
     break;                                                                                                             \
   }

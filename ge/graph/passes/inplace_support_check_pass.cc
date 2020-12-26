@@ -20,20 +20,16 @@
 #include "graph/debug/ge_attr_define.h"
 
 namespace {
-const uint32_t kInplaceSupportOutputIndex = 0;
-const uint32_t kInplaceSupportOutputNum = 1;
-static const std::set<std::string> src_node_types = { ge::DATA, ge::ANN_DATA, ge::AIPPDATA,
-                                                      ge::CONSTANT, ge::CONSTANTOP,
-                                                      ge::VARIABLE, ge::VARIABLEV2 };
+constexpr uint32_t kInplaceSupportOutputIndex = 0;
+constexpr uint32_t kInplaceSupportOutputNum = 1;
+static const std::set<std::string> kSrcNodeTypes = { ge::DATA, ge::ANN_DATA, ge::AIPPDATA,
+                                                     ge::CONSTANT, ge::CONSTANTOP,
+                                                     ge::VARIABLE, ge::VARIABLEV2 };
 }
 
 namespace ge {
 Status InplaceSupportCheckPass::Run(NodePtr &node) {
   GELOGD("InplaceSupportCheckPass running");
-  if (src_node_types.count(node->GetType()) > 0) {
-    GELOGD("meet src_node %s, skip InplaceSupportCheckPass", node->GetName().c_str());
-    return SUCCESS;
-  }
   if (node->GetAllOutDataAnchorsSize() != kInplaceSupportOutputNum) {
     GELOGD("output num of node %s is not %u, skip InplaceSupportCheckPass",
            node->GetName().c_str(), kInplaceSupportOutputNum);
@@ -49,7 +45,7 @@ Status InplaceSupportCheckPass::Run(NodePtr &node) {
       continue;
     }
     auto in_node = peer_data_anchor->GetOwnerNode();
-    if (src_node_types.count(in_node->GetType()) > 0) {
+    if (kSrcNodeTypes.count(in_node->GetType()) > 0) {
       GELOGD("meet src_node %s", in_node->GetName().c_str());
       continue;
     }
@@ -62,11 +58,11 @@ Status InplaceSupportCheckPass::Run(NodePtr &node) {
     const DataType &input_type = node->GetOpDesc()->GetInputDesc(inplace_input_idx).GetDataType();
     const GeShape &input_shape = node->GetOpDesc()->GetInputDesc(inplace_input_idx).GetShape();
     if (input_type !=  output_type) {
-      GELOGD("DataType mismatch, in_idx=%d, input_type=%u, output_type=%u", inplace_input_idx, input_type, output_type);
+      GELOGW("DataType mismatch, in_idx=%d, input_type=%u, output_type=%u", inplace_input_idx, input_type, output_type);
       continue;
     }
     if (input_shape.GetDims() != output_shape.GetDims()) {
-      GELOGD("Shape mismatch, in_idx=%d, input_shape=[%s], output_shape=[%s]",
+      GELOGW("Shape mismatch, in_idx=%d, input_shape=[%s], output_shape=[%s]",
              inplace_input_idx, input_shape.ToString().c_str(), output_shape.ToString().c_str());
       continue;
     }

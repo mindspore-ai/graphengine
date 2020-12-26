@@ -24,7 +24,7 @@ const void *HostMemAllocator::Malloc(const std::shared_ptr<AlignedPtr> &aligned_
     GELOGW("Insert a null aligned_ptr");
     return nullptr;
   }
-  GELOGD("allocate existed host memory succ, addr=%p, size=%zu", aligned_ptr->Get(), size);
+  GELOGD("allocate existed host memory succ, size=%zu", size);
   allocated_blocks_[aligned_ptr->Get()] = { size, aligned_ptr };
   return aligned_ptr->Get();
 }
@@ -38,12 +38,11 @@ uint8_t *HostMemAllocator::Malloc(size_t size) {
     return nullptr;
   }
   allocated_blocks_[aligned_ptr->Get()] = { size, aligned_ptr };
-  GELOGD("allocate host memory succ, addr=%p, size=%zu", aligned_ptr->Get(), size);
+  GELOGD("allocate host memory succ, size=%zu", size);
   return aligned_ptr->MutableGet();
 }
 
 Status HostMemAllocator::Free(const void *memory_addr) {
-  GELOGD("Free host memory, addr=%p", memory_addr);
   if (memory_addr == nullptr) {
     GELOGE(GE_GRAPH_FREE_FAILED, "Invalid memory pointer");
     return GE_GRAPH_FREE_FAILED;

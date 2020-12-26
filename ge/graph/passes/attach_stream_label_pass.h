@@ -58,11 +58,9 @@ class AttachStreamLabelPass : public GraphPass {
   /// @brief Update stream_label for loop_branch
   /// @param [in] enter_nodes
   /// @param [in] stream_label
-  /// @param [in] batch_label
   /// @return Status
   ///
-  static Status UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const std::string &stream_label,
-                                 const std::string &batch_label);
+  static Status UpdateLoopBranch(const std::stack<NodePtr> &enter_nodes, const std::string &stream_label);
 
   ///
   /// @brief Update stream_label start with enter nodes

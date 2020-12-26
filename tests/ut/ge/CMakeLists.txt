@@ -802,7 +802,6 @@ add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_SRCS}
 
 target_compile_definitions(ge_build_common PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_build_common PRIVATE

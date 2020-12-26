@@ -25,6 +25,21 @@ class AssignPass : public BaseNodePass {
   Status Run(NodePtr &node) override;
 
  private:
+#ifndef ONLY_COMPILE_OPEN_SRC
+  ///
+  /// @brief Optimize for assign_node
+  /// @param [in] assign_node
+  /// @return Status
+  ///
+  Status OptimizedAssignNode(NodePtr &assign_node);
+
+  ///
+  /// @brief Transform assign_var_name attr
+  /// @param [in] node
+  /// @return Status
+  ///
+  Status TransformAttr(NodePtr &node);
+#endif
   ///
   /// @brief Check if need optimize for assign_node
   /// @param [in] assign_node

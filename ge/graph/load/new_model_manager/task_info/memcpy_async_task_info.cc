@@ -45,7 +45,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(src_) + sizeof(void *));
     // for zero copy
     kind_ = RT_MEMCPY_ADDR_DEVICE_TO_DEVICE;
-    GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addr failed");
+    GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addrs failed");
     GELOGI("MemcpyAsyncTaskInfo op name %s, src_ %p, dst_ %p, args_offset %u.",
            op_desc->GetName().c_str(), src_, dst_, args_offset_);
     return SUCCESS;
@@ -75,8 +75,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
 
   davinci_model_->DisableZeroCopy(src_);
   davinci_model_->DisableZeroCopy(dst_);
-  GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addr failed");
-
+  GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addrs failed");
   GELOGI("MemcpyAsyncTaskInfo Init Success, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu",
          memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_);
   return SUCCESS;
@@ -118,7 +117,7 @@ Status MemcpyAsyncTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davinci
 
 Status MemcpyAsyncTaskInfo::SetIoAddrs(const OpDescPtr &op_desc, const domi::MemcpyAsyncDef &memcpy_async) {
   uint8_t *src = nullptr;
-  Status ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async_.src(), src);
+  Status ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async.src(), src);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -129,11 +128,11 @@ Status MemcpyAsyncTaskInfo::SetIoAddrs(const OpDescPtr &op_desc, const domi::Mem
     io_addrs_.emplace_back(fixed_addr);
   } else {
     uint8_t *dst = nullptr;
-    ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async_.dst(), dst);
+    ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async.dst(), dst);
     if (ret != SUCCESS) {
       return ret;
     }
-    io_addrs_.emplace_back(reinterpret_cast<void *>(dst_));
+    io_addrs_.emplace_back(reinterpret_cast<void *>(dst));
   }
 
   return SUCCESS;

@@ -503,7 +503,7 @@ class DavinciModel {
     void *cur_args = static_cast<char *>(args_) + offset;
     return cur_args;
   }
-  void SetTotalIOAddrs(vector<void *> &io_addrs) {
+  void SetTotalIOAddrs(const vector<void *> &io_addrs) {
     total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
   }
   void SetHybridArgsSize(uint32_t args_size) { total_hybrid_args_size_ += args_size; }

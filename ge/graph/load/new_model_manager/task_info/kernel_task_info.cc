@@ -218,7 +218,7 @@ uint32_t KernelTaskInfo::GetDumpFlag() {
 }
 
 Status KernelTaskInfo::SuperKernelLaunch() {
-  SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
+  const SuperKernelTaskInfo &skt_info = davinci_model_->GetSuperKernelTaskInfo();
   if (skt_info.kernel_list.empty()) {
     GELOGI("SuperKernelLaunch: Skt_kernel_list has no task, just return");
     return SUCCESS;
@@ -448,7 +448,6 @@ void KernelTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
 
 Status KernelTaskInfo::UpdateArgs() {
   GELOGI("KernelTaskInfo::UpdateArgs in.");
-
   if (kernel_type_ == ccKernelType::TE) {
     davinci_model_->SetTotalIOAddrs(io_addrs_);
   } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {

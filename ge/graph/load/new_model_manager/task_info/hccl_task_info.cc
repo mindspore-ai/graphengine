@@ -230,7 +230,7 @@ Status HcclTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *
   return SUCCESS;
 }
 
-void HcclTaskInfo::SetIoAddrs() {
+void HcclTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
   const auto input_data_addrs = ModelUtils::GetInputDataAddrs(rts_param, op_desc);
   const auto output_data_addrs = ModelUtils::GetOutputDataAddrs(rts_param, op_desc);

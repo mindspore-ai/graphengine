@@ -52,10 +52,10 @@ if (ENABLE_OPEN_SRC)
     include(cmake/FindModule.cmake)
     include(cmake/intf_pub_linux.cmake)
 
-    # for CPU/GPU mode, find c_sec and slog from local prebuild
+    # for CPU/GPU mode, find c_sec and alog from local prebuild
     #if(NOT ENABLE_D AND NOT GE_ONLY)
     #    set(GE_PREBUILD_PATH ${GE_CODE_DIR}/third_party/prebuild/${CMAKE_HOST_SYSTEM_PROCESSOR})
-    #    find_module(slog libslog.so ${GE_PREBUILD_PATH})
+    #    find_module(slog libalog.so ${GE_PREBUILD_PATH})
     # if D_LINK_PATH is set in environment variables, search libraries in given path
     if(DEFINED ENV{D_LINK_PATH})
         # D_LINK_PATH is set
@@ -72,7 +72,7 @@ if (ENABLE_OPEN_SRC)
         endif()
         set(GE_LIB_PATH ${GE_LIB_PATH}/${GE_SYS_ARCH})
         set(STATIC_ACL_LIB ${GE_LIB_PATH})
-        find_module(slog libslog.so ${GE_LIB_PATH})
+        find_module(slog libalog.so ${GE_LIB_PATH})
         find_module(static_mmpa libmmpa.a ${GE_LIB_PATH})
         find_module(msprofiler libmsprofiler.a ${GE_LIB_PATH})
         find_module(hccl libhccl.so ${GE_LIB_PATH})
@@ -88,7 +88,7 @@ if (ENABLE_OPEN_SRC)
     elseif(ENABLE_GE_COV OR ENABLE_GE_UT)
 	add_subdirectory(tests)
     else()
-        find_module(slog libslog.so ${ASCEND_ATC_DIR})
+        find_module(slog libalog.so ${ASCEND_ATC_DIR})
         find_module(static_mmpa libmmpa.a ${ASCEND_ATC_DIR})
 	find_module(error_manager liberror_manager.so ${ASCEND_ATC_DIR})
         if(PLATFORM STREQUAL "train")
@@ -154,7 +154,7 @@ elseif (ENABLE_D OR ENABLE_ACL)
     include(cmake/intf_pub_linux.cmake)
 
     # common libraries
-    find_module(slog libslog.so ${ASCEND_MS_DRIVER_PATH})
+    find_module(slog libalog.so ${ASCEND_MS_DRIVER_PATH})
     find_module(error_manager liberror_manager.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
     find_module(static_mmpa libmmpa.a ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
 
@@ -174,7 +174,7 @@ elseif(ENABLE_MS_TESTCASES)
     include(cmake/intf_pub_linux.cmake)
 
     # common libraries
-    find_module(slog libslog.so ${ASCEND_MS_DRIVER_PATH})
+    find_module(slog libalog.so ${ASCEND_MS_DRIVER_PATH})
     find_module(error_manager liberror_manager.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
     find_module(static_mmpa libmmpa.a ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
 

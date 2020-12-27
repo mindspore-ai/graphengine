@@ -53,7 +53,7 @@ TEST_F(UtestKernelTaskInfo, success_kernel_taskInfo_not_te) {
 
   EXPECT_EQ(task_info->Init(*task, &model), FAILED);
 
-  kernel_def->set_block_dim(10)
+  kernel_def->set_block_dim(10);
   kernel_def->set_args("args111111", 10);
   kernel_def->set_args_size(10);
 
@@ -86,7 +86,6 @@ TEST_F(UtestKernelTaskInfo, init_tvm_task_fail) {
   DavinciModel model(0, nullptr);
   domi::TaskDef task_def;
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
-  domi::KernelContext *ctx = kernel_def->mutable_context();
 
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
@@ -104,7 +103,6 @@ TEST_F(UtestKernelTaskInfo, init_tvm_task_info_with_te_kernel_type) {
   KernelTaskInfo kernel_task_info;
   EXPECT_EQ(kernel_task_info.Init(task_def, nullptr), PARAM_INVALID);
 
-  task->stream_id_ = 0;
   rtStream_t stream = nullptr;
   rtStreamCreate(&stream, 0);
   model.stream_list_ = { stream };
@@ -124,11 +122,11 @@ TEST_F(UtestKernelTaskInfo, init_tvm_task_info_with_te_kernel_type) {
   ctx->set_kernel_type(2);
   ctx->set_op_index(4);
   ctx->set_args_offset("\0\0"); // args_offset = 0
-  EXPECT_EQ(kernel_task_info.Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), PARAM_INVALID);
 
   ctx->clear_args_offset();
   ctx->set_args_offset("args111111", 10);
-  EXPECT_EQ(kernel_task_info.Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), PARAM_INVALID);
 
   ctx->clear_op_index();
   ctx->set_op_index(0);
@@ -167,18 +165,18 @@ TEST_F(UtestKernelTaskInfo, init_kernel_task_info_with_customized_kernel_type) {
   ctx->set_kernel_type(3);
   ctx->set_op_index(4);
   ctx->set_args_offset("\0\0"); // args_offset = 0
-  EXPECT_EQ(kernel_task_info.Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), PARAM_INVALID);
 
   ctx->clear_args_offset();
   ctx->set_args_offset("args111111", 10);
-  EXPECT_EQ(kernel_task_info.Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), PARAM_INVALID);
 
   ctx->clear_args_offset();
   ctx->set_op_index(0);
 
   const char task[] = "opattr";
   AttrUtils::SetBytes(model.op_list_[0], ATTR_NAME_OPATTR, Buffer::CopyFrom((uint8_t *)task, sizeof(task)));
-  EXPECT_EQ(kernel_task_info.Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), PARAM_INVALID);
 
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
@@ -205,8 +203,8 @@ TEST_F(UtestKernelTaskInfo, init_aicpu_custom_task_failed) {
   EXPECT_EQ(kernel_task_info.InitAICPUCustomTask(0, *kernel_def), PARAM_INVALID);
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
-  ctx->clear_args_offset();
-  ctx->set_args_offset("args111111", 10);
+  context->clear_args_offset();
+  context->set_args_offset("args111111", 10);
   // KernelTaskInfo::StoreInputOutputTensor   -> SUCCESS
   EXPECT_EQ(kernel_task_info.InitAICPUCustomTask(0, *kernel_def), FAILED);
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
@@ -233,7 +231,7 @@ TEST_F(UtestKernelTaskInfo, init_aicpu_custom_task_failed2) {
   context->set_args_offset("\0\0");
   // KernelTaskInfo::StoreInputOutputTensor   -> SUCCESS
   // AttrUtils::GetBytes  -> true
-  EXPECT_EQ(kernel_task_info.InitAICPUCustomTask(0, *kernel_def), FAILED);
+  EXPECT_EQ(kernel_task_info.InitAICPUCustomTask(0, *kernel_def), PARAM_INVALID);
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
   kernel_def->clear_context();
@@ -257,7 +255,7 @@ TEST_F(UtestKernelTaskInfo, init_aicpu_custom_task_failed3) {
 
   context->set_args_offset("\0\0");
   // KernelTaskInfo::StoreInputOutputTensor   -> SUCCESS
-  EXPECT_EQ(kernel_task_info.InitAICPUCustomTask(0, *kernel_def), FAILED);
+  EXPECT_EQ(kernel_task_info.InitAICPUCustomTask(0, *kernel_def), PARAM_INVALID);
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
   kernel_def->clear_context();
@@ -359,7 +357,7 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type) {
 
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
 
   task_def.set_type(RT_MODEL_TASK_KERNEL);
   string args;
@@ -377,10 +375,10 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type) {
   // ModelUtils::GetOutputDataAddrs -> ok
   // rtMalloc -> RT_ERROR_NONE
   // rtMemcpy -> RT_ERROR_NONE
-  EXPECT_EQ(kernel_task_info->Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), SUCCESS);
 
-  EXPECT_EQ(kernel_task_info->Distribute(), SUCCESS);
-  EXPECT_EQ(kernel_task_info->Release(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Distribute(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
   kernel_def->clear_context();
   task_def.clear_kernel();
@@ -395,7 +393,7 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type_fail) {
 
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
 
   task_def.set_type(RT_MODEL_TASK_KERNEL);
   string args;
@@ -413,10 +411,10 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type_fail) {
   // ModelUtils::GetOutputDataAddrs -> ok
   // rtMalloc -> RT_ERROR_NONE
   // rtMemcpy -> RT_ERROR_INVALID_VALUE
-  EXPECT_EQ(kernel_task_info->Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), SUCCESS);
 
-  EXPECT_EQ(kernel_task_info->Distribute(), SUCCESS);
-  EXPECT_EQ(kernel_task_info->Release(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Distribute(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
   kernel_def->clear_context();
   task_def.clear_kernel();
@@ -431,7 +429,7 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type_fail2) {
 
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
 
   task_def.set_type(RT_MODEL_TASK_KERNEL);
   string args;
@@ -449,10 +447,10 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type_fail2) {
   // ModelUtils::GetOutputDataAddrs -> ok
   // rtMalloc -> RT_ERROR_INVALID_VALUE
   // rtMemcpy -> RT_ERROR_NONE
-  EXPECT_EQ(kernel_task_info->Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), SUCCESS);
 
-  EXPECT_EQ(kernel_task_info->Distribute(), SUCCESS);
-  EXPECT_EQ(kernel_task_info->Release(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Distribute(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
   kernel_def->clear_context();
   task_def.clear_kernel();
@@ -467,7 +465,7 @@ TEST_F(UtestKernelTaskInfo, store_input_output_tensor_fail) {
 
   KernelTaskInfo kernel_task_info;
   // rtMalloc -> RT_ERROR_INVALID_VALUE
-  EXPECT_EQ(kernel_task_info->StoreInputOutputTensor(input_data_addrs, output_data_addrs, input_descs, output_descs), SUCCESS);
+  EXPECT_EQ(kernel_task_info.StoreInputOutputTensor(input_data_addrs, output_data_addrs, input_descs, output_descs), SUCCESS);
 }
 
 
@@ -479,7 +477,7 @@ TEST_F(UtestKernelTaskInfo, store_input_output_tensor_fail2) {
 
   KernelTaskInfo kernel_task_info;
   // rtMalloc -> RT_ERROR_INVALID_VALUE
-  EXPECT_EQ(kernel_task_info->StoreInputOutputTensor(input_data_addrs, output_data_addrs, input_descs, output_descs), SUCCESS);
+  EXPECT_EQ(kernel_task_info.StoreInputOutputTensor(input_data_addrs, output_data_addrs, input_descs, output_descs), SUCCESS);
 }
 
 // test InitCceTask success
@@ -492,7 +490,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_init_cce_task) {
 
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   kernel_task_info.davinci_model_ = &model;
 
   kernel_def->set_flowtable("InitCceTask");
@@ -515,7 +513,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_init_cce_task) {
   // rtMalloc -> RT_ERROR_NONE
   // rtMemcpy -> RT_ERROR_NONE
   // rtMemAllocManaged  -> RT_ERROR_NONE
-  EXPECT_EQ(kernel_task_info->InitCceTask(kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
   kernel_def->clear_context();
   task_def.clear_kernel();
@@ -528,8 +526,8 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed1) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
   task_def.clear_kernel();
 }
@@ -545,15 +543,15 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed2) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
 
   domi::KernelContext *context = kernel_def->mutable_context();
   context->set_is_flowtable(true);
 
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
-  kernel_def->clear_kernel();
+  kernel_def->clear_context();
   task_def.clear_kernel();
 }
 
@@ -568,7 +566,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed3) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
 
   kernel_def->set_flowtable("InitCceTask");
@@ -576,9 +574,9 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed3) {
   context->set_is_flowtable(true);
 
   // KernelTaskInfo::UpdateCceArgs  -> CCE_FAILED
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
-  kernel_def->clear_kernel();
+  kernel_def->clear_context();
   task_def.clear_kernel();
 }
 
@@ -593,7 +591,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed4) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
 
   kernel_def->set_flowtable("InitCceTask");
@@ -602,9 +600,9 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed4) {
 
   // KernelTaskInfo::UpdateCceArgs  -> SUCCESS
   // KernelTaskInfo::SetFlowtable  -> RT_FAILED
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
-  kernel_def->clear_kernel();
+  kernel_def->clear_context();
   task_def.clear_kernel();
 }
 
@@ -619,7 +617,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed5) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
 
   kernel_def->set_flowtable("InitCceTask");
@@ -629,9 +627,9 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed5) {
   // KernelTaskInfo::UpdateCceArgs  -> SUCCESS
   // KernelTaskInfo::SetFlowtable  -> SUCCESS
   // rtMalloc  -> RT_ERROR_INVALID_VALUE
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
-  kernel_def->clear_kernel();
+  kernel_def->clear_context();
   task_def.clear_kernel();
 }
 
@@ -646,7 +644,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed6) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
 
   kernel_def->set_flowtable("InitCceTask");
@@ -657,9 +655,9 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed6) {
   // KernelTaskInfo::SetFlowtable  -> SUCCESS
   // rtMalloc  -> RT_ERROR_NONE
   // rtMemcpy  -> RT_ERROR_INVALID_VALUE
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
-  kernel_def->clear_kernel();
+  kernel_def->clear_context();
   task_def.clear_kernel();
 }
 
@@ -674,7 +672,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed7) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
 
-  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
 
   kernel_def->set_flowtable("InitCceTask");
@@ -690,9 +688,9 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed7) {
   // rtMalloc  -> RT_ERROR_NONE
   // rtMemcpy  -> RT_ERROR_NONE
   // rtMemAllocManaged -> RT_ERROR_INVALID_VALUE
-  EXPECT_EQ(kernel_task_info->InitCceTask(*kernel_def), INTERNAL_ERROR);
+  EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
 
-  kernel_def->clear_kernel();
+  kernel_def->clear_context();
   task_def.clear_kernel();
 }
 
@@ -712,7 +710,7 @@ TEST_F(UtestKernelTaskInfo, success_kernel_taskInfo_init_set_context) {
 
   EXPECT_EQ(kernel_task_info.SetContext(*kernel_def), SUCCESS);
 
-  EXPECT_EQ(kernel_task_info->Release(), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 
   kernel_def->clear_context();
   task_def.clear_kernel();
@@ -775,7 +773,6 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_cce_args) {
   string sm_desc("args");
 
   uint8_t test = 2;
-  uint8_t *p = &test;
   model.mem_base_ = &test;
   model.runtime_param_.logic_mem_base = 0;
 
@@ -822,7 +819,6 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_cce_args_failed1) {
   string sm_desc("args");
 
   uint8_t test = 2;
-  uint8_t *p = &test;
   model.mem_base_ = &test;
   model.runtime_param_.logic_mem_base = 0;
 
@@ -1014,7 +1010,7 @@ TEST_F(UtestKernelTaskInfo, success_distribute_dump_task) {
 // test success GetTaskID
 TEST_F(UtestKernelTaskInfo, success_get_task_id) {
   domi::ModelTaskDef model_task_def;
-  domi::TaskDef *task = model_task_def->add_task();
+  domi::TaskDef *task = model_task_def.add_task();
   task->set_type(RT_MODEL_TASK_KERNEL);
   TaskInfoPtr task_info = TaskInfoFactory::Instance().Create(static_cast<rtModelTaskType_t>(task->type()));
 
@@ -1112,7 +1108,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_init_success) {
   model.ge_model_ = MakeShared<GeModel>();
   model.ge_model_->SetModelTaskDef(model_def);
 
-  auto op_desc = GreateOpDesc("data", DATA);
+  auto op_desc = CreateOpDesc("data", DATA);
   op_desc->SetInputOffset({1});
   op_desc->SetOutputOffset({100});
 
@@ -1136,7 +1132,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_init_success) {
   AttrUtils::GetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, original_op_names);
 
   KernelTaskInfo kernel_task_info;
-  EXPECT_EQ(kernel_task_info.Init(task_def, &model), SUCCESS);
+  EXPECT_EQ(kernel_task_info.Init(task_def, &model), FAILED);
 }
 
 TEST_F(UtestKernelTaskInfo, kernel_task_info_calculate_args_te) {
@@ -1180,7 +1176,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_args_aicpu) {
   kernel_task_info.davinci_model_ = &model;
   kernel_task_info.args_size_ = 120;
   kernel_task_info.args_addr = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[kernel_task_info.args_size_]);
-  kernel_task_info.io_addrs_ - { (void*)0x12345678, (void*)0x22345678 };
+  kernel_task_info.io_addrs_ = { (void*)0x12345678, (void*)0x22345678 };
   rtMalloc(&kernel_task_info.args_, kernel_task_info.args_size_, RT_MEMORY_HBM);
 
   EXPECT_EQ(kernel_task_info.UpdateArgs(), SUCCESS);

@@ -54,7 +54,7 @@ TEST_F(UtestMemcpyAddrAsyncTaskInfo, success_memcpy_addr_async_task_init) {
 
   // DavinciModel is null
   MemcpyAddrAsyncTaskInfo memcpy_addr_async_task_info;
-  EXPECT_EQ(memcpy_addr_async_task_info.Init(task_def, nullptr), INTERNAL_ERROR);
+  EXPECT_EQ(memcpy_addr_async_task_info.Init(task_def, nullptr), PARAM_INVALID);
 
   // SetStream failed.
   EXPECT_EQ(memcpy_addr_async_task_info.Init(task_def, &model), FAILED);
@@ -113,7 +113,7 @@ TEST_F(UtestMemcpyAddrAsyncTaskInfo, success_memcpy_async_task_init_failed) {
 
   // DavinciModel is null
   MemcpyAddrAsyncTaskInfo memcpy_addr_async_task_info;
-  EXPECT_EQ(memcpy_addr_async_task_info.Init(task_def, &model), SUCCESS);
+  EXPECT_EQ(memcpy_addr_async_task_info.Init(task_def, &model), PARAM_INVALID);
 
   task_def.clear_memcpy_async();
 }

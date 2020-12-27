@@ -20,16 +20,7 @@
 #define protected public
 
 #include "graph/load/new_model_manager/davinci_model.h"
-#include "graph/load/new_model_manager/task_info/kernel_task_info.h"
 #include "graph/load/new_model_manager/task_info/hccl_task_info.h"
-
-using domi::EventExDef;
-using domi::KernelContext;
-using domi::KernelDef;
-using domi::LogTimeStampDef;
-using domi::ModelTaskDef;
-using domi::StreamActiveDef;
-using domi::TaskDef;
 
 namespace ge {
 class UtestHcclTaskInfo : public testing::Test {
@@ -49,18 +40,16 @@ TEST_F(UtestHcclTaskInfo, success_get_task_id) {
 
   EXPECT_EQ(task_info->GetTaskID(), 0);
 
-  KernelTaskInfo kernel_task_info;
-  EXPECT_EQ(kernel_task_info.GetTaskID(), 0);
-
   HcclTaskInfo hccl_task_info;
   EXPECT_EQ(hccl_task_info.GetTaskID(), 0);
 }
 
 // test init EventRecordTaskInfo
 TEST_F(UtestHcclTaskInfo, success_create_stream) {
-  DavinciModel *model1 = nullptr;
-  KernelTaskInfo kernel_task_info;
-  EXPECT_EQ(kernel_task_info.CreateStream(3, &model, 0), SUCCESS);
+  DavinciModel model(0, nullptr);
+
+  HcclTaskInfo hccl_task_info;
+  EXPECT_EQ(hccl_task_info.CreateStream(3, &model, 0), SUCCESS);
 }
 
 // test hccl_Distribute
@@ -95,7 +84,7 @@ TEST_F(UtestHcclTaskInfo, success_distribute7_with_hccl_type) {
 
   domi::KernelHcclDef *kernel_hccl_def = task_def.mutable_kernel_hccl();
   kernel_hccl_def->set_op_index(0);
-  kernel_hccl_def->set_hccl_type("HcomBroadcast")
+  kernel_hccl_def->set_hccl_type("HcomBroadcast");
   model.op_list_[0] = std::make_shared<OpDesc>("FrameworkOp", "FrameworkOp");
   EXPECT_EQ(hccl_task_info.Init(task_def, &model), SUCCESS);
 
@@ -107,7 +96,7 @@ TEST_F(UtestHcclTaskInfo, success_hccl_get_private_def_by_task_def) {
   DavinciModel model(0, nullptr);
 
   domi::ModelTaskDef model_task_def;
-  TaskDef *task7 = model_task_def.add_task();
+  domi::TaskDef *task7 = model_task_def.add_task();
   task7->set_type(RT_MODEL_TASK_HCCL);
   // for SetStream
   rtStream_t stream = nullptr;

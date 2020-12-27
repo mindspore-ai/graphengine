@@ -78,6 +78,8 @@ TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init) {
   model.runtime_param_.weight_size = 0x6000;
   model.runtime_param_.var_size = 0x1000;
 
+  MemcpyAsyncTaskInfo memcpy_async_task_info;
+
   // GetOpByIndex src failed
   rtStream_t stream = nullptr;
   rtStreamCreate(&stream, 0);
@@ -100,7 +102,7 @@ TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init) {
   memcpy_async->set_dst_max(0);
   model.op_list_[6]->SetInputOffset({1024});
   model.op_list_[6]->SetOutputOffset({5120});
-  EXPECT_EQ(memcpy_async_task_info.Init(task_def, &model), PARAM_INVALID);
+  EXPECT_EQ(memcpy_async_task_info.Init(task_def, &model), FAILED);
 
 
   task_def.clear_memcpy_async();
@@ -132,7 +134,7 @@ TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init_failed) {
   EXPECT_EQ(memcpy_async_task_info.Init(task_def, nullptr), PARAM_INVALID);
 
   // SetStream failed
-  EXPECT_EQ(memcpy_async_task_info.Init(task_def, nullptr), FAILED);
+  EXPECT_EQ(memcpy_async_task_info.Init(task_def, nullptr), PARAM_INVALID);
 
   // GetOpByIndex failed
   rtStream_t stream = nullptr;
@@ -151,7 +153,7 @@ TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init_failed) {
   std::vector<int64_t> memory_type = { RT_MEMORY_TS_4G };
   AttrUtils::SetListInt(model.op_list_[6], ATTR_NAME_OUTPUT_MEM_TYPE_LIST, memory_type);
   memcpy_async->set_dst_max(0);
-  EXPECT_EQ(memcpy_async_task_info.Init(task_def, nullptr), FAILED);
+  EXPECT_EQ(memcpy_async_task_info.Init(task_def, nullptr), PARAM_INVALID);
   memcpy_async->set_dst_max(512);
 
 
@@ -168,9 +170,9 @@ TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init_failed) {
   task_def.clear_memcpy_async();
 }
 
-TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init) {
+TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_distribute) {
   DavinciModel model(0, nullptr);
-  model.SetKnownNode(trues);
+  model.SetKnownNode(true);
   domi::TaskDef task_def;
   task_def.set_stream_id(0);
 
@@ -188,6 +190,8 @@ TEST_F(UtestMemcpyAsyncTaskInfo, success_memcpy_async_task_init) {
   model.runtime_param_.mem_size = 0x5000;
   model.runtime_param_.weight_size = 0x6000;
   model.runtime_param_.var_size = 0x1000;
+
+  MemcpyAsyncTaskInfo memcpy_async_task_info;
 
   // GetOpByIndex src failed
   rtStream_t stream = nullptr;

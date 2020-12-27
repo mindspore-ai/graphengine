@@ -25,6 +25,8 @@
 #include "cce/aicpu_engine_struct.h"
 
 namespace ge {
+extern OpDescPtr CreateOpDesc(string name, string type);
+
 class UtestKernelExTaskInfo : public testing::Test {
  protected:
   void SetUp() {}
@@ -39,7 +41,7 @@ TEST_F(UtestKernelExTaskInfo, success_kernel_ex_task_init) {
   EXPECT_EQ(kernel_ex_task_info.Init(task_def, nullptr), PARAM_INVALID);
 
   DavinciModel model(0, nullptr);
-  EXPECT_EQ(kernel_ex_task_info1.Init(task_def, &model), FAILED);
+  EXPECT_EQ(kernel_ex_task_info.Init(task_def, &model), FAILED);
 
   rtStream_t stream = nullptr;
   rtStreamCreate(&stream, 0);
@@ -136,7 +138,7 @@ TEST_F(UtestKernelExTaskInfo, kernel_ex_task_info_calculate_args) {
   AttrUtils::SetStr(model.op_list_[0], ATTR_DYNAMIC_SHAPE_FIXED_ADDR, "Hello Mr Tree");
 
   KernelExTaskInfo kernel_ex_task_info;
-  EXPECT_EQ(kernel_task_info.CalculateArgs(task_def, &model), SUCCESS);
+  EXPECT_EQ(kernel_ex_task_info.CalculateArgs(task_def, &model), FAILED);
 }
 
 }  // namespace ge

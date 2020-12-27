@@ -388,6 +388,7 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/kernel_ex_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/kernel_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/label_set_task_info.cc"
+    "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/stream_active_task_info.cc"

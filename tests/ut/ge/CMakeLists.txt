@@ -329,7 +329,7 @@ set(COMMON_FORMAT_SRC_FILES
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nchw.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
-    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"   
+    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
 )
 
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
@@ -565,6 +565,11 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/new_model_manager_event_manager_unittest.cc"
     #"graph/load/output_net_output_unittest.cc"
     "graph/load/tbe_handle_store_unittest.cc"
+    "graph/load/hccl_task_info_unittest.cc"
+    "graph/load/kernel_ex_task_info_unittest.cc"
+    "graph/load/kernel_task_info_unittest.cc"
+    "graph/load/memcpy_addr_async_task_info_unittest.cc"
+    "graph/load/memcpy_async_task_info_unittest.cc"
     #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
 )
@@ -914,7 +919,7 @@ target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
     google=ascend_private
 )
 
-target_link_libraries(ut_libge_distinct_load_utest 
+target_link_libraries(ut_libge_distinct_load_utest
 	${COMMON_SHARED_LIBRARIES}
 	$<BUILD_INTERFACE:intf_pub>
         ge_execute_common ge_ut_common_format ge_load_common

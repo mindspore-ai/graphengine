@@ -291,6 +291,9 @@ const std::string OP_DEBUG_LEVEL = "ge.opDebugLevel";
 // Configure model bank path
 const std::string MDL_BANK_PATH_FLAG = "ge.mdl_bank_path";
 
+// Configure display_model_info flag
+const std::string DISPLAY_MODEL_INFO = "ge.display_model_info";
+
 // Configure op bank path
 const std::string OP_BANK_PATH_FLAG = "ge.op_bank_path";
 const std::string OP_BANK_UPDATE_FLAG = "ge.op_bank_update";

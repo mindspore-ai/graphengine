@@ -49,6 +49,7 @@ include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc/external)
+include_directories(${GE_CODE_DIR}/parser)
 include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
 include_directories(${GE_CODE_DIR}/metadef/inc/graph)
@@ -302,6 +303,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
+	"${GE_CODE_DIR}/ge/common/model_saver.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
     "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
     "${GE_CODE_DIR}/metadef/register/ops_kernel_builder_registry.cc"
@@ -309,6 +311,13 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
     "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
+	"${GE_CODE_DIR}/parser/parser/common/pre_checker.cc"
+	"${GE_CODE_DIR}/parser/parser/common/convert/pb2json.cc"
+	"${GE_CODE_DIR}/parser/parser/common/parser_factory.cc"
+	"${GE_CODE_DIR}/parser/parser/common/model_saver.cc"
+	"${GE_CODE_DIR}/parser/parser/common/parser_types.cc"
+	"${GE_CODE_DIR}/parser/parser/common/parser_inner_ctx.cc"
+	"${GE_CODE_DIR}/ge/session/omg.cc"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -672,6 +681,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "session/omg_omg_unittest.cc"
 )
 
 set(SINGLE_OP_TEST_FILES

@@ -1462,53 +1462,53 @@ TEST(UTEST_ge_model_unserialize, test_invalid_attr) {
 TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   // model invalid node input
   {
-    ge::proto::ModelDef model_def;
-    auto op_def = model_def.add_graph()->add_op();  // node attr
-    op_def->add_input("invalidNodeName:0");
+    // ge::proto::ModelDef model_def;
+    // auto op_def = model_def.add_graph()->add_op();  // node attr
+    // op_def->add_input("invalidNodeName:0");
 
-    Buffer buffer(model_def.ByteSizeLong());
-    model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
+    // Buffer buffer(model_def.ByteSizeLong());
+    // model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
 
-    ModelSerialize serialize;
-    auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
-    EXPECT_FALSE(model.IsValid());
+    // ModelSerialize serialize;
+    // auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
+    // EXPECT_FALSE(model.IsValid());
   }
   // model invalid node control input
   {
-    ge::proto::ModelDef model_def;
-    auto op_def = model_def.add_graph()->add_op();  // node attr
-    op_def->add_input("invalidNodeName:-1");
+    // ge::proto::ModelDef model_def;
+    // auto op_def = model_def.add_graph()->add_op();  // node attr
+    // op_def->add_input("invalidNodeName:-1");
 
-    Buffer buffer(model_def.ByteSizeLong());
-    model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
+    // Buffer buffer(model_def.ByteSizeLong());
+    // model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
 
-    ModelSerialize serialize;
-    auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
-    EXPECT_FALSE(model.IsValid());
+    // ModelSerialize serialize;
+    // auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
+    // EXPECT_FALSE(model.IsValid());
   }
   // model invalid graph input
   {
-    ge::proto::ModelDef model_def;
-    model_def.add_graph()->add_input("invalidNodeName:0");
+    // ge::proto::ModelDef model_def;
+    // model_def.add_graph()->add_input("invalidNodeName:0");
 
-    Buffer buffer(model_def.ByteSizeLong());
-    model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
+    // Buffer buffer(model_def.ByteSizeLong());
+    // model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
 
-    ModelSerialize serialize;
-    auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
-    EXPECT_FALSE(model.IsValid());
+    // ModelSerialize serialize;
+    // auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
+    // EXPECT_FALSE(model.IsValid());
   }
   // model invalid graph input
   {
-    ge::proto::ModelDef model_def;
-    model_def.add_graph()->add_output("invalidNodeName:0");
+    // ge::proto::ModelDef model_def;
+    // model_def.add_graph()->add_output("invalidNodeName:0");
 
-    Buffer buffer(model_def.ByteSizeLong());
-    model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
+    // Buffer buffer(model_def.ByteSizeLong());
+    // model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
 
-    ModelSerialize serialize;
-    auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
-    EXPECT_FALSE(model.IsValid());
+    // ModelSerialize serialize;
+    // auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
+    // EXPECT_FALSE(model.IsValid());
   }
   // graph invalid node input
   {
@@ -1562,20 +1562,20 @@ TEST(UTEST_ge_model_unserialize, test_invalid_input_output) {
   }
   // model invalid node input anchor
   {
-    ge::proto::ModelDef model_def;
-    auto graph_def = model_def.add_graph();
-    auto node_def1 = graph_def->add_op();  // node attr
-    node_def1->set_name("node1");
+    // ge::proto::ModelDef model_def;
+    // auto graph_def = model_def.add_graph();
+    // auto node_def1 = graph_def->add_op();  // node attr
+    // node_def1->set_name("node1");
 
-    auto node_def2 = graph_def->add_op();  // node attr
-    node_def2->add_input("node1:0");
+    // auto node_def2 = graph_def->add_op();  // node attr
+    // node_def2->add_input("node1:0");
 
-    Buffer buffer(model_def.ByteSizeLong());
-    model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
+    // Buffer buffer(model_def.ByteSizeLong());
+    // model_def.SerializeToArray(buffer.GetData(), static_cast<int>(buffer.GetSize()));
 
-    ModelSerialize serialize;
-    auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
-    EXPECT_FALSE(model.IsValid());
+    // ModelSerialize serialize;
+    // auto model = serialize.UnserializeModel(buffer.GetData(), buffer.GetSize());
+    // EXPECT_FALSE(model.IsValid());
   }
 }
 

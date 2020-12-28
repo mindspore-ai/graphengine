@@ -22,6 +22,8 @@
 #include "graph/preprocess/multi_batch_options.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
+#include "graph/utils/tensor_utils.h"
+#include "graph/utils/type_utils.h"
 #include "register/op_registry.h"
 
 namespace ge {
@@ -614,7 +616,7 @@ Status MultiBatchClonePass::CreateSubgraphs(const ComputeGraphPtr &graph, const 
     graph->AddSubgraph(subgraph->GetName(), subgraph);
     all_branch_output_[subgraph] = subgraph->FindFirstNodeMatchType(NETOUTPUT);
     GE_CHK_STATUS_RET(UpdateSubgraphOutput(all_branch_output_[subgraph]),
-		      "Update %s failed", all_branch_output_[subgraph]->GetName().c_str());
+                      "Update %s failed", all_branch_output_[subgraph]->GetName().c_str());
 
     const string key_name = "branches" + std::to_string(i);
     op_desc->AddSubgraphName(key_name);

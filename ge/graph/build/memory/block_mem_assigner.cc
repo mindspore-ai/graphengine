@@ -562,7 +562,7 @@ void BlockMemAssigner::MarkContinuousAllocedForOneInputFromVariable(const NodePt
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, return);
     auto in_node = peer_out_anchor->GetOwnerNode();
     GE_IF_BOOL_EXEC(in_node == nullptr, return);
-    if (in_node->GetType() == VARIABLE) {
+    if (in_node->GetType() == VARIABLE || in_node->GetType() == CONSTANT) {
       GELOGI("node only one input and from variable, set continuous alloced. node_name:%s", node->GetName().c_str());
       (void)ge::AttrUtils::SetBool(node_op_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, true);
     }

@@ -598,7 +598,7 @@ Status SwitchToStreamSwitchPass::AddConstNode(const ComputeGraphPtr &graph, cons
 ///
 Status SwitchToStreamSwitchPass::ModifySwitchInCtlEdges(const NodePtr &switch_node, const NodePtr &cast_node,
                                                         const std::set<NodePtr> &same_cond_switch) {
-  GELOGD("ModifySwitchInCtlEdges: switch_node=%s, cast_node=%s", switch_node->GetName().c_str(),
+  GELOGD("ModifySwitchInCtlEdges: switch_node=%s, active_node=%s", switch_node->GetName().c_str(),
          cast_node->GetName().c_str());
   std::string orig_switch_name = switch_node->GetName();
   OpDescPtr switch_desc = switch_node->GetOpDesc();

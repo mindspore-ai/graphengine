@@ -844,7 +844,7 @@ domi::Status GenerateInfershapeJson() {
 static Status ConvertModelToJson(int fwk_type, const string &model_file, const string &json_file) {
   Status ret = ge::SUCCESS;
   if (fwk_type == -1) {
-    ret = ge::ConvertOmModelToJson(model_file.c_str(), json_file.c_str());
+    ret = ge::ConvertOm(model_file.c_str(), json_file.c_str(), true);
     return ret;
   }
 

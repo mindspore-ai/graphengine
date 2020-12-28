@@ -167,7 +167,7 @@ Status HcclMemcpyPass::P2pmemInputProcess(const ComputeGraphPtr &graph, const No
       continue;
     }
 
-    GELOGI("p2p input op is:%s.", op_desc->GetName().c_str());
+    GELOGD("p2p input op is:%s.", op_desc->GetName().c_str());
     auto hccl_in_anchor = node->GetInDataAnchor(index);
     if (hccl_in_anchor == nullptr) {
       continue;
@@ -266,6 +266,9 @@ std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
 ///
 Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                                             const InDataAnchorPtr &hccl_in_anchor) {
+  GE_CHECK_NOTNULL(src_out_anchor->GetOwnerNode());
+  GE_CHECK_NOTNULL(hccl_in_anchor->GetOwnerNode());
+
   Status ret = InsertIdentityBeforeHccl(graph, src_out_anchor, hccl_in_anchor);
   if (ret != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "add identity failed, var_node:%s, hccl_node:%s.",
@@ -333,7 +336,12 @@ Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &g
                                                         const OutDataAnchorPtr &var_out_anchor,
                                                         const InDataAnchorPtr &hccl_in_anchor) {
   if (hccl_in_anchor->GetOwnerNode()->GetType() != HCOMBROADCAST) {
-    GELOGI("%s not broadcast, no need to insert assign node", hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    GELOGD("%s not broadcast, no need to insert assign node", hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    return SUCCESS;
+  }
+
+  if (var_out_anchor->GetOwnerNode()->GetType() != VARIABLE) {
+    GELOGD("%s not variable, no need to insert assign node", var_out_anchor->GetOwnerNode()->GetName().c_str());
     return SUCCESS;
   }
 
@@ -342,7 +350,7 @@ Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &g
 
   for (auto peer_in_anchor : var_out_anchor->GetPeerInDataAnchors()) {
     if (peer_in_anchor->GetOwnerNode()->GetType() == ASSIGN) {
-      GELOGI("variable %s out assign node is exist.", var_out_anchor->GetOwnerNode()->GetName().c_str());
+      GELOGD("variable %s out assign node is exist.", var_out_anchor->GetOwnerNode()->GetName().c_str());
       return SUCCESS;
     }
   }
@@ -351,6 +359,7 @@ Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &g
   GE_CHECK_NOTNULL(assign_node);
 
   OutDataAnchorPtr hccl_out_anchor = hccl_in_anchor->GetOwnerNode()->GetOutDataAnchor(hccl_in_anchor->GetIdx());
+  GE_CHECK_NOTNULL(hccl_out_anchor);
 
   Status ret = hccl_out_anchor->LinkTo(assign_node->GetInDataAnchor(kAnchorAssignValueIndex));
   if (ret != SUCCESS) {
@@ -368,6 +377,7 @@ Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &g
 
   // add control edge between assign node and node after broadcast node
   OutControlAnchorPtr assign_out_control_anchor = assign_node->GetOutControlAnchor();
+  GE_CHECK_NOTNULL(assign_out_control_anchor);
 
   for (auto in_data_anchor : hccl_out_anchor->GetPeerInDataAnchors()) {
     if (in_data_anchor->GetOwnerNode()->GetName() == assign_node->GetName()) {

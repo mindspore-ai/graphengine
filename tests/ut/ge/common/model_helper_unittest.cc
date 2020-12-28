@@ -15,39 +15,38 @@
  */
 
 #include <gtest/gtest.h>
+#define private public
+#define protected public
+#include "framework/common/helper/model_helper.h"
+#include "ge/model/ge_model.h"
+#undef private
+#undef protected
 
-#include "common/ge/ge_util.h"
-#include "proto/ge_ir.pb.h"
-#include "inc/framework/omg/omg.h"
-
+#include "proto/task.pb.h"
 
 using namespace ge;
 using namespace std;
 
-class UtestOmg : public testing::Test {
+
+class UtestModelHelper : public testing::Test {
  protected:
   void SetUp() override {}
 
   void TearDown() override {}
 };
 
-TEST_F(UtestOmg, display_model_info_failed)
+TEST_F(UtestModelHelper, save_size_to_modeldef_failed)
 {
-  ge::proto::ModelDef model_def;
-  PrintModelInfo(&model_def);
+  GeModelPtr ge_model = ge::MakeShared<ge::GeModel>();
+  ModelHelper model_helper;
+  EXPECT_EQ(ACL_ERROR_GE_MEMORY_ALLOCATION, model_helper.SaveSizeToModelDef(ge_model));
 }
 
-TEST_F(UtestOmg, display_model_info_success)
+TEST_F(UtestModelHelper, save_size_to_modeldef)
 {
-  ge::proto::ModelDef model_def;
-  auto attrs = model_def.mutable_attr();
-  ge::proto::AttrDef *attr_def_soc = &(*attrs)["soc_version"];
-  attr_def_soc->set_s("Ascend310");
-  ge::proto::AttrDef *attr_def = &(*attrs)["om_info_list"];
-  attr_def->mutable_list()->add_i(1);
-  attr_def->mutable_list()->add_i(2);
-  attr_def->mutable_list()->add_i(3);
-  attr_def->mutable_list()->add_i(4);
-  attr_def->mutable_list()->add_i(5);
-  PrintModelInfo(&model_def);
+  GeModelPtr ge_model = ge::MakeShared<ge::GeModel>();
+  std::shared_ptr<domi::ModelTaskDef> task = ge::MakeShared<domi::ModelTaskDef>();
+  ge_model->SetModelTaskDef(task);
+  ModelHelper model_helper;
+  EXPECT_EQ(SUCCESS, model_helper.SaveSizeToModelDef(ge_model));
 }

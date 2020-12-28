@@ -678,6 +678,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/format_transfer_fracz_nhwc_unittest.cc"
     "common/format_transfer_fracz_hwcn_unittest.cc"
     "common/ge_format_util_unittest.cc"
+    "common/model_helper_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"

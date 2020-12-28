@@ -19,9 +19,7 @@
 #include <string>
 #include "graph/manager/graph_caching_allocator.h"
 #include "graph/manager/rdma_pool_allocator.h"
-#ifndef ONLY_COMPILE_OPEN_SRC
-#include "graph/manager/host_mem_allocator.h"
-#endif
+
 namespace ge {
 void MemoryAllocator::Initialize(uint32_t device_id) {
   GELOGI("MemoryAllocator::Initialize");
@@ -192,12 +190,6 @@ Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
     GELOGE(ge::INTERNAL_ERROR, "Create RdmaAllocator failed.");
     return ge::INTERNAL_ERROR;
   }
-#ifndef ONLY_COMPILE_OPEN_SRC
-  if (InitAllocator(memory_type, host_allocator_map_) != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "Create HostMemAllocator failed.");
-    return ge::INTERNAL_ERROR;
-  }
-#endif
   return SUCCESS;
 }
 
@@ -219,9 +211,6 @@ void MemManager::Finalize() noexcept {
   // caching and rdma allocator use memory allocator, so finalize them first
   FinalizeAllocatorMap(caching_allocator_map_);
   FinalizeAllocatorMap(rdma_allocator_map_);
-#ifndef ONLY_COMPILE_OPEN_SRC
-  FinalizeAllocatorMap(host_allocator_map_);
-#endif
   FinalizeAllocatorMap(memory_allocator_map_);
 }
 
@@ -250,9 +239,4 @@ CachingAllocator &MemManager::CachingInstance(rtMemType_t memory_type) {
 RdmaPoolAllocator &MemManager::RdmaPoolInstance(rtMemType_t memory_type) {
   return Instance().GetAllocator(memory_type, rdma_allocator_map_);
 }
-#ifndef ONLY_COMPILE_OPEN_SRC
-HostMemAllocator &MemManager::HostMemInstance(rtMemType_t memory_type) {
-  return Instance().GetAllocator(memory_type, host_allocator_map_);
-}
-#endif
 }  // namespace ge

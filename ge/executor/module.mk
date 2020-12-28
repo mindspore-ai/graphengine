@@ -15,7 +15,6 @@ local_ge_executor_src_files :=  \
     ../graph/manager/graph_manager_utils.cc \
     ../graph/manager/graph_var_manager.cc \
     ../graph/manager/rdma_pool_allocator.cc \
-    ../graph/manager/host_mem_allocator.cc \
     ../graph/manager/graph_mem_allocator.cc \
     ../graph/manager/graph_caching_allocator.cc \
     ../graph/manager/trans_var_data_utils.cc \

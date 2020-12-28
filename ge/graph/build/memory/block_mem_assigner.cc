@@ -1081,32 +1081,12 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   return block;
 }
 
-bool IsOutputIndexRef(const OpDescPtr &op_desc, uint32_t index) {
-  auto output_tensor = op_desc->GetOutputDescPtr(index);
-  bool dst_reuse_input = false;
-  (void)ge::TensorUtils::GetReuseInput(*output_tensor, dst_reuse_input);
-  if (dst_reuse_input) {
-    return true;
-  }
-
-  bool is_ref = false;
-  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_REFERENCE, is_ref);
-  if (is_ref) {
-    string output_name = op_desc->GetOutputNameByIndex(index);
-    for (const auto &input_name : op_desc->GetAllInputNames()) {
-      if (output_name == input_name) {
-        return true;;
-      }
-    }
-  }
-  return false;
-}
-
 void BlockMemAssigner::ContinuousOutRefCheck(bool &isAllOutputRef, bool &isOutputHasRef,
                                              const NodePtr &n) {
   const auto node_op_desc = n->GetOpDesc();
   for (uint32_t index = 0; index < static_cast<uint32_t>(node_op_desc->GetOutputsSize()); index++) {
-    if (!IsOutputIndexRef(node_op_desc, index)) {
+    int32_t reuse_in_index = -1;
+    if (!GraphUtils::IsRefFromInput(n->GetOutDataAnchor(index), reuse_in_index)) {
       isAllOutputRef = false;
       break;
     } else {
@@ -1224,7 +1204,8 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
     block->ref_count_++;
   } else {
     // if ref input is variable, can not find symbol, must judge alone
-    if (IsOutputIndexRef(node_op_desc, index)) {
+    int32_t reuse_in_index = -1;
+    if (GraphUtils::IsRefFromInput(n->GetOutDataAnchor(index), reuse_in_index)) {
       zero_memory_list_.emplace_back(n, kOutput, index, false);
       GELOGI("ref mode skip out block assign. node_name: %s, index:%d", n->GetName().c_str(), index);
       return nullptr;

@@ -249,6 +249,7 @@ class GeGenerator::Impl {
   bool GetVersionFromPath(const std::string &file_path, std::string &version);
   bool SetAtcVersionInfo(AttrHolder &obj);
   bool SetOppVersionInfo(AttrHolder &obj);
+  bool SetOmSystemInfo(AttrHolder &obj);
 };
 
 Status GeGenerator::Initialize(const map<string, string> &options) { return Initialize(options, domi::GetContext()); }
@@ -462,6 +463,32 @@ bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
   return true;
 }
 
+bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
+  std::string soc_version;
+  (void)ge::GetContext().GetOption(ge::SOC_VERSION, soc_version);
+  GELOGI("SetOmSystemInfo soc_version: %s", soc_version.c_str());
+  if (!ge::AttrUtils::SetStr(obj, "soc_version", soc_version)) {
+    GELOGW("SetStr of soc_version failed.");
+    return false;
+  }
+
+  // 0(Caffe) 1(MindSpore) 3(TensorFlow) 5(Onnx)
+  std::map<string, string> framework_type_to_string = {
+    {"0", "Caffe"},
+    {"1", "MindSpore"},
+    {"3", "TensorFlow"},
+    {"5", "Onnx"}
+  };
+  std::string framework_type;
+  (void)ge::GetContext().GetOption(ge::FRAMEWORK_TYPE, framework_type);
+  GELOGI("SetOmSystemInfo framework_type: %s", framework_type.c_str());
+  if (!ge::AttrUtils::SetStr(obj, "framework_type", framework_type_to_string[framework_type.c_str()])) {
+    GELOGW("SetStr of framework_type failed.");
+    return false;
+  }
+  return true;
+}
+
 Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                                   ModelBufferData &model, bool is_offline) {
   rtContext_t ctx = nullptr;
@@ -663,6 +690,9 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &
   // set opp version
   if (!SetOppVersionInfo(*(model.get()))) {
     GELOGW("SetPackageVersionInfo of ops failed!");
+  }
+  if (!SetOmSystemInfo(*(model_root.get()))) {
+    GELOGW("SetOmsystemInfo failed!");
   }
   ModelHelper model_helper;
   model_helper.SetSaveMode(is_offline_);

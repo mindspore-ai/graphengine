@@ -47,7 +47,8 @@ enum RunMode {
   GEN_OM_MODEL = 0,    // generate offline model file
   MODEL_TO_JSON = 1,   // convert to JSON file
   ONLY_PRE_CHECK = 3,  // only for pre-check
-  PBTXT_TO_JSON = 5    // pbtxt to json
+  PBTXT_TO_JSON = 5,   // pbtxt to json
+  DISPLAY_OM_INFO = 6  // display model info
 };
 
 ///

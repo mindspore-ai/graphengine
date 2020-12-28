@@ -233,6 +233,9 @@ const std::string INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
 // 0: close debug; 1: open TBE compiler; 2: open ccec compiler
 const std::string OP_DEBUG_LEVEL = "ge.opDebugLevel";
 
+// Configure display_model_info flag
+const std::string DISPLAY_MODEL_INFO = "ge.display_model_info";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 

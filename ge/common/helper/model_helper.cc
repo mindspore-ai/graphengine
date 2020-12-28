@@ -74,6 +74,49 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
   return SUCCESS;
 }
 
+Status ModelHelper::SaveSizeToModelDef(const GeModelPtr &ge_model) {
+  vector<int64_t> om_info;
+  ModelPtr model_tmp = ge::MakeShared<ge::Model>(ge_model->GetName(), ge_model->GetPlatformVersion());
+  if (model_tmp == nullptr) {
+    GELOGE(FAILED, "Create Model %s Ptr failed", ge_model->GetName().c_str());
+    return FAILED;
+  }
+  model_tmp->SetGraph(ge_model->GetGraph());
+  model_tmp->SetVersion(ge_model->GetVersion());
+  model_tmp->SetAttr(ge_model->MutableAttrMap());
+  ge::Buffer model_buffer;
+  (void)model_tmp->Save(model_buffer);
+  GELOGD("SaveSizeToModelDef modeldef_size is %zu", model_buffer.GetSize());
+  om_info.push_back(model_buffer.GetSize());
+
+  auto ge_model_weight = ge_model->GetWeight();
+  GELOGD("SaveSizeToModelDef weight_data_size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
+  om_info.push_back(ge_model_weight.GetSize());
+
+  TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
+  GELOGD("SaveSizeToModelDef tbe_kernels_size is %zu", tbe_kernel_store.DataSize());
+  om_info.push_back(tbe_kernel_store.DataSize());
+
+  CustAICPUKernelStore cust_aicpu_kernel_store = ge_model->GetCustAICPUKernelStore();
+  GELOGD("SaveSizeToModelDef cust aicpu kernels size is %zu", cust_aicpu_kernel_store.DataSize());
+  om_info.push_back(cust_aicpu_kernel_store.DataSize());
+
+  std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
+  if (model_task_def == nullptr) {
+    GELOGE(FAILED, "Create model task def ptr failed");
+    return FAILED;
+  }
+  size_t partition_task_size = model_task_def->ByteSizeLong();
+  GELOGD("SaveSizeToModelDef task_info_size is %zu", partition_task_size);
+  om_info.push_back(partition_task_size);
+
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(*(ge_model.get()), "om_info_list", om_info),
+                   GELOGE(FAILED, "SetListInt of om_info_list failed.");
+  return FAILED);
+
+  return SUCCESS;
+}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model,
                                                                                    const SaveParam &save_param,
                                                                                    const std::string &output_file,
@@ -94,6 +137,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   model_tmp->SetGraph(ge_model->GetGraph());
   model_tmp->SetVersion(ge_model->GetVersion());
   model_tmp->SetAttr(ge_model->MutableAttrMap());
+  Status ret = SaveSizeToModelDef(ge_model);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "SaveSizeToModelDef failed");
+    return ret;
+  }
 
   ge::Buffer model_buffer;
   (void)model_tmp->Save(model_buffer);
@@ -185,7 +233,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   string model_name = reinterpret_cast<char *>(model_header.name);
   GELOGI("Model name save:%s", model_name.c_str());
 
-  Status ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
+  ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "OmFileSaveHelper SaveModel return fail.");
     return FAILED;

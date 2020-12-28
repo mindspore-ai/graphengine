@@ -322,5 +322,36 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
   }
   return SUCCESS;
 }
+
+TensorValue *HybridModel::GetConstant(const NodePtr &node) const {
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "Param is null");
+    return nullptr;
+  }
+
+  auto it = constant_tensors_.find(node);
+  if (it == constant_tensors_.end()) {
+    GELOGD("constant not found, node name = [%s]", node->GetName().c_str());
+    return nullptr;
+  }
+
+  GELOGD("Got constant tensor, node name = [%s], tensor = %s",
+         node->GetName().c_str(),
+         it->second->DebugString().c_str());
+  return it->second.get();
+}
+
+TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "Param is null");
+    return nullptr;
+  }
+
+  if (node->GetType() == CONSTANT) {
+    return GetConstant(node);
+  }
+
+  return GetVariable(node->GetName());
+}
 }  // namespace hybrid
 }  // namespace ge

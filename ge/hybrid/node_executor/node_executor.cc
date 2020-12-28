@@ -238,5 +238,13 @@ NodeExecutorRegistrar::NodeExecutorRegistrar(NodeExecutorManager::ExecutorType e
                                              NodeExecutor *(*builder)()) {
   NodeExecutorManager::GetInstance().RegisterExecutorBuilder(executor_type, builder);
 }
+Status NoOpTask::UpdateArgs(TaskContext &context) {
+  GELOGD("[%s] Skipping UpdateArgs for op with empty outputs", context.GetNodeName());
+  return SUCCESS;
+}
+Status NoOpTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  GELOGD("[%s] Skipping execute for op with empty outputs", context.GetNodeName());
+  return SUCCESS;
+}
 }  // namespace hybrid
 }  // namespace ge

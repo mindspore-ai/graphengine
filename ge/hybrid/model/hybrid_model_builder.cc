@@ -810,7 +810,7 @@ Status HybridModelBuilder::AssignUninitializedConstantOps() {
     GELOGI("no need to assign when exec on host.");
     return SUCCESS;
   }
-  for (auto &it : hybrid_model_.constant_op_nodes_) {
+  for (auto &it : constant_op_nodes_) {
     const string &var_name = it.first;
     const NodePtr &var_node = it.second;
     auto tensor_desc = var_node->GetOpDesc()->MutableOutputDesc(0);
@@ -839,7 +839,7 @@ Status HybridModelBuilder::AssignUninitializedConstantOps() {
 }
 
 Status HybridModelBuilder::InitConstantOps() {
-  for (auto &it : hybrid_model_.constant_op_nodes_) {
+  for (auto &it : constant_op_nodes_) {
     const string &var_name = it.first;
     const NodePtr &var_node = it.second;
     auto op_desc = var_node->GetOpDesc();
@@ -920,7 +920,47 @@ Status HybridModelBuilder::InitVariableTensors() {
 }
 
 Status HybridModelBuilder::InitWeights() {
-  // Train do not have weight. (only got ConstOp)
+  auto allocator = NpuMemoryAllocator::GetAllocator();
+  GE_CHECK_NOTNULL(allocator);
+
+  for (auto &it : hybrid_model_.node_items_) {
+    auto &node_item = it.second;
+    if (node_item->node_type != CONSTANT) {
+      continue;
+    }
+
+    const auto &constant_node = node_item->node;
+    auto op_desc = constant_node->GetOpDesc();
+    auto v_weights = ModelUtils::GetWeights(op_desc);
+    if (v_weights.empty()) {
+      GELOGE(INTERNAL_ERROR, "[%s] Constant no not have value", constant_node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
+    auto output_desc = op_desc->MutableOutputDesc(0);
+    GE_CHECK_NOTNULL(output_desc);
+    auto tensor_size = ge_tensor->GetData().GetSize();
+    GELOGD("[%s] Start to init Constant node [%s], size = %ld",
+           GetGraphName(),
+           constant_node->GetName().c_str(),
+           tensor_size);
+
+    auto tensor_buffer = TensorBuffer::Create(allocator, tensor_size);
+    GE_CHECK_NOTNULL(tensor_buffer);
+    std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(std::move(tensor_buffer)));
+    GE_CHECK_NOTNULL(constant_tensor);
+    constant_tensor->SetName("Constant_" + op_desc->GetName());
+    if (tensor_size > 0) {
+      GE_CHK_RT_RET(rtMemcpy(constant_tensor->MutableData(),
+                             constant_tensor->GetSize(),
+                             ge_tensor->GetData().data(),
+                             ge_tensor->GetData().size(),
+                             RT_MEMCPY_HOST_TO_DEVICE));
+    }
+
+    hybrid_model_.constant_tensors_.emplace(constant_node, std::move(constant_tensor));
+    GELOGD("[%s] Constant node [%s] added, size = %ld", GetGraphName(), constant_node->GetName().c_str(), tensor_size);
+  }
   return SUCCESS;
 }
 
@@ -1053,7 +1093,7 @@ Status HybridModelBuilder::IndexSpecialNodes() {
         hybrid_model_.device_variable_nodes_.emplace(node->GetName(), node);
       }
     } else if (op_type == CONSTANTOP) {
-      hybrid_model_.constant_op_nodes_.emplace(node->GetName(), node);
+      constant_op_nodes_.emplace(node->GetName(), node);
     } else if (op_type == DATA && node->GetOwnerComputeGraph() != root_graph) {
       NodePtr src_node;
       int peer_out_index = -1;
@@ -1326,7 +1366,7 @@ Status HybridModelBuilder::GetParentNodeOutputIndex(const OpDesc &op_desc, int i
 Status HybridModelBuilder::InitModelMem() {
   hybrid_model_.var_mem_base_ = var_manager_->GetVarMemoryBase(RT_MEMORY_HBM);
   auto total_var_size = hybrid_model_.TotalVarMemSize();
-  if (total_var_size == 0 && !hybrid_model_.constant_op_nodes_.empty()) {
+  if (total_var_size == 0 && !constant_op_nodes_.empty()) {
     total_var_size = var_manager_->GetVarMemSize(RT_MEMORY_HBM) > 0 ? var_manager_->GetVarMemMaxSize() : 0;
     GELOGD("Model var size = 0. but got uninitialized constant. set var size to %zu.", total_var_size);
   }
@@ -1477,6 +1517,10 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     GE_CHECK_NOTNULL(node);
     GE_CHECK_NOTNULL(node->GetOpDesc());
     const auto &op_type = node->GetType();
+    if (op_type == NOOP) {
+      GELOGD("[%s] Skip NoOp", node->GetName().c_str());
+      continue;
+    }
 
     NodeItem *node_item = nullptr;
     GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node, &node_item));

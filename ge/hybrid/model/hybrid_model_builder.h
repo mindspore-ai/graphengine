@@ -48,7 +48,6 @@ class HybridModelBuilder {
   static Status MergeNetOutputNode(ComputeGraph &compute_graph);
   static Status UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGraphPtr &merged_graph);
   static Status UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph &parent_graph, ComputeGraph &sub_graph);
-  static Status InitWeights();
   static Status BuildInputMapping(GraphItem &graph_item,
                                   std::vector<NodeItem *> &data_nodes,
                                   bool is_root_graph);
@@ -68,6 +67,7 @@ class HybridModelBuilder {
   Status IndexSpecialNodes();
   Status InitRuntimeParams();
   Status InitModelMem();
+  Status InitWeights();
   Status TransAllVarData();
   Status CopyVarData();
   Status VarNodeToTensor(const NodePtr &var_node, std::unique_ptr<TensorValue> &tensor);
@@ -88,8 +88,9 @@ class HybridModelBuilder {
   NodeItem *MutableNodeItem(const NodePtr &node);
 
   GeRootModelPtr ge_root_model_;
-  std::map<int, std::unique_ptr<TensorValue>> weights_;
   std::map<std::string, GeModelPtr> subgraph_models_;
+  std::map<std::string, NodePtr> constant_op_nodes_;
+
   HybridModel &hybrid_model_;
   std::map<NodePtr, std::vector<std::pair<int, NodePtr>>> node_ref_inputs_;
   int node_index = 0;

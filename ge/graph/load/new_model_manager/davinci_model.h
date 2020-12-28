@@ -503,9 +503,7 @@ class DavinciModel {
     void *cur_args = static_cast<char *>(args_) + offset;
     return cur_args;
   }
-  void SetTotalIOAddrs(const vector<void *> &io_addrs) {
-    total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
-  }
+  void SetTotalIOAddrs(const vector<void *> &io_addrs);
   void SetHybridArgsSize(uint32_t args_size) { total_hybrid_args_size_ += args_size; }
   uint32_t GetHybridArgsSize() {
     return total_hybrid_args_size_;
@@ -555,6 +553,7 @@ class DavinciModel {
   uint8_t *weights_mem_base_;
   uint8_t *var_mem_base_;
   // memory address of model
+  uintptr_t fixed_mem_base_;  // Initial of mem_base_, keep forever.
   uint8_t *mem_base_;
   uint8_t *p2p_mem_base_;
   bool is_inner_mem_base_;

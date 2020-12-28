@@ -61,7 +61,7 @@ class ModelHelper {
   Status GenerateGeModel(OmFileLoadHelper& om_load_helper);
   Status LoadModelData(OmFileLoadHelper& om_load_helper);
   void SetModelToGeModel(ge::Model& model);
-  Status SaveSizeToModelDef(const GeModelPtr &ge_model);
+  Status SaveSizeToModelDef(const GeModelPtr& ge_model);
   Status LoadWeights(OmFileLoadHelper& om_load_helper);
   Status LoadTask(OmFileLoadHelper& om_load_helper);
   Status LoadTBEKernelStore(OmFileLoadHelper& om_load_helper);

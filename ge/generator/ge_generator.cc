@@ -691,7 +691,7 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &
   if (!SetOppVersionInfo(*(model.get()))) {
     GELOGW("SetPackageVersionInfo of ops failed!");
   }
-  if (!SetOmSystemInfo(*(model_root.get()))) {
+  if (!SetOmSystemInfo(*(model.get()))) {
     GELOGW("SetOmsystemInfo failed!");
   }
   ModelHelper model_helper;

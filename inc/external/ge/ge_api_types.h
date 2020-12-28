@@ -295,6 +295,11 @@ const std::string MDL_BANK_PATH_FLAG = "ge.mdl_bank_path";
 const std::string OP_BANK_PATH_FLAG = "ge.op_bank_path";
 const std::string OP_BANK_UPDATE_FLAG = "ge.op_bank_update";
 
+// Configure for fix hcombroadcast format.
+// when config model multi, broadcast format should be fixed
+// 0: data multi; 1: model multi;
+const std::string HCOM_MULTI_MODE = "ge.hcomMultiMode";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 

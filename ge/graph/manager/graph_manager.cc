@@ -2121,6 +2121,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
                                                new (std::nothrow) TransOpWithoutReshapeFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::TransOpBreadthFusionPass",
                                                new (std::nothrow) TransOpBreadthFusionPass))
+  GE_CHK_STATUS_RET(
+      after_merge_passes.AddPass("OptimizeStage1_1::HcclMemcpyPass", new (std::nothrow) HcclMemcpyPass));
 
   GE_TIMESTAMP_START(after_merge_passes);
   auto ret = after_merge_passes.Run(compute_graph);

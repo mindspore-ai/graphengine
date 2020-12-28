@@ -103,8 +103,8 @@ Status ModelHelper::SaveSizeToModelDef(const GeModelPtr &ge_model) {
 
   std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
   if (model_task_def == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create model task def ptr failed");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    GELOGE(FAILED, "Create model task def ptr failed");
+    return FAILED;
   }
   size_t partition_task_size = model_task_def->ByteSizeLong();
   GELOGD("SaveSizeToModelDef task_info_size is %zu", partition_task_size);
@@ -233,7 +233,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   string model_name = reinterpret_cast<char *>(model_header.name);
   GELOGI("Model name save:%s", model_name.c_str());
 
-  Status ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
+  ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
     GELOGE(FAILED, "OmFileSaveHelper SaveModel return fail.");
     return FAILED;

@@ -25,11 +25,13 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
+#ifndef ONLY_COMPILE_OPEN_SRC
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/host_mem_allocator.h"
+#endif
 #include "graph/utils/graph_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "framework/common/debug/ge_log.h"
-#include "graph/utils/attr_utils.h"
 
 namespace ge {
 namespace hybrid {
@@ -852,9 +854,24 @@ Status HybridModelBuilder::InitConstantOps() {
 
     std::unique_ptr<TensorValue> var_tensor;
     if (GetContext().GetHostExecFlag()) {
+#ifndef ONLY_COMPILE_OPEN_SRC
+      GE_CHECK_NOTNULL(ge_tensor);
+      // Address for eigen kernel should be aligned with 16 bytes
+      // Tensors return by api GetWeights share data with proto, whose addr is not confirmed to be aligned
+      GeTensor aligned_tensor = ge_tensor->Clone();
+      GELOGD("Init tensor with host constant %s size = %zu", var_name.c_str(), aligned_tensor.MutableData().GetSize());
+      if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(aligned_tensor.GetAlignedPtr(),
+                                                                       aligned_tensor.GetData().size()) == nullptr) {
+        GELOGE(MEMALLOC_FAILED, "Malloc host memory for an existed GeTensor failed.");
+        return MEMALLOC_FAILED;
+      }
+      var_tensor.reset(new(std::nothrow)TensorValue(aligned_tensor.MutableData().data(),
+                                                    aligned_tensor.GetData().size()));
+#else
       auto buffer = ge_tensor->MutableData();
       GELOGD("Init tensor with host constant. size = %zu", buffer.GetSize());
       var_tensor.reset(new(std::nothrow)TensorValue(buffer.GetData(), buffer.GetSize()));
+#endif
     } else {
       GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
       GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());
@@ -909,9 +926,21 @@ Status HybridModelBuilder::InitVariableTensors() {
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Host variable [%s] malloc failed.", it.first.c_str());
       return GE_GRAPH_MALLOC_FAILED;
     }
+#ifndef ONLY_COMPILE_OPEN_SRC
+    if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(mem_info.host_aligned_ptr,
+                                                                     tensor_size) == nullptr) {
+      GELOGE(MEMALLOC_FAILED, "Malloc host memory for an existed GeTensor failed.");
+      return MEMALLOC_FAILED;
+    }
+    GELOGD("Host variable [%s] malloc success, size=%lld.", it.first.c_str(), tensor_size);
+
+    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_aligned_ptr->MutableGet(),
+                                                                       tensor_size));
+#else
     GELOGD("Host variable [%s] malloc success.", it.first.c_str());
 
     std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_address, tensor_size));
+#endif
     GE_CHECK_NOTNULL(tensor);
     hybrid_model_.variable_tensors_.emplace(it.first, std::move(tensor));
   }

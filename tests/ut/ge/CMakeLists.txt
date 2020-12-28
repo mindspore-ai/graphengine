@@ -224,7 +224,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/cond_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/for_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/enter_pass.cc"
-    "${GE_CODE_DIR}/ge/graph/passes/assign_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/assign_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/addn_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/common_subexpression_elimination_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_symmetry_elimination_pass.cc"

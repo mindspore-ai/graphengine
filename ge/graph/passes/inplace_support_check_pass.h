@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_ASSIGN_PASS_H_
-#define GE_GRAPH_PASSES_ASSIGN_PASS_H_
+#ifndef GE_GRAPH_PASSES_INPLACE_SUPPORT_CHECK_PASS_H_
+#define GE_GRAPH_PASSES_INPLACE_SUPPORT_CHECK_PASS_H_
 
 #include "graph/passes/base_pass.h"
 
 namespace ge {
-class AssignPass : public BaseNodePass {
+class InplaceSupportCheckPass : public BaseNodePass {
  public:
   Status Run(NodePtr &node) override;
-
- private:
-  ///
-  /// @brief Check if need optimize for assign_node
-  /// @param [in] assign_node
-  /// @param [in] peer_data_anchor for ref_input of assign_node
-  /// @param [in] peer_data_anchor for value_input of assign_node
-  /// @return Status
-  ///
-  static bool IsCondMatch(const NodePtr &node, const OutDataAnchorPtr &ref_peer_anchor,
-                          const OutDataAnchorPtr &value_peer_anchor);
 };
 }  // namespace ge
-#endif  // GE_GRAPH_PASSES_ASSIGN_PASS_H_
+#endif  // GE_GRAPH_PASSES_INPLACE_SUPPORT_CHECK_PASS_H_

@@ -128,6 +128,7 @@ class KernelTaskInfo : public TaskInfo {
   Status SuperKernelDistribute();
   bool IsL1FusionOp(const OpDescPtr &op_desc);
   void SetIoAddrs(const OpDescPtr &op_desc);
+  void InitDumpTask(uint32_t offset);
 
   // For super kernel
   Status SaveSKTDumpInfo();

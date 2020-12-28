@@ -97,9 +97,10 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                   return FAILED;)
   // 2.3 Create session
   GE_CHECK_NOTNULL(ModelManager::GetInstance());
-  GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuSession(session_id) != SUCCESS,
-                  GELOGE(FAILED, "CreateAicpuSession error. session id: %lu", session_id);
-                  return FAILED;)
+  ret = ModelManager::GetInstance()->CreateAicpuSession(session_id);
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(ret, "CreateAicpuSession error. session id: %lu", session_id);
+                  return ret;)
 
   kernel_buf_size_ = sizeof(STR_FWK_OP_KERNEL);
   if (davinci_model_->IsKnownNode()) {
@@ -128,6 +129,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     SetIoAddrs(op_desc);
+    InitDumpTask(input_output_addr, op_desc);
     GELOGI("KernelExTaskInfo knonw node Init Success.");
     return SUCCESS;
   }
@@ -162,11 +164,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
-    if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                            op_desc->GetName())) {
-      dump_flag_ = RT_KERNEL_DUMPFLAG;
-      dump_args_ = input_output_addr_;
-    }
+    InitDumpTask(input_output_addr_, op_desc);
     if (davinci_model_->GetOpDugReg()) {
       GELOGI("Op debug is open in kernel ex task info");
       dump_args_ = input_output_addr_;
@@ -194,6 +192,14 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   SetIoAddrs(op_desc);
   GELOGI("KernelExTaskInfo Init Success. session id: %lu", session_id);
   return SUCCESS;
+}
+
+void KernelExTaskInfo::InitDumpTask(void *addr, const OpDescPtr &op_desc) {
+  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
+                                                          op_desc->GetName())) {
+    dump_flag_ = RT_KERNEL_DUMPFLAG;
+    dump_args_ = input_output_addr_;
+  }
 }
 
 Status KernelExTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {

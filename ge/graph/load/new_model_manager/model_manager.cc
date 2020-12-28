@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "aicpu/aicpu_schedule/aicpu_op_type_list.h"
 #include "common/dump/dump_manager.h"
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
@@ -30,6 +31,7 @@
 #include "graph/load/new_model_manager/davinci_model_parser.h"
 #include "model/ge_root_model.h"
 #include "graph/common/local_context.h"
+#include "graph/utils/attr_utils.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "hybrid/hybrid_davinci_model.h"
 
@@ -52,6 +54,7 @@ const char *const kDeleteCustOp = "deleteCustOp";
 const int kTimeSpecNano = 1000000000;
 const int kTimeSpecMiro = 1000000;
 const int kSessionMaxBias = 100;
+const int kOpNameMaxSize = 100;
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
   uint32_t kernelSoBufLen;
@@ -1526,6 +1529,202 @@ Status ModelManager::EnableExceptionDump(const std::map<string, string> &options
   } else {
     GELOGI("Not find option enable exception dump");
   }
+  return SUCCESS;
+}
+
+Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_optype_list,
+                                              std::vector<std::string> &aicpu_tf_optype_list) {
+  std::string kernel_name = "checkOpType";
+  GELOGI("LaunchKernelCheckAicpuOpType in, kernel name %s", kernel_name.c_str());
+  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
+  std::vector<SysOpInfo> req_aicpu_op_info_list;
+  std::vector<SysOpInfo> res_aicpu_op_info_list;
+  std::vector<ReturnCode> res_ret_code_list;
+
+  if (aicpu_optype_list.empty() && aicpu_tf_optype_list.empty()) {
+    GELOGI("No need to check aicpu op type.");
+    return SUCCESS;
+  }
+
+  vector<void *> allocated_mem;
+  rtError_t status;
+  rtStream_t stream = nullptr;
+  void *args = nullptr;
+
+  void *d_req_op_list = nullptr;
+  void *d_res_op_list = nullptr;
+  void *d_ret_code_list = nullptr;
+
+  size_t aicpu_op_nums = aicpu_optype_list.size();
+  size_t tf_op_nums = aicpu_tf_optype_list.size();
+  size_t op_nums = aicpu_op_nums + tf_op_nums;
+  // malloc sysOpInfoList in SysOpCheckInfo
+  status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(d_req_op_list);
+
+  // malloc sysOpInfoList in SysOpCheckResp
+  status = rtMalloc(&d_res_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(d_res_op_list);
+
+  // malloc returnCodeList in SysOpCheckResp
+  status = rtMalloc(&d_ret_code_list, op_nums * sizeof(ReturnCode), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(d_ret_code_list);
+
+  for (const auto &op_type : aicpu_optype_list) {
+    SysOpInfo op_info;
+    // malloc op_type name in SysOpInfo
+    void *d_op_type_name = nullptr;
+    status = rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM);
+    if (status != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      return RT_ERROR_TO_GE_STATUS(status);
+    }
+    allocated_mem.push_back(d_op_type_name);
+    GE_CHK_RT(rtMemcpy(d_op_type_name, op_type.length(), op_type.c_str(), op_type.length(), RT_MEMCPY_HOST_TO_DEVICE));
+    op_info.opType = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_op_type_name));
+    op_info.opLen = op_type.length();
+    op_info.kernelsType = CPU_KERNEL;
+    req_aicpu_op_info_list.emplace_back(op_info);
+  }
+
+  for (const auto &op_type : aicpu_tf_optype_list) {
+    SysOpInfo op_info;
+    // malloc op_type name in SysOpInfo
+    void *d_op_type_name = nullptr;
+    status = rtMalloc(&d_op_type_name, op_type.size(), RT_MEMORY_HBM);
+    if (status != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      return RT_ERROR_TO_GE_STATUS(status);
+    }
+    allocated_mem.push_back(d_op_type_name);
+    GE_CHK_RT(rtMemcpy(d_op_type_name, op_type.size(), op_type.c_str(), op_type.size(), RT_MEMCPY_HOST_TO_DEVICE));
+    op_info.opType = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_op_type_name));
+    op_info.opLen = op_type.size();
+    op_info.kernelsType = TF_KERNEL;
+    req_aicpu_op_info_list.emplace_back(op_info);
+  }
+  GELOGI("Check aicpu op all attr size: %zu, real attr size: %zu.", op_nums, req_aicpu_op_info_list.size());
+  GE_CHK_RT(rtMemcpy(d_req_op_list, sizeof(SysOpInfo) * req_aicpu_op_info_list.size(), req_aicpu_op_info_list.data(),
+                     sizeof(SysOpInfo) * req_aicpu_op_info_list.size(), RT_MEMCPY_HOST_TO_DEVICE));
+
+  SysOpCheckInfo op_check_info_req = { 0 };
+  SysOpCheckResp op_check_info_res = { 0 };
+  op_check_info_req.opListNum = op_nums;
+  op_check_info_req.offSetLen = sizeof(SysOpCheckInfo);
+  op_check_info_req.sysOpInfoList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_req_op_list));
+
+  op_check_info_res.opListNum = 0;
+  op_check_info_res.isWithoutJson = 0;
+  op_check_info_res.returnCodeList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_ret_code_list));
+  op_check_info_res.sysOpInfoList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_res_op_list));
+
+  uint32_t args_size = sizeof(SysOpCheckInfo) + sizeof(SysOpCheckResp);
+  status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(args);
+  GE_CHK_RT(
+      rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)),
+                     sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res), sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtStreamCreate(&stream, 0));
+  GE_CHK_RT(rtCpuKernelLaunch(nullptr, kernel_name.c_str(), 1, args, args_size, nullptr, stream));
+
+  status = rtStreamSynchronize(stream);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  // Check the response
+  SysOpCheckResp *d_op_check_info_res = reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
+  (void)memset_s(&op_check_info_res, sizeof(SysOpCheckResp), 0, sizeof(SysOpCheckResp));
+  GE_CHK_RT(rtMemcpy(&op_check_info_res, sizeof(SysOpCheckResp), d_op_check_info_res, sizeof(SysOpCheckResp),
+                     RT_MEMCPY_DEVICE_TO_HOST));
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+    GE_CHK_RT(rtStreamDestroy(stream));
+  };
+
+  if (op_check_info_res.isWithoutJson) {
+    GELOGI("No need to check aicpu in this scenoria.");
+    GE_MAKE_GUARD(release, callback);
+    return SUCCESS;
+  }
+  uint64_t res_op_nums = op_check_info_res.opListNum;
+  GELOGI("Check aicpu type, is without json: %d, res op num: %lu.", op_check_info_res.isWithoutJson, res_op_nums);
+  if (res_op_nums != 0) {
+    res_ret_code_list.clear();
+    res_ret_code_list.resize(res_op_nums);
+    res_aicpu_op_info_list.clear();
+    res_aicpu_op_info_list.resize(res_op_nums);
+    GE_CHK_RT(rtMemcpy(res_ret_code_list.data(), sizeof(ReturnCode) * res_op_nums,
+                       reinterpret_cast<void *>(static_cast<uintptr_t>(op_check_info_res.returnCodeList)),
+                       sizeof(ReturnCode) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
+    GE_CHK_RT(rtMemcpy(res_aicpu_op_info_list.data(), sizeof(SysOpInfo) * res_op_nums,
+                       reinterpret_cast<void *>(static_cast<uintptr_t>(op_check_info_res.sysOpInfoList)),
+                       sizeof(SysOpInfo) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
+    if (res_ret_code_list.size() != res_aicpu_op_info_list.size() || res_ret_code_list.size() != res_op_nums) {
+      GELOGE(FAILED, "Number of retcode is not equal to number of op type.");
+      GE_MAKE_GUARD(release, callback);
+      return FAILED;
+    }
+    std::string fail_reason;
+    for (uint32_t i = 0; i < res_op_nums; i++) {
+      ReturnCode ret_code = res_ret_code_list.at(i);
+      SysOpInfo aicpu_info = res_aicpu_op_info_list.at(i);
+      GELOGI("Not support aicpu op type: %lu, kernel_type:%d, opLen:%d, ret_code:%d", aicpu_info.opType,
+             aicpu_info.kernelsType, aicpu_info.opLen, ret_code);
+      std::vector<char> op_name;
+      op_name.clear();
+      op_name.resize(kOpNameMaxSize);
+      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen, reinterpret_cast<void *>(aicpu_info.opType),
+                         aicpu_info.opLen, RT_MEMCPY_DEVICE_TO_HOST));
+      std::string kernel_type =
+          (static_cast<OpKernelType>(aicpu_info.kernelsType) == TF_KERNEL) ? "TF_KERNEL" : "CPU_KERNEL";
+      string op_name_str(op_name.data());
+      fail_reason += "op_type: " + op_name_str + " kernel_type: " + kernel_type +
+                     "  ret code:" + std::to_string(static_cast<int>(ret_code)) +
+                     "<0: op_type, 1: format, 2: datatype> \n";
+    }
+    fail_reason += "not support.";
+    GELOGE(FAILED, "Check aicpu op_type failed. details: %s", fail_reason.c_str());
+    GE_MAKE_GUARD(release, callback);
+    return FAILED;
+  }
+
+  GE_MAKE_GUARD(release, callback);
+  GELOGI("Cpu kernel launch check optype task success.");
+  return SUCCESS;
+}
+
+Status ModelManager::CheckAicpuOpList(GeModelPtr ge_model) {
+  std::vector<std::string> aicpu_optype_list;
+  std::vector<std::string> aicpu_tf_optype_list;
+  bool aicpu_need_check = ge::AttrUtils::GetListStr(ge_model, "needCheckCpu", aicpu_optype_list);
+  bool tf_need_check = ge::AttrUtils::GetListStr(ge_model, "needCheckTf", aicpu_tf_optype_list);
+  if (!aicpu_need_check && !tf_need_check) {
+    GELOGI("Graph:%s No need to check aicpu optype.", ge_model->GetGraph().GetName().c_str());
+    return SUCCESS;
+  }
+  GE_CHK_STATUS_RET(LaunchKernelCheckAicpuOp(aicpu_optype_list, aicpu_tf_optype_list),
+                    "Launch check aicpu op type failed.");
   return SUCCESS;
 }
 

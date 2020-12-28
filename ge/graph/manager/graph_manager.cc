@@ -526,7 +526,15 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
                                                       Graph2SubGraphInfoList &sub_graph_map, uint64_t session_id) {
   GE_CHECK_NOTNULL(compute_graph);
   // use default 16 multi thread
-  const uint32_t thread_num = 16;
+  uint32_t thread_num = 16;
+
+  char *env = std::getenv("THREAD_MULTI_NUM");
+  if (env != nullptr) {
+    thread_num = atoi(env);
+    GEEVENT("OptimizeSubGraphWithMultiThreads thread num: %u", thread_num);
+  }
+
+
   ThreadPool executor(thread_num);
   std::vector<std::future<Status>> vector_future;
   const auto &root_subgraph_list = sub_graph_map[compute_graph];

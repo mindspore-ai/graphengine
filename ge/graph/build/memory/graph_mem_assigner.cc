@@ -89,14 +89,6 @@ Status VariableMemoryAssigner::AssignVarAttr2Nodes() {
   return ge::SUCCESS;
 }
 
-Status VariableMemoryAssigner::AssignMemory2HasRefAttrNode() {
-  Status result = ge::VarMemAssignUtil::AssignMemory2HasRefAttrNode(compute_graph_);
-  if (result != ge::SUCCESS) {
-    return result;
-  }
-  return ge::SUCCESS;
-}
-
 Status GraphMemoryAssigner::AssignMemory() {
   ge::HybridMemAssignerPtr mem_assigner(new (std::nothrow) HybridMemAssigner(compute_graph_));
   if (mem_assigner->Assign() != ge::SUCCESS) {
@@ -134,19 +126,6 @@ ge::Status GraphMemoryAssigner::AssignVarAttr2Nodes() {
     return ge::FAILED;
   }
   if (variable_assigner->AssignVarAttr2Nodes() != ge::SUCCESS) {
-    return ge::FAILED;
-  }
-  return ge::SUCCESS;
-}
-
-ge::Status GraphMemoryAssigner::AssignMemory2HasRefAttrNode() {
-  auto variable_assigner =
-    std::unique_ptr<ge::VariableMemoryAssigner>(new (std::nothrow) ge::VariableMemoryAssigner(compute_graph_));
-  if (variable_assigner == nullptr) {
-    GELOGE(ge::FAILED, "Alloc VariableMemoryAssigner failed.");
-    return ge::FAILED;
-  }
-  if (variable_assigner->AssignMemory2HasRefAttrNode() != ge::SUCCESS) {
     return ge::FAILED;
   }
   return ge::SUCCESS;

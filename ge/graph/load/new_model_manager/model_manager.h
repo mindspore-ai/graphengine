@@ -295,6 +295,11 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status LaunchKernelCustAicpuSo(const string &kernel_name);
 
+  ge::Status LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_optype_list,
+                                      std::vector<std::string> &aicpu_tf_optype_list);
+
+  ge::Status CheckAicpuOpList(GeModelPtr ge_model);
+
   ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
 
   ge::Status GenSessionId(uint64_t &session_id);

@@ -22,7 +22,7 @@
 
 namespace ge {
 namespace {
-const int64_t kMinTrainingTraceJobId = 256;
+const int64_t kMinTrainingTraceJobId = 65536;
 const int kDecimal = 10;
 const char *kHostExecPlacement = "HOST";
 }

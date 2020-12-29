@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ support "NHWC/NCHW" to "NC1HWC0" and "NC1HWC0" to "NHWC/NCHW"
 *@par Attributes:
 *@li src_format: A string source data format, can be "NHWC", "NCHW", "FRACTAL_Zn" etc.
 *@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc.
-*@li group: A required int32, default value is 1. \n
+*@li group: A optional int32, default value is 1. \n
 
 *@par Outputs:
 *dst: A Tensor dtype of all types.
@@ -151,7 +151,7 @@ REG_OP(TransData)
     .OUTPUT(dst, TensorType::BasicType())
     .REQUIRED_ATTR(src_format, String)
     .REQUIRED_ATTR(dst_format, String)
-    .ATTR(group, Int, 1)
+    .ATTR(groups, Int, 1)
     .OP_END_FACTORY_REG(TransData)
 
 /**
@@ -357,7 +357,7 @@ REG_OP(DepthToSpace)
 *@brief Permutes data into spatial data blocks and then prunes them . \n
 
 *@par Inputs:
-*@li x: A 4D Tensor with format NHWC.
+*@li x: A 4D Tensor with format. Must set the format, supported format list ["NCHW, NHWC"]
 *@li crops: A 1D list or tuple of int32 or int64 . \n
 
 *Must be one of the following types: float16, float32
@@ -434,9 +434,10 @@ REG_OP(BatchToSpaceD)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NHWC Tensor. Must be one of the following types:
+*@li x: An 4D Tensor. Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* Must set the format, supported format list ["NCHW, NHWC"]
 *@li paddings: A 2D tensor of type int, specifying the input . \n
 
 *@par Attributes:

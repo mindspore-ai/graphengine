@@ -76,20 +76,6 @@ struct timeInfo {
   int64_t dumpEndTime;
 };
 
-struct TaskMemInfo {
-  int64_t input_size{0};
-  int64_t output_size{0};
-  int64_t weight_size{0};
-  int64_t workspace_size{0};
-  int64_t total_size{0};
-};
-
-struct ProfileInfo {
-  FusionOpInfo fusion_info;
-  TaskMemInfo memory_info;
-  uint32_t task_count{0};
-};
-
 enum ExecuteMode {
   INITIALIZATION,
   SYNCHRONIZATION,
@@ -240,6 +226,8 @@ class DavinciModel {
   const vector<OpDescPtr> &GetDataList() const { return data_op_list_; }
 
   // get Op
+  const map<uint32_t, OpDescPtr> &GetOpList() const { return op_list_; }
+
   OpDescPtr GetOpByIndex(uint32_t index) const {
     if (op_list_.find(index) == op_list_.end()) {
       return nullptr;
@@ -448,6 +436,10 @@ class DavinciModel {
 
   int64_t GetLoadEndTime() { return load_end_time_; }
 
+  Status SinkModelProfile();
+
+  Status SinkTimeProfile(const InputData &current_data);
+
   Status ReportProfilingData();
 
   void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
@@ -484,14 +476,6 @@ class DavinciModel {
   void SetTotalIOAddrs(vector<void *> &io_addrs) {
     total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
   }
-  void SetHybridArgsSize(uint32_t args_size) { total_hybrid_args_size_ += args_size; }
-  uint32_t GetHybridArgsSize() {
-    return total_hybrid_args_size_;
-  }
-  void *GetCurrentHybridArgsAddr(uint32_t offset) {
-    void *cur_args = static_cast<char *>(hybrid_addrs_) + offset;
-    return cur_args;
-  }
   void SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size);
   int64_t GetFixedAddrsSize(string tensor_name);
   void *GetCurrentFixedAddr(int64_t offset) const {
@@ -510,7 +494,7 @@ class DavinciModel {
   Status MallocKnownArgs();
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
-  Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs);
+  Status UpdateKnownZeroCopyAddr();
   void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);
@@ -812,11 +796,6 @@ class DavinciModel {
 
   void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
 
-  Status InitModelProfile();
-  Status SinkModelProfile();
-
-  Status SinkTimeProfile(const InputData &current_data);
-
   Status GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data_index, OutputData *output_data,
                              std::vector<ge::OutputTensorInfo> &outputs);
 
@@ -952,8 +931,6 @@ class DavinciModel {
   void *args_ = nullptr;
   void *args_host_ = nullptr;
   void *fixed_addrs_ = nullptr;
-  void *hybrid_addrs_ = nullptr;
-  uint32_t total_hybrid_args_size_ = 0;
   int64_t total_fixed_addr_size_ = 0;
   std::map<const void *, void *> knonw_input_data_info_;
   std::map<const void *, void *> knonw_output_data_info_;
@@ -993,9 +970,6 @@ class DavinciModel {
   // key: input_index: input is merge node; value: each gear info and each output shape
   std::map<size_t, std::map<vector<int64_t>, vector<int64_t>>> merge_nodes_gear_and_real_out_shape_info_;
   std::vector<std::vector<int64_t>> all_gears_info_;
-
-  std::multimap<uint32_t, uint32_t> op_id_map_;
-  std::vector<ProfileInfo> profile_list_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

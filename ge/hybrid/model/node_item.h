@@ -103,11 +103,6 @@ struct NodeItem {
  private:
   explicit NodeItem(NodePtr node);
   Status Init();
-  Status InitInputsAndOutputs();
-  void ResolveOptionalInputs();
-  Status ResolveDynamicState();
-  Status ResolveStaticInputsAndOutputs();
-  void ResolveUnknownShapeType();
 
   std::vector<bool> is_input_shape_static_;
   std::vector<uint32_t> input_desc_indices_;

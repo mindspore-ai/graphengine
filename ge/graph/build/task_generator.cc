@@ -54,7 +54,7 @@ const uint64_t kProfilingFpStartLogid = 1;
 const uint64_t kProfilingBpEndLogid = 2;
 const uint64_t kProfilingArStartLogid = 3;
 const uint64_t kProfilingArEndLogid = 4;
-const uint64_t kProfilingIterEndLogid = 255;
+const uint64_t kProfilingIterEndLogid = 65535;
 const int64_t kHashFactor = 100000;
 const int64_t kInvalidGroupId = -1;
 }  // namespace

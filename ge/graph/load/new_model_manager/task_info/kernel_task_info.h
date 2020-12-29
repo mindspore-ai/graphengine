@@ -159,9 +159,7 @@ class KernelTaskInfo : public TaskInfo {
   OpDescPtr op_desc_;
   DavinciModel *davinci_model_;
   uint32_t args_offset_ = 0;
-  uint32_t hybrid_args_offset_ = 0;
   int64_t fixed_addr_offset_ = 0;
-  std::unique_ptr<uint8_t[]> args_addr = nullptr;
   bool call_save_dump_ = false;
 
   // aicpu ext_info device mem

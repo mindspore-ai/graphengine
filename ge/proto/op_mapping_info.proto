@@ -15,7 +15,6 @@ message Output {
     int32 original_output_data_type = 7;
     int32 original_output_format = 8;
     uint64 size = 9;
-    Shape origin_shape = 10;
 }
 
 message Input {
@@ -24,7 +23,6 @@ message Input {
     Shape shape = 3;
     uint64 address = 4;
     uint64 size = 5;
-    Shape origin_shape = 6;
 }
 
 enum BufferType {

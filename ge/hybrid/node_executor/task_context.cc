@@ -148,10 +148,6 @@ Status TaskContext::AllocateWorkspaces() {
 }
 
 Status TaskContext::RegisterCallback(const std::function<void()> &callback_fun) const {
-  if (callback_fun == nullptr) {
-    GELOGW("[%s] Callback is NULL", GetNodeName());
-    return SUCCESS;
-  }
   auto ret = execution_context_->callback_manager->RegisterCallback(callback_fun);
   if (ret != SUCCESS) {
     GELOGE(ret, "[%s] Failed to register callback", GetNodeName());
@@ -388,20 +384,6 @@ const char *TaskContext::GetNodeName() const {
   return node_item_->NodeName().c_str();
 }
 
-void TaskContext::ReleaseInputsAndOutputs() {
-  for (int i = 0; i < node_item_->num_inputs; ++i) {
-    auto tensor = inputs_start_ + i;
-    tensor->Destroy();
-    GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), i);
-  }
-
-  for (int i = 0; i < node_item_->num_outputs; ++i) {
-    auto tensor = outputs_start_ + i;
-    tensor->Destroy();
-    GELOGD("[%s] Tensor of output[%d] released", GetNodeName(), i);
-  }
-}
-
 void TaskContext::ReleaseInput(int index) {
   auto input_tensor = MutableInput(index);
   if (input_tensor != nullptr) {
@@ -473,10 +455,6 @@ Status TaskContext::TryExecuteCallback(const function<void()> &callback_fun) con
 }
 const DumpProperties &TaskContext::GetDumpProperties() const {
   return execution_context_->dump_properties;
-}
-
-bool TaskContext::NeedCallback() {
-  return node_item_->has_observer || IsDumpEnabled() || execution_context_->profiling_level > 0;
 }
 }  // namespace hybrid
 }  // namespace ge

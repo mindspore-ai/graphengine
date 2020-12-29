@@ -74,17 +74,13 @@ class ErrorManager {
                            const std::vector<std::string> &value = {});
 
   ///
-  /// @brief report graph compile failed message such as error code and op_name in mstune case
+  /// @brief report graph compile failed message such as error code and op_name in mustune case
+  /// @param [in] root_graph_name: root graph name
   /// @param [in] msg: failed message map, key is error code, value is op_name
   /// @return int 0(success) -1(fail)
   ///
-  int ReportMstuneCompileFailedMsg(const std::map<std::string, std::string> &msg);
-
-  ///
-  /// @brief save graph compile failed message from thread local map to global map
-  /// @param [in] graph_name: graph name
-  ///
-  void SaveMstuneCompileFailedMsg(const std::string &graph_name);
+  int ReportMstuneCompileFailedMsg(const std::string &root_graph_name,
+                                   const std::map<std::string, std::string> &msg);
 
   ///
   /// @brief get graph compile failed message in mstune case
@@ -92,8 +88,8 @@ class ErrorManager {
   /// @param [out] msg_map: failed message map, key is error code, value is op_name list
   /// @return int 0(success) -1(fail)
   ///
-  int GetMstuneCompileFailedMsg(const std::string &graph_name, 
-                                std::map<std::string, 
+  int GetMstuneCompileFailedMsg(const std::string &graph_name,
+                                std::map<std::string,
                                 std::vector<std::string>> &msg_map);
 
  private:
@@ -114,6 +110,9 @@ class ErrorManager {
   int ParseJsonFile(std::string path);
 
   int ReadJsonFile(const std::string &file_path, void *handle);
+
+  void ClassifyMsg(const std::map<std::string, std::string> &msg,
+                   std::map<std::string, std::vector<std::string>> &classified_msg);
 
   bool is_init_ = false;
   std::mutex mutex_;

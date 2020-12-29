@@ -50,8 +50,6 @@ class TaskContext {
   ConstGeTensorDescPtr GetOutputDesc(int index) const;
   GeTensorDescPtr MutableInputDesc(int index) const;
   GeTensorDescPtr MutableOutputDesc(int index) const;
-  void ReleaseInputsAndOutputs();
-  bool NeedCallback();
   void ReleaseInput(int index);
   const TensorValue *GetInput(int index) const;
   const TensorValue *GetOutput(int index) const;

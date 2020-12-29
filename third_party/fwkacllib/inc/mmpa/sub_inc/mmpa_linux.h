@@ -279,8 +279,10 @@ typedef struct {
 #define M_NAME_MAX MAX_FNAME
 
 #define M_F_OK F_OK
-#define M_R_OK R_OK
+#define M_X_OK X_OK
 #define M_W_OK W_OK
+#define M_R_OK R_OK
+
 
 #define MM_DT_DIR DT_DIR
 #define MM_DT_REG DT_REG

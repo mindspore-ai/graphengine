@@ -295,6 +295,11 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status LaunchKernelCustAicpuSo(const string &kernel_name);
 
+  ge::Status LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_optype_list,
+                                      std::vector<std::string> &aicpu_tf_optype_list);
+
+  ge::Status CheckAicpuOpList(GeModelPtr ge_model);
+
   ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
 
   ge::Status GenSessionId(uint64_t &session_id);
@@ -353,7 +358,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
   std::map<std::string, std::vector<uint64_t>> model_aicpu_kernel_;
   uint32_t max_model_id_;
-  std::recursive_mutex map_mutex_;
+  std::mutex map_mutex_;
+  std::mutex sess_ids_mutex_;
   std::mutex session_id_create_mutex_;
   static::std::mutex exeception_infos_mutex_;
   uint64_t session_id_bias_;

@@ -93,8 +93,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
 
   if (options.profiling_mode == "1" && !options.profiling_options.empty()) {
     // enable profiling by ge option
-    if (memcpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
-                 options.profiling_options.size()) != EOK) {
+    if (strncpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
+                 MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
       GELOGE(INTERNAL_ERROR, "copy profiling_options failed.");
       return INTERNAL_ERROR;
     }
@@ -124,11 +124,12 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     return ge::PARAM_INVALID;
   }
 
-  if (memcpy_s(prof_conf.jobId, sizeof(prof_conf.jobId), options.job_id.c_str(),
-               sizeof(options.job_id.c_str())) != EOK) {
+  if (strncpy_s(prof_conf.jobId, MSPROF_OPTIONS_DEF_LEN_MAX, options.job_id.c_str(),
+               MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
     GELOGE(INTERNAL_ERROR, "copy job_id failed.");
     return INTERNAL_ERROR;
   }
+  GELOGI("Job id: %s, original job id: %s.", prof_conf.jobId, options.job_id.c_str());
 #endif
   return ge::SUCCESS;
 }
@@ -158,6 +159,7 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     if (!fp_point_.empty() && !bp_point_.empty()) {
       GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
     }
+    is_training_trace_ = true;
   } catch (...) {
     GELOGE(FAILED, "Json prof_conf options is invalid.");
     return ge::PARAM_INVALID;
@@ -631,6 +633,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     uint64_t module, const std::map<std::string, std::string> &config_para) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
+  uint64_t training_trace_mask = module & PROF_TRAINING_TRACE_MASK;
+  if (training_trace_mask == PROF_TRAINING_TRACE_MASK) {
+    is_training_trace_ = true;
+  }
   int32_t device_num = 0;
   vector<int32_t> device_list;
   if (ProfParseParam(config_para, device_num, device_list) != SUCCESS) {

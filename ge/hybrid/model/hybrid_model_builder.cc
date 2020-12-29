@@ -932,7 +932,7 @@ Status HybridModelBuilder::InitWeights() {
     auto op_desc = constant_node->GetOpDesc();
     auto v_weights = ModelUtils::GetWeights(op_desc);
     if (v_weights.empty()) {
-      GELOGE(INTERNAL_ERROR, "[%s] Constant no not have value", constant_node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[%s] Constant has no value", constant_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
     auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());

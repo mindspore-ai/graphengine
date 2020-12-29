@@ -18,6 +18,10 @@
 #include "hybrid/node_executor/host_cpu/kernel_factory.h"
 #include "graph/passes/folding_pass.h"
 #include "hybrid/model/hybrid_model.h"
+#ifndef ONLY_COMPILE_OPEN_SRC
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/host_mem_allocator.h"
+#endif
 #include "ge_local_engine/engine/host_cpu_engine.h"
 
 namespace ge {
@@ -50,15 +54,23 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     auto input_desc_ptr = context.GetInputDesc(i);
     GE_CHECK_NOTNULL(input_desc_ptr);
     const auto &input_desc = *input_desc_ptr;
+#ifndef ONLY_COMPILE_OPEN_SRC
+    auto tensor = context.GetInput(i);
+    GE_CHECK_NOTNULL(tensor);
+    auto item = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).GetAlignedPtr(tensor->GetData());
+    GE_CHECK_NOTNULL(item.second);
+    auto in_tensor = MakeShared<GeTensor>(input_desc, item.second, item.first);
+#else
     GE_CHECK_NOTNULL(context.GetInput(i));
     auto in_tensor = MakeShared<GeTensor>(input_desc,
                                           reinterpret_cast<const uint8_t *>(context.GetInput(i)->GetData()),
                                           context.GetInput(i)->GetSize());
+#endif
     GE_CHECK_NOTNULL(in_tensor);
     in_tensor->MutableTensorDesc().SetDataType(input_desc.GetDataType());
     in_tensor->MutableTensorDesc().SetShape(input_desc.GetShape());
     inputs.emplace_back(in_tensor);
-    GELOGI("node:%s allocate input %d, size=%zu", op_desc->GetName().c_str(), i, in_tensor->GetData().size());
+    GELOGD("node:%s allocate input %d, size=%zu", op_desc->GetName().c_str(), i, in_tensor->GetData().size());
   }
 
   std::vector<GeTensorPtr> outputs;
@@ -72,14 +84,20 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     }
     auto tensor = context.GetOutput(i);
     GE_CHECK_NOTNULL(tensor);
+#ifndef ONLY_COMPILE_OPEN_SRC
+    auto item = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).GetAlignedPtr(tensor->GetData());
+    GE_CHECK_NOTNULL(item.second);
+    auto out_tensor = MakeShared<GeTensor>(output_desc, item.second, item.first);
+#else
     auto out_tensor = MakeShared<GeTensor>(output_desc,
                                            reinterpret_cast<const uint8_t *>(tensor->GetData()),
                                            tensor->GetSize());
+#endif
     GE_CHECK_NOTNULL(out_tensor);
     out_tensor->MutableTensorDesc().SetDataType(output_desc.GetDataType());
     out_tensor->MutableTensorDesc().SetShape(output_desc.GetShape());
     outputs.emplace_back(out_tensor);
-    GELOGI("node:%s allocate output %d, size=%zu", op_desc->GetName().c_str(), i, out_tensor->GetData().size());
+    GELOGD("node:%s allocate output %d, size=%zu", op_desc->GetName().c_str(), i, out_tensor->GetData().size());
   }
 
   return HostCpuEngine::GetInstance().Run(node_, inputs, outputs);

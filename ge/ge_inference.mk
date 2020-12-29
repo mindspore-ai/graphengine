@@ -64,6 +64,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     graph/manager/graph_var_manager.cc \
     graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
+    graph/manager/host_mem_allocator.cc \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
 
@@ -195,7 +196,8 @@ OMG_HOST_SRC_FILES := \
     graph/passes/useless_control_out_remove_pass.cc \
     graph/passes/for_pass.cc \
     graph/passes/enter_pass.cc \
-    graph/passes/assign_pass.cc \
+    graph/passes/assign_remove_pass.cc \
+    graph/passes/inplace_support_check_pass.cc \
     graph/passes/addn_pass.cc \
     graph/passes/common_subexpression_elimination_pass.cc \
     graph/passes/transop_symmetry_elimination_pass.cc \

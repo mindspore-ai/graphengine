@@ -94,6 +94,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/manager/graph_var_manager.cc \
     graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
+    graph/manager/host_mem_allocator.cc \
     graph/manager/memory_api.cc \
     graph/manager/model_manager/event_manager.cc        \
     graph/manager/trans_var_data_utils.cc \
@@ -134,7 +135,8 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/dropout_pass.cc \
     graph/passes/hccl_group_pass.cc \
     graph/passes/enter_pass.cc \
-    graph/passes/assign_pass.cc \
+    graph/passes/assign_remove_pass.cc \
+    graph/passes/inplace_support_check_pass.cc \
     graph/passes/flow_ctrl_pass.cc \
     graph/passes/global_step_insert_pass.cc \
     host_kernels/transpose_kernel.cc \

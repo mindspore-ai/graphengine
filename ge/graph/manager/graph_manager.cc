@@ -38,6 +38,10 @@
 #include "graph/partition/stage_partition.h"
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/bitcast_pass.h"
+#ifndef ONLY_COMPILE_OPEN_SRC
+#include "graph/passes/assign_remove_pass.h"
+#include "graph/passes/inplace_support_check_pass.h"
+#endif
 #include "graph/passes/atomic_addr_clean_pass.h"
 #include "graph/passes/attach_stream_label_pass.h"
 #include "graph/passes/cast_remove_pass.h"
@@ -2250,10 +2254,20 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   ReshapeRemovePass reshape_remove_pass;
   CondRemovePass condition_remove_pass;
   BitcastPass bitcast_pass;
+#ifndef ONLY_COMPILE_OPEN_SRC
+  AssignRemovePass assign_remove_pass;
+  InplaceSupportCheckPass inplace_support_check_pass;
+#endif
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("CondRemovePass", &condition_remove_pass);
   names_to_passes.emplace_back("BitcastPass", &bitcast_pass);
+#ifndef ONLY_COMPILE_OPEN_SRC
+  if (GetContext().GetHostExecFlag()) {
+    names_to_passes.emplace_back("AssignRemovePass", &assign_remove_pass);
+    names_to_passes.emplace_back("InplaceSupportCheckPass", &inplace_support_check_pass);
+  }
+#endif
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "OptimizeStage2::MergedGraphNameToPasses");

@@ -18,7 +18,7 @@
 #define GE_GRAPH_MANAGER_HOST_MEM_ALLOCATOR_H_
 
 #include <mutex>
-#include <unordered_map>
+#include <map>
 
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/aligned_ptr.h"
@@ -27,7 +27,7 @@
 namespace ge {
 class HostMemAllocator {
  public:
-  explicit HostMemAllocator(rtMemType_t memory_type) : memory_type_(memory_type) {}
+  explicit HostMemAllocator(rtMemType_t)  {}
   ~HostMemAllocator() = default;
 
   HostMemAllocator(const HostMemAllocator &) = delete;
@@ -48,8 +48,7 @@ class HostMemAllocator {
  private:
   void Clear();
 
-  rtMemType_t memory_type_;
-  std::unordered_map<const void *, std::pair<size_t, std::shared_ptr<AlignedPtr>>> allocated_blocks_;
+  std::map<const void *, std::pair<size_t, std::shared_ptr<AlignedPtr>>> allocated_blocks_;
   // lock around all operations
   mutable std::mutex mutex_;
 };

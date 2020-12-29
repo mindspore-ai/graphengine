@@ -44,13 +44,12 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
   }
   mem_info.fd = output_para.fd;
 #ifndef ONLY_COMPILE_OPEN_SRC
-  mem_info.host_aligned_ptr = AlignedPtr::BuildFromAllocFunc(mem_info.mem_size,
-                                                             [&output_para](std::unique_ptr<uint8_t[], deleter> &ptr) {
+  mem_info.host_aligned_ptr = AlignedPtr::BuildFromAllocFunc([&output_para](std::unique_ptr<uint8_t[], deleter> &ptr) {
                                                                ptr.reset(reinterpret_cast<uint8_t *>(output_para.ptr));
                                                              },
                                                              [](uint8_t *ptr) {
                                                                ptr = nullptr;
-                                                             }, 0);
+                                                             });
 #else
   mem_info.host_address = reinterpret_cast<uint8_t *>(output_para.ptr);
 #endif

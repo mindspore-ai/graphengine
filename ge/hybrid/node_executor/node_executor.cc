@@ -244,7 +244,7 @@ Status NoOpTask::UpdateArgs(TaskContext &context) {
 }
 Status NoOpTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Skipping execution for op with empty outputs", context.GetNodeName());
-  return context.TryExecuteCallback((done_callback));
+  return context.TryExecuteCallback(done_callback);
 }
 }  // namespace hybrid
 }  // namespace ge

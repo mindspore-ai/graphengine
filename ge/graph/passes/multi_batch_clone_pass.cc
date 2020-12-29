@@ -488,8 +488,7 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &data) {
     auto shape = data_shape;
     auto ret = multibatch::CalcShape(data_to_dynamic_info_.at(data_name).at(i), shape);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to calculate the batched shape for data node %s, the shapes may not match",
-             data->GetName().c_str());
+      GELOGE(ret, "Failed to calculate the shape for data node %s, the shape may not match", data->GetName().c_str());
       return ret;
     }
     tensor.SetShape(shape);

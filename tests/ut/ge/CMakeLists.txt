@@ -562,6 +562,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     #"graph/load/new_model_manager_davinci_model_unittest.cc"
     #"graph/load/new_model_manager_model_manager_unittest.cc"
     #"graph/load/new_model_manager_task_build_unittest.cc"
+	"graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
     #"graph/load/output_net_output_unittest.cc"

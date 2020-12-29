@@ -805,7 +805,7 @@ Status ModelBuilder::CompileSingleOp() {
 }
 
 void ModelBuilder::CollectCheckAicpuAttr(const OpDescPtr &op_desc, std::set<std::string> &aicpu_op_types,
-                                           std::set<std::string> &aicpu_tf_op_types) {
+                                         std::set<std::string> &aicpu_tf_op_types) {
   std::string aicpu_optype;
   bool has_attr_check_cpu = ge::AttrUtils::GetStr(op_desc, "needCheckCpu", aicpu_optype);
   std::vector<std::string> tf_optypes;
@@ -822,7 +822,7 @@ void ModelBuilder::CollectCheckAicpuAttr(const OpDescPtr &op_desc, std::set<std:
 }
 
 void ModelBuilder::SetModelCheckAicpuAttr(ge::Model &model, std::set<std::string> &aicpu_op_types,
-                                            std::set<std::string> &aicpu_tf_op_types) {
+                                          std::set<std::string> &aicpu_tf_op_types) {
   std::vector<std::string> aicpu_optype_list;
   std::vector<std::string> aicpu_tf_optype_list;
   if (ge::AttrUtils::GetListStr(&model, "needCheckCpu", aicpu_optype_list)) {
@@ -839,10 +839,10 @@ void ModelBuilder::SetModelCheckAicpuAttr(ge::Model &model, std::set<std::string
   aicpu_optype_list.assign(aicpu_op_types.begin(), aicpu_op_types.end());
   aicpu_tf_optype_list.assign(aicpu_tf_op_types.begin(), aicpu_tf_op_types.end());
   GELOGI(
-      "Check Aicpu op types ComputeGraph: %s aicpu_op_types: %zu, aicpu_optype_list: %zu, aicpu_tf_op_types: %zu, "
-      "aicpu_tf_optype_list:%zu.",
-      compute_graph_->GetName().c_str(), aicpu_op_types.size(), aicpu_optype_list.size(), aicpu_tf_op_types.size(),
-      aicpu_tf_optype_list.size());
+    "Check Aicpu op types ComputeGraph: %s aicpu_op_types: %zu, aicpu_optype_list: %zu, aicpu_tf_op_types: %zu, "
+    "aicpu_tf_optype_list:%zu.",
+    compute_graph_->GetName().c_str(), aicpu_op_types.size(), aicpu_optype_list.size(), aicpu_tf_op_types.size(),
+    aicpu_tf_optype_list.size());
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, "needCheckCpu", aicpu_optype_list), return,
                    "Set attr needCheckCpu fail.");
 

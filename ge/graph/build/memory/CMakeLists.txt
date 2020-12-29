@@ -14,6 +14,7 @@ add_library(ge_memory STATIC ${SRC_LIST})
 target_compile_options(ge_memory PRIVATE
     -Werror
     -O2
+    -fno-common
 )
 
 target_compile_definitions(ge_memory PRIVATE

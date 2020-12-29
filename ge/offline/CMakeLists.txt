@@ -22,6 +22,7 @@ target_compile_options(atc PRIVATE
     -Werror
     -O2
     -Wno-deprecated-declarations
+    -fno-common
 )
 
 target_compile_definitions(atc PRIVATE
@@ -83,6 +84,7 @@ target_compile_options(atc_atc.bin PRIVATE
     -Werror
     -O2
     -Wno-deprecated-declarations
+    -fno-common
 )
 
 target_compile_definitions(atc_atc.bin PRIVATE
@@ -149,6 +151,7 @@ target_compile_options(fwk_atc.bin PRIVATE
     -Werror
     -O2
     -Wno-deprecated-declarations
+    -fno-common
 )
 
 target_compile_definitions(fwk_atc.bin PRIVATE

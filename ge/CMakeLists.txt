@@ -625,6 +625,7 @@ target_compile_definitions(ge_runner PRIVATE
 
 target_compile_options(ge_runner PRIVATE
     -O2
+    -fno-common
 )
 
 target_include_directories(ge_runner PRIVATE
@@ -669,7 +670,6 @@ target_link_libraries(ge_runner PRIVATE
     c_sec
     slog
     runtime
-    resource
     error_manager
     ascend_hal_stub
     -Wl,--as-needed
@@ -693,6 +693,7 @@ target_compile_definitions(ge_compiler PRIVATE
 
 target_compile_options(ge_compiler PRIVATE
     -O2
+    -fno-common
 )
 
 target_include_directories(ge_compiler PRIVATE
@@ -734,7 +735,6 @@ target_link_libraries(ge_compiler PRIVATE
     error_manager
     slog
     runtime_compile
-    resource
     -Wl,--as-needed
     json
     -lrt

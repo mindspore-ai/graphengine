@@ -89,7 +89,6 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
 #ifdef DAVINCI_SUPPORT_PROFILING
   // enable profiling by env
   char env_profiling_mode[MMPA_MAX_PATH] = { 0x00 };
-  is_load_profiling_ = false; // Change in ProfInit
   is_execute_profiling_ = false;
 
   if (options.profiling_mode == "1" && !options.profiling_options.empty()) {

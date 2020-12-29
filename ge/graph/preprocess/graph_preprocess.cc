@@ -50,7 +50,6 @@
 #include "graph/passes/for_pass.h"
 #include "graph/passes/guarantee_const_pass.h"
 #include "graph/passes/hccl_group_pass.h"
-#include "graph/passes/hccl_memcpy_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/infershape_pass.h"
 #include "graph/passes/net_output_pass.h"
@@ -1728,8 +1727,6 @@ Status GraphPrepare::PrepareOptimize() {
   PassManager graph_pass;
   try {
     (void)graph_pass.AddPass("PrepareOptimize::PrunePass", new PrunePass);
-    // todo 临时把hccl的memcpy插入放到图准备，为了防止其多插memcpy
-    (void)graph_pass.AddPass("PrepareOptimize::HcclMemcpyPass", new (std::nothrow) HcclMemcpyPass);
   } catch (std::bad_alloc &e) {
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
     return INTERNAL_ERROR;

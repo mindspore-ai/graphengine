@@ -28,50 +28,157 @@
 namespace {
 const int32_t kAnchorSize = 1;
 const int kAnchorNum = 0;
+const int32_t kAnchorAssignRefIndex = 0;
+const int32_t kAnchorAssignValueIndex = 1;
 const char *const kInputMutable = "_input_mutable";
 }  // namespace
 namespace ge {
 Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
+  Status ret = SUCCESS;
   GE_IF_BOOL_EXEC(graph == nullptr, GELOGE(PARAM_INVALID, "param [graph] must not be null."); return PARAM_INVALID);
   for (const auto &node : graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
+    if (op_desc == nullptr) {
+      GELOGE(INTERNAL_ERROR, "node has no op_desc, node_name : %s.", node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
 
-    bool node_input_mutable = false;
-    if (!AttrUtils::HasAttr(op_desc, kInputMutable)) {
+    ret = ContinuousInputProcess(graph, node);
+    if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "failed ProcessBroadcastMemcpy, node_name:%s.", node->GetName().c_str());
+      return ret;
+    }
+
+    ret = MutableInputProcess(graph, node);
+    if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "failed MutableInputProcess, node_name:%s.", node->GetName().c_str());
+      return ret;
+    }
+
+    ret = P2pmemInputProcess(graph, node);
+    if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "failed P2pmemInputProcess, node_name:%s.", node->GetName().c_str());
+      return ret;
+    }
+
+  }
+  return ret;
+}
+
+// If node has _input_mutable attr, means input mem may be modified when op execute.
+// In order to avoid to affect another op execute with same input when data modified,
+// need to inset memcpy node between.
+// also works on situation that input is variable or const.
+Status HcclMemcpyPass::MutableInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
+  auto op_desc = node->GetOpDesc();
+
+  bool node_input_mutable = false;
+  if (!AttrUtils::HasAttr(op_desc, kInputMutable)) {
+    return SUCCESS;
+  }
+
+  if (!AttrUtils::GetBool(op_desc, kInputMutable, node_input_mutable)) {
+    GELOGE(INTERNAL_ERROR, "node:%s get attr:_input_mutable failed.", node->GetName().c_str());
+    return FAILED;
+  }
+  if (!node_input_mutable) {
+    return SUCCESS;
+  }
+
+  GELOGI("input mutable hcom op is:%s.", op_desc->GetName().c_str());
+  for (auto &hccl_in_anchor : node->GetAllInDataAnchors()) {
+    if (hccl_in_anchor == nullptr) {
+      continue;
+    }
+    auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(src_out_anchor);
+
+    int32_t src_out_anchor_size = src_out_anchor->GetPeerInDataAnchors().size();
+    if (src_out_anchor_size == kAnchorSize) {
+      // Identity needs to be inserted between constant (/data) and hcomallreduce to avoid constant being cleared.
+      if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
+        Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
+        if (ret != SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+          return ret;
+        }
+      }
       continue;
     }
 
-    GE_IF_BOOL_EXEC(!AttrUtils::GetBool(op_desc, kInputMutable, node_input_mutable),
-        GELOGE(INTERNAL_ERROR, "node:%s get attr:_input_mutable failed.", node->GetName().c_str()); return FAILED);
-    if (!node_input_mutable) {
-      continue;
+    Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
+    if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+      return ret;
     }
+  }
+  return SUCCESS;
+}
 
-    GELOGI("hcom op is:%s.", op_desc->GetName().c_str());
+// If broadcast input size is bigger than 1, and input from variable,
+// cause by broadcast input memory should be continuous,
+// another featuremap mem will be allocated for broadcast input.
+// In this condition, move data from variable mem to broadcast input featuremap mem will be executed each step.
+// In order to avoid move action out of model, use memcpy node instead of move action code.
+Status HcclMemcpyPass::ContinuousInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
+  auto op_desc = node->GetOpDesc();
+
+  bool is_input_continuous = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
+
+  if (is_input_continuous && op_desc->GetInputsSize() > 1) {
+    GELOGI("continuous input op is:%s.", op_desc->GetName().c_str());
+    // if input size bigger than one, insert memcpy between var data for support continous mem alloc
     for (auto &hccl_in_anchor : node->GetAllInDataAnchors()) {
       if (hccl_in_anchor == nullptr) {
         continue;
       }
       auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
-      GE_CHECK_NOTNULL(src_out_anchor);
-
-      int32_t src_out_anchor_size = src_out_anchor->GetPeerInDataAnchors().size();
-      if (src_out_anchor_size == kAnchorSize) {
-        // Memcpyasync needs to be inserted between constant (/data) and hcomallreduce to avoid constant being cleared.
-        NodePtr src_node = src_out_anchor->GetOwnerNode();
-        std::string src_type = src_node->GetType();
-        bool check_src_type = (src_type == CONSTANTOP) || (src_type == DATA) || (src_type == CONSTANT);
-        if (check_src_type) {
-          Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
-          if (ret != SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
-            return ret;
-          }
-        }
-        continue;
+      if (src_out_anchor == nullptr) {
+        GELOGE(INTERNAL_ERROR, "hcom op input has no peer anchor, node_name:%s", node->GetName().c_str());
+        return INTERNAL_ERROR;
       }
 
+      if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
+        Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
+        if (ret != SUCCESS) {
+          GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+          return ret;
+        }
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+// if input is var type, and node input need p2p mem, then memcpy should be insert between the two
+Status HcclMemcpyPass::P2pmemInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
+  auto op_desc = node->GetOpDesc();
+
+  vector<int64_t> input_memory_types;
+  (void) ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, input_memory_types);
+
+  if (input_memory_types.empty()) {
+    return SUCCESS;
+  }
+
+  for (uint32_t index = 0; index < input_memory_types.size() && index < op_desc->GetInputsSize(); index++) {
+    if (input_memory_types[index] != RT_MEMORY_P2P_DDR) {
+      continue;
+    }
+
+    GELOGD("p2p input op is:%s.", op_desc->GetName().c_str());
+    auto hccl_in_anchor = node->GetInDataAnchor(index);
+    if (hccl_in_anchor == nullptr) {
+      continue;
+    }
+    auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
+    if (src_out_anchor == nullptr) {
+      GELOGE(INTERNAL_ERROR, "hcom op input has no peer anchor, node_name:%s", node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
       Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
       if (ret != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
@@ -82,8 +189,12 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
   return SUCCESS;
 }
 
+bool HcclMemcpyPass::IsDataNode(const std::string& node_type) {
+  return (node_type == CONSTANTOP) || (node_type == VARIABLE) || (node_type == DATA) || (node_type == CONSTANT);
+}
+
 ///
-/// @brief Add MemcpyAsync Node
+/// @brief Add Identity Node
 /// @param [in] ge::ComputeGraphPtr graph
 /// @param [in] ge::OutDataAnchorPtr in_node
 /// @return ge::NodePtr
@@ -101,20 +212,20 @@ NodePtr HcclMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const O
   node_name = CheckDuplicateName(node_name);
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), IDENTITY);
   if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Create identity op: MakeShared op_desc fail.");
+    GELOGE(INTERNAL_ERROR, "Create Identity op: MakeShared op_desc fail.");
     return nullptr;
   }
-  GELOGI("Create identity op:%s.", op_desc->GetName().c_str());
+  GELOGI("Create Identity op:%s.", op_desc->GetName().c_str());
 
   graphStatus ret = op_desc->AddInputDesc("x", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Create identity op: add input desc fail.");
+    GELOGE(INTERNAL_ERROR, "Create Identity op: add input desc fail.");
     return nullptr;
   }
 
   ret = op_desc->AddOutputDesc("y", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Create identity op: add output desc fail.");
+    GELOGE(INTERNAL_ERROR, "Create Identity op: add output desc fail.");
     return nullptr;
   }
   // because history reason ,this pass can not do work after constant fold so mark it
@@ -122,7 +233,7 @@ NodePtr HcclMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const O
 
   NodePtr memcpy_node = graph->AddNode(op_desc);
   if (memcpy_node == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Insert identity node fail.");
+    GELOGE(INTERNAL_ERROR, "Insert Identity node fail.");
     return nullptr;
   }
 
@@ -155,7 +266,38 @@ std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
 ///
 Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                                             const InDataAnchorPtr &hccl_in_anchor) {
-  GELOGI("The op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str());
+  GE_CHECK_NOTNULL(src_out_anchor->GetOwnerNode());
+  GE_CHECK_NOTNULL(hccl_in_anchor->GetOwnerNode());
+
+  Status ret = InsertIdentityBeforeHccl(graph, src_out_anchor, hccl_in_anchor);
+  if (ret != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "add identity failed, var_node:%s, hccl_node:%s.",
+           src_out_anchor->GetOwnerNode()->GetName().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    return ret;
+  }
+
+  ret = InsertAssignAfterBroadcastIfNeed(graph, src_out_anchor, hccl_in_anchor);
+  if (ret != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "add assign failed, var_node:%s, hccl_node:%s.",
+           src_out_anchor->GetOwnerNode()->GetName().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    return ret;
+  }
+  return SUCCESS;
+}
+
+///
+/// @brief Insert Identity node Between Hccl node and variable
+/// @param [in] ComputeGraphPtr graph
+/// @param [in] OutDataAnchorPtr src_out_anchor
+/// @param [in] InDataAnchorPtr hccl_in_anchor
+/// @return status
+///
+Status HcclMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
+                                                const InDataAnchorPtr &hccl_in_anchor) {
+  GELOGI("Between op %s and op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
+    hccl_in_anchor->GetOwnerNode()->GetName().c_str());
   NodePtr memcpy_node = CreateIdentityNode(graph, src_out_anchor);
   GE_CHECK_NOTNULL(memcpy_node);
 
@@ -182,6 +324,139 @@ Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const 
   }
   return SUCCESS;
 }
+
+///
+/// @brief Insert assign node after broadcast node and variable to refresh variable data
+/// @param [in] ComputeGraphPtr graph
+/// @param [in] OutDataAnchorPtr var_out_anchor
+/// @param [in] InDataAnchorPtr hccl_in_anchor
+/// @return status
+///
+Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &graph,
+                                                        const OutDataAnchorPtr &var_out_anchor,
+                                                        const InDataAnchorPtr &hccl_in_anchor) {
+  if (hccl_in_anchor->GetOwnerNode()->GetType() != HCOMBROADCAST) {
+    GELOGD("%s not broadcast, no need to insert assign node", hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+    return SUCCESS;
+  }
+
+  if (var_out_anchor->GetOwnerNode()->GetType() != VARIABLE) {
+    GELOGD("%s not variable, no need to insert assign node", var_out_anchor->GetOwnerNode()->GetName().c_str());
+    return SUCCESS;
+  }
+
+  GELOGI("after op %s and op %s need insert assign op.", var_out_anchor->GetOwnerNode()->GetName().c_str(),
+    hccl_in_anchor->GetOwnerNode()->GetName().c_str());
+
+  for (auto peer_in_anchor : var_out_anchor->GetPeerInDataAnchors()) {
+    if (peer_in_anchor->GetOwnerNode()->GetType() == ASSIGN) {
+      GELOGD("variable %s out assign node is exist.", var_out_anchor->GetOwnerNode()->GetName().c_str());
+      return SUCCESS;
+    }
+  }
+
+  NodePtr assign_node = CreateAssignNode(graph, var_out_anchor);
+  GE_CHECK_NOTNULL(assign_node);
+
+  OutDataAnchorPtr hccl_out_anchor = hccl_in_anchor->GetOwnerNode()->GetOutDataAnchor(hccl_in_anchor->GetIdx());
+  GE_CHECK_NOTNULL(hccl_out_anchor);
+
+  Status ret = hccl_out_anchor->LinkTo(assign_node->GetInDataAnchor(kAnchorAssignValueIndex));
+  if (ret != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", hccl_out_anchor->GetOwnerNode()->GetName().c_str(),
+           assign_node->GetName().c_str());
+    return FAILED;
+  }
+
+  ret = var_out_anchor->LinkTo(assign_node->GetInDataAnchor(kAnchorAssignRefIndex));
+  if (ret != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", var_out_anchor->GetOwnerNode()->GetName().c_str(),
+           assign_node->GetName().c_str());
+    return FAILED;
+  }
+
+  // add control edge between assign node and node after broadcast node
+  OutControlAnchorPtr assign_out_control_anchor = assign_node->GetOutControlAnchor();
+  GE_CHECK_NOTNULL(assign_out_control_anchor);
+
+  for (auto in_data_anchor : hccl_out_anchor->GetPeerInDataAnchors()) {
+    if (in_data_anchor->GetOwnerNode()->GetName() == assign_node->GetName()) {
+      continue;
+    }
+    ret = assign_out_control_anchor->LinkTo(in_data_anchor->GetOwnerNode()->GetInControlAnchor());
+      if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "The op %s link control anchor %s fail.", assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+             in_data_anchor->GetOwnerNode()->GetName().c_str());
+      return FAILED;
+    }
+  }
+
+  for (auto in_control_anchor : hccl_out_anchor->GetOwnerNode()->GetOutControlAnchor()->GetPeerInControlAnchors()) {
+    if (in_control_anchor->GetOwnerNode()->GetName() == assign_node->GetName()) {
+      continue;
+    }
+    ret = assign_out_control_anchor->LinkTo(in_control_anchor);
+      if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "The op %s link control anchor %s fail.", assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+             in_control_anchor->GetOwnerNode()->GetName().c_str());
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+///
+/// @brief create assign Node, add to graph
+/// @param [in] ge::ComputeGraphPtr graph
+/// @param [in] ge::OutDataAnchorPtr variable node out anchor
+/// @return ge::NodePtr
+///
+NodePtr HcclMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+  GE_IF_BOOL_EXEC(graph == nullptr, return nullptr);
+  NodePtr pre_node = out_data_anchor->GetOwnerNode();
+  OpDescPtr pre_op_desc = pre_node->GetOpDesc();
+  if (pre_op_desc == nullptr) {
+    GELOGE(INTERNAL_ERROR, "OpDesc of pre node is invalid.");
+    return nullptr;
+  }
+
+  std::string node_name = pre_node->GetName() + "_" + ASSIGN;
+  node_name = CheckDuplicateName(node_name);
+  OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), ASSIGN);
+  if (op_desc == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Create Assign op: MakeShared op_desc fail.");
+    return nullptr;
+  }
+  GELOGI("Create Assign op:%s.", op_desc->GetName().c_str());
+
+  graphStatus ret = op_desc->AddInputDesc("ref", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Create Assign op: add ref input desc fail.");
+    return nullptr;
+  }
+
+  ret = op_desc->AddInputDesc("value", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Create Assign op: add value input desc fail.");
+    return nullptr;
+  }
+
+  ret = op_desc->AddOutputDesc("ref", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Create Assign op: add output desc fail.");
+    return nullptr;
+  }
+
+  NodePtr assign_node = graph->AddNode(op_desc);
+  if (assign_node == nullptr) {
+    GELOGE(INTERNAL_ERROR, "Insert Identity node fail.");
+    return nullptr;
+  }
+
+  return assign_node;
+}
+
+
 ///
 /// @brief Clear Status, used for subgraph pass
 /// @return SUCCESS

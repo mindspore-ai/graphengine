@@ -20,6 +20,7 @@ add_library(host_cpu_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(host_cpu_engine PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(host_cpu_engine PRIVATE
@@ -49,9 +50,7 @@ target_link_libraries(host_cpu_engine PRIVATE
     ascend_protobuf
     c_sec
     graph
-    register
     slog
-    runtime
     -Wl,--as-needed
 )
 
@@ -60,6 +59,7 @@ add_library(atc_host_cpu_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(atc_host_cpu_engine PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(atc_host_cpu_engine PRIVATE
@@ -90,9 +90,7 @@ target_link_libraries(atc_host_cpu_engine PRIVATE
     ascend_protobuf
     c_sec
     graph
-    register
     slog
-    runtime_compile
     -Wl,--as-needed
 )
 
@@ -106,6 +104,7 @@ add_library(host_cpu_opskernel_builder SHARED ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(host_cpu_opskernel_builder PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(host_cpu_opskernel_builder PRIVATE
@@ -145,6 +144,7 @@ add_library(atc_host_cpu_opskernel_builder SHARED ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(atc_host_cpu_opskernel_builder PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(atc_host_cpu_opskernel_builder PRIVATE
@@ -189,6 +189,7 @@ add_library(host_cpu_opskernel_builder_static STATIC ${CPU_OPS_KERNEL_LIST})
 
 target_compile_options(host_cpu_opskernel_builder_static PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(host_cpu_opskernel_builder_static PRIVATE

@@ -23,15 +23,25 @@
 #include <sstream>
 #include <string>
 #include <thread>
+#include <utility>
 
+#include "common/ge/ge_util.h"
 #include "common/math/math_util.h"
 #include "common/thread_pool.h"
+#include "common/util.h"
+#include "external/graph/types.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "analyzer/analyzer.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/common/local_context.h"
 #include "graph/common/transop_util.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
+#include "graph/ge_local_context.h"
+#include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/util/rt_context_util.h"
 #include "graph/partition/dynamic_shape_partition.h"
 #include "graph/passes/enter_pass.h"
@@ -51,6 +61,8 @@
 #include "graph/passes/dimension_adjust_pass.h"
 #include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/flow_ctrl_pass.h"
+#include "graph/passes/hccl_group_pass.h"
+#include "graph/passes/hccl_memcpy_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/input_output_connection_identify_pass.h"
 #include "graph/passes/iterator_op_pass.h"
@@ -65,6 +77,8 @@
 #include "graph/passes/permute_pass.h"
 #include "graph/passes/prune_pass.h"
 #include "graph/passes/ref_identity_delete_op_pass.h"
+#include "graph/passes/replace_with_empty_const_pass.h"
+#include "graph/passes/remove_same_const_pass.h"
 #include "graph/passes/reshape_recovery_pass.h"
 #include "graph/passes/reshape_remove_pass.h"
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
@@ -74,11 +88,14 @@
 #include "graph/passes/switch_logic_remove_pass.h"
 #include "graph/passes/switch_to_stream_switch_pass.h"
 #include "graph/passes/transop_breadth_fusion_pass.h"
+#include "graph/passes/transop_depth_fusion_pass.h"
 #include "graph/passes/transop_nearby_allreduce_fusion_pass.h"
 #include "graph/passes/transop_symmetry_elimination_pass.h"
 #include "graph/passes/transop_without_reshape_fusion_pass.h"
 #include "graph/passes/transpose_transdata_pass.h"
+#include "graph/passes/useless_control_out_remove_pass.h"
 #include "graph/passes/variable_op_pass.h"
+#include "graph/passes/variable_prepare_op_pass.h"
 #include "graph/passes/variable_ref_delete_op_pass.h"
 #include "graph/passes/variable_ref_useless_control_out_delete_pass.h"
 #include "graph/passes/end_of_sequence_add_control_pass.h"
@@ -89,6 +106,9 @@
 #include "graph/passes/memcpy_addr_async_pass.h"
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
+#include "graph/utils/type_utils.h"
+#include "graph/graph_util.h"
+#include "graph/types.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
 #include "ir_build/atc_ir_common.h"
@@ -532,7 +552,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
       (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
     }
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
-                                            compute_graph->GetGraphID(), subgraph, compute_graph->GetName(), session_id,
+                                            compute_graph->GetGraphID(), subgraph,
+                                            compute_graph->GetName(), session_id,
                                             GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
@@ -547,7 +568,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
         (void) AttrUtils::SetStr(subgraph->GetSubGraph(), ATTR_NAME_OP_COMPILE_STRATEGY, op_compile_strategy);
       }
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
-                                              compute_graph->GetGraphID(), subgraph, compute_graph->GetName(), session_id,
+                                              compute_graph->GetGraphID(), subgraph,
+                                              compute_graph->GetName(), session_id,
                                               GetThreadLocalContext());
       if (!f.valid()) {
         GELOGE(FAILED, "Future is invalid");
@@ -2130,6 +2152,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   TransposeTransDataPass transpose_transdata_pass;
   TransOpSymmetryEliminationPass symmetry_elimination_pass;
   DimensionComputePass dimension_compute_pass;
+  UselessControlOutRemovePass useless_control_out_remove_pass;
   names_to_passes.emplace_back("EnterPass", &enter_pass);
   names_to_passes.emplace_back("AddNPass", &addn_pass);
   names_to_passes.emplace_back("SwitchDeadBranchElimination", &switch_dead_branch_elimination);
@@ -2143,6 +2166,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("DimensionAdjustPass", &dimension_adjust_pass);
+  names_to_passes.emplace_back("UselessControlOutRemovePass", &useless_control_out_remove_pass);
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "GraphManager::OptimizeStage1_2");
@@ -2183,6 +2207,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::VariableRefUselessControlOutDeletePass",
                                        new (std::nothrow) VariableRefUselessControlOutDeletePass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ReshapeRecoveryPass", new (std::nothrow) ReshapeRecoveryPass))
+  GE_CHK_STATUS_RET(
+      graph_pass.AddPass("OptimizeStage1_3::RemoveSameConstPass", new (std::nothrow) RemoveSameConstPass))
   if (options_.train_graph_flag) {
     // Priority: The GlobalStepInsertPass should work before graph partitioner.
     // Reason: Make sure that the var "global_step" can be partitioned to known sub graph and allocated memory

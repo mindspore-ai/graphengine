@@ -76,8 +76,7 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   }
 }
 
-Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph,
-                                       const std::string &engine_name) {
+Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std::string &engine_name) {
   if (compute_graph == nullptr) {
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeSubGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;

@@ -289,8 +289,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
     if (weight_ptr == nullptr) {
       weights_mem_base_ = MallocWeightsMem(weights_size);
       if (weights_mem_base_ == nullptr) {
-        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc weight memory failed. size: %zu", weights_size);
-        return ACL_ERROR_GE_MEMORY_ALLOCATION;
+        GELOGE(GE_EXEC_ALLOC_WEIGHT_MEM_FAILED, "Alloc weight memory failed. size: %zu", weights_size);
+        return GE_EXEC_ALLOC_WEIGHT_MEM_FAILED;
       }
       is_inner_weight_base_ = true;
     }
@@ -307,8 +307,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "call InitFeatureMapMem more than once .");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    GELOGE(FAILED, "call InitFeatureMapMem more than once .");
+    return FAILED;
   }
   is_feature_map_mem_has_inited_ = true;
 
@@ -316,8 +316,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
 
   if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    GELOGE(FAILED, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
+    return FAILED;
   }
 
   mem_base_ = static_cast<uint8_t *>(dev_ptr);
@@ -327,8 +327,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (TotalMemSize() && mem_base_ == nullptr) {
     mem_base_ = MallocFeatureMapMem(data_size);
     if (mem_base_ == nullptr) {
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
-      return ACL_ERROR_GE_MEMORY_ALLOCATION;
+      GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
+      return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
     }
     GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
             runtime_param_.graph_id, mem_base_, data_size);
@@ -343,8 +343,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (p2p_data_size != 0) {
     p2p_mem_base_ = MallocP2PMem(p2p_data_size);
     if (p2p_mem_base_ == nullptr) {
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc p2p memory failed,size: %zu", p2p_data_size);
-      return ACL_ERROR_GE_MEMORY_ALLOCATION;
+      GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
+      return GE_EXEC_ALLOC_P2P_MEM_FAILED;
     }
     GELOGI("InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
            p2p_mem_base_, p2p_data_size);
@@ -484,6 +484,8 @@ Status DavinciModel::DoTaskSink() {
   GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
 
   GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
 
   GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
 
@@ -710,7 +712,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   }
 
   // collect profiling for ge
-  GE_CHK_STATUS_RET(InitModelProfile(), "Init model profile failed");
   auto &profiling_manager = ProfilingManager::Instance();
   if (profiling_manager.ProfilingModelLoadOn()) {
     Status p_ret = ReportProfilingData();
@@ -2087,61 +2088,12 @@ Status DavinciModel::SyncVarData() {
   return ret;
 }
 
-Status DavinciModel::InitModelProfile() {
-  for (const auto &task : task_list_) {
-    GE_CHECK_NOTNULL(task);
-    const FusionOpInfo *fusion_op_info = task->GetFusionOpInfo();
-    // when type is RT_MODEL_TASK_KERNEL, ctx is not null
-    if ((fusion_op_info == nullptr) || fusion_op_info->original_op_names.empty()) {
-      continue;
-    }
-
-    GELOGI("task.id = %u, opNum = %zu", task->GetTaskID(), fusion_op_info->original_op_names.size());
-    op_id_map_.insert(std::make_pair(fusion_op_info->op_index, task->GetTaskID()));
+inline int64_t SumSize(const vector<int64_t> &size_list) {
+  int64_t sum_size = 0;
+  for (const int64_t &size : size_list) {
+    sum_size += size;
   }
-
-  std::set<uint32_t> task_id_set;
-  using CIT = std::multimap<uint32_t, uint32_t>::const_iterator;
-  using Range = std::pair<CIT, CIT>;
-  for (const auto &task : task_list_) {
-    GE_CHECK_NOTNULL(task);
-    const FusionOpInfo *fusion_op_info = task->GetFusionOpInfo();
-    if ((fusion_op_info == nullptr) || fusion_op_info->original_op_names.empty()) {
-      continue;
-    }
-
-    if (task_id_set.count(task->GetTaskID()) > 0) {
-      continue;
-    }
-
-    const auto &op_desc = GetOpByIndex(fusion_op_info->op_index);
-    GE_CHK_BOOL_EXEC(op_desc != nullptr, return FAILED, "index: %u out of range", fusion_op_info->op_index);
-
-    ProfileInfo profile;
-    profile.fusion_info = *fusion_op_info;
-    Range range = op_id_map_.equal_range(fusion_op_info->op_index);
-    for (CIT range_idx = range.first; range_idx != range.second; ++range_idx) {
-      profile.task_count++;
-      task_id_set.insert(range_idx->second);
-    }
-
-    // memory info
-    TaskMemInfo &mem_info = profile.memory_info;
-    const auto input_size = ModelUtils::GetInputSize(op_desc);
-    const auto output_size = ModelUtils::GetOutputSize(op_desc);
-    const auto workspace_size = ModelUtils::GetWorkspaceSize(op_desc);
-    const auto weight_size = ModelUtils::GetWeightSize(op_desc);
-    mem_info.input_size = std::accumulate(input_size.begin(), input_size.end(), 0);
-    mem_info.output_size = std::accumulate(output_size.begin(), output_size.end(), 0);
-    mem_info.workspace_size = std::accumulate(workspace_size.begin(), workspace_size.end(), 0);
-    mem_info.weight_size = std::accumulate(weight_size.begin(), weight_size.end(), 0);
-    mem_info.total_size = mem_info.weight_size + mem_info.input_size + mem_info.output_size + mem_info.workspace_size;
-
-    profile_list_.emplace_back(profile);
-  }
-
-  GELOGI("fusion task size: %zu, profile info size: %zu", op_id_map_.size(), profile_list_.size());
-  return SUCCESS;
+  return sum_size;
 }
 
 Status DavinciModel::SinkModelProfile() {
@@ -2149,12 +2101,18 @@ Status DavinciModel::SinkModelProfile() {
   auto &prof_mgr = ProfilingManager::Instance();
   ReporterData reporter_data{};
   // report model data tag name
-  std::string tag_name("model_load_info_" + std::to_string(this->Id()));
+  std::string tag_name;
+  tag_name.append("model_load_info_").append(std::to_string(this->Id()));
   GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
                    return FAILED, "Sink model tag memcpy error.");
 
   // Model Header
-  std::string name = om_name_.empty() ? name_ : om_name_;
+  string name;
+  if (!om_name_.empty()) {
+    name = om_name_;
+  } else {
+    name = name_;
+  }
   size_t name_len = name.size();
   reporter_data.deviceId = device_id_;
   reporter_data.data = (unsigned char *)&name_len;
@@ -2186,71 +2144,128 @@ Status DavinciModel::SinkModelProfile() {
   GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u.", this->Id());
 
-  using CIT = std::multimap<uint32_t, uint32_t>::const_iterator;
-  using Range = std::pair<CIT, CIT>;
-  for (const ProfileInfo &profile : profile_list_) {
-    // op name after fusion
-    string fusion_op_name = profile.fusion_info.op_name;
-    int32_t fusion_op_name_len = fusion_op_name.size() == 0 ? 1 : fusion_op_name.size();
-    reporter_data.data = (unsigned char *)&fusion_op_name_len;
-    reporter_data.dataLen = sizeof(int32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    reporter_data.data = (unsigned char *)fusion_op_name.c_str();
-    reporter_data.dataLen = fusion_op_name_len;
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    // original op name before fusion
-    uint32_t op_num = profile.fusion_info.original_op_names.size();
-    reporter_data.data = (unsigned char *)&op_num;
-    reporter_data.dataLen = sizeof(int32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    for (uint32_t k = 0; k < op_num; k++) {
-      std::string op_name = profile.fusion_info.original_op_names[k];
-      int32_t op_name_len = op_name.size() == 0 ? 1 : op_name.size();
-      reporter_data.data = (unsigned char *)&op_name_len;
-      reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                       "Reporter data fail, model id:%u.", this->Id());
-      reporter_data.data = (unsigned char *)op_name.c_str();
-      reporter_data.dataLen = op_name_len;
-      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                       "Reporter data fail, model id:%u.", this->Id());
-    }
-
-    // stream id info
-    uint32_t streamId = profile.fusion_info.stream_id;
-    reporter_data.data = (unsigned char *)&streamId;
-    reporter_data.dataLen = sizeof(int32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    // memory info
-    reporter_data.data = (unsigned char *)&profile.memory_info;
-    reporter_data.dataLen = sizeof(profile.memory_info);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    // task info
-    reporter_data.data = (unsigned char *)&profile.task_count;
-    reporter_data.dataLen = sizeof(uint32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    Range task_range = op_id_map_.equal_range(profile.fusion_info.op_index);
-    for (CIT idx = task_range.first; idx != task_range.second; ++idx) {
-      uint32_t task_id = idx->second;
-      reporter_data.data = (unsigned char *)&task_id;
-      reporter_data.dataLen = sizeof(uint32_t);
-      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                       "Reporter data fail, model id:%u.", this->Id());
+  int32_t task_num = task_list_.size();
+  std::multimap<uint32_t, uint32_t> op_id_map;
+  std::set<uint32_t> task_id_set;
+  for (int32_t i = 0; i < task_num; i++) {
+    auto task = task_list_[i];
+    GE_CHECK_NOTNULL(task);
+    auto fusion_op_info = task->GetFusionOpInfo();
+    // when type is RT_MODEL_TASK_KERNEL, ctx is not null
+    if (fusion_op_info != nullptr) {
+      uint32_t op_num = fusion_op_info->original_op_names.size();
+      uint32_t task_id = task->GetTaskID();
+      if (op_num > 0) {
+        GELOGI("task.id = %u, opNum = %u", task_id, op_num);
+        op_id_map.insert(std::make_pair(fusion_op_info->op_index, task_id));
+      }
     }
   }
 
+  struct memoryInfo {
+    int64_t input_size;
+    int64_t output_size;
+    int64_t weight_size;
+    int64_t workspace_size;
+    int64_t total_size;
+
+    memoryInfo() : input_size(0), output_size(0), weight_size(0), workspace_size(0), total_size(0) {}
+  };
+
+  using CIT = std::multimap<uint32_t, uint32_t>::const_iterator;
+  using Range = std::pair<CIT, CIT>;
+  for (int32_t i = 0; i < task_num; i++) {
+    auto task = task_list_[i];
+    GE_CHECK_NOTNULL(task);
+    auto fusion_op_info = task->GetFusionOpInfo();
+    if (fusion_op_info != nullptr && fusion_op_info->original_op_names.size() > 0) {
+      uint32_t task_id = task->GetTaskID();
+      uint32_t op_num = fusion_op_info->original_op_names.size();
+      uint32_t task_count = 0;
+      if (task_id_set.count(task_id) != 0) {
+        continue;
+      }
+
+      uint32_t op_id = fusion_op_info->op_index;
+      Range range = op_id_map.equal_range(op_id);
+      for (CIT range_idx = range.first; range_idx != range.second; ++range_idx) {
+        task_count++;
+        uint32_t task_id = range_idx->second;
+        task_id_set.insert(task_id);
+      }
+
+      // op name after fusion
+      string fusion_op_name = fusion_op_info->op_name;
+      int32_t fusion_op_name_len = fusion_op_name.size() == 0 ? 1 : fusion_op_name.size();
+      reporter_data.data = (unsigned char *)&fusion_op_name_len;
+      reporter_data.dataLen = sizeof(int32_t);
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+
+      reporter_data.data = (unsigned char *)fusion_op_name.c_str();
+      reporter_data.dataLen = fusion_op_name_len;
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+
+      // original op name before fusion
+      reporter_data.data = (unsigned char *)&op_num;
+      reporter_data.dataLen = sizeof(int32_t);
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+
+      for (uint32_t k = 0; k < op_num; k++) {
+        std::string op_name = fusion_op_info->original_op_names[k];
+        int32_t op_name_len = op_name.size() == 0 ? 1 : op_name.size();
+        reporter_data.data = (unsigned char *)&op_name_len;
+        reporter_data.dataLen = sizeof(int32_t);
+        GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                         "Reporter data fail, model id:%u.", this->Id());
+        reporter_data.data = (unsigned char *)op_name.c_str();
+        reporter_data.dataLen = op_name_len;
+        GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                         "Reporter data fail, model id:%u.", this->Id());
+      }
+
+      // stream id info
+      uint32_t streamId = task->GetStreamId();
+      reporter_data.data = (unsigned char *)&streamId;
+      reporter_data.dataLen = sizeof(int32_t);
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+
+      // memory info
+      struct memoryInfo memory_info;
+      uint32_t op_index = fusion_op_info->op_index;
+      auto iter = op_list_.find(op_index);
+      GE_CHK_BOOL_EXEC(iter != op_list_.end(), return FAILED, "index is out of range, index: %u", op_index);
+      auto op_desc = iter->second;
+      memory_info.input_size = SumSize(ModelUtils::GetInputSize(op_desc));
+      memory_info.output_size = SumSize(ModelUtils::GetOutputSize(op_desc));
+      memory_info.workspace_size = SumSize(ModelUtils::GetWorkspaceSize(op_desc));
+      memory_info.weight_size = SumSize(ModelUtils::GetWeightSize(op_desc));
+      memory_info.total_size =
+          memory_info.weight_size + memory_info.input_size + memory_info.output_size + memory_info.workspace_size;
+      reporter_data.data = (unsigned char *)&memory_info;
+      reporter_data.dataLen = sizeof(struct memoryInfo);
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+
+      // task info
+      reporter_data.data = (unsigned char *)&task_count;
+      reporter_data.dataLen = sizeof(uint32_t);
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+
+      Range task_range = op_id_map.equal_range(op_id);
+      for (CIT idx = task_range.first; idx != task_range.second; ++idx) {
+        uint32_t task_id = idx->second;
+        reporter_data.data = (unsigned char *)&task_id;
+        reporter_data.dataLen = sizeof(uint32_t);
+        GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                         "Reporter data fail, model id:%u.", this->Id());
+      }
+    }
+  }
   return SUCCESS;
 }
 
@@ -2824,19 +2839,19 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
   return SUCCESS;
 }
 
-Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs) {
-  for (size_t i = 0; i < total_io_addrs.size(); ++i) {
-    auto it_in = knonw_input_data_info_.find(total_io_addrs[i]);
+Status DavinciModel::UpdateKnownZeroCopyAddr() {
+  for (size_t i = 0; i < total_io_addrs_.size(); ++i) {
+    auto it_in = knonw_input_data_info_.find(total_io_addrs_[i]);
     if (it_in != knonw_input_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %zu,v addr %p,p addr %p .", i, total_io_addrs[i],
-             knonw_input_data_info_.at(total_io_addrs[i]));
-      total_io_addrs[i] = knonw_input_data_info_.at(total_io_addrs[i]);
+      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
+             knonw_input_data_info_.at(total_io_addrs_[i]));
+      total_io_addrs_[i] = knonw_input_data_info_.at(total_io_addrs_[i]);
     }
-    auto it_out = knonw_output_data_info_.find(total_io_addrs[i]);
+    auto it_out = knonw_output_data_info_.find(total_io_addrs_[i]);
     if (it_out != knonw_output_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %zu,v addr %p,p addr %p .", i, total_io_addrs[i],
-             knonw_output_data_info_.at(total_io_addrs[i]));
-      total_io_addrs[i] = knonw_output_data_info_.at(total_io_addrs[i]);
+      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
+             knonw_output_data_info_.at(total_io_addrs_[i]));
+      total_io_addrs_[i] = knonw_output_data_info_.at(total_io_addrs_[i]);
     }
   }
   GELOGI("DavinciModel::UpdateKnownZeroCopyAddr success.");
@@ -2865,7 +2880,7 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
   } else {
     total_io_addrs_ = orig_total_io_addrs_;
   }
-  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(total_io_addrs_), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
+  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
 
   if (total_args_size_ == 0) {
     GELOGW("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, pass rtMemcpy.", args_, total_args_size_);
@@ -2932,14 +2947,7 @@ Status DavinciModel::MallocKnownArgs() {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-  // malloc dynamic and static hybrid memory
-  if (total_hybrid_args_size_ != 0) {
-    rt_ret = rtMalloc(&hybrid_addrs_, total_hybrid_args_size_, RT_MEMORY_HBM);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
-    }
-  }
+
   // malloc fixed addr memory, eg: rts op
   if (total_fixed_addr_size_ != 0) {
     GELOGI("Begin to allocate fixed addr.");

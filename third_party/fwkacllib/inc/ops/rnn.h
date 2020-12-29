@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,6 +255,59 @@ REG_OP(DynamicRNN)
     .OP_END_FACTORY_REG(DynamicRNN)
 
 /**
+*@brief: DynamicLSTMV2 calculation.
+*@par Inputs:
+*ten inputs:
+*@li x:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li b:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li cont:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li w_xc_x_static:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li h0:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li c0:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li wci:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wcf:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wco:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li mask:A 1D Tensor. Must be one of the following types: uint8. The format must be ND . \n
+
+*@par Attributes:
+*@li num_output:An integer identifying the num projection in the op. Default to 0.
+*@li expose_hidden:An bool identifying the expose_hidden in the op. Default to flase.
+*@li need_output_last:An bool identifying the time major in the op. Default to true.
+*@li forget_bias:An float identifying the forget bias in the op. Default to 0.
+
+*@par Outputs:
+*eight outputs:
+*@li y:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li output_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li output_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li last_output_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li last_output_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*/
+REG_OP(DynamicLSTMV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(b, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(cont, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(w_xc_x_static, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(h0, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(c0, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wci, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wcf, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wco, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(last_output_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(last_output_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(num_output, Int, 0)
+    .ATTR(expose_hidden, Bool, false)
+    .ATTR(need_output_last, Bool, false)
+    .ATTR(forget_bias, Float, 0.0)
+    .OP_END_FACTORY_REG(DynamicLSTMV2)
+
+/**
 *@brief: LSTMInputGrad calculation.
 *@par Inputs:
 *ten inputs: \n
@@ -475,9 +528,9 @@ REG_OP(BasicRNNCell)
     .OP_END_FACTORY_REG(BasicRNNCell)
 
 /**
-*@brief: DynamicGRU calculation.
+*@brief DynamicGRU calculation.
 *@par Inputs:
-*seven inputs: \n
+*seven inputs: 
 *@li x:Must be one of the following types: float16. The format must be FRACTAL_NZ.
 *@li w:Must be one of the following types: float16. The format must be FRACTAL_Z.
 *@li b:Must be one of the following types: float16, float32. The format must be ND.
@@ -497,7 +550,7 @@ REG_OP(BasicRNNCell)
 *@li is_training:An bool identifying is training in the op. Default to true.
 
 *@par Outputs:
-*five outputs: \n
+*five outputs: 
 *@li y:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li output_h:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li r:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
@@ -531,9 +584,9 @@ REG_OP(DynamicGRU)
     .OP_END_FACTORY_REG(DynamicGRU)
 
 /**
-*@brief: DynamicGRUV2 calculation.
+*@brief DynamicGRUV2 calculation.
 *@par Inputs:
-*seven inputs: \n
+*seven inputs: 
 *@li x:Must be one of the following types: float16. The format must be FRACTAL_NZ.
 *@li weight_input:Must be one of the following types: float16. The format must be FRACTAL_Z.
 *@li weight_hidden:Must be one of the following types: float16. The format must be FRACTAL_Z.
@@ -555,7 +608,7 @@ REG_OP(DynamicGRU)
 *@li is_training:An bool identifying is training in the op. Default to true.
 
 *@par Outputs:
-*six outputs: \n
+*six outputs: 
 *@li y:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li output_h:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li update:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
@@ -592,6 +645,68 @@ REG_OP(DynamicGRUV2)
     .ATTR(is_training, Bool, true)
     .OP_END_FACTORY_REG(DynamicGRUV2)
 
+
+/**
+*@brief DynamicGRUV2Hidden calculation.
+*@par Inputs:
+*five inputs: 
+*@li x_weight_input:Must be one of the following types: float32. The format must be FRACTAL_NZ.
+*@li weight_hidden:Must be one of the following types: float16. The format must be FRACTAL_Z.
+*@li bias_hidden:Must be one of the following types: float16, float32. The format must be ND.
+*@li seq_length:Must be one of the following types: int32. The format must be ND.
+*@li init_h:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+
+*@par Attributes:
+*@li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL". 
+Only UNIDIRECTIONAL is currently supported.
+*@li cell_depth:An integer identifying the cell depth in the op. Default to 1.
+*@li keep_prob:An float identifying the keep prob in the op. Default to 1.
+*@li cell_clip:An float identifying the cell clip in the op. Default to -1.
+*@li num_proj:An integer identifying the num projection in the op. Default to 0.
+*@li time_major:An bool identifying the time major in the op. Default to true.
+*@li activation:An string identifying the type of activation function in the op. Default to "tanh". 
+Only tanh is currently supported.
+*@li gate_order:An string identifying the gate order in weight and bias. Default to "zrh". "rzh" is another option.
+*@li reset_after:An bool identifying whether to apply reset gate after matrix multiplication. Default to true.
+*@li is_training:An bool identifying is training in the op. Default to true.
+
+*@par Outputs:
+*six outputs: 
+*@li y:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li output_h:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li update:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li reset:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li new:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li hidden_new:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DynamicGRUV2Hidden)
+    .INPUT(x_weight_input, TensorType({DT_FLOAT32}))
+    .INPUT(weight_hidden, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(bias_hidden, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(update, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(reset, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(new, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(hidden_new, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(direction, String, "UNIDIRECTIONAL")
+    .ATTR(cell_depth, Int, 1)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(cell_clip, Float, -1.0)
+    .ATTR(num_proj, Int, 0)
+    .ATTR(time_major, Bool, true)
+    .ATTR(activation, String, "tanh")
+    .ATTR(gate_order, String, "zrh")
+    .ATTR(reset_after, Bool, true)
+    .ATTR(is_training, Bool, true)
+    .OP_END_FACTORY_REG(DynamicGRUV2Hidden)
+
+
 /**
 *@brief: DynamicGRUV2Grad calculation.
 *@par Inputs:
@@ -618,7 +733,6 @@ REG_OP(DynamicGRUV2)
 *@li cell_clip:An float identifying the cell clip in the op. Default to -1.
 *@li num_proj:An integer identifying the num projection in the op. Default to 0.
 *@li time_major:An bool identifying the time major in the op. Default to true.
-*@li bias_type:An string identifying the type of bias_type function in the op. Default to "double_bias".
 *@li gate_order:An string identifying the gate order in weight and bias. Default to "zrh". "rzh" is another option.
 *@li reset_after:An bool identifying whether to apply reset gate after matrix multiplication. Default to true.
 
@@ -630,6 +744,9 @@ REG_OP(DynamicGRUV2)
 *@li db_hidden:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dx:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(DynamicGRUV2Grad)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -658,7 +775,6 @@ REG_OP(DynamicGRUV2Grad)
     .ATTR(cell_clip, Float, -1.0)
     .ATTR(num_proj, Int, 0)
     .ATTR(time_major, Bool, true)
-    .ATTR(bias_type, String, "double_bias")
     .ATTR(gate_order, String, "zrh")
     .ATTR(reset_after, Bool, true)
     .OP_END_FACTORY_REG(DynamicGRUV2Grad)
@@ -667,7 +783,7 @@ REG_OP(DynamicGRUV2Grad)
 *@brief: GRUV2HiddenGrad calculation.
 *@par Inputs:
 *nine inputs: \n
-*@li weight_hidden:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li dh_pre_t:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li init_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dy:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
@@ -678,6 +794,7 @@ REG_OP(DynamicGRUV2Grad)
 *@li hidden_new:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 
 *@par Attributes:
+*@li t_state:An Int identifying the current t state. Default to [0, 4].
 *@li gate_order:An string identifying the gate order in weight and bias. Default to "zrh". "rzh" is another option.
 
 *@par Outputs:
@@ -685,10 +802,12 @@ REG_OP(DynamicGRUV2Grad)
 *@li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dgate_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dnt_x:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
-REG_OP(GRUV2HiddenGrad)
-    .INPUT(weight_hidden, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+REG_OP(GRUV2HiddenGradCell)
+    .INPUT(dh_pre_t, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(h, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(dh, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -699,8 +818,42 @@ REG_OP(GRUV2HiddenGrad)
     .OUTPUT(dh_prev, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dgate_h, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(dnt_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(t_state, Int, 0)
     .ATTR(gate_order, String, "zrh")
-    .OP_END_FACTORY_REG(GRUV2HiddenGrad)
+    .OP_END_FACTORY_REG(GRUV2HiddenGradCell)
+
+/**
+* @brief Calculates the reversed outputs of the function "embedding". \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li grad: A mutable Tensor of word grad. Must be one of the following types:
+*     float32.
+* @li indices: A mutable word index Tensor of the int32 type.\n
+
+* @par Attributes:
+* @li num_weights: An int attr which use to judge how many words in dict. \n
+
+* @li padding_idx: An int attr judge which word to fill zeros. Defaults to "-1". \n
+
+* @li scale_grad_by_freq: An optional bool. Defaults to "False".
+*     If "True", "grad_weight" will be scale by word_frequency.
+*     If "False", "grad_weight" will not be scale by word_frequency. \n
+
+* @par Outputs:
+* @li grad_weight: A mutable output Tensor of new word grad has the same type as "grads". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator EmbeddingDenseGrad.
+*/
+REG_OP(EmbeddingDenseGrad)
+    .INPUT(grad, TensorType({ DT_FLOAT32 }))  /* "First operand." */
+    .INPUT(indices, TensorType({ DT_INT32 })) /* "Second operand." */
+    .OUTPUT(y, TensorType({ DT_FLOAT32 }))    /* "Result, has same element type as two inputs" */
+    .REQUIRED_ATTR(num_weights, Int)
+    .ATTR(padding_idx, Int, -1)
+    .ATTR(scale_grad_by_freq, Bool, false)
+    .OP_END_FACTORY_REG(EmbeddingDenseGrad)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RNN_H_

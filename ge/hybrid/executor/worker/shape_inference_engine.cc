@@ -17,15 +17,9 @@
 #include "hybrid/executor/worker/shape_inference_engine.h"
 #include "graph/shape_refiner.h"
 #include "graph/utils/node_utils.h"
-#include "graph/utils/tensor_utils.h"
-#include "graph/utils/type_utils.h"
-#include "common/math/math_util.h"
 #include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
-namespace {
-const int kAlignment = 32;
-}
 namespace hybrid {
 ShapeInferenceEngine::ShapeInferenceEngine(GraphExecutionContext *execution_context, SubgraphContext *subgraph_context)
     : execution_context_(execution_context),
@@ -46,9 +40,7 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   }
 
   if (node_item.fused_subgraph != nullptr) {
-    GE_CHK_STATUS_RET_NOLOG(InferShapeForSubgraph(node_item, *node_item.fused_subgraph));
-    GE_CHK_STATUS_RET_NOLOG(CalcOutputTensorSizes(node_item));
-    return SUCCESS;
+    return InferShapeForSubgraph(node_item, *node_item.fused_subgraph);
   }
 
   // Skip shape inference for node of type DEPEND_COMPUTE
@@ -71,15 +63,21 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
     std::lock_guard<std::mutex> lk(mu_);
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndTypeForRunning(node_item.node, true),
-                      "Invoke InferShapeAndType failed.");
+        "Invoke InferShapeAndType failed.");
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] End");
   }
+  // Check again to make sure shape is valid after shape inference
+  if (node_item.shape_inference_type != DEPEND_SHAPE_RANGE) {
+    bool is_unknown_shape = false;
+    GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node_item.node, is_unknown_shape),
+                      "Failed to get shape status. node = %s",
+                      node_item.NodeName().c_str());
 
-  // update output tensor sizes after shape inference
-  // error if shape is still unknown and not of type DEPEND_SHAPE_RANGE
-  RECORD_COMPILE_EVENT(execution_context_, node_item.NodeName().c_str(), "[CalcOpRunningParam] Start");
-  GE_CHK_STATUS_RET_NOLOG(CalcOutputTensorSizes(node_item, node_item.shape_inference_type == DEPEND_SHAPE_RANGE));
-  RECORD_COMPILE_EVENT(execution_context_, node_item.NodeName().c_str(), "[CalcOpRunningParam] End");
+    GE_CHK_BOOL_RET_STATUS(!is_unknown_shape,
+                           INTERNAL_ERROR,
+                           "[%s] Shape is still unknown after shape inference.",
+                           node_item.NodeName().c_str());
+  }
 
   GELOGD("[%s] [HybridTrace] After shape inference. Node = %s",
          node_item.NodeName().c_str(),
@@ -129,6 +127,8 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
   // propagate each output
   for (int i = 0; i < node_item.num_outputs; ++i) {
     auto output_desc = node_item.op_desc->MutableOutputDesc(i);
+    const auto &shape = output_desc->MutableShape();
+    const auto &ori_shape = output_desc->GetOriginShape();
     auto &output_nodes = node_item.outputs[i];
 
     // propagate output to all sub-inputs
@@ -149,7 +149,9 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
         infer_state.UpdateInputShapeFuture(dst_input_index_and_node.first,
                                            std::move(future));
       } else {
-        GE_CHK_STATUS_RET_NOLOG(infer_state.UpdateInputShape(dst_input_index_and_node.first, *output_desc));
+        GE_CHK_STATUS_RET_NOLOG(infer_state.UpdateInputShape(dst_input_index_and_node.first,
+                                                             ori_shape,
+                                                             shape));
       }
     }
   }
@@ -226,93 +228,6 @@ Status ShapeInferenceEngine::UpdatePeerNodeShape(const Node &node) {
              peer_input_desc->GetOriginDataType());
     }
   }
-  return SUCCESS;
-}
-
-Status ShapeInferenceEngine::CanonicalizeShape(GeTensorDesc &tensor_desc,
-                                               std::vector<int64_t> &shape,
-                                               bool fallback_with_range) {
-  const auto &tensor_shape = tensor_desc.MutableShape();
-  if (tensor_shape.IsUnknownShape()) {
-    if (!fallback_with_range) {
-      GELOGE(INTERNAL_ERROR, "Output shape is still unknown after shape inference. shape = [%s]",
-             tensor_shape.ToString().c_str());
-      return INTERNAL_ERROR;
-    }
-
-    GELOGD("Calc output size by range");
-    std::vector<std::pair<int64_t, int64_t>> shape_range;
-    GE_CHK_GRAPH_STATUS_RET(tensor_desc.GetShapeRange(shape_range), "Failed to get shape range");
-    if (shape_range.size() != shape.size()) {
-      GELOGE(INTERNAL_ERROR, "Number of shape ranges (%zu) mismatches that of dims (%zu)",
-             shape_range.size(),
-             shape.size());
-      return INTERNAL_ERROR;
-    }
-
-    for (size_t dim_index = 0; dim_index < shape.size(); ++dim_index) {
-      if (shape[dim_index] == ge::UNKNOWN_DIM) {
-        shape[dim_index] = shape_range[dim_index].second;
-      }
-    }
-
-    GELOGD("After canonicalization, shape = [%s], before = [%s]",
-           GeShape(shape).ToString().c_str(),
-           tensor_shape.ToString().c_str());
-  }
-
-  return SUCCESS;
-}
-
-Status ShapeInferenceEngine::CalcTensorSize(DataType data_type,
-                                            const std::vector<int64_t> &shape,
-                                            int64_t &tensor_size) {
-  GELOGD("To calc tensor size by shape = [%s]", GeShape(shape).ToString().c_str());
-  uint32_t type_size;
-  if (!TypeUtils::GetDataTypeLength(data_type, type_size)) {
-    GELOGE(INTERNAL_ERROR, "Failed to get data type size");
-    return INTERNAL_ERROR;
-  }
-
-  tensor_size = type_size;
-  for (const auto &dim : shape) {
-    GE_CHECK_GE(dim, 0);
-    GE_CHK_STATUS_RET(Int64MulCheckOverflow(tensor_size, dim),
-                      "Shape size overflow, shape = [%s]",
-                      GeShape(shape).ToString().c_str());
-    tensor_size *= dim;
-  }
-
-  GE_CHK_STATUS_RET(CheckInt64AddOverflow(tensor_size, kAlignment - 1),
-                    "Tensor size is too large: %ld, shape = [%s]",
-                    tensor_size,
-                    GeShape(shape).ToString().c_str());
-  tensor_size = (tensor_size + kAlignment - 1) / kAlignment * kAlignment;
-  return SUCCESS;
-}
-
-Status ShapeInferenceEngine::CalcOutputTensorSizes(const NodeItem &node_item, bool fallback_with_range) {
-  auto op_desc = node_item.GetOpDesc();
-  for (size_t output_index = 0; output_index < op_desc->GetOutputsSize(); ++output_index) {
-    auto tensor_desc = op_desc->MutableOutputDesc(output_index);
-    GE_CHECK_NOTNULL(tensor_desc);
-    const auto &shape = tensor_desc->MutableShape();
-    // modify on copy
-    auto dims = shape.GetDims();
-    GE_CHK_STATUS_RET(CanonicalizeShape(*tensor_desc, dims, fallback_with_range),
-                      "[%s] Failed to canonicalize shape for output %zu",
-                      node_item.NodeName().c_str(),
-                      output_index);
-
-    int64_t tensor_size;
-    GE_CHK_STATUS_RET(CalcTensorSize(tensor_desc->GetDataType(), dims, tensor_size),
-                      "[%s] Failed to calc tensor size for output %zu",
-                      node_item.NodeName().c_str(),
-                      output_index);
-    GELOGD("[%s] Tensor size of output %zu = %ld", node_item.NodeName().c_str(), output_index, tensor_size);
-    (void) TensorUtils::SetSize(*tensor_desc, tensor_size);
-  }
-
   return SUCCESS;
 }
 }  // namespace hybrid

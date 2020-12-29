@@ -96,7 +96,7 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       GE_CHECK_NOTNULL(tensor_desc);
       auto node_state = subgraph_context_->GetOrCreateNodeState(input_node);
       GE_CHECK_NOTNULL(node_state);
-      node_state->GetShapeInferenceState().UpdateInputShape(0, *tensor_desc);
+      node_state->GetShapeInferenceState().UpdateInputShape(0, tensor_desc->GetOriginShape(), tensor_desc->GetShape());
     }
   }
 
@@ -268,6 +268,13 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
   } else {
     node_state.SetKernelTask(node_item.kernel_task);
   }
+
+  GELOGD("[%s] Start to invoke CalcOpRunningParam.", node_item.NodeName().c_str());
+  RECORD_COMPILE_EVENT(ctx, node_item.NodeName().c_str(), "[CalcOpRunningParam] Start");
+  GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().CalcOpRunningParam(*node_item.node),
+                    "[%s] Failed to invoke CalcOpRunningParam.", node_item.NodeName().c_str());
+  RECORD_COMPILE_EVENT(ctx, node_item.NodeName().c_str(), "[CalcOpRunningParam] End");
+  GELOGD("[%s] Done invoking CalcOpRunningParam successfully.", node_item.NodeName().c_str());
   return SUCCESS;
 }
 

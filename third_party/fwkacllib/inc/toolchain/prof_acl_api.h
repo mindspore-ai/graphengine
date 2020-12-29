@@ -73,6 +73,16 @@
 
 #define PROF_MODEL_LOAD_MASK             0x8000000000000000
 
+#ifndef OS_TYPE
+#define OS_TYPE 0
+#endif // OS_TYPE
+
+#if (OS_TYPE != LINUX)
+#define MSVP_PROF_API __declspec(dllexport)
+#else
+#define MSVP_PROF_API __attribute__((visibility("default")))
+#endif
+
 #include <cstdint>
 
 namespace Msprofiler {
@@ -85,7 +95,7 @@ namespace Api {
  * @param index [IN] index of part(op)
  * @return op execution time (us)
  */
-uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
+MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
 }
 }
 

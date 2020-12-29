@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1383,6 +1383,7 @@ REG_OP(DecodeWheelsTarget)
 
 *@attention Constraints:
 * Only computation of float16 data is supported.
+* Note: when the class num per image * max_size_per_class is too big, will compile fail with ERROR-insufficient memory
 */
 REG_OP(BatchMultiClassNonMaxSuppression)
     .INPUT(boxes, TensorType({DT_FLOAT16}))
@@ -1494,6 +1495,13 @@ REG_OP(Sort)
     .ATTR(axis, Int, -1)
     .ATTR(descending, Bool, false)
     .OP_END_FACTORY_REG(Sort)
+
+REG_OP(PtIou)
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(overlap, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(mode, String, "iou")
+    .OP_END_FACTORY_REG(PtIou)
 
 }  // namespace ge
 

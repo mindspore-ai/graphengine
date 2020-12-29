@@ -4,7 +4,7 @@ endif()
 
 add_library(intf_pub INTERFACE)
 
-target_compile_options(intf_pub INTERFACE 	
+target_compile_options(intf_pub INTERFACE
     -Wall 
     -fPIC 
     $<IF:$<STREQUAL:${CMAKE_SYSTEM_NAME},centos>,-fstack-protector-all,-fstack-protector-strong>
@@ -16,6 +16,7 @@ target_compile_definitions(intf_pub INTERFACE
     $<$<CONFIG:Debug>:CFG_BUILD_DEBUG>   
     WIN64=1
     LINUX=0
+    LOG_CPP
 )
 target_link_options(intf_pub INTERFACE
     -Wl,-z,relro

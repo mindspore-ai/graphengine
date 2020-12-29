@@ -322,6 +322,7 @@ typedef VOID (*mmPf)(VOID);
 #define M_NAME_MAX  _MAX_FNAME
 
 #define M_F_OK 0
+#define M_X_OK 1
 #define M_W_OK 2
 #define M_R_OK 4
 

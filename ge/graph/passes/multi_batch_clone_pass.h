@@ -105,12 +105,20 @@ class MultiBatchClonePass : public GraphPass {
 
   ///
   /// @ingroup ge
-  /// @brief Set shape to Data node in branch.
-  /// @param [in] const NodePtr &data: data in branch.
+  /// @brief Update Data node in Subgraph.
+  /// @param [in] const NodePtr &data: data in Subgraph.
   /// @param [in] size_t index: The batch index.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status UpdateShapeToData(const NodePtr &data, size_t index);
+  Status UpdateSubgraphData(const NodePtr &data, size_t index);
+
+  ///
+  /// @ingroup ge
+  /// @brief Update output_node in Subgraph.
+  /// @param [in] const NodePtr &output_node: output_node in Subgraph.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status UpdateSubgraphOutput(const NodePtr &output_node);
 
   ///
   /// @ingroup ge
@@ -130,14 +138,6 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CreateSubgraphs(const ComputeGraphPtr &graph, const ComputeGraphPtr &branch);
-
-  ///
-  /// @ingroup ge
-  /// @brief Assign parent index for branches.
-  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
-  /// @return 0: SUCCESS / others: FAILED
-  ///
-  Status PostProcSubgraph(const ComputeGraphPtr &graph);
 
   ///
   /// @ingroup ge

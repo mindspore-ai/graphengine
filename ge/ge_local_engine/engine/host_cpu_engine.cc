@@ -39,7 +39,7 @@ namespace {
       }                                                                                                                \
       ge_tensor = MakeShared<GeTensor>(out_desc);                                                                      \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGD("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));\
+      GELOGI("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));\
       if (ge_tensor->SetData(reinterpret_cast<uint8_t *>(buf.get()), data_num * sizeof(TYPE)) != GRAPH_SUCCESS) {      \
         GELOGE(MEMALLOC_FAILED, "Set data for output %zu of node %s failed.", i, op_desc->GetName().c_str());          \
         return MEMALLOC_FAILED;                                                                                        \
@@ -50,7 +50,8 @@ namespace {
     } else {                                                                                                           \
       ge_tensor = outputs[i];                                                                                          \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGD("node:%s existed output %zu", op_desc->GetName().c_str(), i);                                             \
+      GELOGI("node:%s existed output %zu, addr=%p, size=%lld", op_desc->GetName().c_str(), i,                          \
+             reinterpret_cast<const uint8_t *>(ge_tensor->GetData().data()), ge_tensor->GetData().size());             \
     }                                                                                                                  \
     auto tensor = TensorAdapter::AsTensor(*ge_tensor);                                                                 \
     auto tensor_name = op_desc->GetOutputNameByIndex(i);                                                               \

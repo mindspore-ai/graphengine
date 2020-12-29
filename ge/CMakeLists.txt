@@ -157,6 +157,8 @@ set(TRAIN_SRC_LIST
     "graph/passes/compile_nodes_pass.cc"
     "graph/passes/constant_folding_pass.cc"
     "graph/passes/constant_fuse_same_pass.cc"
+    "graph/passes/remove_same_const_pass.cc"
+    "graph/passes/useless_control_out_remove_pass.cc"
     "graph/passes/control_trigger_pass.cc"
     "graph/passes/dimension_adjust_pass.cc"
     "graph/passes/dimension_compute_pass.cc"
@@ -522,6 +524,8 @@ set(INFER_SRC_LIST
     "graph/passes/assign_pass.cc"
     "graph/passes/addn_pass.cc"
     "graph/passes/common_subexpression_elimination_pass.cc"
+    "graph/passes/remove_same_const_pass.cc"
+    "graph/passes/useless_control_out_remove_pass.cc"
     "graph/passes/transop_symmetry_elimination_pass.cc"
     "graph/passes/save_pass.cc"
     "graph/passes/switch_dead_branch_elimination.cc"
@@ -616,6 +620,7 @@ target_compile_definitions(ge_runner PRIVATE
     FMK_SUPPORT_DUMP
     DAVINCI_CLOUD
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_runner PRIVATE
@@ -683,6 +688,7 @@ target_compile_definitions(ge_compiler PRIVATE
     FMK_HOST_INFER
     COMPILE_OMG_PACKAGE
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_compiler PRIVATE

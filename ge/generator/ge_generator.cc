@@ -262,16 +262,26 @@ static Status CheckShapeReset(const OpDescPtr &op_desc, bool &change_shape_flag)
       change_shape_flag = true;
     }
   }
+  for (size_t i = 0; i < op_desc->GetAllOutputsDesc().size(); i++) {
+    auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(output_desc);
+    // pass scalar output desc
+    auto dims = output_desc->GetShape().GetDims();
+    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
+      change_shape_flag = true;
+    }
+  }
   return SUCCESS;
 }
 
-static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
+static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
   for (auto input : inputs) {
     auto input_desc = input.GetTensorDesc();
     GeShape shape_ori = input_desc.GetShape();
 
     std::vector<int64_t> dynamic_shape_dims = {kDynamicDimValue};
     GeShape dynamic_shape(dynamic_shape_dims);
+    std::vector<std::pair<int64_t, int64_t>> dynamic_shape_range;
 
     ge::GeTensor inputTensor;
     ge::GeTensorDesc desc(input_desc);
@@ -279,12 +289,20 @@ static void ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor>
     bool is_const = false;
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
     if (!is_const && shape_ori.GetDims().size() > 0) {
+      int64_t storage_format = FORMAT_NCHW;
+      if (ge::AttrUtils::GetInt(desc, ge::ATTR_NAME_STORAGE_FORMAT, storage_format) &&
+          !ge::AttrUtils::SetListInt(desc, ge::ATTR_NAME_STORAGE_SHAPE, dynamic_shape_dims)) {
+        GELOGE(FAILED, "Set attr ATTR_NAME_STORAGE_SHAPE fail.");
+        return FAILED;
+      }
       desc.SetShape(dynamic_shape);
+      desc.SetShapeRange(dynamic_shape_range);
     }
 
     inputTensor.SetTensorDesc(desc);
     inputs_dynamic.push_back(inputTensor);
   }
+  return SUCCESS;
 }
 
 class GeGenerator::Impl {
@@ -528,6 +546,24 @@ bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
   return true;
 }
 
+static Status SetModelNameForDump(GeRootModelPtr ge_root_model) {
+  ModelHelper model_helper;
+  string model_name = "";
+  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
+                                                                 model_name);
+  if (name_ret != SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
+    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
+    return PARAM_INVALID;
+  }
+  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
+  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
+  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
+  ge_model->SetName(model_name);
+  return SUCCESS;
+}
+
 Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                                   ModelBufferData &model, bool is_offline) {
   rtContext_t ctx = nullptr;
@@ -536,7 +572,6 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     GELOGD("Current ctx is null.");
     ctx = nullptr;
   }
-
   GeRootModelPtr ge_root_model = nullptr;
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   impl_->is_offline_ = is_offline;
@@ -560,22 +595,11 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
            impl_->build_step_.c_str());
     return SUCCESS;
   }
-
   GE_CHECK_NOTNULL(ge_root_model);
-  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
-  ModelHelper model_helper;
-  string model_name = "";
-  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
-                                                                 model_name);
-  if (name_ret != SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
-    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
-    return PARAM_INVALID;
+  ret = SetModelNameForDump(ge_root_model);
+  if (ret != SUCCESS) {
+    return ret;
   }
-  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
-  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
-  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
-  ge_model->SetName(model_name);
   ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");
@@ -584,11 +608,9 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     }
     return ret;
   }
-
   if (ctx != nullptr) {
     (void)rtCtxSetCurrent(ctx);
   }
-
   return SUCCESS;
 }
 
@@ -682,8 +704,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   if (CheckShapeReset(op_desc, dynamic_flag) == SUCCESS && dynamic_flag) {
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;
-    ResetTensorVecShape(inputs, inputs_dynamic);
-    ResetTensorVecShape(outputs, outputs_dynamic);
+    GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(inputs, inputs_dynamic));
+    GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(outputs, outputs_dynamic));
     GE_CHK_STATUS_RET_NOLOG(
       impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
   } else {

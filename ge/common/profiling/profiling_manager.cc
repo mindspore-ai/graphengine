@@ -38,10 +38,8 @@ const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
 }  // namespace
 
 namespace ge {
-ProfilingManager::ProfilingManager() : is_load_profiling_(false),
-                                       is_execute_profiling_(false),
-                                       is_training_trace_(false),
-                                       subscribe_count_(0) {
+ProfilingManager::ProfilingManager()
+    : is_load_profiling_(false), is_execute_profiling_(false), is_training_trace_(false), subscribe_count_(0) {
   prof_cb_.msprofCtrlCallback = nullptr;
   prof_cb_.msprofReporterCallback = nullptr;
 }
@@ -96,14 +94,14 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
 
   if (options.profiling_mode == "1" && !options.profiling_options.empty()) {
     // enable profiling by ge option
-    if (memcpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
-                 options.profiling_options.size()) != EOK) {
+    if (strncpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
+                 MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
       GELOGE(INTERNAL_ERROR, "copy profiling_options failed.");
       return INTERNAL_ERROR;
     }
     is_execute_profiling_ = true;
-    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(),
-          prof_conf.options, options.profiling_options.c_str());
+    GELOGI("The profiling in options is %s, %s. origin option: %s", options.profiling_mode.c_str(), prof_conf.options,
+           options.profiling_options.c_str());
   } else {
     (void)mmGetEnv("PROFILING_MODE", env_profiling_mode, MMPA_MAX_PATH);
     (void)mmGetEnv("PROFILING_OPTIONS", prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX);
@@ -127,11 +125,12 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     return ge::PARAM_INVALID;
   }
 
-  if (memcpy_s(prof_conf.jobId, sizeof(prof_conf.jobId), options.job_id.c_str(),
-               sizeof(options.job_id.c_str())) != EOK) {
+  if (strncpy_s(prof_conf.jobId, MSPROF_OPTIONS_DEF_LEN_MAX, options.job_id.c_str(),
+               MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
     GELOGE(INTERNAL_ERROR, "copy job_id failed.");
     return INTERNAL_ERROR;
   }
+  GELOGI("Job id: %s, original job id: %s.", prof_conf.jobId, options.job_id.c_str());
 #endif
   return ge::SUCCESS;
 }
@@ -143,6 +142,9 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   }
   try {
     Json prof_options = Json::parse(options);
+    if (options.find(kTrainingTrace) == std::string::npos) {
+      return ge::SUCCESS;
+    }
     const std::string training_trace = prof_options[kTrainingTrace];
     if (training_trace.empty()) {
       GELOGI("Training trace will not take effect.");
@@ -158,6 +160,7 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     if (!fp_point_.empty() && !bp_point_.empty()) {
       GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
     }
+    is_training_trace_ = true;
   } catch (...) {
     GELOGE(FAILED, "Json prof_conf options is invalid.");
     return ge::PARAM_INVALID;
@@ -627,6 +630,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
     uint64_t module, const std::map<std::string, std::string> &config_para) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
+  uint64_t training_trace_mask = module & PROF_TRAINING_TRACE_MASK;
+  if (training_trace_mask == PROF_TRAINING_TRACE_MASK) {
+    is_training_trace_ = true;
+  }
   int32_t device_num = 0;
   vector<int32_t> device_list;
   if (ProfParseParam(config_para, device_num, device_list) != SUCCESS) {

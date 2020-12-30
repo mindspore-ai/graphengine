@@ -39,8 +39,6 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
-#include "graph/opsproto_manager.h"
-#include "ge_local_engine/engine/host_cpu_engine.h"
 
 using std::string;
 using std::vector;
@@ -210,33 +208,6 @@ bool IsDynmaicDimsSizeMatchModel(const vector<uint64_t> cur_dynamic_dims,
 namespace ge {
 bool GeExecutor::isInit_ = false;
 
-static void InitOpsProtoManger() {
-  string opsproto_path;
-  const char *path_env = std::getenv("ASCEND_OPP_PATH");
-  if (path_env != nullptr) {
-    string path = path_env;
-    string file_path = RealPath(path.c_str());
-    if (file_path.empty()) {
-      GELOGE(FAILED, "File path %s is invalid.", path.c_str());
-      return;
-    }
-    opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
-    GELOGI("Get opsproto so path from env : %s", path.c_str());
-  } else {
-    string path_base = PluginManager::GetPath();
-    GELOGI("path_base is %s", path_base.c_str());
-    path_base = path_base.substr(0, path_base.rfind('/'));
-    path_base = path_base.substr(0, path_base.rfind('/') + 1);
-    opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
-  }
-
-  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
-  OpsProtoManager *manager = OpsProtoManager::Instance();
-  map<string, string> option_tmp;
-  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
-  (void)manager->Initialize(option_tmp);
-}
-
 GeExecutor::GeExecutor() {}
 
 Status GeExecutor::Initialize() {
@@ -245,16 +216,6 @@ Status GeExecutor::Initialize() {
     GELOGW("Already initialized, no need to be initialized again.");
     return ge::SUCCESS;
   }
-
-  OpTilingManager::GetInstance().LoadSo();
-
-  Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
-  if (initHostCpuEngineStatus != SUCCESS) {
-    GELOGE(initHostCpuEngineStatus, "Failed to initialize HostCpuEngine");
-    return initHostCpuEngineStatus;
-  }
-
-  InitOpsProtoManger();
 
   std::vector<rtMemType_t> mem_type(1, RT_MEMORY_HBM);
   mem_type.push_back(RT_MEMORY_P2P_DDR);

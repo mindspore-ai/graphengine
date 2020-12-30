@@ -110,7 +110,6 @@ target_compile_options(ut_libgraph PRIVATE
 
 target_compile_definitions(ut_libgraph PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libgraph 

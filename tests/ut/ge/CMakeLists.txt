@@ -902,7 +902,7 @@ target_compile_options(ut_libge_kernel_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
 )
 
-target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
+target_compile_definitions(ut_libge_kernel_utest PRIVATE
     $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 

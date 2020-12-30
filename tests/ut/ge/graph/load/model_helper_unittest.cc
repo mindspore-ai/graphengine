@@ -24,10 +24,9 @@
 
 #include "proto/task.pb.h"
 
-using namespace ge;
 using namespace std;
 
-
+namespace ge {
 class UtestModelHelper : public testing::Test {
  protected:
   void SetUp() override {}
@@ -50,3 +49,4 @@ TEST_F(UtestModelHelper, save_size_to_modeldef)
   ModelHelper model_helper;
   EXPECT_EQ(SUCCESS, model_helper.SaveSizeToModelDef(ge_model));
 }
+}  // namespace ge

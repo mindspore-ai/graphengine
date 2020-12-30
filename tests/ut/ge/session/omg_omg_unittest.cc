@@ -21,9 +21,9 @@
 #include "inc/framework/omg/omg.h"
 
 
-using namespace ge;
 using namespace std;
 
+namespace ge {
 class UtestOmg : public testing::Test {
  protected:
   void SetUp() override {}
@@ -31,14 +31,12 @@ class UtestOmg : public testing::Test {
   void TearDown() override {}
 };
 
-TEST_F(UtestOmg, display_model_info_failed)
-{
+TEST_F(UtestOmg, display_model_info_failed) {
   ge::proto::ModelDef model_def;
   PrintModelInfo(&model_def);
 }
 
-TEST_F(UtestOmg, display_model_info_success)
-{
+TEST_F(UtestOmg, display_model_info_success) {
   ge::proto::ModelDef model_def;
   auto attrs = model_def.mutable_attr();
   ge::proto::AttrDef *attr_def_soc = &(*attrs)["soc_version"];
@@ -51,3 +49,4 @@ TEST_F(UtestOmg, display_model_info_success)
   attr_def->mutable_list()->add_i(5);
   PrintModelInfo(&model_def);
 }
+}  // namespace ge

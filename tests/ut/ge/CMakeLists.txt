@@ -338,7 +338,7 @@ set(COMMON_FORMAT_SRC_FILES
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nchw.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
-    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"   
+    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
 )
 
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
@@ -406,7 +406,6 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
-    "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/common/debug/memory_dumper.cc"
     "${GE_CODE_DIR}/ge/executor/ge_executor.cc"
@@ -437,7 +436,6 @@ set(GRAPH_BUILD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/build/memory/hybrid_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/build/memory/max_block_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
-    "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
@@ -576,6 +574,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/tbe_handle_store_unittest.cc"
     #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
+    "graph/load/model_helper_unittest.cc"
 )
 
 set(PASS_TEST_FILES
@@ -678,7 +677,6 @@ set(MULTI_PARTS_TEST_FILES
     "common/format_transfer_fracz_nhwc_unittest.cc"
     "common/format_transfer_fracz_hwcn_unittest.cc"
     "common/ge_format_util_unittest.cc"
-    "common/model_helper_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"

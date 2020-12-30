@@ -402,6 +402,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return FAILED;
   }
+  continuous_mem_start = iter->second.mem_offset_;
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_data_anchor == nullptr, continue);

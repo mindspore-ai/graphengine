@@ -20,6 +20,7 @@ target_compile_options(ge_memory PRIVATE
 target_compile_definitions(ge_memory PRIVATE
     google=ascend_private
     LOG_CPP
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_memory PRIVATE

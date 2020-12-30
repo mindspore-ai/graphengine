@@ -902,6 +902,10 @@ target_compile_options(ut_libge_kernel_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
 )
 
+target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
+)
+
 target_link_libraries(ut_libge_kernel_utest
     $<BUILD_INTERFACE:intf_pub>
     ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
@@ -922,7 +926,6 @@ target_compile_options(ut_libge_distinct_load_utest PRIVATE
 
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libge_distinct_load_utest

@@ -718,7 +718,6 @@ target_compile_definitions(ge_compiler PRIVATE
     FMK_HOST_INFER
     COMPILE_OMG_PACKAGE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_compiler PRIVATE
@@ -806,7 +805,6 @@ endif()
 
 target_compile_definitions(opensrc_ascendcl PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(opensrc_ascendcl PRIVATE

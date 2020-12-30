@@ -25,7 +25,6 @@ target_compile_options(host_cpu_engine PRIVATE
 
 target_compile_definitions(host_cpu_engine PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(host_cpu_engine PRIVATE
@@ -66,7 +65,6 @@ target_compile_options(atc_host_cpu_engine PRIVATE
 target_compile_definitions(atc_host_cpu_engine PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(atc_host_cpu_engine PRIVATE
@@ -111,7 +109,6 @@ target_compile_options(host_cpu_opskernel_builder PRIVATE
 
 target_compile_definitions(host_cpu_opskernel_builder PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(host_cpu_opskernel_builder PRIVATE
@@ -152,7 +149,6 @@ target_compile_options(atc_host_cpu_opskernel_builder PRIVATE
 
 target_compile_definitions(atc_host_cpu_opskernel_builder PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(atc_host_cpu_opskernel_builder PRIVATE
@@ -199,7 +195,6 @@ target_compile_options(host_cpu_opskernel_builder_static PRIVATE
 target_compile_definitions(host_cpu_opskernel_builder_static PRIVATE
     google=ascend_private
     LOG_CPP
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(host_cpu_opskernel_builder_static PRIVATE

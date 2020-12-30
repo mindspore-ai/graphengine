@@ -30,6 +30,7 @@ target_compile_definitions(atc PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(atc PRIVATE
@@ -92,6 +93,7 @@ target_compile_definitions(atc_atc.bin PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(atc_atc.bin PRIVATE
@@ -152,6 +154,7 @@ target_compile_options(fwk_atc.bin PRIVATE
     -O2
     -Wno-deprecated-declarations
     -fno-common
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_definitions(fwk_atc.bin PRIVATE

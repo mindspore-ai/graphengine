@@ -25,7 +25,6 @@ class AssignRemovePass : public BaseNodePass {
   Status Run(NodePtr &node) override;
 
  private:
-#ifndef ONLY_COMPILE_OPEN_SRC
   ///
   /// @brief Optimize for assign_node
   /// @param [in] assign_node
@@ -39,7 +38,7 @@ class AssignRemovePass : public BaseNodePass {
   /// @return Status
   ///
   Status TransformAttr(NodePtr &node);
-#endif
+
   ///
   /// @brief Check if need optimize for assign_node
   /// @param [in] assign_node

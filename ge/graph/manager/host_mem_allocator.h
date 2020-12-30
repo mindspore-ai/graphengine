@@ -27,7 +27,7 @@
 namespace ge {
 class HostMemAllocator {
  public:
-  explicit HostMemAllocator(rtMemType_t)  {}
+  explicit HostMemAllocator(rtMemType_t) {}
   ~HostMemAllocator() = default;
 
   HostMemAllocator(const HostMemAllocator &) = delete;

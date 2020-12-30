@@ -898,6 +898,117 @@ Status ProcessNetoutputNodeDynShape(NodePtr &node) {
   }
   return SUCCESS;
 }
+/**
+ * Parser shape_range from string to vector
+ * shape_range from option normally is "[1~20],[3],[3~6],[-1]"
+ * @param shape_range
+ */
+void ParseDynamicInputShapeRange(const std::string &shape_range,
+                                 std::vector<std::vector<std::pair<int64_t, int64_t>>> &range) {
+  if (shape_range.empty() || shape_range.size() < 2) {
+    GELOGW("Shape range %s is invalid.", shape_range);
+    return;
+  }
+  // different parameter sets are split by ';'
+  vector<string> shape_set = ge::StringUtils::Split(shape_range, ']');
+  if (shape_set.empty()) {
+    return;
+  }
+  for (auto shape_str : shape_set) {
+    if (shape_str.empty()) {
+      continue;
+    }
+    if (ge::StringUtils::StartWith(shape_str, "[")) {
+      shape_str = shape_str.substr(1, shape_str.size());
+    }
+    if (ge::StringUtils::StartWith(shape_str, ",")) {
+      shape_str = shape_str.substr(2, shape_str.size());
+    }
+    std::vector<std::pair<int64_t, int64_t>> range_of_single;
+    vector<string> range_set = ge::StringUtils::Split(shape_str, ',');
+    for (auto range_str : range_set) {
+      vector<string> pair_set = ge::StringUtils::Split(range_str, '~');
+      pair<int64_t, int64_t> range_pair;
+      if (pair_set.size() == 1) {
+        auto range_value = atoi(pair_set.at(0).c_str());
+        if (range_value < 0) {
+          range_pair = std::make_pair(1, range_value);
+        } else {
+          range_pair = std::make_pair(range_value, range_value);
+        }
+      } else if (pair_set.size() == 2) {
+        auto range_left = atoi(pair_set.at(0).c_str());
+        auto range_right = atoi(pair_set.at(1).c_str());
+        range_pair = std::make_pair(range_left, range_right);
+      }
+      range_of_single.emplace_back(range_pair);
+    }
+    range.emplace_back(range_of_single);
+  }
+}
+
+Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option,
+                                 vector<vector<std::pair<int64_t, int64_t>>> &range_vec) {
+  auto mode_iter = graph_option.find(OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+  if (mode_iter == graph_option.end()) {
+    GELOGD("Graph Option: Can not find %s option in graph options.", OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+    return SUCCESS;
+  }
+  GELOGD("Graph Option: dynamic_input_mode value is %s.", mode_iter->second.c_str());
+  if (mode_iter->second != "dynamic_execute") {
+    return SUCCESS;
+  }
+  auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
+  if (iter == graph_option.end()) {
+    GELOGE(PARAM_INVALID, "Graph option %s is required when %s is dynamic_execute", OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE,
+           OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+    return PARAM_INVALID;
+  }
+  GELOGD("GraphOption: dynamic_inputs_shape_range value is %s.", iter->second.c_str());
+  ParseDynamicInputShapeRange(iter->second, range_vec);
+  if (range_vec.size() != user_input.size()) {
+    GELOGE(PARAM_INVALID, "Dynamic input shape range size is %zu, inputs size is %zu. Not match.", range_vec.size(),
+           user_input.size());
+    return PARAM_INVALID;
+  }
+  return SUCCESS;
+}
+
+Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
+                                    const ector<vector<std::pair<int64_t, int64_t>>> &range_vec, OpDescPtr &op,
+                                    GeTensorDesc &desc) {
+  auto unkown_shape = desc.GetShape();
+  auto shape_range = range_vec.at(index);
+  for (size_t i = 0; i < unkown_shape.GetDimNum(); ++i) {
+    if (shape_range.at(i).first == shape_range.at(i).second) {
+      unkown_shape.SetDim(i, shape_range.at(i).first);
+    } else {
+      unkown_shape.SetDim(i, -1);
+    }
+  }
+  desc.SetShape(unkown_shape);
+  desc.SetShapeRange(shape_range);
+  int64_t dynamic_shape_size = 1;
+  for (const auto range_pair : range_vec.at(index)) {
+    FMK_INT64_MULCHECK(dynamic_shape_size, range_pair.second);
+    dynamic_shape_size *= range_pair.second;
+  }
+  auto data_type_size = GetSizeByDataType(desc.GetDataType());
+  if (data_type_size < 0) {
+    GELOGE(PARAM_INVALID, "Input data type is %s, is not supported.",
+           TypeUtils::DataTypeToSerialString(desc.GetDataType()).c_str());
+    return PARAM_INVALID;
+  }
+  FMK_INT64_MULCHECK(dynamic_shape_size, data_type_size);
+  dynamic_shape_size *= data_type_size;
+  GELOGI("In dynamic_execute mode ,set input %s shape range size %ld", op->GetName().c_str(), dynamic_shape_size);
+  ge::TensorUtils::SetSize(desc, dynamic_shape_size);
+  graphStatus graph_ret = op->UpdateInputDesc(0, desc);
+  GE_CHK_STATUS_RET(graph_ret, "UpdateInputDesc fail, graph ret: %u", graph_ret);
+  graph_ret = op->UpdateOutputDesc(0, desc);
+  GE_CHK_STATUS_RET(graph_ret, "UpdateInputDesc fail, graph ret: %u", graph_ret);
+  return SUCCESS;
+}
 }  // namespace
 
 GraphPrepare::GraphPrepare() : compute_graph_(nullptr) {}
@@ -1102,7 +1213,11 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
+Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string,string> &graph_option) {
+  // Get shape range of input in dynamic_execute mode
+  vector<vector<std::pair<int64_t,int64_t>>> dynamic_shape_range_vec;
+  auto ret = GetDynamicInputShapeRange(user_input, graph_option, dynamic_shape_range_vec);
+  GE_CHK_STATUS_RET(ret, "Graph option is not right on Dynamic execute mode.");
   compute_graph_->SaveDataFormat(ge::TypeUtils::DomiFormatToFormat(GetLocalOmgContext().format));
   for (NodePtr &input_node : compute_graph_->GetDirectNode()) {
     GE_CHECK_NOTNULL(input_node);
@@ -1183,6 +1298,12 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input) {
       if (graph_ret != GRAPH_SUCCESS) {
         GELOGE(graph_ret, "UpdateOutputDesc fail, graph_ret:%u", graph_ret);
         return graph_ret;
+      }
+
+      if (!dynamic_shape_range_vec.empty()) {
+        ret = UpdateDynamicInputShapeRange(index, dynamic_shape_range_vec, op, desc);
+        GE_CHK_STATUS_RET(ret, "Fail to update dynamic input shape range on %s.", op->GetName().c_str());
+        continue;
       }
 
       if (!options_.train_graph_flag) {
@@ -1358,17 +1479,17 @@ Status GraphPrepare::SaveOriginalGraphToOmModel() {
     GELOGI("Prepare %s on graph %s success.", name, compute_graph->GetName().c_str()); \
   } while (0)
 
-Status GraphPrepare::PrepareDynShape(ConstGraphPtr graph, const std::vector<GeTensor> &user_input,
+Status GraphPrepare::PrepareDynShape(const GraphNodePtr &graph_node, const std::vector<GeTensor> &user_input,
                                      ge::ComputeGraphPtr &compute_graph, uint64_t session_id) {
-  GE_CHECK_NOTNULL(graph);
+  GE_CHECK_NOTNULL(graph_node->GetGraph());
   GE_CHECK_NOTNULL(compute_graph);
 
   GetLocalOmgContext().type = static_cast<domi::FrameworkType>(options_.framework_type);
-  const Graph &const_graph = *graph;
+  const Graph &const_graph = *graph_node->GetGraph();
 
   PP_RUN("Init", Init, const_graph, session_id);
   PP_RUN("SetRtContext", SetRtContext, rtContext_t(), RT_CTX_GEN_MODE);
-  PP_RUN_AND_DUMP("CheckAndUpdateInput", CheckAndUpdateInput, user_input);
+  PP_RUN_AND_DUMP("CheckAndUpdateInput", CheckAndUpdateInput, user_input, graph_node->GetGraph());
   PP_RUN_AND_DUMP("GraphEquivalentTransformation", GraphEquivalentTransformation);
   PP_RUN_AND_DUMP("ProcessOutput", ProcessNetOutput);
   PP_RUN_AND_DUMP("ProcessMultiBatch", multibatch::ProcessMultiBatch, compute_graph_);
@@ -1831,7 +1952,7 @@ Status GraphPrepare::ProcessNetOutput() {
   return SUCCESS;
 }
 
-Status GraphPrepare::CheckAndUpdateInput(const std::vector<GeTensor> &user_input) {
+Status GraphPrepare::CheckAndUpdateInput(const std::vector<GeTensor> &user_input,const std::map<string,string> &graph_option) {
   compute_graph_->SetInputSize(user_input.size());
   if (user_input.empty()) {
     return SUCCESS;
@@ -1843,7 +1964,7 @@ Status GraphPrepare::CheckAndUpdateInput(const std::vector<GeTensor> &user_input
     return ret;
   }
 
-  ret = UpdateInput(user_input);
+  ret = UpdateInput(user_input, graph_option);
   if (ret != SUCCESS) {
     GELOGE(ret, "UpdateInput fail, ret:%u", ret);
     return ret;

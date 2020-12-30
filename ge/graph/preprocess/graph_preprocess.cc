@@ -37,6 +37,7 @@
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/aicpu_constant_folding_pass.h"
 #include "graph/passes/assert_pass.h"
+#include "ge/ge_api_types.h"
 #ifdef ONLY_COMPILE_OPEN_SRC
 #include "graph/passes/assign_remove_pass.h"
 #endif
@@ -1489,7 +1490,7 @@ Status GraphPrepare::PrepareDynShape(const GraphNodePtr &graph_node, const std::
 
   PP_RUN("Init", Init, const_graph, session_id);
   PP_RUN("SetRtContext", SetRtContext, rtContext_t(), RT_CTX_GEN_MODE);
-  PP_RUN_AND_DUMP("CheckAndUpdateInput", CheckAndUpdateInput, user_input, graph_node->GetGraph());
+  PP_RUN_AND_DUMP("CheckAndUpdateInput", CheckAndUpdateInput, user_input, graph_node->GetOptions());
   PP_RUN_AND_DUMP("GraphEquivalentTransformation", GraphEquivalentTransformation);
   PP_RUN_AND_DUMP("ProcessOutput", ProcessNetOutput);
   PP_RUN_AND_DUMP("ProcessMultiBatch", multibatch::ProcessMultiBatch, compute_graph_);

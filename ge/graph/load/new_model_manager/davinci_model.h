@@ -531,7 +531,7 @@ class DavinciModel {
   Status MallocKnownArgs();
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
-  Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs);
+  Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, bool update_args = true);
   void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info);

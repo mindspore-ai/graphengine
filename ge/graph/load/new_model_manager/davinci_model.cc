@@ -2859,8 +2859,8 @@ void DavinciModel::SetTotalIOAddrs(const vector<void *> &io_addrs) {
   }
 }
 
-Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs) {
-  if (fixed_mem_base_ != reinterpret_cast<uintptr_t>(mem_base_)) {
+Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, bool update_args) {
+  if (fixed_mem_base_ != reinterpret_cast<uintptr_t>(mem_base_) && update_args) {
     for (size_t i = 0; i < total_io_addrs.size(); ++i) {
       total_io_addrs[i] = GetRunAddress(total_io_addrs[i]);
     }
@@ -2904,7 +2904,7 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
   } else {
     total_io_addrs_ = orig_total_io_addrs_;
   }
-  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(total_io_addrs_), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
+  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(total_io_addrs_, false), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
 
   if (total_args_size_ == 0) {
     GELOGW("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, pass rtMemcpy.", args_, total_args_size_);

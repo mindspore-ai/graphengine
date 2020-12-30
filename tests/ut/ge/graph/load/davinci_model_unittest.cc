@@ -282,4 +282,42 @@ TEST_F(UtestDavinciModel, init_unknown) {
   const vector<void *> outputs = { &virtual_addr  };
   EXPECT_EQ(model.UpdateKnownNodeArgs(inputs, outputs), SUCCESS);
 }
+
+TEST_F(UtestDavinciModel, ReturnNoOutput_test) {
+  DavinciModel model(0, nullptr);
+
+  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  TensorUtils::SetSize(tensor, 512);
+
+  OpDescPtr var1 = CreateOpDesc("var1", VARIABLE);
+  var1->AddInputDesc(tensor);
+  var1->AddOutputDesc(tensor);
+  var1->SetInputOffset({1024});
+  var1->SetOutputOffset({1024});
+
+  model.variable_op_list_.push_back(var1);
+
+
+  EXPECT_EQ(model.ReturnNoOutput(model), PARAM_INVALID);
+}
+
+TEST_F(UtestDavinciModel, SyncVarData_test) {
+  DavinciModel model(0, nullptr);
+
+  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  TensorUtils::SetSize(tensor, 512);
+
+  OpDescPtr var1 = CreateOpDesc("var1", VARIABLE);
+  var1->AddInputDesc(tensor);
+  var1->AddOutputDesc(tensor);
+  var1->SetInputOffset({1024});
+  var1->SetOutputOffset({1024});
+
+  model.variable_op_list_.push_back(var1);
+
+  EXPECT_NE(model.SyncVarData(model), SUCCESS);
+
+}
+
+
 }  // namespace ge

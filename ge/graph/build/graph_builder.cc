@@ -322,7 +322,7 @@ Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeMo
   ge::ModelBuilder builder(session_id, comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
   GE_DUMP(comp_graph, "BeforePreBuildModel");
   GE_TIMESTAMP_START(PreBuildModel);
-  GE_CHK_STATUS_RET(builder.PreBuildModel(),  "Graph[%s] builder PreBuildModel() return fail.",
+  GE_CHK_STATUS_RET(builder.PreBuildModel(), "Graph[%s] builder PreBuildModel() return fail.",
                     comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(PreBuildModel, "GraphBuilder::PreBuildModel");
   GE_DUMP(comp_graph, "AfterPreBuildModel");
@@ -336,9 +336,9 @@ Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeMo
   GE_TIMESTAMP_START(SetConstantInputOffset);
   GE_CHK_STATUS_RET(SetConstantInputOffset(comp_graph),
                     "Graph[%s] failed to set constant input offset.", comp_graph->GetName().c_str());
-  GE_TIMESTAMP_END(SetConstantInputOffset);
+  GE_TIMESTAMP_END(SetConstantInputOffset, "GraphBuilder::SetConstantInputOffset");
   GE_TIMESTAMP_START(MergeWeights);
-  GE_CHK_STATUS_RET(MergeWeights(), "Graph[%s] failed to merge weights.", comp_graph->GetName().c_str());
+  GE_CHK_STATUS_RET(builder.MergeWeights(), "Graph[%s] failed to merge weights.", comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(MergeWeights, "GraphBuilder::MergeWeights");
 
   ModelPtr model_ptr = MakeShared<ge::Model>();

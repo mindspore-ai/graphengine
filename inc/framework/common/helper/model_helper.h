@@ -84,6 +84,7 @@ class ModelHelper {
                             const uint8_t *data, size_t size, size_t model_index);
   Status SaveModelDef(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                       Buffer &model_buffer, size_t model_index = 0);
+  Status SaveSizeToModelDef(const GeModelPtr &ge_model);
   Status SaveModelWeights(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
                           size_t model_index = 0);
   Status SaveModelTbeKernel(shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,

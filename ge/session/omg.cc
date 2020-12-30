@@ -71,6 +71,7 @@ const char *const kOutputTypeError = "The multiple out nodes set in output_type 
 const size_t kNodeNameIndex = 0;
 const size_t kIndexStrIndex = 1;
 const size_t kDTValueIndex = 2;
+const size_t kOmInfoSize = 5;
 }  // namespace
 
 // When the model is converted to a JSON file, the following operator attributes in the blacklist will be ignored
@@ -869,9 +870,78 @@ void GetGroupName(ge::proto::ModelDef &model_def) {
       });
 }
 
-FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, const char *json_file) {
+FMK_FUNC_HOST_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def) {
+  std::cout << "============ Display Model Info start ============" << std::endl;
+
+  auto model_attr_map = model_def->mutable_attr();
+  // system info
+  auto iter = model_attr_map->find(ATTR_MODEL_ATC_VERSION);
+  auto atc_version = (iter != model_attr_map->end()) ? iter->second.s() : "";
+  iter = model_attr_map->find("soc_version");
+  auto soc_version = (iter != model_attr_map->end()) ? iter->second.s() : "";
+  iter = model_attr_map->find("framework_type");
+  auto framework_type = (iter != model_attr_map->end()) ? iter->second.s() : "";
+  std::cout << "system   info: "
+            <<  ATTR_MODEL_ATC_VERSION
+            << "[" << atc_version << "], "
+            << "soc_version"
+            << "[" << soc_version << "], "
+            << "framework_type"
+            << "[" << framework_type << "]." << std::endl;
+
+  // resource info
+  iter = model_attr_map->find(ATTR_MODEL_MEMORY_SIZE);
+  auto memory_size = (iter != model_attr_map->end()) ? iter->second.i() : -1;
+  iter = model_attr_map->find(ATTR_MODEL_WEIGHT_SIZE);
+  auto weight_size = (iter != model_attr_map->end()) ? iter->second.i() : -1;
+  iter = model_attr_map->find(ATTR_MODEL_STREAM_NUM);
+  auto stream_num = (iter != model_attr_map->end()) ? iter->second.i() : -1;
+  iter = model_attr_map->find(ATTR_MODEL_EVENT_NUM);
+  auto event_num = (iter != model_attr_map->end()) ? iter->second.i() : -1;
+  std::cout << "resource info: "
+            << ATTR_MODEL_MEMORY_SIZE
+            << "[" << memory_size << " B], "
+            << ATTR_MODEL_WEIGHT_SIZE
+            << "[" << weight_size << " B], "
+            << ATTR_MODEL_STREAM_NUM
+            << "[" << stream_num << "], "
+            << ATTR_MODEL_EVENT_NUM
+            << "[" << event_num << "]."
+            << std::endl;
+
+  // om info
+  iter = model_attr_map->find("om_info_list");
+  if (iter == model_attr_map->end()) {
+    std::cout << "Display Model Info failed, attr \"om_info_list\" is not found in om, check the version is matched."
+              << std::endl;
+    std::cout << "============ Display Model Info end   ============"  << std::endl;
+    return;
+  }
+  auto list_size = iter->second.list().i_size();
+  if (list_size == kOmInfoSize) {
+    std::cout << "om       info: "
+              << "modeldef_size"
+              << "[" << iter->second.list().i(0) << " B], "
+              << "weight_data_size"
+              << "[" << iter->second.list().i(1) << " B], "
+              << "tbe_kernels_size"
+              << "[" << iter->second.list().i(2) << " B], "
+              << "cust_aicpu_kernel_store_size"
+              << "[" << iter->second.list().i(3) << " B], "
+              << "task_info_size"
+              << "[" << iter->second.list().i(4) << " B]." << std::endl;
+  } else {
+    std::cout << "Display Model Info error, please check!"  << std::endl;
+  };
+
+  std::cout << "============ Display Model Info end   ============"  << std::endl;
+}
+
+FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *json_file, bool is_covert_to_json) {
   GE_CHECK_NOTNULL(model_file);
-  GE_CHECK_NOTNULL(json_file);
+  if (is_covert_to_json) {
+    GE_CHECK_NOTNULL(json_file);
+  }
   ge::ModelData model;
 
   // Mode 2 does not need to verify the priority, and a default value of 0 is passed
@@ -917,12 +987,16 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOmModelToJson(const char *model_file, con
       // De serialization
       bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
       if (flag) {
-        GetGroupName(model_def);
+        if (is_covert_to_json) {
+          GetGroupName(model_def);
 
-        json j;
-        Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
+          json j;
+          Pb2Json::Message2Json(model_def, kOmBlackFields, j, true);
 
-        ret = ModelSaver::SaveJsonToFile(json_file, j);
+          ret = ModelSaver::SaveJsonToFile(json_file, j);
+        } else {
+          PrintModelInfo(&model_def);
+        }
       } else {
         ret = INTERNAL_ERROR;
         GELOGE(ret, "ReadProtoFromArray failed.");

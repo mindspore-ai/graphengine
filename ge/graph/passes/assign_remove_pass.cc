@@ -28,6 +28,7 @@ static const std::set<std::string> kNoTaskNodeTypes = { ge::DATA, ge::ANN_DATA, 
                                                         ge::CONSTANT, ge::CONSTANTOP,
                                                         ge::VARIABLE, ge::VARIABLEV2 };
 }
+
 Status AssignRemovePass::Run(NodePtr &node) {
   GELOGD("AssignRemovePass running");
 

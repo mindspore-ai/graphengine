@@ -150,14 +150,7 @@ DavinciModel::~DavinciModel() {
       GELOGW("UnloadDumpInfo failed, ret: %u.", ret);
     }
 
-    for (const auto &op_and_addr : saved_task_addrs_) {
-      auto addr = op_and_addr.second;
-      if (addr != nullptr) {
-        GE_CHK_RT(rtFree(addr));
-      }
-      addr = nullptr;
-    }
-    saved_task_addrs_.clear();
+    ClearTaskAddrs();
 
     GE_CHK_STATUS(ModelRunStop());
 
@@ -221,6 +214,17 @@ DavinciModel::~DavinciModel() {
   }
 }
 
+void DavinciModel::ClearTaskAddrs() {
+  for (const auto &op_and_addr : saved_task_addrs_) {
+    auto addr = op_and_addr.second;
+    if (addr != nullptr) {
+      GE_CHK_RT(rtFree(addr));
+    }
+    addr = nullptr;
+  }
+  saved_task_addrs_.clear();
+}
+
 void DavinciModel::UnbindHcomStream() {
   if (!all_hccl_stream_list_.empty()) {
     for (size_t i = 0; i < all_hccl_stream_list_.size(); i++) {
@@ -263,7 +267,10 @@ Status DavinciModel::Assign(const GeModelPtr &ge_model) {
 ///
 void DavinciModel::Shrink() {
   skt_info_ = {0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, -1, 0, nullptr};
+  DumperShrink();
   ge_model_.reset();  // delete object.
+  op_list_.clear();
+  ClearTaskAddrs();
 }
 
 Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size) {
@@ -738,7 +745,6 @@ Status DavinciModel::ReportProfilingData() {
   }
   ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info);
   GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
-  op_list_.clear();
 
   return SUCCESS;
 }
@@ -963,7 +969,9 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
   }
 
   data_by_index[data_index] = op_desc;
-  data_op_list_.push_back(op_desc);
+  auto data_op = AttrUtils::CopyOpDesc(op_desc);
+  GE_CHECK_NOTNULL(data_op);
+  data_op_list_.push_back(data_op);
   if (known_node_) {
     return SUCCESS;
   }
@@ -1019,7 +1027,9 @@ Status DavinciModel::OptInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_
 
   data_op_list_.clear();
   for (auto &item : data_by_index) {
-    data_op_list_.emplace_back(item.second);
+    auto data_op = AttrUtils::CopyOpDesc(item.second);
+    GE_CHECK_NOTNULL(data_op);
+    data_op_list_.emplace_back(data_op);
     auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, item.second);
     GELOGD("Data node: %s, output addr size: %zu", item.second->GetName().c_str(), output_addrs.size());
     input_addrs_list_.emplace_back(output_addrs);

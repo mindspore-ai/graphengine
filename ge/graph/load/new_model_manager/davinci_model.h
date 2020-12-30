@@ -481,6 +481,10 @@ class DavinciModel {
     data_dumper_.SaveDumpTask(task_id, stream_id, op_desc, args);
   }
 
+  void DumperShrink() {
+    data_dumper_.DumpShrink();
+  }
+
   void SetEndGraphId(uint32_t task_id, uint32_t stream_id);
   DavinciModel &operator=(const DavinciModel &model) = delete;
 
@@ -643,6 +647,8 @@ class DavinciModel {
   void FreeP2PMem();
 
   void ReleaseTask();
+
+  void ClearTaskAddrs();
 
   void UnbindTaskSinkStream();
 
@@ -875,12 +881,12 @@ class DavinciModel {
   string om_name_;
 
   uint32_t version_;
-  GeModelPtr ge_model_;
+  GeModelPtr ge_model_;  // release after DavinciModel::Init
 
   bool need_destroy_aicpu_kernel_{false};
   vector<string> out_node_name_;
 
-  map<uint32_t, OpDescPtr> op_list_;
+  map<uint32_t, OpDescPtr> op_list_;  // release after DavinciModel::Init
 
   // data op_desc
   vector<OpDescPtr> data_op_list_;
@@ -975,7 +981,7 @@ class DavinciModel {
   DataDumper data_dumper_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
-  map<OpDescPtr, void *> saved_task_addrs_;
+  map<OpDescPtr, void *> saved_task_addrs_;  // release after DavinciModel::Init
   void *l1_fusion_addr_ = nullptr;
 
   bool known_node_ = false;

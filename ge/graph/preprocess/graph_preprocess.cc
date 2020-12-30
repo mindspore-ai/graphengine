@@ -906,7 +906,7 @@ Status ProcessNetoutputNodeDynShape(NodePtr &node) {
 void ParseDynamicInputShapeRange(const std::string &shape_range,
                                  std::vector<std::vector<std::pair<int64_t, int64_t>>> &range) {
   if (shape_range.empty() || shape_range.size() < 2) {
-    GELOGW("Shape range %s is invalid.", shape_range);
+    GELOGW("Shape range %s is invalid.", shape_range.c_str());
     return;
   }
   // different parameter sets are split by ';'
@@ -975,7 +975,7 @@ Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const 
 }
 
 Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
-                                    const ector<vector<std::pair<int64_t, int64_t>>> &range_vec, OpDescPtr &op,
+                                    const vector<vector<std::pair<int64_t, int64_t>>> &range_vec, OpDescPtr &op,
                                     GeTensorDesc &desc) {
   auto unkown_shape = desc.GetShape();
   auto shape_range = range_vec.at(index);

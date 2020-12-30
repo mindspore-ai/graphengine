@@ -60,6 +60,8 @@ class KernelExTaskInfo : public TaskInfo {
  private:
   Status CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param, const OpDescPtr &op_desc);
 
+  void InitDumpTask(void *addr, const OpDescPtr &op_desc);
+
   uint32_t task_id_;
   uint32_t stream_id_;
   uint32_t dump_flag_;

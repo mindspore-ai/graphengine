@@ -218,8 +218,8 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
-    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
-    return GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
+    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
   DestroyAicpuSession(session_id);
@@ -905,7 +905,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
   davinci_model->SetModelDescVersion(new_model_desc);

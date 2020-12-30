@@ -1563,6 +1563,11 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   size_t aicpu_op_nums = aicpu_optype_list.size();
   size_t tf_op_nums = aicpu_tf_optype_list.size();
   size_t op_nums = aicpu_op_nums + tf_op_nums;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+  };
   // malloc sysOpInfoList in SysOpCheckInfo
   status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
@@ -1575,6 +1580,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   status = rtMalloc(&d_res_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    GE_MAKE_GUARD(release, callback);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   allocated_mem.push_back(d_res_op_list);
@@ -1583,6 +1589,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   status = rtMalloc(&d_ret_code_list, op_nums * sizeof(ReturnCode), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    GE_MAKE_GUARD(release, callback);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   allocated_mem.push_back(d_ret_code_list);
@@ -1594,6 +1601,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     status = rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM);
     if (status != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      GE_MAKE_GUARD(release, callback);
       return RT_ERROR_TO_GE_STATUS(status);
     }
     allocated_mem.push_back(d_op_type_name);
@@ -1611,6 +1619,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     status = rtMalloc(&d_op_type_name, op_type.size(), RT_MEMORY_HBM);
     if (status != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      GE_MAKE_GUARD(release, callback);
       return RT_ERROR_TO_GE_STATUS(status);
     }
     allocated_mem.push_back(d_op_type_name);
@@ -1639,37 +1648,39 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    GE_MAKE_GUARD(release, callback);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   allocated_mem.push_back(args);
-  GE_CHK_RT(
-      rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo), RT_MEMCPY_HOST_TO_DEVICE));
-  GE_CHK_RT(rtMemcpy(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)),
-                     sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res), sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo),
+                     RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(
+    reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) +
+    op_check_info_req.offSetLen)), sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res),
+    sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
   GE_CHK_RT(rtStreamCreate(&stream, 0));
   GE_CHK_RT(rtCpuKernelLaunch(nullptr, kernel_name.c_str(), 1, args, args_size, nullptr, stream));
 
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
   // Check the response
-  SysOpCheckResp *d_op_check_info_res = reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
+  SysOpCheckResp *d_op_check_info_res =
+    reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(
+    reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
   (void)memset_s(&op_check_info_res, sizeof(SysOpCheckResp), 0, sizeof(SysOpCheckResp));
   GE_CHK_RT(rtMemcpy(&op_check_info_res, sizeof(SysOpCheckResp), d_op_check_info_res, sizeof(SysOpCheckResp),
                      RT_MEMCPY_DEVICE_TO_HOST));
-  std::function<void()> callback = [&]() {
-    for (auto mem : allocated_mem) {
-      GE_CHK_RT(rtFree(mem));
-    }
-    GE_CHK_RT(rtStreamDestroy(stream));
-  };
 
   if (op_check_info_res.isWithoutJson) {
     GELOGI("No need to check aicpu in this scenoria.");
     GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return SUCCESS;
   }
   uint64_t res_op_nums = op_check_info_res.opListNum;
@@ -1688,6 +1699,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     if (res_ret_code_list.size() != res_aicpu_op_info_list.size() || res_ret_code_list.size() != res_op_nums) {
       GELOGE(FAILED, "Number of retcode is not equal to number of op type.");
       GE_MAKE_GUARD(release, callback);
+      GE_CHK_RT(rtStreamDestroy(stream));
       return FAILED;
     }
     std::string fail_reason;
@@ -1711,10 +1723,12 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     fail_reason += "not support.";
     GELOGE(FAILED, "Check aicpu op_type failed. details: %s", fail_reason.c_str());
     GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return FAILED;
   }
 
   GE_MAKE_GUARD(release, callback);
+  GE_CHK_RT(rtStreamDestroy(stream));
   GELOGI("Cpu kernel launch check optype task success.");
   return SUCCESS;
 }

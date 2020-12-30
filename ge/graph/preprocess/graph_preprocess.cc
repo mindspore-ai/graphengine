@@ -53,6 +53,7 @@
 #include "graph/passes/hccl_group_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/infershape_pass.h"
+#include "graph/passes/merge_pass.h"
 #include "graph/passes/net_output_pass.h"
 #include "graph/passes/no_use_reshape_remove_pass.h"
 #include "graph/passes/parallel_concat_start_op_pass.h"
@@ -68,6 +69,7 @@
 #include "graph/passes/shape_operate_op_remove_pass.h"
 #include "graph/passes/snapshot_pass.h"
 #include "graph/passes/stop_gradient_pass.h"
+#include "graph/passes/switch_dead_branch_elimination.h"
 #include "graph/passes/unused_const_pass.h"
 #include "graph/passes/var_is_initialized_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
@@ -1606,6 +1608,10 @@ Status GraphPrepare::InferShapeForPreprocess() {
   if (!options_.train_graph_flag) {
     names_to_passes.emplace_back("AssertPass", &assert_pass);
   }
+  SwitchDeadBranchElimination switch_dead_branch_elimination;
+  names_to_passes.emplace_back("SwitchDeadBranchElimination", &switch_dead_branch_elimination);
+  MergePass merge_pass;
+  names_to_passes.emplace_back("MergePass", &merge_pass);
   InferShapePass infer_shape_pass;
   names_to_passes.emplace_back("InferShapePass", &infer_shape_pass);
   ReplaceWithEmptyConstPass replace_with_empty_const_pass;

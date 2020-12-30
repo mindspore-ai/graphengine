@@ -19,6 +19,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
+namespace ge {
 namespace {
 constexpr uint32_t kValidInputNodeOutputNum = 1;
 constexpr int32_t kAssignRefInputIndex = 0;
@@ -27,8 +28,6 @@ static const std::set<std::string> kNoTaskNodeTypes = { ge::DATA, ge::ANN_DATA, 
                                                         ge::CONSTANT, ge::CONSTANTOP,
                                                         ge::VARIABLE, ge::VARIABLEV2 };
 }
-
-namespace ge {
 Status AssignRemovePass::Run(NodePtr &node) {
   GELOGD("AssignRemovePass running");
 

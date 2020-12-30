@@ -2099,6 +2099,12 @@ Status DavinciModel::SyncVarData() {
                            RT_MEMCPY_HOST_TO_DEVICE));
   }
 
+  for (auto op_desc : variable_op_list_) {
+    ret =
+        VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+    GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret failed, model id:%u, op name:%s.", model_id_,
+                     op_desc->GetName().c_str());
+  }
   return ret;
 }
 
@@ -2571,6 +2577,12 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
 ///
 Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
   GELOGI("ReturnNoOutput model id:%u", model_id_);
+  for (auto op_desc : variable_op_list_) {
+    Status ret = VarManager::Instance(session_id_)
+                     ->SyncBroadCastData2Var(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+    GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret failed, model id:%u, op name:%s.", model_id_,
+                     op_desc->GetName().c_str());
+  }
 
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null!");
   std::vector<ge::OutputTensorInfo> outputs;

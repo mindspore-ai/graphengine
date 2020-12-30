@@ -298,7 +298,7 @@ TEST_F(UtestDavinciModel, ReturnNoOutput_test) {
   model.variable_op_list_.push_back(var1);
 
 
-  EXPECT_EQ(model.ReturnNoOutput(model), PARAM_INVALID);
+  EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
 }
 
 TEST_F(UtestDavinciModel, SyncVarData_test) {
@@ -315,8 +315,7 @@ TEST_F(UtestDavinciModel, SyncVarData_test) {
 
   model.variable_op_list_.push_back(var1);
 
-  EXPECT_NE(model.SyncVarData(model), SUCCESS);
-
+  EXPECT_NE(model.SyncVarData(), SUCCESS);
 }
 
 

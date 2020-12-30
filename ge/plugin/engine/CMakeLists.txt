@@ -14,6 +14,7 @@ target_compile_options(engine PRIVATE
 target_compile_definitions(engine PRIVATE
     REUSE_MEMORY=1
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(engine PRIVATE

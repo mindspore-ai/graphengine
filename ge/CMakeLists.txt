@@ -768,6 +768,7 @@ add_library(opensrc_ascendcl SHARED
 
 target_compile_definitions(opensrc_ascendcl PRIVATE
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(opensrc_ascendcl PRIVATE

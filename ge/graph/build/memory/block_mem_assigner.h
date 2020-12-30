@@ -420,11 +420,7 @@ class BlockMemAssigner : public MemAssigner {
 
   bool GetWorkSpaceMemoryType(const NodePtr &node, size_t index, int64_t &memory_type);
 
-  void ContinuousOutRefCheck(bool &isAllOutputRef, bool &isOutputHasRef, const NodePtr &n);
-
-  Status ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges, const bool is_op_reuse_mem);
-
-  void MarkContinuousAllocedForOneInputFromVariable(const NodePtr &node);
+  MemoryBlock *ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges, const bool is_op_reuse_mem);
 
   std::unordered_map<int64_t, std::unordered_map<int64_t, std::vector<MemoryBlock *>>> reusable_blocks_;
 

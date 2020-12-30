@@ -495,8 +495,8 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &data) {
     int64_t tensor_size = 0;
     (void)TensorUtils::GetTensorSizeInBytes(tensor, tensor_size);
     string input_str = TypeUtils::FormatToSerialString(tensor.GetFormat()) + ":" +
-	                   TypeUtils::DataTypeToSerialString(tensor.GetDataType()) + ":" + data->GetName() + ":" +
-	                   std::to_string(tensor_size) + ":" + std::to_string(tensor.GetShape().GetDimNum()) + ":" +
+	               TypeUtils::DataTypeToSerialString(tensor.GetDataType()) + ":" + data->GetName() + ":" +
+	               std::to_string(tensor_size) + ":" + std::to_string(tensor.GetShape().GetDimNum()) + ":" +
                        formats::JoinToString(tensor.GetShape().GetDims());
     input_dims_str.emplace_back(input_str);
   }

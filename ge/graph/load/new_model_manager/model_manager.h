@@ -273,7 +273,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   std::shared_ptr<hybrid::HybridDavinciModel> GetHybridModel(uint32_t id);
 
-  ge::Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id);
+  ge::Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id,
+                            uint32_t sub_model_id);
 
   ge::Status CreateAicpuSession(uint64_t session_id);
 
@@ -281,9 +282,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   void DestroyAicpuSession(uint64_t session_id);
 
-  ge::Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
+  ge::Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id);
 
-  ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id);
+  ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id, uint64_t kernel_id);
 
   ge::Status DestroyAicpuSessionForInfer(uint32_t model_id);
 

@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
+#include <cce/compiler_stub.h>
 #include <gtest/gtest.h>
 
-#include <cce/compiler_stub.h>
 #include "common/debug/log.h"
+#include "common/l2_cache_optimize.h"
 #include "common/model_parser/base.h"
 #include "common/properties_manager.h"
 #include "common/types.h"
-#include "common/l2_cache_optimize.h"
 
 #define private public
 #define protected public
-#include "graph/load/new_model_manager/model_manager.h"
-
 #include "common/helper/om_file_helper.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/new_model_manager/model_manager.h"
 //#include "new_op_test_utils.h"
 #undef private
 #undef protected
@@ -60,7 +59,20 @@ TEST_F(UtestModelManagerModelManagerAicpu, checkAicpuOptype) {
 
   model_manager.LaunchKernelCheckAicpuOp(aicpu_op_list, aicpu_tf_list);
   // Load allow listener is null
-  //EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, nullptr, nullptr));
+  // EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, nullptr, nullptr));
+}
+
+TEST_F(UtestModelManagerModelManagerAicpu, DestroyAicpuKernel) {
+  ModelManager model_manager;
+  uint32_t model_id = 0;
+  std::vector<std::string> aicpu_op_list;
+  std::vector<std::string> aicpu_tf_list;
+  aicpu_tf_list.emplace_back("FrameworkOp");
+  aicpu_tf_list.emplace_back("Unique");
+
+  model_manager.DestroyAicpuKernel(0,0,0);
+  // Load allow listener is null
+  // EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, nullptr, nullptr));
 }
 
 }  // namespace ge

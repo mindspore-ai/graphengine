@@ -565,6 +565,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
     #"graph/load/output_net_output_unittest.cc"
+    "graph/load/davinci_model_unittest.cc"
     "graph/load/tbe_handle_store_unittest.cc"
     "graph/load/hccl_task_info_unittest.cc"
     "graph/load/kernel_ex_task_info_unittest.cc"

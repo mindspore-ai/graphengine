@@ -32,11 +32,11 @@ const int kOffsetUnit = 8;
 RuntimeModel::~RuntimeModel() {
   GELOGI("RuntimeModel destructor start");
 
-  // Release task first, hccl task hold stream
-  task_list_.clear();
-
   // Unbind rtModel from all task related streams
   RtModelUnbindStream();
+
+  // Release task first, hccl task hold stream
+  task_list_.clear();
 
   // Release all task related streams
   RtStreamDestory();

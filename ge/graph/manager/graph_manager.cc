@@ -769,7 +769,7 @@ Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint
 Status GraphManager::RunCustomPass(const GraphNodePtr &graph_node) {
   ConstGraphPtr const_graph = graph->node->GetGraph();
   auto comp_graph = GraphUtils::GetComputeGraph(*const_graph);
-  GE_DUMP(compute_graph, "RunCustomPassBegin");
+  GE_DUMP(comp_graph, "RunCustomPassBegin");
 
   GE_TIMESTAMP_START(RunCustomPass);
   GraphPtr graph = std::const_pointer_cast<Graph>(const_graph);

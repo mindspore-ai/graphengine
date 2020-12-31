@@ -73,14 +73,14 @@ struct DataBuffer {
 /// @brief External input data
 ///
 struct InputData {
-  uint32_t index;                 // Index of input data
-  uint32_t timestamp;             // Data creation time
-  uint32_t timeout;               // Processing timeout
-  uint32_t model_id;              // Model ID required for data processing
-  uint64_t request_id = 0;        // Request ID
-  std::vector<DataBuffer> blobs;  // Actual input data, currently only supports one input
-  bool is_dynamic_batch = false;  // Whether is dynamic batch size scene, default:false
-  std::string batch_label;        // Gear used for current inference in dynamic batch scene
+  uint32_t index;                           // Index of input data
+  uint32_t timestamp;                       // Data creation time
+  uint32_t timeout;                         // Processing timeout
+  uint32_t model_id;                        // Model ID required for data processing
+  uint64_t request_id = 0;                  // Request ID
+  std::vector<DataBuffer> blobs;            // Actual input data, currently only supports one input
+  bool is_dynamic_batch = false;            // Whether is dynamic batch size scene, default:false
+  std::string batch_label;                  // Gear used for current inference in dynamic batch scene
   std::vector<std::vector<int64_t>> shapes; // Input shapes
 };
 

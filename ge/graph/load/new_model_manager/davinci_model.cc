@@ -2466,19 +2466,10 @@ Status DavinciModel::InitOutputTensorInfo(const OpDescPtr &op_desc) {
     GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
                     GELOGE(ret, "Get size from TensorDesc failed, op:%s, input id:%zu", op_desc->GetName().c_str(), i);
                     return ret);
-    std::vector<int64_t> output_shape = input_desc->GetShape().GetDims();
-    if (is_online_infer_dynamic_) {
-      if (merge_nodes_gear_and_real_out_size_info_.find(i) != merge_nodes_gear_and_real_out_size_info_.end()) {
-        auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[i];
-        size = gear_and_real_out_size_info[cur_dynamic_dims_];
-        auto gear_and_real_out_shape_info = merge_nodes_gear_and_real_out_shape_info_[i];
-        output_shape = gear_and_real_out_shape_info[cur_dynamic_dims_];
-        is_dynamic_ = true;
-      }
-    }
-    GELOGI("Output size is %ld, output shape is %s.", size, formats::JoinToString(output_shape).c_str());
-    output_buffer_size_.push_back(size);
-    output_shape_info_.push_back(output_shape);
+    const GeShape &shape = input_desc->GetShape();
+    GELOGI("Output size is %ld, output shape is %s.", size, formats::JoinToString(shape.GetDims()).c_str());
+    output_buffer_size_.emplace_back(size);
+    output_shape_info_.emplace_back(shape);
   }
 
   return SUCCESS;
@@ -2491,18 +2482,38 @@ Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputT
     return SUCCESS;
   }
 
+  vector<int64_t> output_buffer_size;
+  vector<vector<int64_t>> output_shape_info;
+  size_t output_num = output_buffer_size_.size();
+  for (size_t i = 0; i < output_num; ++i) {
+    int64_t output_size = output_buffer_size_[i];
+    vector<int64_t> output_shape = output_shape_info_[i].GetDims();
+    if (is_online_infer_dynamic_) {
+      if (merge_nodes_gear_and_real_out_size_info_.find(i) != merge_nodes_gear_and_real_out_size_info_.end()) {
+        auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[i];
+        output_size = gear_and_real_out_size_info[cur_dynamic_dims_];
+        auto gear_and_real_out_shape_info = merge_nodes_gear_and_real_out_shape_info_[i];
+        output_shape = gear_and_real_out_shape_info[cur_dynamic_dims_];
+        is_dynamic_ = true;
+      }
+    }
+    GELOGI("Output size is %ld, output shape is %s.", output_size, formats::JoinToString(output_shape).c_str());
+    output_buffer_size.push_back(output_size);
+    output_shape_info.push_back(output_shape);
+  }
+
   GELOGI("Output blobs size:%zu, model id:%u", output_buffer_size_.size(), model_id_);
-  for (size_t i = 0; i < output_buffer_size_.size(); ++i) {
-    std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[output_buffer_size_[i]]);
+  for (size_t i = 0; i < output_buffer_size.size(); ++i) {
+    std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[output_buffer_size[i]]);
     if (data_buf == nullptr) {
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Malloc buffer failed.");
       return GE_GRAPH_MALLOC_FAILED;
     }
-    output_data->blobs.push_back({data_buf.get(), static_cast<uint64_t>(output_buffer_size_[i]), false});
-    ge::OutputTensorInfo output;
-    output.dims = output_shape_info_[i];
+    output_data->blobs.push_back({data_buf.get(), static_cast<uint64_t>(output_buffer_size[i]), false});
+    OutputTensorInfo output;
+    output.dims = output_shape_info[i];
     output.data = std::move(data_buf);
-    output.length = output_buffer_size_[i];
+    output.length = output_buffer_size[i];
     outputs.emplace_back(std::move(output));
     GELOGD("Output index:%zu, output dims is %s, data length:%lu.", i,
            formats::JoinToString(output.dims).c_str(), output.length);

@@ -98,10 +98,10 @@ Status HybridModelAsyncExecutor::Init() {
   return SUCCESS;
 }
 
-Status HybridModelAsyncExecutor::PreRun(InputData &current_data) {
+Status HybridModelAsyncExecutor::PreRun(InputData &current_data, HybridModelExecutor::ExecuteArgs &args) {
   GE_CHK_STATUS_RET(SyncVarData(), "Failed to sync var data");
   RECORD_MODEL_EXECUTION_EVENT(executor_->GetContext(), "[SyncVarData] End");
-  GE_CHK_STATUS_RET(CopyInputData(current_data), "Failed to copy input data to model");
+  GE_CHK_STATUS_RET(PrepareInputs(current_data, args), "Failed to copy input data to model");
   RECORD_MODEL_EXECUTION_EVENT(executor_->GetContext(), "[CopyInputData] End");
   return SUCCESS;
 }
@@ -126,14 +126,9 @@ Status HybridModelAsyncExecutor::RunInternal() {
     InputData current_data = data_wrapper->GetInput();
     GELOGI("Model thread Run begin, model id:%u, data index:%u.", model_id_, current_data.index);
 
-    HybridModelExecutor::ExecuteArgs args;
-    args.inputs.resize(input_tensors_.size());
-    for (auto &it : input_tensors_) {
-      args.inputs[it.first] = it.second;
-    }
-
     RECORD_MODEL_EXECUTION_EVENT(executor_->GetContext(), "[RunInternal] [iteration = %d] Start", iterator_count_);
-    ret = PreRun(current_data);
+    HybridModelExecutor::ExecuteArgs args;
+    ret = PreRun(current_data, args);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ret != SUCCESS, (void) HandleResult(ret, current_data.index, args, data_wrapper->GetOutput());
         CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
@@ -202,7 +197,9 @@ Status HybridModelAsyncExecutor::SyncVarData() {
   return SUCCESS;
 }
 
-Status HybridModelAsyncExecutor::CopyInputData(const InputData &current_data) {
+Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, HybridModelExecutor::ExecuteArgs &args) {
+  args.inputs.resize(input_tensors_.size());
+  args.input_desc.resize(input_tensor_desc_.size());
   const std::vector<DataBuffer> &blobs = current_data.blobs;
   for (const auto &it : input_tensors_) {
     auto input_index = it.first;
@@ -230,6 +227,13 @@ Status HybridModelAsyncExecutor::CopyInputData(const InputData &current_data) {
                            data_buf.data,
                            data_buf.length,
                            RT_MEMCPY_HOST_TO_DEVICE));
+    args.inputs[input_index] = input_tensor;
+    if (is_input_dynamic_[input_index]) {
+      auto &tensor_desc = input_tensor_desc_[input_index];
+      tensor_desc->SetShape(GeShape(current_data.shapes[input_index]));
+      args.input_desc[input_index] = tensor_desc;
+      GELOGD("Update shape of input[%u] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
+    }
   }
 
   return SUCCESS;
@@ -240,7 +244,10 @@ Status HybridModelAsyncExecutor::InitInputTensors() {
   GE_CHECK_NOTNULL(allocator);
   int input_index = 0;
   for (const auto &input_node : model_->GetRootGraphItem()->GetInputNodes()) {
-    GELOGD("Init input[%u], node = %s", input_index, input_node->NodeName().c_str());
+    GELOGD("Init input[%u], node = %s, is_dynamic = %d",
+           input_index,
+           input_node->NodeName().c_str(),
+           input_node->is_dynamic);
     auto output_desc = input_node->MutableOutputDesc(kDataOutputIndex);
     GE_CHECK_NOTNULL(output_desc);
     int64_t tensor_size = 0;
@@ -258,6 +265,8 @@ Status HybridModelAsyncExecutor::InitInputTensors() {
     TensorValue tensor(shared_ptr<TensorBuffer>(buffer.release()));
     tensor.SetName("Input_" + input_node->NodeName());
     input_tensors_.emplace(input_index, tensor);
+    input_tensor_desc_.emplace(input_index, output_desc);
+    is_input_dynamic_.push_back(input_node->is_dynamic);
     input_index += 1;
   }
 
@@ -402,18 +411,12 @@ Status HybridModelAsyncExecutor::Execute(const vector<GeTensor> &inputs, vector<
     buffer.data = const_cast<uint8_t *>(tensor.GetData().GetData());
     buffer.length = tensor.GetData().size();
     input_data.blobs.emplace_back(buffer);
+    input_data.shapes.emplace_back(tensor.GetTensorDesc().GetShape().GetDims());
   }
-  GE_CHK_STATUS_RET(CopyInputData(input_data), "Failed to copy input data to model");
-  GELOGD("Done copying input data successfully.");
 
   HybridModelExecutor::ExecuteArgs args;
-  args.inputs.resize(input_tensors_.size());
-  args.input_desc.resize(input_tensors_.size());
-  for (auto &it : input_tensors_) {
-    args.inputs[it.first] = it.second;
-    args.input_desc[it.first] = MakeShared<GeTensorDesc>(inputs[it.first].GetTensorDesc());
-  }
-
+  GE_CHK_STATUS_RET(PrepareInputs(input_data, args), "Failed to copy input data to model");
+  GELOGD("Done copying input data successfully.");
   GE_CHK_STATUS_RET(executor_->Execute(args), "Failed to execute model.");
 
   std::vector<ge::OutputTensorInfo> output_tensor_info_list;

@@ -81,6 +81,7 @@ struct InputData {
   std::vector<DataBuffer> blobs;  // Actual input data, currently only supports one input
   bool is_dynamic_batch = false;  // Whether is dynamic batch size scene, default:false
   std::string batch_label;        // Gear used for current inference in dynamic batch scene
+  std::vector<std::vector<int64_t>> shapes; // Input shapes
 };
 
 /// Output result structure definition

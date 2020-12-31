@@ -70,9 +70,9 @@ class HybridModelAsyncExecutor {
 
   Status OnComputeDone(uint32_t data_index, uint32_t result_code, std::vector<ge::OutputTensorInfo> &outputs);
 
-  Status PreRun(InputData &current_data);
+  Status PreRun(InputData &current_data, HybridModelExecutor::ExecuteArgs &args);
 
-  Status CopyInputData(const InputData &current_data);
+  Status PrepareInputs(const InputData &current_data, HybridModelExecutor::ExecuteArgs &args);
 
   std::mutex mu_;
   HybridModel *model_;
@@ -86,6 +86,8 @@ class HybridModelAsyncExecutor {
 
   rtStream_t stream_ = nullptr;
   std::map<uint32_t, TensorValue> input_tensors_;
+  std::map<uint32_t, GeTensorDescPtr> input_tensor_desc_;
+  std::vector<bool> is_input_dynamic_;
   std::shared_ptr<ModelListener> listener_;
 };
 }  // namespace hybrid

@@ -358,7 +358,7 @@ Status GraphOptimize::OptimizeWholeGraph(ComputeGraphPtr &compute_graph) {
       if (iter.first == exclude_core_type || iter.second == nullptr) {
         continue;
       }
-      GELOGI("Begin to refine running format by engine %s", iter->first.c_str());
+      GELOGI("Begin to optimize whole graph by engine %s", iter.first.c_str());
       ret = iter.second->OptimizeWholeGraph(*compute_graph);
       GE_DUMP(compute_graph, "OptimizeWholeGraph" + iter.first);
       if (ret != SUCCESS) {

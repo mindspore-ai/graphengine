@@ -1038,7 +1038,7 @@ class DavinciModel {
   vector<vector<void *>> output_addrs_list_;
 
   vector<int64_t> output_buffer_size_;
-  vector<vector<int64_t>> output_shape_info_;
+  vector<GeShape> output_shape_info_;
 
   vector<InputOutputDescInfo> output_descs_;
   vector<uint32_t> output_formats_;

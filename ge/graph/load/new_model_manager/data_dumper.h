@@ -83,6 +83,8 @@ class DataDumper {
 
   Status UnloadDumpInfo();
 
+  void DumpShrink();
+
   void SetDumpProperties(const DumpProperties &dump_properties) { dump_properties_ = dump_properties; }
   const DumpProperties &GetDumpProperties() const { return dump_properties_; }
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
@@ -112,18 +114,18 @@ class DataDumper {
   struct InnerInputMapping;
 
   std::vector<OpDescInfo> op_desc_info_;
-  std::vector<InnerDumpInfo> op_list_;
+  std::vector<InnerDumpInfo> op_list_;  // release after DavinciModel::Init
   uint32_t end_graph_task_id_ = 0;
   uint32_t end_graph_stream_id_ = 0;
   bool is_end_graph_ = false;
-  std::multimap<std::string, InnerInputMapping> input_map_;
+  std::multimap<std::string, InnerInputMapping> input_map_;  // release after DavinciModel::Init
   bool load_flag_;
   uint32_t device_id_;
   uintptr_t global_step_;
   uintptr_t loop_per_iter_;
   uintptr_t loop_cond_;
-  ComputeGraphPtr compute_graph_;
-  std::map<OpDescPtr, void *> ref_info_;
+  ComputeGraphPtr compute_graph_;  // release after DavinciModel::Init
+  std::map<OpDescPtr, void *> ref_info_;  // release after DavinciModel::Init
   void *l1_fusion_addr_ = nullptr;
 
 

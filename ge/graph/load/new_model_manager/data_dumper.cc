@@ -830,6 +830,13 @@ Status DataDumper::UnloadDumpInfo() {
   return SUCCESS;
 }
 
+void DataDumper::DumpShrink() {
+  compute_graph_.reset();
+  input_map_.clear();
+  ref_info_.clear();
+  op_list_.clear();
+}
+
 void DataDumper::PrintCheckLog(string &dump_list_key) {
   std::set<std::string> model_list = dump_properties_.GetAllDumpModel();
   if (model_list.empty()) {

@@ -217,10 +217,15 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
 
   json jsn;
   GraphInfoToJson(jsn, *graph_info);
-  json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
+  bool ret_failed = false;
+  try {
+    json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
+  } catch (nlohmann::detail::type_error &e) {
+    GELOGE(FAILED, "analyzer file [%s] failed because [%s]", json_file_name_.c_str(), e.what());
+    ret_failed = true;
+  }
   json_file_.close();
-
-  return SUCCESS;
+  return ret_failed ? FAILED : SUCCESS;
 }
 
 ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {

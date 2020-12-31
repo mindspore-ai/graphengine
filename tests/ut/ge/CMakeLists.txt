@@ -121,6 +121,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
     "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
     "${GE_CODE_DIR}/metadef/register/register.cpp"
+    "${GE_CODE_DIR}/metadef/register/register_pass.cpp"
     "${GE_CODE_DIR}/metadef/register/op_kernel_registry.cpp"
     "${GE_CODE_DIR}/metadef/register/auto_mapping_util.cpp"
     "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"

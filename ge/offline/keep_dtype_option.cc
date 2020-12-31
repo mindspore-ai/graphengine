@@ -42,21 +42,29 @@ bool IsOriginalOpFind(OpDescPtr &op_desc, const std::string &op_name) {
 }
 
 void KeepDtypeReportError(const std::vector<std::string> &invalid_list) {
-  std::stringstream error_ops;
-  for (size_t i = 0; i < invalid_list.size(); i++) {
+  std::stringstream err_msg;
+  size_t list_size = invalid_list.size();
+  err_msg << "config file contains " << list_size;
+  if (list_size == 1) {
+    err_msg << " operator not in the graph, op name:";
+  } else {
+    err_msg << " operators not in the graph, op names:";
+  }
+
+  for (size_t i = 0; i < list_size; i++) {
     if (i == kMaxOpsNum) {
-      error_ops << "...";
+      err_msg << "..";
       break;
     }
-    error_ops << invalid_list[i] << " ";
+    err_msg << invalid_list[i];
+    if (i != list_size - 1) {
+      err_msg << " ";
+    }
   }
-  std::string err_msg = "config file contains ";
-  err_msg = err_msg.append(std::to_string(invalid_list.size()))
-                   .append(" operators not in the graph, op names:")
-                   .append(error_ops.str());
+
   ErrorManager::GetInstance().ATCReportErrMessage(
-      "E10042", {"parameter", "reason"}, {"keep_dtype", err_msg.c_str()});
-  GELOGE(FAILED, "%s", err_msg.c_str());
+      "E10042", {"parameter", "reason"}, {"keep_dtype", err_msg.str().c_str()});
+  GELOGE(FAILED, "%s", err_msg.str().c_str());
 }
 
 Status DealKeepDtypeOption(const ComputeGraphPtr &graph, const std::string &keep_dtype) {
@@ -96,6 +104,7 @@ Status DealKeepDtypeOption(const ComputeGraphPtr &graph, const std::string &keep
       invalid_list.push_back(op_name);
     }
   }
+  ifs.close();
 
   if (!invalid_list.empty()) {
     KeepDtypeReportError(invalid_list);

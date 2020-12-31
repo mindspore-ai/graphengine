@@ -994,6 +994,8 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
 
   Status ret = ge::DealKeepDtypeOption(ge::GraphUtils::GetComputeGraph(graph), FLAGS_keep_dtype);
   if (ret != SUCCESS) {
+    (void)ge_generator.Finalize();
+    (void)ge::GELib::GetInstance()->Finalize();
     return ret;
   }
 

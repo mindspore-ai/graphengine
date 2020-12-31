@@ -1,3 +1,5 @@
+# Release 1.0.0
+
 ### Major Features and Improvements
 * Dynamic dims input is supported in online inference scenarios.
 * Dynamic ranking is supported in the GetNext scenario.
@@ -22,7 +24,7 @@
 * Fix the problem of dump AICPU operator fails.
 
 ## Thanks to our Contributors
-Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
+Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong, zhaoxinxin, chuxing, wangtao, zhaozhixuan, wangwenhua Contributions of any kind are welcome!
 
 Contributions of any kind are welcome!
 
@@ -41,7 +43,7 @@ Contributions of any kind are welcome!
 
 
 ## Thanks to our Contributors
-Thanks goes to these wonderful people: wuweikang，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong, zhaoxinxin, chuxing, wangtao, zhaozhixuan, wangwenhua Contributions of any kind are welcome!
+Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
 
 Contributions of any kind are welcome!
 

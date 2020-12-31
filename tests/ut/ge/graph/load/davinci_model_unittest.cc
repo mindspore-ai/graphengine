@@ -111,6 +111,12 @@ TEST_F(UtestDavinciModel, init_success) {
   EXPECT_EQ(model.output_addrs_list_.size(), 1);
   EXPECT_EQ(model.task_list_.size(), 2);
 
+  OutputData output_data;
+  vector<OutputTensorInfo> outputs;
+  EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
+  EXPECT_EQ(output_data.blobs.size(), 1);
+  EXPECT_EQ(outputs.size(), 1);
+
   ProfilingManager::Instance().is_load_profiling_ = false;
 }
 

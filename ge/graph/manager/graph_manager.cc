@@ -101,7 +101,7 @@
 #include "graph/common/local_context.h"
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "external/register/register_pass.h"
+#include "register/custom_pass_helper.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -773,7 +773,7 @@ Status GraphManager::RunCustomPass(const GraphNodePtr &graph_node) {
 
   GE_TIMESTAMP_START(RunCustomPass);
   GraphPtr graph = std::const_pointer_cast<Graph>(const_graph);
-  GE_CHK_STATUS_RET(CustomPassHelper::Instance()->Run(graph), "Graph[%s] run custom pass fail.",
+  GE_CHK_STATUS_RET(CustomPassHelper::Instance().Run(graph), "Graph[%s] run custom pass fail.",
                     comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(RunCustomPass, "GraphBuilder::RunCustomPass");
   return SUCCESS;

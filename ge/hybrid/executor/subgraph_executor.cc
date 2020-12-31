@@ -240,6 +240,10 @@ Status SubgraphExecutor::PrepareNodes() {
     }
 
     if (!ready_queue_.Push(p_node_state)) {
+      if (context_->is_eos_) {
+        GELOGD("Got end of sequence");
+        return SUCCESS;
+      }
       GELOGE(INTERNAL_ERROR, "[%s] Error occurs while launching tasks. quit from preparing nodes.",
              graph_item_->GetName().c_str());
       return INTERNAL_ERROR;
@@ -295,6 +299,11 @@ Status SubgraphExecutor::LaunchTasks() {
                       "[%s] Execute node failed.",
                       node_state->GetName().c_str());
 
+    if (context_->is_eos_) {
+      GELOGD("Got end of sequence");
+      ready_queue_.Stop();
+      return SUCCESS;
+    }
     GELOGD("[%s] Done executing node successfully.", node_state->GetName().c_str());
   }
 }
@@ -350,7 +359,7 @@ Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs, std::vector<Co
 
 Status SubgraphExecutor::Synchronize() {
   GELOGD("[%s] Synchronize start.", graph_item_->GetName().c_str());
-  GE_CHK_RT_RET(rtStreamSynchronize(context_->stream));
+  GE_CHK_STATUS_RET_NOLOG(context_->Synchronize(context_->stream));
   GELOGD("[%s] Done synchronizing successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
 }

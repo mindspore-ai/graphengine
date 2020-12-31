@@ -19,6 +19,7 @@
 #include "common/formats/formats.h"
 #include "aicpu/common/aicpu_task_struct.h"
 #include "graph/load/new_model_manager/model_manager.h"
+#include "graph/utils/node_utils.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
@@ -188,6 +189,10 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
   GELOGD("Node[%s] execute async start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
 
   GE_CHK_STATUS_RET(LaunchTask(context));
+  if (context.GetExecutionContext()->is_eos_) {
+    GELOGD("[%s] Got end of sequence", node_name_.c_str());
+    return SUCCESS;
+  }
 
   uint32_t task_id = 0;
   uint32_t stream_id = 0;
@@ -346,7 +351,11 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
   GE_CHK_RT_RET(rtMemcpy(kernel_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL),
                          &fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL),
                          RT_MEMCPY_HOST_TO_DEVICE));
-
+  auto node_type = NodeUtils::GetNodeType(node_item_->node);
+  if (node_type.find(GETNEXT) != string::npos) {
+    GELOGD("[%s] Is GetNext, set need sync to true, node type = %s", node_name_.c_str(), node_type.c_str());
+    need_sync_ = true;
+  }
   GELOGI("Node[%s] init end.", node_name_.c_str());
   return SUCCESS;
 }
@@ -616,6 +625,10 @@ Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
   GE_CHK_RT_RET(rtKernelLaunchEx(kernel_buf_->GetData(), kernel_buf_->GetSize(), flag, context.GetStream()));
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] End");
   GELOGD("Node[%s] launch end.", node_name_.c_str());
+  if (need_sync_) {
+    GELOGD("[%s] Task needs sync", node_name_.c_str());
+    GE_CHK_STATUS_RET_NOLOG(context.Synchronize());
+  }
   return SUCCESS;
 }
 

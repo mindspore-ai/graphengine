@@ -58,6 +58,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
     context_.profiler->Reset();
   }
 
+  args.is_eos = context_.is_eos_;
   context_.iteration += 1;
   return SUCCESS;
 }

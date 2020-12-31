@@ -494,5 +494,9 @@ const DumpProperties &TaskContext::GetDumpProperties() const {
 bool TaskContext::NeedCallback() {
   return node_item_->has_observer || IsDumpEnabled() || execution_context_->profiling_level > 0;
 }
+
+Status TaskContext::Synchronize() {
+  return execution_context_->Synchronize(GetStream());
+}
 }  // namespace hybrid
 }  // namespace ge

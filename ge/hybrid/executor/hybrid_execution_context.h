@@ -36,6 +36,7 @@ namespace hybrid {
 struct GraphExecutionContext {
   void SetErrorCode(Status error_code);
   Status GetStatus() const;
+  Status Synchronize(rtStream_t rt_stream);
 
   uint64_t session_id = 0;
   const HybridModel *model = nullptr;
@@ -49,6 +50,7 @@ struct GraphExecutionContext {
   DumpProperties dump_properties;
   bool trace_enabled = false;
   bool dump_enabled = false;
+  std::atomic_bool is_eos_;
   long profiling_level = 0;
   long iteration = 0;
   Status status = SUCCESS;

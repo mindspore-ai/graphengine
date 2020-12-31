@@ -31,6 +31,7 @@ class HybridModelExecutor {
     std::vector<ConstGeTensorDescPtr> input_desc;
     std::vector<TensorValue> outputs;
     std::vector<ConstGeTensorDescPtr> output_desc;
+    bool is_eos = false;
   };
 
   HybridModelExecutor(HybridModel *model, uint32_t device_id, rtStream_t stream);

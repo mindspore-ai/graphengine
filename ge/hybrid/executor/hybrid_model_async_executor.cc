@@ -24,7 +24,7 @@
 namespace ge {
 namespace hybrid {
 namespace {
-int kDataOutputIndex = 0;
+const int kDataOutputIndex = 0;
 }
 HybridModelAsyncExecutor::HybridModelAsyncExecutor(HybridModel *model)
     : model_(model), run_flag_(false) {
@@ -162,7 +162,7 @@ Status HybridModelAsyncExecutor::HandleResult(Status exec_ret,
                                               OutputData *output_data) {
   GELOGD("Start to handle result. model id = %u, data index = %u, execution ret = %u", model_id_, data_id, exec_ret);
   std::vector<ge::OutputTensorInfo> output_tensor_info_list;
-  if (exec_ret == END_OF_SEQUENCE) {
+  if (args.is_eos) {
     GELOGW("End of sequence, model id = %u", model_id_);
     return OnComputeDone(data_id, END_OF_SEQUENCE, output_tensor_info_list);
   }

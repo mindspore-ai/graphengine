@@ -1,3 +1,31 @@
+### Major Features and Improvements
+* Dynamic dims input is supported in online inference scenarios.
+* Dynamic ranking is supported in the GetNext scenario.
+* Dynamic shape is supported in offline inference scenarios.
+* Dynamic AIPP is supported in the dynamic multi-batch scenario.
+* Dynamic shape is supported for single operator in inference scenarios.
+* Supporting Profiling Training Trace in the Dynamic Shape Scenario.
+
+### New Features
+
+#### C++ API
+* Session::AddGraphWithCopy(uint32_t graphId, const Graph& graph)  added ([#230](https://gitee.com/mindspore/graphengine/pulls/230))
+* Session::AddGraphWithCopy(uint32_t graphId, const Graph& graph, const std::map<AscendString, AscendString>& options) added([#230](https://gitee.com/mindspore/graphengine/pulls/230))
+
+### Bug fixes
+
+* Fix aicpu custom cpukernelluanch operation scene, the problem of stream resources cannot be released normally.
+* Fix the problem of network performance degradation caused by adding too many trandata operators in special scenes of graph optimization
+* Code review to fix the problem of program dead loop after partial integer flip
+* Fix the problem that some scenes of dynamic shape cannot dump the reducesum operator
+* Fix the problem of large loop expansion during network composition, resulting in insufficient memory and training failure
+* Fix the problem of dump AICPU operator fails.
+
+## Thanks to our Contributors
+Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
+
+Contributions of any kind are welcome!
+
 # Release 1.0.0
 
 ## Major Features and Improvements
@@ -13,7 +41,7 @@
 
 
 ## Thanks to our Contributors
-Thanks goes to these wonderful people: wuweikang，wangcong，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
+Thanks goes to these wonderful people: wuweikang，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong, zhaoxinxin, chuxing, wangtao, zhaozhixuan, wangwenhua Contributions of any kind are welcome!
 
 Contributions of any kind are welcome!
 

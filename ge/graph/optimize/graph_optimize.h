@@ -52,6 +52,9 @@ class GraphOptimize {
   // for fe prepare optimize in quantize scene
   Status OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_graph);
 
+  // for engine to optimize merged whole graph before ge Optimize2
+  Status OptimizeWholeGraph(ComputeGraphPtr &compute_graph);
+
   // for rts optimize before build to add attr and insert memcpy op
   Status OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_graph);
 

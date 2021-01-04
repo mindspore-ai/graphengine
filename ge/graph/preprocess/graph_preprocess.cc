@@ -1032,7 +1032,7 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
   desc.SetShape(origin_shape);
   desc.SetShapeRange(current_shape_range_vec);
 
-  /*int64_t dynamic_shape_size = 1;
+  int64_t dynamic_shape_size = 1;
   for (const auto range_pair : range_vec.at(index)) {
     FMK_INT64_MULCHECK(dynamic_shape_size, range_pair.second);
     dynamic_shape_size *= range_pair.second;
@@ -1046,7 +1046,7 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
   FMK_INT64_MULCHECK(dynamic_shape_size, data_type_size);
   dynamic_shape_size *= data_type_size;
   GELOGI("In dynamic_execute mode ,set input %s shape range size %ld", op->GetName().c_str(), dynamic_shape_size);
-  ge::TensorUtils::SetSize(desc, dynamic_shape_size);*/
+  ge::TensorUtils::SetSize(desc, dynamic_shape_size);
   graphStatus graph_ret = op->UpdateInputDesc(0, desc);
   GE_CHK_STATUS_RET(graph_ret, "UpdateInputDesc fail, graph ret: %u", graph_ret);
   graph_ret = op->UpdateOutputDesc(0, desc);

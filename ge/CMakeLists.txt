@@ -1,7 +1,6 @@
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
     add_subdirectory(common)
     add_subdirectory(plugin/engine)
-    add_subdirectory(graph/build/memory)
     add_subdirectory(ge_local_engine)
     add_subdirectory(host_cpu_engine)
     add_subdirectory(executor)
@@ -342,6 +341,13 @@ set(TRAIN_SRC_LIST
     "analyzer/analyzer.cc"
     "ir_build/ge_ir_build.cc"
     "ir_build/atc_ir_common.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
 )
 
 set(INFER_SRC_LIST
@@ -611,6 +617,13 @@ set(INFER_SRC_LIST
     "graph/label/while_label_maker.cc"
     "graph/label/partitioned_call_label_maker.cc"
     "analyzer/analyzer.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
@@ -630,7 +643,7 @@ if (msprofiler_fwk_ext_LIBRARY_DIR)
         COMMAND ar x ${msprofiler_fwk_ext_LIBRARY_DIR}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object	
     )
-    file(GOLB MSPROFILER_FWK_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
+    file(GLOB MSPROFILER_FWK_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
     set_property(TARGET msprofiler_fwk_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_FWK_OBJECT_LIST})
 endif()
 
@@ -677,7 +690,6 @@ target_include_directories(ge_runner PRIVATE
 
 target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ge_memory
     adump_server
     static_mmpa
     -Wl,--no-as-needed
@@ -742,7 +754,6 @@ target_include_directories(ge_compiler PRIVATE
 
 target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ge_memory
     static_mmpa
     -Wl,--no-as-needed
     graph
@@ -789,8 +800,8 @@ if (msprofiler_ext_LIBRARY_DIR)
         COMMAND ar x ${msprofiler_ext_LIBRARY_DIR}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object
     )
-    file(GOLB MSPROFILER_FWK_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object/*.o)
-    set_property(TARGET msprofiler_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_FWK_OBJECT_LIST})
+    file(GLOB MSPROFILER_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object/*.o)
+    set_property(TARGET msprofiler_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_OBJECT_LIST})
 endif()
 
 target_compile_definitions(opensrc_ascendcl PRIVATE

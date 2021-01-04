@@ -995,16 +995,6 @@ Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynami
   return SUCCESS;
 }
 
-Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
-                                                       vector<InputOutputDescInfo> &output_desc,
-                                                       std::vector<uint32_t> &inputFormats,
-                                                       std::vector<uint32_t> &outputFormats) {
-  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-      "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
-  return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
-}
-
 ///
 /// @ingroup ge
 /// @brief Get AIPP info
@@ -1013,11 +1003,11 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 /// @param [out] aipp_info
 /// @return execute result
 ///
-Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+Status ModelManager::GetAippInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
       "GetAIPPInfo failed, invalid model_id is %u.", model_id);
-  return davinci_model->GetAIPPInfo(index, aipp_info);
+  return davinci_model->GetAippInfo(index, aipp_info);
 }
 
 Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {

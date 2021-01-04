@@ -239,23 +239,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @param [out] aipp_info
   /// @return execute result
   ///
-  ge::Status GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+  ge::Status GetAippInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
   ge::Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief set model input and output size zero copy
-  /// @param [in] model_id  model id
-  /// @param [out] input_shape   input tensor
-  /// @param [out] output_shape  output tensor
-  /// @return SUCCESS          success
-  /// @return PARAM_INVALID    parameter invalid
-  ///
-  ge::Status GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
-                                               std::vector<InputOutputDescInfo> &output_desc,
-                                               std::vector<uint32_t> &inputFormats,
-                                               std::vector<uint32_t> &outputFormats);
 
   ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 

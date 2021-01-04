@@ -36,7 +36,6 @@ namespace {
       GELOGD("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, size);                   \
       ge_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());                                              \
       ge_tensor->MutableTensorDesc().SetShape(out_desc.GetShape());                                                    \
-      outputs.emplace_back(ge_tensor);                                                                                 \
     } else {                                                                                                           \
       ge_tensor = outputs[i];                                                                                          \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
@@ -224,15 +223,26 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   GE_CHK_STATUS_RET_NOLOG(FindOpKernel(node, op_kernel));
 
   std::map<std::string, const Tensor> named_inputs;
-  std::vector<GeTensorPtr> tmp_outputs;
-  tmp_outputs.swap(outputs);
   std::map<std::string, Tensor> named_outputs;
   auto op_desc = node->GetOpDesc();
   GE_CHK_STATUS_RET_NOLOG(PrepareInputs(op_desc, inputs, named_inputs));
-  GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, tmp_outputs, named_outputs));
+  GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, outputs, named_outputs));
   GE_CHK_STATUS_RET_NOLOG(RunInternal(op_desc, *op_kernel, named_inputs, named_outputs));
 
   GELOGD("Run node by host cpu engine successfully. name node = %s", node->GetName().c_str());
+  std::vector<GeTensorPtr> tmp_outputs;
+  for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
+    auto tensor_name = op_desc->GetOutputNameByIndex(i);
+    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",
+                               op_desc->GetName().c_str(), i);
+    auto iter = named_outputs.find(tensor_name);
+    GE_RETURN_WITH_LOG_IF_TRUE(iter == named_outputs.end(),
+                               "Failed to get output tensor. node = %s, index = %zu, tensor_name = %s",
+                               op_desc->GetName().c_str(), i, tensor_name.c_str());
+    auto ge_tensor = MakeShared<GeTensor>(TensorAdapter::AsGeTensor(iter->second));
+    GE_CHECK_NOTNULL(ge_tensor);
+    tmp_outputs.emplace_back(ge_tensor);
+  }
   outputs.swap(tmp_outputs);
   return SUCCESS;
 }

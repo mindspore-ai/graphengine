@@ -221,7 +221,7 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   GELOGD("Run node by host cpu engine. node name = %s", node->GetName().c_str());
   std::unique_ptr<HostCpuOp> op_kernel;
   GE_CHK_STATUS_RET_NOLOG(FindOpKernel(node, op_kernel));
-
+#ifndef ONLY_COMPILE_OPEN_SRC
   std::map<std::string, const Tensor> named_inputs;
   std::map<std::string, Tensor> named_outputs;
   auto op_desc = node->GetOpDesc();
@@ -229,7 +229,6 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, outputs, named_outputs));
   GE_CHK_STATUS_RET_NOLOG(RunInternal(op_desc, *op_kernel, named_inputs, named_outputs));
 
-  GELOGD("Run node by host cpu engine successfully. name node = %s", node->GetName().c_str());
   std::vector<GeTensorPtr> tmp_outputs;
   for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
     auto tensor_name = op_desc->GetOutputNameByIndex(i);
@@ -243,6 +242,17 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
     GE_CHECK_NOTNULL(ge_tensor);
     tmp_outputs.emplace_back(ge_tensor);
   }
+#else
+  std::map<std::string, const Tensor> named_inputs;
+  std::vector<GeTensorPtr> tmp_outputs;
+  tmp_outputs.swap(outputs);
+  std::map<std::string, Tensor> named_outputs;
+  auto op_desc = node->GetOpDesc();
+  GE_CHK_STATUS_RET_NOLOG(PrepareInputs(op_desc, inputs, named_inputs));
+  GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, tmp_outputs, named_outputs));
+  GE_CHK_STATUS_RET_NOLOG(RunInternal(op_desc, *op_kernel, named_inputs, named_outputs));
+#endif
+  GELOGD("Run node by host cpu engine successfully. name node = %s", node->GetName().c_str());
   outputs.swap(tmp_outputs);
   return SUCCESS;
 }

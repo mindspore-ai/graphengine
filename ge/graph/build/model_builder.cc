@@ -569,7 +569,11 @@ Status ModelBuilder::MergeWeights() {
         return FAILED;
       }
     }
+#ifndef ONLY_COMPILE_OPEN_SRC
+    weight->ClearData();
+#else
     weight_data.clear();
+#endif
   }
 
   return SUCCESS;

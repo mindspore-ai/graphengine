@@ -676,7 +676,7 @@ Status GeExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "not inited yet!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
   }
-  Status ret = GraphExecutor::GetAIPPInfo(model_id, index, aipp_info);
+  Status ret = GraphExecutor::GetAippInfo(model_id, index, aipp_info);
   if (ret != SUCCESS) {
     GELOGW("GetAIPPInfo is not success.");
     return ret;
@@ -711,43 +711,6 @@ Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dyn
     return ret;
   }
   return SUCCESS;
-}
-
-Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
-                                               std::vector<TensorDesc> &output_desc) {
-  GELOGI("get model desc info for zero copy begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  std::vector<InputOutputDescInfo> input_desc_infos;
-  std::vector<InputOutputDescInfo> output_desc_infos;
-  std::vector<uint32_t> input_formats;
-  std::vector<uint32_t> output_formats;
-
-  Status ret = GraphExecutor::GetInputOutputDescInfoForZeroCopy(model_id, input_desc_infos, output_desc_infos,
-                                                                input_formats, output_formats);
-  if (ret != domi::SUCCESS) {
-    GELOGE(ret, "Get DescInfo from zero copy failed. ret = %u", ret);
-    return ACL_ERROR_GE_GET_TENSOR_INFO;
-  }
-
-  if (input_formats.size() != input_desc_infos.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "input_formats.size() != input_desc_infos.size().");
-    return ACL_ERROR_GE_PARAM_INVALID;
-  }
-
-  if (output_formats.size() != output_desc_infos.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "output_formats.size() != output_desc_infos.size().");
-    return ACL_ERROR_GE_PARAM_INVALID;
-  }
-
-  GetGeTensorDescFromDomiInfo(input_desc, input_desc_infos, input_formats);
-  GetGeTensorDescFromDomiInfo(output_desc, output_desc_infos, output_formats);
-
-  GELOGI("get model desc info from zero copy end.");
-  return ge::SUCCESS;
 }
 
 Status GeExecutor::CommandHandle(const Command &command) {

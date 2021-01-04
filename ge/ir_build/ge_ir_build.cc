@@ -611,7 +611,7 @@ graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
     return GRAPH_PARAM_INVALID;
   }
 
-  auto ret = Impl::InferShapePrepare(root_graph);
+  auto ret = Impl::InferShapePrepare(compute_graph);
   if (ret != GRAPH_SUCCESS) {
     return ret;
   }

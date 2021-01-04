@@ -163,8 +163,9 @@ Status HybridModelAsyncExecutor::HandleResult(Status exec_ret,
   GELOGD("Start to handle result. model id = %u, data index = %u, execution ret = %u", model_id_, data_id, exec_ret);
   std::vector<ge::OutputTensorInfo> output_tensor_info_list;
   if (args.is_eos) {
-    GELOGW("End of sequence, model id = %u", model_id_);
-    return OnComputeDone(data_id, END_OF_SEQUENCE, output_tensor_info_list);
+    GELOGI("End of sequence, model id = %u", model_id_);
+    GE_CHK_STATUS_RET_NOLOG(OnComputeDone(data_id, END_OF_SEQUENCE, output_tensor_info_list));
+    return SUCCESS;
   }
 
   if (exec_ret != SUCCESS) {

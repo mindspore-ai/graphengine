@@ -263,6 +263,8 @@ struct ComputeGraphDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
+  uint32_t task_id;
+  uint32_t stream_id;
 };
 
 struct OpDescInfo {

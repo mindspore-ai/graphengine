@@ -3102,6 +3102,8 @@ Status DavinciModel::DistributeTask() {
     task_desc_info.stream_id = task->GetStreamId();
     task_desc_info.shape_type = "static";
     task_desc_info.cur_iter_num = 0;
+    profiler_report_op_info_[task_desc_info.op_name] =
+      std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
     task_desc_info_.emplace_back(task_desc_info);
     if (flag) {
       if (task->GetSktTaskID() != 0xFFFFFFFF) {
@@ -3109,6 +3111,8 @@ Status DavinciModel::DistributeTask() {
         string op_name = "super_kernel_" + to_string(task_index);
         task_desc_info.op_name = op_name;
         task_desc_info.task_id = task->GetSktTaskID();
+        profiler_report_op_info_[task_desc_info.op_name] =
+          std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
         task_desc_info_.emplace_back(task_desc_info);
       }
     }
@@ -3980,7 +3984,15 @@ Status DavinciModel::GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_des
     compute_graph_info.output_format = op_desc.output_format;
     compute_graph_info.output_shape = op_desc.output_shape;
     compute_graph_info.output_data_type = op_desc.output_data_type;
-
+    uint32_t task_id = 0;
+    uint32_t stream_id = 0;
+    auto iter = profiler_report_op_info_.find(op_desc.op_name);
+    if (iter != profiler_report_op_info_.end()) {
+      task_id = iter->second.first;
+      stream_id = iter->second.second;
+    }
+    compute_graph_info.task_id = task_id;
+    compute_graph_info.stream_id = stream_id;
     graph_desc_info.emplace_back(compute_graph_info);
   }
   return SUCCESS;

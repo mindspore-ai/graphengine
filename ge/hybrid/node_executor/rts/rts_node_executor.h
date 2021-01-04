@@ -18,6 +18,7 @@
 #define GE_HYBRID_NODE_EXECUTOR_RTS_RTS_NODE_EXECUTOR_H_
 
 #include "hybrid/node_executor/node_executor.h"
+#include "proto/task.pb.h"
 
 namespace ge {
 namespace hybrid {
@@ -33,6 +34,18 @@ class IdentityNodeTask : public NodeTask {
 class IdentityNNodeTask : public IdentityNodeTask {
  public:
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+};
+
+class ProfilingTraceNodeTask :  public NodeTask {
+ public:
+  explicit ProfilingTraceNodeTask(const std::vector<domi::TaskDef> &task_defs) : task_defs_(task_defs) {}
+  ~ProfilingTraceNodeTask() override = default;
+
+  Status UpdateArgs(TaskContext &context) override;
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+
+ private:
+  std::vector<domi::TaskDef> task_defs_;
 };
 
 class RtsNodeExecutor : public NodeExecutor {

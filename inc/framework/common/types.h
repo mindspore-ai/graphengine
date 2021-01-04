@@ -529,6 +529,9 @@ REGISTER_OPTYPE_DECLARE(HVDWAIT, "HorovodWait");
 // aicpu op for online_infer dynamic_dims
 REGISTER_OPTYPE_DECLARE(GETDYNAMICDIMS, "GetDynamicDims");
 
+// profiling training trace node
+REGISTER_OPTYPE_DECLARE(PROFILINGTRAININGTRACE, "ProfilingTrainingTrace");
+
 enum InputMode { INPUT = 0, CONST_INPUT };
 
 // Definition of the processing status enum of the process module

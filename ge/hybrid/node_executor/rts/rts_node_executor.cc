@@ -18,6 +18,7 @@
 #include "common/debug/log.h"
 #include "common/ge/ge_util.h"
 #include "graph/utils/tensor_utils.h"
+#include "hybrid/model/hybrid_model.h"
 #include "runtime/rt.h"
 
 namespace ge {
@@ -79,12 +80,44 @@ Status IdentityNNodeTask::ExecuteAsync(TaskContext &context, std::function<void(
   return SUCCESS;
 }
 
+Status ProfilingTraceNodeTask::UpdateArgs(TaskContext &context) {
+  return SUCCESS;
+}
+
+Status ProfilingTraceNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  for (const auto &task_def : task_defs_) {
+    auto log_time_stamp_def = task_def.log_timestamp();
+    uint64_t log_id = log_time_stamp_def.logid();
+    bool notify = log_time_stamp_def.notify();
+    uint32_t flat = log_time_stamp_def.flat();
+
+    GELOGD("ProfilingTraceTask execute async start. logid = %lu, notify = %d.", log_id, notify);
+    rtError_t rt_ret = rtProfilerTrace(log_id, notify, flat, context.GetStream());
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    GELOGD("[%s] ProfilingTraceTask[%lu] execute success.", context.GetNodeName(), log_id);
+  }
+
+  return SUCCESS;
+};
+
 Status RtsNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const {
+  GE_CHECK_NOTNULL(node);
+
   auto op_type = node->GetType();
   if (op_type == IDENTITY) {
     task = MakeShared<IdentityNodeTask>();
   } else if (op_type == IDENTITYN) {
     task = MakeShared<IdentityNNodeTask>();
+  } else if (op_type == PROFILINGTRAININGTRACE) {
+    auto *task_defs = model.GetTaskDefs(node);
+    if (task_defs == nullptr || task_defs->empty()) {
+      GELOGE(INTERNAL_ERROR, "Profiling node has no task to execute.");
+      return INTERNAL_ERROR;
+    }
+    task = MakeShared<ProfilingTraceNodeTask>(*task_defs);
   } else {
     GELOGE(INTERNAL_ERROR, "[%s] Unsupported RTS op type: %s", node->GetName().c_str(), op_type.c_str());
     return INTERNAL_ERROR;

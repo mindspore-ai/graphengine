@@ -421,6 +421,52 @@ static Status GenerateTaskForConstant(const std::shared_ptr<ComputeGraph> &graph
   return SUCCESS;
 }
 
+Status GraphBuilder::MarkFpBpProfilingTaskAttr(ComputeGraphPtr &com_graph) {
+  bool original_unknown_shape_flag = com_graph->GetGraphUnknownFlag();
+  com_graph->SetGraphUnknownFlag(false);
+
+  GELOGD("Start to mark profiling task attr for fp and bp.");
+  TaskGenerator task_generator;
+  ProfilingPoint profiling_point;
+  std::vector<uint32_t> all_reduce_node_index;
+  Status ret = task_generator.FindProfilingNodeIndex(com_graph, profiling_point, all_reduce_node_index);
+  com_graph->SetGraphUnknownFlag(original_unknown_shape_flag);
+  if (ret != SUCCESS) {
+    GELOGW("Find profiling node index failed.");
+  }
+  if (profiling_point.fp_index == 0 || profiling_point.bp_index == 0 || profiling_point.end_index.empty()) {
+    GELOGD("No need to mark fp bp profiling task attr.");
+    return SUCCESS;
+  }
+  // mark profiling task attr for node
+  uint32_t node_index = 0;
+  for (const auto &node : com_graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    node_index++;
+    if (profiling_point.fp_index == node_index) {
+       GELOGI("The first fp node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+      (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_FP_PROFILILNG_TASK, true);
+    }
+    if (profiling_point.bp_index == node_index) {
+      GELOGI("The bp node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+      (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
+    }
+    for (size_t i = 0; i < all_reduce_node_index.size(); i++) {
+      if (all_reduce_node_index[i] == node_index) {
+        GELOGI("The all reduce node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+        (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
+        continue;
+      }
+    }
+    if (profiling_point.end_index.find(node_index) != profiling_point.end_index.end()) {
+      GELOGI("The end node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+      (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_END_PROFILILNG_TASK, true);
+    }
+  }
+  return SUCCESS;
+}
+
 Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                                                std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                                                GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
@@ -435,6 +481,12 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
       GE_CHK_STATUS_RET(CalcDynShapeRootGraphDataSize(op_desc), "Calc dynamic shape root graph data[%s] size failed.",
                         op_desc->GetName().c_str());
     }
+  }
+
+  // Set fp bp profiling task attr for graph
+  if (MarkFpBpProfilingTaskAttr(comp_graph) != SUCCESS) {
+    GELOGE(FAILED, "Set fp bp profiling task attr for graph.");
+    return FAILED;
   }
 
   auto all_graphs = comp_graph->GetAllSubgraphs();

@@ -864,11 +864,13 @@ class DavinciModel {
 
   void ParseDynamicOutShape(const vector<string> &str_info, vector<vector<int64_t>> &vec_info);
   bool IsGetNextSinkDynamic(const OpDescPtr &op_desc);
+
+  Status InitRealSizeAndShapeInfo(const ComputeGraphPtr &compute_graph, const NodePtr &node);
   void GetAllGearsInfo(const NodePtr &node);
   Status GetGetDynamicDimsNodeInfo(const NodePtr &node);
-  Status GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr &node);
-  Status GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node);
-  Status GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc);
+  Status GetGearAndRealOutSizeInfo(const ComputeGraphPtr &graph, const NodePtr &node);
+  Status GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_t input_index, const NodePtr &case_node);
+  Status GetGearAndRealOutShapeInfo(const ComputeGraphPtr &graph, const NodePtr &node);
 
   bool is_weight_mem_has_inited_;
   bool is_feature_map_mem_has_inited_;
@@ -1021,15 +1023,15 @@ class DavinciModel {
   bool is_new_model_desc_{false};
   bool is_online_infer_dynamic_ = false;
   bool is_getnext_sink_dynamic_ = false;
-  vector<int64_t> cur_dynamic_dims_;
+  vector<int32_t> cur_dynamic_dims_;
   void *netoutput_last_input_addr_ = nullptr;
   int64_t netoutput_last_input_size_ = 0;
   size_t shape_of_cur_dynamic_dims_ = 0;
   // key: input_index: input is merge node; value: each gear info and each output size
-  map<size_t, map<vector<int64_t>, int64_t>> merge_nodes_gear_and_real_out_size_info_;
+  map<size_t, map<vector<int32_t>, int64_t>> merge_nodes_gear_and_real_out_size_info_;
   // key: input_index: input is merge node; value: each gear info and each output shape
-  map<size_t, map<vector<int64_t>, vector<int64_t>>> merge_nodes_gear_and_real_out_shape_info_;
-  vector<vector<int64_t>> all_gears_info_;
+  map<size_t, map<vector<int32_t>, vector<int64_t>>> merge_nodes_gear_and_real_out_shape_info_;
+  vector<vector<int32_t>> all_gears_info_;
 
   multimap<uint32_t, uint32_t> op_id_map_;
   vector<ProfileInfo> profile_list_;

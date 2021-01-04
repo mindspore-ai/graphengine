@@ -32,6 +32,18 @@ class UtestDavinciModel : public testing::Test {
   void SetUp() {}
 
   void TearDown() {}
+  public:
+    NodePtr MakeNode(const ComputeGraphPtr &graph, uint32_t in_num, uint32_t out_num, string name, string type) {
+      GeTensorDesc test_desc(GeShape(), FORMAT_NCHW, DT_FLOAT);
+      auto op_desc = std::make_shared<OpDesc>(name, type);
+      for (auto i = 0; i < in_num; ++i) {
+        op_desc->AddInputDesc(test_desc);
+      }
+      for (auto i = 0; i < out_num; ++i) {
+        op_desc->AddOutputDesc(test_desc);
+      }
+      return graph->AddNode(op_desc);
+    }
 };
 
 TEST_F(UtestDavinciModel, init_success) {
@@ -324,5 +336,94 @@ TEST_F(UtestDavinciModel, SyncVarData_test) {
   EXPECT_NE(model.SyncVarData(), SUCCESS);
 }
 
+TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {
+  DavinciModel model(0, nullptr);
+  model.ge_model_ = make_shared<GeModel>();
+  ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
+
+  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  OpDescPtr op_output = CreateOpDesc("output_ascend_mbatch_batch_1", NETOUTPUT);
+  op_output->AddInputDesc(tensor);
+  op_output->SetInputOffset({1024});
+  NodePtr node_output = graph->AddNode(op_output);
+  EXPECT_EQ(model.InitRealSizeAndShapeInfo(graph, node_output), SUCCESS);
+}
+
+TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ2) {
+  DavinciModel model(0, nullptr);
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test_graph");
+
+  OpDescPtr data1 = CreateOpDesc("data1", DATA);
+  GeTensorDesc shape_desc(GeShape({4,3,224,224}), FORMAT_NCHW, DT_FLOAT);
+  data1->AddInputDesc(shape_desc);
+  data1->AddOutputDesc(shape_desc);
+  NodePtr data1_node = graph->AddNode(data1);
+
+  OpDescPtr case_node = CreateOpDesc("case1", CASE);
+  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  case_node->AddInputDesc(tensor);
+  case_node->AddOutputDesc(tensor);
+  NodePtr case1_node = graph->AddNode(case_node);
+
+  OpDescPtr output = CreateOpDesc("output1", NETOUTPUT);
+  output->AddInputDesc(tensor);
+  output->SetSrcName( { "case1" } );
+  output->SetSrcIndex( { 0 } );
+  NodePtr output_node = graph->AddNode(output);
+
+  GraphUtils::AddEdge(data1_node->GetOutDataAnchor(0), case1_node->GetInDataAnchor(0));
+  GraphUtils::AddEdge(case1_node->GetOutDataAnchor(0), output_node->GetInDataAnchor(0));
+  
+  (void)AttrUtils::SetStr(output_node->GetOpDesc(), ATTR_ALL_GEARS_INFO, "1;2;4;8");
+  (void)AttrUtils::SetBool(case_node, ATTR_INSERT_BY_MBATCH, true);
+
+  model.is_getnext_sink_dynamic_ = false;
+  model.is_online_infer_dynamic_ = true;
+  auto ret = model.InitRealSizeAndShapeInfo(graph, output_node);
+  // GetGearAndRealOutShapeInfo without ATTR_NAME_DYNAMIC_OUTPUT_DIMS
+  EXPECT_EQ(ret, SUCCESS);
+  vector<string> dynamic_output_dims = {"0,0,1,1,0,2,2,0,4,3,0,8"};
+  (void)AttrUtils::SetListStr(output_node->GetOpDesc(), ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_dims);
+  ret = model.InitRealSizeAndShapeInfo(graph, output_node);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ3) {
+  DavinciModel model(0, nullptr);
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test_graph");
+
+  OpDescPtr data1 = CreateOpDesc("data1", DATA);
+  GeTensorDesc shape_desc(GeShape({4,3,224,224}), FORMAT_NCHW, DT_FLOAT);
+  data1->AddInputDesc(shape_desc);
+  data1->AddOutputDesc(shape_desc);
+  NodePtr data1_node = graph->AddNode(data1);
+
+  OpDescPtr shape_node = CreateOpDesc("ascend_mbatch_get_dynamic_dims_node", GETDYNAMICDIMS);
+  GeTensorDesc in_tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  GeTensorDesc out_tensor(GeShape({4,3}), FORMAT_NCHW, DT_FLOAT);
+  shape_node->AddInputDesc(in_tensor);
+  shape_node->AddOutputDesc(out_tensor);
+  NodePtr get_dynamic_dims_node = graph->AddNode(shape_node);
+
+  OpDescPtr output = CreateOpDesc("output1", NETOUTPUT);
+  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  output->AddInputDesc(tensor);
+  output->SetSrcName( { "data1", "ascend_mbatch_get_dynamic_dims_node" } );
+  output->SetSrcIndex( { 0, 1 } );
+  NodePtr output_node = graph->AddNode(output);
+  GraphUtils::AddEdge(data1_node->GetOutDataAnchor(0), output_node->GetInDataAnchor(0));
+  GraphUtils::AddEdge(get_dynamic_dims_node->GetOutDataAnchor(0), output_node->GetInDataAnchor(1));
+
+  (void)AttrUtils::SetStr(output_node->GetOpDesc(), ATTR_ALL_GEARS_INFO, "1,3;;4,3;,3");
+
+  model.is_getnext_sink_dynamic_ = true;
+  model.is_online_infer_dynamic_ = false;
+  auto ret = model.InitRealSizeAndShapeInfo(graph, output_node);
+  EXPECT_EQ(ret, SUCCESS);
+  model.runtime_param_.mem_base = (uint8_t *)0x08000000;
+  model.runtime_param_.mem_size = 4;
+  ret = model.InitRealSizeAndShapeInfo(graph, output_node);
+  EXPECT_EQ(ret, SUCCESS);
+}
 
 }  // namespace ge

@@ -2780,8 +2780,10 @@ Status GraphManager::ParseInputsDims(const std::vector<InputTensorInfo> &input_t
   if (!GetLocalOmgContext().dynamic_node_type.empty()) {
     vector<NodePtr> data_nodes;
     vector<NodePtr> getnext_nosink_nodes;
-    data_nodes = compute_graph_->TryGetExtAttr(kExtAttrDataNodes, data_nodes);
-    getnext_nosink_nodes = compute_graph_->TryGetExtAttr(kExtAttrGetNextNoSink, getnext_nosink_nodes);
+    data_nodes = GetLocalOmgContext().data_nodes;
+    getnext_nosink_nodes = GetLocalOmgContext().getnext_nosink_nodes;
+    GELOGD("Data nodes count is %zu, getnext nosink nodes count is %zu.", data_nodes.size(),
+           getnext_nosink_nodes.size());
     if (GetLocalOmgContext().dynamic_node_type == DATA) {
       if (getnext_nosink_nodes.empty()) {
         // just data or data+getnext_sink

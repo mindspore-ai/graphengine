@@ -247,7 +247,7 @@ class Impl {
   OmgContext omg_context_;
 };
 
-static graphStatus InferShapePrepare(const ComputeGraphPtr &compute_graph) {
+graphStatus Impl::InferShapePrepare(const ComputeGraphPtr &compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
 
   PassManager prepare_infershape;

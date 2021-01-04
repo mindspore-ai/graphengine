@@ -204,6 +204,10 @@ Status UnusedArgsCleanPass::RemoveInputTensor(const map<ComputeGraphPtr, map<uin
   GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, old_anchor), "Remove edge failed");
   GELOGI("Remove edge: %s %s", out_node->GetName().c_str(), func_node->GetName().c_str());
 
+  if (out_node->GetInDataNodes().size() == 0 && out_node->GetOutAllNodes().size() == 0) {
+    GE_CHK_GRAPH_STATUS_RET(out_node->GetOwnerComputeGraph()->RemoveNode(out_node), "Remove node failed: %s",
+                            out_node->GetName().c_str());
+  }
   return SUCCESS;
 }
 }  // namespace ge

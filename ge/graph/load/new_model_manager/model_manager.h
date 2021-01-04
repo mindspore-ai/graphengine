@@ -126,14 +126,14 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   /// @ingroup domi_ome
   /// @brief Get cur_dynamic_dims for all input.
-  /// @param [in] vector<vector<uint64_t>> &user_real_input_dims: dims info of all user_inputs.
+  /// @param [in] vector<vector<int64_t>> &user_real_input_dims: dims info of all user_inputs.
   /// @param [in] vector<pair<string, vector<int64_t>>> &user_input_dims: key:name. value:dynamic dims from option.
-  /// @param [out] vector<uint64_t> &cur_dynamic_dims: real dims gather, where the index of -1.
+  /// @param [out] vector<int32_t> &cur_dynamic_dims: real dims gather, where the index of -1.
   /// @return 0: SUCCESS / others: INTERNAL_ERROR
   ///
   Status GetCurDynamicDims(const vector<vector<int64_t>> &user_real_input_dims,
                            const vector<pair<string, vector<int64_t>>> &user_input_dims,
-                           vector<int64_t> &cur_dynamic_dims);
+                           vector<int32_t> &cur_dynamic_dims);
 
   ///
   /// @ingroup domi_ome

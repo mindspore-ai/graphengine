@@ -460,8 +460,8 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 
 Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_input_dims,
                                        const vector<pair<string, vector<int64_t>>> &user_input_dims,
-                                       vector<int64_t> &cur_dynamic_dims) {
-  GELOGD(" Start get cur dynamic dims.");
+                                       vector<int32_t> &cur_dynamic_dims) {
+  GELOGD("Start get cur dynamic dims.");
   if (user_real_input_dims.size() != user_input_dims.size()) {
     GELOGE(INTERNAL_ERROR,
            "The input count of user: %zu should be equal to the data count of graph: %zu",
@@ -478,7 +478,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
     }
     for (size_t j = 0; j < user_input_dims.at(i).second.size(); ++j) {
       if (user_input_dims.at(i).second.at(j) < 0) {
-        cur_dynamic_dims.emplace_back(user_real_input_dims[i][j]);
+        cur_dynamic_dims.emplace_back(static_cast<int32_t>(user_real_input_dims[i][j]));
       }
     }
   }
@@ -523,7 +523,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
     input_data.blobs.push_back(data);
   }
   if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
-    std::vector<int64_t> cur_dynamic_dims;
+    std::vector<int32_t> cur_dynamic_dims;
     if (!GetLocalOmgContext().user_real_input_dims.empty()) {
       if (GetCurDynamicDims(GetLocalOmgContext().user_real_input_dims, GetLocalOmgContext().user_input_dims,
                             cur_dynamic_dims) != SUCCESS) {
@@ -531,9 +531,9 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
         return INTERNAL_ERROR;
       }
       DataBuffer data;
-      data.data = new(std::nothrow) int64_t[cur_dynamic_dims.size()];
+      data.data = new(std::nothrow) int32_t[cur_dynamic_dims.size()];
       GE_CHECK_NOTNULL(data.data);
-      uint64_t length = static_cast<uint64_t>(cur_dynamic_dims.size() * sizeof(int64_t));
+      uint32_t length = static_cast<uint32_t>(cur_dynamic_dims.size() * sizeof(int32_t));
       GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK, return INTERNAL_ERROR,
                        "Failed to memcpy data.");
       data.length = length;

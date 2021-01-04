@@ -60,6 +60,7 @@ class GraphBuilder {
   Status UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph, ge::NodePtr &parent_node_ptr);
   Status CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc);
   Status SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list);
+  Status MarkFpBpProfilingTaskAttr(ComputeGraphPtr &com_graph);
   Status BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                                    GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);

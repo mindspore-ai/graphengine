@@ -978,6 +978,8 @@ class DavinciModel {
   // for profiling task and graph info
   vector<TaskDescInfo> task_desc_info_;
 
+  std::map<std::string, std::pair<uint32_t, uint32_t>> profiler_report_op_info_;
+
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;

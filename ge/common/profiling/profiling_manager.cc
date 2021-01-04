@@ -302,6 +302,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     }
 
     data.append(" model_id:").append(std::to_string(model_id));
+    data.append(" task_id:").append(std::to_string(graph.task_id));
+    data.append(" stream_id:").append(std::to_string(graph.stream_id));
     data.append("\n");
 
     GraphDescReport(device_id, data);

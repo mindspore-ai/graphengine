@@ -899,6 +899,23 @@ Status ProcessNetoutputNodeDynShape(NodePtr &node) {
   }
   return SUCCESS;
 }
+long StringToLongNoThrow(const string &str) {
+  try {
+    return std::stol(str);
+  } catch (const std::invalid_argument) {
+    GELOGE(PARAM_INVALID,
+           "Parse shape range of input failed when transfer from string to int64. Given %s, while correct example: "
+           "\"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
+           str.c_str());
+    return PARAM_INVALID;
+  } catch (const std::out_of_range) {
+    GELOGE(PARAM_INVALID,
+           "Parse shape range of input failed when transfer from string to int64. Given %s, while correct example: "
+           "\"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
+           str.c_str());
+    return PARAM_INVALID;
+  }
+}
 /**
  * Parser shape_range from string to vector
  * shape_range from option normally is "[1~20,3,3~6,-1],[1~20,3,3~6,-1]"
@@ -910,7 +927,7 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
     GELOGE(PARAM_INVALID, "Shape range %s is invalid.", shape_range.c_str());
     return PARAM_INVALID;
   }
-  // different shape_ragne of single input are split by ']'
+  // different shape_range of single input are split by ']'
   vector<string> shape_range_set = ge::StringUtils::Split(shape_range, ']');
   if (shape_range_set.empty()) {
     GELOGE(PARAM_INVALID, "Shape range %s is not valid. Correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
@@ -919,22 +936,16 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
   }
   for (auto &shape_range_str : shape_range_set) {
     if (shape_range_str.empty()) {
-      GELOGE(PARAM_INVALID,
-             "Shape range of input is empty. Given %s, while correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
-             shape_range.c_str());
-      return PARAM_INVALID;
+      continue;
     }
     // trim start bytes, after that, single input should be "1~20,3,3~6,-1"
     if (ge::StringUtils::StartWith(shape_range_str, "[")) {
       shape_range_str = shape_range_str.substr(1, shape_range_str.size());
-    } else if (ge::StringUtils::StartWith(shape_range_str, ",")) {
-      shape_range_str = shape_range_str.substr(2, shape_range_str.size());
-    } else {
-      GELOGE(PARAM_INVALID,
-             "Shape range of input is invalid. Given %s, while correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
-             shape_range.c_str());
-      return PARAM_INVALID;
     }
+    if (ge::StringUtils::StartWith(shape_range_str, ",")) {
+      shape_range_str = shape_range_str.substr(2, shape_range_str.size());
+    }
+
     // parse shape_range of single input. eg. "1~20,3,3~6,-1"
     std::vector<std::pair<int64_t, int64_t>> range_of_single_input;
     vector<string> dim_range_set = ge::StringUtils::Split(shape_range_str, ',');
@@ -943,26 +954,17 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
       pair<int64_t, int64_t> range_pair;
       if (range_pair_set.size() == 1) {
         // fix dim
-        auto range_value = std::stol(range_pair_set.at(0).c_str());
+        auto range_value = StringToLongNoThrow(range_pair_set.at(0).c_str());
         if (range_value < 0) {
-          range_pair = std::make_pair(1, range_value);
+          range_pair = std::make_pair(0, range_value);
         } else {
           range_pair = std::make_pair(range_value, range_value);
         }
       } else if (range_pair_set.size() == 2) {
         // unknown dim, should get range.
-        try {
-          auto range_left = std::stol(range_pair_set.at(0).c_str());
-          auto range_right = std::stol(range_pair_set.at(1).c_str());
-          range_pair = std::make_pair(range_left, range_right);
-        } catch (const std::invalid_argument) {
-          GELOGE(
-            PARAM_INVALID,
-            "Parse shape range of input failed when transfer from string to int64. Given %s, while correct example: "
-            "\"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
-            shape_range.c_str());
-          return PARAM_INVALID;
-        }
+        auto range_left = StringToLongNoThrow(range_pair_set.at(0).c_str());
+        auto range_right = StringToLongNoThrow(range_pair_set.at(1).c_str());
+        range_pair = std::make_pair(range_left, range_right);
       } else {
         GELOGE(PARAM_INVALID,
                "Shape range of input is invalid. Given %s, while correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",

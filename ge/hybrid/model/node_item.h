@@ -82,7 +82,6 @@ struct NodeItem {
   bool has_observer = false;
   bool has_optional_inputs = false;
   bool is_output_shape_static = true;
-  bool may_trigger_eos_ = false;
   UnknowShapeOpType shape_inference_type = DEPEND_IN_SHAPE;
   std::string node_name;
   std::string node_type;

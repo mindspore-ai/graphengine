@@ -36,7 +36,7 @@ Status GraphExecutionContext::GetStatus() const {
 
 Status GraphExecutionContext::Synchronize(rtStream_t rt_stream) {
   auto rt_ret = rtStreamSynchronize(rt_stream);
-  if (rt_ret == SUCCESS) {
+  if (rt_ret == RT_ERROR_NONE) {
     return SUCCESS;
   }
 

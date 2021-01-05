@@ -212,6 +212,7 @@ class BlockMemAssigner : public MemAssigner {
 
   void SetOpMemOffset(bool is_zero_copy);
 
+  std::string GetMaxBatchLabel() const { return max_batch_label_; }
  protected:
   ///
   /// @ingroup domi

@@ -136,9 +136,9 @@ class GraphMemoryAssigner {
                                                int64_t &output_mem_size, int64_t &batch_dim_num, int64_t &out_size);
 
   ge::Status ReAssignAtomicMemory(bool is_loop_graph);
-  
-  ge::Status FilterAtomicNodesForMemoryAssign(std::map<NodePtr, vector<NodePtr>> &normal_atomic_nodes_map,
-                                              std::vector<NodePtr> &connecting_output_atomic_nodes);
+
+  ge::Status FilterAtomicNodesForMemoryAssign(map<string, map<NodePtr, vector<NodePtr>>> &normal_atomic_nodes_map,
+                                              map<string, vector<NodePtr>> &connecting_output_atomic_nodes);
 
   ge::Status AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
                                          int64_t &continuous_mem_size, int64_t memory_type);

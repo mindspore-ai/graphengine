@@ -1,7 +1,6 @@
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
     add_subdirectory(common)
     add_subdirectory(plugin/engine)
-    add_subdirectory(graph/build/memory)
     add_subdirectory(ge_local_engine)
     add_subdirectory(host_cpu_engine)
     add_subdirectory(executor)
@@ -342,6 +341,13 @@ set(TRAIN_SRC_LIST
     "analyzer/analyzer.cc"
     "ir_build/ge_ir_build.cc"
     "ir_build/atc_ir_common.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
 )
 
 set(INFER_SRC_LIST
@@ -611,11 +617,35 @@ set(INFER_SRC_LIST
     "graph/label/while_label_maker.cc"
     "graph/label/partitioned_call_label_maker.cc"
     "analyzer/analyzer.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
+add_library(ge_runner SHARED
+            ${TRAIN_SRC_LIST}
+	    ${PROTO_SRCS}
+	    ${PROTO_CLIENT_SRCS}
+	    $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler_fwk>,msprofiler_fwk,msprofiler_fwk_object>>
+)
+
+add_library(msprofiler_fwk_object OBJECT IMPORTED GLOBAL)
+
+if (msprofiler_fwk_ext_LIBRARY_DIR)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object)
+    execute_process(
+        COMMAND ar x ${msprofiler_fwk_ext_LIBRARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object	
+    )
+    file(GLOB MSPROFILER_FWK_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
+    set_property(TARGET msprofiler_fwk_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_FWK_OBJECT_LIST})
+endif()
 
 target_compile_definitions(ge_runner PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -660,12 +690,8 @@ target_include_directories(ge_runner PRIVATE
 
 target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ge_memory
     adump_server
     static_mmpa
-    -Wl,--whole-archive
-    msprofiler_fwk
-    -Wl,--no-whole-archive
     -Wl,--no-as-needed
     graph
     ge_common
@@ -728,7 +754,6 @@ target_include_directories(ge_compiler PRIVATE
 
 target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ge_memory
     static_mmpa
     -Wl,--no-as-needed
     graph
@@ -755,7 +780,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object)
 if(EXISTS ${STATIC_ACL_LIB}/libascendcl.a)
     execute_process(
         COMMAND ar x ${STATIC_ACL_LIB}/libascendcl.a
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object    
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object
     )
     file(GLOB OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object/*.o)
 else()
@@ -764,7 +789,20 @@ endif()
 
 add_library(opensrc_ascendcl SHARED
     ${OBJECT_LIST}
+    $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler>,msprofiler,msprofiler_object>>
 )
+
+add_library(msprofiler_object OBJECT IMPORTED GLOBAL)
+
+if (msprofiler_ext_LIBRARY_DIR)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object)
+    execute_process(
+        COMMAND ar x ${msprofiler_ext_LIBRARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object
+    )
+    file(GLOB MSPROFILER_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object/*.o)
+    set_property(TARGET msprofiler_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_OBJECT_LIST})
+endif()
 
 target_compile_definitions(opensrc_ascendcl PRIVATE
     google=ascend_private
@@ -780,14 +818,7 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,--allow-multiple-definition
     -Wl,-z,muldefs
     -Wl,-Bsymbolic
-    -Wl,--exclude-libs,libascend_protobuf.a
-    -Wl,--exclude-libs,libge_executor.a
-    -Wl,--exclude-libs,libge_common.a
-    -Wl,--exclude-libs,libgraph.a
-    -Wl,--exclude-libs,libmmpa.a
-    -Wl,--exclude-libs,libregister.a
-    -Wl,--exclude-libs,liberror_manager.a
-    -Wl,--exclude-libs,libadump_server.a
+    -Wl,--exclude-libs,ALL
 )
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive
@@ -799,7 +830,6 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      register_static
                      error_manager_static
                      adump_server
-                     msprofiler
                      -Wl,--no-whole-archive
                      -Wl,--no-as-needed
                      c_sec

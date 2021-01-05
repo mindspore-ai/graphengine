@@ -559,7 +559,12 @@ bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
   std::string framework_type;
   (void)ge::GetContext().GetOption(ge::FRAMEWORK_TYPE, framework_type);
   GELOGI("SetOmSystemInfo framework_type: %s", framework_type.c_str());
-  if (!ge::AttrUtils::SetStr(obj, "framework_type", ge::kFwkTypeToStr[framework_type])) {
+  auto iter = ge::kFwkTypeToStr.find(framework_type);
+  if (iter == ge::kFwkTypeToStr.end()) {
+    GELOGW("can not find framework_type in map");
+    return false;
+  }
+  if (!ge::AttrUtils::SetStr(obj, "framework_type", iter->second) {
     GELOGW("SetStr of framework_type failed.");
     return false;
   }

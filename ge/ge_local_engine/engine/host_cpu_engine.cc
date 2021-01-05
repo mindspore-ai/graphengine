@@ -232,12 +232,16 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   std::vector<GeTensorPtr> tmp_outputs;
   for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
     auto tensor_name = op_desc->GetOutputNameByIndex(i);
-    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",
-                               op_desc->GetName().c_str(), i);
+    if (tensor_name.empty()) {
+      GELOGE(INTERNAL_ERROR, "Failed to get output name. node = %s, index = %zu", op_desc->GetName().c_str(), i);
+      return INTERNAL_ERROR;
+    }
     auto iter = named_outputs.find(tensor_name);
-    GE_RETURN_WITH_LOG_IF_TRUE(iter == named_outputs.end(),
-                               "Failed to get output tensor. node = %s, index = %zu, tensor_name = %s",
-                               op_desc->GetName().c_str(), i, tensor_name.c_str());
+    if (iter == named_outputs.end()) {
+       GELOGE(INTERNAL_ERROR, "Failed to get output tensor. node = %s, index = %zu, tensor_name = %s",
+              op_desc->GetName().c_str(), i, tensor_name.c_str());
+      return INTERNAL_ERROR;
+    }
     auto ge_tensor = MakeShared<GeTensor>(TensorAdapter::AsGeTensor(iter->second));
     GE_CHECK_NOTNULL(ge_tensor);
     tmp_outputs.emplace_back(ge_tensor);

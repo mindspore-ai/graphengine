@@ -1097,6 +1097,7 @@ struct BasicInfo {
   uint32_t total_size;       // total memory size
 };
 #pragma pack()  // Cancels single-byte alignment
+enum class MemorySizeCalcType { NORMAL = 0, ALWAYS_EMPTY };
 }  // namespace ge
 
 namespace domi {

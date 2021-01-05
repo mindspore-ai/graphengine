@@ -61,6 +61,11 @@ const char *const OPTION_EXEC_HCCL_FLAG = "ge.exec.hcclFlag";
 const char *const OPTION_EXEC_ATOMIC_FLAG = "ge.exec.enable_atomic";
 const char *const OPTION_EXEC_DISABLE_REUSED_MEMORY = "ge.exec.disableReuseMemory";
 const char *const OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION = "ge.exec.isTailingOptimization";
+// Dynamic input flag. ge.exec.dynamicInput=1, means enable dynaimc input,
+// ge.exec.dynamicGraphExecuteMode, dynamic_execute[default]
+const char *const OPTION_EXEC_DYNAMIC_INPUT = "ge.exec.dynamicInput";
+const char *const OPTION_EXEC_DYNAMIC_EXECUTE_MODE = "ge.exec.dynamicGraphExecuteMode";
+const char *const OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE = "ge.exec.dataInputsShapeRange";
 
 // Option key: memory init
 const char *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";

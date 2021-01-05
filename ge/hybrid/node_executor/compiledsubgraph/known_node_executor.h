@@ -27,8 +27,8 @@ class HybridModel;
 
 class KnownNodeTask : public NodeTask {
  public:
-  explicit KnownNodeTask(std::shared_ptr<DavinciModel> davinci_model, bool need_sync)
-      : davinci_model_(davinci_model), need_sync_(need_sync)
+  explicit KnownNodeTask(std::shared_ptr<DavinciModel> davinci_model)
+      : davinci_model_(davinci_model)
     {}
 
   ~KnownNodeTask() {}
@@ -39,7 +39,6 @@ class KnownNodeTask : public NodeTask {
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
   bool load_flag_ = false;
-  bool need_sync_;
 };
 
 class KnownNodeExecutor : public NodeExecutor {
@@ -49,7 +48,6 @@ class KnownNodeExecutor : public NodeExecutor {
   Status ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const;
   ~KnownNodeExecutor() {}
  private:
-  static Status NeedSync(GeModel &ge_model, bool &need_sync);
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
 };
 }  // namespace hybrid

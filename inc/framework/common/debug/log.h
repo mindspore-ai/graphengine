@@ -28,7 +28,7 @@
 #include "ge/ge_api_error_codes.h"
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
-#define DOMI_LOGE(...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, __VA_ARGS__)
+#define DOMI_LOGE(fmt, ...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, fmt, ##__VA_ARGS__)
 #else
 #include <android/log.h>
 #if defined(BUILD_VERSION_PERF)

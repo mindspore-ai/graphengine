@@ -654,7 +654,6 @@ target_compile_definitions(ge_runner PRIVATE
     FMK_SUPPORT_DUMP
     DAVINCI_CLOUD
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_runner PRIVATE

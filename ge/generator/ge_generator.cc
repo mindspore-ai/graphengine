@@ -561,7 +561,7 @@ bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
   GELOGI("SetOmSystemInfo framework_type: %s", framework_type.c_str());
   auto iter = ge::kFwkTypeToStr.find(framework_type);
   if (iter == ge::kFwkTypeToStr.end()) {
-    GELOGW("can not find framework_type in map");
+    GELOGW("Can not find framework_type in the map.");
     return false;
   }
   if (!ge::AttrUtils::SetStr(obj, "framework_type", iter->second) {

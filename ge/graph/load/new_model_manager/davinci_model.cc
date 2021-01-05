@@ -75,7 +75,6 @@
 namespace ge {
 namespace {
 const uint32_t kDataIndex = 0;
-const uint32_t kOutputNum = 1;
 const uint32_t kTrueBranchStreamNum = 1;
 const uint32_t kGetDynamicDimsCount = 1;
 const uint32_t kThreadNum = 16;

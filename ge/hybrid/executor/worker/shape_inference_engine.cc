@@ -99,11 +99,7 @@ Status ShapeInferenceEngine::AwaitDependentNodes(NodeState &node_state) {
                                  node_item.NodeName().c_str(),
                                  "[AwaitNodeDone] [%s] Start",
                                  src_node->GetName().c_str());
-    if (!subgraph_context_->Await(src_node)) {
-      GELOGE(INTERNAL_ERROR, "[%s] Await node failed.", src_node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
-
+    HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node), "[%s] Await node failed.", src_node->GetName().c_str());
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_,
                                  node_item.NodeName().c_str(),
                                  "[AwaitNodeDone] [%s] End",

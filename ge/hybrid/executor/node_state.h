@@ -35,7 +35,7 @@ class ShapeFuture {
   ShapeFuture(NodePtr src_node, uint32_t src_index, SubgraphContext *subgraph_context);
   ~ShapeFuture() = default;
   Status Get(GeShape &ori_shape, GeShape &shape);
-  GeTensorDescPtr GetTensorDesc();
+  Status GetTensorDesc(GeTensorDescPtr &tensor_desc);
 
  private:
   NodePtr src_node_;

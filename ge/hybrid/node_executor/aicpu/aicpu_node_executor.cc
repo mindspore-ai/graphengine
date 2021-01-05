@@ -188,11 +188,7 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AicpuNodeTaskBaseExecuteAsync] Start");
   GELOGD("Node[%s] execute async start. unknown_type=%d.", node_name_.c_str(), unknown_type_);
 
-  GE_CHK_STATUS_RET(LaunchTask(context));
-  if (context.GetExecutionContext()->is_eos_) {
-    GELOGD("[%s] Got end of sequence", node_name_.c_str());
-    return SUCCESS;
-  }
+  HYBRID_CHK_STATUS_RET(LaunchTask(context), "[%s] Failed to launch task", node_name_.c_str());
 
   uint32_t task_id = 0;
   uint32_t stream_id = 0;

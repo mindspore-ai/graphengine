@@ -20,8 +20,8 @@
 
 namespace ge {
 namespace hybrid {
-SubgraphContext::SubgraphContext(const GraphItem *graph_item) : graph_item_(graph_item) {
-
+SubgraphContext::SubgraphContext(const GraphItem *graph_item, const GraphExecutionContext *execution_context)
+    : graph_item_(graph_item), execution_context_(execution_context) {
 }
 
 Status SubgraphContext::Init() {
@@ -111,12 +111,22 @@ Status SubgraphContext::GetOutputs(std::vector<TensorValue> &outputs) {
   return SUCCESS;
 }
 
-bool SubgraphContext::Await(const NodePtr &node) {
-  return node_done_manager_.Await(node);
+Status SubgraphContext::Await(const NodePtr &node) {
+  if (node_done_manager_.Await(node)) {
+    return SUCCESS;
+  }
+
+  if (execution_context_->is_eos_) {
+    return END_OF_SEQUENCE;
+  }
+
+  return FAILED;
 }
 
 void SubgraphContext::OnError(Status error) {
-  GELOGE(error, "[%s] Error occurred while executing graph.", graph_item_->GetName().c_str());
+  if (error != END_OF_SEQUENCE) {
+    GELOGE(error, "[%s] Error occurred while executing graph.", graph_item_->GetName().c_str());
+  }
   node_done_manager_.Destroy();
 }
 

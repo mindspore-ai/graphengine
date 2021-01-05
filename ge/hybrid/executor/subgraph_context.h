@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "hybrid/common/tensor_value.h"
+#include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/executor/node_state.h"
 #include "hybrid/executor/node_done_manager.h"
 #include "hybrid/model/graph_item.h"
@@ -29,7 +30,7 @@ namespace ge {
 namespace hybrid {
 class SubgraphContext {
  public:
-  explicit SubgraphContext(const GraphItem *graph_item);
+  explicit SubgraphContext(const GraphItem *graph_item, const GraphExecutionContext *execution_context);
   ~SubgraphContext() = default;
 
   Status Init();
@@ -43,11 +44,12 @@ class SubgraphContext {
   Status GetInput(int index, TensorValue &tensor);
   Status GetOutputs(std::vector<TensorValue> &outputs);
 
-  bool Await(const NodePtr &node);
+  Status Await(const NodePtr &node);
   void NodeDone(const NodePtr &node);
 
  private:
   friend class TaskContext;
+  const GraphExecutionContext *execution_context_;
   const GraphItem *graph_item_;
   std::mutex mu_;
   std::vector<TensorValue> all_inputs_;

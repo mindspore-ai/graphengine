@@ -163,10 +163,10 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
   known_shape_task_context_ = TaskContext::Create(*node_item, context_, subgraph_context_.get());
   GE_CHECK_NOTNULL(known_shape_task_context_);
 
-  GE_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_),
-                    "[%s] Failed to execute node [%s] for known subgraph.",
-                    graph_item_->GetName().c_str(),
-                    known_shape_task_context_->GetNodeName());
+  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_),
+                        "[%s] Failed to execute node [%s] for known subgraph.",
+                        graph_item_->GetName().c_str(),
+                        known_shape_task_context_->GetNodeName());
 
   GELOGD("[%s] Done execute non-dynamic subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
@@ -252,10 +252,10 @@ Status SubgraphExecutor::PrepareNodes() {
 
 Status SubgraphExecutor::InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) {
   const auto &node_item = *node_state.GetNodeItem();
-  GE_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state),
-                    "[%s] Failed to InferShape.", node_state.GetName().c_str());
-  GE_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_item),
-                    "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
+  HYBRID_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state),
+                        "[%s] Failed to InferShape.", node_state.GetName().c_str());
+  HYBRID_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_item),
+                        "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
   return SUCCESS;
 }
 
@@ -299,15 +299,9 @@ Status SubgraphExecutor::LaunchTasks() {
     GE_CHECK_NOTNULL(task_context);
     task_context->SetForceInferShape(force_infer_shape_);
     auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
-    GE_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, shared_task_context, *context_),
-                      "[%s] Execute node failed.",
-                      node_state->GetName().c_str());
-
-    if (context_->is_eos_) {
-      GELOGD("Got end of sequence");
-      ready_queue_.Stop();
-      return SUCCESS;
-    }
+    HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, shared_task_context, *context_),
+                          "[%s] Execute node failed.",
+                          node_state->GetName().c_str());
     GELOGD("[%s] Done executing node successfully.", node_state->GetName().c_str());
   }
 }
@@ -324,7 +318,6 @@ Status SubgraphExecutor::ScheduleTasks() {
   GELOGD("[%s] Start to execute subgraph.", graph_item_->GetName().c_str());
   auto ret = LaunchTasks();
   if (ret != SUCCESS) {
-    GELOGE(ret, "[%s] Failed to execute subgraph.", graph_item_->GetName().c_str());
     subgraph_context_->OnError(ret);
     context_->SetErrorCode(ret);
     ready_queue_.Stop();

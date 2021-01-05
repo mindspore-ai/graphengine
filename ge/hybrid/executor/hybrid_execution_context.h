@@ -31,6 +31,20 @@
 #include "hybrid/executor/rt_callback_manager.h"
 #include "hybrid/model/hybrid_model.h"
 
+// If expr is not SUCCESS, print the log and return the same value
+#define HYBRID_CHK_STATUS_RET(expr, ...)        \
+  do {                                          \
+    const ge::Status _status = (expr);          \
+    if (_status != ge::SUCCESS) {               \
+      if (_status == ge::END_OF_SEQUENCE) {     \
+        GELOGD("Got end of sequence");          \
+      } else {                                  \
+        GELOGE(_status, __VA_ARGS__);           \
+      }                                         \
+      return _status;                           \
+    }                                           \
+  } while (0)
+
 namespace ge {
 namespace hybrid {
 struct GraphExecutionContext {

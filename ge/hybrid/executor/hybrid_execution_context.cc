@@ -43,7 +43,7 @@ Status GraphExecutionContext::Synchronize(rtStream_t rt_stream) {
   if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
     GELOGI("Got end of sequence");
     is_eos_ = true;
-    return SUCCESS;
+    return END_OF_SEQUENCE;
   }
 
   if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {

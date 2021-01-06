@@ -78,14 +78,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
          op_desc->GetType().c_str(), ext_info.size(), ext_info_addr_);
 
   // 2.1 get loop cond variable for tensor array write
-  uint64_t step_id_addr = 0;
-  OpDescPtr step_id_node = davinci_model_->GetVariableOp(NODE_NAME_GLOBAL_STEP);
-  if (step_id_node != nullptr) {
-    vector<void *> v_step_id_addr = ModelUtils::GetOutputDataAddrs(rts_param, step_id_node);
-    if (!v_step_id_addr.empty()) {
-      step_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_step_id_addr[0]));
-    }
-  }
+  uint64_t step_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(davinci_model_->GetGlobalStep()));
 
   auto session_id = davinci_model_->GetSessionId();
   fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID = session_id;

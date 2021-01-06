@@ -96,6 +96,29 @@ const int32_t kModelAbortNormalNew = 507024;
 inline bool IsDataOp(const std::string &node_type) {
   return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
 }
+
+inline bool IsTbeTask(const OpDescPtr &op_desc) {
+  uint32_t run_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
+  if (!AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, run_mode)) {
+    return false;
+  }
+
+  if (run_mode != static_cast<uint32_t>(domi::ImplyType::TVM)) {
+    return false;
+  }
+
+  // Skip no_task operator, such as concat and split.
+  bool attr_no_task = false;
+  bool get_attr_no_task_flag = AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_no_task);
+  if (get_attr_no_task_flag && attr_no_task) {
+    GELOGI("Node[name:%s, type:%s] does not generate task, skip initialization.",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
+    return false;
+  }
+
+  return true;
+}
+
 inline bool IsNoTaskAndDumpNeeded(const OpDescPtr &op_desc) {
   bool save_dump_info = false;
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NO_TASK_AND_DUMP_NEEDED, save_dump_info);
@@ -689,7 +712,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
   GE_CHK_STATUS_RET(InitNodes(compute_graph), "Init nodes failed");
 
-  SetDataDumperArgs(compute_graph);
   GE_TIMESTAMP_START(DoTaskSink);
   GE_CHK_STATUS_RET(DoTaskSink(), "Task sink failed");
   GE_TIMESTAMP_END(DoTaskSink, "GraphLoader::DoTaskSink");
@@ -825,7 +847,6 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
   typedef Status (DavinciModel::*OpDescCall)(const OpDescPtr &);
   static std::map<std::string, OpDescCall> op_desc_handle = {
-      {VARIABLE, &DavinciModel::InitVariable},
       {CONSTANTOP, &DavinciModel::InitConstant},
       {STREAMACTIVE, &DavinciModel::InitStreamActive},
       {STREAMSWITCH, &DavinciModel::InitStreamSwitch},
@@ -836,15 +857,13 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
   vector<OpDescPtr> output_op_list;
   map<uint32_t, OpDescPtr> data_by_index;
+  map<string, OpDescPtr> variable_by_name;
   auto nodes = compute_graph->GetAllNodes();
   const CustAICPUKernelStore &aicpu_kernel_store = ge_model_->GetCustAICPUKernelStore();
   for (size_t i = 0; i < nodes.size(); ++i) {
-    auto node = nodes.at(i);
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(PARAM_INVALID, "op_desc is null.");
-      return PARAM_INVALID;
-    }
+    const auto &node = nodes.at(i);
+    const auto &op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
 
     op_list_[op_desc->GetId()] = op_desc;
 
@@ -868,6 +887,14 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
       }
       if (InitRealSizeAndShapeInfo(compute_graph, node) != SUCCESS) {
         GELOGE(PARAM_INVALID, "Init real size and shape failed, Name: %s", op_desc->GetName().c_str());
+        return PARAM_INVALID;
+      }
+      continue;
+    }
+
+    if (op_desc->GetType() == VARIABLE) {
+      if (InitVariable(op_desc, variable_by_name) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Variable init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
       continue;
@@ -907,17 +934,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     }
 
     GE_TIMESTAMP_RESTART(InitTbeHandle);
-    uint32_t run_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
-    if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, run_mode) &&
-        run_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
-      // Skip no_task operator, such as concat and split.
-      bool attr_notask = false;
-      bool get_attr_notask_flag = ge::AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_notask);
-      GE_IF_BOOL_EXEC(get_attr_notask_flag && attr_notask,
-                      GELOGI("Node[name:%s, type:%s] does not generate task, skip initialization.",
-                             op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                      continue;);
-
+    if (IsTbeTask(op_desc)) {
       Status status = InitTbeHandle(op_desc);
       if (status != SUCCESS) {
         GELOGE(status, "TBE init failed. %s", op_desc->GetName().c_str());
@@ -927,6 +944,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     GE_TIMESTAMP_ADD(InitTbeHandle);
   }
 
+  SetDataDumperArgs(compute_graph, variable_by_name);
   GE_TIMESTAMP_CALLNUM_END(LoadTBEKernelBinToOpDesc, "GraphLoader::LoadTBEKernelBinToOpDesc.");
   GE_TIMESTAMP_CALLNUM_END(InitTbeHandle, "GraphLoader::InitTbeHandle.");
   return GenInputOutputInfo(data_by_index, output_op_list);
@@ -1405,8 +1423,23 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   return SUCCESS;
 }
 
-Status DavinciModel::InitVariable(const OpDescPtr &op_desc) {
-  variable_op_list_.push_back(op_desc);
+Status DavinciModel::InitVariable(const OpDescPtr &op_desc, map<string, OpDescPtr> &variable_by_name) {
+  if (op_desc->GetName() == NODE_NAME_GLOBAL_STEP) {
+    const auto output_sizes = ModelUtils::GetOutputSize(op_desc);
+    if (!output_sizes.empty()) {
+      global_step_size_ = output_sizes[0];
+    }
+    const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
+    if (!output_addrs.empty()) {
+      global_step_addr_ = output_addrs[0];
+    }
+  }
+
+  if (op_desc->HasAttr(VAR_ATTR_VAR_IS_BROADCAST)) {
+    broadcast_variable_[op_desc->GetName()] = op_desc->GetOutputDesc(0);
+  }
+
+  variable_by_name[op_desc->GetName()] = op_desc;
   return SUCCESS;
 }
 
@@ -2116,25 +2149,16 @@ Status DavinciModel::SyncVarData() {
   GELOGI("Sync var data, model id:%u", model_id_);
   Status ret = SUCCESS;
 
-  OpDescPtr global_step = GetVariableOp(NODE_NAME_GLOBAL_STEP);
-  if (global_step != nullptr) {
-    auto v_output_size = ModelUtils::GetOutputSize(global_step);
-    auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param_, global_step);
-    if (v_output_size.empty() || v_output_addr.empty()) {
-      GELOGE(PARAM_INVALID, "global step op:%s not set output", global_step->GetName().c_str());
-      return PARAM_INVALID;
-    }
-    std::vector<uint64_t> v_step;
-    v_step.push_back(iterator_count_);
-    GE_CHK_RT_RET(rtMemcpy(v_output_addr[0], v_output_size[0], v_step.data(), v_step.size() * sizeof(uint64_t),
+  if (global_step_addr_ != nullptr && global_step_size_ != 0) {
+    const vector<uint64_t> v_step = { iterator_count_ };
+    GE_CHK_RT_RET(rtMemcpy(global_step_addr_, global_step_size_, v_step.data(), v_step.size() * sizeof(uint64_t),
                            RT_MEMCPY_HOST_TO_DEVICE));
   }
 
-  for (auto op_desc : variable_op_list_) {
-    ret =
-        VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+  for (const auto &item : broadcast_variable_) {
+    ret = VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, item.first, item.second, mem_base_);
     GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret failed, model id:%u, op name:%s.", model_id_,
-                     op_desc->GetName().c_str());
+                     item.first.c_str());
   }
   return ret;
 }
@@ -2619,11 +2643,11 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
 ///
 Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
   GELOGI("ReturnNoOutput model id:%u", model_id_);
-  for (auto op_desc : variable_op_list_) {
+  for (const auto item : broadcast_variable_) {
     Status ret = VarManager::Instance(session_id_)
-                     ->SyncBroadCastData2Var(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+                     ->SyncBroadCastData2Var(runtime_param_.graph_id, item.first, item.second, mem_base_);
     GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret failed, model id:%u, op name:%s.", model_id_,
-                     op_desc->GetName().c_str());
+                     item.first.c_str());
   }
 
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null!");
@@ -3918,11 +3942,11 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
   return SUCCESS;
 }
 
-void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
+void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name) {
   data_dumper_.SetModelName(name_);
   data_dumper_.SetModelId(model_id_);
   data_dumper_.SetOmName(om_name_);
-  data_dumper_.SetComputeGraph(compute_graph);
+  data_dumper_.SetComputeGraph(graph);
   data_dumper_.SetRefInfo(saved_task_addrs_);
   data_dumper_.SetL1FusionAddr(l1_fusion_addr_);
 
@@ -3935,22 +3959,23 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
   data_dumper_.SetDeviceId(device_id);
 
   // set loop count addr
-  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void *{
-    if (op != nullptr) {
-      auto v_output_size = ModelUtils::GetOutputSize(op);
-      auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param, op);
-      if (v_output_size.empty() || v_output_addr.empty()) {
+  auto get_var_addr = [&](const string &name) -> void *{
+    const auto it = variable_by_name.find(name);
+    if (it != variable_by_name.end()) {
+      const auto output_sizes = ModelUtils::GetOutputSize(it->second);
+      const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, it->second);
+      if (output_sizes.empty() || output_addrs.empty()) {
         return nullptr;
       }
-      return v_output_addr[0];
+      return output_addrs[0];
     }
-    GELOGD("op is null.");
+    GELOGD("op: %s is null.", name.c_str());
     return nullptr;
   };
 
-  data_dumper_.SetLoopAddr(get_var_addr(GetVariableOp(NODE_NAME_GLOBAL_STEP), runtime_param_),
-                           get_var_addr(GetVariableOp(NODE_NAME_FLOWCTRL_LOOP_PER_ITER), runtime_param_),
-                           get_var_addr(GetVariableOp(NODE_NAME_FLOWCTRL_LOOP_COND), runtime_param_));
+  data_dumper_.SetLoopAddr(get_var_addr(NODE_NAME_GLOBAL_STEP),
+                           get_var_addr(NODE_NAME_FLOWCTRL_LOOP_PER_ITER),
+                           get_var_addr(NODE_NAME_FLOWCTRL_LOOP_COND));
 }
 
 uint32_t DavinciModel::GetFlowctrlIndex(uint32_t op_index) {

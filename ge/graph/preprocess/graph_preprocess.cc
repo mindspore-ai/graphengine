@@ -1646,6 +1646,10 @@ Status GraphPrepare::InferShapeForPreprocess() {
   if (!options_.train_graph_flag) {
     names_to_passes.emplace_back("AssertPass", &assert_pass);
   }
+  SwitchDeadBranchElimination switch_dead_branch_elimination;
+  names_to_passes.emplace_back("SwitchDeadBranchElimination", &switch_dead_branch_elimination);
+  MergePass merge_pass;
+  names_to_passes.emplace_back("MergePass", &merge_pass);
   InferShapePass infer_shape_pass;
   names_to_passes.emplace_back("InferShapePass", &infer_shape_pass);
   ReplaceWithEmptyConstPass replace_with_empty_const_pass;

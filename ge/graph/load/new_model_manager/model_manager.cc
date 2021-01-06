@@ -909,9 +909,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
-  davinci_model->SetModelDescVersion(new_model_desc);
-
-  return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
+  return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats, new_model_desc);
 }
 
 ///

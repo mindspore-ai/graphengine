@@ -319,7 +319,7 @@ class DavinciModel {
   Status GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc, vector<InputOutputDescInfo> &output_desc);
 
   Status GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc, vector<InputOutputDescInfo> &output_desc,
-                                vector<uint32_t> &input_formats, vector<uint32_t> &output_formats);
+                                vector<uint32_t> &input_formats, vector<uint32_t> &output_formats, bool by_dims);
 
   ///
   /// @ingroup ge
@@ -523,7 +523,7 @@ class DavinciModel {
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) const;
   Status GetAllAippInputOutputDims(uint32_t index, vector<InputOutputDims> &input_dims,
                                    vector<InputOutputDims> &output_dims) const;
-  void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
+
   // om file name
   void SetOmName(string om_name) { om_name_ = om_name; }
 
@@ -603,11 +603,11 @@ class DavinciModel {
   Status InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size);
   Status InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size);
 
-  void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
+  void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, ShapeDescription &shape1, ShapeDescription &shape2);
 
-  void SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format, InputOutputDescInfo &input);
+  void SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format, ShapeDescription &shape_info);
 
-  Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, vector<uint32_t> &input_formats);
+  Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, vector<uint32_t> &input_formats, bool by_dims) const;
   Status GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, vector<uint32_t> &output_formats) const;
 
   Status InitTaskInfo(domi::ModelTaskDef &modelTaskInfo);
@@ -1006,7 +1006,6 @@ class DavinciModel {
   bool is_op_debug_reg_ = false;
   void *op_debug_addr_ = nullptr;
   void *p2p_debug_addr_ = nullptr;
-  bool is_new_model_desc_{false};
   bool is_online_infer_dynamic_ = false;
   bool is_getnext_sink_dynamic_ = false;
   vector<int32_t> cur_dynamic_dims_;
@@ -1040,6 +1039,7 @@ class DavinciModel {
   map<uint32_t, pair<vector<InputOutputDims>, vector<InputOutputDims>>> aipp_dims_info_;
 
   vector<InputOutputDescInfo> input_descs_;
+  vector<InputOutputDescInfo> input_descs_dims_;
   vector<uint32_t> input_formats_;
   vector<InputOutputDescInfo> output_descs_;
   vector<uint32_t> output_formats_;

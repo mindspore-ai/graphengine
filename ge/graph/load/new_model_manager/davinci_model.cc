@@ -1719,7 +1719,7 @@ Status DavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_d
     GELOGI("data_op_list_ is empty or input_desc size is not 1.");
   } else {
     vector<uint32_t> input_formats;
-    GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed.");
+    GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats, false), "get input desc info failed.");
   }
 
   vector<uint32_t> output_formats;
@@ -1730,13 +1730,13 @@ Status DavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_d
 Status DavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
                                             vector<InputOutputDescInfo> &output_desc,
                                             vector<uint32_t> &input_formats,
-                                            vector<uint32_t> &output_formats) {
+                                            vector<uint32_t> &output_formats, bool by_dims) {
   if (input_addrs_list_.empty() || input_addrs_list_[0].size() != 1) {
     GELOGE(FAILED, "OP List Pointer is null or input_desc size is not 1!");
     return FAILED;
   }
 
-  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed");
+  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats, by_dims), "get input desc info failed");
 
   GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, output_formats), "get output desc info failed");
   return SUCCESS;
@@ -1908,52 +1908,50 @@ void DavinciModel::GetModelAttr(vector<string> &out_shape_info) const {
   out_shape_info.insert(out_shape_info.end(), dynamic_output_shape_info_.begin(), dynamic_output_shape_info_.end());
 }
 
-void DavinciModel::SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format,
-                                    InputOutputDescInfo &input) {
+void DavinciModel::SetInputDimsInfo(const vector<int64_t> &input_dims, Format &format, ShapeDescription &shape_info) {
   uint32_t n, c, h, w;
   n = format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N;
   c = format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C;
   h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
   w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
 
-  if (model_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-    input.shape_info.num = model_input_dims[n];
-    input.shape_info.height = model_input_dims[h];
-    input.shape_info.width = model_input_dims[w];
-    input.shape_info.channel = model_input_dims[c];
+  if (input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+    shape_info.num = input_dims[n];
+    shape_info.height = input_dims[h];
+    shape_info.width = input_dims[w];
+    shape_info.channel = input_dims[c];
   }
-  for (size_t k = 0; k < model_input_dims.size(); ++k) {
-    input.shape_info.dims.push_back(model_input_dims[k]);
+  for (size_t k = 0; k < input_dims.size(); ++k) {
+    shape_info.dims.push_back(input_dims[k]);
   }
-  return;
 }
 
-void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
-  if (is_new_model_desc_ && op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
-    // When static aipp is set, need to get the model input dims which processed by aipp
-    vector<int64_t> model_input_dims;
-    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
-    SetInputDimsInfo(model_input_dims, format, input);
-    return;
-  }
+void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format,
+                                       ShapeDescription &shape_info, ShapeDescription &dims_info) {
   // judge if this data is linked dynamic aipp first, multiply batch has been considered
   if (op_desc->HasAttr(ATTR_DYNAMIC_AIPP_INPUT_DIMS)) {
     vector<int64_t> dynamic_aipp_input_dims;
     (void)AttrUtils::GetListInt(op_desc, ATTR_DYNAMIC_AIPP_INPUT_DIMS, dynamic_aipp_input_dims);
-    SetInputDimsInfo(dynamic_aipp_input_dims, format, input);
-    return;
+    SetInputDimsInfo(dynamic_aipp_input_dims, format, shape_info);
   } else {
     // judge if this data is multiply batch
     if (!op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
       vector<int64_t> input_dims = op_desc->GetInputDescPtr(0)->GetShape().GetDims();
-      SetInputDimsInfo(input_dims, format, input);
-      return;
+      SetInputDimsInfo(input_dims, format, shape_info);
     } else {
       vector<int64_t> origin_input_dims;
       (void)AttrUtils::GetListInt(op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
-      SetInputDimsInfo(origin_input_dims, format, input);
-      return;
+      SetInputDimsInfo(origin_input_dims, format, shape_info);
     }
+  }
+
+  if (op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
+    // When static aipp is set, need to get the model input dims which processed by aipp
+    vector<int64_t> model_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
+    SetInputDimsInfo(model_input_dims, format, dims_info);
+  } else {
+    dims_info = shape_info;
   }
 }
 
@@ -1963,8 +1961,9 @@ Status DavinciModel::InitInputDescInfo(const map<uint32_t, OpDescPtr> &data_by_i
     GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
 
     InputOutputDescInfo input;
+    ShapeDescription dims_info;
     Format format = op_desc->GetInputDescPtr(0)->GetFormat();
-    CreateInputDimsInfo(op_desc, format, input);
+    CreateInputDimsInfo(op_desc, format, input.shape_info, dims_info);
 
     input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
     input.name = op_desc->GetName();
@@ -1973,16 +1972,19 @@ Status DavinciModel::InitInputDescInfo(const map<uint32_t, OpDescPtr> &data_by_i
     input.size = input_size;
     input_formats_.push_back(format);
     input_descs_.push_back(input);
+
+    input.shape_info = dims_info;
+    input_descs_dims_.push_back(input);
   }
   return SUCCESS;
 }
 
-Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_descs, vector<uint32_t> &input_formats) {
-  input_descs.insert(input_descs.end(), input_descs_.begin(), input_descs_.end());
+Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_descs,
+                                      vector<uint32_t> &input_formats, bool by_dims) const {
+  const vector<InputOutputDescInfo> &input_desc_info = by_dims ? input_descs_dims_ : input_descs_;
+  input_descs.insert(input_descs.end(), input_desc_info.begin(), input_desc_info.end());
   input_formats.insert(input_formats.end(), input_formats_.begin(), input_formats_.end());
 
-  // cause GetInputDescInfo called not only once, set is_new_model_desc_ to false after calc the model input dims
-  is_new_model_desc_ = false;
   return SUCCESS;
 }
 

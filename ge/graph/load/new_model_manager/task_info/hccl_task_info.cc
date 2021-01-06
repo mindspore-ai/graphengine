@@ -289,8 +289,8 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
       kernel_hccl_infos[i].opType = op_type;
     }
     davinci_model_->DisableZeroCopy(input_data_addr);
-    return SUCCESS;
   }
+  return SUCCESS;
 }
 void HcclTaskInfo::TransToGETaskInfo(GETaskInfo &ge_task) {
   ge_task.id = id_;

@@ -919,7 +919,7 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
   auto mem_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_iter == memory_offset_.end()) {
     std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str()); 
     return FAILED;
   }
 

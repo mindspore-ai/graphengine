@@ -1120,7 +1120,6 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_init_success) {
   op_desc->AddOutputDesc(descout);
   op_desc->SetId(0);
 
-  model.data_op_list_.push_back(op_desc);
   model.op_list_[0] = op_desc;
 
   domi::TaskDef task_def;

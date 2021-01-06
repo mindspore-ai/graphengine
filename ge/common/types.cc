@@ -480,6 +480,9 @@ REGISTER_OPTYPE_DEFINE(HVDWAIT, "HorovodWait");
 // aicpu op for online_infer dynamic_dims
 REGISTER_OPTYPE_DEFINE(GETDYNAMICDIMS, "GetDynamicDims");
 
+// profiling training trace node
+REGISTER_OPTYPE_DEFINE(PROFILINGTRAININGTRACE, "ProfilingTrainingTrace");
+
 const std::string MODEL_ATTR_TASKS = "tasks";
 const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR = "task_gen_base_addr";
 const std::string MODEL_ATTR_TASK_GEN_WEIGHT_ADDR = "task_gen_weight_addr";

@@ -27,7 +27,6 @@ target_compile_options(ge_runtime PRIVATE
 
 target_compile_definitions(ge_runtime PRIVATE 
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(ge_runtime PRIVATE

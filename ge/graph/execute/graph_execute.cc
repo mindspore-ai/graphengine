@@ -560,34 +560,10 @@ Status GraphExecutor::GetModelAttr(uint32_t model_id, std::vector<string> &dynam
   return SUCCESS;
 }
 
-Status GraphExecutor::GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
-                                                        vector<InputOutputDescInfo> &output_desc,
-                                                        std::vector<uint32_t> &input_formats,
-                                                        std::vector<uint32_t> &out_formats) {
-  try {
-    auto model_manager = ge::ModelManager::GetInstance();
-    GE_CHECK_NOTNULL(model_manager);
-    Status ret =
-        model_manager->GetInputOutputDescInfoForZeroCopy(model_id, input_desc, output_desc, input_formats, out_formats);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "GetInputOutputDescInfoForZeroCopy failed.");
-      return ret;
-    }
-  } catch (std::bad_alloc &) {
-    GELOGE(MEMALLOC_FAILED, "GetInputOutputDescInfoForZeroCopy failed, bad memory allocation occur !");
-    return MEMALLOC_FAILED;
-  } catch (...) {
-    GELOGE(FAILED, "GetInputOutputDescInfoForZeroCopy failed, some exceptions occur !");
-    return FAILED;
-  }
-
-  return SUCCESS;
-}
-
-Status GraphExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+Status GraphExecutor::GetAippInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->GetAIPPInfo(model_id, index, aipp_info);
+  Status ret = model_manager->GetAippInfo(model_id, index, aipp_info);
   if (ret != SUCCESS) {
     GELOGW("GetAIPPInfo is not success.");
     return ret;

@@ -477,6 +477,7 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
   single_op.num_inputs_ = data_ops_.size();
   single_op.num_outputs_ = netoutput_op_->GetAllInputsSize();
   GE_CHK_STATUS_RET_NOLOG(InitModelMem(resource));
+  model_params_.memory_size = UINT_MAX;
   return BuildTaskListForDynamicOp(single_op);
 }
 }  // namespace ge

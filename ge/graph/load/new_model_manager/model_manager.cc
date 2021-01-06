@@ -460,8 +460,8 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 
 Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_input_dims,
                                        const vector<pair<string, vector<int64_t>>> &user_input_dims,
-                                       vector<int64_t> &cur_dynamic_dims) {
-  GELOGD(" Start get cur dynamic dims.");
+                                       vector<int32_t> &cur_dynamic_dims) {
+  GELOGD("Start get cur dynamic dims.");
   if (user_real_input_dims.size() != user_input_dims.size()) {
     GELOGE(INTERNAL_ERROR,
            "The input count of user: %zu should be equal to the data count of graph: %zu",
@@ -478,7 +478,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
     }
     for (size_t j = 0; j < user_input_dims.at(i).second.size(); ++j) {
       if (user_input_dims.at(i).second.at(j) < 0) {
-        cur_dynamic_dims.emplace_back(user_real_input_dims[i][j]);
+        cur_dynamic_dims.emplace_back(static_cast<int32_t>(user_real_input_dims[i][j]));
       }
     }
   }
@@ -523,7 +523,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
     input_data.blobs.push_back(data);
   }
   if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
-    std::vector<int64_t> cur_dynamic_dims;
+    std::vector<int32_t> cur_dynamic_dims;
     if (!GetLocalOmgContext().user_real_input_dims.empty()) {
       if (GetCurDynamicDims(GetLocalOmgContext().user_real_input_dims, GetLocalOmgContext().user_input_dims,
                             cur_dynamic_dims) != SUCCESS) {
@@ -531,9 +531,9 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
         return INTERNAL_ERROR;
       }
       DataBuffer data;
-      data.data = new(std::nothrow) int64_t[cur_dynamic_dims.size()];
+      data.data = new(std::nothrow) int32_t[cur_dynamic_dims.size()];
       GE_CHECK_NOTNULL(data.data);
-      uint64_t length = static_cast<uint64_t>(cur_dynamic_dims.size() * sizeof(int64_t));
+      uint32_t length = static_cast<uint32_t>(cur_dynamic_dims.size() * sizeof(int32_t));
       GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK, return INTERNAL_ERROR,
                        "Failed to memcpy data.");
       data.length = length;
@@ -995,16 +995,6 @@ Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynami
   return SUCCESS;
 }
 
-Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
-                                                       vector<InputOutputDescInfo> &output_desc,
-                                                       std::vector<uint32_t> &inputFormats,
-                                                       std::vector<uint32_t> &outputFormats) {
-  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-      "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
-  return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
-}
-
 ///
 /// @ingroup ge
 /// @brief Get AIPP info
@@ -1013,11 +1003,11 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 /// @param [out] aipp_info
 /// @return execute result
 ///
-Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+Status ModelManager::GetAippInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
       "GetAIPPInfo failed, invalid model_id is %u.", model_id);
-  return davinci_model->GetAIPPInfo(index, aipp_info);
+  return davinci_model->GetAippInfo(index, aipp_info);
 }
 
 Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
@@ -1563,6 +1553,12 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   size_t aicpu_op_nums = aicpu_optype_list.size();
   size_t tf_op_nums = aicpu_tf_optype_list.size();
   size_t op_nums = aicpu_op_nums + tf_op_nums;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
   // malloc sysOpInfoList in SysOpCheckInfo
   status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
@@ -1642,34 +1638,33 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     return RT_ERROR_TO_GE_STATUS(status);
   }
   allocated_mem.push_back(args);
-  GE_CHK_RT(
-      rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo), RT_MEMCPY_HOST_TO_DEVICE));
-  GE_CHK_RT(rtMemcpy(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)),
-                     sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res), sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo),
+                     RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(
+    reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) +
+    op_check_info_req.offSetLen)), sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res),
+    sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
   GE_CHK_RT(rtStreamCreate(&stream, 0));
   GE_CHK_RT(rtCpuKernelLaunch(nullptr, kernel_name.c_str(), 1, args, args_size, nullptr, stream));
 
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
   // Check the response
-  SysOpCheckResp *d_op_check_info_res = reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
+  SysOpCheckResp *d_op_check_info_res =
+    reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(
+    reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
   (void)memset_s(&op_check_info_res, sizeof(SysOpCheckResp), 0, sizeof(SysOpCheckResp));
   GE_CHK_RT(rtMemcpy(&op_check_info_res, sizeof(SysOpCheckResp), d_op_check_info_res, sizeof(SysOpCheckResp),
                      RT_MEMCPY_DEVICE_TO_HOST));
-  std::function<void()> callback = [&]() {
-    for (auto mem : allocated_mem) {
-      GE_CHK_RT(rtFree(mem));
-    }
-    GE_CHK_RT(rtStreamDestroy(stream));
-  };
 
   if (op_check_info_res.isWithoutJson) {
     GELOGI("No need to check aicpu in this scenoria.");
-    GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return SUCCESS;
   }
   uint64_t res_op_nums = op_check_info_res.opListNum;
@@ -1687,7 +1682,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
                        sizeof(SysOpInfo) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
     if (res_ret_code_list.size() != res_aicpu_op_info_list.size() || res_ret_code_list.size() != res_op_nums) {
       GELOGE(FAILED, "Number of retcode is not equal to number of op type.");
-      GE_MAKE_GUARD(release, callback);
+      GE_CHK_RT(rtStreamDestroy(stream));
       return FAILED;
     }
     std::string fail_reason;
@@ -1710,11 +1705,11 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     }
     fail_reason += "not support.";
     GELOGE(FAILED, "Check aicpu op_type failed. details: %s", fail_reason.c_str());
-    GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return FAILED;
   }
 
-  GE_MAKE_GUARD(release, callback);
+  GE_CHK_RT(rtStreamDestroy(stream));
   GELOGI("Cpu kernel launch check optype task success.");
   return SUCCESS;
 }

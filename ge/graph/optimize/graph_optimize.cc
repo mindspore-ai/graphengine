@@ -127,6 +127,10 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
 }
 
 Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
+  if (GetContext().GetHostExecFlag()) {
+    // graph exec on host, no need OptimizeOriginalGraph
+    return SUCCESS;
+  }
   if (compute_graph == nullptr) {
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeOriginalGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
@@ -162,7 +166,7 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
 Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_graph) {
   GELOGD("OptimizeOriginalGraphJudgeInsert in");
   if (GetContext().GetHostExecFlag()) {
-    // graph exec on host, no need OptimizeOriginalGraph
+    // graph exec on host, no need OptimizeOriginalGraphJudgeInsert
     return SUCCESS;
   }
 
@@ -335,5 +339,38 @@ Status GraphOptimize::IdentifyReference(ComputeGraphPtr &compute_graph) {
     }
   }
   return SUCCESS;
+}
+Status GraphOptimize::OptimizeWholeGraph(ComputeGraphPtr &compute_graph) {
+  if (compute_graph == nullptr) {
+    GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeWholeGraph]: compute_graph is nullptr.");
+    return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
+  }
+
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeWholeGraph failed.");
+    return GE_CLI_GE_NOT_INITIALIZED;
+  }
+
+  auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
+  GELOGI("optimize by opskernel in OptimizeWholeGraph. num of graph_optimizer is %zu.", graph_optimizer.size());
+  Status ret = SUCCESS;
+  string exclude_core_type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
+  GELOGD("[OptimizeWholeGraph]: engine type will exclude: %s", exclude_core_type.c_str());
+  if (!graph_optimizer.empty()) {
+    for (auto &iter : graph_optimizer) {
+      if (iter.first == exclude_core_type || iter.second == nullptr) {
+        continue;
+      }
+      GELOGI("Begin to optimize whole graph by engine %s", iter.first.c_str());
+      ret = iter.second->OptimizeWholeGraph(*compute_graph);
+      GE_DUMP(compute_graph, "OptimizeWholeGraph" + iter.first);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "[OptimizeWholeGraph]: graph optimize failed, ret:%u", ret);
+        return ret;
+      }
+    }
+  }
+  return ret;
 }
 }  // namespace ge

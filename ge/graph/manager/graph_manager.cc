@@ -38,10 +38,8 @@
 #include "graph/partition/stage_partition.h"
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/bitcast_pass.h"
-#ifndef ONLY_COMPILE_OPEN_SRC
 #include "graph/passes/assign_remove_pass.h"
 #include "graph/passes/inplace_support_check_pass.h"
-#endif
 #include "graph/passes/atomic_addr_clean_pass.h"
 #include "graph/passes/attach_stream_label_pass.h"
 #include "graph/passes/cast_remove_pass.h"
@@ -93,7 +91,6 @@
 #include "graph/passes/unused_args_clean_pass.h"
 #include "graph/passes/global_step_insert_pass.h"
 #include "graph/passes/memcpy_addr_async_pass.h"
-#include "graph/passes/hccl_memcpy_pass.h"
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
@@ -102,6 +99,7 @@
 #include "graph/common/local_context.h"
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "register/custom_pass_helper.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -687,7 +685,7 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
   CompilerStages &stages = GetCompilerStages(graph_node->GetGraphId());
   GM_RUN_AND_DUMP_PERF("OptimizeGraphPrepare", stages.optimizer.OptimizeOriginalGraphForQuantize, compute_graph);
   GM_RUN_AND_DUMP_PERF("HandleSummaryOp", stages.optimizer.HandleSummaryOp, compute_graph);
-  GM_RUN_AND_DUMP_PERF("Prepare", stages.preparer.PrepareDynShape, graph_node->GetGraph(), inputs, compute_graph,
+  GM_RUN_AND_DUMP_PERF("Prepare", stages.preparer.PrepareDynShape, graph_node, inputs, compute_graph,
                        session_id);
   GM_RUN_AND_DUMP_PERF("OptimizeOriginalGraph", stages.optimizer.OptimizeOriginalGraph, compute_graph);
 
@@ -732,6 +730,9 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
                                                  GeRootModelPtr &ge_root_model, uint64_t session_id) {
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(compute_graph);
+
+  CompilerStages &stages = GetCompilerStages(graph_node->GetGraphId());
+  GM_RUN_AND_DUMP_PERF("OptimizeWholeGraph", stages.optimizer.OptimizeWholeGraph, compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
   GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
                        GetCompilerStages(graph_node->GetGraphId()).optimizer.OptimizeGraphBeforeBuildForRts,
@@ -766,10 +767,24 @@ Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint
   return SUCCESS;
 }
 
+Status GraphManager::RunCustomPass(const GraphNodePtr &graph_node) {
+  ConstGraphPtr const_graph = graph_node->GetGraph();
+  auto comp_graph = GraphUtils::GetComputeGraph(*const_graph);
+  GE_DUMP(comp_graph, "RunCustomPassBegin");
+
+  GE_TIMESTAMP_START(RunCustomPass);
+  GraphPtr graph = std::const_pointer_cast<Graph>(const_graph);
+  GE_CHK_STATUS_RET(CustomPassHelper::Instance().Run(graph), "Graph[%s] run custom pass fail.",
+                    comp_graph->GetName().c_str());
+  GE_TIMESTAMP_END(RunCustomPass, "GraphBuilder::RunCustomPass");
+  return SUCCESS;
+}
+
 Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
                             GeRootModelPtr &ge_root_model, uint64_t session_id) {
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(graph_node->GetGraph());
+  GE_CHK_STATUS_RET_NOLOG(RunCustomPass(graph_node));
   auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
   GE_CHECK_NOTNULL(compute_graph);
   compute_graph->SetSessionID(session_id);
@@ -1173,7 +1188,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
   auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
   GE_CHECK_NOTNULL(compute_graph);
 
-  GM_RUN_AND_DUMP_PERF("Prepare", GetCompilerStages(graph_id).preparer.PrepareDynShape, graph_node->GetGraph(), inputs,
+  GM_RUN_AND_DUMP_PERF("Prepare", GetCompilerStages(graph_id).preparer.PrepareDynShape, graph_node, inputs,
                        compute_graph, session_id);
 
   for (auto &node : compute_graph->GetAllNodes()) {
@@ -2122,8 +2137,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
                                                new (std::nothrow) TransOpWithoutReshapeFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::TransOpBreadthFusionPass",
                                                new (std::nothrow) TransOpBreadthFusionPass))
-  GE_CHK_STATUS_RET(
-      after_merge_passes.AddPass("OptimizeStage1_1::HcclMemcpyPass", new (std::nothrow) HcclMemcpyPass));
 
   GE_TIMESTAMP_START(after_merge_passes);
   auto ret = after_merge_passes.Run(compute_graph);
@@ -2254,20 +2267,16 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   ReshapeRemovePass reshape_remove_pass;
   CondRemovePass condition_remove_pass;
   BitcastPass bitcast_pass;
-#ifndef ONLY_COMPILE_OPEN_SRC
   AssignRemovePass assign_remove_pass;
   InplaceSupportCheckPass inplace_support_check_pass;
-#endif
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
   names_to_passes.emplace_back("ReshapeRemovePass", &reshape_remove_pass);
   names_to_passes.emplace_back("CondRemovePass", &condition_remove_pass);
   names_to_passes.emplace_back("BitcastPass", &bitcast_pass);
-#ifndef ONLY_COMPILE_OPEN_SRC
   if (GetContext().GetHostExecFlag()) {
     names_to_passes.emplace_back("AssignRemovePass", &assign_remove_pass);
     names_to_passes.emplace_back("InplaceSupportCheckPass", &inplace_support_check_pass);
   }
-#endif
   GE_TIMESTAMP_START(names_to_passes);
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "OptimizeStage2::MergedGraphNameToPasses");
@@ -2765,8 +2774,10 @@ Status GraphManager::ParseInputsDims(const std::vector<InputTensorInfo> &input_t
   if (!GetLocalOmgContext().dynamic_node_type.empty()) {
     vector<NodePtr> data_nodes;
     vector<NodePtr> getnext_nosink_nodes;
-    data_nodes = compute_graph_->TryGetExtAttr(kExtAttrDataNodes, data_nodes);
-    getnext_nosink_nodes = compute_graph_->TryGetExtAttr(kExtAttrGetNextNoSink, getnext_nosink_nodes);
+    data_nodes = GetLocalOmgContext().data_nodes;
+    getnext_nosink_nodes = GetLocalOmgContext().getnext_nosink_nodes;
+    GELOGD("Data nodes count is %zu, getnext nosink nodes count is %zu.", data_nodes.size(),
+           getnext_nosink_nodes.size());
     if (GetLocalOmgContext().dynamic_node_type == DATA) {
       if (getnext_nosink_nodes.empty()) {
         // just data or data+getnext_sink

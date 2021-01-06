@@ -145,7 +145,9 @@ Status HcclTaskInfo::SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciM
     } else {
       GELOGI("need to reuse follow stream and create new follow stream.");
       size_t created_stream_num = follow_stream_usage.size();
-      hccl_stream_list_ = follow_stream_usage;
+      for (const auto &stream : follow_stream_usage) {
+        hccl_stream_list_.emplace_back(stream);
+      }
       ret = CreateStream(hccl_stream_num - created_stream_num, davinci_model, main_stream_id);
       if (ret != SUCCESS) {
         GELOGE(RT_FAILED, "Create hccl stream failed.");

@@ -36,6 +36,7 @@ extern "C" {
 #define RT_STREAM_FORBIDDEN_DEFAULT (0x10)
 #define RT_STREAM_HEAD (0x20)
 #define RT_STREAM_PRIMARY_DEFAULT (0x40)
+#define RT_STREAM_PRIMARY_FIRST_DEFAULT (0x80)
 
 /**
  * @ingroup stream_type

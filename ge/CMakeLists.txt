@@ -1,7 +1,6 @@
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
     add_subdirectory(common)
     add_subdirectory(plugin/engine)
-    add_subdirectory(graph/build/memory)
     add_subdirectory(ge_local_engine)
     add_subdirectory(host_cpu_engine)
     add_subdirectory(executor)
@@ -125,7 +124,7 @@ set(TRAIN_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/manager/host_mem_allocator.cc>
+    "graph/manager/host_mem_allocator.cc"
     "graph/manager/memory_api.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/trans_var_data_utils.cc"
@@ -167,7 +166,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/hccl_group_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_remove_pass.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/passes/inplace_support_check_pass.cc>
+    "graph/passes/inplace_support_check_pass.cc"
     "graph/passes/flow_ctrl_pass.cc"
     "graph/passes/global_step_insert_pass.cc"
     "host_kernels/transpose_kernel.cc"
@@ -342,6 +341,13 @@ set(TRAIN_SRC_LIST
     "analyzer/analyzer.cc"
     "ir_build/ge_ir_build.cc"
     "ir_build/atc_ir_common.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
 )
 
 set(INFER_SRC_LIST
@@ -403,7 +409,7 @@ set(INFER_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/manager/host_mem_allocator.cc>
+    "graph/manager/host_mem_allocator.cc"
     "graph/manager/graph_mem_allocator.cc"
     "graph/manager/graph_caching_allocator.cc"
     "model/ge_model.cc"
@@ -525,7 +531,7 @@ set(INFER_SRC_LIST
     "graph/passes/for_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_remove_pass.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/passes/inplace_support_check_pass.cc>
+    "graph/passes/inplace_support_check_pass.cc"
     "graph/passes/addn_pass.cc"
     "graph/passes/common_subexpression_elimination_pass.cc"
     "graph/passes/remove_same_const_pass.cc"
@@ -611,11 +617,35 @@ set(INFER_SRC_LIST
     "graph/label/while_label_maker.cc"
     "graph/label/partitioned_call_label_maker.cc"
     "analyzer/analyzer.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
-add_library(ge_runner SHARED ${TRAIN_SRC_LIST} ${PROTO_SRCS} ${PROTO_CLIENT_SRCS})
+add_library(ge_runner SHARED
+            ${TRAIN_SRC_LIST}
+	    ${PROTO_SRCS}
+	    ${PROTO_CLIENT_SRCS}
+	    $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler_fwk>,msprofiler_fwk,msprofiler_fwk_object>>
+)
+
+add_library(msprofiler_fwk_object OBJECT IMPORTED GLOBAL)
+
+if (msprofiler_fwk_ext_LIBRARY_DIR)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object)
+    execute_process(
+        COMMAND ar x ${msprofiler_fwk_ext_LIBRARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object	
+    )
+    file(GLOB MSPROFILER_FWK_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
+    set_property(TARGET msprofiler_fwk_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_FWK_OBJECT_LIST})
+endif()
 
 target_compile_definitions(ge_runner PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -624,7 +654,6 @@ target_compile_definitions(ge_runner PRIVATE
     FMK_SUPPORT_DUMP
     DAVINCI_CLOUD
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_runner PRIVATE
@@ -660,12 +689,8 @@ target_include_directories(ge_runner PRIVATE
 
 target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ge_memory
     adump_server
     static_mmpa
-    -Wl,--whole-archive
-    msprofiler_fwk
-    -Wl,--no-whole-archive
     -Wl,--no-as-needed
     graph
     ge_common
@@ -692,7 +717,6 @@ target_compile_definitions(ge_compiler PRIVATE
     FMK_HOST_INFER
     COMPILE_OMG_PACKAGE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_compiler PRIVATE
@@ -728,7 +752,6 @@ target_include_directories(ge_compiler PRIVATE
 
 target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ge_memory
     static_mmpa
     -Wl,--no-as-needed
     graph
@@ -755,7 +778,7 @@ file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object)
 if(EXISTS ${STATIC_ACL_LIB}/libascendcl.a)
     execute_process(
         COMMAND ar x ${STATIC_ACL_LIB}/libascendcl.a
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object    
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object
     )
     file(GLOB OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/ascendcl_object/*.o)
 else()
@@ -764,11 +787,23 @@ endif()
 
 add_library(opensrc_ascendcl SHARED
     ${OBJECT_LIST}
+    $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler>,msprofiler,msprofiler_object>>
 )
+
+add_library(msprofiler_object OBJECT IMPORTED GLOBAL)
+
+if (msprofiler_ext_LIBRARY_DIR)
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object)
+    execute_process(
+        COMMAND ar x ${msprofiler_ext_LIBRARY_DIR}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object
+    )
+    file(GLOB MSPROFILER_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_object/*.o)
+    set_property(TARGET msprofiler_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_OBJECT_LIST})
+endif()
 
 target_compile_definitions(opensrc_ascendcl PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(opensrc_ascendcl PRIVATE
@@ -780,14 +815,7 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,--allow-multiple-definition
     -Wl,-z,muldefs
     -Wl,-Bsymbolic
-    -Wl,--exclude-libs,libascend_protobuf.a
-    -Wl,--exclude-libs,libge_executor.a
-    -Wl,--exclude-libs,libge_common.a
-    -Wl,--exclude-libs,libgraph.a
-    -Wl,--exclude-libs,libmmpa.a
-    -Wl,--exclude-libs,libregister.a
-    -Wl,--exclude-libs,liberror_manager.a
-    -Wl,--exclude-libs,libadump_server.a
+    -Wl,--exclude-libs,ALL
 )
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive
@@ -799,7 +827,6 @@ target_link_libraries(opensrc_ascendcl PRIVATE
                      register_static
                      error_manager_static
                      adump_server
-                     msprofiler
                      -Wl,--no-whole-archive
                      -Wl,--no-as-needed
                      c_sec

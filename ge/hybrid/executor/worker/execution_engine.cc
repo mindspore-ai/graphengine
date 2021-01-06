@@ -221,6 +221,8 @@ Status NodeDoneCallback::GetGraphDescInfo(const NodePtr node, const HybridModel 
       tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
       tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
     }
+    tmp_compute_graph_info.task_id = context_->GetTaskId();
+    tmp_compute_graph_info.stream_id = context_->GetStreamId();
     compute_graph_info.emplace_back(tmp_compute_graph_info);
     GELOGD("GetComputeGraphInfo of node [%s] end.", node->GetName().c_str());
   }

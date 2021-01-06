@@ -15,6 +15,7 @@
  */
 
 #include "graph/build/graph_builder.h"
+#include "graph/build/memory/graph_mem_assigner.h"
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
 #include "graph/build/logical_stream_allocator.h"
@@ -197,10 +198,8 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
     return MEMALLOC_FAILED;
   }
   GeModelPtr ge_model_ptr = nullptr;
-  bool is_dynamic_shape = false;
-  // To be compatible with the old process, do not verify the return value temporarily.
-  (void)AttrUtils::GetBool(comp_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
-  if (is_dynamic_shape) {
+
+  if (comp_graph->GetGraphUnknownFlag()) {
     GE_CHK_STATUS_RET(
         BuildForDynamicShapeGraph(comp_graph, subgraph_ptr_list, ge_root_model_ptr, ge_model_ptr, session_id),
         "Build for dynamic shape graph failed.");
@@ -270,16 +269,78 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::v
   return SUCCESS;
 }
 
+Status GraphBuilder::SetConstantInputOffset(ComputeGraphPtr &comp_graph) {
+  for (auto &node : comp_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(node);
+    auto op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    auto num_inputs = op_desc->GetInputsSize();
+    std::vector<int64_t> input_offsets(num_inputs, 0);
+    int valid_input_index = -1;
+    for (uint32_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
+      auto in_anchor = node->GetInDataAnchor(i);
+      auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
+      if (peer_out_anchor == nullptr) {
+        continue;
+      }
+
+      ++valid_input_index;
+      auto peer_node = peer_out_anchor->GetOwnerNode();
+      if (peer_node == nullptr) {
+        continue;
+      }
+
+      if (peer_node->GetType() != CONSTANT) {
+        continue;
+      }
+
+      std::vector<GeTensorPtr> weights = OpDescUtils::MutableWeights(peer_node);
+      if (weights.empty()) {
+        GELOGE(FAILED, "weights size of node %s is empty", node->GetName().c_str());
+        return FAILED;
+      }
+      GeTensorPtr weight = weights[0];
+      GE_CHECK_NOTNULL(weight);
+      int64_t input_offset = 0;
+      (void) TensorUtils::GetDataOffset(weight->MutableTensorDesc(), input_offset);
+      // valid_input_index must smaller than num_inputs
+      input_offsets[valid_input_index] = input_offset;
+      GELOGD("[%s] input[%u] is const, offset = %ld", node->GetName().c_str(), valid_input_index, input_offset);
+    }
+
+    op_desc->SetInputOffset(input_offsets);
+    std::vector<int64_t> output_offsets(op_desc->GetOutputsSize(), 0);
+    op_desc->SetOutputOffset(output_offsets);
+  }
+  return SUCCESS;
+}
+
 Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                                                uint64_t session_id) {
   GELOGI("Begin to build unknown shape graph[%s].", comp_graph->GetName().c_str());
+  Graph2SubGraphInfoList subgraph_map;
+  ge::ModelBuilder builder(session_id, comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
+  GE_DUMP(comp_graph, "BeforePreBuildModel");
+  GE_TIMESTAMP_START(PreBuildModel);
+  GE_CHK_STATUS_RET(builder.PreBuildModel(), "Graph[%s] builder PreBuildModel() return fail.",
+                    comp_graph->GetName().c_str());
+  GE_TIMESTAMP_END(PreBuildModel, "GraphBuilder::PreBuildModel");
+  GE_DUMP(comp_graph, "AfterPreBuildModel");
+
   GE_TIMESTAMP_START(CalcOpParam);
   GE_CHK_STATUS_RET(CalcOpParam(comp_graph), "Graph[%s] builder CalcOpParam() return fail.",
                     comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(CalcOpParam, "GraphBuilder::CalcOpParam");
   GE_DUMP(comp_graph, "AfterCalcOpParam");
-  Graph2SubGraphInfoList subgraph_map;
-  ge::ModelBuilder builder(session_id, comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
+
+  GE_TIMESTAMP_START(SetConstantInputOffset);
+  GE_CHK_STATUS_RET(SetConstantInputOffset(comp_graph),
+                    "Graph[%s] failed to set constant input offset.", comp_graph->GetName().c_str());
+  GE_TIMESTAMP_END(SetConstantInputOffset, "GraphBuilder::SetConstantInputOffset");
+  GE_TIMESTAMP_START(MergeWeights);
+  GE_CHK_STATUS_RET(builder.MergeWeights(), "Graph[%s] failed to merge weights.", comp_graph->GetName().c_str());
+  GE_TIMESTAMP_END(MergeWeights, "GraphBuilder::MergeWeights");
+
   ModelPtr model_ptr = MakeShared<ge::Model>();
   if (model_ptr == nullptr) {
     return MEMALLOC_FAILED;
@@ -360,6 +421,52 @@ static Status GenerateTaskForConstant(const std::shared_ptr<ComputeGraph> &graph
   return SUCCESS;
 }
 
+Status GraphBuilder::MarkFpBpProfilingTaskAttr(ComputeGraphPtr &com_graph) {
+  bool original_unknown_shape_flag = com_graph->GetGraphUnknownFlag();
+  com_graph->SetGraphUnknownFlag(false);
+
+  GELOGD("Start to mark profiling task attr for fp and bp.");
+  TaskGenerator task_generator;
+  ProfilingPoint profiling_point;
+  std::vector<uint32_t> all_reduce_node_index;
+  Status ret = task_generator.FindProfilingNodeIndex(com_graph, profiling_point, all_reduce_node_index);
+  com_graph->SetGraphUnknownFlag(original_unknown_shape_flag);
+  if (ret != SUCCESS) {
+    GELOGW("Find profiling node index failed.");
+  }
+  if (profiling_point.fp_index == 0 || profiling_point.bp_index == 0 || profiling_point.end_index.empty()) {
+    GELOGD("No need to mark fp bp profiling task attr.");
+    return SUCCESS;
+  }
+  // mark profiling task attr for node
+  uint32_t node_index = 0;
+  for (const auto &node : com_graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    node_index++;
+    if (profiling_point.fp_index == node_index) {
+       GELOGI("The first fp node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+      (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_FP_PROFILILNG_TASK, true);
+    }
+    if (profiling_point.bp_index == node_index) {
+      GELOGI("The bp node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+      (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
+    }
+    for (size_t i = 0; i < all_reduce_node_index.size(); i++) {
+      if (all_reduce_node_index[i] == node_index) {
+        GELOGI("The all reduce node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+        (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
+        continue;
+      }
+    }
+    if (profiling_point.end_index.find(node_index) != profiling_point.end_index.end()) {
+      GELOGI("The end node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
+      (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_END_PROFILILNG_TASK, true);
+    }
+  }
+  return SUCCESS;
+}
+
 Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                                                std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                                                GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
@@ -375,10 +482,21 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                         op_desc->GetName().c_str());
     }
   }
-  //
-  for (auto &sub_graph : comp_graph->GetAllSubgraphs()) {
+
+  // Set fp bp profiling task attr for graph
+  if (MarkFpBpProfilingTaskAttr(comp_graph) != SUCCESS) {
+    GELOGE(FAILED, "Set fp bp profiling task attr for graph.");
+    return FAILED;
+  }
+
+  auto all_graphs = comp_graph->GetAllSubgraphs();
+  if (all_graphs.empty()) {
+    all_graphs.push_back(comp_graph);
+  }
+  for (auto &sub_graph : all_graphs) {
     // exclude functional subgraph in known subgraph
-    if (sub_graph->GetParentGraph() != comp_graph && !sub_graph->GetParentGraph()->GetGraphUnknownFlag()) {
+    if (sub_graph->GetParentGraph() != nullptr && sub_graph->GetParentGraph() != comp_graph &&
+        !sub_graph->GetParentGraph()->GetGraphUnknownFlag()) {
       continue;
     }
 

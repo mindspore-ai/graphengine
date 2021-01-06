@@ -55,12 +55,12 @@ class ModelBuilder {
 
   ge::Buffer GetWeightBuffer() const;
 
+  Status MergeWeights();
+
  protected:
   void AddNodeInputProperty();
 
   void ClearOriginalFormat();
-
-  Status MergeWeights();
 
  private:
   bool SetInputConst(const OpDescPtr &op_desc, const NodePtr &src_node, size_t index, vector<bool> &is_input_const);

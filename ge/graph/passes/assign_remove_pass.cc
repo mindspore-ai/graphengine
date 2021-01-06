@@ -19,6 +19,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
+namespace ge {
 namespace {
 constexpr uint32_t kValidInputNodeOutputNum = 1;
 constexpr int32_t kAssignRefInputIndex = 0;
@@ -28,8 +29,6 @@ static const std::set<std::string> kNoTaskNodeTypes = { ge::DATA, ge::ANN_DATA, 
                                                         ge::VARIABLE, ge::VARIABLEV2 };
 }
 
-namespace ge {
-#ifndef ONLY_COMPILE_OPEN_SRC
 Status AssignRemovePass::Run(NodePtr &node) {
   GELOGD("AssignRemovePass running");
 
@@ -145,71 +144,7 @@ Status AssignRemovePass::TransformAttr(NodePtr &node) {
   }
   return SUCCESS;
 }
-#else
-Status AssignRemovePass::Run(NodePtr &node) {
-  GELOGD("AssignRemovePass running");
-  if (node->GetType() != ASSIGN) {
-    GELOGD("No need run AssignRemovePass on [%s, %s].", node->GetName().c_str(), node->GetType().c_str());
-    return SUCCESS;
-  }
 
-  const auto &ref_in_anchor = node->GetInDataAnchor(kAssignRefInputIndex);
-  const auto &value_in_anchor = node->GetInDataAnchor(kAssignValueInputIndex);
-  if ((ref_in_anchor == nullptr) || (value_in_anchor == nullptr)) {
-    GELOGE(FAILED, "In data anchor is null, node:%s", node->GetName().c_str());
-    return FAILED;
-  }
-  const auto &ref_peer_anchor = ref_in_anchor->GetPeerOutAnchor();
-  const auto &value_peer_anchor = value_in_anchor->GetPeerOutAnchor();
-  if ((ref_peer_anchor == nullptr) || (value_peer_anchor == nullptr)) {
-    GELOGE(FAILED, "Peer data anchor is null, node:%s", node->GetName().c_str());
-    return FAILED;
-  }
-
-  if (IsCondMatch(node, ref_peer_anchor, value_peer_anchor)) {
-    ///
-    ///    variable  not-const               not-const
-    ///         \     /                          |
-    ///          \   /                           |
-    ///         Assign           ---->        variable
-    ///           |                              |
-    ///           |                              |
-    ///         node                           node
-    ///
-    GELOGI("Optimization for assign_node %s start", node->GetName().c_str());
-    if (IsolateAndDeleteNode(node, {kAssignRefInputIndex}) != SUCCESS) {
-      GELOGE(FAILED, "Isolate and delete assign_node %s failed.", node->GetName().c_str());
-      return FAILED;
-    }
-    AddNodeDeleted(node);
-
-    const auto &ref_input = ref_peer_anchor->GetOwnerNode()->GetOpDesc();
-    const auto &value_input = value_peer_anchor->GetOwnerNode()->GetOpDesc();
-    if ((ref_input == nullptr) || (value_input == nullptr)) {
-      GELOGE(FAILED, "value input is null");
-      return FAILED;
-    }
-    if (!AttrUtils::SetStr(value_input->MutableOutputDesc(value_peer_anchor->GetIdx()), ASSIGN_VAR_NAME,
-                           ref_input->GetName())) {
-      GELOGE(FAILED, "Set attr ASSIGN_VAR_NAME failed.");
-      return FAILED;
-    }
-
-    // variable has and only has one input
-    if (ref_input->UpdateInputDesc(0, value_input->GetOutputDesc(value_peer_anchor->GetIdx())) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Update input_desc for variable %s failed.", ref_input->GetName().c_str());
-      return FAILED;
-    }
-    if (GraphUtils::AddEdge(value_peer_anchor, ref_peer_anchor->GetOwnerNode()->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Add data edge %s->%s failed", value_input->GetName().c_str(), ref_input->GetName().c_str());
-      return FAILED;
-    }
-  }
-
-  GELOGD("AssignRemovePass success");
-  return SUCCESS;
-}
-#endif
 ///
 /// @brief Check if need optimize for assign_node
 /// @param [in] assign_node
@@ -218,7 +153,7 @@ Status AssignRemovePass::Run(NodePtr &node) {
 /// @return Status
 ///
 bool AssignRemovePass::IsCondMatch(const NodePtr &node, const OutDataAnchorPtr &ref_peer_anchor,
-                             const OutDataAnchorPtr &value_peer_anchor) {
+                                   const OutDataAnchorPtr &value_peer_anchor) {
   GELOGD("Check if assign_node %s match optimization condition, ref_input: %s, value_input: %s",
          node->GetName().c_str(), ref_peer_anchor->GetOwnerNode()->GetName().c_str(),
          value_peer_anchor->GetOwnerNode()->GetName().c_str());

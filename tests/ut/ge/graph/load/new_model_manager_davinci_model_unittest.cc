@@ -254,6 +254,17 @@ TEST_F(UtestModelManagerDavinciModel, eventlist_success) {
   delete model;
 }
 
+// test Shrink
+TEST_F(UtestModelManagerDavinciModel, shrink_success) {
+  DavinciModel model(0, g_label_call_back);
+  OpDescPtr op_desc_ptr = make_shared<OpDesc>("Cast", "Cast");
+  void *addr = nullptr;
+  rtMalloc(&addr, 128, RT_MEMORY_HBM);
+  model.saved_task_addrs_.emplace(op_desc_ptr, addr);
+  model.Shrink();
+  EXPECT_EQ(model.saved_task_addrs_.isEmpty(), true);
+}
+
 // test rtMalloc
 TEST_F(UtestModelManagerDavinciModel, failed_reset_device) {
   DavinciModel model(0, g_label_call_back);

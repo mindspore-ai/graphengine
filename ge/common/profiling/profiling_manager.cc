@@ -94,7 +94,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
   if (options.profiling_mode == "1" && !options.profiling_options.empty()) {
     // enable profiling by ge option
     if (strncpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
-                 MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
+                  MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
       GELOGE(INTERNAL_ERROR, "copy profiling_options failed.");
       return INTERNAL_ERROR;
     }
@@ -124,8 +124,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     return ge::PARAM_INVALID;
   }
 
-  if (strncpy_s(prof_conf.jobId, MSPROF_OPTIONS_DEF_LEN_MAX, options.job_id.c_str(),
-               MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
+  if (strncpy_s(prof_conf.jobId, MSPROF_OPTIONS_DEF_LEN_MAX, options.job_id.c_str(), MSPROF_OPTIONS_DEF_LEN_MAX - 1) !=
+      EOK) {
     GELOGE(INTERNAL_ERROR, "copy job_id failed.");
     return INTERNAL_ERROR;
   }
@@ -302,6 +302,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     }
 
     data.append(" model_id:").append(std::to_string(model_id));
+    data.append(" task_id:").append(std::to_string(graph.task_id));
+    data.append(" stream_id:").append(std::to_string(graph.stream_id));
     data.append("\n");
 
     GraphDescReport(device_id, data);

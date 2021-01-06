@@ -99,9 +99,8 @@ Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_n
   }
   GELOGI("Data count is %zu, getnext nosink count is %zu, getnext sink count is %zu.", data_nodes.size(),
          getnext_nosink_nodes.size(), getnext_sink_nodes.size());
-  GE_IF_BOOL_EXEC(!graph->SetExtAttr(kExtAttrDataNodes, data_nodes), GELOGW("Set data nodes attr failed.");)
-  GE_IF_BOOL_EXEC(!graph->SetExtAttr(kExtAttrGetNextNoSink, getnext_nosink_nodes),
-                  GELOGW("Set getnext nosink nodes attr failed.");)
+  GetLocalOmgContext().data_nodes = data_nodes;
+  GetLocalOmgContext().getnext_nosink_nodes = getnext_nosink_nodes;
   return SUCCESS;
 }
 

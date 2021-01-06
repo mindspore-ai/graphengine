@@ -89,6 +89,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/buffer.cc"
+    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
     "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
     "${GE_CODE_DIR}/metadef/graph/graph.cc"
     "${GE_CODE_DIR}/metadef/graph/gnode.cc"
@@ -121,6 +122,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
     "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
     "${GE_CODE_DIR}/metadef/register/register.cpp"
+    "${GE_CODE_DIR}/metadef/register/register_pass.cpp"
     "${GE_CODE_DIR}/metadef/register/op_kernel_registry.cpp"
     "${GE_CODE_DIR}/metadef/register/auto_mapping_util.cpp"
     "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"
@@ -226,6 +228,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/for_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/enter_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/assign_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/inplace_support_check_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/addn_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/common_subexpression_elimination_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_symmetry_elimination_pass.cc"
@@ -302,6 +305,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
     "${GE_CODE_DIR}/ge/common/model_saver.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
@@ -369,6 +373,7 @@ set(GRAPH_LOAD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
 )
 
@@ -569,6 +574,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     #"graph/load/new_model_manager_davinci_model_unittest.cc"
     #"graph/load/new_model_manager_model_manager_unittest.cc"
     #"graph/load/new_model_manager_task_build_unittest.cc"
+	"graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
     #"graph/load/output_net_output_unittest.cc"
@@ -625,6 +631,7 @@ set(PASS_TEST_FILES
     "graph/passes/net_output_pass_unittest.cc"
     "graph/passes/no_use_reshape_remove_pass_unittest.cc"
     "graph/passes/infershape_pass_unittest.cc"
+	"graph/passes/multi_batch_clone_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -720,7 +727,6 @@ add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_ut_common PRIVATE
@@ -735,7 +741,6 @@ add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_F
 
 target_compile_definitions(ge_ut_common_format PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_ut_common_format PRIVATE
@@ -792,7 +797,6 @@ add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_SRCS} $
 
 target_compile_definitions(ge_load_common PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_load_common PRIVATE
@@ -807,7 +811,6 @@ add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_S
 
 target_compile_definitions(ge_execute_common PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_execute_common PRIVATE
@@ -822,7 +825,6 @@ add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_SRCS}
 
 target_compile_definitions(ge_build_common PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ge_build_common PRIVATE
@@ -895,10 +897,6 @@ target_compile_options(ut_libge_others_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
 )
 
-target_compile_definitions(ut_libge_others_utest PRIVATE
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
-)
-
 target_link_libraries(ut_libge_others_utest
     $<BUILD_INTERFACE:intf_pub>
     ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
@@ -914,10 +912,6 @@ add_executable(ut_libge_kernel_utest
 
 target_compile_options(ut_libge_kernel_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
-)
-
-target_compile_definitions(ut_libge_kernel_utest PRIVATE
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libge_kernel_utest
@@ -940,7 +934,6 @@ target_compile_options(ut_libge_distinct_load_utest PRIVATE
 
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libge_distinct_load_utest

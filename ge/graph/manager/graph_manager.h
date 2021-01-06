@@ -226,6 +226,7 @@ class GraphManager {
   void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);
   Status ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
                                                const std::vector<InputTensorInfo> &input_tensor);
+  Status RunCustomPass(const GraphNodePtr &graph_node);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, GeRootModelPtr &ge_root_model,
                 uint64_t session_id = INVALID_SESSION_ID);
 

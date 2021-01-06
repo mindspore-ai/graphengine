@@ -31,7 +31,6 @@ target_compile_options(ge_local_engine PRIVATE
 
 target_compile_definitions(ge_local_engine PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(ge_local_engine PRIVATE
@@ -73,7 +72,6 @@ target_compile_options(atc_ge_local_engine PRIVATE
 target_compile_definitions(atc_ge_local_engine PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(atc_ge_local_engine PRIVATE
@@ -119,7 +117,6 @@ target_compile_options(ge_local_opskernel_builder PRIVATE
 
 target_compile_definitions(ge_local_opskernel_builder PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(ge_local_opskernel_builder PRIVATE
@@ -161,7 +158,6 @@ target_compile_options(atc_ge_local_opskernel_builder PRIVATE
 
 target_compile_definitions(atc_ge_local_opskernel_builder PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(atc_ge_local_opskernel_builder PRIVATE
@@ -209,7 +205,6 @@ target_compile_options(ge_local_opskernel_builder_static PRIVATE
 target_compile_definitions(ge_local_opskernel_builder_static PRIVATE
     google=ascend_private
     LOG_CPP
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(ge_local_opskernel_builder_static PRIVATE

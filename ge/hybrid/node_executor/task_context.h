@@ -123,7 +123,7 @@ class TaskContext {
   Status status_ = SUCCESS;
   std::vector<void *> workspaces_;
   uint64_t iteration_ = 0;
-  uint32_t task_id_= 0;
+  uint32_t task_id_ = 0;
   uint32_t stream_id_ = 0;
 };
 }  // namespace hybrid

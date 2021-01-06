@@ -79,6 +79,12 @@ class HybridModelBuilder {
   Status LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem *parent_node_item);
   Status RecoverGraphUnknownFlag();
   Status CheckAicpuOpList();
+  Status CreateProfilingNodeBefore(GraphItem &graph_item, const NodePtr &node);
+  Status CreateProfilingNodeAfter(GraphItem &graph_item, const NodePtr &node);
+  Status GenerateFpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
+  Status GenerateBpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
+  Status GenerateEndProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
+  Status GenerateArProfilingTask(const OpDescPtr &op_desc, int64_t log_id, vector<domi::TaskDef> &task_def_list);
 
   const char* GetGraphName() const {
     return hybrid_model_.model_name_.c_str();

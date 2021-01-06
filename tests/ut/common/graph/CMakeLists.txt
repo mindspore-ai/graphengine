@@ -67,6 +67,7 @@ set(SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/buffer.cc"
+    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
     "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
     "${GE_CODE_DIR}/metadef/graph/graph.cc"
@@ -110,7 +111,6 @@ target_compile_options(ut_libgraph PRIVATE
 
 target_compile_definitions(ut_libgraph PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libgraph 

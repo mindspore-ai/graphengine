@@ -572,7 +572,7 @@ Status TaskGenerator::MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_
       continue;
     }
     string op_type = op_desc->GetType();
-    if (!op_desc->GetSubgraphInstanceNames().empty() || separator_types.count(op_type) != 0) {
+    if ((!is_single_stream && !op_desc->GetSubgraphInstanceNames().empty()) || separator_types.count(op_type) != 0) {
       continuous_op_lists.emplace_back(vector<OpDescPtr>());
     } else {
       continuous_op_lists.back().emplace_back(op_desc);

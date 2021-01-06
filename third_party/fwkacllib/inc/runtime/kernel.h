@@ -387,7 +387,7 @@ typedef void *rtModel_t;
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
- RTS_API rtError_t rtDumpAddrSet(rtModel_t model, void *addr, uint32_t dumpSize, uint32_t flag);
+RTS_API rtError_t rtDumpAddrSet(rtModel_t model, void *addr, uint32_t dumpSize, uint32_t flag);
 
 /**
  * @ingroup rt_kernel

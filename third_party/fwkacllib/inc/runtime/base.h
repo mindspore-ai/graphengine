@@ -81,25 +81,16 @@ typedef enum tagRtLimitType {
 } rtLimitType_t;
 
 typedef struct rtExceptionInfo {
-    uint32_t taskid;
-    uint32_t streamid;
-    uint32_t tid;
-    uint32_t deviceid;
+  uint32_t taskid;
+  uint32_t streamid;
+  uint32_t tid;
+  uint32_t deviceid;
+  uint32_t retcode;
 } rtExceptionInfo;
-
-typedef struct rtTaskFailInfo {
-    uint32_t taskid;
-    uint32_t streamid;
-    uint32_t tid;
-    uint32_t deviceid;
-    uint32_t retcode;
-} rtTaskFailInfo;
 
 typedef void (*rtErrorCallback)(rtExceptionType);
 
 typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
-
-typedef void (*rtTaskFailCallbackByModule)(rtTaskFailInfo *exceptionInfo);
 
 typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 
@@ -143,13 +134,13 @@ RTS_API rtError_t rtProfilerConfig(uint16_t type);
  * @ingroup profiling_base
  * @brief start rts profiler.
  */
-RTS_API rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t* deviceList);
+RTS_API rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList);
 
 /**
  * @ingroup profiling_base
  * @brief stop rts profiler.
  */
-RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t* deviceList);
+RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList);
 
 /**
  * @ingroup profiling_base
@@ -209,7 +200,7 @@ RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCal
  * @param [out] NA
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtRegTaskFailCallbackByModule(const char *moduleName, rtTaskFailCallbackByModule callback);
+RTS_API rtError_t rtRegTaskFailCallbackByModule(const char *moduleName, rtTaskFailCallback callback);
 
 /**
  * @ingroup dvrt_base

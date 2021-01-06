@@ -114,15 +114,9 @@ const char *const kCheckPointForGetVar = "CheckPointGraphForGetVar";
 const char *const kCheckPointGraph = "checkpoint_graph";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
-const char *const kOffOptimize = "off_optimize";
 const int32_t kDynamicDimsTypeIsGetNext = 0;
 const int32_t kDynamicDimsTypeIsData = 1;
-const int64_t kInvalidDynaimcDimsType = -1;
-const char *const kSubstrOfGetNextNosinkName = "IteratorGetNext";
-const char *const kShapeDataName = "ascend_mbatch_shape_data";
 const char *const kGetNextName = "IteratorV2";
-const char *const kExtAttrDataNodes = "data_nodes";
-const char *const kExtAttrGetNextNoSink = "getnext_no_sink";
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;

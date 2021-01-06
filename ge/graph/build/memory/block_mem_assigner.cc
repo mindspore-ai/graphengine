@@ -52,7 +52,6 @@ const char *const kAttrNameWorkspaceReuseFlag = "workspace_reuse_flag";
 const char *const kL2FusionDynamicConvergeOp = "l2fusion_dynamic_converge_op";
 const char *const kOpNoReuseMem = "no_reuse_mem_flag";
 const char *const OP_NO_REUSE_MEM = "OP_NO_REUSE_MEM";
-const int kReuseMaxCount = 10;
 const int kReuseMaxOpNum = 10;
 const int kReuseMaxCharNum = 2000;
 }  // namespace

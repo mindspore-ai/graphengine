@@ -68,6 +68,10 @@ const char *const kModeSupport = "only support 0(model to framework model), "
                                  "1(framework model to json), 3(only pre-check), 5(pbtxt to json)";
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
 
+static const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
+static const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
+static const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
+
 // limit available mem size 2G
 const long kMinAvailableMem = 2097152;  // 2 * 1024 * 1024
 
@@ -614,9 +618,9 @@ static bool CheckInputFormat() {
     }
     // only support NCHW ND
     ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, ge::kCaffeFormatSupport});
+        "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, kCaffeFormatSupport});
     GELOGE(ge::FAILED,
-        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), ge::kCaffeFormatSupport);
+        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), kCaffeFormatSupport);
     return false;
   } else if ((FLAGS_framework == static_cast<int32_t>(domi::TENSORFLOW))) { // tf
     if (ge::tf_support_input_format.find(FLAGS_input_format) != ge::tf_support_input_format.end()) {
@@ -624,9 +628,9 @@ static bool CheckInputFormat() {
     }
     // only support NCHW NHWC ND NCDHW NDHWC
     ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, ge::kTFFormatSupport});
+        "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, kTFFormatSupport});
     GELOGE(ge::FAILED,
-        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), ge::kTFFormatSupport);
+        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), kTFFormatSupport);
     return false;
   } else if (FLAGS_framework == static_cast<int32_t>(domi::ONNX)) {
     if (ge::onnx_support_input_format.find(FLAGS_input_format) != ge::onnx_support_input_format.end()) {
@@ -634,9 +638,9 @@ static bool CheckInputFormat() {
     }
     // only support NCHW ND
     ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, ge::kONNXFormatSupport});
+        "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, kONNXFormatSupport});
     GELOGE(ge::FAILED,
-        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), ge::kONNXFormatSupport);
+        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), kONNXFormatSupport);
     return false;
   }
   return true;

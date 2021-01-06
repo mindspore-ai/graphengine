@@ -24,10 +24,6 @@
 #include "graph/load/new_model_manager/model_utils.h"
 
 namespace ge {
-namespace {
-const uint32_t kMaxTaskOfStream = 200;
-}
-
 std::mutex HcclTaskInfo::hccl_follow_stream_mutex_;
 
 HcclTaskInfo::~HcclTaskInfo() {
@@ -293,8 +289,8 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
       kernel_hccl_infos[i].opType = op_type;
     }
     davinci_model_->DisableZeroCopy(input_data_addr);
+    return SUCCESS;
   }
-  return SUCCESS;
 }
 void HcclTaskInfo::TransToGETaskInfo(GETaskInfo &ge_task) {
   ge_task.id = id_;

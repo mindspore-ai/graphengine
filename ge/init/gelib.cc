@@ -53,9 +53,6 @@ const int kDecimal = 10;
 const int kSocVersionLen = 50;
 const int kDefaultDeviceIdForTrain = 0;
 const int kDefaultDeviceIdForInfer = -1;
-const uint32_t kAicoreOverflow = (0x1 << 0);
-const uint32_t kAtomicOverflow = (0x1 << 1);
-const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
 const char *const kGlobalOptionFpCeilingModeDefault = "2";
 }  // namespace
 static std::shared_ptr<GELib> instancePtr_ = nullptr;

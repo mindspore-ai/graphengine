@@ -1872,6 +1872,8 @@ Status DavinciModel::GetAippType(uint32_t index, InputAippType &aipp_type, size_
   const auto it = aipp_type_list_.find(index);
   if (it == aipp_type_list_.end()) {
     GELOGW("There is no aipp releated info with index %u.", index);
+    aipp_type = DATA_WITHOUT_AIPP;
+    aipp_index = 0xFFFFFFFF;
     return SUCCESS;
   }
 

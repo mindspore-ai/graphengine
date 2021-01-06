@@ -487,7 +487,7 @@ TEST_F(UtestDavinciModel, init_data_aipp_static) {
 
   InputAippType aipp_type;
   size_t aipp_index = 0;
-  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
+  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), PARAM_INVALID);
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
   EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
   EXPECT_EQ(aipp_type, DATA_WITH_STATIC_AIPP);
@@ -519,7 +519,7 @@ TEST_F(UtestDavinciModel, init_data_aipp_dynamic) {
 
   InputAippType aipp_type;
   size_t aipp_index = 0;
-  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
+  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), PARAM_INVALID);
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
   EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
 
@@ -559,7 +559,7 @@ TEST_F(UtestDavinciModel, init_data_aipp_releated) {
 
   InputAippType aipp_type;
   size_t aipp_index = 0;
-  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
+  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), PARAM_INVALID);
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
   EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
   EXPECT_EQ(aipp_type, DATA_WITH_DYNAMIC_AIPP);
@@ -590,7 +590,7 @@ TEST_F(UtestDavinciModel, init_data_aipp_dynamic_conf) {
 
   InputAippType aipp_type;
   size_t aipp_index = 0;
-  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
+  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), PARAM_INVALID);
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
   EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
   EXPECT_EQ(aipp_type, DYNAMIC_AIPP_NODE);
@@ -621,7 +621,7 @@ TEST_F(UtestDavinciModel, init_data_aipp_dynamic_invalid) {
 
   InputAippType aipp_type;
   size_t aipp_index = 0;
-  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), SUCCESS);
+  EXPECT_EQ(model.GetAippType(0, aipp_type, aipp_index), PARAM_INVALID);
   EXPECT_EQ(model.InitNodes(graph), ACL_ERROR_GE_AIPP_MODE_INVALID);
 
   EXPECT_EQ(model.input_addrs_list_.size(), 1);

@@ -198,8 +198,10 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
     return MEMALLOC_FAILED;
   }
   GeModelPtr ge_model_ptr = nullptr;
-
-  if (comp_graph->GetGraphUnknownFlag()) {
+  bool is_dynamic_shape = false;
+  // To be compatible with the old process, do not verify the return value temporarily.
+  (void)AttrUtils::GetBool(comp_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
+  if (is_dynamic_shape || comp_graph->GetGraphUnknownFlag()) {
     GE_CHK_STATUS_RET(
         BuildForDynamicShapeGraph(comp_graph, subgraph_ptr_list, ge_root_model_ptr, ge_model_ptr, session_id),
         "Build for dynamic shape graph failed.");

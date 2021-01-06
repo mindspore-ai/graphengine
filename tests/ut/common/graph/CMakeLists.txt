@@ -67,6 +67,7 @@ set(SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/buffer.cc"
+    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
     "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
     "${GE_CODE_DIR}/metadef/graph/graph.cc"

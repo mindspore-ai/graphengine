@@ -139,7 +139,7 @@ Status SubgraphExecutor::ExecuteAsync(const std::vector<TensorValue> &inputs,
     return ExecuteAsyncForKnownShape(inputs);
   }
 
-  GE_CHK_STATUS_RET(ScheduleTasks(), "[%s] Failed to execute tasks.", graph_item_->GetName().c_str());
+  HYBRID_CHK_STATUS_RET(ScheduleTasks(), "[%s] Failed to execute tasks.", graph_item_->GetName().c_str());
   GELOGD("[%s] Done executing subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
 }

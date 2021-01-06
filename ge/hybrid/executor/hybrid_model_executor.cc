@@ -50,16 +50,18 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   auto ret = ExecuteGraphInternal(executor, args);
   Cleanup();
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Cleanup] End");
-  GE_CHK_STATUS_RET(ret, "Failed to execute model");
   GELOGD("Model executed successfully.");
-
   if (context_.profiler != nullptr) {
     context_.profiler->Dump(std::cout);
     context_.profiler->Reset();
   }
 
-  args.is_eos = context_.is_eos_;
   context_.iteration += 1;
+  if (ret == END_OF_SEQUENCE) {
+    args.is_eos = true;
+  } else {
+    GE_CHK_STATUS_RET(ret, "Failed to execute model");
+  }
   return SUCCESS;
 }
 
@@ -69,13 +71,13 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
 
-  GE_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc), "Failed to execute partitioned call.");
+  HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc), "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
 
-  GE_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
+  HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
 
-  GE_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
+  HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
   return SUCCESS;
 }

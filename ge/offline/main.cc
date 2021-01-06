@@ -232,8 +232,7 @@ class GFlagUtils {
         "[General]\n"
         "  --h/help            Show this help message\n"
         "  --mode              Run mode. 0(default): generate offline model; 1: convert model to JSON format; "
-        "6: display model info"
-        "3: only pre-check; 5: convert ge dump txt file to JSON format\n"
+        "3: only pre-check; 5: convert ge dump txt file to JSON format; 6: display model info\n"
         "\n[Input]\n"
         "  --model             Model file\n"
         "  --weight            Weight file. Required when framework is Caffe\n"
@@ -462,6 +461,10 @@ class GFlagUtils {
     GE_CHK_BOOL_EXEC(
         ge::CheckEnableSingleStreamParamValid(std::string(FLAGS_enable_single_stream)) == ge::SUCCESS,
         ret = ge::FAILED, "check enable single stream failed!");
+
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((FLAGS_display_model_info != "0") && (FLAGS_display_model_info != "1"),
+      ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"display_model_info"});
+      ret = ge::FAILED, "Input parameter[--display_model_info]'s value must be 1 or 0.");
 
     return ret;
   }

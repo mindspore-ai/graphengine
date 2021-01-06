@@ -556,17 +556,15 @@ bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
     return false;
   }
 
-  // 0(Caffe) 1(MindSpore) 3(TensorFlow) 5(Onnx)
-  std::map<string, string> framework_type_to_string = {
-    {"0", "Caffe"},
-    {"1", "MindSpore"},
-    {"3", "TensorFlow"},
-    {"5", "Onnx"}
-  };
   std::string framework_type;
   (void)ge::GetContext().GetOption(ge::FRAMEWORK_TYPE, framework_type);
   GELOGI("SetOmSystemInfo framework_type: %s", framework_type.c_str());
-  if (!ge::AttrUtils::SetStr(obj, "framework_type", framework_type_to_string[framework_type.c_str()])) {
+  auto iter = ge::kFwkTypeToStr.find(framework_type);
+  if (iter == ge::kFwkTypeToStr.end()) {
+    GELOGW("Can not find framework_type in the map.");
+    return false;
+  }
+  if (!ge::AttrUtils::SetStr(obj, "framework_type", iter->second)) {
     GELOGW("SetStr of framework_type failed.");
     return false;
   }

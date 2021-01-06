@@ -605,7 +605,7 @@ class DavinciModel {
 
   void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, ShapeDescription &shape1, ShapeDescription &shape2);
 
-  void SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format, ShapeDescription &shape_info);
+  void SetInputDimsInfo(const vector<int64_t> &input_dims, Format &format, ShapeDescription &shape_info);
 
   Status GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, vector<uint32_t> &input_formats, bool by_dims) const;
   Status GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, vector<uint32_t> &output_formats) const;

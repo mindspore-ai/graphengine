@@ -17,6 +17,7 @@
 #include "subgraph_context.h"
 
 #include "common/debug/log.h"
+#include "hybrid/executor/hybrid_model_executor.h"
 
 namespace ge {
 namespace hybrid {

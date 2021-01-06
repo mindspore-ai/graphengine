@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "hybrid/common/tensor_value.h"
-#include "hybrid/executor/hybrid_model_executor.h"
+#include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/node_state.h"
 #include "hybrid/executor/node_done_manager.h"
 #include "hybrid/model/graph_item.h"
@@ -49,8 +49,8 @@ class SubgraphContext {
 
  private:
   friend class TaskContext;
-  const GraphExecutionContext *execution_context_;
   const GraphItem *graph_item_;
+  const GraphExecutionContext *execution_context_;
   std::mutex mu_;
   std::vector<TensorValue> all_inputs_;
   std::vector<TensorValue> all_outputs_;

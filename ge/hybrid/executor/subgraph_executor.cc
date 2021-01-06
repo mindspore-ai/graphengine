@@ -40,7 +40,7 @@ SubgraphExecutor::~SubgraphExecutor() {
 
 Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                               const std::vector<ConstGeTensorDescPtr> &input_desc) {
-  subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_));
+  subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_, context_));
   GE_CHECK_NOTNULL(subgraph_context_);
   GE_CHK_STATUS_RET(subgraph_context_->Init(), "[%s] Failed to init subgraph context.", graph_item_->GetName().c_str());
 

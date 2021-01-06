@@ -963,7 +963,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
       OmFileLoadHelper omFileLoadHelper;
       ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
       if (status != ge::GRAPH_SUCCESS) {
-        ErrorManager::GetInstance().ATCReportErrMessage("E19021", "Om file init failed");
+        ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason", "Om file init failed");
         GELOGE(ge::FAILED, "Om file init failed.");
         if (model.model_data != nullptr) {
           delete[] reinterpret_cast<char *>(model.model_data);
@@ -975,7 +975,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
       ModelPartition ir_part;
       status = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
       if (status != ge::GRAPH_SUCCESS) {
-        ErrorManager::GetInstance().ATCReportErrMessage("E19021", "Get model part failed");
+        ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason", "Get model part failed");
         GELOGE(ge::FAILED, "Get model part failed.");
         if (model.model_data != nullptr) {
           delete[] reinterpret_cast<char *>(model.model_data);
@@ -1001,7 +1001,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
         }
       } else {
         ret = INTERNAL_ERROR;
-        ErrorManager::GetInstance().ATCReportErrMessage("E19021", "ReadProtoFromArray failed");
+        ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason", "ReadProtoFromArray failed");
         GELOGE(ret, "ReadProtoFromArray failed.");
       }
     } else {
@@ -1016,8 +1016,8 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
     }
     return ret;
   } catch (const std::exception &e) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", "Convert om model to json failed, exception message[" +
-        e.what() + "]");
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason",
+        "Convert om model to json failed, exception message[" + e.what() + "]");
     GELOGE(FAILED, "Convert om model to json failed, exception message : %s.", e.what());
     return FAILED;
   }
@@ -1048,7 +1048,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
 
     if (!flag) {
       free_model_data(&model.model_data);
-      ErrorManager::GetInstance().ATCReportErrMessage("E19021", "ParseFromString failed");
+      ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason", "ParseFromString failed");
       GELOGE(FAILED, "ParseFromString failed.");
       return FAILED;
     }
@@ -1065,13 +1065,13 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
     return SUCCESS;
   } catch (google::protobuf::FatalException &e) {
     free_model_data(&model.model_data);
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", "ParseFromString failed, exception message[" +
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason", "ParseFromString failed, exception message[" +
         e.what() + "]");
     GELOGE(FAILED, "ParseFromString failed. exception message : %s", e.what());
     return FAILED;
   } catch (const std::exception &e) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", "Convert pbtxt to json failed, exception message[" +
-        e.what() + "]");
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", "reason",
+        "Convert pbtxt to json failed, exception message[" + e.what() + "]");
     GELOGE(FAILED, "Convert pbtxt to json failed, exception message : %s.", e.what());
     return FAILED;
   }

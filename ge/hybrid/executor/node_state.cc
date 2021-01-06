@@ -98,6 +98,11 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
         break;
       }
 
+      if (context.is_eos_) {
+        GELOGD("[%s] Await pending shape cancelled due to end of sequence", node_item.NodeName().c_str());
+        return END_OF_SEQUENCE;
+      }
+
       if (context.GetStatus() != SUCCESS) {
         GELOGE(FAILED, "[%s] Await pending shape cancelled", node_item.NodeName().c_str());
         break;
@@ -114,7 +119,8 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
     auto idx = p.first;
     auto &future = p.second;
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] Start", idx);
-    auto src_tensor_desc = future.GetTensorDesc();
+    GeTensorDescPtr src_tensor_desc;
+    GE_CHK_STATUS_RET_NOLOG(future.GetTensorDesc(src_tensor_desc));
     GE_CHECK_NOTNULL(src_tensor_desc);
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] End", idx);
 
@@ -156,10 +162,11 @@ Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
                            node_item_->NodeName().c_str(),
                            "[AwaitNodeDone] [%s] Start",
                            src_node->GetName().c_str());
-    if (!subgraph_context_->Await(src_node)) {
-      GELOGE(INTERNAL_ERROR, "[%s] Await node [%s] failed.", GetName().c_str(), src_node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
+
+    HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node),
+                          "[%s] Await node [%s] failed.",
+                          GetName().c_str(),
+                          src_node->GetName().c_str());
 
     RECORD_EXECUTION_EVENT(&context,
                            node_item_->NodeName().c_str(),
@@ -183,24 +190,18 @@ Status NodeState::WaitForPrepareDone() {
 
 Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {
   GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
-  if (!subgraph_context_->Await(src_node_)) {
-    GELOGE(INTERNAL_ERROR, "cancelled");
-    return INTERNAL_ERROR;
-  }
-
+  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");
   shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->MutableShape();
   ori_shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->GetOriginShape();
   GELOGD("Get shape from %s:%u. shape = [%s]", src_node_->GetName().c_str(), src_index_, shape.ToString().c_str());
   return SUCCESS;
 }
 
-GeTensorDescPtr ShapeFuture::GetTensorDesc() {
+Status ShapeFuture::GetTensorDesc(GeTensorDescPtr &tensor_desc) {
   GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
-  if (!subgraph_context_->Await(src_node_)) {
-    GELOGE(INTERNAL_ERROR, "cancelled");
-    return nullptr;
-  }
-  return src_node_->GetOpDesc()->MutableOutputDesc(src_index_);
+  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");
+  tensor_desc = src_node_->GetOpDesc()->MutableOutputDesc(src_index_);
+  return SUCCESS;
 }
 }  // namespace hybrid
 }  // namespace ge

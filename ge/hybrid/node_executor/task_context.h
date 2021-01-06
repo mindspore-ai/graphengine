@@ -102,6 +102,8 @@ class TaskContext {
   uint32_t GetStreamId() const;
   void SetStreamId(uint32_t stream_id);
 
+  Status Synchronize();
+
   bool IsForceInferShape() const;
   void SetForceInferShape(bool force_infer_shape);
   void *handle_ = nullptr;

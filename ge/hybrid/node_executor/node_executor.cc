@@ -20,6 +20,7 @@
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 #include "graph/utils/tensor_utils.h"
+#include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"
 #include "graph/debug/ge_attr_define.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
@@ -44,9 +45,9 @@ Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
 }
 
 Status NodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const {
-  GE_CHK_STATUS_RET(task.ExecuteAsync(context, callback),
-                    "Failed to execute task. node = %s",
-                    context.GetNodeItem().NodeName().c_str());
+  HYBRID_CHK_STATUS_RET(task.ExecuteAsync(context, callback),
+                        "Failed to execute task. node = %s",
+                        context.GetNodeItem().NodeName().c_str());
   return SUCCESS;
 }
 

@@ -408,9 +408,9 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
 
   // Wait for dependent nodes(DEPEND_COMPUTE), so that the input tensors are valid.
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[AwaitDependents] Start");
-  GE_CHK_STATUS_RET(node_state.AwaitInputTensors(context),
-                    "[%s] Failed to wait for dependent nodes.",
-                    node_state.GetName().c_str());
+  HYBRID_CHK_STATUS_RET(node_state.AwaitInputTensors(context),
+                        "[%s] Failed to wait for dependent nodes.",
+                        node_state.GetName().c_str());
 
   const auto &node_item = *node_state.GetNodeItem();
   auto executor = node_item.node_executor;
@@ -440,9 +440,9 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
     });
   }
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] Start");
-  GE_CHK_STATUS_RET(node_item.node_executor->ExecuteTask(*task, task_context, callback),
-                    "[%s] Failed to execute task",
-                    node_state.GetName().c_str());
+  HYBRID_CHK_STATUS_RET(node_item.node_executor->ExecuteTask(*task, task_context, callback),
+                        "[%s] Failed to execute task",
+                        node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] End");
 
   GELOGD("[%s] Done task launch successfully.", node_state.GetName().c_str());

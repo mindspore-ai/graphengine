@@ -89,7 +89,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/buffer.cc"
-	"${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
+    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
     "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
     "${GE_CODE_DIR}/metadef/graph/graph.cc"
     "${GE_CODE_DIR}/metadef/graph/gnode.cc"
@@ -228,6 +228,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/for_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/enter_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/assign_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/inplace_support_check_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/addn_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/common_subexpression_elimination_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_symmetry_elimination_pass.cc"
@@ -304,6 +305,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
     "${GE_CODE_DIR}/ge/common/model_saver.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
@@ -371,6 +373,7 @@ set(GRAPH_LOAD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
 )
 

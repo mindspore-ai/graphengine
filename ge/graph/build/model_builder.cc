@@ -562,7 +562,7 @@ Status ModelBuilder::MergeWeights() {
         return FAILED;
       }
     }
-    weight_data.clear();
+    weight->ClearData();
   }
 
   return SUCCESS;

@@ -32,9 +32,6 @@ namespace ge {
 static std::set<std::string> caffe_support_input_format = {"NCHW", "ND"};
 static std::set<std::string> tf_support_input_format = {"NCHW", "NHWC", "ND", "NCDHW", "NDHWC"};
 static std::set<std::string> onnx_support_input_format = {"NCHW", "ND"};
-static const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
-static const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
-static const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
 
 static std::map<std::string, domiTensorFormat_t> input_format_str_to_geformat = {
     {"ND", domi::DOMI_TENSOR_ND},

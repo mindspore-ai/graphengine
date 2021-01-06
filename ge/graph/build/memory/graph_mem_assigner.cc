@@ -32,7 +32,6 @@
 #include "graph/utils/type_utils.h"
 
 namespace {
-const int kDataOutputIndex = 0;
 const int kAllInputAddrIsAtomic = -1;
 const int kVirtualInputNodeMemoryReuse = 0;
 const int kVirtualOutputNodeMemoryReuse = 1;

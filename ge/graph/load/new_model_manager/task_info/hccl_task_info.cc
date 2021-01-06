@@ -24,10 +24,6 @@
 #include "graph/load/new_model_manager/model_utils.h"
 
 namespace ge {
-namespace {
-const uint32_t kMaxTaskOfStream = 200;
-}
-
 std::mutex HcclTaskInfo::hccl_follow_stream_mutex_;
 
 HcclTaskInfo::~HcclTaskInfo() {

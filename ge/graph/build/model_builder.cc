@@ -55,14 +55,7 @@ using std::vector;
 namespace {
 const uint32_t kWeightsStartOffset = 512;
 const int32_t kWrongIndex = -2;
-
-const float kImgRatioYUV420SP_U8 = 1.5;
-const int kImgRatioRGB888_U8 = 3;
-const int kImgRatioNC1HWC0DI_FP16 = 12;
 const int kInvalidIndexNum = -1;
-
-const uint32_t kInputDimensions2D = 2;
-const uint32_t kInputDimensions3D = 3;
 
 const char *const kVectorCore = "VectorCore";
 const char *const kCoreType = "ge.engineType";

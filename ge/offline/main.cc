@@ -459,8 +459,7 @@ class GFlagUtils {
         ret = ge::FAILED, "check enable single stream failed!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((FLAGS_display_model_info != "0") && (FLAGS_display_model_info != "1"),
-      ErrorManager::GetInstance().ATCReportErrMessage(
-          "E10006", {"parameter"}, {"display_model_info", FLAGS_display_model_info}),
+      ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"display_model_info"});
       ret = ge::FAILED, "Input parameter[--display_model_info]'s value must be 1 or 0.");
 
     return ret;

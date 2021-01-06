@@ -159,11 +159,11 @@ typedef struct rtAiCoreMemorySize {
  * @ingroup dvrt_mem
  * @brief memory type
  */
-typedef enum tagRtMemoryType { 
-    RT_MEMORY_TYPE_HOST = 1, 
-    RT_MEMORY_TYPE_DEVICE = 2 , 
-    RT_MEMORY_TYPE_SVM = 3,
-    RT_MEMORY_TYPE_DVPP = 4
+typedef enum tagRtMemoryType {
+  RT_MEMORY_TYPE_HOST = 1,
+  RT_MEMORY_TYPE_DEVICE = 2,
+  RT_MEMORY_TYPE_SVM = 3,
+  RT_MEMORY_TYPE_DVPP = 4
 } rtMemoryType_t;
 
 /**
@@ -179,23 +179,23 @@ typedef struct tagRtPointerAttributes {
 
 
 typedef struct rtMallocHostSharedMemoryIn {
-    const char* name;
-    const uint64_t size;
-    uint32_t flag;
+  const char *name;
+  const uint64_t size;
+  uint32_t flag;
 } rtMallocHostSharedMemoryIn;
 
 typedef struct rtMallocHostSharedMemoryOut {
-    int fd;
-    void* ptr;
-    void* devPtr;
+  int fd;
+  void *ptr;
+  void *devPtr;
 } rtMallocHostSharedMemoryOut;
 
 typedef struct rtFreeHostSharedMemoryIn {
-    const char* name;
-    const uint64_t size;
-    int fd;
-    void* ptr;
-    void* devPtr;
+  const char *name;
+  const uint64_t size;
+  int fd;
+  void *ptr;
+  void *devPtr;
 } rtFreeHostSharedMemoryIn;
 
 
@@ -267,7 +267,7 @@ RTS_API rtError_t rtFreeHost(void *hostPtr);
  */
 
 RTS_API rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
-    rtMallocHostSharedMemoryOut *out);
+                                           rtMallocHostSharedMemoryOut *out);
 
 /**
  * @ingroup dvrt_mem

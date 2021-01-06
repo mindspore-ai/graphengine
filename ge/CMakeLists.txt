@@ -124,7 +124,7 @@ set(TRAIN_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/manager/host_mem_allocator.cc>
+    "graph/manager/host_mem_allocator.cc"
     "graph/manager/memory_api.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/trans_var_data_utils.cc"
@@ -166,7 +166,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/hccl_group_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_remove_pass.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/passes/inplace_support_check_pass.cc>
+    "graph/passes/inplace_support_check_pass.cc"
     "graph/passes/flow_ctrl_pass.cc"
     "graph/passes/global_step_insert_pass.cc"
     "host_kernels/transpose_kernel.cc"
@@ -409,7 +409,7 @@ set(INFER_SRC_LIST
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/manager/host_mem_allocator.cc>
+    "graph/manager/host_mem_allocator.cc"
     "graph/manager/graph_mem_allocator.cc"
     "graph/manager/graph_caching_allocator.cc"
     "model/ge_model.cc"
@@ -531,7 +531,7 @@ set(INFER_SRC_LIST
     "graph/passes/for_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_remove_pass.cc"
-    $<$<NOT:$<STREQUAL:${ENABLE_OPEN_SRC},True>>:graph/passes/inplace_support_check_pass.cc>
+    "graph/passes/inplace_support_check_pass.cc"
     "graph/passes/addn_pass.cc"
     "graph/passes/common_subexpression_elimination_pass.cc"
     "graph/passes/remove_same_const_pass.cc"
@@ -654,7 +654,6 @@ target_compile_definitions(ge_runner PRIVATE
     FMK_SUPPORT_DUMP
     DAVINCI_CLOUD
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_runner PRIVATE
@@ -718,7 +717,6 @@ target_compile_definitions(ge_compiler PRIVATE
     FMK_HOST_INFER
     COMPILE_OMG_PACKAGE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_compiler PRIVATE
@@ -806,7 +804,6 @@ endif()
 
 target_compile_definitions(opensrc_ascendcl PRIVATE
     google=ascend_private
-    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(opensrc_ascendcl PRIVATE

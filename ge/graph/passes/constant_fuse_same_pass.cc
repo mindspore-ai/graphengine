@@ -115,21 +115,15 @@ void ConstantFuseSamePass::GetFuseConstNodes(ComputeGraphPtr &graph,
              TypeUtils::DataTypeToSerialString(data_type).c_str());
       continue;
     }
-#ifndef ONLY_COMPILE_OPEN_SRC
     if ((type_size != 0) && (weight->MutableData().GetAlignedPtr() == nullptr)) {
       GELOGW("aligned_ptr is null while size is not 0");
       continue;
     }
-#endif
     ++insert_const_nums;
 
     SameConstKey map_key;
     map_key.data_size = type_size;
-#ifndef ONLY_COMPILE_OPEN_SRC
     map_key.aligned_ptr = weight->MutableData().GetAlignedPtr();
-#else
-    map_key.data = weight->GetData().GetData();
-#endif
     map_key.data_type = data_type;
     map_key.format = output_tensor->GetFormat();
     map_key.shape = output_tensor->GetShape().GetDims();

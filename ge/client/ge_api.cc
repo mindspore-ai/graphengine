@@ -32,9 +32,7 @@
 #include "graph/common/ge_call_wrapper.h"
 #include "register/op_registry.h"
 #include "common/ge/tbe_plugin_manager.h"
-#ifndef ONLY_COMPILE_OPEN_SRC
 #include "toolchain/plog.h"
-#endif
 
 using domi::OpRegistry;
 using std::map;
@@ -132,11 +130,9 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
 
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
-#ifndef ONLY_COMPILE_OPEN_SRC
   if (DlogReportInitialize() != SUCCESS) {
     GELOGW("Dlog report device log initialize failed.");
   }
-#endif
   return GEInitializeImpl(options);
 }
 
@@ -151,11 +147,9 @@ Status GEInitialize(const std::map<AscendString, AscendString> &options) {
     std::string val = option.second.GetString();
     str_options[key] = val;
   }
-#ifndef ONLY_COMPILE_OPEN_SRC
   if (DlogReportInitialize() != SUCCESS) {
     GELOGW("Dlog report device log initialize failed.");
   }
-#endif
   return GEInitializeImpl(str_options);
 }
 
@@ -200,11 +194,9 @@ Status GEFinalize() {
   // to avoid memory fragment, use malloc_trim to back free stack to system
   malloc_trim(0);
 
-#ifndef ONLY_COMPILE_OPEN_SRC
   if (DlogReportFinalize() != SUCCESS) {
     GELOGW("Dlog report device log finalize failed.");
   }
-#endif
 
   GELOGT(TRACE_STOP, "GEFinalize finished");
   return ret;

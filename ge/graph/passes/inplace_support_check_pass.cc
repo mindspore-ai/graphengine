@@ -19,6 +19,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
+namespace ge {
 namespace {
 constexpr uint32_t kInplaceSupportOutputIndex = 0;
 constexpr uint32_t kInplaceSupportOutputNum = 1;
@@ -26,8 +27,6 @@ static const std::set<std::string> kSrcNodeTypes = { ge::DATA, ge::ANN_DATA, ge:
                                                      ge::CONSTANT, ge::CONSTANTOP,
                                                      ge::VARIABLE, ge::VARIABLEV2 };
 }
-
-namespace ge {
 Status InplaceSupportCheckPass::Run(NodePtr &node) {
   GELOGD("InplaceSupportCheckPass running");
   if (node->GetAllOutDataAnchorsSize() != kInplaceSupportOutputNum) {

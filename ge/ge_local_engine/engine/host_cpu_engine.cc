@@ -26,7 +26,6 @@
 #include "common/math/math_util.h"
 
 namespace {
-#ifndef ONLY_COMPILE_OPEN_SRC
 #define CREATE_OUTPUT_CASE(DTYPE, TYPE)                                                                                \
   case (DTYPE): {                                                                                                      \
     GeTensorPtr ge_tensor = nullptr;                                                                                   \
@@ -50,43 +49,6 @@ namespace {
     named_outputs.emplace(tensor_name, tensor);                                                                        \
     break;                                                                                                             \
   }
-#else
-#define CREATE_OUTPUT_CASE(DTYPE, TYPE)                                                                                \
-  case (DTYPE): {                                                                                                      \
-    GeTensorPtr ge_tensor = nullptr;                                                                                   \
-    if (need_create_flag) {                                                                                            \
-      GELOGI("node:%s allocate output %zu start, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));  \
-      std::unique_ptr<TYPE[]> buf(new (std::nothrow) TYPE[data_num]());                                                \
-      if (buf == nullptr) {                                                                                            \
-        GELOGE(MEMALLOC_FAILED, "New sizeof(T) * data_num(%zu) memory failed",                                         \
-               static_cast<size_t>(sizeof(TYPE) * data_num));                                                          \
-        return MEMALLOC_FAILED;                                                                                        \
-      }                                                                                                                \
-      ge_tensor = MakeShared<GeTensor>(out_desc);                                                                      \
-      GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGD("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));\
-      if (ge_tensor->SetData(reinterpret_cast<uint8_t *>(buf.get()), data_num * sizeof(TYPE)) != GRAPH_SUCCESS) {      \
-        GELOGE(MEMALLOC_FAILED, "Set data for output %zu of node %s failed.", i, op_desc->GetName().c_str());          \
-        return MEMALLOC_FAILED;                                                                                        \
-      }                                                                                                                \
-      ge_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());                                              \
-      ge_tensor->MutableTensorDesc().SetShape(out_desc.GetShape());                                                    \
-      outputs.emplace_back(ge_tensor);                                                                                 \
-    } else {                                                                                                           \
-      ge_tensor = outputs[i];                                                                                          \
-      GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGD("node:%s existed output %zu", op_desc->GetName().c_str(), i);                                             \
-    }                                                                                                                  \
-    auto tensor = TensorAdapter::AsTensor(*ge_tensor);                                                                 \
-    auto tensor_name = op_desc->GetOutputNameByIndex(i);                                                               \
-    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",               \
-                               op_desc->GetName().c_str(), i);                                                         \
-    GELOGD("Successfully inserted output tensor. node = %s, index = %zu, output name = %s, addr = %p, size = %zu",     \
-           op_desc->GetName().c_str(), i, tensor_name.c_str(), tensor.GetData(), tensor.GetSize());                    \
-    named_outputs.emplace(tensor_name, tensor);                                                                        \
-    break;                                                                                                             \
-  }
-#endif
 }
 
 namespace ge {

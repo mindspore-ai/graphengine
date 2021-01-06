@@ -564,7 +564,7 @@ bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
     GELOGW("Can not find framework_type in the map.");
     return false;
   }
-  if (!ge::AttrUtils::SetStr(obj, "framework_type", iter->second) {
+  if (!ge::AttrUtils::SetStr(obj, "framework_type", iter->second)) {
     GELOGW("SetStr of framework_type failed.");
     return false;
   }

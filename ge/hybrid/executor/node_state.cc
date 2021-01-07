@@ -61,7 +61,7 @@ Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target
   tensor_desc->SetShape(target.GetShape());
   tensor_desc->SetOriginShape(target.GetOriginShape());
   (void) TensorUtils::SetSize(*tensor_desc, tensor_size);
-  if (--num_pending_shapes_ == 0) {
+  if (--num_pending_shapes_ <= 0) {
     ready_cv_.notify_all();
   }
 

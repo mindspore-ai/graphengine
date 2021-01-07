@@ -163,6 +163,25 @@ Status NodeItem::ResolveDynamicState() {
 
 Status NodeItem::ResolveStaticInputsAndOutputs() {
   for (int i = 0; i < num_inputs; ++i) {
+    // Data has unconnected input but set by framework
+    if (node_type != DATA) {
+      int origin_index = i;
+      if (has_optional_inputs) {
+        origin_index = input_desc_indices_[i];
+      }
+      auto in_data_anchor = node->GetInDataAnchor(origin_index);
+      GE_CHECK_NOTNULL(in_data_anchor);
+
+      // If no node was connected to the current input anchor
+      // increase num_static_input_shapes in case dead wait in ShapeInferenceState::AwaitShapesReady
+      if (in_data_anchor->GetPeerOutAnchor() == nullptr ||
+          in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() == nullptr) {
+        num_static_input_shapes++;
+        is_input_shape_static_.push_back(true);
+        GELOGW("[%s] Peer node of input[%d] is empty", NodeName().c_str(), i);
+        continue;
+      }
+    }
     const auto &input_desc = MutableInputDesc(i);
     GE_CHECK_NOTNULL(input_desc);
     if (input_desc->MutableShape().IsUnknownShape()) {

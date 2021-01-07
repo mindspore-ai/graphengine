@@ -162,10 +162,10 @@ build_graphengine()
   TARGET=${COMMON_TARGET}
   if [ "x${PLATFORM}" = "xtrain" ]
   then
-    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ${TARGET}"
+    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder fwk_atc.bin ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
+    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc_atc.bin opensrc_ascendcl ${TARGET}"
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
@@ -244,6 +244,7 @@ generate_package()
   FWK_PATH="fwkacllib/lib64"
   ATC_PATH="atc/lib64"
   ATC_BIN_PATH="atc/bin"
+  FWK_BIN_PATH="fwkacllib/bin"
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
@@ -256,6 +257,7 @@ generate_package()
   rm -rf ${OUTPUT_PATH:?}/${ACL_PATH}/
   rm -rf ${OUTPUT_PATH:?}/${ATC_PATH}/
   rm -rf ${OUTPUT_PATH:?}/${ATC_BIN_PATH}/
+  rm -rf ${OUTPUT_PATH:?}/${FWK_BIN_PATH}/
 
   mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}"
   mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH}"
@@ -263,6 +265,7 @@ generate_package()
   mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH}"
   mk_dir "${OUTPUT_PATH}/${ACL_PATH}"
   mk_dir "${OUTPUT_PATH}/${ATC_BIN_PATH}"
+  mk_dir "${OUTPUT_PATH}/${FWK_BIN_PATH}"
  
   cd "${OUTPUT_PATH}"
 
@@ -301,7 +304,8 @@ generate_package()
     find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH} \;
   done
 
-  find ./bin -name atc -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
+  find ./lib/atclib -name atc.bin -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
+  find ./lib/fwkacl -name atc.bin -exec cp {} "${OUTPUT_PATH}/${FWK_BIN_PATH}" \;
   find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "libascendcl.so" -exec cp -f {} ${OUTPUT_PATH}/${ACL_PATH} \;
   
   if [ "x${PLATFORM}" = "xtrain" ]

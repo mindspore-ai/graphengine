@@ -581,42 +581,6 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
   return GRAPH_SUCCESS;
 }
 
-graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
-  auto compute_graph = GraphUtils::GetComputeGraph(graph);
-  GE_CHECK_NOTNULL(compute_graph);
-
-  auto root_graph = compute_graph->GetParentGraph();
-  if (root_graph != nullptr) {
-    GELOGE(GRAPH_PARAM_INVALID, "Input param should not be subgraph");
-    return GRAPH_PARAM_INVALID;
-  }
-
-  auto ret = compute_graph->TopologicalSorting();
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "Acl topo logical sort failed.");
-    return ret;
-  }
-
-  ret = compute_graph->InferOriginFormat();
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "Acl InferOriginFormat failed.");
-    return ret;
-  }
-
-  for (auto &node: compute_graph->GetAllNodes()) {
-    graphStatus ret = ShapeRefiner::InferShapeAndType(node);
-    if (ret == GRAPH_PARAM_INVALID) {
-      GELOGW("Can not find infershape func.");
-      continue;
-    } else if (ret != GRAPH_SUCCESS) {
-      GELOGE(ret, "Acl infershape failed.");
-      return ret;
-    }
-  }
-
-  return GRAPH_SUCCESS;
-}
-
 graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len) {
   GE_CHECK_NOTNULL(file);
 

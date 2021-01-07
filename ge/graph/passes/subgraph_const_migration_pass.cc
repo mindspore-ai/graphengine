@@ -412,7 +412,11 @@ Status SubgraphConstMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
   const auto &out_anchor = in_anchor->GetPeerOutAnchor();
   if (out_anchor != nullptr) {  // Break useless old link.
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
-    GELOGI("Remove Edge: %s %s", out_anchor->GetOwnerNode()->GetName().c_str(), func_node->GetName().c_str());
+    const auto owner_node = out_anchor->GetOwnerNode();
+    GELOGI("Remove Edge: %s %s", owner_node->GetName().c_str(), func_node->GetName().c_str());
+    if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty()) {
+      graph->RemoveNode(owner_node);
+    }
   }
   GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(const_node->GetOutDataAnchor(kZeroIndex), in_anchor), "Add edge failed");
   GELOGI("Add Edge: %s %s, index: %u", const_node->GetName().c_str(), func_node->GetName().c_str(), parent_index);

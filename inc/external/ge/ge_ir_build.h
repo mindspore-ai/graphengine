@@ -102,6 +102,16 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
 
 /**
  * @ingroup AscendCL
+ * @brief infer shape and data type
+ *
+ * @param graph[IN] the graph ready to build
+ * @retval GRAPH_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+graphStatus aclgrphInferShapeAndType(ge::Graph &graph);
+
+/**
+ * @ingroup AscendCL
  * @brief dump graph
  *
  * @param graph[IN] the graph ready to build

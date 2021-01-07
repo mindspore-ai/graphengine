@@ -32,49 +32,6 @@ protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
 protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
 
-if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
-############ libge_proto_common.a ############
-add_library(ge_proto_common STATIC
-    ${PROTO_SRCS}
-)
-
-target_compile_definitions(ge_proto_common PRIVATE
-    PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    google=ascend_private
-)
-
-target_compile_options(ge_proto_common PRIVATE
-    -O2
-    -fno-common
-)
-
-target_link_libraries(ge_proto_common PRIVATE
-    $<BUILD_INTERFACE:intf_pub>
-    ascend_protobuf
-)
-
-############ libge_proto_client.a ############
-add_library(ge_proto_client STATIC
-    ${PROTO_CLIENT_SRCS}
-)
-
-target_compile_definitions(ge_proto_client PRIVATE
-    PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    google=ascend_private
-)
-
-target_compile_options(ge_proto_client PRIVATE
-    -O2
-    -fno-common
-)
-
-target_link_libraries(ge_proto_client PRIVATE
-    $<BUILD_INTERFACE:intf_pub>
-    ascend_protobuf
-)
-endif ()
-
-##################################################################
 set(TRAIN_SRC_LIST
     "common/formats/format_transfers/datatype_transfer.cc"
     "common/formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
@@ -672,8 +629,10 @@ set(INFER_SRC_LIST
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_runner.so ############
 add_library(ge_runner SHARED
-    ${TRAIN_SRC_LIST}
-    $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler_fwk>,msprofiler_fwk,msprofiler_fwk_object>>
+            ${TRAIN_SRC_LIST}
+	    ${PROTO_SRCS}
+	    ${PROTO_CLIENT_SRCS}
+	    $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler_fwk>,msprofiler_fwk,msprofiler_fwk_object>>
 )
 
 add_library(msprofiler_fwk_object OBJECT IMPORTED GLOBAL)
@@ -682,7 +641,7 @@ if (msprofiler_fwk_ext_LIBRARY_DIR)
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object)
     execute_process(
         COMMAND ar x ${msprofiler_fwk_ext_LIBRARY_DIR}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object	
     )
     file(GLOB MSPROFILER_FWK_OBJECT_LIST ${CMAKE_CURRENT_BINARY_DIR}/msprofiler_fwk_object/*.o)
     set_property(TARGET msprofiler_fwk_object PROPERTY IMPORTED_OBJECTS ${MSPROFILER_FWK_OBJECT_LIST})
@@ -700,11 +659,9 @@ target_compile_definitions(ge_runner PRIVATE
 target_compile_options(ge_runner PRIVATE
     -O2
     -fno-common
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-const-variable>
 )
 
-target_include_directories(ge_runner SYSTEM PRIVATE
+target_include_directories(ge_runner PRIVATE
     ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
@@ -734,8 +691,6 @@ target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     adump_server
     static_mmpa
-    ge_proto_common
-    ge_proto_client
     -Wl,--no-as-needed
     graph
     ge_common
@@ -753,9 +708,7 @@ target_link_libraries(ge_runner PRIVATE
 )
 
 ############ libge_compiler.so ############
-add_library(ge_compiler SHARED
-    ${INFER_SRC_LIST}
-)
+add_library(ge_compiler SHARED ${INFER_SRC_LIST} ${PROTO_SRCS})
 
 target_compile_definitions(ge_compiler PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
@@ -769,11 +722,9 @@ target_compile_definitions(ge_compiler PRIVATE
 target_compile_options(ge_compiler PRIVATE
     -O2
     -fno-common
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-const-variable>
 )
 
-target_include_directories(ge_compiler SYSTEM PRIVATE
+target_include_directories(ge_compiler PRIVATE
     ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
@@ -802,7 +753,6 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
 target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     static_mmpa
-    ge_proto_common
     -Wl,--no-as-needed
     graph
     ge_common

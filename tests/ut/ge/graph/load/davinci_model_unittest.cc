@@ -308,6 +308,9 @@ TEST_F(UtestDavinciModel, init_unknown) {
 
 TEST_F(UtestDavinciModel, Init_variable_op) {
   DavinciModel model(0, nullptr);
+  model.ge_model_ = make_shared<GeModel>();
+  model.runtime_param_.mem_base = (uint8_t *)0x08000000;
+  model.runtime_param_.mem_size = 5120000;
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
   GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
@@ -371,7 +374,7 @@ TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ2) {
 
   GraphUtils::AddEdge(data1_node->GetOutDataAnchor(0), case1_node->GetInDataAnchor(0));
   GraphUtils::AddEdge(case1_node->GetOutDataAnchor(0), output_node->GetInDataAnchor(0));
-  
+
   (void)AttrUtils::SetStr(output_node->GetOpDesc(), ATTR_ALL_GEARS_INFO, "1;2;4;8");
   (void)AttrUtils::SetBool(case_node, ATTR_INSERT_BY_MBATCH, true);
 

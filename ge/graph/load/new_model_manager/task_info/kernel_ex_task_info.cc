@@ -97,7 +97,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 
   // 2.2 Collect aicpu kernel
   uint64_t kernel_id = fwk_op_kernel.fwkKernelBase.fwk_kernel.kernelID;
-  GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuKernel(session_id, davinci_model->Id(), kernel_id) != SUCCESS,
+  GE_IF_BOOL_EXEC(ModelManager::GetInstance()->CreateAicpuKernel(session_id, davinci_model->Id(),
+                                                                 davinci_model->SubModelId(), kernel_id) != SUCCESS,
                   GELOGE(FAILED, "CreateAicpuKernel error.");
                   return FAILED;)
   // 2.3 Create session

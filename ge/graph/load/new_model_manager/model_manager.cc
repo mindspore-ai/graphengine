@@ -81,7 +81,8 @@ ModelManager::ModelManager() {
   session_id_bias_ = 0;
 }
 
-Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id) {
+Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id,
+                                    uint32_t sub_model_id) {
   STR_FWK_OP_KERNEL param_base = {};
   void *devicebase = nullptr;
   void *aicpu_kernel_addr = nullptr;
@@ -91,10 +92,11 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   param_base.fwkKernelBase.fwk_kernel.sessionID = session_id;
   if (op_type == aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY) {
     std::vector<uint64_t> v_aicpu_kernel;
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                            std::to_string(sub_model_id);
     auto iter = model_aicpu_kernel_.find(model_key);
     if (iter != model_aicpu_kernel_.end()) {
-      GELOGD("kernel destroy session_id %lu, model_id %u.", session_id, model_id);
+      GELOGD("kernel destroy session_id %lu, model_id %u, sub_model_id %u..", session_id, model_id, sub_model_id);
       v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
       // Insert size of aicpu kernel vector in the first element
       v_aicpu_kernel.insert(v_aicpu_kernel.begin(), v_aicpu_kernel.size());
@@ -192,7 +194,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
       GE_CHK_RT(rtSetDevice(static_cast<int32_t>(GetContext().DeviceId())));
     }
 
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0, 0);
     if (ret != SUCCESS) {
       GELOGW("The session: %lu destroy failed.", session_id);
     } else {
@@ -226,12 +228,14 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
   return SUCCESS;
 }
 
-ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
+ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
   std::lock_guard<std::mutex> lock(map_mutex_);
-  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                          std::to_string(sub_model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id,
+                                sub_model_id);
     if (ret != SUCCESS) {
       GELOGE(FAILED, "Destroy aicpu kernel failed.");
       return FAILED;
@@ -240,10 +244,12 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
   return SUCCESS;
 }
 
-ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
+ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id,
+                                           uint64_t kernel_id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
-  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                          std::to_string(sub_model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
   }
@@ -378,7 +384,8 @@ Status ModelManager::DeleteModel(uint32_t id) {
   auto hybrid_model_it = hybrid_model_map_.find(id);
   if (it != model_map_.end()) {
     uint64_t session_id = it->second->GetSessionId();
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id);
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id)  + "_" +
+                            std::to_string(it->second->SubModelId());
     auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
     if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
       (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
@@ -1224,7 +1231,8 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
     // Zero copy is enabled by default, no need to judge.
     uint64_t session_id_davinci = davinci_model->GetSessionId();
     uint32_t model_id_davinci = davinci_model->GetModelId();
-    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci);
+    uint32_t sub_model_id = davinci_model->SubModelId();
+    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci, sub_model_id);
     if (status != SUCCESS) {
       GELOGW("Destroy specified aicpu kernel failed, session id is %lu, model id is %u.", session_id_davinci,
              model_id_davinci);
@@ -1244,7 +1252,7 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   auto it = sess_ids_.find(session_id);
   // never been created by any model
   if (it == sess_ids_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0, 0);
     if (ret == SUCCESS) {
       (void)sess_ids_.insert(session_id);
       GELOGI("The session: %lu create success.", session_id);

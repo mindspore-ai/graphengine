@@ -15,68 +15,6 @@ set(SRC_LIST
     "../ir_build/atc_ir_common.cc"
 )
 
-############ atc ############
-add_executable(atc ${SRC_LIST} ${PROTO_HDRS})
-
-target_compile_options(atc PRIVATE
-    -Werror
-    -O2
-    -Wno-deprecated-declarations
-    -fno-common
-)
-
-target_compile_definitions(atc PRIVATE
-    PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    COMPILE_OMG_PACKAGE
-    google=ascend_private
-    LOG_CPP
-)
-
-target_include_directories(atc PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}
-    ${GE_CODE_DIR}
-    ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/inc/external
-    ${GE_CODE_DIR}/common/inc/external
-    ${GE_CODE_DIR}/common/inc/external/graph
-    ${GE_CODE_DIR}/inc
-    ${GE_CODE_DIR}/inc/framework
-    ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/graph
-    ${METADEF_DIR}/inc/register
-    ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/external/register
-    ${PARSER_DIR}
-    ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
-    #### yellow zone ####
-    ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/common
-    #### blue zone ####
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
-)
-
-target_link_libraries(atc PRIVATE
-    $<BUILD_INTERFACE:intf_pub>
-    ascend_protobuf
-    ge_common
-    register
-    c_sec
-    graph
-    error_manager
-    ge_compiler
-    parser_common
-    gflags
-    json
-    runtime_compile
-    slog
-    static_mmpa
-    -lrt
-    -ldl
-)
-
 ############ atc_atc.bin ############
 add_executable(atc_atc.bin ${SRC_LIST} ${PROTO_HDRS})
 
@@ -214,10 +152,6 @@ set_target_properties(fwk_atc.bin PROPERTIES
 ############ install ############
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)
-
-install(TARGETS atc OPTIONAL
-    LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
-)
 
 install(TARGETS atc_atc.bin OPTIONAL
     RUNTIME DESTINATION ${INSTALL_LIBRARY_DIR}/atclib

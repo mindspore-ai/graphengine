@@ -173,6 +173,20 @@ class DavinciModel {
   ///
   void SetId(uint32_t model_id) { model_id_ = model_id; }
 
+  ///
+  /// @ingroup ge
+  /// @brief Get SubModelId
+  /// @return sub model ID
+  ///
+  uint32_t SubModelId() const { return sub_model_id_; }
+
+  ///
+  /// @ingroup ge
+  /// @brief Get SubModelId
+  /// @return sub model ID
+  ///
+  void SetSubModelId(uint32_t sub_model_id) { sub_model_id_ = sub_model_id; }
+
   static void *Run(DavinciModel *model_pointer);
 
   ///
@@ -857,6 +871,7 @@ class DavinciModel {
 
   uint32_t model_id_;
   uint32_t runtime_model_id_;
+  uint32_t sub_model_id_ = 0;
   string name_;
 
   // used for inference data dump

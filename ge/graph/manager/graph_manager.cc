@@ -2473,7 +2473,7 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
       GELOGE(RT_FAILED, "[GraphManager:] rtSetDevice failed, modelId=%u, graphId=%u.", model_id, graph_id);
       continue;
     }
-    result = GraphLoader::DestroyAicpuKernel(session_id, model_id);
+    result = GraphLoader::DestroyAicpuKernel(session_id, model_id, 0);
     if (result != SUCCESS) {
       GELOGW("[GraphManager:] destroy aicpu kernel failed when dynamic memory, modelId=%u, graphId=%u.", model_id,
              graph_id);

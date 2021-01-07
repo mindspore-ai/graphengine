@@ -263,10 +263,10 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
   return SUCCESS;
 }
 
-Status GraphLoader::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
+Status GraphLoader::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
-  Status ret = model_manager->DestroyAicpuKernel(session_id, model_id);
+  Status ret = model_manager->DestroyAicpuKernel(session_id, model_id, sub_model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "Destroy aicpu kernel failed.");
     return ret;

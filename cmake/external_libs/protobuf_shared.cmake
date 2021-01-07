@@ -53,7 +53,7 @@ set_target_properties(ascend_protobuf PROPERTIES
                       IMPORTED_LOCATION ${PROTOBUF_SHARED_PKG_DIR}/${CMAKE_INSTALL_LIBDIR}/libascend_protobuf.so
 )
 
-target_include_directories(ascend_protobuf INTERFACE ${PROTOBUF_SHARED_PKG_DIR}/include)
+target_include_directories(ascend_protobuf SYSTEM INTERFACE ${PROTOBUF_SHARED_PKG_DIR}/include)
 
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)

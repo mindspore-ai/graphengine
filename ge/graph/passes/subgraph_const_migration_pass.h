@@ -119,8 +119,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [in] outputs: Parent index of Node output.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status DetachParallelNode(const map<string, NodePtr> &const_nodes, const NodePtr &const_node,
-                            const NodePtr &data_node);
+  Status DetachParallelNode(const ComputeGraphPtr &graph, const map<string, NodePtr> &const_nodes,
+                            const NodePtr &const_node, const NodePtr &data_node);
 
   ///
   /// @ingroup ge

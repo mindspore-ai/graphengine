@@ -905,6 +905,7 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
       toolkit::dumpdata::DumpData dump_data;
       dump_data.set_version("2.0");
       dump_data.set_dump_time(GetNowTime());
+      dump_data.set_op_name(op_desc_info.op_name);
       for (size_t i = 0; i < op_desc_info.input_format.size(); ++i) {
         toolkit::dumpdata::OpInput input;
         input.set_data_type(toolkit::dumpdata::OutputDataType(GetIrDataType(op_desc_info.input_data_type[i])));

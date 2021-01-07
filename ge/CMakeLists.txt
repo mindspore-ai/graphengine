@@ -68,7 +68,7 @@ target_compile_options(ge_proto_client PRIVATE
     -fno-common
 )
 
-target_link_libraries(ge_proto_common PRIVATE
+target_link_libraries(ge_proto_client PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     ascend_protobuf
 )

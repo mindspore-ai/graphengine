@@ -306,8 +306,12 @@ TEST_F(UtestDavinciModel, init_unknown) {
   EXPECT_EQ(model.UpdateKnownNodeArgs(inputs, outputs), SUCCESS);
 }
 
-TEST_F(UtestDavinciModel, ReturnNoOutput_test) {
+TEST_F(UtestDavinciModel, Init_variable_op) {
   DavinciModel model(0, nullptr);
+  model.ge_model_ = make_shared<GeModel>();
+  model.runtime_param_.mem_base = (uint8_t *)0x08000000;
+  model.runtime_param_.mem_size = 5120000;
+  ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
   GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
   TensorUtils::SetSize(tensor, 512);
@@ -317,27 +321,19 @@ TEST_F(UtestDavinciModel, ReturnNoOutput_test) {
   var1->AddOutputDesc(tensor);
   var1->SetInputOffset({1024});
   var1->SetOutputOffset({1024});
+  AttrUtils::SetBool(var1, VAR_ATTR_VAR_IS_BROADCAST, true);
+  graph->AddNode(var1);
 
-  model.variable_op_list_.push_back(var1);
+  OpDescPtr var2 = CreateOpDesc(NODE_NAME_GLOBAL_STEP, VARIABLE);
+  var2->AddInputDesc(tensor);
+  var2->AddOutputDesc(tensor);
+  var2->SetInputOffset({1024});
+  var2->SetOutputOffset({1024});
+  graph->AddNode(var2);
 
+  EXPECT_EQ(model.InitNodes(graph), SUCCESS);
 
   EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
-}
-
-TEST_F(UtestDavinciModel, SyncVarData_test) {
-  DavinciModel model(0, nullptr);
-
-  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
-  TensorUtils::SetSize(tensor, 512);
-
-  OpDescPtr var1 = CreateOpDesc("var1", VARIABLE);
-  var1->AddInputDesc(tensor);
-  var1->AddOutputDesc(tensor);
-  var1->SetInputOffset({1024});
-  var1->SetOutputOffset({1024});
-
-  model.variable_op_list_.push_back(var1);
-
   EXPECT_NE(model.SyncVarData(), SUCCESS);
 }
 
@@ -378,7 +374,7 @@ TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ2) {
 
   GraphUtils::AddEdge(data1_node->GetOutDataAnchor(0), case1_node->GetInDataAnchor(0));
   GraphUtils::AddEdge(case1_node->GetOutDataAnchor(0), output_node->GetInDataAnchor(0));
-  
+
   (void)AttrUtils::SetStr(output_node->GetOpDesc(), ATTR_ALL_GEARS_INFO, "1;2;4;8");
   (void)AttrUtils::SetBool(case_node, ATTR_INSERT_BY_MBATCH, true);
 

@@ -268,14 +268,7 @@ class DavinciModel {
     return op_list_.at(index);
   }
 
-  OpDescPtr GetVariableOp(const string &name) {
-    for (auto op_desc : variable_op_list_) {
-      if (op_desc != nullptr && op_desc->GetName() == name) {
-        return op_desc;
-      }
-    }
-    return nullptr;
-  }
+  void *GetGlobalStep() const { return global_step_addr_; }
 
   // get task info for profiling
   const vector<TaskDescInfo> &GetTaskDescInfo() const { return task_desc_info_; }
@@ -689,7 +682,7 @@ class DavinciModel {
   ///
   Status InitConstant(const OpDescPtr &op_desc);
 
-  Status InitVariable(const OpDescPtr &op_desc);
+  Status InitVariable(const OpDescPtr &op_desc, map<string, OpDescPtr> &variable_by_name);
 
   /// @ingroup ge
   /// @brief LabelSet Op Initialize.
@@ -828,7 +821,7 @@ class DavinciModel {
   // get desc info of graph for profiling
   Status GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_desc_info);
 
-  void SetDataDumperArgs(const ComputeGraphPtr &compute_graph);
+  void SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name);
 
   Status InitModelProfile();
   Status SinkModelProfile();
@@ -877,7 +870,9 @@ class DavinciModel {
 
   map<uint32_t, OpDescPtr> op_list_;  // release after DavinciModel::Init
 
-  vector<OpDescPtr> variable_op_list_;
+  map<string, GeTensorDesc> broadcast_variable_;
+  void *global_step_addr_{nullptr};
+  uint64_t global_step_size_{0};
 
   map<uint32_t, ZeroCopyOffset> new_input_data_info_;
   map<uint32_t, ZeroCopyOffset> new_output_data_info_;

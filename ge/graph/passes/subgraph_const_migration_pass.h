@@ -42,8 +42,9 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [out] graph_datas: Data groups of subgraph.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status ClassifyDataNodes(const ComputeGraphPtr &graph, const OpDescPtr &func_desc,
-                           map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_datas);
+  Status ClassifyGraphNodes(const ComputeGraphPtr &graph, const OpDescPtr &func_desc,
+                            map<ComputeGraphPtr, map<string, NodePtr>> &all_const_nodes,
+                            map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes);
 
   ///
   /// @ingroup ge
@@ -53,7 +54,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [out] graph_nodes: Data groups of subgraph.
   /// @return true: SUCCESS / false: FAILED
   ///
-  bool GetAssociatedNodes(const NodePtr &node, map<uint32_t, uint32_t> &inputs, map<uint32_t, uint32_t> &outputs);
+  bool GetAssociatedNodes(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
+                          const NodePtr &const_node, uint32_t &parent_index);
 
   ///
   /// @ingroup ge
@@ -64,8 +66,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [in] data_idx: Data groups of subgraph.
   /// @return true: Same / false: not same
   ///
-  bool IsParallelNodeSame(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                          const NodePtr &const_node, uint32_t parent_index, size_t index);
+  bool IsParallelNodeSame(const map<ComputeGraphPtr, map<string, NodePtr>> &all_const_nodes,
+                          const NodePtr &const_node, const string &node_key);
 
   ///
   /// @ingroup ge
@@ -74,12 +76,13 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [in] func_node: functional Node of Case.
   /// @param [in] graph_nodes: Data groups of subgraph.
   /// @param [in] data_base: Data Node for migration.
-  /// @param [in] data_idx: Data groups of subgraph.
+  /// @param [in] node_key: Data groups of subgraph.
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status GraphNodeMigration(const ComputeGraphPtr &graph, const NodePtr &func_node,
-                            map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                            const NodePtr &data_base, uint32_t data_idx);
+                            const map<ComputeGraphPtr, map<string, NodePtr>> &all_const_nodes,
+                            map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
+                            const NodePtr &const_node, const string &node_key);
 
   ///
   /// @ingroup ge
@@ -93,20 +96,20 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status MoveNodeToParent(const ComputeGraphPtr &graph, const NodePtr &func_node,
-                          const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                          uint32_t parent_index, uint32_t anchor_idx,
-                          const map<uint32_t, uint32_t> &inputs, const map<uint32_t, uint32_t> &outputs);
+                          const map<ComputeGraphPtr, map<string, NodePtr>> &all_const_nodes,
+                          const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
+                          const string &node_key, uint32_t parent_index);
 
   ///
   /// @ingroup ge
   /// @brief Append Input Tensor for functional node.
-  /// @param [in] graph_nodes: Data groups of subgraph.
+  /// @param [in] graph_nodes: Const groups of subgraph.
   /// @param [in] func_node: functional Node of Case.
   /// @param [in] outputs: Parent index of Node output.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status AppendParallelNode(map<ComputeGraphPtr, map<uint32_t, NodePtr>> &graph_nodes,
-                            const NodePtr &func_node, map<uint32_t, uint32_t> &outputs);
+  Status AppendParallelNode(const NodePtr &func_node, uint32_t &parent_index,
+                            map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes);
 
   ///
   /// @ingroup ge
@@ -116,8 +119,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [in] outputs: Parent index of Node output.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status DetachParallelNode(const map<uint32_t, NodePtr> &graph_datas, const NodePtr &detach,
-                            const map<uint32_t, uint32_t> &outputs);
+  Status DetachParallelNode(const map<string, NodePtr> &const_nodes, const NodePtr &const_node,
+                            const NodePtr &data_node);
 
   ///
   /// @ingroup ge
@@ -129,10 +132,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @param [in] outputs: Parent index of Node output.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status AttachParallelNode(const ComputeGraphPtr &graph, const NodePtr &func_node, const NodePtr &attach,
-                            const map<uint32_t, uint32_t> &inputs, const map<uint32_t, uint32_t> &outputs);
-
-  bool migration_append_{false};
+  Status AttachParallelNode(const ComputeGraphPtr &graph, const NodePtr &func_node,
+                            const NodePtr &const_node, uint32_t parent_index);
 };
 }  // namespace ge
 #endif  // GE_COMMON_SUBGRAPH_CONST_MIGRATION_H_

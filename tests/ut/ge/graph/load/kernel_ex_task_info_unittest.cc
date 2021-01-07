@@ -64,10 +64,6 @@ TEST_F(UtestKernelExTaskInfo, success_kernel_ex_task_init) {
   string value1(arg_size, 'a');
   kernel_ex_def->set_args_size(arg_size);
   kernel_ex_def->set_args(value1);
-  OpDescPtr v_op_desc = CreateOpDesc("ge_global_step", "Variable");
-  model.variable_op_list_.push_back(v_op_desc);
-  model.op_list_[0]->SetWorkspace({100331008});   // offset
-  model.op_list_[0]->SetWorkspaceBytes({150});    // length
   EXPECT_EQ(kernel_ex_task_info.Init(task_def, &model), FAILED);
 
 

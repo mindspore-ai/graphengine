@@ -340,15 +340,15 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const map<string, NodePtr>
                                                       const NodePtr &const_node, const NodePtr &data_node) {
   // Break Data and Move node.
   const auto &in_anchor = const_node->GetInControlAnchor();
-  while (!in_anchor->GetPeerOutControlAnchors().empty()) {
-    const auto &out_anchor = in_anchor->GetPeerOutControlAnchors().at(kZeroIndex);
+  const auto out_anchors = in_anchor->GetPeerOutControlAnchors();
+  for (const auto out_anchor : out_anchors) {
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
     GELOGI("Remove Edge: %s %s", out_anchor->GetOwnerNode()->GetName().c_str(), const_node->GetName().c_str());
   }
 
   const auto &ctrl_anchor = const_node->GetOutControlAnchor();
-  while (!ctrl_anchor->GetPeerInControlAnchors().empty()) {
-    const auto &in_anchor = ctrl_anchor->GetPeerInControlAnchors().at(kZeroIndex);
+  const auto ctrl_anchors = ctrl_anchor->GetPeerInControlAnchors();
+  for (const auto in_anchor : ctrl_anchors) {
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(ctrl_anchor, in_anchor), "Remove edge failed");
     GELOGI("Remove Edge: %s %s", const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
 
@@ -358,8 +358,8 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const map<string, NodePtr>
 
   // Break Move and follow, Link Data and follow.
   const auto &out_anchor = const_node->GetOutDataAnchor(kZeroIndex);
-  while (!out_anchor->GetPeerInDataAnchors().empty()) {
-    const auto &in_anchor = out_anchor->GetPeerInDataAnchors().at(kZeroIndex);
+  const auto in_anchors =out_anchor->GetPeerInDataAnchors();
+  for (const auto in_anchor : in_anchors) {
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
     GELOGI("Remove Edge: %s %s", const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
 

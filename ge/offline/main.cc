@@ -65,7 +65,8 @@ using std::vector;
 static bool is_dynamic_input = false;
 
 const char *const kModeSupport = "only support 0(model to framework model), "
-                                 "1(framework model to json), 3(only pre-check), 5(pbtxt to json)";
+                                 "1(framework model to json), 3(only pre-check), "
+                                 "5(pbtxt to json), 6(display model info)";
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
 
 static const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";

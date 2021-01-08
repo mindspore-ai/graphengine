@@ -63,6 +63,8 @@ class VariableMemoryAssigner {
   ///
   ge::Status AssignVarAttr2Nodes();
 
+  ge::Status AssignMemory2HasRefAttrNode();
+
  private:
   ge::ComputeGraphPtr compute_graph_;
 };
@@ -98,6 +100,8 @@ class GraphMemoryAssigner {
   ge::Status AssignVarAttr2Nodes();
 
   ge::Status ReAssignMemory(bool is_loop_graph, size_t &mem_offset);
+
+  ge::Status AssignMemory2HasRefAttrNode();
 
   ge::Status AssignZeroCopyMemory(size_t &mem_offset, size_t &zero_mem_copy_size);
 

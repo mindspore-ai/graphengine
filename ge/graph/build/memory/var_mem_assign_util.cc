@@ -34,7 +34,6 @@ using std::vector;
 namespace ge {
 Status VarMemAssignUtil::AssignVarMemory(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(AssignMemory2VariableNode(compute_graph));
-  GE_CHK_STATUS_RET(AssignMemory2HasRefAttrNode(compute_graph));
 
   return SUCCESS;
 }

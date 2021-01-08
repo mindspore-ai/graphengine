@@ -545,7 +545,7 @@ Status DavinciModel::SetTSDevice() {
 Status DavinciModel::OpDebugRegister() {
   bool is_op_debug = false;
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_OP_DEBUG_FLAG, is_op_debug);
-  GELOGD("The value of op_debug in ge_model_ is %d.", is_op_debug);
+  GELOGD("The value of op debug in ge_model is %d.", is_op_debug);
   if (is_op_debug) {
     debug_reg_mutex_.lock();
     rtError_t rt_ret = rtMalloc(&op_debug_addr_, kOpDebugMemorySize, RT_MEMORY_DDR);
@@ -638,7 +638,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   version_ = ge_model_->GetVersion();
   name_ = ge_model_->GetName();
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_);
-  GELOGD("The value of ge.l1Fusion in ge_model_ is %d.", is_l1_fusion_enable_);
+  GELOGD("The value of ge.l1Fusion in ge_model is %d.", is_l1_fusion_enable_);
   CheckHasHcomOp();
 
   vector<int64_t> huge_stream_list;

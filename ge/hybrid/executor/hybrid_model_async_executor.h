@@ -53,7 +53,7 @@ class HybridModelAsyncExecutor {
   Status EnqueueData(const std::shared_ptr<InputDataWrapper> &data);
 
  private:
-  Status InitInputTensors();
+  Status InitInputDesc();
 
   Status RunInternal();
 
@@ -85,7 +85,7 @@ class HybridModelAsyncExecutor {
   uint64_t iterator_count_ = 0;
 
   rtStream_t stream_ = nullptr;
-  std::map<uint32_t, TensorValue> input_tensors_;
+  std::map<uint32_t, int64_t> input_sizes_;
   std::map<uint32_t, GeTensorDescPtr> input_tensor_desc_;
   std::vector<bool> is_input_dynamic_;
   std::shared_ptr<ModelListener> listener_;

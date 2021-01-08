@@ -23,7 +23,7 @@ export BUILD_PATH="${BASEPATH}/build/"
 usage()
 {
   echo "Usage:"
-  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off]"
+  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off] [-M]"
   echo ""
   echo "Options:"
   echo "    -h Print usage"
@@ -35,6 +35,7 @@ usage()
   echo "    -p Build inference or train"
   echo "    -v Display build command"
   echo "    -S Enable enable download cmake compile dependency from gitee , default off"
+  echo "    -M build MindSpore mode"
   echo "to be continued ..."
 }
 
@@ -58,30 +59,27 @@ checkopts()
   ENABLE_GE_UT="off"
   ENABLE_GE_ST="off"
   ENABLE_GE_COV="off"
-  GE_ONLY="on"
   PLATFORM=""
   PRODUCT="normal"
   ENABLE_GITEE="off"
+  MINDSPORE_MODE="off"
   # Process the options
-  while getopts 'ustchj:p:g:vS:' opt
+  while getopts 'ustchj:p:g:vS:M' opt
   do
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
       u)
         # ENABLE_GE_UT_ONLY_COMPILE="on"
         ENABLE_GE_UT="on"
-        GE_ONLY="off"
         ;;
       s)
         ENABLE_GE_ST="on"
         ;;
       t)
 	      ENABLE_GE_UT="on"
-	      GE_ONLY="off"
 	      ;;
       c)
         ENABLE_GE_COV="on"
-        GE_ONLY="off"
         ;;
       h)
         usage
@@ -103,6 +101,9 @@ checkopts()
         check_on_off $OPTARG S
         ENABLE_GITEE="$OPTARG"
         echo "enable download from gitee"
+        ;;
+      M)
+        MINDSPORE_MODE="on"
         ;;
       *)
         echo "Undefined option: ${opt}"
@@ -132,7 +133,12 @@ build_graphengine()
   echo "create build directory and build GraphEngine";
   mk_dir "${BUILD_PATH}"
   cd "${BUILD_PATH}"
-  CMAKE_ARGS="-DBUILD_PATH=$BUILD_PATH -DGE_ONLY=$GE_ONLY"
+
+  if [[ "X$MINDSPORE_MODE" = "Xoff" ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
+  else
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_D=ON -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
+  fi
 
   if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_COV=ON"
@@ -169,6 +175,9 @@ build_graphengine()
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
+  elif [ "X$MINDSPORE_MODE" = "Xon" ]
+  then
+    TARGET="ge_common graph"
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
@@ -320,7 +329,12 @@ generate_package()
   fi
 }
 
-if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then
+if [[ "X$ENABLE_GE_UT" = "Xoff" && "X$MINDSPORE_MODE" = "Xoff" ]]; then
   generate_package
+elif [ "X$MINDSPORE_MODE" = "Xon" ]
+then
+  cd "${OUTPUT_PATH}"
+  find ./ -name graphengine_lib.tar -exec rm {} \;
+  tar -cf graphengine_lib.tar lib
 fi
 echo "---------------- GraphEngine package archive generated ----------------"

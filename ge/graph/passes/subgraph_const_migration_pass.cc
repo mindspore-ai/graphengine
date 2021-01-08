@@ -128,10 +128,11 @@ Status SubgraphConstMigrationPass::Run(ComputeGraphPtr graph) {
 
 ///
 /// @ingroup ge
-/// @brief Get all Data nodes for all subgraph.
+/// @brief Get all Const/Data nodes for all subgraph.
 /// @param [in] graph: Root compute graph.
 /// @param [in] func_desc: functional OpDesc of Case.
-/// @param [out] graph_nodes: Data groups of subgraph.
+/// @param [out] all_const_nodes: Const groups of subgraph.
+/// @param [out] all_data_nodes: Data groups of subgraph.
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &graph, const OpDescPtr &func_desc,
@@ -193,10 +194,10 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
 
 ///
 /// @ingroup ge
-/// @brief Get all Data nodes for all subgraph.
-/// @param [in] node: Const node of subgraph.
-/// @param [out] inputs: parent index to Const.
-/// @param [out] outputs: Data groups of subgraph.
+/// @brief Get parent_index for Const node migration.
+/// @param [in] all_data_nodes: Data groups of subgraph.
+/// @param [in] const_node: Const node will process.
+/// @param [out] parent_index: parent index for replace Data.
 /// @return true: SUCCESS / false: FAILED
 ///
 bool SubgraphConstMigrationPass::GetAssociatedNodes(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
@@ -222,11 +223,10 @@ bool SubgraphConstMigrationPass::GetAssociatedNodes(const map<ComputeGraphPtr, m
 
 ///
 /// @ingroup ge
-/// @brief Get all Data nodes for all subgraph.
-/// @param [in] graph_nodes: Const groups of subgraph.
-/// @param [in] data_base: Data Node for migration.
-/// @param [in] data_idx: Data groups of subgraph.
-/// @param [in] data_idx: Data groups of subgraph.
+/// @brief Check parallel node is same for all subgraph.
+/// @param [in] all_const_nodes: Const groups of subgraph.
+/// @param [in] const_node: Const Node for migration.
+/// @param [in] node_key: Key of Const node.
 /// @return true: Same / false: not same
 ///
 bool SubgraphConstMigrationPass::IsParallelNodeSame(const map<ComputeGraphPtr, map<string, NodePtr>> &all_const_nodes,
@@ -255,9 +255,10 @@ bool SubgraphConstMigrationPass::IsParallelNodeSame(const map<ComputeGraphPtr, m
 /// @brief Migration subgraph Node to Root
 /// @param [in] graph: Root compute graph.
 /// @param [in] func_node: functional Node of Case.
-/// @param [in] graph_nodes: Const groups of subgraph.
-/// @param [in] data_base: Data Node for migration.
-/// @param [in] data_idx: Data groups of subgraph.
+/// @param [in] all_const_nodes: Const groups of subgraph.
+/// @param [in] all_data_nodes: Data groups of subgraph.
+/// @param [in] const_node: Const Node for migration.
+/// @param [in] node_key: Key of Const node for migration.
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status SubgraphConstMigrationPass::GraphNodeMigration(const ComputeGraphPtr &graph, const NodePtr &func_node,
@@ -289,13 +290,13 @@ Status SubgraphConstMigrationPass::GraphNodeMigration(const ComputeGraphPtr &gra
 ///
 /// @ingroup ge
 /// @brief Append Input Tensor for functional node.
-/// @param [in] graph_nodes: Const groups of subgraph.
 /// @param [in] func_node: functional Node of Case.
-/// @param [in] outputs: Parent index of Node output.
+/// @param [in/out] parent_index: Parent index for migration.
+/// @param [in/out] all_data_nodes: Data groups of subgraph.
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status SubgraphConstMigrationPass::AppendParallelNode(const NodePtr &func_node, uint32_t &parent_index,
-                                                      map<ComputeGraphPtr, map<uint32_t, NodePtr>> &data_nodes) {
+                                                      map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes) {
   // If outputs index invalid, add Data and Input Tensor.
   if (parent_index != kInvalidParent) {
     return SUCCESS;
@@ -303,7 +304,7 @@ Status SubgraphConstMigrationPass::AppendParallelNode(const NodePtr &func_node, 
 
   // Add Data to subgraph.
   parent_index = func_node->GetAllInDataAnchorsSize();  // Update to valid parent index.
-  for (auto &item : data_nodes) {
+  for (auto &item : all_data_nodes) {
     const auto &subgraph = item.first;
     const auto data_name = subgraph->GetName() + "_data_" + std::to_string(parent_index);
     OpDescBuilder op_builder(data_name, DATA);
@@ -335,15 +336,14 @@ Status SubgraphConstMigrationPass::AppendParallelNode(const NodePtr &func_node, 
 
 ///
 /// @ingroup ge
-/// @brief Delete Node from all subgraph.
-/// @param [in] graph_nodes: Data groups of subgraph.
-/// @param [in] detach: Node will move to parent.
-/// @param [in] outputs: Parent index of Node output.
+/// @brief Delete Node from subgraph.
+/// @param [in] graph: subgraph for process.
+/// @param [in] const_node: Node will move to parent.
+/// @param [in] data_node: Place holder for Const.
 /// @return 0: SUCCESS / others: FAILED
 ///
-Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &graph,
-                                                      const map<string, NodePtr> &const_nodes,
-                                                      const NodePtr &const_node, const NodePtr &data_node) {
+Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &graph, const NodePtr &const_node,
+                                                      const NodePtr &data_node) {
   // Break Data and Move node.
   const auto &in_anchor = const_node->GetInControlAnchor();
   const auto out_anchors = in_anchor->GetPeerOutControlAnchors();
@@ -351,7 +351,7 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &gra
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
     const auto owner_node = out_anchor->GetOwnerNode();
     GELOGI("Remove Edge: %s %s", owner_node->GetName().c_str(), const_node->GetName().c_str());
-    if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty()) {
+    if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty() && owner_node != data_node) {
       graph->RemoveNode(owner_node);
     }
   }
@@ -392,9 +392,8 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &gra
 /// @brief Move Node to Parent Graph.
 /// @param [in] graph: Parent compute graph.
 /// @param [in] func_node: functional Node of Case.
-/// @param [in] attach: Node will move to parent.
-/// @param [in] inputs: Parent index of Node input.
-/// @param [in] outputs: Parent index of Node output.
+/// @param [in] const_node: Node will move to parent.
+/// @param [in] parent_index: Parent index of Node input.
 /// @return 0: SUCCESS / others: FAILED
 ///
 Status SubgraphConstMigrationPass::AttachParallelNode(const ComputeGraphPtr &graph, const NodePtr &func_node,
@@ -468,7 +467,7 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
       return FAILED;
     }
 
-    if (DetachParallelNode(subgraph, item.second, move_node, it_data->second) != SUCCESS) {
+    if (DetachParallelNode(subgraph, move_node, it_data->second) != SUCCESS) {
       GELOGE(FAILED, "Data: %s not found, index: %u", move_node->GetName().c_str(), parent_index);
       return FAILED;
     }

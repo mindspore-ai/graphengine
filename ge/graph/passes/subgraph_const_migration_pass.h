@@ -36,10 +36,11 @@ class SubgraphConstMigrationPass : public GraphPass {
  private:
   ///
   /// @ingroup ge
-  /// @brief Get all Data nodes for all subgraph.
+  /// @brief Get all Const/Data nodes for all subgraph.
   /// @param [in] graph: Root compute graph.
   /// @param [in] func_desc: functional OpDesc of Case.
-  /// @param [out] graph_datas: Data groups of subgraph.
+  /// @param [out] all_const_nodes: Const groups of subgraph.
+  /// @param [out] all_data_nodes: Data groups of subgraph.
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status ClassifyGraphNodes(const ComputeGraphPtr &graph, const OpDescPtr &func_desc,
@@ -48,10 +49,10 @@ class SubgraphConstMigrationPass : public GraphPass {
 
   ///
   /// @ingroup ge
-  /// @brief Get all Data nodes for all subgraph.
-  /// @param [in] node: Const node of subgraph.
-  /// @param [in] func_desc: functional OpDesc of Case.
-  /// @param [out] graph_nodes: Data groups of subgraph.
+  /// @brief Get parent_index for Const node migration.
+  /// @param [in] all_data_nodes: Data groups of subgraph.
+  /// @param [in] const_node: Const node will process.
+  /// @param [out] parent_index: parent index for replace Data.
   /// @return true: SUCCESS / false: FAILED
   ///
   bool GetAssociatedNodes(const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
@@ -59,11 +60,10 @@ class SubgraphConstMigrationPass : public GraphPass {
 
   ///
   /// @ingroup ge
-  /// @brief Get all Data nodes for all subgraph.
-  /// @param [in] graph_nodes: Data groups of subgraph.
-  /// @param [in] data_base: Data Node for migration.
-  /// @param [in] data_idx: Data groups of subgraph.
-  /// @param [in] data_idx: Data groups of subgraph.
+  /// @brief Check parallel node is same for all subgraph.
+  /// @param [in] all_const_nodes: Const groups of subgraph.
+  /// @param [in] const_node: Const Node for migration.
+  /// @param [in] node_key: Key of Const node.
   /// @return true: Same / false: not same
   ///
   bool IsParallelNodeSame(const map<ComputeGraphPtr, map<string, NodePtr>> &all_const_nodes,
@@ -74,9 +74,10 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @brief Migration subgraph Node to Root
   /// @param [in] graph: Root compute graph.
   /// @param [in] func_node: functional Node of Case.
-  /// @param [in] graph_nodes: Data groups of subgraph.
-  /// @param [in] data_base: Data Node for migration.
-  /// @param [in] node_key: Data groups of subgraph.
+  /// @param [in] all_const_nodes: Const groups of subgraph.
+  /// @param [in] all_data_nodes: Data groups of subgraph.
+  /// @param [in] const_node: Const Node for migration.
+  /// @param [in] node_key: Key of Const node for migration.
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status GraphNodeMigration(const ComputeGraphPtr &graph, const NodePtr &func_node,
@@ -104,8 +105,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   /// @ingroup ge
   /// @brief Append Input Tensor for functional node.
   /// @param [in] graph_nodes: Const groups of subgraph.
-  /// @param [in] func_node: functional Node of Case.
-  /// @param [in] outputs: Parent index of Node output.
+  /// @param [in/out] parent_index: Parent index for migration.
+  /// @param [in/out] all_data_nodes: Data groups of subgraph.
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status AppendParallelNode(const NodePtr &func_node, uint32_t &parent_index,
@@ -113,23 +114,21 @@ class SubgraphConstMigrationPass : public GraphPass {
 
   ///
   /// @ingroup ge
-  /// @brief Delete Node from all subgraph.
-  /// @param [in] graph_nodes: Data groups of subgraph.
-  /// @param [in] detach: Node will move to parent.
-  /// @param [in] outputs: Parent index of Node output.
+  /// @brief Delete Node from subgraph.
+  /// @param [in] graph: subgraph for process.
+  /// @param [in] const_node: Node will move to parent.
+  /// @param [in] data_node: Place holder for Const.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status DetachParallelNode(const ComputeGraphPtr &graph, const map<string, NodePtr> &const_nodes,
-                            const NodePtr &const_node, const NodePtr &data_node);
+  Status DetachParallelNode(const ComputeGraphPtr &graph, const NodePtr &const_node, const NodePtr &data_node);
 
   ///
   /// @ingroup ge
   /// @brief Move Node to Parent Graph.
   /// @param [in] graph: Parent compute graph.
   /// @param [in] func_node: functional Node of Case.
-  /// @param [in] attach: Node will move to parent.
-  /// @param [in] inputs: Parent index of Node input.
-  /// @param [in] outputs: Parent index of Node output.
+  /// @param [in] const_node: Node will move to parent.
+  /// @param [in] parent_index: Parent index of Node input.
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status AttachParallelNode(const ComputeGraphPtr &graph, const NodePtr &func_node,

@@ -27,6 +27,8 @@ namespace {
 const char *const kTrainingTrace = "training_trace";
 const char *const kFpPoint = "fp_point";
 const char *const kBpPoint = "bp_point";
+
+#ifdef DAVINCI_SUPPORT_PROFILING
 const size_t kReportMaxLen = 2048;
 const int32_t kMaxDeviceNum = 256;
 const std::string kConfigNumsdev = "devNums";
@@ -35,6 +37,7 @@ const std::string kProfStart = "prof_start";
 const std::string kProfStop = "prof_stop";
 const std::string kProfModelSubscribe = "prof_model_subscribe";
 const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
+#endif
 }  // namespace
 
 namespace ge {
@@ -110,7 +113,7 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     }
     // enable profiling by env
     is_execute_profiling_ = true;
-    GELOGI("The profiling in env is %s, %s", env_profiling_mode, prof_conf.options); 
+    GELOGI("The profiling in env is %s, %s", env_profiling_mode, prof_conf.options);
   }
 
   if (!is_execute_profiling_) {
@@ -186,7 +189,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
       GELOGW("Call rtProfilerStop failed, ret:%d", rt_ret);
     }
   }
- 
+
   // stop profiling
   if (prof_cb_.msprofCtrlCallback == nullptr) {
       GELOGE(ge::PARAM_INVALID, "MsprofCtrlCallback callback is nullptr.");
@@ -801,7 +804,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMs
   if (prof_cb_.msprofReporterCallback == nullptr) {
     GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
     return ge::PARAM_INVALID;
-  }    
+  }
   return prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_REPORT),
@@ -853,7 +856,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
       return;
     }
   }
-  
+
   return;
 }
 

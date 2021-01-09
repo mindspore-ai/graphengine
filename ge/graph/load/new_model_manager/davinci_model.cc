@@ -520,6 +520,8 @@ Status DavinciModel::DoTaskSink() {
 
   GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
 
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
+
   GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
 
   GE_CHK_RT_RET(rtModelLoadComplete(rt_model_handle_));
@@ -715,19 +717,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   GE_TIMESTAMP_START(DoTaskSink);
   GE_CHK_STATUS_RET(DoTaskSink(), "Task sink failed");
   GE_TIMESTAMP_END(DoTaskSink, "GraphLoader::DoTaskSink");
-
-  auto all_dump_model = GetDumpProperties().GetAllDumpModel();
-  bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
-  bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
-  bool dump_l1fusion_op = (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) ||
-                          findByOmName || findByModelName;
-  if (dump_l1fusion_op) {
-    // malloc 2M for dump l1fusion op
-    GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
-
-    // send l1fusion dump addr to rts
-    GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
-  }
 
   /// In zero copy model, if a aicpu operator is connected to the first or last layer, before model execution,
   /// the aicpu opertor needs to destroy history record, and update operator memory address.
@@ -3951,7 +3940,6 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
   data_dumper_.SetOmName(om_name_);
   data_dumper_.SetComputeGraph(graph);
   data_dumper_.SetRefInfo(saved_task_addrs_);
-  data_dumper_.SetL1FusionAddr(l1_fusion_addr_);
 
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
@@ -4159,6 +4147,25 @@ int64_t DavinciModel::GetFixedAddrsSize(string tensor_name) {
   } else {
     return total_fixed_addr_size_;
   }
+}
+
+Status DavinciModel::InitL1DataDumperArgs() {
+  auto all_dump_model = GetDumpProperties().GetAllDumpModel();
+  bool find_by_om_name = all_dump_model.find(om_name_) != all_dump_model.end();
+  bool find_by_model_name = all_dump_model.find(name_) != all_dump_model.end();
+  bool dump_l1fusion_op =
+    (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) || find_by_om_name || find_by_model_name;
+  if (dump_l1fusion_op) {
+    // malloc 2M for dump l1fusion op
+    GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
+
+    // send l1fusion dump addr to rts
+    GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
+
+    // set addr for l1 data dump
+    data_dumper_.SetL1FusionAddr(l1_fusion_addr_);
+  }
+  return SUCCESS;
 }
 
 }  // namespace ge

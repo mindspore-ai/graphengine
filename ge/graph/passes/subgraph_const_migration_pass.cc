@@ -151,7 +151,7 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
       if (node->GetType() == DATA) {
         uint32_t parent_index = kInvalidParent;
         if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-          return false;
+          return FAILED;
         }
 
         data_nodes[parent_index] = node;

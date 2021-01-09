@@ -688,6 +688,12 @@ Status GraphOptimize::HandleMemoryRWConflict(ComputeGraphPtr &compute_graph) {
     if (node->GetType() == NETOUTPUT && AttrUtils::HasAttr(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX)) {
       continue;
     }
+    bool identity_reserved = false;
+    AttrUtils::GetBool(node->GetOpDesc(), "_zero_copy_identity_reserved", identity_reserved);
+    if (identity_reserved) {
+      GELOGD("Identity [%s] need to be reserved.", node->GetName().c_str());
+      continue;
+    }
     if (node->GetType() == IDENTITY || node->GetType() == READVARIABLEOP) {
       // split identity
       ret = SplitIdentity(node);

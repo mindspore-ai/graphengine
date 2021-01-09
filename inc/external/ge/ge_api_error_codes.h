@@ -19,7 +19,7 @@
 
 #include <map>
 #include <string>
-#include "ge_error_codes.h"
+#include "ge_acl_error_codes.h"
 
 namespace ge {
 #ifdef __GNUC__

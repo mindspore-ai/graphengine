@@ -443,7 +443,9 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
                         .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
                         .Build();
   (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
-  (void)AttrUtils::SetBool(op_desc, "_zero_copy_identity_reserved", true);
+  if (graph->GetParentNode() != nullptr || !graph->GetParentNode()->GetOwnerComputeGraph()->GetGraphUnknownFlag()) {
+    (void)AttrUtils::SetBool(op_desc, "_zero_copy_identity_reserved", true);
+  }
   if (GraphUtils::InsertNodeAfter(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Insert IDENTITY node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
     return FAILED;

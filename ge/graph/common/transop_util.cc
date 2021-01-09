@@ -23,7 +23,10 @@
 namespace {
 const int kInvalidTransopDataIndex = -1;
 const int kTransOpOutIndex = 0;
-std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {{ge::DT_FLOAT, ge::DT_BOOL}};
+std::map<ge::DataType, ge::DataType> precision_loss_transfer_map = {
+  {ge::DT_FLOAT, ge::DT_BOOL},
+  {ge::DT_INT64, ge::DT_BOOL}
+};
 }  // namespace
 
 namespace ge {

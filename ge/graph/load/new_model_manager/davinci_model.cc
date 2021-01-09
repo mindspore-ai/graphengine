@@ -4160,7 +4160,12 @@ Status DavinciModel::InitL1DataDumperArgs() {
     GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
 
     // send l1fusion dump addr to rts
-    GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
+    if (rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion) !=
+        RT_ERROR_NONE) {
+      GELOGE(FAILED, "Call rtDumpAddrSet failed");
+      GE_CHK_RT(rtFree(l1_fusion_addr_));
+      return FAILED;
+    }
 
     // set addr for l1 data dump
     data_dumper_.SetL1FusionAddr(l1_fusion_addr_);

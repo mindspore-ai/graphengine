@@ -670,6 +670,7 @@ set(INFER_SRC_LIST
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
+message("CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
 ############ libge_runner.so ############
 add_library(ge_runner SHARED
     ${TRAIN_SRC_LIST}
@@ -700,8 +701,8 @@ target_compile_definitions(ge_runner PRIVATE
 target_compile_options(ge_runner PRIVATE
     -O2
     -fno-common
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-const-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable>
 )
 
 target_include_directories(ge_runner SYSTEM PRIVATE
@@ -769,8 +770,8 @@ target_compile_definitions(ge_compiler PRIVATE
 target_compile_options(ge_compiler PRIVATE
     -O2
     -fno-common
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_HOST_SYSTEM_PROCESSOR},aarch64>:-Werror=unused-const-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable>
 )
 
 target_include_directories(ge_compiler SYSTEM PRIVATE

@@ -4162,8 +4162,8 @@ Status DavinciModel::InitL1DataDumperArgs() {
     // send l1fusion dump addr to rts
     if (rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion) !=
         RT_ERROR_NONE) {
+      // l1_fusion_addr_ will be free when DavinciModel destruct
       GELOGE(FAILED, "Call rtDumpAddrSet failed");
-      GE_CHK_RT(rtFree(l1_fusion_addr_));
       return FAILED;
     }
 

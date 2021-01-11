@@ -180,8 +180,12 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
         }
 
         if (peer_name_list.empty()) {
-          ctrl_only_const_nodes.insert(node);
-          GELOGI("%s, Const: %s, no data link will removed", subgraph->GetName().c_str(), node->GetName().c_str());
+          GELOGI("%s, Const: %s, no data output", subgraph->GetName().c_str(), node->GetName().c_str());
+          const auto in_all_nodes = node->GetInAllNodes();
+          if (in_all_nodes.empty() || std::all_of(in_all_nodes.begin(), in_all_nodes.end(),
+                                                  [](const NodePtr &n) { return n->GetType() == DATA; })) {
+            ctrl_only_const_nodes.insert(node);
+          }
           continue;
         }
 
@@ -456,7 +460,8 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
                                                     const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
                                                     const string &node_key, uint32_t parent_index) {
   if (node_key.empty() || parent_index == kInvalidParent) {
-    GELOGE(FAILED, "Graph: %s, inputs is empty", graph->GetName().c_str());
+    GELOGE(FAILED, "Graph: %s, node key: %s, parent index: %u invalid",
+           graph->GetName().c_str(), node_key.c_str(), parent_index);
     return FAILED;
   }
 

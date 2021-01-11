@@ -145,6 +145,7 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
 
+    set<NodePtr> ctrl_only_const_nodes;
     auto &data_nodes = all_data_nodes[subgraph];
     auto &const_nodes = all_const_nodes[subgraph];
     for (auto &node : subgraph->GetDirectNode()) {
@@ -178,14 +179,25 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
           peer_name_list.insert(fixed_name + ":" + std::to_string(in_anchor->GetIdx()));
         }
 
+        if (peer_name_list.empty()) {
+          ctrl_only_const_nodes.insert(node);
+          GELOGI("%s, Const: %s, no data link will removed", subgraph->GetName().c_str(), node->GetName().c_str());
+          continue;
+        }
+
         string key_of_const;
         for (const string &name : peer_name_list) {
           key_of_const += (key_of_const.empty() ? name : "_" + name);
         }
 
         const_nodes[key_of_const] = node;
-        GELOGD("%s, Key: %s, Const: %s", subgraph->GetName().c_str(), key_of_const.c_str(), node->GetName().c_str());
+        GELOGD("%s, Const: %s, Key: %s", subgraph->GetName().c_str(), node->GetName().c_str(), key_of_const.c_str());
       }
+    }
+
+    for (auto &node : ctrl_only_const_nodes) {
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(subgraph, node),
+          "Remove node without relink failed, node: %s", node->GetName().c_str());
     }
   }
 
@@ -352,7 +364,8 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &gra
     const auto owner_node = out_anchor->GetOwnerNode();
     GELOGI("Remove Edge: %s %s", owner_node->GetName().c_str(), const_node->GetName().c_str());
     if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty() && owner_node != data_node) {
-      graph->RemoveNode(owner_node);
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, owner_node),
+          "Remove node without relink failed, node: %s", owner_node->GetName().c_str());
     }
   }
 
@@ -414,7 +427,8 @@ Status SubgraphConstMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
     const auto owner_node = out_anchor->GetOwnerNode();
     GELOGI("Remove Edge: %s %s", owner_node->GetName().c_str(), func_node->GetName().c_str());
     if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty()) {
-      graph->RemoveNode(owner_node);
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, owner_node),
+          "Remove node without relink failed, node: %s", owner_node->GetName().c_str());
     }
   }
   GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(const_node->GetOutDataAnchor(kZeroIndex), in_anchor), "Add edge failed");
@@ -472,7 +486,8 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
       return FAILED;
     }
 
-    GE_CHK_GRAPH_STATUS_RET(subgraph->RemoveNode(move_node), "Remove node failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(subgraph, move_node),
+        "Remove node without relink failed, node: %s", move_node->GetName().c_str());
     GELOGI("Remove Node: %s %s", subgraph->GetName().c_str(), move_node->GetName().c_str());
   }
 

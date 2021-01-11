@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -519,7 +519,8 @@ REG_OP(Unpack)
 * @par Inputs:
 * x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of the
 *    following types:float32, double, int32, uint8, int16, int8, int64, uint16,
-*    float16, uint32, uint64
+*    float16, uint32, uint64. The inputs must have data_format with one of follows:
+*    NHWC, NCHW.
 
 * @par Attributes:
 * @li ksizes: A required list or tuple. The size of the sliding window for each
@@ -534,7 +535,6 @@ REG_OP(Unpack)
 * This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
 * @li padding: A required string. The type of padding algorithm to use,
   support "SAME" or "VALID". \n
-* @li data_format: A required string. The format of input, only supported NHWC. \n
 
 * @par Outputs:
 * y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *
@@ -555,7 +555,6 @@ REG_OP(ExtractImagePatches)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(rates, ListInt)
     .REQUIRED_ATTR(padding, String)
-    .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(ExtractImagePatches)
 
 /**
@@ -564,6 +563,7 @@ REG_OP(ExtractImagePatches)
 
 * @par Inputs:
 * x: A 5D Tensor with shape [batch, in_planes, in_rows, in_cols, depth] . \n
+*    The inputs must have data_format with one of follows: NDHWC, NCDHW. \n
 
 * @par Attributes:
 * @li ksizes: A required list or tuple. The size of the sliding window for each
@@ -572,7 +572,6 @@ REG_OP(ExtractImagePatches)
 * patches are in "x". Must be: [1, stride_planes, stride_rows, stride_cols, 1].
 * @li padding: A required string. The type of padding algorithm to use ,
 * support "SAME" or "VALID" . \n
-* @li data_format: An optional string. The format of input, only supported NDHWC. \n
 
 * @par Outputs:
 * Output: A 5D Tensor with shape [batch, out_planes, out_rows, out_cols, ksize_planes *
@@ -591,7 +590,6 @@ REG_OP(ExtractVolumePatches)
     .REQUIRED_ATTR(ksizes, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
-    .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**

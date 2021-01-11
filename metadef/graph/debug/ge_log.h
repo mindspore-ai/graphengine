@@ -20,7 +20,7 @@
 #include "graph/ge_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 
-#define GE_LOGE(...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, __VA_ARGS__)
+#define GE_LOGE(fmt, ...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, fmt, ##__VA_ARGS__)
 
 #define GE_LOGI_IF(condition, ...) \
   if ((condition)) {               \

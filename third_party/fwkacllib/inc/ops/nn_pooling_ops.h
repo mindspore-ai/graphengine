@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,83 @@ REG_OP(AvgPool3DD)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(AvgPool3DD)
 
+/**
+* @brief Computes AvgPool3DGrad function.
+
+* @par Inputs:
+* @li orig_input_shape: An NDHWC tensor of type float16, float32, or double.
+* @li grads: An NDHWC tensor of type int32.
+
+* @par Attributes:
+* @li ksize: List of ints that has length 1, 3 or 5. The size of the window for each dimension of the input tensor.
+* @li strides:List of ints that has length 1, 3 or 5. The stride of the sliding window for each dimension of the input tensor.
+* @li pads: List of ints, implicit zero paddings on both sides of the input.
+* @li ceil_mode: When true, will use ceil instead of floor in the formula to compute the output shape.
+* @li count_include_pad: When true, will include the zero-padding in the averaging calculation.
+* @li divisor_override: if specified, it will be used as divisor, otherwise size of the pooling region will be used.
+* @li data_format: A string, format of input data.
+
+* @par Outputs:
+* @output: A mutable tensor with the same shape and type as "orig_input".
+
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator AvgPoolGrad.
+*/
+
+REG_OP(AvgPool3DGrad)
+    .INPUT(orig_input_shape, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .INPUT(grads, TensorType({DT_INT32}))
+    .OUTPUT(output, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .REQUIRED_ATTR(ksize, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(ceil_mode, Bool, false)
+    .ATTR(count_include_pad, Bool, true)
+    .ATTR(divisor_override, Int, 0)
+    .ATTR(data_format, String, "NDHWC")
+    .OP_END_FACTORY_REG(AvgPool3DGrad)
+
+/**
+* @brief Performs average pooling on the input.
+
+* @par Inputs:
+* @li grads: An NDHWC tensor of type float16.
+* @li filter: An optional tensor of type float16, fractal_z_3d layout.
+* @li multiplier: An optional tensor of float16.
+
+* @par Attributes:
+* @li orig_input_shape: List of ints that has length 5. The size of the window for each dimension of the input tensor.
+* @li ksize: List of ints that has length 3. The size of the window for each dimension of the input tensor.
+* @li strides:List of ints that has length 3. The stride of the sliding window for each dimension of the input tensor.
+* @li pads: List of ints, implicit zero paddings on both sides of the input.
+* @li ceil_mode: When true, will use ceil instead of floor in the formula to compute the output shape.
+* @li count_include_pad: When true, will include the zero-padding in the averaging calculation.
+* @li divisor_override: if specified, it will be used as divisor, otherwise size of the pooling region will be used.
+* @li data_format: A string, format of input data . \n
+
+* @par Outputs:
+* @output: The average pooled output tensor . \n
+
+* @attention Constraints:
+* @li "ksize" is in the range [1, 255]. "strides" is in the range [1, 63]
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator AvgPool3DGradD.
+*/
+REG_OP(AvgPool3DGradD)
+    .INPUT(grads, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(filter, TensorType({DT_FLOAT16}))
+    .OPTIONAL_INPUT(multiplier, TensorType({DT_FLOAT16}))
+    .OUTPUT(output, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .REQUIRED_ATTR(orig_input_shape, ListInt)
+    .REQUIRED_ATTR(ksize, ListInt)
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(pads, ListInt)
+    .ATTR(ceil_mode, Bool, false)
+    .ATTR(count_include_pad, Bool, true)
+    .ATTR(divisor_override, Int, 0)
+    .ATTR(data_format, String, "NDHWC")
+    .OP_END_FACTORY_REG(AvgPool3DGradD)
 
 /**
 *@brief Performs max_pool_ext2 on the input . \n
@@ -350,6 +427,31 @@ REG_OP(MaxPool3D)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(MaxPool3D)
 
+/**
+*@brief Applies a 2D adaptive max pooling over an input signal conposed of several input planes. \n
+* The output is of size H x W, for any input size. 
+
+* @par Inputs:
+* One input, including:
+* @li x: A Tensor. Must be one of the following data types:
+*     float16, float32, float64. \n
+
+* @par Attributes:
+* @li output_size: A required list of 2 ints
+*    specifying the size (H,W) of the output tensor. \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same data type as "x" \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator AdaptiveMaxPool2d.
+*/
+REG_OP(AdaptiveMaxPool2d)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .OUTPUT(argmax, TensorType::IndexNumberType())
+    .REQUIRED_ATTR(output_size, ListInt)
+    .OP_END_FACTORY_REG(AdaptiveMaxPool2d)
 
 /**
 * @brief Computes second-order gradients of the maxpooling3d function . \n

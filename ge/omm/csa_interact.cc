@@ -78,8 +78,8 @@ void CsaInteract::Init(int32_t dev_index, int64_t job_id) {
 Status CsaInteract::WriteJobState(JobState job_state, JobSubState job_sub_state, uint32_t module_ret_errcode,
                                   ErrorModule error_module) {
   if (!is_init_) {
-    GELOGE(INTERNAL_ERROR, "CsaInteract has not init, can't WriteJobState");
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "CsaInteract has not init, can't WriteJobState");
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   if ((curr_state_ == JOBSTATE_FAILED) || (curr_state_ == JOBSTATE_KILLED)) {
     return SUCCESS;

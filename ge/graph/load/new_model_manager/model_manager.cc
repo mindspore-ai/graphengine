@@ -81,7 +81,8 @@ ModelManager::ModelManager() {
   session_id_bias_ = 0;
 }
 
-Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id) {
+Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id,
+                                    uint32_t sub_model_id) {
   STR_FWK_OP_KERNEL param_base = {};
   void *devicebase = nullptr;
   void *aicpu_kernel_addr = nullptr;
@@ -91,10 +92,11 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   param_base.fwkKernelBase.fwk_kernel.sessionID = session_id;
   if (op_type == aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY) {
     std::vector<uint64_t> v_aicpu_kernel;
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                            std::to_string(sub_model_id);
     auto iter = model_aicpu_kernel_.find(model_key);
     if (iter != model_aicpu_kernel_.end()) {
-      GELOGD("kernel destroy session_id %lu, model_id %u.", session_id, model_id);
+      GELOGD("kernel destroy session_id %lu, model_id %u, sub_model_id %u..", session_id, model_id, sub_model_id);
       v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
       // Insert size of aicpu kernel vector in the first element
       v_aicpu_kernel.insert(v_aicpu_kernel.begin(), v_aicpu_kernel.size());
@@ -192,7 +194,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
       GE_CHK_RT(rtSetDevice(static_cast<int32_t>(GetContext().DeviceId())));
     }
 
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0, 0);
     if (ret != SUCCESS) {
       GELOGW("The session: %lu destroy failed.", session_id);
     } else {
@@ -218,20 +220,22 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
-    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
-    return GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
+    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
   DestroyAicpuSession(session_id);
   return SUCCESS;
 }
 
-ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
+ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
   std::lock_guard<std::mutex> lock(map_mutex_);
-  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                          std::to_string(sub_model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id,
+                                sub_model_id);
     if (ret != SUCCESS) {
       GELOGE(FAILED, "Destroy aicpu kernel failed.");
       return FAILED;
@@ -240,10 +244,12 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
   return SUCCESS;
 }
 
-ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
+ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id,
+                                           uint64_t kernel_id) {
   std::lock_guard<std::mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
-  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                          std::to_string(sub_model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
   }
@@ -378,7 +384,8 @@ Status ModelManager::DeleteModel(uint32_t id) {
   auto hybrid_model_it = hybrid_model_map_.find(id);
   if (it != model_map_.end()) {
     uint64_t session_id = it->second->GetSessionId();
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id);
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id)  + "_" +
+                            std::to_string(it->second->SubModelId());
     auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
     if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
       (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
@@ -905,7 +912,7 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
   davinci_model->SetModelDescVersion(new_model_desc);
@@ -1224,7 +1231,8 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
     // Zero copy is enabled by default, no need to judge.
     uint64_t session_id_davinci = davinci_model->GetSessionId();
     uint32_t model_id_davinci = davinci_model->GetModelId();
-    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci);
+    uint32_t sub_model_id = davinci_model->SubModelId();
+    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci, sub_model_id);
     if (status != SUCCESS) {
       GELOGW("Destroy specified aicpu kernel failed, session id is %lu, model id is %u.", session_id_davinci,
              model_id_davinci);
@@ -1244,7 +1252,7 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   auto it = sess_ids_.find(session_id);
   // never been created by any model
   if (it == sess_ids_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0, 0);
     if (ret == SUCCESS) {
       (void)sess_ids_.insert(session_id);
       GELOGI("The session: %lu create success.", session_id);
@@ -1558,6 +1566,12 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   size_t aicpu_op_nums = aicpu_optype_list.size();
   size_t tf_op_nums = aicpu_tf_optype_list.size();
   size_t op_nums = aicpu_op_nums + tf_op_nums;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
   // malloc sysOpInfoList in SysOpCheckInfo
   status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
@@ -1637,8 +1651,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     return RT_ERROR_TO_GE_STATUS(status);
   }
   allocated_mem.push_back(args);
-  GE_CHK_RT(
-      rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo),
+                     RT_MEMCPY_HOST_TO_DEVICE));
   GE_CHK_RT(rtMemcpy(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)),
                      sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res), sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
   GE_CHK_RT(rtStreamCreate(&stream, 0));
@@ -1647,24 +1661,21 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
   // Check the response
-  SysOpCheckResp *d_op_check_info_res = reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
+  SysOpCheckResp *d_op_check_info_res =
+    reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(
+    reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
   (void)memset_s(&op_check_info_res, sizeof(SysOpCheckResp), 0, sizeof(SysOpCheckResp));
   GE_CHK_RT(rtMemcpy(&op_check_info_res, sizeof(SysOpCheckResp), d_op_check_info_res, sizeof(SysOpCheckResp),
                      RT_MEMCPY_DEVICE_TO_HOST));
-  std::function<void()> callback = [&]() {
-    for (auto mem : allocated_mem) {
-      GE_CHK_RT(rtFree(mem));
-    }
-    GE_CHK_RT(rtStreamDestroy(stream));
-  };
 
   if (op_check_info_res.isWithoutJson) {
     GELOGI("No need to check aicpu in this scenoria.");
-    GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return SUCCESS;
   }
   uint64_t res_op_nums = op_check_info_res.opListNum;
@@ -1682,7 +1693,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
                        sizeof(SysOpInfo) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
     if (res_ret_code_list.size() != res_aicpu_op_info_list.size() || res_ret_code_list.size() != res_op_nums) {
       GELOGE(FAILED, "Number of retcode is not equal to number of op type.");
-      GE_MAKE_GUARD(release, callback);
+      GE_CHK_RT(rtStreamDestroy(stream));
       return FAILED;
     }
     std::string fail_reason;
@@ -1705,11 +1716,11 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     }
     fail_reason += "not support.";
     GELOGE(FAILED, "Check aicpu op_type failed. details: %s", fail_reason.c_str());
-    GE_MAKE_GUARD(release, callback);
+    GE_CHK_RT(rtStreamDestroy(stream));
     return FAILED;
   }
 
-  GE_MAKE_GUARD(release, callback);
+  GE_CHK_RT(rtStreamDestroy(stream));
   GELOGI("Cpu kernel launch check optype task success.");
   return SUCCESS;
 }

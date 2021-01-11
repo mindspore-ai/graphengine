@@ -123,11 +123,22 @@ Status KnownNodeTask::Init(TaskContext &context) {
            davinci_model_->GetRuntimeParam().mem_base, davinci_model_->GetRuntimeParam().mem_size);
   }
   if (!load_flag_) {
+    auto dump_properties = context.GetDumpProperties();
+    if (dump_properties.IsDumpOpen()) {
+      davinci_model_->SetDumpProperties(dump_properties);
+    }
+    int32_t device_id = 0;
+    rtError_t rt_ret = rtGetDevice(&device_id);
+    if (rt_ret != RT_ERROR_NONE || device_id < 0) {
+      GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    davinci_model_->SetDeviceId(device_id);
     GE_CHK_STATUS_RET(davinci_model_->Init(), "KnownNodeExecutor::InitDavinciModel failed.");
     load_flag_ = true;
   } else {
     GE_CHK_STATUS_RET(ModelManager::GetInstance()->DestroyAicpuKernel(davinci_model_->GetSessionId(),
-            davinci_model_->Id()), "KnownNodeTask::Init destroy aicpu kernel failed.");
+            davinci_model_->Id(), davinci_model_->SubModelId()), "KnownNodeTask::Init destroy aicpu kernel failed.");
   }
   GELOGI("[%s] KnownNodeExecutor::Init success.", context.GetNodeName());
   return SUCCESS;
@@ -161,8 +172,9 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
 
   // set known node flag as true
   davinci_model->SetKnownNode(true);
+  davinci_model->SetId(model.GetModelId());
   // set model id as root node's node id
-  davinci_model->SetId(node->GetOpDesc()->GetId());
+  davinci_model->SetSubModelId(node->GetOpDesc()->GetId());
   GELOGD("KnownNodeExecutor::LoadTask node id %ld.", node->GetOpDesc()->GetId());
 
   GE_CHK_STATUS_RET(davinci_model->Assign(ge_model), "KnownNodeExecutor::LoadTask davincimodel assign failed.");

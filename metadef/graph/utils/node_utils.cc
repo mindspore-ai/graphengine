@@ -318,9 +318,16 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
            TypeUtils::DataTypeToSerialString(output_tensor->GetOriginDataType()).c_str());
 
     for (const auto &peer_anchor : out_anchor->GetPeerInDataAnchors()) {
-      if (peer_anchor->GetOwnerNode()->GetOpDesc() == nullptr) {
+      auto peer_anchor_opdesc = peer_anchor->GetOwnerNode()->GetOpDesc();
+      if (peer_anchor_opdesc == nullptr) {
         GELOGE(GRAPH_FAILED, "peer_anchor opdesc is null");
         continue;
+      }
+      if (op_desc->GetId() < peer_anchor_opdesc->GetId() ||
+          peer_anchor_opdesc->GetType() == CONSTANT ||
+          peer_anchor_opdesc->GetType() == CONSTANTOP) {
+          GELOGD("no need to UpdatePeerNodeInputDesc");
+          continue;
       }
       auto peer_input_desc = peer_anchor->GetOwnerNode()->GetOpDesc()->MutableInputDesc(peer_anchor->GetIdx());
       if (peer_input_desc == nullptr) {
@@ -337,22 +344,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY graphStatus NodeUtils::UpdatePeer
                peer_anchor->GetOwnerNode()->GetName().c_str(), peer_anchor->GetIdx(),
                TypeUtils::DataTypeToSerialString(peer_input_dtype).c_str());
       } else if ((!peer_input_dims.empty()) && (out_dims != peer_input_dims)) {
-        string out_shape_str, peer_in_shape_str;
-        out_shape_str += "[";
-        for (int64_t dim : out_dims) {
-          out_shape_str += std::to_string(dim) + " ";
-        }
-        out_shape_str += "]";
-        peer_in_shape_str += "[";
-        for (int64_t dim : peer_input_dims) {
-          peer_in_shape_str += std::to_string(dim) + " ";
-        }
-        peer_in_shape_str += "]";
-
         GELOGW("current node [%s] [%d]\'th out_shape is [%s].peer input node [%s] [%d]\'th "
                "input_shape is [%s].The two shape should be same! Please check graph and fix it",
-               node_ptr->GetName().c_str(), out_anchor->GetIdx(), out_shape_str.c_str(),
-               peer_anchor->GetOwnerNode()->GetName().c_str(), peer_anchor->GetIdx(), peer_in_shape_str.c_str());
+               node_ptr->GetName().c_str(), out_anchor->GetIdx(), output_tensor->GetShape().ToString().c_str(),
+               peer_anchor->GetOwnerNode()->GetName().c_str(), peer_anchor->GetIdx(),
+               peer_input_desc->GetShape().ToString().c_str());
       }
       GELOGI("Peer input opdesc name is %s, need to flush: shape size is %zu, datatype is %d, original datatype is %d",
              peer_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),

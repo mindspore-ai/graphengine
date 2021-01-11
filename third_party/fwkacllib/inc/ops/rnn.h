@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,16 +187,16 @@ REG_OP(DynamicRNNGrad)
 *@brief: DynamicRNN calculation.
 *@par Inputs:
 *ten inputs:
-*@li x:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li w:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li b:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-*@li seq_length:A 1D Tensor. Must be one of the following types: int32. The format must be ND.
-*@li init_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li init_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li wci:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li wcf:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li wco:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li mask:A 1D Tensor. Must be one of the following types: uint8. The format must be ND . \n
+*@li x:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li seq_length:A optional 1D Tensor. Must be one of the following types: int32. The format must be ND.
+*@li init_h:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li init_c:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li wci:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wcf:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wco:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li mask:A optional 1D Tensor. Must be one of the following types: uint8. The format must be ND . \n
 
 *@par Attributes:
 *@li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
@@ -221,6 +221,8 @@ REG_OP(DynamicRNNGrad)
 *@li f:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li o:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@par Third-party framework compatibility:
+* Compatible with the TF operator LSTM.
 */
 REG_OP(DynamicRNN)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -258,17 +260,17 @@ REG_OP(DynamicRNN)
 *@brief: DynamicLSTMV2 calculation.
 *@par Inputs:
 *ten inputs:
-*@li x:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li w:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li b:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-*@li cont:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-*@li w_xc_x_static:A 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-*@li h0:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li c0:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li wci:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li wcf:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li wco:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
-*@li mask:A 1D Tensor. Must be one of the following types: uint8. The format must be ND . \n
+*@li x:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li cont:A required 2D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li w_xc_x_static:A optional 2D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li h0:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li c0:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li wci:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wcf:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wco:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li mask:A optional 1D Tensor. Must be one of the following types: uint8. The format must be ND .
 
 *@par Attributes:
 *@li num_output:An integer identifying the num projection in the op. Default to 0.
@@ -283,6 +285,10 @@ REG_OP(DynamicRNN)
 *@li output_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li last_output_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li last_output_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@par Third-party framework compatibility:
+* Compatible with the Caffe operator LSTM.
+*@par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(DynamicLSTMV2)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -854,6 +860,56 @@ REG_OP(EmbeddingDenseGrad)
     .ATTR(padding_idx, Int, -1)
     .ATTR(scale_grad_by_freq, Bool, false)
     .OP_END_FACTORY_REG(EmbeddingDenseGrad)
+
+/**
+*@brief CommonLSTM calculation.
+*@par Inputs:
+*eight inputs: \n
+*@li x:Each time step is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li w:Each direction is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li r:Each direction is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li b:An optional input. Each direction is a 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li sequence_lens:An optional input. A 1D Tensor.Must be one of the following types: int32. The format must be ND.
+*@li initial_h:An optional input. Each direction is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li initial_c:An optional input. Each direction is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li p:An optional input. Each direction is a 1D Tensor.Must be one of the following types: float16, float32. The format must be ND.
+
+*@par Attributes:
+*@li activation_alpha:Optional scaling values used by some activation functions. Empty is currently supported.
+*@li activation_beta:Optional scaling values used by some activation functions. Empty is currently supported.
+*@li activations:The list of activation functions. Empty is currently supported.
+*@li clip:An float identifying the cell clip in the op. Default to -1.
+*@li direction:Specify if the RNN is forward, reverse, or bidirectional. Must be one of forward(default), reverse, or bidirectional.
+*@li hidden_size:Number of neurons in the hidden layer. Reserved.
+*@li input_forget:Couple the input and forget gates if 1. Reserved.
+
+*@par Outputs:
+*three outputs: \n
+*@li y:First dimension is time step, second dimension is direction, others is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li y_h:Each direction is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li y_c:Each direction is a 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*/
+
+REG_OP(CommonLSTM)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(r, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(sequence_lens, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(initial_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(initial_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(p, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(activation_alpha, ListFloat, {})
+    .ATTR(activation_beta, ListFloat, {})
+    .ATTR(activations, ListString, {})
+    .ATTR(clip, Float, -1.0)
+    .ATTR(direction, String, "forward")
+    .REQUIRED_ATTR(hidden_size, Int)
+    .ATTR(input_forget, Int, 0)
+    .OP_END_FACTORY_REG(CommonLSTM)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RNN_H_

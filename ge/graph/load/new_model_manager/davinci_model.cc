@@ -734,7 +734,6 @@ Status DavinciModel::ReportProfilingData() {
   }
   ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info);
   GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
-  op_list_.clear();
 
   return SUCCESS;
 }

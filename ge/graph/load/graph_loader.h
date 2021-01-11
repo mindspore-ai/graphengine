@@ -68,7 +68,7 @@ class GraphLoader {
                              const std::vector<GeTensorDesc> &input_desc, OutputData &output_data,
                              std::vector<GeTensorDesc> &output_desc);
 
-  static Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
+  static Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id);
 
   static Status DestroyAicpuSessionForInfer(uint32_t model_id);
 

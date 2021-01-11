@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1487,6 +1487,9 @@ REG_OP(DecodeBboxV2)
 *@par Outputs:
 * @li y1: A Tensor. Must have the same type as x.
 * @li y2: A Tensor. Indices of y1 in x.Dtype must be int32.
+* 
+*@attention Constraints:
+* The upper limit of data on the direction axis is 7040.
 */
 REG_OP(Sort)
     .INPUT(x, TensorType({ DT_FLOAT16 }))

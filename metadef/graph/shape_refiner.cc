@@ -766,6 +766,7 @@ graphStatus ShapeRefiner::InferShapeAndType(const NodePtr &node, bool before_sub
              TypeUtils::FormatToSerialString(output_tensor->GetOriginFormat()).c_str(),
              TypeUtils::DataTypeToSerialString(output_tensor->GetOriginDataType()).c_str());
     }
+    GE_CHK_STATUS_RET_NOLOG(NodeUtils::UpdatePeerNodeInputDesc(node));
   } else {
     GELOGE(GRAPH_FAILED, "%s call infer function failed.", node->GetName().c_str());
     return GRAPH_FAILED;

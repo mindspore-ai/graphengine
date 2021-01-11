@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -365,6 +365,25 @@ REG_OP(BiasAddGrad)
  * 4-D with shape [batch, out_height, out_width, out_channels]
  * or [batch, out_channels, out_height, out_width].
  * Gradients with respect to the output of the convolution.
+ *\n
+ *\n
+ * The following are the supported data types and data formats:
+*@verbatim
+    | Tensor    | out_bckprop | filter  | y
+    ------------|-------------|---------|--------
+    | Data Type | float16     | float16 | float16
+    |           |-------------|---------|--------
+    |           | float32     | float32 | float32
+    |           |-------------|---------|--------
+    |           | float64     | float64 | float64
+    ------------|-------------|---------|--------
+    | Format    | NCHW        | NCHW    | NCHW
+    |           | NHWC        | HWCN    | NHWC
+@endverbatim
+ * For float32 and float64 type, the actual calculation on the chip is based on
+ * float16.
+ *\n
+ *
 *@par Attributes:
  * Five attributes:
  * @li strides: A tuple/list of 4 integers. The stride of the sliding window
@@ -377,8 +396,52 @@ REG_OP(BiasAddGrad)
  * channels.
  * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to
  * "NHWC". Specify the data format of the input and output data.
+ *\n
+ *\n
+ * The following value range restrictions must be met:
+*@verbatim
+    | Name             | Field    | Scope
+    -------------------|----------|--------------
+    | input_size       | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Filter           | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | out_backprop     | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | y(fmap)          | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Stride           | H        | [1, 63]
+    |                  | W        | [1, 63]
+    -------------------|----------|--------------
+    | Padding          | Top      | [0, 255]
+    |                  | Bottom   | [0, 255]
+    |                  | Left     | [0, 255]
+    |                  | Right    | [0, 255]
+    -------------------|----------|--------------
+    | Dilation         | H        | [1, 255]
+    |                  | W        | [1, 255]
+
+@endverbatim
+ * In Ascend910, fmap or out_backprop's H and W not support 1 when
+ * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ *\n
+ *
 *@par Outputs:
  * y: A Tensor. Has the same type as filter,and has same format as input_size.
+ *\n
+ *     out_backprop_height = (fmap_height + pad_top + pad_bottom -
+ *                           (dilation_h * (filter_height - 1) + 1))
+ *                           / stride_h + 1
+ *\n
+ *     out_backprop_width = (fmap_width + pad_left + pad_right -
+ *                          (dilation_w * (filter_width - 1) + 1))
+ *                          / stride_w + 1
+ *\n
+ *
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv2d_backprop_input
 */
@@ -454,6 +517,21 @@ REG_OP(Conv2DBackpropInputD)
  * @li bias: An optional tensor. Must have the same type as "y".
  * @li offset_w: An optional 1D tensor for quantized deconvolution.
  * Type is int8. Reserved.\n
+ *\n
+ *\n
+ * The following are the supported data types and data formats:
+*@verbatim
+    | Tensor    | x       | filter  | bias    | y
+    ------------|---------|---------|---------|--------
+    | Data Type | float16 | float16 | float16 | float16
+    |           |---------|---------|---------|--------
+    |           | int8    | int8    | int32   | int32
+    ------------|---------|---------|---------|--------
+    | Format    | NCHW    | NCHW    | ND      | NCHW
+@endverbatim
+ * For int8, a dequant or requant operator must be followed.
+ *\n
+ *
 *@par Attributes:
  * Six attributes:
  * @li strides: A tuple or list of 2 integers. The stride of the sliding window
@@ -468,8 +546,51 @@ REG_OP(Conv2DBackpropInputD)
   Specify the data format of the input and output data.
  * @li offset_x: An optional integer for quantized deconvolution.
  * Defaults to "0".
+ *\n
+ *\n
+ * The following value range restrictions must be met:
+*@verbatim
+    | Name             | Field    | Scope
+    -------------------|----------|--------------
+    | x (out_backprop) | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Filter           | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | y (fmap)         | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Stride           | H        | [1, 63]
+    |                  | W        | [1, 63]
+    -------------------|----------|--------------
+    | Padding          | Top      | [0, 255]
+    |                  | Bottom   | [0, 255]
+    |                  | Left     | [0, 255]
+    |                  | Right    | [0, 255]
+    -------------------|----------|--------------
+    | Dilation         | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | Offset_x         |          | [-128, 127]
+
+@endverbatim
+ * In Ascend910, fmap or out_backprop's H and W not support 1 when
+ * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ *\n
+ *
 *@par Outputs:
  * y: A Tensor. 4D tensor with shape [batch, channels, height, width].
+ *\n
+ *     out_backprop_height = (fmap_height + pad_top + pad_bottom -
+ *                           (dilation_h * (filter_height - 1) + 1))
+ *                           / stride_h + 1
+ *\n
+ *     out_backprop_width = (fmap_width + pad_left + pad_right -
+ *                          (dilation_w * (filter_width - 1) + 1))
+ *                          / stride_w + 1
+ *\n
+ *
  * When type of x is float16, the type of y must be float16.
  * When type of x is int8, the type of y must be int32.
 */
@@ -502,6 +623,25 @@ REG_OP(Deconvolution)
  * [batch, out_height, out_width, out_channels] or [batch, out_channels,
  * out_height, out_width]. Gradients with respect to the output of the
  * convolution.
+ *\n
+ *\n
+ * The following are the supported data types and data formats:
+*@verbatim
+    | Tensor    | x       | out_backprop | y
+    ------------|---------|--------------|---------
+    | Data Type | float16 |    float16   | float16
+    |           |---------|--------------|---------
+    |           | float32 |    float32   | float32
+    |           |---------|--------------|---------
+    |           | float64 |    float64   | float64
+    |-----------|---------|--------------|---------
+    | Format    | NCHW    |     NCHW     | NCHW
+    |           | NHWC    |     NHWC     | HWCN
+@endverbatim
+ * For float32 and float64 type of x and outbackprop, the actual calculation on the chip
+ * is based on float16.
+ *\n
+ *
 *@par Attributes:
  * Five attributes:
  * @li strides: A tuple/list of 4 integers. The stride of the sliding window
@@ -514,8 +654,52 @@ REG_OP(Deconvolution)
  * channels.
  * @li data_format: An optional string from: "NHWC", "NCHW". Defaults to
  * "NHWC". Specify the data format of the input and output data.
+ *\n
+*\n
+* The following value range restrictions must be met:
+*@verbatim
+    | Name             | Field    | Scope
+    -------------------|----------|--------------
+    | x(fmap)          | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Filter Size      | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | out_backprop     | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | y                | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Stride           | H        | [1, 63]
+    |                  | W        | [1, 63]
+    -------------------|----------|--------------
+    | Padding          | Top      | [0, 255]
+    |                  | Bottom   | [0, 255]
+    |                  | Left     | [0, 255]
+    |                  | Right    | [0, 255]
+    -------------------|----------|--------------
+    | Dilation         | H        | [1, 255]
+    |                  | W        | [1, 255]
+
+@endverbatim
+ * In Ascend910, out_backprop's H and W not support 1 when
+ * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ *\n
+ *
 *@par Outputs:
  * y: A Tensor. Has the same type as x, has the same format as filter_size.
+ *\n
+ *     out_backprop_height = (in_height + pad_top + pad_bottom -
+ *                           (dilation_h * (filter_height - 1) + 1))
+ *                           / stride_h + 1
+ *\n
+ *     out_backprop_width = (in_width + pad_left + pad_right -
+ *                          (dilation_w * (filter_width - 1) + 1))
+ *                          / stride_w + 1
+ *\n
+ *
 *@par Third-party framework compatibility
  * Compatible with Tensorflow's conv2d_backprop_filter
 */
@@ -1031,9 +1215,7 @@ REG_OP(Conv3DBackpropInputD)
 * @li c_t: A optinal Tensor dtype of float16, float32. The cell state at time t . \n
 
 *@par Third-party framework compatibility:
-* Compatible with the Pytorch operator adds.
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+* Compatible with the Caffe operator LSTM.
 */
 REG_OP(LSTM)
     .INPUT(x, TensorType({DT_FLOAT16}))
@@ -1275,6 +1457,22 @@ REG_OP(Conv3DTransposeD)
  * or [out_channels, in_channel, filter_height, filter_width].
  * @li bias: An optional 1D tensor of type float16 or int32. Format is "ND".
  * @li offset_w: An optional 1D tensor for quantized inference. Reserved.
+ *\n
+ *\n
+ * The following are the supported data types and data formats:
+*@verbatim
+    | Tensor    | x       | filter  | bias    | y
+    ------------|---------|---------|---------|--------
+    | Data Type | float16 | float16 | float16 | float16
+    |           |---------|---------|---------|--------
+    |           | int8    | int8    | int32   | int32
+    ------------|---------|---------|---------|--------
+    | Format    | NCHW    | NCHW    | ND      | NCHW
+    |           | NHWC    | HWCN    |         | NHWC
+@endverbatim
+ * For int8, a dequant or requant operator must be followed.
+ *\n
+ *
 *@par Required Attributes:
  * @li strides: A required tuple/list of 4 integers. The stride of the sliding
  * window for H/W dimension. The index of H/W is same as data_format.
@@ -1293,9 +1491,55 @@ REG_OP(Conv3DTransposeD)
  * to [0, 0, 0, 0].
  * @li offset_x: An optional int. Input offset, used for quantized inference.
  * Defaults to "0".
+ *\n
+ *\n
+ * The following value range restrictions must be met:
+*@verbatim
+    | Name             | Field    | Scope
+    -------------------|----------|--------------
+    | input_size       | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | x (out_backprop) | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | filter           | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | y (fmap)         | H        | [1, 4096]
+    |                  | W        | [1, 4096]
+    -------------------|----------|--------------
+    | Stride           | H        | [1, 63]
+    |                  | W        | [1, 63]
+    -------------------|----------|--------------
+    | Padding          | Top      | [0, 255]
+    |                  | Bottom   | [0, 255]
+    |                  | Left     | [0, 255]
+    |                  | Right    | [0, 255]
+    -------------------|----------|--------------
+    | Dilation         | H        | [1, 255]
+    |                  | W        | [1, 255]
+    -------------------|----------|--------------
+    | Offset_x         |          | [-128, 127]
+
+@endverbatim
+ * In Ascend910, fmap or out_backprop's H and W not support 1 when
+ * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ *\n
+ *
 *@par Outputs:
  * y: A Tensor. A Tensor of type float16 or int32, and has same format as
  * input_size.
+ *\n
+ *     out_backprop_height = (fmap_height + pad_top + pad_bottom -
+ *                           (dilation_h * (filter_height - 1) + 1))
+ *                           / stride_h + 1
+ *\n
+ *     out_backprop_width = (fmap_width + pad_left + pad_right -
+ *                          (dilation_w * (filter_width - 1) + 1))
+ *                          / stride_w + 1
+ *\n
+ *
 */
 REG_OP(Conv2DTranspose)
     .INPUT(input_size, TensorType({DT_INT32, DT_INT64}))

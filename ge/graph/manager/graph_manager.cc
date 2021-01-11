@@ -536,7 +536,7 @@ Status GraphManager::CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_gr
   return SUCCESS;
 }
 
-Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph, 
+Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_graph,
                                                       Graph2SubGraphInfoList &sub_graph_map, uint64_t session_id) {
   GE_CHECK_NOTNULL(compute_graph);
   // use default 16 multi thread
@@ -737,6 +737,9 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
                                                  GeRootModelPtr &ge_root_model, uint64_t session_id) {
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(compute_graph);
+
+  CompilerStages &stages = GetCompilerStages(graph_node->GetGraphId());
+  GM_RUN_AND_DUMP_PERF("OptimizeWholeGraph", stages.optimizer.OptimizeWholeGraph, compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
   GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
                        GetCompilerStages(graph_node->GetGraphId()).optimizer.OptimizeGraphBeforeBuildForRts,
@@ -2439,6 +2442,13 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
       continue;
     }
     auto model_id = model->GetModelId();
+    // unknown model not release
+    bool is_unknown_shape = false;
+    GE_CHK_STATUS_RET(model->CheckIsUnknownShape(is_unknown_shape));
+    if (is_unknown_shape) {
+      GELOGD("model_id[%u] graph_id[%u] is unknown model, not release memory", model_id, graph_id);
+      continue;
+    }
     // not loaded,no need unload
     if (!it.second->GetLoadFlag()) {
       GELOGI("CheckAndReleaseMemory graph[%u] has not been loaded.", graph_id);
@@ -2456,7 +2466,7 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
       GELOGE(RT_FAILED, "[GraphManager:] rtSetDevice failed, modelId=%u, graphId=%u.", model_id, graph_id);
       continue;
     }
-    result = GraphLoader::DestroyAicpuKernel(session_id, model_id);
+    result = GraphLoader::DestroyAicpuKernel(session_id, model_id, 0);
     if (result != SUCCESS) {
       GELOGW("[GraphManager:] destroy aicpu kernel failed when dynamic memory, modelId=%u, graphId=%u.", model_id,
              graph_id);

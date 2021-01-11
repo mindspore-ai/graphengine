@@ -26,7 +26,7 @@ extern "C" {
 #define ACL_PROF_ACL_API 0x0001
 #define ACL_PROF_TASK_TIME 0x0002
 #define ACL_PROF_AICORE_METRICS 0x0004
-#define ACL_PROF_AICPU_TRACE 0x0008
+#define ACL_PROF_AICPU 0x0008
 
 #define ACL_PROF_MAX_OP_NAME_LEN 257
 #define ACL_PROF_MAX_OP_TYPE_LEN 65
@@ -288,32 +288,6 @@ ACL_FUNC_VISIBILITY uint64_t aclprofGetOpDuration(const void *opInfo, size_t opI
  * @retval 0 for failed
  */
 ACL_FUNC_VISIBILITY size_t aclprofGetModelId(const void *opInfo, size_t opInfoLen, uint32_t index);
-
-/**
- * @ingroup AscendCL
- * @brief get cube ops from subscription data
- *
- * @param  opInfo [IN]     pointer to subscription data
- * @param  opInfoLen [IN]  memory size of subscription data
- * @param  index [IN]      index of op array in opInfo
- *
- * @retval cube ops of subscription data
- * @retval 0 for failed
- */
-ACL_FUNC_VISIBILITY uint64_t aclprofGetOpCubeOps(const void *opInfo, size_t opInfoLen, uint32_t index);
-
-/**
- * @ingroup AscendCL
- * @brief get vector ops from subscription data
- *
- * @param  opInfo [IN]      pointer to subscription data
- * @param  opInfoLen [IN]   memory size of subscription data
- * @param  index [IN]       index of op array in opInfo
- *
- * @retval vector ops of subscription data
- * @retval 0 for failed
- */
-ACL_FUNC_VISIBILITY uint64_t aclprofGetOpVectorOps(const void *opInfo, size_t opInfoLen, uint32_t index);
 
 #ifdef __cplusplus
 }

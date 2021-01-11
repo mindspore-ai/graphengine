@@ -44,18 +44,36 @@
 #define REQUIRE_SUCCESS(cond, ...) REQUIRE(((cond) == SUCCESS), __VA_ARGS__)
 #define REQUIRE_GRAPH_SUCCESS(cond, ...) REQUIRE(((cond) == GRAPH_SUCCESS), __VA_ARGS__)
 
-bool IsExperimental() {
-  const static bool kIsExperimental = (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") != nullptr);
-  return kIsExperimental;
-}
-
 namespace ge {
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
+static bool IsContainResourceOp(const ComputeGraphPtr &root_graph) {
+  for (const auto &node : root_graph->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    for (const auto &input_desc : node->GetOpDesc()->GetAllInputsDesc()) {
+      auto type = input_desc.GetDataType();
+      if (type == DT_STRING || type == DT_RESOURCE || type == DT_STRING_REF) {
+        if (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") == nullptr) {
+          return false;
+        }
+      }
+    }
+    for (const auto &output_desc : node->GetOpDesc()->GetAllOutputsDesc()) {
+      auto type = output_desc.GetDataType();
+      if (type == DT_STRING || type == DT_RESOURCE || type == DT_STRING_REF) {
+        if (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") == nullptr) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 Status DynamicShapePartitioner::Partition() {
   REQUIRE_NOT_NULL(root_graph_, "Graph is nullptr.");
-  if (!IsExperimental()) {
+  if (!IsContainResourceOp(root_graph_)) {
     GELOGD("Skip dynamic shape partition as not in experimental mode.");
     REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
             "Failed set dynamic shape partitioned flag on root graph.");

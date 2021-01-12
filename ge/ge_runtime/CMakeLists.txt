@@ -23,6 +23,8 @@ add_library(ge_runtime SHARED ${GE_SRC_LIST})
 target_compile_options(ge_runtime PRIVATE
     -Werror
     -O2
+    -Wno-deprecated-declarations
+    -fno-common
 )
 
 target_compile_definitions(ge_runtime PRIVATE 

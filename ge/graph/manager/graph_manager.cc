@@ -53,6 +53,7 @@
 #include "graph/passes/dimension_adjust_pass.h"
 #include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/flow_ctrl_pass.h"
+#include "graph/passes/fuse_data_nodes_with_common_input_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/input_output_connection_identify_pass.h"
 #include "graph/passes/iterator_op_pass.h"
@@ -70,6 +71,7 @@
 #include "graph/passes/remove_same_const_pass.h"
 #include "graph/passes/reshape_recovery_pass.h"
 #include "graph/passes/reshape_remove_pass.h"
+#include "graph/passes/no_data_out_const_elimination_pass.h"
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
 #include "graph/passes/subgraph_pass.h"
 #include "graph/passes/switch_data_edges_bypass.h"
@@ -2104,6 +2106,24 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
       after_merge_passes.AddPass("OptimizeStage1_1::SwitchDataEdgesBypass", new (std::nothrow) SwitchDataEdgesBypass));
   GE_CHK_STATUS_RET(
       after_merge_passes.AddPass("OptimizeStage1_1::ConstantFuseSamePass", new (std::nothrow) ConstantFuseSamePass));
+  /*
+   * Do CSE before FuseDataNodesWithCommonInputPass to resolve the scene in bertlarge as following:
+   *            const
+   *    /        |        \
+   * cast1      cast2     cast3
+   *    \         |         /
+   *             case
+   * the node `const` is the fused const node after ConstantFuseSamePass
+   * the nodes `cast1`, `cast2` and 'cast3' will be fused by CSE.
+   * in order to eliminate hard code in FuseDataNodesWithCommonInputPass,
+   * we do CSE before FuseDataNodesWithCommonInputPass
+   * But it is a temp solution, this CSE will be deleted after change pass from graph pass to node pass
+   */
+  GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::CSEBeforeFuseDataNodesWithCommonInputPass",
+                                               new (std::nothrow) CommonSubexpressionEliminationPass));
+  // FuseDataNodesWithCommonInputPass: fuse same data with common input in same graph
+  GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::FuseDataNodesWithCommonInputPass",
+                                               new (std::nothrow) FuseDataNodesWithCommonInputPass));
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::CommonSubexpressionEliminationPass",
                                                new (std::nothrow) CommonSubexpressionEliminationPass));
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::PermutePass", new (std::nothrow) PermutePass))
@@ -2226,12 +2246,14 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
     GELOGE(ret, "Run passes when OptimizeStage1_3 failed, ret:%u.", ret);
     return ret;
   }
-  NamesToPass identity_remove_pass;
-  GE_TIMESTAMP_START(identity_remove_pass);
+  NamesToPass node_pass;
+  GE_TIMESTAMP_START(node_pass);
   IdentityPass identity_force_pass(false);  // after SwitchToStreamSwitchPass
-  identity_remove_pass.emplace_back("IdentityPass", &identity_force_pass);
-  ret = GEPass(compute_graph).Run(identity_remove_pass);
-  GE_TIMESTAMP_END(identity_remove_pass, "GraphPrepare::IdentityRemovePass");
+  NoDataOutConstEliminationPass no_data_out_const_elimination_pass;
+  node_pass.emplace_back("IdentityPass", &identity_force_pass);
+  node_pass.emplace_back("NoDataOutConstEliminationPass", &no_data_out_const_elimination_pass);
+  ret = GEPass(compute_graph).Run(node_pass);
+  GE_TIMESTAMP_END(node_pass, "GraphPrepare::node_pass");
   if (ret != SUCCESS) {
     GELOGE(ret, "Run identity remove pass for preprocess failed, ret:%u.", ret);
     return ret;

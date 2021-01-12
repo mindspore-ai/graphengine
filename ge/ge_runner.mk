@@ -127,7 +127,9 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/compile_nodes_pass.cc \
     graph/passes/constant_folding_pass.cc \
     graph/passes/constant_fuse_same_pass.cc \
+    graph/passes/fuse_data_nodes_with_common_input_pass.cc \
     graph/passes/remove_same_const_pass.cc \
+    graph/passes/no_data_out_const_elimination_pass.cc \
     graph/passes/useless_control_out_remove_pass.cc \
     graph/passes/control_trigger_pass.cc \
     graph/passes/dimension_adjust_pass.cc \

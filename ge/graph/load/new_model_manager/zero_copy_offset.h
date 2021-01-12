@@ -65,7 +65,7 @@ class ZeroCopyOffset {
   // data_size of Data/Netoutput
   int64_t GetDataSize() const { return data_size_; }
   // value of *outside_addrs_ from davinci_model
-  std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() { return outside_addrs_; }
+  const std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() { return outside_addrs_; }
   // name of op
   std::string GetOpName() const { return op_name_; }
 

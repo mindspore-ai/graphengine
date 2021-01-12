@@ -109,6 +109,10 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id, cons
     aicpu_param_head->extInfoAddr = reinterpret_cast<uintptr_t>(task.ext_info_addr_dev_);
   }
 
+  task.op_type_ = op_desc_->GetName();
+  task.kernel_id_ = kernel_id;
+  auto debug_info = BuildTaskUtils::GetTaskInfo(op_desc_);
+  GELOGI("[TASK_INFO] %lu/%s %s", kernel_id, task.op_type_.c_str(), debug_info.c_str());
   return SUCCESS;
 }
 }  // namespace ge

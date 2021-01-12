@@ -123,7 +123,7 @@ namespace ge {
     task.kernel_id_ = kernel_id;
 
     auto debug_info = BuildTaskUtils::GetTaskInfo(op_desc_);
-    GELOGI("[TASK_INFO] %s/%s %s", std::to_string(kernel_id).c_str(), task.op_type_.c_str(), debug_info.c_str());
+    GELOGI("[TASK_INFO] %lu/%s %s", kernel_id, task.op_type_.c_str(), debug_info.c_str());
     return SUCCESS;
   }
 }  // namespace ge

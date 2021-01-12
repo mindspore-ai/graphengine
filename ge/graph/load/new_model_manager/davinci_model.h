@@ -837,6 +837,8 @@ class DavinciModel {
 
   void SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name);
 
+  Status InitL1DataDumperArgs();
+
   Status InitModelProfile();
   Status SinkModelProfile();
 

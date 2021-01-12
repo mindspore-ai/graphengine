@@ -35,6 +35,7 @@ protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_proto_common.a ############
 add_library(ge_proto_common STATIC
+    ${PROTO_HEADER_HDRS}
     ${PROTO_SRCS}
 )
 
@@ -55,6 +56,7 @@ target_link_libraries(ge_proto_common PRIVATE
 
 ############ libge_proto_client.a ############
 add_library(ge_proto_client STATIC
+    ${PROTO_HEADER_HDRS}
     ${PROTO_CLIENT_SRCS}
 )
 

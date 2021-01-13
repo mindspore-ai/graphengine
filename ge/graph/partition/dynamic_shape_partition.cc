@@ -57,7 +57,7 @@ static bool IsInExperimentalMode(const ComputeGraphPtr &root_graph) {
         if (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") == nullptr) {
           return false;
         } else {
-          GELOGE(FAILED, "In dynamic shape scene, model contains data type:"
+          GEEVENT("In dynamic shape scene, model contains data type:"
                  "DT_STRING/DT_RESOURCE/DT_STRING_REF may not be supported well "
                  "temporarily, please retry with \"unset EXPERIMENTAL_DYNAMIC_PARTITION\".");
           break;
@@ -70,7 +70,7 @@ static bool IsInExperimentalMode(const ComputeGraphPtr &root_graph) {
         if (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") == nullptr) {
           return false;
         } else {
-          GELOGE(FAILED, "In dynamic shape scene, model contains data type:"
+          GEEVENT("In dynamic shape scene, model contains data type:"
                  "DT_STRING/DT_RESOURCE/DT_STRING_REF may not be supported well "
                  "temporarily, please retry with \"unset EXPERIMENTAL_DYNAMIC_PARTITION\".");
           break;

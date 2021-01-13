@@ -194,6 +194,9 @@ TEST_F(UtestMultiBatchClonePass, graph_with_subgraph) {
   auto func_node = MakeNode(owner, 3, 1, "test_if", "If");
   graph->SetParentNode(func_node);
   graph->SetParentGraph(owner);
+  owner->AddSubgraph(graph->GetName(), graph);
+  size_t sub_graph_num = owner->GetAllSubgraphs().size();
+  EXPECT_EQ(sub_graph_num, 1);
   EXPECT_EQ(pass_manager.Run(graph), SUCCESS);
 }
 

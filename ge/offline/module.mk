@@ -11,6 +11,7 @@ LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dg
 LOCAL_SRC_FILES := \
     main.cc \
     single_op_parser.cc \
+    keep_dtype_option.cc \
     ../session/omg.cc \
     ../ir_build/atc_ir_common.cc \
 
@@ -64,6 +65,7 @@ LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dg
 LOCAL_SRC_FILES := \
     main.cc \
     single_op_parser.cc \
+    keep_dtype_option.cc \
     ../session/omg.cc \
     ../ir_build/atc_ir_common.cc \
 
@@ -117,6 +119,7 @@ LOCAL_CFLAGS += -DPROTOBUF_INLINE_NOT_IN_HEADERS=0 -DCOMPILE_OMG_PACKAGE -O2 -Dg
 LOCAL_SRC_FILES := \
     main.cc \
     single_op_parser.cc \
+    keep_dtype_option.cc \
     ../session/omg.cc \
     ../ir_build/atc_ir_common.cc \
 

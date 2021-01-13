@@ -70,6 +70,13 @@ TEST_F(UtestNoDataOutConstEliminationPass, succ_graph1) {
   NamesToPass node_pass;
   NoDataOutConstEliminationPass no_data_out_const_elimination_pass;
   node_pass.emplace_back("NoDataOutConstEliminationPass", &no_data_out_const_elimination_pass);
+  auto const1 = graph->FindNode("const_node1");
+  EXPECT_NE(const1, nullptr);
+  EXPECT_TRUE(const1->GetInDataNodes().empty());
+  EXPECT_TRUE(const1->GetOutDataNodes().empty());
   EXPECT_EQ(pass.Run(node_pass), SUCCESS);
+  // after pass, const1 will be delete
+  const1 = graph->FindNode("const_node1");
+  EXPECT_EQ(const1, nullptr);
 }
 }  // namespace ge

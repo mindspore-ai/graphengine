@@ -227,6 +227,8 @@ private:
   size_t io_addr_num_ = 0;
   bool is_custom_ = false;
   uint32_t dump_flag_ = RT_KERNEL_DEFAULT;
+  std::string op_type_;
+  uint64_t kernel_id_ = 0;
 };
 }  // namespace ge
 

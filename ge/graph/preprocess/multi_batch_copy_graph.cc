@@ -1693,7 +1693,7 @@ Status MultiBatchGraphCopyer::LinkToNodeOutBranch(const NodePtr &node) {
 
 Status ProcessMultiBatch(ComputeGraphPtr &graph) {
   const char *multi_batch_with_case = std::getenv("MULTI_BATCH_WITH_CASE");
-  if (multi_batch_with_case == nullptr) {
+  if (multi_batch_with_case != nullptr) {
     PassManager pass_manager;  
     GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
     return pass_manager.Run(graph);

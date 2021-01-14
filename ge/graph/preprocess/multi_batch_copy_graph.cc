@@ -1692,13 +1692,11 @@ Status MultiBatchGraphCopyer::LinkToNodeOutBranch(const NodePtr &node) {
 }
 
 Status ProcessMultiBatch(ComputeGraphPtr &graph) {
-  if (GetLocalOmgContext().dynamic_node_type.empty()) {
-    const char *multi_batch_with_switchn = std::getenv("MULTI_BATCH_WITH_SWITCHN");
-    if (multi_batch_with_switchn == nullptr) {
-      PassManager pass_manager;
-      GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
-      return pass_manager.Run(graph);
-    }
+  const char *multi_batch_with_case = std::getenv("MULTI_BATCH_WITH_CASE");
+  if (multi_batch_with_case == nullptr) {
+    PassManager pass_manager;  
+    GE_CHK_STATUS_RET(pass_manager.AddPass("MultiBatchClonePass", new (std::nothrow) MultiBatchClonePass));
+    return pass_manager.Run(graph);
   }
 
   if (!GetLocalOmgContext().need_multi_batch) {

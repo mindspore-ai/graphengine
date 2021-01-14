@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "mmpa/mmpa_api.h"
 #include "aicpu/aicpu_schedule/aicpu_op_type_list.h"
 #include "common/dump/dump_manager.h"
 #include "common/l2_cache_optimize.h"
@@ -53,7 +54,6 @@ const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
 const char *const kDeleteCustOp = "deleteCustOp";
 const int kTimeSpecNano = 1000000000;
 const int kTimeSpecMiro = 1000000;
-const int kSessionMaxBias = 100;
 const int kOpNameMaxSize = 100;
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
@@ -1037,6 +1037,12 @@ Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippTyp
 }
 
 Status ModelManager::GenSessionId(uint64_t &session_id) {
+  const uint64_t kSessionTimeMask = 0xffffffffffff0000;
+  const uint64_t kSessionPidMask  = 0x000000000000ff00;
+  const uint64_t kSessionBiasMask = 0x00000000000000ff;
+
+  const uint64_t kMaskPerOffset = 8;
+
   std::lock_guard<std::mutex> lock(session_id_create_mutex_);
 
   mmTimeval tv;
@@ -1044,12 +1050,14 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }
-  session_id = static_cast<uint64_t>(tv.tv_sec * kTimeSpecMiro + tv.tv_usec);  // 1000000us
+  uint64_t timestamp = static_cast<uint64_t>(tv.tv_sec * kTimeSpecMiro + tv.tv_usec);  // 1000000us
+
+  static uint32_t pid = mmGetPid();
 
   session_id_bias_++;
-  // max bais 100.
-  session_id_bias_ = session_id_bias_ % kSessionMaxBias;
-  session_id = session_id * kSessionMaxBias + session_id_bias_;
+
+  session_id = ((timestamp<<kMaskPerOffset<<kMaskPerOffset) & kSessionTimeMask) +
+               ((pid<<kMaskPerOffset) & kSessionPidMask) + (session_id_bias_ & kSessionBiasMask);
 
   GELOGD("Generate new session id: %lu.", session_id);
   return SUCCESS;

@@ -16,6 +16,8 @@
 
 #include <cce/compiler_stub.h>
 #include <gtest/gtest.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "common/debug/log.h"
 #include "common/l2_cache_optimize.h"
@@ -74,5 +76,27 @@ TEST_F(UtestModelManagerModelManagerAicpu, DestroyAicpuKernel) {
   // Load allow listener is null
   // EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, nullptr, nullptr));
 }
+
+// test GenSessionId
+TEST_F(UtestModelManagerModelManagerAicpu, gen_session_id) {
+  ModelManager manager;
+  uint64_t session_id;
+  manager.GenSessionId(session_id);
+
+  struct timeval tv;
+  gettimeofday(&tv, nullptr);
+  uint64_t timestamp = static_cast<uint64_t>(tv.tv_sec * 1000000);
+
+  const uint64_t kSessionTimeMask = 0xfffffff000000000; // 不比us
+  const uint64_t kSessionPidMask  = 0x000000000000ff00;
+  const uint64_t kSessionBiasMask = 0x00000000000000ff;
+
+  uint32_t pid = getpid();
+
+  EXPECT_EQ(1, kSessionBiasMask & session_id);
+  EXPECT_EQ(pid<<8 & kSessionPidMask, kSessionPidMask & session_id);
+  //EXPECT_EQ(timestamp<<16 & kSessionTimeMask, kSessionTimeMask & session_id);
+}
+
 
 }  // namespace ge

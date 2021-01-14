@@ -272,3 +272,8 @@ VOID *mmDlsym(VOID *handle, const CHAR *funcName)
 {
   return NULL;
 }
+
+INT32 mmGetPid()
+{
+  return (INT32)getpid();
+}

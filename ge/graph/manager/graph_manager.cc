@@ -71,7 +71,6 @@
 #include "graph/passes/remove_same_const_pass.h"
 #include "graph/passes/reshape_recovery_pass.h"
 #include "graph/passes/reshape_remove_pass.h"
-#include "graph/passes/no_data_out_const_elimination_pass.h"
 #include "graph/passes/same_transdata_breadth_fusion_pass.h"
 #include "graph/passes/subgraph_pass.h"
 #include "graph/passes/switch_data_edges_bypass.h"
@@ -2249,9 +2248,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   NamesToPass node_pass;
   GE_TIMESTAMP_START(node_pass);
   IdentityPass identity_force_pass(false);  // after SwitchToStreamSwitchPass
-  NoDataOutConstEliminationPass no_data_out_const_elimination_pass;
   node_pass.emplace_back("IdentityPass", &identity_force_pass);
-  node_pass.emplace_back("NoDataOutConstEliminationPass", &no_data_out_const_elimination_pass);
   ret = GEPass(compute_graph).Run(node_pass);
   GE_TIMESTAMP_END(node_pass, "GraphPrepare::node_pass");
   if (ret != SUCCESS) {

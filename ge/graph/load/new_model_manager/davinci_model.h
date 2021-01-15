@@ -883,7 +883,6 @@ class DavinciModel {
   GeModelPtr ge_model_;  // release after DavinciModel::Init
 
   bool need_destroy_aicpu_kernel_{false};
-  vector<string> out_node_name_;
 
   map<uint32_t, OpDescPtr> op_list_;  // release after DavinciModel::Init
 

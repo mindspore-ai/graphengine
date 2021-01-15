@@ -24,6 +24,7 @@
 #include "graph/buffer.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
+#include "graph/types.h"
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
@@ -1401,6 +1402,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     if (output_op_desc != nullptr) {
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS, GELOGI("Get size failed"));
     }
+
     // fusion: other type's size not means malloc HBM memory
     bool l1_flag = has_mem_type_attr && memorys_type[i] == RT_MEMORY_L1;
     if (l1_flag) {
@@ -1408,6 +1410,11 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
              op_desc->GetName().c_str(), op_desc->GetOutputNameByIndex(i).c_str(), memorys_type[i]);
       size = 0;
     }
+
+    int32_t calc_type = 0;
+    bool ret = ge::AttrUtils::GetInt(output_op_desc, ATTR_NAME_MEMORY_SIZE_CALC_TYPE, calc_type);
+    GE_IF_BOOL_EXEC((ret && (calc_type == static_cast<int32_t>(ge::MemorySizeCalcType::ALWAYS_EMPTY))), size = 0;);
+
     std::string peer_name;
     uint32_t peer_input_index = 0;
     bool out_node_set_continuous_input = false;

@@ -18,6 +18,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_executor.h"
@@ -210,6 +211,13 @@ Status TaskContext::AllocateOutput(int index,
 
   if (outputs_start_[index].GetData() != nullptr) {
     GELOGI("already allocated as net output");
+    return SUCCESS;
+  }
+
+  int32_t calc_type = 0;
+  bool ret = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_MEMORY_SIZE_CALC_TYPE, calc_type);
+  if (ret && (calc_type == static_cast<int32_t>(ge::MemorySizeCalcType::ALWAYS_EMPTY))) {
+    outputs_start_[index] = TensorValue();
     return SUCCESS;
   }
 

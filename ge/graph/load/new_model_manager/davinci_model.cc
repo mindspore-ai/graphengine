@@ -1809,7 +1809,7 @@ void DavinciModel::GetUserDesignateShapeOrder(std::vector<std::string> &user_inp
 ///
 Status DavinciModel::InitAippInfo(uint32_t index, const OpDescPtr &op_desc) {
   if (!op_desc->HasAttr(ATTR_NAME_AIPP)) {
-    GELOGW("there is not AIPP related with index %u.", index);
+    GELOGW("There is not AIPP related with index %u.", index);
     return SUCCESS;
   }
 
@@ -1818,7 +1818,7 @@ Status DavinciModel::InitAippInfo(uint32_t index, const OpDescPtr &op_desc) {
   GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr), GE_AIPP_NOT_EXIST,
                          "Data node do not contain param aipp!");
   GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, &aipp_params), "get aipp params failed");
-  GELOGI("node data: %s, type: %s, current index: %u, current node related input rank: %u",
+  GELOGI("Node data: %s, type: %s, current index: %u, current node related input rank: %u",
          op_desc->GetName().c_str(), op_desc->GetType().c_str(), index, aipp_params.related_input_rank());
 
   AippConfigInfo aipp_info;
@@ -2481,7 +2481,7 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
     uint64_t buffer_length = buffer.length;
     void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data));
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%lu] datasize[%lu]",
+    GELOGI("CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%lu] datasize[%lu]",
            runtime_param_.graph_id, output.first, output.second.GetBasicAddr(), data_size, buffer_length);
     GE_CHK_RT_RET(rtMemcpy(buffer_addr, buffer_length, output.second.GetBasicAddr(), data_size, kind));
     idx++;

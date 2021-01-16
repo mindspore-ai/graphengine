@@ -1,18 +1,18 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef __CCE_RUNTIME_MEM_H__
 #define __CCE_RUNTIME_MEM_H__
@@ -34,6 +34,7 @@ extern "C" {
  */
 #define RT_MEMORY_DEFAULT ((uint32_t)0x0)   // default memory on device
 #define RT_MEMORY_HBM ((uint32_t)0x2)       // HBM memory on device
+#define RT_MEMORY_RDMA_HBM ((uint32_t)0x3)  // RDMA-HBM memory on device
 #define RT_MEMORY_DDR ((uint32_t)0x4)       // DDR memory on device
 #define RT_MEMORY_SPM ((uint32_t)0x8)       // shared physical memory on device
 #define RT_MEMORY_P2P_HBM ((uint32_t)0x10)  // HBM memory on other 4P device
@@ -89,40 +90,40 @@ typedef uint32_t rtMemType_t;
  * @brief memory copy type
  */
 typedef enum tagRtMemcpyKind {
-  RT_MEMCPY_HOST_TO_HOST = 0,  // host to host
-  RT_MEMCPY_HOST_TO_DEVICE,    // host to device
-  RT_MEMCPY_DEVICE_TO_HOST,    // device to host
-  RT_MEMCPY_DEVICE_TO_DEVICE,  // device to device, 1P && P2P
-  RT_MEMCPY_MANAGED,           // managed memory
-  RT_MEMCPY_ADDR_DEVICE_TO_DEVICE,
-  RT_MEMCPY_HOST_TO_DEVICE_EX, // host  to device ex (only used for 8 bytes)
-  RT_MEMCPY_DEVICE_TO_HOST_EX, // device to host ex
-  RT_MEMCPY_RESERVED,
+    RT_MEMCPY_HOST_TO_HOST = 0,  // host to host
+    RT_MEMCPY_HOST_TO_DEVICE,    // host to device
+    RT_MEMCPY_DEVICE_TO_HOST,    // device to host
+    RT_MEMCPY_DEVICE_TO_DEVICE,  // device to device, 1P && P2P
+    RT_MEMCPY_MANAGED,           // managed memory
+    RT_MEMCPY_ADDR_DEVICE_TO_DEVICE,
+    RT_MEMCPY_HOST_TO_DEVICE_EX, // host  to device ex (only used for 8 bytes)
+    RT_MEMCPY_DEVICE_TO_HOST_EX, // device to host ex
+    RT_MEMCPY_RESERVED,
 } rtMemcpyKind_t;
 
 typedef enum tagRtMemInfoType {
-  RT_MEMORYINFO_DDR,
-  RT_MEMORYINFO_HBM,
-  RT_MEMORYINFO_DDR_HUGE,               // Hugepage memory of DDR
-  RT_MEMORYINFO_DDR_NORMAL,             // Normal memory of DDR
-  RT_MEMORYINFO_HBM_HUGE,               // Hugepage memory of HBM
-  RT_MEMORYINFO_HBM_NORMAL,             // Normal memory of HBM
-  RT_MEMORYINFO_DDR_P2P_HUGE,           // Hugepage memory of DDR
-  RT_MEMORYINFO_DDR_P2P_NORMAL,         // Normal memory of DDR
-  RT_MEMORYINFO_HBM_P2P_HUGE,           // Hugepage memory of HBM
-  RT_MEMORYINFO_HBM_P2P_NORMAL,         // Normal memory of HBM
+    RT_MEMORYINFO_DDR,
+    RT_MEMORYINFO_HBM,
+    RT_MEMORYINFO_DDR_HUGE,               // Hugepage memory of DDR
+    RT_MEMORYINFO_DDR_NORMAL,             // Normal memory of DDR
+    RT_MEMORYINFO_HBM_HUGE,               // Hugepage memory of HBM
+    RT_MEMORYINFO_HBM_NORMAL,             // Normal memory of HBM
+    RT_MEMORYINFO_DDR_P2P_HUGE,           // Hugepage memory of DDR
+    RT_MEMORYINFO_DDR_P2P_NORMAL,         // Normal memory of DDR
+    RT_MEMORYINFO_HBM_P2P_HUGE,           // Hugepage memory of HBM
+    RT_MEMORYINFO_HBM_P2P_NORMAL,         // Normal memory of HBM
 } rtMemInfoType_t;
 
 typedef enum tagRtRecudeKind {
-  RT_MEMCPY_SDMA_AUTOMATIC_ADD = 10,  // D2D, SDMA inline reduce, include 1P, and P2P
-  RT_RECUDE_KIND_END
+    RT_MEMCPY_SDMA_AUTOMATIC_ADD = 10,  // D2D, SDMA inline reduce, include 1P, and P2P
+    RT_RECUDE_KIND_END
 } rtRecudeKind_t;
 
 typedef enum tagRtDataType {
-  RT_DATA_TYPE_FP32 = 0,  // fp32
-  RT_DATA_TYPE_FP16 = 1,  // fp16
-  RT_DATA_TYPE_INT16 = 2, // int16
-  RT_DATA_TYPE_END
+    RT_DATA_TYPE_FP32 = 0,  // fp32
+    RT_DATA_TYPE_FP16 = 1,  // fp16
+    RT_DATA_TYPE_INT16 = 2, // int16
+    RT_DATA_TYPE_END
 } rtDataType_t;
 
 /**
@@ -130,10 +131,10 @@ typedef enum tagRtDataType {
  * @brief memory copy channel  type
  */
 typedef enum tagRtMemcpyChannelType {
-  RT_MEMCPY_CHANNEL_TYPE_INNER = 0,  // 1P
-  RT_MEMCPY_CHANNEL_TYPE_PCIe,
-  RT_MEMCPY_CHANNEL_TYPE_HCCs,  // not support now
-  RT_MEMCPY_CHANNEL_TYPE_RESERVED,
+    RT_MEMCPY_CHANNEL_TYPE_INNER = 0,  // 1P
+    RT_MEMCPY_CHANNEL_TYPE_PCIe,
+    RT_MEMCPY_CHANNEL_TYPE_HCCs,  // not support now
+    RT_MEMCPY_CHANNEL_TYPE_RESERVED,
 } rtMemcpyChannelType_t;
 
 /**
@@ -141,18 +142,18 @@ typedef enum tagRtMemcpyChannelType {
  * @brief ai core memory size
  */
 typedef struct rtAiCoreMemorySize {
-  uint32_t l0ASize;
-  uint32_t l0BSize;
-  uint32_t l0CSize;
-  uint32_t l1Size;
-  uint32_t ubSize;
-  uint32_t l2Size;
-  uint32_t l2PageNum;
-  uint32_t blockSize;
-  uint64_t bankSize;
-  uint64_t bankNum;
-  uint64_t burstInOneBlock;
-  uint64_t bankGroupNum;
+    uint32_t l0ASize;
+    uint32_t l0BSize;
+    uint32_t l0CSize;
+    uint32_t l1Size;
+    uint32_t ubSize;
+    uint32_t l2Size;
+    uint32_t l2PageNum;
+    uint32_t blockSize;
+    uint64_t bankSize;
+    uint64_t bankNum;
+    uint64_t burstInOneBlock;
+    uint64_t bankGroupNum;
 } rtAiCoreMemorySize_t;
 
 /**
@@ -160,10 +161,10 @@ typedef struct rtAiCoreMemorySize {
  * @brief memory type
  */
 typedef enum tagRtMemoryType {
-  RT_MEMORY_TYPE_HOST = 1,
-  RT_MEMORY_TYPE_DEVICE = 2,
-  RT_MEMORY_TYPE_SVM = 3,
-  RT_MEMORY_TYPE_DVPP = 4
+    RT_MEMORY_TYPE_HOST = 1,
+    RT_MEMORY_TYPE_DEVICE = 2,
+    RT_MEMORY_TYPE_SVM = 3,
+    RT_MEMORY_TYPE_DVPP = 4
 } rtMemoryType_t;
 
 /**
@@ -171,31 +172,31 @@ typedef enum tagRtMemoryType {
  * @brief memory attribute
  */
 typedef struct tagRtPointerAttributes {
-  rtMemoryType_t memoryType;  // host memory or device memory
-  rtMemoryType_t locationType;
-  uint32_t deviceID;          // device ID
-  uint32_t pageSize;
+    rtMemoryType_t memoryType;  // host memory or device memory
+    rtMemoryType_t locationType;
+    uint32_t deviceID;          // device ID
+    uint32_t pageSize;
 } rtPointerAttributes_t;
 
 
 typedef struct rtMallocHostSharedMemoryIn {
-  const char *name;
-  const uint64_t size;
-  uint32_t flag;
+    const char *name;
+    const uint64_t size;
+    uint32_t flag;
 } rtMallocHostSharedMemoryIn;
 
 typedef struct rtMallocHostSharedMemoryOut {
-  int fd;
-  void *ptr;
-  void *devPtr;
+    int fd;
+    void *ptr;
+    void *devPtr;
 } rtMallocHostSharedMemoryOut;
 
 typedef struct rtFreeHostSharedMemoryIn {
-  const char *name;
-  const uint64_t size;
-  int fd;
-  void *ptr;
-  void *devPtr;
+    const char *name;
+    const uint64_t size;
+    int fd;
+    void *ptr;
+    void *devPtr;
 } rtFreeHostSharedMemoryIn;
 
 

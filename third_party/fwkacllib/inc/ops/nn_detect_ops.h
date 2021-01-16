@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1383,6 +1383,7 @@ REG_OP(DecodeWheelsTarget)
 
 *@attention Constraints:
 * Only computation of float16 data is supported.
+* Note: when the class num per image * max_size_per_class is too big, will compile fail with ERROR-insufficient memory
 */
 REG_OP(BatchMultiClassNonMaxSuppression)
     .INPUT(boxes, TensorType({DT_FLOAT16}))
@@ -1485,7 +1486,10 @@ REG_OP(DecodeBboxV2)
 *
 *@par Outputs:
 * @li y1: A Tensor. Must have the same type as x.
-* @li y2: A Tensor. Indices of y1 in x.Dtype must be int32.
+* @li y2: A Tensor. Indices of y1 in x. Dtype must be int32.
+*
+*@attention Constraints:
+* The upper limit of data on the direction axis is 7040.
 */
 REG_OP(Sort)
     .INPUT(x, TensorType({ DT_FLOAT16 }))
@@ -1494,6 +1498,111 @@ REG_OP(Sort)
     .ATTR(axis, Int, -1)
     .ATTR(descending, Bool, false)
     .OP_END_FACTORY_REG(Sort)
+
+REG_OP(PtIou)
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(overlap, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(mode, String, "iou")
+    .OP_END_FACTORY_REG(PtIou)
+
+/**
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
+
+*@par Inputs:
+*Input boxes and  scores must be float16 type. Inputs include:
+*@li boxes: A input tensor with shape [num_batches,spatial_dimension,4].
+The single box data format is indicated by center_point_box.
+*@li scores: A input tensor with shape [num_batches,num_classes,spatial_dimension]
+*@li max_output_size: A scalar integer tensor representing the maximum number
+of boxes to be selected by non max suppression.
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding
+whether boxes overlap too much with respect to IOU.
+*@li score_threshold: A 0-D float tensor representing the threshold for
+deciding when to remove boxes based on score . \n
+
+*@par Attributes:
+*center_point_box:Integer indicate the format of the box data. 
+The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
+where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
+of box corners and the coordinates can be provided as normalized 
+(i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
+1 - the box data is supplied as [x_center, y_center, width, height].
+ Mostly used for Pytorch models. \n
+
+*@par Outputs:
+*@li selected_indices: A 2-D integer tensor of shape [M] representing the
+selected indices from the boxes tensor, where M <= max_output_size. \n
+
+*@attention Constraints:
+*Input boxes and  scores must be float16 type . \n
+
+*@par Third-party framework compatibility
+*Compatible with onnx NonMaxSuppression operator.
+*/
+
+REG_OP(NonMaxSuppressionV6)
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(scores, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(max_output_size, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(iou_threshold, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(score_threshold, TensorType({DT_FLOAT}))
+    .OUTPUT(selected_indices, TensorType({DT_INT32}))
+    .ATTR(center_point_box, Int, 0)
+    .ATTR(max_boxes_size, Int, 0)
+    .OP_END_FACTORY_REG(NonMaxSuppressionV6)
+
+/**
+*@brief Greedily selects a subset of bounding boxes in descending order of
+score . \n
+
+*@par Inputs:
+*Input boxes and  scores must be float16 type. Inputs include:
+*@li boxes: A input tensor with shape [num_batches,spatial_dimension,4].
+The single box data format is indicated by center_point_box.
+*@li scores: A input tensor with shape [num_batches,num_classes,spatial_dimension]
+*@li max_output_size: A scalar integer tensor representing the maximum number
+of boxes to be selected by non max suppression.
+*@li iou_threshold: A 0-D float tensor representing the threshold for deciding
+whether boxes overlap too much with respect to IOU.
+*@li score_threshold: A 0-D float tensor representing the threshold for
+deciding when to remove boxes based on score . \n
+*@li index_id: A input tensor with shape [num_batches,num_classes,spatial_dimension,3]
+the last dim representing (batch_id,class_id,index_id)  . \n
+
+*@par Attributes:
+*center_point_box:Integer indicate the format of the box data. 
+The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
+where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
+of box corners and the coordinates can be provided as normalized 
+(i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
+1 - the box data is supplied as [x_center, y_center, width, height].
+ Mostly used for Pytorch models. \n
+
+*@par Outputs:
+*@li selected_indices: A 2-D integer tensor of shape [M] representing the
+selected indices from the boxes tensor, where M <= max_output_size. \n
+
+*@attention Constraints:
+*Input boxes and  scores must be float16 type . \n
+
+*@par Third-party framework compatibility
+*Compatible with onnx NonMaxSuppression operator.
+*/
+
+
+REG_OP(NonMaxSuppressionV7)
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(scores, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(max_output_size, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(iou_threshold, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(score_threshold, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(index_id, TensorType({DT_FLOAT16}))
+    .OUTPUT(selected_indices, TensorType({DT_INT32}))
+    .ATTR(center_point_box, Int, 0)
+    .ATTR(max_boxes_size, Int, 0)
+    .OP_END_FACTORY_REG(NonMaxSuppressionV7)
 
 }  // namespace ge
 

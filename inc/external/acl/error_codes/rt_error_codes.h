@@ -42,12 +42,22 @@ static const int32_t ACL_ERROR_RT_GROUP_NOT_SET = 107013;             // group n
 static const int32_t ACL_ERROR_RT_GROUP_NOT_CREATE = 107014;          // group not create
 static const int32_t ACL_ERROR_RT_STREAM_NO_CB_REG = 107015;          // callback not register to stream
 static const int32_t ACL_ERROR_RT_INVALID_MEMORY_TYPE = 107016;       // invalid memory type
+static const int32_t ACL_ERROR_RT_INVALID_HANDLE = 107017;            // invalid handle
+static const int32_t ACL_ERROR_RT_INVALID_MALLOC_TYPE = 107018;       // invalid malloc type
 
-static const int32_t ACL_ERROR_RT_FEATURE_NOT_SUPPROT = 207000;  // feature not support
+static const int32_t ACL_ERROR_RT_FEATURE_NOT_SUPPORT = 207000;  // feature not support
 static const int32_t ACL_ERROR_RT_MEMORY_ALLOCATION = 207001;    // memory allocation error
 static const int32_t ACL_ERROR_RT_MEMORY_FREE = 207002;          // memory free error
+static const int32_t ACL_ERROR_RT_AICORE_OVER_FLOW = 207003;     // aicore over flow
+static const int32_t ACL_ERROR_RT_NO_DEVICE = 207004;            // no device
+static const int32_t ACL_ERROR_RT_RESOURCE_ALLOC_FAIL = 207005;  // resource alloc fail
+static const int32_t ACL_ERROR_RT_NO_PERMISSION = 207006;        // no permission
+static const int32_t ACL_ERROR_RT_NO_EVENT_RESOURCE = 207007;    // no event resource
+static const int32_t ACL_ERROR_RT_NO_STREAM_RESOURCE = 207008;   // no stream resource
+static const int32_t ACL_ERROR_RT_NO_NOTIFY_RESOURCE = 207009;   // no notify resource
+static const int32_t ACL_ERROR_RT_NO_MODEL_RESOURCE = 207010;    // no model resource
 
-static const int32_t ACL_ERROR_RT_INTERNEL_ERROR = 507000;          // runtime internel error
+static const int32_t ACL_ERROR_RT_INTERNAL_ERROR = 507000;          // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR = 507001;                // ts internel error
 static const int32_t ACL_ERROR_RT_STREAM_TASK_FULL = 507002;        // task full in stream
 static const int32_t ACL_ERROR_RT_STREAM_TASK_EMPTY = 507003;       // task empty in stream
@@ -82,7 +92,7 @@ static const int32_t ACL_ERROR_RT_LABEL_CONTEXT = 507031;           // label not
 static const int32_t ACL_ERROR_RT_PROGRAM_USE_OUT = 507032;         // program register num use out
 static const int32_t ACL_ERROR_RT_DEV_SETUP_ERROR = 507033;         // device setup error
 
-static const int32_t ACL_ERROR_RT_DRV_INTERNEL_ERROR = 507899;  // drv internel error
+static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR = 507899;  // drv internal error
 
 #ifdef __cplusplus
 }

@@ -26,8 +26,6 @@
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
 
-#include "prof_callback.h"
-
 /**
  * @file prof_reporter.h
  * @defgroup reporter the reporter group

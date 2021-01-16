@@ -120,15 +120,15 @@ typedef struct tagKV {
 } KeyValue;
 
 typedef enum {
-  APPLICATION = 0,
-  SYSTEM
+    APPLICATION = 0,
+    SYSTEM
 } ProcessType;
 
 typedef struct {
-  ProcessType type;
-  unsigned int pid;
-  unsigned int deviceId;
-  char reserved[RESERVERD_LENGTH];
+    ProcessType type;
+    unsigned int pid;
+    unsigned int deviceId;
+    char reserved[RESERVERD_LENGTH];
 } LogAttr;
 
 /**

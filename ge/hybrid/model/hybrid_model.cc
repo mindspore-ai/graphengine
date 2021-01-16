@@ -176,20 +176,9 @@ Status HybridModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_de
   return SUCCESS;
 }
 
-void HybridModel::SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t,int64_t>> &shape_ranges,
-                                                 Format &format, InputOutputDescInfo &input) {
-  uint32_t n, c, h, w;
-  n = format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N;
-  c = format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C;
-  h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
-  w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
-
-  if (model_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-    input.shape_info.num = model_input_dims[n];
-    input.shape_info.height = model_input_dims[h];
-    input.shape_info.width = model_input_dims[w];
-    input.shape_info.channel = model_input_dims[c];
-  }
+void HybridModel::SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims,
+                                                 std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
+                                                 InputOutputDescInfo &input) {
   for (auto model_input_dim : model_input_dims) {
     input.shape_info.dims.push_back(model_input_dim);
   }
@@ -197,25 +186,25 @@ void HybridModel::SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_in
   return;
 }
 
-void HybridModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
+void HybridModel::CreateInputDimsInfo(const OpDescPtr &op_desc, InputOutputDescInfo &input) {
   std::vector<std::pair<int64_t,int64_t>> shape_ranges;
   if (is_new_model_desc_ && op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
     // When static aipp is set, need to get the model input dims which processed by aipp
     vector<int64_t> model_input_dims;
     (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
-    SetInputDimsAndShapeRangesInfo(model_input_dims, shape_ranges, format, input);
+    SetInputDimsAndShapeRangesInfo(model_input_dims, shape_ranges, input);
     return;
   }
   // judge if this data is linked dynamic aipp first, multiply batch has been considered
   if (op_desc->HasAttr("_dynamic_aipp_input_dims")) {
     vector<int64_t> dynamic_aipp_input_dims;
     (void)AttrUtils::GetListInt(op_desc, "_dynamic_aipp_input_dims", dynamic_aipp_input_dims);
-    SetInputDimsAndShapeRangesInfo(dynamic_aipp_input_dims, shape_ranges, format, input);
+    SetInputDimsAndShapeRangesInfo(dynamic_aipp_input_dims, shape_ranges, input);
     return;
   } else {
     vector<int64_t> input_dims = op_desc->GetInputDescPtr(0)->GetShape().GetDims();
     op_desc->GetInputDescPtr(0)->GetShapeRange(shape_ranges);
-    SetInputDimsAndShapeRangesInfo(input_dims, shape_ranges, format, input);
+    SetInputDimsAndShapeRangesInfo(input_dims, shape_ranges, input);
     return;
   }
 }
@@ -248,7 +237,7 @@ Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, st
     // not support dynamic shape input for now, so input_size here will be not less than zero.
     input.size = input_size;
 
-    CreateInputDimsInfo(op_desc, format, input);
+    CreateInputDimsInfo(op_desc, input);
 
     formats.push_back(format);
     input_desc.push_back(input);
@@ -257,29 +246,15 @@ Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, st
   return SUCCESS;
 }
 
-void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc, InputOutputDescInfo &output_desc_info, uint32_t &format_result) {
+void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc,
+                               InputOutputDescInfo &output_desc_info, uint32_t &format_result) {
   GE_IF_BOOL_EXEC(output_desc == nullptr, GELOGE(FAILED, "output desc ptr is nullptr"); return );
   Format format = output_desc->GetFormat();
   GeShape shape = output_desc->GetShape();
   std::vector<std::pair<int64_t,int64_t>> shape_ranges;
   output_desc->GetShapeRange(shape_ranges);
   DataType data_type = output_desc->GetDataType();
-  int64_t dims[] = {1, 1, 1, 1};
   format_result = format;
-  if (format == FORMAT_ND) {  // for ND tensor
-    for (size_t i = 0; i < shape.GetDimNum() && i < (sizeof(dims) / sizeof(dims[0])); i++) {
-      dims[i] = shape.GetDim(i);
-    }
-  } else {                                                                    // FOR FORMAT_NHWC or FORMAT_NCHW
-    dims[0] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N);  // 0: first dim
-    dims[1] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C);  // 1: second dim
-    dims[2] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H);  // 2: third dim
-    dims[3] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W);  // 3: forth dim
-  }
-  output_desc_info.shape_info.num = dims[0];      // 0: first dim
-  output_desc_info.shape_info.channel = dims[1];  // 1: second dim
-  output_desc_info.shape_info.height = dims[2];   // 2: third dim
-  output_desc_info.shape_info.width = dims[3];    // 3: forth dim
   if (format == FORMAT_FRACTAL_Z) {  // FraczToHWCK
     int64_t k = shape.GetDim(0);                                           // 0: first dim
     int64_t c = shape.GetDim(1);                                           // 1: second dim
@@ -310,7 +285,8 @@ void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc, InputOutputDes
 
 Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats) {
   std::vector<ConstGeTensorDescPtr> output_desc_list;
-  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list), "get output desc info failed");  // output_desc_list contains vaild input desc
+  // output_desc_list contains vaild input desc
+  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list), "get output desc info failed");
 
   vector<std::string> out_node_names;
   (void)ge::AttrUtils::GetListStr(ge_root_model_->GetRootGraph(), ATTR_MODEL_OUT_NODES_NAME, out_node_names);
@@ -320,7 +296,8 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
   GE_CHECK_NOTNULL(op_desc);
 
   auto out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
-  GE_CHK_BOOL_RET_STATUS(out_size == output_desc_list.size(), FAILED, "output size[%u] not match output_desc_list size[%zu]", out_size, output_desc_list.size());
+  GE_CHK_BOOL_RET_STATUS(out_size == output_desc_list.size(),
+      FAILED, "output size[%u] not match output_desc_list size[%zu]", out_size, output_desc_list.size());
 
   for (uint32_t index = 0; index < out_size; ++index) {
     string output_name;
@@ -328,9 +305,11 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
     std::vector<int64_t> src_index = op_desc->GetSrcIndex();
     if (out_size == out_node_names.size()) {
       bool contains_colon = out_node_names[index].find(":") != std::string::npos;
-      output_name = contains_colon ? out_node_names[index] : out_node_names[index] + ":" + std::to_string(src_index[index]);
+      output_name = contains_colon ? out_node_names[index] : out_node_names[index] +
+          ":" + std::to_string(src_index[index]);
     } else {
-      output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" + std::to_string(src_index[index]);
+      output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] +
+          "_" + std::to_string(src_index[index]);
     }
 
     InputOutputDescInfo output_desc_info;
@@ -342,6 +321,37 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
     formats.push_back(format_result);
   }
   return SUCCESS;
+}
+
+TensorValue *HybridModel::GetConstant(const NodePtr &node) const {
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "Param is null");
+    return nullptr;
+  }
+
+  auto it = constant_tensors_.find(node);
+  if (it == constant_tensors_.end()) {
+    GELOGD("constant not found, node name = [%s]", node->GetName().c_str());
+    return nullptr;
+  }
+
+  GELOGD("Got constant tensor, node name = [%s], tensor = %s",
+         node->GetName().c_str(),
+         it->second->DebugString().c_str());
+  return it->second.get();
+}
+
+TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "Param is null");
+    return nullptr;
+  }
+
+  if (node->GetType() == CONSTANT) {
+    return GetConstant(node);
+  }
+
+  return GetVariable(node->GetName());
 }
 }  // namespace hybrid
 }  // namespace ge

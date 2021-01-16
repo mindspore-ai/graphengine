@@ -54,8 +54,8 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
 Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(size == 0 || data == nullptr, return PARAM_INVALID);
   mmSsize_t write_count;
-  uint32_t size_2g = ((uint32_t) 0x1 << 31);
-  uint32_t size_1g = ((uint32_t) 0x1 << 30);
+  uint32_t size_2g = 2147483648;  // 0x1 << 31
+  uint32_t size_1g = 1073741824;  // 0x1 << 30
   // Write data
   if (size > size_2g) {
     auto seek = reinterpret_cast<uint8_t *>(const_cast<void *>(data));
@@ -256,6 +256,65 @@ FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header, Mod
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "save file failed, file_path:%s, file header len:%u.",
                          file_path.c_str(), file_header.length);
   return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
+FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header,
+                      vector<ModelPartitionTable *> &model_partition_tables,
+                      const vector<vector<ModelPartition>> &all_partition_datas) {
+  file_header.is_encrypt = ModelEncryptType::UNENCRYPTED;
+
+  const Status ret = SaveWithFileHeader(file_path, file_header, model_partition_tables, all_partition_datas);
+  GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "save file failed, file_path:%s, file header len:%u.",
+                         file_path.c_str(), file_header.length);
+  return SUCCESS;
+}
+
+Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFileHeader &file_header,
+                                     vector<ModelPartitionTable *> &model_partition_tables,
+                                     const vector<vector<ModelPartition>> &all_partition_datas) {
+
+  GE_CHK_BOOL_EXEC(model_partition_tables.size() == all_partition_datas.size(),
+                   return PARAM_INVALID,
+                   "model table size %zu does not match partition size %zu",
+                   model_partition_tables.size(), all_partition_datas.size())
+  for (size_t index = 0; index < model_partition_tables.size(); ++index) {
+    auto &cur_partiton_data = all_partition_datas[index];
+    auto &cur_model_partition_table = *model_partition_tables[index];
+    GE_CHK_BOOL_RET_STATUS(!cur_partiton_data.empty() && cur_model_partition_table.num != 0
+                           && cur_model_partition_table.num == cur_partiton_data.size(), FAILED,
+                           "Invalid param:partition data size is (%u), model_partition_table.num is (%zu).",
+                           cur_model_partition_table.num, cur_partiton_data.size());
+  }
+
+  // Open file
+  int32_t fd = 0;
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(OpenFile(fd, file_path) != SUCCESS, return FAILED);
+  Status ret = SUCCESS;
+  do {
+    // Write file header
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+        WriteData(static_cast<const void *>(&file_header), sizeof(ModelFileHeader), fd) != SUCCESS, ret = FAILED;
+        break);
+    for (size_t index = 0; index < model_partition_tables.size(); ++index) {
+      // Write model partition table
+      auto &cur_tabel = *model_partition_tables[index];
+      uint32_t table_size = static_cast<uint32_t>(SIZE_OF_MODEL_PARTITION_TABLE(cur_tabel));
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+          WriteData(static_cast<const void *>(&cur_tabel), table_size, fd) != SUCCESS, ret = FAILED; break);
+      // Write partition data
+      auto &cur_partition_datas = all_partition_datas[index];
+      for (const auto &partition_data : cur_partition_datas) {
+        GELOGI("GC:size[%zu]", partition_data.size);
+        GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+            WriteData(static_cast<const void *>(partition_data.data), partition_data.size, fd) != SUCCESS, ret = FAILED;
+            break);
+      }
+    }
+  } while (0);
+  // Close file
+  GE_CHK_BOOL_RET_STATUS(mmClose(fd) == EN_OK, FAILED, "Close file failed.");
+  return ret;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(const string &file_path, const void *data,

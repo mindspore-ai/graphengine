@@ -185,7 +185,7 @@ RTS_API rtError_t rtDisableP2P(uint32_t devIdDes, uint32_t phyIdSrc);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtDeviceCanAccessPeer(int32_t* canAccessPeer, uint32_t device, uint32_t peerDevice);
+RTS_API rtError_t rtDeviceCanAccessPeer(int32_t *canAccessPeer, uint32_t device, uint32_t peerDevice);
 
 /**
  * @ingroup dvrt_dev

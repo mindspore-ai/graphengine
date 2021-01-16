@@ -119,31 +119,15 @@ class GraphMemoryAssigner {
   ///
   ge::Status ReAssignContinuousMemory(bool is_loop_graph);
 
-  ge::Status ReAssignReuseAndNoPaddingContinuousInputMemory();
-
-  ge::Status ReAssignReuseAndNoPaddingContinuousOutputMemory();
-
-  ge::Status ReAssignVirtualInputNodeMemory(NodePtr node, size_t &mem_offset_reuse);
-
-  ge::Status ReAssignVirtualOutputNodeMemory(NodePtr node, size_t &mem_offset_reuse);
-
-  ge::Status ReAssignVirtualNodesMemory(map<string, vector<NodePtr>> &mem_reuse_nodes_map, int32_t mem_reuse_model);
-
-  ge::Status GetMaxBatchLabel(const map<string, vector<NodePtr>> &mem_reuse_virtual_nodes_map,
-                              int32_t mem_reuse_model, string &max_batch_label);
-
-  ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &output_desc, int64_t dim_index,
-                                               int64_t &output_mem_size, int64_t &batch_dim_num, int64_t &out_size);
-
   ge::Status ReAssignAtomicMemory(bool is_loop_graph);
-  
-  ge::Status FilterAtomicNodesForMemoryAssign(std::map<NodePtr, vector<NodePtr>> &normal_atomic_nodes_map,
-                                              std::vector<NodePtr> &connecting_output_atomic_nodes);
+
+  ge::Status FilterAtomicNodesForMemoryAssign(map<string, map<NodePtr, vector<NodePtr>>> &normal_atomic_nodes_map,
+                                              map<string, vector<NodePtr>> &connecting_output_atomic_nodes);
 
   ge::Status AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
-                                         int64_t &continuous_mem_size, int64_t memory_type);
+                                         int64_t &continuous_mem_size, int64_t memory_type, uint32_t continuous_type);
 
-  ge::Status AssignContinuousOutputMemory(const ge::NodePtr &node);
+  ge::Status AssignContinuousOutputMemory(const ge::NodePtr &node, int64_t memory_type, uint32_t continuous_type);
 
   ///
   /// @brief check the input of node whether support atomic attr
@@ -169,10 +153,10 @@ class GraphMemoryAssigner {
   ge::Status AssignConnectNetOutputAtomicMemory(vector<NodePtr> &connect_netoutput_nodes);
 
   ge::Status SetIndependentAtomicAttr(const ge::NodePtr &node, int64_t atomic_mem_start,
-                                      const std::vector<int64_t> &mem_offset_end);
+                                      const std::vector<int64_t> &mem_offset_end, int64_t memory_type);
 
   ge::Status SetAtomicCleanAttr(const ge::NodePtr &node, const std::vector<int64_t> &atomic_mem_start,
-                                const std::vector<int64_t> &atomic_mem_size);
+                                const std::vector<int64_t> &atomic_mem_size, int64_t memory_type);
 
   ge::Status IsIndependentAtomicClean(const ge::NodePtr &node, bool &is_independent_atomic_clean_node);
 

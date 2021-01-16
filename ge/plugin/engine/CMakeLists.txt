@@ -8,6 +8,7 @@ add_library(engine SHARED ${SRC_LIST})
 
 target_compile_options(engine PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(engine PRIVATE

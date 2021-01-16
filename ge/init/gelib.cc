@@ -53,9 +53,6 @@ const int kDecimal = 10;
 const int kSocVersionLen = 50;
 const int kDefaultDeviceIdForTrain = 0;
 const int kDefaultDeviceIdForInfer = -1;
-const uint32_t kAicoreOverflow = (0x1 << 0);
-const uint32_t kAtomicOverflow = (0x1 << 1);
-const uint32_t kAllOverflow = (kAicoreOverflow | kAtomicOverflow);
 const char *const kGlobalOptionFpCeilingModeDefault = "2";
 }  // namespace
 static std::shared_ptr<GELib> instancePtr_ = nullptr;
@@ -485,11 +482,9 @@ Status GELib::Finalize() {
 void GELib::ShutDownProfiling() {
   std::lock_guard<std::mutex> lock(status_mutex_);
 
-  if (!ProfilingManager::Instance().ProfilingOpTraceOn() && ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().StopProfiling();
-  }
   if (ProfilingManager::Instance().ProfilingOn()) {
-    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+    ProfilingManager::Instance().StopProfiling();
+    ProfilingManager::Instance().PluginUnInit();
   }
 }
 

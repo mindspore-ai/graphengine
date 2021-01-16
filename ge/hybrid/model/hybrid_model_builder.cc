@@ -21,23 +21,34 @@
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/new_model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/host_mem_allocator.h"
 #include "graph/utils/graph_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "framework/common/debug/ge_log.h"
-#include "graph/utils/attr_utils.h"
 
 namespace ge {
 namespace hybrid {
+using domi::LogTimeStampDef;
+using domi::TaskDef;
 namespace {
 const uint32_t kSubgraphIndex = 0U;
 const uint32_t kVarOutputIndex = 0U;
-const uint32_t kAlignment = 32;
+const uint64_t kProfilingFpStartLogid = 1U;
+const uint64_t kProfilingBpEndLogid = 2U;
+const uint64_t kProfilingIterEndLogid = 65535U;
 const int kBytes = 8;
 const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
+const char *const kProfilingGraph = "ProfilingGraph";
+const char *const kProfilingFpNode = "ProfilingFpNode";
+const char *const kProfilingBpNode = "ProfilingBpNode";
+const char *const kProfilingEndNode = "ProfilingEndNode";
+const char *const kProfilingArNode = "ProfilingAllReduceNode";
+const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
 
 Status SetOutputNameAttr(ComputeGraph &graph) {
   vector<string> output_names;
@@ -227,7 +238,10 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
   new_node->node_id = node_index;
   new_node->op_desc->SetId(node_index);
   node_index += 1;
-
+  NodeExecutorManager::ExecutorType executor_type = NodeExecutorManager::GetInstance().ResolveExecutorType(*node);
+  new_node->is_profiling_report = (executor_type == NodeExecutorManager::ExecutorType::AICORE) ||
+                                  (executor_type == NodeExecutorManager::ExecutorType::AICPU_TF) ||
+                                  (executor_type == NodeExecutorManager::ExecutorType::AICPU_CUSTOM);
   *node_item = new_node.get();
   node_items[node] = std::move(new_node);
   return SUCCESS;
@@ -339,9 +353,9 @@ Status HybridModelBuilder::ParseDependentForFusedSubgraph(NodeItem &node_item) {
     uint32_t parent_index = 0;
     if (!AttrUtils::GetInt(*op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
       GELOGE(INTERNAL_ERROR,
-            "[%s] Failed to get attr [%s]",
-            op_desc->GetName().c_str(),
-            ATTR_NAME_PARENT_NODE_INDEX.c_str());
+             "[%s] Failed to get attr [%s]",
+             op_desc->GetName().c_str(),
+             ATTR_NAME_PARENT_NODE_INDEX.c_str());
       return INTERNAL_ERROR;
     }
 
@@ -793,7 +807,7 @@ Status HybridModelBuilder::HandleDtString(const GeTensor &tensor, void *var_addr
                            "Shape size is invalid");
     auto offset = static_cast<uint64_t>(elem_num * kBytes);
     auto hbm_raw_data_base_addr =
-        reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
+        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
     for (int64_t i = elem_num - 1; i >= 0; --i) {
       buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
     }
@@ -807,7 +821,7 @@ Status HybridModelBuilder::AssignUninitializedConstantOps() {
     GELOGI("no need to assign when exec on host.");
     return SUCCESS;
   }
-  for (auto &it : hybrid_model_.constant_op_nodes_) {
+  for (auto &it : constant_op_nodes_) {
     const string &var_name = it.first;
     const NodePtr &var_node = it.second;
     auto tensor_desc = var_node->GetOpDesc()->MutableOutputDesc(0);
@@ -836,7 +850,7 @@ Status HybridModelBuilder::AssignUninitializedConstantOps() {
 }
 
 Status HybridModelBuilder::InitConstantOps() {
-  for (auto &it : hybrid_model_.constant_op_nodes_) {
+  for (auto &it : constant_op_nodes_) {
     const string &var_name = it.first;
     const NodePtr &var_node = it.second;
     auto op_desc = var_node->GetOpDesc();
@@ -849,9 +863,18 @@ Status HybridModelBuilder::InitConstantOps() {
 
     std::unique_ptr<TensorValue> var_tensor;
     if (GetContext().GetHostExecFlag()) {
-      auto buffer = ge_tensor->MutableData();
-      GELOGD("Init tensor with host constant. size = %zu", buffer.GetSize());
-      var_tensor.reset(new(std::nothrow)TensorValue(buffer.GetData(), buffer.GetSize()));
+      GE_CHECK_NOTNULL(ge_tensor);
+      // Address for eigen kernel should be aligned with 16 bytes
+      // Tensors return by api GetWeights share data with proto, whose addr is not confirmed to be aligned
+      GeTensor aligned_tensor = ge_tensor->Clone();
+      GELOGD("Init tensor with host constant %s size = %zu", var_name.c_str(), aligned_tensor.MutableData().GetSize());
+      if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(aligned_tensor.GetAlignedPtr(),
+                                                                       aligned_tensor.GetData().size()) == nullptr) {
+        GELOGE(MEMALLOC_FAILED, "Malloc host memory for an existed GeTensor failed.");
+        return MEMALLOC_FAILED;
+      }
+      var_tensor.reset(new(std::nothrow)TensorValue(aligned_tensor.MutableData().data(),
+                                                    aligned_tensor.GetData().size()));
     } else {
       GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
       GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());
@@ -906,9 +929,15 @@ Status HybridModelBuilder::InitVariableTensors() {
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Host variable [%s] malloc failed.", it.first.c_str());
       return GE_GRAPH_MALLOC_FAILED;
     }
-    GELOGD("Host variable [%s] malloc success.", it.first.c_str());
+    if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(mem_info.host_aligned_ptr,
+                                                                     tensor_size) == nullptr) {
+      GELOGE(MEMALLOC_FAILED, "Malloc host memory for an existed GeTensor failed.");
+      return MEMALLOC_FAILED;
+    }
+    GELOGD("Host variable [%s] malloc success, size=%lld.", it.first.c_str(), tensor_size);
 
-    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_address, tensor_size));
+    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_aligned_ptr->MutableGet(),
+                                                                       tensor_size));
     GE_CHECK_NOTNULL(tensor);
     hybrid_model_.variable_tensors_.emplace(it.first, std::move(tensor));
   }
@@ -917,11 +946,52 @@ Status HybridModelBuilder::InitVariableTensors() {
 }
 
 Status HybridModelBuilder::InitWeights() {
-  // Train do not have weight. (only got ConstOp)
+  auto allocator = NpuMemoryAllocator::GetAllocator();
+  GE_CHECK_NOTNULL(allocator);
+
+  for (auto &it : hybrid_model_.node_items_) {
+    auto &node_item = it.second;
+    if (node_item->node_type != CONSTANT) {
+      continue;
+    }
+
+    const auto &constant_node = node_item->node;
+    auto op_desc = constant_node->GetOpDesc();
+    auto v_weights = ModelUtils::GetWeights(op_desc);
+    if (v_weights.empty()) {
+      GELOGE(INTERNAL_ERROR, "[%s] Constant has no value", constant_node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
+    auto output_desc = op_desc->MutableOutputDesc(0);
+    GE_CHECK_NOTNULL(output_desc);
+    auto tensor_size = ge_tensor->GetData().GetSize();
+    GELOGD("[%s] Start to init Constant node [%s], size = %ld",
+           GetGraphName(),
+           constant_node->GetName().c_str(),
+           tensor_size);
+
+    auto tensor_buffer = TensorBuffer::Create(allocator, tensor_size);
+    GE_CHECK_NOTNULL(tensor_buffer);
+    std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(std::move(tensor_buffer)));
+    GE_CHECK_NOTNULL(constant_tensor);
+    constant_tensor->SetName("Constant_" + op_desc->GetName());
+    if (tensor_size > 0) {
+      GE_CHK_RT_RET(rtMemcpy(constant_tensor->MutableData(),
+                             constant_tensor->GetSize(),
+                             ge_tensor->GetData().data(),
+                             ge_tensor->GetData().size(),
+                             RT_MEMCPY_HOST_TO_DEVICE));
+    }
+
+    hybrid_model_.constant_tensors_.emplace(constant_node, std::move(constant_tensor));
+    GELOGD("[%s] Constant node [%s] added, size = %ld", GetGraphName(), constant_node->GetName().c_str(), tensor_size);
+  }
   return SUCCESS;
 }
 
 Status HybridModelBuilder::LoadTasks() {
+  GE_CHK_STATUS_RET(CheckAicpuOpList(), "Check Aicpu op failed.");
   for (auto &it : hybrid_model_.node_items_) {
     auto &node_item = it.second;
     auto &node_ptr = node_item->node;
@@ -987,7 +1057,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
 
     // index task defs
     GELOGD("To index tasks for subgraph: %s", name.c_str());
-    unordered_map<int64_t, NodePtr> node_map;
+    std::unordered_map<int64_t, NodePtr> node_map;
     for (const auto &node : sub_graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node);
       GE_CHECK_NOTNULL(node->GetOpDesc());
@@ -1049,7 +1119,7 @@ Status HybridModelBuilder::IndexSpecialNodes() {
         hybrid_model_.device_variable_nodes_.emplace(node->GetName(), node);
       }
     } else if (op_type == CONSTANTOP) {
-      hybrid_model_.constant_op_nodes_.emplace(node->GetName(), node);
+      constant_op_nodes_.emplace(node->GetName(), node);
     } else if (op_type == DATA && node->GetOwnerComputeGraph() != root_graph) {
       NodePtr src_node;
       int peer_out_index = -1;
@@ -1322,7 +1392,7 @@ Status HybridModelBuilder::GetParentNodeOutputIndex(const OpDesc &op_desc, int i
 Status HybridModelBuilder::InitModelMem() {
   hybrid_model_.var_mem_base_ = var_manager_->GetVarMemoryBase(RT_MEMORY_HBM);
   auto total_var_size = hybrid_model_.TotalVarMemSize();
-  if (total_var_size == 0 && !hybrid_model_.constant_op_nodes_.empty()) {
+  if (total_var_size == 0 && !constant_op_nodes_.empty()) {
     total_var_size = var_manager_->GetVarMemSize(RT_MEMORY_HBM) > 0 ? var_manager_->GetVarMemMaxSize() : 0;
     GELOGD("Model var size = 0. but got uninitialized constant. set var size to %zu.", total_var_size);
   }
@@ -1458,6 +1528,188 @@ Status HybridModelBuilder::RecoverGraphUnknownFlag() {
   return SUCCESS;
 }
 
+Status HybridModelBuilder::GenerateFpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list) {
+  uint64_t jobid_log_id = ge::GetContext().TraceId();
+  GELOGD("The first FP operator is %s,, job_id %lu", op_desc->GetName().c_str(), jobid_log_id);
+
+  TaskDef job_task_def;
+  job_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
+  job_task_def.set_stream_id(op_desc->GetStreamId());
+  LogTimeStampDef *job_log_def = job_task_def.mutable_log_timestamp();
+  if (job_log_def != nullptr) {
+    job_log_def->set_logid(jobid_log_id);
+    job_log_def->set_notify(false);
+  }
+  task_def_list.emplace_back(job_task_def);
+  TaskDef fp_task_def;
+  fp_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
+  fp_task_def.set_stream_id(op_desc->GetStreamId());
+  LogTimeStampDef *fp_log_def = fp_task_def.mutable_log_timestamp();
+  if (fp_log_def != nullptr) {
+    fp_log_def->set_logid(kProfilingFpStartLogid);
+    fp_log_def->set_notify(false);
+  }
+  task_def_list.emplace_back(fp_task_def);
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::GenerateArProfilingTask(const OpDescPtr &op_desc, int64_t log_id,
+                                                   vector<domi::TaskDef> &task_def_list) {
+  TaskDef ar_task_def;
+  ar_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
+  ar_task_def.set_stream_id(op_desc->GetStreamId());
+  LogTimeStampDef *ar_log_def = ar_task_def.mutable_log_timestamp();
+  if (ar_log_def != nullptr) {
+    ar_log_def->set_logid(log_id);
+    ar_log_def->set_notify(false);
+  }
+  task_def_list.emplace_back(ar_task_def);
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::GenerateBpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list) {
+    TaskDef bp_task_def;
+    bp_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
+    bp_task_def.set_stream_id(op_desc->GetStreamId());
+    LogTimeStampDef *bp_log_def = bp_task_def.mutable_log_timestamp();
+    GE_CHECK_NOTNULL(bp_log_def);
+    bp_log_def->set_logid(kProfilingBpEndLogid);
+    bp_log_def->set_notify(false);
+    task_def_list.emplace_back(bp_task_def);
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::GenerateEndProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list) {
+  TaskDef end_task_def;
+  end_task_def.set_type(RT_MODEL_TASK_PROFILER_TRACE);
+  end_task_def.set_stream_id(op_desc->GetStreamId());
+  LogTimeStampDef *end_log_def = end_task_def.mutable_log_timestamp();
+  GE_CHECK_NOTNULL(end_log_def);
+  end_log_def->set_logid(kProfilingIterEndLogid);
+  end_log_def->set_notify(true);
+  task_def_list.emplace_back(end_task_def);
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, const NodePtr &node) {
+  GE_CHECK_NOTNULL(node);
+  const OpDescPtr &op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  const auto &compute_graph = MakeShared<ComputeGraph>(kProfilingGraph);
+  GE_CHECK_NOTNULL(compute_graph);
+
+  NodePtr node_ptr = nullptr;
+  vector<domi::TaskDef> task_def_list;
+  // create fp node
+  bool is_insert_fp_profiling_task = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_FP_PROFILILNG_TASK, is_insert_fp_profiling_task);
+  if (is_insert_fp_profiling_task) {
+    (void)GenerateFpProfilingTask(op_desc, task_def_list);
+    auto fp_desc = MakeShared<OpDesc>(kProfilingFpNode, PROFILINGTRAININGTRACE);
+    GE_CHECK_NOTNULL(fp_desc);
+    fp_desc->SetOpKernelLibName(kEngineNameRts);
+    node_ptr = compute_graph->AddNode(fp_desc);
+    GELOGD("Create fp profiling node success before.");
+  }
+  // creat all reduce start node
+  bool is_insert_bp_profiling_task = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, is_insert_bp_profiling_task);
+  bool is_all_reduce = (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HVDCALLBACKALLREDUCE);
+  if (is_all_reduce && is_insert_bp_profiling_task) {
+    int64_t log_id = 0;
+    (void)ge::AttrUtils::GetInt(op_desc, ATTR_NAME_INSERT_PROFILILNG_TASK_LOG_ID, log_id);
+    GELOGD("All reduce node profiling task log id: %ld before", log_id);
+    (void) GenerateArProfilingTask(op_desc, log_id, task_def_list);
+    string op_name = string(kProfilingArNode) + std::to_string(log_id);
+    auto ar_desc_start = MakeShared<OpDesc>(op_name, PROFILINGTRAININGTRACE);
+    GE_CHECK_NOTNULL(ar_desc_start);
+    ar_desc_start->SetOpKernelLibName(kEngineNameRts);
+    node_ptr = compute_graph->AddNode(ar_desc_start);
+    GELOGD("Create all reduce start profiling node success before.");
+  }
+
+  if (node_ptr != nullptr) {
+    for (const auto &task_def : task_def_list) {
+      hybrid_model_.task_defs_[node_ptr].emplace_back(task_def);
+    }
+    NodeItem *node_item = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node_ptr, &node_item));
+    node_item->input_start = 0;
+    node_item->output_start = 0;
+    graph_item.node_items_.emplace_back(node_item);
+  } else {
+    GELOGD("No need to create profiling node before.");
+  }
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const NodePtr &node) {
+  GE_CHECK_NOTNULL(node);
+  const OpDescPtr &op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  const auto &compute_graph = MakeShared<ComputeGraph>(kProfilingGraph);
+  GE_CHECK_NOTNULL(compute_graph);
+
+  NodePtr node_ptr = nullptr;
+  vector<domi::TaskDef> task_def_list;
+  // Create all reduce end node
+  bool is_insert_bp_profiling_task = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, is_insert_bp_profiling_task);
+  bool is_all_reduce = (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HVDCALLBACKALLREDUCE);
+  if (is_all_reduce && is_insert_bp_profiling_task) {
+    int64_t log_id = 0;
+    (void)ge::AttrUtils::GetInt(op_desc, ATTR_NAME_INSERT_PROFILILNG_TASK_LOG_ID, log_id);
+    GELOGD("All reduce node profiling task log id: %ld after", log_id);
+    (void) GenerateArProfilingTask(op_desc, log_id + 1, task_def_list);
+    string op_name = string(kProfilingArNode) + std::to_string(log_id + 1);
+    auto ar_desc_end = MakeShared<OpDesc>(op_name, PROFILINGTRAININGTRACE);
+    GE_CHECK_NOTNULL(ar_desc_end);
+    ar_desc_end->SetOpKernelLibName(kEngineNameRts);
+    node_ptr = compute_graph->AddNode(ar_desc_end);
+    GELOGD("Create all reduce end profiling node success after.");
+  }
+  // create bp node
+  if (!is_all_reduce && is_insert_bp_profiling_task) {
+    (void) GenerateBpProfilingTask(op_desc, task_def_list);
+    auto bp_op_desc = MakeShared<OpDesc>(kProfilingBpNode, PROFILINGTRAININGTRACE);
+    GE_CHECK_NOTNULL(bp_op_desc);
+    bp_op_desc->SetOpKernelLibName(kEngineNameRts);
+    node_ptr = compute_graph->AddNode(bp_op_desc);
+    GELOGD("Create bp profiling node success after.");
+  }
+  // create end node
+  bool is_insert_end_profiling_task = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_END_PROFILILNG_TASK, is_insert_end_profiling_task);
+  if (is_insert_end_profiling_task) {
+    (void)GenerateEndProfilingTask(op_desc, task_def_list);
+    auto end_desc = MakeShared<OpDesc>(kProfilingEndNode, PROFILINGTRAININGTRACE);
+    GE_CHECK_NOTNULL(end_desc);
+    end_desc->SetOpKernelLibName(kEngineNameRts);
+    node_ptr = compute_graph->AddNode(end_desc);
+    GELOGD("Create end profiling node success after.");
+  }
+
+  if (node_ptr != nullptr) {
+    for (const auto &task_def : task_def_list) {
+      hybrid_model_.task_defs_[node_ptr].emplace_back(task_def);
+    }
+    NodeItem *node_item = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node_ptr, &node_item));
+    node_item->input_start = 0;
+    node_item->output_start = 0;
+    graph_item.node_items_.emplace_back(node_item);
+  } else {
+    GELOGD("No need to create profiling node after.");
+  }
+
+  return SUCCESS;
+}
+
 Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root_graph) {
   GELOGD("Start to load subgraph [%s]", graph.GetName().c_str());
   // for known partitioned call, load all nodes
@@ -1473,6 +1725,10 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     GE_CHECK_NOTNULL(node);
     GE_CHECK_NOTNULL(node->GetOpDesc());
     const auto &op_type = node->GetType();
+    if (op_type == NOOP) {
+      GELOGD("[%s] Skip NoOp", node->GetName().c_str());
+      continue;
+    }
 
     NodeItem *node_item = nullptr;
     GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node, &node_item));
@@ -1490,8 +1746,9 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
       graph_item->output_node_ = node_item;
       GE_CHK_STATUS_RET_NOLOG(BuildOutputMapping(*graph_item, *node_item, is_root_graph));
     }
-
+    GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeBefore(*graph_item, node));
     graph_item->node_items_.emplace_back(node_item);
+    GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeAfter(*graph_item, node));
     // parse var outputs
     GE_CHK_STATUS_RET_NOLOG(ParseVarOutputs(*node_item));
     GELOGD("NodeItem created: %s", node_item->DebugString().c_str());
@@ -1556,6 +1813,30 @@ Status HybridModelBuilder::BuildInputMapping(GraphItem &graph_item,
     graph_item.input_nodes_[data_index] = node_item;
   }
 
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CheckAicpuOpList() {
+  std::vector<std::string> aicpu_optype_list;
+  std::vector<std::string> aicpu_tf_optype_list;
+  std::set<std::string> aicpu_optype_set;
+  std::set<std::string> aicpu_tf_optype_set;
+  for (auto &it : ge_root_model_->GetSubgraphInstanceNameToModel()) {
+    auto &ge_model = it.second;
+    GE_CHECK_NOTNULL(ge_model);
+    if (ge::AttrUtils::GetListStr(*ge_model, "needCheckCpu", aicpu_optype_list)) {
+      aicpu_optype_set.insert(aicpu_optype_list.begin(), aicpu_optype_list.end());
+    }
+
+    if (ge::AttrUtils::GetListStr(*ge_model, "needCheckTf", aicpu_tf_optype_list)) {
+      aicpu_tf_optype_set.insert(aicpu_tf_optype_list.begin(), aicpu_tf_optype_list.end());
+    }
+  }
+  // reset list with set
+  aicpu_optype_list.assign(aicpu_optype_set.begin(), aicpu_optype_set.end());
+  aicpu_tf_optype_list.assign(aicpu_tf_optype_set.begin(), aicpu_tf_optype_set.end());
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchKernelCheckAicpuOp(aicpu_optype_list, aicpu_tf_optype_list),
+                    "Launch check aicpu op type failed.");
   return SUCCESS;
 }
 }  // namespace hybrid

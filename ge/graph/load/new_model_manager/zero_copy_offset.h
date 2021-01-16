@@ -51,7 +51,7 @@ class ZeroCopyOffset {
                             const OpDescPtr &op_desc, const size_t &idx, bool &fusion_flag);
   void SetOutputOutsideAddrs(const int64_t &input_offset, const bool &fusion_flag, void *addr,
                              std::vector<void *> &tensor_addrs);
-  bool SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset);
+  void SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset);
 
   // basic_addr of l2-fusion
   void *GetBasicAddr() const { return basic_addr_; }
@@ -65,10 +65,13 @@ class ZeroCopyOffset {
   // data_size of Data/Netoutput
   int64_t GetDataSize() const { return data_size_; }
   // value of *outside_addrs_ from davinci_model
-  std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() { return outside_addrs_; }
+  const std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() { return outside_addrs_; }
+  // name of op
+  std::string GetOpName() const { return op_name_; }
 
  private:
   void *basic_addr_ = nullptr;
+  std::string op_name_;
   uint32_t data_count_ = 0;
   std::vector<std::pair<int64_t, void *>> data_info_;
   vector<int64_t> relative_offset_;

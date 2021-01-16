@@ -96,7 +96,7 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unorder
                node->GetName().c_str(), node->GetType().c_str());
         continue;
       }
-      if (node_to_re_pass->IsAllInNodesSeen(nodes_seen)) {
+      if (nodes_seen.count(node_to_re_pass.get()) > 0 || node_to_re_pass->IsAllInNodesSeen(nodes_seen)) {
         GELOGD("The node %s will be re-pass later", node_to_re_pass->GetName().c_str());
         nodes_re_pass.insert(node_to_re_pass);
       } else {

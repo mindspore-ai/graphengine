@@ -73,6 +73,8 @@ class HybridModel {
 
   NodePtr GetVariableNode(const string &name) const;
 
+  TensorValue* GetTensor(const NodePtr &node) const;
+
   const std::vector<domi::TaskDef>* GetTaskDefs(const NodePtr &node) const;
 
   const GraphItem *GetRootGraphItem() const;
@@ -100,24 +102,27 @@ class HybridModel {
 
   Status GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats);
 
-  void CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input);
+  void CreateInputDimsInfo(const OpDescPtr &op_desc, InputOutputDescInfo &input);
 
   void SetModelDescVersion(bool is_new_model_desc) { is_new_model_desc_ = is_new_model_desc; }
 
-  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims, std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
-                                      Format &format, InputOutputDescInfo &input);
+  void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims,
+                                      std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
+                                      InputOutputDescInfo &input);
 
  private:
   friend class HybridModelBuilder;
   friend class HybridModelAsyncExecutor;
 
+  TensorValue* GetConstant(const NodePtr &node) const;
+
   std::string model_name_;
   GeRootModelPtr ge_root_model_;
   std::map<uint32_t, NodeItem *> input_nodes_;
-  std::map<std::string, NodePtr> constant_op_nodes_;
   std::map<std::string, NodePtr> device_variable_nodes_; //lint !e148
   std::map<std::string, NodePtr> host_variable_nodes_; //lint !e148
   std::map<std::string, std::unique_ptr<TensorValue>> variable_tensors_;
+  std::map<NodePtr, std::unique_ptr<TensorValue>> constant_tensors_;
   std::map<NodePtr, std::vector<domi::TaskDef>> task_defs_;
   std::map<NodePtr, GeModelPtr> known_shape_sub_models_;
 

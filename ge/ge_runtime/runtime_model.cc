@@ -28,14 +28,15 @@
 
 namespace ge {
 namespace model_runner {
+const int kOffsetUnit = 8;
 RuntimeModel::~RuntimeModel() {
   GELOGI("RuntimeModel destructor start");
 
-  // Release task first, hccl task hold stream
-  task_list_.clear();
-
   // Unbind rtModel from all task related streams
   RtModelUnbindStream();
+
+  // Release task first, hccl task hold stream
+  task_list_.clear();
 
   // Release all task related streams
   RtStreamDestory();
@@ -495,7 +496,7 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
         return false;
       }
       uint64_t *buff = reinterpret_cast<uint64_t *>(const_cast<char *>(constant->weight_data.data()));
-      int64_t offset = elem_num * 8;
+      int64_t offset = elem_num * kOffsetUnit;
       uintptr_t hbm_raw_data_base_addr = reinterpret_cast<uintptr_t>(constant->output_addrs[0]) + offset;
       for (int64_t i = elem_num - 1; i >= 0; --i) {
         buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);

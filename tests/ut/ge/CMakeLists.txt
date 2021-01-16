@@ -49,6 +49,7 @@ include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc/external)
+include_directories(${GE_CODE_DIR}/parser)
 include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
 include_directories(${GE_CODE_DIR}/metadef/inc/graph)
@@ -88,6 +89,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
     "${GE_CODE_DIR}/metadef/graph/buffer.cc"
+    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
     "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
     "${GE_CODE_DIR}/metadef/graph/graph.cc"
     "${GE_CODE_DIR}/metadef/graph/gnode.cc"
@@ -120,6 +122,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
     "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
     "${GE_CODE_DIR}/metadef/register/register.cpp"
+    "${GE_CODE_DIR}/metadef/register/register_pass.cpp"
     "${GE_CODE_DIR}/metadef/register/op_kernel_registry.cpp"
     "${GE_CODE_DIR}/metadef/register/auto_mapping_util.cpp"
     "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"
@@ -175,6 +178,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/net_output_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/replace_transshape_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/constant_fuse_same_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/fuse_data_nodes_with_common_input_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/print_op_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/no_use_reshape_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/iterator_op_pass.cc"
@@ -182,6 +186,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/atomic_addr_clean_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_same_addr_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_graph_unknown_status_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/dynamic_single_op_reset_shape_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_agnostic_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dimension_compute_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dimension_adjust_pass.cc"
@@ -223,7 +228,8 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/cond_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/for_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/enter_pass.cc"
-    "${GE_CODE_DIR}/ge/graph/passes/assign_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/assign_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/inplace_support_check_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/addn_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/common_subexpression_elimination_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_symmetry_elimination_pass.cc"
@@ -244,6 +250,8 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/hccl_group_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/set_input_output_offset_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/model_utils.cc"
@@ -298,7 +306,9 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
+    "${GE_CODE_DIR}/ge/common/model_saver.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
     "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
     "${GE_CODE_DIR}/metadef/register/ops_kernel_builder_registry.cc"
@@ -306,6 +316,13 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
     "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
+    "${GE_CODE_DIR}/parser/parser/common/pre_checker.cc"
+    "${GE_CODE_DIR}/parser/parser/common/convert/pb2json.cc"
+    "${GE_CODE_DIR}/parser/parser/common/parser_factory.cc"
+    "${GE_CODE_DIR}/parser/parser/common/model_saver.cc"
+    "${GE_CODE_DIR}/parser/parser/common/parser_types.cc"
+    "${GE_CODE_DIR}/parser/parser/common/parser_inner_ctx.cc"
+    "${GE_CODE_DIR}/ge/session/omg.cc"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -326,7 +343,7 @@ set(COMMON_FORMAT_SRC_FILES
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nchw.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
-    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"   
+    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
 )
 
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
@@ -357,6 +374,7 @@ set(GRAPH_LOAD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
 )
 
@@ -385,6 +403,7 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/kernel_ex_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/kernel_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/label_set_task_info.cc"
+    "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/memcpy_async_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/profiler_trace_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/stream_active_task_info.cc"
@@ -394,7 +413,6 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc"
     "${GE_CODE_DIR}/ge/graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
-    "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/common/debug/memory_dumper.cc"
     "${GE_CODE_DIR}/ge/executor/ge_executor.cc"
@@ -425,7 +443,6 @@ set(GRAPH_BUILD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/build/memory/hybrid_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/build/memory/max_block_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
-    "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
@@ -474,6 +491,8 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/reshape_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_add_control_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_remove_control_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_breadth_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_without_reshape_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_depth_fusion_pass.cc"
@@ -482,7 +501,7 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/compile_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/common/transop_util.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
-    "${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
+    #"${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/folding_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/variable_op_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transpose_transdata_pass.cc"
@@ -556,12 +575,20 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     #"graph/load/new_model_manager_davinci_model_unittest.cc"
     #"graph/load/new_model_manager_model_manager_unittest.cc"
     #"graph/load/new_model_manager_task_build_unittest.cc"
+	"graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
     #"graph/load/output_net_output_unittest.cc"
+    "graph/load/davinci_model_unittest.cc"
     "graph/load/tbe_handle_store_unittest.cc"
+    "graph/load/hccl_task_info_unittest.cc"
+    "graph/load/kernel_ex_task_info_unittest.cc"
+    "graph/load/kernel_task_info_unittest.cc"
+    "graph/load/memcpy_addr_async_task_info_unittest.cc"
+    "graph/load/memcpy_async_task_info_unittest.cc"
     #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
+    "graph/load/model_helper_unittest.cc"
 )
 
 set(PASS_TEST_FILES
@@ -590,6 +617,7 @@ set(PASS_TEST_FILES
     "graph/passes/trans_op_depth_fusion_pass_unittest.cc"
     "graph/passes/transop_nearby_allreduce_fusion_pass_unittest.cc"
     "graph/passes/constant_folding_pass_unittest.cc"
+	"graph/passes/fuse_data_nodes_with_common_input_pass_unittest.cc"
     "graph/passes/stop_gradient_pass_unittest.cc"
     "graph/passes/prevent_gradient_pass_unittest.cc"
     "graph/passes/identity_pass_unittest.cc"
@@ -605,6 +633,7 @@ set(PASS_TEST_FILES
     "graph/passes/net_output_pass_unittest.cc"
     "graph/passes/no_use_reshape_remove_pass_unittest.cc"
     "graph/passes/infershape_pass_unittest.cc"
+	"graph/passes/multi_batch_clone_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -667,10 +696,11 @@ set(MULTI_PARTS_TEST_FILES
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "session/omg_omg_unittest.cc"
 )
 
 set(SINGLE_OP_TEST_FILES
-    "single_op/single_op_model_unittest.cc"
+    #"single_op/single_op_model_unittest.cc"
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
 )
@@ -843,13 +873,17 @@ add_executable(ut_libge_multiparts_utest
     ${MULTI_PARTS_TEST_FILES}
 )
 
+target_compile_options(ut_libge_multiparts_utest PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+)
+
 target_compile_definitions(ut_libge_multiparts_utest PRIVATE
     google=ascend_private
 )
 
 target_link_libraries(ut_libge_multiparts_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl 
+    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
 )
 
 # libge_others_utest
@@ -860,9 +894,14 @@ add_executable(ut_libge_others_utest
     ${EXECUTE_TEST_FILES}
     ${OTHERS_TEST_FILES}
 )
+
+target_compile_options(ut_libge_others_utest PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+)
+
 target_link_libraries(ut_libge_others_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
+    ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
 )
 
 # libge_kernel_utest
@@ -872,9 +911,14 @@ add_executable(ut_libge_kernel_utest
         ${KERNEL_TEST_FILES}
         ${KERNEL_SRC_FILES}
 )
+
+target_compile_options(ut_libge_kernel_utest PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+)
+
 target_link_libraries(ut_libge_kernel_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl
+    ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
 )
 
 # libge_distinct_load_utest
@@ -886,15 +930,19 @@ add_executable(ut_libge_distinct_load_utest
         ${PROFILING_MNG_TEST_FILES}
 )
 
+target_compile_options(ut_libge_distinct_load_utest PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+)
+
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
     google=ascend_private
 )
 
-target_link_libraries(ut_libge_distinct_load_utest 
+target_link_libraries(ut_libge_distinct_load_utest
 	${COMMON_SHARED_LIBRARIES}
 	$<BUILD_INTERFACE:intf_pub>
         ge_execute_common ge_ut_common_format ge_load_common
         ge_single_op   ge_prepare_common
         ge_optimize_common  ge_build_common ge_partition_common ge_ut_common
-        gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread
+        gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread -lgcov
 )

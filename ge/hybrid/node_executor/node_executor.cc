@@ -20,6 +20,7 @@
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
 #include "graph/utils/tensor_utils.h"
+#include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"
 #include "graph/debug/ge_attr_define.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
@@ -34,7 +35,6 @@ const char *const kEngineNameAiCpuTf = "aicpu_tf_kernel";
 const char *const kEngineNameHccl = "ops_kernel_info_hccl";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
 const char *const kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
-const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 }
 Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
@@ -45,9 +45,9 @@ Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
 }
 
 Status NodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const {
-  GE_CHK_STATUS_RET(task.ExecuteAsync(context, callback),
-                    "Failed to execute task. node = %s",
-                    context.GetNodeItem().NodeName().c_str());
+  HYBRID_CHK_STATUS_RET(task.ExecuteAsync(context, callback),
+                        "Failed to execute task. node = %s",
+                        context.GetNodeItem().NodeName().c_str());
   return SUCCESS;
 }
 
@@ -238,6 +238,14 @@ void NodeExecutorManager::FinalizeExecutors() {
 NodeExecutorRegistrar::NodeExecutorRegistrar(NodeExecutorManager::ExecutorType executor_type,
                                              NodeExecutor *(*builder)()) {
   NodeExecutorManager::GetInstance().RegisterExecutorBuilder(executor_type, builder);
+}
+Status NoOpTask::UpdateArgs(TaskContext &context) {
+  GELOGD("[%s] Skipping UpdateArgs for op with empty outputs", context.GetNodeName());
+  return SUCCESS;
+}
+Status NoOpTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  GELOGD("[%s] Skipping execution for op with empty outputs", context.GetNodeName());
+  return context.TryExecuteCallback(done_callback);
 }
 }  // namespace hybrid
 }  // namespace ge

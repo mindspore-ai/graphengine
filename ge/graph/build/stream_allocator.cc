@@ -34,7 +34,6 @@ using std::string;
 using std::vector;
 
 namespace {
-const uint32_t kMaxSwitchStreamNum = 1;
 const int64_t kTaskNumPerNormalNode = 3;
 const int64_t kTaskNumPerHcclNode = 200;
 const char *const kTrueStr = "true";
@@ -49,7 +48,8 @@ inline bool HasContinuousStreamLabel(const ge::OpDescPtr &op_desc, std::string &
 }
 
 bool IsHcclOp(const string &op_type) {
-  const set<string> hccl_op_types({ge::HCOMBROADCAST, ge::HCOMALLGATHER, ge::HCOMALLREDUCE, ge::HCOMREDUCESCATTER, ge::HCOMREDUCE});
+  const set<string> hccl_op_types({ge::HCOMBROADCAST, ge::HCOMALLGATHER,
+                                   ge::HCOMALLREDUCE, ge::HCOMREDUCESCATTER, ge::HCOMREDUCE});
   return hccl_op_types.find(op_type) != hccl_op_types.end();
 }
 }  // namespace

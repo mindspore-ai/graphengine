@@ -45,7 +45,7 @@ class GraphPrepare {
   virtual ~GraphPrepare();
   GraphPrepare(const GraphPrepare &in) = delete;
   GraphPrepare &operator=(const GraphPrepare &in) = delete;
-  Status PrepareDynShape(ConstGraphPtr graph,
+  Status PrepareDynShape(const GraphNodePtr &graph_node,
                          const std::vector<GeTensor> &user_input,
                          ge::ComputeGraphPtr &compute_graph,
                          uint64_t session_id = 0);
@@ -63,8 +63,8 @@ class GraphPrepare {
   Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
-  Status UpdateInput(const std::vector<GeTensor> &user_input);
-  Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input);
+  Status UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string,string> &graph_option);
+  Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input, const std::map<string,string> &graph_option);
   Status CheckConstOp();
   Status VerifyConstOp(const NodePtr &node);
   Status CheckUserInput(const std::vector<GeTensor> &user_input);

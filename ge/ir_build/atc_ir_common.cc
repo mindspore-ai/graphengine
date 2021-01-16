@@ -51,6 +51,7 @@ const char *const kDigitError = "is not digit";
 const char *const kCompressWeightError = "it must be appointed when appoint parameter[--optypelist_for_implmode]";
 const char *const kSelectImplmodeError = "only support high_performance, high_precision";
 const char *const kDynamicBatchSizeError = "It can only contains digit, \",\", \" \"";
+const char *const kKeepDtypeError = "file not found";
 
 vector<string> SplitInputShape(const std::string &input_shape) {
   vector<string> shape_pair_vec;
@@ -62,6 +63,19 @@ vector<string> SplitInputShape(const std::string &input_shape) {
   return shape_pair_vec;
 }
 }  // namespace
+
+Status CheckInputFormat(const string &input_format) {
+  if (input_format.empty()) {
+    return ge::SUCCESS;
+  }
+  if (!ge::TypeUtils::IsFormatValid(input_format.c_str())) {
+    ErrorManager::GetInstance().ATCReportErrMessage(
+      "E10001", {"parameter", "value", "reason"}, {"--input_format", input_format, "input format is invalid!"});
+    GELOGE(ge::PARAM_INVALID, "input format [%s] is invalid!", input_format.c_str());
+    return ge::PARAM_INVALID;
+  }
+  return ge::SUCCESS;
+}
 
 bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
                                           std::string &dynamic_batch_size) {
@@ -423,6 +437,17 @@ Status CheckCompressWeightParamValid(const std::string enable_compress_weight, c
     GELOGE(ge::PARAM_INVALID, "enable_compress_weight and compress_weight_conf can not both exist!!");
     return ge::PARAM_INVALID;
   }
+  return ge::SUCCESS;
+}
+
+Status CheckKeepTypeParamValid(const std::string &keep_dtype) {
+  if ((!keep_dtype.empty()) && (!CheckInputPathValid(keep_dtype, "--keep_dtype"))) {
+    ErrorManager::GetInstance().ATCReportErrMessage(
+        "E10001", {"parameter", "value", "reason"}, {"--keep_dtype", keep_dtype, kKeepDtypeError});
+    GELOGE(ge::PARAM_INVALID, "keep dtype config file not found, file_name:%s", keep_dtype.c_str());
+    return ge::PARAM_INVALID;
+  }
+
   return ge::SUCCESS;
 }
 

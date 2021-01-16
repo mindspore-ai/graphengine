@@ -59,7 +59,7 @@ struct ParserContext {
   bool train_flag = false;
   domi::domiTensorFormat_t format = domi::DOMI_TENSOR_ND;
   domi::FrameworkType type = domi::FRAMEWORK_RESERVED;
-  RunMode run_mode = ONLY_PRE_CHECK;
+  RunMode run_mode = GEN_OM_MODEL;
   // save caffe custom proto path, used by caffe parse
   std::string custom_proto_path;
   // save caffe proto path, used by caffe parse

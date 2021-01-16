@@ -230,7 +230,7 @@ TEST_F(UtestGeTensor, test_tensor_invalid_null) {
   GeTensor tensor(msg_owner, nullptr);
   EXPECT_EQ(tensor.GetData().size(), 0);
   EXPECT_EQ(tensor.MutableData().size(), 0);
-  EXPECT_EQ(tensor.SetData(Buffer(100)), ge::GRAPH_PARAM_INVALID);
+  EXPECT_EQ(tensor.SetData(Buffer(100)), GRAPH_SUCCESS);
 
   TensorUtils::SetWeightSize(tensor.MutableTensorDesc(), 100);
   EXPECT_EQ(TensorUtils::GetWeightSize(tensor), 0);

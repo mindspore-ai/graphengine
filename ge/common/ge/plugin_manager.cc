@@ -123,7 +123,10 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     if (handle == nullptr) {
       const char *error = mmDlerror();
       GE_IF_BOOL_EXEC(error == nullptr, error = "");
-      GELOGE(GE_PLGMGR_PATH_INVALID, "Failed to dlopen %s!", error);
+      ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
+          {"mmDlopen", "shared library path is " + FmtToStr(file_path_dlopen) + ". Errormessage" + FmtToStr(error)});
+      GELOGE(GE_PLGMGR_PATH_INVALID, "Failed to dlopen the shared library path[%s]. Errormessage[%s]!",
+             file_path_dlopen.c_str(), error);
       continue;
     }
 
@@ -132,6 +135,9 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     for (const auto &func_name : func_check_list) {
       auto real_fn = (void (*)())mmDlsym(handle, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
+            {"mmDlsym", FmtToStr(func_name) + " is skipped since function" +
+            FmtToStr(func_name) + " is not existed!"});
         GELOGE(GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not existed!", func_name.c_str(),
                func_name.c_str());
         is_valid = false;

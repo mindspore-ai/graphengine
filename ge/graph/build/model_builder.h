@@ -55,12 +55,12 @@ class ModelBuilder {
 
   ge::Buffer GetWeightBuffer() const;
 
+  Status MergeWeights();
+
  protected:
   void AddNodeInputProperty();
 
   void ClearOriginalFormat();
-
-  Status MergeWeights();
 
  private:
   bool SetInputConst(const OpDescPtr &op_desc, const NodePtr &src_node, size_t index, vector<bool> &is_input_const);
@@ -82,6 +82,12 @@ class ModelBuilder {
   void InitL1FusionOption();
 
   Status CompileSingleOp();
+
+  void CollectCheckAicpuAttr(const OpDescPtr &op_desc, std::set<std::string> &aicpu_op_types,
+                               std::set<std::string> &aicpu_tf_op_types);
+
+  void SetModelCheckAicpuAttr(ge::Model &model, std::set<std::string> &aicpu_op_types,
+                                std::set<std::string> &aicpu_tf_op_types);
 
   uint64_t session_id_;
 

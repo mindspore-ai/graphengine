@@ -126,14 +126,14 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   /// @ingroup domi_ome
   /// @brief Get cur_dynamic_dims for all input.
-  /// @param [in] vector<vector<uint64_t>> &user_real_input_dims: dims info of all user_inputs.
+  /// @param [in] vector<vector<int64_t>> &user_real_input_dims: dims info of all user_inputs.
   /// @param [in] vector<pair<string, vector<int64_t>>> &user_input_dims: key:name. value:dynamic dims from option.
-  /// @param [out] vector<uint64_t> &cur_dynamic_dims: real dims gather, where the index of -1.
+  /// @param [out] vector<int32_t> &cur_dynamic_dims: real dims gather, where the index of -1.
   /// @return 0: SUCCESS / others: INTERNAL_ERROR
   ///
   Status GetCurDynamicDims(const vector<vector<int64_t>> &user_real_input_dims,
                            const vector<pair<string, vector<int64_t>>> &user_input_dims,
-                           vector<int64_t> &cur_dynamic_dims);
+                           vector<int32_t> &cur_dynamic_dims);
 
   ///
   /// @ingroup domi_ome
@@ -169,8 +169,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @brief comment handle function
   ///
   ge::Status HandleCommand(const Command &command);
-  static ge::Status HandleAclProfilingCommand(const Command &command);
-  static ge::Status HandleProfileCommand(const Command &command);
   static ge::Status HandleDumpCommand(const Command &command);
   static ge::Status HandleProfModelSubscribeCommand(const Command &command);
   static ge::Status HandleProfModelUnsubscribeCommand(const Command &command);
@@ -241,23 +239,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @param [out] aipp_info
   /// @return execute result
   ///
-  ge::Status GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+  ge::Status GetAippInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
   ge::Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief set model input and output size zero copy
-  /// @param [in] model_id  model id
-  /// @param [out] input_shape   input tensor
-  /// @param [out] output_shape  output tensor
-  /// @return SUCCESS          success
-  /// @return PARAM_INVALID    parameter invalid
-  ///
-  ge::Status GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, std::vector<InputOutputDescInfo> &input_desc,
-                                               std::vector<InputOutputDescInfo> &output_desc,
-                                               std::vector<uint32_t> &inputFormats,
-                                               std::vector<uint32_t> &outputFormats);
 
   ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
@@ -275,7 +259,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   std::shared_ptr<hybrid::HybridDavinciModel> GetHybridModel(uint32_t id);
 
-  ge::Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id);
+  ge::Status KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id,
+                            uint32_t sub_model_id);
 
   ge::Status CreateAicpuSession(uint64_t session_id);
 
@@ -283,19 +268,24 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   void DestroyAicpuSession(uint64_t session_id);
 
-  ge::Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id);
+  ge::Status DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id);
 
-  ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id);
+  ge::Status CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id, uint64_t kernel_id);
 
   ge::Status DestroyAicpuSessionForInfer(uint32_t model_id);
 
-  ge::Status LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name);
+  ge::Status LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name, bool &loaded);
 
   ge::Status LaunchCustAicpuSo();
 
   ge::Status ClearAicpuSo();
 
   ge::Status LaunchKernelCustAicpuSo(const string &kernel_name);
+
+  ge::Status LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_optype_list,
+                                      std::vector<std::string> &aicpu_tf_optype_list);
+
+  ge::Status CheckAicpuOpList(GeModelPtr ge_model);
 
   ge::Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
 
@@ -355,8 +345,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
   std::map<std::string, std::vector<uint64_t>> model_aicpu_kernel_;
   uint32_t max_model_id_;
-  std::mutex map_mutex_;
-  std::mutex sess_ids_mutex_;
+  std::recursive_mutex map_mutex_;
   std::mutex session_id_create_mutex_;
   static::std::mutex exeception_infos_mutex_;
   uint64_t session_id_bias_;

@@ -42,8 +42,7 @@ class GraphOptimize {
   ~GraphOptimize() = default;
 
   // subgraph optimize
-  Status OptimizeSubGraph(ComputeGraphPtr &compute_graph, const ComputeGraphPtr &parent_graph,
-                          const std::string &engine_name);
+  Status OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std::string &engine_name);
 
   // original graph optimize
   Status OptimizeOriginalGraph(ComputeGraphPtr &compute_graph);
@@ -52,6 +51,9 @@ class GraphOptimize {
 
   // for fe prepare optimize in quantize scene
   Status OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_graph);
+
+  // for engine to optimize merged whole graph before ge Optimize2
+  Status OptimizeWholeGraph(ComputeGraphPtr &compute_graph);
 
   // for rts optimize before build to add attr and insert memcpy op
   Status OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_graph);

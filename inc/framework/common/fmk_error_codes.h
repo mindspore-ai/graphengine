@@ -23,10 +23,6 @@
 #include "framework/common/fmk_types.h"
 #include "register/register_error_codes.h"
 
-#define MODID_OMG 1          // OMG module ID
-#define MODID_OME 2          // OME module ID
-#define MODID_CALIBRATION 3  // Calibration module ID
-
 // Each module uses the following four macros to define error codes:
 #define DECLARE_ERRORNO_OMG(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OMG, name, value)
 #define DECLARE_ERRORNO_OME(name, value) DECLARE_ERRORNO(SYSID_FWK, MODID_OME, name, value)
@@ -36,6 +32,10 @@
 
 // Interface for Obtaining Error Code Description
 #define GET_ERRORNO_STR(value) domi::StatusFactory::Instance()->GetErrDesc(value)
+
+const int MODID_OMG = 1;          // OMG module ID
+const int MODID_OME = 2;          // OME module ID
+const int MODID_CALIBRATION = 3;  // Calibration module ID
 
 namespace domi {
 class StatusFactory {

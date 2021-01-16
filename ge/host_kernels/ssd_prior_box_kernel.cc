@@ -180,14 +180,18 @@ Status SsdPriorboxKernel::SetVariance(const vector<float> &variance, const int d
   return SUCCESS;
 }
 
-Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint aspect_ratios_size, uint min_sizes_size, uint max_sizes_size,
-                                                int layer_width, int layer_height, int &num_priors,
+Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint32_t aspect_ratios_size,
+                                                uint32_t min_sizes_size,
+                                                uint32_t max_sizes_size,
+                                                int layer_width,
+                                                int layer_height,
+                                                int &num_priors,
                                                 int &dim_size) const {
   if (ge::CheckUint32MulOverflow(min_sizes_size, aspect_ratios_size) != SUCCESS) {
     return PARAM_INVALID;
   }
 
-  uint tmp_value = aspect_ratios_size * min_sizes_size;
+  uint32_t tmp_value = aspect_ratios_size * min_sizes_size;
   if (ge::CheckUint32AddOverflow(tmp_value, max_sizes_size) != SUCCESS) {
     GELOGW("Failed to get list param.");
     return PARAM_INVALID;
@@ -199,7 +203,7 @@ Status SsdPriorboxKernel::GetNumPriorAndDimSize(uint aspect_ratios_size, uint mi
     return PARAM_INVALID;
   }
   num_priors = static_cast<int>(tmp_value);
-  
+
   if (ge::CheckIntMulOverflow(layer_width, layer_height) != SUCCESS) {
     GELOGW("Failed to get list param.");
     return PARAM_INVALID;
@@ -288,7 +292,7 @@ std::unique_ptr<float[]> SsdPriorboxKernel::BoundaryCalulate(int dim_size, int l
     }
   }
 
-  return std::move(output_data);
+  return output_data;
 }
 
 Status SsdPriorboxKernel::Compute(const NodePtr &node, std::vector<GeTensorPtr> &v_output) {

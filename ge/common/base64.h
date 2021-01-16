@@ -25,32 +25,38 @@
 
 namespace ge {
 namespace {
-const char* kBase64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                           "abcdefghijklmnopqrstuvwxyz"
-                           "0123456789+/";
+const char *kBase64Chars =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  "abcdefghijklmnopqrstuvwxyz"
+  "0123456789+/";
 const char kEqualSymbol = '=';
 const size_t kBase64CharsNum = 64;
 const size_t kThreeByteOneGroup = 3;
 const size_t kFourByteOneGroup = 4;
-}
+const size_t kThreeByteOneGroupIndex0 = 0;
+const size_t kThreeByteOneGroupIndex1 = 1;
+const size_t kThreeByteOneGroupIndex2 = 2;
+const size_t kFourByteOneGroupIndex0 = 0;
+const size_t kFourByteOneGroupIndex1 = 1;
+const size_t kFourByteOneGroupIndex2 = 2;
+const size_t kFourByteOneGroupIndex3 = 3;
+}  // namespace
 
 namespace base64 {
-static inline bool IsBase64Char(const char &c) {
-  return (isalnum(c) || (c == '+') || (c == '/'));
-}
+static inline bool IsBase64Char(const char &c) { return (isalnum(c) || (c == '+') || (c == '/')); }
 
 static std::string EncodeToBase64(const std::string &raw_data) {
   size_t encode_length = raw_data.size() / kThreeByteOneGroup * kFourByteOneGroup;
   encode_length += raw_data.size() % kThreeByteOneGroup == 0 ? 0 : kFourByteOneGroup;
-  size_t raw_data_index = 0 ;
+  size_t raw_data_index = 0;
   size_t encode_data_index = 0;
   std::string encode_data;
   encode_data.resize(encode_length);
 
   for (; raw_data_index + kThreeByteOneGroup <= raw_data.size(); raw_data_index += kThreeByteOneGroup) {
     auto char_1 = static_cast<uint8_t>(raw_data[raw_data_index]);
-    auto char_2 = static_cast<uint8_t>(raw_data[raw_data_index + 1]);
-    auto char_3 = static_cast<uint8_t>(raw_data[raw_data_index + 2]);
+    auto char_2 = static_cast<uint8_t>(raw_data[raw_data_index + kThreeByteOneGroupIndex1]);
+    auto char_3 = static_cast<uint8_t>(raw_data[raw_data_index + kThreeByteOneGroupIndex2]);
     encode_data[encode_data_index++] = kBase64Chars[char_1 >> 2u];
     encode_data[encode_data_index++] = kBase64Chars[((char_1 << 4u) & 0x30) | (char_2 >> 4u)];
     encode_data[encode_data_index++] = kBase64Chars[((char_2 << 2u) & 0x3c) | (char_3 >> 6u)];
@@ -80,8 +86,7 @@ static std::string EncodeToBase64(const std::string &raw_data) {
 #pragma GCC diagnostic ignored "-Wunused-function"
 static Status DecodeFromBase64(const std::string &base64_data, std::string &decode_data) {
   if (base64_data.size() % kFourByteOneGroup != 0) {
-    GELOGE(PARAM_INVALID, "base64 data size must can be divided by 4, but given data size is %zu",
-           base64_data.size());
+    GELOGE(PARAM_INVALID, "base64 data size must can be divided by 4, but given data size is %zu", base64_data.size());
     return PARAM_INVALID;
   }
   decode_data.clear();
@@ -92,10 +97,10 @@ static Status DecodeFromBase64(const std::string &base64_data, std::string &deco
     return static_cast<uint8_t>(std::distance(kBase64Chars, char_pos)) & 0xff;
   };
 
-  for (std::size_t input_data_index = 0; input_data_index < base64_data_len; input_data_index += 4) {
+  for (std::size_t input_data_index = 0; input_data_index < base64_data_len; input_data_index += kFourByteOneGroup) {
     for (size_t i = 0; i < kFourByteOneGroup; ++i) {
       if (base64_data[input_data_index + i] == kEqualSymbol &&
-          input_data_index >= base64_data_len - 4 && i > 1) {
+          input_data_index >= base64_data_len - kFourByteOneGroup && i > 1) {
         byte_4[i] = kBase64CharsNum;
       } else if (IsBase64Char(base64_data[input_data_index + i])) {
         byte_4[i] = FindCharInBase64Chars(base64_data[input_data_index + i]);
@@ -104,19 +109,23 @@ static Status DecodeFromBase64(const std::string &base64_data, std::string &deco
         return PARAM_INVALID;
       }
     }
-    decode_data += static_cast<char>((byte_4[0] << 2u) + ((byte_4[1] & 0x30) >> 4u));
-    if (byte_4[2] >= kBase64CharsNum){
+    decode_data +=
+      static_cast<char>((byte_4[kFourByteOneGroupIndex0] << 2u) + ((byte_4[kFourByteOneGroupIndex1] & 0x30) >> 4u));
+    if (byte_4[kFourByteOneGroupIndex2] >= kBase64CharsNum) {
       break;
-    } else if (byte_4[3] >= kBase64CharsNum) {
-      decode_data += static_cast<char>(((byte_4[1] & 0x0f) << 4u)  + ((byte_4[2] & 0x3c) >> 2u));
+    } else if (byte_4[kFourByteOneGroupIndex3] >= kBase64CharsNum) {
+      decode_data += static_cast<char>(((byte_4[kFourByteOneGroupIndex1] & 0x0f) << 4u) +
+                                       ((byte_4[kFourByteOneGroupIndex2] & 0x3c) >> 2u));
       break;
     }
-    decode_data += static_cast<char>(((byte_4[1] & 0x0f) << 4u)  + ((byte_4[2] & 0x3c) >> 2u));
-    decode_data += static_cast<char>(((byte_4[2] & 0x03) << 6u)  + byte_4[3]);
+    decode_data += static_cast<char>(((byte_4[kFourByteOneGroupIndex1] & 0x0f) << 4u) +
+                                     ((byte_4[kFourByteOneGroupIndex2] & 0x3c) >> 2u));
+    decode_data +=
+      static_cast<char>(((byte_4[kFourByteOneGroupIndex2] & 0x03) << 6u) + byte_4[kFourByteOneGroupIndex3]);
   }
   return SUCCESS;
 }
 #pragma GCC diagnostic pop
-}
+}  // namespace base64
 }  // namespace ge
 #endif  // GE_COMMON_BASE64_H_

@@ -32,6 +32,7 @@
 #include "graph/common/ge_call_wrapper.h"
 #include "register/op_registry.h"
 #include "common/ge/tbe_plugin_manager.h"
+#include "toolchain/plog.h"
 
 using domi::OpRegistry;
 using std::map;
@@ -129,12 +130,15 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
 
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
+  if (DlogReportInitialize() != SUCCESS) {
+    GELOGW("Dlog report device log initialize failed.");
+  }
   return GEInitializeImpl(options);
 }
 
 Status GEInitialize(const std::map<AscendString, AscendString> &options) {
   std::map<std::string, std::string> str_options;
-  for (auto & option : options) {
+  for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
       GELOGE(FAILED, "GEInitialize options is nullptr.");
       return FAILED;
@@ -142,6 +146,9 @@ Status GEInitialize(const std::map<AscendString, AscendString> &options) {
     std::string key = option.first.GetString();
     std::string val = option.second.GetString();
     str_options[key] = val;
+  }
+  if (DlogReportInitialize() != SUCCESS) {
+    GELOGW("Dlog report device log initialize failed.");
   }
   return GEInitializeImpl(str_options);
 }
@@ -186,6 +193,10 @@ Status GEFinalize() {
 
   // to avoid memory fragment, use malloc_trim to back free stack to system
   malloc_trim(0);
+
+  if (DlogReportFinalize() != SUCCESS) {
+    GELOGW("Dlog report device log finalize failed.");
+  }
 
   GELOGT(TRACE_STOP, "GEFinalize finished");
   return ret;

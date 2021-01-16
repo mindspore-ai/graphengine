@@ -37,121 +37,32 @@ class UtestGeProfilinganager : public testing::Test {
   void TearDown() override {}
 };
 
-class TestReporter : public Msprof::Engine::Reporter {
- public:
-  TestReporter() {}
-  ~TestReporter() {}
-
- public:
-  int Report(const Msprof::Engine::ReporterData *data) { return 0; }
-
-  int Flush() { return 0; }
-};
-
-class TestPluginIntf : public Msprof::Engine::PluginIntf {
- public:
-  TestPluginIntf() {}
-  ~TestPluginIntf() {}
-
- public:
-  int Init(const Msprof::Engine::Reporter *reporter) { return 0; }
-
-  int UnInit() { return 0; }
-};
-
 TEST_F(UtestGeProfilinganager, init_success) {
   setenv("PROFILING_MODE", "true", true);
   Options options;
   options.device_id = 0;
   options.job_id = "0";
-  string profiling_config;
+  options.profiling_mode = "1";
+  options.profiling_options = R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","fp_point":"Data_0","bp_point":"addn","ai_core_metrics":"ResourceConflictRatio"})";
 
-  ProfilingManager::Instance().SetProfilingConfig(profiling_config);
 
-  Status ret = ProfilingManager::Instance().Init(options);
+  struct MsprofGeOptions prof_conf = {{ 0 }};
+
+  Status ret = ProfilingManager::Instance().InitFromOptions(options, prof_conf);
   EXPECT_EQ(ret, ge::SUCCESS);
 }
 
-TEST_F(UtestGeProfilinganager, start_profiling_success) {
-  int32_t iter_num = 1;
+TEST_F(UtestGeProfilinganager, ParseOptions) {
+setenv("PROFILING_MODE", "true", true);
+Options options;
+options.device_id = 0;
+options.job_id = "0";
+options.profiling_mode = "1";
+options.profiling_options = R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","fp_point":"Data_0","bp_point":"addn","ai_core_metrics":"ResourceConflictRatio"})";
 
-  setenv("PROFILING_MODE", "true", true);
-  setenv("PROFILING_OPTIONS", "training_trace", true);
-  Options options;
-  string profiling_config;
 
-  ProfilingManager::Instance().SetProfilingConfig(profiling_config);
+struct MsprofGeOptions prof_conf = {{ 0 }};
 
-  Status ret = ProfilingManager::Instance().Init(options);
-  EXPECT_EQ(ret, ge::SUCCESS);
-  ret = ProfilingManager::Instance().StartProfiling(iter_num, 0);
-  EXPECT_EQ(ret, ge::SUCCESS);
-
-  setenv("PROFILING_OPTIONS", "op_trance", true);
-  ret = ProfilingManager::Instance().Init(options);
-  EXPECT_EQ(ret, ge::SUCCESS);
-  ret = ProfilingManager::Instance().StartProfiling(iter_num, 0);
-  EXPECT_EQ(ret, ge::SUCCESS);
-}
-
-TEST_F(UtestGeProfilinganager, stop_profiling_success) {
-  int32_t iter_num = 1;
-  Options options;
-
-  TestReporter test_reporter;
-
-  string profiling_config;
-  ProfilingManager::Instance().SetProfilingConfig(profiling_config);
-
-  Status ret = 0;
-  setenv("PROFILING_OPTIONS", "op_trance", true);
-  ret = ProfilingManager::Instance().Init(options);
-  EXPECT_EQ(ret, ge::SUCCESS);
-  ret = ProfilingManager::Instance().StartProfiling(iter_num, 0);
-  EXPECT_EQ(ret, ge::SUCCESS);
-  ProfilingManager::Instance().StopProfiling();
-}
-
-TEST_F(UtestGeProfilinganager, plugin_impl_success) {
-  PluginImpl plugin_Impl("FMK");
-  TestReporter test_reporter;
-  Msprof::Engine::Reporter *reporter_ptr = &test_reporter;
-  plugin_Impl.Init(reporter_ptr);
-  plugin_Impl.UnInit();
-}
-
-TEST_F(UtestGeProfilinganager, profiling_engine_impl_success) {
-  ProfilingEngineImpl profiling_engine_impl;
-
-  Msprof::Engine::PluginIntf *plugin_ptr = new TestPluginIntf();
-  profiling_engine_impl.ReleasePlugin(plugin_ptr);
-
-  Msprof::Engine::PluginIntf *ptr = profiling_engine_impl.CreatePlugin();
-  delete ptr;
-  ptr = nullptr;
-}
-
-TEST_F(UtestGeProfilinganager, set_profilng_cfg_success) {
-  string profiling_config = "profiling_mode: true";
-  ProfilingManager::Instance().SetProfilingConfig(profiling_config);
-}
-
-TEST_F(UtestGeProfilinganager, init_from_cfg_success0) {
-  Options options;
-  string profiling_config =
-      "{\"startCfg\":[{\"deviceID\":\"0\",\"features\":[{\"name\":\"op_trace\",\"conf\":\"2\"}]}]}";
-  ProfilingManager::Instance().SetProfilingConfig(profiling_config);
-
-  Status ret = ProfilingManager::Instance().Init(options);
-  EXPECT_EQ(ret, ge::SUCCESS);
-}
-
-TEST_F(UtestGeProfilinganager, init_from_cfg_success1) {
-  Options options;
-  string profiling_config =
-      "{\"startCfg\":[{\"deviceID\":\"0\",\"features\":[{\"name\":\"test_trace\"}],\"jobID\":\"1231231231\"}]}";
-  ProfilingManager::Instance().SetProfilingConfig(profiling_config);
-
-  Status ret = ProfilingManager::Instance().Init(options);
-  EXPECT_EQ(ret, ge::SUCCESS);
+Status ret = ProfilingManager::Instance().ParseOptions(options.profiling_options);
+EXPECT_EQ(ret, ge::SUCCESS);
 }

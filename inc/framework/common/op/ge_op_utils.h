@@ -17,7 +17,6 @@
 #ifndef INC_FRAMEWORK_COMMON_OP_GE_OP_UTILS_H_
 #define INC_FRAMEWORK_COMMON_OP_GE_OP_UTILS_H_
 
-#include <cce/dnn.h>
 #include <memory>
 #include <vector>
 
@@ -32,7 +31,6 @@
 #include "proto/insert_op.pb.h"
 
 namespace ge {
-using namespace cce;
 using domi::Status;
 
 // Add Sub Mul
@@ -76,18 +74,7 @@ class OpUtils {
   static inline bool CheckEnumValid(int32_t check_value, int32_t min_enum_value, int32_t max_enum_value) {
     return check_value < min_enum_value ? false : (check_value >= max_enum_value ? false : true);
   }
-  ///
-  /// @ingroup domi_omg
-  /// @brief Convert the dimension of array according to different format
-  /// @param [in] src_format src_shape format
-  /// @param [in] src Dimension array to be converted
-  /// @param [in] dst_format Target format after conversion
-  /// @param [out] dst Dimension array after conversion
-  /// @return SUCCESS success
-  /// @return FAILED fail
-  ///
-  static bool ConvertDim(ccTensorFormat_t src_format, const std::vector<int64_t> &src, ccTensorFormat_t dst_format,
-                         std::vector<int64_t> &dst);
+
   ///
   /// @ingroup domi_omg
   /// @brief Determine whether to manually calculate the tensor size based on the values of format and dim
@@ -97,73 +84,6 @@ class OpUtils {
   /// @return false skip
   ///
   static bool IsComputDimsSize(const int32_t format, const uint32_t real_dim_cnt);
-  ///
-  /// @ingroup domi_ome
-  /// @brief Initialize the tensor description, which is used for input and output.
-  /// @param [in] model_tensor Tensor information defined by the offline model
-  /// @param [out] cc_tensor Tensor definition used by CC
-  /// @return SUCCESS success
-  /// @return FAILED fail
-  ///
-  static Status InitTensorDescriptor(const ge::GeTensorDesc &model_tensor, ccTensorDescriptor_t &cc_tensor);
-  ///
-  /// @ingroup domi_ome
-  /// @brief Initialize the tensor description, which is used for input and output.
-  /// @param [in] model_tensor Tensor information defined by the offline model
-  /// @param [in] dst_data_type data_type of the target cc_tensor
-  /// @param [out] cc_tensor Tensor definition used by CC
-  /// @return SUCCESS success
-  /// @return FAILED fail
-  ///
-  static Status InitTensorDescriptor(const ge::GeTensorDesc &model_tensor, int32_t dst_data_type,
-                                     ccTensorDescriptor_t &cc_tensor);
-  ///
-  /// @ingroup domi_ome
-  /// @brief Initialize the tensor description for bias.
-  /// @param [in] model_tensor Tensor information defined by the offline model
-  /// @param [out]  cc_tensor Tensor definition used by CC
-  /// @return SUCCESS success
-  /// @return FAILED fail
-  ///
-  ///
-  static Status InitTensorDescriptor(const ge::GeTensor &model_tensor, ccTensorDescriptor_t &cc_tensor);
-  ///
-  /// @ingroup domi_ome
-  /// @brief Initialize the tensor description for bias.
-  /// @param [in] model_tensor Tensor information defined by the offline model
-  /// @param [in] dst_data_type data_type of the target cc_tensor
-  /// @param [out] cc_tensor Tensor definition used by CC
-  /// @return SUCCESS success
-  /// @return FAILED fail
-  ///
-  static Status InitTensorDescriptor(const ge::GeTensor &model_tensor, int32_t dst_data_type,
-                                     ccTensorDescriptor_t &cc_tensor);
-
-  static Status InitTensorDescriptor(int32_t format, int32_t data_type, const std::vector<int64_t> &dim,
-                                     ccTensorDescriptor_t &cc_tensor, uint32_t real_dim_cnt = 4);
-  ///
-  /// @ingroup domi_ome
-  /// @brief Destroys a tensor
-  /// @param [inout] cc_tensor Tensor definition used by CC
-  ///
-  static void DestroyTensorDescriptor(ccTensorDescriptor_t &cc_tensor) noexcept;
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Destroys a tensor
-  /// @param [inout] cc_filter cc_filter Definition of the filter used by CC
-  ///
-  static void DestroyFilterDescriptor(ccFilterDescriptor_t &cc_filter);
-
-  ///
-  /// @ingroup domi_ome
-  /// @brief Initializing Filter Description
-  /// @param [in] model_filter Filter information defined in the offline model
-  /// @param [out] cc_filter Definition of the filter used by CC
-  /// @return SUCCESS success
-  /// @return FAILED fail
-  ///
-  static Status InitFilterDescriptor(const ge::GeTensor &model_filter, ccFilterDescriptor_t &cc_filter);
 
   ///
   /// @brief Extract AIPP parameters from AttrDefMap and splice them
@@ -209,16 +129,7 @@ class OpUtils {
   /// @param [out] output Data pointer after conversion. The format is HWCK
   ///
   static void TransDataKCHW2HWCK(const void *input, int64_t K, int64_t C, int64_t H, int64_t W, void *output);
-  ///
-  /// @ingroup domi_omg
-  /// @brief Initialize the input and output description of the data node which is applied to filter weight in the
-  /// training network
-  /// @param [in] model_tensor input and output tensor information
-  /// @param [out] cc_tensor Tensor in CCE format after conversion
-  ///
-  static Status InitFilterTensorDescriptor(const ge::GeTensorDesc &model_tensor, ccFilterDescriptor_t &cc_tensor);
-
-  static void SetTensorDescriptorAllOffsetQuantizeInfo(const GeTensorDesc &tensor, ccTensorDescriptor_t cc_tensor);
+  
   static vector<ConstGeTensorPtr> GetWeights(const ge::Node &node);
   static vector<ConstGeTensorPtr> GetWeights(ge::ConstNodePtr node);
   static vector<GeTensorPtr> MutableWeights(const ge::Node &node);
@@ -228,69 +139,7 @@ class OpUtils {
   static Status GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims);
 
  private:
-  friend class CceTensorDescriptor;
   static uint32_t GetRealDimCnt(const GeTensorDesc &tensor_desc);
-};
-
-class CceTensorDescriptor;
-
-using CceTensorDescriptorPtr = std::shared_ptr<CceTensorDescriptor>;
-
-class CceTensorDescriptor {
- public:
-  explicit CceTensorDescriptor(ccTensorDescriptor_t cc_tensor);
-  CceTensorDescriptor(const CceTensorDescriptor &) = delete;
-  CceTensorDescriptor &operator=(const CceTensorDescriptor &) = delete;
-
-  ~CceTensorDescriptor();
-
-  ccTensorDescriptor_t GetPtr() { return cc_tensor_; }
-
-  ///
-  /// @brief      Initializes the tensor based on shape information.
-  /// @param[in]  format  data permutation format
-  /// @param[in]  data_type Data Type
-  /// @param[in]  dim dim information
-  /// @return     return code
-  ///
-  Status InitTensor(int32_t format, int32_t data_type, const std::vector<int64_t> &dims);
-
-  Status InitTensor(int32_t format, int32_t data_type, const ge::GeShape &shape);
-
-  ///
-  /// @brief      get format of tensor
-  /// @param[out] format format of the tensor
-  /// @return     return code
-  ///
-  Status GetFormat(ccTensorFormat_t *format);
-
-  ///
-  /// @brief      Obtains the size of the tensor.
-  /// @param[out] size size of Tensor
-  /// @return     return code
-  ///
-  Status GetTensorSizeInBytes(uint32_t *size);
-
-  ///
-  /// @brief transform tensor between 4d(NCHW) and 5d(NC1HWC0)
-  /// @param [in] xDesc   descriptor of input tensor
-  /// @param [in] x   point to input data in host memory
-  /// @param [in] dataTypeTransmode   mode of data type transform
-  /// @param [in] yDesc   descriptor of output tensor
-  /// @param [in|out] y   point to output data in host memory
-  /// @param [in] ySizeInBytes   size of outputData
-  /// @return return code
-  ///
-  static Status TransTensor(const ccTensorDescriptor_t xDesc, const void *x, const CceTensorDescriptorPtr &yDesc,
-                            void *y, uint32_t ySizeInBytes);
-
-  ///
-  /// @brief      CceTensorDescriptor Static Constructor
-  /// @return     CceTensorDescriptor smart pointer
-  ///
-  static CceTensorDescriptorPtr Create();
-
-  ccTensorDescriptor_t cc_tensor_ = nullptr;
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_OP_GE_OP_UTILS_H_

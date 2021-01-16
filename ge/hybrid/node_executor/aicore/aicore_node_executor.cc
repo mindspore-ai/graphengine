@@ -15,13 +15,26 @@
  */
 
 #include "aicore_node_executor.h"
-#include "cce/taskdown_common.hpp"
+#include "framework/common/taskdown_common.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 
 namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICORE, AiCoreNodeExecutor);
+namespace {
+bool IsNoOp(const NodeItem &node_item) {
+  for (int i = 0; i < node_item.num_outputs; ++i) {
+    const auto &tensor_desc = node_item.MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(tensor_desc);
+    const auto &shape = tensor_desc->MutableShape();
+    if (shape.IsScalar() || shape.GetShapeSize() > 0) {
+      return false;
+    }
+  }
 
+  return true;
+}
+}  // namespace
 AiCoreNodeTask::AiCoreNodeTask(std::vector<std::unique_ptr<AiCoreOpTask>> &&tasks) : tasks_(std::move(tasks)) {
 }
 
@@ -104,9 +117,13 @@ std::shared_ptr<NodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &nod
 
 Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
                                        const NodePtr &node, shared_ptr<NodeTask> &task) const {
-  GE_CHECK_NOTNULL(node);
-  auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
+  auto node_item = model.GetNodeItem(node);
+  GE_CHECK_NOTNULL(node_item);
+  if (IsNoOp(*node_item)) {
+    task = MakeShared<NoOpTask>();
+    return SUCCESS;
+  }
+  auto op_desc = node_item->op_desc;
   GELOGI("AiCoreNodeExecutor(%s) CompileTask Start.", node->GetName().c_str());
 
   auto ori_node_name = node->GetName();
@@ -150,7 +167,7 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
 
 Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] Start");
-  if (IsNoOp(context)) {
+  if (IsNoOp(context.GetNodeItem())) {
     GELOGD("[%s] Skipping execution for op with empty outputs", context.GetNodeName());
     auto ret = context.TryExecuteCallback(done_callback);
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeTaskExecuteAsync] End");
@@ -165,6 +182,16 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     }
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
+    uint32_t task_id = 0;
+    uint32_t stream_id = 0;
+    rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(rt_ret, "Get task_id and stream_id failed.");
+      return rt_ret;
+    }
+    context.SetTaskId(task_id);
+    context.SetStreamId(stream_id);
+    GELOGD("AiCore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }
@@ -210,19 +237,6 @@ bool AiCoreNodeTask::IsSupportDynamicShape() {
   for (size_t i = 0; i < tasks_.size(); ++i) {
     if (!tasks_[i]->IsDynamicShapeSupported()) {
       GELOGD("[%s] Task does not support dynamic shape.", tasks_[i]->GetName().c_str());
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool AiCoreNodeTask::IsNoOp(TaskContext &task_context) {
-  for (int i = 0; i < task_context.NumOutputs(); ++i) {
-    const auto &tensor_desc = task_context.MutableOutputDesc(i);
-    GE_CHECK_NOTNULL(tensor_desc);
-    const auto &shape = tensor_desc->MutableShape();
-    if (shape.IsScalar() || shape.GetShapeSize() > 0) {
       return false;
     }
   }

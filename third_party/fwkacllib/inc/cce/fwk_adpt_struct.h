@@ -70,6 +70,7 @@ enum FWKExtUpdateAddrType {
   FWK_ADPT_UPDATE_INPUT_OUTPUT
 };
 
+#pragma pack(push, 1)
 // API Parameter Structure
 struct StrFWKKernel {
   FWKOperateType opType;
@@ -89,31 +90,39 @@ struct StrFWKKernel {
 
   uint64_t extInfoLen;         // extend info total length
   uint64_t extInfoAddr;        // extend info addr, ExtInfo structure
-} __attribute__((packed));
+};
+#pragma pack(pop)
 
 typedef StrFWKKernel FWKOperateParam;
 
 // Extent info ShapeAndType
 const uint32_t kMaxShapeDims = 8;
+#pragma pack(push, 1)
 struct ShapeAndType {
   int32_t type;
   int64_t dims[kMaxShapeDims];
-} __attribute__((packed));
+};
+#pragma pack(pop)
 
 // Extend info structure for extInfoAddr
 const uint32_t kExtInfoHeadSize = 8;
+
+#pragma pack(push, 1)
 struct ExtInfo {
   int32_t  infoType;    // extend type
   uint32_t infoLen;     // length for infoMsg
   char     infoMsg[0];  // extend value
-} __attribute__((packed));
+};
+#pragma pack(pop)
 
+#pragma pack(push, 1)
 struct ResultSummary {
   uint64_t shape_data_ptr;   // shape data addr, need convert to void*
   uint64_t shape_data_size;  // num of dims
   uint64_t raw_data_ptr;     // raw data addr,  need convert to void*
   uint64_t raw_data_size;    // size of raw data
-} __attribute__((packed));
+};
+#pragma pack(pop)
 }  // end  namespace FWKAdapter
 }  // namespace aicpu
 

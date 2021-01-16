@@ -120,7 +120,7 @@ Status ConcatV2Kernel::ConcatV2PreCompute(const std::vector<ConstGeTensorPtr> &i
                                           int &tidx,
                                           ConstGeTensorPtr &tensor) {
   size_t input_size = input.size();
-  // N >= 2 and N + 1 >= 3
+  // N + 1 is greater than or equal to 3
   if (input_size < kConcatV2InputNum) {
     GELOGI("The number of input for ConcatV2 must not be less than %zu.", kConcatV2InputNum);
     return NOT_CHANGED;

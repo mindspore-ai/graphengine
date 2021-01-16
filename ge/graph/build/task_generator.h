@@ -51,6 +51,7 @@ struct FusionTaskInfo {
   std::map<uint32_t, string> &op_name_map;
   ProfilingPoint &profiling_point;
   vector<uint32_t> all_reduce_nodes;
+  uint64_t all_reduce_node_idx;
 };
 
 class TaskGenerator {
@@ -76,6 +77,8 @@ class TaskGenerator {
   ///
   Status GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t session_id, RunContext &run_context);
 
+  Status FindProfilingNodeIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
+                                std::vector<uint32_t> &all_reduce_nodes);
  private:
   Status UpdateAnchorStatus(const NodePtr &node);
 
@@ -126,10 +129,10 @@ class TaskGenerator {
                                 std::vector<uint32_t> &all_reduce_nodes) const;
   Status InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
                                    std::vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
-                                   std::vector<domi::TaskDef> &task_def_list);
+                                   std::vector<domi::TaskDef> &task_def_list, uint64_t &all_reduce_node_idx);
   Status InsertProfilingTaskAfter(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
                                   std::vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
-                                  std::vector<domi::TaskDef> &task_def_list);
+                                  std::vector<domi::TaskDef> &task_def_list, uint64_t all_reduce_node_idx);
 
   static bool IsProfPoint(const OpDescPtr &op, const std::string &name);
 

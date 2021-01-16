@@ -16,12 +16,14 @@
 
 #include "graph/passes/enter_pass.h"
 
+#include "graph/debug/ge_attr_define.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/graph_utils.h"
 
 namespace {
 const size_t kOutNodesNum = 1;
+const size_t kInCtrlNodesNum = 1;
 }
 
 namespace ge {
@@ -54,6 +56,7 @@ Status EnterPass::Run(NodePtr &node) {
       if (out_ctrl_node == nullptr) {
         continue;
       }
+      GELOGI("Remove control edge from %s to %s.", node->GetName().c_str(), out_ctrl_node->GetName().c_str());
       if (GraphUtils::RemoveEdge(node->GetOutControlAnchor(), out_ctrl_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
         GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s", node->GetName().c_str(),
                out_ctrl_node->GetName().c_str());
@@ -61,8 +64,12 @@ Status EnterPass::Run(NodePtr &node) {
       }
     }
   } else {
-    if (OptimizeEnter(node, in_node) != SUCCESS) {
-      GELOGE(FAILED, "Optimize enter node[%s] failed.", node->GetName().c_str());
+    if (OptimizeEnterWithOnlyDataOut(node, in_node) != SUCCESS) {
+      GELOGE(FAILED, "Optimize enter node[%s] with only out data node failed.", node->GetName().c_str());
+      return FAILED;
+    }
+    if (UnlinkCtrlEdgeBeforeConst(node) != SUCCESS) {
+      GELOGE(FAILED, "Unlink control edge before const of node[%s]'s out nodes failed.", node->GetName().c_str());
       return FAILED;
     }
   }
@@ -71,36 +78,72 @@ Status EnterPass::Run(NodePtr &node) {
   return SUCCESS;
 }
 
-Status EnterPass::OptimizeEnter(NodePtr &node, NodePtr &in_node) {
-  auto out_nodes_of_in_node = in_node->GetOutAllNodes();
-  if (out_nodes_of_in_node.size() != kOutNodesNum) {
+Status EnterPass::OptimizeEnterWithOnlyDataOut(NodePtr &node, NodePtr &in_node) {
+  if ((in_node->GetOutAllNodes().size() != kOutNodesNum) || !node->GetOutControlNodes().empty()) {
     return SUCCESS;
   }
-
-  if (!node->GetOutControlNodes().empty()) {
+  bool is_constant_flag = true;
+  (void)AttrUtils::GetBool(node->GetOpDesc(), ENTER_ATTR_CONSTANT_FLAG, is_constant_flag);
+  if (!is_constant_flag) {
     return SUCCESS;
-  }
-
-  for (const auto &out_node : node->GetOutDataNodes()) {
-    GE_CHECK_NOTNULL(out_node);
-    if (out_node->GetType() == MERGE) {
-      return SUCCESS;
-    }
   }
 
   GE_CHECK_NOTNULL(in_node->GetOutDataAnchor(0));
-  GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->Unlink(node->GetInDataAnchor(0)));
-  auto out_data_anchor = node->GetOutDataAnchor(0);
+  GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->Unlink(node->GetInDataAnchor(0)))
+  const auto &out_data_anchor = node->GetOutDataAnchor(0);
   GE_CHECK_NOTNULL(out_data_anchor);
-  for (auto peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    GE_CHK_STATUS_RET(out_data_anchor->Unlink(peer_in_data_anchor));
-    GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->LinkTo(peer_in_data_anchor));
+  for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
+    GE_CHK_STATUS_RET(out_data_anchor->Unlink(peer_in_data_anchor))
+    GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->LinkTo(peer_in_data_anchor))
   }
-
-  auto graph = node->GetOwnerComputeGraph();
-  GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, node))
+  GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node))
+  AddNodeDeleted(node);
   AddRePassNodesWithInOut(in_node);
 
+  return SUCCESS;
+}
+
+Status EnterPass::UnlinkCtrlEdgeBeforeConst(NodePtr &node) {
+  auto out_ctrl_nodes = node->GetOutControlNodes();
+  if (out_ctrl_nodes.empty()) {
+    return SUCCESS;
+  }
+  auto out_ctrl_anchor = node->GetOutControlAnchor();
+  GE_CHECK_NOTNULL(out_ctrl_anchor);
+
+  for (auto &out_ctrl_node : out_ctrl_nodes) {
+    GE_CHECK_NOTNULL(out_ctrl_node);
+    if ((out_ctrl_node->GetType() != CONSTANT) && (out_ctrl_node->GetType() != CONSTANTOP)) {
+      continue;
+    }
+    auto in_ctrl_nodes = out_ctrl_node->GetInControlNodes();
+    if (in_ctrl_nodes.size() != kInCtrlNodesNum) {
+      continue;
+    }
+
+    // Skip when has merge out
+    bool has_merge_out = false;
+    auto out_nodes_of_const = out_ctrl_node->GetOutAllNodes();
+    for (const auto &out_node_of_const : out_nodes_of_const) {
+      GE_CHECK_NOTNULL(out_node_of_const);
+      if (out_node_of_const->GetType() == MERGE || out_node_of_const->GetType() == REFMERGE) {
+        has_merge_out = true;
+        break;
+      }
+    }
+    if (has_merge_out) {
+      continue;
+    }
+
+    GELOGI("Unlink control edge from %s to %s.", node->GetName().c_str(), out_ctrl_node->GetName().c_str());
+    GE_CHK_STATUS_RET(out_ctrl_anchor->Unlink(out_ctrl_node->GetInControlAnchor()))
+    for (auto &out_node_of_const : out_nodes_of_const) {
+      if (!out_ctrl_anchor->IsLinkedWith(out_node_of_const->GetInControlAnchor())) {
+        GELOGI("Link control edge from %s to %s.", node->GetName().c_str(), out_node_of_const->GetName().c_str());
+        GE_CHK_STATUS_RET(out_ctrl_anchor->LinkTo(out_node_of_const->GetInControlAnchor()))
+      }
+    }
+  }
   return SUCCESS;
 }
 }  // namespace ge

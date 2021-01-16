@@ -23,6 +23,7 @@ static const int kCubeSize = 16;
 static const int kNiSize = 16;
 static const int64_t kShapeItemNumMAX = 1024UL * 1024UL * 1024UL * 1024UL;
 
+
 enum NchwDimIndex {
   kNchwN,
   kNchwC,
@@ -45,6 +46,14 @@ enum HwcnDimIndex {
   kHwcnC,
   kHwcnN,
   kHwcnDimsNum
+};
+
+enum ChwnDimIndex {
+  kChwnC,
+  kChwnH,
+  kChwnW,
+  kChwnN,
+  kChwnDimsNum
 };
 
 enum Nc1hwc0DimIndex {

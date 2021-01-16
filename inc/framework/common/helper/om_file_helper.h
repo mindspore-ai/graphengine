@@ -32,14 +32,14 @@ using std::vector;
 namespace ge {
 struct ModelPartition {
   ModelPartitionType type;
-  uint8_t* data = 0;
+  uint8_t *data = 0;
   uint32_t size = 0;
 };
 
 struct OmFileContext {
   std::vector<ModelPartition> partition_datas_;
   std::vector<char> partition_table_;
-  uint32_t model_data_len_;
+  uint32_t model_data_len_ = 0;
 };
 
 struct SaveParam {
@@ -57,14 +57,22 @@ class OmFileLoadHelper {
 
   Status Init(uint8_t *model_data, const uint32_t model_data_size);
 
+  Status Init(uint8_t *model_data, const uint32_t model_data_size, uint32_t model_num);
+
   Status GetModelPartition(ModelPartitionType type, ModelPartition &partition);
 
+  Status GetModelPartition(ModelPartitionType type, ModelPartition &partition, size_t model_index);
+
   OmFileContext context_;
+
+  vector<OmFileContext> model_contexts_;
 
  private:
   Status CheckModelValid(const ge::ModelData &model) const;
 
   Status LoadModelPartitionTable(uint8_t *model_data, const uint32_t model_data_size);
+
+  Status LoadModelPartitionTable(uint8_t *model_data, const uint32_t model_data_size, uint32_t model_num);
 
   bool is_inited_{false};
 };
@@ -79,15 +87,23 @@ class OmFileSaveHelper {
 
   Status AddPartition(ModelPartition &partition);
 
+  Status AddPartition(ModelPartition &partition, size_t cur_index);
+
   const std::vector<ModelPartition> &GetModelPartitions() const;
 
-  Status SaveModel(const SaveParam &save_param, const char *target_file,
-                   ge::ModelBufferData& model, bool is_offline = true);
+  Status SaveModel(const SaveParam &save_param, const char *target_file, ge::ModelBufferData &model,
+                   bool is_offline = true);
 
   Status SaveModelToFile(const char *output_file, ge::ModelBufferData &model, bool is_offline = true);
 
+  vector<OmFileContext> model_contexts_;
+
   ModelFileHeader model_header_;
   OmFileContext context_;
+
+  ModelPartitionTable *GetPartitionTable(size_t cur_ctx_index);
+
+  Status SaveRootModel(const SaveParam &save_param, const char *output_file, ModelBufferData &model, bool is_offline);
 };
 }  // namespace ge
 #endif  // INC_FRAMEWORK_COMMON_HELPER_OM_FILE_HELPER_H_

@@ -16,7 +16,6 @@
 
 #include "graph/load/new_model_manager/davinci_model.h"
 
-#include <cce/dnn.h>
 #include <graph/utils/node_utils.h>
 #include <algorithm>
 #include <map>
@@ -76,7 +75,6 @@
 namespace ge {
 namespace {
 const uint32_t kDataIndex = 0;
-const uint32_t kOutputNum = 1;
 const uint32_t kTrueBranchStreamNum = 1;
 const uint32_t kGetDynamicDimsCount = 1;
 const uint32_t kThreadNum = 16;
@@ -84,10 +82,11 @@ const uint32_t kAddrLen = sizeof(void *);
 const int kDecimal = 10;
 const int kBytes = 8;
 const uint32_t kDataMemAlignSizeCompare = 64;
-const uint32_t kDumpL1FusionOpMByteSize = 2 * 1024 * 1024;
+const uint32_t kDumpL1FusionOpMByteSize = 2097152;   // 2 * 1024 * 1024
 const uint32_t kDumpFlagOfL1Fusion = 0;
 const char *const kDefaultBatchLable = "Batch_default";
 const char *const kGetDynamicDimsName = "ascend_mbatch_get_dynamic_dims_node";
+const char *const kMultiBatchNodePostfix = "_ascend_mbatch_batch_";
 const int32_t kInvalidStream = -1;
 const uint32_t kEndOfSequence = 0x0704000a;
 const uint32_t kEndOfSequenceNew = 507005;
@@ -97,6 +96,29 @@ const int32_t kModelAbortNormalNew = 507024;
 inline bool IsDataOp(const std::string &node_type) {
   return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
 }
+
+inline bool IsTbeTask(const OpDescPtr &op_desc) {
+  uint32_t run_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
+  if (!AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, run_mode)) {
+    return false;
+  }
+
+  if (run_mode != static_cast<uint32_t>(domi::ImplyType::TVM)) {
+    return false;
+  }
+
+  // Skip no_task operator, such as concat and split.
+  bool attr_no_task = false;
+  bool get_attr_no_task_flag = AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_no_task);
+  if (get_attr_no_task_flag && attr_no_task) {
+    GELOGI("Node[name:%s, type:%s] does not generate task, skip initialization.",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
+    return false;
+  }
+
+  return true;
+}
+
 inline bool IsNoTaskAndDumpNeeded(const OpDescPtr &op_desc) {
   bool save_dump_info = false;
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NO_TASK_AND_DUMP_NEEDED, save_dump_info);
@@ -109,6 +131,7 @@ std::mutex DavinciModel::tvm_bin_mutex_;
 DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener> &listener)
     : weights_mem_base_(nullptr),
       var_mem_base_(nullptr),
+      fixed_mem_base_(0),
       mem_base_(nullptr),
       is_inner_mem_base_(false),
       is_inner_weight_base_(false),
@@ -140,6 +163,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       is_l1_fusion_enable_(false),
       is_first_execute_(true) {
   op_list_.clear();
+  skt_info_ = {0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, -1, 0, nullptr};
 }
 
 DavinciModel::~DavinciModel() {
@@ -149,20 +173,11 @@ DavinciModel::~DavinciModel() {
       GELOGW("UnloadDumpInfo failed, ret: %u.", ret);
     }
 
-    for (const auto &op_and_addr : saved_task_addrs_) {
-      auto addr = op_and_addr.second;
-      if (addr != nullptr) {
-        GE_CHK_RT(rtFree(addr));
-      }
-      addr = nullptr;
-    }
-    saved_task_addrs_.clear();
+    ClearTaskAddrs();
 
     GE_CHK_STATUS(ModelRunStop());
 
     op_list_.clear();
-    data_op_list_.clear();
-    output_op_list_.clear();
     tensor_name_to_fixed_addr_size_.clear();
     tensor_name_to_peer_output_index_.clear();
     GE_DELETE_NEW_SINGLE(data_inputer_);
@@ -221,6 +236,17 @@ DavinciModel::~DavinciModel() {
   }
 }
 
+void DavinciModel::ClearTaskAddrs() {
+  for (const auto &op_and_addr : saved_task_addrs_) {
+    auto addr = op_and_addr.second;
+    if (addr != nullptr) {
+      GE_CHK_RT(rtFree(addr));
+    }
+    addr = nullptr;
+  }
+  saved_task_addrs_.clear();
+}
+
 void DavinciModel::UnbindHcomStream() {
   if (!all_hccl_stream_list_.empty()) {
     for (size_t i = 0; i < all_hccl_stream_list_.size(); i++) {
@@ -262,7 +288,11 @@ Status DavinciModel::Assign(const GeModelPtr &ge_model) {
 /// @return: void
 ///
 void DavinciModel::Shrink() {
+  skt_info_ = {0, 0, 0, 0, nullptr, nullptr, {}, {}, {}, {}, {}, RT_KERNEL_DEFAULT, -1, 0, nullptr};
+  DumperShrink();
   ge_model_.reset();  // delete object.
+  op_list_.clear();
+  ClearTaskAddrs();
 }
 
 Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size) {
@@ -290,8 +320,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
     if (weight_ptr == nullptr) {
       weights_mem_base_ = MallocWeightsMem(weights_size);
       if (weights_mem_base_ == nullptr) {
-        GELOGE(GE_EXEC_ALLOC_WEIGHT_MEM_FAILED, "Alloc weight memory failed. size: %zu", weights_size);
-        return GE_EXEC_ALLOC_WEIGHT_MEM_FAILED;
+        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc weight memory failed. size: %zu", weights_size);
+        return ACL_ERROR_GE_MEMORY_ALLOCATION;
       }
       is_inner_weight_base_ = true;
     }
@@ -308,8 +338,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(FAILED, "call InitFeatureMapMem more than once .");
-    return FAILED;
+    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once.");
+    return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
 
@@ -317,8 +347,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
 
   if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
-    GELOGE(FAILED, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
-    return FAILED;
+    GELOGE(PARAM_INVALID, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
+    return PARAM_INVALID;
   }
 
   mem_base_ = static_cast<uint8_t *>(dev_ptr);
@@ -328,11 +358,11 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (TotalMemSize() && mem_base_ == nullptr) {
     mem_base_ = MallocFeatureMapMem(data_size);
     if (mem_base_ == nullptr) {
-      GELOGE(GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED, "Alloc feature map memory failed. size: %zu", data_size);
-      return GE_EXEC_ALLOC_FEATURE_MAP_MEM_FAILED;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
-    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-            mem_base_, data_size);
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
+            runtime_param_.graph_id, mem_base_, data_size);
 
     if (!is_inner_weight_base_) {
       weights_mem_base_ = mem_base_;
@@ -344,8 +374,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (p2p_data_size != 0) {
     p2p_mem_base_ = MallocP2PMem(p2p_data_size);
     if (p2p_mem_base_ == nullptr) {
-      GELOGE(GE_EXEC_ALLOC_P2P_MEM_FAILED, "Alloc p2p memory failed,size: %zu", p2p_data_size);
-      return GE_EXEC_ALLOC_P2P_MEM_FAILED;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc p2p memory failed,size: %zu", p2p_data_size);
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     GELOGI("InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
            p2p_mem_base_, p2p_data_size);
@@ -486,7 +516,11 @@ Status DavinciModel::DoTaskSink() {
 
   GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
 
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
+
   GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
+
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
 
   GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
 
@@ -513,7 +547,7 @@ Status DavinciModel::SetTSDevice() {
 Status DavinciModel::OpDebugRegister() {
   bool is_op_debug = false;
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_OP_DEBUG_FLAG, is_op_debug);
-  GELOGD("The value of op_debug in ge_model_ is %d.", is_op_debug);
+  GELOGD("The value of op debug in ge_model is %d.", is_op_debug);
   if (is_op_debug) {
     debug_reg_mutex_.lock();
     rtError_t rt_ret = rtMalloc(&op_debug_addr_, kOpDebugMemorySize, RT_MEMORY_DDR);
@@ -606,7 +640,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   version_ = ge_model_->GetVersion();
   name_ = ge_model_->GetName();
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_);
-  GELOGD("The value of ge.l1Fusion in ge_model_ is %d.", is_l1_fusion_enable_);
+  GELOGD("The value of ge.l1Fusion in ge_model is %d.", is_l1_fusion_enable_);
   CheckHasHcomOp();
 
   vector<int64_t> huge_stream_list;
@@ -667,6 +701,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
     data_inputer_ = new (std::nothrow) DataInputer();
     GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, MEMALLOC_FAILED, "data_inputer_ is nullptr.");
   }
+  fixed_mem_base_ = reinterpret_cast<uintptr_t>(mem_base_);
   GE_TIMESTAMP_END(InitModelMem, "GraphLoader::InitModelMem");
 
   for (const ge::NodePtr &node : compute_graph->GetDirectNode()) {
@@ -679,23 +714,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
   GE_CHK_STATUS_RET(InitNodes(compute_graph), "Init nodes failed");
 
-  SetDataDumperArgs(compute_graph);
   GE_TIMESTAMP_START(DoTaskSink);
-  auto ret = DoTaskSink();
+  GE_CHK_STATUS_RET(DoTaskSink(), "Task sink failed");
   GE_TIMESTAMP_END(DoTaskSink, "GraphLoader::DoTaskSink");
-
-  auto all_dump_model = GetDumpProperties().GetAllDumpModel();
-  bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
-  bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
-  bool dump_l1fusion_op = (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) ||
-                          findByOmName || findByModelName;
-  if (dump_l1fusion_op) {
-    // malloc 2M for dump l1fusion op
-    GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
-
-    // send l1fusion dump addr to rts
-    GE_CHK_RT_RET(rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion));
-  }
 
   /// In zero copy model, if a aicpu operator is connected to the first or last layer, before model execution,
   /// the aicpu opertor needs to destroy history record, and update operator memory address.
@@ -711,9 +732,10 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   }
 
   // collect profiling for ge
+  GE_CHK_STATUS_RET(InitModelProfile(), "Init model profile failed");
   auto &profiling_manager = ProfilingManager::Instance();
   if (profiling_manager.ProfilingModelLoadOn()) {
-    Status p_ret = ReportProfilingData(!profiling_manager.IsAclApiMode());
+    Status p_ret = ReportProfilingData();
     if (p_ret != SUCCESS) {
       GELOGE(p_ret, "Report profiling data failed.");
       return p_ret;
@@ -721,19 +743,18 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   }
 
   Shrink();
-  return ret;
+  return SUCCESS;
 }
 
-Status DavinciModel::ReportProfilingData(bool check_device) {
+Status DavinciModel::ReportProfilingData() {
   std::vector<ComputeGraphDescInfo> compute_graph_desc_info;
   Status ret = GetComputeGraphInfo(compute_graph_desc_info);
   if (ret != SUCCESS) {
     GELOGE(ret, "GetComputeGraphInfo failed.");
     return ret;
   }
-  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info, check_device);
+  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info);
   GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
-  op_list_.clear();
 
   return SUCCESS;
 }
@@ -815,7 +836,6 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
   typedef Status (DavinciModel::*OpDescCall)(const OpDescPtr &);
   static std::map<std::string, OpDescCall> op_desc_handle = {
-      {VARIABLE, &DavinciModel::InitVariable},
       {CONSTANTOP, &DavinciModel::InitConstant},
       {STREAMACTIVE, &DavinciModel::InitStreamActive},
       {STREAMSWITCH, &DavinciModel::InitStreamSwitch},
@@ -824,18 +844,15 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
       {CASE, &DavinciModel::InitCase},
   };
 
-  GE_CHK_STATUS_RET(InitInputOutputForDynamic(compute_graph), "InitInputOutputForDynamic failed.");
-
+  vector<OpDescPtr> output_op_list;
   map<uint32_t, OpDescPtr> data_by_index;
+  map<string, OpDescPtr> variable_by_name;
   auto nodes = compute_graph->GetAllNodes();
   const CustAICPUKernelStore &aicpu_kernel_store = ge_model_->GetCustAICPUKernelStore();
-  for (size_t i = 0; i < nodes.size(); i++) {
-    auto node = nodes.at(i);
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(PARAM_INVALID, "op_desc is null.");
-      return PARAM_INVALID;
-    }
+  for (size_t i = 0; i < nodes.size(); ++i) {
+    const auto &node = nodes.at(i);
+    const auto &op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
 
     op_list_[op_desc->GetId()] = op_desc;
 
@@ -844,7 +861,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     GE_TIMESTAMP_ADD(LoadTBEKernelBinToOpDesc);
 
     if (IsDataOp(op_desc->GetType())) {
-      if (InitDataOp(node, data_op_index, data_by_index) != SUCCESS) {
+      if (InitDataOp(compute_graph, node, data_op_index, data_by_index) != SUCCESS) {
         GELOGE(PARAM_INVALID, "Data init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
@@ -853,8 +870,20 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     }
 
     if (op_desc->GetType() == NETOUTPUT) {
-      if (InitNetOutput(node) != SUCCESS) {
+      if (InitNetOutput(compute_graph, node, output_op_list) != SUCCESS) {
         GELOGE(PARAM_INVALID, "NetOutput init failed, Name: %s", op_desc->GetName().c_str());
+        return PARAM_INVALID;
+      }
+      if (InitRealSizeAndShapeInfo(compute_graph, node) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Init real size and shape failed, Name: %s", op_desc->GetName().c_str());
+        return PARAM_INVALID;
+      }
+      continue;
+    }
+
+    if (op_desc->GetType() == VARIABLE) {
+      if (InitVariable(op_desc, variable_by_name) != SUCCESS) {
+        GELOGE(PARAM_INVALID, "Variable init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
       continue;
@@ -863,7 +892,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     auto it = op_desc_handle.find(op_desc->GetType());
     if (it != op_desc_handle.end()) {
       if ((this->*it->second)(op_desc) != SUCCESS) {
-        GELOGE(PARAM_INVALID, "NetOutput init failed, Name: %s", op_desc->GetName().c_str());
+        GELOGE(PARAM_INVALID, "Node init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
       continue;
@@ -894,17 +923,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     }
 
     GE_TIMESTAMP_RESTART(InitTbeHandle);
-    uint32_t run_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
-    if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, run_mode) &&
-        run_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
-      // Skip no_task operator, such as concat and split.
-      bool attr_notask = false;
-      bool get_attr_notask_flag = ge::AttrUtils::GetBool(op_desc, ATTR_NAME_NOTASK, attr_notask);
-      GE_IF_BOOL_EXEC(get_attr_notask_flag && attr_notask,
-                      GELOGI("Node[name:%s, type:%s] does not generate task, skip initialization.",
-                             op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                      continue;);
-
+    if (IsTbeTask(op_desc)) {
       Status status = InitTbeHandle(op_desc);
       if (status != SUCCESS) {
         GELOGE(status, "TBE init failed. %s", op_desc->GetName().c_str());
@@ -913,33 +932,11 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     }
     GE_TIMESTAMP_ADD(InitTbeHandle);
   }
-  AdjustDataOpList(data_by_index);
+
+  SetDataDumperArgs(compute_graph, variable_by_name);
   GE_TIMESTAMP_CALLNUM_END(LoadTBEKernelBinToOpDesc, "GraphLoader::LoadTBEKernelBinToOpDesc.");
   GE_TIMESTAMP_CALLNUM_END(InitTbeHandle, "GraphLoader::InitTbeHandle.");
-  return SUCCESS;
-}
-
-Status DavinciModel::InitInputOutputForDynamic(const ComputeGraphPtr &compute_graph) {
-  if (!known_node_) return SUCCESS;
-  // for dynamic shape
-  auto direct_nodes = compute_graph->GetDirectNode();
-  for (size_t i = 0; i < direct_nodes.size(); i++) {
-    auto node = direct_nodes.at(i);
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(PARAM_INVALID, "op_desc is null.");
-      return PARAM_INVALID;
-    }
-    if (IsDataOp(op_desc->GetType())) {
-      GELOGD("init data op %s", op_desc->GetName().c_str());
-      data_op_list_.push_back(op_desc);
-    }
-    if (op_desc->GetType() == NETOUTPUT) {
-      GELOGD("init netouput op %s", op_desc->GetName().c_str());
-      output_op_list_.push_back(op_desc);
-    }
-  }
-  return SUCCESS;
+  return GenInputOutputInfo(data_by_index, output_op_list);
 }
 
 void DavinciModel::SetLabelForDynamic(const NodePtr &node) {
@@ -957,24 +954,34 @@ void DavinciModel::SetLabelForDynamic(const NodePtr &node) {
   }
 }
 
+///
 /// @ingroup ge
 /// @brief Data Op Initialize.
+/// @param [in] ComputeGraphPtr: root graph of the model.
 /// @param [in] NodePtr: Data Op.
-/// @param [in/out] data_op_index: NetOutput addr size info.
+/// @param [in/out] data_op_index: index of courrent count.
+/// @param [in/out] data_by_index: Data ordered by index.
 /// @return Status
-Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, map<uint32_t, OpDescPtr> &data_by_index) {
+///
+Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &node, uint32_t &data_op_index,
+                                map<uint32_t, OpDescPtr> &data_by_index) {
   // op_desc Checked by Init: Data, valid.
   auto op_desc = node->GetOpDesc();
+  if (node->GetOwnerComputeGraph() != graph) {
+    GELOGI("Skip subgraph Data node: %s.", op_desc->GetName().c_str());
+    return SUCCESS;
+  }
+
+  GELOGI("Init Data node: %s.", op_desc->GetName().c_str());
+  auto data_index = data_op_index++;
+  if (AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
+    GELOGD("Get new index %u, old %u", data_index, data_op_index - 1);
+  }
+
+  data_by_index[data_index] = op_desc;
   if (known_node_) {
     return SUCCESS;
   }
-  uint32_t parent_index = 0;  // Ignore subgraph Data Node.
-  if (AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-    GELOGI("Init zero copy by subgraph Data node: %s.", op_desc->GetName().c_str());
-    return InitInputBatchLabel(node);
-  }
-
-  data_op_list_.push_back(op_desc);
 
   // Make information for copy input data.
   const vector<int64_t> output_size_list = ModelUtils::GetOutputSize(op_desc);
@@ -986,10 +993,7 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
            op_desc->GetName().c_str(), output_size_list.size(), virtual_addr_list.size(), output_offset_list.size());
     return PARAM_INVALID;
   }
-  auto data_index = data_op_index;
-  if (AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
-    GELOGD("ge_train: get new index %u, old %u", data_index, data_op_index);
-  }
+
   bool fusion_flag = false;
   ZeroCopyOffset zero_copy_offset;
   int64_t data_size = output_size_list[kDataIndex];
@@ -1000,7 +1004,6 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
     return PARAM_INVALID;
   }
   new_input_data_info_[data_index] = zero_copy_offset;
-  data_by_index[data_index] = op_desc;
 
   for (size_t index = 0; index < virtual_addr_list.size(); ++index) {
     void *addr = virtual_addr_list.at(index);
@@ -1011,11 +1014,6 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
     new_input_outside_addrs_[addr] = zero_copy_offset;
   }
 
-  data_op_index++;
-  if (InitInputZeroCopyNodes(node) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Input zero copy nodes init failed!");
-    return PARAM_INVALID;
-  }
   return SUCCESS;
 }
 
@@ -1023,51 +1021,50 @@ Status DavinciModel::InitDataOp(const NodePtr &node, uint32_t &data_op_index, ma
 /// @ingroup ge
 /// @brief Sort Data op list by index.
 /// @param [in] data_by_index: map of Data Op.
-/// @return
-///
-void DavinciModel::AdjustDataOpList(const map<uint32_t, OpDescPtr> &data_by_index) {
-  if (data_by_index.size() != data_op_list_.size()) {
-    GELOGW("Data map size: %zu, Data list size: %zu.", data_by_index.size(), data_op_list_.size());
-    return;
-  }
-
-  data_op_list_.clear();
-  for (auto &item : data_by_index) {
-    data_op_list_.emplace_back(item.second);
-  }
-}
-
-///
-/// @ingroup ge
-/// @brief input zero copy node Initialize.
-/// @param [in] NodePtr: Data Op.
+/// @param [in] output_op_list: list of NetOutput op.
 /// @return Status
 ///
-Status DavinciModel::InitInputZeroCopyNodes(const NodePtr &node) {
-  auto out_data_anchor = node->GetOutDataAnchor(kDataIndex);
-  if (out_data_anchor == nullptr) {
-    GELOGE(FAILED, "Out data anchor is nullptr");
-    return FAILED;
-  }
-  for (auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    auto node = peer_in_data_anchor->GetOwnerNode();
-    auto op_desc = node->GetOpDesc();
-    if (op_desc == nullptr) {
-      GELOGE(FAILED, "Op desc is nullptr");
-      return FAILED;
-    }
-    string batch_label;
-    (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
-    if (batch_label.empty()) {
-      batch_label = kDefaultBatchLable;
-    }
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_.emplace(pair<int64_t, string>(op_desc->GetId(), batch_label));
-      GELOGD("Init input zero copy nodes success, op name:%s, op id: %ld, batch label: %s.", op_desc->GetName().c_str(),
-             op_desc->GetId(), batch_label.c_str());
+Status DavinciModel::GenInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_index,
+                                        const vector<OpDescPtr> &output_op_list) {
+  GELOGD("Data node size: %zu, NetOutput node size: %zu", data_by_index.size(), output_op_list.size());
+  for (auto &item : data_by_index) {
+    auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, item.second);
+    GELOGD("Data node: %s, output addr size: %zu", item.second->GetName().c_str(), output_addrs.size());
+    input_addrs_list_.emplace_back(output_addrs);
+
+    GE_CHK_STATUS_RET(InitAippInfo(item.first, item.second), "Init AIPP Info failed");
+    GE_CHK_STATUS_RET(InitAippType(item.first, item.second, data_by_index), "Init AIPP Type failed");
+    GE_CHK_STATUS_RET(InitOrigInputInfo(item.first, item.second), "Init Orig input failed");
+    GE_CHK_STATUS_RET(InitAippInputOutputDims(item.first, item.second), "Init AIPP dims failed");
+    if (item.second->GetType() == AIPP_DATA_TYPE) {
+      GELOGI("This is dynamic aipp model, Node: %s", item.second->GetName().c_str());
+      is_dynamic_aipp_ = true;
     }
   }
-  return SUCCESS;
+
+  for (const auto &op_desc : output_op_list) {
+    auto input_addrs = ModelUtils::GetInputDataAddrs(runtime_param_, op_desc);
+    GELOGD("NetOutput node: %s, input addr size: %zu", op_desc->GetName().c_str(), input_addrs.size());
+    output_addrs_list_.emplace_back(input_addrs);
+
+    bool getnext_sink_dynamic = false;
+    if (AttrUtils::GetBool(op_desc, ATTR_GETNEXT_SINK_DYNMAIC, getnext_sink_dynamic) && getnext_sink_dynamic) {
+      GELOGI("ATTR_GETNEXT_SINK_DYNMAIC has been set and is true, node: %s", op_desc->GetName().c_str());
+      is_getnext_sink_dynamic_ = true;
+    }
+
+    vector<string> shape_info;
+    if (AttrUtils::GetListStr(op_desc, ATTR_NAME_DYNAMIC_OUTPUT_DIMS, shape_info)) {
+      dynamic_output_shape_info_.insert(dynamic_output_shape_info_.end(), shape_info.begin(), shape_info.end());
+    }
+
+    if (InitOutputTensorInfo(op_desc) != SUCCESS) {
+      return INTERNAL_ERROR;
+    }
+  }
+
+  GE_CHK_STATUS_RET(InitInputDescInfo(data_by_index), "Init input desc info failed");
+  return InitOutputDescInfo(output_op_list);
 }
 
 bool DavinciModel::IsGetNextSinkDynamic(const OpDescPtr &op_desc) {
@@ -1081,24 +1078,27 @@ bool DavinciModel::IsGetNextSinkDynamic(const OpDescPtr &op_desc) {
 
 /// @ingroup ge
 /// @brief NetOutput Op Initialize.
+/// @param [in] ComputeGraphPtr: root graph of the model.
 /// @param [in] NodePtr: NetOutput Op.
+/// @param [in/out] vector<OpDescPtr>: All NetOutput node in model.
 /// @return Status
-Status DavinciModel::InitNetOutput(const NodePtr &node) {
+Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &node,
+                                   vector<OpDescPtr> &output_op_list) {
   // node->GetOpDesc Checked by Init: NetOutput, valid.
   auto op_desc = node->GetOpDesc();
   // excludes the function op sub graph, e.g. case,if
+  if (node->GetOwnerComputeGraph() != graph) {
+    GELOGI("Skip subgraph NetOutput node: %s.", op_desc->GetName().c_str());
+    op_list_.erase(op_desc->GetId());
+    return SUCCESS;
+  }
+
+  GELOGI("Init NetOutput node: %s.", op_desc->GetName().c_str());
+  output_op_list.push_back(op_desc);
   if (known_node_) {
     return SUCCESS;
   }
-  ComputeGraphPtr owner_graph = node->GetOwnerComputeGraph();
-  GE_CHECK_NOTNULL(owner_graph);
-  if (owner_graph->GetParentGraph() != nullptr) {
-    GELOGI("Init zero copy by subgraph NetOutput node: %s.", op_desc->GetName().c_str());
-    op_list_.erase(op_desc->GetId());
-    return InitOutputBatchLabel(node);
-  }
 
-  output_op_list_.push_back(op_desc);
   // Make information for copy output data.
   const vector<int64_t> input_size_list = ModelUtils::GetInputSize(op_desc);
   const vector<void *> virtual_addr_list = ModelUtils::GetInputDataAddrs(runtime_param_, op_desc);
@@ -1146,18 +1146,24 @@ Status DavinciModel::InitNetOutput(const NodePtr &node) {
       real_virtual_addrs_.insert(real_addr);
     }
   }
+  return SUCCESS;
+}
 
-  GE_IF_BOOL_EXEC(InitOutputZeroCopyNodes(node) != SUCCESS,
-                  GELOGE(PARAM_INVALID, "Output zero copy nodes init failed!"); return PARAM_INVALID;);
+Status DavinciModel::InitRealSizeAndShapeInfo(const ComputeGraphPtr &compute_graph, const NodePtr &node) {
+  if (node->GetName().find(kMultiBatchNodePostfix) != string::npos) {
+    GELOGD("No need to get size and shape of netoutput in subgraph.");
+    return SUCCESS;
+  }
+  GELOGD("Start init real size and shape info of %s.", node->GetName().c_str());
   GetAllGearsInfo(node);
   if (is_getnext_sink_dynamic_) {
     GE_IF_BOOL_EXEC(GetGetDynamicDimsNodeInfo(node) != SUCCESS,
                     GELOGE(PARAM_INVALID, "Failed to get info of getdynamicdims node."); return PARAM_INVALID;);
   }
   if (is_online_infer_dynamic_) {
-    GE_IF_BOOL_EXEC(GetGearAndRealOutSizeInfo(input_count, node) != SUCCESS,
+    GE_IF_BOOL_EXEC(GetGearAndRealOutSizeInfo(compute_graph, node) != SUCCESS,
                     GELOGE(PARAM_INVALID, "Failed to get gear and real out size info."); return PARAM_INVALID;);
-    GE_IF_BOOL_EXEC(GetGearAndRealOutShapeInfo(input_count, op_desc) != SUCCESS,
+    GE_IF_BOOL_EXEC(GetGearAndRealOutShapeInfo(compute_graph, node) != SUCCESS,
                     GELOGE(PARAM_INVALID, "Failed to get gear and real out shape info."); return PARAM_INVALID;);
   }
 
@@ -1176,7 +1182,7 @@ void DavinciModel::GetAllGearsInfo(const NodePtr &node) {
       if (shape_str.empty()) {
         continue;
       }
-      std::vector<int64_t> gear_info;
+      std::vector<int32_t> gear_info;
       std::vector<std::string> dims = ge::StringUtils::Split(shape_str, ',');
       for (const auto &dim : dims) {
         if (dim.empty()) {
@@ -1192,6 +1198,7 @@ void DavinciModel::GetAllGearsInfo(const NodePtr &node) {
     }
   }
 }
+
 Status DavinciModel::GetGetDynamicDimsNodeInfo(const NodePtr &node) {
   GE_CHECK_NOTNULL(node->GetOpDesc());
   size_t input_count = node->GetAllInDataAnchors().size();
@@ -1229,11 +1236,11 @@ Status DavinciModel::GetGetDynamicDimsNodeInfo(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status DavinciModel::GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr &node) {
-  GELOGD("Start get gear and real output size info of %s, input count is %zu.", node->GetName().c_str(), input_count);
+Status DavinciModel::GetGearAndRealOutSizeInfo(const ComputeGraphPtr &graph, const NodePtr &node) {
+  GELOGD("Start get gear and real output size info of %s.", node->GetName().c_str());
   merge_nodes_gear_and_real_out_size_info_.clear();
-  for (size_t idx = 0; idx < input_count; ++idx) {
-    auto in_anchor = node->GetAllInDataAnchors().at(idx);
+  size_t idx = 0;
+  for (const auto &in_anchor : node->GetAllInDataAnchors()) {
     auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
     if (peer_out_anchor == nullptr) {
       continue;
@@ -1241,89 +1248,106 @@ Status DavinciModel::GetGearAndRealOutSizeInfo(size_t input_count, const NodePtr
     auto peer_node = peer_out_anchor->GetOwnerNode();
     auto op_desc = peer_node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    if ((peer_node->GetType() == MERGE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
-      if (GetRealOutputSizeOfMerge(idx, peer_node) != SUCCESS) {
+    if ((peer_node->GetType() == CASE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
+      if (GetRealOutputSizeOfCase(graph, idx, peer_node) != SUCCESS) {
         GELOGE(PARAM_INVALID, "Get real output size of %s failed.", peer_node->GetName().c_str());
         return PARAM_INVALID;
       }
     }
+    idx++;
   }
   return SUCCESS;
 }
 
-Status DavinciModel::GetRealOutputSizeOfMerge(size_t input_index, const NodePtr &merge_node) {
-  GELOGD("Start get output size of %s, which is %zu input to netoutput.", merge_node->GetName().c_str(), input_index);
-  std::map<vector<int64_t>, int64_t> gear_and_real_out_size_info;
-  for (auto &in_anchor : merge_node->GetAllInDataAnchors()) {
-    auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
-    if (peer_out_anchor == nullptr) {
-      continue;
+Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_t input_index,
+                                             const NodePtr &case_node) {
+  GELOGD("Start get output size of %s, which is %zu input to netoutput.", case_node->GetName().c_str(), input_index);
+  const auto &func_desc = case_node->GetOpDesc();
+  GE_CHECK_NOTNULL(func_desc);
+  std::map<vector<int32_t>, int64_t> gear_and_real_out_size_info;
+  for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
+    const auto &subgraph = graph->GetSubgraph(name);
+    if (subgraph == nullptr) {
+      GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s.", name.c_str());
+      return GE_GRAPH_EMPTY_SUBGRAPH;
     }
-    auto in_node = peer_out_anchor->GetOwnerNode();
-    GELOGD("Input node of merge is %s.", in_node->GetName().c_str());
-    auto op_desc = in_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    string batch_label;
-    if (AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
-      size_t batch_index = static_cast<size_t>(stoi(batch_label.substr(batch_label.rfind('_') + 1)));
-      GELOGD("Batch index of %s is %zu.", op_desc->GetName().c_str(), batch_index);
-      if (batch_index > all_gears_info_.size()) {
-        GELOGE(PARAM_INVALID, "The value of ATTR_NAME_BATCH_LABEL is invalid.");
-        return PARAM_INVALID;
-      }
+    for (auto &node : subgraph->GetDirectNode()) {
+      if (node->GetType() == NETOUTPUT) {
+        auto op_desc = node->GetOpDesc();
+        GE_CHECK_NOTNULL(op_desc);
+        string batch_label;
+        if (AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label)) {
+          size_t batch_index = static_cast<size_t>(stoi(batch_label.substr(batch_label.rfind('_') + 1)));
+          GELOGD("Batch index of %s is %zu.", op_desc->GetName().c_str(), batch_index);
+          if (batch_index > all_gears_info_.size()) {
+            GELOGE(PARAM_INVALID, "The value of ATTR_NAME_BATCH_LABEL is invalid.");
+            return PARAM_INVALID;
+          }
 
-      const vector<int64_t> output_size_list = ModelUtils::GetOutputSize(op_desc);
-      int output_index = ge::AnchorUtils::GetIdx(peer_out_anchor);
-      auto tensor_desc = op_desc->GetOutputDescPtr(output_index);
-      GE_CHECK_NOTNULL(tensor_desc);
-      int64_t data_size = 0;
-      if (TensorUtils::GetTensorSizeInBytes(*tensor_desc, data_size) != GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Get tensor size in bytes failed.");
-        return FAILED;
+          const vector<int64_t> input_size_list = ModelUtils::GetInputSize(op_desc);
+          auto tensor_desc = op_desc->GetInputDescPtr(input_index);
+          GE_CHECK_NOTNULL(tensor_desc);
+          int64_t data_size = 0;
+          if (TensorUtils::GetTensorSizeInBytes(*tensor_desc, data_size) != GRAPH_SUCCESS) {
+            GELOGE(FAILED, "Get tensor size in bytes failed.");
+            return FAILED;
+          }
+          gear_and_real_out_size_info[all_gears_info_[batch_index]] = data_size;
+          GELOGD("Get real gear index is: %zu, gear info is %s, size is %ld, tensor size is %ld",
+                 batch_index, formats::JoinToString(all_gears_info_[batch_index]).c_str(),
+                 input_size_list[input_index], data_size);
+        }
+        break;
       }
-      gear_and_real_out_size_info[all_gears_info_[batch_index]] = data_size;
-      GELOGD("Get real gear index is: %zu, gear info is %s, size is %ld, tensor size is %ld",
-             batch_index, formats::JoinToString(all_gears_info_[batch_index]).c_str(),
-             output_size_list[output_index], data_size);
     }
   }
   merge_nodes_gear_and_real_out_size_info_[input_index] = gear_and_real_out_size_info;
   return SUCCESS;
 }
 
-Status DavinciModel::GetGearAndRealOutShapeInfo(size_t input_count, const OpDescPtr &op_desc) {
-  GELOGD("Start to get dynamic output dims of %s.", op_desc->GetName().c_str());
+Status DavinciModel::GetGearAndRealOutShapeInfo(const ComputeGraphPtr &graph, const NodePtr &node) {
+  GELOGD("Start to get dynamic output dims of %s.", node->GetName().c_str());
   merge_nodes_gear_and_real_out_shape_info_.clear();
-  std::vector<std::string> dynamic_output_shape_info;
-  if (!AttrUtils::GetListStr(op_desc, ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_shape_info)) {
-    GELOGD("Can not get dynamic output dims attr");
-    return SUCCESS;
-  }
-  GELOGI("Dynamic output shape info is %s", formats::JoinToString(dynamic_output_shape_info).c_str());
-  std::vector<vector<int64_t>> dynamic_output_shape;
-  ParseDynamicOutShape(dynamic_output_shape_info, dynamic_output_shape);
-  // idx: input_index to netoutput
-  for (size_t idx = 0; idx < input_count; ++idx) {
-    std::map<vector<int64_t>, vector<int64_t>> gear_and_real_out_shape_info;
-    for (auto &it : dynamic_output_shape) {
-      auto gear_index = static_cast<size_t>(it[0]);
-      if (gear_index > all_gears_info_.size()) {
-        GELOGE(PARAM_INVALID, "The value of cur index: %zu is invalid.", static_cast<size_t>(it[0]));
-        return PARAM_INVALID;
-      }
-
-      if (static_cast<size_t>(it[1]) == idx) {
-        vector<int64_t> output_shape;
-        for (size_t i = 2; i < it.size(); ++i) {
-          output_shape.emplace_back(it[i]);
-        }
-        gear_and_real_out_shape_info[all_gears_info_[gear_index]] = output_shape;
-        GELOGD("Get real gear index is: %zu, gear info is %s, output shape is %s.",
-               gear_index, formats::JoinToString(all_gears_info_[gear_index]).c_str(),
-               formats::JoinToString(output_shape).c_str());
-      }
+  size_t idx = 0;
+  for (const auto &in_anchor : node->GetAllInDataAnchors()) {
+    auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
+    if (peer_out_anchor == nullptr) {
+      continue;
     }
-    merge_nodes_gear_and_real_out_shape_info_[idx] = gear_and_real_out_shape_info;
+    auto peer_node = peer_out_anchor->GetOwnerNode();
+    auto op_desc = peer_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    if ((peer_node->GetType() == CASE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
+      std::vector<std::string> dynamic_output_shape_info;
+      if (!AttrUtils::GetListStr(node->GetOpDesc(), ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_shape_info)) {
+        GELOGD("Can not get dynamic output dims attr from %s.", node->GetName().c_str());
+        return SUCCESS;
+      }
+      GELOGI("Dynamic output shape info is %s", formats::JoinToString(dynamic_output_shape_info).c_str());
+      std::vector<vector<int64_t>> dynamic_output_shape;
+      ParseDynamicOutShape(dynamic_output_shape_info, dynamic_output_shape);
+      std::map<vector<int32_t>, vector<int64_t>> gear_and_real_out_shape_info;
+      for (auto &it : dynamic_output_shape) {
+        auto gear_index = static_cast<size_t>(it[0]);
+        if (gear_index > all_gears_info_.size()) {
+          GELOGE(PARAM_INVALID, "The value of cur index: %zu is invalid.", static_cast<size_t>(it[0]));
+          return PARAM_INVALID;
+        }
+
+        if (static_cast<size_t>(it[1]) == idx) {
+          vector<int64_t> output_shape;
+          for (size_t i = 2; i < it.size(); ++i) {
+            output_shape.emplace_back(it[i]);
+          }
+          gear_and_real_out_shape_info[all_gears_info_[gear_index]] = output_shape;
+          GELOGD("Get real gear index is: %zu, gear info is %s, output shape is %s.",
+                 gear_index, formats::JoinToString(all_gears_info_[gear_index]).c_str(),
+                 formats::JoinToString(output_shape).c_str());
+        }
+      }
+      merge_nodes_gear_and_real_out_shape_info_[idx] = gear_and_real_out_shape_info;
+    }
+    idx++;
   }
   return SUCCESS;
 }
@@ -1342,121 +1366,6 @@ void DavinciModel::ParseDynamicOutShape(const std::vector<std::string> &str_info
     GELOGI("Shape from attr is %s.", formats::JoinToString(shape).c_str());
     vec_info.emplace_back(shape);
   }
-}
-
-///
-/// @ingroup ge
-/// @brief output zero copy node Initialize.
-/// @param [in] NodePtr: netoutput Op.
-/// @return Status
-///
-Status DavinciModel::InitOutputZeroCopyNodes(const NodePtr &node) {
-  set<NodePtr> nodes_need_record;
-  for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
-    auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    if (peer_out_data_anchor == nullptr) {
-      continue;
-    }
-    auto peer_node = peer_out_data_anchor->GetOwnerNode();
-    nodes_need_record.emplace(peer_node);
-
-    // Merge node output multiplexed input, upstream nodes need to be considered in multiple batch scenarios
-    if (peer_node->GetType() == MERGE) {
-      for (const auto &merge_peer_in_data_anchor : peer_node->GetAllInDataAnchors()) {
-        auto merge_peer_out_data_anchor = merge_peer_in_data_anchor->GetPeerOutAnchor();
-        if (merge_peer_out_data_anchor == nullptr) {
-          continue;
-        }
-        auto merge_peer_node = merge_peer_out_data_anchor->GetOwnerNode();
-        nodes_need_record.emplace(merge_peer_node);
-      }
-    } else {
-      for (const auto &other_in_data_anchor : peer_out_data_anchor->GetPeerInDataAnchors()) {
-        auto other_in_node = other_in_data_anchor->GetOwnerNode();
-        if (other_in_node->GetType() != NETOUTPUT) {
-          nodes_need_record.emplace(other_in_node);
-        }
-      }
-    }
-  }
-
-  for (const auto &node_need_record : nodes_need_record) {
-    auto op_desc = node_need_record->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    string batch_label;
-    (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
-    if (batch_label.empty()) {
-      batch_label = kDefaultBatchLable;
-    }
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_.emplace(pair<int64_t, string>(op_desc->GetId(), batch_label));
-      GELOGD("Init Output zero copy nodes success, op name:%s, op id: %ld, batch label: %s.",
-             op_desc->GetName().c_str(), op_desc->GetId(), batch_label.c_str());
-    }
-  }
-  return SUCCESS;
-}
-
-///
-/// @ingroup ge
-/// @brief input zero copy node Initialize.
-/// @param [in] NodePtr: Data Op.
-/// @return Status
-///
-Status DavinciModel::InitInputBatchLabel(const NodePtr &node) {
-  string batch_label;
-  if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-    return SUCCESS;  // Not Multi-batch.
-  }
-
-  const auto &out_data_anchor = node->GetOutDataAnchor(kDataIndex);
-  GE_CHECK_NOTNULL(out_data_anchor);
-
-  for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    const auto &node = peer_in_data_anchor->GetOwnerNode();
-    const auto &op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_[op_desc->GetId()] = batch_label;
-      GELOGD("Init input zero copy nodes success, op name: %s, op id: %ld, batch label: %s", op_desc->GetName().c_str(),
-             op_desc->GetId(), batch_label.c_str());
-    }
-  }
-
-  return SUCCESS;
-}
-
-///
-/// @ingroup ge
-/// @brief output zero copy node Initialize for Case.
-/// @param [in] NodePtr: netoutput Op.
-/// @return Status
-///
-Status DavinciModel::InitOutputBatchLabel(const NodePtr &node) {
-  string batch_label;
-  if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-    return SUCCESS;  // Not Multi-batch.
-  }
-
-  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
-    const auto &peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    if (peer_out_data_anchor == nullptr) {
-      continue;
-    }
-
-    const auto &peer_node = peer_out_data_anchor->GetOwnerNode();
-    const auto &op_desc = peer_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-
-    if (zero_copy_op_id_batch_label_.find(op_desc->GetId()) == zero_copy_op_id_batch_label_.end()) {
-      zero_copy_op_id_batch_label_[op_desc->GetId()] = batch_label;
-      GELOGD("Init Output zero copy nodes success, op name: %s, op id: %ld, batch label: %s",
-             op_desc->GetName().c_str(), op_desc->GetId(), batch_label.c_str());
-    }
-  }
-
-  return SUCCESS;
 }
 
 /// @ingroup ge
@@ -1503,8 +1412,23 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   return SUCCESS;
 }
 
-Status DavinciModel::InitVariable(const OpDescPtr &op_desc) {
-  variable_op_list_.push_back(op_desc);
+Status DavinciModel::InitVariable(const OpDescPtr &op_desc, map<string, OpDescPtr> &variable_by_name) {
+  if (op_desc->GetName() == NODE_NAME_GLOBAL_STEP) {
+    const auto output_sizes = ModelUtils::GetOutputSize(op_desc);
+    if (!output_sizes.empty()) {
+      global_step_size_ = output_sizes[0];
+    }
+    const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
+    if (!output_addrs.empty()) {
+      global_step_addr_ = output_addrs[0];
+    }
+  }
+
+  if (op_desc->HasAttr(VAR_ATTR_VAR_IS_BROADCAST)) {
+    broadcast_variable_[op_desc->GetName()] = op_desc->GetOutputDesc(0);
+  }
+
+  variable_by_name[op_desc->GetName()] = op_desc;
   return SUCCESS;
 }
 
@@ -1544,7 +1468,8 @@ Status DavinciModel::LoadWithQueue() {
   }
 
   if (output_queue_ids_.size() != new_output_data_info_.size()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Output queue ids not match model: output_queue=%zu output_data=%zu",
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID,
+           "Output queue ids not match model: output_queue=%zu output_data=%zu",
            output_queue_ids_.size(), new_output_data_info_.size());
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
@@ -1812,32 +1737,30 @@ Status DavinciModel::CpuModelRepeat() {
 
 Status DavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
                                             vector<InputOutputDescInfo> &output_desc) {
-  if ((data_op_list_.empty()) || (data_op_list_[0]->GetInputsSize()) != 1) {
+  if (input_addrs_list_.empty() || input_addrs_list_[0].size() != 1) {
     GELOGI("data_op_list_ is empty or input_desc size is not 1.");
   } else {
-    std::vector<uint32_t> input_formats;
-    GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed.");
+    vector<uint32_t> input_formats;
+    GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats, false), "get input desc info failed.");
   }
 
-  std::vector<uint32_t> outputFormats;
-  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, outputFormats), "get output desc info failed.");
-
+  vector<uint32_t> output_formats;
+  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, output_formats), "get output desc info failed");
   return SUCCESS;
 }
 
 Status DavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_desc,
                                             vector<InputOutputDescInfo> &output_desc,
-                                            std::vector<uint32_t> &input_formats,
-                                            std::vector<uint32_t> &outputFormats) {
-  if ((data_op_list_.empty()) || (data_op_list_[0]->GetInputsSize()) != 1) {
+                                            vector<uint32_t> &input_formats,
+                                            vector<uint32_t> &output_formats, bool by_dims) {
+  if (input_addrs_list_.empty() || input_addrs_list_[0].size() != 1) {
     GELOGE(FAILED, "OP List Pointer is null or input_desc size is not 1!");
     return FAILED;
   }
 
-  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed");
+  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats, by_dims), "get input desc info failed");
 
-  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, outputFormats), "get ouput desc info failed");
-
+  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, output_formats), "get output desc info failed");
   return SUCCESS;
 }
 
@@ -1881,73 +1804,104 @@ void DavinciModel::GetUserDesignateShapeOrder(std::vector<std::string> &user_inp
 /// @ingroup ge
 /// @brief Get AIPP input info
 /// @param [in] index
-/// @param [out] aipp_info
+/// @param [int] OpDescPtr
 /// @return execute result
 ///
-Status DavinciModel::GetAIPPInfo(uint32_t index, AippConfigInfo &aipp_info) {
-  GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
-  OpDescPtr data_op = data_op_list_[index];
-  if (!data_op->HasAttr(ATTR_NAME_AIPP)) {
-    GELOGW("GetAIPPInfo: there is not AIPP related with index %u.", index);
-    return ACL_ERROR_GE_AIPP_NOT_EXIST;
+Status DavinciModel::InitAippInfo(uint32_t index, const OpDescPtr &op_desc) {
+  if (!op_desc->HasAttr(ATTR_NAME_AIPP)) {
+    GELOGW("There is not AIPP related with index %u.", index);
+    return SUCCESS;
   }
 
-  std::unique_ptr<domi::AippOpParams> aipp_params(new (std::nothrow) domi::AippOpParams());
-  GE_CHECK_NOTNULL(aipp_params);
-
-  ge::GeAttrValue::NAMED_ATTRS aipp_attr;
-  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(data_op, ATTR_NAME_AIPP, aipp_attr), GE_AIPP_NOT_EXIST,
+  domi::AippOpParams aipp_params;
+  GeAttrValue::NAMED_ATTRS aipp_attr;
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr), GE_AIPP_NOT_EXIST,
                          "Data node do not contain param aipp!");
-  GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, aipp_params.get()), "get aipp params failed");
-  GELOGI("GetAIPPInfo: node data: %s, type: %s, current index: %u, current node related input rank: %u",
-         data_op->GetName().c_str(), data_op->GetType().c_str(), index, aipp_params->related_input_rank());
+  GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, &aipp_params), "get aipp params failed");
+  GELOGI("Node data: %s, type: %s, current index: %u, current node related input rank: %u",
+         op_desc->GetName().c_str(), op_desc->GetType().c_str(), index, aipp_params.related_input_rank());
 
-  GE_CHK_STATUS_RET(AippUtils::ConvertAippParams2AippInfo(aipp_params.get(), aipp_info),
+  AippConfigInfo aipp_info;
+  GE_CHK_STATUS_RET(AippUtils::ConvertAippParams2AippInfo(&aipp_params, aipp_info),
                     "convert aipp params to aipp config info failed");
 
+  aipp_info_list_[index] = aipp_info;
   return SUCCESS;
 }
 
-Status DavinciModel::GetAippType(uint32_t index, InputAippType &type, size_t &aipp_index) {
-  GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
-  // Set default value
-  type = DATA_WITHOUT_AIPP;
-  aipp_index = 0xFFFFFFFF;  // default invalid value
-  OpDescPtr data_op = data_op_list_[index];
-  GE_CHECK_NOTNULL(data_op);
-  if (!data_op->HasAttr(ATTR_DATA_RELATED_AIPP_MODE)) {
+///
+/// @ingroup ge
+/// @brief Get AIPP input info
+/// @param [in] index
+/// @param [out] aipp_info
+/// @return execute result
+///
+Status DavinciModel::GetAippInfo(uint32_t index, AippConfigInfo &aipp_info) const {
+  const auto it = aipp_info_list_.find(index);
+  if (it == aipp_info_list_.end()) {
+    GELOGW("there is not AIPP related with index %u.", index);
+    return ACL_ERROR_GE_AIPP_NOT_EXIST;
+  }
+
+  aipp_info = it->second;
+  return SUCCESS;
+}
+
+Status DavinciModel::InitAippType(uint32_t index, const OpDescPtr &op_desc, const map<uint32_t, OpDescPtr> &data_list) {
+  if (!op_desc->HasAttr(ATTR_DATA_RELATED_AIPP_MODE)) {
     GELOGW("There is no aipp releated info with index %u.", index);
     return SUCCESS;
   }
-  std::string data_mode;
-  (void)AttrUtils::GetStr(data_op, ATTR_DATA_RELATED_AIPP_MODE, data_mode);
+
+  // Set default value
+  InputAippType aipp_type = DATA_WITHOUT_AIPP;
+  string data_mode;
+  (void)AttrUtils::GetStr(op_desc, ATTR_DATA_RELATED_AIPP_MODE, data_mode);
   if (data_mode == "static_aipp") {
-    type = DATA_WITH_STATIC_AIPP;
+    aipp_type = DATA_WITH_STATIC_AIPP;
   } else if (data_mode == "dynamic_aipp") {
-    type = DATA_WITH_DYNAMIC_AIPP;
+    aipp_type = DATA_WITH_DYNAMIC_AIPP;
   } else if (data_mode == "dynamic_aipp_conf") {
-    type = DYNAMIC_AIPP_NODE;
+    aipp_type = DYNAMIC_AIPP_NODE;
   } else {
     GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID,
            "The info of aipp releated info %s is invalid with index %u.", data_mode.c_str(), index);
     return ACL_ERROR_GE_AIPP_MODE_INVALID;
   }
 
-  if (type == DATA_WITH_DYNAMIC_AIPP) {
+  size_t aipp_index = 0xFFFFFFFF;  // default invalid value
+  if (aipp_type == DATA_WITH_DYNAMIC_AIPP) {
     string releated_name;
-    (void)AttrUtils::GetStr(data_op, ATTR_DATA_AIPP_DATA_NAME_MAP, releated_name);
-    for (size_t i = 0; i < data_op_list_.size(); ++i) {
-      GE_CHECK_NOTNULL(data_op_list_[i]);
-      if (data_op_list_[i]->GetName() == releated_name) {
-        GELOGI("Find aipp_data [%s] index %zu from index %u", releated_name.c_str(), i, index);
-        aipp_index = i;
+    (void)AttrUtils::GetStr(op_desc, ATTR_DATA_AIPP_DATA_NAME_MAP, releated_name);
+    for (const auto item : data_list) {
+      if (item.second->GetName() == releated_name) {
+        GELOGI("Find aipp_data [%s] index %zu from index %u", releated_name.c_str(), item.first, index);
+        aipp_index = item.first;
       }
     }
+
     if (aipp_index == 0xFFFFFFFF) {
-      GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "Can not find aipp data node from index %u", index);
-      return ACL_ERROR_GE_AIPP_NOT_EXIST;
+      GELOGW("Can not find aipp data node from index %u", index);
+      return SUCCESS;
     }
   }
+
+  aipp_type_list_[index] = { aipp_type, aipp_index };
+  return SUCCESS;
+}
+
+Status DavinciModel::GetAippType(uint32_t index, InputAippType &aipp_type, size_t &aipp_index) const {
+  GE_CHK_BOOL_RET_STATUS(index < input_addrs_list_.size(), PARAM_INVALID, "Index %u is invalid", index);
+  const auto it = aipp_type_list_.find(index);
+  if (it == aipp_type_list_.end()) {
+    GELOGW("There is no aipp releated info with index %u.", index);
+    aipp_type = DATA_WITHOUT_AIPP;
+    aipp_index = 0xFFFFFFFF;
+    return SUCCESS;
+  }
+
+  aipp_type = it->second.first;
+  aipp_index = it->second.second;
   return SUCCESS;
 }
 
@@ -1963,7 +1917,7 @@ void DavinciModel::SetDynamicSize(const std::vector<uint64_t> &batch_num, int32_
   dynamic_type_ = dynamic_type;
 }
 
-void DavinciModel::GetCurShape(std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
+void DavinciModel::GetCurShape(std::vector<int64_t> &batch_info, int32_t &dynamic_type) const {
   if (batch_size_.empty()) {
     GELOGD("User does not set dynamic size");
   }
@@ -1975,122 +1929,95 @@ void DavinciModel::GetCurShape(std::vector<int64_t> &batch_info, int32_t &dynami
   dynamic_type = dynamic_type_;
 }
 
-void DavinciModel::GetModelAttr(std::vector<std::string> &dynamic_output_shape_info) {
-  for (auto &op : output_op_list_) {
-    if (op->GetType() != NETOUTPUT) {
-      continue;
-    }
-    if (!AttrUtils::GetListStr(op, ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_shape_info)) {
-      GELOGD("Can not get dynamic output dims attr");
-    }
-  }
+void DavinciModel::GetModelAttr(vector<string> &out_shape_info) const {
+  out_shape_info.insert(out_shape_info.end(), dynamic_output_shape_info_.begin(), dynamic_output_shape_info_.end());
 }
 
-Status DavinciModel::GetInputOutputDescInfoForZeroCopy(vector<InputOutputDescInfo> &input_desc,
-                                                       vector<InputOutputDescInfo> &output_desc,
-                                                       std::vector<uint32_t> &input_formats,
-                                                       std::vector<uint32_t> &outputFormats) {
-  if ((data_op_list_.empty()) || (1 != data_op_list_[0]->GetInputsSize())) {
-    GELOGE(FAILED, "OP List Pointer is null or input_desc size is not 1!");
-    return FAILED;
-  }
-
-  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed");
-
-  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, outputFormats), "get ouput desc info failed");
-
-  GE_CHK_BOOL_RET_STATUS(output_desc.size() == output_memory_size_list_.size(), INTERNAL_ERROR,
-                         "output_desc size[%zu] not equal output_size_list_[%zu] size!", output_desc.size(),
-                         output_memory_size_list_.size());
-
-  /// For function zero copy,the momery should be aligned by 512 bytes.
-  /// And, because of the cce op limit, size should be lager than the real shape size. The memory should be padded by 32
-  /// bytes.
-  /// *size equals to ((tensorDesc->dataSize + 2 * 32 - 1) / 32) * 32;
-  for (size_t i = 0; i < output_memory_size_list_.size(); i++) {
-    output_desc[i].size = output_memory_size_list_[i];
-  }
-
-  return SUCCESS;
-}
-
-void DavinciModel::SetInputDimsInfo(const vector<int64_t> &model_input_dims, Format &format,
-                                    InputOutputDescInfo &input) {
+void DavinciModel::SetInputDimsInfo(const vector<int64_t> &input_dims, Format &format, ShapeDescription &shape_info) {
   uint32_t n, c, h, w;
   n = format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N;
   c = format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C;
   h = format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H;
   w = format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W;
 
-  if (model_input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
-    input.shape_info.num = model_input_dims[n];
-    input.shape_info.height = model_input_dims[h];
-    input.shape_info.width = model_input_dims[w];
-    input.shape_info.channel = model_input_dims[c];
+  if (input_dims.size() == static_cast<size_t>(NORMAL_TENSOR_SIZE)) {
+    shape_info.num = input_dims[n];
+    shape_info.height = input_dims[h];
+    shape_info.width = input_dims[w];
+    shape_info.channel = input_dims[c];
   }
-  for (size_t k = 0; k < model_input_dims.size(); ++k) {
-    input.shape_info.dims.push_back(model_input_dims[k]);
+  for (size_t k = 0; k < input_dims.size(); ++k) {
+    shape_info.dims.push_back(input_dims[k]);
   }
-  return;
 }
 
-void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format, InputOutputDescInfo &input) {
-  if (is_new_model_desc_ && op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
-    // When static aipp is set, need to get the model input dims which processed by aipp
-    vector<int64_t> model_input_dims;
-    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
-    SetInputDimsInfo(model_input_dims, format, input);
-    return;
-  }
+void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format,
+                                       ShapeDescription &shape_info, ShapeDescription &dims_info) {
   // judge if this data is linked dynamic aipp first, multiply batch has been considered
   if (op_desc->HasAttr(ATTR_DYNAMIC_AIPP_INPUT_DIMS)) {
     vector<int64_t> dynamic_aipp_input_dims;
     (void)AttrUtils::GetListInt(op_desc, ATTR_DYNAMIC_AIPP_INPUT_DIMS, dynamic_aipp_input_dims);
-    SetInputDimsInfo(dynamic_aipp_input_dims, format, input);
-    return;
+    SetInputDimsInfo(dynamic_aipp_input_dims, format, shape_info);
   } else {
     // judge if this data is multiply batch
     if (!op_desc->HasAttr(ATTR_MBATCH_ORIGIN_INPUT_DIMS)) {
       vector<int64_t> input_dims = op_desc->GetInputDescPtr(0)->GetShape().GetDims();
-      SetInputDimsInfo(input_dims, format, input);
-      return;
+      SetInputDimsInfo(input_dims, format, shape_info);
     } else {
       vector<int64_t> origin_input_dims;
       (void)AttrUtils::GetListInt(op_desc, ATTR_MBATCH_ORIGIN_INPUT_DIMS, origin_input_dims);
-      SetInputDimsInfo(origin_input_dims, format, input);
-      return;
+      SetInputDimsInfo(origin_input_dims, format, shape_info);
     }
+  }
+
+  if (op_desc->HasAttr(ATTR_NAME_INPUT_DIMS)) {
+    // When static aipp is set, need to get the model input dims which processed by aipp
+    vector<int64_t> model_input_dims;
+    (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_DIMS, model_input_dims);
+    SetInputDimsInfo(model_input_dims, format, dims_info);
+  } else {
+    dims_info = shape_info;
   }
 }
 
-Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, std::vector<uint32_t> &formats) {
-  for (size_t index = 0; index < data_op_list_.size(); ++index) {
+Status DavinciModel::InitInputDescInfo(const map<uint32_t, OpDescPtr> &data_by_index) {
+  for (const auto &item : data_by_index) {
+    const auto op_desc = item.second;
+    GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
+
     InputOutputDescInfo input;
-    GE_CHECK_NOTNULL(data_op_list_[index]);
-    GE_CHECK_NOTNULL(data_op_list_[index]->GetInputDescPtr(0));
+    ShapeDescription dims_info;
+    Format format = op_desc->GetInputDescPtr(0)->GetFormat();
+    CreateInputDimsInfo(op_desc, format, input.shape_info, dims_info);
 
-    Format format = data_op_list_[index]->GetInputDescPtr(0)->GetFormat();
-    CreateInputDimsInfo(data_op_list_[index], format, input);
-
-    input.data_type = data_op_list_[index]->GetInputDescPtr(0)->GetDataType();
-    input.name = data_op_list_[index]->GetName();
+    input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+    input.name = op_desc->GetName();
     int64_t input_size = 0;
-    GE_CHK_STATUS_RET(TensorUtils::GetSize(*data_op_list_[index]->GetInputDescPtr(0), input_size),
-                      "get input size failed.");
+    GE_CHK_STATUS_RET(TensorUtils::GetSize(*op_desc->GetInputDescPtr(0), input_size), "get input size failed.");
     input.size = input_size;
-    formats.push_back(format);
-    input_desc.push_back(input);
+    input_formats_.push_back(format);
+    input_descs_.push_back(input);
+
+    input.shape_info = dims_info;
+    input_descs_dims_.push_back(input);
   }
-  // cause GetInputDescInfo called not only once, set is_new_model_desc_ to false after calc the model input dims
-  is_new_model_desc_ = false;
   return SUCCESS;
 }
 
-void DavinciModel::CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputDescInfo &output,
+Status DavinciModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_descs,
+                                      vector<uint32_t> &input_formats, bool by_dims) const {
+  const vector<InputOutputDescInfo> &input_desc_info = by_dims ? input_descs_dims_ : input_descs_;
+  input_descs.insert(input_descs.end(), input_desc_info.begin(), input_desc_info.end());
+  input_formats.insert(input_formats.end(), input_formats_.begin(), input_formats_.end());
+
+  return SUCCESS;
+}
+
+void DavinciModel::CreateOutput(uint32_t index, const OpDescPtr &op_desc, InputOutputDescInfo &output,
                                 uint32_t &format_result) {
   /// netoutput input tensor desc
   GE_IF_BOOL_EXEC(op_desc->GetInputDescPtr(index) == nullptr, GELOGE(FAILED, "OpDesc GetInputDescPtr is nullptr");
-                  return );
+                  return);
   Format format = op_desc->GetInputDescPtr(index)->GetFormat();
   GeShape shape = op_desc->GetInputDescPtr(index)->GetShape();
   DataType data_type = op_desc->GetInputDescPtr(index)->GetDataType();
@@ -2139,10 +2066,9 @@ void DavinciModel::CreateOutput(uint32_t index, OpDescPtr &op_desc, InputOutputD
   output.data_type = op_desc->GetInputDescPtr(index)->GetDataType();
 }
 
-Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats) {
-  GELOGD("Output node size: %zu", output_op_list_.size());
-  for (size_t i = 0; i < output_op_list_.size(); i++) {
-    auto &op_desc = output_op_list_[i];
+Status DavinciModel::InitOutputDescInfo(const vector<OpDescPtr> &output_op_list) {
+  GELOGD("Output node size: %zu", output_op_list.size());
+  for (const auto &op_desc : output_op_list) {
     uint32_t out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
     for (uint32_t index = 0; index < out_size; index++) {
       string output_name;
@@ -2165,20 +2091,18 @@ Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc,
                       std::to_string(src_index[index]);
       }
       output.name = output_name;
-      output_desc.push_back(output);
-      formats.push_back(format_result);
+      output_descs_.push_back(output);
+      output_formats_.push_back(format_result);
     }
   }
   return SUCCESS;
 }
 
-ge::Format DavinciModel::GetFormat() {
-  if ((data_op_list_.empty()) || data_op_list_[0] == nullptr || data_op_list_[0]->GetInputDescPtr(0) == nullptr) {
-    GELOGW("OP List Pointer is null or input_desc size is not 1!");
-    return FORMAT_NCHW;
-  }
-
-  return data_op_list_[0]->GetInputDescPtr(0)->GetFormat();
+Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_descs,
+                                       vector<uint32_t> &output_formats) const {
+  output_descs.insert(output_descs.end(), output_descs_.begin(), output_descs_.end());
+  output_formats.insert(output_formats.end(), output_formats_.begin(), output_formats_.end());
+  return SUCCESS;
 }
 
 Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data) {
@@ -2186,8 +2110,9 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
   const std::vector<DataBuffer> &blobs = input_data.blobs;
   for (const auto &data : new_input_data_info_) {
     if (data.first >= blobs.size()) {
-      GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld", blobs.size(),
-             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first);
+      GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld, op_name(%s)", blobs.size(),
+             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first,
+             data.second.GetOpName().c_str());
       return FAILED;
     }
 
@@ -2198,13 +2123,14 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
     }
     uint64_t data_size = data.second.GetDataSize();
     GE_CHK_BOOL_RET_STATUS(data_size >= data_buf.length, PARAM_INVALID,
-                           "input data size(%lu) does not match model required size(%lu), ret failed.", data_buf.length,
-                           data_size);
+                           "input data size(%lu) does not match model required size(%lu), op_name(%s) ret failed.",
+                           data_buf.length, data_size, data.second.GetOpName().c_str());
     void *mem_addr = data.second.GetBasicAddr();
     void *data_buf_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(data_buf.data));
     uint64_t data_buf_length = data_buf.length;
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] input[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
-           runtime_param_.graph_id, data.first, mem_addr, data_buf_addr, data_size, data_buf_length);
+    GELOGI("CopyPlainData memcpy graph_%u type[F] input[%s] rank[%u] dst[%p] src[%p] mem_size[%lu] datasize[%lu]",
+           runtime_param_.graph_id, data.second.GetOpName().c_str(), data.first, mem_addr, data_buf_addr, data_size,
+           data_buf_length);
     GE_CHK_RT_RET(rtMemcpy(mem_addr, data_size, data_buf_addr, data_buf_length, kind));
   }
 
@@ -2215,217 +2141,191 @@ Status DavinciModel::SyncVarData() {
   GELOGI("Sync var data, model id:%u", model_id_);
   Status ret = SUCCESS;
 
-  OpDescPtr global_step = GetVariableOp(NODE_NAME_GLOBAL_STEP);
-  if (global_step != nullptr) {
-    auto v_output_size = ModelUtils::GetOutputSize(global_step);
-    auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param_, global_step);
-    if (v_output_size.empty() || v_output_addr.empty()) {
-      GELOGE(PARAM_INVALID, "global step op:%s not set output", global_step->GetName().c_str());
-      return PARAM_INVALID;
-    }
-    std::vector<uint64_t> v_step;
-    v_step.push_back(iterator_count_);
-    GE_CHK_RT_RET(rtMemcpy(v_output_addr[0], v_output_size[0], v_step.data(), v_step.size() * sizeof(uint64_t),
+  if (global_step_addr_ != nullptr && global_step_size_ != 0) {
+    const vector<uint64_t> v_step = { iterator_count_ };
+    GE_CHK_RT_RET(rtMemcpy(global_step_addr_, global_step_size_, v_step.data(), v_step.size() * sizeof(uint64_t),
                            RT_MEMCPY_HOST_TO_DEVICE));
   }
 
-  for (auto op_desc : variable_op_list_) {
-    ret =
-        VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+  for (const auto &item : broadcast_variable_) {
+    ret = VarManager::Instance(session_id_)->SyncVarData(runtime_param_.graph_id, item.first, item.second, mem_base_);
     GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret failed, model id:%u, op name:%s.", model_id_,
-                     op_desc->GetName().c_str());
+                     item.first.c_str());
   }
   return ret;
 }
 
-inline int64_t SumSize(const vector<int64_t> &size_list) {
-  int64_t sum_size = 0;
-  for (const int64_t &size : size_list) {
-    sum_size += size;
+Status DavinciModel::InitModelProfile() {
+  for (const auto &task : task_list_) {
+    GE_CHECK_NOTNULL(task);
+    const FusionOpInfo *fusion_op_info = task->GetFusionOpInfo();
+    // when type is RT_MODEL_TASK_KERNEL, ctx is not null
+    if ((fusion_op_info == nullptr) || fusion_op_info->original_op_names.empty()) {
+      continue;
+    }
+
+    GELOGI("task.id = %u, opNum = %zu", task->GetTaskID(), fusion_op_info->original_op_names.size());
+    op_id_map_.insert(std::make_pair(fusion_op_info->op_index, task->GetTaskID()));
   }
-  return sum_size;
+
+  std::set<uint32_t> task_id_set;
+  using CIT = std::multimap<uint32_t, uint32_t>::const_iterator;
+  using Range = std::pair<CIT, CIT>;
+  for (const auto &task : task_list_) {
+    GE_CHECK_NOTNULL(task);
+    const FusionOpInfo *fusion_op_info = task->GetFusionOpInfo();
+    if ((fusion_op_info == nullptr) || fusion_op_info->original_op_names.empty()) {
+      continue;
+    }
+
+    if (task_id_set.count(task->GetTaskID()) > 0) {
+      continue;
+    }
+
+    const auto &op_desc = GetOpByIndex(fusion_op_info->op_index);
+    GE_CHK_BOOL_EXEC(op_desc != nullptr, return FAILED, "index: %u out of range", fusion_op_info->op_index);
+
+    ProfileInfo profile;
+    profile.fusion_info = *fusion_op_info;
+    Range range = op_id_map_.equal_range(fusion_op_info->op_index);
+    for (CIT range_idx = range.first; range_idx != range.second; ++range_idx) {
+      profile.task_count++;
+      task_id_set.insert(range_idx->second);
+    }
+
+    // memory info
+    TaskMemInfo &mem_info = profile.memory_info;
+    const auto input_size = ModelUtils::GetInputSize(op_desc);
+    const auto output_size = ModelUtils::GetOutputSize(op_desc);
+    const auto workspace_size = ModelUtils::GetWorkspaceSize(op_desc);
+    const auto weight_size = ModelUtils::GetWeightSize(op_desc);
+    mem_info.input_size = std::accumulate(input_size.begin(), input_size.end(), 0);
+    mem_info.output_size = std::accumulate(output_size.begin(), output_size.end(), 0);
+    mem_info.workspace_size = std::accumulate(workspace_size.begin(), workspace_size.end(), 0);
+    mem_info.weight_size = std::accumulate(weight_size.begin(), weight_size.end(), 0);
+    mem_info.total_size = mem_info.weight_size + mem_info.input_size + mem_info.output_size + mem_info.workspace_size;
+
+    profile_list_.emplace_back(profile);
+  }
+
+  GELOGI("fusion task size: %zu, profile info size: %zu", op_id_map_.size(), profile_list_.size());
+  return SUCCESS;
 }
 
 Status DavinciModel::SinkModelProfile() {
   // profiling plugin must be registered
-  Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
-  GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return SUCCESS);
-
-  Msprof::Engine::ReporterData reporter_data{};
+  auto &prof_mgr = ProfilingManager::Instance();
+  ReporterData reporter_data{};
   // report model data tag name
-  std::string tag_name;
-  tag_name.append("model_load_info_").append(std::to_string(this->Id()));
+  std::string tag_name("model_load_info_" + std::to_string(this->Id()));
   GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
                    return FAILED, "Sink model tag memcpy error.");
 
   // Model Header
-  string name;
-  if (!om_name_.empty()) {
-    name = om_name_;
-  } else {
-    name = name_;
-  }
+  std::string name = om_name_.empty() ? name_ : om_name_;
   size_t name_len = name.size();
   reporter_data.deviceId = device_id_;
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   reporter_data.data = (unsigned char *)name.c_str();
   reporter_data.dataLen = name.size();
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   uint32_t model_id = this->Id();
   reporter_data.data = (unsigned char *)&model_id;
   reporter_data.dataLen = sizeof(uint32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   // Load Start/End Time
   int64_t start_time = this->GetLoadBeginTime();
   reporter_data.data = (unsigned char *)&start_time;
   reporter_data.dataLen = sizeof(int64_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   int64_t end_time = this->GetLoadEndTime();
   reporter_data.data = (unsigned char *)&end_time;
   reporter_data.dataLen = sizeof(int64_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
-
-  int32_t task_num = task_list_.size();
-  std::multimap<uint32_t, uint32_t> op_id_map;
-  std::set<uint32_t> task_id_set;
-  for (int32_t i = 0; i < task_num; i++) {
-    auto task = task_list_[i];
-    GE_CHECK_NOTNULL(task);
-    auto fusion_op_info = task->GetFusionOpInfo();
-    // when type is RT_MODEL_TASK_KERNEL, ctx is not null
-    if (fusion_op_info != nullptr) {
-      uint32_t op_num = fusion_op_info->original_op_names.size();
-      uint32_t task_id = task->GetTaskID();
-      if (op_num > 0) {
-        op_id_map.insert(std::make_pair(fusion_op_info->op_index, task_id));
-      }
-    }
-  }
-
-  struct memoryInfo {
-    int64_t input_size;
-    int64_t output_size;
-    int64_t weight_size;
-    int64_t workspace_size;
-    int64_t total_size;
-
-    memoryInfo() : input_size(0), output_size(0), weight_size(0), workspace_size(0), total_size(0) {}
-  };
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   using CIT = std::multimap<uint32_t, uint32_t>::const_iterator;
   using Range = std::pair<CIT, CIT>;
-  for (int32_t i = 0; i < task_num; i++) {
-    auto task = task_list_[i];
-    GE_CHECK_NOTNULL(task);
-    auto fusion_op_info = task->GetFusionOpInfo();
-    if (fusion_op_info != nullptr && fusion_op_info->original_op_names.size() > 0) {
-      uint32_t task_id = task->GetTaskID();
-      uint32_t op_num = fusion_op_info->original_op_names.size();
-      uint32_t task_count = 0;
-      if (task_id_set.count(task_id) != 0) {
-        continue;
-      }
+  for (const ProfileInfo &profile : profile_list_) {
+    // op name after fusion
+    string fusion_op_name = profile.fusion_info.op_name;
+    int32_t fusion_op_name_len = fusion_op_name.size() == 0 ? 1 : fusion_op_name.size();
+    reporter_data.data = (unsigned char *)&fusion_op_name_len;
+    reporter_data.dataLen = sizeof(int32_t);
+    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                     "Reporter data fail, model id:%u.", this->Id());
 
-      uint32_t op_id = fusion_op_info->op_index;
-      Range range = op_id_map.equal_range(op_id);
-      for (CIT range_idx = range.first; range_idx != range.second; ++range_idx) {
-        task_count++;
-        uint32_t task_id = range_idx->second;
-        task_id_set.insert(task_id);
-      }
+    reporter_data.data = (unsigned char *)fusion_op_name.c_str();
+    reporter_data.dataLen = fusion_op_name_len;
+    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                     "Reporter data fail, model id:%u.", this->Id());
 
-      // op name after fusion
-      string fusion_op_name = fusion_op_info->op_name;
-      int32_t fusion_op_name_len = fusion_op_name.size() == 0 ? 1 : fusion_op_name.size();
-      reporter_data.data = (unsigned char *)&fusion_op_name_len;
+    // original op name before fusion
+    uint32_t op_num = profile.fusion_info.original_op_names.size();
+    reporter_data.data = (unsigned char *)&op_num;
+    reporter_data.dataLen = sizeof(int32_t);
+    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                     "Reporter data fail, model id:%u.", this->Id());
+
+    for (uint32_t k = 0; k < op_num; k++) {
+      std::string op_name = profile.fusion_info.original_op_names[k];
+      int32_t op_name_len = op_name.size() == 0 ? 1 : op_name.size();
+      reporter_data.data = (unsigned char *)&op_name_len;
       reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+      reporter_data.data = (unsigned char *)op_name.c_str();
+      reporter_data.dataLen = op_name_len;
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
+    }
 
-      reporter_data.data = (unsigned char *)fusion_op_name.c_str();
-      reporter_data.dataLen = fusion_op_name_len;
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+    // stream id info
+    uint32_t streamId = profile.fusion_info.stream_id;
+    reporter_data.data = (unsigned char *)&streamId;
+    reporter_data.dataLen = sizeof(int32_t);
+    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                     "Reporter data fail, model id:%u.", this->Id());
 
-      // original op name before fusion
-      reporter_data.data = (unsigned char *)&op_num;
-      reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
+    // memory info
+    reporter_data.data = (unsigned char *)&profile.memory_info;
+    reporter_data.dataLen = sizeof(profile.memory_info);
+    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                     "Reporter data fail, model id:%u.", this->Id());
 
-      for (uint32_t k = 0; k < op_num; k++) {
-        std::string op_name = fusion_op_info->original_op_names[k];
-        int32_t op_name_len = op_name.size() == 0 ? 1 : op_name.size();
-        reporter_data.data = (unsigned char *)&op_name_len;
-        reporter_data.dataLen = sizeof(int32_t);
-        GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                         this->Id());
-        reporter_data.data = (unsigned char *)op_name.c_str();
-        reporter_data.dataLen = op_name_len;
-        GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                         this->Id());
-      }
+    // task info
+    reporter_data.data = (unsigned char *)&profile.task_count;
+    reporter_data.dataLen = sizeof(uint32_t);
+    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                     "Reporter data fail, model id:%u.", this->Id());
 
-      // stream id info
-      uint32_t streamId = task->GetStreamId();
-      reporter_data.data = (unsigned char *)&streamId;
-      reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
-
-      // memory info
-      struct memoryInfo memory_info;
-      uint32_t op_index = fusion_op_info->op_index;
-      auto iter = op_list_.find(op_index);
-      GE_CHK_BOOL_EXEC(iter != op_list_.end(), return FAILED, "index is out of range, index: %u", op_index);
-      auto op_desc = iter->second;
-      memory_info.input_size = SumSize(ModelUtils::GetInputSize(op_desc));
-      memory_info.output_size = SumSize(ModelUtils::GetOutputSize(op_desc));
-      memory_info.workspace_size = SumSize(ModelUtils::GetWorkspaceSize(op_desc));
-      memory_info.weight_size = SumSize(ModelUtils::GetWeightSize(op_desc));
-      memory_info.total_size =
-          memory_info.weight_size + memory_info.input_size + memory_info.output_size + memory_info.workspace_size;
-      reporter_data.data = (unsigned char *)&memory_info;
-      reporter_data.dataLen = sizeof(struct memoryInfo);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
-
-      // task info
-      reporter_data.data = (unsigned char *)&task_count;
+    Range task_range = op_id_map_.equal_range(profile.fusion_info.op_index);
+    for (CIT idx = task_range.first; idx != task_range.second; ++idx) {
+      uint32_t task_id = idx->second;
+      reporter_data.data = (unsigned char *)&task_id;
       reporter_data.dataLen = sizeof(uint32_t);
-      GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                       this->Id());
-
-      Range task_range = op_id_map.equal_range(op_id);
-      for (CIT idx = task_range.first; idx != task_range.second; ++idx) {
-        uint32_t task_id = idx->second;
-        reporter_data.data = (unsigned char *)&task_id;
-        reporter_data.dataLen = sizeof(uint32_t);
-        GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                         this->Id());
-      }
+      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                       "Reporter data fail, model id:%u.", this->Id());
     }
   }
+
   return SUCCESS;
 }
 
 Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   // profiling plugin must be registered
-  Msprof::Engine::Reporter *reporter = PluginImpl::GetPluginReporter();
-  GE_IF_BOOL_EXEC(reporter == nullptr, GELOGI("Profiling report is nullptr!"); return SUCCESS);
-
-  Msprof::Engine::ReporterData reporter_data{};
+  auto &prof_mgr = ProfilingManager::Instance();
+  ReporterData reporter_data{};
   // report model data tag name
   std::string tag_name;
   tag_name.append("model_time_info_")
@@ -2448,33 +2348,33 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   size_t name_len = name.size();
   reporter_data.data = (unsigned char *)&name_len;
   reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   reporter_data.data = (unsigned char *)name.c_str();
   reporter_data.dataLen = name.size();
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED, "Reporter data fail, model id:%u.",
-                   this->Id());
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
+                   "Reporter data fail, model id:%u.", this->Id());
 
   // request id
   uint64_t request_id = current_data.request_id;
   reporter_data.data = (unsigned char *)&request_id;
   reporter_data.dataLen = sizeof(uint32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED,
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
 
   // thread id
   int32_t thread_id = GetDataInputTid();
   reporter_data.data = (unsigned char *)&thread_id;
   reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED,
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
 
   // time info
   time_info_.modelId = this->Id();
   reporter_data.data = (unsigned char *)&time_info_;
   reporter_data.dataLen = sizeof(struct timeInfo);
-  GE_CHK_BOOL_EXEC(reporter->Report(&reporter_data) == SUCCESS, return FAILED,
+  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                    "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
 
   return SUCCESS;
@@ -2530,7 +2430,7 @@ void DavinciModel::SetProfileTime(ModelProcStage stage, int64_t endTime) {
 /// @author
 ///
 Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind) {
-  if (output_op_list_.empty()) {
+  if (output_addrs_list_.empty()) {
     Status ret = SyncVarData();
     return ret;
   }
@@ -2581,7 +2481,7 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
     uint64_t buffer_length = buffer.length;
     void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data));
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%lu] datasize[%lu]",
+    GELOGI("CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%lu] datasize[%lu]",
            runtime_param_.graph_id, output.first, output.second.GetBasicAddr(), data_size, buffer_length);
     GE_CHK_RT_RET(rtMemcpy(buffer_addr, buffer_length, output.second.GetBasicAddr(), data_size, kind));
     idx++;
@@ -2589,20 +2489,12 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
   return SUCCESS;
 }
 
-Status DavinciModel::GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data_index, OutputData *output_data,
-                                         std::vector<ge::OutputTensorInfo> &outputs) {
-  GE_CHECK_NOTNULL(op_desc);
-  GE_CHECK_NOTNULL(output_data);
-  if (output_data->blobs.size() > data_index) {
-    GELOGI("No need to generate output tensor info, model id:%u", model_id_);
-    return SUCCESS;
-  }
-  std::vector<int64_t> out_buffer_size_vec;
-  std::vector<std::vector<int64_t>> shape_info_vec;
+Status DavinciModel::InitOutputTensorInfo(const OpDescPtr &op_desc) {
   size_t input_num = op_desc->GetInputsSize();
   if (is_getnext_sink_dynamic_) {
     input_num = input_num - kGetDynamicDimsCount;
   }
+
   for (size_t i = 0; i < input_num; ++i) {
     int64_t size = 0;
     auto input_desc = op_desc->GetInputDescPtr(i);
@@ -2611,36 +2503,59 @@ Status DavinciModel::GenOutputTensorInfo(const OpDescPtr &op_desc, uint32_t data
     GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
                     GELOGE(ret, "Get size from TensorDesc failed, op:%s, input id:%zu", op_desc->GetName().c_str(), i);
                     return ret);
-    std::vector<int64_t> output_shape = input_desc->GetShape().GetDims();
+    const GeShape &shape = input_desc->GetShape();
+    GELOGI("Output size is %ld, output shape is %s.", size, formats::JoinToString(shape.GetDims()).c_str());
+    output_buffer_size_.emplace_back(size);
+    output_shape_info_.emplace_back(shape);
+  }
+
+  return SUCCESS;
+}
+
+Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputTensorInfo> &outputs) {
+  GE_CHECK_NOTNULL(output_data);
+  if (!output_data->blobs.empty()) {
+    GELOGI("No need to generate output tensor info, model id:%u", model_id_);
+    return SUCCESS;
+  }
+
+  vector<int64_t> output_buffer_size;
+  vector<vector<int64_t>> output_shape_info;
+  size_t output_num = output_buffer_size_.size();
+  for (size_t i = 0; i < output_num; ++i) {
+    int64_t output_size = output_buffer_size_[i];
+    vector<int64_t> output_shape = output_shape_info_[i].GetDims();
     if (is_online_infer_dynamic_) {
       if (merge_nodes_gear_and_real_out_size_info_.find(i) != merge_nodes_gear_and_real_out_size_info_.end()) {
         auto gear_and_real_out_size_info = merge_nodes_gear_and_real_out_size_info_[i];
-        size = gear_and_real_out_size_info[cur_dynamic_dims_];
+        output_size = gear_and_real_out_size_info[cur_dynamic_dims_];
         auto gear_and_real_out_shape_info = merge_nodes_gear_and_real_out_shape_info_[i];
         output_shape = gear_and_real_out_shape_info[cur_dynamic_dims_];
         is_dynamic_ = true;
       }
     }
-    GELOGI("Output size is %ld, output shape is %s.", size, formats::JoinToString(output_shape).c_str());
-    out_buffer_size_vec.push_back(size);
-    shape_info_vec.push_back(output_shape);
+    GELOGI("Output size is %ld, output shape is %s.", output_size, formats::JoinToString(output_shape).c_str());
+    output_buffer_size.push_back(output_size);
+    output_shape_info.push_back(output_shape);
   }
-  GELOGI("Output blobs size:%zu, data index:%u, model id:%u", out_buffer_size_vec.size(), data_index, model_id_);
-  for (size_t i = 0; i < out_buffer_size_vec.size(); ++i) {
-    std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[out_buffer_size_vec[i]]);
+
+  GELOGI("Output blobs size:%zu, model id:%u", output_buffer_size_.size(), model_id_);
+  for (size_t i = 0; i < output_buffer_size.size(); ++i) {
+    std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[output_buffer_size[i]]);
     if (data_buf == nullptr) {
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Malloc buffer failed.");
       return GE_GRAPH_MALLOC_FAILED;
     }
-    output_data->blobs.push_back({data_buf.get(), static_cast<uint64_t>(out_buffer_size_vec[i]), false});
-    ge::OutputTensorInfo output;
-    output.dims = shape_info_vec[i];
+    output_data->blobs.push_back({data_buf.get(), static_cast<uint64_t>(output_buffer_size[i]), false});
+    OutputTensorInfo output;
+    output.dims = output_shape_info[i];
     output.data = std::move(data_buf);
-    output.length = out_buffer_size_vec[i];
+    output.length = output_buffer_size[i];
     outputs.emplace_back(std::move(output));
     GELOGD("Output index:%zu, output dims is %s, data length:%lu.", i,
            formats::JoinToString(output.dims).c_str(), output.length);
   }
+
   return SUCCESS;
 }
 
@@ -2675,35 +2590,28 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
     return INTERNAL_ERROR;
   }
 
-  if (output_op_list_.empty()) {
+  if (output_addrs_list_.empty()) {
     GELOGW("Output tensor list is empty, model id: %u", model_id_);
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, INTERNAL_ERROR, outputs), "OnComputeDone failed.");
     return INTERNAL_ERROR;
   }
 
   GE_CHECK_NOTNULL(output_data);
-  // index of data in output_data
-  uint32_t data_index = 0;
-
   output_data->index = data_id;
   output_data->model_id = model_id_;
 
-  is_getnext_sink_dynamic_ = false;
-  // copy output data from op to designated position
-  for (auto &op_desc : output_op_list_) {
-    if (IsGetNextSinkDynamic(op_desc)) {
-      GELOGD("Reinit cur dynamic dims when getnext sink dynamic.");
-      is_getnext_sink_dynamic_ = true;
-      cur_dynamic_dims_.clear();
-      cur_dynamic_dims_.resize(shape_of_cur_dynamic_dims_);
-      GE_CHK_RT_RET(rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int64_t),
-                                netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST));
-    }
-    GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims_).c_str());
-    if (GenOutputTensorInfo(op_desc, data_index, output_data, outputs) != SUCCESS) {
-      return INTERNAL_ERROR;
-    }
-    data_index += op_desc->GetInputsSize();
+  if (is_getnext_sink_dynamic_) {
+    GELOGD("Reinit cur dynamic dims when getnext sink dynamic.");
+    cur_dynamic_dims_.clear();
+    cur_dynamic_dims_.resize(shape_of_cur_dynamic_dims_);
+    auto ret = rtMemcpy(cur_dynamic_dims_.data(), shape_of_cur_dynamic_dims_ * sizeof(int32_t),
+                        netoutput_last_input_addr_, netoutput_last_input_size_, RT_MEMCPY_DEVICE_TO_HOST);
+    GE_CHK_RT_RET(ret);
+  }
+
+  GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims_).c_str());
+  if (GenOutputTensorInfo(output_data, outputs) != SUCCESS) {
+    return INTERNAL_ERROR;
   }
 
   if (CopyOutputData(data_id, *output_data, RT_MEMCPY_DEVICE_TO_HOST) != SUCCESS) {
@@ -2727,11 +2635,11 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
 ///
 Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
   GELOGI("ReturnNoOutput model id:%u", model_id_);
-  for (auto op_desc : variable_op_list_) {
+  for (const auto item : broadcast_variable_) {
     Status ret = VarManager::Instance(session_id_)
-                     ->SyncBroadCastData2Var(runtime_param_.graph_id, op_desc->GetName(), op_desc, mem_base_);
+                     ->SyncBroadCastData2Var(runtime_param_.graph_id, item.first, item.second, mem_base_);
     GE_CHK_BOOL_EXEC(ret == SUCCESS, break, "sync var data ret failed, model id:%u, op name:%s.", model_id_,
-                     op_desc->GetName().c_str());
+                     item.first.c_str());
   }
 
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null!");
@@ -2797,88 +2705,54 @@ void *DavinciModel::Run(DavinciModel *model) {
       GE_IF_BOOL_EXEC(current_data.blobs.empty(), break);
       auto shape_data_buffer_data = current_data.blobs.back().data;
       auto shape_data_buffer_length = current_data.blobs.back().length;
-      model->cur_dynamic_dims_.assign(reinterpret_cast<int64_t *>(shape_data_buffer_data),
-                                      reinterpret_cast<int64_t *>(shape_data_buffer_data) +
-                                      shape_data_buffer_length / sizeof(int64_t));
+      model->cur_dynamic_dims_.assign(reinterpret_cast<int32_t *>(shape_data_buffer_data),
+                                      reinterpret_cast<int32_t *>(shape_data_buffer_data) +
+                                      shape_data_buffer_length / sizeof(int32_t));
       GELOGD("Data: cur dynamic dims is %s", formats::JoinToString(model->cur_dynamic_dims_).c_str());
-      delete[] (int64_t *)current_data.blobs.back().data;
+      delete[] reinterpret_cast<int32_t *>(current_data.blobs.back().data);
       current_data.blobs.pop_back();
     }
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_PRE_PROC_END));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_START));
-    if (ProfilingManager::Instance().ProfilingOpTraceOn()) {
-      GELOGI("GetOpTraceIterNum:%d", ProfilingManager::Instance().GetOpTraceIterNum());
-      for (int32_t i = 0; i < ProfilingManager::Instance().GetOpTraceIterNum(); i++) {
-        if (!ProfilingManager::Instance().ProfilingLoadFlag()) {
-          vector<int32_t> prof_device_id_vec = ProfilingManager::Instance().GetProfilingDeviceId();
-          for (size_t j = 0; j < prof_device_id_vec.size(); ++j) {
-            // just profiling, no need to check value
-            (void)ProfilingManager::Instance().StartProfiling(i, prof_device_id_vec[j]);
-          }
-        }
+    GE_TIMESTAMP_START(rtModelExecute);
+    GELOGI("rtModelExecute start.");
+    rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
+                    (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
+                    CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
+                    continue);
+    GELOGI("rtModelExecute end");
+    GE_IF_BOOL_EXEC(model->is_first_execute_, GE_TIMESTAMP_EVENT_END(rtModelExecute, "GraphExcute::rtModelExecute"));
 
-        GELOGI("rtModelExecute start.");
-        rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
-        GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
-                        (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-                        continue);  // [No need to check value]
-        GELOGI("rtModelExecute end");
-
-        GELOGI("rtStreamSynchronize start.");
-        rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-        if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
-          GELOGI("The model with multiple datasets aborts normally.");
-        } else {
-          GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
-                          (void)model->ReturnResult(current_data.index, false, seq_end_flag, data_wrapper->GetOutput());
-                          continue);  // [No need to check value]
-        }
-
-        GELOGI("rtStreamSynchronize end.");
-        (void)ProfilingManager::Instance().StopProfiling();  // just profiling, no need to check value
-      }
+    GE_TIMESTAMP_START(rtStreamSynchronize);
+    GELOGI("rtStreamSynchronize start.");
+    rt_ret = rtStreamSynchronize(model->rt_model_stream_);
+    if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
+      seq_end_flag = true;
+    }
+    if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
+      GELOGI("The model with multiple datasets aborts normally.");
     } else {
-      GE_TIMESTAMP_START(rtModelExecute);
-      GELOGI("rtModelExecute start.");
-      rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
-                      (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-                      CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
-                      continue);
-      GELOGI("rtModelExecute end");
-      GE_IF_BOOL_EXEC(model->is_first_execute_, GE_TIMESTAMP_EVENT_END(rtModelExecute, "GraphExcute::rtModelExecute"));
-
-      GE_TIMESTAMP_START(rtStreamSynchronize);
-      GELOGI("rtStreamSynchronize start.");
-      rt_ret = rtStreamSynchronize(model->rt_model_stream_);
-      if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
-        seq_end_flag = true;
-      }
-      if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
-        GELOGI("The model with multiple datasets aborts normally.");
-      } else {
-        GE_IF_BOOL_EXEC(
-          rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
-          (void)model->ReturnResult(current_data.index, false, seq_end_flag,
-                                    data_wrapper->GetOutput());  // [No need to check value]
-          CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
-          continue);
-      }
-
-      GELOGI("rtStreamSynchronize end.");
-      GE_IF_BOOL_EXEC(model->is_first_execute_,
-                      GE_TIMESTAMP_EVENT_END(rtStreamSynchronize, "GraphExcute::Wait for rtStreamSynchronize"));
-      GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_END));
+      GE_IF_BOOL_EXEC(
+        rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
+        (void)model->ReturnResult(current_data.index, false, seq_end_flag,
+                                  data_wrapper->GetOutput());  // [No need to check value]
+        CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
+        continue);
     }
 
+    GELOGI("rtStreamSynchronize end.");
+    GE_IF_BOOL_EXEC(model->is_first_execute_,
+                    GE_TIMESTAMP_EVENT_END(rtStreamSynchronize, "GraphExcute::Wait for rtStreamSynchronize"));
+    GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), model->SetProfileTime(MODEL_INFER_END));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(),
                     model->SetProfileTime(MODEL_AFTER_PROC_START));
     GE_TIMESTAMP_START(ReturnResult3);
     // copy output data from device to host
-    GE_IF_BOOL_EXEC(!model->output_op_list_.empty(),
+    GE_IF_BOOL_EXEC(!model->output_addrs_list_.empty(),
                     (void)model->ReturnResult(current_data.index, rslt_flg, false, data_wrapper->GetOutput()))
     // copy output data from device to host for variable graph
-    GE_IF_BOOL_EXEC(model->output_op_list_.empty(), (void)model->ReturnNoOutput(current_data.index));
+    GE_IF_BOOL_EXEC(model->output_addrs_list_.empty(), (void)model->ReturnNoOutput(current_data.index));
     GE_IF_BOOL_EXEC(model->is_first_execute_,
                     GE_TIMESTAMP_EVENT_END(ReturnResult3, "GraphExcute::CopyDataFromDeviceToHost"));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(),
@@ -2998,49 +2872,83 @@ void DavinciModel::UnbindTaskSinkStream() {
   }
 }
 
+void *DavinciModel::GetRunAddress(void *addr) const {
+  if (fixed_mem_base_ == reinterpret_cast<uintptr_t>(mem_base_)) {
+    return addr;
+  }
+
+  uintptr_t ptr = reinterpret_cast<uintptr_t>(addr);
+  if ((fixed_mem_base_ <= ptr) && (ptr < fixed_mem_base_ + runtime_param_.mem_size)) {
+    return mem_base_ + (ptr - fixed_mem_base_);
+  } else {
+    return addr;
+  }
+}
+
 Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs) {
-  GELOGI("DavinciModel::CreateKnownZeroCopyMap in.");
-  if (inputs.size() > data_op_list_.size()) {
-    GELOGE(FAILED, "input data addr %zu should less than input op number %zu.", inputs.size(), data_op_list_.size());
+  GELOGI("in, inputs size: %zu, input addr size: %zu, outputs size: %zu, output addr size: %zu",
+         inputs.size(), input_addrs_list_.size(), outputs.size(), output_addrs_list_.size());
+  if (inputs.size() > input_addrs_list_.size()) {
+    GELOGE(FAILED, "input data addr %zu should less than input op num %zu.", inputs.size(), input_addrs_list_.size());
     return FAILED;
   }
   // remove zero copy addr in last iteration
-  knonw_input_data_info_.clear();
-  knonw_output_data_info_.clear();
+  known_input_data_info_.clear();
+  known_output_data_info_.clear();
   for (size_t i = 0; i < inputs.size(); ++i) {
-    const vector<void *> addr_list = ModelUtils::GetOutputDataAddrs(runtime_param_, data_op_list_[i]);
-    knonw_input_data_info_[addr_list[kDataIndex]] = inputs[i];
-    GELOGI("DavinciModel::CreateKnownZeroCopyMap input %zu,v addr %p,p addr %p .", i, addr_list[kDataIndex], inputs[i]);
+    const vector<void *> &addr_list = input_addrs_list_[i];
+    void *addr = GetRunAddress(addr_list[kDataIndex]);
+    known_input_data_info_[addr] = inputs[i];
+    GELOGI("input %zu, v addr %p, r addr %p, p addr %p", i, addr_list[kDataIndex], addr, inputs[i]);
   }
-  if (output_op_list_.size() < kOutputNum) {
-    GELOGW("output op num in graph is %zu.", output_op_list_.size());
+
+  if (output_addrs_list_.empty()) {
+    GELOGW("output op num in graph is %zu", output_addrs_list_.size());
     return SUCCESS;
   }
-  const vector<void *> addr_list = ModelUtils::GetInputDataAddrs(runtime_param_, output_op_list_[kDataIndex]);
+  const vector<void *> &addr_list = output_addrs_list_.front();
   for (size_t i = 0; i < addr_list.size() && i < outputs.size(); ++i) {
-    knonw_output_data_info_[addr_list[i]] = outputs[i];
-    GELOGI("DavinciModel::CreateKnownZeroCopyMap output %zu,v addr %p,p addr %p .", i, addr_list[i], outputs[i]);
+    void *addr = GetRunAddress(addr_list[i]);
+    known_output_data_info_[addr] = outputs[i];
+    GELOGI("output %zu, v addr %p, r addr %p, p addr %p", i, addr_list[i], addr, outputs[i]);
   }
-  GELOGI("DavinciModel::CreateKnownZeroCopyMap success.");
+
+  GELOGI("success, known input data info size: %zu, known output data info size: %zu",
+         known_input_data_info_.size(), known_output_data_info_.size());
   return SUCCESS;
 }
 
-Status DavinciModel::UpdateKnownZeroCopyAddr() {
-  for (size_t i = 0; i < total_io_addrs_.size(); ++i) {
-    auto it_in = knonw_input_data_info_.find(total_io_addrs_[i]);
-    if (it_in != knonw_input_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr input %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
-             knonw_input_data_info_.at(total_io_addrs_[i]));
-      total_io_addrs_[i] = knonw_input_data_info_.at(total_io_addrs_[i]);
-    }
-    auto it_out = knonw_output_data_info_.find(total_io_addrs_[i]);
-    if (it_out != knonw_output_data_info_.end()) {
-      GELOGI("DavinciModel::UpdateKnownZeroCopyAddr output %zu,v addr %p,p addr %p .", i, total_io_addrs_[i],
-             knonw_output_data_info_.at(total_io_addrs_[i]));
-      total_io_addrs_[i] = knonw_output_data_info_.at(total_io_addrs_[i]);
+void DavinciModel::SetTotalIOAddrs(const vector<void *> &io_addrs) {
+  if (fixed_mem_base_ == reinterpret_cast<uintptr_t>(mem_base_)) {
+    total_io_addrs_.insert(total_io_addrs_.end(), io_addrs.begin(), io_addrs.end());
+    return;
+  }
+
+  for (size_t i = 0; i < io_addrs.size(); ++i) {
+    total_io_addrs_.emplace_back(GetRunAddress(io_addrs[i]));
+  }
+}
+
+Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, bool update_args) {
+  if (fixed_mem_base_ != reinterpret_cast<uintptr_t>(mem_base_) && update_args) {
+    for (size_t i = 0; i < total_io_addrs.size(); ++i) {
+      total_io_addrs[i] = GetRunAddress(total_io_addrs[i]);
     }
   }
-  GELOGI("DavinciModel::UpdateKnownZeroCopyAddr success.");
+
+  for (size_t i = 0; i < total_io_addrs.size(); ++i) {
+    auto it_in = known_input_data_info_.find(total_io_addrs[i]);
+    if (it_in != known_input_data_info_.end()) {
+      GELOGI("input %zu, v addr %p, p addr %p", i, total_io_addrs[i], known_input_data_info_.at(total_io_addrs[i]));
+      total_io_addrs[i] = known_input_data_info_.at(total_io_addrs[i]);
+    }
+    auto it_out = known_output_data_info_.find(total_io_addrs[i]);
+    if (it_out != known_output_data_info_.end()) {
+      GELOGI("output %zu, v addr %p, p addr %p", i, total_io_addrs[i], known_output_data_info_.at(total_io_addrs[i]));
+      total_io_addrs[i] = known_output_data_info_.at(total_io_addrs[i]);
+    }
+  }
+  GELOGI("success, total io addrs size: %zu", total_io_addrs.size());
   return SUCCESS;
 }
 
@@ -3066,7 +2974,7 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
   } else {
     total_io_addrs_ = orig_total_io_addrs_;
   }
-  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
+  GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(total_io_addrs_, false), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
 
   if (total_args_size_ == 0) {
     GELOGW("DavinciModel::UpdateKnownNodeArgs device args %p, dst size %u, pass rtMemcpy.", args_, total_args_size_);
@@ -3133,7 +3041,14 @@ Status DavinciModel::MallocKnownArgs() {
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-
+  // malloc dynamic and static hybrid memory
+  if (total_hybrid_args_size_ != 0) {
+    rt_ret = rtMalloc(&hybrid_addrs_, total_hybrid_args_size_, RT_MEMORY_HBM);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+  }
   // malloc fixed addr memory, eg: rts op
   if (total_fixed_addr_size_ != 0) {
     GELOGI("Begin to allocate fixed addr.");
@@ -3170,21 +3085,27 @@ Status DavinciModel::DistributeTask() {
 
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
   for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
+    auto &task_def = model_task_def->task(task_index);
     auto &task = task_list_.at(task_index);
     GE_CHK_STATUS_RET(task->Distribute(), "Task[%zu] distribute fail", task_index);
     // for data dump
-    auto op_index = std::max(model_task_def->task(task_index).kernel().context().op_index(),
-                             model_task_def->task(task_index).kernel_ex().op_index());
+    auto op_index = std::max(task_def.kernel().context().op_index(),
+                             task_def.kernel_ex().op_index());
     OpDescPtr op = GetOpByIndex(op_index);
     GE_CHECK_NOTNULL(op);
 
-    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
       bool call_dump = GetDumpProperties().IsLayerNeedDump(name_, om_name_, op->GetName()) && task->CallSaveDumpInfo();
       if (call_dump || is_op_debug_reg_) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
     }
+
+    auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+    bool no_need_profiling = (task_type != RT_MODEL_TASK_KERNEL) && (task_type != RT_MODEL_TASK_KERNEL_EX);
+    GE_IF_BOOL_EXEC(no_need_profiling, continue);
+
+    SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
     // Load task info for profiling
     TaskDescInfo task_desc_info;
     if (!om_name_.empty()) {
@@ -3193,9 +3114,13 @@ Status DavinciModel::DistributeTask() {
       task_desc_info.model_name = name_;
     }
     task_desc_info.op_name = op->GetName();
-    task_desc_info.block_dim = model_task_def->task(task_index).kernel().block_dim();
+    task_desc_info.block_dim = task_def.kernel().block_dim();
     task_desc_info.task_id = task->GetTaskID();
     task_desc_info.stream_id = task->GetStreamId();
+    task_desc_info.shape_type = "static";
+    task_desc_info.cur_iter_num = 0;
+    profiler_report_op_info_[task_desc_info.op_name] =
+      std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
     task_desc_info_.emplace_back(task_desc_info);
     if (flag) {
       if (task->GetSktTaskID() != 0xFFFFFFFF) {
@@ -3203,6 +3128,8 @@ Status DavinciModel::DistributeTask() {
         string op_name = "super_kernel_" + to_string(task_index);
         task_desc_info.op_name = op_name;
         task_desc_info.task_id = task->GetSktTaskID();
+        profiler_report_op_info_[task_desc_info.op_name] =
+          std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
         task_desc_info_.emplace_back(task_desc_info);
       }
     }
@@ -3283,54 +3210,26 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
 
     for (auto &input_outside_addrs : new_input_outside_addrs_) {
       ZeroCopyOffset &input_outside = input_outside_addrs.second;
-      bool ret = input_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
-      if (ret) {
-        void *args_val = static_cast<uint8_t *>(args) + offset + i * kAddrLen;
-        SetBatchLabelAddr(op_desc, reinterpret_cast<uintptr_t>(args_val));
-      }
+      input_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
     }
 
     for (auto &output_outside_addrs : new_output_outside_addrs_) {
       ZeroCopyOffset &output_outside = output_outside_addrs.second;
-      bool ret = output_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
-      if (ret) {
-        void *args_val = static_cast<uint8_t *>(args) + offset + i * kAddrLen;
-        SetBatchLabelAddr(op_desc, reinterpret_cast<uintptr_t>(args_val));
-      }
+      output_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
     }
   }
-  auto it = zero_copy_op_id_batch_label_.find(op_desc->GetId());
-  if (it == zero_copy_op_id_batch_label_.end()) {
+
+  string batch_label;
+  if (!AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label) || batch_label.empty()) {
     zero_copy_task.SetBatchLabel(kDefaultBatchLable);
   } else {
-    zero_copy_task.SetBatchLabel(it->second);
+    zero_copy_task.SetBatchLabel(batch_label);
   }
 
   std::lock_guard<std::mutex> lock(outside_addrs_mutex_);
   if (zero_copy_task.IsTaskArgsSet()) {
     zero_copy_task.SetOriginalArgs(info, offset + nums * kAddrLen);
     zero_copy_tasks_.emplace_back(zero_copy_task);
-  }
-}
-
-void DavinciModel::SetBatchLabelAddr(const OpDescPtr &op_desc, uintptr_t addr) {
-  // Establish a mapping between batch label and zero copy address for multi-batch scenes
-  auto it = zero_copy_op_id_batch_label_.find(op_desc->GetId());
-  if (it == zero_copy_op_id_batch_label_.end()) {
-    return;
-  }
-
-  const string &batch_label = it->second;
-  auto iter = zero_copy_batch_label_addrs_.find(batch_label);
-  if (iter != zero_copy_batch_label_addrs_.end()) {
-    iter->second.insert(addr);
-    GELOGD("[ZCPY] Set zero copy batch label and addrs success, batch label: %s, op name:%s.", batch_label.c_str(),
-           op_desc->GetName().c_str());
-  } else {
-    set<uintptr_t> addrs = {addr};
-    zero_copy_batch_label_addrs_.emplace(pair<string, set<uintptr_t>>(batch_label, addrs));
-    GELOGD("[ZCPY] New added zero copy batch label and addrs success, batch label: %s, op name:%s.",
-           batch_label.c_str(), op_desc->GetName().c_str());
   }
 }
 
@@ -3354,15 +3253,8 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
         "MAY cause inference result ERROR, please check model input",
         input_size, op_size);
   }
-  bool is_dynamic_aipp = false;
-  for (const auto &op_desc : data_op_list_) {
-    if (op_desc->GetType() == AIPP_DATA_TYPE) {
-      GELOGI("This is dynamic aipp model.");
-      is_dynamic_aipp = true;
-      break;
-    }
-  }
-  if (is_dynamic_aipp) {
+
+  if (is_dynamic_aipp_) {
     GELOGI("This is dynamic aipp model, no need to judge smaller input size");
     return true;
   }
@@ -3391,14 +3283,14 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
 ///
 Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &output_data, bool is_dynamic) {
   if (UpdateIoTaskArgs(new_input_data_info_, true, input_data.blobs, is_dynamic, input_data.batch_label) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "[ZCPY] Update input data to model failed.");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update input data to model failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (UpdateIoTaskArgs(new_output_data_info_, false, output_data.blobs, is_dynamic, input_data.batch_label) !=
       SUCCESS) {
-    GELOGE(PARAM_INVALID, "[ZCPY] Update output data to model failed.");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update output data to model failed.");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   for (ZeroCopyTask &task : zero_copy_tasks_) {
@@ -3444,7 +3336,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     }
 
     if (!CheckInputAndModelSize(buffer.length, data.second.GetDataSize(), is_dynamic)) {
-      GELOGE(FAILED, "Check input size and model size failed");
+      GELOGE(FAILED, "Check input size and model size failed, op[%s]", data.second.GetOpName().c_str());
       return FAILED;
     }
 
@@ -3467,15 +3359,15 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
       void *addr = data.second.GetDataInfo().at(count).second;
       void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data) +
                                                    data.second.GetRelativeOffset().at(count));
-      GELOGI("[ZCPY] Copy %s blobs_index %u, virtual_addr: %p, size: %ld, user_data_addr: %p", input_or_output.c_str(),
-             data.first, addr, size, buffer_addr);
+      GELOGI("[ZCPY] Copy %s blobs_index %u, virtual_addr: %p, size: %ld, user_data_addr: %p, batch_label: %s",
+             input_or_output.c_str(), data.first, addr, size, buffer_addr, batch_label.c_str());
       // For input data, just copy for rts task.
       for (ZeroCopyTask &task : zero_copy_tasks_) {
         if (task.GetBatchLabel() != kDefaultBatchLable && task.GetBatchLabel() != batch_label) {
           continue;
         }
         uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
-        if (task.UpdateTaskParam(addr_val, buffer_addr, zero_copy_batch_label_addrs_, batch_label) != SUCCESS) {
+        if (task.UpdateTaskParam(addr_val, buffer_addr) != SUCCESS) {
           return FAILED;
         }
       }
@@ -3837,9 +3729,6 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   GELOGD("Model Run begin, model id:%u, data index:%u, flag:%d.", model_id_, input_data.index, is_async_mode_);
   GE_CHK_STATUS_RET(InitModelStream(stream), "Init model stream failed.");
   is_dynamic_ = input_data.is_dynamic_batch;
-  if (!is_dynamic_) {
-    zero_copy_batch_label_addrs_.clear();
-  }
 
   GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_PRE_PROC_START));
   Status ret = CopyModelData(input_data, output_data, is_dynamic_);
@@ -3861,7 +3750,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   if (!is_async_mode_) {
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_START));
     ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Copy Output data to user failed.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
+        "Copy Output data to user failed.");
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_END));
   }
 
@@ -4044,13 +3934,12 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
   return SUCCESS;
 }
 
-void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
+void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name) {
   data_dumper_.SetModelName(name_);
   data_dumper_.SetModelId(model_id_);
   data_dumper_.SetOmName(om_name_);
-  data_dumper_.SetComputeGraph(compute_graph);
+  data_dumper_.SetComputeGraph(graph);
   data_dumper_.SetRefInfo(saved_task_addrs_);
-  data_dumper_.SetL1FusionAddr(l1_fusion_addr_);
 
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
@@ -4061,22 +3950,23 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &compute_graph) {
   data_dumper_.SetDeviceId(device_id);
 
   // set loop count addr
-  auto get_var_addr = [](const OpDescPtr &op, const RuntimeParam &runtime_param) -> void * {
-    if (op != nullptr) {
-      auto v_output_size = ModelUtils::GetOutputSize(op);
-      auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param, op);
-      if (v_output_size.empty() || v_output_addr.empty()) {
+  auto get_var_addr = [&](const string &name) -> void *{
+    const auto it = variable_by_name.find(name);
+    if (it != variable_by_name.end()) {
+      const auto output_sizes = ModelUtils::GetOutputSize(it->second);
+      const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, it->second);
+      if (output_sizes.empty() || output_addrs.empty()) {
         return nullptr;
       }
-      return v_output_addr[0];
+      return output_addrs[0];
     }
-    GELOGD("op is null.");
+    GELOGD("op: %s is null.", name.c_str());
     return nullptr;
   };
 
-  data_dumper_.SetLoopAddr(get_var_addr(GetVariableOp(NODE_NAME_GLOBAL_STEP), runtime_param_),
-                           get_var_addr(GetVariableOp(NODE_NAME_FLOWCTRL_LOOP_PER_ITER), runtime_param_),
-                           get_var_addr(GetVariableOp(NODE_NAME_FLOWCTRL_LOOP_COND), runtime_param_));
+  data_dumper_.SetLoopAddr(get_var_addr(NODE_NAME_GLOBAL_STEP),
+                           get_var_addr(NODE_NAME_FLOWCTRL_LOOP_PER_ITER),
+                           get_var_addr(NODE_NAME_FLOWCTRL_LOOP_COND));
 }
 
 uint32_t DavinciModel::GetFlowctrlIndex(uint32_t op_index) {
@@ -4111,7 +4001,15 @@ Status DavinciModel::GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_des
     compute_graph_info.output_format = op_desc.output_format;
     compute_graph_info.output_shape = op_desc.output_shape;
     compute_graph_info.output_data_type = op_desc.output_data_type;
-
+    uint32_t task_id = 0;
+    uint32_t stream_id = 0;
+    auto iter = profiler_report_op_info_.find(op_desc.op_name);
+    if (iter != profiler_report_op_info_.end()) {
+      task_id = iter->second.first;
+      stream_id = iter->second.second;
+    }
+    compute_graph_info.task_id = task_id;
+    compute_graph_info.stream_id = stream_id;
     graph_desc_info.emplace_back(compute_graph_info);
   }
   return SUCCESS;
@@ -4124,25 +4022,45 @@ void DavinciModel::SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_s
   }
 }
 
-Status DavinciModel::GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) {
-  GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
-  OpDescPtr data_op = data_op_list_[index];
-  if (!data_op->HasAttr(ATTR_NAME_AIPP_INPUTS) || !data_op->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "GetOrigInputInfo: there is not AIPP related with index %u.", index);
+Status DavinciModel::InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc) {
+  if (!op_desc->HasAttr(ATTR_NAME_AIPP_INPUTS) || !op_desc->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
+    GELOGI("there is not AIPP related with index %u, node: %s.", index, op_desc->GetName().c_str());
+    return SUCCESS;
+  }
+
+  vector<string> inputs;
+  if (AttrUtils::GetListStr(op_desc, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
+    std::string input = inputs[kAippOriginInputIndex];
+    GELOGI("origin input str: %s", input.c_str());
+    std::vector<std::string> infos = ge::StringUtils::Split(input, ':');
+    if (infos.size() != kAippInfoNum) {
+      GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID, "origin input str is invalid[%zu, %u].", infos.size(), kAippInfoNum);
+      return ACL_ERROR_GE_AIPP_MODE_INVALID;
+    }
+
+    OriginInputInfo input_info;
+    input_info.format = TypeUtils::SerialStringToFormat(infos[kAippInfoFormat]);
+    input_info.data_type = TypeUtils::SerialStringToDataType(infos[kAippInfoDataType]);
+    input_info.dim_num = std::strtol(infos[kAippInfoDimNum].c_str(), nullptr, kDecimal);
+    orig_input_info_[index] = input_info;
+  } else {
+    OriginInputInfo input_info = { FORMAT_RESERVED, DT_UNDEFINED, 0 };
+    orig_input_info_[index] = input_info;
+  }
+
+  return SUCCESS;
+}
+
+Status DavinciModel::GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) const {
+  const auto it = orig_input_info_.find(index);
+  if (it == orig_input_info_.end()) {
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
-  vector<std::string> inputs;
-  if (AttrUtils::GetListStr(data_op, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
-    std::string input = inputs[kAippOriginInputIndex];
-    GELOGI("GetOrigInputInfo: origin input str: %s", input.c_str());
-    std::vector<std::string> infos = ge::StringUtils::Split(input, ':');
-    if (infos.size() != kAippInfoNum) {
-      GELOGW("origin input str is invalid.");
-    }
-    orig_input_info.format = TypeUtils::SerialStringToFormat(infos[kAippInfoFormat]);
-    orig_input_info.data_type = TypeUtils::SerialStringToDataType(infos[kAippInfoDataType]);
-    orig_input_info.dim_num = std::strtol(infos[kAippInfoDimNum].c_str(), nullptr, kDecimal);
+  const OriginInputInfo &input_info = it->second;
+  if (input_info.format != FORMAT_RESERVED || input_info.data_type != DT_UNDEFINED) {
+    orig_input_info = input_info;
   }
 
   return SUCCESS;
@@ -4152,7 +4070,8 @@ void DavinciModel::ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_
   GELOGI("ParseAIPPInfo: origin str: %s", in_out_info.c_str());
   std::vector<std::string> infos = ge::StringUtils::Split(in_out_info, ':');
   if (infos.size() != kAippInfoNum) {
-    GELOGW("origin input str is invalid.");
+    GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID, "origin input str is invalid[%zu, %u].", infos.size(), kAippInfoNum);
+    return;
   }
   dims_info.name = infos[kAippInfoTensorName];
   dims_info.size = std::strtol(infos[kAippInfoTensorSize].c_str(), nullptr, kDecimal);
@@ -4167,47 +4086,58 @@ void DavinciModel::ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_
   }
 }
 
-Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, std::vector<InputOutputDims> &input_dims,
-                                               std::vector<InputOutputDims> &output_dims) {
-  GE_CHK_BOOL_RET_STATUS(index < data_op_list_.size(), PARAM_INVALID, "Index %u is invalid.", index);
-  OpDescPtr data_op = data_op_list_[index];
-  if (!data_op->HasAttr(ATTR_NAME_AIPP_INPUTS) || !data_op->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "GetAllAippInputOutputDims: there is not AIPP related with index %u.", index);
-    return ACL_ERROR_GE_AIPP_NOT_EXIST;
+Status DavinciModel::InitAippInputOutputDims(uint32_t index, const OpDescPtr &op_desc) {
+  if (!op_desc->HasAttr(ATTR_NAME_AIPP_INPUTS) || !op_desc->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
+    GELOGI("there is not AIPP related with index %u.", index);
+    return SUCCESS;
   }
 
-  vector<std::string> inputs;
-  if (AttrUtils::GetListStr(data_op, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
-    GELOGI("GetAllAippInputOutputDims: Data: %s has %zu related aippInfo.", data_op->GetName().c_str(), inputs.size());
+  vector<string> inputs;
+  vector<InputOutputDims> input_dims;
+  if (AttrUtils::GetListStr(op_desc, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
+    GELOGI("Data: %s has %zu related aippInfo.", op_desc->GetName().c_str(), inputs.size());
     for (auto it : inputs) {
       InputOutputDims input_info;
       ParseAIPPInfo(it, input_info);
       input_dims.emplace_back(input_info);
-      GELOGD("GetAllAippInputOutputDims Aipp origin input dims info: %s", it.c_str());
+      GELOGD("Aipp origin input dims info: %s", it.c_str());
 
-      ConstGeTensorDescPtr data_input_desc = data_op->GetInputDescPtr(kDataIndex);
+      ConstGeTensorDescPtr data_input_desc = op_desc->GetInputDescPtr(kDataIndex);
       int64_t data_input_size;
-      (void)TensorUtils::GetSize(*(data_op->GetInputDescPtr(kDataIndex)), data_input_size);
-      GELOGD(
-          "GetAllAippInputOutputDims related Data[%d]: tensor_name is %s, dim_num is %zu, tensor_size: %zu, format: "
-          "%s, data_type: %s, shape: %s .",
-          index, data_op->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
-          TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
-          TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),
-          formats::JoinToString(data_input_desc->GetShape().GetDims()).c_str());
+      (void)TensorUtils::GetSize(*(op_desc->GetInputDescPtr(kDataIndex)), data_input_size);
+      GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s",
+        index, op_desc->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
+        TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
+        TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),
+        formats::JoinToString(data_input_desc->GetShape().GetDims()).c_str());
     }
   }
 
-  vector<std::string> outputs;
-  if (AttrUtils::GetListStr(data_op, ATTR_NAME_AIPP_OUTPUTS, outputs) && !outputs.empty()) {
+  vector<string> outputs;
+  vector<InputOutputDims> output_dims;
+  if (AttrUtils::GetListStr(op_desc, ATTR_NAME_AIPP_OUTPUTS, outputs) && !outputs.empty()) {
     for (auto it : outputs) {
       InputOutputDims output_info;
       ParseAIPPInfo(it, output_info);
       output_dims.emplace_back(output_info);
-      GELOGD("GetAllAippInputOutputDims Aipp output dims info: %s", it.c_str());
+      GELOGD("Aipp output dims info: %s", it.c_str());
     }
   }
 
+  aipp_dims_info_[index] = { input_dims, input_dims };
+  return SUCCESS;
+}
+
+Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, vector<InputOutputDims> &input_dims,
+                                               vector<InputOutputDims> &output_dims) const {
+  const auto it = aipp_dims_info_.find(index);
+  if (it == aipp_dims_info_.end()) {
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
+    return ACL_ERROR_GE_AIPP_NOT_EXIST;
+  }
+
+  input_dims = it->second.first;
+  output_dims = it->second.second;
   return SUCCESS;
 }
 
@@ -4217,6 +4147,30 @@ int64_t DavinciModel::GetFixedAddrsSize(string tensor_name) {
   } else {
     return total_fixed_addr_size_;
   }
+}
+
+Status DavinciModel::InitL1DataDumperArgs() {
+  auto all_dump_model = GetDumpProperties().GetAllDumpModel();
+  bool find_by_om_name = all_dump_model.find(om_name_) != all_dump_model.end();
+  bool find_by_model_name = all_dump_model.find(name_) != all_dump_model.end();
+  bool dump_l1fusion_op =
+    (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) || find_by_om_name || find_by_model_name;
+  if (dump_l1fusion_op) {
+    // malloc 2M for dump l1fusion op
+    GE_CHK_RT_RET(rtMalloc(&l1_fusion_addr_, kDumpL1FusionOpMByteSize, RT_MEMORY_DDR));
+
+    // send l1fusion dump addr to rts
+    if (rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion) !=
+        RT_ERROR_NONE) {
+      // l1_fusion_addr_ will be free when DavinciModel destruct
+      GELOGE(FAILED, "Call rtDumpAddrSet failed");
+      return FAILED;
+    }
+
+    // set addr for l1 data dump
+    data_dumper_.SetL1FusionAddr(l1_fusion_addr_);
+  }
+  return SUCCESS;
 }
 
 }  // namespace ge

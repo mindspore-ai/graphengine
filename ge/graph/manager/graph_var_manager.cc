@@ -183,51 +183,32 @@ ge::Status VarResource::GetBroadCastInfo(uint32_t graph_id, const string &var_na
 }
 
 ge::Status VarResource::SyncVarData2BroadCast(uint32_t graph_id, const std::string &var_name,
-                                              const ge::ConstOpDescPtr &var_op_desc, uint8_t *base_ptr) {
-  if (var_op_desc == nullptr) {
-    GELOGE(FAILED, "[SyncVarData2BroadCast] var opdesc is null!");
-    return FAILED;
-  }
+                                              const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
   GE_CHECK_NOTNULL(base_ptr);
   GELOGI("SyncVarData2BroadCast graph_id: %u, var_name: %s.", graph_id, var_name.c_str());
 
   VarBroadCastInfo var_broadcast_info = var_broad_cast_info_[graph_id][var_name];
   uint8_t *dst_addr = base_ptr + var_broadcast_info.input_offset;
-  ge::GeTensorDesc var_tensor_desc = var_op_desc->GetOutputDesc(0);
 
   return ge::TransVarDataUtils::SyncVarData2BroadCast(var_name, var_tensor_desc, dst_addr,
                                                       var_broadcast_info.input_size, session_id_);
 }
 
 ge::Status VarResource::SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                              const ge::ConstOpDescPtr &var_op_desc, uint8_t *base_ptr) {
+                                              const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
   GELOGI("SyncBroadCastData2Var var_name: %s", var_name.c_str());
-  GE_CHECK_NOTNULL(var_op_desc);
-  string var_is_broadcast;
-  bool is_broadcast = AttrUtils::GetStr(var_op_desc, VAR_ATTR_VAR_IS_BROADCAST, var_is_broadcast);
-  if (!is_broadcast) {
-    return SUCCESS;
-  }
 
   VarBroadCastInfo var_broadcast_info = var_broad_cast_info_[graph_id][var_name];
   // subgraph base_ptr could be nullptr, task it as base 0
   uint8_t *dst_addr = base_ptr + var_broadcast_info.output_offset;
-  ge::GeTensorDesc var_tensor_desc = var_op_desc->GetOutputDesc(0);
 
   return ge::TransVarDataUtils::SyncBroadCastData2Var(dst_addr, var_broadcast_info.output_size, var_name,
                                                       var_tensor_desc, session_id_);
 }
 
 ge::Status VarResource::SyncVarData(uint32_t graph_id, const std::string &var_name,
-                                    const ge::ConstOpDescPtr &var_op_desc, uint8_t *base_ptr) {
-  GE_CHECK_NOTNULL(var_op_desc);
-  string var_is_broadcast;
-  bool is_broadcast = AttrUtils::GetStr(var_op_desc, VAR_ATTR_VAR_IS_BROADCAST, var_is_broadcast);
-  if (!is_broadcast) {
-    return SUCCESS;
-  }
-
-  return SyncVarData2BroadCast(graph_id, var_name, var_op_desc, base_ptr);
+                                    const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
+  return SyncVarData2BroadCast(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
 bool VarResource::IsVarAddr(const int64_t &offset) { return var_offset_set_.count(offset) > 0; }
@@ -280,9 +261,9 @@ Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uin
     return PARAM_INVALID;
   }
   uint64_t free_size = total_size_ - var_mem_size_;
-  if (free_size < (size + kSessionMemAlignSize * 2)) {
+  if (free_size < (size + kSessionMemAlignSize * kSessionMemAlignUnit)) {
     GELOGE(PARAM_INVALID, "Out of memory : current var size[%lu] exceeds total var size[%lu]",
-           size + kSessionMemAlignSize * 2 + var_mem_size_, total_size_);
+           size + kSessionMemAlignSize * kSessionMemAlignUnit + var_mem_size_, total_size_);
     return PARAM_INVALID;
   }
 
@@ -570,14 +551,14 @@ bool VarManager::IsVarExist(const std::string &var_name) {
   return var_resource_->IsVarExist(var_name);
 }
 
-ge::Status VarManager::SyncVarData(uint32_t graph_id, const std::string &var_name, ge::ConstOpDescPtr var_op_desc,
+ge::Status VarManager::SyncVarData(uint32_t graph_id, const std::string &var_name, const GeTensorDesc &var_tensor_desc,
                                    uint8_t *base_ptr) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_resource_ == nullptr) {
     GELOGW("VarManager has not been init.");
     return ge::INTERNAL_ERROR;
   }
-  return var_resource_->SyncVarData(graph_id, var_name, std::move(var_op_desc), base_ptr);
+  return var_resource_->SyncVarData(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
 ge::Status VarManager::GetCurVarDesc(const std::string &var_name, ge::GeTensorDesc &tensor_desc) {
@@ -630,13 +611,13 @@ ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPt
 }
 
 ge::Status VarManager::SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                             ge::ConstOpDescPtr var_op_desc, uint8_t *base_ptr) {
+                                             const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_resource_ == nullptr) {
     GELOGW("VarManager has not been init.");
     return ge::INTERNAL_ERROR;
   }
-  return var_resource_->SyncBroadCastData2Var(graph_id, var_name, std::move(var_op_desc), base_ptr);
+  return var_resource_->SyncBroadCastData2Var(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
 bool VarManager::IsVarAddr(const int64_t &offset) {

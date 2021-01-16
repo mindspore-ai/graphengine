@@ -20,9 +20,12 @@
 #include "graph/manager/graph_caching_allocator.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/rdma_pool_allocator.h"
+#include "graph/manager/host_mem_allocator.h"
 
 namespace ge {
 namespace hybrid {
+const size_t kPaddingUnit = 2;
+
 size_t kMaxHbmMemorySize = 1024UL * 1024UL * 1024UL * 1024UL; // 1024G
 
 std::map<uint32_t, std::unique_ptr<NpuMemoryAllocator>> NpuMemoryAllocator::allocators_;
@@ -62,7 +65,7 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   if (mem_type == RDMA_HBM) {
     buffer = MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Malloc(allocate_size, device_id_);
   } else if (mem_type == HOST_DDR) {
-    buffer = malloc(allocate_size);
+    buffer = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(allocate_size);
   } else {
     if (allocate_size > kMaxHbmMemorySize) {
       GELOGE(PARAM_INVALID, "Invalid HBM memory size: %zu", allocate_size);
@@ -77,7 +80,7 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
       }
     }
     // padding up to multiple of padding, and add extra padding
-    allocate_size = (size + 2 * padding - 1) / padding * padding;
+    allocate_size = (size + kPaddingUnit * padding - 1) / padding * padding;
     GELOGD("Padding size %ld by %d. final size = %zu.", size, padding, allocate_size);
     buffer = MemManager::Instance()
                  .CachingInstance(RT_MEMORY_HBM)
@@ -99,7 +102,7 @@ void NpuMemoryAllocator::Deallocate(void *data, MemStorageType mem_type) {
     if (mem_type == RDMA_HBM) {
       MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Free(reinterpret_cast<uint8_t *>(data), device_id_);
     } else if (mem_type == HOST_DDR) {
-      free(data);
+      MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Free(data);
     } else {
       MemManager::Instance().CachingInstance(RT_MEMORY_HBM).Free(reinterpret_cast<uint8_t *>(data), device_id_);
     }

@@ -394,4 +394,117 @@ void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, c
 }
 #endif // LOG_CPP
 #endif // __cplusplus
+
+#ifdef LOG_CPP
+#ifdef __cplusplus
+extern "C" {
+#endif
+/**
+ * @ingroup slog
+ * @brief DlogGetlevelForC: get module loglevel and enableEvent
+ *
+ * @param [in]moduleId: moudule id(see slog.h, eg: CCE), others: invalid
+ * @param [out]enableEvent: 1: enable; 0: disable
+ * @return: module level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
+ */
+DLL_EXPORT int DlogGetlevelForC(int moduleId, int *enableEvent);
+
+/**
+ * @ingroup slog
+ * @brief DlogSetlevelForC: set module loglevel and enableEvent
+ *
+ * @param [in]moduleId: moudule id(see slog.h, eg: CCE), -1: all modules, others: invalid
+ * @param [in]level: log level(0: debug, 1: info, 2: warning, 3: error, 4: null output)
+ * @param [in]enableEvent: 1: enable; 0: disable, others:invalid
+ * @return: 0: SUCCEED, others: FAILED
+ */
+DLL_EXPORT int DlogSetlevelForC(int moduleId, int level, int enableEvent);
+
+/**
+ * @ingroup slog
+ * @brief CheckLogLevelForC: check module level enable or not
+ * users no need to call it because all dlog interface(include inner interface) has already called
+ *
+ * @param [in]moduleId: module id, eg: CCE
+ * @param [in]logLevel: eg: DLOG_EVENT/DLOG_ERROR/DLOG_WARN/DLOG_INFO/DLOG_DEBUG
+ * @return: 1:enable, 0:disable
+ */
+DLL_EXPORT int CheckLogLevelForC(int moduleId, int logLevel);
+
+/**
+ * @ingroup slog
+ * @brief DlogSetAttrForC: set log attr, default pid is 0, default device id is 0, default process type is APPLICATION
+ * @param [in]logAttr: attr info, include pid(must be larger than 0), process type and device id(chip ID)
+ * @return: 0: SUCCEED, others: FAILED
+ */
+DLL_EXPORT int DlogSetAttrForC(LogAttr logAttr);
+
+/**
+ * @ingroup slog
+ * @brief DlogForC: print log, need caller to specify level
+ * call CheckLogLevelForC in advance to optimize performance, call interface with fmt input take time
+ *
+ * @param [in]moduleId: module id, eg: CCE
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]fmt: log content
+ */
+#define DlogForC(moduleId, level, fmt, ...)                                                 \
+  do {                                                                                  \
+    if(CheckLogLevelForC(moduleId, level) == 1) {                                           \
+        DlogInnerForC(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
+     }                                                                                  \
+  } while (0)
+
+/**
+ * @ingroup slog
+ * @brief DlogSubForC: print log, need caller to specify level and submodule
+ * call CheckLogLevelForC in advance to optimize performance, call interface with fmt input take time
+ *
+ * @param [in]moduleId: module id, eg: CCE
+ * @param [in]submodule: eg: engine
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]fmt: log content
+ */
+#define DlogSubForC(moduleId, submodule, level, fmt, ...)                                                   \
+  do {                                                                                                  \
+    if(CheckLogLevelForC(moduleId, level) == 1) {                                                           \
+        DlogInnerForC(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
+    }                                                                                                   \
+  } while (0)
+
+/**
+ * @ingroup slog
+ * @brief DlogWithKVForC: print log, need caller to specify level and other paramters
+ * call CheckLogLevelForC in advance to optimize performance, call interface with fmt input take time
+ *
+ * @param [in]moduleId: module id, eg: CCE
+ * @param [in]level(0: debug, 1: info, 2: warning, 3: error, 5: trace, 6: oplog, 16: event)
+ * @param [in]pstKVArray: key-value array
+ * @param [in]kvNum: key-value element num in array
+ * @param [in]fmt: log content
+ */
+#define DlogWithKVForC(moduleId, level, pstKVArray, kvNum, fmt, ...)                                                \
+  do {                                                                                                          \
+    if(CheckLogLevelForC(moduleId, level) == 1) {                                                                   \
+        DlogWithKVInnerForC(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
+    }                                                                                                           \
+  } while (0)
+
+/**
+ * @ingroup slog
+ * @brief DlogFlushForC: flush log buffer to file
+ */
+DLL_EXPORT void DlogFlushForC(void);
+
+/**
+ * @ingroup slog
+ * @brief Internal log interface, other modules are not allowed to call this interface
+ */
+void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
+void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
+#endif // LOG_CPP
 #endif // D_SYSLOG_H_

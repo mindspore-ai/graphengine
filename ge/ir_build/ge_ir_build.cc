@@ -36,6 +36,9 @@
 #include "model/ge_model.h"
 #include "graph/shape_refiner.h"
 #include "graph/opsproto_manager.h"
+#include "inc/pass_manager.h"
+#include "graph/passes/net_output_pass.h"
+#include "graph/passes/data_pass.h"
 
 using std::string;
 using namespace std;
@@ -49,6 +52,8 @@ const std::string IR_OPTION_LOG_LEVEL_DEFAULT = "default";
 const std::string IR_OPTION_BUFFER_OPTIMIZE_DEFAULT = "l2_optimize";
 const std::string IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT = "0";
 const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
+const std::string kInputShape = "input_shape";
+const std::string kInputFormat = "input_format";
 }  // namespace
 
 static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
@@ -225,11 +230,13 @@ class Impl {
   ~Impl() { (void)generator_.Finalize(); };
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
   graphStatus CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs);
-  graphStatus Init(const std::map<std::string, std::string> &options);
+  graphStatus UpdateDataOpAttr(const Graph &graph);
+  graphStatus Init(const Graph &graph, const std::map<std::string, std::string> &options);
   graphStatus BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                          ModelBufferData &ge_models);
   graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                                  bool is_dynamic_input);
+  static graphStatus InferShapePrepare(const ComputeGraphPtr &compute_graph);
   void SetRtSocVersion();
   void UpdateThreadContext();
   void LoadOpsProto();
@@ -239,6 +246,56 @@ class Impl {
   bool is_dynamic_input_ = false;
   OmgContext omg_context_;
 };
+
+graphStatus Impl::InferShapePrepare(const ComputeGraphPtr &compute_graph) {
+  GE_CHECK_NOTNULL(compute_graph);
+
+  PassManager prepare_infershape;
+  prepare_infershape.AddPass("PrepareNetoutput", new(std::nothrow) NetOutputPass);
+  prepare_infershape.AddPass("PrepareSubGraphReflection", new (std::nothrow) DataPass);
+
+  auto ret = prepare_infershape.Run(compute_graph);
+  if ((ret != SUCCESS) && (ret != NOT_CHANGED)) {
+    GELOGE(ret, "Prepair for infershape failed, ret:%d", ret);
+    return ret;
+  }
+  GELOGD("Prepair for infershape success!");
+  return GRAPH_SUCCESS;
+}
+
+graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
+  GELOGD("Enter Update Data Attr Process!");
+  if (options_.find(kInputShape) == options_.end()) {
+    return GRAPH_SUCCESS;
+  }
+  unordered_map<string, vector<int64_t>> shape_map;
+  vector<pair<string, vector<int64_t>>> user_shape_map;
+  GE_CHK_BOOL_EXEC(ParseInputShape(options_[kInputShape], shape_map, user_shape_map, true),
+    return GRAPH_PARAM_INVALID, "parse input shape failed!");
+  auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    ge::OpDescPtr op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      auto tensor_input = op->MutableInputDesc(0);
+      auto tensor_output = op->MutableOutputDesc(0);
+      GE_CHECK_NOTNULL(tensor_input);
+      GE_CHECK_NOTNULL(tensor_output);
+      string data_op_name = op->GetName();
+      auto iter = shape_map.find(data_op_name);
+      if (iter != shape_map.end()) {
+        tensor_input->SetShape(ge::GeShape(iter->second));
+        tensor_output->SetShape(ge::GeShape(iter->second));
+        GELOGD("update input [%s] shape info", data_op_name.c_str());
+      } else {
+        GELOGI("no need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
+      }
+    }
+  }
+  return GRAPH_SUCCESS;
+}
 
 graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options) {
   for (auto &ele : options) {
@@ -275,17 +332,29 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
       return GRAPH_PARAM_INVALID;
     }
   }
+  // Check option EXEC_DISABLE_REUSED_MEMORY
+  it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
+  if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
+    return GRAPH_PARAM_INVALID;
+  }
+  // Check Input Format
+  if (options_.find(kInputFormat) != options_.end()) {
+    return CheckInputFormat(options_[kInputFormat]);
+  }
   return GRAPH_SUCCESS;
 }
 
-graphStatus Impl::Init(const std::map<std::string, std::string> &options) {
+graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::string> &options) {
   // 1. check options
   graphStatus ret = CheckOptions(options);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "User input options are illegal! Please check!");
     return ret;
   }
-
+  ret = UpdateDataOpAttr(graph);
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
   std::string build_mode = (options_.find(BUILD_MODE) == options_.end() || options_[BUILD_MODE] == BUILD_MODE_NORMAL)
                            ? "" : options_[BUILD_MODE];
   options_[BUILD_MODE] = build_mode;
@@ -416,7 +485,7 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
 graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                              ModelBufferData &model) {
   // 1. init GeGenerator with user optios
-  graphStatus ret = Init(options);
+  graphStatus ret = Init(graph, options);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ret, "Build ir model Init failed!");
     return ret;
@@ -502,7 +571,7 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
     GELOGE(GRAPH_PARAM_INVALID, "input model is illegal");
     return GRAPH_PARAM_INVALID;
   }
-  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
+  return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 
@@ -517,7 +586,7 @@ graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &mod
     return GRAPH_PARAM_INVALID;
   }
   std::string str_output_file = output_file;
-  return FileSaver::SaveToFile((str_output_file + ".om"), reinterpret_cast<void*>(model.data.get()),
+  return FileSaver::SaveToFile((str_output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
                                static_cast<uint32_t>(model.length));
 }
 
@@ -529,42 +598,6 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
   *major_version = IR_MAJOR_VERSION;
   *minor_version = IR_MINOR_VERSION;
   *patch_version = IR_PATCH_VERSION;
-  return GRAPH_SUCCESS;
-}
-
-graphStatus aclgrphInferShapeAndType(ge::Graph &graph) {
-  auto compute_graph = GraphUtils::GetComputeGraph(graph);
-  GE_CHECK_NOTNULL(compute_graph);
-
-  auto root_graph = compute_graph->GetParentGraph();
-  if (root_graph != nullptr) {
-    GELOGE(GRAPH_PARAM_INVALID, "Input param should not be subgraph");
-    return GRAPH_PARAM_INVALID;
-  }
-
-  auto ret = compute_graph->TopologicalSorting();
-  if(ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "Acl topo logical sort failed.");
-    return ret;
-  }
-
-  ret = compute_graph->InferOriginFormat();
-  if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "Acl InferOriginFormat failed.");
-    return ret;
-  }
-
-  for (auto &node: compute_graph->GetAllNodes()) {
-    graphStatus ret = ShapeRefiner::InferShapeAndType(node);
-    if (ret == GRAPH_PARAM_INVALID) {
-      GELOGW("Can not find infershape func.");
-      continue;
-    } else if (ret != GRAPH_SUCCESS) {
-      GELOGE(ret, "Acl infershape failed.");
-      return ret;
-    }
-  }
-
   return GRAPH_SUCCESS;
 }
 
@@ -619,6 +652,54 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
     GraphUtils::DumpGrphToOnnx(*sub_graph_func, string(path), sub_graph_func_name);
   }
 
+  return GRAPH_SUCCESS;
+}
+
+graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<TensorDesc> &inputs,
+                                 const vector<TensorDesc> &outputs, Graph &graph) {
+  auto op_type_str = std::string(op_type.GetString());
+  auto op_name = op_type_str + "_" + std::to_string(ge::GetCurrentTimestamp());
+  auto op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type_str);
+  GE_CHECK_NOTNULL(op_desc);
+
+  // convert input tensordesc to getensor
+  std::vector<ge::GeTensor> input_tensors;
+  for (const auto &input : inputs) {
+    ge::GeTensorDesc tensor_desc(ge::GeShape(input.GetShape().GetDims()), input.GetFormat(), input.GetDataType());
+
+    tensor_desc.SetOriginFormat(input.GetFormat());
+    ge::TensorUtils::SetRealDimCnt(tensor_desc, static_cast<uint32_t>(input.GetShape().GetDims().size()));
+    ge::TensorUtils::SetInputTensor(tensor_desc, true);
+    ge::TensorUtils::SetOutputTensor(tensor_desc, false);
+
+    if (op_desc->AddInputDesc(tensor_desc) != ge::GRAPH_SUCCESS) {
+      GELOGE(ge::FAILED, "AddInputDesc fail.");
+      return ge::FAILED;
+    }
+    input_tensors.emplace_back(tensor_desc);
+  }
+
+  // convert output tensordesc to getensor
+  std::vector<ge::GeTensor> output_tensors;
+  for (const auto &output : outputs) {
+    ge::GeTensorDesc tensor_desc(ge::GeShape(output.GetShape().GetDims()), output.GetFormat(), output.GetDataType());
+
+    tensor_desc.SetOriginFormat(output.GetFormat());
+    ge::TensorUtils::SetRealDimCnt(tensor_desc, static_cast<uint32_t>(output.GetShape().GetDims().size()));
+    ge::TensorUtils::SetInputTensor(tensor_desc, false);
+    ge::TensorUtils::SetOutputTensor(tensor_desc, true);
+
+    (void)op_desc->AddOutputDesc(tensor_desc);
+    output_tensors.emplace_back(tensor_desc);
+  }
+
+  // call api to get graph
+  ge::GeGenerator generator;
+  std::string graph_name = ge::CurrentTimeInStr() + "_graph";
+  if (generator.BuildSingleOpGraph(op_desc, input_tensors, output_tensors, graph_name, graph) != ge::SUCCESS) {
+    GELOGE(GRAPH_FAILED, "make graph fail.");
+    return GRAPH_FAILED;
+  }
   return GRAPH_SUCCESS;
 }
 

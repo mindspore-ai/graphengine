@@ -36,6 +36,7 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CollectIoNodes(const ComputeGraphPtr &graph);
+  Status InitParamsOfGetNext(const NodePtr &node);
 
   ///
   /// @ingroup ge
@@ -49,10 +50,12 @@ class MultiBatchClonePass : public GraphPass {
   /// @ingroup ge
   /// @brief Create index data node for root graph.
   /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
-  /// @param [in] NodePtr node: index data node.
+  /// @param [in] NodePtr shape_node: index data node, DATA or GETDYNAMICDIMS type.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status CreateIndexDataNode(const ComputeGraphPtr &graph, NodePtr &node);
+  Status CreateIndexDataNode(const ComputeGraphPtr &graph, NodePtr &shape_node);
+
+  Status CreateGetDynamicDimsNode(const ComputeGraphPtr &graph, NodePtr &shape_node);
 
   ///
   /// @ingroup ge
@@ -70,6 +73,9 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CreateIndexNode(const ComputeGraphPtr &graph);
+  Status AddAttrForGetDynamicDims(const NodePtr &shape_node);
+  Status LinkGetNextToGetDynamicDims(const NodePtr &getnext_node, const NodePtr &shape_node);
+  Status LinkGetDynamicDimsToNetOutput(const NodePtr &output_node);
 
   ///
   /// @ingroup ge
@@ -78,6 +84,28 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CreateInputNode(const ComputeGraphPtr &graph);
+  Status LinkEdgeForGetNext(const NodePtr &getnext_node, size_t &case_input_index);
+
+  ///
+  /// @ingroup ge
+  /// @brief Set max shape to Data node in root graph.
+  /// @param [in] const NodePtr &data: data in Root/Case graph.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status SetMaxShape(const NodePtr &data);
+  Status SetMaxShapeToData(const NodePtr &node, size_t out_anchor_index);
+  ///
+  /// @ingroup ge
+  /// @brief Set max shape to Data/GetNext node in root graph.
+  /// @param [in] const std::vector<int64_t> &shapes: dims of shape.
+  /// @param [in] const NodePtr &data: data in Root/Case graph.
+  /// @param [in] GeShape &data_shape: dims of data node.
+  /// @param [in] size_t out_anchor_index: out anchor index of data node.
+  /// @return 0: SUCCESS / others: FAILED
+  ///
+  Status SetShapeToData(const std::vector<int64_t> &shapes, const NodePtr &data, GeShape &data_shape,
+                        size_t out_anchor_index);
+  Status UpdateShapeOfShapeNode(const NodePtr &node, size_t out_anchor_index);
 
   ///
   /// @ingroup ge
@@ -86,6 +114,7 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CreateConstNode(const ComputeGraphPtr &graph);
+  void ChangeConstToData();
 
   ///
   /// @ingroup ge
@@ -97,30 +126,29 @@ class MultiBatchClonePass : public GraphPass {
 
   ///
   /// @ingroup ge
-  /// @brief Set max shape to Data node in root graph.
-  /// @param [in] const NodePtr &data: data in Root/Case graph.
+  /// @brief Update Data node in Subgraph.
+  /// @param [in] const NodePtr &data: data in Subgraph.
+  /// @param [in] size_t batch_index: The batch index.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status SetMaxShapeToData(const NodePtr &data);
+  Status UpdateSubgraphData(const NodePtr &data, size_t batch_index);
 
   ///
   /// @ingroup ge
-  /// @brief Set shape to Data node in branch.
-  /// @param [in] const NodePtr &data: data in branch.
-  /// @param [in] size_t index: The batch index.
+  /// @brief Update output_node in Subgraph.
+  /// @param [in] const NodePtr &output_node: output_node in Subgraph.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status UpdateShapeToData(const NodePtr &data, size_t index);
+  Status UpdateSubgraphOutput(const NodePtr &output_node);
 
   ///
   /// @ingroup ge
-  /// @brief Set max shape to Data node in root graph.
-  /// @param [in] const std::vector<int64_t> &shapes: dims of shape.
-  /// @param [in] const NodePtr &data: data in Root/Case graph.
-  /// @param [in] GeShape &data_shape: dims of data node.
+  /// @brief Create nodes for root graph.
+  /// @param [in] const ComputeGraphPtr &graph: Original graph.
   /// @return 0: SUCCESS / others: FAILED
   ///
-  Status SetShapeToData(const std::vector<int64_t> &shapes, const NodePtr &data, GeShape &data_shape);
+  Status CreateOriGraph(const ComputeGraphPtr &graph);
+  NodePtr CreateDataNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor, size_t data_index);
 
   ///
   /// @ingroup ge
@@ -130,14 +158,6 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status CreateSubgraphs(const ComputeGraphPtr &graph, const ComputeGraphPtr &branch);
-
-  ///
-  /// @ingroup ge
-  /// @brief Assign parent index for branches.
-  /// @param [in] const ComputeGraphPtr &graph: Root/Case graph.
-  /// @return 0: SUCCESS / others: FAILED
-  ///
-  Status PostProcSubgraph(const ComputeGraphPtr &graph);
 
   ///
   /// @ingroup ge
@@ -168,6 +188,10 @@ class MultiBatchClonePass : public GraphPass {
   std::map<string, vector<vector<int64_t>>> data_to_dynamic_info_;
 
   NodePtr case_node_;
+  size_t data_count_from_getnext_ = 0;
+  bool getnext_sink_dynamic_dims_ = false;
+  NodePtr shape_node_;
+  std::set<NodePtr> out_control_nodes_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_MULTI_BATCH_CLONE_PASS_H_

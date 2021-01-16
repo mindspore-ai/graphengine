@@ -40,10 +40,6 @@ class FloorDivKernel : public Kernel {
   template <typename T>
   Status DataCal(const std::vector<ConstGeTensorPtr> &input, ge::GeTensorPtr output_ptr);
   Status ComputeByDataType(DataType data_type, const std::vector<ConstGeTensorPtr> &input, GeTensorPtr output_ptr);
-
-  int64_t axis_dim_;
-  int64_t head_dim_;
-  int64_t end_dim_;
 };
 }  // namespace ge
 

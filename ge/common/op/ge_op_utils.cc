@@ -357,7 +357,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataHWCK2KCH
   const char *w_data = (const char *)input;
 
   int64_t count = h * w * c * k;
-  GE_IF_BOOL_EXEC(count <= 0, GELOGW("Count value must be greater than 0, but count = %ld", count); return );
+  GE_IF_BOOL_EXEC(count <= 0, GELOGW("Count value must be greater than 0, but count = %ld", count); return);
   float *buf = new (std::nothrow) float[count]();
   GE_RT_VOID_CHECK_NOTNULL(buf);
   float *src_buff = nullptr;

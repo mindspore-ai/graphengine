@@ -237,6 +237,11 @@ typedef struct {
 } mmThreadAttr;
 
 typedef VOID (*mmPf)(VOID);
+
+#define mm_no_argument        0
+#define mm_required_argument  1
+#define mm_optional_argument  2
+
 #define M_FILE_RDONLY GENERIC_READ
 #define M_FILE_WRONLY GENERIC_WRITE
 #define M_FILE_RDWR (GENERIC_READ | GENERIC_WRITE)
@@ -317,6 +322,7 @@ typedef VOID (*mmPf)(VOID);
 #define M_NAME_MAX  _MAX_FNAME
 
 #define M_F_OK 0
+#define M_X_OK 1
 #define M_W_OK 2
 #define M_R_OK 4
 

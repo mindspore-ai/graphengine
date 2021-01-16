@@ -215,6 +215,10 @@ typedef struct {
 #define S_IWRITE S_IWUSR
 #endif
 
+#define mm_no_argument        no_argument
+#define mm_required_argument  required_argument
+#define mm_optional_argument  optional_argument
+
 #define M_FILE_RDONLY O_RDONLY
 #define M_FILE_WRONLY O_WRONLY
 #define M_FILE_RDWR O_RDWR
@@ -275,8 +279,9 @@ typedef struct {
 #define M_NAME_MAX MAX_FNAME
 
 #define M_F_OK F_OK
-#define M_R_OK R_OK
+#define M_X_OK X_OK
 #define M_W_OK W_OK
+#define M_R_OK R_OK
 
 #define MM_DT_DIR DT_DIR
 #define MM_DT_REG DT_REG
@@ -412,8 +417,12 @@ MMPA_FUNC_VISIBILITY VOID mmClosePipe(mmPipeHandle pipe[], UINT32 pipeCount);
 // Poll related interface
 MMPA_FUNC_VISIBILITY mmCompletionHandle mmCreateCompletionPort();
 MMPA_FUNC_VISIBILITY VOID mmCloseCompletionPort(mmCompletionHandle handle);
-MMPA_FUNC_VISIBILITY INT32 mmPoll(mmPollfd *fds, INT32 fdCount, INT32 timeout, mmCompletionHandle handleIOCP,
-                                    pmmPollData polledData, mmPollBack pollBack);
+MMPA_FUNC_VISIBILITY INT32 mmPoll(mmPollfd *fds,
+                                  INT32 fdCount,
+                                  INT32 timeout,
+                                  mmCompletionHandle handleIOCP,
+                                  pmmPollData polledData,
+                                  mmPollBack pollBack);
 MMPA_FUNC_VISIBILITY INT32 mmGetErrorCode();
 MMPA_FUNC_VISIBILITY CHAR *mmGetErrorFormatMessage(mmErrorMsg errnum, CHAR *buf, mmSize size);
 MMPA_FUNC_VISIBILITY INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone);

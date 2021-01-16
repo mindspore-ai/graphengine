@@ -33,20 +33,6 @@
  */
 namespace Msprof {
 namespace Engine {
-/// the max tag length
-#define MSPROF_ENGINE_MAX_TAG_LEN (31)
-/**
- * @ingroup reporter
- * @brief struct ReporterData
- * the sturct of the data send to libmsprof
- */
-struct ReporterData {
-  char tag[MSPROF_ENGINE_MAX_TAG_LEN + 1];  ///< the sub-type of the module, data with different tag will be writen
-  int deviceId;                             ///< the physical id of device
-  size_t dataLen;                           ///< the length of send data
-  unsigned char *data;                      ///< the data content
-};
-
 /**
  * @ingroup reporter
  * @brief class Reporter

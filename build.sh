@@ -23,7 +23,7 @@ export BUILD_PATH="${BASEPATH}/build/"
 usage()
 {
   echo "Usage:"
-  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off]"
+  echo "sh build.sh [-j[n]] [-h] [-v] [-s] [-t] [-u] [-c] [-S on|off] [-M]"
   echo ""
   echo "Options:"
   echo "    -h Print usage"
@@ -35,6 +35,7 @@ usage()
   echo "    -p Build inference or train"
   echo "    -v Display build command"
   echo "    -S Enable enable download cmake compile dependency from gitee , default off"
+  echo "    -M build MindSpore mode"
   echo "to be continued ..."
 }
 
@@ -58,30 +59,27 @@ checkopts()
   ENABLE_GE_UT="off"
   ENABLE_GE_ST="off"
   ENABLE_GE_COV="off"
-  GE_ONLY="on"
   PLATFORM=""
   PRODUCT="normal"
   ENABLE_GITEE="off"
+  MINDSPORE_MODE="off"
   # Process the options
-  while getopts 'ustchj:p:g:vS:' opt
+  while getopts 'ustchj:p:g:vS:M' opt
   do
     OPTARG=$(echo ${OPTARG} | tr '[A-Z]' '[a-z]')
     case "${opt}" in
       u)
         # ENABLE_GE_UT_ONLY_COMPILE="on"
         ENABLE_GE_UT="on"
-        GE_ONLY="off"
         ;;
       s)
         ENABLE_GE_ST="on"
         ;;
       t)
 	      ENABLE_GE_UT="on"
-	      GE_ONLY="off"
 	      ;;
       c)
         ENABLE_GE_COV="on"
-        GE_ONLY="off"
         ;;
       h)
         usage
@@ -103,6 +101,9 @@ checkopts()
         check_on_off $OPTARG S
         ENABLE_GITEE="$OPTARG"
         echo "enable download from gitee"
+        ;;
+      M)
+        MINDSPORE_MODE="on"
         ;;
       *)
         echo "Undefined option: ${opt}"
@@ -132,7 +133,8 @@ build_graphengine()
   echo "create build directory and build GraphEngine";
   mk_dir "${BUILD_PATH}"
   cd "${BUILD_PATH}"
-  CMAKE_ARGS="-DBUILD_PATH=$BUILD_PATH -DGE_ONLY=$GE_ONLY"
+
+  CMAKE_ARGS="-DBUILD_PATH=$BUILD_PATH"
 
   if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_COV=ON"
@@ -150,7 +152,13 @@ build_graphengine()
   if [[ "X$ENABLE_GITEE" = "Xon" ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GITEE=ON"
   fi
-  CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
+
+  if [[ "X$MINDSPORE_MODE" = "Xoff" ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_OPEN_SRC=True -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH} -DPLATFORM=${PLATFORM} -DPRODUCT=${PRODUCT}"
+  else
+    CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_D=ON -DCMAKE_INSTALL_PREFIX=${OUTPUT_PATH}"
+  fi
+
   echo "${CMAKE_ARGS}"
   cmake ${CMAKE_ARGS} ..
   if [ $? -ne 0 ]
@@ -162,13 +170,16 @@ build_graphengine()
   TARGET=${COMMON_TARGET}
   if [ "x${PLATFORM}" = "xtrain" ]
   then
-    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ${TARGET}"
+    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder fwk_atc.bin ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc opensrc_ascendcl ${TARGET}"
+    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc_atc.bin opensrc_ascendcl ${TARGET}"
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
+  elif [ "X$MINDSPORE_MODE" = "Xon" ]
+  then
+    TARGET="ge_common graph"
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
@@ -224,12 +235,14 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
 #     fi
 
 #     if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
-#         echo "Generating coverage statistics, please wait..."
-#         cd ${BASEPATH}
-#         rm -rf ${BASEPATH}/cov
-#         mkdir ${BASEPATH}/cov
-#         gcovr -r ./ --exclude 'third_party' --exclude 'build' --exclude 'tests' --exclude 'prebuild' --exclude 'inc' --print-summary --html --html-details -d -o cov/index.html
-#     fi
+         echo "Generating coverage statistics, please wait..."
+         cd ${BASEPATH}
+         rm -rf ${BASEPATH}/cov
+         mkdir ${BASEPATH}/cov
+         lcov -c -d build/tests/ut/ge -d build/tests/ut/common/graph/ -o cov/tmp.info
+	 lcov --remove cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' -o cov/coverage.info
+	 cd ${BASEPATH}/cov
+	 genhtml coverage.info
 fi
 
 # generate output package in tar form, including ut/st libraries/executables
@@ -242,6 +255,7 @@ generate_package()
   FWK_PATH="fwkacllib/lib64"
   ATC_PATH="atc/lib64"
   ATC_BIN_PATH="atc/bin"
+  FWK_BIN_PATH="fwkacllib/bin"
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
@@ -254,6 +268,7 @@ generate_package()
   rm -rf ${OUTPUT_PATH:?}/${ACL_PATH}/
   rm -rf ${OUTPUT_PATH:?}/${ATC_PATH}/
   rm -rf ${OUTPUT_PATH:?}/${ATC_BIN_PATH}/
+  rm -rf ${OUTPUT_PATH:?}/${FWK_BIN_PATH}/
 
   mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${NNENGINE_PATH}"
   mk_dir "${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH}"
@@ -261,6 +276,7 @@ generate_package()
   mk_dir "${OUTPUT_PATH}/${ATC_PATH}/${OPSKERNEL_PATH}"
   mk_dir "${OUTPUT_PATH}/${ACL_PATH}"
   mk_dir "${OUTPUT_PATH}/${ATC_BIN_PATH}"
+  mk_dir "${OUTPUT_PATH}/${FWK_BIN_PATH}"
  
   cd "${OUTPUT_PATH}"
 
@@ -299,7 +315,8 @@ generate_package()
     find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH} \;
   done
 
-  find ./bin -name atc -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
+  find ./lib/atclib -name atc.bin -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
+  find ./lib/fwkacl -name atc.bin -exec cp {} "${OUTPUT_PATH}/${FWK_BIN_PATH}" \;
   find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "libascendcl.so" -exec cp -f {} ${OUTPUT_PATH}/${ACL_PATH} \;
   
   if [ "x${PLATFORM}" = "xtrain" ]
@@ -314,7 +331,12 @@ generate_package()
   fi
 }
 
-if [[ "X$ENABLE_GE_UT" = "Xoff" ]]; then
+if [[ "X$ENABLE_GE_UT" = "Xoff" && "X$MINDSPORE_MODE" = "Xoff" ]]; then
   generate_package
+elif [ "X$MINDSPORE_MODE" = "Xon" ]
+then
+  cd "${OUTPUT_PATH}"
+  find ./ -name graphengine_lib.tar -exec rm {} \;
+  tar -cf graphengine_lib.tar lib
 fi
 echo "---------------- GraphEngine package archive generated ----------------"

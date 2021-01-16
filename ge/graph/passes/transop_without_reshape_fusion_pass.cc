@@ -63,7 +63,7 @@ void TransOpWithoutReshapeFusionPass::SetRemainNode(
       continue;
     }
     GELOGI("SetRemainNode node is %s", op_desc->GetName().c_str());
-    GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true), GELOGE(INTERNAL_ERROR, "set ext attr failed"); return );
+    GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true), GELOGE(INTERNAL_ERROR, "set ext attr failed"); return);
   }
 }
 
@@ -594,7 +594,7 @@ void TransOpWithoutReshapeFusionPass::GetBeginOutDescAndEndInDesc(const int inde
   auto out_owner_node = out_peer_anchor->GetOwnerNode();
   GE_CHECK_NOTNULL_JUST_RETURN(out_owner_node);
   auto out_peer_op_desc = out_owner_node->GetOpDesc();
-  GE_IF_BOOL_EXEC(out_peer_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "out_peer_op_desc is nullptr"); return );
+  GE_IF_BOOL_EXEC(out_peer_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "out_peer_op_desc is nullptr"); return);
   out_desc = out_peer_op_desc->GetInputDesc(out_peer_anchor->GetIdx());
 
   auto in_peer_anchor = nodes_anchor.back().first;
@@ -602,7 +602,7 @@ void TransOpWithoutReshapeFusionPass::GetBeginOutDescAndEndInDesc(const int inde
   auto in_owner_node = in_peer_anchor->GetOwnerNode();
   GE_CHECK_NOTNULL_JUST_RETURN(in_owner_node);
   auto in_peer_op_desc = in_owner_node->GetOpDesc();
-  GE_IF_BOOL_EXEC(in_peer_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "in_peer_op_desc is nullptr"); return );
+  GE_IF_BOOL_EXEC(in_peer_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "in_peer_op_desc is nullptr"); return);
   in_desc = in_peer_op_desc->GetOutputDesc(in_peer_anchor->GetIdx());
 }
 
@@ -734,10 +734,14 @@ void TransOpWithoutReshapeFusionPass::RemoveNousedNodes(const ComputeGraphPtr &g
         continue;
       }
 
-      GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true), GELOGE(INTERNAL_ERROR, "set ext attr failed"); return );
+      GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true), GELOGE(INTERNAL_ERROR, "set ext attr failed"); return);
       GELOGI("remove node:%s", node->GetName().c_str());
-      if (graph->RemoveNode(node) != GRAPH_SUCCESS) {
-        GELOGW("remove node failed!node:%s", node->GetName().c_str());
+      if (GraphUtils::IsolateNode(node, {0}) != GRAPH_SUCCESS) {
+        GELOGW("Isolate node: %s failed.", node->GetName().c_str());
+        continue;
+      }
+      if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
+        GELOGW("Remove node: %s failed.", node->GetName().c_str());
         continue;
       }
     }

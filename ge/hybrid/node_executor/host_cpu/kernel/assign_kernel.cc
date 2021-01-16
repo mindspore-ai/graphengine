@@ -20,7 +20,6 @@
 #include "hybrid/node_executor/host_cpu/kernel_factory.h"
 
 namespace {
-const size_t kAssignInputNum = 2;
 const size_t kAssignRefInputIndex = 0;
 const size_t kAssignValueInputIndex = 1;
 const size_t kAssignRefOutputIndex = 0;

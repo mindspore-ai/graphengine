@@ -33,10 +33,8 @@ namespace ge {
 
   private:
     static Status SetKernelArgs(void **args, STR_FWK_OP_KERNEL &kernel);
-    Status SetInputOutputAddr(void **io_addr, const std::vector<void *> &addresses);
     Status SetFmkOpKernel(void *io_addr, void *ws_addr, STR_FWK_OP_KERNEL &kernel);
-    Status InitWorkspaceAndIO(void **io_addr, void **kernel_workspace,
-                              const SingleOpModelParam &param, bool dynamic_flag);
+    Status InitWorkspaceAndIO(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag);
 
     const OpDescPtr op_desc_;
     const domi::KernelExDef &kernel_def_;

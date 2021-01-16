@@ -55,14 +55,7 @@ using std::vector;
 namespace {
 const uint32_t kWeightsStartOffset = 512;
 const int32_t kWrongIndex = -2;
-
-const float kImgRatioYUV420SP_U8 = 1.5;
-const int kImgRatioRGB888_U8 = 3;
-const int kImgRatioNC1HWC0DI_FP16 = 12;
 const int kInvalidIndexNum = -1;
-
-const uint32_t kInputDimensions2D = 2;
-const uint32_t kInputDimensions3D = 3;
 
 const char *const kVectorCore = "VectorCore";
 const char *const kCoreType = "ge.engineType";
@@ -224,6 +217,7 @@ Status ModelBuilder::AdjustConstWeightSize(const ge::NodePtr &node, size_t &mem_
     GeTensorDesc &tensor_desc = weight->MutableTensorDesc();
     size_t output_size = weight->GetData().size();
     TensorUtils::SetDataOffset(tensor_desc, mem_offset);
+    GELOGD("Node: %s, weight size: %zu.", node->GetName().c_str(), output_size);
     mem_offset += output_size;
   }
   return SUCCESS;
@@ -282,7 +276,7 @@ Status ModelBuilder::SetInputOutputDesc() {
 void ModelBuilder::AddNodeInputProperty() {
   for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
     vector<string> src_name_list;
     vector<int64_t> src_index_list;
     for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
@@ -309,10 +303,10 @@ void ModelBuilder::AddNodeInputProperty() {
 
   for (const ge::NodePtr &node : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return );
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, GELOGW("node_op_desc is nullptr!"); return);
     GE_IF_BOOL_EXEC(node_op_desc->GetType() == NETOUTPUT, continue);
     auto out_control_anchor = node->GetOutControlAnchor();
-    GE_IF_BOOL_EXEC(out_control_anchor == nullptr, GELOGW("out_control_anchor is nullptr"); return );
+    GE_IF_BOOL_EXEC(out_control_anchor == nullptr, GELOGW("out_control_anchor is nullptr"); return);
     vector<string> dst_name_list;
     vector<int64_t> dst_index_list;
     string dst_name_temp;
@@ -330,7 +324,7 @@ void ModelBuilder::AddNodeInputProperty() {
       dst_name_temp = "";
       int64_t dst_index = kWrongIndex;  // assign an impossible value to dst_index.
       for (const auto &in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-        GE_IF_BOOL_EXEC(in_data_anchor == nullptr, GELOGW("in_data_anchor is nullptr"); return );
+        GE_IF_BOOL_EXEC(in_data_anchor == nullptr, GELOGW("in_data_anchor is nullptr"); return);
         ge::NodePtr dst_node = in_data_anchor->GetOwnerNode();
         dst_name_temp = dst_name_temp.empty() ? dst_node->GetName() : dst_name_temp + ":" + dst_node->GetName();
         dst_index = in_data_anchor->GetIdx();
@@ -568,7 +562,7 @@ Status ModelBuilder::MergeWeights() {
         return FAILED;
       }
     }
-    weight_data.clear();
+    weight->ClearData();
   }
 
   return SUCCESS;
@@ -581,9 +575,13 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
   // Add TBE Kernels and custom aicpu op bin
   std::set<std::string> tbe_name_set;
   std::set<std::string> aicpu_name_set;
+  std::set<std::string> aicpu_op_types;
+  std::set<std::string> aicpu_tf_op_types;
   for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
+    // check aicpu op type
+    CollectCheckAicpuAttr(node_op_desc, aicpu_op_types, aicpu_tf_op_types);
     TBEKernelPtr tbe_kernel = node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
     if (tbe_kernel == nullptr) {
       std::string kernel_name;
@@ -604,6 +602,8 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     tbe_name_set.insert(tbe_kernel->GetName());
     tbe_kernel_store_.AddTBEKernel(tbe_kernel);
   }
+
+  SetModelCheckAicpuAttr(model, aicpu_op_types, aicpu_tf_op_types);
 
   for (const ge::NodePtr &n : compute_graph_->GetNodes(compute_graph_->GetGraphUnknownFlag())) {
     auto node_op_desc = n->GetOpDesc();
@@ -795,5 +795,52 @@ Status ModelBuilder::CompileSingleOp() {
   }
   GE_TIMESTAMP_CALLNUM_END(BatchCompileOp, "GraphBuild::CompileOp");
   return ge::SUCCESS;
+}
+
+void ModelBuilder::CollectCheckAicpuAttr(const OpDescPtr &op_desc, std::set<std::string> &aicpu_op_types,
+                                         std::set<std::string> &aicpu_tf_op_types) {
+  std::string aicpu_optype;
+  bool has_attr_check_cpu = ge::AttrUtils::GetStr(op_desc, "needCheckCpu", aicpu_optype);
+  std::vector<std::string> tf_optypes;
+  bool has_attr_check_tf = ge::AttrUtils::GetListStr(op_desc, "needCheckTf", tf_optypes);
+  if (has_attr_check_cpu && !aicpu_optype.empty()) {
+    aicpu_op_types.insert(aicpu_optype);
+  }
+
+  if (has_attr_check_tf && !tf_optypes.empty()) {
+    aicpu_tf_op_types.insert(tf_optypes.begin(), tf_optypes.end());
+  }
+
+  return;
+}
+
+void ModelBuilder::SetModelCheckAicpuAttr(ge::Model &model, std::set<std::string> &aicpu_op_types,
+                                          std::set<std::string> &aicpu_tf_op_types) {
+  std::vector<std::string> aicpu_optype_list;
+  std::vector<std::string> aicpu_tf_optype_list;
+  if (ge::AttrUtils::GetListStr(&model, "needCheckCpu", aicpu_optype_list)) {
+    GELOGI("Already have aicpu optype size: %zu", aicpu_optype_list.size());
+    aicpu_op_types.insert(aicpu_optype_list.begin(), aicpu_optype_list.end());
+  }
+
+  if (ge::AttrUtils::GetListStr(&model, "needCheckTf", aicpu_tf_optype_list)) {
+    GELOGI("Already have aicpu tf optype size: %zu", aicpu_tf_optype_list.size());
+    aicpu_tf_op_types.insert(aicpu_tf_optype_list.begin(), aicpu_tf_optype_list.end());
+  }
+
+  // reset list with set
+  aicpu_optype_list.assign(aicpu_op_types.begin(), aicpu_op_types.end());
+  aicpu_tf_optype_list.assign(aicpu_tf_op_types.begin(), aicpu_tf_op_types.end());
+  GELOGI(
+    "Check Aicpu op types ComputeGraph: %s aicpu_op_types: %zu, aicpu_optype_list: %zu, aicpu_tf_op_types: %zu, "
+    "aicpu_tf_optype_list:%zu.",
+    compute_graph_->GetName().c_str(), aicpu_op_types.size(), aicpu_optype_list.size(), aicpu_tf_op_types.size(),
+    aicpu_tf_optype_list.size());
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, "needCheckCpu", aicpu_optype_list), return,
+                   "Set attr needCheckCpu fail.");
+
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, "needCheckTf", aicpu_tf_optype_list), return,
+                   "Set attr needCheckTf fail.");
+  return;
 }
 }  // namespace ge

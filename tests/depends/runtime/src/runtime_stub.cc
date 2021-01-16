@@ -325,7 +325,7 @@ rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback)
 }
 
 rtError_t rtMallocHostSharedMemory(rtMallocHostSharedMemoryIn *in,
-		                   rtMallocHostSharedMemoryOut *out)
+		                               rtMallocHostSharedMemoryOut *out)
 {
   out->ptr = new uint8_t[in->size];
   out->devPtr = new uint8_t[in->size];
@@ -381,6 +381,11 @@ rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *maxStrCount, uint
 }
 
 rtError_t rtModelExit(rtModel_t model, rtStream_t stream)
+{
+ return RT_ERROR_NONE;
+}
+
+rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId)
 {
  return RT_ERROR_NONE;
 }

@@ -52,6 +52,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(u
   return SUCCESS;
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(uint8_t *model_data,
+                                                                               uint32_t model_data_size,
+                                                                               uint32_t model_num) {
+  Status status = LoadModelPartitionTable(model_data, model_data_size, model_num);
+  if (status != SUCCESS) {
+    return status;
+  }
+  is_inited_ = true;
+  return SUCCESS;
+}
+
 // Use both
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type,
                                                                                             ModelPartition &partition) {
@@ -62,6 +73,37 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetMod
 
   bool found = false;
   for (ModelPartition &part : context_.partition_datas_) {
+    if (part.type == type) {
+      partition = part;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    if (type != ModelPartitionType::TBE_KERNELS && type != ModelPartitionType::WEIGHTS_DATA &&
+        type != ModelPartitionType::CUST_AICPU_KERNELS) {
+      GELOGE(FAILED, "GetModelPartition:type:%d is not in partition_datas!", static_cast<int>(type));
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type,
+                                                                                            ModelPartition &partition,
+                                                                                            size_t model_index) {
+  if (!is_inited_) {
+    GELOGE(PARAM_INVALID, "OmFileLoadHelper has not been initialized!");
+    return PARAM_INVALID;
+  }
+  if (model_index >= model_contexts_.size()) {
+    GELOGE(PARAM_INVALID, "cur index : %zu, model_contexts size:%zu", model_index, model_contexts_.size());
+    return PARAM_INVALID;
+  }
+  auto &cur_ctx = model_contexts_[model_index];
+  bool found = false;
+  for (ModelPartition &part : cur_ctx.partition_datas_) {
     if (part.type == type) {
       partition = part;
       found = true;
@@ -138,12 +180,68 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
     context_.partition_datas_.push_back(partition);
 
     if (partition.size > model_data_size || mem_offset > model_data_size - partition.size) {
-      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %zu is greater than the model data size %u.",
+      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
+             "The partition size %zu is greater than the model data size %u.",
              partition.size + mem_offset, model_data_size);
       return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
     }
     mem_offset += partition.size;
     GELOGD("Partition, type:%d, size:%u", static_cast<int>(partition.type), partition.size);
+  }
+  return SUCCESS;
+}
+
+Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t model_data_size, uint32_t model_num) {
+  if (model_data == nullptr) {
+    GELOGE(PARAM_INVALID, "Param model_data must not be null!");
+    return PARAM_INVALID;
+  }
+
+  uint32_t cur_offset = 0;
+  for (uint32_t index = 0; index < model_num; ++index) {
+    // Init partition table
+    auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data + cur_offset);
+    size_t partition_table_size = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);
+    cur_offset += partition_table_size;
+    GELOGD("Cur model index %zu: ModelPartitionTable num :%u, "
+           "ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
+           index, partition_table->num, sizeof(ModelFileHeader), partition_table_size);
+    if (model_data_size <= cur_offset) {
+      GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "invalid model data, partition_table->num:%u, model data size %u",
+             partition_table->num, model_data_size);
+      return GE_EXEC_MODEL_DATA_SIZE_INVALID;
+    }
+
+    for (uint32_t i = 0; i < partition_table->num; i++) {
+      ModelPartition partition;
+      partition.size = partition_table->partition[i].mem_size;
+      partition.data = model_data + cur_offset;
+      partition.type = partition_table->partition[i].type;
+      if (index >= model_contexts_.size()) {
+        if (index != model_contexts_.size()) {
+          GELOGE(FAILED, "cur index is %zu make model_contexts_ overflow", index);
+          return FAILED;
+        }
+
+        OmFileContext tmp_ctx;
+        tmp_ctx.partition_datas_.push_back(partition);
+        model_contexts_.push_back(tmp_ctx);
+      } else {
+        model_contexts_[index].partition_datas_.push_back(partition);
+      }
+
+      if (partition.size > model_data_size || cur_offset > model_data_size - partition.size) {
+        GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %zu is greater than the model data size %u.",
+               partition.size + cur_offset, model_data_size);
+        return GE_EXEC_MODEL_DATA_SIZE_INVALID;
+      }
+      cur_offset += partition.size;
+      GELOGD("Partition, type:%d, size:%u, model_index:%zu", static_cast<int>(partition.type), partition.size, index);
+    }
+  }
+  if (cur_offset != model_data_size) {
+    GELOGE(FAILED, "do not get the complete model, read end offset:%zu, all size:%zu", cur_offset, model_data_size);
+    return FAILED;
   }
   return SUCCESS;
 }
@@ -172,6 +270,28 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSave
   return partition_table;
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSaveHelper::GetPartitionTable(
+    size_t cur_ctx_index) {
+  auto &cur_ctx = model_contexts_[cur_ctx_index];
+  auto partition_size = static_cast<uint32_t>(cur_ctx.partition_datas_.size());
+  // Build ModelPartitionTable, flex array
+  cur_ctx.partition_table_.clear();
+  cur_ctx.partition_table_.resize(sizeof(ModelPartitionTable) + sizeof(ModelPartitionMemInfo) * partition_size, 0);
+
+  auto partition_table = reinterpret_cast<ModelPartitionTable *>(cur_ctx.partition_table_.data());
+  partition_table->num = partition_size;
+
+  uint32_t mem_offset = 0;
+  for (uint32_t i = 0; i < partition_size; i++) {
+    ModelPartition partition = cur_ctx.partition_datas_[i];
+    partition_table->partition[i] = {partition.type, mem_offset, partition.size};
+    mem_offset += partition.size;
+    GELOGD("Partition, type:%d, size:%u", static_cast<int>(partition.type), partition.size);
+  }
+  return partition_table;
+}
+
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileSaveHelper::AddPartition(ModelPartition &partition) {
   if (ge::CheckUint32AddOverflow(context_.model_data_len_, partition.size) != SUCCESS) {
     GELOGE(FAILED, "UINT32 %u and %u addition can result in overflow!", context_.model_data_len_, partition.size);
@@ -179,6 +299,27 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileSaveHelper::AddPar
   }
   context_.partition_datas_.push_back(partition);
   context_.model_data_len_ += partition.size;
+  return SUCCESS;
+}
+
+Status OmFileSaveHelper::AddPartition(ModelPartition &partition, size_t cur_index) {
+  if (ge::CheckUint32AddOverflow(context_.model_data_len_, partition.size) != SUCCESS) {
+    GELOGE(FAILED, "UINT32 %u and %u addition can result in overflow!", context_.model_data_len_, partition.size);
+    return FAILED;
+  }
+  if (cur_index >= model_contexts_.size()) {
+    if (cur_index != model_contexts_.size()) {
+      GELOGE(FAILED, "cur index is %zu make model_contexts_ overflow", cur_index);
+      return FAILED;
+    }
+    OmFileContext tmp_ctx;
+    tmp_ctx.model_data_len_ += partition.size;
+    tmp_ctx.partition_datas_.push_back(partition);
+    model_contexts_.push_back(tmp_ctx);
+  } else {
+    model_contexts_[cur_index].model_data_len_ += partition.size;
+    model_contexts_[cur_index].partition_datas_.push_back(partition);
+  }
   return SUCCESS;
 }
 
@@ -198,6 +339,10 @@ Status OmFileSaveHelper::SaveModel(const SaveParam &save_param, const char *outp
 
 Status OmFileSaveHelper::SaveModelToFile(const char *output_file, ModelBufferData &model, bool is_offline) {
 #if !defined(NONSUPPORT_SAVE_TO_FILE)
+  if (context_.partition_datas_.empty()) {
+    GE_CHK_BOOL_EXEC(!model_contexts_.empty(), return FAILED, "mode contexts empty");
+    context_ = model_contexts_.front();
+  }
   uint32_t model_data_len = context_.model_data_len_;
   if (model_data_len == 0) {
     GELOGE(domi::PARAM_INVALID, "Model data len error! should not be 0");
@@ -222,6 +367,55 @@ Status OmFileSaveHelper::SaveModelToFile(const char *output_file, ModelBufferDat
     ret = FileSaver::SaveToFile(output_file, model_header_, *partition_table, partition_datas);
   } else {
     ret = FileSaver::SaveToBuffWithFileHeader(model_header_, *partition_table, partition_datas, model);
+  }
+  if (ret == SUCCESS) {
+    GELOGD("Save model success without encrypt.");
+  }
+  return ret;
+#else
+  return SUCCESS;
+#endif
+}
+
+Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char *output_file,
+                                       ModelBufferData &model, bool is_offline) {
+  (void)save_param.cert_file;
+  (void)save_param.ek_file;
+  (void)save_param.encode_mode;
+  (void)save_param.hw_key_file;
+  (void)save_param.pri_key_file;
+
+#if !defined(NONSUPPORT_SAVE_TO_FILE)
+  vector<ModelPartitionTable *> model_partition_tabels;
+  vector<vector<ModelPartition>> all_model_partitions;
+  for (size_t ctx_index = 0; ctx_index < model_contexts_.size(); ++ctx_index) {
+    auto &cur_ctx = model_contexts_[ctx_index];
+    uint32_t cur_model_data_len = cur_ctx.model_data_len_;
+    if (cur_model_data_len == 0) {
+      GELOGE(domi::PARAM_INVALID, "Model data len error! should not be 0");
+      return domi::PARAM_INVALID;
+    }
+
+    auto tmp_table = GetPartitionTable(ctx_index);
+    if (tmp_table == nullptr) {
+      GELOGE(ge::GE_GRAPH_SAVE_FAILED, "SaveModelToFile execute failed: partition_table is NULL.");
+      return ge::GE_GRAPH_SAVE_FAILED;
+    }
+    uint32_t size_of_table = SIZE_OF_MODEL_PARTITION_TABLE(*tmp_table);
+    FMK_UINT32_ADDCHECK(size_of_table, cur_model_data_len)
+    FMK_UINT32_ADDCHECK(size_of_table + cur_model_data_len, model_header_.length)
+    model_header_.length += size_of_table + cur_model_data_len;
+    model_partition_tabels.push_back(tmp_table);
+    all_model_partitions.push_back(cur_ctx.partition_datas_);
+    GELOGD("sizeof(ModelPartitionTable):%u, cur_model_data_len:%u, cur_context_index:%zu",
+           size_of_table, cur_model_data_len, ctx_index);
+  }
+  Status ret;
+  if (is_offline) {
+    ret = FileSaver::SaveToFile(output_file, model_header_, model_partition_tabels, all_model_partitions);
+  } else {
+    GELOGW("do not support save ge root model to buff now");
+    return FAILED;
   }
   if (ret == SUCCESS) {
     GELOGD("Save model success without encrypt.");

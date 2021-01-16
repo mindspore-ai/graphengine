@@ -58,7 +58,7 @@
   /// @param [in] value: vector parameter value
   ///
   void ErrorManager::ATCReportErrMessage(std::string error_code, const std::vector<std::string> &key,
-                           const std::vector<std::string> &value) { 
+                                         const std::vector<std::string> &value) { 
   }
 
   ///
@@ -66,13 +66,8 @@
   /// @param [in] msg: failed message map, key is error code, value is op_name
   /// @return int 0(success) -1(fail)
   ///
-  int ErrorManager::ReportMstuneCompileFailedMsg(const std::map<std::string, std::string> &msg) { return 0; }
-
-  ///
-  /// @brief save graph compile failed message from thread local map to global map
-  /// @param [in] graph_name: graph name
-  ///
-  void ErrorManager::SaveMstuneCompileFailedMsg(const std::string &graph_name) {}
+  int ErrorManager::ReportMstuneCompileFailedMsg(const std::string &root_graph_name,
+		                                 const std::map<std::string, std::string> &msg) { return 0; }
 
   ///
   /// @brief get graph compile failed message in mstune case

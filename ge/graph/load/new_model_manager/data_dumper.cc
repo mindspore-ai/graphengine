@@ -120,6 +120,7 @@ static int32_t GetIrDataType(ge::DataType data_type) {
       {ge::DT_RESOURCE, ge::proto::DT_RESOURCE},
       {ge::DT_STRING_REF, ge::proto::DT_STRING_REF},
       {ge::DT_STRING, ge::proto::DT_STRING},
+      {ge::DT_VARIANT, ge::proto::DT_VARIANT},
   };
 
   auto iter = data_type_map.find(data_type);
@@ -319,6 +320,9 @@ Status DataDumper::GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vis
   for (auto dim : tensor_descs.at(index).GetShape().GetDims()) {
     output.mutable_shape()->add_dim(dim);
   }
+  for (auto dim : tensor_descs.at(index).GetOriginShape().GetDims()) {
+    output.mutable_origin_shape()->add_dim(dim);
+  }
   int64_t output_size = 0;
   if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(index), output_size) != SUCCESS) {
     GELOGE(PARAM_INVALID, "Get output size filed");
@@ -475,6 +479,9 @@ Status DataDumper::GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor
 
   for (auto dim : tensor_descs.at(index).GetShape().GetDims()) {
     input.mutable_shape()->add_dim(dim);
+  }
+  for (auto dim : tensor_descs.at(index).GetOriginShape().GetDims()) {
+    input.mutable_origin_shape()->add_dim(dim);
   }
   int64_t input_size = 0;
   if (AttrUtils::GetInt(tensor_descs.at(index), ATTR_NAME_INPUT_ORIGIN_SIZE, input_size)) {
@@ -823,6 +830,13 @@ Status DataDumper::UnloadDumpInfo() {
   return SUCCESS;
 }
 
+void DataDumper::DumpShrink() {
+  compute_graph_.reset();
+  input_map_.clear();
+  ref_info_.clear();
+  op_list_.clear();
+}
+
 void DataDumper::PrintCheckLog(string &dump_list_key) {
   std::set<std::string> model_list = dump_properties_.GetAllDumpModel();
   if (model_list.empty()) {
@@ -891,6 +905,7 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
       toolkit::dumpdata::DumpData dump_data;
       dump_data.set_version("2.0");
       dump_data.set_dump_time(GetNowTime());
+      dump_data.set_op_name(op_desc_info.op_name);
       for (size_t i = 0; i < op_desc_info.input_format.size(); ++i) {
         toolkit::dumpdata::OpInput input;
         input.set_data_type(toolkit::dumpdata::OutputDataType(GetIrDataType(op_desc_info.input_data_type[i])));
@@ -919,11 +934,11 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
       ReplaceStringElem(op_name);
       ReplaceStringElem(op_type);
       string dump_file_path =
-          "./" + op_type + "." + op_name + "." + to_string(op_desc_info.task_id) + "." + to_string(now_time);
+          "./" + op_type + "." + op_name + "." + std::to_string(op_desc_info.task_id) + "." + std::to_string(now_time);
       GELOGI("The exception dump file path is %s", dump_file_path.c_str());
 
       uint64_t proto_size = dump_data.ByteSizeLong();
-      unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
+      std::unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
       bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);
       if (!ret || proto_size == 0) {
         GELOGE(PARAM_INVALID, "Dump data proto serialize failed");

@@ -50,15 +50,18 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   auto ret = ExecuteGraphInternal(executor, args);
   Cleanup();
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Cleanup] End");
-  GE_CHK_STATUS_RET(ret, "Failed to execute model");
   GELOGD("Model executed successfully.");
-
   if (context_.profiler != nullptr) {
     context_.profiler->Dump(std::cout);
     context_.profiler->Reset();
   }
 
   context_.iteration += 1;
+  if (ret == END_OF_SEQUENCE) {
+    args.is_eos = true;
+  } else {
+    GE_CHK_STATUS_RET(ret, "Failed to execute model");
+  }
   return SUCCESS;
 }
 
@@ -68,13 +71,13 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
 
-  GE_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc), "Failed to execute partitioned call.");
+  HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc), "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
 
-  GE_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
+  HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
 
-  GE_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
+  HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
   return SUCCESS;
 }
@@ -82,7 +85,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
 Status HybridModelExecutor::Cleanup() {
   GELOGD("Start to cleanup.");
   context_.callback_manager->Destroy();
-  RuntimeInferenceContext::DestroyContext(to_string(context_.session_id));
+  RuntimeInferenceContext::DestroyContext(std::to_string(context_.session_id));
   GELOGD("Cleanup successfully.");
   return SUCCESS;
 }
@@ -94,7 +97,9 @@ Status HybridModelExecutor::InitExecutionContext() {
 
   context_.stream = stream_;
   context_.model = model_;
+  context_.is_eos_ = false;
   context_.session_id = ::ge::GetContext().SessionId();
+  context_.ge_context = &GetThreadLocalContext();
   GELOGD("session id from model = %lu, from context = %lu", model_->GetSessionId(), context_.session_id);
   context_.allocator = NpuMemoryAllocator::GetAllocator(device_id_);
   GE_CHECK_NOTNULL(context_.allocator);

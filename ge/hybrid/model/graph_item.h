@@ -29,7 +29,7 @@ class GraphItem {
   const vector<NodeItem *> &GetAllNodes() const;
   const vector<const NodeItem *> &GetInputNodes() const;
   Status GetOutputDescList(std::vector<ConstGeTensorDescPtr> &output_desc_list) const;
-
+  const vector<std::pair<const NodeItem *, int>> &GetOutputEdges() const;
   int TotalInputs() const {
     return total_inputs_;
   }

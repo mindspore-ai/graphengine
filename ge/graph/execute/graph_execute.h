@@ -73,7 +73,7 @@ class GraphExecutor {
                                        vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &input_formats,
                                        std::vector<uint32_t> &output_formats, bool new_model_desc = false);
 
-  static Status GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
+  static Status GetAippInfo(uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info);
 
   static Status GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index);
 
@@ -110,10 +110,6 @@ class GraphExecutor {
 
   static Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
-  static Status GetInputOutputDescInfoForZeroCopy(uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
-                                                  vector<InputOutputDescInfo> &output_desc,
-                                                  std::vector<uint32_t> &input_formats,
-                                                  std::vector<uint32_t> &output_formats);
   static Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
   static Status GetAllAippInputOutputDims(uint32_t model_id, uint32_t index, std::vector<InputOutputDims> &input_dims,
                                           std::vector<InputOutputDims> &output_dims);

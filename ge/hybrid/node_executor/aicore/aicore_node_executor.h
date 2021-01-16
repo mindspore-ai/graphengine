@@ -60,7 +60,6 @@ class AiCoreNodeTask : public NodeTask {
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
  private:
-  static bool IsNoOp(TaskContext &task_context);
   std::vector<std::unique_ptr<AiCoreOpTask>> tasks_;
 };
 
@@ -89,7 +88,7 @@ class TaskCompilerFactory {
 
 class CompilerFunctionRegistrar {
  public:
-  CompilerFunctionRegistrar(CreateFn fn);
+  explicit CompilerFunctionRegistrar(CreateFn fn);
   ~CompilerFunctionRegistrar() = default;
 };
 }  // namespace hybrid

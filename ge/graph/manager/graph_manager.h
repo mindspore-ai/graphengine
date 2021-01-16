@@ -219,12 +219,14 @@ class GraphManager {
 
   static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, GraphId root_graph_id,
                                                 const SubGraphInfoPtr &sub_graph_info_ptr,
-                                                const ComputeGraphPtr &compute_graph, uint64_t session_id,
+                                                const std::string &root_graph_name,
+                                                uint64_t session_id,
                                                 const GEThreadLocalContext &ge_context);
   Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
   void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);
   Status ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
                                                const std::vector<InputTensorInfo> &input_tensor);
+  Status RunCustomPass(const GraphNodePtr &graph_node);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, GeRootModelPtr &ge_root_model,
                 uint64_t session_id = INVALID_SESSION_ID);
 

@@ -53,7 +53,6 @@
 
 using namespace testing;
 using namespace ge;
-using namespace cce;
 using namespace ge::test;
 
 class UtestEmptyKernel : public testing::Test {

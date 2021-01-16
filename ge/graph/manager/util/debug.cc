@@ -32,7 +32,8 @@ Debug::~Debug() = default;
 
 void Debug::DumpProto(const Message &proto, const char *file) {
   std::string file_path = RealPath(file);
-  int fd = mmOpen2(file_path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD | M_UMASK_OTHREAD);
+  int fd = mmOpen2(file_path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD |
+                   M_UMASK_OTHREAD);
   if (fd == -1) {
     GELOGW("Write %s failed", file_path.c_str());
     return;

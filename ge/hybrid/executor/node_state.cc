@@ -18,6 +18,7 @@
 #include <chrono>
 #include "framework/common/debug/log.h"
 #include "graph/compute_graph.h"
+#include "graph/utils/tensor_utils.h"
 #include "hybrid_execution_context.h"
 #include "subgraph_context.h"
 
@@ -35,30 +36,32 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
          this->num_pending_shapes_);
 }
 
-Status ShapeInferenceState::UpdateInputShape(int idx,
-                                             const GeShape &ori_shape,
-                                             const GeShape &shape) {
+Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target) {
   if (node_item.IsInputShapeStatic(idx)) {
     GELOGD("[%s] Trying to update static shape, idx = %d. old shape = [%s], new shape = [%s]",
            node_item.NodeName().c_str(),
            idx,
            node_item.MutableInputDesc(idx)->GetShape().ToString().c_str(),
-           shape.ToString().c_str());
+           target.GetShape().ToString().c_str());
     return SUCCESS;
   }
 
-  GELOGD("[%s] Update input shape [%d] with Shape: [%s] and OriginalShape: [%s]",
+  int64_t tensor_size = -1;
+  (void) TensorUtils::GetSize(target, tensor_size);
+  GELOGD("[%s] Update input shape [%d] with Shape: [%s] and OriginalShape: [%s], size = %ld",
          node_item.NodeName().c_str(),
          idx,
-         shape.ToString().c_str(),
-         ori_shape.ToString().c_str());
+         target.GetShape().ToString().c_str(),
+         target.GetOriginShape().ToString().c_str(),
+         tensor_size);
 
   std::lock_guard<std::mutex> lk(mu_);
   auto tensor_desc = node_item.MutableInputDesc(idx);
   GE_CHECK_NOTNULL(tensor_desc);
-  tensor_desc->SetShape(shape);
-  tensor_desc->SetOriginShape(ori_shape);
-  if (--num_pending_shapes_ == 0) {
+  tensor_desc->SetShape(target.GetShape());
+  tensor_desc->SetOriginShape(target.GetOriginShape());
+  (void) TensorUtils::SetSize(*tensor_desc, tensor_size);
+  if (--num_pending_shapes_ <= 0) {
     ready_cv_.notify_all();
   }
 
@@ -95,6 +98,11 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
         break;
       }
 
+      if (context.is_eos_) {
+        GELOGD("[%s] Await pending shape cancelled due to end of sequence", node_item.NodeName().c_str());
+        return END_OF_SEQUENCE;
+      }
+
       if (context.GetStatus() != SUCCESS) {
         GELOGE(FAILED, "[%s] Await pending shape cancelled", node_item.NodeName().c_str());
         break;
@@ -110,24 +118,25 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
   for (auto &p : shape_futures) {
     auto idx = p.first;
     auto &future = p.second;
-    GeShape shape;
-    GeShape ori_shape;
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] Start", idx);
-    GE_CHK_STATUS_RET(future.Get(ori_shape, shape),
-                      "[%s] Get shape failed. index = %u",
-                      node_item.NodeName().c_str(),
-                      idx);
+    GeTensorDescPtr src_tensor_desc;
+    GE_CHK_STATUS_RET_NOLOG(future.GetTensorDesc(src_tensor_desc));
+    GE_CHECK_NOTNULL(src_tensor_desc);
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] End", idx);
 
-    GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s]",
-           node_item.NodeName().c_str(),
-           idx,
-           shape.ToString().c_str(),
-           ori_shape.ToString().c_str());
     auto input_desc = node_item.MutableInputDesc(idx);
     GE_CHECK_NOTNULL(input_desc);
-    input_desc->SetShape(std::move(shape));
-    input_desc->SetOriginShape(ori_shape);
+    int64_t tensor_size = -1;
+    (void) TensorUtils::GetSize(*src_tensor_desc, tensor_size);
+    GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s], index = %zu",
+           node_item.NodeName().c_str(),
+           idx,
+           src_tensor_desc->GetShape().ToString().c_str(),
+           src_tensor_desc->GetOriginShape().ToString().c_str(),
+           tensor_size);
+    input_desc->SetShape(src_tensor_desc->GetShape());
+    input_desc->SetOriginShape(src_tensor_desc->GetOriginShape());
+    (void) TensorUtils::SetSize(*input_desc, tensor_size);
   }
 
   return SUCCESS;
@@ -153,10 +162,11 @@ Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
                            node_item_->NodeName().c_str(),
                            "[AwaitNodeDone] [%s] Start",
                            src_node->GetName().c_str());
-    if (!subgraph_context_->Await(src_node)) {
-      GELOGE(INTERNAL_ERROR, "[%s] Await node [%s] failed.", GetName().c_str(), src_node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
+
+    HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node),
+                          "[%s] Await node [%s] failed.",
+                          GetName().c_str(),
+                          src_node->GetName().c_str());
 
     RECORD_EXECUTION_EVENT(&context,
                            node_item_->NodeName().c_str(),
@@ -180,14 +190,17 @@ Status NodeState::WaitForPrepareDone() {
 
 Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {
   GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
-  if (!subgraph_context_->Await(src_node_)) {
-    GELOGE(INTERNAL_ERROR, "cancelled");
-    return INTERNAL_ERROR;
-  }
-
+  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");
   shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->MutableShape();
   ori_shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->GetOriginShape();
   GELOGD("Get shape from %s:%u. shape = [%s]", src_node_->GetName().c_str(), src_index_, shape.ToString().c_str());
+  return SUCCESS;
+}
+
+Status ShapeFuture::GetTensorDesc(GeTensorDescPtr &tensor_desc) {
+  GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
+  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");
+  tensor_desc = src_node_->GetOpDesc()->MutableOutputDesc(src_index_);
   return SUCCESS;
 }
 }  // namespace hybrid

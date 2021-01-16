@@ -39,16 +39,17 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
   Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
  private:
+  Status SetIoAddrs(const OpDescPtr &op_desc, const domi::MemcpyAsyncDef &memcpy_async);
+
   uint8_t *dst_;
   uint64_t dst_max_;
   uint8_t *src_;
   uint64_t count_;
   uint32_t kind_;
-  OpDescPtr op_desc_;
+  vector<void *> io_addrs_;
   int64_t fixed_addr_offset_;
   DavinciModel *davinci_model_ = nullptr;
   uint32_t args_offset_ = 0;
-  domi::MemcpyAsyncDef memcpy_async_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_MEMCPY_ASYNC_TASK_INFO_H_

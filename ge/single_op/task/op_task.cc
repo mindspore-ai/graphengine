@@ -24,9 +24,11 @@
 #include "common/dump/dump_manager.h"
 #include "common/dump/dump_op.h"
 #include "common/formats/formats.h"
+#include "common/math/math_util.h"
 #include "framework/common/debug/log.h"
 #include "register/op_tiling.h"
 #include "runtime/rt.h"
+#include "build_task_utils.h"
 
 namespace ge {
 namespace {
@@ -48,18 +50,22 @@ Status OpTask::OpenDump(rtStream_t stream) {
     std::vector<uint64_t> output_adds;
     auto input_size = op_desc_->GetInputsSize();
     auto output_size = op_desc_->GetOutputsSize();
-    auto all_size = io_addrs_for_dump_.size();
-    if (input_size + output_size != all_size) {
-      GELOGE(FAILED, "io_addrs_for_dump_ size %zu is not equal input and output size %zu", all_size,
+    uintptr_t *arg_base = nullptr;
+    size_t arg_num = 0;
+    GetIoAddr(arg_base, arg_num);
+    if (arg_num < input_size + output_size) {
+      GELOGE(FAILED, "io_addrs_for_dump_ size %zu is not equal input and output size %zu",
+             arg_num,
              input_size + output_size);
       return FAILED;
     }
+
     for (size_t i = 0; i < input_size; i++) {
-      uint64_t input_addr = io_addrs_for_dump_[i];
+      uint64_t input_addr = arg_base[i];
       input_addrs.emplace_back(input_addr);
     }
     for (size_t j = 0; j < output_size; j++) {
-      uint64_t output_addr = io_addrs_for_dump_[input_size + j];
+      uint64_t output_addr = arg_base[input_size + j];
       output_adds.emplace_back(output_addr);
     }
     dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(), op_desc_, input_addrs, output_adds, stream);
@@ -89,9 +95,55 @@ void TbeOpTask::SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size
 
 void TbeOpTask::SetSmDesc(void *sm_desc) { sm_desc_ = sm_desc; }
 
-const vector<int64_t> &OpTask::GetWorkspaceSizes() const { return workspace_sizes_; }
+void OpTask::SetModelArgs(std::string model_name, uint32_t model_id) {
+  model_name_ = model_name;
+  model_id_ = model_id;
+}
 
-void OpTask::SetWorkspaceSizes(const vector<int64_t> &workspace_sizes) { workspace_sizes_ = workspace_sizes; }
+Status OpTask::GetProfilingArgs(std::string &model_name, std::string &op_name, uint32_t &model_id,
+                                uint32_t &block_dim) {
+  model_name = model_name_;
+  model_id = model_id_;
+  block_dim = block_dim_;
+  GE_CHECK_NOTNULL(op_desc_);
+  op_name = op_desc_->GetName();
+  return SUCCESS;
+}
+Status OpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
+  return UNSUPPORTED;
+}
+
+Status OpTask::DoUpdateArgTable(const SingleOpModelParam &param, bool keep_workspace) {
+  auto addresses = BuildTaskUtils::GetAddresses(op_desc_, param, keep_workspace);
+  auto all_addresses = BuildTaskUtils::JoinAddresses(addresses);
+  uintptr_t *arg_base = nullptr;
+  size_t arg_num = 0;
+  GetIoAddr(arg_base, arg_num);
+  if (arg_num < all_addresses.size()) {
+    GELOGE(INTERNAL_ERROR, "[%s] arg number mismatches, expect at least = %zu, but got = %zu",
+           op_desc_->GetName().c_str(),
+           all_addresses.size(),
+           arg_num);
+    return INTERNAL_ERROR;
+  }
+
+  for (void *addr : all_addresses) {
+    *arg_base++ = reinterpret_cast<uintptr_t >(addr);
+  }
+  return SUCCESS;
+}
+
+Status OpTask::UpdateArgTable(const SingleOpModelParam &param) {
+  return DoUpdateArgTable(param, true);
+}
+
+Status OpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
+                            const vector<DataBuffer> &input_buffers,
+                            vector<GeTensorDesc> &output_desc,
+                            vector<DataBuffer> &output_buffers,
+                            rtStream_t stream) {
+  return UNSUPPORTED;
+}
 
 TbeOpTask::~TbeOpTask() {
   if (sm_desc_ != nullptr) {
@@ -126,12 +178,6 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
     return RT_FAILED;
   }
   GELOGI("[TASK_INFO] %s", this->stub_name_.c_str());
-
-  size_t input_size = op_desc_->GetInputsSize();
-  size_t output_size = op_desc_->GetOutputsSize();
-  uint64_t *io_addr = reinterpret_cast<uint64_t *>(args_.get());
-  std::vector<uint64_t> io_addrs(io_addr, io_addr + input_size + output_size);
-  SetIoAddrsForDump(io_addrs);
   auto status = OpenDump(stream);
   if (status != SUCCESS) {
     GELOGE(status, "Open dump failed in the tbe single op %s", this->stub_name_.c_str());
@@ -152,11 +198,12 @@ Status TbeOpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const ve
     GELOGE(FAILED, "Failed to invoke OpParaCalculate. ret = %u", ret);
     return FAILED;
   }
-  SetWorkspaceSizes(run_info.workspaces);
   block_dim_ = run_info.block_dim;
   tiling_data_ = run_info.tiling_data.str();
   GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu", block_dim_,
          tiling_data_.size());
+
+  GE_CHK_STATUS_RET(AllocateWorkspaces(run_info.workspaces), "Failed to allocate workspaces");
   return SUCCESS;
 }
 
@@ -212,13 +259,54 @@ void TbeOpTask::EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, s
   max_tiling_size_ = max_tiling_size;
 }
 
-Status TbeOpTask::LaunchKernel(const vector<void *> &inputs, const vector<void *> &outputs,
-                               const vector<void *> &workspaces, rtStream_t stream) {
+Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
+  static const std::string kPurpose("malloc workspace memory for dynamic op.");
+  if (workspace_sizes.empty()) {
+    GELOGD("No need to allocate workspace.");
+    return SUCCESS;
+  }
+  int64_t total_size = 0;
+  std::vector<int64_t> ws_offsets;
+  for (auto ws_size : workspace_sizes) {
+    // alignment and padding should be done in OpParaCalculate
+    GE_CHK_STATUS_RET_NOLOG(CheckInt64AddOverflow(total_size, ws_size));
+    ws_offsets.emplace_back(total_size);
+    total_size += ws_size;
+  }
+
+  GELOGD("Total workspace size is %ld", total_size);
+  GE_CHECK_NOTNULL(stream_resource_);
+  auto ws_base = stream_resource_->MallocMemory(kPurpose, static_cast<size_t>(total_size));
+  if (ws_base == nullptr) {
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to allocate memory of size: %ld", total_size);
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+  }
+  GELOGD("Done allocating workspace memory successfully.");
+
+  for (auto ws_offset : ws_offsets) {
+    workspaces_.emplace_back(ws_base + ws_offset);
+  }
+
+  return SUCCESS;
+}
+
+Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
+                               const vector<DataBuffer> &input_buffers,
+                               vector<GeTensorDesc> &output_desc,
+                               vector<DataBuffer> &output_buffers,
+                               rtStream_t stream) {
+  GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo(input_desc, output_desc));
   GELOGD("[%s] Start to launch kernel", node_->GetName().c_str());
   std::vector<void *> args;
-  args.insert(args.end(), inputs.begin(), inputs.end());
-  args.insert(args.end(), outputs.begin(), outputs.end());
-  args.insert(args.end(), workspaces.begin(), workspaces.end());
+  for (auto &buffer : input_buffers) {
+    args.emplace_back(buffer.data);
+  }
+  for (auto &buffer : output_buffers) {
+    args.emplace_back(buffer.data);
+  }
+  for (auto &buffer : workspaces_) {
+    args.emplace_back(buffer);
+  }
 
   if (tiling_buffer_ != nullptr) {
     GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
@@ -237,6 +325,14 @@ Status TbeOpTask::LaunchKernel(const vector<void *> &inputs, const vector<void *
   GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), arg_size_, nullptr, stream));
   GELOGD("[%s] Done invoking rtKernelLaunch successfully", node_->GetName().c_str());
   return SUCCESS;
+}
+
+void TbeOpTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
+  arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  arg_count = arg_size_ / sizeof(void *);
+  if (tiling_buffer_ != nullptr) {
+    --arg_count;
+  }
 }
 
 AiCpuBaseTask::~AiCpuBaseTask() {
@@ -278,6 +374,25 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   return SUCCESS;
 }
 
+Status AiCpuBaseTask::SetInputConst() {
+  input_is_const_.clear();
+  const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
+  for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {
+    const GeTensorDescPtr tensor_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(i));
+    if (tensor_desc == nullptr) {
+      GELOGD("SingleOp: %s, Index: %zu, has no input", op_desc_->GetName().c_str(), i);
+      continue;
+    }
+    if (i < v_is_input_const.size() && v_is_input_const[i]) {
+      GELOGD("SingleOp: %s, Index: %zu, input is const", op_desc_->GetName().c_str(), i);
+      input_is_const_.push_back(true);
+      continue;
+    }
+    input_is_const_.push_back(false);
+  }
+  return SUCCESS;
+}
+
 Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, 
                                     std::vector<GeTensorDesc> &output_desc,
                                     rtStream_t stream) {
@@ -288,9 +403,23 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
   }
 
   GE_CHECK_NOTNULL(aicpu_ext_handle_);
-  for (size_t i = 0; i < num_inputs_; ++i) {
-    GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(i, input_desc[i]),
-                      "Input[%zu] update input shape failed.", i);
+
+  size_t non_const_index = 0;
+  for (size_t input_index = 0; input_index < num_inputs_; input_index++) {
+    if (input_index < input_is_const_.size() && input_is_const_[input_index]) {
+      // get input_desc from op_desc if const input, num_inputs_ is op_desc_ input_size
+      auto const_input_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(input_index));
+      GE_CHECK_NOTNULL(const_input_desc);
+      GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, *const_input_desc),
+                        "Input[%zu] update input shape failed.", input_index);
+      continue;
+    }
+    GE_CHK_BOOL_RET_STATUS(non_const_index < input_desc.size(), PARAM_INVALID,
+                           "Input_desc size is %zu, but get non_const_index is %zu",
+                           input_desc.size(), non_const_index);
+    GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, input_desc[non_const_index]),
+                      "Input[%zu] update input shape failed.", input_index);
+    non_const_index++;
   }
 
   if (unknown_type_ != DEPEND_COMPUTE) {
@@ -363,6 +492,41 @@ Status AiCpuBaseTask::UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensor
   return SUCCESS;
 }
 
+Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+  uintptr_t *arg_base = nullptr;
+  size_t arg_num = 0;
+  GetIoAddr(arg_base, arg_num);
+
+  // input number and output number was check in ValidateParams
+  size_t non_const_index = 0;
+  for (size_t input_index = 0; input_index < num_inputs_; input_index++) {
+    if (input_index < input_is_const_.size() && input_is_const_[input_index]) {
+      // const input no need update addr
+      GE_CHECK_NOTNULL(arg_base);
+      GELOGD("AICpuTask input[%zu] addr = %u", input_index, *arg_base);
+      arg_base++;
+      continue;
+    }
+    GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), PARAM_INVALID,
+                           "Input size is %zu, but get non_const_index is %zu",
+                           inputs.size(), non_const_index);
+    auto addr = inputs[non_const_index].data;
+    GE_CHECK_NOTNULL(addr);
+    GELOGD("AICpuTask input[%zu] addr = %p", input_index, addr);
+    *arg_base++ = reinterpret_cast<uintptr_t>(addr);
+    non_const_index++;
+  }
+
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    auto addr = outputs[i].data;
+    GE_CHECK_NOTNULL(addr);
+    GELOGD("AICpuTask output[%zu] addr = %p", i, addr);
+    *arg_base++ = reinterpret_cast<uintptr_t>(addr);
+  }
+
+  return SUCCESS;
+}
+
 AiCpuTask::~AiCpuTask() {
   FreeHbm(args_);
   FreeHbm(io_addr_);
@@ -384,12 +548,14 @@ AiCpuTask::~AiCpuTask() {
   }
 }
 
-const void *AiCpuTask::GetIOAddr() const { return io_addr_; }
-
 Status AiCpuTask::LaunchKernel(rtStream_t stream) {
   GELOGD("Start to launch kernel. task = %s", this->op_type_.c_str());
-  auto ret = rtMemcpyAsync(workspace_addr_, task_info_.size(), task_info_.data(), task_info_.size(),
-                           RT_MEMCPY_HOST_TO_DEVICE_EX, stream);
+  auto ret = rtMemcpyAsync(io_addr_,
+                           io_addr_size_,
+                           io_addr_host_.data(),
+                           io_addr_host_.size() * sizeof(void *),
+                           RT_MEMCPY_HOST_TO_DEVICE_EX,
+                           stream);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpyAsync workspace data failed. ret = %d, task = %s", ret, this->op_type_.c_str());
     return RT_FAILED;
@@ -401,7 +567,7 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
     GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->op_type_.c_str());
     return RT_FAILED;
   }
-  GELOGI("[TASK_INFO] %s/%s", std::to_string(kernel_id_).c_str(), op_type_.c_str());
+  GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
 
   auto status = OpenDump(stream);
   if (status != SUCCESS) {
@@ -538,40 +704,6 @@ Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output
   return SUCCESS;
 }
 
-Status AiCpuTask::SetIO(const vector<void *> &inputs, vector<void *> &outputs) {
-  vector<uint64_t> io_addrs;
-  io_addrs.reserve(num_inputs_ + num_outputs_);
-  for (size_t i = 0; i < num_inputs_; ++i) {
-    GE_CHECK_NOTNULL(inputs[i]);
-    GELOGD("AiCpuTask input[%zu] addr = %p", i, inputs[i]);
-    io_addrs.emplace_back(reinterpret_cast<uintptr_t>(inputs[i]));
-  }
-
-  if (unknown_type_ != DEPEND_COMPUTE) {
-    for (size_t i = 0; i < num_outputs_; ++i) {
-      GE_CHECK_NOTNULL(outputs[i]);
-      GELOGD("AiCpuTask output[%zu] addr = %p", i, outputs[i]);
-      io_addrs.emplace_back(reinterpret_cast<uintptr_t>(outputs[i]));
-    }
-  } else {
-    for (size_t i = 0; i < num_outputs_; ++i) {
-      void *summary_addr = output_summary_[i];
-      io_addrs.emplace_back(reinterpret_cast<uintptr_t>(summary_addr));
-    }
-  }
-
-  if (!io_addrs.empty()) {
-    auto *dst_io_addr = const_cast<uintptr_t *>(reinterpret_cast<const uintptr_t *>(io_addr_));
-    GE_CHK_RT_RET(rtMemcpy(dst_io_addr,
-                           sizeof(uint64_t) * io_addrs.size(),
-                           &io_addrs[0],
-                           sizeof(uint64_t) * io_addrs.size(),
-                           RT_MEMCPY_HOST_TO_DEVICE));
-    GE_CHECK_NOTNULL(dst_io_addr);
-  };
-  return SUCCESS;
-}
-
 Status AiCpuTask::InitForSummaryAndCopy() {
   if (unknown_type_ != DEPEND_COMPUTE || num_outputs_ == 0) {
     GELOGI("Unknown_type is %d, output num is %d.", unknown_type_, num_outputs_);
@@ -643,17 +775,17 @@ Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
                                std::vector<DataBuffer> &output_buffers,
                                rtStream_t stream) {
   GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc, stream));
-  std::vector<void *> inputs;
-  std::vector<void *> outputs;
-  for (auto &buffer : input_buffers) {
-    inputs.emplace_back(buffer.data);
+  if (unknown_type_ == DEPEND_COMPUTE) {
+    std::vector<DataBuffer> summary_buffers;
+    for (size_t i = 0; i < num_outputs_; ++i) {
+      summary_buffers.emplace_back(output_summary_[i], sizeof(aicpu::FWKAdapter::ResultSummary), false);
+    }
+    GE_CHK_STATUS_RET_NOLOG(UpdateIoAddr(input_buffers, summary_buffers));
+  } else {
+    GE_CHK_STATUS_RET_NOLOG(UpdateIoAddr(input_buffers, output_buffers));
   }
-  for (auto &buffer : output_buffers) {
-    outputs.emplace_back(buffer.data);
-  }
-  GE_CHK_STATUS_RET_NOLOG(SetIO(inputs, outputs));
-  GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
 
+  GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
     GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateOutputShape(output_desc));
@@ -663,6 +795,16 @@ Status AiCpuTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
   }
 
   return SUCCESS;
+}
+
+Status AiCpuBaseTask::UpdateArgTable(const SingleOpModelParam &param) {
+  // aicpu do not have workspace, for now
+  return DoUpdateArgTable(param, false);
+}
+
+void AiCpuTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
+  arg_base = reinterpret_cast<uintptr_t *>(io_addr_host_.data());
+  arg_count = io_addr_host_.size();
 }
 
 void AiCpuCCTask::SetKernelArgs(std::unique_ptr<uint8_t[]> args, size_t arg_size) {
@@ -676,9 +818,7 @@ void AiCpuCCTask::SetSoName(const std::string &so_name) { so_name_ = so_name; }
 
 void AiCpuCCTask::SetkernelName(const std::string &kernel_Name) { kernel_name_ = kernel_Name; }
 
-void AiCpuCCTask::SetIoAddr(void *io_addr) { io_addr_ = io_addr; }
-
-const void *AiCpuCCTask::GetIOAddr() const { return io_addr_; }
+void AiCpuCCTask::SetIoAddr(uintptr_t *io_addr) { io_addr_ = io_addr; }
 
 const void *AiCpuCCTask::GetArgs() const { return args_.get(); }
 
@@ -700,13 +840,8 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
     GELOGE(ret, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
     return ret;
   }
+  GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
-
-  size_t input_size = op_desc_->GetInputsSize();
-  size_t output_size = op_desc_->GetOutputsSize();
-  uint64_t *io_addr = reinterpret_cast<uint64_t *>(io_addr_);
-  std::vector<uint64_t> io_addrs (io_addr, io_addr + input_size + output_size);
-  SetIoAddrsForDump(io_addrs);
   auto status = OpenDump(stream);
   if (status != SUCCESS) {
     GELOGE(status, "Open dump failed in the aicpucc single op %s", this->kernel_name_.c_str());
@@ -721,29 +856,19 @@ Status AiCpuCCTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
                                  std::vector<GeTensorDesc> &output_desc,
                                  std::vector<DataBuffer> &output_buffers,
                                  rtStream_t stream) {
-  GE_CHK_BOOL_RET_STATUS(unknown_type_ != DEPEND_COMPUTE, FAILED,
-                         "AiCpuCCTask unknown type[%d] is depend compute, it's not supported now.",
-                         unknown_type_);
-
   GE_CHK_STATUS_RET_NOLOG(UpdateExtInfo(input_desc, output_desc, stream));
-
-  size_t arg_index = 0;
-  auto *task_io_addr = reinterpret_cast<uintptr_t *>(io_addr_);
-  GE_CHECK_NOTNULL(task_io_addr);
-  for (auto &input : input_buffers) {
-    task_io_addr[arg_index++] = reinterpret_cast<uintptr_t>(input.data);
-  }
-  for (auto &output : output_buffers) {
-    task_io_addr[arg_index++] = reinterpret_cast<uintptr_t>(output.data);
-  }
-
+  GE_CHK_STATUS_RET_NOLOG(UpdateIoAddr(input_buffers, output_buffers));
   GE_CHK_STATUS_RET_NOLOG(LaunchKernel(stream));
-
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
     GE_CHK_RT_RET(rtStreamSynchronize(stream));
     GE_CHK_STATUS_RET_NOLOG(UpdateOutputShape(output_desc));
   }
 
   return SUCCESS;
+}
+
+void AiCpuCCTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
+  arg_base = io_addr_;
+  arg_count = io_addr_num_;
 }
 }  // namespace ge

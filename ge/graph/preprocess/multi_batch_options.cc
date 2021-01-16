@@ -37,17 +37,12 @@ constexpr int kDecimal = 10;
 constexpr uint8_t kMaxShapesCount = 100;
 constexpr uint8_t kMinShapesCount = 2;
 const int kDynmaicDims = -1;
-const int kDynamicBatchDynamicDimsNum = 1;
 const int kDynamicImgSizeDynamciDimsNum = 2;
-const size_t kMaxNDDimNum = 4;
-const size_t kMinNDDimNum = 1;
 const size_t kNumOfGetnextNode = 1;
 const int kDivisionConst = 2;
 const char *const kSubstrOfGetNextNosinkName = "IteratorGetNext";
 const char *const kShapeDataName = "ascend_mbatch_shape_data";
 const char *const kGetNextName = "IteratorV2";
-const char *const kExtAttrDataNodes = "data_nodes";
-const char *const kExtAttrGetNextNoSink = "getnext_no_sink";
 
 inline bool IsGetNextType(const NodePtr &node) {
   std::string original_type;
@@ -99,9 +94,8 @@ Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_n
   }
   GELOGI("Data count is %zu, getnext nosink count is %zu, getnext sink count is %zu.", data_nodes.size(),
          getnext_nosink_nodes.size(), getnext_sink_nodes.size());
-  GE_IF_BOOL_EXEC(!graph->SetExtAttr(kExtAttrDataNodes, data_nodes), GELOGW("Set data nodes attr failed.");)
-  GE_IF_BOOL_EXEC(!graph->SetExtAttr(kExtAttrGetNextNoSink, getnext_nosink_nodes),
-                  GELOGW("Set getnext nosink nodes attr failed.");)
+  GetLocalOmgContext().data_nodes = data_nodes;
+  GetLocalOmgContext().getnext_nosink_nodes = getnext_nosink_nodes;
   return SUCCESS;
 }
 

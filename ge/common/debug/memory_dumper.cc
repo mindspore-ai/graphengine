@@ -139,7 +139,8 @@ int MemoryDumper::OpenFile(const char *filename) {
   GE_IF_BOOL_EXEC(
     -1 != path_split_pos, string prefix_path = std::string(filename).substr(0, path_split_pos);
     string last_path = std::string(filename).substr(path_split_pos, strlen(filename) - 1);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= MMPA_MAX_PATH, return kInvalidFd, "Prefix path is too long!");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= MMPA_MAX_PATH,
+        return kInvalidFd, "Prefix path is too long!");
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mmRealPath(prefix_path.c_str(), tmp_path, MMPA_MAX_PATH) != EN_OK, return kInvalidFd,
                                    "Dir %s does not exit.", prefix_path.c_str());
     real_path = std::string(tmp_path) + last_path;)

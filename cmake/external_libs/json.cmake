@@ -18,6 +18,7 @@ ExternalProject_Add(json_build
                     URL ${REQ_URL}
                     #URL /home/txd/workspace/cloud_code/pkg/include.zip
                     SOURCE_DIR  ${JSON_SRC_DIR}
+                    TLS_VERIFY OFF
                     CONFIGURE_COMMAND ""
                     BUILD_COMMAND ""
                     INSTALL_COMMAND ""

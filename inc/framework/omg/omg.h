@@ -73,7 +73,7 @@ Status ParseGraph(ge::Graph &graph, const std::map<string, string> &atc_params, 
  * @param [key] encrypted key
  * @return Status result code
  */
-Status ConvertOmModelToJson(const char *model_file, const char *json_file);
+Status ConvertOm(const char *model_file, const char *json_file, bool is_covert_to_json);
 
 Status ConvertPbtxtToJson(const char *model_file, const char *json_file);
 /**
@@ -103,6 +103,8 @@ void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &ou
 void UpdateOmgCtxWithParserCtx();
 
 void UpdateParserCtxWithOmgCtx();
+
+void PrintModelInfo(ge::proto::ModelDef *model_def);
 }  // namespace ge
 
 namespace domi {

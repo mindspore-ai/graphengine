@@ -28,6 +28,7 @@ enum OutputDataType {
     DT_RESOURCE = 23;
     DT_STRING_REF = 24;
     DT_DUAL = 25;
+    DT_VARIANT = 26;
 }
 
 enum OutputFormat {
@@ -108,4 +109,5 @@ message DumpData{
     repeated OpOutput output = 3;
     repeated OpInput input = 4;
     repeated OpBuffer buffer = 5;
+    string op_name = 6;
 }

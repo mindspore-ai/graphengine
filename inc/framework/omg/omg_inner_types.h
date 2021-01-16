@@ -26,6 +26,7 @@
 #include <vector>
 #include "framework/common/fmk_error_codes.h"
 #include "register/register_fmk_types.h"
+#include "graph/node.h"
 
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_RESERVED;
@@ -46,7 +47,8 @@ enum RunMode {
   GEN_OM_MODEL = 0,    // generate offline model file
   MODEL_TO_JSON = 1,   // convert to JSON file
   ONLY_PRE_CHECK = 3,  // only for pre-check
-  PBTXT_TO_JSON = 5    // pbtxt to json
+  PBTXT_TO_JSON = 5,   // pbtxt to json
+  DISPLAY_OM_INFO = 6  // display model info
 };
 
 ///
@@ -119,6 +121,8 @@ struct OmgContext {
   std::vector<std::vector<int64_t>> user_real_input_dims;
   std::vector<int64_t> cur_dynamic_dims;
   bool need_multi_batch = false;
+  std::vector<NodePtr> data_nodes;
+  std::vector<NodePtr> getnext_nosink_nodes;
 };
 }  // namespace ge
 

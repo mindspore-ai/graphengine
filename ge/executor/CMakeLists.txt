@@ -17,6 +17,7 @@ set(SRC_LIST
     "../common/dump/dump_properties.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
+    "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
     "../omm/csa_interact.cc"
@@ -27,6 +28,7 @@ set(SRC_LIST
     "../graph/manager/trans_var_data_utils.cc"
     "../graph/manager/util/debug.cc"
     "../graph/manager/rdma_pool_allocator.cc"
+    "../graph/manager/host_mem_allocator.cc"
     "../hybrid/node_executor/aicpu/aicpu_ext_info.cc"
     "../model/ge_model.cc"
     "../model/ge_root_model.cc"
@@ -161,7 +163,7 @@ set(SRC_LIST
 add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_executor PRIVATE
-    $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations>
+    $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
     $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
     $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
 )
@@ -172,6 +174,7 @@ target_compile_definitions(ge_executor PRIVATE
     google=ascend_private
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    LOG_CPP
 )
 
 target_include_directories(ge_executor PRIVATE
@@ -244,7 +247,6 @@ target_link_libraries(ge_executor_shared PRIVATE
     mmpa
     graph
     register
-    msprof
     error_manager
     ascend_hal_stub
     ascend_protobuf

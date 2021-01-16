@@ -39,14 +39,15 @@ using DependStreamLife = std::map<int64_t, std::map<int64_t, size_t>>;
 enum OpMemoryType { kOutput, kWorkspace };
 
 struct NodeTypeIndex {
-  NodeTypeIndex(ge::NodePtr node, OpMemoryType mem_type, uint32_t index, bool ref_input = false)
-      : node(std::move(node)), mem_type(mem_type), index(index), ref_input(ref_input) {}
+  NodeTypeIndex(ge::NodePtr node, OpMemoryType mem_type, uint32_t index, bool ref_input = false, size_t begin = 0)
+      : node(std::move(node)), mem_type(mem_type), index(index), ref_input(ref_input), life_time_begin(begin) {}
 
   ge::NodePtr node = nullptr;
   OpMemoryType mem_type = kOutput;
   uint32_t index = 0;
-  size_t life_time_end = kMaxLifeTime;
   bool ref_input = false;
+  size_t life_time_begin = 0;
+  size_t life_time_end = kMaxLifeTime;
   const string GetMemType() const {
     if (mem_type == kOutput) {
       return "output";
@@ -54,6 +55,34 @@ struct NodeTypeIndex {
       return "workspace";
     }
     return "unknown";
+  }
+
+  size_t GetLifeBegin() const {
+    if ((node == nullptr) || (node->GetOpDesc() == nullptr)) {
+      return 0;
+    }
+
+    if ((life_time_begin > 0) && (life_time_begin < static_cast<size_t>(node->GetOpDesc()->GetId()))) {
+      return life_time_begin;
+    } else {
+      return node->GetOpDesc()->GetId();
+    }
+  }
+
+  std::string GetLifeBeginDesc() const {
+    if (node == nullptr) {
+      return "";
+    }
+    auto node_op_desc = node->GetOpDesc();
+    if (node_op_desc != nullptr) {
+      auto life_begin = GetLifeBegin();
+      if (life_begin != static_cast<size_t>(node_op_desc->GetId())) {
+        return std::to_string(life_begin) + "-" + std::to_string(node_op_desc->GetId());
+      } else {
+        return std::to_string(node_op_desc->GetId());
+      }
+    }
+    return "";
   }
 };
 
@@ -65,6 +94,7 @@ class MemoryBlock {
         stream_id_(stream_id),
         deleted_block_(false),
         reuse_mem_(reuse_mem),
+        same_stream_(true),
         input_index_(0),
         continuous_block_(false),
         first_continuous_block_(false),
@@ -85,12 +115,13 @@ class MemoryBlock {
     symbol_list_.clear();
   }
 
-  void Init(size_t real_size, OpMemoryType type, const ge::NodePtr &node, uint32_t out_index, size_t no_align_size) {
-    real_size_list_.emplace_back(real_size);
-    no_align_size_list_.emplace_back(no_align_size);
-    node_type_index_list_.emplace_back(node, type, out_index, false);
-  }
   size_t Size() const { return block_size_; }
+
+  void SetSize(size_t size) {
+    if (size > block_size_) {
+      block_size_ = size;
+    }
+  }
 
   size_t AlignSize() const;
 
@@ -106,6 +137,12 @@ class MemoryBlock {
     node_type_index_list_.emplace_back(node_type_index);
     real_size_list_.emplace_back(real_size);
     no_align_size_list_.emplace_back(no_align_size);
+    if ((node_type_index.node != nullptr) && (node_type_index.node->GetOpDesc() != nullptr)) {
+      auto stream_id = node_type_index.node->GetOpDesc()->GetStreamId();
+      if (stream_id != stream_id_) {
+        same_stream_ = false;
+      }
+    }
   }
 
   void AddSymbol(const std::string &symbol) {
@@ -122,7 +159,7 @@ class MemoryBlock {
 
   std::string String();
 
-  bool IsSameLabel(std::string &first_batch_label);
+  bool IsSameBatchLabel();
 
   void AddContinuousLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_node_depend_stream_life);
 
@@ -132,7 +169,7 @@ class MemoryBlock {
 
   size_t GetLifeBegin();
 
-  size_t GetLifeEnd();
+  size_t GetLifeEnd() const;
 
   void AddDependLifeBegin(DependStreamLife &node_depend_stream_life);
 
@@ -142,6 +179,7 @@ class MemoryBlock {
   int64_t stream_id_;
   bool deleted_block_;
   bool reuse_mem_;
+  bool same_stream_;
   uint32_t input_index_;
   bool continuous_block_;
   bool first_continuous_block_;
@@ -149,6 +187,7 @@ class MemoryBlock {
   bool is_zero_copy_;
   std::map<int64_t, size_t> depend_stream_life_;
   int64_t memory_type_;
+  std::string batch_label_;
  private:
   size_t block_size_;
   std::vector<size_t> real_size_list_;
@@ -199,6 +238,7 @@ class BlockMemAssigner : public MemAssigner {
 
   void SetOpMemOffset(bool is_zero_copy);
 
+  std::string GetMaxBatchLabel() const { return max_batch_label_; }
  protected:
   ///
   /// @ingroup domi
@@ -209,7 +249,7 @@ class BlockMemAssigner : public MemAssigner {
 
   void GetOutAndWorkSpaceMem(std::vector<int64_t> &all_memory_size);
 
-  void GetNodeWorkSpaceSize(const ge::NodePtr &node, std::vector<int64_t> &workspace_memory);
+  void GetNodeWorkSpaceSize(const ge::NodePtr &node, std::vector<int64_t> &workspace_memory, int64_t &total_size);
 
   ///
   /// @ingroup GE
@@ -353,7 +393,7 @@ class BlockMemAssigner : public MemAssigner {
   /// @return void
   /// @author
   ///
-  void ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory);
+  void ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory, bool same_stream = true);
 
   ///
   /// @ingroup GE
@@ -379,11 +419,11 @@ class BlockMemAssigner : public MemAssigner {
 
   ///
   /// @ingroup GE
-  /// @brief Merge memory blocks between different batchs
+  /// @brief Resize memory blocks for each batchs
   /// @return merge or not
   /// @author
   ///
-  bool MergeDynamicBatchBlocks();
+  void ResizeDynamicBatchBlocks();
 
   void AssignContinuousBlocks();
 
@@ -392,6 +432,7 @@ class BlockMemAssigner : public MemAssigner {
   bool IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t out_index, std::string &peer_name,
                                    uint32_t &peer_input_index, bool &no_need_assign_memory, bool &reset_zero_copy_flag);
 
+  bool IsContinuousMemoryReuse(const NodePtr &n, const NodePtr &peer_node, uint32_t out_index);
   ///
   /// @ingroup GE
   /// @|+++++++++block1++++++++|                               |+++++++++block1++++++++|
@@ -410,8 +451,6 @@ class BlockMemAssigner : public MemAssigner {
   MemoryBlock *ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges, const bool is_op_reuse_mem);
 
   std::unordered_map<int64_t, std::unordered_map<int64_t, std::vector<MemoryBlock *>>> reusable_blocks_;
-
-  std::map<std::string, uint64_t> reusable_block_counts_;
 
   std::unordered_map<int64_t, std::unordered_map<int64_t, std::vector<MemoryBlock *>>> stream_workspace_blocks_;
 
@@ -436,6 +475,18 @@ class BlockMemAssigner : public MemAssigner {
 
   int64_t atomic_addr_clean_id_ = 0;
 
+  size_t theory_min_memory_size_ = 0;
+
+  size_t theory_memory_size_ = 0;
+
+  std::string max_batch_label_;
+
+  size_t continuous_life_begin_ = 0;
+  ///
+  /// @          [stream1][nodeid]
+  /// @[nodeid]  [stream2][nodeid]
+  /// @          [stream2][nodeid]
+  ///
   DependStreamLife total_node_depend_stream_life_;
 };
 }  // namespace ge

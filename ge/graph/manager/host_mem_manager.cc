@@ -43,7 +43,12 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
     return GE_GRAPH_MEMORY_ALLOC_FAILED;
   }
   mem_info.fd = output_para.fd;
-  mem_info.host_address = reinterpret_cast<uint8_t *>(output_para.ptr);
+  mem_info.host_aligned_ptr = AlignedPtr::BuildFromAllocFunc([&output_para](std::unique_ptr<uint8_t[], deleter> &ptr) {
+                                                               ptr.reset(reinterpret_cast<uint8_t *>(output_para.ptr));
+                                                             },
+                                                             [](uint8_t *ptr) {
+                                                               ptr = nullptr;
+                                                             });
   mem_info.device_address = reinterpret_cast<uint8_t *>(output_para.devPtr);
   return SUCCESS;
 }
@@ -51,8 +56,7 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
 Status SharedMemAllocator::DeAllocate(SharedMemInfo &mem_info) {
   GELOGD("SharedMemAllocator::DeAllocate");
   rtFreeHostSharedMemoryIn free_para = {mem_info.shm_name.c_str(), mem_info.mem_size, mem_info.fd,
-                                        mem_info.host_address, mem_info.device_address};
-
+                                        mem_info.host_aligned_ptr->MutableGet(), mem_info.device_address};
   rtError_t rt_ret = rtFreeHostSharedMemory(&free_para);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api(rtFreeHostSharedMemory) failed, ret: 0x%X.", rt_ret);
@@ -106,7 +110,7 @@ Status HostMemManager::QueryVarMemInfo(const string &op_name, uint64_t &base_add
     GELOGE(INTERNAL_ERROR, "Find host base base_addr failed,node name:%s!", op_name.c_str());
     return INTERNAL_ERROR;
   }
-  base_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].device_address));
+  base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].device_address));
   data_size = var_memory_base_map_[op_name].mem_size;
   return SUCCESS;
 }

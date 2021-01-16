@@ -37,6 +37,8 @@ class AicpuNodeTaskBase : public NodeTask {
 
   ~AicpuNodeTaskBase() override = default;
 
+  using NodeTask::Init;
+
   virtual Status Init(const HybridModel &model) = 0;
 
   Status UpdateArgs(TaskContext &context) override;
@@ -142,6 +144,7 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
   std::unique_ptr<TensorBuffer> copy_input_data_size_dev_;
   std::unique_ptr<TensorBuffer> copy_input_src_dev_;
   std::unique_ptr<TensorBuffer> copy_input_dst_dev_;
+  bool need_sync_ = false;
 };
 
 class AicpuNodeTask : public AicpuNodeTaskBase {

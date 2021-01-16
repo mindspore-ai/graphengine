@@ -45,8 +45,9 @@ class StreamResource {
   Status BuildOperator(const std::string &model_name, const ModelData &model_data, SingleOp **single_op);
   Status BuildDynamicOperator(const std::string &model_name, const ModelData &model_data, DynamicSingleOp **single_op);
 
-  uint8_t *MallocMemory(const std::string &purpose, size_t size);
+  uint8_t *MallocMemory(const std::string &purpose, size_t size, bool holding_lock = true);
   uint8_t *MallocWeight(const std::string &purpose, size_t size);
+  const uint8_t *GetMemoryBase() const;
 
  private:
   uint8_t *DoMallocMemory(const std::string &purpose,

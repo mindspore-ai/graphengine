@@ -42,7 +42,7 @@ struct SharedMemInfo {
   uint64_t mem_size = 0;
   int fd = 0;
   uint8_t *device_address = nullptr;
-  uint8_t *host_address = nullptr;
+  std::shared_ptr<AlignedPtr> host_aligned_ptr = nullptr;
   SharedMemInfo() = default;
   SharedMemInfo(string name, uint64_t size) : op_name(std::move(name)), mem_size(size) {}
 };

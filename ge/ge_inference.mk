@@ -64,6 +64,7 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
     graph/manager/graph_var_manager.cc \
     graph/manager/host_mem_manager.cc \
     graph/manager/rdma_pool_allocator.cc \
+    graph/manager/host_mem_allocator.cc \
     graph/manager/graph_mem_allocator.cc \
     graph/manager/graph_caching_allocator.cc \
 
@@ -102,6 +103,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/net_output_pass.cc \
     graph/passes/replace_transshape_pass.cc \
     graph/passes/constant_fuse_same_pass.cc \
+    graph/passes/fuse_data_nodes_with_common_input_pass.cc \
     graph/passes/print_op_pass.cc \
     graph/passes/no_use_reshape_remove_pass.cc \
     graph/passes/iterator_op_pass.cc \
@@ -109,6 +111,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
+    graph/passes/dynamic_single_op_reset_shape_pass.cc \
     graph/passes/mark_agnostic_pass.cc \
     graph/common/omg_util.cc \
     graph/common/bcast.cc \
@@ -164,6 +167,7 @@ OMG_HOST_SRC_FILES := \
     host_kernels/slice_d_kernel.cc \
     host_kernels/dynamic_stitch_kernel.cc \
     host_kernels/identity_kernel.cc \
+    host_kernels/reformat_kernel.cc \
     graph/passes/stop_gradient_pass.cc \
     graph/passes/prevent_gradient_pass.cc \
     graph/passes/identity_pass.cc \
@@ -189,9 +193,12 @@ OMG_HOST_SRC_FILES := \
     graph/passes/control_trigger_pass.cc \
     graph/passes/cond_pass.cc \
     graph/passes/cond_remove_pass.cc \
+    graph/passes/remove_same_const_pass.cc \
+    graph/passes/useless_control_out_remove_pass.cc \
     graph/passes/for_pass.cc \
     graph/passes/enter_pass.cc \
-    graph/passes/assign_pass.cc \
+    graph/passes/assign_remove_pass.cc \
+    graph/passes/inplace_support_check_pass.cc \
     graph/passes/addn_pass.cc \
     graph/passes/common_subexpression_elimination_pass.cc \
     graph/passes/transop_symmetry_elimination_pass.cc \

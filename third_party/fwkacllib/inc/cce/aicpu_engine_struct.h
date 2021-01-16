@@ -33,18 +33,22 @@ typedef enum {
   FMK_KERNEL_TYPE_RESERVED
 } FwkkernelType_t;
 
+#pragma pack(push, 1)
 typedef struct {
   uint32_t fwkKernelType;  // FwkkernelType_t
   union {
     ::aicpu::FWKAdapter::FWKOperateParam fwk_kernel;
   } fwkKernelBase;
-} __attribute__((packed)) STR_FWK_OP_KERNEL;
+} STR_FWK_OP_KERNEL;
+#pragma pack(pop)
 
+#pragma pack(push, 1)
 struct SessionInfo {
   uint64_t sessionId;
   uint64_t kernelId;
   bool sessFlag;
-} __attribute__((packed));
+};
+#pragma pack(pop)
 
 #ifdef __cplusplus
 }

@@ -27,6 +27,7 @@ ExternalProject_Add(protobuf_static_build
                     URL ${REQ_URL}
                     #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
                     #SOURCE_DIR ${METADEF_DIR}/../../third_party/protobuf/src/protobuf-3.8.0
+                    TLS_VERIFY OFF
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}

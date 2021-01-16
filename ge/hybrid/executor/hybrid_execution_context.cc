@@ -18,6 +18,12 @@
 
 namespace ge {
 namespace hybrid {
+namespace {
+const uint32_t kEndOfSequence = 0x0704000a;
+const uint32_t kEndOfSequenceNew = 507005;
+const int32_t kModelAbortNormal = 0x0704000e;
+const int32_t kModelAbortNormalNew = 507024;
+}  // namespace
 void GraphExecutionContext::SetErrorCode(Status error_code) {
   std::lock_guard<std::mutex> lk(mu);
   this->status = error_code;
@@ -26,6 +32,27 @@ void GraphExecutionContext::SetErrorCode(Status error_code) {
 Status GraphExecutionContext::GetStatus() const {
   std::lock_guard<std::mutex> lk(mu);
   return this->status;
+}
+
+Status GraphExecutionContext::Synchronize(rtStream_t rt_stream) {
+  auto rt_ret = rtStreamSynchronize(rt_stream);
+  if (rt_ret == RT_ERROR_NONE) {
+    return SUCCESS;
+  }
+
+  if (rt_ret == kEndOfSequence || rt_ret == kEndOfSequenceNew) {
+    GELOGI("Got end of sequence");
+    is_eos_ = true;
+    return END_OF_SEQUENCE;
+  }
+
+  if (rt_ret == kModelAbortNormal || rt_ret == kModelAbortNormalNew) {
+    GELOGI("The model with multiple datasets aborts normally");
+    return SUCCESS;
+  }
+
+  GELOGE(RT_FAILED, "Failed to invoke rtStreamSynchronize, ret = %d", rt_ret);
+  return RT_FAILED;
 }
 }  // namespace hybrid
 }  // namespace ge

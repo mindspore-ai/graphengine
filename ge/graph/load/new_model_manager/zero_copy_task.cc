@@ -22,8 +22,6 @@
 #include "common/ge_compiler_options.h"
 
 namespace ge {
-const char *const kDefaultBatchLable = "Batch_default";
-
 ZeroCopyTask::ZeroCopyTask(const string &name, uint8_t *args, size_t size)
     : name_(name), args_addr_(args), args_size_(size), is_updated_(false) {}
 
@@ -66,46 +64,8 @@ void ZeroCopyTask::SetOriginalArgs(const void *info, size_t size) {
   const uint8_t *data = static_cast<const uint8_t *>(info);
   args_info_.assign(data, data + size);
 
-  GELOGI("[ZCPY] %s set info from virtual_addr: %p, args_addr: %p, args size: %zu, info size: %zu", name_.c_str(), info,
+  GELOGI("[ZCPY] %s set original args info: %p, args_addr: %p, args size: %zu, info size: %zu", name_.c_str(), info,
          args_addr_, args_size_, size);
-}
-
-/**
- * @ingroup ge
- * @brief Check is dynamic batch node.
- * @param [in] addr: virtual address value from Op.
- * @param [in] data: data buffer from user.
- * @param [in] batch_addrs: dynamic batch addr info.
- * @param [in] batch_label: batch label.
- * @return: true / false
- */
-bool ZeroCopyTask::CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_addrs, const string &batch_label,
-                                     uintptr_t addr) {
-  // Used for dynamic batch / resolution scene
-  set<uintptr_t> dynamic_input_addrs;
-  auto dynamic_input_iter = batch_addrs.find(batch_label);
-  if (dynamic_input_iter != batch_addrs.end()) {
-    dynamic_input_addrs = dynamic_input_iter->second;
-  }
-
-  set<uintptr_t> fix_input_addrs;
-  auto fix_input_iter = batch_addrs.find(kDefaultBatchLable);
-  if (fix_input_iter != batch_addrs.end()) {
-    fix_input_addrs = fix_input_iter->second;
-  }
-
-  if (fix_input_addrs.empty()) {
-    if (!dynamic_input_addrs.empty() && dynamic_input_addrs.find(addr) == dynamic_input_addrs.end()) {
-      return false;
-    }
-  } else {
-    if (!dynamic_input_addrs.empty() && dynamic_input_addrs.find(addr) == dynamic_input_addrs.end() &&
-        fix_input_addrs.find(addr) == fix_input_addrs.end()) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 /**
@@ -113,25 +73,18 @@ bool ZeroCopyTask::CheckDynamicBatch(const map<string, set<uintptr_t>> &batch_ad
  * @brief Set user data addr to Task param.
  * @param [in] addr: virtual address value from Op.
  * @param [in] buffer_addr: real_data_buffer_addr from user.
- * @param [in] batch_addrs: dynamic batch addr info.
- * @param [in] batch_label: batch label.
  * @return: void
  */
-Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, void *buffer_addr, const map<string, set<uintptr_t>> &batch_addrs,
-                                     const string &batch_label) {
+Status ZeroCopyTask::UpdateTaskParam(uintptr_t addr, void *buffer_addr) {
   auto iter = task_addr_offset_.find(addr);
   if (iter != task_addr_offset_.end()) {
     auto &cur_pair = *iter;
     uint8_t *args_info = args_info_.data();
     for (auto offset : cur_pair.second) {
-      if (!CheckDynamicBatch(batch_addrs, batch_label, reinterpret_cast<uintptr_t>(args_addr_ + offset))) {
-        continue;
-      }
-
       auto dst_addr = static_cast<uint8_t *>(buffer_addr);
       GELOGI("[ZCPY] %s update task, args_addr: %p, size: %zu, offset: %zu, virtual_addr: 0x%lx, user_data_addr: %p",
              name_.c_str(), args_addr_, args_size_, offset, addr, buffer_addr);
-      *(uintptr_t *)(args_info + offset) = reinterpret_cast<uintptr_t>(dst_addr);
+      *reinterpret_cast<uintptr_t *>(args_info + offset)= reinterpret_cast<uintptr_t>(dst_addr);
       is_updated_ = true;
     }
   }

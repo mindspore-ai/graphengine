@@ -22,6 +22,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "hybrid/executor/worker/shape_inference_engine.h"
 
 namespace ge {
 namespace hybrid {
@@ -47,7 +48,7 @@ Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgr
     GE_CHECK_NOTNULL(dst_op_desc);
     auto in_idx = node_and_anchor.second->GetIdx();
     auto tensor_desc = dst_op_desc->MutableInputDesc(in_idx);
-    fused_subgraph.input_mapping[parent_index].emplace_back(tensor_desc);
+    fused_subgraph.input_mapping[static_cast<int>(parent_index)].emplace_back(tensor_desc);
     GELOGD("Input[%u] mapped to [%s:%u]", parent_index, dst_op_desc->GetName().c_str(), in_idx);
   }
 
@@ -64,7 +65,7 @@ Status ParseOutputMapping(const OpDescPtr &op_desc, FusedSubgraph &fused_subgrap
     return FAILED;
   }
 
-  fused_subgraph.output_mapping.emplace(parent_index, op_desc);
+  fused_subgraph.output_mapping.emplace(static_cast<int>(parent_index), op_desc);
   return SUCCESS;
 }
 
@@ -126,12 +127,7 @@ Status NodeItem::Create(const NodePtr &node, std::unique_ptr<NodeItem> &node_ite
   return SUCCESS;
 }
 
-Status NodeItem::Init() {
-  GE_CHECK_LE(op_desc->GetInputsSize(), INT32_MAX);
-  GE_CHECK_LE(op_desc->GetOutputsSize(), INT32_MAX);
-  num_inputs = static_cast<int>(op_desc->GetInputsSize());
-  num_outputs = static_cast<int>(op_desc->GetOutputsSize());
-
+void NodeItem::ResolveOptionalInputs() {
   if (op_desc->GetAllInputsSize() != op_desc->GetInputsSize()) {
     has_optional_inputs = true;
     for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
@@ -143,7 +139,18 @@ Status NodeItem::Init() {
       }
     }
   }
+}
 
+Status NodeItem::InitInputsAndOutputs() {
+  GE_CHECK_LE(op_desc->GetInputsSize(), INT32_MAX);
+  GE_CHECK_LE(op_desc->GetOutputsSize(), INT32_MAX);
+  num_inputs = static_cast<int>(op_desc->GetInputsSize());
+  num_outputs = static_cast<int>(op_desc->GetOutputsSize());
+  ResolveOptionalInputs();
+  return SUCCESS;
+}
+
+Status NodeItem::ResolveDynamicState() {
   (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
   GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
   if (!is_dynamic) {
@@ -151,38 +158,73 @@ Status NodeItem::Init() {
                       "[%s] Failed to get shape status.",
                       node->GetName().c_str());
   }
+  return SUCCESS;
+}
 
-  if (is_dynamic) {
-    for (int i = 0; i < num_inputs; ++i) {
-      const auto &input_desc = MutableInputDesc(i);
-      GE_CHECK_NOTNULL(input_desc);
-      if (input_desc->MutableShape().IsUnknownShape()) {
-        is_input_shape_static_.push_back(false);
-      } else {
+Status NodeItem::ResolveStaticInputsAndOutputs() {
+  for (int i = 0; i < num_inputs; ++i) {
+    // Data has unconnected input but set by framework
+    if (node_type != DATA) {
+      int origin_index = i;
+      if (has_optional_inputs) {
+        origin_index = input_desc_indices_[i];
+      }
+      auto in_data_anchor = node->GetInDataAnchor(origin_index);
+      GE_CHECK_NOTNULL(in_data_anchor);
+
+      // If no node was connected to the current input anchor
+      // increase num_static_input_shapes in case dead wait in ShapeInferenceState::AwaitShapesReady
+      if (in_data_anchor->GetPeerOutAnchor() == nullptr ||
+          in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() == nullptr) {
         num_static_input_shapes++;
         is_input_shape_static_.push_back(true);
-        GELOGD("[%s] The shape of input[%d] is static. shape = [%s]",
-               NodeName().c_str(), i, input_desc->MutableShape().ToString().c_str());
+        GELOGW("[%s] Peer node of input[%d] is empty", NodeName().c_str(), i);
+        continue;
       }
     }
-
-    for (int i = 0; i < num_outputs; ++i) {
-      const auto &output_desc = op_desc->MutableOutputDesc(i);
-      GE_CHECK_NOTNULL(output_desc);
-      if (output_desc->MutableShape().IsUnknownShape()) {
-        is_output_shape_static = false;
-        break;
-      }
-    }
-
-    if (IsControlOp() || node_type == PARTITIONEDCALL) {
-      shape_inference_type = DEPEND_COMPUTE;
+    const auto &input_desc = MutableInputDesc(i);
+    GE_CHECK_NOTNULL(input_desc);
+    if (input_desc->MutableShape().IsUnknownShape()) {
+      is_input_shape_static_.push_back(false);
     } else {
-      int32_t unknown_shape_type_val = 0;
-      (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
-      shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+      num_static_input_shapes++;
+      is_input_shape_static_.push_back(true);
+      GELOGD("[%s] The shape of input[%d] is static. shape = [%s]",
+             NodeName().c_str(), i, input_desc->MutableShape().ToString().c_str());
     }
+  }
 
+  for (int i = 0; i < num_outputs; ++i) {
+    const auto &output_desc = op_desc->MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(output_desc);
+    if (output_desc->MutableShape().IsUnknownShape()) {
+      is_output_shape_static = false;
+      break;
+    }
+  }
+
+  if (is_output_shape_static) {
+    GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(*this));
+  }
+  return SUCCESS;
+}
+
+void NodeItem::ResolveUnknownShapeType() {
+  if (IsControlOp() || node_type == PARTITIONEDCALL) {
+    shape_inference_type = DEPEND_COMPUTE;
+  } else {
+    int32_t unknown_shape_type_val = 0;
+    (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+    shape_inference_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+  }
+}
+
+Status NodeItem::Init() {
+  GE_CHK_STATUS_RET_NOLOG(InitInputsAndOutputs());
+  GE_CHK_STATUS_RET_NOLOG(ResolveDynamicState());
+  if (is_dynamic) {
+    ResolveUnknownShapeType();
+    GE_CHK_STATUS_RET_NOLOG(ResolveStaticInputsAndOutputs());
     GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   }
 

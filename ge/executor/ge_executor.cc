@@ -39,8 +39,6 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
-#include "graph/opsproto_manager.h"
-#include "ge_local_engine/engine/host_cpu_engine.h"
 
 using std::string;
 using std::vector;
@@ -209,46 +207,6 @@ bool IsDynmaicDimsSizeMatchModel(const vector<uint64_t> cur_dynamic_dims,
 
 namespace ge {
 bool GeExecutor::isInit_ = false;
-class ModelListenerAdapter : public ModelListener {
- public:
-  domi::Status OnComputeDone(uint32_t model_id, uint32_t dataIndex, uint32_t resultCode,
-                             std::vector<ge::OutputTensorInfo> &outputs) {
-    if (listener == nullptr) {
-      GELOGE(ge::FAILED, "listener is null.");
-      return FAILED;
-    }
-    return listener->OnComputeDone(model_id, dataIndex, resultCode, outputs);
-  }
-
-  std::shared_ptr<ge::ModelListener> listener;
-};
-
-static void InitOpsProtoManger() {
-  string opsproto_path;
-  const char *path_env = std::getenv("ASCEND_OPP_PATH");
-  if (path_env != nullptr) {
-    string path = path_env;
-    string file_path = RealPath(path.c_str());
-    if (file_path.empty()) {
-      GELOGE(FAILED, "File path %s is invalid.", path.c_str());
-      return;
-    }
-    opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
-    GELOGI("Get opsproto so path from env : %s", path.c_str());
-  } else {
-    string path_base = PluginManager::GetPath();
-    GELOGI("path_base is %s", path_base.c_str());
-    path_base = path_base.substr(0, path_base.rfind('/'));
-    path_base = path_base.substr(0, path_base.rfind('/') + 1);
-    opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
-  }
-
-  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
-  OpsProtoManager *manager = OpsProtoManager::Instance();
-  map<string, string> option_tmp;
-  option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
-  (void)manager->Initialize(option_tmp);
-}
 
 GeExecutor::GeExecutor() {}
 
@@ -258,16 +216,6 @@ Status GeExecutor::Initialize() {
     GELOGW("Already initialized, no need to be initialized again.");
     return ge::SUCCESS;
   }
-
-  OpTilingManager::GetInstance().LoadSo();
-
-  Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
-  if (initHostCpuEngineStatus != SUCCESS) {
-    GELOGE(initHostCpuEngineStatus, "Failed to initialize HostCpuEngine");
-    return initHostCpuEngineStatus;
-  }
-
-  InitOpsProtoManger();
 
   std::vector<rtMemType_t> mem_type(1, RT_MEMORY_HBM);
   mem_type.push_back(RT_MEMORY_P2P_DDR);
@@ -283,7 +231,8 @@ Status GeExecutor::Initialize() {
   // Start profiling
   Options profiling_options;
   profiling_options.device_id = 0;
-  profiling_options.job_id = "";
+  // job id need to be set, the value is meaningless;
+  profiling_options.job_id = "1";
   ProfilingManager::Instance().Init(profiling_options);
 
   isInit_ = true;
@@ -303,7 +252,7 @@ Status GeExecutor::Finalize() {
   // Stop profiling
   if (ProfilingManager::Instance().ProfilingOn()) {
     ProfilingManager::Instance().StopProfiling();
-    ProfilingManager::Instance().PluginUnInit(GE_PROFILING_MODULE);
+    ProfilingManager::Instance().PluginUnInit();
   }
 
   GELOGI("Uninit GeExecutor over.");
@@ -572,60 +521,6 @@ Status GeExecutor::SetDynamicAippData(uint32_t model_id, void *dynamic_input_add
   return SUCCESS;
 }
 
-// Load model
-Status GeExecutor::LoadModelOffline(uint32_t &model_id, const std::string &path, const std::string &key,
-                                    int32_t priority, std::shared_ptr<ge::ModelListener> listener) {
-  GELOGI("load model offline begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  string filePath = RealPath(path.c_str());
-  if (filePath.empty()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID,
-           "File path is invalid. please check your text file '%s'.", path.c_str());
-    return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
-  }
-
-  std::shared_ptr<ModelListenerAdapter> listener_adapter = MakeShared<ModelListenerAdapter>();
-  if (listener_adapter == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelListenerAdapter make shared failed!");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
-  }
-  listener_adapter->listener = listener;
-
-  Status ret = GraphLoader::LoadModelFromFile(path, key, priority, listener_adapter, model_id);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[GeExecutor] LoadModelFromFile failed");
-    return ACL_ERROR_GE_LOAD_MODEL;
-  }
-  return SUCCESS;
-}
-
-Status GeExecutor::LoadModel(uint32_t &model_id, const ModelData &model_data,
-                             std::shared_ptr<ge::ModelListener> listener) {
-  GELOGI("Load model begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  std::shared_ptr<ModelListenerAdapter> listener_adapter = MakeShared<ModelListenerAdapter>();
-  if (listener_adapter == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelListenerAdapter make shared failed!");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
-  }
-  listener_adapter->listener = listener;
-
-  Status ret = GraphLoader::LoadModel(model_data, listener_adapter, model_id);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "[GeExecutor] LoadModel failed.");
-    return ACL_ERROR_GE_LOAD_MODEL;
-  }
-  return ret;
-}
-
 Status GeExecutor::UnloadModel(uint32_t model_id) {
   GELOGD("unload model %u begin.", model_id);
   if (!isInit_) {
@@ -635,10 +530,11 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
   Status ret = GraphLoader::DestroyAicpuSessionForInfer(model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed. model id: %u", model_id);
-    return ACL_ERROR_GE_INTERNAL_ERROR;
+    return ret;
   }
 
-  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = ModelManager::GetInstance()->GetHybridModel(model_id);
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model =
+      ModelManager::GetInstance()->GetHybridModel(model_id);
   if (hybrid_davinci_model != nullptr) {
     uint64_t session_id = hybrid_davinci_model->GetSessionId();
     VarManagerPool::Instance().RemoveVarManager(session_id);
@@ -652,24 +548,9 @@ Status GeExecutor::UnloadModel(uint32_t model_id) {
   ret = GraphLoader::UnloadModel(model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[GraphLoader] DestroyAicpuSessionForInfer failed. model id: %u", model_id);
-    return ACL_ERROR_GE_UNLOAD_MODEL;
+    return ret;
   }
   return SUCCESS;
-}
-
-Status GeExecutor::RunModel(const ge::RunModelData &input_data, ge::RunModelData &output_data) {
-  GELOGI("run model begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  InputData inputs;
-  GetDomiInputData(input_data, inputs);
-  OutputData outputs;
-  GetDomiOutputData(output_data, outputs);
-
-  return GraphExecutor::DataInput(inputs, outputs);
 }
 
 // Get input and output descriptor
@@ -795,7 +676,7 @@ Status GeExecutor::GetAIPPInfo(uint32_t model_id, uint32_t index, AippConfigInfo
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "not inited yet!");
     return ACL_ERROR_GE_EXEC_NOT_INIT;
   }
-  Status ret = GraphExecutor::GetAIPPInfo(model_id, index, aipp_info);
+  Status ret = GraphExecutor::GetAippInfo(model_id, index, aipp_info);
   if (ret != SUCCESS) {
     GELOGW("GetAIPPInfo is not success.");
     return ret;
@@ -830,43 +711,6 @@ Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dyn
     return ret;
   }
   return SUCCESS;
-}
-
-Status GeExecutor::GetModelDescInfoForZeroCopy(uint32_t model_id, std::vector<ge::TensorDesc> &input_desc,
-                                               std::vector<TensorDesc> &output_desc) {
-  GELOGI("get model desc info for zero copy begin.");
-  if (!isInit_) {
-    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "GeExecutor has not been initialized!");
-    return ACL_ERROR_GE_EXEC_NOT_INIT;
-  }
-
-  std::vector<InputOutputDescInfo> input_desc_infos;
-  std::vector<InputOutputDescInfo> output_desc_infos;
-  std::vector<uint32_t> input_formats;
-  std::vector<uint32_t> output_formats;
-
-  Status ret = GraphExecutor::GetInputOutputDescInfoForZeroCopy(model_id, input_desc_infos, output_desc_infos,
-                                                                input_formats, output_formats);
-  if (ret != domi::SUCCESS) {
-    GELOGE(ret, "Get DescInfo from zero copy failed. ret = %u", ret);
-    return ACL_ERROR_GE_GET_TENSOR_INFO;
-  }
-
-  if (input_formats.size() != input_desc_infos.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "input_formats.size() != input_desc_infos.size().");
-    return ACL_ERROR_GE_PARAM_INVALID;
-  }
-
-  if (output_formats.size() != output_desc_infos.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "output_formats.size() != output_desc_infos.size().");
-    return ACL_ERROR_GE_PARAM_INVALID;
-  }
-
-  GetGeTensorDescFromDomiInfo(input_desc, input_desc_infos, input_formats);
-  GetGeTensorDescFromDomiInfo(output_desc, output_desc_infos, output_formats);
-
-  GELOGI("get model desc info from zero copy end.");
-  return ge::SUCCESS;
 }
 
 Status GeExecutor::CommandHandle(const Command &command) {

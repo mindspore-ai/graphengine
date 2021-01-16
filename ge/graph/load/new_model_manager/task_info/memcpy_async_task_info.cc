@@ -30,14 +30,13 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     return ret;
   }
 
-  memcpy_async_ = task_def.memcpy_async();
-  count_ = memcpy_async_.count();
-  kind_ = memcpy_async_.kind();
-  dst_max_ = memcpy_async_.dst_max();
-  OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async_.op_index());
-  op_desc_ = op_desc;
+  const domi::MemcpyAsyncDef &memcpy_async = task_def.memcpy_async();
+  count_ = memcpy_async.count();
+  kind_ = memcpy_async.kind();
+  dst_max_ = memcpy_async.dst_max();
+  OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async.op_index());
   if (op_desc == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async_.op_index());
+    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
     return INTERNAL_ERROR;
   }
 
@@ -46,13 +45,14 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(src_) + sizeof(void *));
     // for zero copy
     kind_ = RT_MEMCPY_ADDR_DEVICE_TO_DEVICE;
+    GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addrs failed");
     GELOGI("MemcpyAsyncTaskInfo op name %s, src_ %p, dst_ %p, args_offset %u.",
            op_desc->GetName().c_str(), src_, dst_, args_offset_);
     return SUCCESS;
   }
 
   const RuntimeParam &rts_param = davinci_model_->GetRuntimeParam();
-  ret = ModelUtils::GetRtAddress(rts_param, memcpy_async_.src(), src_);
+  ret = ModelUtils::GetRtAddress(rts_param, memcpy_async.src(), src_);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -61,23 +61,23 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   vector<int64_t> memory_type_list;
   (void)AttrUtils::GetListInt(op_desc, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, memory_type_list);
   if (!memory_type_list.empty() && memory_type_list[0] == RT_MEMORY_TS_4G) {  // TS Feature, Just one.
-    uint64_t mem_offset = memcpy_async_.dst() - rts_param.logic_mem_base;
-    dst_ = static_cast<uint8_t *>(rts_param.ts_mem_mall->Acquire(mem_offset, memcpy_async_.dst_max()));
+    uint64_t mem_offset = memcpy_async.dst() - rts_param.logic_mem_base;
+    dst_ = static_cast<uint8_t *>(rts_param.ts_mem_mall->Acquire(mem_offset, memcpy_async.dst_max()));
     if (dst_ == nullptr) {
       return FAILED;
     }
   } else {
-    ret = ModelUtils::GetRtAddress(rts_param, memcpy_async_.dst(), dst_);
+    ret = ModelUtils::GetRtAddress(rts_param, memcpy_async.dst(), dst_);
     if (ret != SUCCESS) {
       return ret;
     }
   }
 
-  GELOGI("MemcpyAsyncTaskInfo Init Success, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu",
-         memcpy_async_.src(), memcpy_async_.dst(), src_, dst_, dst_max_, count_);
-
   davinci_model_->DisableZeroCopy(src_);
   davinci_model_->DisableZeroCopy(dst_);
+  GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addrs failed");
+  GELOGI("MemcpyAsyncTaskInfo Init Success, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu",
+         memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_);
   return SUCCESS;
 }
 
@@ -115,29 +115,33 @@ Status MemcpyAsyncTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davinci
   return SUCCESS;
 }
 
+Status MemcpyAsyncTaskInfo::SetIoAddrs(const OpDescPtr &op_desc, const domi::MemcpyAsyncDef &memcpy_async) {
+  uint8_t *src = nullptr;
+  Status ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async.src(), src);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+  io_addrs_.emplace_back(reinterpret_cast<void *>(src));
+
+  if (op_desc->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
+    void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
+    io_addrs_.emplace_back(fixed_addr);
+  } else {
+    uint8_t *dst = nullptr;
+    ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async.dst(), dst);
+    if (ret != SUCCESS) {
+      return ret;
+    }
+    io_addrs_.emplace_back(reinterpret_cast<void *>(dst));
+  }
+
+  return SUCCESS;
+}
+
 Status MemcpyAsyncTaskInfo::UpdateArgs() {
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs in.");
   GE_CHECK_NOTNULL(davinci_model_);
-  Status ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async_.src(), src_);
-  if (ret != SUCCESS) {
-    return ret;
-  }
-
-  ret = ModelUtils::GetRtAddress(davinci_model_->GetRuntimeParam(), memcpy_async_.dst(), dst_);
-  if (ret != SUCCESS) {
-    return ret;
-  }
-
-  vector<void *> io_addrs;
-  io_addrs.emplace_back(reinterpret_cast<void *>(src_));
-  if (op_desc_->HasAttr(ATTR_DYNAMIC_SHAPE_FIXED_ADDR)) {
-    void *fixed_addr = davinci_model_->GetCurrentFixedAddr(fixed_addr_offset_);
-    io_addrs.emplace_back(fixed_addr);
-  } else {
-    io_addrs.emplace_back(reinterpret_cast<void *>(dst_));
-  }
-  davinci_model_->SetTotalIOAddrs(io_addrs);
-
+  davinci_model_->SetTotalIOAddrs(io_addrs_);
   GELOGI("MemcpyAsyncTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }

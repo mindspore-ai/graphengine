@@ -18,6 +18,7 @@
 #define __CCE_RUNTIME_BASE_H__
 
 #include <stdint.h>
+#include "toolchain/prof_callback.h"
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 extern "C" {
@@ -80,10 +81,11 @@ typedef enum tagRtLimitType {
 } rtLimitType_t;
 
 typedef struct rtExceptionInfo {
-    uint32_t taskid;
-    uint32_t streamid;
-    uint32_t tid;
-    uint32_t deviceid;
+  uint32_t taskid;
+  uint32_t streamid;
+  uint32_t tid;
+  uint32_t deviceid;
+  uint32_t retcode;
 } rtExceptionInfo;
 
 typedef void (*rtErrorCallback)(rtExceptionType);
@@ -132,19 +134,25 @@ RTS_API rtError_t rtProfilerConfig(uint16_t type);
  * @ingroup profiling_base
  * @brief start rts profiler.
  */
-RTS_API rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t* deviceList);
+RTS_API rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList);
 
 /**
  * @ingroup profiling_base
  * @brief stop rts profiler.
  */
-RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t* deviceList);
+RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList);
 
 /**
  * @ingroup profiling_base
  * @brief ts send keypoint profiler log.
  */
 RTS_API rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtStream_t stream);
+
+/**
+ * @ingroup profiling_base
+ * @brief ts set profiling reporter callback.
+ */
+RTS_API rtError_t rtSetMsprofReporterCallback(MsprofReporterCallback callback);
 
 /**
  * @ingroup dvrt_base
@@ -183,6 +191,16 @@ RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCallback callback);
+
+/**
+ * @ingroup dvrt_base
+ * @brief register callback for fail task 
+ * @param [in] uniName unique register name, can't be null
+ * @param [in] callback fail task callback function
+ * @param [out] NA
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtRegTaskFailCallbackByModule(const char *moduleName, rtTaskFailCallback callback);
 
 /**
  * @ingroup dvrt_base

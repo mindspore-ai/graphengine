@@ -8,12 +8,14 @@ local_ge_executor_src_files :=  \
     ../common/dump/dump_op.cc \
     ../common/ge/plugin_manager.cc \
     ../common/ge/op_tiling_manager.cc \
+    ../common/profiling/ge_profiling.cc \
     ../graph/load/graph_loader.cc \
     ../graph/execute/graph_execute.cc \
     ../omm/csa_interact.cc \
     ../graph/manager/graph_manager_utils.cc \
     ../graph/manager/graph_var_manager.cc \
     ../graph/manager/rdma_pool_allocator.cc \
+    ../graph/manager/host_mem_allocator.cc \
     ../graph/manager/graph_mem_allocator.cc \
     ../graph/manager/graph_caching_allocator.cc \
     ../graph/manager/trans_var_data_utils.cc \
@@ -177,7 +179,6 @@ local_ge_executor_shared_library :=        \
     libmmpa                                \
     libgraph                               \
     libregister                            \
-    libmsprof                              \
     liberror_manager                       \
 
 local_ge_executor_ldflags := -lrt -ldl     \
@@ -234,7 +235,6 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libmmpa                                \
     libgraph                               \
     libregister                            \
-    libmsprof                              \
     liberror_manager                       \
     stub/libascend_hal                     \
 
@@ -272,7 +272,6 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libruntime                             \
     libslog                                \
     libmmpa                                \
-    libmsprof                              \
 
 LOCAL_LDFLAGS += $(local_ge_executor_ldflags)
 
@@ -304,7 +303,6 @@ LOCAL_SHARED_LIBRARIES :=                  \
     libruntime                             \
     libslog                                \
     libmmpa                                \
-    libmsprof                              \
 
 ifeq ($(device_os),android)
 LOCAL_LDFLAGS += -ldl

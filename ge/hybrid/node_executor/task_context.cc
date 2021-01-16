@@ -148,6 +148,10 @@ Status TaskContext::AllocateWorkspaces() {
 }
 
 Status TaskContext::RegisterCallback(const std::function<void()> &callback_fun) const {
+  if (callback_fun == nullptr) {
+    GELOGW("[%s] Callback is NULL", GetNodeName());
+    return SUCCESS;
+  }
   auto ret = execution_context_->callback_manager->RegisterCallback(callback_fun);
   if (ret != SUCCESS) {
     GELOGE(ret, "[%s] Failed to register callback", GetNodeName());
@@ -233,9 +237,7 @@ Status TaskContext::AllocateOutput(int index,
       } else {
         GE_CHK_STATUS_RET_NOLOG(AllocateTensor(tensor_desc, outputs_start_[index], attr));
         GELOGD("Allocating output successfully. node: %s. index = %d, size = %zu",
-              node_item_->NodeName().c_str(),
-              index,
-              outputs_start_[index].GetSize());
+               node_item_->NodeName().c_str(), index, outputs_start_[index].GetSize());
       }
     }
   }
@@ -317,6 +319,22 @@ void TaskContext::SetStatus(Status status) {
   }
 }
 
+uint32_t TaskContext::GetTaskId() const {
+  return task_id_;
+}
+
+void TaskContext::SetTaskId(uint32_t task_id) {
+  task_id_ = task_id;
+}
+
+uint32_t TaskContext::GetStreamId() const {
+  return stream_id_;
+}
+
+void TaskContext::SetStreamId(uint32_t stream_id) {
+  stream_id_ = stream_id;
+}
+
 Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr) {
   GE_CHECK_NOTNULL(buffer);
   if (ori_addr == nullptr) {
@@ -384,6 +402,20 @@ const void *TaskContext::GetVarBaseAddr() {
 
 const char *TaskContext::GetNodeName() const {
   return node_item_->NodeName().c_str();
+}
+
+void TaskContext::ReleaseInputsAndOutputs() {
+  for (int i = 0; i < node_item_->num_inputs; ++i) {
+    auto tensor = inputs_start_ + i;
+    tensor->Destroy();
+    GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), i);
+  }
+
+  for (int i = 0; i < node_item_->num_outputs; ++i) {
+    auto tensor = outputs_start_ + i;
+    tensor->Destroy();
+    GELOGD("[%s] Tensor of output[%d] released", GetNodeName(), i);
+  }
 }
 
 void TaskContext::ReleaseInput(int index) {
@@ -457,6 +489,14 @@ Status TaskContext::TryExecuteCallback(const function<void()> &callback_fun) con
 }
 const DumpProperties &TaskContext::GetDumpProperties() const {
   return execution_context_->dump_properties;
+}
+
+bool TaskContext::NeedCallback() {
+  return node_item_->has_observer || IsDumpEnabled() || execution_context_->profiling_level > 0;
+}
+
+Status TaskContext::Synchronize() {
+  return execution_context_->Synchronize(GetStream());
 }
 }  // namespace hybrid
 }  // namespace ge

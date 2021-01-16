@@ -21,7 +21,6 @@
 
 namespace {
   const std::string kStringLength = "StringLength";
-  const size_t kScalarDimNum = 1;
 }
 
 namespace ge {

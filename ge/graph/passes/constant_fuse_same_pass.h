@@ -21,14 +21,14 @@
 #include <set>
 #include <utility>
 #include <vector>
-
+#include "graph/aligned_ptr.h"
 #include "graph/types.h"
 #include "inc/graph_pass.h"
 
 namespace ge {
 struct SameConstKey {
   int data_size;
-  const uint8_t *data;
+  std::shared_ptr<AlignedPtr> aligned_ptr;
   DataType data_type;
   Format format;
   std::vector<int64_t> shape;
@@ -38,9 +38,11 @@ struct SameConstKey {
     if (data_size != key.data_size) {
       return data_size < key.data_size;
     }
-    int ret = memcmp(data, key.data, data_size);
-    if (ret != 0) {
-      return ret < 0;
+    if (data_size != 0) {
+      int ret = memcmp(aligned_ptr->Get(), key.aligned_ptr->Get(), data_size);
+      if (ret != 0) {
+        return ret < 0;
+      }
     }
     if (data_type != key.data_type) {
       return data_type < key.data_type;

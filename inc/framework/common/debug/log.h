@@ -28,7 +28,7 @@
 #include "ge/ge_api_error_codes.h"
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
-#define DOMI_LOGE(...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, __VA_ARGS__)
+#define DOMI_LOGE(fmt, ...) GE_LOG_ERROR(GE_MODULE_NAME, ge::FAILED, fmt, ##__VA_ARGS__)
 #else
 #include <android/log.h>
 #if defined(BUILD_VERSION_PERF)
@@ -258,7 +258,7 @@
 #define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)                                    \
   {                                                                                    \
     GELOGE(_status, "%s", errormsg);                                                   \
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
   }
 
 #define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                 \
@@ -266,7 +266,7 @@
     bool b = (expr);                                                                     \
     if (!b) {                                                                            \
       GELOGE(_status, "%s", errormsg);                                                   \
-      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {errormsg}); \
+      ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
       return _status;                                                                    \
     }                                                                                    \
   } while (0)

@@ -100,8 +100,8 @@ class SsdPriorboxKernel : public Kernel {
    * @return OTHERS:  Execution failed
    * @author
    */
-  Status GetNumPriorAndDimSize(uint aspect_ratios_size, uint min_sizes_size, uint max_sizes_size, int layer_width,
-                               int layer_height, int &num_priors, int &dim_size) const;
+  Status GetNumPriorAndDimSize(uint32_t aspect_ratios_size, uint32_t min_sizes_size, uint32_t max_sizes_size,
+                               int layer_width, int layer_height, int &num_priors, int &dim_size) const;
   void DataCalulate(float x, float y, float box_x, float box_y, int img_x, int img_y, vector<float> &result);
   std::unique_ptr<float[]> BoundaryCalulate(int dim_size, int layer_width, int layer_height, float step_width,
                                             float step_height, int img_width, int img_height, float offset,

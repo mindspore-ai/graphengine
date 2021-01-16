@@ -47,7 +47,7 @@ typedef struct tagRtGroupInfo {
   uint32_t aivectorNum;
   uint32_t sdmaNum;
   uint32_t activeStreamNum;
-  void*  extrPtr;
+  void *extrPtr;
 } rtGroupInfo_t;
 
 /**

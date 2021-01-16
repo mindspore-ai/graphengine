@@ -480,6 +480,9 @@ REGISTER_OPTYPE_DEFINE(HVDWAIT, "HorovodWait");
 // aicpu op for online_infer dynamic_dims
 REGISTER_OPTYPE_DEFINE(GETDYNAMICDIMS, "GetDynamicDims");
 
+// profiling training trace node
+REGISTER_OPTYPE_DEFINE(PROFILINGTRAININGTRACE, "ProfilingTrainingTrace");
+
 const std::string MODEL_ATTR_TASKS = "tasks";
 const std::string MODEL_ATTR_TASK_GEN_BASE_ADDR = "task_gen_base_addr";
 const std::string MODEL_ATTR_TASK_GEN_WEIGHT_ADDR = "task_gen_weight_addr";
@@ -801,7 +804,7 @@ const uint32_t XRGB_CHN_NUM = 4;
 ///
 const bool DEFAULT_GLOBAL_POOLING = false;
 
-const uint32_t MODEL_VERSION = 0x10000000; ///< Model version 1.0///
+const uint32_t MODEL_VERSION = 0x20000000; ///< Model version 2.0///
 
 // Eltwise's input size
 const int ELTWISE_MIN_INPUT_SIZE = 2;

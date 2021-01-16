@@ -26,6 +26,7 @@ add_library(ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_local_engine PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(ge_local_engine PRIVATE
@@ -55,10 +56,8 @@ target_link_libraries(ge_local_engine PRIVATE
     -Wl,--no-as-needed
     graph
     ascend_protobuf
-    register
     c_sec
     slog
-    runtime
     -Wl,--as-needed
 )
 
@@ -67,6 +66,7 @@ add_library(atc_ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(atc_ge_local_engine PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(atc_ge_local_engine PRIVATE
@@ -97,10 +97,8 @@ target_link_libraries(atc_ge_local_engine PRIVATE
     -Wl,--no-as-needed
     graph
     ascend_protobuf
-    register
     c_sec
     slog
-    runtime_compile
     -Wl,--as-needed
 )
 
@@ -114,6 +112,7 @@ add_library(ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDR
 
 target_compile_options(ge_local_opskernel_builder PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(ge_local_opskernel_builder PRIVATE
@@ -154,6 +153,7 @@ add_library(atc_ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO
 
 target_compile_options(atc_ge_local_opskernel_builder PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(atc_ge_local_opskernel_builder PRIVATE
@@ -199,10 +199,12 @@ add_library(ge_local_opskernel_builder_static STATIC ${OPS_KERNEL_SRC_LIST} ${PR
 
 target_compile_options(ge_local_opskernel_builder_static PRIVATE
     -Werror
+    -fno-common
 )
 
 target_compile_definitions(ge_local_opskernel_builder_static PRIVATE
     google=ascend_private
+    LOG_CPP
 )
 
 target_include_directories(ge_local_opskernel_builder_static PRIVATE

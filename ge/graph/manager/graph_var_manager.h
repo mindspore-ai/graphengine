@@ -42,6 +42,7 @@ const size_t kGraphMemoryBuffer = 4UL * 1024UL * 1024UL * 1024UL;
 const size_t kMaxMemorySize = 256UL * 1024UL * 1024UL * 1024UL;
 const char kEnvGeuseStaticMemory[] = "GE_USE_STATIC_MEMORY";
 const uint64_t kSessionMemAlignSize = 512;
+const size_t kSessionMemAlignUnit = 2;
 
 enum MemStatus {
   NORMAL = 0,
@@ -118,12 +119,12 @@ class VarResource {
   ge::Status GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info);
 
   ge::Status SyncVarData2BroadCast(uint32_t graph_id, const std::string &var_name,
-                                   const ge::ConstOpDescPtr &var_op_desc, uint8_t *base_ptr);
+                                   const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr);
 
   ge::Status SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                   const ge::ConstOpDescPtr &var_op_desc, uint8_t *base_ptr);
+                                   const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr);
 
-  ge::Status SyncVarData(uint32_t graph_id, const std::string &var_name, const ge::ConstOpDescPtr &var_op_desc,
+  ge::Status SyncVarData(uint32_t graph_id, const std::string &var_name, const GeTensorDesc &var_tensor_desc,
                          uint8_t *base_ptr);
 
   Status SetTransRoad(const std::string &var_name, const VarTransRoad &trans_road) {
@@ -214,14 +215,14 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
 
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr);
 
-  ge::Status SyncVarData(uint32_t graph_id, const std::string &var_name, ge::ConstOpDescPtr var_op_desc,
+  ge::Status SyncVarData(uint32_t graph_id, const std::string &var_name, const GeTensorDesc &var_tensor_desc,
                          uint8_t *base_ptr);
 
   ge::Status SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
 
   ge::Status GetBroadCastInfo(uint32_t graph_id,  const string &var_name, VarBroadCastInfo &broad_cast_info);
 
-  ge::Status SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name, ge::ConstOpDescPtr var_op_desc,
+  ge::Status SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name, const GeTensorDesc &var_tensor_desc,
                                    uint8_t *base_ptr);
 
   ge::Status GetCurVarDesc(const std::string &var_name, ge::GeTensorDesc &tensor_desc);

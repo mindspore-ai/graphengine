@@ -36,6 +36,9 @@
 #include "graph/load/new_model_manager/davinci_model.h"
 #include "graph/load/new_model_manager/davinci_model_parser.h"
 #include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/new_model_manager/task_info/kernel_task_info.h"
+#include "graph/load/new_model_manager/task_info/kernel_ex_task_info.h"
+#include "ge/common/dump/dump_properties.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/utils/graph_utils.h"
 #include "proto/ge_ir.pb.h"
@@ -43,8 +46,7 @@
 #undef protected
 
 using namespace std;
-using namespace ge;
-
+namespace ge {
 class UtestGeExecutor : public testing::Test {
  protected:
   static void InitModelDefault(ge::Model &model) {
@@ -67,6 +69,46 @@ class UtestGeExecutor : public testing::Test {
   }
 };
 
+class DModelListener : public ge::ModelListener {
+ public:
+  DModelListener() {
+  };
+  Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode,
+                       std::vector<ge::OutputTensorInfo> &outputs) {
+    GELOGI("In Call back. OnComputeDone");
+    return SUCCESS;
+  }
+};
+
+shared_ptr<ge::ModelListener> g_label_call_back(new DModelListener());
+
+static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {
+  auto op_desc = std::make_shared<ge::OpDesc>(name, type);
+  op_desc->SetStreamId(0);
+  op_desc->SetId(0);
+
+  ge::AttrUtils::SetFloat(op_desc, ge::ATTR_NAME_ALPHA, 0);
+  ge::AttrUtils::SetFloat(op_desc, ge::ATTR_NAME_BETA, 0);
+
+  op_desc->SetWorkspace({});
+  ;
+  op_desc->SetWorkspaceBytes({});
+  op_desc->SetInputOffset({});
+  op_desc->SetOutputOffset({});
+
+  ge::AttrUtils::SetListStr(op_desc, ge::ATTR_NAME_WEIGHT_NAME, {});
+  ge::AttrUtils::SetInt(op_desc, ge::POOLING_ATTR_MODE, 0);
+  ge::AttrUtils::SetInt(op_desc, ge::POOLING_ATTR_PAD_MODE, 0);
+  ge::AttrUtils::SetInt(op_desc, ge::POOLING_ATTR_DATA_MODE, 0);
+  ge::AttrUtils::SetInt(op_desc, ge::POOLING_ATTR_CEIL_MODE, 0);
+  ge::AttrUtils::SetInt(op_desc, ge::POOLING_ATTR_NAN_OPT, 0);
+  ge::AttrUtils::SetListInt(op_desc, ge::POOLING_ATTR_WINDOW, {});
+  ge::AttrUtils::SetListInt(op_desc, ge::POOLING_ATTR_PAD, {});
+  ge::AttrUtils::SetListInt(op_desc, ge::POOLING_ATTR_STRIDE, {});
+  ge::AttrUtils::SetListInt(op_desc, ge::ATTR_NAME_ACTIVE_STREAM_LIST, {1, 1});
+  ge::AttrUtils::SetInt(op_desc, ge::ATTR_NAME_STREAM_SWITCH_COND, 0);
+  return op_desc;
+}
 /*
 TEST_F(UtestGeExecutor, fail_UnloadModel_model_manager_stop_unload_error) {
   uint32_t model_id = 1;
@@ -87,3 +129,46 @@ TEST_F(UtestGeExecutor, fail_CommandHandle_model_manager_HandleCommand_error) {
   EXPECT_EQ(ge::PARAM_INVALID, ret);
 }
 */
+TEST_F(UtestGeExecutor, InitFeatureMapAndP2PMem_failed) {
+  DavinciModel model(0, g_label_call_back);
+  model.is_feature_map_mem_has_inited_ = true;
+  EXPECT_EQ(model.InitFeatureMapAndP2PMem(nullptr, 0), PARAM_INVALID);
+}
+
+TEST_F(UtestGeExecutor, kernel_InitDumpTask) {
+  DavinciModel model(0, g_label_call_back);
+  model.om_name_ = "testom";
+  model.name_ = "test";
+  OpDescPtr op_desc = CreateOpDesc("test", "test");
+
+  std::map<std::string, std::set<std::string>> model_dump_properties_map;
+  std::set<std::string> s;
+  model_dump_properties_map[DUMP_ALL_MODEL] = s;
+  DumpProperties dp;
+  dp.model_dump_properties_map_ = model_dump_properties_map;
+  model.SetDumpProperties(dp);
+
+  KernelTaskInfo kernel_task_info;
+  kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = op_desc;
+  kernel_task_info.InitDumpTask(0);
+}
+
+TEST_F(UtestGeExecutor, kernel_ex_InitDumpTask) {
+  DavinciModel model(0, g_label_call_back);
+  model.om_name_ = "testom";
+  model.name_ = "test";
+  OpDescPtr op_desc = CreateOpDesc("test", "test");
+
+  std::map<std::string, std::set<std::string>> model_dump_properties_map;
+  std::set<std::string> s;
+  model_dump_properties_map[DUMP_ALL_MODEL] = s;
+  DumpProperties dp;
+  dp.model_dump_properties_map_ = model_dump_properties_map;
+  model.SetDumpProperties(dp);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  kernel_ex_task_info.davinci_model_ = &model;
+  kernel_ex_task_info.InitDumpTask(nullptr, op_desc);
+}
+}

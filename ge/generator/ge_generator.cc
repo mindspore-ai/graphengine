@@ -47,6 +47,8 @@ const char *const kEngineNameDefault = "default";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kFileNameSuffix = "online";
+const size_t kDynamicDimSize = 1;
+const int64_t kDynamicDimValue = -2;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
     {ge::ENGINE_SYS, kEngineNameDefault}, {ge::ENGINE_AICORE, kAIcoreEngine}, {ge::ENGINE_VECTOR, kVectorEngine}};
@@ -156,7 +158,12 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
   }
 
   string op_type;
-  if (!AttrUtils::GetStr(tensor, kAttrOpType, op_type) || op_type.empty()) {
+  bool is_const = false;
+  (void)AttrUtils::GetBool(tensor, CONST_ATTR_NAME_INPUT, is_const);
+  if (is_const) {
+    GELOGD("Get input[%d] is const", index);
+    op_type = CONSTANTOP;
+  } else if (!AttrUtils::GetStr(tensor, kAttrOpType, op_type) || op_type.empty()) {
     op_type = DATA;
   }
 
@@ -165,6 +172,18 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTen
   if (data_op == nullptr) {
     return FAILED;
   }
+  if (is_const) {
+    ConstGeTensorPtr tensor_value;
+    if (!AttrUtils::GetTensor(tensor, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
+      GELOGE(FAILED, "Get value failed, node name:%s.", tensor.GetName().c_str());
+      return FAILED;
+    }
+    if (!AttrUtils::SetTensor(data_op, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
+      GELOGE(FAILED, "Set attr ATTR_NAME_WEIGHTS fail.");
+      return FAILED;
+    }
+  }
+
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
   GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail.");
@@ -231,6 +250,61 @@ static void GetOpsProtoPath(string &opsproto_path) {
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
 }
 
+static Status CheckShapeReset(const OpDescPtr &op_desc, bool &change_shape_flag) {
+  GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
+  change_shape_flag = false;
+  for (size_t i = 0; i < op_desc->GetAllInputsDesc().size(); i++) {
+    auto input_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(input_desc);
+    // pass scalar input desc
+    auto dims = input_desc->GetShape().GetDims();
+    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
+      change_shape_flag = true;
+    }
+  }
+  for (size_t i = 0; i < op_desc->GetAllOutputsDesc().size(); i++) {
+    auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(i));
+    GE_CHECK_NOTNULL(output_desc);
+    // pass scalar output desc
+    auto dims = output_desc->GetShape().GetDims();
+    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
+      change_shape_flag = true;
+    }
+  }
+  return SUCCESS;
+}
+
+static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
+  for (auto input : inputs) {
+    auto input_desc = input.GetTensorDesc();
+    GeShape shape_ori = input_desc.GetShape();
+
+    std::vector<int64_t> dynamic_shape_dims = {kDynamicDimValue};
+    GeShape dynamic_shape(dynamic_shape_dims);
+    std::vector<std::pair<int64_t, int64_t>> dynamic_shape_range;
+
+    ge::GeTensor inputTensor;
+    ge::GeTensorDesc desc(input_desc);
+
+    bool is_const = false;
+    (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
+    if (!is_const && shape_ori.GetDims().size() > 0) {
+      int64_t storage_format = FORMAT_NCHW;
+      if (ge::AttrUtils::GetInt(desc, ge::ATTR_NAME_STORAGE_FORMAT, storage_format) &&
+          !ge::AttrUtils::SetListInt(desc, ge::ATTR_NAME_STORAGE_SHAPE, dynamic_shape_dims)) {
+        GELOGE(FAILED, "Set attr ATTR_NAME_STORAGE_SHAPE fail.");
+        return FAILED;
+      }
+      desc.SetShape(dynamic_shape);
+      desc.SetShapeRange(dynamic_shape_range);
+    }
+
+    inputTensor.SetTensorDesc(desc);
+    inputs_dynamic.push_back(inputTensor);
+  }
+  return SUCCESS;
+}
+
 class GeGenerator::Impl {
  public:
   Impl(OmgContext &omg_context) : omg_context_(omg_context) {}
@@ -239,6 +313,8 @@ class GeGenerator::Impl {
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GeRootModelPtr &ge_models);
 
   Status SaveModel(const string &file_name_prefix, GeModelPtr &models, ModelBufferData &model);
+
+  Status SaveRootModel(const string &file_name_prefix, GeRootModelPtr &model, ModelBufferData &model_buff);
 
   Status SaveParams(GeModelPtr &ge_model, const string &type, const map<string, GeAttrValue> &attrs,
                     const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
@@ -260,6 +336,7 @@ class GeGenerator::Impl {
   bool GetVersionFromPath(const std::string &file_path, std::string &version);
   bool SetAtcVersionInfo(AttrHolder &obj);
   bool SetOppVersionInfo(AttrHolder &obj);
+  bool SetOmSystemInfo(AttrHolder &obj);
 };
 
 Status GeGenerator::Initialize(const map<string, string> &options) {
@@ -470,6 +547,30 @@ bool GeGenerator::Impl::SetOppVersionInfo(AttrHolder &obj) {
   return true;
 }
 
+bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
+  std::string soc_version;
+  (void)ge::GetContext().GetOption(ge::SOC_VERSION, soc_version);
+  GELOGI("SetOmSystemInfo soc_version: %s", soc_version.c_str());
+  if (!ge::AttrUtils::SetStr(obj, "soc_version", soc_version)) {
+    GELOGW("SetStr of soc_version failed.");
+    return false;
+  }
+
+  std::string framework_type;
+  (void)ge::GetContext().GetOption(ge::FRAMEWORK_TYPE, framework_type);
+  GELOGI("SetOmSystemInfo framework_type: %s", framework_type.c_str());
+  auto iter = ge::kFwkTypeToStr.find(framework_type);
+  if (iter == ge::kFwkTypeToStr.end()) {
+    GELOGW("Can not find framework_type in the map.");
+    return false;
+  }
+  if (!ge::AttrUtils::SetStr(obj, "framework_type", iter->second)) {
+    GELOGW("SetStr of framework_type failed.");
+    return false;
+  }
+  return true;
+}
+
 Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                                   ModelBufferData &model, bool is_offline) {
   rtContext_t ctx = nullptr;
@@ -507,17 +608,18 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
   ModelHelper model_helper;
   string model_name = "";
-  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(), model_name);
+  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
+                                                                 model_name);
   if (name_ret != SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
-    GELOGE(FAILED, "Get model_name failed. Param --output is invalid");
+    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
     return PARAM_INVALID;
   }
   map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
   GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
-  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model can not be null");
+  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
   ge_model->SetName(model_name);
-  ret = impl_->SaveModel(file_name_prefix, ge_model, model);
+  ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");
     if (impl_->graph_manager_.Finalize() != SUCCESS) {
@@ -567,6 +669,9 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
+  if (!is_offline) {
+    (void)AttrUtils::SetBool(op_desc, ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, true);
+  }
 
   if (CheckForSingleOp(op_desc, inputs, outputs) != SUCCESS) {
     GELOGE(PARAM_INVALID, "input param is invalid when build single op!");
@@ -594,40 +699,11 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   // 2. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
-  ge::ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(name);
-  GE_CHECK_NOTNULL_EXEC(compute_graph, return INTERNAL_ERROR);
-
-  // 3. Add Node to ComputeGraph.
-  NodePtr op_node = compute_graph->AddNode(op_desc);
-  GE_CHECK_NOTNULL_EXEC(op_node, return INTERNAL_ERROR);
-
-  // 4. Create InputData node.
-  int32_t arg_index = 0;
-  if (inputs.empty()) {
-    for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
-      GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
-      if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
-        continue;
-      }
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
-      arg_index++;
-    }
-  } else {
-    for (const auto &in_desc : inputs) {
-      GeTensorDesc input_desc = in_desc.GetTensorDesc();
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
-      arg_index++;
-    }
+  Graph graph;
+  if (BuildSingleOpGraph(op_desc, inputs, outputs, name, graph) != ge::SUCCESS) {
+    GELOGE(GRAPH_FAILED, "make graph fail.");
+    return GRAPH_FAILED;
   }
-
-  // 5. Create Output node.
-  if (!outputs.empty()) {
-    GE_CHK_STATUS_RET_NOLOG(AddOutputs(compute_graph, op_node, outputs));
-  }
-
-  // dump ComputeGraph.
-  compute_graph->Dump();
-  Graph graph = ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
@@ -644,7 +720,18 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   }
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
   GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
-  GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
+
+  bool dynamic_flag = false;
+  if (CheckShapeReset(op_desc, dynamic_flag) == SUCCESS && dynamic_flag) {
+    vector<GeTensor> inputs_dynamic;
+    vector<GeTensor> outputs_dynamic;
+    GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(inputs, inputs_dynamic));
+    GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(outputs, outputs_dynamic));
+    GE_CHK_STATUS_RET_NOLOG(
+      impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
+  } else {
+    GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
+  }
   GE_CHK_STATUS_RET_NOLOG(impl_->SaveModel(model_file_name, ge_model, model_buff));
   return SUCCESS;
 }
@@ -683,6 +770,46 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
   return BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
 }
 
+Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
+                                       const vector<GeTensor> &outputs, std::string graph_name, Graph &graph) {
+  ge::ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(graph_name);
+  GE_CHECK_NOTNULL_EXEC(compute_graph, return INTERNAL_ERROR);
+
+  // 1. Add Node to ComputeGraph.
+  NodePtr op_node = compute_graph->AddNode(op_desc);
+  GE_CHECK_NOTNULL_EXEC(op_node, return INTERNAL_ERROR);
+
+  // 2. Create InputData node.
+  int32_t arg_index = 0;
+  if (inputs.empty()) {
+    for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
+      GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
+      if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
+        continue;
+      }
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
+      arg_index++;
+    }
+  } else {
+    for (const auto &in_desc : inputs) {
+      GeTensorDesc input_desc = in_desc.GetTensorDesc();
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
+      arg_index++;
+    }
+  }
+
+  // 3. Create Output node.
+  if (!outputs.empty()) {
+    GE_CHK_STATUS_RET_NOLOG(AddOutputs(compute_graph, op_node, outputs));
+  }
+
+  // dump ComputeGraph node.
+  compute_graph->Dump();
+  graph = ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+
+  return SUCCESS;
+}
+
 Status GeGenerator::Impl::SaveParams(GeModelPtr &ge_model, const string &type, const map<string, GeAttrValue> &attrs,
                                      const vector<GeTensor> &inputs, const vector<GeTensor> &outputs) {
   GE_CHECK_NOTNULL_EXEC(ge_model, return PARAM_INVALID);
@@ -705,6 +832,47 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &
   ModelHelper model_helper;
   model_helper.SetSaveMode(is_offline_);
   Status ret = model_helper.SaveToOmModel(model, save_param_, file_name_prefix, model_buff);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Save to om model failed");
+    return ret;
+  }
+  return SUCCESS;
+}
+
+Status GeGenerator::Impl::SaveRootModel(const string &file_name_prefix, GeRootModelPtr &ge_root_model,
+                                        ModelBufferData &model_buff) {
+  bool is_unknown_shape = false;
+  auto ret = ge_root_model->CheckIsUnknownShape(is_unknown_shape);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "Check root model is unkonwn shape failed");
+    return FAILED;
+  }
+  GELOGD("begin save root model, cur model is unkonwn shape model ? : %d", is_unknown_shape);
+  GE_CHK_BOOL_EXEC(!ge_root_model->GetSubgraphInstanceNameToModel().empty(), return FAILED,
+                   "ge root model has no sub model")
+  GeModelPtr model_root = nullptr;
+  if (is_unknown_shape) {
+    model_root = make_shared<GeModel>();
+    model_root->SetGraph(GraphUtils::CreateGraphFromComputeGraph(ge_root_model->GetRootGraph()));
+    ge_root_model->SetSubgraphInstanceNameToModel(ge_root_model->GetRootGraph()->GetName(), model_root);
+    model_root->SetName(ge_root_model->GetRootGraph()->GetName());
+  } else {
+    model_root = ge_root_model->GetSubgraphInstanceNameToModel().begin()->second;
+  }
+  // set atc version
+  if (!SetAtcVersionInfo(*(model_root.get()))) {
+    GELOGW("SetPackageVersionInfo of atc failed!");
+  }
+  // set opp version
+  if (!SetOppVersionInfo(*(model_root.get()))) {
+    GELOGW("SetPackageVersionInfo of ops failed!");
+  }
+  if (!SetOmSystemInfo(*(model_root.get()))) {
+    GELOGW("SetOmsystemInfo failed!");
+  }
+  ModelHelper model_helper;
+  model_helper.SetSaveMode(is_offline_);
+  ret = model_helper.SaveToOmRootModel(ge_root_model, save_param_, file_name_prefix, model_buff, is_unknown_shape);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save to om model failed");
     return ret;

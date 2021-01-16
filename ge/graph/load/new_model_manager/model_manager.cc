@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include "mmpa/mmpa_api.h"
+#include "aicpu/aicpu_schedule/aicpu_op_type_list.h"
 #include "common/dump/dump_manager.h"
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
@@ -30,6 +32,7 @@
 #include "graph/load/new_model_manager/davinci_model_parser.h"
 #include "model/ge_root_model.h"
 #include "graph/common/local_context.h"
+#include "graph/utils/attr_utils.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "hybrid/hybrid_davinci_model.h"
 
@@ -40,9 +43,7 @@ const int kCmdParSize = 2;
 const int kDumpCmdPairSize = 2;
 const std::size_t kProfCmdParaMaxSize = 1000;
 const std::size_t kProfStartCmdParaSize = 2;
-const std::string kCmdTypeProfile = "profile";
 const std::string kCmdTypeDump = "dump";
-const std::string kCmdTypeProfiling = "profiling";
 const std::string kCmdTypeProfInit = "prof_init";
 const std::string kCmdTypeProfFinalize = "prof_finalize";
 const std::string kCmdTypeProfStart = "prof_start";
@@ -51,6 +52,9 @@ const std::string kCmdTypeProfModelSubscribe = "prof_model_subscribe";
 const std::string kCmdTypeProfModelUnsubscribe = "prof_model_cancel_subscribe";
 const char *const kBatchLoadBuf = "batchLoadsoFrombuf";
 const char *const kDeleteCustOp = "deleteCustOp";
+const int kTimeSpecNano = 1000000000;
+const int kTimeSpecMiro = 1000000;
+const int kOpNameMaxSize = 100;
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
   uint32_t kernelSoBufLen;
@@ -77,7 +81,8 @@ ModelManager::ModelManager() {
   session_id_bias_ = 0;
 }
 
-Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id) {
+Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, uint64_t session_id, uint32_t model_id,
+                                    uint32_t sub_model_id) {
   STR_FWK_OP_KERNEL param_base = {};
   void *devicebase = nullptr;
   void *aicpu_kernel_addr = nullptr;
@@ -87,10 +92,12 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   param_base.fwkKernelBase.fwk_kernel.sessionID = session_id;
   if (op_type == aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY) {
     std::vector<uint64_t> v_aicpu_kernel;
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                            std::to_string(sub_model_id);
+    std::lock_guard<std::recursive_mutex> lock(map_mutex_);
     auto iter = model_aicpu_kernel_.find(model_key);
     if (iter != model_aicpu_kernel_.end()) {
-      GELOGD("kernel destroy session_id %lu, model_id %u.", session_id, model_id);
+      GELOGD("kernel destroy session_id %lu, model_id %u, sub_model_id %u..", session_id, model_id, sub_model_id);
       v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
       // Insert size of aicpu kernel vector in the first element
       v_aicpu_kernel.insert(v_aicpu_kernel.begin(), v_aicpu_kernel.size());
@@ -175,7 +182,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 }
 
 void ModelManager::DestroyAicpuSession(uint64_t session_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   auto it = sess_ids_.find(session_id);
   if (it == sess_ids_.end()) {
     GELOGI("The session: %lu not created.", session_id);
@@ -188,7 +195,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
       GE_CHK_RT(rtSetDevice(static_cast<int32_t>(GetContext().DeviceId())));
     }
 
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_DESTROY, session_id, 0, 0);
     if (ret != SUCCESS) {
       GELOGW("The session: %lu destroy failed.", session_id);
     } else {
@@ -204,7 +211,7 @@ void ModelManager::DestroyAicpuSession(uint64_t session_id) {
 }
 
 ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   auto hybrid_davinci_model = hybrid_model_map_.find(model_id);
   if (hybrid_davinci_model != hybrid_model_map_.end()) {
     uint64_t session_id = hybrid_davinci_model->second->GetSessionId();
@@ -214,20 +221,22 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
-    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
-    return GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
+    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
   uint64_t session_id = it->second->GetSessionId();
   DestroyAicpuSession(session_id);
   return SUCCESS;
 }
 
-ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id) {
+ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id) {
   GELOGD("destroy aicpu kernel in session_id %lu, model_id %u.", session_id, model_id);
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
-  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                          std::to_string(sub_model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id,
+                                sub_model_id);
     if (ret != SUCCESS) {
       GELOGE(FAILED, "Destroy aicpu kernel failed.");
       return FAILED;
@@ -236,10 +245,12 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
   return SUCCESS;
 }
 
-ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint64_t kernel_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_id, uint32_t sub_model_id,
+                                           uint64_t kernel_id) {
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   std::vector<uint64_t> v_aicpu_kernel;
-  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id);
+  std::string model_key = std::to_string(session_id) + "_" + std::to_string(model_id) + "_" +
+                          std::to_string(sub_model_id);
   if (model_aicpu_kernel_.find(model_key) != model_aicpu_kernel_.end()) {
     v_aicpu_kernel = model_aicpu_kernel_.at(model_key);
   }
@@ -249,7 +260,7 @@ ge::Status ModelManager::CreateAicpuKernel(uint64_t session_id, uint32_t model_i
 }
 
 ModelManager::~ModelManager() {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   model_map_.clear();
   model_aicpu_kernel_.clear();
   cust_aicpu_so_.clear();
@@ -345,7 +356,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
 
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                      timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     davinci_model->SetProfileTime(MODEL_LOAD_END);
   } while (0);
@@ -357,24 +368,25 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
 void ModelManager::InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davinci_model) {
   GE_CHK_BOOL_EXEC(davinci_model != nullptr, return, "davinci_model ptr is null, id: %u", id);
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   model_map_[id] = davinci_model;
 }
 
 void ModelManager::InsertModel(uint32_t id, shared_ptr<hybrid::HybridDavinciModel> &hybrid_model) {
   GE_CHK_BOOL_EXEC(hybrid_model != nullptr, return, "hybrid_model ptr is null, id: %u", id);
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   hybrid_model_map_[id] = hybrid_model;
 }
 
 Status ModelManager::DeleteModel(uint32_t id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
   auto hybrid_model_it = hybrid_model_map_.find(id);
   if (it != model_map_.end()) {
     uint64_t session_id = it->second->GetSessionId();
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id);
+    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id)  + "_" +
+                            std::to_string(it->second->SubModelId());
     auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
     if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
       (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
@@ -383,22 +395,22 @@ Status ModelManager::DeleteModel(uint32_t id) {
   } else if (hybrid_model_it != hybrid_model_map_.end()) {
     (void)hybrid_model_map_.erase(hybrid_model_it);
   } else {
-    GELOGE(GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
-    return GE_EXEC_MODEL_ID_INVALID;
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
+    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
 
   return SUCCESS;
 }
 
 std::shared_ptr<DavinciModel> ModelManager::GetModel(uint32_t id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
   auto it = model_map_.find(id);
   return (it == model_map_.end()) ? nullptr : it->second;
 }
 
 std::shared_ptr<hybrid::HybridDavinciModel> ModelManager::GetHybridModel(uint32_t id) {
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
   auto it = hybrid_model_map_.find(id);
   return (it == hybrid_model_map_.end()) ? nullptr : it->second;
@@ -455,8 +467,8 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 
 Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_input_dims,
                                        const vector<pair<string, vector<int64_t>>> &user_input_dims,
-                                       vector<int64_t> &cur_dynamic_dims) {
-  GELOGD(" Start get cur dynamic dims.");
+                                       vector<int32_t> &cur_dynamic_dims) {
+  GELOGD("Start get cur dynamic dims.");
   if (user_real_input_dims.size() != user_input_dims.size()) {
     GELOGE(INTERNAL_ERROR,
            "The input count of user: %zu should be equal to the data count of graph: %zu",
@@ -473,7 +485,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
     }
     for (size_t j = 0; j < user_input_dims.at(i).second.size(); ++j) {
       if (user_input_dims.at(i).second.at(j) < 0) {
-        cur_dynamic_dims.emplace_back(user_real_input_dims[i][j]);
+        cur_dynamic_dims.emplace_back(static_cast<int32_t>(user_real_input_dims[i][j]));
       }
     }
   }
@@ -518,7 +530,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
     input_data.blobs.push_back(data);
   }
   if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
-    std::vector<int64_t> cur_dynamic_dims;
+    std::vector<int32_t> cur_dynamic_dims;
     if (!GetLocalOmgContext().user_real_input_dims.empty()) {
       if (GetCurDynamicDims(GetLocalOmgContext().user_real_input_dims, GetLocalOmgContext().user_input_dims,
                             cur_dynamic_dims) != SUCCESS) {
@@ -526,9 +538,9 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
         return INTERNAL_ERROR;
       }
       DataBuffer data;
-      data.data = new(std::nothrow) int64_t[cur_dynamic_dims.size()];
+      data.data = new(std::nothrow) int32_t[cur_dynamic_dims.size()];
       GE_CHECK_NOTNULL(data.data);
-      uint64_t length = static_cast<uint64_t>(cur_dynamic_dims.size() * sizeof(int64_t));
+      uint32_t length = static_cast<uint32_t>(cur_dynamic_dims.size() * sizeof(int32_t));
       GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK, return INTERNAL_ERROR,
                        "Failed to memcpy data.");
       data.length = length;
@@ -629,8 +641,7 @@ Status ModelManager::Stop(uint32_t model_id) {
 ///
 Status ModelManager::HandleCommand(const Command &command) {
   static const std::map<std::string, std::function<uint32_t(const Command &)>> cmds = {
-      {kCmdTypeProfile, HandleProfileCommand}, {kCmdTypeDump, HandleDumpCommand},
-      {kCmdTypeProfiling, HandleAclProfilingCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
+      {kCmdTypeDump, HandleDumpCommand}, {kCmdTypeProfInit, HandleProfInitCommand},
       {kCmdTypeProfFinalize, HandleProfFinalizeCommand}, {kCmdTypeProfStart, HandleProfStartCommand},
       {kCmdTypeProfStop, HandleProfStopCommand},
       {kCmdTypeProfModelSubscribe, HandleProfModelSubscribeCommand},
@@ -643,21 +654,6 @@ Status ModelManager::HandleCommand(const Command &command) {
   } else {
     return iter->second(command);
   }
-}
-
-Status ModelManager::HandleAclProfilingCommand(const Command &command) {
-  if (command.cmd_params.size() < kCmdParSize) {
-    GELOGE(PARAM_INVALID, "When the cmd_type is 'profiling', the size of cmd_params must larger than 2.");
-    return PARAM_INVALID;
-  }
-
-  std::string map_key = command.cmd_params[0];
-  std::string value = command.cmd_params[1];
-  if (map_key == PROFILE_CONFIG) {
-    ProfilingManager::Instance().SetProfilingConfig(value);
-  }
-
-  return SUCCESS;
 }
 
 Status ModelManager::GetModelByCmd(const Command &command,
@@ -806,29 +802,6 @@ Status ModelManager::HandleProfStopCommand(const Command &command) {
   return SUCCESS;
 }
 
-Status ModelManager::HandleProfileCommand(const Command &command) {
-  if (command.cmd_params.size() < kCmdParSize) {
-    GELOGE(PARAM_INVALID, "When the cmd_type is 'profile', the size of cmd_params must larger than 2.");
-    return PARAM_INVALID;
-  }
-
-  std::string map_key = command.cmd_params[0];
-  std::string value = command.cmd_params[1];
-
-  GELOGI("Profiling mode, Command key:%s , value:%s ", map_key.c_str(), value.c_str());
-
-  auto iter = PROFILE_COMPONENT_MAP.find(map_key);
-  if (iter != PROFILE_COMPONENT_MAP.end()) {
-    std::string property_value = (value == "on") ? "1" : "0";
-    PropertiesManager::Instance().SetPropertyValue(iter->second, property_value);
-  }
-
-  if ((map_key == PROFILER_JOBCTX || map_key == PROFILER_TARGET_PATH || map_key == RTS_PROFILE_PATH)) {
-    PropertiesManager::Instance().SetPropertyValue(map_key, value);
-  }
-  return SUCCESS;
-}
-
 static Status ParserPara(const Command &command, const string &dump_key, string &dump_value) {
   auto iter = std::find(command.cmd_params.begin(), command.cmd_params.end(), dump_key);
   if (iter != command.cmd_params.end()) {
@@ -940,12 +913,10 @@ Status ModelManager::GetInputOutputDescInfo(const uint32_t model_id, vector<Inpu
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, GE_EXEC_MODEL_ID_INVALID,
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
                          "GetInputOutputDescInfo Failed, Invalid model id %u!", model_id);
 
-  davinci_model->SetModelDescVersion(new_model_desc);
-
-  return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats);
+  return davinci_model->GetInputOutputDescInfo(input_desc, output_desc, inputFormats, outputFormats, new_model_desc);
 }
 
 ///
@@ -1008,8 +979,9 @@ Status ModelManager::GetUserDesignateShapeOrder(const uint32_t model_id,
 }
 
 Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type) {
-  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHECK_NOTNULL(davinci_model);
+  auto davinci_model = GetModel(model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetCurShape Failed, Invalid Model ID %u!", model_id);
   davinci_model->GetCurShape(batch_info, dynamic_type);
   return SUCCESS;
 }
@@ -1022,20 +994,10 @@ Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynami
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHECK_NOTNULL(davinci_model);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "GetModelAttr Failed, Invalid Model ID %u!", model_id);
   davinci_model->GetModelAttr(dynamic_output_shape_info);
   return SUCCESS;
-}
-
-Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, vector<InputOutputDescInfo> &input_desc,
-                                                       vector<InputOutputDescInfo> &output_desc,
-                                                       std::vector<uint32_t> &inputFormats,
-                                                       std::vector<uint32_t> &outputFormats) {
-  std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "GetInputOutputDescInfo Failed, Invalid model id %u!",
-                         model_id);
-
-  return davinci_model->GetInputOutputDescInfoForZeroCopy(input_desc, output_desc, inputFormats, outputFormats);
 }
 
 ///
@@ -1046,25 +1008,27 @@ Status ModelManager::GetInputOutputDescInfoForZeroCopy(const uint32_t model_id, 
 /// @param [out] aipp_info
 /// @return execute result
 ///
-Status ModelManager::GetAIPPInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
+Status ModelManager::GetAippInfo(const uint32_t model_id, uint32_t index, AippConfigInfo &aipp_info) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "GetAIPPInfo failed, invalid model_id is %u.",
-                         model_id);
-
-  return davinci_model->GetAIPPInfo(index, aipp_info);
+      "GetAIPPInfo failed, invalid model_id is %u.", model_id);
+  return davinci_model->GetAippInfo(index, aipp_info);
 }
 
 Status ModelManager::GetAippType(uint32_t model_id, uint32_t index, InputAippType &type, size_t &aipp_index) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
   GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
-                         "GetAIPPInfo failed, invalid model_id is %u.",
-                         model_id);
-
+      "GetAIPPInfo failed, invalid model_id is %u.", model_id);
   return davinci_model->GetAippType(index, type, aipp_index);
 }
 
 Status ModelManager::GenSessionId(uint64_t &session_id) {
+  const uint64_t kSessionTimeMask = 0xffffffffffff0000;
+  const uint64_t kSessionPidMask  = 0x000000000000ff00;
+  const uint64_t kSessionBiasMask = 0x00000000000000ff;
+
+  const uint64_t kMaskPerOffset = 8;
+
   std::lock_guard<std::mutex> lock(session_id_create_mutex_);
 
   mmTimeval tv;
@@ -1072,12 +1036,14 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }
-  session_id = static_cast<uint64_t>(tv.tv_sec * 1000000 + tv.tv_usec);  // 1000000us
+  uint64_t timestamp = static_cast<uint64_t>(tv.tv_sec * kTimeSpecMiro + tv.tv_usec);  // 1000000us
+
+  static uint32_t pid = mmGetPid();
 
   session_id_bias_++;
-  // max bais 100.
-  session_id_bias_ = session_id_bias_ % 100;
-  session_id = session_id * 100 + session_id_bias_;
+
+  session_id = ((timestamp<<kMaskPerOffset<<kMaskPerOffset) & kSessionTimeMask) +
+               ((pid<<kMaskPerOffset) & kSessionPidMask) + (session_id_bias_ & kSessionBiasMask);
 
   GELOGD("Generate new session id: %lu.", session_id);
   return SUCCESS;
@@ -1086,15 +1052,22 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   GE_CHK_BOOL_RET_STATUS(model.key.empty() || mmAccess2(model.key.c_str(), M_F_OK) == EN_OK,
-	                 ACL_ERROR_GE_PARAM_INVALID,
-                         "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
+      ACL_ERROR_GE_PARAM_INVALID, "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
   shared_ptr<DavinciModel> davinci_model = nullptr;
   mmTimespec timespec = mmGetTickCount();
 
   ModelHelper model_helper;
-  Status ret = model_helper.LoadModel(model);
+  Status ret = model_helper.LoadRootModel(model);
+  if (model_helper.GetModelType()) {
+    bool is_shape_unknown = false;
+    GE_CHK_STATUS_RET(model_helper.GetGeRootModel()->CheckIsUnknownShape(is_shape_unknown),
+                      "CheckIsUnknownShape failed, model id:%u", model_id);
+    if (is_shape_unknown || GetContext().GetHostExecFlag()) {
+      return DoLoadHybridModelOnline(model_id, model_helper.GetGeRootModel(), listener);
+    }
+  }
   if (ret != SUCCESS) {
     GELOGE(ret, "load model failed.");
     return ret;
@@ -1108,8 +1081,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     } catch (...) {
-      GELOGE(INTERNAL_ERROR, "Make shared failed since other exception raise");
-      return INTERNAL_ERROR;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed since other exception raise");
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     ret = davinci_model->Assign(ge_model);
     if (ret != SUCCESS) {
@@ -1121,7 +1094,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     int32_t device_id = 0;
     rtError_t rt_ret = rtGetDevice(&device_id);
     if (rt_ret != RT_ERROR_NONE || device_id < 0) {
-      GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+      GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     davinci_model->SetDeviceId(device_id);
@@ -1148,7 +1121,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
 
     GELOGI("Parse model %u success.", model_id);
 
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * 1000 * 1000 * 1000 +
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                      timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     davinci_model->SetProfileTime(MODEL_LOAD_END);
 
@@ -1252,14 +1225,16 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
   }
 
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
-  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, PARAM_INVALID, "Invalid model id %u.", model_id);
+  GE_CHK_BOOL_RET_STATUS(davinci_model != nullptr, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID,
+                         "Invalid model id %u, check whether model has been loaded or not.", model_id);
 
   if (davinci_model->NeedDestroyAicpuKernel()) {
     GELOGI("Start to destroy specified aicpu kernel.");
     // Zero copy is enabled by default, no need to judge.
     uint64_t session_id_davinci = davinci_model->GetSessionId();
     uint32_t model_id_davinci = davinci_model->GetModelId();
-    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci);
+    uint32_t sub_model_id = davinci_model->SubModelId();
+    Status status = DestroyAicpuKernel(session_id_davinci, model_id_davinci, sub_model_id);
     if (status != SUCCESS) {
       GELOGW("Destroy specified aicpu kernel failed, session id is %lu, model id is %u.", session_id_davinci,
              model_id_davinci);
@@ -1275,11 +1250,11 @@ Status ModelManager::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asy
 }
 
 Status ModelManager::CreateAicpuSession(uint64_t session_id) {
-  std::lock_guard<std::mutex> lock(sess_ids_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   auto it = sess_ids_.find(session_id);
   // never been created by any model
   if (it == sess_ids_.end()) {
-    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0);
+    Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_SESSION_CREATE, session_id, 0, 0);
     if (ret == SUCCESS) {
       (void)sess_ids_.insert(session_id);
       GELOGI("The session: %lu create success.", session_id);
@@ -1289,13 +1264,13 @@ Status ModelManager::CreateAicpuSession(uint64_t session_id) {
   return SUCCESS;
 }
 
-Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name) {
-  GELOGI("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
+Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_name, bool &loaded) {
+  GELOGD("LoadCustAicpuSo in, op name %s, so name %s", op_desc->GetName().c_str(), so_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   CustAICPUKernelPtr aicpu_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
   if (aicpu_kernel == nullptr) {
-    GELOGE(INTERNAL_ERROR, "cust aicpu op %s can't find kernel!", op_desc->GetName().c_str());
-    return INTERNAL_ERROR;
+    GELOGI("cust aicpu op %s has no corresponding kernel!", op_desc->GetName().c_str());
+    return SUCCESS;
   }
 
   // get current context
@@ -1313,18 +1288,24 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
     std::map<string, CustAICPUKernelPtr> new_so_name;
     new_so_name.insert({so_name, aicpu_kernel});
     cust_aicpu_so_[resource_id] = new_so_name;
-    GELOGI("LoadCustAicpuSo new aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo new aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
     return SUCCESS;
   }
   auto it_so_name = it->second.find(so_name);
   if (it_so_name == it->second.end()) {
     it->second.insert({so_name, aicpu_kernel});
-    GELOGI("LoadCustAicpuSo add aicpu so resource id %lu", resource_id);
+    loaded = false;
+    GELOGD("LoadCustAicpuSo add aicpu so name %s, resource id %lu", so_name.c_str(), resource_id);
+    return SUCCESS;
   }
+  loaded = true;
+  GELOGD("LoadCustAicpuSo so name %s has been loaded.", so_name.c_str());
   return SUCCESS;
 }
 
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
+  GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
   if (cust_aicpu_so_.size() == 0) return SUCCESS;
   // get current context
@@ -1488,8 +1469,7 @@ void ModelManager::GenModelId(uint32_t *id) {
   if (id == nullptr) {
     return;
   }
-
-  std::lock_guard<std::mutex> lock(map_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
   *id = ++max_model_id_;
 }
 
@@ -1558,6 +1538,207 @@ Status ModelManager::EnableExceptionDump(const std::map<string, string> &options
   } else {
     GELOGI("Not find option enable exception dump");
   }
+  return SUCCESS;
+}
+
+Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_optype_list,
+                                              std::vector<std::string> &aicpu_tf_optype_list) {
+  std::string kernel_name = "checkOpType";
+  GELOGI("LaunchKernelCheckAicpuOpType in, kernel name %s", kernel_name.c_str());
+  std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
+  std::vector<SysOpInfo> req_aicpu_op_info_list;
+  std::vector<SysOpInfo> res_aicpu_op_info_list;
+  std::vector<ReturnCode> res_ret_code_list;
+
+  if (aicpu_optype_list.empty() && aicpu_tf_optype_list.empty()) {
+    GELOGI("No need to check aicpu op type.");
+    return SUCCESS;
+  }
+
+  vector<void *> allocated_mem;
+  rtError_t status;
+  rtStream_t stream = nullptr;
+  void *args = nullptr;
+
+  void *d_req_op_list = nullptr;
+  void *d_res_op_list = nullptr;
+  void *d_ret_code_list = nullptr;
+
+  size_t aicpu_op_nums = aicpu_optype_list.size();
+  size_t tf_op_nums = aicpu_tf_optype_list.size();
+  size_t op_nums = aicpu_op_nums + tf_op_nums;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
+  // malloc sysOpInfoList in SysOpCheckInfo
+  status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(d_req_op_list);
+
+  // malloc sysOpInfoList in SysOpCheckResp
+  status = rtMalloc(&d_res_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(d_res_op_list);
+
+  // malloc returnCodeList in SysOpCheckResp
+  status = rtMalloc(&d_ret_code_list, op_nums * sizeof(ReturnCode), RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(d_ret_code_list);
+
+  for (const auto &op_type : aicpu_optype_list) {
+    SysOpInfo op_info;
+    // malloc op_type name in SysOpInfo
+    void *d_op_type_name = nullptr;
+    status = rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM);
+    if (status != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      return RT_ERROR_TO_GE_STATUS(status);
+    }
+    allocated_mem.push_back(d_op_type_name);
+    GE_CHK_RT(rtMemcpy(d_op_type_name, op_type.length(), op_type.c_str(), op_type.length(), RT_MEMCPY_HOST_TO_DEVICE));
+    op_info.opType = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_op_type_name));
+    op_info.opLen = op_type.length();
+    op_info.kernelsType = CPU_KERNEL;
+    req_aicpu_op_info_list.emplace_back(op_info);
+  }
+
+  for (const auto &op_type : aicpu_tf_optype_list) {
+    SysOpInfo op_info;
+    // malloc op_type name in SysOpInfo
+    void *d_op_type_name = nullptr;
+    status = rtMalloc(&d_op_type_name, op_type.size(), RT_MEMORY_HBM);
+    if (status != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+      return RT_ERROR_TO_GE_STATUS(status);
+    }
+    allocated_mem.push_back(d_op_type_name);
+    GE_CHK_RT(rtMemcpy(d_op_type_name, op_type.size(), op_type.c_str(), op_type.size(), RT_MEMCPY_HOST_TO_DEVICE));
+    op_info.opType = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_op_type_name));
+    op_info.opLen = op_type.size();
+    op_info.kernelsType = TF_KERNEL;
+    req_aicpu_op_info_list.emplace_back(op_info);
+  }
+  GELOGI("Check aicpu op all attr size: %zu, real attr size: %zu.", op_nums, req_aicpu_op_info_list.size());
+  GE_CHK_RT(rtMemcpy(d_req_op_list, sizeof(SysOpInfo) * req_aicpu_op_info_list.size(), req_aicpu_op_info_list.data(),
+                     sizeof(SysOpInfo) * req_aicpu_op_info_list.size(), RT_MEMCPY_HOST_TO_DEVICE));
+
+  SysOpCheckInfo op_check_info_req = { 0 };
+  SysOpCheckResp op_check_info_res = { 0 };
+  op_check_info_req.opListNum = op_nums;
+  op_check_info_req.offSetLen = sizeof(SysOpCheckInfo);
+  op_check_info_req.sysOpInfoList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_req_op_list));
+
+  op_check_info_res.opListNum = 0;
+  op_check_info_res.isWithoutJson = 0;
+  op_check_info_res.returnCodeList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_ret_code_list));
+  op_check_info_res.sysOpInfoList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_res_op_list));
+
+  uint32_t args_size = sizeof(SysOpCheckInfo) + sizeof(SysOpCheckResp);
+  status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+  allocated_mem.push_back(args);
+  GE_CHK_RT(rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo),
+                     RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtMemcpy(
+    reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(args)) +
+    op_check_info_req.offSetLen)), sizeof(SysOpCheckResp), reinterpret_cast<void *>(&op_check_info_res),
+    sizeof(SysOpCheckResp), RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT(rtStreamCreate(&stream, 0));
+  GE_CHK_RT(rtCpuKernelLaunch(nullptr, kernel_name.c_str(), 1, args, args_size, nullptr, stream));
+
+  status = rtStreamSynchronize(stream);
+  if (status != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
+    GE_CHK_RT(rtStreamDestroy(stream));
+    return RT_ERROR_TO_GE_STATUS(status);
+  }
+
+  // Check the response
+  SysOpCheckResp *d_op_check_info_res =
+    reinterpret_cast<SysOpCheckResp *>(reinterpret_cast<void *>(static_cast<uintptr_t>(static_cast<uint64_t>(
+    reinterpret_cast<uintptr_t>(args)) + op_check_info_req.offSetLen)));
+  (void)memset_s(&op_check_info_res, sizeof(SysOpCheckResp), 0, sizeof(SysOpCheckResp));
+  GE_CHK_RT(rtMemcpy(&op_check_info_res, sizeof(SysOpCheckResp), d_op_check_info_res, sizeof(SysOpCheckResp),
+                     RT_MEMCPY_DEVICE_TO_HOST));
+
+  if (op_check_info_res.isWithoutJson) {
+    GELOGI("No need to check aicpu in this scenoria.");
+    GE_CHK_RT(rtStreamDestroy(stream));
+    return SUCCESS;
+  }
+  uint64_t res_op_nums = op_check_info_res.opListNum;
+  GELOGI("Check aicpu type, is without json: %d, res op num: %lu.", op_check_info_res.isWithoutJson, res_op_nums);
+  if (res_op_nums != 0) {
+    res_ret_code_list.clear();
+    res_ret_code_list.resize(res_op_nums);
+    res_aicpu_op_info_list.clear();
+    res_aicpu_op_info_list.resize(res_op_nums);
+    GE_CHK_RT(rtMemcpy(res_ret_code_list.data(), sizeof(ReturnCode) * res_op_nums,
+                       reinterpret_cast<void *>(static_cast<uintptr_t>(op_check_info_res.returnCodeList)),
+                       sizeof(ReturnCode) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
+    GE_CHK_RT(rtMemcpy(res_aicpu_op_info_list.data(), sizeof(SysOpInfo) * res_op_nums,
+                       reinterpret_cast<void *>(static_cast<uintptr_t>(op_check_info_res.sysOpInfoList)),
+                       sizeof(SysOpInfo) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
+    if (res_ret_code_list.size() != res_aicpu_op_info_list.size() || res_ret_code_list.size() != res_op_nums) {
+      GELOGE(FAILED, "Number of retcode is not equal to number of op type.");
+      GE_CHK_RT(rtStreamDestroy(stream));
+      return FAILED;
+    }
+    std::string fail_reason;
+    for (uint32_t i = 0; i < res_op_nums; i++) {
+      ReturnCode ret_code = res_ret_code_list.at(i);
+      SysOpInfo aicpu_info = res_aicpu_op_info_list.at(i);
+      GELOGI("Not support aicpu op type: %lu, kernel_type:%d, opLen:%d, ret_code:%d", aicpu_info.opType,
+             aicpu_info.kernelsType, aicpu_info.opLen, ret_code);
+      std::vector<char> op_name;
+      op_name.clear();
+      op_name.resize(kOpNameMaxSize);
+      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen, reinterpret_cast<void *>(aicpu_info.opType),
+                         aicpu_info.opLen, RT_MEMCPY_DEVICE_TO_HOST));
+      std::string kernel_type =
+          (static_cast<OpKernelType>(aicpu_info.kernelsType) == TF_KERNEL) ? "TF_KERNEL" : "CPU_KERNEL";
+      string op_name_str(op_name.data());
+      fail_reason += "op_type: " + op_name_str + " kernel_type: " + kernel_type +
+                     "  ret code:" + std::to_string(static_cast<int>(ret_code)) +
+                     "<0: op_type, 1: format, 2: datatype> \n";
+    }
+    fail_reason += "not support.";
+    GELOGE(FAILED, "Check aicpu op_type failed. details: %s", fail_reason.c_str());
+    GE_CHK_RT(rtStreamDestroy(stream));
+    return FAILED;
+  }
+
+  GE_CHK_RT(rtStreamDestroy(stream));
+  GELOGI("Cpu kernel launch check optype task success.");
+  return SUCCESS;
+}
+
+Status ModelManager::CheckAicpuOpList(GeModelPtr ge_model) {
+  std::vector<std::string> aicpu_optype_list;
+  std::vector<std::string> aicpu_tf_optype_list;
+  bool aicpu_need_check = ge::AttrUtils::GetListStr(ge_model, "needCheckCpu", aicpu_optype_list);
+  bool tf_need_check = ge::AttrUtils::GetListStr(ge_model, "needCheckTf", aicpu_tf_optype_list);
+  if (!aicpu_need_check && !tf_need_check) {
+    GELOGI("Graph:%s No need to check aicpu optype.", ge_model->GetGraph().GetName().c_str());
+    return SUCCESS;
+  }
+  GE_CHK_STATUS_RET(LaunchKernelCheckAicpuOp(aicpu_optype_list, aicpu_tf_optype_list),
+                    "Launch check aicpu op type failed.");
   return SUCCESS;
 }
 

@@ -272,6 +272,10 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
 void StridedSliceKernel::ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_tensor, const size_t x_dims_num,
                                                vector<int64_t> &x_dims) {
   auto begin_data_type_size = GetSizeByDataType(begin_tensor->GetTensorDesc().GetDataType());
+  if (begin_data_type_size == 0) {
+    GELOGW("Param begin_data_type_size should not be zero.");
+    return;
+  }
   size_t begin_vec_size = begin_tensor->GetData().size() / begin_data_type_size;
   auto final_dim_num = x_dims_num < begin_vec_size ? begin_vec_size : x_dims_num;
   for (size_t i = 0; i < final_dim_num; i++) {
@@ -284,8 +288,10 @@ void StridedSliceKernel::ExpandDimsWithNewAxis(const ConstGeTensorPtr &begin_ten
 }
 
 void StridedSliceKernel::ExpandStrideWithEllipsisMask(const size_t x_dims_num, 
-                                    const vector<int64_t> &x_dims, vector<int64_t> &orig_begin_vec,
-                                    vector<int64_t> &orig_end_vec, vector<int64_t> &orig_stride_vec) {
+                                                      const vector<int64_t> &x_dims, 
+                                                      vector<int64_t> &orig_begin_vec,
+                                                      vector<int64_t> &orig_end_vec, 
+                                                      vector<int64_t> &orig_stride_vec) {
   
   if (attr_value_map_.at(STRIDE_SLICE_ATTR_ELLIPSIS_MASK) != 0) {
     auto end_mask = attr_value_map_.at(STRIDE_SLICE_ATTR_END_MASK);
@@ -308,7 +314,7 @@ void StridedSliceKernel::ExpandStrideWithEllipsisMask(const size_t x_dims_num,
         if (orig_begin_vec.size() < x_dims_num) {
           for (size_t j = 1; j < (x_dims_num - orig_begin_vec.size() + 1); ++j) {
             orig_begin_vec.insert((orig_begin_vec.begin() + ellipsis_dim + j), 0);
-            orig_end_vec.insert((orig_end_vec.begin() + ellipsis_dim + j), x_dims.at(ellipsis_dim +j));
+            orig_end_vec.insert((orig_end_vec.begin() + ellipsis_dim + j), x_dims.at(ellipsis_dim + j));
             orig_stride_vec.insert((orig_stride_vec.begin() + ellipsis_dim + j), 1);
           }
         }

@@ -70,8 +70,10 @@ std::string TransOpBreadthFusionPass::GetNodeId(const int anchor_index, const No
     trans_data_type = true;
     trans_format = true;
     trans_shape = true;
-  } else if (node->GetType() == RESHAPE) {
+  } else if (node->GetType() == RESHAPE || node->GetType() == EXPANDDIMS || node->GetType() == SQUEEZE) {
     trans_shape = true;
+  } else if (node->GetType() == REFORMAT) {
+    trans_format = true;
   }
 
   id << node->GetType() << '-' << anchor_index;

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 #include "host_cpu_engine.h"
-#include <dlfcn.h>
 #include "graph/common/omg_util.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_adapter.h"
@@ -31,35 +30,21 @@ namespace {
   case (DTYPE): {                                                                                                      \
     GeTensorPtr ge_tensor = nullptr;                                                                                   \
     if (need_create_flag) {                                                                                            \
-      GELOGI("node:%s allocate output %zu start, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));  \
-      std::unique_ptr<TYPE[]> buf(new (std::nothrow) TYPE[data_num]());                                                \
-      if (buf == nullptr) {                                                                                            \
-        GELOGE(MEMALLOC_FAILED, "New sizeof(T) * data_num(%zu) memory failed",                                         \
-               static_cast<size_t>(sizeof(TYPE) * data_num));                                                          \
-        return MEMALLOC_FAILED;                                                                                        \
-      }                                                                                                                \
-      ge_tensor = MakeShared<GeTensor>(out_desc);                                                                      \
+      uint64_t size = data_num * sizeof(TYPE);                                                                         \
+      ge_tensor = MakeShared<GeTensor>(out_desc, size);                                                                \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGI("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, data_num * sizeof(TYPE));\
-      if (ge_tensor->SetData(reinterpret_cast<uint8_t *>(buf.get()), data_num * sizeof(TYPE)) != GRAPH_SUCCESS) {      \
-        GELOGE(MEMALLOC_FAILED, "Set data for output %zu of node %s failed.", i, op_desc->GetName().c_str());          \
-        return MEMALLOC_FAILED;                                                                                        \
-      }                                                                                                                \
+      GELOGD("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, size);                   \
       ge_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());                                              \
       ge_tensor->MutableTensorDesc().SetShape(out_desc.GetShape());                                                    \
-      outputs.emplace_back(ge_tensor);                                                                                 \
     } else {                                                                                                           \
       ge_tensor = outputs[i];                                                                                          \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGI("node:%s existed output %zu, addr=%p, size=%lld", op_desc->GetName().c_str(), i,                          \
-             reinterpret_cast<const uint8_t *>(ge_tensor->GetData().data()), ge_tensor->GetData().size());             \
+      GELOGD("node:%s existed output %zu", op_desc->GetName().c_str(), i);                                             \
     }                                                                                                                  \
     auto tensor = TensorAdapter::AsTensor(*ge_tensor);                                                                 \
     auto tensor_name = op_desc->GetOutputNameByIndex(i);                                                               \
     GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",               \
                                op_desc->GetName().c_str(), i);                                                         \
-    GELOGD("Successfully inserted output tensor. node = %s, index = %zu, output name = %s, addr = %p, size = %zu",     \
-           op_desc->GetName().c_str(), i, tensor_name.c_str(), tensor.GetData(), tensor.GetSize());                    \
     named_outputs.emplace(tensor_name, tensor);                                                                        \
     break;                                                                                                             \
   }
@@ -96,8 +81,8 @@ Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
 
 void HostCpuEngine::CloseSo() {
   for (auto handle : lib_handles_) {
-    if (dlclose(handle) != 0) {
-      GELOGW("failed to close handle, message: %s", dlerror());
+    if (mmDlclose(handle) != 0) {
+      GELOGW("failed to close handle, message: %s", mmDlerror());
     }
   }
   lib_handles_.clear();
@@ -236,16 +221,30 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   GELOGD("Run node by host cpu engine. node name = %s", node->GetName().c_str());
   std::unique_ptr<HostCpuOp> op_kernel;
   GE_CHK_STATUS_RET_NOLOG(FindOpKernel(node, op_kernel));
-
   std::map<std::string, const Tensor> named_inputs;
-  std::vector<GeTensorPtr> tmp_outputs;
-  tmp_outputs.swap(outputs);
   std::map<std::string, Tensor> named_outputs;
   auto op_desc = node->GetOpDesc();
   GE_CHK_STATUS_RET_NOLOG(PrepareInputs(op_desc, inputs, named_inputs));
-  GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, tmp_outputs, named_outputs));
+  GE_CHK_STATUS_RET_NOLOG(PrepareOutputs(op_desc, outputs, named_outputs));
   GE_CHK_STATUS_RET_NOLOG(RunInternal(op_desc, *op_kernel, named_inputs, named_outputs));
 
+  std::vector<GeTensorPtr> tmp_outputs;
+  for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
+    auto tensor_name = op_desc->GetOutputNameByIndex(i);
+    if (tensor_name.empty()) {
+      GELOGE(INTERNAL_ERROR, "Failed to get output name. node = %s, index = %zu", op_desc->GetName().c_str(), i);
+      return INTERNAL_ERROR;
+    }
+    auto iter = named_outputs.find(tensor_name);
+    if (iter == named_outputs.end()) {
+       GELOGE(INTERNAL_ERROR, "Failed to get output tensor. node = %s, index = %zu, tensor_name = %s",
+              op_desc->GetName().c_str(), i, tensor_name.c_str());
+      return INTERNAL_ERROR;
+    }
+    auto ge_tensor = MakeShared<GeTensor>(TensorAdapter::AsGeTensor(iter->second));
+    GE_CHECK_NOTNULL(ge_tensor);
+    tmp_outputs.emplace_back(ge_tensor);
+  }
   GELOGD("Run node by host cpu engine successfully. name node = %s", node->GetName().c_str());
   outputs.swap(tmp_outputs);
   return SUCCESS;
@@ -323,13 +322,13 @@ Status HostCpuEngine::LoadLibs(std::vector<std::string> &lib_paths) {
 
 Status HostCpuEngine::LoadLib(const std::string &lib_path) {
   GELOGI("To invoke dlopen on lib: %s", lib_path.c_str());
-  auto handle = dlopen(lib_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  auto handle = mmDlopen(lib_path.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
   if (handle == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), dlerror());
+    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), mmDlerror());
     return INTERNAL_ERROR;
   }
 
-  auto initialize = (Status (*)(const HostCpuContext &))dlsym(handle, "Initialize");
+  auto initialize = (Status (*)(const HostCpuContext &))mmDlsym(handle, "Initialize");
   if (initialize != nullptr) {
     GELOGI("Invoke function Initialize in lib: %s", lib_path.c_str());
     if (initialize(HostCpuContext()) != SUCCESS) {

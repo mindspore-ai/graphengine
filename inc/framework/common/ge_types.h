@@ -37,7 +37,15 @@ enum FrameworkType {
   MINDSPORE = 1,
   TENSORFLOW = 3,
   ANDROID_NN,
-  FRAMEWORK_RESERVED,
+  ONNX,
+};
+
+const std::map<std::string, std::string> kFwkTypeToStr = {
+    {"0", "Caffe"},
+    {"1", "MindSpore"},
+    {"3", "TensorFlow"},
+    {"4", "Android_NN"},
+    {"5", "Onnx"}
 };
 
 enum OpEngineType {
@@ -70,14 +78,15 @@ struct DataBuffer {
 /// @brief External input data
 ///
 struct InputData {
-  uint32_t index;                 // Index of input data
-  uint32_t timestamp;             // Data creation time
-  uint32_t timeout;               // Processing timeout
-  uint32_t model_id;              // Model ID required for data processing
-  uint64_t request_id = 0;        // Request ID
-  std::vector<DataBuffer> blobs;  // Actual input data, currently only supports one input
-  bool is_dynamic_batch = false;  // Whether is dynamic batch size scene, default:false
-  std::string batch_label;        // Gear used for current inference in dynamic batch scene
+  uint32_t index;                            // Index of input data
+  uint32_t timestamp;                        // Data creation time
+  uint32_t timeout;                          // Processing timeout
+  uint32_t model_id;                         // Model ID required for data processing
+  uint64_t request_id = 0;                   // Request ID
+  std::vector<DataBuffer> blobs;             // Actual input data, currently only supports one input
+  bool is_dynamic_batch = false;             // Whether is dynamic batch size scene, default:false
+  std::string batch_label;                   // Gear used for current inference in dynamic batch scene
+  std::vector<std::vector<int64_t>> shapes;  // Input shapes
 };
 
 /// Output result structure definition
@@ -245,6 +254,8 @@ struct TaskDescInfo {
   uint32_t block_dim;
   uint32_t task_id;
   uint32_t stream_id;
+  std::string shape_type;
+  int64_t cur_iter_num;
 };
 
 // Profiling info of graph
@@ -258,6 +269,8 @@ struct ComputeGraphDescInfo {
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
+  uint32_t task_id;
+  uint32_t stream_id;
 };
 
 struct OpDescInfo {

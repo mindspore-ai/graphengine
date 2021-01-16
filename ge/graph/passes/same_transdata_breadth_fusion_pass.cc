@@ -28,7 +28,6 @@
 #include "init/gelib.h"
 
 namespace {
-const char *const kRemainNode = "node_remain";
 const int kNoTransOp = 1;
 }  // namespace
 

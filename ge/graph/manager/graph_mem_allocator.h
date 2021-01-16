@@ -139,7 +139,7 @@ class MemoryAllocator {
 using MemoryAllocatorPtr = std::shared_ptr<MemoryAllocator>;
 class CachingAllocator;
 class RdmaPoolAllocator;
-
+class HostMemAllocator;
 class MemManager {
  public:
   MemManager();
@@ -148,6 +148,7 @@ class MemManager {
   static MemoryAllocator *Instance(rtMemType_t memory_type);
   CachingAllocator &CachingInstance(rtMemType_t memory_type);
   RdmaPoolAllocator &RdmaPoolInstance(rtMemType_t memory_type);
+  HostMemAllocator &HostMemInstance(rtMemType_t memory_type);
   MemManager(const MemManager &) = delete;
   MemManager &operator=(const MemManager &) = delete;
   ///
@@ -235,6 +236,7 @@ class MemManager {
   std::map<rtMemType_t, MemoryAllocator *> memory_allocator_map_;
   std::map<rtMemType_t, CachingAllocator *> caching_allocator_map_;
   std::map<rtMemType_t, RdmaPoolAllocator *> rdma_allocator_map_;
+  std::map<rtMemType_t, HostMemAllocator *> host_allocator_map_;
   std::recursive_mutex allocator_mutex_;
 };
 }  // namespace ge

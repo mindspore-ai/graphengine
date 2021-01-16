@@ -20,12 +20,9 @@
 #include "graph/utils/tensor_adapter.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "common/dump/dump_manager.h"
+#include "hybrid/executor//worker//shape_inference_engine.h"
 #include "common/dump/dump_op.h"
-#include "common/types.h"
-#include "common/ge_types.h"
 #include "common/profiling/profiling_manager.h"
-#include "runtime/base.h"
 
 namespace ge {
 namespace hybrid {
@@ -154,18 +151,19 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(model);
 
+  // only report aicpu and aicore node
+  bool is_profiling_report = context_->GetNodeItem().is_profiling_report;
+  if (!is_profiling_report) {
+    GELOGD("Node[%s] is not aicore or aicpu, and no need to report data.", node->GetName().c_str());
+    return SUCCESS;
+  }
+
   GELOGD("GetTaskDescInfo of node [%s] start.", node->GetName().c_str());
   auto op_desc = node->GetOpDesc();
   std::string op_name = op_desc->GetName();
   std::string dynamic_model_name = model->GetModelName();
-
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  if (rtGetTaskIdAndStreamID(&task_id, &stream_id) != RT_ERROR_NONE) {
-    GELOGE(PARAM_INVALID, "Get task_id and stream_id failed.");
-    return PARAM_INVALID;
-  }
-
+  uint32_t task_id = context_->GetTaskId();
+  uint32_t stream_id = context_->GetStreamId();
   TaskDescInfo tmp_task_desc_info;
   tmp_task_desc_info.model_name = dynamic_model_name;
   tmp_task_desc_info.op_name = op_name;
@@ -177,6 +175,8 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
   }
   tmp_task_desc_info.task_id = task_id;
   tmp_task_desc_info.stream_id = stream_id;
+  tmp_task_desc_info.shape_type = "dynamic";
+  tmp_task_desc_info.cur_iter_num = graph_context_->iteration;
   GELOGD("GetTaskDescInfo of node [%s] end, task_id[%u], stream_id[%u]",
          node->GetName().c_str(), task_id, stream_id);
   task_desc_info.emplace_back(tmp_task_desc_info);
@@ -221,6 +221,8 @@ Status NodeDoneCallback::GetGraphDescInfo(const NodePtr node, const HybridModel 
       tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
       tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
     }
+    tmp_compute_graph_info.task_id = context_->GetTaskId();
+    tmp_compute_graph_info.stream_id = context_->GetStreamId();
     compute_graph_info.emplace_back(tmp_compute_graph_info);
     GELOGD("GetComputeGraphInfo of node [%s] end.", node->GetName().c_str());
   }
@@ -260,8 +262,7 @@ Status NodeDoneCallback::ProfilingReport() {
   }
 
   auto &profiling_manager = ProfilingManager::Instance();
-  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info, compute_graph_info,
-                                        !profiling_manager.IsAclApiMode());
+  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info, compute_graph_info);
   return SUCCESS;
 }
 
@@ -349,6 +350,10 @@ Status NodeDoneCallback::OnNodeDone() {
   }
 
   GE_CHK_STATUS_RET_NOLOG(PrepareConstInputs(node_item));
+  if (node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE) {
+    // update output tensor sizes
+    GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(node_item));
+  }
   // PropagateOutputs for type == DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {
     if (graph_context_->trace_enabled) {
@@ -403,9 +408,9 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
 
   // Wait for dependent nodes(DEPEND_COMPUTE), so that the input tensors are valid.
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[AwaitDependents] Start");
-  GE_CHK_STATUS_RET(node_state.AwaitInputTensors(context),
-                    "[%s] Failed to wait for dependent nodes.",
-                    node_state.GetName().c_str());
+  HYBRID_CHK_STATUS_RET(node_state.AwaitInputTensors(context),
+                        "[%s] Failed to wait for dependent nodes.",
+                        node_state.GetName().c_str());
 
   const auto &node_item = *node_state.GetNodeItem();
   auto executor = node_item.node_executor;
@@ -435,9 +440,9 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
     });
   }
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] Start");
-  GE_CHK_STATUS_RET(node_item.node_executor->ExecuteTask(*task, task_context, callback),
-                    "[%s] Failed to execute task",
-                    node_state.GetName().c_str());
+  HYBRID_CHK_STATUS_RET(node_item.node_executor->ExecuteTask(*task, task_context, callback),
+                        "[%s] Failed to execute task",
+                        node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ExecuteTask] End");
 
   GELOGD("[%s] Done task launch successfully.", node_state.GetName().c_str());

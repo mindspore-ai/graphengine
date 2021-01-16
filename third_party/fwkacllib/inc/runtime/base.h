@@ -1,18 +1,18 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef __CCE_RUNTIME_BASE_H__
 #define __CCE_RUNTIME_BASE_H__
@@ -41,12 +41,12 @@ static const int32_t RT_ERROR_NONE = 0; // success
  * @brief runtime exception numbers.
  */
 typedef enum tagRtExceptionType {
-  RT_EXCEPTION_NONE = 0,
-  RT_EXCEPTION_TS_DOWN = 1,
-  RT_EXCEPTION_TASK_TIMEOUT = 2,
-  RT_EXCEPTION_TASK_FAILURE = 3,
-  RT_EXCEPTION_DEV_RUNNING_DOWN = 4,
-  RT_EXCEPTION_STREAM_ID_FREE_FAILED = 5
+    RT_EXCEPTION_NONE = 0,
+    RT_EXCEPTION_TS_DOWN = 1,
+    RT_EXCEPTION_TASK_TIMEOUT = 2,
+    RT_EXCEPTION_TASK_FAILURE = 3,
+    RT_EXCEPTION_DEV_RUNNING_DOWN = 4,
+    RT_EXCEPTION_STREAM_ID_FREE_FAILED = 5
 } rtExceptionType;
 
 /**
@@ -54,12 +54,12 @@ typedef enum tagRtExceptionType {
  * @brief Switch type.
  */
 typedef enum tagRtCondition {
-  RT_EQUAL = 0,
-  RT_NOT_EQUAL,
-  RT_GREATER,
-  RT_GREATER_OR_EQUAL,
-  RT_LESS,
-  RT_LESS_OR_EQUAL
+    RT_EQUAL = 0,
+    RT_NOT_EQUAL,
+    RT_GREATER,
+    RT_GREATER_OR_EQUAL,
+    RT_LESS,
+    RT_LESS_OR_EQUAL
 } rtCondition_t;
 
 /**
@@ -67,25 +67,25 @@ typedef enum tagRtCondition {
  * @brief Data Type of Extensible Switch Task.
  */
 typedef enum tagRtSwitchDataType {
-  RT_SWITCH_INT32 = 0,
-  RT_SWITCH_INT64 = 1,
+    RT_SWITCH_INT32 = 0,
+    RT_SWITCH_INT64 = 1,
 } rtSwitchDataType_t;
 
 typedef enum tagRtStreamFlagType {
-  RT_HEAD_STREAM = 0,  // first stream
-  RT_INVALID_FLAG = 0xFFFFFFFF,
+    RT_HEAD_STREAM = 0,  // first stream
+    RT_INVALID_FLAG = 0xFFFFFFFF,
 } rtStreamFlagType_t;
 
 typedef enum tagRtLimitType {
-  RT_LIMIT_TYPE_LOW_POWER_TIMEOUT = 0,  // timeout for power down , ms
+    RT_LIMIT_TYPE_LOW_POWER_TIMEOUT = 0,  // timeout for power down , ms
 } rtLimitType_t;
 
 typedef struct rtExceptionInfo {
-  uint32_t taskid;
-  uint32_t streamid;
-  uint32_t tid;
-  uint32_t deviceid;
-  uint32_t retcode;
+    uint32_t taskid;
+    uint32_t streamid;
+    uint32_t tid;
+    uint32_t deviceid;
+    uint32_t retcode;
 } rtExceptionInfo;
 
 typedef void (*rtErrorCallback)(rtExceptionType);

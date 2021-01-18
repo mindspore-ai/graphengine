@@ -623,6 +623,9 @@ class DavinciModel {
 
   Status DistributeTask();
 
+  void SaveProfilingTaskDescInfo(const OpDescPtr &op, const TaskInfoPtr &task,
+                                 const domi::TaskDef &task_def, size_t task_index);
+
   uint8_t *MallocFeatureMapMem(size_t data_size);
 
   uint8_t *MallocWeightsMem(size_t weights_size);

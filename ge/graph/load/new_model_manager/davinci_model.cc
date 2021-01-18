@@ -3064,6 +3064,65 @@ Status DavinciModel::MallocKnownArgs() {
   return SUCCESS;
 }
 
+void DavinciModel::SaveProfilingTaskDescInfo(const OpDescPtr &op, const TaskInfoPtr &task,
+                                             const domi::TaskDef &task_def, size_t task_index) {
+  task_desc_info_.clear();
+  bool flag = GetL1FusionEnableOption();
+  char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
+  INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
+  int64_t env_flag = (res == EN_OK) ? std::strtol(skt_enable_env, nullptr, kDecimal) : 0;
+  if (env_flag != 0) {
+    flag = true;
+  }
+
+  TaskDescInfo task_desc_info;
+  if (!om_name_.empty()) {
+    task_desc_info.model_name = om_name_;
+  } else {
+    task_desc_info.model_name = name_;
+  }
+  task_desc_info.op_name = op->GetName();
+  task_desc_info.block_dim = task_def.kernel().block_dim();
+  task_desc_info.task_id = task->GetTaskID();
+  task_desc_info.stream_id = task->GetStreamId();
+  task_desc_info.shape_type = "static";
+  task_desc_info.cur_iter_num = 0;
+  // task type
+  task_desc_info.task_type = kTaskTypeInvalid;
+  auto model_task_type = static_cast<rtModelTaskType_t>(task_def.type());
+  if (model_task_type == RT_MODEL_TASK_KERNEL) {
+    const domi::KernelDef &kernel_def = task_def.kernel();
+    const auto &context = kernel_def.context();
+    auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
+    if (kernel_type == ccKernelType::TE) {
+      task_desc_info.task_type = kTaskTypeAicore;
+    } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
+      task_desc_info.task_type = kTaskTypeAicpu;
+    } else {
+      GELOGD("Other kernel type: %u", context.kernel_type());
+    }
+  } else if (model_task_type == RT_MODEL_TASK_KERNEL_EX) {
+    task_desc_info.task_type = kTaskTypeAicpu;
+  } else {
+    GELOGD("Skip task type: %d", static_cast<int>(model_task_type));
+  }
+  profiler_report_op_info_[task_desc_info.op_name] =
+    std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
+  task_desc_info_.emplace_back(task_desc_info);
+  if (flag) {
+    if (task->GetSktTaskID() != 0xFFFFFFFF) {
+      TaskDescInfo task_desc_info;
+      string op_name = "super_kernel_" + to_string(task_index);
+      task_desc_info.op_name = op_name;
+      task_desc_info.task_id = task->GetSktTaskID();
+      profiler_report_op_info_[task_desc_info.op_name] =
+        std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
+      task_desc_info_.emplace_back(task_desc_info);
+    }
+  }
+  return;
+}
+
 Status DavinciModel::DistributeTask() {
   GELOGI("do Distribute.");
   for (auto &task : cpu_task_list_) {
@@ -3074,19 +3133,11 @@ Status DavinciModel::DistributeTask() {
     GE_CHK_STATUS_RET(task->Distribute());
   }
 
-  task_desc_info_.clear();
-  bool flag = GetL1FusionEnableOption();
-  char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
-  INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
-  int64_t env_flag = (res == EN_OK) ? std::strtol(skt_enable_env, nullptr, kDecimal) : 0;
-  if (env_flag != 0) {
-    flag = true;
-  }
-
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
   for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
     auto &task_def = model_task_def->task(task_index);
     auto &task = task_list_.at(task_index);
+    GE_CHECK_NOTNULL(task);
     GE_CHK_STATUS_RET(task->Distribute(), "Task[%zu] distribute fail", task_index);
     // for data dump
     auto op_index = std::max(task_def.kernel().context().op_index(),
@@ -3106,33 +3157,9 @@ Status DavinciModel::DistributeTask() {
     GE_IF_BOOL_EXEC(no_need_profiling, continue);
 
     SaveDumpOpInfo(runtime_param_, op, task->GetTaskID(), task->GetStreamId());
-    // Load task info for profiling
-    TaskDescInfo task_desc_info;
-    if (!om_name_.empty()) {
-      task_desc_info.model_name = om_name_;
-    } else {
-      task_desc_info.model_name = name_;
-    }
-    task_desc_info.op_name = op->GetName();
-    task_desc_info.block_dim = task_def.kernel().block_dim();
-    task_desc_info.task_id = task->GetTaskID();
-    task_desc_info.stream_id = task->GetStreamId();
-    task_desc_info.shape_type = "static";
-    task_desc_info.cur_iter_num = 0;
-    profiler_report_op_info_[task_desc_info.op_name] =
-      std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
-    task_desc_info_.emplace_back(task_desc_info);
-    if (flag) {
-      if (task->GetSktTaskID() != 0xFFFFFFFF) {
-        TaskDescInfo task_desc_info;
-        string op_name = "super_kernel_" + to_string(task_index);
-        task_desc_info.op_name = op_name;
-        task_desc_info.task_id = task->GetSktTaskID();
-        profiler_report_op_info_[task_desc_info.op_name] =
-          std::pair<uint32_t, uint32_t>(task_desc_info.task_id, task_desc_info.stream_id);
-        task_desc_info_.emplace_back(task_desc_info);
-      }
-    }
+
+    // save task info for profiling
+    SaveProfilingTaskDescInfo(op, task, task_def, task_index);
   }
   // launch dump kernel to aicpu
   GE_CHK_STATUS_RET(data_dumper_.LoadDumpInfo(), "Load dump info failed.");

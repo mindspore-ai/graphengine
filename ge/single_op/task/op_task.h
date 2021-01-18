@@ -52,6 +52,7 @@ class OpTask {
                               std::vector<GeTensorDesc> &output_desc,
                               std::vector<DataBuffer> &output_buffers,
                               rtStream_t stream);
+  virtual uint32_t GetTaskType() const;
 
  protected:
   Status DoUpdateArgTable(const SingleOpModelParam &param, bool keep_workspace);
@@ -85,6 +86,7 @@ class TbeOpTask : public OpTask {
   size_t GetArgSize() const;
   const std::string &GetStubName() const;
   void EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, size_t max_tiling_size);
+  uint32_t GetTaskType() const override;
 
  private:
   friend class SingleOpModel;
@@ -113,6 +115,8 @@ class AiCpuBaseTask : public OpTask {
   ~AiCpuBaseTask() override;
   UnknowShapeOpType GetUnknownType() const { return unknown_type_; }
   Status UpdateArgTable(const SingleOpModelParam &param) override;
+  uint32_t GetTaskType() const override;
+
  protected:
   Status UpdateIoAddr(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
   Status SetInputConst();

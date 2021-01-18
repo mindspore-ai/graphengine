@@ -48,6 +48,8 @@ class AiCoreOpTask {
 
   bool GetClearAtomic() const {return clear_atomic_;}
 
+  uint32_t GetBlockDim() const {return block_dim_;}
+
  protected:
   Status UpdateTilingInfo(TaskContext &context);
   virtual std::string GetKeyForOpParamSize() const;

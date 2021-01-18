@@ -21,6 +21,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_executor.h"
+#include "common/profiling/profiling_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -497,6 +498,43 @@ bool TaskContext::NeedCallback() {
 
 Status TaskContext::Synchronize() {
   return execution_context_->Synchronize(GetStream());
+}
+
+Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_type, uint32_t block_dim) {
+  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+    const NodeItem &node_item = GetNodeItem();
+    auto op_desc = node_item.GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+
+    uint32_t task_id = 0;
+    uint32_t stream_id = 0;
+    rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id); // must be called after Launch kernel
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(rt_ret, "Get task_id and stream_id failed.");
+      return rt_ret;
+    }
+    GELOGD("Node[%s] task_id: %u, stream_id: %u.", GetNodeName(), task_id, stream_id);
+
+    const GraphExecutionContext * graph_context = GetExecutionContext();
+    GE_CHECK_NOTNULL(graph_context);
+    const HybridModel *model = graph_context->model;
+    GE_CHECK_NOTNULL(model);
+
+    std::string op_name = op_desc->GetName();
+    std::string dynamic_model_name = model->GetModelName();
+    TaskDescInfo tmp_task_desc_info;
+    tmp_task_desc_info.model_name = dynamic_model_name;
+    tmp_task_desc_info.op_name = op_name;
+    tmp_task_desc_info.block_dim = block_dim;
+    tmp_task_desc_info.task_type = task_type;
+    tmp_task_desc_info.task_id = task_id;
+    tmp_task_desc_info.stream_id = stream_id;
+    tmp_task_desc_info.shape_type = "dynamic";
+    tmp_task_desc_info.cur_iter_num = iteration_;
+    task_desc_info.emplace_back(tmp_task_desc_info);
+  }
+
+  return SUCCESS;
 }
 }  // namespace hybrid
 }  // namespace ge

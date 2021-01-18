@@ -32,7 +32,7 @@ class DynamicShapePartitioner {
   // DATA:DATA, UNKNOWN_SHAPE:unknowshape, KNOWN_SHAPE:knowshape, NETOUTPUT:NETOUTPUT.
   class Cluster : public std::enable_shared_from_this<Cluster> {
    public:
-    enum Type { DATA, INPUT_NODE, NETOUTPUT, KNOWN_SHAPE, UNKNOWN_SHAPE };
+    enum Type { DATA, INPUT_NODE, NETOUTPUT, STAGE, KNOWN_SHAPE, UNKNOWN_SHAPE };
     Cluster(size_t rank, Type type, NodePtr node, DynamicShapePartitioner *partitioner)
         : id_(rank), min_(rank), max_(rank), type_(type), partitioner_(partitioner) {
       nodes_.push_back(node);
@@ -45,6 +45,7 @@ class DynamicShapePartitioner {
     bool IsData() const;
     bool IsKnownShape() const;
     bool IsUnknownShape() const;
+    bool IsIndependent() const;
     bool IsNetOutput() const;
     std::vector<std::shared_ptr<Cluster>> Inputs() const;
     std::vector<std::shared_ptr<Cluster>> Outputs() const;

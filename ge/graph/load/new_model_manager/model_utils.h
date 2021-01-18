@@ -107,6 +107,15 @@ class ModelUtils {
   /// @return Status
   ///
   static Status GetRtAddress(const RuntimeParam &model_param, uintptr_t logic_addr, uint8_t *&mem_addr);
+
+ private:
+  ///
+  /// @ingroup ge
+  /// @brief Get variable address.
+  /// @return Status
+  ///
+  static Status GetVarAddr(const RuntimeParam &model_param, const ConstOpDescPtr &op_desc, int64_t offset,
+                           uint8_t *&var_addr);
 };
 }  // namespace ge
 

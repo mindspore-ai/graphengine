@@ -95,6 +95,7 @@ local_ge_executor_src_files :=  \
     ../hybrid/node_executor/host_cpu/kernel/variable_kernel.cc              \
     ../hybrid/node_executor/host_cpu/kernel/assign_kernel.cc                \
     ../hybrid/node_executor/host_cpu/kernel/random_uniform_kernel.cc        \
+    ../hybrid/node_executor/host_cpu/kernel/data_kernel.cc                  \
     ../hybrid/node_executor/controlop/control_op_executor.cc                \
     ../hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc \
     ../hybrid/node_executor/rts/rts_node_executor.cc                        \

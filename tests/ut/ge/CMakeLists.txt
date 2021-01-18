@@ -589,6 +589,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
     "graph/load/model_helper_unittest.cc"
+    "graph/load/model_utils_unittest.cc"
 )
 
 set(PASS_TEST_FILES

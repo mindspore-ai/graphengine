@@ -34,6 +34,7 @@ extern "C" {
  */
 #define RT_MEMORY_DEFAULT ((uint32_t)0x0)   // default memory on device
 #define RT_MEMORY_HBM ((uint32_t)0x2)       // HBM memory on device
+#define RT_MEMORY_RDMA_HBM ((uint32_t)0x3)  // RDMA-HBM memory on device
 #define RT_MEMORY_DDR ((uint32_t)0x4)       // DDR memory on device
 #define RT_MEMORY_SPM ((uint32_t)0x8)       // shared physical memory on device
 #define RT_MEMORY_P2P_HBM ((uint32_t)0x10)  // HBM memory on other 4P device

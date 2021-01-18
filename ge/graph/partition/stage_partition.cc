@@ -25,6 +25,10 @@
 #include "common/types.h"
 
 namespace ge {
+namespace {
+const std::set<std::string> kSrcNodeTypes = { DATA, AIPPDATA, ANN_DATA };
+}
+
 Status StagePartitioner::Partition() {
   GE_CHECK_NOTNULL(root_graph_);
   if (root_graph_->GetParentGraph() != nullptr) {
@@ -37,6 +41,10 @@ Status StagePartitioner::Partition() {
     if (!AttrUtils::GetInt(op_desc, ATTR_STAGE_LEVEL, level)) {
       continue;
     }
+    if ((kSrcNodeTypes.count(op_desc->GetType()) != 0) && node->GetInAllNodes().empty()) {
+      continue;
+    }
+    GELOGD("original node %s for stage %u", node->GetName().c_str(), level);
     stage_nodes_[level].insert(node);
   }
   if (stage_nodes_.empty()) {
@@ -54,6 +62,13 @@ Status StagePartitioner::Partition() {
     return FAILED;
   }
 
+  root_graph_->TopologicalSorting([](const NodePtr &a, const NodePtr &b) -> bool {
+    uint32_t a_level = UINT32_MAX;
+    (void)AttrUtils::GetInt(a->GetOpDesc(), ATTR_STAGE_LEVEL, a_level);
+    uint32_t b_level = UINT32_MAX;
+    (void)AttrUtils::GetInt(b->GetOpDesc(), ATTR_STAGE_LEVEL, b_level);
+    return a_level < b_level;
+  });
   if (root_graph_->TopologicalSorting() != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Topological sort for graph %s after stage partition failed, "
            "maybe stage_level was not set correctly.", root_graph_->GetName().c_str());
@@ -76,20 +91,26 @@ Status StagePartitioner::SplitStageLevel() {
       auto node = nodes.top();
       nodes.pop();
       GE_CHECK_NOTNULL(node->GetOpDesc());
-      if (node->GetOpDesc()->HasAttr(ATTR_STAGE_LEVEL) && (cur_stage_nodes.count(node) == 0)) {
+      uint32_t tmp_level = cur_stage_level;
+      (void)AttrUtils::GetInt(node->GetOpDesc(), ATTR_STAGE_LEVEL, tmp_level);
+      if (tmp_level != cur_stage_level) {
         continue;
       }
       for (const auto &in_node : node->GetInAllNodes()) {
         if (visited_stage_nodes.count(in_node) != 0) {
           continue;
         }
+        if (!AttrUtils::SetInt(in_node->GetOpDesc(), ATTR_STAGE_LEVEL, cur_stage_level)) {
+          GELOGE(INTERNAL_ERROR, "Set attr ATTR_STAGE_LEVEL on node %s failed.", in_node->GetName().c_str());
+          return INTERNAL_ERROR;
+        }
+        GELOGD("Mark stage_level node %s, stage_level=%u", in_node->GetName().c_str(), cur_stage_level);
+        if ((kSrcNodeTypes.count(in_node->GetType()) != 0) && in_node->GetInAllNodes().empty()) {
+          GELOGD("skip data node %s for stage %u", in_node->GetName().c_str(), cur_stage_level);
+          continue;
+        }
         nodes.push(in_node);
       }
-      if (!AttrUtils::SetInt(node->GetOpDesc(), ATTR_STAGE_LEVEL, cur_stage_level)) {
-        GELOGE(INTERNAL_ERROR, "Set attr ATTR_STAGE_LEVEL on node %s failed.", node->GetName().c_str());
-        return INTERNAL_ERROR;
-      }
-      GELOGD("Mark stage_level node %s, stage_level=%u", node->GetName().c_str(), cur_stage_level);
       visited_stage_nodes.emplace(node);
     }
     for (const auto &node : visited_stage_nodes) {
@@ -218,6 +239,11 @@ NodePtr StagePartitioner::BuildSubgraphNode(const std::string &graph_name, const
 
   op_desc->AddSubgraphName("f");
   op_desc->SetSubgraphInstanceName(0, graph_name);
+
+  if (!AttrUtils::SetInt(op_desc, ATTR_STAGE_LEVEL, stage_info.stage_level)) {
+    GELOGE(INTERNAL_ERROR, "Set attr ATTR_STAGE_LEVEL on node %s failed", op_desc->GetName().c_str());
+    return nullptr;
+  }
 
   NodePtr subgraph_node = root_graph_->AddNode(op_desc);
   if (subgraph_node == nullptr) {

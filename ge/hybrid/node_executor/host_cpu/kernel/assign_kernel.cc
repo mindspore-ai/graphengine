@@ -29,8 +29,6 @@ namespace ge {
 namespace hybrid {
 namespace host_cpu {
 Status AssignKernel::Compute(TaskContext& context) {
-  GELOGI("[%s] compute begin.", node_->GetName().c_str());
-
   auto ref_tensor = context.MutableInput(kAssignRefInputIndex);
   GE_CHECK_NOTNULL(ref_tensor);
   const auto value_tensor = context.GetInput(kAssignValueInputIndex);
@@ -50,7 +48,7 @@ Status AssignKernel::Compute(TaskContext& context) {
   GE_CHK_STATUS_RET(context.SetOutput(kAssignRefOutputIndex, *ref_tensor),
                     "[%s] Failed to set output.", context.GetNodeName());
 
-  GELOGI("[%s] compute success.", node_->GetName().c_str());
+  GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;
 }
 

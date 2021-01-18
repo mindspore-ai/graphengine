@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-#include "hybrid/node_executor/host_cpu/kernel/variable_kernel.h"
+#include "hybrid/node_executor/host_cpu/kernel/data_kernel.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "hybrid/node_executor/host_cpu/kernel_factory.h"
 
+namespace {
+constexpr size_t kDataInputIndex = 0;
+constexpr size_t kDataOutputIndex = 0;
+}
+
 namespace ge {
 namespace hybrid {
 namespace host_cpu {
-Status VariableKernel::Compute(TaskContext& context) {
-  auto tensor = context.GetVariable(node_->GetName());
-  if (tensor == nullptr) {
-    GELOGE(PARAM_INVALID, "tensor is NULL.");
-    return PARAM_INVALID;
-  }
-  // Constant & Variable Op has and only has one output
-  GE_CHK_STATUS_RET(context.SetOutput(0, *tensor), "[%s] Failed to set output.", context.GetNodeName());
+Status DataKernel::Compute(TaskContext& context) {
+  auto input = context.MutableInput(kDataInputIndex);
+  GE_CHECK_NOTNULL(input);
+  GE_CHK_STATUS_RET(context.SetOutput(kDataOutputIndex, *input), "[%s] Failed to set output.", context.GetNodeName())
   GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;
 }
 
-REGISTER_KERNEL_CREATOR(Variable, VariableKernel);
-REGISTER_KERNEL_CREATOR(Constant, VariableKernel);
+REGISTER_KERNEL_CREATOR(Data, DataKernel);
 }  // namespace host_cpu
 }  // namespace hybrid
 }  // namespace ge

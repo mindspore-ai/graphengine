@@ -30,8 +30,6 @@ namespace ge {
 namespace hybrid {
 namespace host_cpu {
 Status RandomUniformKernel::Compute(TaskContext& context) {
-  GELOGI("[%s] compute begin.", node_->GetName().c_str());
-
   int64_t seed = 0;
   int64_t seed2 = 0;
   (void)AttrUtils::GetInt(node_->GetOpDesc(), "seed", seed);
@@ -66,7 +64,7 @@ Status RandomUniformKernel::Compute(TaskContext& context) {
       return UNSUPPORTED;
   }
 
-  GELOGI("[%s] compute success.", node_->GetName().c_str());
+  GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;
 }
 

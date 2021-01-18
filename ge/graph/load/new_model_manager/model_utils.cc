@@ -15,18 +15,10 @@
  */
 
 #include "graph/load/new_model_manager/model_utils.h"
-
 #include <string>
-
 #include "common/debug/log.h"
 #include "common/op/ge_op_utils.h"
-#include "graph/debug/ge_attr_define.h"
-#include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "runtime/base.h"
-#include "runtime/kernel.h"
-
-#include "framework/common/debug/ge_log.h"
 #include "graph/manager/graph_var_manager.h"
 
 #define VALIDATE_MEM_RANGE(OP, SIZE, OFFSET)                                                                 \
@@ -342,8 +334,8 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     int64_t input_offset = v_input_offset[non_const_index];
     non_const_index++;
     GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset),
-                    VALIDATE_MEM_RANGE(op_desc, model_param.var_size, input_offset - model_param.logic_var_base);
-                    uint8_t *variable_addr = model_param.var_base + input_offset - model_param.logic_var_base;
+                    uint8_t *variable_addr = nullptr;
+                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, input_offset, variable_addr), return {});
                     v_input_data_addr.push_back(variable_addr);
                     GELOGI("[IMAS]GetInputDataAddrs graph_%u type[V] name[%s] input[%lu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
@@ -382,6 +374,27 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
 
 ///
 /// @ingroup ge
+/// @brief Get variable address.
+/// @return Status
+///
+Status ModelUtils::GetVarAddr(const RuntimeParam &model_param, const ConstOpDescPtr &op_desc, int64_t offset,
+                              uint8_t *&var_addr) {
+  if (ge::VarManager::Instance(model_param.session_id)->GetVarMemType(offset) == RT_MEMORY_RDMA_HBM) {
+    if (offset < 0) {
+      GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p", reinterpret_cast<uint8_t *>(offset));
+      return PARAM_INVALID;
+    }
+    var_addr = reinterpret_cast<uint8_t *>(offset);
+    GE_CHECK_NOTNULL(var_addr);
+  } else {
+    VALIDATE_MEM_RANGE(op_desc, model_param.var_size, offset - model_param.logic_var_base);
+    var_addr = model_param.var_base + offset - model_param.logic_var_base;
+  }
+  return SUCCESS;
+}
+
+///
+/// @ingroup ge
 /// @brief Get output data address.
 /// @return vector<void*>
 ///
@@ -405,8 +418,8 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
   }
   for (size_t i = 0; i < outputs_size; ++i) {
     GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i]),
-                    VALIDATE_MEM_RANGE(op_desc, model_param.var_size, v_output_offset[i] - model_param.logic_var_base);
-                    uint8_t *variable_addr = model_param.var_base + v_output_offset[i] - model_param.logic_var_base;
+                    uint8_t *variable_addr = nullptr;
+                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i], variable_addr), return {});
                     v_output_data_addr.push_back(variable_addr);
                     GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[V] name[%s] output[%zu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);

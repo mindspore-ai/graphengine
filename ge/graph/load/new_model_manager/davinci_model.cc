@@ -722,7 +722,6 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   /// the aicpu opertor needs to destroy history record, and update operator memory address.
   /// The model with specified aicpu operators is only marked here, and destruction is in ModelManager::ExecuteModel().
   need_destroy_aicpu_kernel_ = IsAicpuKernelConnectSpecifiedLayer();
-  (void)ge::AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name_);
 
   string fp_ceiling_mode;
   if (ge::AttrUtils::GetStr(ge_model_, ATTR_FP_CEILING_MODE, fp_ceiling_mode)) {
@@ -2068,6 +2067,8 @@ void DavinciModel::CreateOutput(uint32_t index, const OpDescPtr &op_desc, InputO
 
 Status DavinciModel::InitOutputDescInfo(const vector<OpDescPtr> &output_op_list) {
   GELOGD("Output node size: %zu", output_op_list.size());
+  vector<string> out_node_name;
+  (void)ge::AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name);
   for (const auto &op_desc : output_op_list) {
     uint32_t out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
     for (uint32_t index = 0; index < out_size; index++) {
@@ -2081,11 +2082,11 @@ Status DavinciModel::InitOutputDescInfo(const vector<OpDescPtr> &output_op_list)
       GE_CHK_BOOL_RET_STATUS(src_name.size() > index && src_index.size() > index, INTERNAL_ERROR,
                              "construct output_name failed.");
       // forward compatbility, if old om has no out_node_name, need to return output follow origin way
-      if (out_size == out_node_name_.size()) {
+      if (out_size == out_node_name.size()) {
         // neweast plan, the index will add to name during generate model.
-        bool contains_colon = out_node_name_[index].find(":") != std::string::npos;
+        bool contains_colon = out_node_name[index].find(":") != std::string::npos;
         output_name =
-            contains_colon ? out_node_name_[index] : out_node_name_[index] + ":" + std::to_string(src_index[index]);
+            contains_colon ? out_node_name[index] : out_node_name[index] + ":" + std::to_string(src_index[index]);
       } else {
         output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" +
                       std::to_string(src_index[index]);

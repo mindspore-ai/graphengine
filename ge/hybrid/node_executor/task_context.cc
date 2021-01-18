@@ -530,7 +530,7 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_type, uint32_t block
     tmp_task_desc_info.task_id = task_id;
     tmp_task_desc_info.stream_id = stream_id;
     tmp_task_desc_info.shape_type = "dynamic";
-    tmp_task_desc_info.cur_iter_num = iteration_;
+    tmp_task_desc_info.cur_iter_num = iteration_ + 1;
     task_desc_info.emplace_back(tmp_task_desc_info);
   }
 

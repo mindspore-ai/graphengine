@@ -190,16 +190,8 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
 
   HYBRID_CHK_STATUS_RET(LaunchTask(context), "[%s] Failed to launch task", node_name_.c_str());
 
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Get task_id and stream_id failed.");
-    return rt_ret;
-  }
-  context.SetTaskId(task_id);
-  context.SetStreamId(stream_id);
-  GELOGD("AiCpu node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
+  // save profiling data
+  (void)context.SaveProfilingTaskDescInfo(kTaskTypeAicpu, 0);
 
   auto callback = [=, &context]() {
     GELOGD("Node[%s] callback start.", node_name_.c_str());

@@ -159,27 +159,9 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
   }
 
   GELOGD("GetTaskDescInfo of node [%s] start.", node->GetName().c_str());
-  auto op_desc = node->GetOpDesc();
-  std::string op_name = op_desc->GetName();
-  std::string dynamic_model_name = model->GetModelName();
-  uint32_t task_id = context_->GetTaskId();
-  uint32_t stream_id = context_->GetStreamId();
-  TaskDescInfo tmp_task_desc_info;
-  tmp_task_desc_info.model_name = dynamic_model_name;
-  tmp_task_desc_info.op_name = op_name;
-  tmp_task_desc_info.block_dim = 0;
-  auto task_defs = model->GetTaskDefs(node);
-  if (task_defs != nullptr && (*task_defs).size() > 0) {
-    const auto &task_def = (*task_defs)[0];
-    tmp_task_desc_info.block_dim = task_def.kernel().block_dim();
-  }
-  tmp_task_desc_info.task_id = task_id;
-  tmp_task_desc_info.stream_id = stream_id;
-  tmp_task_desc_info.shape_type = "dynamic";
-  tmp_task_desc_info.cur_iter_num = graph_context_->iteration;
-  GELOGD("GetTaskDescInfo of node [%s] end, task_id[%u], stream_id[%u]",
-         node->GetName().c_str(), task_id, stream_id);
-  task_desc_info.emplace_back(tmp_task_desc_info);
+  task_desc_info = context_->GetProfilingTaskDescInfo();
+  context_->ClearProfilingTaskDescInfo();
+
   return SUCCESS;
 }
 
@@ -247,7 +229,6 @@ Status NodeDoneCallback::ProfilingReport() {
 
   GELOGD("ProfilingReport of node [%s] model [%s] start.", node->GetName().c_str(), model->GetModelName().c_str());
   std::vector<TaskDescInfo> task_desc_info;
-  TaskDescInfo tmp_task_desc_info;
   auto profiling_ret = GetTaskDescInfo(node, model, task_desc_info);
   if (profiling_ret != RT_ERROR_NONE) {
     GELOGE(profiling_ret, "Get task info of node[%s] failed.", node->GetName().c_str());

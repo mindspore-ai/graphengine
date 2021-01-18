@@ -22,6 +22,7 @@
 #include <vector>
 #include "common/properties_manager.h"
 #include "external/ge/ge_api_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/executor/rt_callback_manager.h"
@@ -108,6 +109,10 @@ class TaskContext {
   void SetForceInferShape(bool force_infer_shape);
   void *handle_ = nullptr;
 
+  const std::vector<TaskDescInfo>& GetProfilingTaskDescInfo() const { return task_desc_info; }
+  Status SaveProfilingTaskDescInfo(uint32_t task_type, uint32_t block_dim);
+  void ClearProfilingTaskDescInfo() { task_desc_info.clear(); }
+
  private:
   TaskContext(GraphExecutionContext *execution_context,
               const NodeItem *node_item,
@@ -127,6 +132,7 @@ class TaskContext {
   uint64_t iteration_ = 0;
   uint32_t task_id_ = 0;
   uint32_t stream_id_ = 0;
+  std::vector<TaskDescInfo> task_desc_info;
 };
 }  // namespace hybrid
 }  // namespace ge

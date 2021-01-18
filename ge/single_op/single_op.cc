@@ -70,6 +70,7 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
   tmp_task_desc_info.stream_id = stream_id;
   tmp_task_desc_info.shape_type = shape_type;
   tmp_task_desc_info.cur_iter_num = 0;
+  tmp_task_desc_info.task_type = op_task->GetTaskType();
   GELOGD("GetTaskDescInfo of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
   task_desc_info.emplace_back(tmp_task_desc_info);
 

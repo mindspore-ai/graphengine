@@ -145,6 +145,8 @@ Status OpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   return UNSUPPORTED;
 }
 
+uint32_t OpTask::GetTaskType() const { return kTaskTypeInvalid; }
+
 TbeOpTask::~TbeOpTask() {
   if (sm_desc_ != nullptr) {
     (void)rtMemFreeManaged(sm_desc_);
@@ -160,6 +162,8 @@ const void *TbeOpTask::GetArgs() const { return args_.get(); }
 size_t TbeOpTask::GetArgSize() const { return arg_size_; }
 
 const std::string &TbeOpTask::GetStubName() const { return stub_name_; }
+
+uint32_t TbeOpTask::GetTaskType() const { return kTaskTypeAicore; }
 
 Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   GELOGD("To invoke rtKernelLaunch. task = %s, block_dim = %u", this->stub_name_.c_str(), block_dim_);
@@ -801,6 +805,8 @@ Status AiCpuBaseTask::UpdateArgTable(const SingleOpModelParam &param) {
   // aicpu do not have workspace, for now
   return DoUpdateArgTable(param, false);
 }
+
+uint32_t AiCpuBaseTask::GetTaskType() const { return kTaskTypeAicpu; }
 
 void AiCpuTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   arg_base = reinterpret_cast<uintptr_t *>(io_addr_host_.data());

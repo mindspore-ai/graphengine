@@ -68,7 +68,6 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   // Do shape inference
   GELOGD("[%s] Start to invoke InferShapeAndType", node_item.NodeName().c_str());
   {
-    std::lock_guard<std::mutex> lk(mu_);
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndTypeForRunning(node_item.node, true),
                       "Invoke InferShapeAndType failed.");

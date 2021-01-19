@@ -240,7 +240,7 @@ Status SubgraphExecutor::PrepareNodes() {
         return INTERNAL_ERROR;
       }
       auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-      node_state->SetTaskContex(shared_task_context);
+      node_state->SetTaskContext(shared_task_context);
     }
 
     if (!ready_queue_.Push(p_node_state)) {
@@ -284,7 +284,7 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
     return INTERNAL_ERROR;
   }
   auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state.SetTaskContex(shared_task_context);
+  node_state.SetTaskContext(shared_task_context);
   GE_CHK_RT_RET(rtCtxSetCurrent(ctx->rt_context));
   RECORD_COMPILE_EVENT(ctx, node_item.NodeItem().c_str(), "[UpdateTilingData] start");
   GE_CHK_STATUS_RET_NOLOG(task->UpdateTilingData(*shared_task_context)); // update op_desc before alloc ws

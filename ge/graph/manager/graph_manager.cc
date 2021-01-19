@@ -3121,9 +3121,8 @@ Status GraphManager::Build(const GraphNodePtr &graph_node, ComputeGraphPtr &comp
     graph_name.append(std::to_string(graph_node->GetGraphId()));
     compute_graph->SetName(graph_name);
   }
-  std::vector<SubGraphInfoPtr> sub_graph_list;
-  auto ret = GetCompilerStages(graph_node->GetGraphId()).builder.Build(compute_graph, sub_graph_list, ge_root_model,
-                                                                      session_id);
+
+  auto ret = GetCompilerStages(graph_node->GetGraphId()).builder.Build(compute_graph, ge_root_model, session_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "SubGraph build Failed.");
     return ret;

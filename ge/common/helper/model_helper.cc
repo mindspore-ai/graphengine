@@ -23,7 +23,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 

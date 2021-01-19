@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
 #include "runtime/rt.h"
 #include "single_op/task/build_task_utils.h"

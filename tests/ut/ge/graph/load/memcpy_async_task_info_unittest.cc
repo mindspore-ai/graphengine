@@ -19,8 +19,8 @@
 #define private public
 #define protected public
 
-#include "graph/load/new_model_manager/davinci_model.h"
-#include "graph/load/new_model_manager/task_info/memcpy_async_task_info.h"
+#include "graph/load/model_manager/davinci_model.h"
+#include "graph/load/model_manager/task_info/memcpy_async_task_info.h"
 
 
 namespace ge {

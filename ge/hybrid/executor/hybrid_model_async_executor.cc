@@ -15,7 +15,7 @@
  */
 
 #include "hybrid/executor/hybrid_model_async_executor.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_context.h"

@@ -24,7 +24,7 @@
 #include "common/helper/model_helper.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/op_desc.h"
 #include "graph/types.h"
 #include "graph/utils/attr_utils.h"
@@ -35,7 +35,7 @@
 #include "graph/load/graph_loader.h"
 
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "model/ge_model.h"
 #undef private

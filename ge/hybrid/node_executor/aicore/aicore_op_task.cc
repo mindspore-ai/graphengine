@@ -19,7 +19,7 @@
 #include "framework/common/debug/log.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
-#include "graph/load/new_model_manager/tbe_handle_store.h"
+#include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/types.h"
 
 using optiling::OpRunInfo;

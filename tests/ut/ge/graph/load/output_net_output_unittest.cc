@@ -23,8 +23,8 @@
 #define private public
 #include "common/debug/memory_dumper.h"
 #include "common/op/ge_op_utils.h"
-#include "graph/load/new_model_manager/davinci_model.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/davinci_model.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
 #include "new_op_test_utils.h"
 #include "proto/om.pb.h"

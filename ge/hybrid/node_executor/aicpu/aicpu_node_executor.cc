@@ -18,7 +18,7 @@
 #include "framework/common/taskdown_common.h"
 #include "common/formats/formats.h"
 #include "aicpu/common/aicpu_task_struct.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "graph/utils/node_utils.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"

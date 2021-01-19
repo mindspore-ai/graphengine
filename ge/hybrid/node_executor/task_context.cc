@@ -500,21 +500,12 @@ Status TaskContext::Synchronize() {
   return execution_context_->Synchronize(GetStream());
 }
 
-Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_type, uint32_t block_dim) {
+Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id,
+                                              uint32_t task_type, uint32_t block_dim) {
   if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-
-    uint32_t task_id = 0;
-    uint32_t stream_id = 0;
-    rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id); // must be called after Launch kernel
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "Get task_id and stream_id failed.");
-      return rt_ret;
-    }
-    GELOGD("Node[%s] task_id: %u, stream_id: %u.", GetNodeName(), task_id, stream_id);
-
     const GraphExecutionContext * graph_context = GetExecutionContext();
     GE_CHECK_NOTNULL(graph_context);
     const HybridModel *model = graph_context->model;
@@ -536,5 +527,59 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_type, uint32_t block
 
   return SUCCESS;
 }
+
+Status TaskContext::SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream_id) {
+  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+    const NodeItem &node_item = GetNodeItem();
+    auto op_desc = node_item.GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    const GraphExecutionContext * graph_context = GetExecutionContext();
+    GE_CHECK_NOTNULL(graph_context);
+    const HybridModel *model = graph_context->model;
+    GE_CHECK_NOTNULL(model);
+
+    std::string dynamic_model_name = model->GetModelName();
+    auto op_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
+    if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, op_mode) &&
+        op_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
+      ComputeGraphDescInfo tmp_compute_graph_info;
+      tmp_compute_graph_info.model_name = dynamic_model_name;
+      tmp_compute_graph_info.op_name = op_desc->GetName();
+      tmp_compute_graph_info.op_type = op_desc->GetType();
+      // default
+      if (op_desc->GetAllInputsSize() == 0) {
+        tmp_compute_graph_info.input_format = { FORMAT_NULL };
+        tmp_compute_graph_info.input_shape = { {0} };
+        tmp_compute_graph_info.input_data_type = { DT_UNDEFINED };
+      }
+      for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+        GeTensorDescPtr input_desc = op_desc->MutableInputDesc(i);
+        if (input_desc == nullptr) {
+          continue;
+        }
+        tmp_compute_graph_info.input_format.emplace_back(input_desc->GetFormat());
+        tmp_compute_graph_info.input_shape.emplace_back(input_desc->GetShape().GetDims());
+        tmp_compute_graph_info.input_data_type.emplace_back(input_desc->GetDataType());
+      }
+
+      if (op_desc->GetOutputsSize() == 0) {
+        tmp_compute_graph_info.output_format = { FORMAT_NULL };
+        tmp_compute_graph_info.output_shape = { {0} };
+        tmp_compute_graph_info.output_data_type = { DT_UNDEFINED };
+      }
+      for (size_t j = 0; j < op_desc->GetOutputsSize(); ++j) {
+        GeTensorDesc output_desc = op_desc->GetOutputDesc(j);
+        tmp_compute_graph_info.output_format.emplace_back(output_desc.GetFormat());
+        tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
+        tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
+      }
+      tmp_compute_graph_info.task_id = task_id;
+      tmp_compute_graph_info.stream_id = stream_id;
+      compute_graph_info.emplace_back(tmp_compute_graph_info);
+    }
+  }
+  return SUCCESS;
+}
+
 }  // namespace hybrid
 }  // namespace ge

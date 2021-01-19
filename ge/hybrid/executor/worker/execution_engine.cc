@@ -171,43 +171,9 @@ Status NodeDoneCallback::GetGraphDescInfo(const NodePtr node, const HybridModel 
   GE_CHECK_NOTNULL(model);
 
   GELOGD("GetComputeGraphInfo of node [%s] start.", node->GetName().c_str());
+  compute_graph_info = context_->GetProfilingGraphDescInfo();
+  context_->ClearProfilingGraphDescInfo();
 
-  std::string dynamic_model_name = model->GetModelName();
-  auto op_desc = node->GetOpDesc();
-  if (op_desc == nullptr) {
-    GELOGE(PARAM_INVALID, "op_desc is nullptr.");
-    return PARAM_INVALID;
-  }
-
-  auto op_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
-  if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, op_mode) &&
-      op_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
-    ComputeGraphDescInfo tmp_compute_graph_info;
-    tmp_compute_graph_info.model_name = dynamic_model_name;
-    tmp_compute_graph_info.op_name = op_desc->GetName();
-    tmp_compute_graph_info.op_type = op_desc->GetType();
-
-    for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
-      GeTensorDescPtr input_desc = op_desc->MutableInputDesc(i);
-      if (input_desc == nullptr) {
-        continue;
-      }
-      tmp_compute_graph_info.input_format.emplace_back(input_desc->GetFormat());
-      tmp_compute_graph_info.input_shape.emplace_back(input_desc->GetShape().GetDims());
-      tmp_compute_graph_info.input_data_type.emplace_back(input_desc->GetDataType());
-    }
-
-    for (size_t j = 0; j < op_desc->GetOutputsSize(); ++j) {
-      GeTensorDesc output_desc = op_desc->GetOutputDesc(j);
-      tmp_compute_graph_info.output_format.emplace_back(output_desc.GetFormat());
-      tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
-      tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
-    }
-    tmp_compute_graph_info.task_id = context_->GetTaskId();
-    tmp_compute_graph_info.stream_id = context_->GetStreamId();
-    compute_graph_info.emplace_back(tmp_compute_graph_info);
-    GELOGD("GetComputeGraphInfo of node [%s] end.", node->GetName().c_str());
-  }
   return SUCCESS;
 }
 

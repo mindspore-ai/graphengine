@@ -3067,7 +3067,6 @@ Status DavinciModel::MallocKnownArgs() {
 
 void DavinciModel::SaveProfilingTaskDescInfo(const OpDescPtr &op, const TaskInfoPtr &task,
                                              const domi::TaskDef &task_def, size_t task_index) {
-  task_desc_info_.clear();
   bool flag = GetL1FusionEnableOption();
   char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
   INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
@@ -3134,6 +3133,7 @@ Status DavinciModel::DistributeTask() {
     GE_CHK_STATUS_RET(task->Distribute());
   }
 
+  task_desc_info_.clear();
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
   for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
     auto &task_def = model_task_def->task(task_index);

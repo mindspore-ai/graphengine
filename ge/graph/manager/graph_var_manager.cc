@@ -212,7 +212,7 @@ rtMemType_t VarResource::GetVarMemType(const int64_t &offset) {
   if (var_offset_map_.count(offset) > 0) {
     return var_offset_map_[offset];
   }
-  return RT_MEMORY_HBM;
+  return RT_MEMORY_RESERVED;
 }
 
 VarTransRoad *VarResource::GetTransRoad(const std::string &var_name) {
@@ -660,7 +660,7 @@ rtMemType_t VarManager::GetVarMemType(const int64_t &offset) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_resource_ == nullptr) {
     GELOGW("VarManager has not been init.");
-    return RT_MEMORY_HBM;
+    return RT_MEMORY_RESERVED;
   }
   return var_resource_->GetVarMemType(offset);
 }

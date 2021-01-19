@@ -38,7 +38,6 @@ const char *const kEngineNameHostCpu = "DNN_VM_HOST_CPU_OP_STORE";
 }
 Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   GE_CHK_STATUS_RET_NOLOG(context.AllocateOutputs());
-  GE_CHK_STATUS_RET_NOLOG(task.UpdateTilingData(context)); // update op_desc before alloc ws
   GE_CHK_STATUS_RET_NOLOG(context.AllocateWorkspaces());
   GE_CHK_STATUS_RET_NOLOG(task.UpdateArgs(context));
   return SUCCESS;

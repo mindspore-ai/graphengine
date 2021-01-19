@@ -29,6 +29,7 @@ namespace hybrid {
 class NodeTask;
 struct GraphExecutionContext;
 class SubgraphContext;
+class TaskContext;
 
 class ShapeFuture {
  public:
@@ -103,6 +104,9 @@ struct NodeState {
 
   Status AwaitInputTensors(GraphExecutionContext &context) const;
 
+  void SetTaskContext(std::shared_ptr<TaskContext> &task_context);
+  std::shared_ptr<TaskContext> GetTaskContext();
+
  private:
   const NodeItem *node_item_ = nullptr;
   std::shared_ptr<NodeTask> kernel_task_ = nullptr;
@@ -110,6 +114,7 @@ struct NodeState {
   OpDescPtr op_desc_;
   ShapeInferenceState shape_inference_state_;
   SubgraphContext *subgraph_context_;
+  std::shared_ptr<TaskContext> task_context_ = nullptr;
   std::mutex mu_;
 };
 

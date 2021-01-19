@@ -231,16 +231,16 @@ Status SubgraphExecutor::PrepareNodes() {
         } else {
           node_state->SetKernelTask(node_item.kernel_task);
         }
+        auto unique_task_context = TaskContext::Create(*node_state->GetNodeItem(), context_, subgraph_context_.get());
+        GE_CHECK_NOTNULL(unique_task_context);
+        const auto &task = node_state->GetKernelTask();
+        if (task == nullptr) {
+          GELOGE(INTERNAL_ERROR, "[%s] NodeTask is null.", node_state->GetName().c_str());
+          return INTERNAL_ERROR;
+        }
+        auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
+        node_state->SetTaskContext(shared_task_context);
       }
-      auto unique_task_context = TaskContext::Create(*node_state->GetNodeItem(), context_, subgraph_context_.get());
-      GE_CHECK_NOTNULL(unique_task_context);
-      const auto &task = node_state->GetKernelTask();
-      if (task == nullptr) {
-        GELOGE(INTERNAL_ERROR, "[%s] NodeTask is null.", node_state->GetName().c_str());
-        return INTERNAL_ERROR;
-      }
-      auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-      node_state->SetTaskContext(shared_task_context);
     }
 
     if (!ready_queue_.Push(p_node_state)) {

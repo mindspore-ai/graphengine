@@ -20,6 +20,7 @@
 #include "common/op/ge_op_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/types.h"
 
 #define VALIDATE_MEM_RANGE(OP, SIZE, OFFSET)                                                                 \
   do {                                                                                                       \
@@ -340,7 +341,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
                     GELOGI("[IMAS]GetInputDataAddrs graph_%u type[V] name[%s] input[%lu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
                     continue);
-    
+
     int64_t mem_type;
     bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);
     // feature maps
@@ -424,6 +425,18 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
     return v_output_data_addr;
   }
   for (size_t i = 0; i < outputs_size; ++i) {
+    const GeTensorDescPtr tensor_desc = op_desc->MutableOutputDesc(i);
+    if (tensor_desc == nullptr) {
+      GELOGW("Op: %s, Index: %zu, Tensor Desc is null", op_desc->GetName().c_str(), i);
+      continue;
+    }
+
+    int32_t calc_type = 0;
+    bool ret = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_MEMORY_SIZE_CALC_TYPE, calc_type);
+    if (ret && (calc_type == static_cast<int32_t>(ge::MemorySizeCalcType::ALWAYS_EMPTY))) {
+      GELOGD("%s is an optional output, the address don't need to be saved.", tensor_desc->GetName().c_str());
+      continue;
+    }
     GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i]),
                     uint8_t *variable_addr = nullptr;
                     GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i], variable_addr), return {});
@@ -431,11 +444,6 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
                     GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[V] name[%s] output[%zu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
                     continue);
-    const GeTensorDescPtr tensor_desc = op_desc->MutableOutputDesc(i);
-    if (tensor_desc == nullptr) {
-      GELOGW("Op: %s, Index: %zu, Tensor Desc is null", op_desc->GetName().c_str(), i);
-      continue;
-    }
 
     int64_t mem_type;
     bool tensor_has_mem_type = ge::AttrUtils::GetInt(tensor_desc, ATTR_NAME_TENSOR_MEM_TYPE, mem_type);

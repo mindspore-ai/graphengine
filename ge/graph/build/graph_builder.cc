@@ -187,8 +187,7 @@ Status GraphBuilder::UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph
   return SUCCESS;
 }
 
-Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
-                           GeRootModelPtr &ge_root_model_ptr, uint64_t session_id) {
+Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, GeRootModelPtr &ge_root_model_ptr, uint64_t session_id) {
   if (comp_graph == nullptr) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Graph build comp_graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
@@ -203,18 +202,18 @@ Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfo
   (void)AttrUtils::GetBool(comp_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
   if (is_dynamic_shape || comp_graph->GetGraphUnknownFlag()) {
     GE_CHK_STATUS_RET(
-        BuildForDynamicShapeGraph(comp_graph, subgraph_ptr_list, ge_root_model_ptr, ge_model_ptr, session_id),
+        BuildForDynamicShapeGraph(comp_graph, ge_root_model_ptr, ge_model_ptr, session_id),
         "Build for dynamic shape graph failed.");
     return SUCCESS;
   }
 
-  GE_CHK_STATUS_RET(BuildForKnownShapeGraph(comp_graph, subgraph_ptr_list, ge_model_ptr, session_id),
+  GE_CHK_STATUS_RET(BuildForKnownShapeGraph(comp_graph, ge_model_ptr, session_id),
                     "Build for known shape graph failed.");
   ge_root_model_ptr->SetSubgraphInstanceNameToModel(comp_graph->GetName(), ge_model_ptr);
   return SUCCESS;
 }
 
-Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_list,
+Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
                                              GeModelPtr &ge_model_ptr, uint64_t session_id) {
   if (ge::GetContext().GetHostExecFlag()) {
     GE_CHK_STATUS_RET(BuildForHostCpuGraph(comp_graph, ge_model_ptr, session_id), "Build for host-cpu graph failed.");
@@ -222,7 +221,7 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::v
   }
 
   GELOGI("Begin to build known shape graph[%s].", comp_graph->GetName().c_str());
-  Status ret = SecondPartition(comp_graph, subgraph_list);
+  Status ret = SecondPartition(comp_graph);
   GE_CHK_STATUS_RET(ret, "Graph[%s] second partition Failed.", comp_graph->GetName().c_str());
   auto subgraph_map = graph_partitioner_.GetSubGraphMap();
 
@@ -470,7 +469,6 @@ Status GraphBuilder::MarkFpBpProfilingTaskAttr(ComputeGraphPtr &com_graph) {
 }
 
 Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
-                                               std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
                                                GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
                                                uint64_t session_id) {
   GELOGI("Start to build BuildForDynamicShape for dynamic shape.");
@@ -517,7 +515,7 @@ Status GraphBuilder::BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
         }
       }
       // known shape build flow
-      GE_CHK_STATUS_RET(BuildForKnownShapeGraph(sub_graph, subgraph_ptr_list, ge_model_ptr, session_id),
+      GE_CHK_STATUS_RET(BuildForKnownShapeGraph(sub_graph, ge_model_ptr, session_id),
                         "Build for known shape graph failed.");
     }
     ge_root_model_ptr->SetSubgraphInstanceNameToModel(sub_graph->GetName(), ge_model_ptr);
@@ -719,7 +717,7 @@ Status GraphBuilder::CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc)
   return SUCCESS;
 }
 
-Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list) {
+Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph) {
   GE_TIMESTAMP_START(GraphPartition2);
   auto ret = graph_partitioner_.Partition(comp_graph, GraphPartitioner::kSecondPartitioning);
   if (ret != SUCCESS) {
@@ -727,10 +725,8 @@ Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge:
     return ret;
   }
   GE_CHK_STATUS_RET(ret, "Graph partition Failed.");
-  auto graph_2_subgraphlist = graph_partitioner_.GetSubGraphMap();
-  if (graph_2_subgraphlist.find(comp_graph) != graph_2_subgraphlist.end()) {
-    subgraph_ptr_list = graph_2_subgraphlist[comp_graph];
-  } else {
+  const auto &graph_2_subgraphlist = graph_partitioner_.GetSubGraphMap();
+  if (graph_2_subgraphlist.find(comp_graph) == graph_2_subgraphlist.end()) {
     GELOGE(FAILED, "Find subgraph failed.");
     return FAILED;
   }

@@ -772,7 +772,12 @@ Status HybridModelBuilder::VarNodeToTensor(const NodePtr &var_node, std::unique_
                     var_name.c_str(),
                     hybrid_model_.GetSessionId());
 
-  uint8_t *dev_mem = var_manager_->GetVarMemoryAddr(var_logic, RT_MEMORY_HBM);
+  rtMemType_t memory_type = RT_MEMORY_HBM;
+  uint32_t mem_type = 0;
+  if (AttrUtils::GetInt(var_node->GetOpDesc(), ATTR_OUTPUT_MEMORY_TYPE, mem_type) && (mem_type == 1)) {
+    memory_type = RT_MEMORY_RDMA_HBM;
+  }
+  uint8_t *dev_mem = var_manager_->GetVarMemoryAddr(var_logic, memory_type);
   if (dev_mem == nullptr) {
     GELOGE(INTERNAL_ERROR,
            "Failed to copy var %s from device, cant not get "

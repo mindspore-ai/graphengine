@@ -23,7 +23,7 @@ namespace ge {
 namespace hybrid {
 namespace host_cpu {
 Status NoOpKernel::Compute(TaskContext& context) {
-  GELOGI("[%s] no need to compute.", node_->GetName().c_str());
+  GELOGD("[%s] no need to compute.", node_->GetName().c_str());
   return SUCCESS;
 }
 

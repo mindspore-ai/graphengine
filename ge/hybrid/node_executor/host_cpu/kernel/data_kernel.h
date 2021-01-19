@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-#include "host_cpu_engine/ops_kernel_store/op/host_op.h"
-#include "framework/common/util.h"
-#include "host_cpu_engine/ops_kernel_store/op/op_factory.h"
+#ifndef GE_HYBRID_HOST_CPU_KERNEL_DATA_KERNEL_H_
+#define GE_HYBRID_HOST_CPU_KERNEL_DATA_KERNEL_H_
+
+#include "hybrid/node_executor/host_cpu/kernel/kernel.h"
 
 namespace ge {
+namespace hybrid {
 namespace host_cpu {
-Status HostOp::Run() {
-  // no need to generate device task
-  return SUCCESS;
-}
+class DataKernel : public Kernel {
+ public:
+  DataKernel(const NodePtr &node) : Kernel(node) {}
+  ~DataKernel() override = default;
+  DataKernel &operator=(const DataKernel &op) = delete;
+  DataKernel(const DataKernel &op) = delete;
 
-REGISTER_OP_CREATOR(NoOp, HostOp);
-REGISTER_OP_CREATOR(Variable, HostOp);
-REGISTER_OP_CREATOR(Constant, HostOp);
-REGISTER_OP_CREATOR(Assign, HostOp);
-REGISTER_OP_CREATOR(RandomUniform, HostOp);
-REGISTER_OP_CREATOR(Add, HostOp);
-REGISTER_OP_CREATOR(Mul, HostOp);
-REGISTER_OP_CREATOR(ConcatV2, HostOp);
-REGISTER_OP_CREATOR(Data, HostOp);
-REGISTER_OP_CREATOR(Fill, HostOp);
+  /**
+   *  @brief compute for node_task.
+   *  @return result
+   */
+  Status Compute(TaskContext& context) override;
+};
 }  // namespace host_cpu
+}  // namespace hybrid
 }  // namespace ge
+
+#endif  // GE_HYBRID_HOST_CPU_KERNEL_DATA_KERNEL_H_

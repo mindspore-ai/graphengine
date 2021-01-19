@@ -60,9 +60,14 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
                     return FAILED);
     ge::ConstGeTensorDescPtr tensor_desc = n->GetOpDesc()->GetOutputDescPtr(0);
     GE_CHECK_NOTNULL(tensor_desc);
+    rtMemType_t memory_type = RT_MEMORY_HBM;
+    uint32_t mem_type = 0;
+    if (AttrUtils::GetInt(n->GetOpDesc(), ATTR_OUTPUT_MEMORY_TYPE, mem_type) && (mem_type == 1)) {
+      memory_type = RT_MEMORY_RDMA_HBM;
+    }
     if (!VarManager::Instance(compute_graph->GetSessionID())->IsVarExist(node_name, *tensor_desc)) {
       GE_CHK_STATUS_RET(
-          VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, RT_MEMORY_HBM));
+          VarManager::Instance(compute_graph->GetSessionID())->AssignVarMem(node_name, *tensor_desc, memory_type));
       GE_IF_BOOL_EXEC(n->GetType() == VARIABLE,
                       GE_CHK_STATUS_RET(AssignData2Fp32Var(n, compute_graph->GetSessionID())));
       GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
@@ -70,7 +75,6 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
     }
 
     uint8_t *dev_ptr = nullptr;
-    rtMemType_t memory_type = RT_MEMORY_HBM;
     GE_CHK_STATUS_RET(VarManager::Instance(compute_graph->GetSessionID())
                           ->GetVarAddr(node_name, *tensor_desc, &dev_ptr, memory_type));
     vector<int64_t> output_list = n->GetOpDesc()->GetOutputOffset();

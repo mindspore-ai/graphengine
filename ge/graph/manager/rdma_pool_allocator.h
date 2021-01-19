@@ -53,6 +53,10 @@ class RdmaPoolAllocator {
 
   Status GetBaseAddr(uint64_t &base_addr, uint64_t &mem_size);
 
+  uint8_t *GetRdmaBaseAddr() { return rdma_base_addr_; }
+
+  size_t GetRdmaMemSize() { return rdma_mem_size_; }
+
  private:
   void MergeBlocks(Block *dst, Block *src);
 

@@ -362,6 +362,7 @@ Status AicpuTfNodeTask::SetMemCopyTask(const domi::TaskDef &task_def) {
     return SUCCESS;
   }
 
+  GELOGD("Start to set memcpy task for node[%s].", node_name_.c_str());
   const domi::KernelExDef &kernel_def = task_def.kernel_ex();
   if (kernel_def.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
     GELOGE(PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
@@ -390,6 +391,7 @@ Status AicpuTfNodeTask::SetMemCopyTask(const domi::TaskDef &task_def) {
 
   GE_CHK_RT_RET(rtMemcpy(copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL),
                          &aicpu_task, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE));
+  GELOGD("Set memcpy task for node[%s] successfully.", node_name_.c_str());
   return SUCCESS;
 }
 

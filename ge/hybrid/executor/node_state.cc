@@ -188,6 +188,14 @@ Status NodeState::WaitForPrepareDone() {
   return SUCCESS;
 }
 
+void NodeState::SetTaskContext(std::shared_ptr<TaskContext> &task_context) {
+  task_context_ = task_context;
+}
+
+std::shared_ptr<TaskContext> NodeState::GetTaskContext() {
+  return task_context_;
+}
+
 Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {
   GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
   HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");

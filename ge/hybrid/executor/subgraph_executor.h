@@ -75,7 +75,7 @@ class SubgraphExecutor {
   Status GetOutputs(std::vector<TensorValue> &outputs, std::vector<ConstGeTensorDescPtr> &output_desc);
 
  private:
-  static Status PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state);
+  Status PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state);
   static Status InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state);
   Status Init(const std::vector<TensorValue> &inputs,
               const std::vector<ConstGeTensorDescPtr> &input_desc);

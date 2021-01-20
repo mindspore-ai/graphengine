@@ -21,7 +21,7 @@
 #include "framework/common/string_util.h"
 #include "graph/ge_context.h"
 #include "runtime/base.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 
 namespace {
 const char *const kTrainingTrace = "training_trace";

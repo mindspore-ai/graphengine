@@ -18,8 +18,8 @@
 
 #define private public
 #define protected public
-#include "graph/load/new_model_manager/data_dumper.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/data_dumper.h"
+#include "graph/load/model_manager/davinci_model.h"
 #undef private
 #undef protected
 

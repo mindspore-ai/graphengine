@@ -19,7 +19,7 @@
 #include "hybrid/node_executor/node_executor.h"
 #include "hybrid/model/hybrid_model.h"
 #include "graph/op_desc.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 
 namespace ge {
 namespace hybrid {

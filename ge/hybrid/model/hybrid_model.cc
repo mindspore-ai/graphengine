@@ -17,7 +17,7 @@
 #include "hybrid_model.h"
 #include <vector>
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"

@@ -22,11 +22,11 @@
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "runtime/mem.h"
 #include "single_op/single_op_manager.h"
 #include "single_op/task/build_task_utils.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_manager.h"
 
 namespace ge {
 namespace {

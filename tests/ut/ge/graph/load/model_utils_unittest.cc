@@ -17,7 +17,7 @@
 #include <gtest/gtest.h>
 #define protected public
 #define private public
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/manager/graph_var_manager.h"
 
 using namespace std;

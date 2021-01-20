@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "common/helper/model_helper.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
 #include "single_op/single_op.h"
 #include "single_op/stream_resource.h"
 

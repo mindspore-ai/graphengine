@@ -28,7 +28,7 @@
 #include "framework/common/util.h"
 #include "graph/detail/attributes_holder.h"
 #include "graph/detail/model_serialize_imp.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/model.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"

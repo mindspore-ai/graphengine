@@ -16,7 +16,7 @@
 
 #include "single_op/task/aicpu_kernel_task_builder.h"
 #include "framework/common/taskdown_common.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "build_task_utils.h"
 
 namespace ge {

@@ -240,7 +240,7 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
         rm -rf ${BASEPATH}/cov
         mkdir ${BASEPATH}/cov
         lcov -c -d build/tests/ut/ge -d build/tests/ut/common/graph/ -o cov/tmp.info
-        lcov --remove cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' '*/model_manager/*' -o cov/coverage.info
+        lcov -r cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' -o cov/coverage.info
         cd ${BASEPATH}/cov
         genhtml coverage.info
 fi

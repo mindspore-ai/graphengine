@@ -527,6 +527,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
     DataBuffer data;
     data.data = inputs[i].data;
     data.length = inputs[i].length;
+    input_data.shapes.emplace_back(inputs[i].dims);
     input_data.blobs.push_back(data);
   }
   if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {

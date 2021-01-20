@@ -935,7 +935,10 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
     return PARAM_INVALID;
   }
   for (auto &shape_range_str : shape_range_set) {
-    if (shape_range_str.empty()) {
+    if (shape_range_str.size() < 3) {
+      // shape_range_str should be "[2~3,1"
+      // or ",[2~3,1". because we should trim '[' or ',['
+      // so shape_range_str.size() < 3 is invalid
       continue;
     }
     // trim start bytes, after that, single input should be "1~20,3,3~6,-1"
@@ -956,7 +959,7 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
         // fix dim
         auto range_value = StringToLongNoThrow(range_pair_set.at(0).c_str());
         if (range_value < 0) {
-          range_pair = std::make_pair(0, range_value);
+          range_pair = std::make_pair(1, range_value);
         } else {
           range_pair = std::make_pair(range_value, range_value);
         }
@@ -1017,36 +1020,32 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
     return PARAM_INVALID;
   }
   for (size_t i = 0; i < origin_shape.GetDimNum(); ++i) {
-    if (current_shape_range_vec.at(i).first == current_shape_range_vec.at(i).second) {
+    auto curr_dim = origin_shape.GetDim(i);
+    auto left_range = current_shape_range_vec.at(i).first;
+    auto right_range = current_shape_range_vec.at(i).second;
+    if (left_range == right_range) {
       // given shape_range is known dim, check is same as origin or not
-      if (origin_shape.GetDim(i) != current_shape_range_vec.at(i).first) {
+      if (curr_dim != left_range) {
         GELOGE(PARAM_INVALID, "Given shape range is %ld, current dim shape is %ld, not match.Pleace Check.",
-              current_shape_range_vec.at(i).first, origin_shape.GetDim(i));
+               left_range, curr_dim);
         return PARAM_INVALID;
       }
-      origin_shape.SetDim(i, current_shape_range_vec.at(i).first);
+      origin_shape.SetDim(i, left_range);
     } else {
-      origin_shape.SetDim(i, -1);
+      // given shape_range is fix range, check input_shape is in this range or not
+      if (right_range != UNKNOWN_DIM) {
+        if ((curr_dim < left_range) || (curr_dim > right_range)) {
+          GELOGE(PARAM_INVALID, "Given shape range is [%ld~%ld], current dim shape is %ld, out of range.Pleace Check.",
+                 left_range, right_range, curr_dim);
+          return PARAM_INVALID;
+        }
+      }
+      origin_shape.SetDim(i, UNKNOWN_DIM);
     }
   }
   desc.SetShape(origin_shape);
   desc.SetShapeRange(current_shape_range_vec);
 
-  int64_t dynamic_shape_size = 1;
-  for (const auto range_pair : range_vec.at(index)) {
-    FMK_INT64_MULCHECK(dynamic_shape_size, range_pair.second);
-    dynamic_shape_size *= range_pair.second;
-  }
-  auto data_type_size = GetSizeByDataType(desc.GetDataType());
-  if (data_type_size < 0) {
-    GELOGE(PARAM_INVALID, "Input data type is %s, is not supported.",
-           TypeUtils::DataTypeToSerialString(desc.GetDataType()).c_str());
-    return PARAM_INVALID;
-  }
-  FMK_INT64_MULCHECK(dynamic_shape_size, data_type_size);
-  dynamic_shape_size *= data_type_size;
-  GELOGI("In dynamic_execute mode ,set input %s shape range size %ld", op->GetName().c_str(), dynamic_shape_size);
-  ge::TensorUtils::SetSize(desc, dynamic_shape_size);
   graphStatus graph_ret = op->UpdateInputDesc(0, desc);
   GE_CHK_STATUS_RET(graph_ret, "UpdateInputDesc fail, graph ret: %u", graph_ret);
   graph_ret = op->UpdateOutputDesc(0, desc);

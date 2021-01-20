@@ -15,24 +15,18 @@
  */
 
 #include <gtest/gtest.h>
-
-#include <cce/compiler_stub.h>
+#include <map>
 #include "common/debug/log.h"
-#include "common/model_parser/base.h"
-#include "common/properties_manager.h"
 #include "common/types.h"
-#include "common/l2_cache_optimize.h"
-
+#include "graph/utils/graph_utils.h"
 #define private public
 #define protected public
 #include "graph/load/model_manager/model_manager.h"
-
 #include "common/helper/om_file_helper.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/load/graph_loader.h"
-#include "graph/load/model_manager/davinci_model.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
-#include "new_op_test_utils.h"
+#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/new_model_manager/davinci_model_parser.h"
 #undef private
 #undef protected
 
@@ -87,7 +81,6 @@ class UtestModelManagerModelManager : public testing::Test {
     data.model_data = new uint8_t[data.model_len];
     uint8_t data_ori[model_len];
     memset(data_ori, 10, model_len);
-    uint32_t out_len;
     ModelFileHeader *header = (ModelFileHeader *)data.model_data;
     header->magic = MODEL_FILE_MAGIC_NUM;
     header->version = MODEL_VERSION;
@@ -97,7 +90,7 @@ class UtestModelManagerModelManager : public testing::Test {
 
   void LoadStandardModelData(ge::ModelData &data) {
     static const std::string STANDARD_MODEL_DATA_PATH =
-        "llt/framework/domi/ut/ome/test/data/standard_partition_model.txt";
+      "llt/framework/domi/ut/ome/test/data/standard_partition_model.txt";
     ge::proto::ModelDef model_def;
     ReadProtoFromText(STANDARD_MODEL_DATA_PATH.c_str(), &model_def);
 
@@ -113,9 +106,8 @@ class DModelListener : public ge::ModelListener {
   uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode) { return 0; }
 };
 
-shared_ptr<ModelListener> UTEST_CALL_BACK_FUN(new DModelListener());
 
-TEST_F(UtestModelManagerModelManager, case_load_incorrect_param) {
+/*TEST_F(UtestModelManagerModelManager, case_load_incorrect_param) {
   ModelManager mm;
   uint32_t model_id = 0;
   ge::ModelData model;
@@ -307,7 +299,7 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_fail) {
 }
 
 
-/*
+*//*
 // test GetInputOutputDescInfo fail
 TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_zero_copy_fail) {
   ModelManager manager;
@@ -316,7 +308,7 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_zero_copy_fail)
   vector<InputOutputDescInfo> output_shape;
   EXPECT_EQ(ge::PARAM_INVALID, manager.GetInputOutputDescInfoForZeroCopy(2, input_shape, output_shape));
 }
-*/
+*//*
 
 // test Stop
 TEST_F(UtestModelManagerModelManager, stop_fail) {
@@ -347,6 +339,20 @@ TEST_F(UtestModelManagerModelManager, destroy_aicpu_session) {
 
   manager.sess_ids_.insert(0);
   manager.DestroyAicpuSession(0);
-}
+}*/
+// test DataInputTensor
+TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
+  shared_ptr<ModelListener> g_label_call_back(nullptr);
+  auto model = std::make_shared<DavinciModel>(0, g_label_call_back);
+  ModelManager mm;
+  uint32_t model_id = 1;
+  mm.model_map_[1] = model;
+  mm.hybrid_model_map_[1] = std::make_shared<hybrid::HybridDavinciModel>();
 
+  auto input_tensor = InputTensorInfo();
+  vector<InputTensorInfo> inputs;
+  inputs.emplace_back(input_tensor);
+  auto ret = mm.DataInputTensor(model_id,inputs);
+  EXPECT_EQ(ge::UNSUPPORTED, ret);
+}
 }  // namespace ge

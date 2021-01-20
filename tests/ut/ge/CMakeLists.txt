@@ -573,7 +573,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/data_dumper_unittest.cc"
     #"graph/load/new_model_manager_data_inputer_unittest.cc"
     #"graph/load/new_model_manager_davinci_model_unittest.cc"
-    #"graph/load/new_model_manager_model_manager_unittest.cc"
+    "graph/load/new_model_manager_model_manager_unittest.cc"
     #"graph/load/new_model_manager_task_build_unittest.cc"
 	"graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
@@ -697,6 +697,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "graph/preprocess/graph_preprocess_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 

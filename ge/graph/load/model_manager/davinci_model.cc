@@ -4021,14 +4021,18 @@ Status DavinciModel::GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_des
     } else {
       compute_graph_info.model_name = name_;
     }
+
+    std::vector<Format> format =  { FORMAT_NULL };
+    std::vector<std::vector<int64_t>> shape = { {0} };
+    std::vector<DataType> data_type = { DT_UNDEFINED };
     compute_graph_info.op_name = op_desc.op_name;
     compute_graph_info.op_type = op_desc.op_type;
-    compute_graph_info.input_format = op_desc.input_format;
-    compute_graph_info.input_shape = op_desc.input_shape;
-    compute_graph_info.input_data_type = op_desc.input_data_type;
-    compute_graph_info.output_format = op_desc.output_format;
-    compute_graph_info.output_shape = op_desc.output_shape;
-    compute_graph_info.output_data_type = op_desc.output_data_type;
+    compute_graph_info.input_format = op_desc.input_format.empty() ? format : op_desc.input_format;
+    compute_graph_info.input_shape = op_desc.input_shape.empty() ? shape : op_desc.input_shape;
+    compute_graph_info.input_data_type = op_desc.input_data_type.empty() ? data_type : op_desc.input_data_type;
+    compute_graph_info.output_format = op_desc.output_format.empty() ? format :  op_desc.output_format;
+    compute_graph_info.output_shape = op_desc.output_shape.empty() ? shape : op_desc.output_shape;
+    compute_graph_info.output_data_type = op_desc.output_data_type.empty() ? data_type : op_desc.output_data_type;
     uint32_t task_id = 0;
     uint32_t stream_id = 0;
     auto iter = profiler_report_op_info_.find(op_desc.op_name);

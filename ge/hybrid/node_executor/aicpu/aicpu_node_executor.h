@@ -21,6 +21,7 @@
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "aicpu_ext_info.h"
+#include "common/ge_inner_error_codes.h"
 
 namespace ge {
 namespace hybrid {
@@ -40,6 +41,10 @@ class AicpuNodeTaskBase : public NodeTask {
   using NodeTask::Init;
 
   virtual Status Init(const HybridModel &model) = 0;
+
+  virtual Status SetMemCopyTask(const domi::TaskDef &task_def) {
+    return UNSUPPORTED;
+  }
 
   Status UpdateArgs(TaskContext &context) override;
 
@@ -89,6 +94,8 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
 
   Status Init(const HybridModel &model) override;
 
+  Status SetMemCopyTask(const domi::TaskDef &task_def) override;
+
  protected:
 
   Status LaunchTask(TaskContext &context) override;
@@ -117,11 +124,9 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
                                 const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
   Status PrepareCopyInputs(const TaskContext &context,
-                           const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm,
-                           uint64_t &copy_num);
+                           const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
   static Status EnsureSessionCreated(uint64_t session_id);
-  static Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, std::string &task_info);
   static uint64_t GetStepIdAddr(const HybridModel &model);
  private:
   // kernel buf, device mem
@@ -145,6 +150,8 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
   std::unique_ptr<TensorBuffer> copy_input_src_dev_;
   std::unique_ptr<TensorBuffer> copy_input_dst_dev_;
   bool need_sync_ = false;
+
+  std::unique_ptr<TensorBuffer> copy_workspace_buf_;
 };
 
 class AicpuNodeTask : public AicpuNodeTaskBase {

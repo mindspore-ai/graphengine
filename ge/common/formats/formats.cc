@@ -64,8 +64,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_form
     std::string error = "Failed to trans data from format " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
   }
 
   return transfer->TransShape(src_format, src_shape, data_type, dst_format, dst_shape);

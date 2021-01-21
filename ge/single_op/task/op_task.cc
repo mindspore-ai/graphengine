@@ -45,7 +45,7 @@ void FreeHbm(void *var) {
 
 Status OpTask::OpenDump(rtStream_t stream) {
   if (DumpManager::GetInstance().GetDumpProperties().IsSingleOpNeedDump()) {
-    GELOGI("Dump is open in single op,start to set dump info");
+    GELOGI("Dump is open in single op, start to set dump info");
     std::vector<uint64_t> input_addrs;
     std::vector<uint64_t> output_adds;
     auto input_size = op_desc_->GetInputsSize();
@@ -54,10 +54,10 @@ Status OpTask::OpenDump(rtStream_t stream) {
     size_t arg_num = 0;
     GetIoAddr(arg_base, arg_num);
     if (arg_num < input_size + output_size) {
-      GELOGE(FAILED, "io_addrs_for_dump_ size %zu is not equal input and output size %zu",
+      GELOGE(ACL_ERROR_GE_DUMP_IO_ADDR_NUM_INVALID, "io_addrs_for_dump_ size %zu is not equal input and output size %zu",
              arg_num,
              input_size + output_size);
-      return FAILED;
+      return ACL_ERROR_GE_DUMP_IO_ADDR_NUM_INVALID;
     }
 
     for (size_t i = 0; i < input_size; i++) {
@@ -120,11 +120,11 @@ Status OpTask::DoUpdateArgTable(const SingleOpModelParam &param, bool keep_works
   size_t arg_num = 0;
   GetIoAddr(arg_base, arg_num);
   if (arg_num < all_addresses.size()) {
-    GELOGE(INTERNAL_ERROR, "[%s] arg number mismatches, expect at least = %zu, but got = %zu",
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[%s] arg number mismatches, expect at least = %zu, but got = %zu",
            op_desc_->GetName().c_str(),
            all_addresses.size(),
            arg_num);
-    return INTERNAL_ERROR;
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   for (void *addr : all_addresses) {
@@ -178,8 +178,8 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   }
 
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->stub_name_.c_str());
-    return RT_FAILED;
+    GELOGE(ret, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->stub_name_.c_str());
+    return RT_ERROR_TO_GE_STATUS(ret);
   }
   GELOGI("[TASK_INFO] %s", this->stub_name_.c_str());
   auto status = OpenDump(stream);
@@ -199,8 +199,8 @@ Status TbeOpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const ve
   run_info.block_dim = 0;
   auto ret = optiling::OpParaCalculate(*node_, run_info);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Failed to invoke OpParaCalculate. ret = %u", ret);
-    return FAILED;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Failed to invoke OpParaCalculate. ret = %u", ret);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   block_dim_ = run_info.block_dim;
   tiling_data_ = run_info.tiling_data.str();
@@ -223,8 +223,8 @@ Status TbeOpTask::UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc 
   } else {
     std::vector<int64_t> storage_shape;
     if (!AttrUtils::GetListInt(src_tensor, ge::ATTR_NAME_STORAGE_SHAPE, storage_shape)) {
-      GELOGE(PARAM_INVALID, "Failed to get storage_shape while storage_format was set");
-      return PARAM_INVALID;
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Failed to get storage_shape while storage_format was set");
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
 
     GELOGD("Storage format set. update shape to [%s], and original shape to [%s]",
@@ -273,7 +273,9 @@ Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
   std::vector<int64_t> ws_offsets;
   for (auto ws_size : workspace_sizes) {
     // alignment and padding should be done in OpParaCalculate
-    GE_CHK_STATUS_RET_NOLOG(CheckInt64AddOverflow(total_size, ws_size));
+    if (CheckInt64AddOverflow(total_size, ws_size) != SUCCESS) {
+      return ACL_ERROR_GE_INTERNAL_ERROR;
+    }
     ws_offsets.emplace_back(total_size);
     total_size += ws_size;
   }
@@ -321,8 +323,9 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   }
 
   if (memcpy_s(args_.get(), arg_size_, args.data(), args.size() * sizeof(void *)) != EOK) {
-    GELOGE(INTERNAL_ERROR, "[%s] Failed to update kernel args.", node_->GetName().c_str());
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[%s] Failed to update kernel args.",
+           node_->GetName().c_str());
+    return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
 
   GELOGD("[%s] Start to invoke rtKernelLaunch", node_->GetName().c_str());
@@ -360,7 +363,7 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
                                                                               num_inputs_,
                                                                               num_outputs_,
                                                                               unknown_type_));
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, FAILED, "Malloc aicpu_ext_handle mem failed!");
+  GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, ACL_ERROR_GE_MEMORY_ALLOCATION, "Malloc aicpu_ext_handle mem failed!");
 
   Status ret = aicpu_ext_handle_->Parse(kernel_ext_info);
   if (ret != SUCCESS) {
@@ -418,7 +421,7 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
                         "Input[%zu] update input shape failed.", input_index);
       continue;
     }
-    GE_CHK_BOOL_RET_STATUS(non_const_index < input_desc.size(), PARAM_INVALID,
+    GE_CHK_BOOL_RET_STATUS(non_const_index < input_desc.size(), ACL_ERROR_GE_PARAM_INVALID,
                            "Input_desc size is %zu, but get non_const_index is %zu",
                            input_desc.size(), non_const_index);
     GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, input_desc[non_const_index]),
@@ -511,7 +514,7 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
       arg_base++;
       continue;
     }
-    GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), PARAM_INVALID,
+    GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), ACL_ERROR_GE_PARAM_INVALID,
                            "Input size is %zu, but get non_const_index is %zu",
                            inputs.size(), non_const_index);
     auto addr = inputs[non_const_index].data;
@@ -561,15 +564,15 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
                            RT_MEMCPY_HOST_TO_DEVICE_EX,
                            stream);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMemcpyAsync workspace data failed. ret = %d, task = %s", ret, this->op_type_.c_str());
-    return RT_FAILED;
+    GELOGE(ret, "rtMemcpyAsync workspace data failed. ret = %d, task = %s", ret, this->op_type_.c_str());
+    return RT_ERROR_TO_GE_STATUS(ret);
   }
 
   GELOGI("To invoke rtKernelLaunchEx. task = %s", this->op_type_.c_str());
   ret = rtKernelLaunchEx(args_, arg_size_, 0, stream);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->op_type_.c_str());
-    return RT_FAILED;
+    GELOGE(ret, "Invoke rtKernelLaunch failed. ret = %d, task = %s", ret, this->op_type_.c_str());
+    return RT_ERROR_TO_GE_STATUS(ret);
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
 
@@ -747,9 +750,9 @@ Status AiCpuTask::InitForSummaryAndCopy() {
 
 Status AiCpuTask::SetMemCopyTask(const domi::KernelExDef &kernel_def) {
   if (kernel_def.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
-    GELOGE(PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
            sizeof(STR_FWK_OP_KERNEL), kernel_def.args_size());
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   GE_CHK_RT_RET(rtMalloc(&copy_workspace_buf_, kernel_def.task_info_size(), RT_MEMORY_HBM));
   GE_CHK_RT_RET(rtMemcpy(copy_workspace_buf_, kernel_def.task_info_size(),
@@ -759,8 +762,8 @@ Status AiCpuTask::SetMemCopyTask(const domi::KernelExDef &kernel_def) {
   auto sec_ret = memcpy_s(&aicpu_task, sizeof(STR_FWK_OP_KERNEL),
                           kernel_def.args().data(), kernel_def.args().size());
   if (sec_ret != EOK) {
-    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
-    return FAILED;
+    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memcpy failed, ret: %d", sec_ret);
+    return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
 
   aicpu_task.fwkKernelBase.fwk_kernel.inputOutputAddr = reinterpret_cast<uintptr_t>(copy_ioaddr_dev_);
@@ -844,7 +847,7 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
                                        sm_desc, stream, dump_flag_);
   if (ret != RT_ERROR_NONE) {
     GELOGE(ret, "Invoke rtCpuKernelLaunch failed. ret = %d", ret);
-    return ret;
+    return RT_ERROR_TO_GE_STATUS(ret);
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
   GELOGD("Invoke rtCpuKernelLaunch succeeded");

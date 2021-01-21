@@ -51,7 +51,7 @@ RdmaPoolAllocator::RdmaPoolAllocator(rtMemType_t memory_type)
 Status RdmaPoolAllocator::Initialize() {
   memory_allocator_ = MemManager::Instance(memory_type_);
   if (memory_allocator_ == nullptr) {
-    return ge::FAILED;
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   return ge::SUCCESS;
 }

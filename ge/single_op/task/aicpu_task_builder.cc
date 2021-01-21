@@ -30,8 +30,8 @@ namespace ge {
     auto sec_ret = memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL),
                             kernel_def_.args().data(), kernel_def_.args().size());
     if (sec_ret != EOK) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "memcpy failed, ret: %d", sec_ret);
-      return ACL_ERROR_GE_INTERNAL_ERROR;
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memcpy failed, ret: %d", sec_ret);
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
 
     auto io_addr_val = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(io_addr));
@@ -46,7 +46,7 @@ namespace ge {
     auto rt_ret = rtMalloc(&fwk_op_args, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(rt_ret, "malloc arg memory failed, ret = %d", rt_ret);
-      return rt_ret;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
 
     rt_ret = rtMemcpy(fwk_op_args, sizeof(STR_FWK_OP_KERNEL), &fwk_op_kernel,
@@ -54,7 +54,7 @@ namespace ge {
     if (rt_ret != RT_ERROR_NONE) {
       (void)rtFree(fwk_op_args);
       GELOGE(rt_ret, "copy args failed, ret = %d", rt_ret);
-      return rt_ret;
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     *args = fwk_op_args;
     return SUCCESS;
@@ -96,7 +96,7 @@ namespace ge {
     // get kernel_ext_info
     auto &kernel_ext_info = kernel_def_.kernel_ext_info();
     auto kernel_ext_info_size = kernel_def_.kernel_ext_info_size();
-    GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
+    GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, ACL_ERROR_GE_PARAM_INVALID,
                            "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
                            kernel_ext_info.size(), kernel_ext_info_size);
     GE_CHK_STATUS_RET(task.SetExtInfoAndType(kernel_ext_info, kernel_id), "Init ext info failed.");

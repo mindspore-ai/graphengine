@@ -32,7 +32,7 @@ Status TransShapeToFz(int64_t d, int64_t n, int64_t c, int64_t h, int64_t w, Dat
                       std::vector<int64_t> &dst_shape) {
   auto c0 = GetCubeSizeByDataType(data_type);
   if (c0 < 0) {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
 
   auto c1 = Ceil(c, c0);
@@ -50,7 +50,7 @@ Status TransShapeToFz(int64_t d, int64_t n, int64_t c, int64_t h, int64_t w, Dat
 Status TransShapeDhwncToFz3DTranspose(const std::vector<int64_t> &src_shape, DataType data_type,
                                       std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kDhwncDimsNum)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   auto d = src_shape.at(kDhwncD);
   auto h = src_shape.at(kDhwncH);
@@ -164,14 +164,14 @@ Status FormatTransferDhwncFractalZ3DTranspose::TransShape(Format src_format, con
                                                           DataType data_type, Format dst_format,
                                                           std::vector<int64_t> &dst_shape) {
   if (CheckDataTypeSupport(data_type) != SUCCESS) {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
 
   if (src_format == FORMAT_DHWNC && dst_format == FORMAT_FRACTAL_Z_3D_TRANSPOSE) {
     return TransShapeDhwncToFz3DTranspose(src_shape, data_type, dst_shape);
   }
 
-  return UNSUPPORTED;
+  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferDhwncFractalZ3DTranspose, FORMAT_DHWNC, FORMAT_FRACTAL_Z_3D_TRANSPOSE)

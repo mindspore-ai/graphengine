@@ -32,12 +32,13 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
                                std::vector<int64_t> &dst_shape) {
   int64_t c0 = GetCubeSizeByDataType(data_type);
   if (c0 <= 0) {
-    GELOGE(PARAM_INVALID, "Failed to get cube size, the data type is invalid");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID, "Failed to get cube size, the data type is invalid");
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {
-    GELOGE(PARAM_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check src shape %s",
+           ShapeToString(src_shape).c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   dst_shape.clear();
   dst_shape.push_back(src_shape.at(kNchwN));
@@ -46,8 +47,9 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   dst_shape.push_back(src_shape.at(kNchwW));
   dst_shape.push_back(c0);
   if (!CheckShapeValid(dst_shape, kNc1hwc0DimsNum)) {
-    GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check dst shape %s",
+           ShapeToString(dst_shape).c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   return SUCCESS;
 }
@@ -193,7 +195,7 @@ Status FormatTransferNchwNc1hwc0::TransShape(Format src_format, const std::vecto
   if (src_format == FORMAT_NCHW) {
     return TransShapeNchwToNc1hwc0(src_shape, data_type, dst_shape);
   } else {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
   }
 }
 

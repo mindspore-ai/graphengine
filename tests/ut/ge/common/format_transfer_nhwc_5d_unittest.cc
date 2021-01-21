@@ -719,7 +719,7 @@ TEST_F(UtestFormatTransferNhwc5d, invalid_src_format) {
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, UNSUPPORTED);
+  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferNhwc5d, invalid_dst_shape2) {

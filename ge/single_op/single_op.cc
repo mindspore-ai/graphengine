@@ -57,9 +57,10 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
   std::vector<TaskDescInfo> task_desc_info;
   uint32_t task_id = 0;
   uint32_t stream_id = 0;
-  if (rtGetTaskIdAndStreamID(&task_id, &stream_id) != RT_ERROR_NONE) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Get task_id and stream_id failed.");
-    return ACL_ERROR_GE_PARAM_INVALID;
+  auto rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "Get task_id and stream_id failed.");
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   TaskDescInfo tmp_task_desc_info;

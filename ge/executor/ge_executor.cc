@@ -226,7 +226,7 @@ Status GeExecutor::Initialize() {
   }
 
   GE_CHK_STATUS_RET(OpsKernelBuilderManager::Instance().Initialize({}, false),
-                    "Failed to initialize OpsKernelBuilders");
+                    "Failed to initialize OpsKernelBuilders.");
 
   // Start profiling
   Options profiling_options;

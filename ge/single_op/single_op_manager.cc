@@ -141,7 +141,7 @@ Status SingleOpManager::GetResourceId(rtStream_t stream, uintptr_t &resource_id)
     auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
     if (rt_err != RT_ERROR_NONE) {
       GELOGE(rt_err, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
-      return rt_err;
+      return RT_ERROR_TO_GE_STATUS(rt_err);
     }
     // use current context as resource key instead
     GELOGI("use context as resource key instead when default stream");

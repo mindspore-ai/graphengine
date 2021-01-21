@@ -242,7 +242,7 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
   auto rtRet = rtMemcpy(args.get(), arg_size, kernel_def_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
   if (rtRet != RT_ERROR_NONE) {
     GELOGE(rtRet, "rtMemcpy args failed, size = %zu, ret = %d", arg_size, static_cast<int>(rtRet));
-    return rtRet;
+    return RT_ERROR_TO_GE_STATUS(rtRet);
   }
 
   const domi::KernelContext &context = kernel_def_.context();
@@ -261,7 +261,7 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
     rtRet = rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
     if (rtRet != RT_ERROR_NONE) {
       GELOGE(rtRet, "rtMemcpy addresses failed, ret = %d", static_cast<int>(rtRet));
-      return rtRet;
+      return RT_ERROR_TO_GE_STATUS(rtRet);
     }
   }
 
@@ -287,7 +287,7 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
   auto rtRet = rtGetFunctionByName(stub_name_.c_str(), &stub_func);
   if (rtRet != SUCCESS) {
     GELOGE(rtRet, "rtGetFunctionByName failed.");
-    return rtRet;
+    return RT_ERROR_TO_GE_STATUS(rtRet);
   }
 
   task.SetStubFunc(stub_name_, stub_func);

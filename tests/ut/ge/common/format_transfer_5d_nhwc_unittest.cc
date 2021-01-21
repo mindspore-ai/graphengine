@@ -679,7 +679,7 @@ TEST_F(UtestFormatTransfer5dNhwc, nc1hwc0_to_nhwc_float2) {
   }
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, UNSUPPORTED);
+  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransfer5dNhwc, invalid_src_format) {

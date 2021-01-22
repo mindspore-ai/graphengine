@@ -15,23 +15,23 @@
 
 extern "C" {
 struct SoftDpProcsessInfo {
-  uint8_t* inputBuffer;
-  uint32_t inputBufferSize;
+    uint8_t* inputBuffer;
+    uint32_t inputBufferSize;
 
-  uint8_t* outputBuffer;
-  uint32_t outputBufferSize;
+    uint8_t* outputBuffer;
+    uint32_t outputBufferSize;
 
-  uint32_t outputWidth;
-  uint32_t outputHeight;
+    uint32_t outputWidth;
+    uint32_t outputHeight;
 
-  uint32_t reserved;
+    uint32_t reserved;
 };
 
 struct DpCropInfo {
-  uint32_t left;
-  uint32_t right;
-  uint32_t up;
-  uint32_t down;
+    uint32_t left;
+    uint32_t right;
+    uint32_t up;
+    uint32_t down;
 };
 
 /*

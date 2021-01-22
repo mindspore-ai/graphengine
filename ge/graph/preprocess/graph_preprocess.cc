@@ -1665,6 +1665,9 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   auto ge_tensor_desc = ge_tensor_ptr->GetTensorDesc();
   int64_t shape_size = ge_tensor_desc.GetShape().GetShapeSize();
   auto data_type = ge_tensor_desc.GetDataType();
+  if (data_type == DT_STRING) {
+    return SUCCESS;
+  }
   uint32_t length = 1;
   bool type_ret = TypeUtils::GetDataTypeLength(data_type, length);
   if (!type_ret) {

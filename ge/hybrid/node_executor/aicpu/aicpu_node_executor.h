@@ -21,7 +21,6 @@
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "aicpu_ext_info.h"
-#include "common/ge_inner_error_codes.h"
 
 namespace ge {
 namespace hybrid {

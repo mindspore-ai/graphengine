@@ -42,10 +42,6 @@ class AicpuNodeTaskBase : public NodeTask {
 
   virtual Status Init(const HybridModel &model) = 0;
 
-  virtual Status SetMemCopyTask(const domi::TaskDef &task_def) {
-    return UNSUPPORTED;
-  }
-
   Status UpdateArgs(TaskContext &context) override;
 
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
@@ -94,8 +90,6 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
 
   Status Init(const HybridModel &model) override;
 
-  Status SetMemCopyTask(const domi::TaskDef &task_def) override;
-
  protected:
 
   Status LaunchTask(TaskContext &context) override;
@@ -105,6 +99,8 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
   Status UpdateIoAddr(TaskContext &context) override;
 
  private:
+  Status SetMemCopyTask(const domi::TaskDef &task_def);
+
   Status InitForDependComputeTask();
 
   Status UpdateShapeAndDataByResultSummary(TaskContext &context);

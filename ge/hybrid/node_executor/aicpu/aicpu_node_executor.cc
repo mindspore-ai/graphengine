@@ -352,6 +352,10 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
     need_sync_ = true;
   }
   GELOGI("Node[%s] init end.", node_name_.c_str());
+  auto task_defs = model.GetTaskDefs(node_item_->node);
+  if (unknown_type_ == DEPEND_COMPUTE) {
+    GE_CHK_STATUS_RET_NOLOG(SetMemCopyTask((*task_defs)[1]));
+  }
   return SUCCESS;
 }
 
@@ -829,9 +833,6 @@ Status AiCpuNodeExecutor::LoadTask(const HybridModel &model,
                          "Load task for node %s failed.", node->GetName().c_str());
 
   GE_CHK_STATUS_RET(aicpu_task->Init(model), "Node[%s] task init failed.", node->GetName().c_str());
-  if (node_item->shape_inference_type == DEPEND_COMPUTE) {
-    GE_CHK_STATUS_RET_NOLOG(aicpu_task->SetMemCopyTask((*task_defs)[1]));
-  }
 
   task = std::move(aicpu_task);
   GELOGD("Node[%s] load task end.", node->GetName().c_str());

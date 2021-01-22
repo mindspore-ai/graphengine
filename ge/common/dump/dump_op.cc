@@ -99,8 +99,8 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
     }
     int64_t output_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_DUMP_GET_TENSOR_SIZE_FAILED, "Get output size filed");
-      return ACL_ERROR_GE_DUMP_GET_TENSOR_SIZE_FAILED;
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Get output size filed");
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get output size in lanch dump op is %ld", output_size);
     output.set_size(output_size);
@@ -126,8 +126,8 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
     }
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_DUMP_GET_TENSOR_SIZE_FAILED, "Get output size filed");
-      return ACL_ERROR_GE_DUMP_GET_TENSOR_SIZE_FAILED;
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Get output size filed");
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get input size in lanch dump op is %ld", input_size);
     input.set_size(input_size);
@@ -151,8 +151,8 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_msg);
   if (!ret || proto_size == 0) {
-    GELOGE(ACL_ERROR_GE_DUMP_PROTOBUF_SERIALIZE_FAILED, "Protobuf serialize failed, proto_size is %zu", proto_size);
-    return ACL_ERROR_GE_DUMP_PROTOBUF_SERIALIZE_FAILED;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Protobuf serialize failed, proto_size is %zu", proto_size);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   rtError_t rt_ret = rtMalloc(&proto_dev_mem_, proto_size, RT_MEMORY_HBM);
@@ -209,10 +209,10 @@ Status DumpOp::LaunchDumpOp() {
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   if (device_id < 0) {
-    GELOGE(ACL_ERROR_GE_CHECK_RTS_RETURN_VALUE_FAILED,
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
            "Check device_id failed, device_id = %d, which should be not less than 0.",
            device_id);
-    return ACL_ERROR_GE_CHECK_RTS_RETURN_VALUE_FAILED;
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   aicpu::dump::OpMappingInfo op_mapping_info;
   auto dump_path = dump_properties_.GetDumpPath() + std::to_string(device_id) + "/";

@@ -479,8 +479,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
 
   Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
-    GELOGE(status, "Parse model content failed!");
-    return status;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Parse model content failed!");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   file_header_ = reinterpret_cast<ModelFileHeader *>(model_data.model_data);
@@ -528,8 +528,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
 
   Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
-    GELOGE(status, "Parse model content failed!");
-    return status;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Parse model content failed!");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   file_header_ = reinterpret_cast<ModelFileHeader *>(model_data.model_data);

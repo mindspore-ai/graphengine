@@ -203,7 +203,7 @@ class MemManager {
         return ACL_ERROR_GE_MEMORY_ALLOCATION;
       } else {
         if (allocator->Initialize() != SUCCESS) {
-          return ACL_ERROR_GE_INIT_ALLOCATOR_FAILED;
+          return ACL_ERROR_GE_INTERNAL_ERROR;
         }
       }
     }

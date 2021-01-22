@@ -54,10 +54,10 @@ Status OpTask::OpenDump(rtStream_t stream) {
     size_t arg_num = 0;
     GetIoAddr(arg_base, arg_num);
     if (arg_num < input_size + output_size) {
-      GELOGE(ACL_ERROR_GE_DUMP_IO_ADDR_NUM_INVALID, "io_addrs_for_dump_ size %zu is not equal input and output size %zu",
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "io_addrs_for_dump_ size %zu is not equal input and output size %zu",
              arg_num,
              input_size + output_size);
-      return ACL_ERROR_GE_DUMP_IO_ADDR_NUM_INVALID;
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
 
     for (size_t i = 0; i < input_size; i++) {

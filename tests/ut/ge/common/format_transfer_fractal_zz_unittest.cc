@@ -7879,7 +7879,7 @@ TEST_F(UtestFormatTransferNdFractZz, invalid_src_shape) {
   FormatTransferFractalZz transfer;
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALIDACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, invalid_src_data_type) {
@@ -7914,7 +7914,7 @@ TEST_F(UtestFormatTransferNdFractZz, invalid_src_format) {
   FormatTransferFractalZz transfer;
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-            ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
   EXPECT_EQ(TransFormat(args, result), UNSUPPORTED);
 }
 

@@ -29,15 +29,15 @@ extern "C" {
  * @brief shared memory data control
  */
 typedef struct tagRtSmData {
-  uint64_t L2_mirror_addr;          // preload or swap source address
-  uint32_t L2_data_section_size;    // every data size
-  uint8_t L2_preload;               // 1 - preload from mirrorAddr, 0 - no preload
-  uint8_t modified;                 // 1 - data will be modified by kernel, 0 - no modified
-  uint8_t priority;                 // data priority
-  int8_t prev_L2_page_offset_base;  // remap source section offset
-  uint8_t L2_page_offset_base;      // remap destination section offset
-  uint8_t L2_load_to_ddr;           // 1 - need load out, 0 - no need
-  uint8_t reserved[2];              // reserved
+    uint64_t L2_mirror_addr;          // preload or swap source address
+    uint32_t L2_data_section_size;    // every data size
+    uint8_t L2_preload;               // 1 - preload from mirrorAddr, 0 - no preload
+    uint8_t modified;                 // 1 - data will be modified by kernel, 0 - no modified
+    uint8_t priority;                 // data priority
+    int8_t prev_L2_page_offset_base;  // remap source section offset
+    uint8_t L2_page_offset_base;      // remap destination section offset
+    uint8_t L2_load_to_ddr;           // 1 - need load out, 0 - no need
+    uint8_t reserved[2];              // reserved
 } rtSmData_t;
 
 /**
@@ -45,12 +45,12 @@ typedef struct tagRtSmData {
  * @brief shared memory description
  */
 typedef struct tagRtSmCtrl {
-  rtSmData_t data[8];  // data description
-  uint64_t size;       // max page Num
-  uint8_t remap[64];   /* just using for static remap mode, default:0xFF
+    rtSmData_t data[8];  // data description
+    uint64_t size;       // max page Num
+    uint8_t remap[64];   /* just using for static remap mode, default:0xFF
                           array index: virtual l2 page id, array value: physic l2 page id */
-  uint8_t l2_in_main;  // 0-DDR, 1-L2, default:0xFF
-  uint8_t reserved[3];
+    uint8_t l2_in_main;  // 0-DDR, 1-L2, default:0xFF
+    uint8_t reserved[3];
 } rtSmDesc_t;
 
 typedef rtSmDesc_t rtL2Ctrl_t;
@@ -60,10 +60,10 @@ typedef rtSmDesc_t rtL2Ctrl_t;
  * @brief device binary type
  */
 typedef struct tagRtDevBinary {
-  uint32_t magic;    // magic number
-  uint32_t version;  // version of binary
-  const void *data;  // binary data
-  uint64_t length;   // binary length
+    uint32_t magic;    // magic number
+    uint32_t version;  // version of binary
+    const void *data;  // binary data
+    uint64_t length;   // binary length
 } rtDevBinary_t;
 
 /**
@@ -73,15 +73,15 @@ typedef struct tagRtDevBinary {
 #define ONLINE_PROF_MAX_PMU_NUM (8)
 
 typedef struct ProfilefDataInfo {
-  const void *stubFunc;
-  uint32_t blockDim;
-  const void *args;
-  uint32_t argsSize;
-  rtSmDesc_t *smDesc;
-  rtStream_t stream;
-  uint64_t totalcycle;
-  uint64_t ovcycle;
-  uint64_t pmu_cnt[ONLINE_PROF_MAX_PMU_NUM];
+    const void *stubFunc;
+    uint32_t blockDim;
+    const void *args;
+    uint32_t argsSize;
+    rtSmDesc_t *smDesc;
+    rtStream_t stream;
+    uint64_t totalcycle;
+    uint64_t ovcycle;
+    uint64_t pmu_cnt[ONLINE_PROF_MAX_PMU_NUM];
 } rtProfDataInfo_t;
 
 /**
@@ -89,12 +89,12 @@ typedef struct ProfilefDataInfo {
  * @brief function mode type
  */
 typedef enum {
-  FUNC_MODE_NORMAL = 0,
-  FUNC_MODE_PCTRACE_USERPROFILE_RECORDLOOP,
-  FUNC_MODE_PCTRACE_USERPROFILE_SKIPLOOP,
-  FUNC_MODE_PCTRACE_CYCLECNT_RECORDLOOP,
-  FUNC_MODE_PCTRACE_CYCLECNT_SKIPLOOP,
-  FUNC_MODE_BUTT
+    FUNC_MODE_NORMAL = 0,
+    FUNC_MODE_PCTRACE_USERPROFILE_RECORDLOOP,
+    FUNC_MODE_PCTRACE_USERPROFILE_SKIPLOOP,
+    FUNC_MODE_PCTRACE_CYCLECNT_RECORDLOOP,
+    FUNC_MODE_PCTRACE_CYCLECNT_SKIPLOOP,
+    FUNC_MODE_BUTT
 } rtFuncModeType_t;
 
 /**
@@ -102,23 +102,23 @@ typedef enum {
  * @brief kernel info
  */
 typedef struct rtKernelInfo {
-  uint64_t task_offset;  // kernel offset in module
-  /* flowtable */
-  void *arg;  // launch kernel arg
-  uint32_t arg_size;
-  /* module */
-  void *module_addr;  // module::baseaddr_
-  uint32_t module_size;
-} * rtKernelInfo_t;
+    uint64_t task_offset;  // kernel offset in module
+    /* flowtable */
+    void *arg;  // launch kernel arg
+    uint32_t arg_size;
+    /* module */
+    void *module_addr;  // module::baseaddr_
+    uint32_t module_size;
+} *rtKernelInfo_t;
 
 /**
  * @ingroup rt_KernelConfigDump
  * @brief device dump type
  */
 typedef enum tagRtDumpKind {
-  RT_DATA_DUMP_KIND_INVALID = -1,
-  RT_DATA_DUMP_KIND_DUMP = 0,
-  RT_DATA_DUMP_KIND_RESERVED
+    RT_DATA_DUMP_KIND_INVALID = -1,
+    RT_DATA_DUMP_KIND_DUMP = 0,
+    RT_DATA_DUMP_KIND_RESERVED
 } rtDumpKind_t;
 
 /**
@@ -376,7 +376,6 @@ RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kern
                                             const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream,
                                             uint32_t flags);
 
-typedef void *rtModel_t;
 /**
  * @ingroup rt_kernel
  * @brief L1 fusion dump addr transfered to device
@@ -414,6 +413,7 @@ RTS_API rtError_t rtDatadumpInfoLoad(const void *dumpInfo, uint32_t length);
 RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc = nullptr, rtStream_t stream = nullptr);
 #else
 RTS_API rtError_t rtConfigureCall(uint32_t numBlocks, rtSmDesc_t *smDesc, rtStream_t stream);
+
 #endif
 #endif  // __CLANG_CCE_RUNTIME_H__
 

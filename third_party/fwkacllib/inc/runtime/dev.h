@@ -27,44 +27,44 @@ extern "C" {
 #define RT_CAPABILITY_NOT_SUPPORT (0x0)
 
 typedef struct tagRTDeviceInfo {
-  uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
-  uint32_t ctrl_cpu_ip;
-  uint32_t ctrl_cpu_id;
-  uint32_t ctrl_cpu_core_num;
-  uint32_t ctrl_cpu_endian_little;
-  uint32_t ts_cpu_core_num;
-  uint32_t ai_cpu_core_num;
-  uint32_t ai_core_num;
-  uint32_t ai_core_freq;
-  uint32_t ai_cpu_core_id;
-  uint32_t ai_core_id;
-  uint32_t aicpu_occupy_bitmap;
-  uint32_t hardware_version;
-  uint32_t ts_num;
+    uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
+    uint32_t ctrl_cpu_ip;
+    uint32_t ctrl_cpu_id;
+    uint32_t ctrl_cpu_core_num;
+    uint32_t ctrl_cpu_endian_little;
+    uint32_t ts_cpu_core_num;
+    uint32_t ai_cpu_core_num;
+    uint32_t ai_core_num;
+    uint32_t ai_core_freq;
+    uint32_t ai_cpu_core_id;
+    uint32_t ai_core_id;
+    uint32_t aicpu_occupy_bitmap;
+    uint32_t hardware_version;
+    uint32_t ts_num;
 } rtDeviceInfo_t;
 
 typedef enum tagRtRunMode {
-  RT_RUN_MODE_OFFLINE = 0,
-  RT_RUN_MODE_ONLINE = 1,
-  RT_RUN_MODE_AICPU_SCHED = 2,
-  RT_RUN_MODE_RESERVED
+    RT_RUN_MODE_OFFLINE = 0,
+    RT_RUN_MODE_ONLINE = 1,
+    RT_RUN_MODE_AICPU_SCHED = 2,
+    RT_RUN_MODE_RESERVED
 } rtRunMode;
 
 typedef enum tagRtAicpuDeployType {
-  AICPU_DEPLOY_CROSS_OS = 0x0,
-  AICPU_DEPLOY_CROSS_PROCESS = 0x1,
-  AICPU_DEPLOY_CROSS_THREAD = 0x2,
-  AICPU_DEPLOY_RESERVED
+    AICPU_DEPLOY_CROSS_OS = 0x0,
+    AICPU_DEPLOY_CROSS_PROCESS = 0x1,
+    AICPU_DEPLOY_CROSS_THREAD = 0x2,
+    AICPU_DEPLOY_RESERVED
 } rtAicpuDeployType_t;
 
 typedef enum tagRtFeatureType {
-  FEATURE_TYPE_MEMCPY = 0,
-  FEATURE_TYPE_RSV
+    FEATURE_TYPE_MEMCPY = 0,
+    FEATURE_TYPE_RSV
 } rtFeatureType_t;
 
 typedef enum tagMemcpyInfo {
-  MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
-  MEMCPY_INFO_RSV
+    MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
+    MEMCPY_INFO_RSV
 } rtMemcpyInfo_t;
 
 /**
@@ -356,6 +356,7 @@ RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t device);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t device);
+
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif

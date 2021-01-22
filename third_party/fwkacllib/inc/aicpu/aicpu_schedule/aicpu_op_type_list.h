@@ -18,43 +18,43 @@
 #define AICPU_OP_TYPE_LIST_H_
 
 enum OpKernelType {
-  TF_KERNEL,
-  CPU_KERNEL
+    TF_KERNEL,
+    CPU_KERNEL
 };
 
 enum ReturnCode {
-  OP_TYPE_NOT_SUPPORT,
-  FORMAT_NOT_SUPPORT,
-  DTYPE_NOT_SUPPORT
+    OP_TYPE_NOT_SUPPORT,
+    FORMAT_NOT_SUPPORT,
+    DTYPE_NOT_SUPPORT
 };
 
 #pragma pack(push, 1)
 //One byte alignment
 struct SysOpInfo {
-  uint64_t opLen;
-  uint64_t opType;
-  OpKernelType kernelsType;
+    uint64_t opLen;
+    uint64_t opType;
+    OpKernelType kernelsType;
 };
 
 struct OpParamInfo {
-  uint64_t num;
-  uint64_t dtypeList;
-  uint64_t formatList;
+    uint64_t num;
+    uint64_t dtypeList;
+    uint64_t formatList;
 };
 
 struct SysOpCheckInfo {
-  uint64_t opListNum;
-  uint64_t offSetLen;
-  uint64_t sysOpInfoList;
-  uint64_t opParamInfoList;
+    uint64_t opListNum;
+    uint64_t offSetLen;
+    uint64_t sysOpInfoList;
+    uint64_t opParamInfoList;
 };
 
 struct SysOpCheckResp {
-  uint64_t opListNum;
-  bool isWithoutJson;
-  uint64_t returnCodeList;
-  uint64_t sysOpInfoList;
-  uint64_t opParamInfoList;
+    uint64_t opListNum;
+    bool isWithoutJson;
+    uint64_t returnCodeList;
+    uint64_t sysOpInfoList;
+    uint64_t opParamInfoList;
 };
 #pragma pack(pop)
 #endif  // AICPU_OP_TYPE_LIST_H_

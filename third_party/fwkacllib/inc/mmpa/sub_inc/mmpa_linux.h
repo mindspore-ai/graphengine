@@ -50,7 +50,7 @@ typedef int (*mmFilter)(const mmDirent *entry);
 typedef int (*mmFilter2)(const mmDirent2 *entry);
 typedef int (*mmSort)(const mmDirent **a, const mmDirent **b);
 typedef int (*mmSort2)(const mmDirent2 **a, const mmDirent2 **b);
-typedef size_t mmSize_t;
+typedef size_t mmSize_t; //lint !e410 !e1051
 typedef off_t mmOfft_t;
 typedef pid_t mmPid_t;
 typedef long MM_LONG;
@@ -282,6 +282,7 @@ typedef struct {
 #define M_X_OK X_OK
 #define M_W_OK W_OK
 #define M_R_OK R_OK
+
 
 #define MM_DT_DIR DT_DIR
 #define MM_DT_REG DT_REG

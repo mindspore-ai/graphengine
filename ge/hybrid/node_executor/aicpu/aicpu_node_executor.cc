@@ -351,11 +351,11 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
     GELOGD("[%s] Is GetNext, set need sync to true, node type = %s", node_name_.c_str(), node_type.c_str());
     need_sync_ = true;
   }
-  GELOGI("Node[%s] init end.", node_name_.c_str());
   auto task_defs = model.GetTaskDefs(node_item_->node);
   if (unknown_type_ == DEPEND_COMPUTE) {
     GE_CHK_STATUS_RET_NOLOG(SetMemCopyTask((*task_defs)[1]));
   }
+  GELOGI("Node[%s] init end.", node_name_.c_str());
   return SUCCESS;
 }
 

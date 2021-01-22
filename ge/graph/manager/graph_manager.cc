@@ -729,9 +729,7 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   CompilerStages &stages = GetCompilerStages(graph_node->GetGraphId());
   GM_RUN_AND_DUMP_PERF("OptimizeWholeGraph", stages.optimizer.OptimizeWholeGraph, compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
-  GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
-                       GetCompilerStages(graph_node->GetGraphId()).optimizer.OptimizeGraphBeforeBuildForRts,
-                       compute_graph);
+  GM_RUN_AND_DUMP_PERF("OptimizeBeforeBuildForRts", stages.optimizer.OptimizeGraphBeforeBuildForRts, compute_graph);
 
   Status ret = compute_graph->TopologicalSorting();
   if (ret != SUCCESS) {

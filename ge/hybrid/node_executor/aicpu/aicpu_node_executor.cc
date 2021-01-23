@@ -382,7 +382,7 @@ Status AicpuTfNodeTask::SetMemCopyTask(const domi::TaskDef &task_def) {
   }
 
   GE_CHK_STATUS_RET(AllocTensorBuffer(kernel_def.task_info_size(), copy_workspace_buf_),
-                    "Node[%s] alloc copy task workspace buf failed, size=%zu.",
+                    "Node[%s] alloc copy task workspace buf failed, size=%u.",
                     node_name_.c_str(), kernel_def.task_info_size());
 
   GE_CHK_RT_RET(rtMemcpy(copy_workspace_buf_->GetData(), kernel_def.task_info_size(),

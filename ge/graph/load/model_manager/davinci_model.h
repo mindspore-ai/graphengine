@@ -827,7 +827,7 @@ class DavinciModel {
 
   void OpDebugUnRegister();
 
-  void CheckHasHcomOp();
+  void CheckHasHcomOp(const ComputeGraphPtr &graph);
 
   Status DoTaskSink();
 
@@ -850,8 +850,8 @@ class DavinciModel {
   Status InitOutputTensorInfo(const OpDescPtr &op_desc);
   Status GenOutputTensorInfo(OutputData *output_data, vector<OutputTensorInfo> &outputs);
 
-  Status InitInputDescInfo(const map<uint32_t, OpDescPtr> &data_by_index);
-  Status InitOutputDescInfo(const vector<OpDescPtr> &output_op_list);
+  Status InitInputDescInfo(const OpDescPtr &op_desc);
+  Status InitOutputDescInfo(const OpDescPtr &op_desc, const vector<string> &out_node_name);
 
   Status InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc);
   Status InitAippInfo(uint32_t index, const OpDescPtr &op_desc);

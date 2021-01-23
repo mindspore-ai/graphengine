@@ -446,23 +446,20 @@ void DavinciModel::InitRuntimeParams() {
       runtime_param_.mem_size, runtime_param_.weight_size, runtime_param_.var_size);
 }
 
-void DavinciModel::CheckHasHcomOp() {
-  Graph graph = ge_model_->GetGraph();
-  auto compute_graph = GraphUtils::GetComputeGraph(graph);
-  if (compute_graph == nullptr) {
-    return;
-  }
+void DavinciModel::CheckHasHcomOp(const ComputeGraphPtr &compute_graph) {
+  const set<string> hcom_opp_types({
+      HCOMBROADCAST, HCOMALLGATHER, HCOMALLREDUCE, HCOMSEND, HCOMRECEIVE, HCOMREDUCESCATTER,
+      HVDCALLBACKALLREDUCE, HVDCALLBACKALLGATHER, HVDCALLBACKBROADCAST, HVDWAIT, HCOMREDUCE
+  });
+
   for (const auto &node : compute_graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGW("Node OpDesc is nullptr"); continue);
-    GE_IF_BOOL_EXEC(((op_desc->GetType() == HCOMBROADCAST) || (op_desc->GetType() == HCOMALLGATHER) ||
-                     (op_desc->GetType() == HCOMALLREDUCE) || (op_desc->GetType() == HCOMSEND) ||
-                     (op_desc->GetType() == HCOMRECEIVE) || (op_desc->GetType() == HCOMREDUCESCATTER) ||
-                     (op_desc->GetType() == HVDCALLBACKALLREDUCE) || (op_desc->GetType() == HVDCALLBACKALLGATHER) ||
-                     (op_desc->GetType() == HVDCALLBACKBROADCAST) || (op_desc->GetType() == HVDWAIT) ||
-                     (op_desc->GetType() == HCOMREDUCE)),
-                    uint32_t stream_id = static_cast<uint32_t>(op_desc->GetStreamId());
-                    (void)hcom_streams_.emplace(stream_id); GELOGD("hcom stream: %u.", stream_id); continue);
+    if (hcom_opp_types.count(op_desc->GetType()) > 0) {
+      uint32_t stream_id = static_cast<uint32_t>(op_desc->GetStreamId());
+      hcom_streams_.emplace(stream_id);
+      GELOGD("hcom stream: %u.", stream_id);
+    }
   }
 }
 
@@ -641,7 +638,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   name_ = ge_model_->GetName();
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_);
   GELOGD("The value of ge.l1Fusion in ge_model is %d.", is_l1_fusion_enable_);
-  CheckHasHcomOp();
+  CheckHasHcomOp(compute_graph);
 
   vector<int64_t> huge_stream_list;
   (void)ge::AttrUtils::GetListInt(ge_model_, ATTR_MODEL_HUGE_STREAM_LIST, huge_stream_list);
@@ -1027,7 +1024,7 @@ Status DavinciModel::GenInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_
                                         const vector<OpDescPtr> &output_op_list) {
   GELOGD("Data node size: %zu, NetOutput node size: %zu", data_by_index.size(), output_op_list.size());
   for (auto &item : data_by_index) {
-    auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, item.second);
+    const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, item.second);
     GELOGD("Data node: %s, output addr size: %zu", item.second->GetName().c_str(), output_addrs.size());
     input_addrs_list_.emplace_back(output_addrs);
 
@@ -1035,14 +1032,18 @@ Status DavinciModel::GenInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_
     GE_CHK_STATUS_RET(InitAippType(item.first, item.second, data_by_index), "Init AIPP Type failed");
     GE_CHK_STATUS_RET(InitOrigInputInfo(item.first, item.second), "Init Orig input failed");
     GE_CHK_STATUS_RET(InitAippInputOutputDims(item.first, item.second), "Init AIPP dims failed");
+    GE_CHK_STATUS_RET(InitInputDescInfo(item.second), "Init input desc info failed");
     if (item.second->GetType() == AIPP_DATA_TYPE) {
       GELOGI("This is dynamic aipp model, Node: %s", item.second->GetName().c_str());
       is_dynamic_aipp_ = true;
     }
   }
 
+  vector<string> out_node_name;
+  (void)AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name);
+  GELOGD("Output node size: %zu, out nodes name: %zu", output_op_list.size(), out_node_name.size());
   for (const auto &op_desc : output_op_list) {
-    auto input_addrs = ModelUtils::GetInputDataAddrs(runtime_param_, op_desc);
+    const auto input_addrs = ModelUtils::GetInputDataAddrs(runtime_param_, op_desc);
     GELOGD("NetOutput node: %s, input addr size: %zu", op_desc->GetName().c_str(), input_addrs.size());
     output_addrs_list_.emplace_back(input_addrs);
 
@@ -1060,10 +1061,11 @@ Status DavinciModel::GenInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_
     if (InitOutputTensorInfo(op_desc) != SUCCESS) {
       return INTERNAL_ERROR;
     }
+
+    GE_CHK_STATUS_RET(InitOutputDescInfo(op_desc, out_node_name), "Init output desc info failed");
   }
 
-  GE_CHK_STATUS_RET(InitInputDescInfo(data_by_index), "Init input desc info failed");
-  return InitOutputDescInfo(output_op_list);
+  return SUCCESS;
 }
 
 bool DavinciModel::IsGetNextSinkDynamic(const OpDescPtr &op_desc) {
@@ -1979,27 +1981,24 @@ void DavinciModel::CreateInputDimsInfo(const OpDescPtr &op_desc, Format format,
   }
 }
 
-Status DavinciModel::InitInputDescInfo(const map<uint32_t, OpDescPtr> &data_by_index) {
-  for (const auto &item : data_by_index) {
-    const auto op_desc = item.second;
-    GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
+Status DavinciModel::InitInputDescInfo(const OpDescPtr &op_desc) {
+  GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
 
-    InputOutputDescInfo input;
-    ShapeDescription dims_info;
-    Format format = op_desc->GetInputDescPtr(0)->GetFormat();
-    CreateInputDimsInfo(op_desc, format, input.shape_info, dims_info);
+  InputOutputDescInfo input;
+  ShapeDescription dims_info;
+  Format format = op_desc->GetInputDescPtr(0)->GetFormat();
+  CreateInputDimsInfo(op_desc, format, input.shape_info, dims_info);
 
-    input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
-    input.name = op_desc->GetName();
-    int64_t input_size = 0;
-    GE_CHK_STATUS_RET(TensorUtils::GetSize(*op_desc->GetInputDescPtr(0), input_size), "get input size failed.");
-    input.size = input_size;
-    input_formats_.push_back(format);
-    input_descs_.push_back(input);
+  input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+  input.name = op_desc->GetName();
+  int64_t input_size = 0;
+  GE_CHK_STATUS_RET(TensorUtils::GetSize(*op_desc->GetInputDescPtr(0), input_size), "get input size failed.");
+  input.size = input_size;
+  input_formats_.push_back(format);
+  input_descs_.push_back(input);
 
-    input.shape_info = dims_info;
-    input_descs_dims_.push_back(input);
-  }
+  input.shape_info = dims_info;
+  input_descs_dims_.push_back(input);
   return SUCCESS;
 }
 
@@ -2065,37 +2064,31 @@ void DavinciModel::CreateOutput(uint32_t index, const OpDescPtr &op_desc, InputO
   output.data_type = op_desc->GetInputDescPtr(index)->GetDataType();
 }
 
-Status DavinciModel::InitOutputDescInfo(const vector<OpDescPtr> &output_op_list) {
-  GELOGD("Output node size: %zu", output_op_list.size());
-  vector<string> out_node_name;
-  (void)ge::AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name);
-  for (const auto &op_desc : output_op_list) {
-    uint32_t out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
-    for (uint32_t index = 0; index < out_size; index++) {
-      string output_name;
-      InputOutputDescInfo output;
-      uint32_t format_result;
-      CreateOutput(index, op_desc, output, format_result);
+Status DavinciModel::InitOutputDescInfo(const OpDescPtr &op_desc, const vector<string> &out_node_name) {
+  uint32_t out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
+  for (uint32_t i = 0; i < out_size; ++i) {
+    string output_name;
+    InputOutputDescInfo output;
+    uint32_t format_result;
+    CreateOutput(i, op_desc, output, format_result);
 
-      std::vector<std::string> src_name = op_desc->GetSrcName();
-      std::vector<int64_t> src_index = op_desc->GetSrcIndex();
-      GE_CHK_BOOL_RET_STATUS(src_name.size() > index && src_index.size() > index, INTERNAL_ERROR,
-                             "construct output_name failed.");
-      // forward compatbility, if old om has no out_node_name, need to return output follow origin way
-      if (out_size == out_node_name.size()) {
-        // neweast plan, the index will add to name during generate model.
-        bool contains_colon = out_node_name[index].find(":") != std::string::npos;
-        output_name =
-            contains_colon ? out_node_name[index] : out_node_name[index] + ":" + std::to_string(src_index[index]);
-      } else {
-        output_name = std::string("output_") + std::to_string(index) + "_" + src_name[index] + "_" +
-                      std::to_string(src_index[index]);
-      }
-      output.name = output_name;
-      output_descs_.push_back(output);
-      output_formats_.push_back(format_result);
+    std::vector<std::string> src_name = op_desc->GetSrcName();
+    std::vector<int64_t> src_index = op_desc->GetSrcIndex();
+    GE_CHK_BOOL_RET_STATUS(src_name.size() > i && src_index.size() > i, INTERNAL_ERROR,
+                           "construct output_name failed.");
+    // forward compatbility, if old om has no out_node_name, need to return output follow origin way
+    if (out_size == out_node_name.size()) {
+      // neweast plan, the index will add to name during generate model.
+      bool contains_colon = out_node_name[i].find(":") != std::string::npos;
+      output_name = contains_colon ? out_node_name[i] : out_node_name[i] + ":" + std::to_string(src_index[i]);
+    } else {
+      output_name = string("output_") + std::to_string(i) + "_" + src_name[i] + "_" + std::to_string(src_index[i]);
     }
+    output.name = output_name;
+    output_descs_.push_back(output);
+    output_formats_.push_back(format_result);
   }
+
   return SUCCESS;
 }
 

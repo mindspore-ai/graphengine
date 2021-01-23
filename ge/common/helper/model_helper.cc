@@ -517,8 +517,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
   }
 
   if (is_assign_model_) {
-    GELOGE(GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
-    return GE_EXEC_LOAD_MODEL_REPEATED;
+    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
+    return ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED;
   }
 
   if (ReleaseLocalModelData() != SUCCESS) {
@@ -609,7 +609,7 @@ Status ModelHelper::GenerateGeRootModel(OmFileLoadHelper &om_load_helper) {
     GeModelPtr cur_model = ge::MakeShared<ge::GeModel>();
     Status ret = LoadModelData(om_load_helper, cur_model, mode_index);
     if (ret != SUCCESS) {
-      return GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
+      return ACL_ERROR_GE_EXEC_LOAD_MODEL_PARTITION_FAILED;
     }
 
     if (is_first_model) {
@@ -622,22 +622,22 @@ Status ModelHelper::GenerateGeRootModel(OmFileLoadHelper &om_load_helper) {
 
     ret = LoadWeights(om_load_helper, cur_model, mode_index);
     if (ret != SUCCESS) {
-      return GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
+      return ACL_ERROR_GE_EXEC_LOAD_WEIGHT_PARTITION_FAILED;
     }
 
     ret = LoadTBEKernelStore(om_load_helper, cur_model, mode_index);
     if (ret != SUCCESS) {
-      return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+      return ACL_ERROR_GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
     }
 
     ret = LoadCustAICPUKernelStore(om_load_helper, cur_model, mode_index);
     if (ret != SUCCESS) {
-      return GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
+      return ACL_ERROR_GE_EXEC_LOAD_KERNEL_PARTITION_FAILED;
     }
 
     ret = LoadTask(om_load_helper, cur_model, mode_index);
     if (ret != SUCCESS) {
-      return GE_EXEC_LOAD_TASK_PARTITION_FAILED;
+      return ACL_ERROR_GE_EXEC_LOAD_TASK_PARTITION_FAILED;
     }
     root_model_->SetSubgraphInstanceNameToModel(cur_model->GetName(), cur_model);
   }

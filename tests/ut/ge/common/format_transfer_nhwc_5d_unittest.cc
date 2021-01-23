@@ -758,13 +758,13 @@ TEST_F(UtestFormatTransferNhwc5d, invalid_data_shape) {
       reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_Z, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_FLOAT16};
   FormatTransferNhwcNc1hwc0 transfer;
   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-  ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
 
   TransArgs args2{
       reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_Z, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_STRING};
   FormatTransferNhwcNc1hwc0 transfer2;
   EXPECT_EQ(transfer2.TransShape(args2.src_format, args2.src_shape, args2.src_data_type, args2.dst_format, args2.dst_shape),
-  ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID);
 }
 }  // namespace formats
 }  // namespace ge

@@ -1894,7 +1894,7 @@ TEST_F(UtestFormatTransferNdFractZz, nd_shape4_fp16_1) {
   }
   EXPECT_EQ(
       transfer2.TransShape(args2.src_format, args2.src_shape, args2.src_data_type, args2.dst_format, args2.dst_shape),
-      ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+                           ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, nd_shape4_fp16) {
@@ -2071,7 +2071,7 @@ TEST_F(UtestFormatTransferNdFractZz, nd_shape4_fp16) {
   }
   EXPECT_EQ(
       transfer2.TransShape(args2.src_format, args2.src_shape, args2.src_data_type, args2.dst_format, args2.dst_shape),
-      ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+                           ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, nd_shape5_fp16) {

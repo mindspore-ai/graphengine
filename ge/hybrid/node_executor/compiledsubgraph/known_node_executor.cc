@@ -126,6 +126,12 @@ Status KnownNodeTask::Init(TaskContext &context) {
     auto dump_properties = context.GetDumpProperties();
     if (dump_properties.IsDumpOpen()) {
       davinci_model_->SetDumpProperties(dump_properties);
+      void *global_step = nullptr;
+      TensorValue *varible_global_step = context.GetVariable(NODE_NAME_GLOBAL_STEP);
+      if (varible_global_step != nullptr) {
+        global_step = varible_global_step->MutableData();
+      }
+      davinci_model_->SetKnownShapeGlobalStep(global_step);
     }
     int32_t device_id = 0;
     rtError_t rt_ret = rtGetDevice(&device_id);

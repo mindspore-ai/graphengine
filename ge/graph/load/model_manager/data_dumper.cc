@@ -820,6 +820,7 @@ Status DataDumper::UnloadDumpInfo() {
   for (const auto &op_iter : op_list_) {
     aicpu::dump::Task task;
     task.set_task_id(op_iter.task_id);
+    task.set_stream_id(op_iter.stream_id);
     op_mapping_info.mutable_task()->Add(std::move(task));
   }
   auto ret = ExecuteUnLoadDumpInfo(op_mapping_info);
@@ -834,7 +835,6 @@ void DataDumper::DumpShrink() {
   compute_graph_.reset();
   input_map_.clear();
   ref_info_.clear();
-  op_list_.clear();
 }
 
 void DataDumper::PrintCheckLog(string &dump_list_key) {

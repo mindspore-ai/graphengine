@@ -203,7 +203,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
     auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data + cur_offset);
     size_t partition_table_size = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);
     cur_offset += partition_table_size;
-    GELOGD("Cur model index %zu: ModelPartitionTable num :%u, "
+    GELOGD("Cur model index %u: ModelPartitionTable num :%u, "
            "ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
            index, partition_table->num, sizeof(ModelFileHeader), partition_table_size);
     if (model_data_size <= cur_offset) {
@@ -219,7 +219,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
       partition.type = partition_table->partition[i].type;
       if (index >= model_contexts_.size()) {
         if (index != model_contexts_.size()) {
-          GELOGE(FAILED, "cur index is %zu make model_contexts_ overflow", index);
+          GELOGE(FAILED, "cur index is %u make model_contexts_ overflow", index);
           return FAILED;
         }
 
@@ -231,16 +231,16 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
       }
 
       if (partition.size > model_data_size || cur_offset > model_data_size - partition.size) {
-        GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %zu is greater than the model data size %u.",
+        GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %u is greater than the model data size %u.",
                partition.size + cur_offset, model_data_size);
         return GE_EXEC_MODEL_DATA_SIZE_INVALID;
       }
       cur_offset += partition.size;
-      GELOGD("Partition, type:%d, size:%u, model_index:%zu", static_cast<int>(partition.type), partition.size, index);
+      GELOGD("Partition, type:%d, size:%u, model_index:%u", static_cast<int>(partition.type), partition.size, index);
     }
   }
   if (cur_offset != model_data_size) {
-    GELOGE(FAILED, "do not get the complete model, read end offset:%zu, all size:%zu", cur_offset, model_data_size);
+    GELOGE(FAILED, "do not get the complete model, read end offset:%u, all size:%u", cur_offset, model_data_size);
     return FAILED;
   }
   return SUCCESS;

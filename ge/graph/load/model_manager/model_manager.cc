@@ -1704,7 +1704,7 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     for (uint32_t i = 0; i < res_op_nums; i++) {
       ReturnCode ret_code = res_ret_code_list.at(i);
       SysOpInfo aicpu_info = res_aicpu_op_info_list.at(i);
-      GELOGI("Not support aicpu op type: %lu, kernel_type:%d, opLen:%d, ret_code:%d", aicpu_info.opType,
+      GELOGI("Not support aicpu op type: %lu, kernel_type:%d, opLen:%lu, ret_code:%d", aicpu_info.opType,
              aicpu_info.kernelsType, aicpu_info.opLen, ret_code);
       std::vector<char> op_name;
       op_name.clear();

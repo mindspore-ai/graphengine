@@ -33,7 +33,7 @@ namespace {
       uint64_t size = data_num * sizeof(TYPE);                                                                         \
       ge_tensor = MakeShared<GeTensor>(out_desc, size);                                                                \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
-      GELOGD("node:%s allocate output %zu success, size=%lld", op_desc->GetName().c_str(), i, size);                   \
+      GELOGD("node:%s allocate output %zu success, size=%ld", op_desc->GetName().c_str(), i, size);                    \
       ge_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());                                              \
       ge_tensor->MutableTensorDesc().SetShape(out_desc.GetShape());                                                    \
     } else {                                                                                                           \
@@ -72,7 +72,7 @@ Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
     num_size = max_range_size;
   }
   if (num_size < 0) {
-    GELOGE(INTERNAL_ERROR, "Get negative size, num_size=%lld.", num_size);
+    GELOGE(INTERNAL_ERROR, "Get negative size, num_size=%ld.", num_size);
     return INTERNAL_ERROR;
   }
   data_num = static_cast<uint64_t>(num_size);

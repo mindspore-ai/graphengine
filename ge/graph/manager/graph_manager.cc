@@ -2777,7 +2777,7 @@ Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr>
     }
 
     GetLocalOmgContext().user_real_input_dims.emplace_back(input_tensor.at(index).dims);
-    GELOGI("Shape dims of %d data is %s.", index, formats::JoinToString(input_tensor.at(index).dims).c_str());
+    GELOGI("Shape dims of %zu data is %s.", index, formats::JoinToString(input_tensor.at(index).dims).c_str());
   }
   return SUCCESS;
 }

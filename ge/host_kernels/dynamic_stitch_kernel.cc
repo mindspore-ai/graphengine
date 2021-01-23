@@ -126,10 +126,10 @@ void DynamicStitchKernel::ComputeMergedShape(const vector<ConstGeTensorPtr> &inp
   vector<int64_t> merged_dim_vec = {merged_first_dim + 1};
   if (step > 0) {
     merged_dim_vec.emplace_back(step);
-    GELOGD("merged_shape is [ %ld, %ld].", merged_first_dim, step);
+    GELOGD("merged_shape is [ %d, %ld].", merged_first_dim, step);
   }
   merged_shape = GeShape(merged_dim_vec);
-  GELOGD("merged_shape is [ %ld ].", merged_first_dim);
+  GELOGD("merged_shape is [ %d ].", merged_first_dim);
 }
 
 Status DynamicStitchKernel::GenData(const vector<ConstGeTensorPtr> &input, GeTensorPtr &output_ptr) {
@@ -196,14 +196,14 @@ Status DynamicStitchKernel::StitchDataFollowIndices(int64_t data_unit, const vec
       // if index repeated, need new data replace old data , so give more allowance
       if (indices_set.find(input_indices[j]) != indices_set.end()) {
         if (ge::CheckInt64AddOverflow(input_indices[j], data_unit) != SUCCESS) {
-          GELOGW("Check int64 mul overflow failed. Indices is %ld, data_unit is %ld.", input_indices[j], data_unit);
+          GELOGW("Check int64 mul overflow failed. Indices is %d, data_unit is %ld.", input_indices[j], data_unit);
           return NOT_CHANGED;
         }
         allowance += data_unit;
       }
       indices_set.insert(input_indices[j]);
       if (!CheckInt64MulOverflow(input_indices[j], data_unit)) {
-        GELOGW("Check int64 mul overflow failed. Indices is %ld, data_unit is %ld.", input_indices[j], data_unit);
+        GELOGW("Check int64 mul overflow failed. Indices is %d, data_unit is %ld.", input_indices[j], data_unit);
         return NOT_CHANGED;
       }
       dst_offset = input_indices[j] * data_unit;

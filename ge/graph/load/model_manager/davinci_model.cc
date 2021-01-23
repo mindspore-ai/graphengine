@@ -1876,7 +1876,7 @@ Status DavinciModel::InitAippType(uint32_t index, const OpDescPtr &op_desc, cons
     (void)AttrUtils::GetStr(op_desc, ATTR_DATA_AIPP_DATA_NAME_MAP, releated_name);
     for (const auto item : data_list) {
       if (item.second->GetName() == releated_name) {
-        GELOGI("Find aipp_data [%s] index %zu from index %u", releated_name.c_str(), item.first, index);
+        GELOGI("Find aipp_data [%s] index %u from index %u", releated_name.c_str(), item.first, index);
         aipp_index = item.first;
       }
     }

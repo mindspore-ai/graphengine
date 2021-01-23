@@ -311,7 +311,7 @@ Status SubgraphPass::InsertInputMemcpy(const ComputeGraphPtr &graph, const std::
 Status SubgraphPass::InsertOutputMemcpy(const ComputeGraphPtr &graph, const NodePtr &output_node,
                                         const std::set<uint32_t> &bypass_index) {
   if (output_node->GetAllInDataAnchorsSize() == bypass_index.size()) {
-    GELOGD("No need to insert output memcpy node in while_body %s, output_size=%zu, bypass_num=%zu.",
+    GELOGD("No need to insert output memcpy node in while_body %s, output_size=%u, bypass_num=%zu.",
            graph->GetName().c_str(), output_node->GetAllInDataAnchorsSize(), bypass_index.size());
     return SUCCESS;
   }

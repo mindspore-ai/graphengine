@@ -435,7 +435,7 @@ Status CheckDynamicParams(const vector<vector<int64_t>> &shapes) {
         "E10035", {"shapesize", "minshapesize"}, {std::to_string(shapes.size()), std::to_string(kMinShapesCount - 1)});
     GELOGE(PARAM_INVALID,
            "Input parameter[--dynamic_batch_size, --dynamic_image_size or --dynamic_dims]'s "
-           "value size [%zu] must be greater than [%zu].",
+           "value size [%zu] must be greater than [%d].",
            shapes.size(), kMinShapesCount - 1);
     return PARAM_INVALID;
   }
@@ -444,7 +444,7 @@ Status CheckDynamicParams(const vector<vector<int64_t>> &shapes) {
         "E10036", {"shapesize", "maxshapesize"}, {std::to_string(shapes.size()), std::to_string(kMaxShapesCount + 1)});
     GELOGE(PARAM_INVALID,
            "Input parameter[--dynamic_batch_size, --dynamic_image_size or --dynamic_dims]'s "
-           "value size [%zu] must be less than [%zu].",
+           "value size [%zu] must be less than [%d].",
            shapes.size(), kMaxShapesCount + 1);
     return PARAM_INVALID;
   }

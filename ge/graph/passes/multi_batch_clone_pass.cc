@@ -928,7 +928,7 @@ Status MultiBatchClonePass::CreateOriGraph(const ComputeGraphPtr &graph) {
         auto out_data_anchor =  node->GetOutDataAnchor(out_index);
         GE_IF_BOOL_EXEC(out_data_anchor == nullptr, continue);
         NodePtr data_node = CreateDataNode(graph, out_data_anchor, data_index);
-        GE_IF_BOOL_EXEC(data_node == nullptr, GELOGE(INTERNAL_ERROR, "Create %zu data node failed.",
+        GE_IF_BOOL_EXEC(data_node == nullptr, GELOGE(INTERNAL_ERROR, "Create %d data node failed.",
                                                      out_data_anchor->GetIdx()); return INTERNAL_ERROR);
         for (auto &in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
           GE_IF_BOOL_EXEC(in_anchor == nullptr, continue);

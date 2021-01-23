@@ -124,7 +124,7 @@ Status PackKernel::ValidateInputs(const ge::OpDescPtr &op_desc_ptr, const std::v
     int64_t num = 1;
     for (auto dim : dst_shape.GetDims()) {
       if (dim < 0) {
-        GELOGW("Invalid dim ld% in the shape %s", dim, formats::ShapeToString(shape).c_str());
+        GELOGW("Invalid dim %ld in the shape %s", dim, formats::ShapeToString(shape).c_str());
         return NOT_CHANGED;
       }
       num *= dim;

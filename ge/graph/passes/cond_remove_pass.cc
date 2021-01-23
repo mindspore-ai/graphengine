@@ -203,7 +203,7 @@ bool CondRemovePass::CheckIfCondConstInput(const OutDataAnchorPtr &cond_out_anch
   // Get weights from peer node
   auto weights = OpDescUtils::GetWeights(out_node);
   if (weights.size() <= static_cast<size_t>(cond_out_anchor->GetIdx())) {
-    GELOGI("Get weights of node %s out index %d, weight size %u is not fit for data index %d.",
+    GELOGI("Get weights of node %s out index %d, weight size %zu is not fit for data index %d.",
            out_node->GetName().c_str(), cond_out_anchor->GetIdx(), weights.size(), cond_out_anchor->GetIdx());
     return false;
   }
@@ -241,7 +241,7 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
     for (const auto &peerout_anchor : input_anchor->GetPeerAnchors()) {
       if (GraphUtils::AddEdge(peerout_anchor, partitioncall_node->GetInAnchor(
                                                   input_anchor->GetIdx() - kConditionIndexNum)) != ge::GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
+        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                peerout_anchor->GetOwnerNode()->GetName().c_str(), peerout_anchor->GetIdx(),
                partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_desc_size,
                output_desc_size);
@@ -254,14 +254,14 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
   for (const auto &output_anchor : node->GetAllOutAnchors()) {
     for (const auto &peerin_anchor : output_anchor->GetPeerAnchors()) {
       if (GraphUtils::RemoveEdge(node->GetOutAnchor(output_anchor->GetIdx()), peerin_anchor) != ge::GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Remove edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
+        GELOGE(FAILED, "Remove edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                node->GetName().c_str(), output_anchor->GetIdx(), peerin_anchor->GetOwnerNode()->GetName().c_str(),
                peerin_anchor->GetIdx(), input_desc_size, output_desc_size);
         return FAILED;
       }
       if (GraphUtils::AddEdge(partitioncall_node->GetOutAnchor(output_anchor->GetIdx()), peerin_anchor) !=
           ge::GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
+        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                partitioncall_node->GetName().c_str(), output_anchor->GetIdx(),
                peerin_anchor->GetOwnerNode()->GetName().c_str(), peerin_anchor->GetIdx(), input_desc_size,
                output_desc_size);

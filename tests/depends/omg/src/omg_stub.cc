@@ -315,7 +315,7 @@ long GetFileLength(const std::string &input_file) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mmGetFileSize(input_file.c_str(), &file_length) != EN_OK, return -1,
                                  "open file failed.");
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_length <= 0), return -1, "file length <= 0, not valid.");
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(file_length > MAX_FILE_SIZE_LIMIT, return -1, "file size %ld is out of limit: %d.",
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(file_length > MAX_FILE_SIZE_LIMIT, return -1, "file size %llu is out of limit: %d.",
                                  file_length, MAX_FILE_SIZE_LIMIT);
   return file_length;
 }

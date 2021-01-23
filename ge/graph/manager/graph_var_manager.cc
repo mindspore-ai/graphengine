@@ -299,12 +299,12 @@ Status HbmMemResource::AssignVarMem(const std::string &var_name, uint64_t size, 
 Status RdmaMemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &address) {
   uint8_t *buffer = MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Malloc(size);
   if (buffer == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Failed to malloc rdma memory for node %s, size = %llu", var_name.c_str(), size);
+    GELOGE(MEMALLOC_FAILED, "Failed to malloc rdma memory for node %s, size = %lu", var_name.c_str(), size);
     return MEMALLOC_FAILED;
   }
   address = static_cast<size_t>(reinterpret_cast<uintptr_t>(buffer));
   var_mem_size_ += size;
-  GELOGI("[IMAS]AssignVarMem Set session_%llu name[%s] output[%d] addr to [%p] size[%llu].",
+  GELOGI("[IMAS]AssignVarMem Set session_%lu name[%s] output[%d] addr to [%p] size[%lu].",
          session_id, var_name.c_str(), 0, buffer, size);
   return SUCCESS;
 }

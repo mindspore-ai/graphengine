@@ -62,7 +62,7 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
     while (size > size_1g) {
       write_count = mmWrite(fd, reinterpret_cast<void *>(seek), size_1g);
       if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
-        GELOGE(FAILED, "Write data failed. mmpa_errorno = %d, %s", write_count, strerror(errno));
+        GELOGE(FAILED, "Write data failed. mmpa_errorno = %ld, %s", write_count, strerror(errno));
         return FAILED;
       }
       size -= size_1g;
@@ -75,7 +75,7 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
 
   // -1: Failed to write to file; - 2: Illegal parameter
   if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
-    GELOGE(FAILED, "Write data failed. mmpa_errorno = %d, %s", write_count, strerror(errno));
+    GELOGE(FAILED, "Write data failed. mmpa_errorno = %ld, %s", write_count, strerror(errno));
     return FAILED;
   }
 
@@ -133,7 +133,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
         WriteData(static_cast<const void *>(&model_partition_table), table_size, fd) != SUCCESS, ret = FAILED; break);
     // Write partition data
     for (const auto &partitionData : partition_datas) {
-      GELOGI("GC:size[%zu]", partitionData.size);
+      GELOGI("GC:size[%u]", partitionData.size);
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
           WriteData(static_cast<const void *>(partitionData.data), partitionData.size, fd) != SUCCESS, ret = FAILED;
           break);
@@ -305,7 +305,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
       // Write partition data
       auto &cur_partition_datas = all_partition_datas[index];
       for (const auto &partition_data : cur_partition_datas) {
-        GELOGI("GC:size[%zu]", partition_data.size);
+        GELOGI("GC:size[%u]", partition_data.size);
         GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
             WriteData(static_cast<const void *>(partition_data.data), partition_data.size, fd) != SUCCESS, ret = FAILED;
             break);

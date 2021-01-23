@@ -659,7 +659,7 @@ Status ParseOutNodes(const string &out_nodes) {
 
         auto iter = domi::GetContext().out_nodes_map.find(key_value_v[0]);
         int32_t index = stoi(StringUtils::Trim(key_value_v[1]));
-        GELOGD("Get output info: node[%s] and index[%ld]", key_value_v[0].c_str(), index);
+        GELOGD("Get output info: node[%s] and index[%d]", key_value_v[0].c_str(), index);
         if (iter != domi::GetContext().out_nodes_map.end()) {
           iter->second.emplace_back(index);
         } else {

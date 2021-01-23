@@ -85,7 +85,7 @@ Status RemoveSameConstPass::Run(ComputeGraphPtr graph) {
 
     ret = GraphUtils::ReplaceNodeAnchors(iter->second, node, {}, output_map);
     if (ret != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to replace node %s by node %s", node->GetName().c_str(),
+      GELOGE(INTERNAL_ERROR, "Failed to replace node %s by node %s, ret=%u", node->GetName().c_str(),
              iter->second->GetName().c_str(), ret);
       return INTERNAL_ERROR;
     }

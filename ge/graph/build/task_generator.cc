@@ -466,11 +466,10 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
         task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(ops_kernel_info_store_ptr));
       }
 
-      GELOGI(
-          "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
-          " task finished, generate %u task(s).",
-          op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
-          task_list_size_after - task_list_size_before);
+      GELOGI("Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
+             " task finished, generate %zu task(s).",
+             op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
+             task_list_size_after - task_list_size_before);
 
       // record nodes which have call generate task successfully
       fusion_nodes_seen.insert(fusion_node.get());

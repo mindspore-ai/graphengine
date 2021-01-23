@@ -371,7 +371,7 @@ Status MultiBatchGraphCopyer::GetEnterNodesGroupByFrame(map<string, vector<NodeP
       GE_CHECK_NOTNULL(op_desc);
       string frame_name;
       if (!AttrUtils::GetStr(op_desc, ENTER_ATTR_FRAME_NAME, frame_name)) {
-        GELOGE(FAILED, "Get attr frame_name of enter[%] failed.", node->GetName().c_str());
+        GELOGE(FAILED, "Get attr frame_name of enter[%s] failed.", node->GetName().c_str());
         return FAILED;
       }
       frame_enter[frame_name].emplace_back(node);
@@ -850,19 +850,19 @@ NodePtr MultiBatchGraphCopyer::FindSwitchnNodeForDataEdge(const OutDataAnchorPtr
   if (is_getnext_sink_data) {
     auto output_idx = data_out_anchor->GetIdx();
     size_t referenced_index = 0;
-    GELOGI("The output idx %zu has %zu referenced nums.", output_idx, data_out_anchor->GetPeerInDataAnchors().size());
+    GELOGI("The output idx %d has %zu referenced nums.", output_idx, data_out_anchor->GetPeerInDataAnchors().size());
     for (const auto &peer_in_anchor : data_out_anchor->GetPeerInDataAnchors()) {
       if (peer_in_anchor->GetOwnerNode()->GetOpDesc() == nullptr) {
         GELOGE(INTERNAL_ERROR, "Op desc should not be nullptr.");
         return nullptr;
       }
       if (getnext_nodes_to_switchn_.at(output_idx).empty()) {
-        GELOGI("Output idx %zu of %s is static output.", output_idx, data_node->GetName().c_str());
+        GELOGI("Output idx %d of %s is static output.", output_idx, data_node->GetName().c_str());
         return nullptr;
       }
       if (output_idx >= static_cast<int>(getnext_nodes_to_switchn_.size()) ||
          referenced_index >= getnext_nodes_to_switchn_.at(output_idx).size()) {
-        GELOGE(INTERNAL_ERROR, "Output idx is %zu, referenced index is %zu", output_idx, referenced_index);
+        GELOGE(INTERNAL_ERROR, "Output idx is %d, referenced index is %zu", output_idx, referenced_index);
         return nullptr;
       }
       if (peer_in_anchor->GetOwnerNode()->GetOpDesc()->GetName() == origin_node->GetName()) {
@@ -1203,7 +1203,7 @@ Status MultiBatchGraphCopyer::InsertSwitchNAndUpdateMaxShape(const NodePtr &node
 
     for (size_t i = 0; i < getnext_sink_dynamic_out_mapping_.size(); ++i) {
       if(UpdateMaxShapeToData(node, i) != SUCCESS) {
-        GELOGE(PARAM_INVALID, "Failed to update max shape of %zu out anchor", node->GetName().c_str(), i);
+        GELOGE(PARAM_INVALID, "Failed to update %s max shape of %zu out anchor", node->GetName().c_str(), i);
         return PARAM_INVALID;
       }
     }

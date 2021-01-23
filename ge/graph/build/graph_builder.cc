@@ -741,7 +741,7 @@ Status GraphBuilder::AddOutputMemTypeForNode(const NodePtr &node) {
   if (!AttrUtils::GetInt(op_desc, ATTR_INPUT_MEMORY_TYPE, mem_type)) {
     return SUCCESS;
   }
-  GELOGD("[%s] has attr input_memory_type %ld", op_desc->GetName().c_str(), mem_type);
+  GELOGD("[%s] has attr input_memory_type %u", op_desc->GetName().c_str(), mem_type);
   for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
     const auto &peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
@@ -751,7 +751,7 @@ Status GraphBuilder::AddOutputMemTypeForNode(const NodePtr &node) {
     while (true) {
       const auto &src_desc = src_node->GetOpDesc();
       GE_IF_BOOL_EXEC(src_desc == nullptr, continue);
-      GELOGD("[%s:%u] set attr output_memory_type %ld", src_desc->GetName().c_str(), src_out_anchor->GetIdx(),
+      GELOGD("[%s:%u] set attr output_memory_type %d", src_desc->GetName().c_str(), src_out_anchor->GetIdx(),
              mem_type);
       if (!AttrUtils::SetInt(src_desc->MutableOutputDesc(src_out_anchor->GetIdx()), ATTR_OUTPUT_MEMORY_TYPE,
                              mem_type)) {

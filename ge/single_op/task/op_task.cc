@@ -507,7 +507,7 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
     if (input_index < input_is_const_.size() && input_is_const_[input_index]) {
       // const input no need update addr
       GE_CHECK_NOTNULL(arg_base);
-      GELOGD("AICpuTask input[%zu] addr = %u", input_index, *arg_base);
+      GELOGD("AICpuTask input[%zu] addr = %lu", input_index, *arg_base);
       arg_base++;
       continue;
     }
@@ -710,7 +710,7 @@ Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output
 
 Status AiCpuTask::InitForSummaryAndCopy() {
   if (unknown_type_ != DEPEND_COMPUTE || num_outputs_ == 0) {
-    GELOGI("Unknown_type is %d, output num is %d.", unknown_type_, num_outputs_);
+    GELOGI("Unknown_type is %d, output num is %zu.", unknown_type_, num_outputs_);
     return SUCCESS;
   }
 

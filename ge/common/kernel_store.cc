@@ -51,7 +51,7 @@ bool KernelStore::Build() {
     kernel_head.name_len = static_cast<uint32_t>(kernel->GetName().length());
     kernel_head.bin_len = static_cast<uint32_t>(kernel->GetBinDataSize());
 
-    GELOGD("get kernel bin name %s, addr %p, size %u",
+    GELOGD("get kernel bin name %s, addr %p, size %zu",
            kernel->GetName().c_str(), kernel->GetBinData(), kernel->GetBinDataSize());
     mem_ret = memcpy_s(next_buffer, remain_len, &kernel_head, sizeof(kernel_head));
     GE_CHK_BOOL_EXEC_NOLOG(mem_ret == EOK, return false);

@@ -878,11 +878,11 @@ inline Status CheckInt32DivOverflow(int32_t a, int32_t b) {
     return INTERNAL_ERROR;                                                                              \
   }
 
-#define FMK_INT64_UINT32_MULCHECK(a, b)                                                                                \
-  if (ge::CheckInt64Uint32MulOverflow((a), (b)) != SUCCESS) {                                                          \
-    GELOGW("Int64 %ld and UINT32 %u multiplication can result in overflow!", static_cast<uint32_t>(a), \
-           static_cast<uint32_t>(b));                                                                                  \
-    return INTERNAL_ERROR;                                                                                             \
+#define FMK_INT64_UINT32_MULCHECK(a, b)                                                                 \
+  if (ge::CheckInt64Uint32MulOverflow((a), (b)) != SUCCESS) {                                           \
+    GELOGW("Int64 %ld and Uint32 %u multiplication can result in overflow!", static_cast<int64_t>(a),   \
+           static_cast<uint32_t>(b));                                                                   \
+    return INTERNAL_ERROR;                                                                              \
   }
 
 #define FMK_FP16_ZEROCHECK(a)                                                                                          \

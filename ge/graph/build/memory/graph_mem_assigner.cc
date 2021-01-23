@@ -1535,8 +1535,8 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         GE_CHK_STATUS(TensorUtils::GetDataOffset(tensor_desc, input_offset));
       }
 
-      GELOGD("%s node[%s] input[%d] is set from node[%s] out index[%lu] offset[%ld]",
-             has_mem_type_attr == true ? "Fusion" : "",
+      GELOGD("%s node[%s] input[%ld] is set from node[%s] out index[%lu] offset[%ld]",
+             has_mem_type_attr ? "Fusion" : "",
              tmp_op_desc->GetName().c_str(),
              valid_input_index,
              peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),

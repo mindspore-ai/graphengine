@@ -92,6 +92,7 @@
 #include "graph/passes/unused_args_clean_pass.h"
 #include "graph/passes/global_step_insert_pass.h"
 #include "graph/passes/memcpy_addr_async_pass.h"
+#include "graph/passes/hccl_memcpy_pass.h"
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
@@ -2150,6 +2151,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
                                                new (std::nothrow) TransOpWithoutReshapeFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::TransOpBreadthFusionPass",
                                                new (std::nothrow) TransOpBreadthFusionPass))
+  GE_CHK_STATUS_RET(
+      after_merge_passes.AddPass("OptimizeStage1_1::HcclMemcpyPass", new (std::nothrow) HcclMemcpyPass));
 
   GE_TIMESTAMP_START(after_merge_passes);
   auto ret = after_merge_passes.Run(compute_graph);

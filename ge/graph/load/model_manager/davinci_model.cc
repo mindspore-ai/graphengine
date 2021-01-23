@@ -624,6 +624,7 @@ void DavinciModel::OpDebugUnRegister() {
 // initialize op sequence and call initialization function of each op respectively
 Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   // validating params
+  GELOGI("Priority is %d", priority_);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(priority_ < 0 || priority_ > 7, return PARAM_INVALID,
                                  "Priority must between 0-7, now is %d", priority_);
   GE_CHK_BOOL_RET_STATUS(ge_model_ != nullptr, PARAM_INVALID, "GeModel is null.");

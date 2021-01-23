@@ -333,8 +333,8 @@ TEST_F(UtestDavinciModel, Init_variable_op) {
 
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
 
-  //EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
-  EXPECT_NE(model.SyncVarData(), SUCCESS);
+  EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
+  EXPECT_EQ(model.SyncVarData(), SUCCESS);
 }
 
 TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {

@@ -192,18 +192,18 @@ class MemManager {
           allocate_map[index] = allocator;
           GELOGI("Create Allocator memory type[%u] success.", index);
         } else {
-          GELOGE(INTERNAL_ERROR, "Alloc Allocator failed.");
+          GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc Allocator failed.");
         }
       } else {
         allocator = it->second;
       }
 
       if (allocator == nullptr) {
-        GELOGE(INTERNAL_ERROR, "Create Allocator failed.");
-        return INTERNAL_ERROR;
+        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create Allocator failed.");
+        return ACL_ERROR_GE_MEMORY_ALLOCATION;
       } else {
         if (allocator->Initialize() != SUCCESS) {
-          return INTERNAL_ERROR;
+          return ACL_ERROR_GE_INTERNAL_ERROR;
         }
       }
     }

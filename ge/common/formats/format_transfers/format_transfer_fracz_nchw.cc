@@ -160,7 +160,7 @@ Status FormatTransferFracZNchw::TransFormat(const TransArgs &args, TransResult &
 Status FormatTransferFracZNchw::TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type,
                                            Format dst_format, std::vector<int64_t> &dst_shape) {
   GELOGD("The shape derivation from FracZ to NCHW is not unique. Trans shape in this direction is not supported");
-  return UNSUPPORTED;
+  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferFracZNchw, FORMAT_FRACTAL_Z, FORMAT_NCHW)

@@ -1007,7 +1007,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
     } else {
       ErrorManager::GetInstance().ATCReportErrMessage("E10003",
           {"parameter", "value", "reason"}, {"om", model_file, "invalid om file"});
-      GELOGE(PARAM_INVALID, "ParseModelContent failed because of invalid om file. Please check --om param.");
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "ParseModelContent failed because of invalid om file. Please check --om param.");
     }
 
     if (model.model_data != nullptr) {

@@ -211,16 +211,16 @@ Status GetPermByForamt(Format src_format, Format dst_format, std::vector<int64_t
     std::string error = "Failed to trans shape, do not support transpose from format " +
         FmtToStr(TypeUtils::FormatToSerialString(src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
   }
   auto iter = dst_iter->second.find(dst_format);
   if (iter == dst_iter->second.end()) {
     std::string error = "Failed to trans shape, do not support transpose from format " +
         FmtToStr(TypeUtils::FormatToSerialString(src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
   }
   perm = iter->second;
   return SUCCESS;
@@ -244,7 +244,7 @@ Status FormatTransferTranspose::TransShape(Format src_format, const std::vector<
   std::vector<int64_t> perm_arg;
   GE_CHK_STATUS_RET_NOLOG(GetPermByForamt(src_format, dst_format, perm_arg));
   if (!IsShapeArgValid(src_shape, perm_arg)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   dst_shape = TransShapeByPerm(src_shape, perm_arg);
   return SUCCESS;

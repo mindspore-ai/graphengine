@@ -683,7 +683,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/format_transfer_nchw_fractalz_unittest.cc"
     "common/format_transfer_hwcn_fractalz_unittest.cc"
     "common/format_transfer_nhwc_fractalz_unittest.cc"
-    #"common/format_transfer_fractal_nz_unittest.cc"
+    "common/format_transfer_fractal_nz_unittest.cc"
     "common/format_transfer_fractal_zz_unittest.cc"
     "common/format_transfer_nhwc_5d_unittest.cc"
     "common/format_transfer_5d_nchw_unittest.cc"

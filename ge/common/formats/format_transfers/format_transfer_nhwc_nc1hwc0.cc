@@ -34,8 +34,8 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
                                std::vector<int64_t> &dst_shape) {
   int64_t c0 = GetCubeSizeByDataType(data_type);
   if (c0 <= 0) {
-    GELOGE(PARAM_INVALID, "Failed to get cube size, the data type is invalid");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID, "Failed to get cube size, the data type is invalid");
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
   dst_shape.clear();
   dst_shape.push_back(src_shape.at(kNhwcN));
@@ -44,8 +44,9 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   dst_shape.push_back(src_shape.at(kNhwcW));
   dst_shape.push_back(c0);
   if (!CheckShapeValid(dst_shape, kNc1hwc0DimsNum)) {
-    GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check dst shape %s",
+           ShapeToString(dst_shape).c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   return SUCCESS;
 }
@@ -189,12 +190,15 @@ Status FormatTransferNhwcNc1hwc0::TransShape(Format src_format, const std::vecto
                                              DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
   if (src_format == FORMAT_NHWC && CheckDataTypeSupported(data_type)) {
     if (!CheckShapeValid(src_shape, kNhwcDimsNum)) {
-      GELOGE(PARAM_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
-      return PARAM_INVALID;
+      GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check src shape %s",
+             ShapeToString(src_shape).c_str());
+      return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
     }
     return TransShapeNhwcToNc1hwc0(src_shape, data_type, dst_shape);
+  } else if (src_format != FORMAT_NHWC) {
+    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
   } else {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
 }
 

@@ -93,7 +93,7 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
   std::vector<std::string> path_vec;
   SplitPath(path, path_vec);
   for (const auto &single_path : path_vec) {
-    GE_IF_BOOL_EXEC(single_path.length() >= MMPA_MAX_PATH, GELOGE(GE_PLGMGR_PATH_INVALID,
+    GE_IF_BOOL_EXEC(single_path.length() >= MMPA_MAX_PATH, GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID,
                     "The shared library file path is too long!");
                     continue);
     // load break when number of loaded so reach maximum
@@ -125,7 +125,8 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
       GE_IF_BOOL_EXEC(error == nullptr, error = "");
       ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
           {"mmDlopen", "shared library path is " + FmtToStr(file_path_dlopen) + ". Errormessage" + FmtToStr(error)});
-      GELOGE(GE_PLGMGR_PATH_INVALID, "Failed to dlopen the shared library path[%s]. Errormessage[%s]!",
+      GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID,
+             "Failed to dlopen the shared library path[%s]. Errormessage[%s]!",
              file_path_dlopen.c_str(), error);
       continue;
     }
@@ -138,8 +139,8 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
         ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
             {"mmDlsym", FmtToStr(func_name) + " is skipped since function" +
             FmtToStr(func_name) + " is not existed!"});
-        GELOGE(GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not existed!", func_name.c_str(),
-               func_name.c_str());
+        GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not existed!",
+               func_name.c_str(), func_name.c_str());
         is_valid = false;
         break;
       }

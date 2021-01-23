@@ -75,7 +75,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_format_nchw) {
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, UNSUPPORTED);
+  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_format_nc1khkwhwc0) {
@@ -142,7 +142,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape3) {
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, PARAM_INVALID);
+  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_format) {

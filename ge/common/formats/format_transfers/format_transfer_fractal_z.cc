@@ -42,7 +42,7 @@ Status CheckDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_
 Status TransShapeToFz(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type, std::vector<int64_t> &dst_shape) {
   auto c0 = GetCubeSizeByDataType(data_type);
   if (c0 < 0) {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
 
   auto c1 = Ceil(c, c0);
@@ -54,15 +54,16 @@ Status TransShapeToFz(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_
   dst_shape.push_back(kNiSize);
   dst_shape.push_back(c0);
   if (!IsShapeValid(dst_shape)) {
-    GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check dst shape %s",
+           ShapeToString(dst_shape).c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   return SUCCESS;
 }
 
 Status TransShapeNchwToFz(const std::vector<int64_t> &src_shape, DataType data_type, std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
 
   auto n = src_shape.at(kNchwN);
@@ -74,7 +75,7 @@ Status TransShapeNchwToFz(const std::vector<int64_t> &src_shape, DataType data_t
 
 Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, DataType data_type, std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kHwcnDimsNum)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
 
   auto h = src_shape.at(kHwcnH);
@@ -87,7 +88,7 @@ Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, DataType data_t
 
 Status TransShapeNhwcToFz(const std::vector<int64_t> &src_shape, DataType data_type, std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kNhwcDimsNum)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
 
   auto n = src_shape.at(kNhwcN);
@@ -369,7 +370,7 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
 Status FormatTransferFractalZ::TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type,
                                           Format dst_format, std::vector<int64_t> &dst_shape) {
   if (CheckDataTypeSupport(data_type) != SUCCESS) {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
 
   if (src_format == FORMAT_NHWC && dst_format == FORMAT_FRACTAL_Z) {
@@ -382,7 +383,7 @@ Status FormatTransferFractalZ::TransShape(Format src_format, const std::vector<i
     return TransShapeNchwToFz(src_shape, data_type, dst_shape);
   }
 
-  return UNSUPPORTED;
+  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferFractalZ, FORMAT_NCHW, FORMAT_FRACTAL_Z)

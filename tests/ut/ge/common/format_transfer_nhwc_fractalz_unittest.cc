@@ -5353,5 +5353,44 @@ TEST_F(UtestFormatTransferNhwcFz, build_transfer_uint8) {
   auto transfer = BuildFormatTransfer(args);
   EXPECT_NE(transfer, nullptr);
 }
+
+TEST_F(UtestFormatTransferNhwcFz, invalid_data_type) {
+  uint16_t data[1 * 4 * 4 * 1] = {0};
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_NZ, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_VARIANT};
+  FormatTransferFractalZ transfer;
+  EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
+            ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID);
+}
+
+TEST_F(UtestFormatTransferNhwcFz, invalid_data_format) {
+  uint16_t data[1 * 4 * 4 * 1] = {0};
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data), FORMAT_CHWN, FORMAT_FRACTAL_NZ, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_FLOAT16};
+  FormatTransferFractalZ transfer;
+  EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
+            ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+}
+
+TEST_F(UtestFormatTransferNhwcFz, invalid_data_shape) {
+  uint16_t data[1 * 4 * 4 * 1] = {0};
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_Z, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_FLOAT16};
+  FormatTransferFractalZ transfer;
+  EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+
+  TransArgs args2{
+      reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_FRACTAL_Z, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_FLOAT16};
+  FormatTransferFractalZ transfer2;
+  EXPECT_EQ(transfer2.TransShape(args2.src_format, args2.src_shape, args2.src_data_type, args2.dst_format, args2.dst_shape),
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+
+  TransArgs args3{
+      reinterpret_cast<uint8_t *>(data), FORMAT_NCHW, FORMAT_FRACTAL_Z, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_FLOAT16};
+  FormatTransferFractalZ transfer3;
+  EXPECT_EQ(transfer3.TransShape(args3.src_format, args3.src_shape, args3.src_data_type, args3.dst_format, args3.dst_shape),
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+}
 }  // namespace formats
 }  // namespace ge

@@ -34,7 +34,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
                                                                                       ge::ModelData &model_data) {
   std::string real_path = RealPath(model_path);
   if (real_path.empty()) {
-    GELOGE(GE_EXEC_MODEL_PATH_INVALID, "Model file path '%s' is invalid", model_path);
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "Model file path '%s' is invalid", model_path);
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 

@@ -64,9 +64,10 @@ uint8_t *MemoryAllocator::MallocMemory(const string &purpose, size_t memory_size
 
 Status MemoryAllocator::FreeMemory(uint8_t *memory_addr, uint32_t device_id) const {
   GELOGI("MemoryAllocator::FreeMemory device_id = %u", device_id);
-  if (rtFree(memory_addr) != RT_ERROR_NONE) {
-    GELOGE(ge::INTERNAL_ERROR, "MemoryAllocator::MallocMemory device_id = %u", device_id);
-    return ge::INTERNAL_ERROR;
+  auto rtRet = rtFree(memory_addr);
+  if (rtRet != RT_ERROR_NONE) {
+    GELOGE(rtRet, "MemoryAllocator::MallocMemory device_id = %u", device_id);
+    return RT_ERROR_TO_GE_STATUS(rtRet);
   }
   memory_addr = nullptr;
   return ge::SUCCESS;
@@ -168,31 +169,36 @@ Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
         memory_allocator_map_[index] = memory_allocator;
         GELOGI("Create MemoryAllocator memory type[%u] success.", index);
       } else {
-        GELOGE(ge::INTERNAL_ERROR, "Alloc MemoryAllocator failed.");
+        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc MemoryAllocator failed.");
       }
     } else {
       memory_allocator = it->second;
     }
 
     if (memory_allocator == nullptr) {
-      GELOGE(ge::INTERNAL_ERROR, "Create MemoryAllocator failed.");
-      return ge::INTERNAL_ERROR;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create MemoryAllocator failed.");
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     } else {
       memory_allocator->Initialize(0);
     }
   }
 
-  if (InitAllocator(memory_type, caching_allocator_map_) != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "Create CachingAllocator failed.");
-    return ge::INTERNAL_ERROR;
+  auto ret = InitAllocator(memory_type, caching_allocator_map_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Create CachingAllocator failed.");
+    return ret;
   }
-  if (InitAllocator(memory_type, rdma_allocator_map_) != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "Create RdmaAllocator failed.");
-    return ge::INTERNAL_ERROR;
+
+  ret = InitAllocator(memory_type, rdma_allocator_map_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Create RdmaAllocator failed.");
+    return ret;
   }
-  if (InitAllocator(memory_type, host_allocator_map_) != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "Create HostMemAllocator failed.");
-    return ge::INTERNAL_ERROR;
+
+  ret = InitAllocator(memory_type, host_allocator_map_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Create HostMemAllocator failed.");
+    return ret;
   }
   return SUCCESS;
 }
@@ -229,7 +235,7 @@ MemoryAllocator *MemManager::GetMemoryAllocator(rtMemType_t memory_type) {
 
   // Usually impossible
   if (memory_allocator == nullptr) {
-    GELOGE(ge::INTERNAL_ERROR, "GetMemoryAllocator failed, memory type is %u.", memory_type);
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "GetMemoryAllocator failed, memory type is %u.", memory_type);
     static MemoryAllocator default_memory_allocator(RT_MEMORY_RESERVED);
     return &default_memory_allocator;
   }

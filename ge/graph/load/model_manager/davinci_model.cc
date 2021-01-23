@@ -621,6 +621,7 @@ void DavinciModel::OpDebugUnRegister() {
 // initialize op sequence and call initialization function of each op respectively
 Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   // validating params
+  GELOGI("Priority is %d", priority_);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(priority_ < 0 || priority_ > 7, return PARAM_INVALID,
                                  "Priority must between 0-7, now is %d", priority_);
   GE_CHK_BOOL_RET_STATUS(ge_model_ != nullptr, PARAM_INVALID, "GeModel is null.");
@@ -1816,7 +1817,7 @@ Status DavinciModel::InitAippInfo(uint32_t index, const OpDescPtr &op_desc) {
 
   domi::AippOpParams aipp_params;
   GeAttrValue::NAMED_ATTRS aipp_attr;
-  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr), GE_AIPP_NOT_EXIST,
+  GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr), ACL_ERROR_GE_AIPP_NOT_EXIST,
                          "Data node do not contain param aipp!");
   GE_CHK_STATUS_RET(OpUtils::ConvertAippParams(aipp_attr, &aipp_params), "get aipp params failed");
   GELOGI("node data: %s, type: %s, current index: %u, current node related input rank: %u",

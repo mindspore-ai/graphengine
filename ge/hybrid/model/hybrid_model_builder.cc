@@ -1608,16 +1608,19 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
   GE_CHECK_NOTNULL(compute_graph);
 
   NodePtr node_ptr = nullptr;
-  vector<domi::TaskDef> task_def_list;
+  map<NodePtr, vector<domi::TaskDef>> node_task_map;
   // create fp node
   bool is_insert_fp_profiling_task = false;
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_FP_PROFILILNG_TASK, is_insert_fp_profiling_task);
   if (is_insert_fp_profiling_task) {
+    vector<domi::TaskDef> task_def_list;
     (void)GenerateFpProfilingTask(op_desc, task_def_list);
     auto fp_desc = MakeShared<OpDesc>(kProfilingFpNode, PROFILINGTRAININGTRACE);
     GE_CHECK_NOTNULL(fp_desc);
     fp_desc->SetOpKernelLibName(kEngineNameRts);
     node_ptr = compute_graph->AddNode(fp_desc);
+    GE_CHECK_NOTNULL(node_ptr);
+    node_task_map[node_ptr] = task_def_list;
     GELOGD("Create fp profiling node success before.");
   }
   // creat all reduce start node
@@ -1625,6 +1628,7 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, is_insert_bp_profiling_task);
   bool is_all_reduce = (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HVDCALLBACKALLREDUCE);
   if (is_all_reduce && is_insert_bp_profiling_task) {
+    vector<domi::TaskDef> task_def_list;
     int64_t log_id = 0;
     (void)ge::AttrUtils::GetInt(op_desc, ATTR_NAME_INSERT_PROFILILNG_TASK_LOG_ID, log_id);
     GELOGD("All reduce node profiling task log id: %ld before", log_id);
@@ -1634,18 +1638,24 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
     GE_CHECK_NOTNULL(ar_desc_start);
     ar_desc_start->SetOpKernelLibName(kEngineNameRts);
     node_ptr = compute_graph->AddNode(ar_desc_start);
+    GE_CHECK_NOTNULL(node_ptr);
+    node_task_map[node_ptr] = task_def_list;
     GELOGD("Create all reduce start profiling node success before.");
   }
 
-  if (node_ptr != nullptr) {
-    for (const auto &task_def : task_def_list) {
-      hybrid_model_.task_defs_[node_ptr].emplace_back(task_def);
+  if (!node_task_map.empty()) {
+    for (const auto &node_task : node_task_map) {
+      NodePtr profiling_node = node_task.first;
+      vector<domi::TaskDef> task_def_lists = node_task.second;
+      for (const auto &task_def : task_def_lists) {
+        hybrid_model_.task_defs_[profiling_node].emplace_back(task_def);
+      }
+      NodeItem *node_item = nullptr;
+      GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(profiling_node, &node_item));
+      node_item->input_start = 0;
+      node_item->output_start = 0;
+      graph_item.node_items_.emplace_back(node_item);
     }
-    NodeItem *node_item = nullptr;
-    GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node_ptr, &node_item));
-    node_item->input_start = 0;
-    node_item->output_start = 0;
-    graph_item.node_items_.emplace_back(node_item);
   } else {
     GELOGD("No need to create profiling node before.");
   }
@@ -1661,12 +1671,13 @@ Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const
   GE_CHECK_NOTNULL(compute_graph);
 
   NodePtr node_ptr = nullptr;
-  vector<domi::TaskDef> task_def_list;
+  map<NodePtr, vector<domi::TaskDef>> node_task_map;
   // Create all reduce end node
   bool is_insert_bp_profiling_task = false;
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, is_insert_bp_profiling_task);
   bool is_all_reduce = (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HVDCALLBACKALLREDUCE);
   if (is_all_reduce && is_insert_bp_profiling_task) {
+    vector<domi::TaskDef> task_def_list;
     int64_t log_id = 0;
     (void)ge::AttrUtils::GetInt(op_desc, ATTR_NAME_INSERT_PROFILILNG_TASK_LOG_ID, log_id);
     GELOGD("All reduce node profiling task log id: %ld after", log_id);
@@ -1676,38 +1687,50 @@ Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const
     GE_CHECK_NOTNULL(ar_desc_end);
     ar_desc_end->SetOpKernelLibName(kEngineNameRts);
     node_ptr = compute_graph->AddNode(ar_desc_end);
+    GE_CHECK_NOTNULL(node_ptr);
+    node_task_map[node_ptr] = task_def_list;
     GELOGD("Create all reduce end profiling node success after.");
   }
   // create bp node
   if (!is_all_reduce && is_insert_bp_profiling_task) {
+    vector<domi::TaskDef> task_def_list;
     (void) GenerateBpProfilingTask(op_desc, task_def_list);
     auto bp_op_desc = MakeShared<OpDesc>(kProfilingBpNode, PROFILINGTRAININGTRACE);
     GE_CHECK_NOTNULL(bp_op_desc);
     bp_op_desc->SetOpKernelLibName(kEngineNameRts);
     node_ptr = compute_graph->AddNode(bp_op_desc);
+    GE_CHECK_NOTNULL(node_ptr);
+    node_task_map[node_ptr] = task_def_list;
     GELOGD("Create bp profiling node success after.");
   }
   // create end node
   bool is_insert_end_profiling_task = false;
   (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_INSERT_END_PROFILILNG_TASK, is_insert_end_profiling_task);
   if (is_insert_end_profiling_task) {
+    vector<domi::TaskDef> task_def_list;
     (void)GenerateEndProfilingTask(op_desc, task_def_list);
     auto end_desc = MakeShared<OpDesc>(kProfilingEndNode, PROFILINGTRAININGTRACE);
     GE_CHECK_NOTNULL(end_desc);
     end_desc->SetOpKernelLibName(kEngineNameRts);
     node_ptr = compute_graph->AddNode(end_desc);
+    GE_CHECK_NOTNULL(node_ptr);
+    node_task_map[node_ptr] = task_def_list;
     GELOGD("Create end profiling node success after.");
   }
 
-  if (node_ptr != nullptr) {
-    for (const auto &task_def : task_def_list) {
-      hybrid_model_.task_defs_[node_ptr].emplace_back(task_def);
+  if (!node_task_map.empty()) {
+    for (const auto &node_task : node_task_map) {
+      NodePtr profiling_node = node_task.first;
+      vector<domi::TaskDef> task_def_lists = node_task.second;
+      for (const auto &task_def : task_def_lists) {
+        hybrid_model_.task_defs_[profiling_node].emplace_back(task_def);
+      }
+      NodeItem *node_item = nullptr;
+      GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(profiling_node, &node_item));
+      node_item->input_start = 0;
+      node_item->output_start = 0;
+      graph_item.node_items_.emplace_back(node_item);
     }
-    NodeItem *node_item = nullptr;
-    GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node_ptr, &node_item));
-    node_item->input_start = 0;
-    node_item->output_start = 0;
-    graph_item.node_items_.emplace_back(node_item);
   } else {
     GELOGD("No need to create profiling node after.");
   }

@@ -37,6 +37,8 @@ using domi::BuildMode;
 
 namespace {
 const int32_t kInvalidPerfLevel = -1;
+const int64_t kProfilingArStep = 2;
+const int64_t kProfilingArStartLogid = 3;
 enum NodeType { kSubgraphData, kSubgraphNode, kOthers };
 }  // namespace
 namespace ge {
@@ -457,6 +459,11 @@ Status GraphBuilder::MarkFpBpProfilingTaskAttr(ComputeGraphPtr &com_graph) {
       if (all_reduce_node_index[i] == node_index) {
         GELOGI("The all reduce node of dynamic graph is %s, idx %u", op_desc->GetName().c_str(), node_index);
         (void)ge::AttrUtils::SetBool(op_desc, ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
+        GE_IF_BOOL_EXEC(TypeUtils::CheckUint64MulOverflow(i, kProfilingArStep),
+                        GELOGE(FAILED, "Multiply result is out of range.");
+                          return FAILED);
+        int64_t log_id = i * kProfilingArStep + kProfilingArStartLogid;
+        (void)ge::AttrUtils::SetInt(op_desc, ATTR_NAME_INSERT_PROFILILNG_TASK_LOG_ID, log_id);
         continue;
       }
     }

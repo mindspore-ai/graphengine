@@ -726,7 +726,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   bool dynamic_flag = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
   CheckShapeReset(op_desc, dynamic_flag);
-  if (dynamic_flag && all_shape) {
+  if (dynamic_flag || all_shape) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;

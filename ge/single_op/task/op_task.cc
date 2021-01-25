@@ -373,7 +373,7 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
 
   GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateSessionInfo(ULLONG_MAX, kernel_id, false),
                     "UpdateSessionInfo failed.");
-  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateExecuteMode(true, "UpdateExecuteMode failed.");
+  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
 
   GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), RT_MEMORY_HBM));
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(),

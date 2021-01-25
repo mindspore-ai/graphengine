@@ -979,7 +979,7 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
   GE_CHK_BOOL_RET_STATUS(ext_handle != nullptr, FAILED, "Malloc aicpu_ext_handle mem failed!");
   GE_CHK_STATUS_RET(ext_handle->Parse(ext_info),
                     "Parse kernel ext info failed, kernel_ext_info_size=%zu.", ext_info.size());
-  GE_CHK_STATUS_RET(ext_handle_->UpdateSessionInfo(davinci_model_->GetSessionId()),
+  GE_CHK_STATUS_RET(ext_handle_->UpdateSessionInfoSessionId(davinci_model_->GetSessionId()),
                     "Update session info session id failed.");
   GELOGD("Update aicpu_task ext_info session_info session_id is %lu", davinci_model_->GetSessionId());
   GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");

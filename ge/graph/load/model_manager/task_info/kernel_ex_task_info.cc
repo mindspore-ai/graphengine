@@ -45,7 +45,7 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
                                                               num_outputs,
                                                               unknown_type));
   GE_CHK_BOOL_RET_STATUS(ext_handle != nullptr, FAILED, "Malloc aicpu_ext_handle mem failed!");
-  GE_CHK_STATUS_RET(ext_handle->Parse(ext_info)
+  GE_CHK_STATUS_RET(ext_handle->Parse(ext_info),
                     "Parse kernel ext info failed, kernel_ext_info_size=%zu.", ext_info.size());
   GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
   GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
@@ -54,7 +54,7 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                   GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
-  rt_ret = rtMemcpy(ext_info_addr_, ext_handle_->GetExtInfoLen(), ext_handle_->GetExtInfo(),
+  rt_ret = rtMemcpy(ext_info_addr_, ext_handle->GetExtInfoLen(), ext_handle->GetExtInfo(),
                     ext_handle->GetExtInfoLen(), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                   GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());

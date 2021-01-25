@@ -373,7 +373,7 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
 
   GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateSessionInfo(ULLONG_MAX, kernel_id, false),
                     "UpdateSessionInfo failed.");
-  GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true, "UpdateExecuteMode failed.");
+  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateExecuteMode(true, "UpdateExecuteMode failed.");
 
   GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), RT_MEMORY_HBM));
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(),
@@ -406,7 +406,7 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
                                     rtStream_t stream) {
   GELOGI("Update ext info begin, unknown_type=%d.", unknown_type_);
   GE_CHECK_NOTNULL(aicpu_ext_handle_);
-  GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(false), "UpdateExecuteMode failed.");
+  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateExecuteMode(false), "UpdateExecuteMode failed.");
 
   if (num_inputs_ == 0 && num_outputs_ == 0) {
     GELOGI("No input and output, no need update ext info.");

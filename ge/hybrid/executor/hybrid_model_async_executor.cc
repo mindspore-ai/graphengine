@@ -221,7 +221,7 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
       auto &tensor_desc = input_tensor_desc_[input_index];
       tensor_desc->SetShape(GeShape(current_data.shapes[input_index]));
       args.input_desc[input_index] = tensor_desc;
-      GELOGD("Update shape of input[%u] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
+      GELOGD("Update shape of input[%zu] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
       GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, tensor_size),
                               "Failed to calc tensor size, index = %zu, shape = [%s]",
                               input_index,
@@ -238,7 +238,7 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
     GE_CHECK_NOTNULL(tensor_buffer);
     args.inputs.emplace_back(std::shared_ptr<TensorBuffer>(tensor_buffer.release()));
 
-    GELOGD("To copy input data for input[%u]", input_index);
+    GELOGD("To copy input data for input[%zu]", input_index);
     const DataBuffer &data_buf = blobs[input_index];
     auto mem_size = static_cast<uint64_t>(tensor_size);
     GE_CHK_BOOL_RET_STATUS(mem_size >= data_buf.length,
@@ -247,7 +247,7 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
                            data_buf.length,
                            mem_size);
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%u] memaddr[%p] mem_size[%u] datasize[%lu]",
+    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%zu] memaddr[%p] mem_size[%zu] datasize[%lu]",
            model_->root_runtime_param_.graph_id,
            input_index,
            args.inputs[input_index].GetData(),

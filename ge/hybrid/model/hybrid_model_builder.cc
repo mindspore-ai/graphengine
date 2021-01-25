@@ -939,7 +939,7 @@ Status HybridModelBuilder::InitVariableTensors() {
       GELOGE(MEMALLOC_FAILED, "Malloc host memory for an existed GeTensor failed.");
       return MEMALLOC_FAILED;
     }
-    GELOGD("Host variable [%s] malloc success, size=%lld.", it.first.c_str(), tensor_size);
+    GELOGD("Host variable [%s] malloc success, size=%ld.", it.first.c_str(), tensor_size);
 
     std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_aligned_ptr->MutableGet(),
                                                                        tensor_size));

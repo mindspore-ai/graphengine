@@ -26,8 +26,42 @@
 #include "graph/attr_value.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "graph/load/model_manager/model_manager.h"
+#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
+#include "framework/common/debug/log.h"
 
 namespace ge {
+Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDescPtr &op_desc) {
+  if (ext_info.empty()) {
+    return SUCCESS;
+  }
+  int32_t unknown_shape_type_val = 0;
+  (void) AttrUtils::GetInt(op_desc, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+  UnknowShapeOpType unknown_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+  uint32_t num_inputs = op_desc->GetInputsSize();
+  uint32_t num_outputs = op_desc->GetOutputsSize();
+  std::unique_ptr<ge::hybrid::AicpuExtInfoHandler> ext_handle(
+          new(std::nothrow) ::ge::hybrid::AicpuExtInfoHandler(op_desc->GetName(),
+                                                              num_inputs,
+                                                              num_outputs,
+                                                              unknown_type));
+  GE_CHK_BOOL_RET_STATUS(ext_handle != nullptr, FAILED, "Malloc aicpu_ext_handle mem failed!");
+  GE_CHK_STATUS_RET(ext_handle->Parse(ext_info)
+                    "Parse kernel ext info failed, kernel_ext_info_size=%zu.", ext_info.size());
+  GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
+  GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
+
+  auto rt_ret = rtMalloc(&ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
+                  GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
+                  return RT_ERROR_TO_GE_STATUS(rt_ret);)
+  rt_ret = rtMemcpy(ext_info_addr_, ext_handle_->GetExtInfoLen(), ext_handle_->GetExtInfo(),
+                    ext_handle->GetExtInfoLen(), RT_MEMCPY_HOST_TO_DEVICE);
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
+                  GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
+                  return RT_ERROR_TO_GE_STATUS(rt_ret);)
+  return SUCCESS;
+}
+
 Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("KernelExTaskInfo Init Start.");
   GE_CHECK_NOTNULL(davinci_model);
@@ -63,16 +97,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   }
 
   const auto &ext_info = kernel_ex_def.kernel_ext_info();
-  if (!ext_info.empty()) {
-    auto rt_ret = rtMalloc(&ext_info_addr_, ext_info.size(), RT_MEMORY_HBM);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
-                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
-    rt_ret = rtMemcpy(ext_info_addr_, ext_info.size(), ext_info.c_str(), ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
-                    return RT_ERROR_TO_GE_STATUS(rt_ret);)
-  }
+  GE_CHK_STATUS_RET(InitTaskExtInfo(ext_info, op_desc),
+                    "Init aicpu tf_task ext info failed, ext_info size=%zu", ext_info.size());
 
   GELOGI("Node[%s] type[%s] kernel_ext_info size=%zu, ext_info_addr_=%p", op_desc->GetName().c_str(),
          op_desc->GetType().c_str(), ext_info.size(), ext_info_addr_);

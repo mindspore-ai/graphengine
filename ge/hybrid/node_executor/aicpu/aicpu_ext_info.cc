@@ -64,6 +64,9 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
       case aicpu::FWKAdapter::FWK_ADPT_EXT_SESSION_INFO:
         GE_CHK_STATUS_RET(ParseExtSessionInfo(aicpu_ext_info), "Parse ext session info failed.");
         break;
+      case aicpu::FWKAdapter::FWK_ADPT_EXT_BITMAP:
+        GE_CHK_STATUS_RET(ParseExtBitMap(aicpu_ext_info), "Parse ext bit map failed.");
+        break;
       default:
         GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.",
                node_name_.c_str(), aicpu_ext_info->infoType, aicpu_ext_info->infoLen);
@@ -137,6 +140,29 @@ Status AicpuExtInfoHandler::ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info) {
 
   session_info_ = reinterpret_cast<AicpuSessionInfo *>(aicpu_ext_info->infoMsg);
   GELOGI("Node[%s] parse session info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::ParseExtBitMap(AicpuExtInfo *aicpu_ext_info) {
+  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(uint64_t), PARAM_INVALID,
+                         "Node[%s] parse bit_map info failed as infoLen must be %zu but %u.",
+                         node_name_.c_str(), sizeof(uint64_t), aicpu_ext_info->infoLen);
+
+  bit_map_ = reinterpret_cast<uint64_t *>(aicpu_ext_info->infoMsg);
+  GELOGI("Node[%s] bit_map info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::UpdateExecuteMode(bool flag) {
+  if (bit_map_ == nullptr) {
+    GELOGD("There is no bit_map in ext_info, no need update.");
+    return SUCCESS;
+  }
+  if (flag) {
+    *(bit_map_) |= 1;
+  } else {
+    *(bit_map_) &= ~1;
+  }
   return SUCCESS;
 }
 

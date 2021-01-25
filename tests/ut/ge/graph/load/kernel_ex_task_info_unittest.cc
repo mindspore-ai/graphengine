@@ -137,4 +137,12 @@ TEST_F(UtestKernelExTaskInfo, kernel_ex_task_info_calculate_args) {
   EXPECT_EQ(kernel_ex_task_info.CalculateArgs(task_def, &model), FAILED);
 }
 
+TEST_F(UtestKernelExTaskInfo, kernel_ex_task_ext_info) {
+  const char ext_info[4] = {0, 0, 0, 4};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
 }  // namespace ge

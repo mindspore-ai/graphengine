@@ -60,6 +60,7 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GELOGD("To update aicpu_task ext_info session_info session_id to %lu", session_id);
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "UpdateSessionInfoSessionId failed.");
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(true), "UpdateExecuteMode failed.");
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
@@ -136,6 +137,7 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
     return SUCCESS;
   }
 
+  GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(false), "UpdateExecuteMode failed.");
   for (auto i = 0; i < node_item_->num_inputs; ++i) {
     auto input_desc = node_item_->MutableInputDesc(i);
     GE_CHECK_NOTNULL(input_desc);

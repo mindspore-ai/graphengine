@@ -1195,4 +1195,10 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_super_kernel_info) {
   EXPECT_EQ(kernel_task_info.SKTFinalize(), SUCCESS);
 }
 
+TEST_F(UtestKernelTaskInfo, kernel_ask_ext_info) {
+  const char ext_info[4] = {0, 0, 0, 4};
+  KernelTaskInfo kernel_task_info;
+  EXPECT_EQ(kernel_task_info.InitAicpuTaskExtInfo(ext_info), SUCCESS);
+}
+
 }  // namespace ge

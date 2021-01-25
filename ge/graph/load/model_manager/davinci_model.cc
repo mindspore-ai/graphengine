@@ -3967,8 +3967,11 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
   }
   data_dumper_.SetDeviceId(device_id);
 
-  // set loop count addr
-  auto get_var_addr = [&](const string &name) -> void *{
+  if (known_node_) {
+    data_dumper_.SetLoopAddr(known_shape_global_step_, nullptr, nullptr);
+  } else {
+    // set loop count addr
+    auto get_var_addr = [&](const string &name) -> void *{
     const auto it = variable_by_name.find(name);
     if (it != variable_by_name.end()) {
       const auto output_sizes = ModelUtils::GetOutputSize(it->second);
@@ -3981,10 +3984,10 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
     GELOGD("op: %s is null.", name.c_str());
     return nullptr;
   };
-
   data_dumper_.SetLoopAddr(get_var_addr(NODE_NAME_GLOBAL_STEP),
                            get_var_addr(NODE_NAME_FLOWCTRL_LOOP_PER_ITER),
                            get_var_addr(NODE_NAME_FLOWCTRL_LOOP_COND));
+  }
 }
 
 uint32_t DavinciModel::GetFlowctrlIndex(uint32_t op_index) {

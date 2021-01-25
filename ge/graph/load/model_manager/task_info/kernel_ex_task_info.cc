@@ -192,7 +192,7 @@ void KernelExTaskInfo::InitDumpTask(void *addr, const OpDescPtr &op_desc) {
   if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
                                                           op_desc->GetName())) {
     dump_flag_ = RT_KERNEL_DUMPFLAG;
-    dump_args_ = input_output_addr_;
+    dump_args_ = addr;
   }
 }
 

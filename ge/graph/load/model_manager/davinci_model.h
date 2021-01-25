@@ -470,6 +470,10 @@ class DavinciModel {
     data_dumper_.SaveDumpTask(task_id, stream_id, op_desc, args);
   }
 
+  void SetKnownShapeGlobalStep(void *global_step) {
+    known_shape_global_step_ = global_step;
+  }
+
   void DumperShrink() {
     data_dumper_.DumpShrink();
   }
@@ -1057,6 +1061,9 @@ class DavinciModel {
   vector<uint32_t> input_formats_;
   vector<InputOutputDescInfo> output_descs_;
   vector<uint32_t> output_formats_;
+
+  // known shape node for dump
+  void *known_shape_global_step_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

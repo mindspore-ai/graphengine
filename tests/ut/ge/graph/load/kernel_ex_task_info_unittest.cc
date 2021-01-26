@@ -138,7 +138,7 @@ TEST_F(UtestKernelExTaskInfo, kernel_ex_task_info_calculate_args) {
 }
 
 TEST_F(UtestKernelExTaskInfo, kernel_ex_task_ext_info) {
-  const char ext_info[4] = {0, 0, 0, 4};
+  const string ext_info = {1, 1, 1, 1, 0, 0, 0, 0};
   const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   KernelExTaskInfo kernel_ex_task_info;

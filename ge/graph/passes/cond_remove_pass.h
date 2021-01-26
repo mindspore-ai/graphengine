@@ -70,7 +70,7 @@ class CondRemovePass : public BaseNodePass {
   ///
   Status ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, const ComputeGraphPtr &save_branch);
 
-  OpDescPtr CreateSubgraphOpDesc(const std::string &name, size_t input_num, size_t output_num);
+  OpDescPtr CreateSubgraphOpDesc(const NodePtr &node, const std::string &name, size_t input_num, size_t output_num);
 
   int32_t GetCondIndex(const ConstGeTensorPtr &tensor);
 };

@@ -47,8 +47,7 @@ class GraphBuilder {
   GraphBuilder(const GraphBuilder &in) = delete;
   GraphBuilder &operator=(const GraphBuilder &in) = delete;
   virtual ~GraphBuilder() = default;
-  Status Build(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
-               GeRootModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
+  Status Build(ComputeGraphPtr &comp_graph, GeRootModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
   void SetOptions(const GraphManagerOptions &options);
 
  private:
@@ -59,12 +58,12 @@ class GraphBuilder {
   Status UpdateDataInputSize(const ge::NodePtr &node_ptr);
   Status UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph, ge::NodePtr &parent_node_ptr);
   Status CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc);
-  Status SecondPartition(ge::ComputeGraphPtr &comp_graph, vector<ge::SubGraphInfoPtr> &subgraph_ptr_list);
+  Status SecondPartition(ge::ComputeGraphPtr &comp_graph);
   Status MarkFpBpProfilingTaskAttr(ComputeGraphPtr &com_graph);
-  Status BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_ptr_list,
+  Status BuildForDynamicShapeGraph(ComputeGraphPtr &comp_graph,
                                    GeRootModelPtr &ge_root_model_ptr, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);
-  Status BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph, std::vector<SubGraphInfoPtr> &subgraph_list,
+  Status BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
                                  GeModelPtr &ge_model_ptr, uint64_t session_id = INVALID_SESSION_ID);
   Status BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                                    uint64_t session_id = INVALID_SESSION_ID);

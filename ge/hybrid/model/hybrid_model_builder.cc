@@ -20,8 +20,8 @@
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/model_utils.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_utils.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
@@ -772,7 +772,12 @@ Status HybridModelBuilder::VarNodeToTensor(const NodePtr &var_node, std::unique_
                     var_name.c_str(),
                     hybrid_model_.GetSessionId());
 
-  uint8_t *dev_mem = var_manager_->GetVarMemoryAddr(var_logic, RT_MEMORY_HBM);
+  rtMemType_t memory_type = RT_MEMORY_HBM;
+  uint32_t mem_type = 0;
+  if (AttrUtils::GetInt(var_node->GetOpDesc(), ATTR_OUTPUT_MEMORY_TYPE, mem_type) && (mem_type == 1)) {
+    memory_type = RT_MEMORY_RDMA_HBM;
+  }
+  uint8_t *dev_mem = var_manager_->GetVarMemoryAddr(var_logic, memory_type);
   if (dev_mem == nullptr) {
     GELOGE(INTERNAL_ERROR,
            "Failed to copy var %s from device, cant not get "

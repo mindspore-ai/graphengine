@@ -261,6 +261,12 @@
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
   }
 
+#define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                           \
+  {                                                                                    \
+    GELOGW("%s", errormsg);                                                            \
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
+  }
+
 #define GE_CHK_LOG_AND_ERRORMSG(expr, _status, errormsg)                                 \
   do {                                                                                   \
     bool b = (expr);                                                                     \

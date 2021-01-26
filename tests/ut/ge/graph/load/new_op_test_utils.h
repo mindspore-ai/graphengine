@@ -40,7 +40,7 @@
 #define private public
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
 #include "graph/utils/attr_utils.h"

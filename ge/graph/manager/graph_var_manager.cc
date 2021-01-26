@@ -16,17 +16,10 @@
 
 #include "graph/manager/graph_var_manager.h"
 
-#include <utility>
-
-#include "common/l2_cache_optimize.h"
-#include "common/types.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/debug/log.h"
-#include "ge/ge_api_types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/rdma_pool_allocator.h"
 #include "graph/manager/trans_var_data_utils.h"
-#include "graph/utils/attr_utils.h"
 #include "graph/utils/type_utils.h"
 
 using std::map;
@@ -37,7 +30,7 @@ namespace ge {
 VarResource::VarResource(uint64_t session_id) : session_id_(session_id) {}
 
 VarResource::~VarResource() {
-  var_offset_set_.clear();
+  var_offset_map_.clear();
   var_addr_mgr_map_.clear();
   cur_var_tensor_desc_map_.clear();
   var_broad_cast_info_.clear();
@@ -91,8 +84,10 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   std::string var_key = VarKey(var_name, tensor_desc);
   GELOGD("VarResource::SaveVarAddr, var_key = %s", var_key.c_str());
   if (var_addr_mgr_map_.count(var_key) == 0) {
-    uint64_t logic_address = VarManager::Instance(session_id_)->GetVarMemLogicBase() +
-                             static_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
+    uint64_t logic_address = static_cast<uint64_t>(reinterpret_cast<std::uintptr_t>(address));
+    if (memory_type != RT_MEMORY_RDMA_HBM) {
+      logic_address += VarManager::Instance(session_id_)->GetVarMemLogicBase();
+    }
     GELOGI("SaveVarAddr node_name %s, tensor_desc format %s, type %s.", var_name.c_str(),
            TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
            TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str());
@@ -102,7 +97,7 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
     var_addr_mgr.tensor_desc = tensor_desc;
     var_addr_mgr.memory_type = memory_type;
     var_addr_mgr_map_[var_key] = var_addr_mgr;
-    var_offset_set_.insert(logic_address);
+    var_offset_map_[logic_address] = memory_type;
 
     return SUCCESS;
   }
@@ -211,7 +206,14 @@ ge::Status VarResource::SyncVarData(uint32_t graph_id, const std::string &var_na
   return SyncVarData2BroadCast(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
-bool VarResource::IsVarAddr(const int64_t &offset) { return var_offset_set_.count(offset) > 0; }
+bool VarResource::IsVarAddr(const int64_t &offset) { return var_offset_map_.count(offset) > 0; }
+
+rtMemType_t VarResource::GetVarMemType(const int64_t &offset) {
+  if (var_offset_map_.count(offset) > 0) {
+    return var_offset_map_[offset];
+  }
+  return RT_MEMORY_RESERVED;
+}
 
 VarTransRoad *VarResource::GetTransRoad(const std::string &var_name) {
   auto iter = var_to_trans_road_.find(var_name);
@@ -252,7 +254,19 @@ Status VarResource::SetAllocatedGraphId(const std::string &var_name, uint32_t gr
 
 MemResource::MemResource() : total_size_(0), var_mem_size_(0) {}
 
-Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset) {
+MemResource *MemResource::BuildMemResourceFromType(rtMemType_t mem_type) {
+  switch (mem_type) {
+    case RT_MEMORY_HBM:
+      return new (std::nothrow) HbmMemResource();
+    case RT_MEMORY_RDMA_HBM:
+      return new (std::nothrow) RdmaMemResource();
+    default:
+      return nullptr;
+  }
+}
+
+Status HbmMemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id,
+                                    size_t &mem_offset) {
   size = (size + kSessionMemAlignSize - 1) / kSessionMemAlignSize * kSessionMemAlignSize;
   uint64_t real_size = size;
   total_size_ = VarManager::Instance(session_id)->GetVarMemMaxSize();
@@ -279,6 +293,19 @@ Status MemResource::AssignVarMem(const std::string &var_name, uint64_t size, uin
     "[IMAS]AssignVarMem Set session_%lu name[%s] output[%d]"
     "offset to [%zu] size[%lu] realsize[%lu].",
     session_id, var_name.c_str(), 0, mem_offset, (var_mem_size_ - mem_offset), real_size);
+  return SUCCESS;
+}
+
+Status RdmaMemResource::AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &address) {
+  uint8_t *buffer = MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Malloc(size);
+  if (buffer == nullptr) {
+    GELOGE(MEMALLOC_FAILED, "Failed to malloc rdma memory for node %s, size = %lu", var_name.c_str(), size);
+    return MEMALLOC_FAILED;
+  }
+  address = static_cast<size_t>(reinterpret_cast<uintptr_t>(buffer));
+  var_mem_size_ += size;
+  GELOGI("[IMAS]AssignVarMem Set session_%lu name[%s] output[%d] addr to [%p] size[%lu].",
+         session_id, var_name.c_str(), 0, buffer, size);
   return SUCCESS;
 }
 
@@ -428,7 +455,7 @@ Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
   MemResource *mem_resource = nullptr;
   auto iter = mem_resource_map_.find(memory_type);
   if (iter == mem_resource_map_.end()) {
-    mem_resource = new (std::nothrow) MemResource();
+    mem_resource = MemResource::BuildMemResourceFromType(memory_type);
     if (mem_resource == nullptr) {
       GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
       return ge::INTERNAL_ERROR;
@@ -465,7 +492,7 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   MemResource *mem_resource = nullptr;
   auto it = mem_resource_map_.find(memory_type);
   if (it == mem_resource_map_.end()) {
-    mem_resource = new (std::nothrow) MemResource();
+    mem_resource = MemResource::BuildMemResourceFromType(memory_type);
     if (mem_resource == nullptr) {
       GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
       return ge::INTERNAL_ERROR;
@@ -629,6 +656,15 @@ bool VarManager::IsVarAddr(const int64_t &offset) {
   return var_resource_->IsVarAddr(offset);
 }
 
+rtMemType_t VarManager::GetVarMemType(const int64_t &offset) {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (var_resource_ == nullptr) {
+    GELOGW("VarManager has not been init.");
+    return RT_MEMORY_RESERVED;
+  }
+  return var_resource_->GetVarMemType(offset);
+}
+
 ge::Status VarManager::MallocVarMemory(size_t memory_size) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   uint8_t *var_mem_base = nullptr;
@@ -654,12 +690,18 @@ ge::Status VarManager::MallocVarMemory(size_t memory_size) {
 
 uint8_t *VarManager::GetVarMemoryBase(rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (memory_type == RT_MEMORY_RDMA_HBM) {
+    return MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).GetRdmaBaseAddr();
+  }
   string memory_key = std::to_string(session_id_);
   return MemManager::Instance(memory_type)->GetMemoryAddr(memory_key);
 }
 
 uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (memory_type == RT_MEMORY_RDMA_HBM) {
+    return logic_addr;
+  }
   string mem_key = std::to_string(session_id_);
   uint8_t *mem_base = MemManager::Instance(memory_type)->GetMemoryAddr(mem_key);
   if (mem_base == nullptr) {

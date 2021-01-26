@@ -55,9 +55,11 @@ class RdmaNodeTask : public NodeTask {
  private:
   Status ExtractTensor(TaskContext &context, vector<HcomRemoteAccessAddrInfo> &addr_infos);
   std::pair<int64_t, int64_t> remote_index_;
+  std::pair<int64_t, int64_t> offset_index_;
   int32_t local_index_ = 0;
   std::mutex hccl_mutex_;
   std::condition_variable cond_;
+  bool skip_flag_;
 };
 
 class HcclNodeExecutor : public NodeExecutor {

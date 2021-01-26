@@ -32,10 +32,27 @@ class HcclMemcpyPass : public GraphPass {
  private:
   NodePtr CreateIdentityNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor);
 
+  NodePtr CreateAssignNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor);
+
   std::string CheckDuplicateName(const std::string &node_name);
 
   Status ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
           const InDataAnchorPtr &hccl_in_anchor);
+
+  Status InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
+                                  const InDataAnchorPtr &hccl_in_anchor);
+
+  Status InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &graph,
+                                          const OutDataAnchorPtr &src_out_anchor,
+                                          const InDataAnchorPtr &hccl_in_anchor);
+
+  Status ContinuousInputProcess(const ComputeGraphPtr &graph, const NodePtr node);
+
+  Status MutableInputProcess(const ComputeGraphPtr &graph, const NodePtr node);
+
+  Status P2pmemInputProcess(const ComputeGraphPtr &graph, const NodePtr node);
+
+  bool IsDataNode(const std::string& node_type);
 
   std::unordered_map<std::string, uint32_t> node_num_map_;
 };

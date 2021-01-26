@@ -24,6 +24,7 @@
 #include "graph/buffer.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
+#include "graph/types.h"
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
@@ -65,7 +66,10 @@ void AlignMemOffset(size_t &mem_align_size) {
 }
 
 static bool CompareLifeTime(const NodeTypeIndex &left, const NodeTypeIndex &right) {
-  if (left.GetLifeBegin() < right.GetLifeBegin()) {
+  auto left_node_op_desc = left.node->GetOpDesc();
+  auto right_node_op_desc = right.node->GetOpDesc();
+  if ((left_node_op_desc != nullptr) && (right_node_op_desc != nullptr)
+      && (left_node_op_desc->GetId() < right_node_op_desc->GetId())) {
     return true;
   }
   return false;
@@ -97,14 +101,14 @@ bool CrossLifeTime(const NodeTypeIndex &left, const NodeTypeIndex &right) {
   auto left_node_op_desc = left.node->GetOpDesc();
   auto right_node_op_desc = right.node->GetOpDesc();
   if ((left_node_op_desc != nullptr) && (right_node_op_desc != nullptr)) {
-    if (left.GetLifeBegin() < right.GetLifeBegin()) {
-      if (left.life_time_end >= right.GetLifeBegin()) {
+    if (left_node_op_desc->GetId() < right_node_op_desc->GetId()) {
+      if (left.life_time_end >= static_cast<size_t>(right_node_op_desc->GetId())) {
         return true;
       }
-    } else if (left.GetLifeBegin() == right.GetLifeBegin()) {
+    } else if (left_node_op_desc->GetId() == right_node_op_desc->GetId()) {
       return true;
     } else {
-      if (right.life_time_end >= left.GetLifeBegin()) {
+      if (right.life_time_end >= static_cast<size_t>(left_node_op_desc->GetId())) {
         return true;
       }
     }
@@ -322,7 +326,12 @@ void MemoryBlock::AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_
 size_t MemoryBlock::GetLifeBegin() {
   size_t life_time = 0;
   if (!node_type_index_list_.empty()) {
-      life_time = node_type_index_list_.front().GetLifeBegin();
+    if (node_type_index_list_.front().node != nullptr) {
+      auto node_op_desc = node_type_index_list_.front().node->GetOpDesc();
+      if (node_op_desc != nullptr) {
+        life_time = node_op_desc->GetId();
+      }
+    }
   }
   return life_time;
 }
@@ -409,7 +418,7 @@ void MemoryBlock::AddDependLifeBegin(DependStreamLife &total_node_depend_stream_
   depend_stream_life_[stream_id_] = GetLifeBegin();
 }
 
-size_t MemoryBlock::GetLifeEnd() const {
+size_t MemoryBlock::GetLifeEnd() {
   if (!node_type_index_list_.empty()) {
     return node_type_index_list_.back().life_time_end;
   }
@@ -542,11 +551,31 @@ void GetMaxBatchAllMemorySize(std::map<std::string, vector<int64_t>> &batch_all_
   }
 }
 
+void BlockMemAssigner::MarkContinuousAllocedForOneInputFromVariable(const NodePtr &node) {
+  auto node_op_desc = node->GetOpDesc();
+  GE_IF_BOOL_EXEC(node_op_desc == nullptr, return);
+  // if input size just one and from variable, no need to reassign continuous memory
+  bool is_input_continuous = false;
+  (void)ge::AttrUtils::GetBool(node_op_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
+  if (is_input_continuous && (node_op_desc->GetInputsSize() == 1)) {
+    auto peer_out_anchor = node->GetInDataAnchor(0)->GetPeerOutAnchor();
+    GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, return);
+    auto in_node = peer_out_anchor->GetOwnerNode();
+    GE_IF_BOOL_EXEC(in_node == nullptr, return);
+    if (in_node->GetType() == VARIABLE || in_node->GetType() == CONSTANT) {
+      GELOGI("node only one input and from variable, set continuous alloced. node_name:%s", node->GetName().c_str());
+      (void)ge::AttrUtils::SetBool(node_op_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, true);
+    }
+  }
+}
+
 void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
   vector<int64_t> temp;
   std::map<std::string, vector<int64_t>> batch_all_memory_size;
   std::map<std::string, int64_t> batch_total_size;
   for (const NodePtr &n : compute_graph_->GetAllNodes()) {
+    MarkContinuousAllocedForOneInputFromVariable(n);
+
     auto node_op_desc = n->GetOpDesc();
     GE_IF_BOOL_EXEC(node_op_desc == nullptr, continue);
 
@@ -563,29 +592,32 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
 
     for (auto &out_anchor : n->GetAllOutDataAnchors()) {
       GeTensorDesc output_desc = node_op_desc->GetOutputDesc(out_anchor->GetIdx());
-      int64_t size = 0;
-      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(output_desc, size) != SUCCESS, GELOGI("Get size failed"));
-      GE_IF_BOOL_EXEC(size < 0, GELOGE(FAILED, "Node:%s size:%ld is invalid, maybe it is unknown shape node.",
-                                       node_op_desc->GetName().c_str(), size);
-                      return;);
-      batch_all_memory_size[batch_label].emplace_back(size);
-      if (batch_total_size.find(batch_label) == batch_total_size.end()) {
-        batch_total_size[batch_label] = size;
-      } else {
-        batch_total_size[batch_label] += size;
-      }
+      bool reuse_input = false;
+      GE_IF_BOOL_EXEC(ge::TensorUtils::GetReuseInput(output_desc, reuse_input) != SUCCESS,
+                      GELOGI("Get reuse_input failed"));
 
-      if (!anchor_to_symbol_.empty()) {
-        auto iter1 = anchor_to_symbol_.find(NodeIndexIO(n, out_anchor->GetIdx(), kOut).ToString());
-        if (iter1 == anchor_to_symbol_.end()) {
-          continue;
+      if (!reuse_input) {
+        int64_t size = 0;
+        GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(output_desc, size) != SUCCESS, GELOGI("Get size failed"));
+        batch_all_memory_size[batch_label].emplace_back(size);
+        if (batch_total_size.find(batch_label) == batch_total_size.end()) {
+          batch_total_size[batch_label] = size;
+        } else {
+          batch_total_size[batch_label] += size;
         }
-        const std::string &symbol = iter1->second;
-        auto iter2 = symbol_size_.find(symbol);
-        if (iter2 == symbol_size_.end()) {
-          symbol_size_[symbol] = size;
-        } else if (size > static_cast<int64_t>(iter2->second)) {
-          iter2->second = size;
+
+        if (!anchor_to_symbol_.empty()) {
+          auto iter1 = anchor_to_symbol_.find(NodeIndexIO(n, out_anchor->GetIdx(), kOut).ToString());
+          if (iter1 == anchor_to_symbol_.end()) {
+            continue;
+          }
+          const std::string &symbol = iter1->second;
+          auto iter2 = symbol_size_.find(symbol);
+          if (iter2 == symbol_size_.end()) {
+            symbol_size_[symbol] = size;
+          } else if (size > static_cast<int64_t>(iter2->second)) {
+            iter2->second = size;
+          }
         }
       }
     }
@@ -626,17 +658,35 @@ bool IsDirectOutputNode(const NodePtr &node, int idx) {
   return false;
 }
 
-bool CanReuseBlock(size_t continuous_life_begin, const MemoryBlock &reusable_block, size_t block_size) {
+void AddReusableBlockCount(const MemoryBlock &mem_block, map<string, uint64_t> &reusable_block_counts) {
+  string key = std::to_string(mem_block.Size());
+  key += "_" + std::to_string(mem_block.stream_id_);
+  key += "_" + std::to_string(mem_block.memory_type_);
+  auto it = reusable_block_counts.find(key);
+  if (it != reusable_block_counts.end()) {
+    it->second++;
+  } else {
+    reusable_block_counts[key] = 1;
+  }
+}
+
+void ReduceReusableBlockCount(const MemoryBlock &mem_block, map<string, uint64_t> &reusable_block_counts) {
+  string key = std::to_string(mem_block.Size());
+  key += "_" + std::to_string(mem_block.stream_id_);
+  key += "_" + std::to_string(mem_block.memory_type_);
+  auto it = reusable_block_counts.find(key);
+  if (it != reusable_block_counts.end()) {
+    if (it->second > 0) {
+      it->second--;
+    }
+  }
+}
+
+bool CanReuseBySize(const map<string, uint64_t> &reusable_block_counts, const MemoryBlock &reusable_block,
+                    size_t block_size, size_t real_size, bool continuous) {
   bool can_reuse = false;
   if (reusable_block.Size() == block_size) {
-    // in some continuous input case, continuous first input node's is not same as topo first node.
-    if (continuous_life_begin > 0) {
-      if (continuous_life_begin > reusable_block.GetLifeEnd()) {
-        can_reuse = true;
-      }
-    } else {
-      can_reuse = true;
-    }
+    can_reuse = true;
   }
   return can_reuse;
 }
@@ -647,13 +697,6 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
   if (n == nullptr || n->GetAllOutDataAnchors().size() <= 0) {
     return false;
   }
-  auto node_desc = n->GetOpDesc();
-  GE_IF_BOOL_EXEC(node_desc == nullptr, GELOGE(FAILED, "Node[%s] nodedesc is null.", n->GetName().c_str());
-                  return false;);
-  std::vector<int64_t> offsets_for_fusion = {};
-  bool has_lx_fusion_attr =
-      AttrUtils::GetListInt(node_desc, ATTR_NAME_OUTPUT_OFFSET_FOR_BUFFER_FUSION, offsets_for_fusion);
-
   if (static_cast<size_t>(out_index) < n->GetAllOutDataAnchors().size()) {
     auto out_anchor = n->GetOutDataAnchor(out_index);
     GE_IF_BOOL_EXEC(out_anchor == nullptr,
@@ -676,17 +719,16 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
                       return false;);
 
       // If GetBool fail, is_input_continuous is false.
-      (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_NOPADDING_CONTINUOUS_INPUT, is_input_continuous);
-      if (is_input_continuous) {
+      bool is_input_continuous_no_padding = false;
+      (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_NOPADDING_CONTINUOUS_INPUT,
+                                   is_input_continuous_no_padding);
+      if (is_input_continuous_no_padding) {
         reset_zero_copy_flag = true;
-        has_lx_fusion_attr = true;
-      } else {
-        (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
+        return false;
       }
+      (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
 
-      // lx_fusion memory only assign first input, broadcast's input some are variable some are not, reassign later
-      GE_IF_BOOL_EXEC(is_input_continuous &&
-          (CheckIsZeroMemNodeType(peer_node->GetType()) || (has_lx_fusion_attr && (peer_in_anchor->GetIdx() != 0))),
+      GE_IF_BOOL_EXEC(is_input_continuous && CheckIsZeroMemNodeType(peer_node->GetType()),
                       GELOGI("Node[%s] output[%u] no_need_assign_memory.", n->GetName().c_str(), out_index);
                       no_need_assign_memory = true;
                       return false;);
@@ -700,10 +742,6 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
           // Only set attr one times.
           if (node_continuous_input_blocks_[peer_in_node_desc->GetName()].size() == 0) {
             (void)ge::AttrUtils::SetBool(peer_in_node_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, true);
-            // lx fusion case assign max size for first block, so reuse as none continuous
-            GE_IF_BOOL_EXEC(has_lx_fusion_attr,
-                            is_op_reuse_mem_ = IsContinuousMemoryReuse(n, peer_node, out_index);
-                            return false;);
             node_continuous_input_counts_[peer_in_node_desc->GetName()] = peer_node->GetAllInDataAnchorsSize();
           }
           peer_input_index = peer_in_anchor->GetIdx();
@@ -714,95 +752,6 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
     }
   }
   return false;
-}
-
-bool IsContinuousInputNodeMaxLife(const NodePtr &n, uint32_t out_index) {
-  if (n == nullptr) {
-    return false;
-  }
-
-  int64_t max_node_life_time = 0;
-  int64_t continuous_input_node_life_time = 0;
-  if (static_cast<size_t>(out_index) < n->GetAllOutDataAnchors().size()) {
-    auto out_anchor = n->GetOutDataAnchor(out_index);
-    if(out_anchor == nullptr) {
-      return false;
-    }
-
-    // continuous input node's life time should be max
-    for (auto const &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
-      if ((peer_in_anchor == nullptr) || (peer_in_anchor->GetOwnerNode() == nullptr)){
-        return false;
-      }
-      auto peer_in_node_desc = peer_in_anchor->GetOwnerNode()->GetOpDesc();
-      GE_IF_BOOL_EXEC(peer_in_node_desc == nullptr,
-                      GELOGE(FAILED, "Node[%s] output[%u] peer in node desc is null.", n->GetName().c_str(), out_index);
-      return false;);
-
-      if(peer_in_node_desc->GetId() > max_node_life_time) {
-        max_node_life_time = peer_in_node_desc->GetId();
-      }
-
-      // If GetBool fail, is_input_continuous is false.
-      bool is_input_continuous = false;
-      (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_NOPADDING_CONTINUOUS_INPUT, is_input_continuous);
-      if (!is_input_continuous) {
-        (void)ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
-      }
-      if (is_input_continuous) {
-        continuous_input_node_life_time = peer_in_node_desc->GetId();
-      }
-    }
-  }
-  return ((max_node_life_time != 0) && (continuous_input_node_life_time == max_node_life_time)) ;
-}
-
-///
-/// @ingroup GE
-/// @brief Check continuous memory reuseable
-/// @return void
-///
-bool BlockMemAssigner::IsContinuousMemoryReuse(const NodePtr &n, const NodePtr &peer_node, uint32_t out_index) {
-  // n,peer_node_desc have been checked
-  auto node_desc = n->GetOpDesc();
-  auto peer_node_desc = peer_node->GetOpDesc();
-  continuous_life_begin_ = static_cast<size_t>(node_desc->GetId());
-  // lx fusion case check all continuous input node, firt input node's life time should be min
-  for (const auto &in_anchor : peer_node->GetAllInDataAnchors()) {
-    if ((in_anchor == nullptr) || (in_anchor->GetPeerOutAnchor() == nullptr) ||
-        (in_anchor->GetPeerOutAnchor()->GetOwnerNode() == nullptr) ||
-        (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetOpDesc() == nullptr)) {
-      GELOGE(FAILED, "Node[%s] output[%u] peer input node desc is null.", n->GetName().c_str(), out_index);
-      return false;
-    }
-    auto peer_out_node_desc = in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetOpDesc();
-    ///
-    ///  node2 node1  node3
-    ///      |   /   / |
-    ///      node5    node6
-    /// firt input node's life time is not min
-    /// when node5's first input node2's life time is not min(node2 > node1), use node1's life time to reuse
-    ///
-    if (static_cast<size_t>(peer_out_node_desc->GetId()) < continuous_life_begin_) {
-      continuous_life_begin_ = static_cast<size_t>(peer_out_node_desc->GetId());
-      GELOGI(
-        "Node[%s] life[%ld] output[%u] is not continuous input node[%s] life[%ld]'s min life time,"
-        "min is node[%s] life[%zu]",
-        n->GetName().c_str(), node_desc->GetId(), out_index, peer_node_desc->GetName().c_str(),
-        peer_node_desc->GetId(), peer_out_node_desc->GetName().c_str(), continuous_life_begin_);
-    }
-    // when node3's output node5's life time is not max(node6 > node5), not reuse
-    if (!IsContinuousInputNodeMaxLife(in_anchor->GetPeerOutAnchor()->GetOwnerNode(),
-                                      in_anchor->GetPeerOutAnchor()->GetIdx())) {
-      GELOGI(
-        "Node[%s] life[%ld] output[%u]'s continuous input node[%s] life[%ld]'s is not node[%s] output[%d]'s "
-        "max life node",
-        n->GetName().c_str(), node_desc->GetId(), out_index, peer_node_desc->GetName().c_str(),
-        peer_node_desc->GetId(), peer_out_node_desc->GetName().c_str(), in_anchor->GetPeerOutAnchor()->GetIdx());
-      return false;
-    }
-  }
-  return true;
 }
 
 ///
@@ -1090,9 +1039,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
         GE_IF_BOOL_EXEC(reusable_block->batch_label_ != batch_label, continue);
 
         // A node can reuse blocks of the same stream and preorder streams
-        if (CanReuseBlock(continuous_life_begin_, *reusable_block, block_size)) {
-          reusable_block->AddNodeTypeIndex({n, mem_type, out_index, false, continuous_life_begin_},
-                                           real_size, no_align_size);
+        if (CanReuseBySize(reusable_block_counts_, *reusable_block, block_size, real_size, continuous)) {
+          reusable_block->AddNodeTypeIndex({n, mem_type, out_index, false}, real_size, no_align_size);
           if (mem_type == kOutput) {
             auto iter = anchor_to_symbol_.find(NodeIndexIO(n, out_index, kOut).ToString());
             if (iter != anchor_to_symbol_.end()) {
@@ -1101,6 +1049,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
           }
           reusable_block->continuous_block_ = continuous;
           reusable_block->ref_count_++;
+          ReduceReusableBlockCount(*reusable_block, reusable_block_counts_);
           reusable_blocks_[memory_type][stream_id].erase((++it).base());
           return reusable_block;
         }
@@ -1113,7 +1062,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
 
   // Data and netoutput need zero copy block
   block->is_zero_copy_ = IsZeroCopyBlock(n, continuous);
-  block->AddNodeTypeIndex({n, mem_type, out_index, false, continuous_life_begin_}, real_size, no_align_size);
+
+  block->Init(real_size, mem_type, n, out_index, no_align_size, node_op_desc->GetStreamId());
   block->stream_id_ = node_op_desc->GetStreamId();
   block->ref_count_++;
   block->continuous_block_ = continuous;
@@ -1131,18 +1081,73 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   return block;
 }
 
-MemoryBlock *BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges,
-                                                     const bool is_op_reuse_mem) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr, return nullptr, "input node is null.");
+bool IsOutputIndexRef(const OpDescPtr &op_desc, uint32_t index) {
+  auto output_tensor = op_desc->GetOutputDescPtr(index);
+  bool dst_reuse_input = false;
+  (void)ge::TensorUtils::GetReuseInput(*output_tensor, dst_reuse_input);
+  if (dst_reuse_input) {
+    return true;
+  }
+
+  bool is_ref = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_REFERENCE, is_ref);
+  if (is_ref) {
+    string output_name = op_desc->GetOutputNameByIndex(index);
+    for (const auto &input_name : op_desc->GetAllInputNames()) {
+      if (output_name == input_name) {
+        return true;;
+      }
+    }
+  }
+  return false;
+}
+
+void BlockMemAssigner::ContinuousOutRefCheck(bool &isAllOutputRef, bool &isOutputHasRef,
+                                             const NodePtr &n) {
+  const auto node_op_desc = n->GetOpDesc();
+  for (uint32_t index = 0; index < static_cast<uint32_t>(node_op_desc->GetOutputsSize()); index++) {
+    if (!IsOutputIndexRef(node_op_desc, index)) {
+      isAllOutputRef = false;
+      break;
+    } else {
+      zero_memory_list_.emplace_back(n, kOutput, index);
+      isOutputHasRef = true;
+    }
+  }
+}
+
+
+Status BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges,
+                                               const bool is_op_reuse_mem) {
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr, return INTERNAL_ERROR, "input node is null.");
   auto node_op_desc = n->GetOpDesc();
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node_op_desc == nullptr, return nullptr, "node_op_desc is null.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node_op_desc == nullptr, return INTERNAL_ERROR, "node_op_desc is null.");
+
+  // continuous output support ref only when all output ref input
+  bool isAllOutputRef = true;
+  bool isOutputHasRef = false;
+
+  ContinuousOutRefCheck(isAllOutputRef, isOutputHasRef, n);
+
+  if (isAllOutputRef) {
+    GELOGI("continuous output node ref all input, skip continuous alloc, node_name:%s", n->GetName().c_str());
+    return SUCCESS;
+  }
+
+  if (!isAllOutputRef && isOutputHasRef) {
+    GELOGE(INTERNAL_ERROR, "continuous output node ref part input, not support this situation, node_name:%s",
+           n->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
   MemoryBlock *block = nullptr;
   int64_t total_size = 0;
   int64_t memory_type = RT_MEMORY_HBM;
   for (uint32_t index = 0; index < static_cast<uint32_t>(node_op_desc->GetOutputsSize()); index++) {
     auto output_op_desc = node_op_desc->GetOutputDescPtr(index);
     if (output_op_desc == nullptr) {
-      return nullptr;
+      GELOGE(INTERNAL_ERROR, "Get output desc failed, node_name:%s, output_index:%u", n->GetName().c_str(), index);
+      return INTERNAL_ERROR;
     }
 
     if (CheckIsZeroMemNodeType(n->GetType())) {
@@ -1152,8 +1157,8 @@ MemoryBlock *BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vec
 
     int64_t size = 0;
     if (ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS) {
-      GELOGI("Get size failed");
-      return nullptr;
+      GELOGE(INTERNAL_ERROR, "Get size failed, node_name:%s, output_index:%u", n->GetName().c_str(), index);
+      return INTERNAL_ERROR;
     }
     size_t align_size = static_cast<size_t>(size);
     AlignMemOffset(align_size);
@@ -1176,7 +1181,7 @@ MemoryBlock *BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vec
   }
 
   if (total_size == 0) {
-    return nullptr;
+    return SUCCESS;
   }
 
   auto block_size = GetBlockSize(total_size, ranges);
@@ -1190,8 +1195,11 @@ MemoryBlock *BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vec
     // hccl task need align header and tail
     block->first_continuous_block_ = true;
     block->last_continuous_block_ = true;
+  } else {
+    GELOGE(INTERNAL_ERROR, "node apply continuous output memory failed. node_name:%s", n->GetName().c_str());
+    return INTERNAL_ERROR;
   }
-  return block;
+  return SUCCESS;
 }
 
 MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, const vector<int64_t> &ranges,
@@ -1203,9 +1211,8 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
   NodeIndexIO node_index_io(n, index, kOut);
   int64_t size = 0;
   auto output_op_desc = node_op_desc->GetOutputDescPtr(index);
-  if (output_op_desc != nullptr) {
-    GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS, GELOGI("Get size failed"));
-  }
+  GE_IF_BOOL_EXEC(output_op_desc == nullptr, return nullptr);
+  GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS, GELOGI("Get size failed"));
   size_t no_align_size = 0;
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(GetNoAlignSize(*node_op_desc, index, no_align_size) != SUCCESS,
                                  return nullptr, "Get no align size failed");
@@ -1213,24 +1220,16 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
   std::string symbol;
   if (IsSymbolExist(node_index_io, symbol)) {
     block = symbol_blocks_[symbol];
-    GE_IF_BOOL_EXEC(block == nullptr, GELOGE(FAILED, "Node %s ref block is nullptr.", node_op_desc->GetName().c_str());
-        return nullptr);
-    // reduce old size
-    size_t align_size = block->Size();
-    AlignMemOffset(align_size);
-    theory_memory_size_ -= align_size;
-
-    auto block_size = GetBlockSize(size, ranges);
-    block->SetSize(block_size);
-    block->SetLifeTimeEnd(life_time_);
-    block->AddNodeTypeIndex({n, kOutput, index, true, continuous_life_begin_}, size, no_align_size);
+    block->AddNodeTypeIndex({n, kOutput, index, true}, size, no_align_size);
     block->ref_count_++;
-
-    // add new size
-    align_size = block_size;
-    AlignMemOffset(align_size);
-    theory_memory_size_ += align_size;
   } else {
+    // if ref input is variable, can not find symbol, must judge alone
+    if (IsOutputIndexRef(node_op_desc, index)) {
+      zero_memory_list_.emplace_back(n, kOutput, index, false);
+      GELOGI("ref mode skip out block assign. node_name: %s, index:%d", n->GetName().c_str(), index);
+      return nullptr;
+    }
+
     int64_t max_size = size;
     int64_t memory_type = RT_MEMORY_HBM;
     auto iter1 = anchor_to_symbol_.find(node_index_io.ToString());
@@ -1282,6 +1281,7 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetReuseInputIndex(*owner_node_op_desc, dst_reuse_input_index) != SUCCESS,
                       GELOGI("Get dst_reuse_input_index failed"));
       if (dst_reuse_input && (dst_reuse_input_index == static_cast<uint32_t>(in_anchor->GetIdx()))) {
+        block->AddNodeTypeIndex({owner_node, kOutput, i, true}, block->Size(), block->Size());
         out_count_reuse_input += 1;
         reuse_input = true;
       }
@@ -1322,7 +1322,7 @@ bool IsAtomicOutputMemory(const ge::NodePtr &node, uint32_t output_index, bool i
       if (static_cast<uint32_t>(index) == output_index) {
         if (node->GetOwnerComputeGraph() != nullptr) {
           string graph_name = node->GetOwnerComputeGraph()->GetName();
-          GELOGD("Atomic no assign %s name[%s] output[%ld] streamid[%ld].", graph_name.c_str(),
+          GELOGD("[IMAS]Atomic no assign %s name[%s] output[%ld] streamid[%ld].", graph_name.c_str(),
                  op_desc->GetName().c_str(), index, op_desc->GetStreamId());
         }
         return true;
@@ -1360,6 +1360,7 @@ void BlockMemAssigner::ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock
     if (to_release->same_stream_) {
       to_release->SetLifeTimeEnd(life_time_);
       reusable_memory.emplace_back(to_release);
+      AddReusableBlockCount(*to_release, reusable_block_counts_);
     }
   }
 }
@@ -1459,7 +1460,6 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   }
 
   is_op_reuse_mem_ = true;
-  continuous_life_begin_ = 0;
   if (op_reuse_env_valid_ == true) {
     vector<string>::iterator it_name =
       std::find(op_no_reuse_mem_vec_.begin(), op_no_reuse_mem_vec_.end(), op_desc->GetName());
@@ -1477,8 +1477,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
                   for (auto iter = stream_workspace_blocks_.begin(); iter != stream_workspace_blocks_.end();
                        ++iter) { ReleaseMemorys(iter->second[stream_id], reusable_blocks_[iter->first][stream_id]); });
   if (IsContinuousOutput(node)) {
-    (void)ApplyContinuousMemory(node, ranges, is_op_reuse_mem_);
-    return SUCCESS;
+    return ApplyContinuousMemory(node, ranges, is_op_reuse_mem_);
   }
   for (uint32_t i = 0; i < static_cast<uint32_t>(op_desc->GetOutputsSize()); i++) {
     int64_t size = 0;
@@ -1486,6 +1485,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     if (output_op_desc != nullptr) {
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS, GELOGI("Get size failed"));
     }
+
     // fusion: other type's size not means malloc HBM memory
     bool l1_flag = has_mem_type_attr && memorys_type[i] == RT_MEMORY_L1;
     if (l1_flag) {
@@ -1493,6 +1493,11 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
              op_desc->GetName().c_str(), op_desc->GetOutputNameByIndex(i).c_str(), memorys_type[i]);
       size = 0;
     }
+
+    int32_t calc_type = 0;
+    bool ret = ge::AttrUtils::GetInt(output_op_desc, ATTR_NAME_MEMORY_SIZE_CALC_TYPE, calc_type);
+    GE_IF_BOOL_EXEC((ret && (calc_type == static_cast<int32_t>(ge::MemorySizeCalcType::ALWAYS_EMPTY))), size = 0;);
+
     std::string peer_name;
     uint32_t peer_input_index = 0;
     bool out_node_set_continuous_input = false;
@@ -1511,7 +1516,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
       continue;
     }
     // atomic can't be reused
-    bool need_change = is_op_reuse_mem_ && is_atomic;
+    bool need_change = is_op_reuse_mem_ && out_node_set_continuous_input && is_atomic;
     if (need_change) {
       is_op_reuse_mem_ = false;
     }
@@ -1904,12 +1909,11 @@ void SetOffsetSize(const NodeTypeIndex &node_type, const MemoryBlock *block,
     }
     op_desc->SetWorkspace(workspace_list);
   }
-  GELOGI("[IMAS]Set %s name[%s] optype[%s] %s[%u] offset to [%ld] streamid[%ld] memtype[%ld] size[%zu] realsize[%zu] "
-         "noalignsize[%zu] life time begin[%s] life time end[%zu] child[%d:%d:%d:%d:%d] isref[%d] batch[%s]",
-         graph_name.c_str(), op_desc->GetName().c_str(), node_type.node->GetType().c_str(),
-         node_type.GetMemType().c_str(), node_type.index, offset, op_desc->GetStreamId(),block->memory_type_,
-         block->Size(), real_size, no_align_size, node_type.GetLifeBeginDesc().c_str(), end, child_block_level,
-         block->reuse_mem_, block->continuous_block_, block->is_zero_copy_, block->same_stream_, node_type.ref_input,
+  GELOGI("[IMAS]Set %s name[%s] %s[%u] offset to [%ld] streamid[%ld] size[%zu] realsize[%zu] noalignsize[%zu] "
+         "life time begin[%zu] life time end[%zu] child[%d:%d:%d:%d:%d] isref[%d] batch[%s]", graph_name.c_str(),
+         op_desc->GetName().c_str(), node_type.GetMemType().c_str(), node_type.index, offset, op_desc->GetStreamId(),
+         block->Size(), real_size, no_align_size, op_desc->GetId(), end, child_block_level, block->reuse_mem_,
+         block->continuous_block_, block->is_zero_copy_, block->same_stream_, node_type.ref_input,
          block->batch_label_.c_str());
 }
 
@@ -1973,9 +1977,8 @@ Status BlockMemAssigner::Assign() {
 
 bool BlockMemAssigner::CheckIsZeroMemNodeType(const string &node_type) const {
   return (node_type == VARIABLE) || (node_type == CONSTANT) || (node_type == MULTISHAPE) ||
-         (node_type == HCOMBROADCAST) || (node_type == CONSTANTOP) ||
-         (node_type == ASSIGNADD) || (node_type == ASSIGNSUB) || (node_type == ASSIGN) || (node_type == HVDWAIT) ||
-         (node_type == HVDCALLBACKBROADCAST);
+         (node_type == CONSTANTOP) || (node_type == ASSIGNADD) || (node_type == ASSIGNSUB) ||
+         (node_type == ASSIGN) || (node_type == HVDWAIT);
 }
 
 bool BlockMemAssigner::GetWorkSpaceMemoryType(const NodePtr &node, size_t index, int64_t &memory_type) {

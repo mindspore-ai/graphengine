@@ -98,6 +98,8 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
   Status UpdateIoAddr(TaskContext &context) override;
 
  private:
+  Status SetMemCopyTask(const domi::TaskDef &task_def);
+
   Status InitForDependComputeTask();
 
   Status UpdateShapeAndDataByResultSummary(TaskContext &context);
@@ -117,11 +119,9 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
                                 const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
   Status PrepareCopyInputs(const TaskContext &context,
-                           const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm,
-                           uint64_t &copy_num);
+                           const std::vector<std::unique_ptr<TensorBuffer>> &out_shape_hbm);
 
   static Status EnsureSessionCreated(uint64_t session_id);
-  static Status GenMemCopyTask(uint64_t count, STR_FWK_OP_KERNEL &task, std::string &task_info);
   static uint64_t GetStepIdAddr(const HybridModel &model);
  private:
   // kernel buf, device mem
@@ -145,6 +145,8 @@ class AicpuTfNodeTask : public AicpuNodeTaskBase {
   std::unique_ptr<TensorBuffer> copy_input_src_dev_;
   std::unique_ptr<TensorBuffer> copy_input_dst_dev_;
   bool need_sync_ = false;
+
+  std::unique_ptr<TensorBuffer> copy_workspace_buf_;
 };
 
 class AicpuNodeTask : public AicpuNodeTaskBase {

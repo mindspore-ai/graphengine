@@ -57,6 +57,7 @@ message TaskDef {
     LabelSetDef label_set = 37;
     LabelGotoExDef label_goto_ex = 38;
     LabelSwitchByIndexDef label_switch_by_index = 39;
+    KernelDefWithHandle kernel_with_handle = 40;
 }
 
 message KernelDef {
@@ -72,6 +73,19 @@ message KernelDef {
     string kernel_name = 17;
     bytes kernel_ext_info = 18;
     uint32 kernel_ext_info_size = 19;
+}
+
+message KernelDefWithHandle {
+    KernelContext context = 1;
+
+    uint64 handle = 10;
+    string dev_func = 11;
+    uint32 block_dim = 12;
+    uint32 args_size = 13;
+    bytes args = 14;
+    bytes sm_desc = 15;
+    string original_kernel_key = 16;
+    string node_info = 17;
 }
 
 message KernelContext {

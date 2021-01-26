@@ -92,6 +92,7 @@
 #include "graph/passes/unused_args_clean_pass.h"
 #include "graph/passes/global_step_insert_pass.h"
 #include "graph/passes/memcpy_addr_async_pass.h"
+#include "graph/passes/hccl_memcpy_pass.h"
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
@@ -729,9 +730,7 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   CompilerStages &stages = GetCompilerStages(graph_node->GetGraphId());
   GM_RUN_AND_DUMP_PERF("OptimizeWholeGraph", stages.optimizer.OptimizeWholeGraph, compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
-  GM_RUN_AND_DUMP_PERF("OptimizeGraphBeforeBuildForRts",
-                       GetCompilerStages(graph_node->GetGraphId()).optimizer.OptimizeGraphBeforeBuildForRts,
-                       compute_graph);
+  GM_RUN_AND_DUMP_PERF("OptimizeBeforeBuildForRts", stages.optimizer.OptimizeGraphBeforeBuildForRts, compute_graph);
 
   Status ret = compute_graph->TopologicalSorting();
   if (ret != SUCCESS) {
@@ -2150,6 +2149,8 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
                                                new (std::nothrow) TransOpWithoutReshapeFusionPass))
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage1_1::TransOpBreadthFusionPass",
                                                new (std::nothrow) TransOpBreadthFusionPass))
+  GE_CHK_STATUS_RET(
+      after_merge_passes.AddPass("OptimizeStage1_1::HcclMemcpyPass", new (std::nothrow) HcclMemcpyPass));
 
   GE_TIMESTAMP_START(after_merge_passes);
   auto ret = after_merge_passes.Run(compute_graph);
@@ -2776,7 +2777,7 @@ Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr>
     }
 
     GetLocalOmgContext().user_real_input_dims.emplace_back(input_tensor.at(index).dims);
-    GELOGI("Shape dims of %d data is %s.", index, formats::JoinToString(input_tensor.at(index).dims).c_str());
+    GELOGI("Shape dims of %zu data is %s.", index, formats::JoinToString(input_tensor.at(index).dims).c_str());
   }
   return SUCCESS;
 }
@@ -3121,9 +3122,8 @@ Status GraphManager::Build(const GraphNodePtr &graph_node, ComputeGraphPtr &comp
     graph_name.append(std::to_string(graph_node->GetGraphId()));
     compute_graph->SetName(graph_name);
   }
-  std::vector<SubGraphInfoPtr> sub_graph_list;
-  auto ret = GetCompilerStages(graph_node->GetGraphId()).builder.Build(compute_graph, sub_graph_list, ge_root_model,
-                                                                      session_id);
+
+  auto ret = GetCompilerStages(graph_node->GetGraphId()).builder.Build(compute_graph, ge_root_model, session_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "SubGraph build Failed.");
     return ret;

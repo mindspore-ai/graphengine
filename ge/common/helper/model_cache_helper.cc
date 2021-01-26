@@ -28,7 +28,7 @@
 #include "framework/common/util.h"
 #include "graph/detail/attributes_holder.h"
 #include "graph/detail/model_serialize_imp.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/model.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -1000,8 +1000,8 @@ Status ModelCacheHelper::RecoverVarAddrAndTensorDesc(const Json &json) const {
       auto offset = (tensor_addr_mgr.offset);
       // Check logic address and offset
       if (logic_address - offset != VarManager::Instance(session_id_)->GetVarMemLogicBase()) {
-        GELOGW("Check logic_address[%u] and offset [%u] of %s failed, var mem logic base is %u, abandon", logic_address,
-               offset, iter.first.c_str(), VarManager::Instance(session_id_)->GetVarMemLogicBase());
+        GELOGW("Check logic_address[%lu] and offset [%lu] of %s failed, var mem logic base is %lu, abandon",
+               logic_address, offset, iter.first.c_str(), VarManager::Instance(session_id_)->GetVarMemLogicBase());
         return PARAM_INVALID;
       }
       // Offset is needed by SaveVarVddr instead of logic address

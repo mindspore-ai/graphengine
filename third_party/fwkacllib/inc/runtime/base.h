@@ -113,6 +113,12 @@ typedef void *rtEvent_t;
 typedef void *rtLabel_t;
 
 /**
+ * @ingroup dvrt_base
+ * @brief model handle.
+ */
+typedef void *rtModel_t;
+
+/**
  * @ingroup profiling_base
  * @brief runtime handle.
  */
@@ -219,6 +225,16 @@ RTS_API rtError_t rtLabelCreate(rtLabel_t *label);
 
 /**
  * @ingroup dvrt_base
+ * @brief create label instance
+ * @param [out] label  created label
+ * @param [in] model  label set model
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtLabelCreateV2(rtLabel_t *label, rtModel_t model);
+
+/**
+ * @ingroup dvrt_base
  * @brief set label and stream instance
  * @param [in] label   set label
  * @param [in] stream  set stream
@@ -313,6 +329,17 @@ RTS_API rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *d
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
+
+/**
+ * @ingroup dvrt_base
+ * @brief labels to dev info
+ * @param [out] label  created label handle
+ * @param [in] model  label bind model
+ * @param [in] stream  label bind stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream);
 
 /**
  * @ingroup dvrt_base

@@ -142,17 +142,18 @@ Status SubgraphPass::SubgraphOutputNode(const ComputeGraphPtr &graph, const Node
     GE_CHECK_NOTNULL(in_node);
 
     // Need insert memcpy
-    //   1. Const->NetOutput in subgraph
+    //   1. Const->NetOutput in subgraph & parent graph is known
     //   2. AtomicOp->NetOutput in subgraph
     //   3. OutputContinuesRequiredOp->NetOutput in subgraph
     //   4. Data->NetOutput in subgraph but parent_node is not while
     //   5. While->NetOutput in known subgraph
     std::string op_type;
-    bool insert_flag = NodeUtils::GetConstOpType(in_node, op_type) ||
+    bool insert_flag =
+        (NodeUtils::GetConstOpType(in_node, op_type) && !graph->GetParentGraph()->GetGraphUnknownFlag()) ||
         IsAtomicRequired(in_node, peer_out_anchor->GetIdx()) || IsOutputContinuesRequired(in_node) ||
         ((in_node->GetType() == DATA) && (kWhileOpTypes.count(graph->GetParentNode()->GetType()) == 0)) ||
         (!graph->GetGraphUnknownFlag() && NodeUtils::IsDynamicShape(node) &&
-            (kWhileOpTypes.count(in_node->GetType()) != 0));
+        (kWhileOpTypes.count(in_node->GetType()) != 0));
     if (insert_flag) {
       GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
       std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
@@ -310,7 +311,7 @@ Status SubgraphPass::InsertInputMemcpy(const ComputeGraphPtr &graph, const std::
 Status SubgraphPass::InsertOutputMemcpy(const ComputeGraphPtr &graph, const NodePtr &output_node,
                                         const std::set<uint32_t> &bypass_index) {
   if (output_node->GetAllInDataAnchorsSize() == bypass_index.size()) {
-    GELOGD("No need to insert output memcpy node in while_body %s, output_size=%zu, bypass_num=%zu.",
+    GELOGD("No need to insert output memcpy node in while_body %s, output_size=%u, bypass_num=%zu.",
            graph->GetName().c_str(), output_node->GetAllInDataAnchorsSize(), bypass_index.size());
     return SUCCESS;
   }

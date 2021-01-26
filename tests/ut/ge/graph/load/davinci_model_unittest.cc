@@ -20,7 +20,7 @@
 #define protected public
 #include "graph/utils/graph_utils.h"
 #include "common/profiling/profiling_manager.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 
 using namespace std;
 
@@ -334,7 +334,7 @@ TEST_F(UtestDavinciModel, Init_variable_op) {
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
 
   EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
-  EXPECT_NE(model.SyncVarData(), SUCCESS);
+  EXPECT_EQ(model.SyncVarData(), SUCCESS);
 }
 
 TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {

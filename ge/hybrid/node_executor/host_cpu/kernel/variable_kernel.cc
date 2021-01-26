@@ -23,8 +23,6 @@ namespace ge {
 namespace hybrid {
 namespace host_cpu {
 Status VariableKernel::Compute(TaskContext& context) {
-  GELOGI("[%s] compute begin.", node_->GetName().c_str());
-
   auto tensor = context.GetVariable(node_->GetName());
   if (tensor == nullptr) {
     GELOGE(PARAM_INVALID, "tensor is NULL.");
@@ -32,7 +30,7 @@ Status VariableKernel::Compute(TaskContext& context) {
   }
   // Constant & Variable Op has and only has one output
   GE_CHK_STATUS_RET(context.SetOutput(0, *tensor), "[%s] Failed to set output.", context.GetNodeName());
-  GELOGI("[%s] compute success.", node_->GetName().c_str());
+  GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;
 }
 

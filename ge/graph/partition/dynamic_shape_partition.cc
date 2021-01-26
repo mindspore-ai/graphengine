@@ -213,6 +213,7 @@ std::string DynamicShapePartitioner::DebugString() const {
   size_t data = 0;
   size_t netoutput = 0;
   size_t is_inputnode = 0;
+  size_t stage = 0;
   std::stringstream ss;
   ss << "All unknown shape nodes:" << std::endl;
   for (const auto &node : unknown_shape_nodes_) {
@@ -229,10 +230,13 @@ std::string DynamicShapePartitioner::DebugString() const {
       netoutput++;
     } else if (cluster->IsInputNode()) {
       is_inputnode++;
+    } else if (cluster->IsIndependent()) {
+      stage++;
     }
   }
   ss << "All clusters:" << unique_clusters_.size() << ", data:" << data << ", known:" << known
-     << ", unknown:" << unknown << ", netoutput:" << netoutput << ", is_inputnode:" << is_inputnode << std::endl;
+     << ", unknown:" << unknown << ", netoutput:" << netoutput << ", is_inputnode:" << is_inputnode
+     << ", stage:" << stage << std::endl;
   for (const auto &cluster : unique_clusters_) {
     ss << "  " << cluster->DebugString() << std::endl;
   }
@@ -272,12 +276,15 @@ Status DynamicShapePartitioner::InitClusters() {
   for (const auto &node : graph->GetDirectNode()) {
     Cluster::Type type = Cluster::DATA;
     bool is_input = ((node->GetType() == CONSTANT) || (node->GetType() == CONSTANTOP)) && node->GetInNodes().empty();
+    REQUIRE_NOT_NULL(node->GetOpDesc(), "op_desc is null");
     if (node->GetType() == DATA) {
       type = Cluster::DATA;
     } else if (is_input) {
       type = Cluster::INPUT_NODE;
     } else if (node->GetType() == NETOUTPUT) {
       type = Cluster::NETOUTPUT;
+    } else if ((node->GetType() == PARTITIONEDCALL) && (node->GetOpDesc()->HasAttr(ATTR_STAGE_LEVEL))) {
+      type = Cluster::STAGE;
     } else if (unknown_shape_nodes_.count(node) > 0) {
       type = Cluster::UNKNOWN_SHAPE;
     } else {
@@ -360,6 +367,9 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
 void DynamicShapePartitioner::MergeClustersUnknownShape() {
   // Merge unknown shape clusters
   for (const auto &cluster : ordered_cluster_) {
+    if (cluster->IsIndependent()) {
+      continue;
+    }
     for (const auto &in_cluster : cluster->Inputs()) {
       if (!in_cluster->IsUnknownShape()) {
         continue;
@@ -379,6 +389,9 @@ void DynamicShapePartitioner::MergeClustersUnknownShape() {
 void DynamicShapePartitioner::MergeClustersKnownShape() {
   // Merge known shape clusters
   for (const auto &cluster : ordered_cluster_) {
+    if (cluster->IsIndependent()) {
+      continue;
+    }
     if (cluster->IsRefVariable() && cluster->Inputs().size() == 1) {
       auto in_cluster = *(cluster->Inputs().begin());
       in_cluster->Merge(cluster);
@@ -606,6 +619,7 @@ void Cluster::UpdateRank(size_t rank) {
 bool Cluster::IsData() const { return type_ == DATA; };
 bool Cluster::IsKnownShape() const { return type_ == KNOWN_SHAPE; };
 bool Cluster::IsUnknownShape() const { return type_ == UNKNOWN_SHAPE; };
+bool Cluster::IsIndependent() const { return type_ == STAGE; };
 bool Cluster::IsNetOutput() const { return type_ == NETOUTPUT; };
 bool Cluster::IsInputNode() const { return type_ == INPUT_NODE; };
 bool Cluster::IsRefVariable() const {
@@ -641,6 +655,9 @@ void Cluster::RemoveOutput(ClusterPtr out) {
                           out->in_clusters_.end());
 };
 void Cluster::Merge(ClusterPtr other) {
+  if (other->IsIndependent()) {
+    return;
+  }
   nodes_.insert(nodes_.end(), other->nodes_.begin(), other->nodes_.end());
   other->in_clusters_.erase(std::remove(other->in_clusters_.begin(), other->in_clusters_.end(), shared_from_this()),
                             other->in_clusters_.end());
@@ -689,7 +706,9 @@ std::vector<ClusterPtr> Cluster::MergeAllPathFrom(ClusterPtr other) {
   std::unordered_set<ClusterPtr> forward_reached_clusters;
   std::unordered_set<ClusterPtr> backward_reached_clusters;
   std::vector<ClusterPtr> path_clusters;
-
+  if (other->IsIndependent()) {
+    return path_clusters;
+  }
   if (std::find(other->out_clusters_.begin(), other->out_clusters_.end(), shared_from_this()) ==
       other->out_clusters_.end()) {
     return path_clusters;
@@ -772,7 +791,7 @@ Status Cluster::BuildFrame() {
         }
       }
     }
-    if (IsData()) {
+    if (IsData() || IsIndependent()) {
       for (const auto &anchor : node->GetAllOutDataAnchors()) {
         AddFrameOutput(anchor);
       }
@@ -888,7 +907,7 @@ Status Cluster::CombinePartitionFrame() {
 }
 
 Status Cluster::BuildPartitionSubgraph() {
-  if (IsData() || IsNetOutput()) {
+  if (IsData() || IsNetOutput() || IsIndependent()) {
     return SUCCESS;
   }
   int64_t parent_node_index = 0;

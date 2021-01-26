@@ -21,8 +21,8 @@
 #include <queue>
 #include <memory>
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/load/new_model_manager/data_inputer.h"
-#include "graph/load/new_model_manager/task_info/task_info.h"
+#include "graph/load/model_manager/data_inputer.h"
+#include "graph/load/model_manager/task_info/task_info.h"
 #include "graph/node.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/model/node_item.h"

@@ -15,7 +15,7 @@
  */
 
 #include "hybrid/executor/hybrid_model_async_executor.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_context.h"
@@ -59,6 +59,7 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
   run_flag_ = true;
   listener_ = listener;
   future_ = std::async(std::launch::async, [&]() -> Status {
+    GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     GetContext().SetSessionId(executor_->GetContext()->session_id);
     return RunInternal();
   });
@@ -229,7 +230,11 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
     }
 
     GE_CHECK_GE(tensor_size, 0);
-    auto tensor_buffer = TensorBuffer::Create(allocator, tensor_size);
+    AllocationAttr attr;
+    if (GetContext().GetHostExecFlag()) {
+      attr.SetMemType(HOST_DDR);
+    }
+    auto tensor_buffer = TensorBuffer::Create(allocator, tensor_size, &attr);
     GE_CHECK_NOTNULL(tensor_buffer);
     args.inputs.emplace_back(std::shared_ptr<TensorBuffer>(tensor_buffer.release()));
 

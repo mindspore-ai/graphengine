@@ -17,7 +17,7 @@
 
 #include <gtest/gtest.h>
 
-#include "graph/load/new_model_manager/data_inputer.h"
+#include "graph/load/model_manager/data_inputer.h"
 
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"

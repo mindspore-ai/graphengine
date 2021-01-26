@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/load/new_model_manager/tbe_handle_store.h"
+#include "graph/load/model_manager/tbe_handle_store.h"
 #include "runtime/kernel.h"
 #undef protected
 #undef private

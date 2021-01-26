@@ -644,7 +644,7 @@ Status InsertNewOpUtil::RecordAIPPInfoToData(const ComputeGraphPtr &graph) {
 
     std::vector<NodePtr> aipps;
     GE_RETURN_IF_ERROR(GetAllAipps(data_node, *aipps_or_switchs_or_case.begin(), aipps));
-    GELOGI("RecordAIPPInfoToData: Data: name[%s], type[%s], batch size[%u]", data_node->GetName().c_str(),
+    GELOGI("RecordAIPPInfoToData: Data: name[%s], type[%s], batch size[%zu]", data_node->GetName().c_str(),
            data_node->GetType().c_str(), aipps.size());
 
     for (auto aipp_it : aipps) {

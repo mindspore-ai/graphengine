@@ -29,15 +29,15 @@
 #include "framework/common/util.h"
 #include "graph/execute/graph_execute.h"
 #include "graph/load/graph_loader.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/model.h"
 #include "graph/utils/graph_utils.h"
 #include "mmpa/mmpa_api.h"
 #include "single_op/single_op_manager.h"
 #include "graph/manager/graph_var_manager.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using std::string;
@@ -454,7 +454,7 @@ Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &
     if (all_data_dims[i] < 0) {
       cur_dynamic_dims.push_back(dynamic_dims[i]);
     } else if (static_cast<uint64_t>(all_data_dims[i]) != dynamic_dims[i]) {
-      GELOGE(ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID, "Static dims should be same, index: %zu value: %d should be %d",
+      GELOGE(ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID, "Static dims should be same, index: %zu value: %lu should be %ld",
              i, dynamic_dims[i], all_data_dims[i]);
       return ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID;
     }

@@ -376,7 +376,6 @@ RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kern
                                             const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream,
                                             uint32_t flags);
 
-typedef void *rtModel_t;
 /**
  * @ingroup rt_kernel
  * @brief L1 fusion dump addr transfered to device

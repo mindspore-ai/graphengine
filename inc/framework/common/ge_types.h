@@ -41,12 +41,7 @@ enum FrameworkType {
 };
 
 const std::map<std::string, std::string> kFwkTypeToStr = {
-    {"0", "Caffe"},
-    {"1", "MindSpore"},
-    {"3", "TensorFlow"},
-    {"4", "Android_NN"},
-    {"5", "Onnx"}
-};
+  {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
 
 enum OpEngineType {
   ENGINE_SYS = 0,  // default engine
@@ -60,6 +55,11 @@ enum InputAippType { DATA_WITHOUT_AIPP = 0, DATA_WITH_STATIC_AIPP, DATA_WITH_DYN
 
 const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
+
+// profiling data
+const uint32_t kTaskTypeAicore = 0;
+const uint32_t kTaskTypeAicpu = 1;
+const uint32_t kTaskTypeInvalid = 0xFFFF;
 
 // Data cache, including data address and length
 struct DataBuffer {
@@ -256,6 +256,7 @@ struct TaskDescInfo {
   uint32_t stream_id;
   std::string shape_type;
   int64_t cur_iter_num;
+  uint32_t task_type;
 };
 
 // Profiling info of graph

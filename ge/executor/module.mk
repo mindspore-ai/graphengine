@@ -22,37 +22,37 @@ local_ge_executor_src_files :=  \
     ../graph/manager/util/debug.cc \
     ../model/ge_model.cc \
     ../model/ge_root_model.cc \
-    ../graph/load/new_model_manager/davinci_model.cc \
-    ../graph/load/new_model_manager/davinci_model_parser.cc \
-    ../graph/load/new_model_manager/model_manager.cc \
-    ../graph/load/new_model_manager/tbe_handle_store.cc \
-    ../graph/load/new_model_manager/cpu_queue_schedule.cc \
-    ../graph/load/new_model_manager/model_utils.cc \
-    ../graph/load/new_model_manager/aipp_utils.cc \
-    ../graph/load/new_model_manager/data_inputer.cc \
-    ../graph/load/new_model_manager/data_dumper.cc \
-    ../graph/load/new_model_manager/zero_copy_task.cc \
-    ../graph/load/new_model_manager/zero_copy_offset.cc \
-    ../graph/load/new_model_manager/task_info/task_info.cc                  \
-    ../graph/load/new_model_manager/task_info/event_record_task_info.cc     \
-    ../graph/load/new_model_manager/task_info/event_wait_task_info.cc       \
-    ../graph/load/new_model_manager/task_info/fusion_start_task_info.cc     \
-    ../graph/load/new_model_manager/task_info/fusion_stop_task_info.cc      \
-    ../graph/load/new_model_manager/task_info/kernel_ex_task_info.cc        \
-    ../graph/load/new_model_manager/task_info/kernel_task_info.cc           \
-    ../graph/load/new_model_manager/task_info/label_set_task_info.cc        \
-    ../graph/load/new_model_manager/task_info/label_switch_by_index_task_info.cc \
-    ../graph/load/new_model_manager/task_info/label_goto_ex_task_info.cc    \
-    ../graph/load/new_model_manager/task_info/memcpy_async_task_info.cc     \
-    ../graph/load/new_model_manager/task_info/memcpy_addr_async_task_info.cc \
-    ../graph/load/new_model_manager/task_info/profiler_trace_task_info.cc   \
-    ../graph/load/new_model_manager/task_info/stream_active_task_info.cc    \
-    ../graph/load/new_model_manager/task_info/stream_switch_task_info.cc    \
-    ../graph/load/new_model_manager/task_info/stream_switchn_task_info.cc   \
-    ../graph/load/new_model_manager/task_info/end_graph_task_info.cc        \
-    ../graph/load/new_model_manager/task_info/model_exit_task_info.cc       \
-    ../graph/load/new_model_manager/task_info/super_kernel/super_kernel_factory.cc   \
-    ../graph/load/new_model_manager/task_info/super_kernel/super_kernel.cc  \
+    ../graph/load/model_manager/davinci_model.cc \
+    ../graph/load/model_manager/davinci_model_parser.cc \
+    ../graph/load/model_manager/model_manager.cc \
+    ../graph/load/model_manager/tbe_handle_store.cc \
+    ../graph/load/model_manager/cpu_queue_schedule.cc \
+    ../graph/load/model_manager/model_utils.cc \
+    ../graph/load/model_manager/aipp_utils.cc \
+    ../graph/load/model_manager/data_inputer.cc \
+    ../graph/load/model_manager/data_dumper.cc \
+    ../graph/load/model_manager/zero_copy_task.cc \
+    ../graph/load/model_manager/zero_copy_offset.cc \
+    ../graph/load/model_manager/task_info/task_info.cc                  \
+    ../graph/load/model_manager/task_info/event_record_task_info.cc     \
+    ../graph/load/model_manager/task_info/event_wait_task_info.cc       \
+    ../graph/load/model_manager/task_info/fusion_start_task_info.cc     \
+    ../graph/load/model_manager/task_info/fusion_stop_task_info.cc      \
+    ../graph/load/model_manager/task_info/kernel_ex_task_info.cc        \
+    ../graph/load/model_manager/task_info/kernel_task_info.cc           \
+    ../graph/load/model_manager/task_info/label_set_task_info.cc        \
+    ../graph/load/model_manager/task_info/label_switch_by_index_task_info.cc \
+    ../graph/load/model_manager/task_info/label_goto_ex_task_info.cc    \
+    ../graph/load/model_manager/task_info/memcpy_async_task_info.cc     \
+    ../graph/load/model_manager/task_info/memcpy_addr_async_task_info.cc \
+    ../graph/load/model_manager/task_info/profiler_trace_task_info.cc   \
+    ../graph/load/model_manager/task_info/stream_active_task_info.cc    \
+    ../graph/load/model_manager/task_info/stream_switch_task_info.cc    \
+    ../graph/load/model_manager/task_info/stream_switchn_task_info.cc   \
+    ../graph/load/model_manager/task_info/end_graph_task_info.cc        \
+    ../graph/load/model_manager/task_info/model_exit_task_info.cc       \
+    ../graph/load/model_manager/task_info/super_kernel/super_kernel_factory.cc   \
+    ../graph/load/model_manager/task_info/super_kernel/super_kernel.cc  \
     ../opskernel_manager/ops_kernel_builder_manager.cc \
     ../single_op/single_op_manager.cc \
     ../single_op/single_op_model.cc \
@@ -95,6 +95,7 @@ local_ge_executor_src_files :=  \
     ../hybrid/node_executor/host_cpu/kernel/variable_kernel.cc              \
     ../hybrid/node_executor/host_cpu/kernel/assign_kernel.cc                \
     ../hybrid/node_executor/host_cpu/kernel/random_uniform_kernel.cc        \
+    ../hybrid/node_executor/host_cpu/kernel/data_kernel.cc                  \
     ../hybrid/node_executor/controlop/control_op_executor.cc                \
     ../hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc \
     ../hybrid/node_executor/rts/rts_node_executor.cc                        \

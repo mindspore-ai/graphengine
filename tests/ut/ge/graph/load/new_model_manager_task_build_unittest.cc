@@ -30,7 +30,7 @@
 #include "graph/compute_graph.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/model_serialize.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 #include "common/properties_manager.h"
 #include "common/op/ge_op_utils.h"
 #include <cce/taskdown_api.h>

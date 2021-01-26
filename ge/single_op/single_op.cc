@@ -22,11 +22,11 @@
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "runtime/mem.h"
 #include "single_op/single_op_manager.h"
 #include "single_op/task/build_task_utils.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_manager.h"
 
 namespace ge {
 namespace {
@@ -70,6 +70,7 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
   tmp_task_desc_info.stream_id = stream_id;
   tmp_task_desc_info.shape_type = shape_type;
   tmp_task_desc_info.cur_iter_num = 0;
+  tmp_task_desc_info.task_type = op_task->GetTaskType();
   GELOGD("GetTaskDescInfo of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
   task_desc_info.emplace_back(tmp_task_desc_info);
 

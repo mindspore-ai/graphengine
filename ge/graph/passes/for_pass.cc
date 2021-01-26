@@ -469,7 +469,7 @@ Status ForPass::BuildWhileLink(const WhileInfo &while_info) {
       continue;
     }
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(peer_out_anchor, in_data_anchor),
-                            "Add data-edge %s:%d->%s:%d failed.",
+                            "Add data-edge %s:%d->%s:%zu failed.",
                             peer_out_anchor->GetOwnerNode()->GetName().c_str(), peer_out_anchor->GetIdx(),
                             while_node->GetName().c_str(), i);
   }
@@ -480,7 +480,7 @@ Status ForPass::BuildWhileLink(const WhileInfo &while_info) {
     GE_CHECK_NOTNULL(out_data_anchor);
     for (auto &peer_in_anchor : while_info.data_outputs[i]) {
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_data_anchor, peer_in_anchor),
-                              "Add data-edge %s:%d->%s:%d failed.",
+                              "Add data-edge %s:%zu->%s:%d failed.",
                               while_node->GetName().c_str(), i + kWhileOutputIndex,
                               peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
     }

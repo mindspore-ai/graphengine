@@ -23,7 +23,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/davinci_model_parser.h"
+#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 
@@ -537,7 +537,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
   //model verison 1.0 file header does not have model_num member
   is_unknown_shape_model_ = file_header_->version >= ge::MODEL_VERSION &&
                             file_header_->model_num > kStatiOmFileModelNum;
-  GELOGD("cur om model is ge root model or no %d, model version %zu", is_unknown_shape_model_, file_header_->version);
+  GELOGD("cur om model is ge root model or no %d, model version %u", is_unknown_shape_model_, file_header_->version);
 
   OmFileLoadHelper om_load_helper;
   if (is_unknown_shape_model_) {
@@ -746,7 +746,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
       GELOGE(INTERNAL_ERROR, "ReadProtoFromArray failed.");
       return INTERNAL_ERROR;
     }
-    GELOGD("TASK_INFO op_size:%zu, stream_num:%u", task->op().size(), task->stream_num());
+    GELOGD("TASK_INFO op_size:%d, stream_num:%u", task->op().size(), task->stream_num());
   }
   cur_model->SetModelTaskDef(task);
   return SUCCESS;

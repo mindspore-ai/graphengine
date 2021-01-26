@@ -18,7 +18,7 @@
 #include <vector>
 
 //#include "cce/taskdown_common.hpp"
-#include "graph/load/new_model_manager/model_utils.h"
+#include "graph/load/model_manager/model_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "runtime/rt.h"
 

@@ -21,8 +21,8 @@
 #include "common/ge/ge_util.h"
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/new_model_manager/model_utils.h"
-#include "graph/load/new_model_manager/model_manager.h"
+#include "graph/load/model_manager/model_utils.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 
 namespace ge {

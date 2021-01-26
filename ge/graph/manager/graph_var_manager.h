@@ -158,13 +158,15 @@ class VarResource {
 
   bool IsVarAddr(const int64_t &offset);
 
+  rtMemType_t GetVarMemType(const int64_t &offset);
+
   std::unordered_map<std::string, ge::GeTensorDesc> GetAllVarDesc() const { return cur_var_tensor_desc_map_; }
 
  private:
   std::string VarKey(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
 
   uint64_t session_id_;
-  std::unordered_set<uint64_t> var_offset_set_;
+  std::unordered_map<uint64_t, rtMemType_t> var_offset_map_;
   std::unordered_map<std::string, VarAddrMgr> var_addr_mgr_map_;
   std::unordered_map<std::string, ge::GeTensorDesc> cur_var_tensor_desc_map_;
   std::unordered_map<std::string, std::vector<TransNodeInfo>> var_to_trans_road_;
@@ -176,17 +178,34 @@ class VarResource {
 class MemResource {
  public:
   MemResource();
-  ~MemResource() = default;
+  virtual ~MemResource() = default;
+  static MemResource *BuildMemResourceFromType(rtMemType_t mem_type);
 
-  Status AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset);
+  virtual Status AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &mem_offset) = 0;
 
   uint64_t GetVarMemSize() const;
 
   void UpdateVarMemSize(int64_t mem_size);
 
- private:
+ protected:
   uint64_t total_size_;
   uint64_t var_mem_size_;
+};
+
+class HbmMemResource : public MemResource {
+ public:
+  HbmMemResource() = default;
+  ~HbmMemResource() override = default;
+
+  Status AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &address) override;
+};
+
+class RdmaMemResource : public MemResource {
+ public:
+  RdmaMemResource() = default;
+  ~RdmaMemResource() override = default;
+
+  Status AssignVarMem(const std::string &var_name, uint64_t size, uint64_t session_id, size_t &address) override;
 };
 
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
@@ -274,6 +293,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
   bool IsVarExist(const std::string &var_name);
 
   bool IsVarAddr(const int64_t &offset);
+
+  rtMemType_t GetVarMemType(const int64_t &offset);
 
   uint8_t *GetVarMemoryBase(rtMemType_t memory_type);
 

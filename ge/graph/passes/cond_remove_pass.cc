@@ -203,7 +203,7 @@ bool CondRemovePass::CheckIfCondConstInput(const OutDataAnchorPtr &cond_out_anch
   // Get weights from peer node
   auto weights = OpDescUtils::GetWeights(out_node);
   if (weights.size() <= static_cast<size_t>(cond_out_anchor->GetIdx())) {
-    GELOGI("Get weights of node %s out index %d, weight size %u is not fit for data index %d.",
+    GELOGI("Get weights of node %s out index %d, weight size %zu is not fit for data index %d.",
            out_node->GetName().c_str(), cond_out_anchor->GetIdx(), weights.size(), cond_out_anchor->GetIdx());
     return false;
   }
@@ -234,14 +234,14 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
   const auto &output_desc_size = node->GetOpDesc()->GetOutputsSize();
   // Create subgraph opdesc & node
   auto partitioncall_opdesc =
-      CreateSubgraphOpDesc(save_branch->GetName(), input_desc_size - kConditionIndexNum, output_desc_size);
+      CreateSubgraphOpDesc(node, save_branch->GetName(), input_desc_size - kConditionIndexNum, output_desc_size);
   auto partitioncall_node = node->GetOwnerComputeGraph()->AddNode(partitioncall_opdesc);
   // Link node's peerout anchors to new node's inanchors
   for (const auto &input_anchor : node->GetAllInAnchors()) {
     for (const auto &peerout_anchor : input_anchor->GetPeerAnchors()) {
       if (GraphUtils::AddEdge(peerout_anchor, partitioncall_node->GetInAnchor(
                                                   input_anchor->GetIdx() - kConditionIndexNum)) != ge::GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
+        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                peerout_anchor->GetOwnerNode()->GetName().c_str(), peerout_anchor->GetIdx(),
                partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_desc_size,
                output_desc_size);
@@ -254,14 +254,14 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
   for (const auto &output_anchor : node->GetAllOutAnchors()) {
     for (const auto &peerin_anchor : output_anchor->GetPeerAnchors()) {
       if (GraphUtils::RemoveEdge(node->GetOutAnchor(output_anchor->GetIdx()), peerin_anchor) != ge::GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Remove edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
+        GELOGE(FAILED, "Remove edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                node->GetName().c_str(), output_anchor->GetIdx(), peerin_anchor->GetOwnerNode()->GetName().c_str(),
                peerin_anchor->GetIdx(), input_desc_size, output_desc_size);
         return FAILED;
       }
       if (GraphUtils::AddEdge(partitioncall_node->GetOutAnchor(output_anchor->GetIdx()), peerin_anchor) !=
           ge::GRAPH_SUCCESS) {
-        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%d, output num:%d",
+        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                partitioncall_node->GetName().c_str(), output_anchor->GetIdx(),
                peerin_anchor->GetOwnerNode()->GetName().c_str(), peerin_anchor->GetIdx(), input_desc_size,
                output_desc_size);
@@ -289,7 +289,8 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
 /// @param [in] output_num
 /// @return OpDescPtr
 ///
-OpDescPtr CondRemovePass::CreateSubgraphOpDesc(const std::string &name, size_t input_num, size_t output_num) {
+OpDescPtr CondRemovePass::CreateSubgraphOpDesc(const NodePtr &node, const std::string &name, size_t input_num,
+                                               size_t output_num) {
   OpDescBuilder op_desc_builder(name, PARTITIONEDCALL);
   op_desc_builder.AddDynamicInput("args", input_num).AddDynamicOutput("output", output_num);
 
@@ -299,6 +300,16 @@ OpDescPtr CondRemovePass::CreateSubgraphOpDesc(const std::string &name, size_t i
   size_t index = op_desc->GetSubgraphInstanceNames().size();
   op_desc->AddSubgraphName("f");
   op_desc->SetSubgraphInstanceName(static_cast<uint32_t>(index), name);
+
+  auto node_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL_EXEC(node_desc, return nullptr);
+  for (size_t i = 0; i < input_num; ++i) {
+    (void)op_desc->UpdateInputDesc(i, node_desc->GetInputDesc(i + 1));
+  }
+  for (size_t i = 0; i < output_num; ++i) {
+    (void)op_desc->UpdateOutputDesc(i, node_desc->GetOutputDesc(i));
+  }
+
   return op_desc;
 }
 

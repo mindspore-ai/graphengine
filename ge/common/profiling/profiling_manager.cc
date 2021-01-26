@@ -21,7 +21,7 @@
 #include "framework/common/string_util.h"
 #include "graph/ge_context.h"
 #include "runtime/base.h"
-#include "graph/load/new_model_manager/davinci_model.h"
+#include "graph/load/model_manager/davinci_model.h"
 
 namespace {
 const char *const kTrainingTrace = "training_trace";
@@ -218,6 +218,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     uint32_t stream_id = task.stream_id;
     std::string shape_type = task.shape_type;
     int64_t cur_iter_num = task.cur_iter_num;
+    uint32_t task_type = task.task_type;
     data = model_name.append(" ")
                      .append(op_name).append(" ")
                      .append(std::to_string(block_dim)).append(" ")
@@ -225,7 +226,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
                      .append(std::to_string(stream_id)).append(" ")
                      .append(std::to_string(model_id)).append(" ")
                      .append(shape_type).append(" ")
-                     .append(std::to_string(cur_iter_num)).append("\n");
+                     .append(std::to_string(cur_iter_num)).append(" ")
+                     .append(std::to_string(task_type)).append("\n");
 
     ReporterData reporter_data{};
     reporter_data.deviceId = device_id;

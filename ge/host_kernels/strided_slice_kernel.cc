@@ -250,16 +250,16 @@ Status StridedSliceKernel::InitParamWithAttrs(const std::vector<ConstGeTensorPtr
       end_i = x_dims.at(i);
       stride_i = 1;
     }
-    GELOGD("Before mask calculate. Begin is : %d\t,end is : %d\t stride is : %d\t x_dim_i is : %d.", begin_i, end_i,
-           stride_i, x_dims.at(i));
+    GELOGD("Before mask calculate. Begin is : %ld\t,end is : %ld\t stride is : %ld\t x_dim_i is : %ld.",
+           begin_i, end_i, stride_i, x_dims.at(i));
     auto ret = MaskCal(i, begin_i, end_i, x_dims.at(i));
     if (ret != SUCCESS) {
       GELOGW("MaskCal failed, because of data overflow.");
       return NOT_CHANGED;
     }
     int64_t dim_final;
-    GELOGD("Before stride calculate. Begin is : %d\t,end is : %d\t stride is : %d\t x_dim_i is : %d.", begin_i, end_i,
-           stride_i, x_dims.at(i));
+    GELOGD("Before stride calculate. Begin is : %ld\t,end is : %ld\t stride is : %ld\t x_dim_i is : %ld.",
+           begin_i, end_i, stride_i, x_dims.at(i));
     (void) StrideCal(x_dims.at(i), begin_i, end_i, stride_i, dim_final);
     output_dims.push_back(dim_final);
     input_dims.push_back(x_dims.at(i));

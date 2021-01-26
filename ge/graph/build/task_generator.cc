@@ -466,11 +466,10 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
         task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(ops_kernel_info_store_ptr));
       }
 
-      GELOGI(
-          "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
-          " task finished, generate %u task(s).",
-          op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
-          task_list_size_after - task_list_size_before);
+      GELOGI("Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), id:%ld, stream_id:%ld]"
+             " task finished, generate %zu task(s).",
+             op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id,
+             task_list_size_after - task_list_size_before);
 
       // record nodes which have call generate task successfully
       fusion_nodes_seen.insert(fusion_node.get());
@@ -525,13 +524,6 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
   if (all_nodes.empty()) {
     GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Graph's node is empty");
     return GE_GRAPH_GRAPH_NODE_NULL;
-  }
-
-  int64_t node_index = 0;
-  for (auto &node : all_nodes) {
-    OpDescPtr op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    op_desc->SetId(node_index++);
   }
 
   map<int64_t, vector<OpDescPtr>> all_stream_ops;

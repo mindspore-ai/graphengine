@@ -849,7 +849,7 @@ class VariableOpPassSimulator {
     if (variable_ref_node_format != FORMAT_NC1HWC0 || variable_ref_node_data_type != DT_FLOAT ||
         variable_ref_node_shape.size() != 5) {
       GELOGI("wanted data format is  (%d,%d,%u)", FORMAT_NC1HWC0, DT_FLOAT, 5);
-      GELOGI("variable_ref_node_format is (%d,%d,%u)", variable_ref_node_format, variable_ref_node_data_type,
+      GELOGI("variable_ref_node_format is (%d,%d,%zu)", variable_ref_node_format, variable_ref_node_data_type,
              variable_ref_node_shape.size());
 
       std::cout << "var ref format not changed !" << std::endl;
@@ -918,7 +918,7 @@ class VariableOpPassSimulator {
     if (variable_ref_node_format != FORMAT_NCHW || variable_ref_node_data_type != DT_INT32 ||
         variable_ref_node_shape.size() != 4) {
       GELOGI("wanted data format is  (%d,%d,%u)", FORMAT_NCHW, DT_INT32, 4);
-      GELOGI("variable_ref_node_format is (%d,%d,%u)", variable_ref_node_format, variable_ref_node_data_type,
+      GELOGI("variable_ref_node_format is (%d,%d,%zu)", variable_ref_node_format, variable_ref_node_data_type,
              variable_ref_node_shape.size());
 
       std::cout << "var ref format not changed !" << std::endl;

@@ -182,16 +182,17 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     }
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
+    // save profiling data
     uint32_t task_id = 0;
     uint32_t stream_id = 0;
-    rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+    rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id); // must be called after Launch kernel
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(rt_ret, "Get task_id and stream_id failed.");
-      return rt_ret;
+      return FAILED;
     }
-    context.SetTaskId(task_id);
-    context.SetStreamId(stream_id);
-    GELOGD("AiCore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
+    GELOGD("Aicore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
+    (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicore, (*it)->GetBlockDim());
+    (void)context.SaveProfilingGraphDescInfo(task_id, stream_id);
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }

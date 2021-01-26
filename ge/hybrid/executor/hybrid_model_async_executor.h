@@ -21,7 +21,7 @@
 #include <future>
 #include "external/ge/ge_api_error_codes.h"
 #include "external/ge/ge_api_types.h"
-#include "graph/load/new_model_manager/data_inputer.h"
+#include "graph/load/model_manager/data_inputer.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "runtime/stream.h"
 

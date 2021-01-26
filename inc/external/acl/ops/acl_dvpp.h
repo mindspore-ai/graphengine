@@ -147,6 +147,17 @@ enum aclvencChannelDescParamType {
   ACL_VENC_MAX_IP_PROP_UINT32
 };
 
+// Jpeg picture format
+enum acldvppJpegFormat {
+  ACL_JPEG_CSS_444 = 0,
+  ACL_JPEG_CSS_422,
+  ACL_JPEG_CSS_420,
+  ACL_JPEG_CSS_GRAY,
+  ACL_JPEG_CSS_440,
+  ACL_JPEG_CSS_411,
+  ACL_JPEG_CSS_UNKNOWN = 1000
+};
+
 /**
  * @ingroup AscendCL
  * @brief alloc device memory for dvpp.
@@ -1519,6 +1530,24 @@ ACL_FUNC_VISIBILITY aclError aclvdecDestroyFrameConfig(aclvdecFrameConfig *vdecF
  */
 ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfo(const void *data, uint32_t size, uint32_t *width, uint32_t *height,
                                                      int32_t *components);
+
+/**
+ * @ingroup AscendCL
+ * @brief Get image width and height of jpeg.
+ *
+ * @param data [IN]          image data in host memory
+ * @param size [IN]          the size of image data
+ * @param width [OUT]        the width of image from image header
+ * @param height [OUT]       the height of image from image header
+ * @param components [OUT]   the components of image from image header
+ * @param format [OUT]       the format of image from image header
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfoV2(const void *data, uint32_t size, uint32_t *width,
+                                                       uint32_t *height, int32_t *components,
+                                                       acldvppJpegFormat *format);
 
 /**
  * @ingroup AscendCL

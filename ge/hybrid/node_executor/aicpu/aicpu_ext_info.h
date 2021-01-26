@@ -57,6 +57,8 @@ class AicpuExtInfoHandler {
 
   Status UpdateSessionInfoSessionId(uint64_t session_id);
 
+  Status UpdateExecuteMode(bool flag);
+
   Status GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type);
 
  private:
@@ -65,6 +67,7 @@ class AicpuExtInfoHandler {
   Status ParseExtInputShape(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info);
+  Status ParseExtBitMap(AicpuExtInfo *aicpu_ext_info);
 
   static Status UpdateShapeAndType(const GeShape &shape,
                                    DataType data_type,
@@ -80,6 +83,7 @@ class AicpuExtInfoHandler {
   const uint32_t output_num_;
   UnknowShapeOpType unknown_type_;
   AicpuSessionInfo *session_info_ = nullptr;
+  uint64_t *bit_map_ = nullptr;
 
   std::unique_ptr<uint8_t[]> ext_info_;
   size_t ext_info_len_ = 0;

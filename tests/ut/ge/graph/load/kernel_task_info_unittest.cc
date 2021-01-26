@@ -413,6 +413,9 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type_fail) {
   // rtMemcpy -> RT_ERROR_INVALID_VALUE
   EXPECT_EQ(kernel_task_info.Init(task_def, &model), SUCCESS);
 
+  const string ext_info = {1, 1, 1, 1, 0, 0, 0, 0};
+  EXPECT_EQ(kernel_task_info.InitAicpuTaskExtInfo(ext_info), SUCCESS);
+
   EXPECT_EQ(kernel_task_info.Distribute(), SUCCESS);
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
 

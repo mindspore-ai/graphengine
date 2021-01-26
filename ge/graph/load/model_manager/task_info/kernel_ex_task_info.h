@@ -62,6 +62,7 @@ class KernelExTaskInfo : public TaskInfo {
   void SetIoAddrs(const OpDescPtr &op_desc);
 
   void InitDumpTask(void *addr, const OpDescPtr &op_desc);
+  Status InitTaskExtInfo(const std::string &ext_info, const OpDescPtr &op_desc);
 
   uint32_t task_id_;
   uint32_t stream_id_;

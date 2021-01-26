@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -366,6 +366,27 @@ REG_OP(GetNext)
     .OP_END_FACTORY_REG(GetNext)
 
 /**
+*@brief Get dynamic dims after GetNext. \n
+
+*@par Inputs:
+*input: A nested structure of Tensor objects, from GetNext's output. \n
+
+*@par Attributes:
+*@li shape_info: GE shape_info for each inputs, -1 means unknow dim.
+*@li N: Inputs number. \n
+
+*@par Outputs:
+*dims: GE unknow dims, a vector of int64. \n
+*/
+
+REG_OP(GetDynamicDims)
+    .DYNAMIC_INPUT(input, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(dims, TensorType({DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(shape_info, ListInt)
+    .REQUIRED_ATTR(N, Int)
+    .OP_END_FACTORY_REG(GetDynamicDims)
+
+/**
 *@brief End of sequence . \n
 
 *@par Inputs:
@@ -710,6 +731,9 @@ REG_OP(IFMR)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(WtsARQ)
@@ -741,6 +765,9 @@ REG_OP(WtsARQ)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQ)
@@ -768,6 +795,9 @@ REG_OP(ActsULQ)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQInputGrad)
@@ -790,6 +820,9 @@ REG_OP(ActsULQInputGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMaxGrad)
@@ -812,6 +845,9 @@ REG_OP(ActULQClampMaxGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMinGrad)
@@ -821,6 +857,33 @@ REG_OP(ActULQClampMinGrad)
   .OUTPUT(clamp_min_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActULQClampMinGrad)
 
+/**
+* @brief Computes Lp norm.
+
+* @par Inputs:
+* @li x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* @li y: An ND tensor of type float16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNorm.
+*/
+REG_OP(LpNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNorm)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

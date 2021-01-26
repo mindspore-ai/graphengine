@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -908,7 +908,7 @@ REG_OP(TensorArray)
     .OUTPUT(handle, TensorType({DT_RESOURCE}))
     .OUTPUT(flow, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(element_shape, ListInt, ge::UNKNOWN_SHAPE)
+    .ATTR(element_shape, ListInt, ge::UNKNOWN_RANK)
     .ATTR(dynamic_size, Bool, false)
     .ATTR(clear_after_read, Bool, true)
     .ATTR(identical_element_shapes, Bool, false)
@@ -963,7 +963,7 @@ REG_OP(TensorArrayConcat)
         DT_QUINT8, DT_QINT32}))
     .OUTPUT(lengths, TensorType({DT_INT64}))
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(element_shape_except0, ListInt, ge::UNKNOWN_SHAPE)
+    .ATTR(element_shape_except0, ListInt, ge::UNKNOWN_RANK)
     .OP_END_FACTORY_REG(TensorArrayConcat)
 
 /**
@@ -999,7 +999,7 @@ REG_OP(TensorArrayGather)
         DT_STRING, DT_COMPLEX64, DT_COMPLEX128, DT_QINT8,
         DT_QUINT8, DT_QINT32}))
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(element_shape, ListInt, ge::UNKNOWN_SHAPE)
+    .ATTR(element_shape, ListInt, ge::UNKNOWN_RANK)
     .OP_END_FACTORY_REG(TensorArrayGather)
 
 /**

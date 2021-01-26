@@ -707,7 +707,7 @@ target_compile_options(ge_runner PRIVATE
     -O2
     -fno-common
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
 
 target_include_directories(ge_runner SYSTEM PRIVATE
@@ -776,7 +776,7 @@ target_compile_options(ge_compiler PRIVATE
     -O2
     -fno-common
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
 
 target_include_directories(ge_compiler SYSTEM PRIVATE

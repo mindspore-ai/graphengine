@@ -13,14 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef KEEP_DTYPE_OPTION_H_
-#define KEEP_DTYPE_OPTION_H_
+#ifndef ATTR_OPTIONS_H_
+#define ATTR_OPTIONS_H_
 
 #include <string>
 #include "graph/compute_graph.h"
-#include "framework/common/ge_inner_error_codes.h"
+#include "graph/ge_error_codes.h"
 
 namespace ge {
-Status DealKeepDtypeOption(const ComputeGraphPtr &graph, const std::string &keep_dtype);
+bool IsOriginalOpFind(OpDescPtr &op_desc, const std::string &op_name);
+
+graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path);
+graphStatus WeightCompressFunc(ComputeGraphPtr &graph, const std::string &cfg_path);
 }  // namespace
-#endif // KEEP_DTYPE_OPTION_H_
+#endif // ATTR_OPTIONS_H_

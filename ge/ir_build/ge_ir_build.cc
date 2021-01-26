@@ -39,6 +39,7 @@
 #include "inc/pass_manager.h"
 #include "graph/passes/net_output_pass.h"
 #include "graph/passes/data_pass.h"
+#include "ir_build/attr_options/attr_options.h"
 
 using std::string;
 using namespace std;
@@ -52,8 +53,28 @@ const std::string IR_OPTION_LOG_LEVEL_DEFAULT = "default";
 const std::string IR_OPTION_BUFFER_OPTIMIZE_DEFAULT = "l2_optimize";
 const std::string IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT = "0";
 const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
+const std::string KEEP_DTYPE_OPTION = "keep_dtype";
 const std::string kInputShape = "input_shape";
 const std::string kInputFormat = "input_format";
+
+/**
+ * @name  SetOpAttrFun
+ * @brief set attribute for operators in the configuration file
+ * @param graph      [IN/OUT] compute graph
+ * @param cfg_path   [IN] the config file path
+ * @return graphStatus
+ */
+typedef graphStatus (*SetOpAttrFun)(ComputeGraphPtr &graph, const std::string &cfg_path);
+
+const std::map<aclgrphAttrType, SetOpAttrFun> kAttrTypeFuncMap = {
+  {ATTR_TYPE_KEEP_DTYPE, KeepDtypeFunc},
+  {ATTR_TYPE_WEIGHT_COMPRESS, WeightCompressFunc}
+};
+
+const std::map<aclgrphAttrType, std::string> kAttrTypeToStringMap = {
+  {ATTR_TYPE_KEEP_DTYPE, KEEP_DTYPE_OPTION},
+  {ATTR_TYPE_WEIGHT_COMPRESS, ge::ir_option::COMPRESS_WEIGHT_CONF}
+};
 }  // namespace
 
 static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global_options) {
@@ -701,6 +722,35 @@ graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<Tenso
     return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;
+}
+
+static std::string AttrTypeToSerialString(aclgrphAttrType attr_type) {
+  auto it = kAttrTypeToStringMap.find(attr_type);
+  if (it != kAttrTypeToStringMap.end()) {
+    return it->second;
+  } else {
+    ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
+        {"AttrTypeToSerialString", "attr_type[" + std::to_string(attr_type) + "] is not support"});
+    GELOGE(GRAPH_FAILED, "AttrTypeToSerialString: attr_type not support %u", attr_type);
+    return "UNDEFINED";
+  }
+}
+
+graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char *cfg_path) {
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  if (cfg_path == nullptr) {
+    return GRAPH_SUCCESS;
+  }
+
+  auto iter = kAttrTypeFuncMap.find(attr_type);
+  if (iter == kAttrTypeFuncMap.end()) {
+    GELOGE(GRAPH_FAILED, "attr type: %s is not support", AttrTypeToSerialString(attr_type).c_str());
+    return GRAPH_FAILED;
+  }
+
+  std::string path = cfg_path;
+  return iter->second(compute_graph, path);
 }
 
 }  // namespace ge

@@ -50,6 +50,8 @@ struct ModelBufferData {
   uint64_t length;
 };
 
+enum aclgrphAttrType { ATTR_TYPE_KEEP_DTYPE = 0, ATTR_TYPE_WEIGHT_COMPRESS };
+
 /**
  * @ingroup AscendCL
  * @brief build model.Notice the model is stored in buffer
@@ -80,13 +82,16 @@ GE_FUNC_VISIBILITY void aclgrphBuildFinalize();
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &, const std::map<AscendString, AscendString> &,
-                                                    ModelBufferData &))
-GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string, std::string> &build_options,
-                              ModelBufferData &model);
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &,
+                                                                       const std::map<AscendString, AscendString> &,
+                                                                       ModelBufferData &))
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph,
+                                                 const std::map<std::string, std::string> &build_options,
+                                                 ModelBufferData &model);
 
-GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
-                              ModelBufferData &model);
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph,
+                                                 const std::map<AscendString, AscendString> &build_options,
+                                                 ModelBufferData &model);
 
 /**
  * @ingroup AscendCL
@@ -138,7 +143,17 @@ GE_FUNC_VISIBILITY graphStatus aclgrphDumpGraph(const ge::Graph &graph, const ch
  * @retval OtherValues Failure
  */
 GE_FUNC_VISIBILITY graphStatus aclgrphGenerateForOp(const AscendString &op_type, const std::vector<TensorDesc> &inputs,
-                                 const std::vector<TensorDesc> &outputs, Graph &graph);
+                                                    const std::vector<TensorDesc> &outputs, Graph &graph);
+
+/**
+ * @name  aclgrphSetOpAttr
+ * @brief set attribute for operators in the configuration file
+ * @param graph      [IN/OUT] compute graph
+ * @param attr_type  [In] attribute type
+ * @param cfg_path   [IN] the config file path
+ * @return graphStatus
+ */
+GE_FUNC_VISIBILITY graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char *cfg_path);
 
 };      // namespace ge
 #endif  // INC_EXTERNAL_GE_IR_BUILD_H_

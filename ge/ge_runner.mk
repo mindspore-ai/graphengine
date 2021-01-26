@@ -183,6 +183,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/get_original_format_pass.cc \
     graph/passes/guarantee_const_pass.cc \
     graph/passes/hccl_memcpy_pass.cc \
+    graph/passes/hccl_continuous_memcpy_pass.cc \
     graph/passes/identity_pass.cc \
     graph/passes/ref_identity_delete_op_pass.cc \
     graph/passes/infershape_pass.cc \

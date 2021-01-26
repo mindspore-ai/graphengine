@@ -212,6 +212,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/cast_remove_pass.cc \
     graph/passes/transpose_transdata_pass.cc \
     graph/passes/hccl_memcpy_pass.cc \
+    graph/passes/hccl_continuous_memcpy_pass.cc \
     graph/passes/flow_ctrl_pass.cc \
     graph/passes/global_step_insert_pass.cc \
     graph/passes/link_gen_mask_nodes_pass.cc \

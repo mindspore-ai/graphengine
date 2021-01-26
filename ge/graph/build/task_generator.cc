@@ -676,7 +676,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
       }
     }
     if (graph->GetNeedIteration()) {
-      if (op_desc->GetName() == NODE_NAME_NET_OUTPUT + '_' + NODE_NAME_STREAM_SWITCH + "_StreamActive") {
+      if (op_desc->GetName() == NODE_NAME_FLOWCTRL_LOOP_ASSIGNADD) {
         profiling_point.end_index.insert(current_idx);
         GELOGI("Iter end name %s, idx %u, from Node_Output_IteratorCtrl_StreamSwitch_StreamActive",
                op_desc->GetName().c_str(), current_idx);

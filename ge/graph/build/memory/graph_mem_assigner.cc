@@ -528,7 +528,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
 
     GELOGI("[IMAS]Continuous input : Set %s name[%s] optype[%s] output[%d] offset to [%zu] stream_id[%ld] memtype[%ld] "
         "size[%zu] realsize[%ld] nopadding[%d].", node->GetOwnerComputeGraph()->GetName().c_str(),
-        node->GetType().c_str(), peer_op_desc->GetName().c_str(),peer_out_data_anchor->GetIdx(),
+        peer_op_desc->GetName().c_str(), node->GetType().c_str(), peer_out_data_anchor->GetIdx(),
         output_list.at(peer_out_data_anchor->GetIdx()), peer_op_desc->GetStreamId(), memory_type,
         is_continuous_input_allocated ? 0UL : align_size, real_size, is_nopadding);
   }
@@ -618,7 +618,7 @@ Status GraphMemoryAssigner::AssignContinuousOutputMemory(const ge::NodePtr &node
     }
     GELOGI("[IMAS]Continuous output : Set %s name[%s] optype[%s] output[%d] offset to [%zu] stream_id[%ld] memtype[%ld]"
            " size[%zu] realsize[%ld] nopadding[%d].", node->GetOwnerComputeGraph()->GetName().c_str(),
-           node->GetType().c_str(), out_op_desc->GetName().c_str(), out_data_anchor->GetIdx(),
+           out_op_desc->GetName().c_str(), node->GetType().c_str(), out_data_anchor->GetIdx(),
            output_list[out_data_anchor->GetIdx()], out_op_desc->GetStreamId(), memory_type, 0UL,
            is_nopadding ? nopadding_size : tensor_desc_size, is_nopadding);
   }

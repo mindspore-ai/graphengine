@@ -319,6 +319,11 @@ rtError_t rtGetSocVersion(char *version, const uint32_t maxLen)
   return RT_ERROR_NONE;
 }
 
+rtError_t rtGetAiCoreCount(uint32_t *aiCoreCnt)
+{
+  return RT_ERROR_NONE;
+}
+
 rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback)
 {
   return RT_ERROR_NONE;

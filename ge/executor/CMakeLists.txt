@@ -167,6 +167,8 @@ target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
     $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
     $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
 
 target_compile_definitions(ge_executor PRIVATE
@@ -178,7 +180,7 @@ target_compile_definitions(ge_executor PRIVATE
     LOG_CPP
 )
 
-target_include_directories(ge_executor PRIVATE
+target_include_directories(ge_executor SYSTEM PRIVATE
     ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external

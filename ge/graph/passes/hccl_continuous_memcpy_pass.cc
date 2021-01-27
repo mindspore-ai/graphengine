@@ -372,6 +372,11 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   }
   GELOGI("Create Assign op:%s.", op_desc->GetName().c_str());
 
+  if (!AttrUtils::SetBool(op_desc, ATTR_NEED_COMPILE, true)) {
+    GELOGE(INTERNAL_ERROR, "Set ATTR_NEED_COMPILE Attr for node:%s fail.", op_desc->GetName().c_str());
+    return nullptr;
+  }
+
   graphStatus ret = op_desc->AddInputDesc("ref", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
   if (ret != GRAPH_SUCCESS) {
     GELOGE(INTERNAL_ERROR, "Create Assign op: add ref input desc fail.");

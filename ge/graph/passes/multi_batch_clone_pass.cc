@@ -176,7 +176,7 @@ Status MultiBatchClonePass::CollectIoNodes(const ComputeGraphPtr &graph) {
   return SUCCESS;
 }
 
-Status MultiBatchClonePass::CheckAndParseDynamicData(){
+Status MultiBatchClonePass::CheckAndParseDynamicData() {
   size_t unknown_shape_count = 0;
   auto data_name_and_shape = GetLocalOmgContext().user_input_dims;
   std::vector<std::string> data_name_order;

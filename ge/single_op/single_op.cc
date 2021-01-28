@@ -277,6 +277,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
 
   std::lock_guard<std::mutex> lk(*stream_mutex_);
   GE_CHECK_NOTNULL(op_task_);
+
   GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
   GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;

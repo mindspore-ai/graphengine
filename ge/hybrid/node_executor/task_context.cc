@@ -252,7 +252,7 @@ Status TaskContext::AllocateOutput(int index,
   }
 
   if (outputs_start_[index].GetSize() > 0) {
-    reMemset(output_start_[index].MutableData(), outputs_start_[index].GetSize(), 0, outputs_start_[index].GetSize());
+    reMemset(outputs_start_[index].MutableData(), outputs_start_[index].GetSize(), 0, outputs_start_[index].GetSize());
   }
 
   if (execution_context_->trace_enabled) {

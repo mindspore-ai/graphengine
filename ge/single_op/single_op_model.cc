@@ -44,8 +44,8 @@ namespace ge {
 namespace {
 const size_t kDataOutputNum = 1;
 }  // namespace
-static Status IfInferDepend(HeModelPtr &ge_model, bool &flag) {
-  auto comp_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph);
+static Status IfInferDepend(GeModelPtr &ge_model, bool &flag) {
+  auto comp_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
   for (const auto &node : comp_graph->GetAllNodes()) {
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
@@ -502,6 +502,10 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
   if (ge_model->GetModelTaskDefPtr()->task_size() > 1 || infer_depend_flag) {
     GELOGD("Build single op HybridModel.");
     GE_CHK_STATUS_RET_NOLOG(hybrid::NodeExecutorManager::GetInstance().EnsureInitialized());
+    auto root_model = model_helper_.GetGeRootModel();
+    GE_CHECK_NOTNULL(root_model);
+    root_model->SetRootGraph(GraphUtils::GetComputeGraph(ge_model->GetGraph()));
+    root_model->SetSubgraphInstanceNameToModel(ge_model->GetGraph()->GetName(), ge_model);
     single_op.hybrid_model_.reset(new (std::nothrow)hybrid::HybridModel(model_helper_.GetGeRootModel()));
     GE_CHECK_NOTNULL(single_op.hybrid_model_);
     GE_CHK_STATUS_RET(single_op.hybrid_model_->Init(true), "Failed to init hybrid model");

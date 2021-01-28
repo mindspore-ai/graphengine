@@ -87,8 +87,8 @@ class SubgraphExecutor {
   Status GetOutputs(std::vector<TensorValue> &outputs, std::vector<ConstGeTensorDescPtr> &output_desc);
 
  private:
-  Status EnableOutputZeroCopy(const std::vector<TensorValue> &outputs);
   Status PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state);
+  Status EnableOutputZeroCopy(const std::vector<TensorValue> &outputs);
   static Status InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state);
   Status Init(const std::vector<TensorValue> &inputs,
               const std::vector<ConstGeTensorDescPtr> &input_desc);

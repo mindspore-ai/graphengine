@@ -65,7 +65,7 @@ class HybridModelBuilder {
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);
   Status ParseDependentForFusedSubgraph(NodeItem &node_item);
   Status IndexTaskDefs();
-  Status IndexTaskDefs(const ComputeGraphPtrs &sub_graph, const GeModelPtr &ge_model);
+  Status IndexTaskDefs(const ComputeGraphPtr &sub_graph, const GeModelPtr &ge_model);
   Status IndexSpecialNodes();
   Status InitRuntimeParams();
   Status InitModelMem();

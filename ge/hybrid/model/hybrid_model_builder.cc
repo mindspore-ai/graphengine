@@ -151,7 +151,7 @@ Status HybridModelBuilder::BuildForSingleOp() {
   GE_CHK_STATUS_RET(ValidateParams(), "Failed to validate GeRootModel");
   hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
-  auto ret = ge_root_model_->GetSubgraphsInstanceNameToModel();
+  auto ret = ge_root_model_->GetSubgraphInstanceNameToModel();
   const GeModelPtr ge_model = ret[ge_root_model_->GetRootGraph()->GetName()];
   GE_CHK_STATUS_RET(IndexTaskDefs(ge_root_model_->GetRootGraph(), ge_model),
                     "[%s] Failed to index task defs", GetGraphName());
@@ -977,7 +977,7 @@ Status HybridModelBuilder::InitWeights() {
 
   auto &root_model = iter->second;
   const auto &weight_buffer = root_model->GetWeight();
-  if (weight_buffer.GetSize == 0) {
+  if (weight_buffer.GetSize() == 0) {
     GELOGD("weight is empty");
     return SUCCESS;
   }
@@ -994,7 +994,7 @@ Status HybridModelBuilder::InitWeights() {
                          RT_MEMCPY_HOST_TO_DEVICE));
 
   GELOGI("Init weight mem successfully, weight base %p, weight size = %zu",
-         weright_base,
+         weight_base,
          hybrid_model_.weight_buffer_->GetSize());
   for (auto &node : root_graph->GetDirectNode()) {
     if (node->GetType() != CONSTANT) {
@@ -1011,7 +1011,7 @@ Status HybridModelBuilder::InitWeights() {
     GE_CHECK_NOTNULL(ge_tensor);
     const GeTensorDesc &tensor_desc = ge_tensor->GetTensorDesc();
     int64_t tensor_size = 0;
-    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetSize(&op_desc->MutableOutputDesc(0), tensor_size),
+    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetSize(*op_desc->MutableOutputDesc(0), tensor_size),
                             "[%s] Failed to get tensor size",
                             node->GetName().c_str());
     int64_t data_offset = 0;
@@ -1020,7 +1020,7 @@ Status HybridModelBuilder::InitWeights() {
                             node->GetName().c_str());
     GELOGD("[%s] Start to init Constant node [%s], size = %ld, offset = %ld",
            GetGraphName(),
-           constant_node->GetName().c_str(),
+           node->GetName().c_str(),
            tensor_size,
            data_offset);
 
@@ -1078,7 +1078,7 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
   return SUCCESS;
 }
 
-Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtrs &sub_graph, const GeModelPtr &ge_model) {
+Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const GeModelPtr &ge_model) {
   // index task defs
   GELOGD("To index tasks for subgraph: %s", sub_graph->GetName().c_str());
   std::unordered_map<int64_t, NodePtr> node_map;

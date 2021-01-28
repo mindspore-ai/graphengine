@@ -61,6 +61,10 @@ DynamicSingleOp *StreamResource::GetDynamicOperator(const void *key) {
   return it->second.get();
 }
 
+rtStream_t StreamResource::GetStream() const {
+  return stream_;
+}
+
 void StreamResource::SetStream(rtStream_t stream) {
   stream_ = stream;
 }

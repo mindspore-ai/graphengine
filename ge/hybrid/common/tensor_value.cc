@@ -71,7 +71,7 @@ TensorValue::TensorValue(void *buffer, size_t size) : ref_buffer_(buffer), ref_s
 TensorValue::~TensorValue() { Destroy(); }
 
 void TensorValue::Destroy() {
-  if (buffer_ != nullptr || ref_buffer_ != nullptr) {
+  if (buffer_ != nullptr) {
     GELOGD("Unref tensor: %s", DebugString().c_str());
     buffer_.reset();
   }

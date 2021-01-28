@@ -256,10 +256,27 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
                                      const vector<DataBuffer> &input_buffers,
                                      vector<GeTensorDesc> &output_desc,
                                      vector<DataBuffer> &output_buffers) {
-  GE_CHECK_NOTNULL(op_task_);
   GE_CHK_STATUS_RET_NOLOG(ValidateParams(input_desc, input_buffers, output_desc, output_buffers));
-  std::lock_guard<std::mutex> lk(*stream_mutex_);
+  if (hybrid_model_executor_ != nullptr) {
+    GELOGD("Execute multi-task dynamic single op by hybrid model executor");
+    hybrid::HybridModelExecutor::ExecuteArgs args;
+    for (auto &input : input_buffers) {
+      args.inputs.emplace_back(hybrid::TensorValue(input.data, input.length));
+    }
+    for (auto &output : output_buffers) {
+      args.outputs.emplace_back(hybrid::TensorValue(output.data, output.length));
+    }
+    for (auto &tensor_desc : input_desc) {
+      auto desc = MakeShared<GeTensorDesc>(tensor_desc);
+      GE_CHECK_NOTNULL(desc);
+      args.input_desc.emplace_back(desc);
+    }
 
+    return hybrid_model_executor_->Execute(args);
+  }
+
+  std::lock_guard<std::mutex> lk(*stream_mutex_);
+  GE_CHECK_NOTNULL(op_task_);
   GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
   GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;

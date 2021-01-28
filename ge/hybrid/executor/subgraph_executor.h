@@ -43,7 +43,19 @@ class SubgraphExecutor {
    * @param input_desc      input tensor descriptions
    * @return SUCCESS on success, error code otherwise
    */
-  Status ExecuteAsync(const std::vector<TensorValue> &inputs, const std::vector<ConstGeTensorDescPtr> &input_desc);
+  Status ExecuteAsync(const std::vector<TensorValue> &inputs,
+                      const std::vector<ConstGeTensorDescPtr> &input_desc);
+
+  /**
+   * Execute subgraph async, output tensor address(not data) and output tensor descriptions are
+   * valid after this method returned
+   * @param inputs          input tensors
+   * @param input_desc      input tensor descriptions
+   * @return SUCCESS on success, error code otherwise
+   */
+  Status ExecuteAsync(const std::vector<TensorValue> &inputs,
+                      const std::vector<ConstGeTensorDescPtr> &input_desc,
+                      const std::vector<TensorValue> &outputs);
 
   /**
    * Execute subgraph async, output tensor address(not data) and output tensor descriptions are
@@ -75,6 +87,7 @@ class SubgraphExecutor {
   Status GetOutputs(std::vector<TensorValue> &outputs, std::vector<ConstGeTensorDescPtr> &output_desc);
 
  private:
+  Status EnableOutputZeroCopy(const std::vector<TensorValue> &outputs);
   Status PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state);
   static Status InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state);
   Status Init(const std::vector<TensorValue> &inputs,

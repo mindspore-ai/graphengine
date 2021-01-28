@@ -37,6 +37,7 @@ class StreamResource {
   StreamResource(StreamResource &&) = delete;
   StreamResource &operator=(const StreamResource &) = delete;
   StreamResource &operator=(StreamResource &&) = delete;
+  rtStream_t GetStream() const;
   void SetStream(rtStream_t stream);
 
   SingleOp *GetOperator(const void *key);

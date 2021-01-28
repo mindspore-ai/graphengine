@@ -28,6 +28,7 @@
 #include "runtime/stream.h"
 #include "task/op_task.h"
 #include "cce/aicpu_engine_struct.h"
+#include "hybrid/executor/hybrid_model_executor.h"
 
 namespace ge {
 class StreamResource;
@@ -46,7 +47,7 @@ class SingleOp {
   Status GetArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs);
 
   friend class SingleOpModel;
-  StreamResource *stream_resource_;
+  StreamResource *stream_resource_ = nullptr;
   std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;
   std::vector<void *> input_addr_list_;
@@ -77,6 +78,8 @@ class DynamicSingleOp {
                         std::vector<DataBuffer> &outputs) const;
 
   std::unique_ptr<OpTask> op_task_;
+  std::unique_ptr<hybrid::HybridModel> hybrid_model_;
+  std::unique_ptr<hybrid::HybridModelExecutor> hybrid_model_executor_;
   uintptr_t resource_id_ = 0;
   std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;

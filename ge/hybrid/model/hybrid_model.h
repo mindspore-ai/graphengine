@@ -37,7 +37,7 @@ class HybridModel {
 
   ~HybridModel();
 
-  Status Init();
+  Status Init(bool is_single_op = false);
 
   const NodeItem *GetNodeItem(const NodePtr &node) const;
 
@@ -136,6 +136,7 @@ class HybridModel {
   uint32_t device_id_ = 0;
   uint32_t model_id_ = 0;
   uint8_t *var_mem_base_ = nullptr;
+  std::unique_ptr<TensorBuffer> weight_buffer_;
   RuntimeParam root_runtime_param_;
 };
 }  // namespace hybrid

@@ -40,9 +40,13 @@ HybridModel::~HybridModel() {
   GELOGD("[%s] HybridModel destroyed.", model_name_.c_str());
 }
 
-Status HybridModel::Init() {
+Status HybridModel::Init(bool is_single_op) {
   GELOGD("Start to init hybrid model.");
-  GE_CHK_STATUS_RET(HybridModelBuilder(*this).Build(), "Failed to build hybrid model.");
+  if (is_single_op) {
+    GE_CHK_STATUS_RET(HybridModelBuilder(*this).BuildForSingleOp(), "Failed to build hybrid model.");
+  } else {
+    GE_CHK_STATUS_RET(HybridModelBuilder(*this).Build(), "Failed to build hybrid model.");
+  }
   GELOGD("HybridModel initialized successfully.");
   return SUCCESS;
 }

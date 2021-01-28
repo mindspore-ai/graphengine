@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -635,8 +635,8 @@ REG_OP(ReduceMin)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use ReduceMin instead.
 */
 REG_OP(ReduceMinD)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8,DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8,DT_INT32}))
     .REQUIRED_ATTR(axes, ListInt)
     .ATTR(keep_dims, Bool, false)
     .OP_END_FACTORY_REG(ReduceMinD)
@@ -821,7 +821,7 @@ Defaults to "0.00001" . \n
 *batch_ variance: A Tensor of type float32 for the result variance . \n
 
 *@attention Constraints:
-*For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*For Ascend 310, the result accuracy fails to reach 0.001 due to the square root instruction.
 */
 REG_OP(INInferV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -882,7 +882,7 @@ REG_OP(INTrainingReduceV2)
 *@attention Constraints:
 *@li This operator is a InstanceNorm fusion operator for updating the moving averages for training.
 * This operator is used in conjunction with INTrainingReduceV2.
-*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*@li For Ascend 310, the result accuracy fails to reach 1â€° due to the square root instruction.
 */
 REG_OP(INTrainingUpdateV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -965,7 +965,7 @@ for the updated variance.
 *@attention Constraints:
 *@li This operator is a InstanceNorm fusion operator for updating the moving averages for training.
 * This operator is used in conjunction with GNTrainingUpdate.
-*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
+*@li For Ascend 310, the result accuracy fails to reach 1â€° due to the square root instruction.
 */
 REG_OP(GNTrainingUpdate)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -982,6 +982,41 @@ REG_OP(GNTrainingUpdate)
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(GNTrainingUpdate)
 
+/**
+* @brief Calculates the standard deviation and average value of Tensors.
+
+* @par Inputs:
+* @li x: A Tensor. Must be one of the following types:
+*     float16, float32. \n
+
+* @par Attributes:
+* Three Attributes, including:
+* @li dim: An optional listint, Defaults to "None". \n
+
+* @li unbiased: An optional bool. Defaults to "True".
+*     If "True", Use Bessel Correction.
+*     If "False", Do not use Bessel Correction. \n
+
+* @li keepdim: An optional bool. Defaults to "False".
+*     If "True", Keep the original tensor dimension.
+*     If "False", Do not keep the original tensor dimension. \n
+
+* @par Outputs:
+* Two Outputs, including:
+* @li y1: A Tensor. Has the same type as "x".
+* @li y2: A Tensor. Has the same type as "x". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator ReduceStd.
+*/
+REG_OP(ReduceStd)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y1, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y2, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(dim, ListInt, {})
+    .ATTR(unbiased, Bool, true)
+    .ATTR(keepdim, Bool, false)
+    .OP_END_FACTORY_REG(ReduceStd)
 } //namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_REDUCE_OPS_H_

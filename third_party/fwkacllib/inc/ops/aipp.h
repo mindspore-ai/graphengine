@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ in aipp config file, framework will auto add one input node to graph at last. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator AippData.
+*@par Restrictions:
+*Warning: This operator can be integrated only by configuring INSERT_OP_FILE of aclgrphBuildModel. Please do not use it directly.
 */
 REG_OP(AippData)
     .INPUT(data, TensorType::ALL())

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ namespace ge {
 * float32, int32. Has format [ND, NHWC] . \n
 
 *@par Attributes:
-*@li transpose_a: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
-*@li transpose_b: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
+*@li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
+*@li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: float16,
@@ -70,8 +70,8 @@ REG_OP(MatMul)
 * float32, int32. Has format [ND, NHWC] . \n
 
 *@par Attributes:
-*@li transpose_a: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
-*@li transpose_b: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
+*@li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
+*@li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D. Must be one of the following types: float16,
@@ -156,8 +156,8 @@ REG_OP(GEMM)
 * float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ] . \n
 
 *@par Attributes:
-*@li adj_x: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
-*@li adj_y: A bool. If True, changes the shape of "x2" from [B, M, K] to [B, K, M] . \n
+*@li adj_x1: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
+*@li adj_x2: A bool. If True, changes the shape of "x2" from [B, M, K] to [B, K, M] . \n
 
 *@par Outputs:
 *y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
@@ -174,6 +174,41 @@ REG_OP(BatchMatMul)
     .ATTR(adj_x1, Bool, false)
     .ATTR(adj_x2, Bool, false)
     .OP_END_FACTORY_REG(BatchMatMul)
+
+
+/**
+* @brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x1: A matrix Tensor. Must be one of the following types: float16,
+* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ].
+* @li x2: A matrix Tensor. Must be one of the following types: float16,
+* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ] . \n
+* @li bias: A matrix Tensor. Must be one of the following types: float16,
+* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ] . \n
+
+* @par Attributes:
+* @li adj_x: A bool. If True, changes the shape of "x1" from [B, M, K] to [B, K, M].
+* @li adj_y: A bool. If True, changes the shape of "x2" from [B, M, K] to [B, K, M] . \n
+
+* @par Outputs:
+* y: The result matrix Tensor. 2D or higher. Must be one of the following types: float16,
+* float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ]. Has the same shape length as "x1" and "x2" . \n
+
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator BatchMatmul.
+*/
+
+REG_OP(BatchMatMulV2)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .ATTR(adj_x1, Bool, false)
+    .ATTR(adj_x2, Bool, false)
+    .OP_END_FACTORY_REG(BatchMatMulV2)
+
 
 /**
 *@brief Computes half the L2 norm of a tensor without the sqrt . \n
@@ -978,6 +1013,14 @@ REG_OP(MatrixDiagV2)
     .INPUT(padding_value, TensorType::BasicType())
     .OUTPUT(output, TensorType::BasicType())
     .OP_END_FACTORY_REG(MatrixDiagV2)
+
+REG_OP(IndexAdd)
+    .INPUT(var, TensorType({DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(updates, TensorType({DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .OUTPUT(var_out, TensorType({DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .ATTR(axis, Int, 0)
+    .OP_END_FACTORY_REG(IndexAdd)
 
 }  // namespace ge
 

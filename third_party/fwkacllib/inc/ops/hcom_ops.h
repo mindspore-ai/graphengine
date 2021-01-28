@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,6 @@ REG_OP(HcomAllGather)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
     .REQUIRED_ATTR(rank_size, Int)
     .REQUIRED_ATTR(group, String)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomAllGather)
 
 /**
@@ -77,8 +75,6 @@ REG_OP(HcomAllReduce)
     .REQUIRED_ATTR(group, String)
     .ATTR(fusion, Int, 1)
     .ATTR(fusion_id, Int, -1)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomAllReduce)
 
 /**
@@ -91,7 +87,7 @@ REG_OP(HcomAllReduce)
   input of this rank will be broadcast to other ranks.
  * @li fusion: A required integer identifying if the op need to fusion,the 
   default value is none fusion
-  * @li fusion: A required integer identifying the fusion id if para fusion
+  * @li fusion_id: A required integer identifying the fusion id if para fusion
   is set.
  * @li group: A required string identifying the group name of ranks
   participating in the op.
@@ -109,10 +105,39 @@ REG_OP(HcomBroadcast)
     .REQUIRED_ATTR(group, String)
     .ATTR(fusion, Int, 0)
     .ATTR(fusion_id, Int, -1)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomBroadcast)
 
+/**
+ * @brief preforms reduction from others rank to rootrank
+ * @par Inputs:
+* @li root_rank: A required integer identifying the root rank in the op
+  the reduction result will be on this root rank
+ * x: A tensor. Must be one of the following types: int8, int16, int32, float16,
+  float32.
+ * @par Attributes:
+ * @li reduction: A required string identifying the reduction operation to
+  perform.The supported operation are: "sum", "max", "min", "prod".
+ * @li group: A required string identifying the group name of ranks
+  participating in the op.
+ * @li fusion: An optional integer identifying the fusion flag of the op.
+  0: no fusion; 1 (default): fusion; 2: fusion the ops by fusion id.
+ * @li fusion_id: An optional integer identifying the fusion id of the op.
+ * The HcomReduce ops with the same fusion id will be fused.
+ * @par Outputs:
+ * y: A Tensor. Has the same type as "x".
+ * @attention Constraints:
+ *"group" is limited to 128 characters. Use "hccl_world_group"
+  as the name of a world group.
+ */
+REG_OP(HcomReduce)
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16}))
+    .REQUIRED_ATTR(root_rank, Int)
+    .REQUIRED_ATTR(reduction, String)
+    .REQUIRED_ATTR(group, String)
+    .ATTR(fusion, Int, 0)
+    .ATTR(fusion_id, Int, -1)
+    .OP_END_FACTORY_REG(HcomReduce)
 /**
  * @brief Performs reduction across all input tensors, scattering in equal
   blocks among ranks, each rank getting a chunk of data based on its rank
@@ -139,8 +164,6 @@ REG_OP(HcomReduceScatter)
     .REQUIRED_ATTR(reduction, String)
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(rank_size, Int)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomReduceScatter)
 
 /**
@@ -167,8 +190,6 @@ REG_OP(HcomSend)
     .REQUIRED_ATTR(group, String)
     .REQUIRED_ATTR(sr_tag, Int)
     .REQUIRED_ATTR(dest_rank, Int)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomSend)
 
 /**
@@ -202,8 +223,6 @@ REG_OP(HcomReceive)
     .REQUIRED_ATTR(src_rank, Int)
     .REQUIRED_ATTR(shape, ListInt)
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(alpha, Float, 1.0)
-    .ATTR(beta, Float, 0.0)
     .OP_END_FACTORY_REG(HcomReceive)
 
 /**

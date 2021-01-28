@@ -191,7 +191,7 @@ Status MultiBatchClonePass::CheckAndParseDynamicData() {
                          data_desc.GetFormat() == Format::FORMAT_NHWC ? "NHWC" : "Others";
       auto data_name = node->GetName();
 
-      std::vector<int64_t> data_shape_dims = data_shape.GetDims();
+      const auto &data_shape_dims = data_shape.GetDims();
       if (std::all_of(data_shape_dims.begin(), data_shape_dims.end(), [](int64_t val) { return val >= 0; })) {
         continue;
       }

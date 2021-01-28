@@ -505,8 +505,8 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
     auto root_model = model_helper_.GetGeRootModel();
     GE_CHECK_NOTNULL(root_model);
     root_model->SetRootGraph(GraphUtils::GetComputeGraph(ge_model->GetGraph()));
-    root_model->SetSubgraphInstanceNameToModel(ge_model->GetGraph()->GetName(), ge_model);
-    single_op.hybrid_model_.reset(new (std::nothrow)hybrid::HybridModel(model_helper_.GetGeRootModel()));
+    root_model->SetSubgraphInstanceNameToModel(root_model->GetRootGraph()->GetName(), ge_model);
+    single_op.hybrid_model_.reset(new (std::nothrow)hybrid::HybridModel(root_model));
     GE_CHECK_NOTNULL(single_op.hybrid_model_);
     GE_CHK_STATUS_RET(single_op.hybrid_model_->Init(true), "Failed to init hybrid model");
     int32_t device_id = 0;

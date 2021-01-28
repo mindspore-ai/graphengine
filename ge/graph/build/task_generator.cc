@@ -533,13 +533,6 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
 
-  int64_t node_index = 0;
-  for (auto &node : all_nodes) {
-    OpDescPtr op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    op_desc->SetId(node_index++);
-  }
-
   map<int64_t, vector<OpDescPtr>> all_stream_ops;
   for (auto &node : all_nodes) {
     OpDescPtr op_desc = node->GetOpDesc();

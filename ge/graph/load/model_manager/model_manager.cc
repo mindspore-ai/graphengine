@@ -1428,7 +1428,7 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
   uint8_t *model_data = nullptr;
   uint32_t model_len = 0;
   Status ret = DavinciModelParser::ParseModelContent(model, model_data, model_len);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "parse model content failed!");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_PARAM_INVALID, "parse model content failed!");
 
   OmFileLoadHelper om_file_helper;
   ret = om_file_helper.Init(model_data, model_len);

@@ -554,33 +554,6 @@ Status TaskContext::SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream
       tmp_compute_graph_info.model_name = dynamic_model_name;
       tmp_compute_graph_info.op_name = op_desc->GetName();
       tmp_compute_graph_info.op_type = op_desc->GetType();
-      // default
-      if (op_desc->GetAllInputsSize() == 0) {
-        tmp_compute_graph_info.input_format = { FORMAT_NULL };
-        tmp_compute_graph_info.input_shape = { {0} };
-        tmp_compute_graph_info.input_data_type = { DT_UNDEFINED };
-      }
-      for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
-        GeTensorDescPtr input_desc = op_desc->MutableInputDesc(i);
-        if (input_desc == nullptr) {
-          continue;
-        }
-        tmp_compute_graph_info.input_format.emplace_back(input_desc->GetFormat());
-        tmp_compute_graph_info.input_shape.emplace_back(input_desc->GetShape().GetDims());
-        tmp_compute_graph_info.input_data_type.emplace_back(input_desc->GetDataType());
-      }
-
-      if (op_desc->GetOutputsSize() == 0) {
-        tmp_compute_graph_info.output_format = { FORMAT_NULL };
-        tmp_compute_graph_info.output_shape = { {0} };
-        tmp_compute_graph_info.output_data_type = { DT_UNDEFINED };
-      }
-      for (size_t j = 0; j < op_desc->GetOutputsSize(); ++j) {
-        GeTensorDesc output_desc = op_desc->GetOutputDesc(j);
-        tmp_compute_graph_info.output_format.emplace_back(output_desc.GetFormat());
-        tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
-        tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
-      }
       tmp_compute_graph_info.task_id = task_id;
       tmp_compute_graph_info.stream_id = stream_id;
       compute_graph_info.emplace_back(tmp_compute_graph_info);

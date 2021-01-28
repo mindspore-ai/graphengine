@@ -302,7 +302,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_fp16_success_eq_cube) {
   }
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, UNSUPPORTED);
+  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_fp16_success_gt_cube) {

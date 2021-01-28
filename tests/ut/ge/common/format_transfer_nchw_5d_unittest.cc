@@ -633,5 +633,14 @@ TEST_F(UtestFormatTransferNchw5d, unsupport_dst_format) {
   TransResult result;
   EXPECT_NE(transfer.TransFormat(args, result), SUCCESS);
 }
+
+TEST_F(UtestFormatTransferNchw5d, invalid_data_format) {
+  uint16_t data[1 * 4 * 4 * 1] = {0};
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_Z, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_FLOAT16};
+  FormatTransferNchwNc1hwc0 transfer;
+  EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
+            ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+}
 }  // namespace formats
 }  // namespace ge

@@ -51,6 +51,13 @@ using ClusterPtr = std::shared_ptr<Cluster>;
 static bool IsInExperimentalMode(const ComputeGraphPtr &root_graph) {
   for (const auto &node : root_graph->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
+    // not do partition in single op scene.
+    bool is_singleop = false;
+    (void)AttrUtils::GetBool(node->GetOpDesc(), ATTR_SINGLE_OP_SCENE, is_singleop);
+    if (is_singleop) {
+      return false;
+    }
+
     for (const auto &input_desc : node->GetOpDesc()->GetAllInputsDesc()) {
       auto type = input_desc.GetDataType();
       if (type == DT_STRING || type == DT_RESOURCE || type == DT_STRING_REF) {

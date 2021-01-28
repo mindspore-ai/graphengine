@@ -670,7 +670,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
   if (!is_offline) {
-    (void)AttrUtils::SetBool(op_desc, ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, true);
+    (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
   }
 
   if (CheckForSingleOp(op_desc, inputs, outputs) != SUCCESS) {

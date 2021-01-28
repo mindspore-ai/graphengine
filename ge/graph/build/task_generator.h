@@ -129,10 +129,16 @@ class TaskGenerator {
                                 std::vector<uint32_t> &all_reduce_nodes) const;
   Status InsertProfilingTaskBefore(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
                                    std::vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
-                                   std::vector<domi::TaskDef> &task_def_list, uint64_t &all_reduce_node_idx);
+                                   std::vector<domi::TaskDef> &task_def_list);
+  Status InsertProfilingArTaskBefore(const OpDescPtr &op_desc, std::vector<uint32_t> &all_reduce_nodes,
+                                     uint32_t node_index, std::vector<domi::TaskDef> &task_def_listy,
+                                     bool is_insert_bp_profiling_task);
   Status InsertProfilingTaskAfter(const OpDescPtr &op_desc, const ProfilingPoint &profiling_point,
                                   std::vector<uint32_t> &all_reduce_nodes, uint32_t node_index,
-                                  std::vector<domi::TaskDef> &task_def_list, uint64_t all_reduce_node_idx);
+                                  std::vector<domi::TaskDef> &task_def_list);
+  Status InsertProfilingArTaskAfter(const OpDescPtr &op_desc, std::vector<uint32_t> &all_reduce_nodes,
+                                    uint32_t node_index, std::vector<domi::TaskDef> &task_def_list,
+                                    bool is_insert_bp_profiling_task);
 
   static bool IsProfPoint(const OpDescPtr &op, const std::string &name);
 
@@ -154,6 +160,8 @@ class TaskGenerator {
   Status DestroyUnknownShapeStream(RunContext &run_context, rtStream_t &stream);
 
   Status SetKnownShapeStream(RunContext &run_context, int64_t stream_id);
+
+  bool IsSubGraphOfDynamicGraph(const ComputeGraphPtr &graph) const;
 
   uint8_t *var_mem_base_ = nullptr;
   uint64_t var_mem_size_ = 0;

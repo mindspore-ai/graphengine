@@ -26,9 +26,6 @@
 
 namespace ge {
 namespace {
-std::set<std::string> un_compute_attrs = {
-    {ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES},
-};
 
 std::string GetCseKey(const NodePtr &node) {
   std::stringstream ss;
@@ -53,7 +50,7 @@ std::string GetCseKey(const NodePtr &node) {
     ss << name << "-";
   }
 
-  ss << "attrs-" << AttrUtils::GetAttrsStrAfterRid(node->GetOpDesc(), un_compute_attrs);
+  ss << "attrs-" << AttrUtils::GetAllAttrsStr(node->GetOpDesc());
 
   return ss.str();
 }

@@ -157,7 +157,7 @@ Status FormatTransferNc1hwc0Nhwc::TransFormat(const TransArgs &args, TransResult
 Status FormatTransferNc1hwc0Nhwc::TransShape(Format src_format, const std::vector<int64_t> &src_shape,
                                              DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
   GELOGD("The shape derivation from NC1HWC0 to NHWC is not unique. Trans shape in this direction is not supported");
-  return UNSUPPORTED;
+  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferNc1hwc0Nhwc, FORMAT_NC1HWC0, FORMAT_NHWC)

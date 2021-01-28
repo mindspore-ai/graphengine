@@ -100,14 +100,14 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
     }
     auto bin_ptr = new (std::nothrow) BlockBin(BlockComparator);
     if (bin_ptr == nullptr) {
-      GELOGE(ge::FAILED, "Alloc BlockBin failed.");
-      return ge::FAILED;
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc BlockBin failed.");
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     free_block_bins_[i] = bin_ptr;
   }
   memory_allocator_ = MemManager::Instance(memory_type_);
   if (memory_allocator_ == nullptr) {
-    return ge::FAILED;
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   return ge::SUCCESS;
 }

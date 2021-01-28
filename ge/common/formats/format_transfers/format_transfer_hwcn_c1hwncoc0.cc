@@ -43,8 +43,9 @@ Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<in
   dst_shape.push_back(cube_size);
   dst_shape.push_back(cube_size);
   if (!CheckShapeValid(dst_shape, kC1hwncoc0DimsNum)) {
-    GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check dst shape %s",
+           ShapeToString(dst_shape).c_str());
+    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
   }
   return SUCCESS;
 }
@@ -197,12 +198,15 @@ Status FormatTransferHwcnC1hwncoc0::TransShape(Format src_format, const std::vec
                                                DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
   if (src_format == FORMAT_HWCN && CheckDataTypeSupported(data_type)) {
     if (!CheckShapeValid(src_shape, kHwcnDimsNum)) {
-      GELOGE(PARAM_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
-      return PARAM_INVALID;
+      GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check src shape %s",
+             ShapeToString(src_shape).c_str());
+      return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
     }
     return TransShapeHwcnToC1hwncoc0(data_type, src_shape, dst_shape);
+  } else if (src_format != FORMAT_HWCN) {
+    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
   } else {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
   }
 }
 

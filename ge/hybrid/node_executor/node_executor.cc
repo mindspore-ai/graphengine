@@ -117,11 +117,11 @@ Status NodeExecutorManager::GetExecutor(Node &node, const NodeExecutor **executo
   auto executor_type = ResolveExecutorType(node);
   const auto it = executors_.find(executor_type);
   if (it == executors_.end()) {
-    GELOGE(INTERNAL_ERROR, "Failed to get executor by type: %d.", executor_type);
+    GELOGE(INTERNAL_ERROR, "Failed to get executor by type: %d.", static_cast<int>(executor_type));
     return INTERNAL_ERROR;
   }
 
-  GELOGD("[%s] Set node executor by type: %d.", node.GetName().c_str(), executor_type);
+  GELOGD("[%s] Set node executor by type: %d.", node.GetName().c_str(), static_cast<int>(executor_type));
   *executor = it->second.get();
   return SUCCESS;
 }
@@ -165,7 +165,7 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
       TensorUtils::SetSize(output_tensor, output_mem_size);
       GE_CHK_STATUS_RET(op_desc->UpdateOutputDesc(static_cast<uint32_t>(i), output_tensor),
                         "hccl update output size failed.");
-      GELOGD("%s output desc[%u], dim_size: %zu, mem_size: %ld.", node.GetName().c_str(), i,
+      GELOGD("%s output desc[%zu], dim_size: %zu, mem_size: %ld.", node.GetName().c_str(), i,
              output_tensor.GetShape().GetDimNum(), output_mem_size);
     }
     return SUCCESS;
@@ -189,14 +189,14 @@ Status NodeExecutorManager::InitializeExecutors() {
     GE_CHECK_NOTNULL(build_fn);
     auto executor = std::unique_ptr<NodeExecutor>(build_fn());
     if (executor == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to create executor for engine type = %d", engine_type);
+      GELOGE(INTERNAL_ERROR, "Failed to create executor for engine type = %d", static_cast<int>(engine_type));
       return INTERNAL_ERROR;
     }
 
-    GELOGD("Executor of engine type = %d was created successfully", engine_type);
+    GELOGD("Executor of engine type = %d was created successfully", static_cast<int>(engine_type));
     auto ret = executor->Initialize();
     if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to initialize NodeExecutor of type = %d, clear executors", engine_type);
+      GELOGE(ret, "Failed to initialize NodeExecutor of type = %d, clear executors", static_cast<int>(engine_type));
       for (auto &executor_it : executors_) {
         executor_it.second->Finalize();
       }

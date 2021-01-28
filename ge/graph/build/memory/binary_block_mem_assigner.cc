@@ -69,8 +69,8 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
     GELOGW("Vector all_memory_size is empty!");
     return SUCCESS;
   }
-  if ((all_memory_size.front() == 0) || (log(kLogBase) == 0)) {
-    GELOGE(FAILED, "dividend is 0!");
+  if ((all_memory_size.front() <= 0) || (log(kLogBase) == 0)) {
+    GELOGE(FAILED, "Memory size:%ld is invalid.", all_memory_size.front());
     return FAILED;
   }
   // Memory size is 512 aligned, so it is not necessary to take less than 512

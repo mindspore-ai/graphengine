@@ -58,9 +58,9 @@ Status DynamicSingleOpResetShapePass::Run(ComputeGraphPtr graph) {
       continue;
     }
 
-    // pass node without attr: ATTR_DYNAMIC_SHAPE_SINGLE_AICPU
+    // pass node without attr: ATTR_SINGLE_OP_SCENE
     bool single_aicpu_unknown = false;
-    if (!AttrUtils::GetBool(node->GetOpDesc(), ATTR_DYNAMIC_SHAPE_SINGLE_AICPU, single_aicpu_unknown) ||
+    if (!AttrUtils::GetBool(node->GetOpDesc(), ATTR_SINGLE_OP_SCENE, single_aicpu_unknown) ||
         !single_aicpu_unknown) {
       continue;
     }

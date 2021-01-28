@@ -1894,7 +1894,7 @@ TEST_F(UtestFormatTransferNdFractZz, nd_shape4_fp16_1) {
   }
   EXPECT_EQ(
       transfer2.TransShape(args2.src_format, args2.src_shape, args2.src_data_type, args2.dst_format, args2.dst_shape),
-      UNSUPPORTED);
+                           ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, nd_shape4_fp16) {
@@ -2071,7 +2071,7 @@ TEST_F(UtestFormatTransferNdFractZz, nd_shape4_fp16) {
   }
   EXPECT_EQ(
       transfer2.TransShape(args2.src_format, args2.src_shape, args2.src_data_type, args2.dst_format, args2.dst_shape),
-      UNSUPPORTED);
+                           ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, nd_shape5_fp16) {
@@ -7879,7 +7879,7 @@ TEST_F(UtestFormatTransferNdFractZz, invalid_src_shape) {
   FormatTransferFractalZz transfer;
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-            PARAM_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, invalid_src_data_type) {
@@ -7899,7 +7899,7 @@ TEST_F(UtestFormatTransferNdFractZz, invalid_src_data_type) {
   FormatTransferFractalZz transfer;
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-            PARAM_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferNdFractZz, invalid_src_format) {
@@ -7914,7 +7914,7 @@ TEST_F(UtestFormatTransferNdFractZz, invalid_src_format) {
   FormatTransferFractalZz transfer;
   EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-            PARAM_INVALID);
+            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
   EXPECT_EQ(TransFormat(args, result), UNSUPPORTED);
 }
 

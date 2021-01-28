@@ -540,7 +540,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   for (auto device_id_module : device_id_module_map_) {
     if (device_id_module.second != 0) {
       uint32_t device_id = static_cast<uint32_t>(device_id_module.first);
-      GELOGI("Prof finalize: device_id: %u, module: 0x%llx.", device_id, device_id_module.second);
+      GELOGI("Prof finalize: device_id: %u, module: 0x%lx.", device_id, device_id_module.second);
       rt_ret = rtProfilerStop(device_id_module.second, 1, &device_id);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGE(FAILED, "Runtime profiler stop failed.");
@@ -629,7 +629,7 @@ Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string>
   }
 
   if (device_num == 0 || device_num > kMaxDeviceNum || device_num != static_cast<int32_t>(device_list.size())) {
-    GELOGE(FAILED, "Config para device num: %d not equal to device list size: %d.", device_num, device_list.size());
+    GELOGE(FAILED, "Config para device num: %d not equal to device list size: %zu.", device_num, device_list.size());
     return FAILED;
   }
 #endif
@@ -659,7 +659,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   for (int32_t i = 0; i < device_num; i++) {
     device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
-  GELOGI("Runtime config param: 0x%llx, device num: %d.", module, device_num);
+  GELOGI("Runtime config param: 0x%lx, device num: %d.", module, device_num);
 
   rtError_t rt_ret = rtProfilerStart(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
@@ -701,7 +701,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   for (int32_t i = 0; i < device_num; i++) {
     device_id_ptr[i] = static_cast<uint32_t>(device_list[i]);
   }
-  GELOGI("Prof stop: runtime config param: 0x%llx, device num: %d", module, device_num);
+  GELOGI("Prof stop: runtime config param: 0x%lx, device num: %d", module, device_num);
   rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");

@@ -99,8 +99,8 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
     }
     int64_t output_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
-      GELOGE(PARAM_INVALID, "Get output size filed");
-      return PARAM_INVALID;
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Get output size filed");
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get output size in lanch dump op is %ld", output_size);
     output.set_size(output_size);
@@ -126,8 +126,8 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
     }
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
-      GELOGE(PARAM_INVALID, "Get output size filed");
-      return PARAM_INVALID;
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Get output size filed");
+      return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get input size in lanch dump op is %ld", input_size);
     input.set_size(input_size);
@@ -151,31 +151,31 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_msg);
   if (!ret || proto_size == 0) {
-    GELOGE(FAILED, "Protobuf serialize failed,proto_size is %zu", proto_size);
-    return FAILED;
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Protobuf serialize failed, proto_size is %zu", proto_size);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   rtError_t rt_ret = rtMalloc(&proto_dev_mem_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    GELOGE(rt_ret, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMemcpy(proto_dev_mem_, proto_size, proto_msg.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    GELOGE(rt_ret, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMalloc(&proto_size_dev_mem_, sizeof(size_t), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    GELOGE(rt_ret, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtMemcpy(proto_size_dev_mem_, sizeof(size_t), &proto_size, sizeof(size_t), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
-    return RT_FAILED;
+    GELOGE(rt_ret, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   constexpr int32_t io_addr_num = 2;
@@ -193,8 +193,8 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
                              nullptr,  // no need smDesc
                              stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Call rtCpuKernelLaunch failed,rt_ret:0x%X", rt_ret);
-    return rt_ret;
+    GELOGE(rt_ret, "Call rtCpuKernelLaunch failed,rt_ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGI("Kernel launch dump op success");
   return SUCCESS;
@@ -204,9 +204,15 @@ Status DumpOp::LaunchDumpOp() {
   GELOGI("Start to launch dump op %s", op_desc_->GetName().c_str());
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
-  if (rt_ret != RT_ERROR_NONE || device_id < 0) {
-    GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
-    return RT_FAILED;
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (device_id < 0) {
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
+           "Check device_id failed, device_id = %d, which should be not less than 0.",
+           device_id);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   aicpu::dump::OpMappingInfo op_mapping_info;
   auto dump_path = dump_properties_.GetDumpPath() + std::to_string(device_id) + "/";
@@ -232,29 +238,31 @@ Status DumpOp::LaunchDumpOp() {
   task.mutable_op()->set_op_name(op_desc_->GetName());
   task.mutable_op()->set_op_type(op_desc_->GetType());
   if (dump_properties_.GetDumpMode() == kDumpOutput) {
-    if (DumpOutput(task) != SUCCESS) {
-      GELOGE(FAILED, "Dump output failed");
-      return FAILED;
+    auto ret = DumpOutput(task);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Dump output failed");
+      return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
   }
   if (dump_properties_.GetDumpMode() == kDumpInput) {
-    if (DumpInput(task) != SUCCESS) {
-      GELOGE(FAILED, "Dump input failed");
-      return FAILED;
+    auto ret = DumpInput(task);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "Dump input failed");
+      return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
   }
   if (dump_properties_.GetDumpMode() == kDumpAll) {
     auto ret = DumpOutput(task);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Dump output failed when in dumping all");
-      return FAILED;
+      GELOGE(ret, "Dump output failed when in dumping all");
+      return ret;
     }
     ret = DumpInput(task);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "Dump input failed when in dumping all");
-      return FAILED;
+      GELOGE(ret, "Dump input failed when in dumping all");
+      return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
   }

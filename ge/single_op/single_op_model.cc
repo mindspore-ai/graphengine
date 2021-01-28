@@ -438,8 +438,8 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
     if (task_type == RT_MODEL_TASK_KERNEL) {
       if (single_op.op_task_ != nullptr) {
-        GELOGE(UNSUPPORTED, "Do not support dynamic op with multiple tasks.");
-        return UNSUPPORTED;
+        GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID, "Do not support dynamic op with multiple tasks.");
+        return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;
       }
       GE_CHK_STATUS_RET_NOLOG(BuildModelTaskKernel(task_def, single_op));
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {

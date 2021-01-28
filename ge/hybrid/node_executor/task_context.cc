@@ -252,7 +252,7 @@ Status TaskContext::AllocateOutput(int index,
   }
 
   if (outputs_start_[index].GetSize() > 0) {
-    reMemset(outputs_start_[index].MutableData(), outputs_start_[index].GetSize(), 0, outputs_start_[index].GetSize());
+    rtMemset(outputs_start_[index].MutableData(), outputs_start_[index].GetSize(), 0, outputs_start_[index].GetSize());
   }
 
   if (execution_context_->trace_enabled) {
@@ -401,7 +401,7 @@ Status TaskContext::PropagateOutputs() {
       subgraph_context_->all_inputs_[input_offset] = *tensor;
       if (execution_context_->trace_enabled) {
         subgraph_context_->all_inputs_[input_offset].SetName(
-            dst_node_item->NodeName() + "_in_" + std::to_string(dst_input_idx));
+          dst_node_item->NodeName() + "_in_" + std::to_string(dst_input_idx));
       }
     }
   }

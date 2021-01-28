@@ -1226,28 +1226,12 @@ Status StreamAllocator::InsertSyncEventNodes() {
     }
   }
 
-  Status status = ReorderEventNodes();
+  Status status = whole_graph_->InsertGraphEvents();
   if (status != SUCCESS) {
     GELOGE(status, "Graph ReorderEventNodes failed");
     return status;
   }
 
-  return SUCCESS;
-}
-
-Status StreamAllocator::ReorderEventNodes() const {
-  Status status = whole_graph_->InsertEventNodes();
-  if (status != SUCCESS) {
-    GELOGE(status, "Whole graph InsertEventNodes failed");
-    return status;
-  }
-  for (const auto &subgraph : whole_graph_->GetAllSubgraphs()) {
-    status = subgraph->InsertEventNodes();
-    if (status != SUCCESS) {
-      GELOGE(status, "Subgraph %s InsertEventNodes failed", subgraph->GetName().c_str());
-      return status;
-    }
-  }
   return SUCCESS;
 }
 

@@ -93,7 +93,7 @@ Status StampDynamicType(const OpDescPtr &op_desc);
 /// @param [in] const string &data_name: cur data name.
 /// @return 0: true/false
 ///
-bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name);
+GE_FUNC_VISIBILITY bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name);
 
 ///
 /// @ingroup ge
@@ -104,7 +104,7 @@ bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_nam
 /// @param [in]  const std::string &input_format: format of input.
 /// @return 0: true/false
 ///
-bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
+GE_FUNC_VISIBILITY bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
                                 const std::string &input_format);
 
 }  // namespace multibatch

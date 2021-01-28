@@ -21,7 +21,7 @@
 #include <string>
 
 namespace ge {
-class OpTypeContainer {
+class GE_FUNC_VISIBILITY OpTypeContainer {
  public:
   static OpTypeContainer *Instance() {
     static OpTypeContainer instance;
@@ -43,7 +43,7 @@ class OpTypeContainer {
   std::set<std::string> op_type_list_;
 };
 
-class OpTypeRegistrar {
+class GE_FUNC_VISIBILITY OpTypeRegistrar {
  public:
   explicit OpTypeRegistrar(const std::string &op_type) { OpTypeContainer::Instance()->Register(op_type); }
   ~OpTypeRegistrar() {}

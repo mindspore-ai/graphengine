@@ -34,7 +34,7 @@ struct ParserContext {
   std::vector<domiTensorFormat_t> output_formats;
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
-  std::unordered_map<std::string, std::vector<int64_t>> input_dims;
+  std::map<std::string, std::vector<int64_t>> input_dims;
   // resolve the mapping between operators with the same name and corresponding network. format e.g.
   // Detectionoutput:SsdDetectiontOutput
   std::map<std::string, std::string> op_conf_map;
@@ -68,7 +68,7 @@ struct ParserContext {
   std::string enable_scope_fusion_passes;
 };
 
-ParserContext &GetParserContext();
+GE_FUNC_VISIBILITY ParserContext &GetParserContext();
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_OMG_PARSER_PARSER_INNER_CONTEXT_H_

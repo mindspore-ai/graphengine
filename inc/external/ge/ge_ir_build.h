@@ -17,6 +17,20 @@
 #ifndef INC_EXTERNAL_GE_IR_BUILD_H_
 #define INC_EXTERNAL_GE_IR_BUILD_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <string>
 #include <map>
 #include <memory>
@@ -44,17 +58,17 @@ struct ModelBufferData {
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ATTRIBUTED_DEPRECATED(graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &))
-graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options);
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &))
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options);
 
-graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_options);
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_options);
 
 /**
  * @ingroup AscendCL
  * @brief build model.Notice the model is stored in buffer
  *
  */
-void aclgrphBuildFinalize();
+GE_FUNC_VISIBILITY void aclgrphBuildFinalize();
 
 /**
  * @ingroup AscendCL
@@ -66,12 +80,12 @@ void aclgrphBuildFinalize();
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ATTRIBUTED_DEPRECATED(graphStatus aclgrphBuildModel(const ge::Graph &, const std::map<AscendString, AscendString> &,
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &, const std::map<AscendString, AscendString> &,
                                                     ModelBufferData &))
-graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string, std::string> &build_options,
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string, std::string> &build_options,
                               ModelBufferData &model);
 
-graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
+GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
                               ModelBufferData &model);
 
 /**
@@ -83,10 +97,10 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendStrin
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ATTRIBUTED_DEPRECATED(graphStatus aclgrphSaveModel(const char *, const ModelBufferData &))
-graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model);
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *, const ModelBufferData &))
+GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model);
 
-graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model);
+GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model);
 
 /**
  * @ingroup AscendCL
@@ -98,7 +112,7 @@ graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &mod
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version);
+GE_FUNC_VISIBILITY graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version);
 
 /**
  * @ingroup AscendCL
@@ -110,7 +124,7 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
+GE_FUNC_VISIBILITY graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len);
 
 /**
  * @ingroup AscendCL
@@ -123,7 +137,7 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
  * @retval GRAPH_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-graphStatus aclgrphGenerateForOp(const AscendString &op_type, const std::vector<TensorDesc> &inputs,
+GE_FUNC_VISIBILITY graphStatus aclgrphGenerateForOp(const AscendString &op_type, const std::vector<TensorDesc> &inputs,
                                  const std::vector<TensorDesc> &outputs, Graph &graph);
 
 };      // namespace ge

@@ -17,6 +17,20 @@
 #ifndef INC_FRAMEWORK_GENERATOR_GENERATOR_API_H_
 #define INC_FRAMEWORK_GENERATOR_GENERATOR_API_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -40,7 +54,7 @@ typedef void *OpTensor_t;
 /// @param [in] om_file: file name for the om to save.
 /// @return 0 for success / others for fail
 ///
-extern Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int in_num,
+GE_FUNC_VISIBILITY extern Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int in_num,
                                  const OpTensor_t *out_tensor, int out_num, const OpAttr_t attr, const char *om_file);
 
 ///
@@ -52,7 +66,7 @@ extern Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tenso
 /// @param [in] num: number of shape.
 /// @return OpTensor_t for success / nullptr for failure
 ///
-extern OpTensor_t OpTensorCreate(int format, int datatype, const int64_t *shape, int num);
+GE_FUNC_VISIBILITY extern OpTensor_t OpTensorCreate(int format, int datatype, const int64_t *shape, int num);
 
 ///
 /// @ingroup ge
@@ -61,7 +75,7 @@ extern OpTensor_t OpTensorCreate(int format, int datatype, const int64_t *shape,
 /// @param [out] none
 /// @return 0 for success / others for failure.
 ///
-extern Status_t OpTensorDestroy(OpTensor_t tensor);
+GE_FUNC_VISIBILITY extern Status_t OpTensorDestroy(OpTensor_t tensor);
 
 ///
 /// @ingroup ge
@@ -70,7 +84,7 @@ extern Status_t OpTensorDestroy(OpTensor_t tensor);
 /// @param [out] none
 /// @return OpAttr_t for success / nullptr for failure.
 ///
-extern OpAttr_t OpAttrCreate();
+GE_FUNC_VISIBILITY extern OpAttr_t OpAttrCreate();
 
 ///
 /// @ingroup ge
@@ -79,7 +93,7 @@ extern OpAttr_t OpAttrCreate();
 /// @param [out] none
 /// @return 0 for success / others for failure.
 ///
-extern Status_t OpAttrDestroy(OpAttr_t attr);
+GE_FUNC_VISIBILITY extern Status_t OpAttrDestroy(OpAttr_t attr);
 
 ///
 /// @ingroup ge
@@ -89,7 +103,7 @@ extern Status_t OpAttrDestroy(OpAttr_t attr);
 /// @param [in] value: attributed value.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrBool(OpAttr_t attr, const char *name, bool value);
+GE_FUNC_VISIBILITY extern Status_t SetAttrBool(OpAttr_t attr, const char *name, bool value);
 
 ///
 /// @ingroup ge
@@ -99,7 +113,7 @@ extern Status_t SetAttrBool(OpAttr_t attr, const char *name, bool value);
 /// @param [in] value: attribute value.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrInt(OpAttr_t attr, const char *name, int64_t value);
+GE_FUNC_VISIBILITY extern Status_t SetAttrInt(OpAttr_t attr, const char *name, int64_t value);
 
 ///
 /// @ingroup ge
@@ -109,7 +123,7 @@ extern Status_t SetAttrInt(OpAttr_t attr, const char *name, int64_t value);
 /// @param [in] value: attribute value.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrFloat(OpAttr_t attr, const char *name, float value);
+GE_FUNC_VISIBILITY extern Status_t SetAttrFloat(OpAttr_t attr, const char *name, float value);
 
 ///
 /// @ingroup ge
@@ -119,7 +133,7 @@ extern Status_t SetAttrFloat(OpAttr_t attr, const char *name, float value);
 /// @param [in] value: attribute value (can`t be nullptr, end with '\0').
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrString(OpAttr_t attr, const char *name, const char *value);
+GE_FUNC_VISIBILITY extern Status_t SetAttrString(OpAttr_t attr, const char *name, const char *value);
 
 ///
 /// @ingroup ge
@@ -130,7 +144,7 @@ extern Status_t SetAttrString(OpAttr_t attr, const char *name, const char *value
 /// @param [in] num: number of value array.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrBoolList(OpAttr_t attr, const char *name, const bool *value, int num);
+GE_FUNC_VISIBILITY extern Status_t SetAttrBoolList(OpAttr_t attr, const char *name, const bool *value, int num);
 
 ///
 /// @ingroup ge
@@ -141,7 +155,7 @@ extern Status_t SetAttrBoolList(OpAttr_t attr, const char *name, const bool *val
 /// @param [in] num: number of value array.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrIntList(OpAttr_t attr, const char *name, const int64_t *value, int num);
+GE_FUNC_VISIBILITY extern Status_t SetAttrIntList(OpAttr_t attr, const char *name, const int64_t *value, int num);
 
 ///
 /// @ingroup ge
@@ -152,7 +166,7 @@ extern Status_t SetAttrIntList(OpAttr_t attr, const char *name, const int64_t *v
 /// @param [in] num: number of value array.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrFloatList(OpAttr_t attr, const char *name, const float *value, int num);
+GE_FUNC_VISIBILITY extern Status_t SetAttrFloatList(OpAttr_t attr, const char *name, const float *value, int num);
 
 ///
 /// @ingroup ge
@@ -163,7 +177,7 @@ extern Status_t SetAttrFloatList(OpAttr_t attr, const char *name, const float *v
 /// @param [in] num: number of value array.
 /// @return 0 for success / others for failure.
 ///
-extern Status_t SetAttrStringList(OpAttr_t attr, const char *name, const char **value, int num);
+GE_FUNC_VISIBILITY extern Status_t SetAttrStringList(OpAttr_t attr, const char *name, const char **value, int num);
 
 #ifdef __cplusplus
 }

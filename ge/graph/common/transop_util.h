@@ -44,7 +44,7 @@ class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY TransOpUtil {
 
   static TransOpUtil &Instance();
 
-  typedef std::unordered_map<std::string, int> transop_index_op;
+  typedef std::map<std::string, int> transop_index_op;
   transop_index_op transop_index_map_;
 };
 }  // namespace ge

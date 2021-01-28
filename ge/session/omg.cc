@@ -606,7 +606,7 @@ Status InitDomiOmgContext(const string &input_shape, const string &input_format,
   }
 
   // Analyze the input shape paramete
-  unordered_map<string, vector<int64_t>> &shape_map = domi::GetContext().input_dims;
+  map<string, vector<int64_t>> &shape_map = domi::GetContext().input_dims;
 
   if (!ge::ParseInputShape(input_shape, domi::GetContext().input_dims, domi::GetContext().user_input_dims,
                            is_dynamic_input) ||
@@ -689,7 +689,7 @@ Status ParseOutNodes(const string &out_nodes) {
 ///
 static Status CheckOpNameMap(const ComputeGraphPtr &graph, const std::string &op_conf) {
   GE_CHECK_NOTNULL(graph);
-  unordered_map<string, string> graphNodeTypes;
+  map<string, string> graphNodeTypes;
   for (const NodePtr &node : graph->GetAllNodes()) {
     auto op_desc = node->GetOpDesc();
     if (op_desc == nullptr) {

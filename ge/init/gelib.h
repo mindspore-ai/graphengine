@@ -31,7 +31,7 @@ using std::map;
 using std::vector;
 
 namespace ge {
-class GELib {
+class GE_FUNC_VISIBILITY GELib {
  public:
   GELib() = default;
   ~GELib() = default;

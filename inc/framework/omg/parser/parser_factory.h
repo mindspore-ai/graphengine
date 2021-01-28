@@ -33,7 +33,7 @@ class ModelParser;
 typedef std::shared_ptr<ModelParser> (*MODEL_PARSER_CREATOR_FUN)(void);
 
 // Create modelparser for different frameworks
-class ModelParserFactory {
+class GE_FUNC_VISIBILITY ModelParserFactory {
  public:
   static ModelParserFactory *Instance();
 
@@ -61,7 +61,7 @@ class ModelParserFactory {
   std::map<domi::FrameworkType, MODEL_PARSER_CREATOR_FUN> creator_map_;
 };  // end class ModelParserFactory
 
-class ModelParserRegisterar {
+class GE_FUNC_VISIBILITY ModelParserRegisterar {
  public:
   ModelParserRegisterar(const domi::FrameworkType type, MODEL_PARSER_CREATOR_FUN fun) {
     ModelParserFactory::Instance()->RegisterCreator(type, fun);
@@ -85,7 +85,7 @@ class ModelParserRegisterar {
 typedef std::shared_ptr<WeightsParser> (*WEIGHTS_PARSER_CREATOR_FUN)(void);
 
 // Create weightsparser for different frameworks
-class WeightsParserFactory {
+class GE_FUNC_VISIBILITY WeightsParserFactory {
  public:
   static WeightsParserFactory *Instance();
 
@@ -113,7 +113,7 @@ class WeightsParserFactory {
   std::map<domi::FrameworkType, WEIGHTS_PARSER_CREATOR_FUN> creator_map_;
 };  // end class WeightsParserFactory
 
-class WeightsParserRegisterar {
+class GE_FUNC_VISIBILITY WeightsParserRegisterar {
  public:
   WeightsParserRegisterar(const domi::FrameworkType type, WEIGHTS_PARSER_CREATOR_FUN fun) {
     WeightsParserFactory::Instance()->RegisterCreator(type, fun);

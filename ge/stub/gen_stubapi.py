@@ -16,7 +16,7 @@ logging.basicConfig(stream=sys.stdout, format='[%(asctime)s] [%(lineno)s] %(leve
 """
     this attr is used for symbol table visible
 """
-GE_ATTR = 'GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY'
+GE_ATTR = 'GE_FUNC_VISIBILITY'
 
 """
     generate stub func body by return type

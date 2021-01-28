@@ -211,7 +211,7 @@ Status TaskGenerator::SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion
     // and it have no attr or group attr different
     // which means bad case, return error
     bool call_check = true;
-    std::unordered_set<int64_t> input_group_ids;
+    std::set<int64_t> input_group_ids;
     for (const auto &input_node : node->GetInNodes()) {
       auto iter = nodes_with_group_attr.find(input_node);
       if (iter == nodes_with_group_attr.end()) {

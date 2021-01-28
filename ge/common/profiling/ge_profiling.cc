@@ -88,7 +88,7 @@ bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
     return false;
   }
 
-  std::unordered_set<uint32_t> record;
+  std::set<uint32_t> record;
   for (size_t i = 0; i < device_nums; ++i) {
     uint32_t dev_id = deviceid_list[i];
     if (dev_id >= static_cast<uint32_t>(dev_count)) {

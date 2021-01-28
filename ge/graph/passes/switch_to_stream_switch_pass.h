@@ -235,7 +235,7 @@ class SwitchToStreamSwitchPass : public GraphPass {
   std::vector<NodePtr> stream_switch_nodes_;
   std::unordered_map<OutDataAnchorPtr, std::map<int64_t, std::vector<std::list<NodePtr>>>> cond_node_map_;
   std::unordered_map<NodePtr, std::set<std::string>> switch_node_map_;
-  std::unordered_map<std::string, uint32_t> node_num_map_;
+  std::map<std::string, uint32_t> node_num_map_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_SWITCH_TO_STREAM_SWITCH_PASS_H_

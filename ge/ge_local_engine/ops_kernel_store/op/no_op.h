@@ -21,7 +21,7 @@
 
 namespace ge {
 namespace ge_local {
-class NoOp : public Op {
+class GE_FUNC_VISIBILITY NoOp : public Op {
  public:
   NoOp(const Node &node, RunContext &run_context);
 

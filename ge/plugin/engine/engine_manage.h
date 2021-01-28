@@ -17,6 +17,20 @@
 #ifndef GE_PLUGIN_ENGINE_ENGINE_MANAGE_H_
 #define GE_PLUGIN_ENGINE_ENGINE_MANAGE_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <map>
 #include <memory>
 #include <string>
@@ -26,7 +40,7 @@
 
 namespace ge {
 using DNNEnginePtr = std::shared_ptr<DNNEngine>;
-class EngineManager {
+class GE_FUNC_VISIBILITY EngineManager {
  public:
   static Status RegisterEngine(const std::string &engine_name, DNNEnginePtr engine_ptr);
   static DNNEnginePtr GetEngine(const std::string &engine_name);
@@ -34,7 +48,7 @@ class EngineManager {
 };
 
 extern "C" {
-void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines);
+GE_FUNC_VISIBILITY void GetDNNEngineObjs(std::map<std::string, DNNEnginePtr> &engines);
 }
 }  // namespace ge
 #endif  // GE_PLUGIN_ENGINE_ENGINE_MANAGE_H_

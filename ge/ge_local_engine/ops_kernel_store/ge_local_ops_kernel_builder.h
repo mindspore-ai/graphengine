@@ -22,7 +22,7 @@
 
 namespace ge {
 namespace ge_local {
-class GeLocalOpsKernelBuilder : public OpsKernelBuilder {
+class GE_FUNC_VISIBILITY GeLocalOpsKernelBuilder : public OpsKernelBuilder {
  public:
   ~GeLocalOpsKernelBuilder() override;
   Status Initialize(const map<std::string, std::string> &options) override;

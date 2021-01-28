@@ -31,7 +31,7 @@
 #include "omg/omg_inner_types.h"
 
 namespace ge {
-class GeGenerator {
+class GE_FUNC_VISIBILITY GeGenerator {
  public:
   static GeGenerator &GetInstance() {
     static GeGenerator Instance;

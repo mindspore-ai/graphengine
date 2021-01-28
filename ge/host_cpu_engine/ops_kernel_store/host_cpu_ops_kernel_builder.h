@@ -17,11 +17,25 @@
 #ifndef GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_HOST_CPU_OPS_KERNEL_BUILDER_H_
 #define GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_HOST_CPU_OPS_KERNEL_BUILDER_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include "common/opskernel/ops_kernel_builder.h"
 
 namespace ge {
 namespace host_cpu {
-class HostCpuOpsKernelBuilder : public OpsKernelBuilder {
+class GE_FUNC_VISIBILITY HostCpuOpsKernelBuilder : public OpsKernelBuilder {
  public:
   Status Initialize(const map<std::string, std::string> &options) override;
 

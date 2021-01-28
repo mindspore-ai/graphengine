@@ -843,7 +843,7 @@ bool ge::GraphPartitioner::HasSecondPath(size_t src, size_t dst, size_t upper_bo
   /// Avoid recursion since stack space might be limited.
   /// We instead keep a stack of nodes to visit.
   std::vector<size_t> temp_stack;
-  std::unordered_set<size_t> visited;
+  std::set<size_t> visited;
   temp_stack.push_back(src);
   while (!temp_stack.empty()) {
     size_t cluster = temp_stack.back();

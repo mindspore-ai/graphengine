@@ -738,7 +738,7 @@ Status MultiBatchGraphCopyer::CheckAndParseDynamicData(){
       }
     }
   }
-  auto ret = ParserDataToDynmaicInfo(shapes_, data_name_and_shape, data_to_dynamic_info_);
+  auto ret = ParserDataToDynamicInfo(shapes_, data_name_and_shape, data_to_dynamic_info_);
   GE_CHK_STATUS_RET(ret, "Failed to parse data to dynamic info.");
   if (!getnext_sink_dynamic_dims_ && unknown_shape_count == 0) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10040");

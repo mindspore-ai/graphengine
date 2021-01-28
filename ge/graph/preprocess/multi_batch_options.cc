@@ -377,7 +377,7 @@ bool InitDynamicParams(vector<vector<int64_t>> &shapes) {
 /// @param [out] map<string, vector<vector<int64_t>>> &data_to_dynamic_info: key:data_name. value:dynamic dims.
 /// @return true: Configed for Multi batch / false: Not configed for Multi batch.
 ///
-Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
+Status ParserDataToDynamicInfo(const vector<vector<int64_t>> &shapes,
                                vector<pair<string, vector<int64_t>>> &data_name_and_shape,
                                map<string, vector<vector<int64_t>> > &data_to_dynamic_info) {
   size_t cur_data_index = 0;

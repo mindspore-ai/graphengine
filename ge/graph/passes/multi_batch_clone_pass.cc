@@ -180,7 +180,7 @@ Status MultiBatchClonePass::CheckAndParseDynamicData(){
   size_t unknown_shape_count = 0;
   auto data_name_and_shape = GetLocalOmgContext().user_input_dims;
   std::vector<std::string> data_name_order;
-  for (auto &item : GetLocalOmgContext().user_input_dims) {
+  for (auto &item : data_name_and_shape) {
     data_name_order.push_back(item.first);
   }
   if (!getnext_sink_dynamic_dims_) {
@@ -190,7 +190,6 @@ Status MultiBatchClonePass::CheckAndParseDynamicData(){
       auto data_format = data_desc.GetFormat() == Format::FORMAT_NCHW ? "NCHW" :
                          data_desc.GetFormat() == Format::FORMAT_NHWC ? "NHWC" : "Others";
       auto data_name = node->GetName();
-      GELOGI("CheckAndParseDynamicData shape_dims is %s.", formats::JoinToString(data_shape.GetDims()).c_str());
 
       std::vector<int64_t> data_shape_dims = data_shape.GetDims();
       if (std::all_of(data_shape_dims.begin(), data_shape_dims.end(), [](int64_t val) { return val >= 0; })) {
@@ -208,8 +207,8 @@ Status MultiBatchClonePass::CheckAndParseDynamicData(){
           GE_IF_BOOL_EXEC(ret == false, GELOGE(PARAM_INVALID, "Failed to check dynamic image size shape of %s.",
                                                data_name.c_str()); return PARAM_INVALID);
         } else if (!GetLocalOmgContext().dynamic_dims.empty()) {
-          ErrorManager::GetInstance().ATCReportErrMessage("E10001",{"parameter", "reason"},
-            {"--input_shape","all dynamic data must be set in --input_shape"});
+          ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "reason"},
+            {"--input_shape", "all dynamic data must be set in --input_shape"});
           GELOGE(INTERNAL_ERROR, "data: %s shape:%s must be set int --input_shape",
                  node->GetName().c_str(), data_shape.ToString().c_str());
           return INTERNAL_ERROR;

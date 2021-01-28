@@ -454,6 +454,8 @@ class BlockMemAssigner : public MemAssigner {
 
   void MarkContinuousAllocedForOneInputFromVariable(const NodePtr &node);
 
+  void CheckAndReleaseSuspendedBlock(const NodePtr &node, uint32_t idx, MemoryBlock *block);
+
   std::unordered_map<int64_t, std::unordered_map<int64_t, std::vector<MemoryBlock *>>> reusable_blocks_;
 
   std::unordered_map<int64_t, std::unordered_map<int64_t, std::vector<MemoryBlock *>>> stream_workspace_blocks_;

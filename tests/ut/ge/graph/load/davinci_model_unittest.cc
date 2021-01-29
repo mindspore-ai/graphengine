@@ -169,7 +169,8 @@ TEST_F(UtestDavinciModel, init_data_op_subgraph) {
 
   uint32_t data_op_index = 0;
   map<uint32_t, OpDescPtr> data_by_index;
-  EXPECT_EQ(model.InitDataOp(nullptr, node, data_op_index, data_by_index), SUCCESS);
+  set<const void *> input_outside_addrs;
+  EXPECT_EQ(model.InitDataOp(nullptr, node, data_op_index, data_by_index, input_outside_addrs), SUCCESS);
 
   EXPECT_EQ(model.input_addrs_list_.size(), 0);
   EXPECT_EQ(model.output_addrs_list_.size(), 0);
@@ -194,7 +195,8 @@ TEST_F(UtestDavinciModel, init_netoutput_op_subgraph) {
   NodePtr node = graph->AddNode(op_output);
 
   std::vector<OpDescPtr> output_op_list;
-  EXPECT_EQ(model.InitNetOutput(nullptr, node, output_op_list), SUCCESS);
+  set<const void *> output_outside_addrs;
+  EXPECT_EQ(model.InitNetOutput(nullptr, node, output_op_list, output_outside_addrs), SUCCESS);
 
   EXPECT_EQ(model.input_addrs_list_.size(), 0);
   EXPECT_EQ(model.output_addrs_list_.size(), 0);
@@ -800,7 +802,6 @@ TEST_F(UtestDavinciModel, label_task_success) {
     label_task_def->set_op_index(op_index++);
   }
 
-
   {
     OpDescPtr op_desc = CreateOpDesc("label_else", LABELSET);
     NodePtr node = graph->AddNode(op_desc);  // op_index = 3
@@ -812,7 +813,6 @@ TEST_F(UtestDavinciModel, label_task_success) {
     domi::LabelSetDef *label_task_def = task_def1->mutable_label_set();
     label_task_def->set_op_index(op_index++);
   }
-
 
   {
     OpDescPtr op_desc = CreateOpDesc("label_leave", LABELSET);
@@ -826,13 +826,27 @@ TEST_F(UtestDavinciModel, label_task_success) {
     label_task_def->set_op_index(op_index++);
   }
 
-
   EXPECT_TRUE(AttrUtils::SetInt(ge_model, ATTR_MODEL_LABEL_NUM, 3));
   EXPECT_EQ(model.Assign(ge_model), SUCCESS);
   EXPECT_EQ(model.Init(), SUCCESS);
-
   EXPECT_EQ(model.input_addrs_list_.size(), 0);
   EXPECT_EQ(model.output_addrs_list_.size(), 0);
   EXPECT_EQ(model.task_list_.size(), 5);
+}
+ 
+TEST_F(UtestDavinciModel, LoadWithQueue_fail_with_diff_args) {
+  DavinciModel model(0, nullptr);
+  model.ge_model_ = make_shared<GeModel>();
+  model.input_queue_ids_.emplace_back(0);
+  EXPECT_EQ(model.LoadWithQueue(), ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID);
+  EXPECT_EQ(model.input_data_info_.size(), 0);
+  ZeroCopyOffset zero_copy_offset;
+  model.input_data_info_[0] = zero_copy_offset;
+  model.output_queue_ids_.emplace_back(0);
+  EXPECT_EQ(model.LoadWithQueue(), ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID);
+  EXPECT_EQ(model.output_data_info_.size(), 0);
+  model.output_data_info_[0] = zero_copy_offset;
+  EXPECT_EQ(model.LoadWithQueue(), INTERNAL_ERROR);
+  EXPECT_EQ(model.active_stream_list_.size(), 0);
 }
 }  // namespace ge

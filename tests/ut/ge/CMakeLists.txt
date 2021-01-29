@@ -629,6 +629,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/kernel_task_info_unittest.cc"
     "graph/load/memcpy_addr_async_task_info_unittest.cc"
     "graph/load/memcpy_async_task_info_unittest.cc"
+	"graph/load/cpu_queue_schedule_unittest.cc"
     #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
     "graph/load/model_helper_unittest.cc"

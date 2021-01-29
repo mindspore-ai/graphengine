@@ -93,7 +93,7 @@ class CpuTaskZeroCopy : public CpuTaskInfo {
   ~CpuTaskZeroCopy() override;
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override { return SUCCESS; }
-  Status Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, ZeroCopyOffset> &outside_addrs);
+  Status Init(std::vector<uintptr_t> &mbuf_list, const map<uint32_t, ZeroCopyOffset> &outside_addrs);
 
   Status Distribute() override;
 private:

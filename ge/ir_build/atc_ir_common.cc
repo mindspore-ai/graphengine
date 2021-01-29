@@ -77,7 +77,7 @@ Status CheckInputFormat(const string &input_format) {
   return ge::SUCCESS;
 }
 
-bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
+bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map,
                                           std::string &dynamic_batch_size) {
   int32_t size = 0;
   for (auto iter = shape_map.begin(); iter != shape_map.end(); ++iter) {
@@ -119,7 +119,7 @@ bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>>
   return true;
 }
 
-bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
+bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map,
                                           const std::string input_format, std::string &dynamic_image_size) {
   if (!input_format.empty() && !ge::TypeUtils::IsFormatValid(input_format.c_str())) {
     GELOGE(ge::PARAM_INVALID, "user input format [%s] is not found!", input_format.c_str());
@@ -177,7 +177,7 @@ bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>>
   return true;
 }
 
-bool CheckDynamicDimsInputShapeValid(const unordered_map<string, vector<int64_t>> &shape_map,
+bool CheckDynamicDimsInputShapeValid(const map<string, vector<int64_t>> &shape_map,
                                      string input_format, string &dynamic_dims) {
   if (input_format != "ND") {
     ErrorManager::GetInstance().ATCReportErrMessage(
@@ -272,7 +272,7 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
     return ge::SUCCESS;
   }
 
-  unordered_map<string, vector<int64_t>> shape_map;
+  map<string, vector<int64_t>> shape_map;
   vector<pair<string, vector<int64_t>>> user_shape_map;
   is_dynamic_input = true;
   if (input_shape.empty()) {
@@ -310,7 +310,7 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
   return ge::SUCCESS;
 }
 
-bool ParseInputShape(const string &input_shape, unordered_map<string, vector<int64_t>> &shape_map,
+bool ParseInputShape(const string &input_shape, map<string, vector<int64_t>> &shape_map,
                      vector<pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input) {
   vector<string> shape_vec = StringUtils::Split(input_shape, ';');
   const int DEFAULT_SHAPE_PAIR_SIZE = 2;

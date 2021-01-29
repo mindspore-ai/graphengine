@@ -28,7 +28,7 @@ namespace ge {
 #define ATTRIBUTED_DEPRECATED(replacement) __declspec(deprecated("Please use " #replacement " instead."))
 #endif
 
-class StatusFactory {
+class GE_FUNC_VISIBILITY StatusFactory {
  public:
   static StatusFactory *Instance() {
     static StatusFactory instance;
@@ -70,7 +70,7 @@ class StatusFactory {
   std::map<uint32_t, std::string> err_desc_;
 };
 
-class ErrorNoRegisterar {
+class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
   ErrorNoRegisterar(uint32_t err, const std::string &desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
   ErrorNoRegisterar(uint32_t err, const char *desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }

@@ -17,6 +17,20 @@
 #ifndef GE_HOST_CPU_ENGINE_ENGINE_HOST_CPU_ENGINE_H_
 #define GE_HOST_CPU_ENGINE_ENGINE_HOST_CPU_ENGINE_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <map>
 #include <memory>
 #include <string>
@@ -32,7 +46,7 @@ namespace host_cpu {
  * host cpu engine.
  * Used for the ops which executes on host.
  */
-class HostCpuEngine {
+class GE_FUNC_VISIBILITY HostCpuEngine {
  public:
   /**
    * get HostCpuEngine instance.
@@ -87,25 +101,25 @@ extern "C" {
  * When Ge start, GE will invoke this interface
  * @return The status whether initialize successfully
  */
-ge::Status Initialize(const map<string, string> &options);
+GE_FUNC_VISIBILITY ge::Status Initialize(const map<string, string> &options);
 
 /**
  * After the initialize, GE will invoke this interface to get the Ops kernel Store
  * @param ops_kernel_map The host cpu's ops kernel info
  */
-void GetOpsKernelInfoStores(std::map<std::string, OpsKernelInfoStorePtr> &ops_kernel_map);
+GE_FUNC_VISIBILITY void GetOpsKernelInfoStores(std::map<std::string, OpsKernelInfoStorePtr> &ops_kernel_map);
 
 /**
  * After the initialize, GE will invoke this interface to get the Graph Optimizer
  * @param graph_optimizers The host cpu's Graph Optimizer objs
  */
-void GetGraphOptimizerObjs(std::map<std::string, GraphOptimizerPtr> &graph_optimizers);
+GE_FUNC_VISIBILITY void GetGraphOptimizerObjs(std::map<std::string, GraphOptimizerPtr> &graph_optimizers);
 
 /**
  * When the graph finished, GE will invoke this interface
  * @return The status whether initialize successfully
  */
-ge::Status Finalize();
+GE_FUNC_VISIBILITY ge::Status Finalize();
 }
 
 #endif  // GE_HOST_CPU_ENGINE_ENGINE_HOST_CPU_ENGINE_H_

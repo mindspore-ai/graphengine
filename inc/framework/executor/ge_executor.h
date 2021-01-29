@@ -46,7 +46,7 @@ struct RunModelData {
   std::vector<uint64_t> dynamic_dims;  // Dynamic dims scene, set dynamic dims, not supported by default:empty
 };
 
-class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
+class GE_FUNC_VISIBILITY GeExecutor {
  public:
   GeExecutor();
   ~GeExecutor() = default;

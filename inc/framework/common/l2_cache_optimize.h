@@ -69,7 +69,7 @@ struct RCMemoryBlock {
 };
 
 // L2Cache optimizer
-class L2CacheOptimize {
+class GE_FUNC_VISIBILITY L2CacheOptimize {
  public:
   explicit L2CacheOptimize(ge::ComputeGraphPtr &graph);
   ~L2CacheOptimize();

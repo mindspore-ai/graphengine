@@ -28,7 +28,7 @@
 #include "model/ge_root_model.h"
 
 namespace ge {
-class ModelHelper {
+class GE_FUNC_VISIBILITY ModelHelper {
  public:
   ModelHelper() = default;
   ~ModelHelper();

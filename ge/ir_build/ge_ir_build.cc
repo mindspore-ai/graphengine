@@ -268,7 +268,7 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
   if (options_.find(kInputShape) == options_.end()) {
     return GRAPH_SUCCESS;
   }
-  unordered_map<string, vector<int64_t>> shape_map;
+  map<string, vector<int64_t>> shape_map;
   vector<pair<string, vector<int64_t>>> user_shape_map;
   GE_CHK_BOOL_EXEC(ParseInputShape(options_[kInputShape], shape_map, user_shape_map, true),
     return GRAPH_PARAM_INVALID, "parse input shape failed!");

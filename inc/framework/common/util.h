@@ -237,7 +237,7 @@ const int32_t DOMI_MAX_PATH_LEN = 256;
 /// @return true success
 /// @return false fail
 ///
-bool ReadProtoFromBinaryFile(const char *file, Message *proto);
+GE_FUNC_VISIBILITY bool ReadProtoFromBinaryFile(const char *file, Message *proto);
 
 ///
 /// @ingroup domi_common
@@ -248,7 +248,7 @@ bool ReadProtoFromBinaryFile(const char *file, Message *proto);
 /// @return true success
 /// @return false fail
 ///
-bool ReadProtoFromArray(const void *data, int size, Message *proto);
+GE_FUNC_VISIBILITY bool ReadProtoFromArray(const void *data, int size, Message *proto);
 
 ///
 /// @ingroup domi_proto
@@ -258,9 +258,9 @@ bool ReadProtoFromArray(const void *data, int size, Message *proto);
 /// @return true success
 /// @return false fail
 ///
-bool ReadProtoFromText(const char *file, google::protobuf::Message *message);
+GE_FUNC_VISIBILITY bool ReadProtoFromText(const char *file, google::protobuf::Message *message);
 
-bool ReadProtoFromMem(const char *data, int size, google::protobuf::Message *message);
+GE_FUNC_VISIBILITY bool ReadProtoFromMem(const char *data, int size, google::protobuf::Message *message);
 
 ///
 /// @ingroup: domi_common
@@ -268,7 +268,7 @@ bool ReadProtoFromMem(const char *data, int size, google::protobuf::Message *mes
 /// @param [in] input_file: path of file
 /// @return long： File length. If the file length fails to be obtained, the value -1 is returned.
 ///
-extern long GetFileLength(const std::string &input_file);
+GE_FUNC_VISIBILITY extern long GetFileLength(const std::string &input_file);
 
 ///
 /// @ingroup domi_common
@@ -279,9 +279,9 @@ extern long GetFileLength(const std::string &input_file);
 /// @return false fail
 /// @return true success
 ///
-bool ReadBytesFromBinaryFile(const char *file_name, char **buffer, int &length);
+GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name, char **buffer, int &length);
 
-bool ReadBytesFromBinaryFile(const char *file_name, std::vector<char> &buffer);
+GE_FUNC_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name, std::vector<char> &buffer);
 
 ///
 /// @ingroup domi_common
@@ -290,14 +290,14 @@ bool ReadBytesFromBinaryFile(const char *file_name, std::vector<char> &buffer);
 /// @return 0 success
 /// @return -1 fail
 ///
-extern int CreateDirectory(const std::string &directory_path);
+GE_FUNC_VISIBILITY extern int CreateDirectory(const std::string &directory_path);
 
 ///
 /// @ingroup domi_common
 /// @brief Obtains the current time string.
 /// @return Time character string in the format ： %Y%m%d%H%M%S, eg: 20171011083555
 ///
-std::string CurrentTimeInStr();
+GE_FUNC_VISIBILITY std::string CurrentTimeInStr();
 
 ///
 /// @ingroup domi_common
@@ -306,7 +306,7 @@ std::string CurrentTimeInStr();
 /// @return string
 ///
 template <typename T>
-std::string ToString(std::vector<T> &v) {
+GE_FUNC_VISIBILITY std::string ToString(std::vector<T> &v) {
   std::stringstream ss;
   ss << "[";
   for (T x : v) {
@@ -326,7 +326,7 @@ std::string ToString(std::vector<T> &v) {
 /// @return string
 ///
 template <typename T>
-std::string ToString(const google::protobuf::RepeatedField<T> &rpd_field) {
+GE_FUNC_VISIBILITY std::string ToString(const google::protobuf::RepeatedField<T> &rpd_field) {
   std::stringstream ss;
   ss << "[";
   for (T x : rpd_field) {
@@ -345,7 +345,7 @@ std::string ToString(const google::protobuf::RepeatedField<T> &rpd_field) {
 /// @return Timestamp, in microseconds (US)
 ///
 ///
-uint64_t GetCurrentTimestamp();
+GE_FUNC_VISIBILITY uint64_t GetCurrentTimestamp();
 
 ///
 /// @ingroup domi_common
@@ -353,7 +353,7 @@ uint64_t GetCurrentTimestamp();
 /// @return Timestamp, in seconds (US)
 ///
 ///
-uint32_t GetCurrentSecondTimestap();
+GE_FUNC_VISIBILITY uint32_t GetCurrentSecondTimestap();
 
 ///
 /// @ingroup domi_common
@@ -362,7 +362,7 @@ uint32_t GetCurrentSecondTimestap();
 /// @param [in] b
 /// @return false: true: The result is within the normal int64 range.
 ///
-bool CheckInt64MulOverflow(int64_t a, int64_t b);
+GE_FUNC_VISIBILITY bool CheckInt64MulOverflow(int64_t a, int64_t b);
 
 ///
 /// @ingroup domi_common
@@ -370,7 +370,7 @@ bool CheckInt64MulOverflow(int64_t a, int64_t b);
 /// @param [in] path of input file
 /// @param [out] Absolute path of a file. If the absolute path cannot be obtained, an empty string is returned
 ///
-std::string RealPath(const char *path);
+GE_FUNC_VISIBILITY std::string RealPath(const char *path);
 
 ///
 /// @ingroup domi_common
@@ -381,7 +381,7 @@ std::string RealPath(const char *path);
 /// @param [in] file_path path of input file
 /// @param [out] result
 ///
-bool CheckInputPathValid(const std::string &file_path, const std::string &atc_param = "");
+GE_FUNC_VISIBILITY bool CheckInputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
 ///
 /// @ingroup domi_common
@@ -389,7 +389,7 @@ bool CheckInputPathValid(const std::string &file_path, const std::string &atc_pa
 /// @param [in] file_path path of output file
 /// @param [out] result
 ///
-bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_param = "");
+GE_FUNC_VISIBILITY bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_param = "");
 
 ///
 /// @ingroup domi_common
@@ -397,7 +397,7 @@ bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_p
 /// @param [in] filePath file path
 /// @param [out] result
 ///
-bool ValidateStr(const std::string &filePath, const std::string &mode);
+GE_FUNC_VISIBILITY bool ValidateStr(const std::string &filePath, const std::string &mode);
 
 ///
 /// @ingroup domi_common
@@ -405,7 +405,7 @@ bool ValidateStr(const std::string &filePath, const std::string &mode);
 /// @param [in] file_path file path
 /// @param [out] result
 ///
-bool IsValidFile(const char *file_path);
+GE_FUNC_VISIBILITY bool IsValidFile(const char *file_path);
 
 ///
 /// @ingroup domi_common
@@ -415,7 +415,7 @@ bool IsValidFile(const char *file_path);
 /// @return 0 success
 /// @return -1 fail
 ///
-Status CheckPath(const char *path, size_t length);
+GE_FUNC_VISIBILITY Status CheckPath(const char *path, size_t length);
 }  // namespace ge
 
 #endif  // INC_FRAMEWORK_COMMON_UTIL_H_

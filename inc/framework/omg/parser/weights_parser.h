@@ -34,7 +34,7 @@ namespace domi {
  * @brief Weight information resolver
  *
  */
-class WeightsParser {
+class GE_FUNC_VISIBILITY WeightsParser {
  public:
   /**
    * @ingroup domi_omg

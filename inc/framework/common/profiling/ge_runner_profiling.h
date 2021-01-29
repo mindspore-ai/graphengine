@@ -19,6 +19,6 @@
 
 #include "profiling/ge_profiling.h"
 
-bool IsInitialize();
+GE_FUNC_VISIBILITY bool IsInitialize();
 
 #endif  // INC_FRAMEWORK_COMMON_GE_RUNNER_PROFILING_H_

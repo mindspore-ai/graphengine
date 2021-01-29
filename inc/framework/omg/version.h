@@ -27,7 +27,7 @@
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {
-class PlatformVersionManager {
+class GE_FUNC_VISIBILITY PlatformVersionManager {
  public:
   PlatformVersionManager() = delete;
   ~PlatformVersionManager() = delete;

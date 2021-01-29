@@ -36,7 +36,7 @@ using PartitionMap = std::unordered_map<ComputeGraphPtr, std::string>;
 using NodetoNodeMap = std::unordered_map<NodePtr, NodePtr>;
 using EnginetoGraphMap = std::unordered_map<std::string, ComputeGraphPtr>;
 using EdgeMap = std::set<std::pair<AnchorPtr, AnchorPtr>>;
-using ClusterSet = std::unordered_set<size_t>;
+using ClusterSet = std::set<size_t>;
 class Cluster {
  public:
   size_t index_;              // corresponding to rank of node

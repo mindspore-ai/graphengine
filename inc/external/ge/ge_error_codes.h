@@ -17,6 +17,20 @@
 #ifndef INC_EXTERNAL_GE_GE_ERROR_CODES_H_
 #define INC_EXTERNAL_GE_GE_ERROR_CODES_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <stddef.h>
 
 #ifdef __cplusplus

@@ -46,13 +46,13 @@ static std::map<std::string, domiTensorFormat_t> input_format_str_to_geformat = 
 static const std::string kEnableCompressWeightTrue = "1";
 static const std::string kEnableCompressWeightFalse = "0";
 
-bool CheckDynamicBatchSizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
+bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map,
                                           std::string &dynamic_batch_size);
 
-bool CheckDynamicImagesizeInputShapeValid(unordered_map<string, vector<int64_t>> shape_map,
+bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map,
                                           const std::string input_format, std::string &dynamic_image_size);
 
-bool CheckDynamicDimsInputShapeValid(const std::unordered_map<std::string, std::vector<int64_t>> &shape_map,
+bool CheckDynamicDimsInputShapeValid(const std::map<std::string, std::vector<int64_t>> &shape_map,
                                      std::string input_format, std::string &dynamic_dims);
 
 bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims);
@@ -61,7 +61,7 @@ Status CheckDynamicInputParamValid(std::string &dynamic_batch_size, std::string 
                                    std::string &dynamic_dims, const std::string input_shape,
                                    const std::string input_format, bool &is_dynamic_input);
 
-bool ParseInputShape(const std::string &input_shape, std::unordered_map<string, std::vector<int64_t>> &shape_map,
+bool ParseInputShape(const std::string &input_shape, std::map<string, std::vector<int64_t>> &shape_map,
                      std::vector<std::pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input = false);
 
 Status CheckOutputTypeParamValid(const std::string output_type);

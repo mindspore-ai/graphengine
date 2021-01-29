@@ -694,11 +694,13 @@ target_compile_definitions(ge_runner PRIVATE
     FMK_SUPPORT_DUMP
     DAVINCI_CLOUD
     google=ascend_private
+    FUNC_VISIBILITY
 )
 
 target_compile_options(ge_runner PRIVATE
     -O2
     -fno-common
+    -fvisibility=hidden
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
@@ -727,6 +729,10 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${ASCEND_DIR}/fwkacllib/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_options(ge_runner PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(ge_runner PRIVATE
@@ -763,11 +769,13 @@ target_compile_definitions(ge_compiler PRIVATE
     FMK_HOST_INFER
     COMPILE_OMG_PACKAGE
     google=ascend_private
+    FUNC_VISIBILITY
 )
 
 target_compile_options(ge_compiler PRIVATE
     -O2
     -fno-common
+    -fvisibility=hidden
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
@@ -796,6 +804,10 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${ASCEND_DIR}/fwkacllib/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_options(ge_compiler PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(ge_compiler PRIVATE
@@ -859,6 +871,7 @@ target_compile_options(opensrc_ascendcl PRIVATE
     -O2
     -fvisibility=hidden
 )
+
 target_link_options(opensrc_ascendcl PRIVATE
     -rdynamic
     -Wl,--allow-multiple-definition
@@ -866,6 +879,7 @@ target_link_options(opensrc_ascendcl PRIVATE
     -Wl,-Bsymbolic
     -Wl,--exclude-libs,ALL
 )
+
 target_link_libraries(opensrc_ascendcl PRIVATE
                      -Wl,--whole-archive
                      ge_executor

@@ -83,7 +83,7 @@ struct OmgContext {
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
   // global input dims
-  std::unordered_map<std::string, std::vector<int64_t>> input_dims;
+  std::map<std::string, std::vector<int64_t>> input_dims;
 
   // resolve the mapping between operators with the same name and corresponding network. format e.g.
   // Detectionoutput:SsdDetectiontOutput
@@ -132,7 +132,7 @@ namespace domi {
  * @brief get OMG context
  * @return OmgContext context
  */
-ge::OmgContext &GetContext();
+GE_FUNC_VISIBILITY ge::OmgContext &GetContext();
 
 struct TEBinInfo {
   // It is obsolete. It will be automatically obtained from the binfilename field of the JSON file later.

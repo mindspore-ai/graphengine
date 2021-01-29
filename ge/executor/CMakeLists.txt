@@ -214,12 +214,14 @@ target_compile_options(ge_executor_shared PRIVATE
     -Werror
     -O2
     -Wno-deprecated-declarations
+    -fvisibility=hidden
 )
 
 target_compile_definitions(ge_executor_shared PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     DAVINCI_SUPPORT_PROFILING
     google=ascend_private
+    FUNC_VISIBILITY
 )
 
 target_include_directories(ge_executor_shared PRIVATE
@@ -238,6 +240,10 @@ target_include_directories(ge_executor_shared PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
+)
+
+target_link_options(ge_executor_shared PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(ge_executor_shared PRIVATE

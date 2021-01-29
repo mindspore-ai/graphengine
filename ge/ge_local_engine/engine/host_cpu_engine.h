@@ -16,6 +16,20 @@
 #ifndef GE_GE_LOCAL_ENGINE_ENGINE_HOST_CPU_ENGINE_H_
 #define GE_GE_LOCAL_ENGINE_ENGINE_HOST_CPU_ENGINE_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <mutex>
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
@@ -23,7 +37,7 @@
 #include "external/../register/register.h"
 
 namespace ge {
-class HostCpuEngine {
+class GE_FUNC_VISIBILITY HostCpuEngine {
  public:
   ~HostCpuEngine() = default;
 

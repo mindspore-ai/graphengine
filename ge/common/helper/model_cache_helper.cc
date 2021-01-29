@@ -598,7 +598,7 @@ bool ModelCacheHelper::IsAllocatedGraphIdSameAsCache(Json &json) const {
     return false;
   }
   // Compare allocated graph id info between json and VarManager
-  std::unordered_map<std::string, uint32_t> allocated_graph_id;
+  std::map<std::string, uint32_t> allocated_graph_id;
   auto ret = ParseAllocatedGraphIdFromJson(json, allocated_graph_id);
   if (ret != SUCCESS) {
     GELOGW("Fail to parse AllocatedGraphId from Json.");
@@ -667,7 +667,7 @@ bool ModelCacheHelper::IsChangedGraphIdSameAsCache(Json &json) const {
     return false;
   }
   // Compare variable changed graph id info between json and VarManager
-  std::unordered_map<std::string, uint32_t> changed_graph_id;
+  std::map<std::string, uint32_t> changed_graph_id;
   auto ret = ParseChangedGraphIdFromJson(json, changed_graph_id);
   if (ret != SUCCESS) {
     GELOGW("Fail to parse ChangedGraphId from Json.");
@@ -732,7 +732,7 @@ bool ModelCacheHelper::IsVarAddrMgrMapSameAsCache(Json &json) const {
   }
   // Compare variable address info between json and VarManager
   std::vector<std::pair<std::string, VarAddrMgr>> var_addr_mgr_vector;
-  std::unordered_set<uint64_t> var_offset_set;
+  std::set<uint64_t> var_offset_set;
   auto ret = ParseVarAddrMgrMapFromJson(json, var_addr_mgr_vector, var_offset_set);
   if (ret != SUCCESS) {
     GELOGW("Fail to parse VarAddrMgrMap from Json.");
@@ -942,7 +942,7 @@ Status ModelCacheHelper::RecoverAllocatedGraphId(const Json &json) const {
     GELOGW("Input param json type should be null or array.");
     return PARAM_INVALID;
   }
-  std::unordered_map<std::string, uint32_t> allocated_graph_id;
+  std::map<std::string, uint32_t> allocated_graph_id;
   auto ret = ParseAllocatedGraphIdFromJson(json, allocated_graph_id);
   if (ret != SUCCESS) {
     GELOGW("Fail to parse AllocatedGraphId from Json.");
@@ -963,7 +963,7 @@ Status ModelCacheHelper::RecoverChangedGraphId(const Json &json) const {
     GELOGW("Input param json type should be null or array.");
     return PARAM_INVALID;
   }
-  std::unordered_map<std::string, uint32_t> changed_graph_id;
+  std::map<std::string, uint32_t> changed_graph_id;
   auto ret = ParseChangedGraphIdFromJson(json, changed_graph_id);
   if (ret != SUCCESS) {
     GELOGW("Fail to parse AllocatedGraphId from Json.");
@@ -985,7 +985,7 @@ Status ModelCacheHelper::RecoverVarAddrAndTensorDesc(const Json &json) const {
     return PARAM_INVALID;
   }
   std::vector<std::pair<std::string, VarAddrMgr>> var_addr_mgr_vector;
-  std::unordered_set<uint64_t> var_offset_set;
+  std::set<uint64_t> var_offset_set;
   auto ret = ParseVarAddrMgrMapFromJson(json, var_addr_mgr_vector, var_offset_set);
   if (ret != SUCCESS) {
     GELOGW("Fail to parse VarAddrMgrMap from Json.");
@@ -1508,7 +1508,7 @@ Status ModelCacheHelper::ParseMemResourceFromJson(const Json &json, map<rtMemTyp
 
 Status ModelCacheHelper::ParseVarAddrMgrMapFromJson(
   const Json &json, std::vector<std::pair<std::string, VarAddrMgr>> &var_addr_mgr_vector,
-  std::unordered_set<uint64_t> &var_offset_set) {
+  std::set<uint64_t> &var_offset_set) {
   if (!(json.is_array() || json.is_null())) {
     GELOGW("Input param json type should be null or array.");
     return PARAM_INVALID;
@@ -1606,7 +1606,7 @@ Status ModelCacheHelper::ParseTransRoadsFromJson(
 }
 
 Status ModelCacheHelper::ParseChangedGraphIdFromJson(const Json &json,
-                                                     std::unordered_map<std::string, uint32_t> &changed_graph_id) {
+                                                     std::map<std::string, uint32_t> &changed_graph_id) {
   if (!(json.is_array() || json.is_null())) {
     GELOGW("Input param json type should be null or array.");
     return PARAM_INVALID;
@@ -1624,7 +1624,7 @@ Status ModelCacheHelper::ParseChangedGraphIdFromJson(const Json &json,
 }
 
 Status ModelCacheHelper::ParseAllocatedGraphIdFromJson(const Json &json,
-                                                       std::unordered_map<std::string, uint32_t> &allocated_graph_id) {
+                                                       std::map<std::string, uint32_t> &allocated_graph_id) {
   if (!(json.is_array() || json.is_null())) {
     GELOGW("Input param json type should be null or array.");
     return PARAM_INVALID;

@@ -17,6 +17,20 @@
 #ifndef GE_GE_LOCAL_ENGINE_OPS_KERNEL_STORE_GE_LOCAL_OPS_KERNEL_INFO_H_
 #define GE_GE_LOCAL_ENGINE_OPS_KERNEL_STORE_GE_LOCAL_OPS_KERNEL_INFO_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <map>
 #include <string>
 #include <vector>
@@ -25,7 +39,7 @@
 
 namespace ge {
 namespace ge_local {
-class GeLocalOpsKernelInfoStore : public OpsKernelInfoStore {
+class GE_FUNC_VISIBILITY GeLocalOpsKernelInfoStore : public OpsKernelInfoStore {
  public:
   GeLocalOpsKernelInfoStore() = default;
 

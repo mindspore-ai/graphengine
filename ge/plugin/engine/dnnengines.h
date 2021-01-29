@@ -25,7 +25,7 @@
 #include "plugin/engine/engine_manage.h"
 
 namespace ge {
-class AICoreDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY AICoreDNNEngine : public DNNEngine {
  public:
   AICoreDNNEngine() = default;
   explicit AICoreDNNEngine(const std::string &engine_name);
@@ -40,7 +40,7 @@ class AICoreDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
-class VectorCoreDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY VectorCoreDNNEngine : public DNNEngine {
  public:
   VectorCoreDNNEngine() = default;
   explicit VectorCoreDNNEngine(const std::string &engine_name);
@@ -56,7 +56,7 @@ class VectorCoreDNNEngine : public DNNEngine {
 };
 
 
-class AICpuDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY AICpuDNNEngine : public DNNEngine {
  public:
   AICpuDNNEngine() = default;
   explicit AICpuDNNEngine(const std::string &engine_name);
@@ -71,7 +71,7 @@ class AICpuDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
-class AICpuTFDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY AICpuTFDNNEngine : public DNNEngine {
  public:
   AICpuTFDNNEngine() = default;
   explicit AICpuTFDNNEngine(const std::string &engine_name);
@@ -86,7 +86,7 @@ class AICpuTFDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
-class GeLocalDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY GeLocalDNNEngine : public DNNEngine {
  public:
   GeLocalDNNEngine() = default;
   explicit GeLocalDNNEngine(const std::string &engine_name);
@@ -101,7 +101,7 @@ class GeLocalDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
-class HostCpuDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY HostCpuDNNEngine : public DNNEngine {
 public:
   HostCpuDNNEngine() = default;
   explicit HostCpuDNNEngine(const std::string &engine_name);
@@ -116,7 +116,7 @@ private:
   DNNEngineAttribute engine_attribute_;
 };
 
-class RtsDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY RtsDNNEngine : public DNNEngine {
  public:
   RtsDNNEngine() = default;
   explicit RtsDNNEngine(const std::string &engine_name);
@@ -131,7 +131,7 @@ class RtsDNNEngine : public DNNEngine {
   DNNEngineAttribute engine_attribute_;
 };
 
-class HcclDNNEngine : public DNNEngine {
+class GE_FUNC_VISIBILITY HcclDNNEngine : public DNNEngine {
  public:
   HcclDNNEngine() = default;
   explicit HcclDNNEngine(const std::string &engine_name);

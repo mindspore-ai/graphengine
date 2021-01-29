@@ -29,7 +29,7 @@
 #define GE_DISMISS_GUARD(var) make_guard_##var.Dismiss()
 
 namespace ge {
-class ScopeGuard {
+class GE_FUNC_VISIBILITY ScopeGuard {
  public:
   // Noncopyable
   ScopeGuard(ScopeGuard const &) = delete;

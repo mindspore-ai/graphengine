@@ -12,7 +12,7 @@ set(PROTO_LIST
     "${METADEF_DIR}/proto/tensorflow/tensor.proto"
     "${METADEF_DIR}/proto/tensorflow/tensor_shape.proto"
     "${METADEF_DIR}/proto/tensorflow/types.proto"
-    "${METADEF_DIR}/proto/tensorflow/versions.proto" 
+    "${METADEF_DIR}/proto/tensorflow/versions.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -73,6 +73,7 @@ target_compile_definitions(ge_common PRIVATE
     FMK_SUPPORT_DUMP
     OS_CENTOS
     google=ascend_private
+    FUNC_VISIBILITY
 )
 
 target_compile_options(ge_common PRIVATE
@@ -105,6 +106,10 @@ target_include_directories(ge_common PRIVATE
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
+target_link_options(ge_common PRIVATE
+    -Wl,-Bsymbolic
+)
+
 target_link_libraries(ge_common PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     static_mmpa
@@ -132,6 +137,7 @@ target_compile_definitions(ge_common_static PRIVATE
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
     LOG_CPP
+    FUNC_VISIBILITY
 )
 
 target_compile_options(ge_common_static PRIVATE
@@ -181,6 +187,7 @@ target_compile_definitions(ge_common PRIVATE
     OS_CENTOS
     google=ascend_private
     LOG_CPP
+    FUNC_VISIBILITY
 )
 
 target_compile_options(ge_common PRIVATE
@@ -206,6 +213,10 @@ target_include_directories(ge_common PRIVATE
     ${CMAKE_BINARY_DIR}/proto/ge
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_options(ge_common PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(ge_common PRIVATE

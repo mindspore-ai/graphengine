@@ -24,7 +24,7 @@
 
 namespace ge {
 const int64_t MEM_ALIGN_SIZE = 512;
-class MemoryAssigner {
+class GE_FUNC_VISIBILITY MemoryAssigner {
  public:
   explicit MemoryAssigner(ge::ComputeGraphPtr compute_graph) : compute_graph_(std::move(compute_graph)) {}
   virtual ~MemoryAssigner() = default;

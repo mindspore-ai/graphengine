@@ -23,7 +23,7 @@
 
 namespace ge {
 using OpsKernelBuilderPtr = std::shared_ptr<OpsKernelBuilder>;
-class OpsKernelBuilderManager {
+class GE_FUNC_VISIBILITY OpsKernelBuilderManager {
  public:
   ~OpsKernelBuilderManager();
 

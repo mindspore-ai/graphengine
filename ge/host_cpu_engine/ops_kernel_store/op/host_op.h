@@ -21,7 +21,7 @@
 
 namespace ge {
 namespace host_cpu {
-class HostOp : public Op {
+class GE_FUNC_VISIBILITY HostOp : public Op {
  public:
   HostOp(const Node &node, RunContext &run_context) : Op(node, run_context) {}
   ~HostOp() override = default;

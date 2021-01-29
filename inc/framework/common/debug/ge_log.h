@@ -37,7 +37,7 @@ extern "C" {
 // trace status of log
 enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
 
-class GeLog {
+class GE_FUNC_VISIBILITY GeLog {
  public:
   static uint64_t GetTid() {
 #ifdef __GNUC__

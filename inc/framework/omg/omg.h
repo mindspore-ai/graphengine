@@ -43,7 +43,7 @@ namespace ge {
  * @brief init omg context
  * @return void
  */
-Status InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
+GE_FUNC_VISIBILITY Status InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
                           bool is_dynamic_input);
 
 /**
@@ -61,7 +61,7 @@ Status InitDomiOmgContext(const string &input_shape, const string &input_format,
  * @param [in] atc_params multiply atc params
  * @return Status result code
  */
-Status ParseGraph(ge::Graph &graph, const std::map<string, string> &atc_params, const char *model_file,
+GE_FUNC_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<string, string> &atc_params, const char *model_file,
                   const char *weights_file, domi::FrameworkType type, const char *op_conf = nullptr,
                   const char *target = nullptr, RunMode run_mode = GEN_OM_MODEL, bool is_dynamic_input = false);
 
@@ -73,9 +73,9 @@ Status ParseGraph(ge::Graph &graph, const std::map<string, string> &atc_params, 
  * @param [key] encrypted key
  * @return Status result code
  */
-Status ConvertOm(const char *model_file, const char *json_file, bool is_covert_to_json);
+GE_FUNC_VISIBILITY Status ConvertOm(const char *model_file, const char *json_file, bool is_covert_to_json);
 
-Status ConvertPbtxtToJson(const char *model_file, const char *json_file);
+GE_FUNC_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const char *json_file);
 /**
  * @ingroup domi_omg
  * @brief convert the model file in protobuf format into a JSON file.
@@ -85,26 +85,26 @@ Status ConvertPbtxtToJson(const char *model_file, const char *json_file);
  * @param [key] encrypted key
  * @return Status result code
  */
-Status ConvertFwkModelToJson(domi::FrameworkType framework, const char *model_file, const char *json_file);
+GE_FUNC_VISIBILITY Status ConvertFwkModelToJson(domi::FrameworkType framework, const char *model_file, const char *json_file);
 
-void GetGroupName(ge::proto::ModelDef &model);
+GE_FUNC_VISIBILITY void GetGroupName(ge::proto::ModelDef &model);
 
-void FindParserSo(const string &path, vector<string> &fileList, string &caffe_parser_path);
+GE_FUNC_VISIBILITY void FindParserSo(const string &path, vector<string> &fileList, string &caffe_parser_path);
 
-Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
+GE_FUNC_VISIBILITY Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
 
-Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output_format);
+GE_FUNC_VISIBILITY Status SetOutputNodeInfo(ge::Graph &graph, const std::string &output_type, const std::string &output_format);
 
-Status GetOutputLeaf(ge::NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);
+GE_FUNC_VISIBILITY Status GetOutputLeaf(ge::NodePtr node, std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);
 
-void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
+GE_FUNC_VISIBILITY void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
                                 std::vector<std::string> &output_nodes_name);
 
-void UpdateOmgCtxWithParserCtx();
+GE_FUNC_VISIBILITY void UpdateOmgCtxWithParserCtx();
 
-void UpdateParserCtxWithOmgCtx();
+GE_FUNC_VISIBILITY void UpdateParserCtxWithOmgCtx();
 
-void PrintModelInfo(ge::proto::ModelDef *model_def);
+GE_FUNC_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def);
 }  // namespace ge
 
 namespace domi {
@@ -113,7 +113,7 @@ namespace domi {
  * @brief get omg context
  * @return reference of OmgContext
  */
-ge::OmgContext &GetContext();
+GE_FUNC_VISIBILITY ge::OmgContext &GetContext();
 }  // namespace domi
 
 #endif  // INC_FRAMEWORK_OMG_OMG_H_

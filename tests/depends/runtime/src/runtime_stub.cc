@@ -265,6 +265,10 @@ rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream
   return RT_ERROR_NONE;
 }
 
+rtError_t rtLabelListCpy(rtLabel_t *label, uint32_t labelNumber, void *dst, uint32_t dstMax) {
+  return RT_ERROR_NONE;
+}
+
 rtError_t rtLabelDestroy(rtLabel_t label) {
   uint64_t *stub = static_cast<uint64_t *>(label);
   delete stub;
@@ -277,7 +281,16 @@ rtError_t rtLabelSwitch(void *ptr, rtCondition_t condition, uint32_t value, rtLa
   return RT_ERROR_NONE;
 }
 
+rtError_t rtLabelSwitchByIndex(void *ptr, uint32_t max, void *labelInfoPtr, rtStream_t stream) {
+  return RT_ERROR_NONE;
+}
+
 rtError_t rtLabelGoto(rtLabel_t label, rtStream_t stream) { return RT_ERROR_NONE; }
+
+rtError_t rtLabelGotoEx(rtLabel_t label, rtStream_t stream) {
+  return RT_ERROR_NONE;
+}
+
 
 rtError_t rtInvalidCache(uint64_t base, uint32_t len) { return RT_ERROR_NONE; }
 

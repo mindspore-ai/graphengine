@@ -675,7 +675,7 @@ class DavinciModel {
   /// @return Status
   ///
   Status InitDataOp(const ComputeGraphPtr &graph, const NodePtr &node, uint32_t &data_op_index,
-                    map<uint32_t, OpDescPtr> &data_by_index);
+                    map<uint32_t, OpDescPtr> &data_by_index, set<const void *> &input_outside_addrs);
 
   ///
   /// @ingroup ge
@@ -694,7 +694,8 @@ class DavinciModel {
   /// @param [in/out] vector<OpDescPtr>: All NetOutput node in model.
   /// @return Status
   ///
-  Status InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &node, vector<OpDescPtr> &output_op_list);
+  Status InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &node, vector<OpDescPtr> &output_op_list,
+                       set<const void *> &output_outside_addrs);
 
   ///
   /// @ingroup ge
@@ -764,7 +765,7 @@ class DavinciModel {
   ///
   Status BindInputQueue();
 
-  Status CpuTaskModelZeroCopy(vector<uintptr_t> &mbuf_list, map<const void *, ZeroCopyOffset> &outside_addrs);
+  Status CpuTaskModelZeroCopy(vector<uintptr_t> &mbuf_list, const map<uint32_t, ZeroCopyOffset> &outside_addrs);
 
   ///
   /// @ingroup ge
@@ -897,10 +898,8 @@ class DavinciModel {
   void *global_step_addr_{nullptr};
   uint64_t global_step_size_{0};
 
-  map<uint32_t, ZeroCopyOffset> new_input_data_info_;
-  map<uint32_t, ZeroCopyOffset> new_output_data_info_;
-  map<const void *, ZeroCopyOffset> new_input_outside_addrs_;
-  map<const void *, ZeroCopyOffset> new_output_outside_addrs_;
+  map<uint32_t, ZeroCopyOffset> input_data_info_;
+  map<uint32_t, ZeroCopyOffset> output_data_info_;
 
   set<const void *> real_virtual_addrs_;
 

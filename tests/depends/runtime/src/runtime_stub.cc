@@ -245,9 +245,31 @@ rtError_t rtProfilerInit(const char *prof_dir, const char *address, const char *
 
 rtError_t rtProfilerStart(void) { return RT_ERROR_NONE; }
 
-rtError_t rtLabelCreate(rtLabel_t *label) { return RT_ERROR_NONE; }
+rtError_t rtLabelCreate(rtLabel_t *label) {
+  *label = new uint64_t;
+  return RT_ERROR_NONE;
+}
 
-rtError_t rtLabelDestroy(rtLabel_t label) { return RT_ERROR_NONE; }
+rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream) {
+  *label = new uint64_t;
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtLabelCreateV2(rtLabel_t *label, rtModel_t model) {
+  *label = new uint64_t;
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream) {
+  *label = new uint64_t;
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtLabelDestroy(rtLabel_t label) {
+  uint64_t *stub = static_cast<uint64_t>(label);
+  delete stub;
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtLabelSet(rtLabel_t label, rtStream_t stream) { return RT_ERROR_NONE; }
 
@@ -361,12 +383,6 @@ rtError_t rtDumpAddrSet(rtModel_t model, void *addr, uint32_t dumpSize, uint32_t
 
 rtError_t rtSetCtxINFMode(bool mode)
 {
-  return RT_ERROR_NONE;
-}
-
-rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream)
-{
-  *label = new uint32_t;
   return RT_ERROR_NONE;
 }
 

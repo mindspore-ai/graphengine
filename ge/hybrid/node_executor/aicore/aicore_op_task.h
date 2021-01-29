@@ -50,7 +50,7 @@ class AiCoreOpTask {
 
   uint32_t GetBlockDim() const {return block_dim_;}
 
-  void SetSingleOp(bool is_single_op) {is_single_op_ = is_single_op};
+  void SetSingleOp(bool is_single_op) {is_single_op_ = is_single_op;};
 
  protected:
   Status UpdateTilingInfo(TaskContext &context);
@@ -74,7 +74,7 @@ class AiCoreOpTask {
   uint32_t args_size_ = 0;
   uint32_t block_dim_ = 1;
   bool clear_atomic_ = true;
-  bool is_single_op_ false;
+  bool is_single_op_ = false;
   std::vector<int> output_indices_to_skip_;
 };
 

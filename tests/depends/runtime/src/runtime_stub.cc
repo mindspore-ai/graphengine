@@ -266,7 +266,7 @@ rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream
 }
 
 rtError_t rtLabelDestroy(rtLabel_t label) {
-  uint64_t *stub = static_cast<uint64_t>(label);
+  uint64_t *stub = static_cast<uint64_t *>(label);
   delete stub;
   return RT_ERROR_NONE;
 }

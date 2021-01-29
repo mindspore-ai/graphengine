@@ -46,7 +46,7 @@ class UtestDavinciModel : public testing::Test {
     }
 };
 
-/*TEST_F(UtestDavinciModel, init_success) {
+TEST_F(UtestDavinciModel, init_success) {
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
   ProfilingManager::Instance().is_load_profiling_ = true;
@@ -130,7 +130,7 @@ class UtestDavinciModel : public testing::Test {
   EXPECT_EQ(outputs.size(), 1);
 
   ProfilingManager::Instance().is_load_profiling_ = false;
-}*/
+}
 
 TEST_F(UtestDavinciModel, init_data_op) {
   DavinciModel model(0, nullptr);

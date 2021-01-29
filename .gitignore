@@ -2,6 +2,7 @@
 /build
 /output
 /prebuilts
+/cov
 *.ir
 *.out
 

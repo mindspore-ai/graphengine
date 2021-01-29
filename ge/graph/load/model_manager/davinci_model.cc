@@ -1402,7 +1402,7 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   }
 
   rtLabel_t rt_label = nullptr;
-  rtError_t rt_error = rtLabelCreateEx(&rt_label, stream);
+  rtError_t rt_error = rtLabelCreateExV2(&rt_label, rt_model_handle_, stream);
   if (rt_error != RT_ERROR_NONE || rt_label == nullptr) {
     GELOGE(INTERNAL_ERROR, "InitLabelSet: %s create label failed, error=0x%x.", op_desc->GetName().c_str(), rt_error);
     return INTERNAL_ERROR;

@@ -74,7 +74,7 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape);
 /// @param [out] map<string, vector<vector<int64_t>>> &data_to_dynamic_info: key:data_name. value:dynamic dims.
 /// @return SUCCESS / PARAM_INVALID
 ///
-Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
+Status ParserDataToDynamicInfo(const vector<vector<int64_t>> &shapes,
                                vector<pair<string, vector<int64_t>>> &data_name_and_shape,
                                map<string, vector<vector<int64_t>>> &data_to_dynamic_info);
 

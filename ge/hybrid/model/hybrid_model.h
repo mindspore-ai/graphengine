@@ -69,6 +69,10 @@ class HybridModel {
     return model_id_;
   }
 
+  bool IsSingleOp() const {
+    return is_single_op_;
+  }
+
   TensorValue* GetVariable(const string &name) const;
 
   NodePtr GetVariableNode(const string &name) const;
@@ -131,6 +135,7 @@ class HybridModel {
   std::map<NodePtr, std::unique_ptr<NodeItem>> node_items_;
 
   bool is_new_model_desc_ = false;    // support aipp
+  bool is_single_op_ = false;
 
   // runtime fields
   uint32_t device_id_ = 0;

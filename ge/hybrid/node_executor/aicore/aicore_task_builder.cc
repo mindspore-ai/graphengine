@@ -37,7 +37,9 @@ AiCoreTaskBuilder::AiCoreTaskBuilder(const OpDescPtr &op_desc, const std::vector
     : op_desc_(op_desc), task_defs_(task_defs) {
 }
 
-Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task, bool ignore_failure_on_atomic) {
+Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task,
+                                    bool ignore_failure_on_atomic,
+                                    bool is_single_op) {
   GE_CHECK_NOTNULL(op_desc_);
   if (task_defs_.size() > kNumTaskWithAtomicAddrCleanTask) {
     GELOGE(INTERNAL_ERROR,
@@ -68,6 +70,7 @@ Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task, bool i
     auto atomic_task =
         std::unique_ptr<AtomicAddrCleanOpTask>(new(std::nothrow)AtomicAddrCleanOpTask());
     GE_CHECK_NOTNULL(atomic_task);
+    atomic_task->SetSingleOp(is_single_op);
     GE_CHK_STATUS_RET(atomic_task->Init(*op_desc_, task_defs_.front()),
                       "[%s] Failed to init task for AtomicAddrClean",
                       op_desc_->GetName().c_str());
@@ -77,6 +80,7 @@ Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task, bool i
   // build aicore task
   auto aicore_task = std::unique_ptr<AiCoreOpTask>(new(std::nothrow)AiCoreOpTask());
   GE_CHECK_NOTNULL(aicore_task);
+  aicore_task->SetSingleOp(is_single_op);
   GE_CHK_STATUS_RET(aicore_task->Init(*op_desc_, task_defs_.back()),
                     "[%s] Failed to init task for AtomicAddrClean",
                     op_desc_->GetName().c_str());

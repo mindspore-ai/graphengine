@@ -71,12 +71,14 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
 
-  HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc), "Failed to execute partitioned call.");
+  HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc, args.outputs),
+                        "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
 
   HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
 
+  args.outputs.clear();
   HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
   return SUCCESS;

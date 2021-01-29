@@ -31,6 +31,8 @@
 #include "task/aicpu_task_builder.h"
 #include "task/aicpu_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
+#include "hybrid/executor/hybrid_model_executor.h"
+#include "hybrid/node_executor/node_executor.h"
 
 static std::atomic<std::uint64_t> aicpu_kernel_id(0);
 
@@ -42,6 +44,20 @@ namespace ge {
 namespace {
 const size_t kDataOutputNum = 1;
 }  // namespace
+static Status IfInferDepend(GeModelPtr &ge_model, bool &flag) {
+  auto comp_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
+  for (const auto &node : comp_graph->GetAllNodes()) {
+    auto op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    const auto &depends = op_desc->GetOpInferDepends();
+    if (!depends.empty()) {
+      flag = true;
+      return SUCCESS;
+    }
+  }
+  return SUCCESS;
+}
+
 SingleOpModel::SingleOpModel(const std::string &model_name, const void *model_data, uint32_t model_size)
     : model_name_(model_name), ori_model_data_(model_data), ori_model_size_(model_size) {}
 
@@ -478,6 +494,30 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
   single_op.num_outputs_ = netoutput_op_->GetAllInputsSize();
   GE_CHK_STATUS_RET_NOLOG(InitModelMem(resource));
   model_params_.memory_size = UINT_MAX;
+
+  auto ge_model = model_helper_.GetGeModel();
+  GE_CHECK_NOTNULL(ge_model);
+  bool infer_depend_flag = false;
+  GE_CHK_STATUS_RET_NOLOG(IfInferDepend(ge_model, infer_depend_flag));
+  if (ge_model->GetModelTaskDefPtr()->task_size() > 1 || infer_depend_flag) {
+    GELOGD("Build single op HybridModel.");
+    GE_CHK_STATUS_RET_NOLOG(hybrid::NodeExecutorManager::GetInstance().EnsureInitialized());
+    auto root_model = model_helper_.GetGeRootModel();
+    GE_CHECK_NOTNULL(root_model);
+    root_model->SetRootGraph(GraphUtils::GetComputeGraph(ge_model->GetGraph()));
+    root_model->SetSubgraphInstanceNameToModel(root_model->GetRootGraph()->GetName(), ge_model);
+    single_op.hybrid_model_.reset(new (std::nothrow)hybrid::HybridModel(root_model));
+    GE_CHECK_NOTNULL(single_op.hybrid_model_);
+    GE_CHK_STATUS_RET(single_op.hybrid_model_->Init(true), "Failed to init hybrid model");
+    int32_t device_id = 0;
+    GE_CHK_RT_RET(rtGetDevice(&device_id));
+    single_op.hybrid_model_executor_.reset(new (std::nothrow)hybrid::HybridModelExecutor(single_op.hybrid_model_.get(),
+                                                                                         device_id,
+                                                                                         resource.GetStream()));
+    GE_CHECK_NOTNULL(single_op.hybrid_model_executor_);
+    GE_CHK_STATUS_RET(single_op.hybrid_model_executor_->Init(), "Failed to init hybrid model");
+    return SUCCESS;
+  }
   return BuildTaskListForDynamicOp(single_op);
 }
 }  // namespace ge

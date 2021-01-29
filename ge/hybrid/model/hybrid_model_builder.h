@@ -35,6 +35,7 @@ class HybridModelBuilder {
   explicit HybridModelBuilder(HybridModel &hybrid_model);
   ~HybridModelBuilder() = default;
   Status Build();
+  Status BuildForSingleOp();
 
  private:
   static Status UpdateAnchorStatus(const NodePtr &node);
@@ -64,6 +65,7 @@ class HybridModelBuilder {
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);
   Status ParseDependentForFusedSubgraph(NodeItem &node_item);
   Status IndexTaskDefs();
+  Status IndexTaskDefs(const ComputeGraphPtr &sub_graph, const GeModelPtr &ge_model);
   Status IndexSpecialNodes();
   Status InitRuntimeParams();
   Status InitModelMem();

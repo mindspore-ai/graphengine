@@ -131,10 +131,14 @@ Status SubgraphExecutor::InitInputsForKnownShape(const std::vector<TensorValue> 
 }
 
 Status SubgraphExecutor::ExecuteAsync(const std::vector<TensorValue> &inputs,
-                                      const std::vector<ConstGeTensorDescPtr> &input_desc) {
+                                      const std::vector<ConstGeTensorDescPtr> &input_desc,
+                                      const std::vector<TensorValue> &outputs) {
   GELOGD("[%s] is dynamic = %s", graph_item_->GetName().c_str(), graph_item_->IsDynamic() ? "true" : "false");
   GE_CHK_STATUS_RET(Init(inputs, input_desc), "[%s] Failed to init executor.", graph_item_->GetName().c_str());
-
+  if (!outputs.empty()) {
+    GE_CHK_STATUS_RET(EnableOutputZeroCopy(outputs),
+                      "Failed to enable output zero copy by user provided outputs.");
+  }
   if (!graph_item_->IsDynamic()) {
     return ExecuteAsyncForKnownShape(inputs);
   }
@@ -142,6 +146,11 @@ Status SubgraphExecutor::ExecuteAsync(const std::vector<TensorValue> &inputs,
   HYBRID_CHK_STATUS_RET(ScheduleTasks(), "[%s] Failed to execute tasks.", graph_item_->GetName().c_str());
   GELOGD("[%s] Done executing subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
+}
+
+Status SubgraphExecutor::ExecuteAsync(const std::vector<TensorValue> &inputs,
+                                      const std::vector<ConstGeTensorDescPtr> &input_desc) {
+  return ExecuteAsync(inputs, input_desc, {});
 }
 
 Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue> &inputs) {
@@ -438,6 +447,38 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
     parent_output_desc->SetOriginShape(output_desc->GetOriginShape());
   }
 
+  return SUCCESS;
+}
+
+Status SubgraphExecutor::EnableOutputZeroCopy(const vector<TensorValue> &outputs) {
+  GELOGD("To enable zero copy, output number = %zu", outputs.size());
+  const auto &output_edges = graph_item_->GetOutputEdges();
+  // Op -> MetOutput, set the output tensor of Op that output to the NetOutput node
+  if (outputs.size() != output_edges.size()) {
+    GELOGE(PARAM_INVALID, "Output number mismatches, expect = %zu, but given = %zu",
+           output_edges.size(),
+           outputs.size());
+    return PARAM_INVALID;
+  }
+
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    auto &output_tensor = outputs[i];
+    auto &output_node = output_edges[i].first;
+    int output_idx = output_edges[i].second;
+    GELOGD("[%s] Set output tensor[%zu] to [%s]'s output[%d], tensor = %s",
+           graph_item_->GetName().c_str(),
+           i,
+           output_node->NodeName().c_str(),
+           output_idx,
+           output_tensor.DebugString().c_str());
+
+    GE_CHK_STATUS_RET(subgraph_context_->SetOutput(*output_node, output_idx, output_tensor),
+                      "[%s] Failed to set input tensor[%zu]",
+                      graph_item_->GetName().c_str(),
+                      i);
+  }
+
+  GELOGD("Done enabling zero copy for outputs successfully.");
   return SUCCESS;
 }
 }  // namespace hybrid

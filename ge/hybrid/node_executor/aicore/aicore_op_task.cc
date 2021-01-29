@@ -65,7 +65,7 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
   }
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
   rtError_t rt_ret = rtQueryFunctionRegistered(stub_name_.c_str());
-  if (rt_ret != RT_ERROR_NONE) {
+  if (rt_ret != RT_ERROR_NONE || is_single_op_) {
     void *bin_handle = nullptr;
     if (!kernel_store.FindTBEHandle(stub_name_.c_str(), bin_handle)) {
       GELOGI("TBE: can't find the kernel_name[%s] in HandleMap", stub_name_.c_str());

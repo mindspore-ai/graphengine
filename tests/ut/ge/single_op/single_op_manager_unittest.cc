@@ -17,7 +17,6 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "cce/taskdown_common.hpp"
 #include "runtime/rt.h"
 
 #define protected public

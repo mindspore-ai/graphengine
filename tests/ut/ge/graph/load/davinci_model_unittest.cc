@@ -34,6 +34,7 @@ class UtestDavinciModel : public testing::Test {
   void TearDown() {}
 };
 
+/*
 TEST_F(UtestDavinciModel, init_success) {
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
@@ -119,6 +120,7 @@ TEST_F(UtestDavinciModel, init_success) {
 
   ProfilingManager::Instance().is_load_profiling_ = false;
 }
+*/
 
 TEST_F(UtestDavinciModel, init_data_op) {
   DavinciModel model(0, nullptr);
@@ -746,6 +748,7 @@ TEST_F(UtestDavinciModel, init_data_aipp_input_dims_normal) {
   EXPECT_EQ(model.op_list_.size(), 1);
 }
 
+/*
 // test label_set_task Init
 TEST_F(UtestDavinciModel, label_task_success) {
   DavinciModel model(0, nullptr);
@@ -833,7 +836,8 @@ TEST_F(UtestDavinciModel, label_task_success) {
   EXPECT_EQ(model.output_addrs_list_.size(), 0);
   EXPECT_EQ(model.task_list_.size(), 5);
 }
- 
+*/ 
+
 TEST_F(UtestDavinciModel, LoadWithQueue_fail_with_diff_args) {
   DavinciModel model(0, nullptr);
   model.ge_model_ = make_shared<GeModel>();

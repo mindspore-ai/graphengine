@@ -57,13 +57,14 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
   if (all_shape) {
+    GELOGD("Aicpu all_shape kernel need to update io shape.");
     for (uint32_t i = 0; i < num_inputs; i++) {
-        auto input_desc = op_desc->MutableInputDesc(i);
-        GE_CHECK_NOTNULL(input_desc);
-        GE_CHK_STATUS_RET(ext_handle->UpdateInputShapeAndType(i, *input_desc),
-                          "Input[%zu] update input shape failed.", i);
+      auto input_desc = op_desc->MutableInputDesc(i);
+      GE_CHECK_NOTNULL(input_desc);
+      GE_CHK_STATUS_RET(ext_handle->UpdateInputShapeAndType(i, *input_desc),
+                        "Input[%zu] update input shape failed.", i);
     }
-    if (unknown_type = DEPEND_COMPUTE) {
+    if (unknown_type != DEPEND_COMPUTE) {
       for (uint32_t j = 0; j < num_outputs; j++) {
         auto output_desc = op_desc->MutableOutputDesc(j);
         GE_CHECK_NOTNULL(output_desc);

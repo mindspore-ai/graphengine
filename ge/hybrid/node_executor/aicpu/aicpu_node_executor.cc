@@ -28,6 +28,7 @@ namespace hybrid {
 namespace {
 // mem need release
 constexpr uint64_t kReleaseFlag = 1;
+const char *const kAicpuAllshape = "_AllShape";
 }
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_TF, AiCpuNodeExecutor);
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_CUSTOM, AiCpuNodeExecutor);
@@ -60,6 +61,7 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GELOGD("To update aicpu_task ext_info session_info session_id to %lu", session_id);
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "UpdateSessionInfoSessionId failed.");
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(!node_item_->is_dynamic), "UpdateExecuteMode failed.");
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
@@ -136,7 +138,6 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
     return SUCCESS;
   }
 
-  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(false), "UpdateExecuteMode failed.");
   for (auto i = 0; i < node_item_->num_inputs; ++i) {
     auto input_desc = node_item_->MutableInputDesc(i);
     GE_CHECK_NOTNULL(input_desc);
@@ -176,10 +177,14 @@ Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
   }
 
   GE_CHK_STATUS_RET(UpdateIoAddr(context), "Node[%s] update io addr failed.", node_name_.c_str());
-  if (node_item_->is_dynamic) {
-    // dynamic node need update ext info.
+  bool all_shape = false;
+  const OpDescPtr op_desc = node_item_->GetOpDesc();
+  (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
+  if (node_item_->is_dynamic || all_shape) {
+    // dynamic node and all_shape kernel need update ext info.
     GE_CHK_STATUS_RET(UpdateExtInfo(), "Node[%s] update ext info failed.", node_name_.c_str());
   }
+
   GELOGD("Node[%s] update args end.", node_name_.c_str());
   return SUCCESS;
 }

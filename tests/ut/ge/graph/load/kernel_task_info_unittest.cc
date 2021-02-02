@@ -390,6 +390,7 @@ TEST_F(UtestKernelTaskInfo, init_kernel_taskInfo_with_aicpu_kernel_type_fail) {
   rtStreamCreate(&stream, 0);
   model.stream_list_ = { stream };
   model.op_list_[0] = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  (void)AttrUtils::GetBool(op_list_[0], "_Allshape", true);
 
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;

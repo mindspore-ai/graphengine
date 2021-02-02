@@ -29,6 +29,10 @@
 #include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
 #include "framework/common/debug/log.h"
 
+namespace {
+const char *const kAicpuAllshape = "_AllShape";
+}  // namespace
+
 namespace ge {
 Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDescPtr &op_desc) {
   if (ext_info.empty()) {
@@ -50,6 +54,24 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
   GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
   GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
 
+  bool all_shape = false;
+  (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
+  if (all_shape) {
+    for (uint32_t i = 0; i < num_inputs; i++) {
+        auto input_desc = op_desc->MutableInputDesc(i);
+        GE_CHECK_NOTNULL(input_desc);
+        GE_CHK_STATUS_RET(ext_handle->UpdateInputShapeAndType(i, *input_desc),
+                          "Input[%zu] update input shape failed.", i);
+    }
+    if (unknown_type = DEPEND_COMPUTE) {
+      for (uint32_t j = 0; j < num_outputs; j++) {
+        auto output_desc = op_desc->MutableOutputDesc(j);
+        GE_CHECK_NOTNULL(output_desc);
+        GE_CHK_STATUS_RET(ext_handle->UpdateOutputShapeAndType(j, *output_desc),
+                          "Output[%zu] update output shape failed.", j);
+      }
+    }
+  }
   auto rt_ret = rtMalloc(&ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                   GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());

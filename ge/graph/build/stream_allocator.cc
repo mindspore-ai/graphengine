@@ -36,7 +36,7 @@ using std::vector;
 namespace {
 const uint32_t kMaxSwitchStreamNum = 1;
 const int64_t kTaskNumPerNormalNode = 3;
-const int64_t kTaskNumPerHcclNode = 200;
+const int64_t kTaskNumPerHcclNode = 245;
 const char *const kTrueStr = "true";
 const char *const kFalseStr = "false";
 

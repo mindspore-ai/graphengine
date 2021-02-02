@@ -48,7 +48,6 @@ const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kFileNameSuffix = "online";
 const char *const kAicpuAllshape = "_AllShape";
-const size_t kDynamicDimSize = 1;
 const int64_t kDynamicDimValue = -2;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
@@ -251,30 +250,6 @@ static void GetOpsProtoPath(string &opsproto_path) {
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
 }
 
-static Status CheckShapeReset(const OpDescPtr &op_desc, bool &change_shape_flag) {
-  GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
-  change_shape_flag = false;
-  for (size_t i = 0; i < op_desc->GetAllInputsDesc().size(); i++) {
-    auto input_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
-    GE_CHECK_NOTNULL(input_desc);
-    // pass scalar input desc
-    auto dims = input_desc->GetShape().GetDims();
-    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
-      change_shape_flag = true;
-    }
-  }
-  for (size_t i = 0; i < op_desc->GetAllOutputsDesc().size(); i++) {
-    auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(i));
-    GE_CHECK_NOTNULL(output_desc);
-    // pass scalar output desc
-    auto dims = output_desc->GetShape().GetDims();
-    if (dims.size() == kDynamicDimSize && dims[0] == kDynamicDimValue) {
-      change_shape_flag = true;
-    }
-  }
-  return SUCCESS;
-}
-
 static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTensor> &inputs_dynamic) {
   for (auto input : inputs) {
     auto input_desc = input.GetTensorDesc();
@@ -289,7 +264,7 @@ static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTenso
 
     bool is_const = false;
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
-    if (!is_const && shape_ori.GetDims().size() > 0) {
+    if (!is_const) {
       int64_t storage_format = FORMAT_NCHW;
       if (ge::AttrUtils::GetInt(desc, ge::ATTR_NAME_STORAGE_FORMAT, storage_format) &&
           !ge::AttrUtils::SetListInt(desc, ge::ATTR_NAME_STORAGE_SHAPE, dynamic_shape_dims)) {
@@ -723,10 +698,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
 
   bool all_shape = false;
-  bool dynamic_flag = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
-  CheckShapeReset(op_desc, dynamic_flag);
-  if (dynamic_flag || all_shape) {
+  if (all_shape) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;

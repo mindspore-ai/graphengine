@@ -62,14 +62,14 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
       auto input_desc = op_desc->MutableInputDesc(i);
       GE_CHECK_NOTNULL(input_desc);
       GE_CHK_STATUS_RET(ext_handle->UpdateInputShapeAndType(i, *input_desc),
-                        "Input[%zu] update input shape failed.", i);
+                        "Input[%u] update input shape failed.", i);
     }
     if (unknown_type != DEPEND_COMPUTE) {
       for (uint32_t j = 0; j < num_outputs; j++) {
         auto output_desc = op_desc->MutableOutputDesc(j);
         GE_CHECK_NOTNULL(output_desc);
         GE_CHK_STATUS_RET(ext_handle->UpdateOutputShapeAndType(j, *output_desc),
-                          "Output[%zu] update output shape failed.", j);
+                          "Output[%u] update output shape failed.", j);
       }
     }
   }

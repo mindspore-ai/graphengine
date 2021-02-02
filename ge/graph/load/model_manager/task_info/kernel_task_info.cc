@@ -994,13 +994,13 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
       auto input_desc = op_desc_->MutableInputDesc(i);
       GE_CHECK_NOTNULL(input_desc);
       GE_CHK_STATUS_RET(ext_handle->UpdateInputShapeAndType(i, *input_desc),
-                        "Input[%zu] update input shape failed.", i);
+                        "Input[%u] update input shape failed.", i);
     }
     for (uint32_t j = 0; j < num_outputs; j++) {
       auto output_desc = op_desc_->MutableOutputDesc(j);
       GE_CHECK_NOTNULL(output_desc);
       GE_CHK_STATUS_RET(ext_handle->UpdateOutputShapeAndType(j, *output_desc),
-                        "Output[%zu] update output shape failed.", j);
+                        "Output[%u] update output shape failed.", j);
     }
   }
   auto rt_ret = rtMalloc(&aicpu_ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);

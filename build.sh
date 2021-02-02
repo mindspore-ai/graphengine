@@ -166,14 +166,14 @@ build_graphengine()
     echo "execute command: cmake ${CMAKE_ARGS} .. failed."
     return 1
   fi
-  COMMON_TARGET="ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register engine_conf.json optimizer_priority.pbtxt "
+  COMMON_TARGET="ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register engine_conf.json optimizer_priority.pbtxt "
   TARGET=${COMMON_TARGET}
   if [ "x${PLATFORM}" = "xtrain" ]
   then
-    TARGET="ge_runner ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder fwk_atc.bin ${TARGET}"
+    TARGET="ge_runner fwk_atc.bin ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    TARGET="ge_compiler atc_ge_local_engine atc_ge_local_opskernel_builder atc_host_cpu_engine atc_host_cpu_opskernel_builder atc_atc.bin opensrc_ascendcl ${TARGET}"
+    TARGET="ge_compiler atc_atc.bin opensrc_ascendcl ${TARGET}"
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
@@ -183,7 +183,7 @@ build_graphengine()
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
-    TARGET=""
+    TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin opensrc_ascendcl ${TARGET}"
   fi
   
   make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install
@@ -198,8 +198,6 @@ g++ -v
 mk_dir ${OUTPUT_PATH}
 build_graphengine || { echo "GraphEngine build failed."; return; }
 echo "---------------- GraphEngine build finished ----------------"
-#cp -rf "${BUILD_PATH}/graphengine/"*.so "${OUTPUT_PATH}"
-#rm -rf "${OUTPUT_PATH}/"libproto*
 rm -f ${OUTPUT_PATH}/libgmock*.so
 rm -f ${OUTPUT_PATH}/libgtest*.so
 rm -f ${OUTPUT_PATH}/lib*_stub.so
@@ -209,10 +207,6 @@ find ${OUTPUT_PATH} -name "*.so*" -print0 | xargs -0 chmod 500
 
 echo "---------------- GraphEngine output generated ----------------"
 
-# if [[ "X$ENABLE_GE_ST" = "Xon" ]]; then
-#     cp ${BUILD_PATH}/graphengine/tests/st/st_resnet50_train ${OUTPUT_PATH}
-# fi
-
 if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
     cp ${BUILD_PATH}/tests/ut/common/graph/ut_libgraph ${OUTPUT_PATH}
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_multiparts_utest ${OUTPUT_PATH}
@@ -220,9 +214,6 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_others_utest ${OUTPUT_PATH}
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_kernel_utest ${OUTPUT_PATH}
 
-#     if [[ "X${ENABLE_GE_UT_ONLY_COMPILE}" != "Xon" ]]; then
-#         export LD_LIBRARY_PATH=${D_LINK_PATH}/x86_64/:${BUILD_PATH}../third_party/prebuild/x86_64/:${BUILD_PATH}/graphengine/:/usr/local/HiAI/driver/lib64:/usr/local/HiAI/runtime/lib64:${LD_LIBRARY_PATH}
-#         echo ${LD_LIBRARY_PATH}
     ${OUTPUT_PATH}/ut_libgraph &&
     ${OUTPUT_PATH}/ut_libge_multiparts_utest &&
     ${OUTPUT_PATH}/ut_libge_distinct_load_utest &&
@@ -232,17 +223,14 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
         echo "!!! UT FAILED, PLEASE CHECK YOUR CHANGES !!!"
         exit 1;
     fi
-#     fi
-
-#     if [[ "X$ENABLE_GE_COV" = "Xon" ]]; then
-        echo "Generating coverage statistics, please wait..."
-        cd ${BASEPATH}
-        rm -rf ${BASEPATH}/cov
-        mkdir ${BASEPATH}/cov
-        lcov -c -d build/tests/ut/ge -d build/tests/ut/common/graph/ -o cov/tmp.info
-        lcov -r cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' -o cov/coverage.info
-        cd ${BASEPATH}/cov
-        genhtml coverage.info
+    echo "Generating coverage statistics, please wait..."
+    cd ${BASEPATH}
+    rm -rf ${BASEPATH}/cov
+    mkdir ${BASEPATH}/cov
+    lcov -c -d build/tests/ut/ge -d build/tests/ut/common/graph/ -o cov/tmp.info
+    lcov -r cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' -o cov/coverage.info
+    cd ${BASEPATH}/cov
+    genhtml coverage.info
 fi
 
 # generate output package in tar form, including ut/st libraries/executables
@@ -256,6 +244,8 @@ generate_package()
   ATC_PATH="atc/lib64"
   ATC_BIN_PATH="atc/bin"
   FWK_BIN_PATH="fwkacllib/bin"
+  FWK_INCLUDE_PATH="fwkacllib/include"
+  ATC_INCLUDE_PATH="atc/include"
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
@@ -277,6 +267,8 @@ generate_package()
   mk_dir "${OUTPUT_PATH}/${ACL_PATH}"
   mk_dir "${OUTPUT_PATH}/${ATC_BIN_PATH}"
   mk_dir "${OUTPUT_PATH}/${FWK_BIN_PATH}"
+  mk_dir "${OUTPUT_PATH}/${FWK_INCLUDE_PATH}"
+  mk_dir "${OUTPUT_PATH}/${ATC_INCLUDE_PATH}"
  
   cd "${OUTPUT_PATH}"
 
@@ -289,10 +281,10 @@ generate_package()
   find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name libengine.so -exec cp -f {} ${OUTPUT_PATH}/${ATC_PATH}/${NNENGINE_PATH}/../ \;
 
   MAX_DEPTH=1
-  if [ "x${PLATFORM}" = "xall" ] || [ "x${PLATFORM}" = "xinference" ]
-  then
-    MAX_DEPTH=2
-  fi
+#  if [ "x${PLATFORM}" = "xall" ] || [ "x${PLATFORM}" = "xinference" ]
+#  then
+#    MAX_DEPTH=2
+#  fi
   for lib in "${PLUGIN_OPSKERNEL[@]}";
   do
     find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth ${MAX_DEPTH} -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH}/${OPSKERNEL_PATH} \;
@@ -318,7 +310,15 @@ generate_package()
   find ./lib/atclib -name atc.bin -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
   find ./lib/fwkacl -name atc.bin -exec cp {} "${OUTPUT_PATH}/${FWK_BIN_PATH}" \;
   find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "libascendcl.so" -exec cp -f {} ${OUTPUT_PATH}/${ACL_PATH} \;
-  
+
+  cp -r ${OUTPUT_PATH}/../metadef/inc/external/* ${ATC_INCLUDE_PATH}
+  cp -r ${OUTPUT_PATH}/../parser/inc/external/* ${ATC_INCLUDE_PATH}
+  cp -r ${OUTPUT_PATH}/../inc/external/* ${ATC_INCLUDE_PATH}
+
+  cp -r ${OUTPUT_PATH}/../metadef/inc/external/* ${FWK_INCLUDE_PATH}
+  cp -r ${OUTPUT_PATH}/../parser/inc/external/* ${FWK_INCLUDE_PATH}
+  cp -r ${OUTPUT_PATH}/../inc/external/* ${FWK_INCLUDE_PATH}
+
   if [ "x${PLATFORM}" = "xtrain" ]
   then
     tar -cf graphengine_lib.tar fwkacllib

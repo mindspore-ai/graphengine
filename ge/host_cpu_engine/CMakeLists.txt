@@ -70,7 +70,6 @@ target_compile_options(atc_host_cpu_engine PRIVATE
 )
 
 target_compile_definitions(atc_host_cpu_engine PRIVATE
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     FUNC_VISIBILITY
 )

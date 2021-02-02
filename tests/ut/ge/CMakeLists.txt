@@ -643,7 +643,7 @@ set(PASS_TEST_FILES
     "graph/passes/get_original_format_pass_unittest.cc"
     "graph/passes/pass_manager_unittest.cc"
     "graph/passes/permute_pass_unittest.cc"
-    #"graph/passes/print_op_pass_unittest.cc"
+    "graph/passes/print_op_pass_unittest.cc"
     "graph/passes/shape_operate_op_remove_pass_unittest.cc"
     "graph/passes/unused_and_isolated_op_remove_pass_unittest.cc"
     "graph/passes/variable_op_pass_unittest.cc"
@@ -661,7 +661,7 @@ set(PASS_TEST_FILES
     "graph/passes/trans_op_breadth_fusion_pass_unittest.cc"
     "graph/passes/trans_op_depth_fusion_pass_unittest.cc"
     "graph/passes/transop_nearby_allreduce_fusion_pass_unittest.cc"
-    #"graph/passes/constant_folding_pass_unittest.cc"
+    "graph/passes/constant_folding_pass_unittest.cc"
 	"graph/passes/fuse_data_nodes_with_common_input_pass_unittest.cc"
     "graph/passes/stop_gradient_pass_unittest.cc"
     "graph/passes/prevent_gradient_pass_unittest.cc"
@@ -675,10 +675,10 @@ set(PASS_TEST_FILES
     "graph/passes/variable_ref_delete_pass_unittest.cc"
     "graph/passes/dimension_adjust_pass_unittest.cc"
     "graph/passes/pass_utils_unittest.cc"
-    #"graph/passes/net_output_pass_unittest.cc"
+    "graph/passes/net_output_pass_unittest.cc"
     "graph/passes/no_use_reshape_remove_pass_unittest.cc"
     "graph/passes/infershape_pass_unittest.cc"
-    #"graph/passes/multi_batch_clone_pass_unittest.cc"
+    "graph/passes/multi_batch_clone_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -740,8 +740,8 @@ set(MULTI_PARTS_TEST_FILES
     "common/ge_format_util_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
-    #"graph/build/mem_assigner_unittest.cc"
-    #"graph/preprocess/graph_preprocess_unittest.cc"
+    "graph/build/mem_assigner_unittest.cc"
+    "graph/preprocess/graph_preprocess_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 

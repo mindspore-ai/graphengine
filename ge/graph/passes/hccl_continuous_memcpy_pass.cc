@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "graph/passes/hccl_memcpy_pass.h"
+#include "graph/passes/hccl_continuous_memcpy_pass.h"
 
 #include <string>
 
@@ -26,14 +26,12 @@
 #include "graph/utils/graph_utils.h"
 
 namespace {
-const int32_t kAnchorSize = 1;
 const int kAnchorNum = 0;
 const int32_t kAnchorAssignRefIndex = 0;
 const int32_t kAnchorAssignValueIndex = 1;
-const char *const kInputMutable = "_input_mutable";
 }  // namespace
 namespace ge {
-Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
+Status HcclContinuousMemcpyPass::Run(ge::ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
   for (const auto &node : graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
@@ -42,46 +40,46 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
       return INTERNAL_ERROR;
     }
 
-    Status ret = MutableInputProcess(graph, node);
+    Status ret = ContinuousInputProcess(graph, node);
     if (ret != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "failed MutableInputProcess, node_name:%s.", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "failed ProcessBroadcastMemcpy, node_name:%s.", node->GetName().c_str());
       return ret;
     }
+
+    ret = P2pmemInputProcess(graph, node);
+    if (ret != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "failed P2pmemInputProcess, node_name:%s.", node->GetName().c_str());
+      return ret;
+    }
+
   }
   return SUCCESS;
 }
 
-// If node has _input_mutable attr, means input mem may be modified when op execute.
-// In order to avoid to affect another op execute with same input when data modified,
-// need to inset memcpy node between.
-// also works on situation that input is variable or const.
-Status HcclMemcpyPass::MutableInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
+// If broadcast input size is bigger than 1, and input from variable,
+// cause by broadcast input memory should be continuous,
+// another featuremap mem will be allocated for broadcast input.
+// In this condition, move data from variable mem to broadcast input featuremap mem will be executed each step.
+// In order to avoid move action out of model, use memcpy node instead of move action code.
+Status HcclContinuousMemcpyPass::ContinuousInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
   auto op_desc = node->GetOpDesc();
 
-  bool node_input_mutable = false;
-  if (!AttrUtils::HasAttr(op_desc, kInputMutable)) {
-    return SUCCESS;
-  }
+  bool is_input_continuous = false;
+  (void)ge::AttrUtils::GetBool(op_desc, ATTR_NAME_CONTINUOUS_INPUT, is_input_continuous);
 
-  if (!AttrUtils::GetBool(op_desc, kInputMutable, node_input_mutable)) {
-    GELOGE(INTERNAL_ERROR, "node:%s get attr:_input_mutable failed.", node->GetName().c_str());
-    return FAILED;
-  }
-  if (!node_input_mutable) {
-    return SUCCESS;
-  }
+  if (is_input_continuous && op_desc->GetInputsSize() > 1) {
+    GELOGI("continuous input op is:%s.", op_desc->GetName().c_str());
+    // if input size bigger than one, insert memcpy between var data for support continous mem alloc
+    for (auto &hccl_in_anchor : node->GetAllInDataAnchors()) {
+      if (hccl_in_anchor == nullptr) {
+        continue;
+      }
+      auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
+      if (src_out_anchor == nullptr) {
+        GELOGE(INTERNAL_ERROR, "hcom op input has no peer anchor, node_name:%s", node->GetName().c_str());
+        return INTERNAL_ERROR;
+      }
 
-  GELOGI("input mutable hcom op is:%s.", op_desc->GetName().c_str());
-  for (auto &hccl_in_anchor : node->GetAllInDataAnchors()) {
-    if (hccl_in_anchor == nullptr) {
-      continue;
-    }
-    auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(src_out_anchor);
-
-    int32_t src_out_anchor_size = src_out_anchor->GetPeerInDataAnchors().size();
-    if (src_out_anchor_size == kAnchorSize) {
-      // Identity needs to be inserted between constant (/data) and hcomallreduce to avoid constant being cleared.
       if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
         Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
         if (ret != SUCCESS) {
@@ -89,19 +87,50 @@ Status HcclMemcpyPass::MutableInputProcess(const ComputeGraphPtr &graph, const N
           return ret;
         }
       }
-      continue;
-    }
-
-    Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
-    if (ret != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
-      return ret;
     }
   }
   return SUCCESS;
 }
 
-bool HcclMemcpyPass::IsDataNode(const std::string& node_type) {
+// if input is var type, and node input need p2p mem, then memcpy should be insert between the two
+Status HcclContinuousMemcpyPass::P2pmemInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
+  auto op_desc = node->GetOpDesc();
+
+  vector<int64_t> input_memory_types;
+  (void) ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, input_memory_types);
+
+  if (input_memory_types.empty()) {
+    return SUCCESS;
+  }
+
+  for (uint32_t index = 0; index < input_memory_types.size() && index < op_desc->GetInputsSize(); index++) {
+    if (input_memory_types[index] != RT_MEMORY_P2P_DDR) {
+      continue;
+    }
+
+    GELOGD("p2p input op is:%s.", op_desc->GetName().c_str());
+    auto hccl_in_anchor = node->GetInDataAnchor(index);
+    if (hccl_in_anchor == nullptr) {
+      continue;
+    }
+    auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
+    if (src_out_anchor == nullptr) {
+      GELOGE(INTERNAL_ERROR, "hcom op input has no peer anchor, node_name:%s", node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
+      Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
+      if (ret != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+        return ret;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+bool HcclContinuousMemcpyPass::IsDataNode(const std::string& node_type) {
   return (node_type == CONSTANTOP) || (node_type == VARIABLE) || (node_type == DATA) || (node_type == CONSTANT);
 }
 
@@ -111,7 +140,7 @@ bool HcclMemcpyPass::IsDataNode(const std::string& node_type) {
 /// @param [in] ge::OutDataAnchorPtr in_node
 /// @return ge::NodePtr
 ///
-NodePtr HcclMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+NodePtr HcclContinuousMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
   NodePtr pre_node = out_data_anchor->GetOwnerNode();
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
@@ -157,7 +186,7 @@ NodePtr HcclMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const O
 /// @param [in] std::string& node_name
 /// @return std::string
 ///
-std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
+std::string HcclContinuousMemcpyPass::CheckDuplicateName(const std::string &node_name) {
   std::string tmp_name = node_name;
   auto iter = node_num_map_.find(tmp_name);
   if (iter != node_num_map_.end()) {
@@ -176,7 +205,7 @@ std::string HcclMemcpyPass::CheckDuplicateName(const std::string &node_name) {
 /// @param [in] InDataAnchorPtr hccl_in_anchor
 /// @return status
 ///
-Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
+Status HcclContinuousMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                                             const InDataAnchorPtr &hccl_in_anchor) {
   GE_CHECK_NOTNULL(src_out_anchor->GetOwnerNode());
   GE_CHECK_NOTNULL(hccl_in_anchor->GetOwnerNode());
@@ -206,7 +235,7 @@ Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const 
 /// @param [in] InDataAnchorPtr hccl_in_anchor
 /// @return status
 ///
-Status HcclMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
+Status HcclContinuousMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                                                 const InDataAnchorPtr &hccl_in_anchor) {
   GELOGI("Between op %s and op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
          hccl_in_anchor->GetOwnerNode()->GetName().c_str());
@@ -244,7 +273,7 @@ Status HcclMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, co
 /// @param [in] InDataAnchorPtr hccl_in_anchor
 /// @return status
 ///
-Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &graph,
+Status HcclContinuousMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &graph,
                                                         const OutDataAnchorPtr &var_out_anchor,
                                                         const InDataAnchorPtr &hccl_in_anchor) {
   if (hccl_in_anchor->GetOwnerNode()->GetType() != HCOMBROADCAST) {
@@ -325,8 +354,8 @@ Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &g
 /// @param [in] ge::OutDataAnchorPtr variable node out anchor
 /// @return ge::NodePtr
 ///
-NodePtr HcclMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
-  GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
+NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+  GE_CHECK_NOTNULL_EXEC(graph , return nullptr);
   NodePtr pre_node = out_data_anchor->GetOwnerNode();
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
   if (pre_op_desc == nullptr) {
@@ -375,7 +404,7 @@ NodePtr HcclMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph, const Out
 /// @brief Clear Status, used for subgraph pass
 /// @return SUCCESS
 ///
-Status HcclMemcpyPass::ClearStatus() {
+Status HcclContinuousMemcpyPass::ClearStatus() {
   node_num_map_.clear();
   return SUCCESS;
 }

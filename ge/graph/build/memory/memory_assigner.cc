@@ -40,6 +40,11 @@ Status MemoryAssigner::AssignMemory(bool is_loop_graph, map<int64_t, size_t> &me
     return ge::FAILED;
   }
 
+  if (graph_mem_assigner.AssignMemory2HasRefAttrNode() != ge::SUCCESS) {
+    GELOGE(ge::FAILED, "Assign memory to node which has ref attr failed!");
+    return ge::FAILED;
+  }
+
   // Assign memory for reference
   if (graph_mem_assigner.AssignReferenceMemory() != ge::SUCCESS) {
     GELOGE(ge::FAILED, "Assign reference memory failed!");

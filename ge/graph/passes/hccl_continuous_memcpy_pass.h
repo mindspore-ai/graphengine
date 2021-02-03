@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_HCCL_MEMCPY_PASS_H_
-#define GE_GRAPH_PASSES_HCCL_MEMCPY_PASS_H_
+#ifndef GE_GRAPH_PASSES_HCCL_CONTINUOUS_MEMCPY_PASS_H_
+#define GE_GRAPH_PASSES_HCCL_CONTINUOUS_MEMCPY_PASS_H_
 
 #include <string>
 #include <unordered_map>
@@ -24,7 +24,7 @@
 #include "inc/graph_pass.h"
 
 namespace ge {
-class HcclMemcpyPass : public GraphPass {
+class HcclContinuousMemcpyPass : public GraphPass {
  public:
   Status Run(ge::ComputeGraphPtr graph);
   Status ClearStatus() override;
@@ -46,7 +46,9 @@ class HcclMemcpyPass : public GraphPass {
                                           const OutDataAnchorPtr &src_out_anchor,
                                           const InDataAnchorPtr &hccl_in_anchor);
 
-  Status MutableInputProcess(const ComputeGraphPtr &graph, const NodePtr node);
+  Status ContinuousInputProcess(const ComputeGraphPtr &graph, const NodePtr node);
+
+  Status P2pmemInputProcess(const ComputeGraphPtr &graph, const NodePtr node);
 
   bool IsDataNode(const std::string& node_type);
 

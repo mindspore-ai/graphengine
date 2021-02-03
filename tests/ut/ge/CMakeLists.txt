@@ -243,6 +243,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/cast_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transpose_transdata_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/hccl_memcpy_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/hccl_continuous_memcpy_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/global_step_insert_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/link_gen_mask_nodes_pass.cc"

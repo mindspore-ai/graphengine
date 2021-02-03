@@ -32,6 +32,8 @@
 #include "super_kernel/super_kernel.h"
 #include "super_kernel/super_kernel_factory.h"
 #include "cce/aicpu_engine_struct.h"
+#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
+#include "framework/common/debug/log.h"
 
 namespace {
 const uint8_t kL2LoadToDdr = 1;
@@ -964,39 +966,32 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
     return SUCCESS;
   }
 
-  std::unique_ptr<uint8_t[]> copy_ext_info;
-  copy_ext_info.reset(new(std::nothrow)uint8_t[ext_info.size()]);
-  GE_CHECK_NOTNULL(copy_ext_info);
-  auto sec_ret = memcpy_s(copy_ext_info.get(), ext_info.size(), ext_info.c_str(), ext_info.size());
-  if (sec_ret != EOK) {
-    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
-    return FAILED;
-  }
+  int32_t unknown_shape_type_val = 0;
+  (void) AttrUtils::GetInt(op_desc_, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
+  UnknowShapeOpType unknown_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+  uint32_t num_inputs = op_desc_->GetInputsSize();
+  uint32_t num_outputs = op_desc_->GetOutputsSize();
+  std::unique_ptr<ge::hybrid::AicpuExtInfoHandler> ext_handle(
+          new(std::nothrow) ::ge::hybrid::AicpuExtInfoHandler(op_desc_->GetName(),
+                                                              num_inputs,
+                                                              num_outputs,
+                                                              unknown_type));
+  GE_CHK_BOOL_RET_STATUS(ext_handle != nullptr, FAILED, "Malloc aicpu_ext_handle mem failed!");
+  GE_CHK_STATUS_RET(ext_handle->Parse(ext_info),
+                    "Parse kernel ext info failed, kernel_ext_info_size=%zu.", ext_info.size());
+  GE_CHK_STATUS_RET(ext_handle->UpdateSessionInfoSessionId(davinci_model_->GetSessionId()),
+                    "Update session info session id failed.");
+  GELOGD("Update aicpu_task ext_info session_info session_id is %lu", davinci_model_->GetSessionId());
+  GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
+  GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
 
-  auto ext_info_data = copy_ext_info.get();
-  size_t offset = 0;
-  while (offset + sizeof(aicpu::FWKAdapter::ExtInfo) <= ext_info.size()) {
-    auto aicpu_ext_info = reinterpret_cast<aicpu::FWKAdapter::ExtInfo *>(ext_info_data + offset);
-    GELOGD("Ext infoType=%d, infoLen=%u.", aicpu_ext_info->infoType, aicpu_ext_info->infoLen);
-    if (aicpu_ext_info->infoType == aicpu::FWKAdapter::FWK_ADPT_EXT_SESSION_INFO) {
-      GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(SessionInfo), PARAM_INVALID,
-                             "Parse ext session info failed as infoLen must be %zu but %u.",
-                             sizeof(SessionInfo), aicpu_ext_info->infoLen);
-      SessionInfo *session_info = reinterpret_cast<SessionInfo *>(aicpu_ext_info->infoMsg);
-      session_info->sessionId = davinci_model_->GetSessionId();
-      session_info->sessFlag = true;
-      GELOGD("Update aicpu_task ext_info session_info session_id is %lu", session_info->sessionId);
-    }
-    offset += sizeof(aicpu::FWKAdapter::ExtInfo);
-    offset += aicpu_ext_info->infoLen;
-  }
-
-  auto rt_ret = rtMalloc(&aicpu_ext_info_addr_, ext_info.size(), RT_MEMORY_HBM);
+  auto rt_ret = rtMalloc(&aicpu_ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_info.size(), ext_info_data, ext_info.size(), RT_MEMCPY_HOST_TO_DEVICE);
+  rt_ret = rtMemcpy(aicpu_ext_info_addr_, ext_handle->GetExtInfoLen(), ext_handle->GetExtInfo(),
+                    ext_handle->GetExtInfoLen(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
     return RT_ERROR_TO_GE_STATUS(rt_ret);

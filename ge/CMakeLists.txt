@@ -258,6 +258,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/get_original_format_pass.cc"
     "graph/passes/guarantee_const_pass.cc"
     "graph/passes/hccl_memcpy_pass.cc"
+    "graph/passes/hccl_continuous_memcpy_pass.cc"
     "graph/passes/identity_pass.cc"
     "graph/passes/ref_identity_delete_op_pass.cc"
     "graph/passes/infershape_pass.cc"
@@ -595,6 +596,7 @@ set(INFER_SRC_LIST
     "graph/passes/cast_remove_pass.cc"
     "graph/passes/transpose_transdata_pass.cc"
     "graph/passes/hccl_memcpy_pass.cc"
+    "graph/passes/hccl_continuous_memcpy_pass.cc"
     "graph/passes/flow_ctrl_pass.cc"
     "graph/passes/global_step_insert_pass.cc"
     "graph/passes/link_gen_mask_nodes_pass.cc"
@@ -707,7 +709,7 @@ target_compile_options(ge_runner PRIVATE
     -O2
     -fno-common
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
 
 target_include_directories(ge_runner SYSTEM PRIVATE
@@ -776,7 +778,7 @@ target_compile_options(ge_compiler PRIVATE
     -O2
     -fno-common
     $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
-    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
 )
 
 target_include_directories(ge_compiler SYSTEM PRIVATE

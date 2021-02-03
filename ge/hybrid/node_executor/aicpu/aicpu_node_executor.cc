@@ -136,6 +136,7 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
     return SUCCESS;
   }
 
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(false), "UpdateExecuteMode failed.");
   for (auto i = 0; i < node_item_->num_inputs; ++i) {
     auto input_desc = node_item_->MutableInputDesc(i);
     GE_CHECK_NOTNULL(input_desc);

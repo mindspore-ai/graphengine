@@ -47,6 +47,7 @@ const char *const kEngineNameDefault = "default";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kFileNameSuffix = "online";
+const char *const kAicpuAllshape = "_AllShape";
 const size_t kDynamicDimSize = 1;
 const int64_t kDynamicDimValue = -2;
 
@@ -721,8 +722,12 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
   GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
 
+  bool all_shape = false;
   bool dynamic_flag = false;
-  if (CheckShapeReset(op_desc, dynamic_flag) == SUCCESS && dynamic_flag) {
+  (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
+  CheckShapeReset(op_desc, dynamic_flag);
+  if (dynamic_flag || all_shape) {
+    GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;
     GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(inputs, inputs_dynamic));

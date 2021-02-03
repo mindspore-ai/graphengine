@@ -74,6 +74,7 @@ struct NodeItem {
   NodePtr node;
   OpDesc *op_desc;
   int node_id = -1;
+  int group = -1;
   int num_inputs = 0;
   int num_outputs = 0;
   int input_start = -1;

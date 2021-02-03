@@ -81,6 +81,7 @@ set(SRC_LIST
     "../hybrid/executor/node_done_manager.cc"
     "../hybrid/executor/hybrid_profiler.cc"
     "../hybrid/executor/hybrid_model_executor.cc"
+    "../hybrid/executor/hybrid_model_pipeline_executor.cc"
     "../hybrid/executor/hybrid_model_async_executor.cc"
     "../hybrid/executor/hybrid_execution_context.cc"
     "../hybrid/executor/subgraph_context.cc"

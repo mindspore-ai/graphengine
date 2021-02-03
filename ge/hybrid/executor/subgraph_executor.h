@@ -36,6 +36,11 @@ class SubgraphExecutor {
   SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape = false);
   ~SubgraphExecutor();
 
+  Status InitForPartialExecution(const std::vector<TensorValue> &inputs,
+                                 const std::vector<ConstGeTensorDescPtr> &input_desc);
+
+  Status PartialExecuteAsync(int task_group);
+
   /**
    * Execute subgraph async, output tensor address(not data) and output tensor descriptions are
    * valid after this method returned
@@ -89,15 +94,15 @@ class SubgraphExecutor {
  private:
   Status PrepareForExecution(GraphExecutionContext *ctx, NodeState &node_state);
   Status EnableOutputZeroCopy(const std::vector<TensorValue> &outputs);
-  static Status InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state);
+  Status InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) const;
   Status Init(const std::vector<TensorValue> &inputs,
               const std::vector<ConstGeTensorDescPtr> &input_desc);
   Status InitInputsForUnknownShape(const std::vector<TensorValue> &inputs,
                                    const std::vector<ConstGeTensorDescPtr> &input_desc);
   Status InitInputsForKnownShape(const std::vector<TensorValue> &inputs);
   Status ExecuteAsyncForKnownShape(const std::vector<TensorValue> &inputs);
-  Status ScheduleTasks();
-  Status PrepareNodes();
+  Status ScheduleTasks(int group = -1);
+  Status PrepareNodes(int group = -1);
   Status LaunchTasks();
   Status SetOutputsToParentNode(TaskContext &task_context);
 

@@ -49,9 +49,9 @@ class AicpuNodeTaskBase : public NodeTask {
 
   virtual Status UpdateExtInfo();
 
-  virtual Status UpdateOutputShapeFromExtInfo();
+  virtual Status UpdateOutputShapeFromExtInfo(TaskContext &task_context);
 
-  Status UpdateShapeToOutputDesc(const GeShape &shape_new, int32_t output_index, GeTensorDescPtr &output_desc);
+  Status UpdateShapeToOutputDesc(TaskContext &task_context, const GeShape &shape_new, int32_t output_index);
 
   virtual Status LaunchTask(TaskContext &context) = 0;
 

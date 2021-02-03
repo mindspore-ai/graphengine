@@ -53,7 +53,7 @@ class HybridModelBuilder {
                                   std::vector<NodeItem *> &data_nodes,
                                   bool is_root_graph);
   static Status ResolveRefIo(NodeItem &node_item);
-  Status BuildOutputMapping(GraphItem &partitioned_call, const NodeItem &node_item, bool is_root_graph);
+  Status BuildOutputMapping(GraphItem &partitioned_call, const NodeItem &node_item);
   Status ValidateParams();
   Status LoadGraph();
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);

@@ -287,6 +287,16 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
              src_node_item->NodeName().c_str());
       src_node_item->has_observer = true;
       node_item.dependents_for_execution.emplace_back(src_node);
+      node_item.has_observer = true;
+      for (auto &dst_node : ge_node->GetOutNodes()) {
+        if (dst_node == nullptr) {
+          continue;
+        }
+
+        NodeItem *dst_node_item = nullptr;
+        GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(dst_node, &dst_node_item));
+        dst_node_item->dependents_for_execution.emplace_back(ge_node);
+      }
     } else if (src_node_item->shape_inference_type == DEPEND_COMPUTE) {
       GELOGD("[%s] Add input data dependent node [%s] due to inference type = DEPEND_COMPUTE",
              node_item.NodeName().c_str(),
@@ -614,6 +624,15 @@ Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGrap
       continue;
     }
 
+    if (op_desc->HasAttr(ATTR_STAGE_LEVEL)) {
+      uint32_t stage_level = UINT32_MAX;
+      if (AttrUtils::GetInt(node->GetOpDesc(), ATTR_STAGE_LEVEL, stage_level)) {
+        for (const auto &stage_node : subgraph->GetAllNodes()) {
+          GELOGD("Set ATTR_STAGE_LEVEL on node %s, stage_level=%u", stage_node->GetName().c_str(), stage_level);
+          (void)AttrUtils::SetInt(stage_node->GetOpDesc(), ATTR_STAGE_LEVEL, stage_level);
+        }
+      }
+    }
     GE_CHK_GRAPH_STATUS_RET(UnfoldSubgraph(root_graph, *merged_graph, *subgraph),
                             "[%s] Failed to merge subgraph.",
                             subgraph->GetName().c_str());
@@ -621,6 +640,14 @@ Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGrap
 
   // invoke before adding subgraphs. in case modify node id in known-shaped subgraphs.
   GE_CHK_GRAPH_STATUS_RET(merged_graph->TopologicalSorting(), "Failed to invoke TopologicalSorting on merged graph.");
+  GE_DUMP(merged_graph, "hybrid_merged_graph_BeforeStageSort");
+  merged_graph->TopologicalSorting([](const NodePtr &a, const NodePtr &b) -> bool {
+    uint32_t a_level = UINT32_MAX;
+    (void)AttrUtils::GetInt(a->GetOpDesc(), ATTR_STAGE_LEVEL, a_level);
+    uint32_t b_level = UINT32_MAX;
+    (void)AttrUtils::GetInt(b->GetOpDesc(), ATTR_STAGE_LEVEL, b_level);
+    return a_level < b_level;
+  });
 
   for (auto &remained_subgraph : root_graph.GetAllSubgraphs()) {
     GELOGD("Adding subgraph [%s] to merged-graph.", remained_subgraph->GetName().c_str());
@@ -675,41 +702,17 @@ Status HybridModelBuilder::UnfoldSubgraph(ComputeGraph &root_graph,
 }
 
 Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item,
-                                              const NodeItem &node_item,
-                                              bool is_root_graph) {
-  auto output_size = node_item.num_inputs;
-  graph_item.output_edges_.resize(output_size);
-
-  for (auto &in_data_anchor : node_item.node->GetAllInDataAnchors()) {
-    auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(peer_out_anchor);
-    auto src_node = peer_out_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(src_node);
-
-    auto src_node_item = GetNodeItem(src_node);
-    GE_CHECK_NOTNULL(src_node_item);
-    auto output_idx = in_data_anchor->GetIdx();
-    auto output_offset = src_node_item->output_start + peer_out_anchor->GetIdx();
-    GELOGI("Output[%d], node = %s, output_index = %d, output_offset = %d ",
-           output_idx,
-           src_node_item->NodeName().c_str(),
-           peer_out_anchor->GetIdx(),
-           output_offset);
-
-    GE_CHECK_LE(output_idx, output_size - 1);
-    graph_item.output_edges_[output_idx] = {src_node_item, peer_out_anchor->GetIdx()};
-  }
-
-  if (!is_root_graph) {
-    for (uint32_t i = 0; i < static_cast<uint32_t>(output_size); ++i) {
-      uint32_t p_index = i;
-      // Net output of Subgraph of while do not have parent index
-      if (AttrUtils::GetInt(node_item.op_desc->GetInputDesc(i), ATTR_NAME_PARENT_NODE_INDEX, p_index)) {
-        GELOGD("[%s] Parent index not set for input[%u].", node_item.NodeName().c_str(), i);
-      }
-
-      graph_item.output_index_mapping_.emplace_back(p_index);
+                                              const NodeItem &node_item) {
+  auto output_size = node_item.op_desc->GetAllInputsSize();
+  GE_CHECK_LE(output_size, UINT32_MAX);
+  for (uint32_t i = 0; i < static_cast<uint32_t>(output_size); ++i) {
+    uint32_t p_index = i;
+    // Net output of Subgraph of while do not have parent index
+    if (AttrUtils::GetInt(node_item.op_desc->GetInputDesc(i), ATTR_NAME_PARENT_NODE_INDEX, p_index)) {
+      GELOGD("[%s] Parent index not set for input[%u].", node_item.NodeName().c_str(), i);
     }
+
+    graph_item.output_index_mapping_.emplace_back(p_index);
   }
 
   return SUCCESS;
@@ -732,6 +735,7 @@ Status HybridModelBuilder::LoadGraph() {
 
   GE_CHK_STATUS_RET(LoadDynamicSubgraph(*root_graph, true), "Failed to load root graph.");
   GELOGD("Done loading root graph successfully.");
+  GE_CHK_STATUS_RET(hybrid_model_.root_graph_item_->GroupNodes(), "Failed to group nodes for root graph");
 
   for (auto &sub_graph : root_graph->GetAllSubgraphs()) {
     GE_CHECK_NOTNULL(sub_graph);
@@ -805,6 +809,7 @@ Status HybridModelBuilder::VarNodeToTensor(const NodePtr &var_node, std::unique_
   // var size is only for checking, will not allocate any memory by it
   tensor.reset(new(std::nothrow)TensorValue(dev_mem, static_cast<size_t>(var_size)));
   GE_CHECK_NOTNULL(tensor);
+  GELOGI("Get var memory addr %p for node %s, size = %lld, mem_type=%u", dev_mem, var_name.c_str(), var_size, mem_type);
   return SUCCESS;
 }
 
@@ -1737,8 +1742,14 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
       for (const auto &task_def : task_def_lists) {
         hybrid_model_.task_defs_[profiling_node].emplace_back(task_def);
       }
+      if (op_desc->HasAttr(ATTR_STAGE_LEVEL)) {
+        uint32_t stage_level = UINT32_MAX;
+        (void)ge::AttrUtils::GetInt(op_desc, ATTR_STAGE_LEVEL, stage_level);
+        (void)ge::AttrUtils::SetInt(node_ptr->GetOpDesc(), ATTR_STAGE_LEVEL, stage_level);
+      }
       NodeItem *node_item = nullptr;
       GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(profiling_node, &node_item));
+      GE_CHECK_NOTNULL(node_item);
       node_item->input_start = 0;
       node_item->output_start = 0;
       graph_item.node_items_.emplace_back(node_item);
@@ -1812,8 +1823,14 @@ Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const
       for (const auto &task_def : task_def_lists) {
         hybrid_model_.task_defs_[profiling_node].emplace_back(task_def);
       }
+      if (op_desc->HasAttr(ATTR_STAGE_LEVEL)) {
+        uint32_t stage_level = UINT32_MAX;
+        (void)ge::AttrUtils::GetInt(op_desc, ATTR_STAGE_LEVEL, stage_level);
+        (void)ge::AttrUtils::SetInt(profiling_node->GetOpDesc(), ATTR_STAGE_LEVEL, stage_level);
+      }
       NodeItem *node_item = nullptr;
       GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(profiling_node, &node_item));
+      GE_CHECK_NOTNULL(node_item);
       node_item->input_start = 0;
       node_item->output_start = 0;
       graph_item.node_items_.emplace_back(node_item);
@@ -1859,7 +1876,9 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
       data_nodes.emplace_back(node_item);
     } else if (op_type == NETOUTPUT) {
       graph_item->output_node_ = node_item;
-      GE_CHK_STATUS_RET_NOLOG(BuildOutputMapping(*graph_item, *node_item, is_root_graph));
+      if (!is_root_graph) {
+        GE_CHK_STATUS_RET_NOLOG(BuildOutputMapping(*graph_item, *node_item));
+      }
     }
     GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeBefore(*graph_item, node));
     graph_item->node_items_.emplace_back(node_item);

@@ -24,7 +24,7 @@
 namespace ge {
 namespace hybrid {
 namespace {
-const int kMaxEvents = 10000;
+const int kMaxEvents = 1024 * 500;
 const int kEventDescMax = 512;
 const int kMaxEventTypes = 8;
 const int kIndent = 8;
@@ -46,11 +46,14 @@ void HybridProfiler::RecordEvent(EventType event_type, const char *fmt, ...) {
   }
 
   va_end(args);
-  std::string event = buf;
   auto index = counter_++;
+  if (index >= static_cast<int>(events_.size())) {
+    GELOGE(INTERNAL_ERROR, "index out of range. index = %d, max event size = %zu", index, events_.size());
+    return;
+  }
   auto &evt = events_[index];
   evt.timestamp = std::chrono::system_clock::now();
-  evt.desc = std::move(event);
+  evt.desc = std::string(buf);
   evt.event_type = event_type;
 }
 
@@ -78,7 +81,7 @@ void HybridProfiler::Dump(std::ostream &output_stream) {
   auto cost_dump = std::chrono::duration_cast<std::chrono::microseconds>(end_dump - start_dump).count();
   output_stream << std::setw(kIndent) << elapsed_dump << "\t\t" << cost_dump
                 << "\t\t" << "[Dump profiling]" << std::endl;
-  events_.clear();
+  Reset();
 }
 
 void HybridProfiler::Reset() {

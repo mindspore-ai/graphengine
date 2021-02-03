@@ -34,6 +34,14 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
   GELOGD("[%s] ShapeInferenceState created, pending shape count = %d",
          node_item.NodeName().c_str(),
          this->num_pending_shapes_);
+
+  for (int i = 0; i < node_item.num_inputs; ++i){
+    input_tensor_desc.emplace_back(std::move(*node_item.MutableInputDesc(i)));
+  }
+
+  for (int i = 0; i < node_item.num_outputs; ++i){
+    output_tensor_desc.emplace_back(std::move(*node_item.MutableOutputDesc(i)));
+  }
 }
 
 Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target) {
@@ -56,11 +64,10 @@ Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target
          tensor_size);
 
   std::lock_guard<std::mutex> lk(mu_);
-  auto tensor_desc = node_item.MutableInputDesc(idx);
-  GE_CHECK_NOTNULL(tensor_desc);
-  tensor_desc->SetShape(target.GetShape());
-  tensor_desc->SetOriginShape(target.GetOriginShape());
-  (void) TensorUtils::SetSize(*tensor_desc, tensor_size);
+  auto &input_desc = input_tensor_desc[idx];
+  input_desc.SetShape(target.GetShape());
+  input_desc.SetOriginShape(target.GetOriginShape());
+  (void) TensorUtils::SetSize(input_desc, tensor_size);
   if (--num_pending_shapes_ <= 0) {
     ready_cv_.notify_all();
   }
@@ -115,12 +122,27 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
     }
   }
 
+  for (size_t i = 0; i < input_tensor_desc.size(); ++i) {
+    auto dst_tensor_desc = node_item.op_desc->MutableInputDesc(i);
+    if (dst_tensor_desc == nullptr) {
+      continue;
+    }
+
+    auto &tensor_desc = input_tensor_desc[i];
+    int64_t tensor_size = -1;
+    (void) TensorUtils::GetSize(tensor_desc, tensor_size);
+
+    dst_tensor_desc->SetShape(tensor_desc.MutableShape());
+    dst_tensor_desc->SetOriginShape(tensor_desc.GetOriginShape());
+    (void) TensorUtils::SetSize(*dst_tensor_desc, tensor_size);
+  }
+
   for (auto &p : shape_futures) {
     auto idx = p.first;
     auto &future = p.second;
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] Start", idx);
-    GeTensorDescPtr src_tensor_desc;
-    GE_CHK_STATUS_RET_NOLOG(future.GetTensorDesc(src_tensor_desc));
+    const GeTensorDesc* src_tensor_desc = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(future.GetTensorDesc(&src_tensor_desc));
     GE_CHECK_NOTNULL(src_tensor_desc);
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] End", idx);
 
@@ -142,10 +164,28 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
   return SUCCESS;
 }
 
-ShapeFuture::ShapeFuture(NodePtr src_node,
+const vector<GeTensorDesc> &ShapeInferenceState::GetOutputTensorDesc() const {
+    return output_tensor_desc;
+}
+
+Status ShapeInferenceState::UpdateOutputDesc() {
+  for (size_t i = 0; i < output_tensor_desc.size(); ++i) {
+    auto src_tensor_desc = node_item.MutableOutputDesc(i);
+    GE_CHECK_NOTNULL(src_tensor_desc);
+    auto &dst_tensor_desc = output_tensor_desc[i];
+    dst_tensor_desc.SetShape(src_tensor_desc->MutableShape());
+    dst_tensor_desc.SetOriginShape(src_tensor_desc->GetOriginShape());
+    int64_t tensor_size = -1;
+    (void) TensorUtils::GetSize(*src_tensor_desc, tensor_size);
+    (void) TensorUtils::SetSize(dst_tensor_desc, tensor_size);
+  }
+  return SUCCESS;
+}
+
+ShapeFuture::ShapeFuture(NodeState *src_node,
                          uint32_t src_index,
                          SubgraphContext *subgraph_context)
-    : src_node_(std::move(src_node)), src_index_(src_index), subgraph_context_(subgraph_context) {
+    : src_node_(src_node), src_index_(src_index), subgraph_context_(subgraph_context) {
 }
 
 NodeState::NodeState(const NodeItem &node_item, SubgraphContext *subgraph_context)
@@ -187,6 +227,13 @@ Status NodeState::WaitForPrepareDone() {
 
   return SUCCESS;
 }
+Status NodeState::UpdateOutputShapes(int index, const GeShape &shape, const GeShape &ori_shape) {
+  auto self_tensor_desc = op_desc_->MutableOutputDesc(index);
+  GE_CHECK_NOTNULL(self_tensor_desc);
+  self_tensor_desc->SetShape(shape);
+  self_tensor_desc->SetOriginShape(ori_shape);
+  return SUCCESS;
+}
 
 void NodeState::SetTaskContext(std::shared_ptr<TaskContext> &task_context) {
   task_context_ = task_context;
@@ -198,17 +245,19 @@ std::shared_ptr<TaskContext> NodeState::GetTaskContext() {
 
 Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {
   GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
-  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");
-  shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->MutableShape();
-  ori_shape = src_node_->GetOpDesc()->MutableOutputDesc(src_index_)->GetOriginShape();
+  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_->GetNodeItem()->node), "cancelled");
+  auto &output_desc = src_node_->GetShapeInferenceState().GetOutputTensorDesc().at(src_index_);
+  shape = output_desc.GetShape();
+  ori_shape = output_desc.GetOriginShape();
   GELOGD("Get shape from %s:%u. shape = [%s]", src_node_->GetName().c_str(), src_index_, shape.ToString().c_str());
   return SUCCESS;
 }
 
-Status ShapeFuture::GetTensorDesc(GeTensorDescPtr &tensor_desc) {
+Status ShapeFuture::GetTensorDesc(const GeTensorDesc **tensor_desc) {
+  GE_CHECK_NOTNULL(tensor_desc);
   GELOGD("Start to wait node: %s for getting shape", src_node_->GetName().c_str());
-  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_), "cancelled");
-  tensor_desc = src_node_->GetOpDesc()->MutableOutputDesc(src_index_);
+  HYBRID_CHK_STATUS_RET(subgraph_context_->Await(src_node_->GetNodeItem()->node), "cancelled");
+  *tensor_desc = &src_node_->GetShapeInferenceState().GetOutputTensorDesc().at(src_index_);
   return SUCCESS;
 }
 }  // namespace hybrid

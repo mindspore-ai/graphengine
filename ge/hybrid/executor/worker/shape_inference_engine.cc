@@ -109,7 +109,8 @@ Status ShapeInferenceEngine::AwaitDependentNodes(NodeState &node_state) {
   return SUCCESS;
 }
 
-Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
+Status ShapeInferenceEngine::PropagateOutputShapes(NodeState &node_state) {
+  auto &node_item = *node_state.GetNodeItem();
   if (node_item.is_output_shape_static) {
     return SUCCESS;
   }
@@ -140,9 +141,8 @@ Status ShapeInferenceEngine::PropagateOutputShapes(const NodeItem &node_item) {
       // in case type 3 and 4, shape will be valid after computing is done
       auto &infer_state = dst_node_state->GetShapeInferenceState();
       if (shape_is_future) {
-        ShapeFuture future(node_item.node, i, subgraph_context_);
-        infer_state.UpdateInputShapeFuture(dst_input_index_and_node.first,
-                                           std::move(future));
+        ShapeFuture future(&node_state, i, subgraph_context_);
+        infer_state.UpdateInputShapeFuture(dst_input_index_and_node.first, std::move(future));
       } else {
         GE_CHK_STATUS_RET_NOLOG(infer_state.UpdateInputShape(dst_input_index_and_node.first, *output_desc));
       }

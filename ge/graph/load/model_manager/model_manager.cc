@@ -328,7 +328,8 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     GELOGE(FAILED, "davinci_model is nullptr");
     return FAILED;
   }
-
+  davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
+                                                   timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
   davinci_model->SetId(model_id);
   davinci_model->SetDeviceId(GetContext().DeviceId());
 
@@ -355,10 +356,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     InsertModel(model_id, davinci_model);
 
     GELOGI("Parse model %u success.", model_id);
-
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
-                                                     timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
-    davinci_model->SetProfileTime(MODEL_LOAD_END);
   } while (0);
 
   GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
@@ -1085,6 +1082,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed since other exception raise");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
+    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
+                                                     timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
     ret = davinci_model->Assign(ge_model);
     if (ret != SUCCESS) {
       GELOGW("assign model failed.");
@@ -1121,11 +1120,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     InsertModel(model_id, davinci_model);
 
     GELOGI("Parse model %u success.", model_id);
-
-    davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
-                                                     timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
-    davinci_model->SetProfileTime(MODEL_LOAD_END);
-
+    
     GE_IF_BOOL_EXEC(ret == SUCCESS, device_count++);
     return SUCCESS;
   } while (0);

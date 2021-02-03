@@ -245,7 +245,7 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
       std::vector<std::pair<int64_t, int64_t>> range;
       auto range_ret = tensor_desc->GetShapeRange(range);
       GE_CHK_BOOL_RET_STATUS(range_ret == GRAPH_SUCCESS, INTERNAL_ERROR,
-                             "Get shape range failed, ret=%u.",  range_ret);
+                             "Get shape range failed, ret=%u.", range_ret);
       for (size_t k = 0; k < range.size(); ++k) {
         if (k >= shape.GetDimNum()) {
           break;

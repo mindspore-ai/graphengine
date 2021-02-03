@@ -43,6 +43,7 @@ constexpr int64_t kInvalidGroupKey = -1;
 constexpr uint32_t kSKTSingleSize = 1;
 const char *kIsLastNode = "is_last_node";
 const char *kIsFirstNode = "is_first_node";
+const char *const kAicpuAllshape = "_AllShape";
 const int64_t kCloseSkt = 100;
 const uint32_t kAddrLen = sizeof(void *);
 const int kBaseInt = 10;
@@ -985,6 +986,23 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
   GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
   GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
 
+  bool all_shape = false;
+  (void)AttrUtils::GetBool(op_desc_, kAicpuAllshape, all_shape);
+  if (all_shape) {
+    GELOGD("Aicpu all_shape kernel need to update io shape.");
+    for (uint32_t i = 0; i < num_inputs; i++) {
+      auto input_desc = op_desc_->MutableInputDesc(i);
+      GE_CHECK_NOTNULL(input_desc);
+      GE_CHK_STATUS_RET(ext_handle->UpdateInputShapeAndType(i, *input_desc),
+                        "Input[%u] update input shape failed.", i);
+    }
+    for (uint32_t j = 0; j < num_outputs; j++) {
+      auto output_desc = op_desc_->MutableOutputDesc(j);
+      GE_CHECK_NOTNULL(output_desc);
+      GE_CHK_STATUS_RET(ext_handle->UpdateOutputShapeAndType(j, *output_desc),
+                        "Output[%u] update output shape failed.", j);
+    }
+  }
   auto rt_ret = rtMalloc(&aicpu_ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());

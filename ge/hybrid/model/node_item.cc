@@ -236,8 +236,8 @@ void NodeItem::ResolveUnknownShapeType() {
 Status NodeItem::Init() {
   GE_CHK_STATUS_RET_NOLOG(InitInputsAndOutputs());
   GE_CHK_STATUS_RET_NOLOG(ResolveDynamicState());
+  ResolveUnknownShapeType();
   if (is_dynamic) {
-    ResolveUnknownShapeType();
     GE_CHK_STATUS_RET_NOLOG(ResolveStaticInputsAndOutputs());
     GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   }

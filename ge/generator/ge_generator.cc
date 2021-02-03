@@ -632,8 +632,8 @@ namespace {
       }
       auto op_desc = node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
-      (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, is_dynamic);
-      if (!is_dynamic) {
+      (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, support_dynamic);
+      if (!support_dynamic) {
         GELOGW("Node[%s] doesn't support dynamic shape.", node->GetName().c_str());
         (void)AttrUtils::SetBool(ge_model, kAttrSupportDynamicShape, false);
         return SUCCESS;
@@ -717,7 +717,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   }
   const ComputeGraphPtr root_graph = ge_root_model->GetRootGraph();
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
-  E_CHK_STATUS_RET_NOLOG(CheckDynamicSupport(ge_model, root_graph));
+  GE_CHK_STATUS_RET_NOLOG(CheckDynamicSupport(ge_model, root_graph));
   GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
 
   bool all_shape = false;

@@ -52,7 +52,7 @@ Status HybridModel::Init(bool is_single_op) {
   return SUCCESS;
 }
 
-TensorValue* HybridModel::GetVariable(const string &name) const {
+TensorValue *HybridModel::GetVariable(const string &name) const {
   auto it = variable_tensors_.find(name);
   if (it == variable_tensors_.end()) {
     GELOGD("Failed to get variable tensor. var name = [%s]", name.c_str());
@@ -113,7 +113,7 @@ GeModelPtr HybridModel::GetGeModel(const NodePtr &node) const {
   return it->second;
 }
 
-const GraphItem* HybridModel::GetRootGraphItem() const {
+const GraphItem *HybridModel::GetRootGraphItem() const {
   return root_graph_item_.get();
 }
 

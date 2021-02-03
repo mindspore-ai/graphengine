@@ -23,6 +23,7 @@
 #include "external/ge/ge_api_types.h"
 #include "graph/load/model_manager/data_inputer.h"
 #include "hybrid/executor/hybrid_model_executor.h"
+#include "hybrid/executor/hybrid_model_pipeline_executor.h"
 #include "runtime/stream.h"
 
 namespace ge {
@@ -81,6 +82,7 @@ class HybridModelAsyncExecutor {
   std::atomic_bool run_flag_;
   std::unique_ptr<DataInputer> data_inputer_;
   std::unique_ptr<HybridModelExecutor> executor_;
+  std::unique_ptr<HybridModelPipelineExecutor> pipe_executor_;
   std::future<Status> future_;
   uint64_t iterator_count_ = 0;
 

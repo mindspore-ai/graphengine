@@ -25,6 +25,7 @@
 #include "framework/common/ge_types.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/common/npu_memory_allocator.h"
+#include "hybrid/executor/node_state.h"
 #include "hybrid/executor/rt_callback_manager.h"
 #include "hybrid/model/node_item.h"
 
@@ -35,7 +36,7 @@ class SubgraphContext;
 
 class TaskContext {
  public:
-  static std::unique_ptr<TaskContext> Create(const NodeItem &node_item,
+  static std::unique_ptr<TaskContext> Create(NodeState *node_state,
                                              GraphExecutionContext *execution_context,
                                              SubgraphContext *subgraph_context);
 
@@ -45,6 +46,7 @@ class TaskContext {
   int NumOutputs() const;
   size_t NumWorkspaces() const;
   const NodeItem &GetNodeItem() const;
+  NodeState *GetNodeState() const;
   const char *GetNodeName() const;
   TensorValue *MutableInput(int index);
   ConstGeTensorDescPtr GetInputDesc(int index) const;
@@ -58,7 +60,7 @@ class TaskContext {
   const TensorValue *GetOutput(int index) const;
   TensorValue *MutableOutput(int index);
   TensorValue *GetVariable(const std::string &name);
-  rtStream_t GetStream();
+  rtStream_t GetStream() const;
   int64_t GetSessionId() const;
   uint64_t GetIterationNumber() const;
 
@@ -119,12 +121,13 @@ class TaskContext {
 
  private:
   TaskContext(GraphExecutionContext *execution_context,
-              const NodeItem *node_item,
+              NodeState *node_state,
               SubgraphContext *subgraph_context);
 
   static string TensorDesc2String(const GeTensorDesc &desc);
   Status AllocateTensor(const GeTensorDesc &tensor_desc, TensorValue &tensor, AllocationAttr *attr);
 
+  NodeState *node_state_ = nullptr;
   const NodeItem *node_item_ = nullptr;
   bool force_infer_shape_ = false;
   GraphExecutionContext *execution_context_;

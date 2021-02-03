@@ -30,23 +30,21 @@ namespace ge {
 namespace hybrid {
 class CallbackManager {
  public:
-  explicit CallbackManager(rtStream_t stream);
-
+  CallbackManager() = default;
   ~CallbackManager() = default;
 
   Status Init();
 
   Status Destroy();
 
-  Status RegisterCallback(rtCallback_t callback, void *user_data);
-  Status RegisterCallback(const std::function<void()> &callback);
+  Status RegisterCallback(rtStream_t stream, rtCallback_t callback, void *user_data);
+  Status RegisterCallback(rtStream_t stream, const std::function<void()> &callback);
 
  private:
   Status CallbackProcess(rtContext_t context);
   static void RtCallbackFunc(void *data);
 
   BlockingQueue<std::pair<rtEvent_t, std::pair<rtCallback_t, void *>>> callback_queue_;
-  rtStream_t stream_;
   std::future<Status> ret_future_;
 };
 }  // namespace hybrid

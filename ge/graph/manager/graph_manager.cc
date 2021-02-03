@@ -3032,6 +3032,7 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     return FAILED;
   }
   GE_TIMESTAMP_EVENT_END(GraphPartitionDynamicShape, "OptimizeSubgraph::GraphPartitionDynamicShape");
+  GE_DUMP(compute_graph, "AfterDynamicShapePartition");
   GE_TIMESTAMP_START(GraphPartition);
   GraphPartitioner &partitioner = GetCompilerStages(graph_node->GetGraphId()).partitioner;
   ret = partitioner.Partition(compute_graph, GraphPartitioner::kPartitioning);

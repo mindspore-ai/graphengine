@@ -21,14 +21,11 @@
 
 namespace ge {
 namespace hybrid {
-CallbackManager::CallbackManager(rtStream_t stream) : stream_(stream) {
-}
-
-Status CallbackManager::RegisterCallback(rtCallback_t callback, void *user_data) {
+Status CallbackManager::RegisterCallback(rtStream_t stream, rtCallback_t callback, void *user_data) {
   GELOGD("To register callback");
   rtEvent_t event = nullptr;
   GE_CHK_RT_RET(rtEventCreate(&event));
-  auto rt_ret = rtEventRecord(event, stream_);
+  auto rt_ret = rtEventRecord(event, stream);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Failed to invoke rtEventRecord, error code = %d", rt_ret);
     (void) rtEventDestroy(event);
@@ -112,11 +109,11 @@ void CallbackManager::RtCallbackFunc(void *data) {
   delete callback_func;
 }
 
-Status CallbackManager::RegisterCallback(const std::function<void()> &callback) {
+Status CallbackManager::RegisterCallback(rtStream_t stream, const std::function<void()> &callback) {
   auto func = std::unique_ptr<std::function<void()>>(new(std::nothrow) std::function<void()>(callback));
   GE_CHECK_NOTNULL(func);
   GELOGD("Callback registered");
-  return RegisterCallback(RtCallbackFunc, func.release());
+  return RegisterCallback(stream, RtCallbackFunc, func.release());
 }
 }  // namespace hybrid
 }  // namespace ge

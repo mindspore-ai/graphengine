@@ -30,6 +30,19 @@ const vector<NodeItem *> &hybrid::GraphItem::GetAllNodes() const {
   return node_items_;
 }
 
+const vector<NodeItem *> &GraphItem::GetAllNodes(int group) const {
+  if (group == -1) {
+    return GetAllNodes();
+  }
+
+  if (group >= static_cast<int>(grouped_node_items_.size())) {
+    static vector<NodeItem *> empty_nodes;
+    return empty_nodes;
+  }
+
+  return grouped_node_items_[group];
+}
+
 const vector<const NodeItem *> &GraphItem::GetInputNodes() const {
   return input_nodes_;
 }
@@ -73,6 +86,29 @@ const NodeItem *GraphItem::GetOutputNode() const {
 }
 const vector<std::pair<const NodeItem *, int>> &GraphItem::GetOutputEdges() const {
   return output_edges_;
+}
+
+Status GraphItem::GroupNodes() {
+  int last_group = INT32_MIN;
+  std::set<int> seen_groups;
+  for (auto node : node_items_) {
+    int group = node->group;
+    if (group != last_group) {
+      if (seen_groups.find(group) != seen_groups.end()) {
+        GELOGE(INTERNAL_ERROR, "Unordered node group found. node = %s, group = %d", node->NodeName().c_str(), group);
+        return INTERNAL_ERROR;
+      } else {
+        last_group = group;
+        seen_groups.insert(group);
+        grouped_node_items_.emplace_back(std::vector<NodeItem *>());
+      }
+    }
+
+    GELOGD("Adding node [%s] to group %d", node->NodeName().c_str(), group);
+    grouped_node_items_.back().emplace_back(node);
+  }
+
+  return SUCCESS;
 }
 }  // namespace hybrid
 }  // namespace ge

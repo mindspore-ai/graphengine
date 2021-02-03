@@ -32,7 +32,7 @@ class ShapeInferenceEngine {
 
   Status InferShapeForSubgraph(const NodeItem &node_item, const FusedSubgraph &fused_subgraph);
 
-  Status PropagateOutputShapes(const NodeItem &node_item);
+  Status PropagateOutputShapes(NodeState &node_state);
 
   static Status CalcOutputTensorSizes(const NodeItem &node_item, bool fallback_with_range = false);
 

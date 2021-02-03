@@ -81,13 +81,14 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   args.outputs.clear();
   HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
+  context_.iteration +=1;
   return SUCCESS;
 }
 
 Status HybridModelExecutor::Cleanup() {
   GELOGD("Start to cleanup.");
   context_.callback_manager->Destroy();
-  RuntimeInferenceContext::DestroyContext(std::to_string(context_.session_id));
+  RuntimeInferenceContext::DestroyContext(std::to_string(context_.context_id));
   GELOGD("Cleanup successfully.");
   return SUCCESS;
 }
@@ -105,7 +106,7 @@ Status HybridModelExecutor::InitExecutionContext() {
   GELOGD("session id from model = %lu, from context = %lu", model_->GetSessionId(), context_.session_id);
   context_.allocator = NpuMemoryAllocator::GetAllocator(device_id_);
   GE_CHECK_NOTNULL(context_.allocator);
-  context_.callback_manager = std::unique_ptr<CallbackManager>(new(std::nothrow)CallbackManager(stream_));
+  context_.callback_manager = std::unique_ptr<CallbackManager>(new(std::nothrow)CallbackManager());
   GE_CHECK_NOTNULL(context_.callback_manager);
   context_.dump_properties = PropertiesManager::Instance().GetDumpProperties(context_.session_id);
   const char *profiling_level = std::getenv(kEnvProfilingLevel);
@@ -126,7 +127,7 @@ Status HybridModelExecutor::InitExecutionContext() {
 
 Status HybridModelExecutor::ResetExecutionContext(GraphExecutionContext &context) {
   GE_CHK_STATUS_RET_NOLOG(context.callback_manager->Init());
-  string ctx_id = std::to_string(context.session_id);
+  string ctx_id = std::to_string(context.context_id);
   RuntimeInferenceContext::DestroyContext(ctx_id);
   GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::CreateContext(ctx_id), "Failed to Destroy RuntimeInferenceContext");
   return SUCCESS;

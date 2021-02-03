@@ -52,6 +52,7 @@ Status StagePartitioner::Partition() {
     return SUCCESS;
   }
 
+  GE_DUMP(root_graph_, "BeforeStagePartition");
   if (SplitStageLevel() != SUCCESS) {
     GELOGE(FAILED, "Split graph-stage for graph %s failed.", root_graph_->GetName().c_str());
     return FAILED;
@@ -74,6 +75,7 @@ Status StagePartitioner::Partition() {
            "maybe stage_level was not set correctly.", root_graph_->GetName().c_str());
     return FAILED;
   }
+  GE_DUMP(root_graph_, "AfterStagePartition");
   return SUCCESS;
 }
 

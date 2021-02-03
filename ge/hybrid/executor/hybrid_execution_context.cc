@@ -15,6 +15,7 @@
  */
 
 #include "hybrid_execution_context.h"
+#include <atomic>
 
 namespace ge {
 namespace hybrid {
@@ -23,7 +24,14 @@ const uint32_t kEndOfSequence = 0x0704000a;
 const uint32_t kEndOfSequenceNew = 507005;
 const int32_t kModelAbortNormal = 0x0704000e;
 const int32_t kModelAbortNormalNew = 507024;
+
+std::atomic_ulong context_id_gen {};
 }  // namespace
+
+GraphExecutionContext::GraphExecutionContext() {
+  context_id = context_id_gen++;
+}
+
 void GraphExecutionContext::SetErrorCode(Status error_code) {
   std::lock_guard<std::mutex> lk(mu);
   this->status = error_code;

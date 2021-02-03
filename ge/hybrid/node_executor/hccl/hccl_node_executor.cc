@@ -22,6 +22,8 @@
 #include "graph/manager/util/hcom_util.h"
 #include "graph/runtime_inference_context.h"
 #include "graph/utils/type_utils.h"
+#include "graph/types.h"
+#include "hccl/hcom.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 
 namespace ge {
@@ -96,13 +98,13 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
     GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclRootId(op_desc, root_id), "GetHcclRootId failed");
   }
   op_info.root = root_id;
-  auto callback = [this, op_desc](HcclResult status) {
+  auto callback = [op_desc, done_callback](HcclResult status) {
     if (status != HCCL_SUCCESS) {
       GELOGE(HCCL_E_INTERNAL, "node %s call HcomExecEnqueueOperation failed, ret: 0x%X",
              op_desc->GetName().c_str(), status);
     }
-    std::lock_guard<std::mutex> lock(this->hccl_mutex_);
-    this->cond_.notify_all();
+
+    done_callback();
     GELOGI("node %s hccl callback success.", op_desc->GetName().c_str());
   };
   int32_t count = 0;
@@ -119,11 +121,6 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
     return HCCL_E_INTERNAL;
   }
 
-  // pending until hccl finished
-  std::unique_lock<std::mutex> ulock(hccl_mutex_);
-  cond_.wait(ulock);
-
-  GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(done_callback));
   GELOGI("[%s] HcclNodeTask::ExecuteAsync success.", context.GetNodeName());
   return SUCCESS;
 }
@@ -165,7 +162,8 @@ Status RdmaNodeTask::Init(TaskContext &context) {
 
 Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccessAddrInfo> &addr_infos) {
   RuntimeInferenceContext *ctx = nullptr;
-  GE_CHK_STATUS_RET(RuntimeInferenceContext::GetContext(std::to_string(context.GetSessionId()), &ctx));
+  GE_CHK_STATUS_RET(
+      RuntimeInferenceContext::GetContext(std::to_string(context.GetExecutionContext()->context_id), &ctx));
 
   ge::Tensor remote_tensor;
   GE_CHK_STATUS_RET(ctx->GetTensor(remote_index_.first, remote_index_.second, remote_tensor));
@@ -282,12 +280,13 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
     return SUCCESS;
   }
 
-  auto callback = [this](HcclResult status) {
+  TaskContext *p_ctx = &context;
+  auto callback = [p_ctx, done_callback](HcclResult status) {
     if (status != HCCL_SUCCESS) {
-      GELOGE(HCCL_E_INTERNAL, "Call HcomExecInitialize failed, ret: 0x%X", status);
+      GELOGE(HCCL_E_INTERNAL, "Call HcomExcutorInitialize failed, ret: 0x%X", status);
+      p_ctx->SetStatus(FAILED);
     }
-    std::lock_guard<std::mutex> lock(this->hccl_mutex_);
-    this->cond_.notify_all();
+    done_callback();
     GELOGI("rdma callback success.");
   };
 
@@ -297,15 +296,10 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   }
   HcclResult hccl_ret = HcomExecEnqueueRemoteAccess(context.GetNodeItem().NodeType(), addr_infos, callback);
   if (hccl_ret != HCCL_SUCCESS) {
-    GELOGE(HCCL_E_INTERNAL, "Call HcomExecInitialize failed, ret: 0x%X", hccl_ret);
+    GELOGE(HCCL_E_INTERNAL, "Call HcomExcutorInitialize failed, ret: 0x%X", hccl_ret);
     return HCCL_E_INTERNAL;
   }
 
-  // pending until hccl finished
-  std::unique_lock<std::mutex> ulock(hccl_mutex_);
-  cond_.wait(ulock);
-
-  (void)context.RegisterCallback(done_callback);
   GELOGI("[%s] RdmaNodeTask::ExecuteAsync success.", context.GetNodeName());
   return SUCCESS;
 }

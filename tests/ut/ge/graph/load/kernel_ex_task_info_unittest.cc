@@ -140,7 +140,7 @@ TEST_F(UtestKernelExTaskInfo, kernel_ex_task_info_calculate_args) {
 TEST_F(UtestKernelExTaskInfo, kernel_ex_task_ext_info) {
   const string ext_info = {1, 1, 1, 1, 0, 0, 0, 0};
   const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
-  AttrUtils::SetBool(op_desc, "_Allshape", true);
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
 
   KernelExTaskInfo kernel_ex_task_info;
   EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);

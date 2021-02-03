@@ -48,6 +48,7 @@ const char *const kVectorEngine = "VectorEngine";
 const char *const kAIcoreEngine = "AIcoreEngine";
 const char *const kFileNameSuffix = "online";
 const char *const kAicpuAllshape = "_AllShape";
+constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 const int64_t kDynamicDimValue = -2;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
@@ -620,6 +621,26 @@ namespace {
     }
     return is_need;
   }
+
+  Status CheckDynamicSupport(GeModelPtr &ge_model, const ComputeGraphPtr &graph) {
+    bool support_dynamic = true;
+    for (const auto &node : graph->GetDirectNode()) {
+      GE_CHECK_NOTNULL(node);
+      if (node->GetType() == DATA || node->GetType() == CONSTANT || node->GetType() == CONSTANTOP ||
+          node->GetType() == NETOUTPUT) {
+        continue;
+      }
+      auto op_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, is_dynamic);
+      if (!is_dynamic) {
+        GELOGW("Node[%s] doesn't support dynamic shape.", node->GetName().c_str());
+        (void)AttrUtils::SetBool(ge_model, kAttrSupportDynamicShape, false);
+        return SUCCESS;
+      }
+    }
+    return SUCCESS;
+  }
 }
 
 Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
@@ -694,7 +715,9 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     GELOGE(PARAM_INVALID, "GetSubgraphInstanceNameToModel is empty.");
     return PARAM_INVALID;
   }
+  const ComputeGraphPtr root_graph = ge_root_model->GetRootGraph();
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
+  E_CHK_STATUS_RET_NOLOG(CheckDynamicSupport(ge_model, root_graph));
   GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
 
   bool all_shape = false;

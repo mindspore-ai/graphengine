@@ -34,6 +34,10 @@ class UtestDavinciModel : public testing::Test {
   void TearDown() {}
 };
 
+int32_t MsprofReport(uint32_t moduleId, uint32_t type, void *data, uint32_t len) {
+  return 0;
+}
+
 /*
 TEST_F(UtestDavinciModel, init_success) {
   DavinciModel model(0, nullptr);
@@ -853,4 +857,18 @@ TEST_F(UtestDavinciModel, LoadWithQueue_fail_with_diff_args) {
   EXPECT_EQ(model.LoadWithQueue(), INTERNAL_ERROR);
   EXPECT_EQ(model.active_stream_list_.size(), 0);
 }
+
+TEST_F(UtestDavinciModel, Sink_model_profile) {
+  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = MsprofReport;
+   ProfileInfo profile;
+   profile.fusion_info.op_name = "relu";
+
+  DavinciModel model(0, nullptr);
+  model.profile_list_.emplace_back(profile);
+  std::map<std::string, std::pair<uint32_t, uint32_t>> op_info;
+  op_info["relu"] = std::pair<uint32_t, uint32_t>(1, 1);
+  model.profiler_report_op_info_ = op_info;
+  model.SinkModelProfile();
+}
+
 }  // namespace ge

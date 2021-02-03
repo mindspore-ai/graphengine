@@ -728,6 +728,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
     GE_CHK_RT_RET(rtSetCtxINFMode((fp_ceiling_mode != "0")));
   }
 
+  SetProfileTime(MODEL_LOAD_END);
   // collect profiling for ge
   GE_CHK_STATUS_RET(InitModelProfile(), "Init model profile failed");
   auto &profiling_manager = ProfilingManager::Instance();
@@ -2279,8 +2280,12 @@ Status DavinciModel::SinkModelProfile() {
     }
 
     // stream id info
-    uint32_t streamId = profile.fusion_info.stream_id;
-    reporter_data.data = (unsigned char *)&streamId;
+    uint32_t stream_id = 0;
+    auto iter = profiler_report_op_info_.find(fusion_op_name);
+    if (iter != profiler_report_op_info_.end()) {
+      stream_id = iter->second.second;
+    }
+    reporter_data.data = (unsigned char *)&stream_id;
     reporter_data.dataLen = sizeof(int32_t);
     GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
                      "Reporter data fail, model id:%u.", this->Id());

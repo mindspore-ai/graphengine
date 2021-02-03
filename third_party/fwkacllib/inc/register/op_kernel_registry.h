@@ -27,10 +27,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OpKernelRegistry {
   using CreateFn = HostCpuOp* (*)();
   ~OpKernelRegistry();
 
-  static OpKernelRegistry& GetInstance() {
-    static OpKernelRegistry instance;
-    return instance;
-  }
+  static OpKernelRegistry& GetInstance();
 
   bool IsRegistered(const std::string &op_type);
 

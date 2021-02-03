@@ -401,7 +401,7 @@ struct OmgContext {
   // user-designate input dims
   std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
   // global input dims
-  std::unordered_map<std::string, std::vector<int64_t>> input_dims;
+  std::map<std::string, std::vector<int64_t>> input_dims;
 
   // solve rename op e.g: Detectionoutput:SsdDetectiontOutput
   std::map<std::string, std::string> op_conf_map;

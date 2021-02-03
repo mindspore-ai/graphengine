@@ -488,7 +488,7 @@ include:
 */
 REG_OP(AsString)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, \
-        DT_DOUBLE, DT_BOOL}))
+        DT_DOUBLE, DT_BOOL, DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(y, TensorType({DT_STRING}))
     .ATTR(precision, Int, -1)
     .ATTR(scientific, Bool, false)

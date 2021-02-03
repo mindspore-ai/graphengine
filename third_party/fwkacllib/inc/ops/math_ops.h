@@ -223,6 +223,24 @@ REG_OP(Bucketize)
     .OP_END_FACTORY_REG(Bucketize)
 
 /**
+*@brief Returns a new tensor with the truncated integer values of the elements of input. \n
+
+*@par Inputs:
+*One inputs, including:
+*   @li input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
+
+*@par Outputs:
+*y: A tensor with the same type and shape of input_x \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Trunc. \n
+*/
+REG_OP(Trunc)
+    .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OP_END_FACTORY_REG(Trunc)
+	
+/**
 *@brief Computes the sum along sparse segments of a tensor . \n
 
 *@par Inputs:
@@ -645,6 +663,7 @@ REG_OP(NLLLoss)
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
@@ -674,6 +693,7 @@ REG_OP(NLLLossGrad)
     .INPUT(total_weight, TensorType({DT_FLOAT}))
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
@@ -884,6 +904,54 @@ REG_OP(LpNorm)
     .ATTR(keepdim, Bool, false)
     .ATTR(epsilon, Float, 1e-12)
     .OP_END_FACTORY_REG(LpNorm)
+
+/**
+* @brief get complex.
+
+* @par Inputs:
+* @li real: An ND tensor of type  float32. double
+* @li imag: An ND tensor of type  float32. double \n
+*
+* @par Outputs:
+* @li out: An ND tensor of type complex64, complex128 \n
+*/
+REG_OP(Complex)
+    .INPUT(real, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(imag, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(out, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .ATTR(Tout, Type, DT_COMPLEX64)
+    .OP_END_FACTORY_REG(Complex)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Imag)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Imag)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Angle)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Angle)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

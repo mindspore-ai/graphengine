@@ -1431,6 +1431,24 @@ REG_OP(OrderedMapClear)
     .OP_END_FACTORY_REG(OrderedMapClear)
 
 /**
+*@brief FakeQueue, support tf api FixedLengthRecordReader. \n
+
+*@par Inputs:
+*Including:
+* @li resource: A Tensor of type DT_RESOURCE.
+
+*@par Outputs:
+*handle: A Tensor of type DT_STRING ref. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FakeQueue.
+*/
+REG_OP(FakeQueue)
+    .INPUT(resource, TensorType({DT_RESOURCE}))
+    .OUTPUT(handle, TensorType({DT_STRING}))
+    .OP_END_FACTORY_REG(FakeQueue)
+
+/**
 *@brief Returns the number of incomplete elements in the underlying container. \n
 
 *@par Attributes:
@@ -2258,6 +2276,7 @@ REG_OP(LruCache)
   .ATTR(shared_name, String, "LruCache")
   .ATTR(cache_size, Int, 100000)
   .ATTR(load_factor, Float, 1)
+  .REQUIRED_ATTR(dtype, Type)
   .OP_END_FACTORY_REG(LruCache)
 
 /**
@@ -2277,9 +2296,9 @@ REG_OP(CacheAdd)
   .INPUT(cache, TensorType({DT_RESOURCE}))
   .INPUT(ids, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OUTPUT(swap_in_id, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
-  .OUTPUT(swap_in_idx, TensorType({DT_INT64}))
+  .OUTPUT(swap_in_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OUTPUT(swap_out_id, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
-  .OUTPUT(swap_out_idx, TensorType({DT_INT64}))
+  .OUTPUT(swap_out_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OP_END_FACTORY_REG(CacheAdd)
 
 /**
@@ -2295,9 +2314,31 @@ REG_OP(CacheAdd)
 REG_OP(CacheRemoteIndexToLocal)
   .INPUT(cache, TensorType({DT_RESOURCE}))
   .INPUT(ids, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
-  .OUTPUT(local_idx, TensorType({DT_INT64}))
+  .OUTPUT(local_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OP_END_FACTORY_REG(CacheRemoteIndexToLocal)
 
+/**
+*@brief CacheAllToLocalIndex, get id in cache
+*@par Inputs:
+*cache: resource data
+*local_idx: id in cache.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(CacheAllIndexToLocal)
+  .INPUT(cache, TensorType({DT_RESOURCE}))
+  .OUTPUT(local_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
+  .REQUIRED_ATTR(dtype, Type)
+  .OP_END_FACTORY_REG(CacheAllIndexToLocal)
+
+REG_OP(DynamicGetNext)
+  .INPUT(x, TensorType::ALL())
+  .DYNAMIC_OUTPUT(y, TensorType::ALL())
+  .ATTR(output_types, ListType, {})
+  .ATTR(output_shapes, ListListInt, {{}, {}})
+  .ATTR(_dynamic_graph_execute_mode, String, "lazy_recompile")
+  .ATTR(_getnext_inputs_shape_range, String, "")
+  .OP_END_FACTORY_REG(DynamicGetNext)
 }   // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

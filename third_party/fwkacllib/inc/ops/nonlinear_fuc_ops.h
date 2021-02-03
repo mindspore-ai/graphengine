@@ -223,7 +223,29 @@ REG_OP(Relu6Grad)
     .INPUT(features, TensorType::RealNumberType())
     .OUTPUT(backprops, TensorType::RealNumberType())
     .OP_END_FACTORY_REG(Relu6Grad)
-
+/**
+*@brief Calculate the elu_grad_v2 function. 
+*Applies the element-wise function:
+* Computes the backward for the elu: if x>0, 1; otherwise elu() + alpha .
+*@par Inputs:
+*One inputs, including:
+* @li grads: A tensor. Must be one of the following types:
+*     float16, float32. 
+* @li activations: A tensor. Must be one of the following types:
+*     float16, float32. 
+*
+*@par Outputs:
+*y: A Tensor with the same type and shape of grads's.
+* 
+*@par Attributes:
+*@li alpha: scalar parameter, default value = 1.0
+*/	
+REG_OP(EluGradV2)
+    .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(activations, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(alpha, Float, 1.0)
+    .OP_END_FACTORY_REG(EluGradV2)
 /**
 * @brief Compute sigmoid of "x" element-wise . \n
 
@@ -842,6 +864,26 @@ REG_OP(SoftShrinkGrad)
      .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
      .ATTR(lambd, Float, 0.5)
      .OP_END_FACTORY_REG(SoftShrinkGrad)
+	 
+/**
+*@brief Calculate -ln(1+e^(-x)). \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A tensor. Must be one of the following types:
+*       float16, float32. \n
+
+*@par Outputs:
+*One outputs, including:
+* @li y: A tensor with the same type and shape of x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator LogSigmoid. \n
+*/
+REG_OP(LogSigmoid)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT})) /* "input:x" */
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))  /* "output:y" */
+    .OP_END_FACTORY_REG(LogSigmoid)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_

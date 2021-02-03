@@ -61,8 +61,8 @@ REG_OP(CholeskyGrad)
 
 *@par Inputs:
 *The input x has to be symmetric and positive definite.Inputs include:
-*x:A Tensor. Must be one of the following types: double, float32. Shape
-is [..., M, M] . \n
+*x:A Tensor. Must be one of the following types: double, float32, float16,
+complex64, complex128. Shape is [..., M, M] . \n
 
 *@par Outputs:
 *y:A Tensor. Has the same type as x . \n
@@ -76,8 +76,10 @@ form square matrices.
 */
 
 REG_OP(Cholesky)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, \
+        DT_FLOAT16, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, \
+        DT_FLOAT16, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(Cholesky)
 
 /**
@@ -87,8 +89,8 @@ of one or more square matrices . \n
 *@par Inputs:
 *The input x is a tensor of shape [N, M, M] whose inner-most 2 dimensions
 form square matrices. Inputs include:
-*x:A Tensor. Must be one of the following types: double, float32. Shape is
-[..., M, M] . \n
+*x:A Tensor. Must be one of the following types: double, float32,
+complex64, complex128. Shape is [..., M, M] . \n
 
 *@par Outputs:
 *@li y:A Tensor. Has the same type as x.
@@ -103,9 +105,9 @@ form square matrices. \n
 */
 
 REG_OP(LogMatrixDeterminant)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(sign, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(sign, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(LogMatrixDeterminant)
 
 /**
@@ -114,8 +116,8 @@ REG_OP(LogMatrixDeterminant)
 *@par Inputs:
 *The input x is a tensor of shape [N, M, M] whose inner-most 2 dimensions
 form square matrices. Inputs include:
-*x:A Tensor. Must be one of the following types: double, float32. Shape is
-[..., M, M] . \n
+*x:A Tensor. Must be one of the following types: double, float32, complex64,
+complex128. Shape is [..., M, M] . \n
 
 *@par Outputs:
 *y:A Tensor. Has the same type as x . \n
@@ -129,8 +131,8 @@ form square matrices.
 */
 
 REG_OP(MatrixDeterminant)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(MatrixDeterminant)
 
 /**
@@ -140,8 +142,7 @@ their adjoints (conjugate transposes) . \n
 *@par Inputs:
 *The input x is a tensor of shape [..., M, M] whose inner-most 2 dimensions
 form square matrices. Inputs include:
-*x:A Tensor. Must be one of the following types: double, float. Shape is
-[..., M, M] . \n
+*x:A Tensor of input. Shape is [..., M, M] . \n
 
 *@par Attributes:
 *adjoint:An optional bool. Defaults to False.Boolean indicating whether to
@@ -159,8 +160,10 @@ form square matrices.  \n
 */
 
 REG_OP(MatrixInverse)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(adjoint, Bool, false)
     .OP_END_FACTORY_REG(MatrixInverse)
 
@@ -169,8 +172,7 @@ REG_OP(MatrixInverse)
 
 *@par Inputs:
 *The input rhs must have the same type as matrix. Inputs include:
-*@li matrix:A Tensor. Must be one of the following types: double, float.
-Shape is [..., M, M].
+*@li matrix:A Tensor of input. Shape is [..., M, M].
 *@li rhs:A Tensor. Must have the same type as matrix. Shape is [..., M, K] . \n
 
 *@par Attributes:
@@ -189,9 +191,9 @@ dimensions form square matrices.  \n
 */
 
 REG_OP(MatrixSolve)
-    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(adjoint, Bool, false)
     .OP_END_FACTORY_REG(MatrixSolve)
 
@@ -221,8 +223,10 @@ dimensions form square matrices.  \n
 */
 
 REG_OP(MatrixSolveLs)
-    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
     .INPUT(l2, TensorType({DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
     .ATTR(fast, Bool, true)
@@ -234,8 +238,7 @@ matrices by backsubstitution . \n
 
 *@par Inputs:
 *The input rhs must have the same type as matrix. Inputs include:
-*@li matrix: A Tensor. Must be one of the following types: double, float.
-Shape is [..., M, M].
+*@li matrix: A Tensor. Shape is [..., M, M].
 *@li rhs:A Tensor. Must have the same type as matrix. Shape is [..., M, K] . \n
 
 *@par Attributes:
@@ -256,9 +259,12 @@ dimensions form square matrices.  \n
 */
 
 REG_OP(MatrixTriangularSolve)
-    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+        DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(lower, Bool, true)
     .ATTR(adjoint, Bool, false)
     .OP_END_FACTORY_REG(MatrixTriangularSolve)
@@ -268,8 +274,7 @@ REG_OP(MatrixTriangularSolve)
 
 *@par Inputs:
 *The input shape of x must be [..., M, N]. Inputs include:
-*x:A Tensor whose shape is [..., M, N]. Must be one of the following types:
-double, float . \n
+*x:A Tensor whose shape is [..., M, N]. \n
 
 *@par Attributes:
 *full_matrices: An optional bool. Defaults to False. If true, compute
@@ -289,9 +294,12 @@ dimensions form matrices of size [M, N].  \n
 */
 
 REG_OP(Qr)
-    .INPUT(x, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
-    .OUTPUT(q, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
-    .OUTPUT(r, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .INPUT(x, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE, \
+        DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(q, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE, \
+        DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(r, TensorType({ DT_FLOAT16, DT_FLOAT, DT_DOUBLE, \
+        DT_COMPLEX64, DT_COMPLEX128 }))
     .ATTR(full_matrices, Bool, false)
     .OP_END_FACTORY_REG(Qr)
 
@@ -384,8 +392,8 @@ of the rows encoded as a list of indices in `0..M-1`. Shape is `[..., M]` . \n
 */
 
 REG_OP(Lu)
-    .INPUT(input, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(lu, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(input, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(lu, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(p, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(output_idx_type, Type)
     .OP_END_FACTORY_REG(Lu)
@@ -404,8 +412,8 @@ y: Shape is `[..., M, M]` . \n
 */
 
 REG_OP(MatrixSquareRoot)
-    .INPUT(input, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(input, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .OP_END_FACTORY_REG(MatrixSquareRoot)
 
 /**

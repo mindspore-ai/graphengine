@@ -1233,6 +1233,47 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
     .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
+/**
+ * @brief Calculate the PoissonNllLoss function. 
+ *        target∼Poisson(input)loss(input,target)=input−target∗log(input)+log(target!) \n
+
+ * @par Inputs:
+ * Two inputs, including:
+ * @li input_x: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+ * 
+ * @par Inputs:
+ * @li target: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+
+ * @par Attributes:
+ * four Attributes, including:
+ * @li log_input: An optional bool. Defaults to "True" \n
+ * 
+ *  @par Attributes:
+ * @li full: An optional bool. Defaults to "False" \n
+ * 
+ *  @par Attributes:
+ * @li eps: An optional float. Defaults to "1e-8" \n
+ * 
+ *  @par Attributes:
+ * @li reduction: An optional string. Defaults to "mean" \n
+
+ * @par Outputs:
+ * loss: A Tensor has same element type as two inputs. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the Pytorch operator PoissonNllLoss. \n
+ */
+REG_OP(PoissonNllLoss)
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(log_input, Bool, true)
+    .ATTR(full, Bool, false)
+    .ATTR(eps, Float, 1e-8)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(PoissonNllLoss)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

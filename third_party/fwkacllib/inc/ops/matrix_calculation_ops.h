@@ -1022,6 +1022,27 @@ REG_OP(IndexAdd)
     .ATTR(axis, Int, 0)
     .OP_END_FACTORY_REG(IndexAdd)
 
+/**
+*@brief: Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li x: A Tensor. Must be one of the following types:
+*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
+*@li diagonal:(int, optional) – the diagonal to consider。\n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator Triu.
+*/
+REG_OP(Triu)
+    .INPUT(x, TensorType::BasicType())
+    .ATTR(diagonal, Int, 0)
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(Triu)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

@@ -3628,6 +3628,35 @@ REG_OP(Lerp)
     .OP_END_FACTORY_REG(Lerp)
 
 /**
+*@brief Returns the num value of abs(x1-x2) > atol+rtol*abs(x2) element-wise. \n
+
+*
+*@par Inputs:
+*@li x1: A tensor. Must be one of the following types: float32, int32, uint8, int8, float16
+*@li x2: A tensor of the same type as "x1".
+*
+*@par Attributes:
+* atol: Defaults to "1e-05".
+* rtol: Defaults to "1e-03".
+*
+*@par Outputs:
+* num: A tensor of type int32.
+* diff: A tensor of type float16.
+*
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*
+*/
+REG_OP(DataCompare)
+  .INPUT(x1, TensorType({ DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT32 }))
+  .INPUT(x2, TensorType({ DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT32 }))
+  .OUTPUT(num, TensorType({DT_FLOAT}))
+  .OUTPUT(diff, TensorType({DT_FLOAT16}))
+  .ATTR(atol, Float, 1e-5)
+  .ATTR(rtol, Float, 1e-3)
+  .OP_END_FACTORY_REG(DataCompare)
+
+/**
 *@brief Hardmax(element in input, axis) = 1 if the element is the first maximum value along the specified axis, 0
 *otherwise The input does not need to explicitly be a 2D vector.The "axis" attribute indicates the dimension along
 *which Hardmax will be performed.The output tensor has the same shape and contains the Hardmax values of the
@@ -3650,6 +3679,57 @@ REG_OP(HardMax)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(axis, Int, -1)
     .OP_END_FACTORY_REG(HardMax)
+
+/**
+* @brief Computes the dot product (inner product) of two tensors. This function does not broadcast.
+
+* @par Inputs:
+* Two inputs, including:
+* @li input_x: A Tensor. the first tensor must be 1d. \n
+* @li input_y: A Tensor. the second tensor must be 1d. \n
+
+* @par Outputs:
+* @li output: A Tensor. Result of the two inputs, must be 1d. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch dot operator. \n
+*/
+REG_OP(Dot)
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
+    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
+    .OP_END_FACTORY_REG(Dot)
+	
+/**
+*@brief Returns a new tensor with boolean elements representing \n
+*if each element of input is “close” to the corresponding element of other \n
+
+*@par Inputs:
+*Two inputs, including:
+* @li x1: A tensor. Must be one of the following types:
+*     float16, float32, int32. \n
+* @li x2: A tensor with the same type and shape of x1's. \n
+
+*@par Attributes:
+*@li rtol: An optional float.Defaults to 1e-05. \n
+*@li atol: An optional float.Defaults to 1e-08. \n
+*@li equal_nan: An optional bool.Defaults to false. \n
+
+*@par Outputs:
+*y: A Tensor bool with the same shape of x1's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator isclose. \n
+*/
+REG_OP(IsClose)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_BOOL}))
+    .ATTR(rtol, Float, 1e-05)
+    .ATTR(atol, Float, 1e-08)
+    .ATTR(equal_nan, Bool, false)
+    .OP_END_FACTORY_REG(IsClose)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_

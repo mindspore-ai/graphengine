@@ -62,8 +62,8 @@ REG_OP(Split)
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
-*@li split_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to split. No default value.
-*@li num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value . \n
+*@li split_dim: A required int32. Specifies the dimension along which to split. No default value.
+*@li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
 *@par Outputs:
 *y:Dynamic output. A list of output tensors. Has the same type and format as "x" . \n
@@ -94,12 +94,12 @@ REG_OP(SplitD)
 *@par Inputs:
 * Three inputs, including:
 *@li x: An ND Tensor.
-*Must be one of the following types:
-*@li size_splits: A list of int8, int16, int32, or int64. Specifies a list containing the sizes of each output tensor along the split dimension.
-*@li split_dim: An int8, int16, int32, or int64. Specifies the dimension along which to split . \n
+*Must be one of the types:float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+*@li size_splits: Must be one of the types:int32, int64. Specifies a list containing the sizes of each output tensor along the split dimension.
+*@li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
 
 *@par Attributes:
-*num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value . \n
+*num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
 *@par Outputs:
 *y:  Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
@@ -129,9 +129,9 @@ REG_OP(SplitV)
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
-*@li size_splits: A required list of int8, int16, int32, or int64. Specifies a list containing the sizes of each output tensor along the split dimension.
-*@li split_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to split. No default value.
-*@li num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value . \n
+*@li size_splits: A required list of int32. Specifies a list containing the sizes of each output tensor along the split dimension.
+*@li split_dim: A required int32. Specifies the dimension along which to split. No default value.
+*@li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
 *@par Outputs:
 *y: Dynamic output.A list of output tensors. Has the same type and format as "x" . \n

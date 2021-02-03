@@ -1036,4 +1036,3 @@ install(FILES
     DESTINATION ${INSTALL_LIBRARY_DIR}
 )
 endif()
-

@@ -22,6 +22,11 @@ namespace ge {
 class MarkAgnosticPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph) override;
+
+ private:
+  bool IsWhileLoop(const NodePtr& node, NodePtr& enter, NodePtr& next);
+  Status HandWhileLoop(const NodePtr& node);
+  Status SetContinuousAttr(const NodePtr& node, const std::vector<uint32_t>& index);
 };
 }
 

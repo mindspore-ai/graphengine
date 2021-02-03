@@ -607,6 +607,9 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
       return FAILED;
     }
     auto &engine_name = graph_info_.partitions_.at(sub_graph);
+    (void)AttrUtils::SetStr(sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
+    GELOGD("set attr success. subgraph(%s) with parent graph(%s)", sub_graph->GetName().c_str(),
+           compute_graph->GetName().c_str());
     GE_DUMP(sub_graph, sub_graph->GetName()  + "_" + mode_2_str_[graph_info_.mode_]);
     if (!session_graph_id.empty()) {
       GE_IF_BOOL_EXEC(!AttrUtils::SetStr(sub_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
@@ -614,9 +617,6 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
     }
     // flush parent node of subgraph
     sub_graph->SetParentNode(compute_graph->GetParentNode());
-    (void)AttrUtils::SetStr(*sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
-    GELOGD("set attr success. subgraph(%s) with parent graph(%s)", sub_graph->GetName().c_str(),
-           compute_graph->GetName().c_str());
     auto sgi = MakeShared<SubGraphInfo>();
     if (sgi == nullptr) {
       GELOGE(GE_GRAPH_PARAM_NULLPTR, "[GraphPartitioner]: MakeShared sub graph info failed.");
@@ -805,8 +805,19 @@ Status ge::GraphPartitioner::SplitSubGraphs(ge::ComputeGraphPtr compute_graph) {
       GELOGD("In anchor index is %d", AnchorUtils::GetIdx(in_anchor));
       for (auto &peer_out_anchor : in_anchor->GetPeerAnchors()) {
         GELOGD("Peer out anchor index is %d", AnchorUtils::GetIdx(peer_out_anchor));
-        // All nodes have a copy in corresponding_node_in_partitions_, so function at can not be execption
-        auto parent_node = graph_info_.corresponding_node_in_partitions_.at(peer_out_anchor->GetOwnerNode());
+        // Normally, all nodes have a copy in corresponding_node_in_partitions_, so function at can not be exception
+        auto iter = graph_info_.corresponding_node_in_partitions_.find(peer_out_anchor->GetOwnerNode());
+        if (iter == graph_info_.corresponding_node_in_partitions_.end()) {
+          GELOGE(GRAPH_FAILED,
+                 "[SpiltSubGraphs]: node[%s]id[%ld]'s parent_node[%s]id[%ld]"
+                 "should make corresponding in advance",
+                 node->GetOpDesc()->GetName().c_str(), node->GetOpDesc()->GetId(),
+                 peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),
+                 peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetId());
+          return GRAPH_FAILED;
+        }
+        auto parent_node = iter->second;
+        GE_CHECK_NOTNULL(parent_node);
         GELOGD("Parent node name is %s", parent_node->GetName().c_str());
         // add edge
         auto src_anchor = parent_node->GetOutAnchor(AnchorUtils::GetIdx(peer_out_anchor));

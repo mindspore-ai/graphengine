@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ support "NHWC/NCHW" to "NC1HWC0" and "NC1HWC0" to "NHWC/NCHW"
 *@par Attributes:
 *@li src_format: A string source data format, can be "NHWC", "NCHW", "FRACTAL_Zn" etc.
 *@li dst_format: A string target data format, can be "NC1HWC0", "NCHW", "FRACTAL_Zn" etc.
-*@li group: A required int32, default value is 1. \n
+*@li group: A optional int32, default value is 1. \n
 
 *@par Outputs:
 *dst: A Tensor dtype of all types.
@@ -151,7 +151,7 @@ REG_OP(TransData)
     .OUTPUT(dst, TensorType::BasicType())
     .REQUIRED_ATTR(src_format, String)
     .REQUIRED_ATTR(dst_format, String)
-    .ATTR(group, Int, 1)
+    .ATTR(groups, Int, 1)
     .OP_END_FACTORY_REG(TransData)
 
 /**
@@ -357,7 +357,7 @@ REG_OP(DepthToSpace)
 *@brief Permutes data into spatial data blocks and then prunes them . \n
 
 *@par Inputs:
-*@li x: A 4D Tensor with format NHWC.
+*@li x: A 4D Tensor with format. Must set the format, supported format list ["NCHW, NHWC"]
 *@li crops: A 1D list or tuple of int32 or int64 . \n
 
 *Must be one of the following types: float16, float32
@@ -434,9 +434,10 @@ REG_OP(BatchToSpaceD)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: An NHWC Tensor. Must be one of the following types:
+*@li x: An 4D Tensor. Must be one of the following types:
 * float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
 * int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+* Must set the format, supported format list ["NCHW, NHWC"]
 *@li paddings: A 2D tensor of type int, specifying the input . \n
 
 *@par Attributes:
@@ -518,7 +519,8 @@ REG_OP(Unpack)
 * @par Inputs:
 * x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of the
 *    following types:float32, double, int32, uint8, int16, int8, int64, uint16,
-*    float16, uint32, uint64
+*    float16, uint32, uint64. The inputs must have data_format with one of follows:
+*    NHWC, NCHW.
 
 * @par Attributes:
 * @li ksizes: A required list or tuple. The size of the sliding window for each
@@ -533,7 +535,6 @@ REG_OP(Unpack)
 * This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
 * @li padding: A required string. The type of padding algorithm to use,
   support "SAME" or "VALID". \n
-* @li data_format: A required string. The format of input, only supported NHWC. \n
 
 * @par Outputs:
 * y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *
@@ -554,7 +555,6 @@ REG_OP(ExtractImagePatches)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(rates, ListInt)
     .REQUIRED_ATTR(padding, String)
-    .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(ExtractImagePatches)
 
 /**
@@ -563,6 +563,7 @@ REG_OP(ExtractImagePatches)
 
 * @par Inputs:
 * x: A 5D Tensor with shape [batch, in_planes, in_rows, in_cols, depth] . \n
+*    The inputs must have data_format with one of follows: NDHWC, NCDHW. \n
 
 * @par Attributes:
 * @li ksizes: A required list or tuple. The size of the sliding window for each
@@ -571,7 +572,6 @@ REG_OP(ExtractImagePatches)
 * patches are in "x". Must be: [1, stride_planes, stride_rows, stride_cols, 1].
 * @li padding: A required string. The type of padding algorithm to use ,
 * support "SAME" or "VALID" . \n
-* @li data_format: An optional string. The format of input, only supported NDHWC. \n
 
 * @par Outputs:
 * Output: A 5D Tensor with shape [batch, out_planes, out_rows, out_cols, ksize_planes *
@@ -590,7 +590,6 @@ REG_OP(ExtractVolumePatches)
     .REQUIRED_ATTR(ksizes, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
-    .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(ExtractVolumePatches)
 
 /**

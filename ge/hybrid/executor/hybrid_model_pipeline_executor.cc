@@ -270,7 +270,7 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
 
   auto last_iter_executor_idx = loop_count % stage_executors_.size();
   GE_CHK_STATUS_RET(stage_executors_[last_iter_executor_idx]->GetOutputs(args.outputs, args.output_desc),
-                    "Failed to get output from executor[%d]", last_iter_executor_idx);
+                    "Failed to get output from executor[%lu]", last_iter_executor_idx);
   return SUCCESS;
 }
 

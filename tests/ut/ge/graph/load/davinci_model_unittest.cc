@@ -280,7 +280,9 @@ TEST_F(UtestDavinciModel, init_unknown) {
   memcpy_async->set_op_index(2);
 
   EXPECT_EQ(model.Assign(ge_model), SUCCESS);
+  ProfilingManager::Instance().is_load_profiling_ = true;
   EXPECT_EQ(model.Init(), SUCCESS);
+  ProfilingManager::Instance().is_load_profiling_ = false;
 
   EXPECT_EQ(model.input_addrs_list_.size(), 1);
   EXPECT_EQ(model.output_addrs_list_.size(), 1);

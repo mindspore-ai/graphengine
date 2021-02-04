@@ -259,7 +259,7 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   GE_CHECK_NOTNULL(out_anchor->GetOwnerNode()->GetOpDesc());
   GE_CHECK_NOTNULL(in_anchor->GetOwnerNode()->GetOpDesc());
   GeTensorDesc in_tensor = out_anchor->GetOwnerNode()->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx());
-  GeTensorDesc out_tensor = in_anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(out_anchor->GetIdx());
+  GeTensorDesc out_tensor = in_anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(in_anchor->GetIdx());
   out_tensor.SetDataType(DT_INT32);
   out_tensor.SetOriginDataType(DT_INT32);
   out_tensor.SetShape(in_tensor.GetShape());

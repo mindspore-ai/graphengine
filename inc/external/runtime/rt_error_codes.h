@@ -92,7 +92,8 @@ static const int32_t ACL_ERROR_RT_LABEL_CONTEXT = 507031;           // label not
 static const int32_t ACL_ERROR_RT_PROGRAM_USE_OUT = 507032;         // program register num use out
 static const int32_t ACL_ERROR_RT_DEV_SETUP_ERROR = 507033;         // device setup error
 
-static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR = 507899;  // drv internal error
+static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR = 507899;    // drv internal error
+static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR = 507900;  // aicpu internal error
 
 #ifdef __cplusplus
 }

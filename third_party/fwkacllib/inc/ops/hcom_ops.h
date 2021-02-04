@@ -238,6 +238,15 @@ REG_OP(HcomRemoteRead)
     .REQUIRED_ATTR(dtype, Type)
     .OP_END_FACTORY_REG(HcomRemoteRead)
 
+/**
+ * @brief Performs Remote Ref Read of input tensors
+ * @par Inputs:
+ * remote: A tensor. describing the remote memory address to read: u64 remoteId, u64 addrRemote, u64 length
+ * cache_var: The local base address
+ * local_offset: Skip step length
+ * @par Outputs:
+ * cache_var: The local base address
+ */
 REG_OP(HcomRemoteRefRead)
     .INPUT(remote, TensorType({DT_UINT64}))
     .INPUT(cache_var, TensorType({DT_UINT64}))
@@ -258,6 +267,13 @@ REG_OP(HcomRemoteWrite)
     .INPUT(local, TensorType::ALL())
     .OP_END_FACTORY_REG(HcomRemoteWrite)
 
+/**
+ * @brief Performs Remote Write of input tensors
+ * @par Inputs:
+ * remote: A tensor. describing the remote memory address to write: u64 remoteId, u64 addrRemote, u64 length
+ * @par Inputs:
+ * local: A Tensor. whose value is length / size_of(Type)
+ */
 REG_OP(HcomRemoteScatterWrite)
     .INPUT(remote, TensorType({DT_INT64, DT_UINT64}))
     .INPUT(local, TensorType::ALL())

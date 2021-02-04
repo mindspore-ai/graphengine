@@ -1059,7 +1059,7 @@ REG_OP(DeformableConv2D)
 
 *@par Attributes:
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li data_format: An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
  * @li dilations: A list of 5 integers. Specifies the dilation factor for each
@@ -1119,7 +1119,7 @@ REG_OP(Conv3D)
 *@par Attributes:
  * Three attributes:
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li data_format: An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
  * @li dilations: A tuple/list of 5 integers, The dilation factor for each
@@ -1167,7 +1167,7 @@ REG_OP(Conv3DBackpropInput)
 *@par Attributes:
  * Three attributes:
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li data_format: An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
  * @li dilations: A tuple/list of 5 integers, The dilation factor for each
@@ -1267,7 +1267,7 @@ REG_OP(LSTM)
  * dimension of input.
  * The N, C and D dimensions must be 1. Has the same format as "x".
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li data_format: An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
 
@@ -1319,7 +1319,7 @@ REG_OP(Conv3DBackpropFilter)
  * dimension of input.
  * The N, C and D dimensions must be 1. Has the same format as "x".
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li data_format: An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
 
@@ -1369,7 +1369,7 @@ REG_OP(Conv3DBackpropFilterD)
 *@par Attributes:
  * Five attributes:
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li dilations: A tuple/list of 5 integers,
  * The dilation factor for each dimension of input.
  * The N, C and D dimensions must be 1. Has the same format as "x".
@@ -1422,7 +1422,7 @@ REG_OP(Conv3DTranspose)
  * dimension of input.
  * The N, C and D dimensions must be 1. Has the same format as "x".
  * @li groups: Number of blocked connections from input channels to output
- * channels. Reserved.
+ * channels.
  * @li data_format: An optional string from: "NDHWC", "NCDHW".
  * Defaults to "NDHWC". Specify the data format of the input and output data.
  * @li output_padding: The size will be added in the output shape.
@@ -1624,7 +1624,7 @@ REG_OP(Conv2DTransposeD)
  * of the input.
  * @li ksize: A tuple/list of 2 integers.kernel size.
 *@par Attributes:
- * Three attributes:
+ * Four attributes:
  * @li dilations: A tuple/list of 4 integers, The dilation factor for each dimension
  * of input.  Defaults to [1, 1, 1, 1]
  * @li data_format: An optional string from: "NCHW", "NHWC". Defaults to "NCHW". Specify the data format of the input x.

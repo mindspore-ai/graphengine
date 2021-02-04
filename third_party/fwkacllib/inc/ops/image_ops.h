@@ -656,6 +656,62 @@ REG_OP(RGBToHSV)
 *Input images must be a 4-D tensor. Inputs include:
 *@li image_size: 1-D, containing [height, width, channels].
 *@li bounding_boxes: 3-D with shape [batch, N, 4] describing the N bounding
+boxes associated with the image. \n
+
+*@par Attributes:
+*@li seed: If either seed or seed2 are set to non-zero, the random number
+generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2: A second seed to avoid seed collision.
+*@li min_object_covered: The cropped area of the image must contain at least
+this fraction of any bounding box supplied. The value of this parameter should
+be non-negative. In the case of 0, the cropped area does not need to overlap
+any of the bounding boxes supplied .
+*@li aspect_ratio_range: The cropped area of the image must have an aspect
+ratio = width / height within this range.
+*@li max_attempts: Number of attempts at generating a cropped region of the
+image of the specified constraints. After max_attempts failures, return the
+entire image.
+*@li use_image_if_no_bounding_boxes: Controls behavior if no bounding boxes
+supplied. If true, assume an implicit bounding box covering the whole input.
+If false, raise an error . \n
+
+*@par Outputs:
+*@li begin: 1-D, containing [offset_height, offset_width, 0].
+*@li size: 1-D, containing [target_height, target_width, -1].
+*@li bboxes: 3-D with shape [1, 1, 4] containing the distorted bounding box . \n
+
+*@attention Constraints:
+*Input images can be of different types but output images are always float . \n
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow SampleDistortedBoundingBox operator.
+*/
+
+REG_OP(SampleDistortedBoundingBox)
+    .INPUT(image_size, TensorType({ DT_UINT8, DT_INT8, DT_INT16, \
+        DT_INT32, DT_INT64 }))
+    .INPUT(bounding_boxes, TensorType({ DT_FLOAT }))
+    .OUTPUT(begin, TensorType({ DT_UINT8, DT_INT8, DT_INT16, \
+        DT_INT32, DT_INT64 }))
+    .OUTPUT(size, TensorType({ DT_UINT8, DT_INT8, DT_INT16, \
+        DT_INT32, DT_INT64 }))
+    .OUTPUT(bboxes, TensorType({ DT_FLOAT }))
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .ATTR(min_object_covered, Float, 0.1f)
+    .ATTR(aspect_ratio_range, ListFloat, { 0.75f, 1.33f })
+    .ATTR(area_range, ListFloat, { 0.05f, 1.0f })
+    .ATTR(max_attempts, Int, 100)
+    .ATTR(use_image_if_no_bounding_boxes, Bool, false)
+    .OP_END_FACTORY_REG(SampleDistortedBoundingBox)
+
+/**
+*@brief Generate a single randomly distorted bounding box for an image . \n
+
+*@par Inputs:
+*Input images must be a 4-D tensor. Inputs include:
+*@li image_size: 1-D, containing [height, width, channels].
+*@li bounding_boxes: 3-D with shape [batch, N, 4] describing the N bounding
 boxes associated with the image.
 *@li min_object_covered: The cropped area of the image must contain at least
 this fraction of any bounding box supplied. The value of this parameter should
@@ -1424,11 +1480,11 @@ REG_OP(Resize)
 
 *@par Attributes:
 *@li channels: An optional int. Defaults to 0. Number of color channels for the decoded image.
-*@li ratio: An optional int. Defaults to 1. Downscaling ratio. 
+*@li ratio: An optional int. Defaults to 1. Downscaling ratio.
 *@li fancy_upscaling: An optional bool. Defaults to True. If true use a slower but nicer upscaling of the chroma planes
 *@li try_recover_truncated: An optional bool. Defaults to False. If true try to recover an image from truncated input.
 *@li acceptable_fraction: An optional float. Defaults to 1. The minimum required fraction of lines before a truncated input is accepted.
-*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used for decompression. \n 
+*@li dct_method: An optional string. Defaults to "". string specifying a hint about the algorithm used for decompression. \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.

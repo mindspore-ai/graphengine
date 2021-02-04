@@ -107,11 +107,13 @@ across multiple sessions .   \n
 
 REG_OP(Unbatch)
   .INPUT(x_tensor, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+      DT_COMPLEX64, DT_COMPLEX128}))
   .INPUT(index, TensorType({DT_INT64}))
   .INPUT(id, TensorType({DT_INT64}))
   .OUTPUT(y_tensor, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+      DT_COMPLEX64, DT_COMPLEX128}))
   .REQUIRED_ATTR(timeout_micros, Int)
   .ATTR(container, String, "")
   .ATTR(shared_name, String, "")
@@ -146,13 +148,16 @@ across multiple sessions .   \n
 
 REG_OP(UnbatchGrad)
   .INPUT(x_input, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+      DT_COMPLEX64, DT_COMPLEX128}))
   .INPUT(index, TensorType({DT_INT64}))
   .INPUT(grad, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+      DT_COMPLEX64, DT_COMPLEX128}))
   .INPUT(id, TensorType({DT_INT64}))
   .OUTPUT(y_grad, TensorType({DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+      DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
+      DT_COMPLEX64, DT_COMPLEX128}))
   .ATTR(container, String, "")
   .ATTR(shared_name, String, "")
   .OP_END_FACTORY_REG(UnbatchGrad)

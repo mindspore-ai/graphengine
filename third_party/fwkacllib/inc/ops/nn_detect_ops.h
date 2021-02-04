@@ -968,8 +968,9 @@ REG_OP(SPP)
 * Three inputs, including:
 *@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
 * map.
-*@li rois: A tensor of type float16 or float32, with shape
+*@li rois: A tensor of type float16 or float32, with 3D shape
 * [batch, 5, roi_max_num], describing the RIOs.
+* roi_max_num must be less than or equal to 6000 and must be divided by 16.
 *@li roi_actual_num: A  optional tensor of type int32, with shape [batch, 8], specifying
 * the number of ROIs per batch . \n
 
@@ -1603,6 +1604,50 @@ REG_OP(NonMaxSuppressionV7)
     .ATTR(center_point_box, Int, 0)
     .ATTR(max_boxes_size, Int, 0)
     .OP_END_FACTORY_REG(NonMaxSuppressionV7)
+
+/**
+*@brief Obtains the ROI feature matrix from the feature map list. It is a customized fused operator for mmdetection. \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li features: A 5HD Tensor list of type float32 or float16.
+*@li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
+* the value "5" indicates the indexes of images where the ROIs are located, "x0", "y0", "x1", and "y1".
+
+*@par Attributes:
+*@li finest_scale: A optional attribute of type int, specifying the scale of calculate levels of "rois".
+*@li roi_scale_factor: A optional attribute of type float32, specifying the rescaling of "rois" coordinates.
+*@li spatial_scale: A optional attribute of type list float32, specifying the scaling ratio of "features"
+* to the original image.
+*@li pooled_height: A optional attribute of type int32, specifying the H dimension.
+*@li pooled_width: A optional attribute of type int32, specifying the W dimension.
+*@li sample_num: An optional attribute of type int32, specifying the horizontal and vertical sampling frequency
+* of each output. If this attribute is set to "0", the sampling frequency is equal to the rounded up value of "rois",
+* which is a floating point number. Defaults to "0".
+*@li pool_mode: An optional attribute of type string to indicate pooling mode. Defaults to "avg" . \n
+*@li aligned: An optional attribute of type bool, specifying the align to corner. Defaults to true . \n
+
+*@par Outputs:
+* output: Outputs the feature sample of each ROI position. The format is 5HD Tensor of type float32 or float16.
+* The axis N is the number of input ROIs. Axes H, W, and C are consistent with the values of "pooled_height",
+* "pooled_width", and "features", respectively.
+
+*@par Third-party framework compatibility
+*Compatible with mmdetection SingleRoIExtractor operator.
+*/
+REG_OP(RoiExtractor)
+    .DYNAMIC_INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(finest_scale, Int, 56)
+    .ATTR(roi_scale_factor, Float, 0)
+    .ATTR(spatial_scale, ListFloat, { 1.f/4, 1.f/8, 1.f/16, 1.f/32 })
+    .ATTR(pooled_height, Int, 7)
+    .ATTR(pooled_width, Int, 7)
+    .ATTR(sample_num, Int, 0)
+    .ATTR(pool_mode, String, "avg")
+    .ATTR(aligned, Bool, true)
+    .OP_END_FACTORY_REG(RoiExtractor)
 
 }  // namespace ge
 

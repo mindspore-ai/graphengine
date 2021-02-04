@@ -383,11 +383,11 @@ REG_OP(SparseFillEmptyRowsGrad)
 REG_OP(SparseTensorDenseMatMul)
     .INPUT(x1_indices, TensorType({DT_INT32, DT_INT64}))
     .INPUT(x1_values, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, \
-        DT_COMPLEXT64, DT_COMPLEX128, DT_FLOAT16}))
+        DT_COMPLEXT64, DT_COMPLEX128, DT_FLOAT16, DT_INT64}))
     .INPUT(x1_shape, TensorType({DT_INT64}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_COMPLEXT64, \
+    .INPUT(x2, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_COMPLEXT64, \
         DT_COMPLEX128, DT_FLOAT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_COMPLEXT64, \
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_COMPLEXT64, \
         DT_COMPLEX128, DT_FLOAT16}))
     .ATTR(adjoint_a, Bool, false)
     .ATTR(adjoint_b, Bool, false)

@@ -37,13 +37,34 @@ namespace ge {
 *@attention Constraints:
 * This operator is a BatchNorm fusion operator for updating the moving
 * averages for training.
-* This operator is used in conjunction with BNTrainingUpdate.
+* This operator is used in conjunction with BNTrainingReduce.
 */
 REG_OP(BNTrainingReduce)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(sum, TensorType({DT_FLOAT}))
     .OUTPUT(square_sum, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingReduce)
+
+/**
+*@brief Performs reduced batch normalization . \n
+
+*@par Inputs:
+*x: A 6D Tensor of type float16 or float32, with format NDC1HWC0 . \n
+
+*@par Outputs:
+*@li sum: A 3D Tensor of type float32 for SUM reduced "x".
+*@li square_sum: A 3D Tensor of type float32 for SUMSQ reduced "x" . \n
+
+*@attention Constraints:
+* This operator is a BatchNorm fusion operator for updating the moving
+* averages for training.
+* This operator is used in conjunction with BN3DTrainingReduce.
+*/
+REG_OP(BN3DTrainingReduce)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(sum, TensorType({DT_FLOAT}))
+    .OUTPUT(square_sum, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(BN3DTrainingReduce)
 
 /**
 *@brief Performs the backpropagation of BatchNorm . \n
@@ -89,6 +110,49 @@ REG_OP(BNTrainingReduceGrad)
     .OP_END_FACTORY_REG(BNTrainingReduceGrad)
 
 /**
+*@brief Performs the backpropagation of BatchNorm . \n
+
+*@par Inputs:
+* Seven inputs, including:
+*@li grads: A 6D Tensor of type float16 or float32, with format NDC1HWC0, for
+* the gradient.
+*@li x: A 6D Tensor of type float16 or float32, with format NDC1HWC0.
+*@li diff_scale: A 6D Tensor of type float32, with format NDC1HWC0,
+* for the mean of "x".
+*@li diff_offset: A 6D Tensor of type float32, with format NDC1HWC0,
+* for the variance of "x".
+*@li scale: A 6D Tensor of type float32, with format NDC1HWC0.
+*@li batch_mean: A 6D Tensor of type float32, with format NDC1HWC0,
+* for the mean of "x".
+*@li batch_variance: A 6D Tensor of type float32, with format NDC1HWC0,
+* for the variance of "x" . \n
+
+*@par Attributes:
+*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* added to the variance of "x" . \n
+
+*@par Outputs:
+*y: A Tensor of type float16 or float32, with format NDC1HWC0, for the offset
+* of "x" . \n
+
+*@attention Constraints:
+* The preceding layer of this operator must be BN3DTrainingReduceGrad . \n
+
+*@see BN3DTrainingReduceGrad
+*/
+REG_OP(BN3DTrainingReduceGrad)
+    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(diff_scale, TensorType({DT_FLOAT}))
+    .INPUT(diff_offset, TensorType({DT_FLOAT}))
+    .INPUT(scale, TensorType({DT_FLOAT}))
+    .INPUT(batch_mean, TensorType({DT_FLOAT}))
+    .INPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(epsilon, Float, 0.0001)
+    .OP_END_FACTORY_REG(BN3DTrainingReduceGrad)
+
+/**
 *@brief Performs reduced batch normalization . \n
 
 *@par Inputs:
@@ -120,7 +184,7 @@ REG_OP(BNTrainingReduceGrad)
 *@attention Constraints:
 *@li This operator is a BatchNorm fusion operator for updating the moving
 averages for training.
-*This operator is used in conjunction with BNTrainingReduce.
+*This operator is used in conjunction with BNTrainingUpdate.
 *@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square
 * root instruction.
 */
@@ -140,6 +204,59 @@ REG_OP(BNTrainingUpdate)
     .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingUpdate)
+
+/**
+*@brief Performs reduced batch normalization . \n
+
+*@par Inputs:
+* Seven inputs, including: (NDC1HWC0 supported)
+*@li x: A 6D Tensor of type float16 or float32.
+*@li sum: A 6D Tensor of type float32 for the output of operator
+* BN3DTrainingUpdate.
+*@li square_sum: A 6D Tensor of type float32 for the output of operator
+* BN3DTrainingUpdate.
+*@li scale: A 6D Tensor of type float32, for the scaling factor.
+*@li offset: A 6D Tensor of type float32, for the scaling offset.
+*@li mean: A 6D Tensor of type float32, for the updated mean.
+*@li variance: A 6D Tensor of type float32, for the updated variance . \n
+
+*@par Attributes:
+*@li epsilon: A required float32, specifying the small value added to variance
+* to avoid dividing by zero.
+*@li factor: A required float32, specifying the weight for updating the mean
+* and variance . \n
+
+*@par Outputs:
+* Five outputs, including: (NDC1HWC0 supported)
+*@li y: A 6D Tensor of type float16 or float32, for normalized "x".
+*@li mean: A 6D Tensor of type float32, for the updated mean.
+*@li variance: A 6D Tensor of type float32, for the updated variance.
+*@li batch_mean: A 6D Tensor of type float32, for the mean of "x".
+*@li batch_variance: A 6D Tensor of type float32, for the variance of "x" . \n
+
+*@attention Constraints:
+*@li This operator is a BatchNorm fusion operator for updating the moving
+averages for training.
+*This operator is used in conjunction with BN3DTrainingUpdate.
+*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square
+* root instruction.
+*/
+REG_OP(BN3DTrainingUpdate)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(sum, TensorType({DT_FLOAT}))
+    .INPUT(square_sum, TensorType({DT_FLOAT}))
+    .INPUT(scale, TensorType({DT_FLOAT}))
+    .INPUT(offset, TensorType({DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT}))
+    .INPUT(variance, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(factor, Float)
+    .REQUIRED_ATTR(epsilon, Float)
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(mean, TensorType({DT_FLOAT}))
+    .OUTPUT(variance, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
+    .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(BN3DTrainingUpdate)
 
 /**
 *@brief Performs batch normalization for inference . \n
@@ -283,6 +400,40 @@ REG_OP(BNTrainingUpdateGrad)
     .OUTPUT(diff_scale, TensorType({DT_FLOAT}))
     .OUTPUT(diff_offset, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(BNTrainingUpdateGrad)
+
+/**
+*@brief Performs the backpropagation of BatchNorm . \n
+
+*@par Inputs:
+* Four inputs, including:
+*@li grads: A 6D Tensor of type float16 or float32, with format NDC1HWC0,
+* for the gradient.
+*@li x: A 6D Tensor of type float16 or float32, with format NDC1HWC0.
+*@li batch_mean: A 6D Tensor of type float32, with format NDC1HWC0,
+* for the mean of "x".
+*@li batch_variance: A 6D Tensor of type float32, with format NDC1HWC0,
+* for the variance of "x" . \n
+
+*@par Attributes:
+*epsilon: An optional float32. Defaults to "0.0001". A small float number
+* added to the variance of "x" . \n
+
+*@par Outputs:
+*@li diff_scale: A Tensor of type float32, with format NDC1HWC0,
+* for the offset of "scale".
+*@li diff_offset: A Tensor of type float32, with format NDC1HWC0,
+* for the offset of "offset" . \n
+
+*/
+REG_OP(BN3DTrainingUpdateGrad)
+    .INPUT(grads, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(batch_mean, TensorType({DT_FLOAT}))
+    .INPUT(batch_variance, TensorType({DT_FLOAT}))
+    .ATTR(epsilon, Float, 0.0001)
+    .OUTPUT(diff_scale, TensorType({DT_FLOAT}))
+    .OUTPUT(diff_offset, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(BN3DTrainingUpdateGrad)
 
 /**
 *@brief Performs the backpropagation of BatchNorm for inference . \n

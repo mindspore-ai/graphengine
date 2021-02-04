@@ -241,7 +241,22 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         return PARAM_INVALID;
       }
       auto &tensor_desc = input_tensor_desc_[input_index];
-      tensor_desc->SetShape(GeShape(current_data.shapes[input_index]));
+      GeShape shape(current_data.shapes[input_index]);
+      std::vector<std::pair<int64_t, int64_t>> range;
+      auto range_ret = tensor_desc->GetShapeRange(range);
+      GE_CHK_BOOL_RET_STATUS(range_ret == GRAPH_SUCCESS, INTERNAL_ERROR,
+                             "Get shape range failed, ret=%u.", range_ret);
+      for (size_t k = 0; k < range.size(); ++k) {
+        if (k >= shape.GetDimNum()) {
+          break;
+        }
+        if (shape.GetDim(k) < range[k].first || shape.GetDim(k) > range[k].second) {
+          GELOGE(PARAM_INVALID, "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld]",
+                 input_index, k, shape.GetDim(k), range[k].first, range[k].second);
+          return PARAM_INVALID;
+        }
+      }
+      tensor_desc->SetShape(shape);
       args.input_desc[input_index] = tensor_desc;
       GELOGD("Update shape of input[%zu] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
       GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, tensor_size),

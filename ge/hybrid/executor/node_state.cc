@@ -36,11 +36,11 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
          this->num_pending_shapes_);
 
   for (int i = 0; i < node_item.num_inputs; ++i){
-    input_tensor_desc.emplace_back(std::move(*node_item.MutableInputDesc(i)));
+    input_tensor_desc.emplace_back(*node_item.MutableInputDesc(i));
   }
 
   for (int i = 0; i < node_item.num_outputs; ++i){
-    output_tensor_desc.emplace_back(std::move(*node_item.MutableOutputDesc(i)));
+    output_tensor_desc.emplace_back(*node_item.MutableOutputDesc(i));
   }
 }
 

@@ -624,6 +624,7 @@ namespace {
 
   Status CheckDynamicSupport(GeModelPtr &ge_model, const ComputeGraphPtr &graph) {
     bool support_dynamic = true;
+    bool is_dynamic = false;
     for (const auto &node : graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node);
       if (node->GetType() == DATA || node->GetType() == CONSTANT || node->GetType() == CONSTANTOP ||
@@ -632,12 +633,17 @@ namespace {
       }
       auto op_desc = node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
-      (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, support_dynamic);
-      if (!support_dynamic) {
-        GELOGW("Node[%s] doesn't support dynamic shape.", node->GetName().c_str());
-        (void)AttrUtils::SetBool(ge_model, kAttrSupportDynamicShape, false);
-        return SUCCESS;
+      if (AttrUtils::HasAttr(op_desc, kAttrSupportDynamicShape)) {
+        is_dynamic = true;
+        (void) AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, support_dynamic);
+        if (!support_dynamic) {
+          GELOGW("Node[%s] doesn't support dynamic shape.", node->GetName().c_str());
+          break;
+        }
       }
+    }
+    if (is_dynamic) {
+      (void) AttrUtils::SetBool(ge_model, kAttrSupportDynamicShape, support_dynamic);
     }
     return SUCCESS;
   }

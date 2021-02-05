@@ -702,19 +702,42 @@ Status HybridModelBuilder::UnfoldSubgraph(ComputeGraph &root_graph,
 }
 
 Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item,
-                                              const NodeItem &node_item) {
-  auto output_size = node_item.op_desc->GetAllInputsSize();
-  GE_CHECK_LE(output_size, UINT32_MAX);
-  for (uint32_t i = 0; i < static_cast<uint32_t>(output_size); ++i) {
-    uint32_t p_index = i;
-    // Net output of Subgraph of while do not have parent index
-    if (AttrUtils::GetInt(node_item.op_desc->GetInputDesc(i), ATTR_NAME_PARENT_NODE_INDEX, p_index)) {
-      GELOGD("[%s] Parent index not set for input[%u].", node_item.NodeName().c_str(), i);
-    }
+                                              const NodeItem &node_item,
+                                              bool is_root_graph) {
+  auto output_size = node_item.num_inputs;
+  graph_item.output_edges_.resize(output_size);
 
-    graph_item.output_index_mapping_.emplace_back(p_index);
+  for (auto &in_data_anchor : node_item.node->GetAllInDataAnchors()) {
+    auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out_anchor);
+    auto src_node = peer_out_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+
+    auto src_node_item = GetNodeItem(src_node);
+    GE_CHECK_NOTNULL(src_node_item);
+    auto output_idx = in_data_anchor->GetIdx();
+    auto output_offset = src_node_item->output_start + peer_out_anchor->GetIdx();
+    GELOGI("Output[%d], node = %s, output_index = %d, output_offset = %d ",
+           output_idx,
+           src_node_item->NodeName().c_str(),
+           peer_out_anchor->GetIdx(),
+           output_offset);
+
+    GE_CHECK_LE(output_idx, output_size - 1);
+    graph_item.output_edges_[output_idx] = {src_node_item, peer_out_anchor->GetIdx()};
   }
 
+  if (!is_root_graph) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(output_size); ++i) {
+      uint32_t p_index = i;
+      // Net output of Subgraph of while do not have parent index
+      if (AttrUtils::GetInt(node_item.op_desc->GetInputDesc(i), ATTR_NAME_PARENT_NODE_INDEX, p_index)) {
+        GELOGD("[%s] Parent index not set for input[%u].", node_item.NodeName().c_str(), i);
+      }
+
+      graph_item.output_index_mapping_.emplace_back(p_index);
+    }
+  }
   return SUCCESS;
 }
 

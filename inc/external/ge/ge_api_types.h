@@ -219,6 +219,9 @@ const std::string HCOM_PARALLEL = "ge.hcomParallel";
 // configure whether to use dynamic batch size
 const char *const kDynamicBatchSize = "ge.dynamicBatchSize";
 
+// configure threshold of fusion data size for communication op
+const std::string FUSION_TENSOR_SIZE = "ge.fusionTensorSize";
+
 const std::string INPUT_SHAPE = "ge.inputShape";
 
 const std::string DYNAMIC_NODE_TYPE = "ge.dynamicNodeType";

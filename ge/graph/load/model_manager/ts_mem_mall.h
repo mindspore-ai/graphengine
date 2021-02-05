@@ -100,8 +100,8 @@ class TsMemMall {
 
  private:
   std::mutex mem_mutex_;
-  std::unordered_map<int64_t, void *> mem_store_size_;
-  std::unordered_map<void *, int64_t> mem_store_addr_;
+  std::map<int64_t, void *> mem_store_size_;
+  std::map<void *, int64_t> mem_store_addr_;
   rtMemType_t mem_type_;
 };
 }  // namespace ge

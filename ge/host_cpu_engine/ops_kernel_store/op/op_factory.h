@@ -32,7 +32,7 @@ using OP_CREATOR_FUNC = std::function<std::shared_ptr<Op>(const Node &, RunConte
 /**
  * manage all the op, support create op.
  */
-class OpFactory {
+class GE_FUNC_VISIBILITY OpFactory {
  public:
   static OpFactory &Instance();
 
@@ -70,7 +70,7 @@ class OpFactory {
   std::vector<std::string> all_ops_;
 };
 
-class OpRegistrar {
+class GE_FUNC_VISIBILITY OpRegistrar {
  public:
   OpRegistrar(const std::string &type, const OP_CREATOR_FUNC &func) {
     OpFactory::Instance().RegisterCreator(type, func);

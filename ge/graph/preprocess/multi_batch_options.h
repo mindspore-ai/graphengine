@@ -74,7 +74,7 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape);
 /// @param [out] map<string, vector<vector<int64_t>>> &data_to_dynamic_info: key:data_name. value:dynamic dims.
 /// @return SUCCESS / PARAM_INVALID
 ///
-Status ParserDataToDynmaicInfo(const vector<vector<int64_t>> &shapes,
+Status ParserDataToDynamicInfo(const vector<vector<int64_t>> &shapes,
                                vector<pair<string, vector<int64_t>>> &data_name_and_shape,
                                map<string, vector<vector<int64_t>>> &data_to_dynamic_info);
 
@@ -93,7 +93,7 @@ Status StampDynamicType(const OpDescPtr &op_desc);
 /// @param [in] const string &data_name: cur data name.
 /// @return 0: true/false
 ///
-bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name);
+GE_FUNC_VISIBILITY bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_name);
 
 ///
 /// @ingroup ge
@@ -104,7 +104,7 @@ bool CheckDynamicBatchShape(const vector<int64_t> &shape, const string &data_nam
 /// @param [in]  const std::string &input_format: format of input.
 /// @return 0: true/false
 ///
-bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
+GE_FUNC_VISIBILITY bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
                                 const std::string &input_format);
 
 }  // namespace multibatch

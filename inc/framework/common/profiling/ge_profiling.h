@@ -38,9 +38,9 @@ struct ProfCommandHandleData {
   uint32_t modelId;
 };
 
-ge::Status RegProfCtrlCallback(MsprofCtrlCallback func);
-ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func);
-ge::Status RegProfReporterCallback(MsprofReporterCallback func);
-ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t len);
+GE_FUNC_VISIBILITY ge::Status RegProfCtrlCallback(MsprofCtrlCallback func);
+GE_FUNC_VISIBILITY ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func);
+GE_FUNC_VISIBILITY ge::Status RegProfReporterCallback(MsprofReporterCallback func);
+GE_FUNC_VISIBILITY ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t len);
 
 #endif  // INC_FRAMEWORK_COMMON_GE_PROFILING_H_

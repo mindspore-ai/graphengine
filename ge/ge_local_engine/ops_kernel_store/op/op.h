@@ -29,7 +29,7 @@ namespace ge_local {
 /**
  * The base class for all op.
  */
-class Op {
+class GE_FUNC_VISIBILITY Op {
  public:
   Op(const Node &node, RunContext &run_context);
 

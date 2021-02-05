@@ -842,6 +842,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
   };
 
   vector<OpDescPtr> output_op_list;
+  set<const void *> input_outside_addrs;
+  set<const void *> output_outside_addrs;
   map<uint32_t, OpDescPtr> data_by_index;
   map<string, OpDescPtr> variable_by_name;
   auto nodes = compute_graph->GetAllNodes();
@@ -858,7 +860,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     GE_TIMESTAMP_ADD(LoadTBEKernelBinToOpDesc);
 
     if (IsDataOp(op_desc->GetType())) {
-      if (InitDataOp(compute_graph, node, data_op_index, data_by_index) != SUCCESS) {
+      if (InitDataOp(compute_graph, node, data_op_index, data_by_index, input_outside_addrs) != SUCCESS) {
         GELOGE(PARAM_INVALID, "Data init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
@@ -867,7 +869,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     }
 
     if (op_desc->GetType() == NETOUTPUT) {
-      if (InitNetOutput(compute_graph, node, output_op_list) != SUCCESS) {
+      if (InitNetOutput(compute_graph, node, output_op_list, output_outside_addrs) != SUCCESS) {
         GELOGE(PARAM_INVALID, "NetOutput init failed, Name: %s", op_desc->GetName().c_str());
         return PARAM_INVALID;
       }
@@ -961,7 +963,7 @@ void DavinciModel::SetLabelForDynamic(const NodePtr &node) {
 /// @return Status
 ///
 Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &node, uint32_t &data_op_index,
-                                map<uint32_t, OpDescPtr> &data_by_index) {
+                                map<uint32_t, OpDescPtr> &data_by_index, set<const void *> &input_outside_addrs) {
   // op_desc Checked by Init: Data, valid.
   auto op_desc = node->GetOpDesc();
   if (node->GetOwnerComputeGraph() != graph) {
@@ -1000,16 +1002,12 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
     GELOGE(PARAM_INVALID, "InitDataInfo of input_info %s failed.", op_desc->GetName().c_str());
     return PARAM_INVALID;
   }
-  new_input_data_info_[data_index] = zero_copy_offset;
-
-  for (size_t index = 0; index < virtual_addr_list.size(); ++index) {
-    void *addr = virtual_addr_list.at(index);
-    if (new_input_outside_addrs_.find(addr) != new_input_outside_addrs_.end()) {
-      continue;
-    }
-    zero_copy_offset.SetInputOutsideAddrs(output_offset_list, addr, index, fusion_flag, real_virtual_addrs_);
-    new_input_outside_addrs_[addr] = zero_copy_offset;
+  if (input_outside_addrs.count(virtual_addr) == 0) {
+    int64_t output_offset = output_offset_list.at(kDataIndex);
+    zero_copy_offset.SetInputOutsideAddrs(output_offset, virtual_addr, fusion_flag, real_virtual_addrs_);
+    input_outside_addrs.insert(virtual_addr);
   }
+  input_data_info_[data_index] = zero_copy_offset;
 
   return SUCCESS;
 }
@@ -1085,7 +1083,7 @@ bool DavinciModel::IsGetNextSinkDynamic(const OpDescPtr &op_desc) {
 /// @param [in/out] vector<OpDescPtr>: All NetOutput node in model.
 /// @return Status
 Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &node,
-                                   vector<OpDescPtr> &output_op_list) {
+                                   vector<OpDescPtr> &output_op_list, set<const void *> &output_outside_addrs) {
   // node->GetOpDesc Checked by Init: NetOutput, valid.
   auto op_desc = node->GetOpDesc();
   // excludes the function op sub graph, e.g. case,if
@@ -1117,7 +1115,7 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
     return PARAM_INVALID;
   }
 
-  size_t num = new_output_data_info_.size();
+  size_t num = output_data_info_.size();
   bool fusion_flag = false;
 
   size_t input_count = input_size_list.size();
@@ -1131,22 +1129,22 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
     Status ret = zero_copy_offset.InitOutputDataInfo(input_size_list, virtual_addr_list, op_desc, idx, fusion_flag);
     GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(PARAM_INVALID, "InitDataInfo of input_info %s failed.",
                                            op_desc->GetName().c_str()); return PARAM_INVALID;);
-    new_output_data_info_[num + idx] = zero_copy_offset;
     void *addr = virtual_addr_list.at(idx);
     int64_t input_offset = input_offset_list.at(idx);
-    vector<void *> tensor_addrs;
-    zero_copy_offset.SetOutputOutsideAddrs(input_offset, fusion_flag, addr, tensor_addrs);
-    auto rslt = new_output_outside_addrs_.insert(std::pair<void *, ZeroCopyOffset>(addr, zero_copy_offset));
-    if (!rslt.second) {
+    if (output_outside_addrs.count(addr) == 0) {
+      vector<void *> tensor_addrs;
+      zero_copy_offset.SetOutputOutsideAddrs(input_offset, fusion_flag, addr, tensor_addrs);
+      output_outside_addrs.insert(addr);
+      for (size_t i = 0; i < tensor_addrs.size(); ++i) {
+        void *real_addr = tensor_addrs.at(i);
+        DisableZeroCopy(real_addr);
+        real_virtual_addrs_.insert(real_addr);
+      }
+    } else {
       GELOGI("same output_tensor_addr %p to different input_tensor of %s", addr, op_desc->GetName().c_str());
       DisableZeroCopy(addr);
     }
-
-    for (size_t i = 0; i < tensor_addrs.size(); ++i) {
-      void *real_addr = tensor_addrs.at(i);
-      DisableZeroCopy(real_addr);
-      real_virtual_addrs_.insert(real_addr);
-    }
+    output_data_info_[num + idx] = zero_copy_offset;
   }
   return SUCCESS;
 }
@@ -1402,7 +1400,7 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   }
 
   rtLabel_t rt_label = nullptr;
-  rtError_t rt_error = rtLabelCreateEx(&rt_label, stream);
+  rtError_t rt_error = rtLabelCreateExV2(&rt_label, rt_model_handle_, stream);
   if (rt_error != RT_ERROR_NONE || rt_label == nullptr) {
     GELOGE(INTERNAL_ERROR, "InitLabelSet: %s create label failed, error=0x%x.", op_desc->GetName().c_str(), rt_error);
     return INTERNAL_ERROR;
@@ -1463,27 +1461,27 @@ Status DavinciModel::LoadWithQueue() {
     return SUCCESS;
   }
 
-  if (input_queue_ids_.size() != new_input_data_info_.size()) {
+  if (input_queue_ids_.size() != input_data_info_.size()) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Input queue ids not match model: input_queue=%zu input_data=%zu",
-           input_queue_ids_.size(), new_input_data_info_.size());
+           input_queue_ids_.size(), input_data_info_.size());
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
 
-  if (output_queue_ids_.size() != new_output_data_info_.size()) {
+  if (output_queue_ids_.size() != output_data_info_.size()) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID,
            "Output queue ids not match model: output_queue=%zu output_data=%zu",
-           output_queue_ids_.size(), new_output_data_info_.size());
+           output_queue_ids_.size(), output_data_info_.size());
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
 
   GE_CHK_STATUS_RET(AddHeadStream(), "Add head stream failed.");
   // Binding input_queue and Data Op.
   GE_CHK_STATUS_RET(BindInputQueue(), "Launch bind input queue failed.");
-  GE_CHK_STATUS_RET(CpuTaskModelZeroCopy(input_mbuf_list_, new_input_outside_addrs_), "Launch zero copy failed.");
+  GE_CHK_STATUS_RET(CpuTaskModelZeroCopy(input_mbuf_list_, input_data_info_), "Launch zero copy failed.");
 
   // Binding output_queue and NetOutput Op.
   GE_CHK_STATUS_RET(BindOutputQueue(), "Launch bind output queue failed.");
-  GE_CHK_STATUS_RET(CpuTaskModelZeroCopy(output_mbuf_list_, new_output_outside_addrs_), "Launch zero copy failed.");
+  GE_CHK_STATUS_RET(CpuTaskModelZeroCopy(output_mbuf_list_, output_data_info_), "Launch zero copy failed.");
 
   GE_CHK_STATUS_RET(CpuActiveStream(), "Launch active entry stream failed.");
   GE_CHK_STATUS_RET(CpuWaitEndGraph(), "Launch wait end graph failed.");
@@ -1499,9 +1497,9 @@ Status DavinciModel::LoadWithQueue() {
 Status DavinciModel::BindInputQueue() {
   // Caller checked: input_queue_ids_.size() == input_size_list_.size() != input_addr_list_.size()
   for (size_t i = 0; i < input_queue_ids_.size(); ++i) {
-    auto it = new_input_data_info_.find(i);
-    if (it == new_input_data_info_.end()) {
-      GELOGE(FAILED, "Input not match: tensor num=%zu, Queue id index=%zu", new_input_data_info_.size(), i);
+    auto it = input_data_info_.find(i);
+    if (it == input_data_info_.end()) {
+      GELOGE(FAILED, "Input not match: tensor num=%zu, Queue id index=%zu", input_data_info_.size(), i);
       return FAILED;
     }
 
@@ -1555,7 +1553,7 @@ Status DavinciModel::CpuModelDequeue(uint32_t queue_id) {
 }
 
 Status DavinciModel::CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
-                                          std::map<const void *, ZeroCopyOffset> &outside_addrs) {
+                                          const map<uint32_t, ZeroCopyOffset> &outside_addrs) {
   GELOGI("Set CpuKernel model zero_copy task enter.");
   std::shared_ptr<CpuTaskZeroCopy> zero_copy = MakeShared<CpuTaskZeroCopy>(rt_entry_stream_);
   if (zero_copy == nullptr) {
@@ -1579,9 +1577,9 @@ Status DavinciModel::CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
 Status DavinciModel::BindOutputQueue() {
   // Caller checked: input_queue_ids_.size() == input_size_list_.size() != input_addr_list_.size()
   for (size_t i = 0; i < output_queue_ids_.size(); ++i) {
-    auto it = new_output_data_info_.find(i);
-    if (it == new_output_data_info_.end()) {
-      GELOGE(FAILED, "Output not match: tensor num=%zu, Queue id index=%zu", new_output_data_info_.size(), i);
+    auto it = output_data_info_.find(i);
+    if (it == output_data_info_.end()) {
+      GELOGE(FAILED, "Output not match: tensor num=%zu, Queue id index=%zu", output_data_info_.size(), i);
       return FAILED;
     }
 
@@ -1685,9 +1683,9 @@ Status DavinciModel::CpuWaitEndGraph() {
 
 Status DavinciModel::BindEnqueue() {
   for (size_t i = 0; i < output_queue_ids_.size(); ++i) {
-    auto it = new_output_data_info_.find(i);
-    if (it == new_output_data_info_.end()) {
-      GELOGE(FAILED, "Output not match: tensor num=%zu, Queue id index=%zu", new_output_data_info_.size(), i);
+    auto it = output_data_info_.find(i);
+    if (it == output_data_info_.end()) {
+      GELOGE(FAILED, "Output not match: tensor num=%zu, Queue id index=%zu", output_data_info_.size(), i);
       return FAILED;
     }
 
@@ -2103,10 +2101,10 @@ Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_descs
 Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data) {
   rtMemcpyKind_t kind = device_data ? RT_MEMCPY_DEVICE_TO_DEVICE : RT_MEMCPY_HOST_TO_DEVICE;
   const std::vector<DataBuffer> &blobs = input_data.blobs;
-  for (const auto &data : new_input_data_info_) {
+  for (const auto &data : input_data_info_) {
     if (data.first >= blobs.size()) {
       GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld, op_name(%s)", blobs.size(),
-             new_input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first,
+             input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first,
              data.second.GetOpName().c_str());
       return FAILED;
     }
@@ -2427,18 +2425,18 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
 
   output_data.index = data_id;
   output_data.model_id = model_id_;
-  if (output_data.blobs.size() != new_output_data_info_.size()) {
+  if (output_data.blobs.size() != output_data_info_.size()) {
     GELOGE(FAILED, "Output data buffer num=%zu not equal model data num=%zu", output_data.blobs.size(),
-           new_output_data_info_.size());
+           output_data_info_.size());
     return FAILED;
   }
 
   std::vector<DataBuffer> &blobs = output_data.blobs;
   size_t idx = 0;
-  for (const auto &output : new_output_data_info_) {
+  for (const auto &output : output_data_info_) {
     if (output.first >= blobs.size()) {
       GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld", blobs.size(),
-             new_input_data_info_.size(), output.first, output.second.GetDataInfo().at(0).first);
+             input_data_info_.size(), output.first, output.second.GetDataInfo().at(0).first);
       return FAILED;
     }
 
@@ -3166,8 +3164,11 @@ void DavinciModel::SetEndGraphId(uint32_t task_id, uint32_t stream_id) {
 /// @return None.
 ///
 void DavinciModel::SetCopyOnlyOutput() {
-  for (const auto &output_outside_addrs : new_output_outside_addrs_) {
+  for (const auto &output_outside_addrs : output_data_info_) {
     ZeroCopyOffset output_outside = output_outside_addrs.second;
+    if (!output_outside.IsRelativeOffsetValid()) {
+      return;
+    }
     for (uint32_t out_count = 0; out_count < output_outside.GetAddrCount(); ++out_count) {
       auto &addrs_mapping_list = output_outside.GetOutsideAddrs();
       std::map<const void *, std::vector<void *>> virtual_args_addrs = addrs_mapping_list[out_count];
@@ -3219,12 +3220,12 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
   for (size_t i = 0; i < nums; ++i) {
     std::lock_guard<std::mutex> lock(outside_addrs_mutex_);
 
-    for (auto &input_outside_addrs : new_input_outside_addrs_) {
+    for (auto &input_outside_addrs : input_data_info_) {
       ZeroCopyOffset &input_outside = input_outside_addrs.second;
       input_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
     }
 
-    for (auto &output_outside_addrs : new_output_outside_addrs_) {
+    for (auto &output_outside_addrs : output_data_info_) {
       ZeroCopyOffset &output_outside = output_outside_addrs.second;
       output_outside.SetOutsideAddrsValue(zero_copy_task, outside_addrs[i], args, offset + i * kAddrLen);
     }
@@ -3293,12 +3294,12 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
 /// @return SUCCESS handle successfully / PARAM_INVALID for failed
 ///
 Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &output_data, bool is_dynamic) {
-  if (UpdateIoTaskArgs(new_input_data_info_, true, input_data.blobs, is_dynamic, input_data.batch_label) != SUCCESS) {
+  if (UpdateIoTaskArgs(input_data_info_, true, input_data.blobs, is_dynamic, input_data.batch_label) != SUCCESS) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update input data to model failed.");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
-  if (UpdateIoTaskArgs(new_output_data_info_, false, output_data.blobs, is_dynamic, input_data.batch_label) !=
+  if (UpdateIoTaskArgs(output_data_info_, false, output_data.blobs, is_dynamic, input_data.batch_label) !=
       SUCCESS) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[ZCPY] Update output data to model failed.");
     return ACL_ERROR_GE_PARAM_INVALID;

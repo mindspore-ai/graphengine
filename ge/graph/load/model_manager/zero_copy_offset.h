@@ -43,8 +43,7 @@ class ZeroCopyOffset {
   ~ZeroCopyOffset();
 
   Status InitInputDataInfo(int64_t output_size, void *virtual_addr, const OpDescPtr &op_desc, bool &fusion_flag);
-  void SetInputOutsideAddrs(const vector<int64_t> &output_offset_list, void *addr, const size_t &index,
-                            bool fusion_flag, std::set<const void *> &real_virtual_addrs);
+  void SetInputOutsideAddrs(int64_t output_offset, void *addr, bool fusion_flag, set<const void *> &real_virtual_addrs);
 
   void IsL2Fusion(const vector<int64_t> &fusion_basic_addrs, const int64_t &tensor_addr, bool &fusion_flag);
   Status InitOutputDataInfo(const vector<int64_t> &input_size_list, const vector<void *> &virtual_addr_list,
@@ -65,9 +64,10 @@ class ZeroCopyOffset {
   // data_size of Data/Netoutput
   int64_t GetDataSize() const { return data_size_; }
   // value of *outside_addrs_ from davinci_model
-  const std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() { return outside_addrs_; }
+  const std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() const { return outside_addrs_; }
   // name of op
   std::string GetOpName() const { return op_name_; }
+  const bool IsRelativeOffsetValid() const { return valid_relative_offset_; }
 
  private:
   void *basic_addr_ = nullptr;
@@ -81,6 +81,7 @@ class ZeroCopyOffset {
 
   std::vector<int64_t> zero_copy_basic_offset_;
   std::vector<int64_t> zero_copy_relative_offset_;
+  bool valid_relative_offset_ = false;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_ZERO_COPY_OFFSET_H_

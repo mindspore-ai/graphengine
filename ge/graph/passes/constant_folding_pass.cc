@@ -50,12 +50,12 @@ Status RunOpKernelWithCheck(NodePtr &node,
   return FoldingPass::RunOpKernel(node, inputs, outputs);
 }
 
-const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>>
+const std::map<std::string, std::pair<std::uint64_t, uint64_t>>
     &ConstantFoldingPass::GetGeConstantFoldingPerfStatistic() const {
   return statistic_of_ge_constant_folding_;
 }
 
-const std::unordered_map<std::string, std::pair<std::uint64_t, uint64_t>>
+const std::map<std::string, std::pair<std::uint64_t, uint64_t>>
     &ConstantFoldingPass::GetOpConstantFoldingPerfStatistic() const {
   return statistic_of_op_constant_folding_;
 }

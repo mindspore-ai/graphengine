@@ -23,6 +23,7 @@ target_compile_options(atc_atc.bin PRIVATE
     -O2
     -Wno-deprecated-declarations
     -fno-common
+    -fvisibility=hidden
 )
 
 target_compile_definitions(atc_atc.bin PRIVATE
@@ -30,6 +31,7 @@ target_compile_definitions(atc_atc.bin PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
+    FUNC_VISIBILITY
 )
 
 target_include_directories(atc_atc.bin PRIVATE
@@ -56,6 +58,10 @@ target_include_directories(atc_atc.bin PRIVATE
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_options(atc_atc.bin PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(atc_atc.bin PRIVATE
@@ -90,6 +96,7 @@ target_compile_options(fwk_atc.bin PRIVATE
     -O2
     -Wno-deprecated-declarations
     -fno-common
+    -fvisibility=hidden
 )
 
 target_compile_definitions(fwk_atc.bin PRIVATE
@@ -97,6 +104,7 @@ target_compile_definitions(fwk_atc.bin PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
+    FUNC_VISIBILITY
 )
 
 target_include_directories(fwk_atc.bin PRIVATE
@@ -123,6 +131,10 @@ target_include_directories(fwk_atc.bin PRIVATE
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+)
+
+target_link_options(fwk_atc.bin PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(fwk_atc.bin PRIVATE

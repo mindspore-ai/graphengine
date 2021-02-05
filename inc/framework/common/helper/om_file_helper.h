@@ -51,7 +51,7 @@ struct SaveParam {
   std::string model_name;
 };
 
-class OmFileLoadHelper {
+class GE_FUNC_VISIBILITY OmFileLoadHelper {
  public:
   Status Init(const ge::ModelData &model);
 
@@ -77,7 +77,7 @@ class OmFileLoadHelper {
   bool is_inited_{false};
 };
 
-class OmFileSaveHelper {
+class GE_FUNC_VISIBILITY OmFileSaveHelper {
  public:
   ModelFileHeader &GetModelFileHeader() { return model_header_; }
 

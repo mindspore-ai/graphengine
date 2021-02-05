@@ -49,6 +49,7 @@ Status AiCoreNodeExecutor::Initialize() {
 Status AiCoreNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
   GELOGI("AiCoreNodeExecutor(%s) LoadTask Start.", node->GetName().c_str());
+  bool is_single_op = model.IsSingleOp();
 
   auto *task_defs = model.GetTaskDefs(node);
   if (task_defs == nullptr || task_defs->empty()) {
@@ -66,7 +67,8 @@ Status AiCoreNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &nod
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), *task_defs);
   std::unique_ptr<NodeTask> node_task;
-  GE_CHK_STATUS_RET(builder.BuildTask(node_task, true), "[%s] Failed to build op tasks.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(builder.BuildTask(node_task, true, is_single_op),
+                    "[%s] Failed to build op tasks.", node->GetName().c_str());
   task = std::move(node_task);
   GELOGI("AiCoreNodeExecutor(%s) LoadTask End.", node->GetName().c_str());
   return SUCCESS;

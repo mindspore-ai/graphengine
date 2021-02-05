@@ -21,7 +21,7 @@
 
 namespace ge {
 namespace ge_local {
-class GeDeletedOp : public Op {
+class GE_FUNC_VISIBILITY GeDeletedOp : public Op {
  public:
   GeDeletedOp(const Node &node, RunContext &run_context);
 

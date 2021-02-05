@@ -131,7 +131,7 @@ bool IsTailingOptimization() {
 }
 
 ge::Status CheckFpCeilingMode() {
-  static const std::unordered_set<std::string> kValidFpCeilingMode = {"0", "1", "2"};
+  static const std::set<std::string> kValidFpCeilingMode = {"0", "1", "2"};
   string mode;
   auto ret = ge::GetContext().GetOption("ge.fpCeilingMode", mode);
   if (ret == ge::GRAPH_SUCCESS) {

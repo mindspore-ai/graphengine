@@ -46,7 +46,7 @@ class RefInputTask : public NodeTask {
 
   // key is op type, value is output ref input index,
   // e.g. {1,0} means out[0] ref input[1], out[1] ref input[0], if vector is empty, it means ref input one by one
-  static const std::unordered_map<std::string, std::vector<uint32_t>> out_ref_input_index_;
+  static const std::map<std::string, std::vector<uint32_t>> out_ref_input_index_;
 };
 
 class DependInputShapeTask : public NodeTask {
@@ -65,7 +65,7 @@ class DependInputShapeTask : public NodeTask {
   const NodePtr node_;
 
   // ops depend input shape
-  static const std::unordered_set<std::string> depend_input_shape_ops_;
+  static const std::set<std::string> depend_input_shape_ops_;
 };
 
 class ConstantNodeTask : public NodeTask {

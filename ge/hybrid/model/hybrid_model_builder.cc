@@ -147,6 +147,21 @@ Status HybridModelBuilder::Build() {
   return SUCCESS;
 }
 
+Status HybridModelBuilder::BuildForSingleOp() {
+  GE_CHK_STATUS_RET(ValidateParams(), "Failed to validate GeRootModel");
+  hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
+  GELOGI("[%s] Start to build hybrid model.", GetGraphName());
+  auto ret = ge_root_model_->GetSubgraphInstanceNameToModel();
+  const GeModelPtr ge_model = ret[ge_root_model_->GetRootGraph()->GetName()];
+  GE_CHK_STATUS_RET(IndexTaskDefs(ge_root_model_->GetRootGraph(), ge_model),
+                    "[%s] Failed to index task defs", GetGraphName());
+  GE_CHK_STATUS_RET(LoadGraph(), "[%s] Failed to load graph", GetGraphName());
+  GE_CHK_STATUS_RET(InitWeights(), "[%s] Failed to init weights", GetGraphName());
+  GE_CHK_STATUS_RET(LoadTasks(), "[%s] Failed to load tasks", GetGraphName());
+  GELOGI("[%s] Done building hybrid model for single op successfully.", GetGraphName());
+  return SUCCESS;
+}
+
 Status HybridModelBuilder::ValidateParams() {
   GE_CHECK_NOTNULL(ge_root_model_);
   GE_CHECK_NOTNULL(ge_root_model_->GetRootGraph());
@@ -951,46 +966,71 @@ Status HybridModelBuilder::InitVariableTensors() {
 }
 
 Status HybridModelBuilder::InitWeights() {
+  // For constant in root graph
+  const auto &root_graph = ge_root_model_->GetRootGraph();
+  const auto &subgraph_models = ge_root_model_->GetSubgraphInstanceNameToModel();
+  auto iter = subgraph_models.find(root_graph->GetName());
+  if (iter == subgraph_models.end()) {
+    GELOGD("Root graph model not found");
+    return SUCCESS;
+  }
+
+  auto &root_model = iter->second;
+  const auto &weight_buffer = root_model->GetWeight();
+  if (weight_buffer.GetSize() == 0) {
+    GELOGD("weight is empty");
+    return SUCCESS;
+  }
+
   auto allocator = NpuMemoryAllocator::GetAllocator();
   GE_CHECK_NOTNULL(allocator);
+  hybrid_model_.weight_buffer_ = TensorBuffer::Create(allocator, weight_buffer.size());
+  GE_CHECK_NOTNULL(hybrid_model_.weight_buffer_);
+  auto weight_base = reinterpret_cast<uint8_t *>(hybrid_model_.weight_buffer_->GetData());
+  GE_CHK_RT_RET(rtMemcpy(weight_base,
+                         hybrid_model_.weight_buffer_->GetSize(),
+                         weight_buffer.GetData(),
+                         weight_buffer.GetSize(),
+                         RT_MEMCPY_HOST_TO_DEVICE));
 
-  for (auto &it : hybrid_model_.node_items_) {
-    auto &node_item = it.second;
-    if (node_item->node_type != CONSTANT) {
+  GELOGI("Init weight mem successfully, weight base %p, weight size = %zu",
+         weight_base,
+         hybrid_model_.weight_buffer_->GetSize());
+  for (auto &node : root_graph->GetDirectNode()) {
+    if (node->GetType() != CONSTANT) {
       continue;
     }
 
-    const auto &constant_node = node_item->node;
-    auto op_desc = constant_node->GetOpDesc();
+    auto op_desc = node->GetOpDesc();
     auto v_weights = ModelUtils::GetWeights(op_desc);
     if (v_weights.empty()) {
-      GELOGE(INTERNAL_ERROR, "[%s] Constant has no value", constant_node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[%s] Constant has no value", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
     auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
-    auto output_desc = op_desc->MutableOutputDesc(0);
-    GE_CHECK_NOTNULL(output_desc);
-    auto tensor_size = ge_tensor->GetData().GetSize();
-    GELOGD("[%s] Start to init Constant node [%s], size = %ld",
+    GE_CHECK_NOTNULL(ge_tensor);
+    const GeTensorDesc &tensor_desc = ge_tensor->GetTensorDesc();
+    int64_t tensor_size = 0;
+    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetSize(*op_desc->MutableOutputDesc(0), tensor_size),
+                            "[%s] Failed to get tensor size",
+                            node->GetName().c_str());
+    int64_t data_offset = 0;
+    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetDataOffset(tensor_desc, data_offset),
+                            "[%s] Failed to get data offset",
+                            node->GetName().c_str());
+    GELOGD("[%s] Start to init Constant node [%s], size = %ld, offset = %ld",
            GetGraphName(),
-           constant_node->GetName().c_str(),
-           tensor_size);
+           node->GetName().c_str(),
+           tensor_size,
+           data_offset);
 
-    auto tensor_buffer = TensorBuffer::Create(allocator, tensor_size);
+    auto tensor_buffer = TensorBuffer::Create(weight_base + data_offset, tensor_size);
     GE_CHECK_NOTNULL(tensor_buffer);
     std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(std::move(tensor_buffer)));
     GE_CHECK_NOTNULL(constant_tensor);
     constant_tensor->SetName("Constant_" + op_desc->GetName());
-    if (tensor_size > 0) {
-      GE_CHK_RT_RET(rtMemcpy(constant_tensor->MutableData(),
-                             constant_tensor->GetSize(),
-                             ge_tensor->GetData().data(),
-                             ge_tensor->GetData().size(),
-                             RT_MEMCPY_HOST_TO_DEVICE));
-    }
-
-    hybrid_model_.constant_tensors_.emplace(constant_node, std::move(constant_tensor));
-    GELOGD("[%s] Constant node [%s] added, size = %ld", GetGraphName(), constant_node->GetName().c_str(), tensor_size);
+    hybrid_model_.constant_tensors_.emplace(node, std::move(constant_tensor));
+    GELOGD("[%s] Constant node [%s] added, size = %ld", GetGraphName(), node->GetName().c_str(), tensor_size);
   }
   return SUCCESS;
 }
@@ -1033,6 +1073,53 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
            sub_graph.GetName().c_str(),
            ge_model->GetModelTaskDefPtr()->task_size());
     hybrid_model_.known_shape_sub_models_.emplace(parent_node, ge_model);
+  }
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const GeModelPtr &ge_model) {
+  // index task defs
+  GELOGD("To index tasks for subgraph: %s", sub_graph->GetName().c_str());
+  std::unordered_map<int64_t, NodePtr> node_map;
+  for (const auto &node : sub_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(node);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    auto node_id = node->GetOpDesc()->GetId();
+    GELOGD("op_index = %ld, node_name = %s", node_id, node->GetName().c_str());
+    node_map.emplace(node_id, node);
+  }
+
+  auto tasks = ge_model->GetModelTaskDefPtr()->task();
+  for (int i = 0; i < tasks.size(); ++i) {
+    const domi::TaskDef &task_def = tasks[i];
+    GELOGI("Task id = %d, task type = %d", i, task_def.type());
+    auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+    uint32_t op_index = -1;
+    if (task_type == RT_MODEL_TASK_KERNEL) {
+      op_index = task_def.kernel().context().op_index();
+    } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
+      op_index = task_def.kernel_ex().op_index();
+    } else if (task_type == RT_MODEL_TASK_HCCL) {
+      op_index = task_def.kernel_hccl().op_index();
+    } else {
+      GELOGD("Skip task type: %d", static_cast<int>(task_type));
+      continue;
+    }
+
+    auto iter = node_map.find(op_index);
+    if (iter == node_map.end()) {
+      GELOGE(INTERNAL_ERROR, "Failed to get node by index = %u", op_index);
+      return INTERNAL_ERROR;
+    }
+
+    auto &node = iter->second;
+    if (task_type == RT_MODEL_TASK_KERNEL) {
+      ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
+    }
+
+    GELOGD("Task loaded for node: %s, task type = %d, op_index = %u", node->GetName().c_str(), task_type, op_index);
+    hybrid_model_.task_defs_[node].emplace_back(task_def);
   }
 
   return SUCCESS;

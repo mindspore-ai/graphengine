@@ -52,7 +52,7 @@ class HcclContinuousMemcpyPass : public GraphPass {
 
   bool IsDataNode(const std::string& node_type);
 
-  std::unordered_map<std::string, uint32_t> node_num_map_;
+  std::map<std::string, uint32_t> node_num_map_;
 };
 }  // namespace ge
 

@@ -17,6 +17,20 @@
 #ifndef GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_HOST_CPU_OPS_KERNEL_INFO_H_
 #define GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_HOST_CPU_OPS_KERNEL_INFO_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <map>
 #include <string>
 #include <vector>
@@ -25,7 +39,7 @@
 
 namespace ge {
 namespace host_cpu {
-class HostCpuOpsKernelInfoStore : public OpsKernelInfoStore {
+class GE_FUNC_VISIBILITY HostCpuOpsKernelInfoStore : public OpsKernelInfoStore {
  public:
   HostCpuOpsKernelInfoStore() {}
   ~HostCpuOpsKernelInfoStore() override = default;

@@ -95,15 +95,15 @@ class ModelCacheHelper {
   static Status ParseMemResourceFromJson(const Json &json, map<rtMemType_t, int64_t> &mem_resource);
   static Status ParseVarAddrMgrMapFromJson(const Json &json,
                                            std::vector<std::pair<std::string, VarAddrMgr>> &var_addr_mgr_vector,
-                                           std::unordered_set<uint64_t> &var_offset_set);
+                                           std::set<uint64_t> &var_offset_set);
   static Status ParseCurVarTensorDescMapFromJson(
       const Json &json, std::unordered_map<std::string, ge::GeTensorDesc> &cur_var_tensor_desc_map);
   static Status ParseTransRoadsFromJson(const Json &json,
                                         std::unordered_map<std::string, std::vector<TransNodeInfo>> &trans_roads);
   static Status ParseChangedGraphIdFromJson(const Json &json,
-                                            std::unordered_map<std::string, uint32_t> &changed_graph_id);
+                                            std::map<std::string, uint32_t> &changed_graph_id);
   static Status ParseAllocatedGraphIdFromJson(const Json &json,
-                                              std::unordered_map<std::string, uint32_t> &allocated_graph_id);
+                                              std::map<std::string, uint32_t> &allocated_graph_id);
   static Status ParseBroadcastInfoFromJson(const Json &json,
                                            std::unordered_map<std::string, VarBroadCastInfo> &var_broadcast_info);
   static Status GetVarNameFromVarKey(const string &var_key, const GeTensorDesc &tensor_desc, string &var_name);

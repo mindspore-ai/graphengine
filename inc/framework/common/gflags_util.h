@@ -17,11 +17,25 @@
 #ifndef INC_FRAMEWORK_COMMON_GFLAGS_UTIL_H_
 #define INC_FRAMEWORK_COMMON_GFLAGS_UTIL_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <gflags/gflags.h>
 #include <string>
 
 namespace ge {
-class GflagsUtils {
+class GE_FUNC_VISIBILITY GflagsUtils {
  public:
   static bool IsSetCommandTrue(const char *name) {
     std::string out;

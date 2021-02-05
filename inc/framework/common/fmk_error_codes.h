@@ -17,6 +17,20 @@
 #ifndef INC_FRAMEWORK_COMMON_FMK_ERROR_CODES_H_
 #define INC_FRAMEWORK_COMMON_FMK_ERROR_CODES_H_
 
+#if defined(_MSC_VER)
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY _declspec(dllexport)
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#else
+#ifdef FUNC_VISIBILITY
+#define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#else
+#define GE_FUNC_VISIBILITY
+#endif
+#endif
+
 #include <map>
 #include <string>
 
@@ -38,7 +52,7 @@ const int MODID_OME = 2;          // OME module ID
 const int MODID_CALIBRATION = 3;  // Calibration module ID
 
 namespace domi {
-class StatusFactory {
+class GE_FUNC_VISIBILITY StatusFactory {
  public:
   static StatusFactory *Instance();
 
@@ -54,7 +68,7 @@ class StatusFactory {
   std::map<uint32_t, std::string> err_desc_;
 };
 
-class ErrorNoRegisterar {
+class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
   ErrorNoRegisterar(uint32_t err, const std::string &desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
   ~ErrorNoRegisterar() {}

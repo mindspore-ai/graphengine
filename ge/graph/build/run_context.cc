@@ -90,7 +90,7 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
   // Create rt label
   for (uint32_t i = 0; i < label_num; ++i) {
     rtLabel_t label = nullptr;
-    rt_ret = rtLabelCreate(&label);
+    rt_ret = rtLabelCreateV2(&label, rt_model_);
     if (rt_ret != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "rtLabelCreate failed. rt_ret = %d, index = %u", static_cast<int>(rt_ret), i);
       return RT_FAILED;

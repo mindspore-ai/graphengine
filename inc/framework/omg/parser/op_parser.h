@@ -34,7 +34,7 @@ namespace ge {
  * @brief Used to analyze operator information
  *
  */
-class OpParser {
+class GE_FUNC_VISIBILITY OpParser {
  public:
   /**
    * @ingroup domi_omg

@@ -74,7 +74,6 @@ class StreamAllocator {
   Status RefreshContinuousEvents();
 
   Status InsertSyncEventNodes();
-  Status ReorderEventNodes() const;
 
   void DumpEvents();
 

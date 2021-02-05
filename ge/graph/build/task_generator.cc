@@ -211,7 +211,7 @@ Status TaskGenerator::SaveFusionNodes(map<int64_t, std::vector<NodePtr>> &fusion
     // and it have no attr or group attr different
     // which means bad case, return error
     bool call_check = true;
-    std::unordered_set<int64_t> input_group_ids;
+    std::set<int64_t> input_group_ids;
     for (const auto &input_node : node->GetInNodes()) {
       auto iter = nodes_with_group_attr.find(input_node);
       if (iter == nodes_with_group_attr.end()) {
@@ -533,13 +533,6 @@ Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
 
-  int64_t node_index = 0;
-  for (auto &node : all_nodes) {
-    OpDescPtr op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    op_desc->SetId(node_index++);
-  }
-
   map<int64_t, vector<OpDescPtr>> all_stream_ops;
   for (auto &node : all_nodes) {
     OpDescPtr op_desc = node->GetOpDesc();
@@ -784,7 +777,7 @@ Status TaskGenerator::FindBpOfEnv(const ComputeGraphPtr &graph, const std::strin
     }
 
     if (graph->GetNeedIteration()) {
-      if (op_desc->GetName() == NODE_NAME_NET_OUTPUT + '_' + NODE_NAME_STREAM_SWITCH + "_StreamActive") {
+      if (op_desc->GetName() == NODE_NAME_FLOWCTRL_LOOP_ASSIGNADD) {
         profiling_point.end_index.insert(current_idx);
         GELOGI("Iter end name %s, idx %u, from Node_Output_IteratorCtrl_StreamSwitch_StreamActive",
                op_desc->GetName().c_str(), current_idx);

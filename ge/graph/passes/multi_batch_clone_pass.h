@@ -175,6 +175,8 @@ class MultiBatchClonePass : public GraphPass {
   /// @return 0: SUCCESS / others: FAILED
   ///
   Status UpdateOutputTensor(uint32_t parent_index, uint32_t unused_num);
+  
+  Status CheckAndParseDynamicData();
 
   std::string session_graph_id_;
   std::vector<std::vector<int64_t>> batch_shapes_;

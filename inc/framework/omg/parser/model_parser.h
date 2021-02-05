@@ -37,7 +37,7 @@ using Status = domi::Status;
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
   const google::protobuf::Message *root_proto, const std::string &graph)>;
-class ModelParser {
+class GE_FUNC_VISIBILITY ModelParser {
  public:
   ModelParser() {}
 

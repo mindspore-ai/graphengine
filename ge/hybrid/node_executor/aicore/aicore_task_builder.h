@@ -47,7 +47,7 @@ class AiCoreTaskBuilder {
   AiCoreTaskBuilder(const OpDescPtr &op_desc, const std::vector<domi::TaskDef> &task_defs);
   ~AiCoreTaskBuilder() = default;
 
-  Status BuildTask(std::unique_ptr<NodeTask> &node_task, bool ignore_failure_on_atomic);
+  Status BuildTask(std::unique_ptr<NodeTask> &node_task, bool ignore_failure_on_atomic, bool is_single_op = false);
 
  private:
   bool ExpectAtomicAddrCleanTask();

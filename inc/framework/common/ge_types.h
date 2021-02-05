@@ -215,7 +215,7 @@ struct ModelInfo {
 };
 
 // Asynchronous callback interface, implemented by the caller
-class ModelListener {
+class GE_FUNC_VISIBILITY ModelListener {
  public:
   virtual ~ModelListener() {}
   ///

@@ -27,7 +27,7 @@ target_compile_options(ge_runtime PRIVATE
     -fno-common
 )
 
-target_compile_definitions(ge_runtime PRIVATE 
+target_compile_definitions(ge_runtime PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     LOG_CPP
 )
@@ -51,6 +51,10 @@ target_include_directories(ge_runtime PRIVATE
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/ge
+)
+
+target_link_options(ge_runtime PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(ge_runtime PRIVATE

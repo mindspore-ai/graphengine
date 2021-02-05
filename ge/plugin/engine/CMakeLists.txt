@@ -9,11 +9,13 @@ add_library(engine SHARED ${SRC_LIST})
 target_compile_options(engine PRIVATE
     -Werror
     -fno-common
+    -fvisibility=hidden
 )
 
 target_compile_definitions(engine PRIVATE
     REUSE_MEMORY=1
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    FUNC_VISIBILITY
 )
 
 target_include_directories(engine PRIVATE
@@ -30,6 +32,10 @@ target_include_directories(engine PRIVATE
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
+)
+
+target_link_options(engine PRIVATE
+    -Wl,-Bsymbolic
 )
 
 target_link_libraries(engine PRIVATE

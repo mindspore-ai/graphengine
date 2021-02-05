@@ -278,7 +278,7 @@
   } while (0)
 
 template <typename T>
-std::string FmtToStr(const T &t) {
+GE_FUNC_VISIBILITY std::string FmtToStr(const T &t) {
   std::string fmt;
   std::stringstream st;
   st << "[" << t << "]";

@@ -23,7 +23,7 @@
 #include "graph/tensor.h"
 
 namespace ge {
-class GeFormatUtil {
+class GE_FUNC_VISIBILITY GeFormatUtil {
  public:
   ///
   /// @name   TransShape

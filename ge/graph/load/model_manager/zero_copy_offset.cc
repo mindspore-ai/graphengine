@@ -127,8 +127,8 @@ void ZeroCopyOffset::IsL2Fusion(const vector<int64_t> &fusion_basic_addrs, const
   }
 }
 
-void ZeroCopyOffset::SetInputOutsideAddrs(const vector<int64_t> &output_offset_list, void *addr, const size_t &index,
-                                          bool fusion_flag, std::set<const void *> &real_virtual_addrs) {
+void ZeroCopyOffset::SetInputOutsideAddrs(int64_t output_offset, void *addr, bool fusion_flag,
+                                          set<const void *> &real_virtual_addrs) {
   uint32_t out_count = 0;
   if (!fusion_flag) {
     out_count++;
@@ -138,7 +138,6 @@ void ZeroCopyOffset::SetInputOutsideAddrs(const vector<int64_t> &output_offset_l
     real_virtual_addrs.insert(addr);
   } else {
     GELOGI("[ZCPY] set l2-fusion for virtual_addr %p.", addr);
-    int64_t output_offset = output_offset_list.at(index);
     for (size_t i = 0; i < zero_copy_basic_offset_.size(); ++i) {
       if (zero_copy_basic_offset_.at(i) == output_offset) {
         out_count++;
@@ -153,6 +152,7 @@ void ZeroCopyOffset::SetInputOutsideAddrs(const vector<int64_t> &output_offset_l
     }
   }
   addr_count_ = out_count;
+  valid_relative_offset_ = true;
 }
 
 void ZeroCopyOffset::SetOutputOutsideAddrs(const int64_t &input_offset, const bool &fusion_flag, void *addr,
@@ -181,9 +181,13 @@ void ZeroCopyOffset::SetOutputOutsideAddrs(const int64_t &input_offset, const bo
     }
   }
   addr_count_ = out_count;
+  valid_relative_offset_ = true;
 }
 
 void ZeroCopyOffset::SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *outside_addr, void *args, size_t offset) {
+  if (!valid_relative_offset_) {
+    return;
+  }
   const auto addr_val = reinterpret_cast<uintptr_t>(outside_addr);
   for (uint32_t out_count = 0; out_count < GetAddrCount(); ++out_count) {
     auto args_addrs = outside_addrs_[out_count].find(outside_addr);

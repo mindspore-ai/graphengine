@@ -99,7 +99,7 @@ Status CpuTaskModelDequeue::Distribute() {
 /// @param [in] outside_addrs: model input/output memory addr
 /// @return: 0 for success / others for failed
 ///
-Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, std::map<const void *, ZeroCopyOffset> &outside_addrs) {
+Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, const map<uint32_t, ZeroCopyOffset> &outside_addrs) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
     GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
     return FAILED;
@@ -110,32 +110,22 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, std::map<const v
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
   AddrMapInfo addr_map_info;
-  for (auto &addrs : outside_addrs) {
-    auto &addrs_mapping_list = addrs.second.GetOutsideAddrs();
+  // init src_addrs/dst_addrs
+  vector<uint64_t> src_addrs;
+  vector<uint64_t> dst_addrs;
+  for (const auto &addrs : outside_addrs) {
+    const auto &addrs_mapping_list = addrs.second.GetOutsideAddrs();
     GE_CHK_BOOL_EXEC(!addrs_mapping_list.empty(), return PARAM_INVALID, "not set outside_addrs");
     std::map<const void *, std::vector<void *>> virtual_args_addrs = addrs_mapping_list[0];
     for (const auto &virtual_args_addr : virtual_args_addrs) {
       addr_map_info.addr_num += virtual_args_addr.second.size();
-    }
-  }
-  GELOGI("addr_map_info.addr_num is %u", addr_map_info.addr_num);
-
-  // init src_addrs/dst_addrs
-  size_t index = 0;
-  vector<uint64_t> src_addrs;
-  vector<uint64_t> dst_addrs;
-  for (auto &addrs : outside_addrs) {
-    auto &addrs_mapping_list = addrs.second.GetOutsideAddrs();
-    GE_CHK_BOOL_EXEC(!addrs_mapping_list.empty(), return PARAM_INVALID, "not set outside_addrs");
-    std::map<const void *, std::vector<void *>> virtual_args_addrs = addrs_mapping_list[0];
-    for (const auto &virtual_args_addr : virtual_args_addrs) {
       for (size_t i = 0; i < virtual_args_addr.second.size(); ++i) {
-        src_addrs.push_back(mbuf_list.at(index));
+        src_addrs.emplace_back(mbuf_list.at(addrs.first));
         dst_addrs.push_back(static_cast<uint64_t>(reinterpret_cast<uintptr_t>(virtual_args_addr.second.at(i))));
       }
     }
-    index++;
   }
+  GELOGI("addr_map_info.addr_num is %u", addr_map_info.addr_num);
 
   // malloc mem for src_addrs/dst_addrs, and copy data of src_addrs/dst_addrs
   GE_CHK_RT_RET(rtMalloc(&src_addr_, src_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM));

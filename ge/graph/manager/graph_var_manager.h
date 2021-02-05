@@ -170,8 +170,8 @@ class VarResource {
   std::unordered_map<std::string, VarAddrMgr> var_addr_mgr_map_;
   std::unordered_map<std::string, ge::GeTensorDesc> cur_var_tensor_desc_map_;
   std::unordered_map<std::string, std::vector<TransNodeInfo>> var_to_trans_road_;
-  std::unordered_map<std::string, uint32_t> var_names_to_changed_graph_id_;
-  std::unordered_map<std::string, uint32_t> var_names_to_allocated_graph_id_;
+  std::map<std::string, uint32_t> var_names_to_changed_graph_id_;
+  std::map<std::string, uint32_t> var_names_to_allocated_graph_id_;
   std::map<uint32_t, std::unordered_map<std::string, VarBroadCastInfo>> var_broad_cast_info_;
 };
 

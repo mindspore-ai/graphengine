@@ -34,15 +34,15 @@ typedef uint32_t (*pCallBackFunc)(uint32_t graph_id, const std::map<AscendString
 }
 
 // Initialize GE
-ATTRIBUTED_DEPRECATED(Status GEInitialize(const std::map<AscendString, AscendString> &))
-Status GEInitialize(const std::map<std::string, std::string> &options);
+ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY Status GEInitialize(const std::map<AscendString, AscendString> &))
+GE_FUNC_VISIBILITY Status GEInitialize(const std::map<std::string, std::string> &options);
 
-Status GEInitialize(const std::map<AscendString, AscendString> &options);
+GE_FUNC_VISIBILITY Status GEInitialize(const std::map<AscendString, AscendString> &options);
 
 // Finalize GE, release all resources
-Status GEFinalize();
+GE_FUNC_VISIBILITY Status GEFinalize();
 
-class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Session {
+class GE_FUNC_VISIBILITY Session {
  public:
   ATTRIBUTED_DEPRECATED(Session(const std::map<AscendString, AscendString> &))
   explicit Session(const std::map<std::string, std::string> &options);

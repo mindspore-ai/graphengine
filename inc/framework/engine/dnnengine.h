@@ -45,7 +45,7 @@ struct DNNEngineAttribute {
   Format engine_output_format;
 };
 
-class DNNEngine {
+class GE_FUNC_VISIBILITY DNNEngine {
  public:
   virtual ~DNNEngine() = default;
   virtual Status Initialize(const std::map<std::string, std::string> &options) = 0;

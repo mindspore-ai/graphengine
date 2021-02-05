@@ -27,7 +27,7 @@ namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::GE_LOCAL, GeLocalNodeExecutor);
 
-const std::unordered_map<std::string, std::vector<uint32_t>>
+const std::map<std::string, std::vector<uint32_t>>
     RefInputTask::out_ref_input_index_ = {{DATA, {}},
                                           {AIPPDATA, {}},
                                           {RESHAPE, {}},
@@ -36,7 +36,7 @@ const std::unordered_map<std::string, std::vector<uint32_t>>
                                           {BROADCASTGRADIENTARGS, {}}
                                          };
 
-const std::unordered_set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE};
+const std::set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE};
 
 Status RefInputTask::UpdateArgs(TaskContext &) {
   // no need update args

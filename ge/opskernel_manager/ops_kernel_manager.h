@@ -41,7 +41,7 @@ using std::vector;
 namespace ge {
 using OpsKernelInfoStorePtr = std::shared_ptr<OpsKernelInfoStore>;
 
-class OpsKernelManager {
+class GE_FUNC_VISIBILITY OpsKernelManager {
  public:
   friend class GELib;
 

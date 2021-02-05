@@ -778,7 +778,7 @@ list(APPEND COMMON_SHARED_LIBRARIES
 
 # build graph
 add_library(ge_ut_graph STATIC
-    ${COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS}
+    ${GRAPH_SRC_FILES} ${PARSER_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
 target_compile_definitions(ge_ut_graph PRIVATE

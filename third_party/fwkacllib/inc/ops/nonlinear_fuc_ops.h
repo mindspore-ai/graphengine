@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,7 +223,29 @@ REG_OP(Relu6Grad)
     .INPUT(features, TensorType::RealNumberType())
     .OUTPUT(backprops, TensorType::RealNumberType())
     .OP_END_FACTORY_REG(Relu6Grad)
-
+/**
+*@brief Calculate the elu_grad_v2 function. 
+*Applies the element-wise function:
+* Computes the backward for the elu: if x>0, 1; otherwise elu() + alpha .
+*@par Inputs:
+*One inputs, including:
+* @li grads: A tensor. Must be one of the following types:
+*     float16, float32. 
+* @li activations: A tensor. Must be one of the following types:
+*     float16, float32. 
+*
+*@par Outputs:
+*y: A Tensor with the same type and shape of grads's.
+* 
+*@par Attributes:
+*@li alpha: scalar parameter, default value = 1.0
+*/	
+REG_OP(EluGradV2)
+    .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(activations, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(alpha, Float, 1.0)
+    .OP_END_FACTORY_REG(EluGradV2)
 /**
 * @brief Compute sigmoid of "x" element-wise . \n
 
@@ -640,6 +662,228 @@ REG_OP(Mish)
     .OUTPUT(y, TensorType({ DT_FLOAT,DT_FLOAT16 }))
     .OP_END_FACTORY_REG(Mish)
 
+/**
+ * @brief pytorch hardtanh_backward operator.
+ *
+ * @par Inputs:
+ * 2 inputs, including:
+ * @li result, minimum tensor of the linear region range,
+ * datatype: float16/float32, format:ND/5HD.
+ * @li grad, maximum tensor of the linear region range,
+ * datatype:float16/float32, format:ND/5HD. \n
+
+ * @par Attributes:
+ * 2 attributes, including:
+ * @li min_val, minimum value of the linear region range, datatype:float.
+ * @li max_val, maximum value of the linear region range, datatype:float. \n
+
+ * @par Outputs:
+ * 1 output, including:
+ * @li y, hardtanh_backward output tensor, datatype and format is same as
+ * input result. \n
+
+ * @attention Constraints:
+ * This operator only supports dataType: float16/float32, format: ND/5HD. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the Pytorch operator HardtanhGrad.
+ */
+REG_OP(HardtanhGrad)
+    .INPUT(result, TensorType({ DT_FLOAT16, DT_FLOAT })) /* "First operand." */
+    .INPUT(grad, TensorType({ DT_FLOAT16, DT_FLOAT }))   /* "Second operand." */
+    .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT }))     /* "Result, has same element type as two inputs" */
+    .ATTR(min_val, Float, -1.0)
+    .ATTR(max_val, Float, 1.0)
+    .OP_END_FACTORY_REG(HardtanhGrad)
+
+/**
+* @brief Calculates the softplus loss function with attributes of beta and threshold. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li x: A mutable Tensor. Must be one of the following types:
+*     float16, float32. \n
+
+* @par Attributes:
+* @li beta: An optional float. Defaults to "1.0" \n
+
+* @li threshold: An optional float. Defaults to "20.0" \n
+
+* @par Outputs:
+* @li y: A mutable Tensor. Has the same type as "x" \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Softplus.
+*/
+REG_OP(SoftplusV2)
+    .INPUT(x, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(y, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .ATTR(beta, Float, 1.0)
+    .ATTR(threshold, Float, 20.0)
+    .OP_END_FACTORY_REG(SoftplusV2)
+
+/**
+* @brief Calculates the reversed outputs of the function "softplus_v2". \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li input_gradients: A mutable Tensor. Must be one of the following types:
+*     float16, float32.
+* @li input_features: A mutable Tensor of the same type as "input_gradients" \n
+
+* @par Attributes:
+* @li beta: An optional float. Defaults to "1.0" \n
+
+* @li threshold: An optional float. Defaults to "20.0" \n
+
+* @par Outputs:
+* @li output_backprops: A mutable Tensor. Has the same type as "input_gradients" \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator SoftplusGrad.
+*/
+REG_OP(SoftplusV2Grad)
+    .INPUT(input_gradients, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(input_features, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(output_backprops, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .ATTR(beta, Float, 1.0)
+    .ATTR(threshold, Float, 20.0)
+    .OP_END_FACTORY_REG(SoftplusV2Grad)
+
+/**
+ * @brief ThresholdedRelu takes one input data (Tensor) and produces one output data (Tensor)
+ *  where the rectified linear function, y = x for x > alpha, y = 0 otherwise, is applied to the tensor elementwise.
+ * 
+ * @par inputs
+ * one input including:
+ * @li x: input A Tensor. Must be one of the following types: float32, float16
+ * 
+ * @par output
+ * one output including:
+ * @li y:A Tensor of the same type as x
+ * 
+ */
+REG_OP(ThresholdedRelu)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(alpha, Float, 1.0)
+    .OP_END_FACTORY_REG(ThresholdedRelu)
+
+/**
+* @brief Calculate the hard shrinkage function. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li input_x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+* @par Attributes:
+* @li lambd: An optional float. Defaults to 0.5. \n
+
+* @par Outputs:
+* y: A Tensor with the same dtype and shape of input_x's. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Hardshrink. \n
+*/
+REG_OP(HardShrink)
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(lambd, Float, 0.5)
+    .OP_END_FACTORY_REG(HardShrink)
+
+/**
+* @brief Calculate the hard sigmoid function. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li input_x: A tensor. Must be one of the following types:
+*     float16, float32, int32. \n
+
+* @par Attributes:
+* @li alpha: An optional float. Defaults to 0.16666666. \n
+* @li beta: An optional float. Defaults to 0.5. \n
+
+* @par Outputs:
+* y: A Tensor with the same dtype and shape of input_x's. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Hardsigmoid. \n
+*/    
+REG_OP(HardSigmoid)
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(alpha, Float, 0.16666666)
+    .ATTR(beta, Float, 0.5)
+    .OP_END_FACTORY_REG(HardSigmoid)
+
+/**
+* @brief Calculate the soft shrinkage function. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li input_x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+* @par Attributes:
+* @li lambd: An optional float. Defaults to 0.5. \n
+
+* @par Outputs:
+* y: A Tensor with the same dtype and shape of input_x's. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator Softshrink. \n
+*/
+REG_OP(SoftShrink)
+     .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .ATTR(lambd, Float, 0.5)
+     .OP_END_FACTORY_REG(SoftShrink)
+
+/**
+* @brief Calculate the reversed outputs of the function "soft_shrink". \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li input_grad: A tensor. Must be one of the following types:
+*     float16, float32. \n
+* @li input_x: A tensor of the same dtype as "input_grad". \n
+
+* @par Attributes:
+* @li lambd: An optional float. Defaults to 0.5. \n
+
+* @par Outputs:
+* y: A Tensor of the same dtype and shape as "input_graxd". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator SoftShrinkGrad. \n
+*/
+REG_OP(SoftShrinkGrad)
+     .INPUT(input_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
+     .ATTR(lambd, Float, 0.5)
+     .OP_END_FACTORY_REG(SoftShrinkGrad)
+	 
+/**
+*@brief Calculate -ln(1+e^(-x)). \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A tensor. Must be one of the following types:
+*       float16, float32. \n
+
+*@par Outputs:
+*One outputs, including:
+* @li y: A tensor with the same type and shape of x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator LogSigmoid. \n
+*/
+REG_OP(LogSigmoid)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT})) /* "input:x" */
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))  /* "output:y" */
+    .OP_END_FACTORY_REG(LogSigmoid)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_

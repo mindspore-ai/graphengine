@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -495,6 +495,60 @@ REG_OP(ShuffleChannel)
                            DT_UINT16, DT_INT32, DT_UINT32,DT_INT64,DT_UINT64}))
     .ATTR(group, Int, 1)
     .OP_END_FACTORY_REG(ShuffleChannel)
+
+/**
+ * @briefGenerate a tensor of samples from a multinomial 
+ * distribution according to the probabilities of each of 
+ * the possible outcomes.
+ * 
+ * @par inputs
+ * one input including:
+ * @li x:Input tensor with shape [batch_size, class_size], 
+ * where class_size is the number of all possible outcomes.
+ * Each value along the axis zero represents the unnormalized 
+ * log-probability of each corresponding outcome in a batch.
+ * 
+ * @par output
+ * one output including:
+ * @li y:Output tensor with shape [batch_size, sample_size], 
+ * where sample_size is the number of times to sample. 
+ * Each value along the axis zero represents the outcome of 
+ * the corresponding sample in a batch.
+ * 
+ */
+REG_OP(MultinomialFuss)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64}))
+    .OUTPUT(y, TensorType({DT_INT32, DT_INT64}))
+    .ATTR(dtype, Int, 6)
+    .ATTR(sample_size, Int, 1)
+    .ATTR(seed, Float, 0)
+    .OP_END_FACTORY_REG(MultinomialFuss)
+
+/**
+* @brief During training, randomly zeroes some of the elements of the input tensor
+* with probability
+*
+* @par Inputs:
+* @li x: A ND Tensor. Must be one of the following data types: Float, Float16
+* @li seed: A ND Tensor. Must be one of the following data types: Float
+*
+* @par Attributes:
+* @li p: probability of an element to be zeroed
+*
+* @par Outputs:
+* @li y: A tensor with the same shape and type as "x".
+* @li mask: A tensor with the same shape and type as "x".
+* @li new_seed: A tensor with the same shape and type as "seed".
+*/
+
+REG_OP(DropoutV2)
+    .INPUT(x, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .INPUT(seed, TensorType({ DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .OUTPUT(mask, TensorType({ DT_FLOAT }))
+    .OUTPUT(seed, TensorType({ DT_FLOAT }))
+    .REQUIRED_ATTR(p, Float)
+    .OP_END_FACTORY_REG(DropoutV2)
 }   // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

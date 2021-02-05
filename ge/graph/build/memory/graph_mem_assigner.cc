@@ -948,7 +948,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
     output_list[output_index] = iter->second.mem_offset_;
     std::string batch_label;
     (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
-    GELOGI("[IMAS]Atomic output : Set %s name[%s] optype[%s] output[%ld] offset to [%zu] stream_id[%ld] memtype[%ld] "
+    GELOGI("[IMAS]Atomic output : Set %s name[%s] optype[%s] output[%ld] offset to [%zu] stream_id[%ld] memtype[%u] "
            "size[%ld] real_size[%ld] batch[%s].", compute_graph_->GetName().c_str(), op_desc->GetName().c_str(),
            node->GetType().c_str(), output_index, iter->second.mem_offset_, op_desc->GetStreamId(), RT_MEMORY_HBM,
            size, size, batch_label.c_str());
@@ -1028,7 +1028,7 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
       (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
       GELOGI(
           "[IMAS]Atomic ordinary workspace : Set %s name[%s] optype[%s] workspace[%lu] offset to [%zu] stream_id[%ld] "
-          "memtype[%ld] size[%ld] real_size[%ld] batch[%s].",
+          "memtype[%u] size[%ld] real_size[%ld] batch[%s].",
           compute_graph_->GetName().c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), workspace_index,
           mem_type_iter->second.mem_offset_, op_desc->GetStreamId(), RT_MEMORY_HBM, workspace_size, workspace_size,
           batch_label.c_str());
@@ -1069,7 +1069,7 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
       (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
       GELOGI(
           "[IMAS]Atomic fusion workspace : Set %s name[%s] optype[%s] workspace[%lu] offset to [%zu] stream_id[%ld] "
-          "memtype[%ld] ssize[%ld] real_size[%ld] batch[%s].", compute_graph_->GetName().c_str(),
+          "memtype[%u] ssize[%ld] real_size[%ld] batch[%s].", compute_graph_->GetName().c_str(),
           op_desc->GetName().c_str(), op_desc->GetType().c_str(), workspace_index, mem_type_iter->second.mem_offset_,
           op_desc->GetStreamId(), RT_MEMORY_HBM, workspace_size, workspace_size, batch_label.c_str());
 

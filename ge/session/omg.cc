@@ -193,44 +193,6 @@ static Status CheckInputFp16Nodes(const ComputeGraphPtr &graph, const string &in
   return SUCCESS;
 }
 
-static Status SetWeightCompressNodes(const ComputeGraphPtr &graph, const string &compress_weight_conf) {
-  GE_CHECK_NOTNULL(graph);
-  if (compress_weight_conf.empty()) {
-    return SUCCESS;
-  }
-  std::string real_path = RealPath(compress_weight_conf.c_str());
-  if (real_path.empty()) {
-    GELOGE(PARAM_INVALID, "Can not get real path for %s.", compress_weight_conf.c_str());
-    return PARAM_INVALID;
-  }
-  std::ifstream ifs(real_path);
-  if (!ifs.is_open()) {
-    GELOGE(domi::FAILED, "Open file %s failed", compress_weight_conf.c_str());
-    return domi::FAILED;
-  }
-
-  std::string compress_nodes;
-  ifs >> compress_nodes;
-  ifs.close();
-  GELOGI("Compress weight of nodes: %s", compress_nodes.c_str());
-
-  vector<string> compress_node_vec = StringUtils::Split(compress_nodes, ';');
-  for (size_t i = 0; i < compress_node_vec.size(); ++i) {
-    ge::NodePtr node = graph->FindNode(compress_node_vec[i]);
-    if (node == nullptr) {
-      GELOGW("node %s is not in graph", compress_node_vec[i].c_str());
-      continue;
-    }
-    auto op_desc = node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    if (!ge::AttrUtils::SetBool(op_desc, ge::ATTR_NAME_COMPRESS_WEIGHT, true)) {
-      GELOGE(domi::FAILED, "node %s SetBool failed.", compress_node_vec[i].c_str());
-      return domi::FAILED;
-    }
-  }
-  return SUCCESS;
-}
-
 static Status ParseOutputFp16NodesFormat(const string &is_output_fp16) {
   if (is_output_fp16.empty()) {
     return SUCCESS;
@@ -799,10 +761,6 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   GE_RETURN_IF_ERROR(CheckInputFp16Nodes(compute_graph, input_fp16_nodes, is_input_adjust_hw_layout));
 
   GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph, is_dynamic_input, run_mode));
-
-  std::string compress_weight_conf;
-  ParseAtcParms(atc_params, "compress_weight_conf", compress_weight_conf);
-  GE_RETURN_IF_ERROR(SetWeightCompressNodes(compute_graph, compress_weight_conf));
 
   // Verify the contents of the op_name_map
   if (op_conf != nullptr && *op_conf != '\0') {

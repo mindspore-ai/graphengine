@@ -311,6 +311,9 @@ LIBGE_LOCAL_SRC_FILES := \
     executor/ge_executor.cc \
     analyzer/analyzer.cc \
     ir_build/ge_ir_build.cc \
+    ir_build/attr_options/utils.cc \
+    ir_build/attr_options/keep_dtype_option.cc \
+    ir_build/attr_options/weight_compress_option.cc \
     ir_build/atc_ir_common.cc \
 
 LIBCLIENT_LOCAL_SRC_FILES := \

@@ -10,7 +10,6 @@ protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 set(SRC_LIST
     "main.cc"
     "single_op_parser.cc"
-    "keep_dtype_option.cc"
     "../session/omg.cc"
     "../ir_build/atc_ir_common.cc"
 )

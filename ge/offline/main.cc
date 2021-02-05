@@ -43,7 +43,7 @@
 #include "parser/common/register_tbe.h"
 #include "register/op_registry.h"
 #include "single_op_parser.h"
-#include "keep_dtype_option.h"
+#include "external/ge/ge_ir_build.h"
 
 using domi::BuildMode;
 using domi::OpRegistrationData;
@@ -913,6 +913,22 @@ static Status ConvertModelToJson(int fwk_type, const string &model_file, const s
   return ret;
 }
 
+static Status SetAttrOptions(ge::Graph &graph) {
+  if (!FLAGS_keep_dtype.empty()) {
+    if (ge::aclgrphSetOpAttr(graph, ge::ATTR_TYPE_KEEP_DTYPE, FLAGS_keep_dtype.c_str()) != ge::GRAPH_SUCCESS) {
+      return ge::FAILED;
+    }
+  }
+  if (!FLAGS_compress_weight_conf.empty()) {
+    if (ge::aclgrphSetOpAttr(graph, ge::ATTR_TYPE_WEIGHT_COMPRESS, FLAGS_compress_weight_conf.c_str())
+        != ge::GRAPH_SUCCESS) {
+      return ge::FAILED;
+    }
+  }
+
+  return ge::SUCCESS;
+}
+
 domi::Status GenerateModel(std::map<string, string> &options, std::string output) {
   ge::GeGenerator ge_generator;
   ge::Status geRet = ge::SUCCESS;
@@ -969,7 +985,6 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     atc_params.insert(std::pair<string, string>("input_fp16_nodes", FLAGS_input_fp16_nodes));
     atc_params.insert(std::pair<string, string>("is_input_adjust_hw_layout", FLAGS_is_input_adjust_hw_layout));
     atc_params.insert(std::pair<string, string>("is_output_adjust_hw_layout", FLAGS_is_output_adjust_hw_layout));
-    atc_params.insert(std::pair<string, string>("compress_weight_conf", FLAGS_compress_weight_conf));
     atc_params.insert(std::pair<string, string>(string(ge::OUTPUT_DATATYPE), FLAGS_output_type));
     atc_params.insert(std::pair<string, string>("output", output));
 
@@ -1003,11 +1018,10 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     }
   }
 
-  Status ret = ge::DealKeepDtypeOption(ge::GraphUtils::GetComputeGraph(graph), FLAGS_keep_dtype);
-  if (ret != SUCCESS) {
+  if (SetAttrOptions(graph) != ge::SUCCESS) {
     (void)ge_generator.Finalize();
     (void)ge::GELib::GetInstance()->Finalize();
-    return ret;
+    return domi::FAILED;
   }
 
   geRet = ge_generator.GenerateOfflineModel(graph, output, inputs);

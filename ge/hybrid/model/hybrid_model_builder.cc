@@ -738,6 +738,7 @@ Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item,
       graph_item.output_index_mapping_.emplace_back(p_index);
     }
   }
+
   return SUCCESS;
 }
 
@@ -1899,9 +1900,7 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
       data_nodes.emplace_back(node_item);
     } else if (op_type == NETOUTPUT) {
       graph_item->output_node_ = node_item;
-      if (!is_root_graph) {
-        GE_CHK_STATUS_RET_NOLOG(BuildOutputMapping(*graph_item, *node_item));
-      }
+      GE_CHK_STATUS_RET_NOLOG(BuildOutputMapping(*graph_item, *node_item, is_root_graph));
     }
     GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeBefore(*graph_item, node));
     graph_item->node_items_.emplace_back(node_item);

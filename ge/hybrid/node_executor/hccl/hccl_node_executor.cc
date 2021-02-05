@@ -222,7 +222,7 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
     Tensor offset_tensor;
     GE_CHK_STATUS_RET(ctx->GetTensor(offset_index_.first, offset_index_.second, offset_tensor))
     if (static_cast<int64_t>(offset_tensor.GetSize() / GetSizeByDataType(data_type)) != row_num) {
-      GELOGE(PARAM_INVALID, "num of offset and remote addr mismatch, offset size=%zu, remote_addr size=%lld, dtype=%s",
+      GELOGE(PARAM_INVALID, "num of offset and remote addr mismatch, offset size=%zu, remote_addr size=%ld, dtype=%s",
              offset_tensor.GetSize(), row_num, TypeUtils::DataTypeToSerialString(data_type).c_str());
       return PARAM_INVALID;
     }
@@ -244,7 +244,7 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
     auto local_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(tv->MutableData()));
     auto device_len = tv->GetSize() / row_num;
     if (device_len <= 0 || device_len > data[kVarTableIdxLen]) {
-      GELOGE(FAILED, "Local embedding length is out of range, expect %lld, but %lld exactly.",
+      GELOGE(FAILED, "Local embedding length is out of range, expect %ld, but %ld exactly.",
              data[kVarTableIdxLen], device_len);
       return FAILED;
     }

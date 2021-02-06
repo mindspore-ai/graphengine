@@ -84,15 +84,14 @@ Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, HcclDataType
   int32_t size = 0;
   GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclTypeSize(data_type, size), "GetHcomCount: GetHcclTypeSize fail!");
   if (op_desc->GetType() == HCOMRECEIVE) {
-    vector<int64_t> shape_dims;
-    bool ret = ge::AttrUtils::GetListInt(op_desc, HCOM_ATTR_SHAPE, shape_dims);
-    if (ret == false) {
-      GELOGE(PARAM_INVALID, "op:HcomReceive, op desc no attr: shape.");
-      return PARAM_INVALID;
+    for (size_t i = 0; i < op_desc->GetOutputsSize(); ++i) {
+      int64_t output_size = 0;
+      GE_CHECK_NOTNULL(op_desc->GetOutputDescPtr(i));
+      GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(*op_desc->GetOutputDescPtr(i), output_size),
+                        "Get size from TensorDesc failed, op: %s, output index: %zu.", op_desc->GetName().c_str(), i);
+      output_size = (output_size + align_size - 1) / align_size * align_size;
+      total_size += output_size;
     }
-    ge::GeShape shape = ge::GeShape(shape_dims);
-    int64_t input_size = shape.GetShapeSize() * size;
-    total_size = (input_size + align_size - 1) / align_size * align_size;
   } else {
     for (size_t i = 0; i < op_desc->GetInputsSize(); i++) {
       int64_t input_size = 0;

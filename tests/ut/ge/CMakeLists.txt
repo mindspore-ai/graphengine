@@ -353,6 +353,7 @@ set(COMMON_FORMAT_SRC_FILES
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
     "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/util/hcom_util.cc"
 )
 
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
@@ -750,6 +751,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
+    "graph/manager/hcom_util_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 

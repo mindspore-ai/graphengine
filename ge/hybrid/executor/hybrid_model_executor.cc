@@ -81,7 +81,6 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   args.outputs.clear();
   HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
-  context_.iteration +=1;
   return SUCCESS;
 }
 

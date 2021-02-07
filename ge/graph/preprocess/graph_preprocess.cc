@@ -967,6 +967,13 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
         // unknown dim, should get range.
         auto range_left = StringToLongNoThrow(range_pair_set.at(0).c_str());
         auto range_right = StringToLongNoThrow(range_pair_set.at(1).c_str());
+        if (range_left < 0 || range_right < 0) {
+          GELOGE(PARAM_INVALID,
+                 "Shape range of input is invalid. Given range pair [%ld,%ld], while correct example: "
+                 "\"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
+                 range_left, range_right);
+          return PARAM_INVALID;
+        }
         range_pair = std::make_pair(range_left, range_right);
       } else {
         GELOGE(PARAM_INVALID,
@@ -983,19 +990,28 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
 
 Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option,
                                  vector<vector<std::pair<int64_t, int64_t>>> &range_vec) {
+  bool enable_dynamic_execute_mode = true;
   auto mode_iter = graph_option.find(OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
   if (mode_iter == graph_option.end()) {
     GELOGD("Graph Option: Can not find %s option in graph options.", OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
-    return SUCCESS;
+    enable_dynamic_execute_mode = false;
   }
-  GELOGD("Graph Option: dynamic_input_mode value is %s.", mode_iter->second.c_str());
-  if (mode_iter->second != "dynamic_execute") {
-    return SUCCESS;
+  if (enable_dynamic_execute_mode) {
+    GELOGD("Graph Option: dynamic_input_mode value is %s.", mode_iter->second.c_str());
+    if (mode_iter->second != "dynamic_execute") {
+      enable_dynamic_execute_mode = false;
+    }
   }
+
   auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
   if (iter == graph_option.end()) {
     GELOGE(PARAM_INVALID, "Graph option %s is required when %s is dynamic_execute", OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE,
            OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+    return PARAM_INVALID;
+  }
+  if (!enable_dynamic_execute_mode) {
+    GELOGE(PARAM_INVALID, "Graph option %s is required when %s is enabled", OPTION_EXEC_DYNAMIC_EXECUTE_MODE,
+           OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
     return PARAM_INVALID;
   }
   GELOGD("GraphOption: dynamic_inputs_shape_range value is %s.", iter->second.c_str());

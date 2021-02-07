@@ -31,6 +31,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
+#include "framework/omg/ge_init.h"
 #include "analyzer/analyzer.h"
 #include "ge/ge_api_types.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
@@ -530,5 +531,24 @@ void GELib::RollbackInit() {
   MemManager::Instance().Finalize();
   HostMemManager::Instance().Finalize();
   VarManagerPool::Instance().Destory();
+}
+
+Status GEInit::Initialize(const map<string, string> &options) {
+  Status ret = SUCCESS;
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    ret = GELib::Initialize(options);
+  }
+  return ret;
+}
+
+Status GEInit::Finalize() {
+  Status ret = GELib::GetInstance()->Finalize();
+  return ret;
+}
+
+string GEInit::GetPath() {
+  std::string path = GELib::GetPath();
+  return path;
 }
 }  // namespace ge

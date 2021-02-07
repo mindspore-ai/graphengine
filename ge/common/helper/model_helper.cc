@@ -21,6 +21,7 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/omg/model_tool.h"
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/davinci_model_parser.h"
@@ -891,5 +892,101 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetModelNam
   model_name = graph_name.substr(start_position, end_position);
   GE_CHK_BOOL_EXEC_WARN(!model_name.empty(), return FAILED, "Get model_name failed, check params --output");
   return SUCCESS;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelTool::GetModelInfoFromOm(const char *model_file,
+                                                                                      ge::proto::ModelDef &model_def) {
+  GE_CHECK_NOTNULL(model_file);
+  ge::ModelData model;
+  int32_t priority = 0;
+
+  // Load model from file
+  Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "LoadFromFile failed.");
+    return ret;
+  }
+  std::function<void()> callback = [&]() {
+    if (model.model_data != nullptr) {
+      delete[] reinterpret_cast<char *>(model.model_data);
+      model.model_data = nullptr;
+    }
+  };
+
+  uint8_t *model_data = nullptr;
+  uint32_t model_len = 0;
+  // Parse the contents of the file to get the modeldef object
+  ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
+  if (ret != SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10003",
+                                                    {"parameter", "value", "reason"},
+                                                    {"om", model_file, "invalid om file"});
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "ParseModelContent failed because of invalid om file. Please check --om param.");
+    return ret;
+  }
+
+  OmFileLoadHelper omFileLoadHelper;
+  ret = omFileLoadHelper.Init(model_data, model_len);
+  if (ret != ge::GRAPH_SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Om file init failed"});
+    GELOGE(ge::FAILED, "Om file init failed.");
+    return ret;
+  }
+
+  ModelPartition ir_part;
+  ret = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
+  if (ret != ge::GRAPH_SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Get model part failed"});
+    GELOGE(ge::FAILED, "Get model part failed.");
+    return ret;
+  }
+
+  bool flag = ReadProtoFromArray(ir_part.data, ir_part.size, &model_def);
+  if (flag) {
+    ret = INTERNAL_ERROR;
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ReadProtoFromArray failed"});
+    GELOGE(ret, "ReadProtoFromArray failed.");
+    return ret;
+  }
+  return ret;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelTool::GetModelInfoFromPbtxt(const char *model_file,
+  ge::proto::ModelDef &model_def) {
+  GE_CHECK_NOTNULL(model_file);
+  ge::ModelData model;
+  int32_t priority = 0;
+  // Load model from file
+  Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+  auto free_model_data = [](void **ptr) -> void {
+    if (ptr != nullptr && *ptr != nullptr) {
+      delete[] reinterpret_cast<char *>(*ptr);
+      *ptr = nullptr;
+    }
+  };
+  if (ret != SUCCESS) {
+    free_model_data(&model.model_data);
+    GELOGE(ret, "LoadFromFile failed.");
+    return ret;
+  }
+
+  try {
+    bool flag = google::protobuf::TextFormat::ParseFromString(reinterpret_cast<char *>(model.model_data), &model_def);
+    if (!flag) {
+      free_model_data(&model.model_data);
+      ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ParseFromString failed"});
+      GELOGE(FAILED, "ParseFromString failed.");
+      return FAILED;
+    }
+    free_model_data(&model.model_data);
+    return SUCCESS;
+  } catch (google::protobuf::FatalException &e) {
+    free_model_data(&model.model_data);
+    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ParseFromString failed, exception message["
+                                                                           + std::string(e.what()) + "]"});
+    GELOGE(FAILED, "ParseFromString failed. exception message : %s", e.what());
+    return FAILED;
+  }
 }
 }  // namespace ge

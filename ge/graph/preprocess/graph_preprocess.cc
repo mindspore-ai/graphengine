@@ -990,31 +990,27 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
 
 Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option,
                                  vector<vector<std::pair<int64_t, int64_t>>> &range_vec) {
+  // check both mode and shape_range option are all enabled
   bool enable_dynamic_execute_mode = true;
   auto mode_iter = graph_option.find(OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
-  if (mode_iter == graph_option.end()) {
+  if ((mode_iter == graph_option.end()) || (mode_iter->second != "dynamic_execute")) {
     GELOGD("Graph Option: Can not find %s option in graph options.", OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
     enable_dynamic_execute_mode = false;
   }
-  if (enable_dynamic_execute_mode) {
-    GELOGD("Graph Option: dynamic_input_mode value is %s.", mode_iter->second.c_str());
-    if (mode_iter->second != "dynamic_execute") {
-      enable_dynamic_execute_mode = false;
-    }
-  }
 
   auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
-  if (iter == graph_option.end()) {
-    GELOGE(PARAM_INVALID, "Graph option %s is required when %s is dynamic_execute", OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE,
-           OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+  bool enable_input_shape_range = (iter != graph_option.end());
+  if (enable_dynamic_execute_mode && enable_input_shape_range) {
+    GELOGD("GraphOption: %s value is dynamic_execute, %s value is %s.", OPTION_EXEC_DYNAMIC_EXECUTE_MODE,
+           OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE, iter->second.c_str());
+  } else if (!enable_dynamic_execute_mode && !enable_input_shape_range) {
+    return SUCCESS;
+  } else {
+    GELOGE(PARAM_INVALID, "Graph option: %s and %s should be enabled at the same time.",
+           OPTION_EXEC_DYNAMIC_EXECUTE_MODE, OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
     return PARAM_INVALID;
   }
-  if (!enable_dynamic_execute_mode) {
-    GELOGE(PARAM_INVALID, "Graph option %s is required when %s is enabled", OPTION_EXEC_DYNAMIC_EXECUTE_MODE,
-           OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
-    return PARAM_INVALID;
-  }
-  GELOGD("GraphOption: dynamic_inputs_shape_range value is %s.", iter->second.c_str());
+
   auto ret = ParseDynamicInputShapeRange(iter->second, range_vec);
   GE_CHK_STATUS_RET(ret, "Parse dynamic input shape range failed.");
   if (range_vec.size() != user_input.size()) {

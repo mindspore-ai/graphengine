@@ -509,7 +509,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
       GE_CHK_STATUS_RET(GetAllRef(node, out2ins), "Node: %s get all ref failed", node->GetName().c_str());
       // output is beginning offset, set offset for input; only support this case now
       if (out2ins.size() == 1 && out2ins.begin()->second == 0) {
-        output_list.at(peer_out_data_anchor->GetIdx()) == output_list_this.at(out2ins.begin()->first);
+        output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
         peer_op_desc->SetOutputOffset(output_list);
       } else {
         GELOGW("Node %s out %d ref in %d with total ref numbers %zu", node->GetName().c_str(), out2ins.begin()->first,

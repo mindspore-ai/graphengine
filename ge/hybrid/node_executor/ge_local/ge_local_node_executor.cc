@@ -36,7 +36,7 @@ const std::map<std::string, std::vector<uint32_t>>
                                           {BROADCASTGRADIENTARGS, {}}
                                          };
 
-const std::set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE};
+const std::set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE, NOOP};
 
 Status RefInputTask::UpdateArgs(TaskContext &) {
   // no need update args

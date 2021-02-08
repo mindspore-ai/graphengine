@@ -27,24 +27,24 @@
 namespace ge {
 namespace {
 const int kReshapeDataIndex = 0;
-enum kOpHashValue {
-  ReshapeType = 0,
-  ReformatType = 1,
-  OpNoDelete = -1
+enum OpHashValue {
+  kReshapeType = 0,
+  kReformatType = 1,
+  kOpNoDelete = -1
 };
 
-std::map<std::string, kOpHashValue> kToBeDeleteOp = {
-  {RESHAPE, ReshapeType},
-  {REFORMAT, ReformatType}
+std::map<std::string, OpHashValue> kToBeDeleteOp = {
+  {RESHAPE, kReshapeType},
+  {REFORMAT, kReformatType}
 };
 }
 
 Status ReshapeRemovePass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
-  int key = kToBeDeleteOp.find(node->GetType()) == kToBeDeleteOp.end() ? OpNoDelete : kToBeDeleteOp[node->GetType()];
+  int key = kToBeDeleteOp.find(node->GetType()) == kToBeDeleteOp.end() ? kOpNoDelete : kToBeDeleteOp[node->GetType()];
   switch(key) {
-    case ReshapeType: {
+    case kReshapeType: {
       bool is_shape_unknown = false;
       if (NodeUtils::GetNodeUnknownShapeStatus(*node, is_shape_unknown) == GRAPH_SUCCESS) {
         if (is_shape_unknown) {
@@ -55,7 +55,7 @@ Status ReshapeRemovePass::Run(NodePtr &node) {
       }
       break;
     }
-    case ReformatType:
+    case kReformatType:
       break;
     default:
       return SUCCESS;

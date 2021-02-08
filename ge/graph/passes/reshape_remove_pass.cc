@@ -33,7 +33,7 @@ enum kOpHashValue {
   OpNoDelete = -1;
 }
 
-std::map<std::string, kOpHashValue> kToDeleteOpType = {
+std::map<std::string, kOpHashValue> kToBeDeleteOp = {
   {RESHAPE, ReshapeType},
   {REFORMAT, ReformatType}
 };
@@ -42,7 +42,7 @@ std::map<std::string, kOpHashValue> kToDeleteOpType = {
 Status ReshapeRemovePass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
-  int key = kOpTypeHash.find(node->GetType()) == kOpTypeHash.end() ? OpNoDelete : kToDeleteOpType[node->GetType()];
+  int key = kToBeDeleteOp.find(node->GetType()) == kToBeDeleteOp.end() ? OpNoDelete : kToBeDeleteOp[node->GetType()];
   switch(key) {
     case ReshapeType: {
       bool is_shape_unknown = false;

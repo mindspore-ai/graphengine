@@ -28,9 +28,9 @@ namespace ge {
 namespace {
 const int kReshapeDataIndex = 0;
 enum kOpHashValue {
-  ReshapeType = 0;
-  ReformatType = 1;
-  OpNoDelete = -1;
+  ReshapeType = 0,
+  ReformatType = 1,
+  OpNoDelete = -1
 };
 
 std::map<std::string, kOpHashValue> kToBeDeleteOp = {

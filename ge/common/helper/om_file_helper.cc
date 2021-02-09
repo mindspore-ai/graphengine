@@ -207,9 +207,9 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
            "ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
            index, partition_table->num, sizeof(ModelFileHeader), partition_table_size);
     if (model_data_size <= cur_offset) {
-      GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "invalid model data, partition_table->num:%u, model data size %u",
+      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "invalid model data, partition_table->num:%u, model data size %u",
              partition_table->num, model_data_size);
-      return GE_EXEC_MODEL_DATA_SIZE_INVALID;
+      return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
     }
 
     for (uint32_t i = 0; i < partition_table->num; i++) {
@@ -231,9 +231,10 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
       }
 
       if (partition.size > model_data_size || cur_offset > model_data_size - partition.size) {
-        GELOGE(GE_EXEC_MODEL_DATA_SIZE_INVALID, "The partition size %u is greater than the model data size %u.",
+        GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
+               "The partition size %u is greater than the model data size %u.",
                partition.size + cur_offset, model_data_size);
-        return GE_EXEC_MODEL_DATA_SIZE_INVALID;
+        return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
       }
       cur_offset += partition.size;
       GELOGD("Partition, type:%d, size:%u, model_index:%u", static_cast<int>(partition.type), partition.size, index);

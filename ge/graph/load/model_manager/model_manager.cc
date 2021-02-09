@@ -55,16 +55,18 @@ const char *const kDeleteCustOp = "deleteCustOp";
 const int kTimeSpecNano = 1000000000;
 const int kTimeSpecMiro = 1000000;
 const int kOpNameMaxSize = 100;
+#pragma pack(push, 1)
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
   uint32_t kernelSoBufLen;
   uint64_t kernelSoName;
   uint32_t kernelSoNameLen;
-} __attribute__((packed));
+};
 struct BatchLoadOpFromBufArgs {
   uint32_t soNum;
   uint64_t args;
-} __attribute__((packed));
+};
+#pragma pack(pop)
 }  // namespace
 
 DumpProperties ModelManager::dump_properties_;

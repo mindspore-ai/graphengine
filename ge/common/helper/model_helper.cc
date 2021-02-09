@@ -21,7 +21,6 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
-#include "framework/omg/model_tool.h"
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/davinci_model_parser.h"

@@ -31,7 +31,6 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/util.h"
-#include "framework/omg/ge_init.h"
 #include "analyzer/analyzer.h"
 #include "ge/ge_api_types.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"

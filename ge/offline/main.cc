@@ -1361,10 +1361,10 @@ bool CheckMemInfo() {
   }
   // only check current available mem when auto_tune_mode is set.
   long current_mem_available = GetMemInfo("MemAvailable");
-  GELOGI("Get mem available [%lu].", current_mem_available);
+  GELOGI("Get mem available [%lu kB].", current_mem_available);
   std::cout << "Current available mem is " << current_mem_available << "kB." << std::endl;
   if ((current_mem_available > 0) && (current_mem_available < kMinAvailableMem)) {
-    GELOGE(ge::PARAM_INVALID, "Current available mem [%lu] can not be smaller than [%lu] .",
+    GELOGE(ge::PARAM_INVALID, "Current available mem [%lu kB] can not be smaller than [%lu kB] .",
            current_mem_available, kMinAvailableMem);
     ErrorManager::GetInstance().ATCReportErrMessage("E10044", {"value", "min_value"},
                                                     {to_string(current_mem_available), to_string(kMinAvailableMem)});
@@ -1420,7 +1420,7 @@ int main(int argc, char* argv[]) {
     if (result != 0) {
       DOMI_LOGE("ErrorManager outputErrMessage fail !");
     }
-    GELOGI("Current mem available mem is [%lu]", GetMemInfo("MemAvailable"));
+    GELOGI("Current mem available mem is [%lu kB]", GetMemInfo("MemAvailable"));
     return ret;
   } else {
     std::cout << "ATC run success, welcome to the next use." << std::endl;

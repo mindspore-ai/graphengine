@@ -532,23 +532,4 @@ void GELib::RollbackInit() {
   HostMemManager::Instance().Finalize();
   VarManagerPool::Instance().Destory();
 }
-
-Status GEInit::Initialize(const map<string, string> &options) {
-  Status ret = SUCCESS;
-  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
-  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    ret = GELib::Initialize(options);
-  }
-  return ret;
-}
-
-Status GEInit::Finalize() {
-  Status ret = GELib::GetInstance()->Finalize();
-  return ret;
-}
-
-string GEInit::GetPath() {
-  std::string path = GELib::GetPath();
-  return path;
-}
 }  // namespace ge

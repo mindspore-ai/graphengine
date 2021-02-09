@@ -131,7 +131,14 @@ rtError_t rtFunctionRegister(void *bin_handle, const void *stub_func, const char
 
 rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **handle) { return RT_ERROR_NONE; }
 
+rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **handle) { return RT_ERROR_NONE; }
+
 rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_t flag, void **arg) { return RT_ERROR_NONE; }
+
+rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim, void *args, uint32_t argsSize,
+                                   rtSmDesc_t *smDesc, rtStream_t stream, const void *kernelInfo) {
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtKernelLaunch(const void *stub_func, uint32_t block_dim, void *args, uint32_t args_size, rtSmDesc_t *sm_desc,
                          rtStream_t stream) {

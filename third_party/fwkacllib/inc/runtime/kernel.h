@@ -193,6 +193,14 @@ typedef void (*rtCallback_t)(void *fnData);
 
 /**
  * @ingroup rt_kernel
+ * @brief kernel mode
+ */
+#define RT_DEFAULT_KERNEL_MODE (0x00)
+#define RT_NORMAL_KERNEL_MODE (0x01)
+#define RT_ALL_KERNEL_MODE (0x02)
+
+/**
+ * @ingroup rt_kernel
  * @brief kernel L1 Fusion Dump bit flags
  */
 #define RT_DDR_ADDR (0x0)
@@ -206,6 +214,16 @@ typedef void (*rtCallback_t)(void *fnData);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **handle);
+
+/**
+ * @ingroup rt_kernel
+ * @brief register device binary
+ * @param [in] bin   device binary description
+ * @param [out] handle   device binary handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **handle);
 
 /**
  * @ingroup rt_kernel
@@ -313,6 +331,23 @@ RTS_API rtError_t rtKernelConfigDump(uint32_t kind, uint32_t dumpSizePerBlock, u
  */
 RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *args, uint32_t argsSize,
                                  rtSmDesc_t *smDesc, rtStream_t stream);
+
+/**
+ * @ingroup rt_kernel
+ * @brief launch kernel with handle to device
+ * @param [in] handle   program
+ * @param [in] devFunc    device function description
+ * @param [in] blockDim   block dimentions
+ * @param [in] args   argments address for kernel function
+ * @param [in] argsSize   argements size
+ * @param [in] smDesc   shared memory description
+ * @param [in] stream   associated stream
+ * @param [in] kernelInfo   kernel info
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim, void *args, uint32_t argsSize,
+                                           rtSmDesc_t *smDesc, rtStream_t stream, const void *kernelInfo);
 
 /**
  * @ingroup rt_kernel

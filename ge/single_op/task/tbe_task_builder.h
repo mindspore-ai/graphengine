@@ -42,6 +42,19 @@ class KernelHolder {
   std::shared_ptr<ge::OpKernelBin> kernel_bin_;
 };
 
+class HandleHolder {
+ public:
+  HandleHolder(void *bin_handle);
+  ~HandleHolder();
+
+  void SetBinHandle(void *bin_handle) { bin_handle_ = bin_handle; }
+  void *GetBinHandle() { return bin_handle_; }
+
+ private:
+  friend class HandleRegistry;
+  void *bin_handle_ = nullptr;
+};
+
 class KernelBinRegistry {
  public:
   static KernelBinRegistry &GetInstance() {
@@ -61,9 +74,22 @@ class KernelBinRegistry {
   std::mutex mutex_;
 };
 
+class HandleRegistry {
+ public:
+  static HandleRegistry &GetInstance() {
+    static HandleRegistry instance;
+    return instance;
+  }
+
+  bool AddHandle(std::unique_ptr<HandleHolder> &&holder);
+
+ private:
+  std::set<std::unique_ptr<HandleHolder>> registered_handles_;
+};
+
 class TbeTaskBuilder {
  public:
-  TbeTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::KernelDef &kernel_def);
+  TbeTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::TaskDef &task_def);
   ~TbeTaskBuilder() = default;
 
   Status BuildTask(TbeOpTask &task, const SingleOpModelParam &param);
@@ -71,9 +97,11 @@ class TbeTaskBuilder {
  private:
   Status InitTilingInfo(TbeOpTask &task);
   Status SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc);
+  Status SetKernelWithHandleArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc);
   Status GetSmDesc(void **sm_desc, const SingleOpModelParam &param) const;
 
   Status RegisterKernel(TbeOpTask &task, const SingleOpModelParam &param);
+  Status RegisterKernelWithHandle(TbeOpTask &task, const SingleOpModelParam &param);
   Status DoRegisterKernel(const OpKernelBin &kernel_bin, const char *bin_file_key, void **bin_handle,
                           const SingleOpModelParam &param);
   Status DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle, const SingleOpModelParam &param) const;
@@ -83,8 +111,11 @@ class TbeTaskBuilder {
 
   const NodePtr node_;
   const OpDescPtr op_desc_;
+  const domi::TaskDef &task_def_;
   const domi::KernelDef &kernel_def_;
+  const domi::KernelDefWithHandle &kernel_def_with_handle_;
   const std::string stub_name_;
+  void *handle_ = nullptr;
 };
 }  // namespace ge
 

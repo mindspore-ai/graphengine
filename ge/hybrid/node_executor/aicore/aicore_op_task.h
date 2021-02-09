@@ -28,6 +28,32 @@
 
 namespace ge {
 namespace hybrid {
+class TbeHandleHolder {
+ public:
+  TbeHandleHolder(void *bin_handle);
+  ~TbeHandleHolder();
+
+  void SetBinHandle(void *bin_handle) { bin_handle_ = bin_handle; }
+  void *GetBinHandle() { return bin_handle_; }
+
+ private:
+  friend class TbeHandleRegistry;
+  void *bin_handle_ = nullptr;
+};
+
+class TbeHandleRegistry {
+ public:
+  static TbeHandleRegistry &GetInstance() {
+    static TbeHandleRegistry instance;
+    return instance;
+  }
+
+  bool AddHandle(std::unique_ptr<TbeHandleHolder> &&holder);
+
+ private:
+  std::set<std::unique_ptr<TbeHandleHolder>> registered_handles_;
+};
+
 class AiCoreOpTask {
  public:
   AiCoreOpTask() = default;
@@ -67,6 +93,9 @@ class AiCoreOpTask {
   Status InitWithTaskDef(const OpDesc &node, const domi::TaskDef &task_def);
   Status InitTilingInfo(const OpDesc &op_desc);
   Status RegisterTbeHandle(const OpDesc &op_desc);
+  Status RegisterKernelHandle(const OpDesc &op_desc);
+  Status InitWithKernelDef(const OpDesc &op_desc, const domi::TaskDef &task_def);
+  Status InitWithKernelDefWithHandle(const OpDesc &node, const domi::TaskDef &task_def);
 
   std::string stub_name_;
   void *stub_func_ = nullptr;
@@ -76,6 +105,11 @@ class AiCoreOpTask {
   bool clear_atomic_ = true;
   bool is_single_op_ = false;
   std::vector<int> output_indices_to_skip_;
+  string original_kernel_key_;
+  string node_info_;
+  uint32_t tiling_key_ = 0;
+  void *handle_ = nullptr;
+  bool is_dynamic_ = false;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {

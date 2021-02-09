@@ -991,15 +991,19 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
 Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option,
                                  vector<vector<std::pair<int64_t, int64_t>>> &range_vec) {
   // check both mode and shape_range option are all enabled
-  bool enable_dynamic_execute_mode = true;
-  auto mode_iter = graph_option.find(OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
-  if ((mode_iter == graph_option.end()) || (mode_iter->second != "dynamic_execute")) {
-    GELOGD("Graph Option: Can not find %s option in graph options.", OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
-    enable_dynamic_execute_mode = false;
-  }
 
+  auto mode_iter = graph_option.find(OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+  bool enable_dynamic_execute_mode = (mode_iter != graph_option.end()) && (mode_iter->second == "dynamic_execute");
+  if (!enable_dynamic_execute_mode) {
+    GELOGD("Graph Option: Can not find %s option in graph options or option value is empty",
+           OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
+  }
   auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
-  bool enable_input_shape_range = (iter != graph_option.end());
+  bool enable_input_shape_range = (iter != graph_option.end()) && (!iter->second.empty());
+  if (!enable_input_shape_range) {
+    GELOGD("Graph Option: Can not find %s option in graph options or option value is empty",
+           OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
+  }
   if (enable_dynamic_execute_mode && enable_input_shape_range) {
     GELOGD("GraphOption: %s value is dynamic_execute, %s value is %s.", OPTION_EXEC_DYNAMIC_EXECUTE_MODE,
            OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE, iter->second.c_str());

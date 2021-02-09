@@ -44,6 +44,7 @@
 #include "omm/csa_interact.h"
 #include "runtime/kernel.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
+#include "external/runtime/rt_error_codes.h"
 
 using Json = nlohmann::json;
 
@@ -54,7 +55,6 @@ const int kSocVersionLen = 50;
 const int kDefaultDeviceIdForTrain = 0;
 const int kDefaultDeviceIdForInfer = -1;
 const char *const kGlobalOptionFpCeilingModeDefault = "2";
-const int32_t ACL_ERROR_RT_FEATURE_NOT_SUPPORT = 207000;
 }  // namespace
 static std::shared_ptr<GELib> instancePtr_ = nullptr;
 

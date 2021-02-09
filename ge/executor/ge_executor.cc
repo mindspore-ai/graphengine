@@ -175,14 +175,14 @@ bool IsDynamicImageSizeMatchModel(uint64_t image_height, uint64_t image_width,
 bool IsDynmaicDimsSizeMatchModel(const vector<uint64_t> cur_dynamic_dims,
                                  const vector<vector<int64_t>> &batch_info) {
   if (batch_info.empty()) {
-    GELOGE(ge::FAILED, "Dynamic batch info is empty.");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Dynamic batch info is empty.");
     return false;
   }
 
   bool find_match = false;
   for (auto resolution : batch_info) {
     if (cur_dynamic_dims.size() != resolution.size()) {
-      GELOGE(ge::FAILED, "Cur dynamic dims param num is %zu, current resolution size is %zu.",
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Cur dynamic dims param num is %zu, current resolution size is %zu.",
              cur_dynamic_dims.size(), resolution.size());
       return false;
     }
@@ -199,7 +199,7 @@ bool IsDynmaicDimsSizeMatchModel(const vector<uint64_t> cur_dynamic_dims,
     }
   }
   if (!find_match) {
-    GELOGE(ge::FAILED, "choose dynamic dims can not match the gear of model.");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "choose dynamic dims can not match the gear of model.");
   }
   return find_match;
 }

@@ -3283,8 +3283,8 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
   }
   // The input and model input size can not be exactly equal because user input is not definite.
   if ((input_size + kDataMemAlignSizeCompare) < op_size) {
-    GELOGE(FAILED, "Input size [%ld] can not be smaller than op size [%ld] after 64-byte alignment", input_size,
-           op_size);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "Input size [%ld] can not be smaller than op size [%ld] after 64-byte alignment", input_size, op_size);
     return false;
   }
   return true;
@@ -3334,27 +3334,28 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
   string input_or_output = "input";
   is_input ? input_or_output = "input" : input_or_output = "output";
   if (blobs.size() != data_info.size()) {
-    GELOGE(FAILED, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
            input_or_output.c_str(), data_info.size(), blobs.size());
-    return FAILED;
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   for (const auto &data : data_info) {
     if (data.first >= blobs.size()) {  // check data index.
-      GELOGE(FAILED, "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
              input_or_output.c_str(), data.first, blobs.size());
-      return FAILED;
+      return ACL_ERROR_GE_PARAM_INVALID;
     }
 
     const DataBuffer &buffer = blobs[data.first];  // index of data.
     if (buffer.data == nullptr) {
-      GELOGE(FAILED, "data_buf.data is nullptr, index=%u", data.first);
-      return FAILED;
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "data_buf.data is nullptr, index=%u", data.first);
+      return ACL_ERROR_GE_PARAM_INVALID;
     }
 
     if (!CheckInputAndModelSize(buffer.length, data.second.GetDataSize(), is_dynamic)) {
-      GELOGE(FAILED, "Check input size and model size failed, op[%s]", data.second.GetOpName().c_str());
-      return FAILED;
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+             "Check input size and model size failed, op[%s]", data.second.GetOpName().c_str());
+      return ACL_ERROR_GE_PARAM_INVALID;
     }
 
     void *basic_addr = data.second.GetBasicAddr();
@@ -3362,9 +3363,10 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     if (copy_only_addrs_.count(basic_addr) > 0) {
       if (is_input) {
         GELOGI("[IMAS] Find addr %p need direct copy from user malloc input %p", basic_addr, buffer.data);
-        if (rtMemcpy(basic_addr, data_size, buffer.data, buffer.length, RT_MEMCPY_DEVICE_TO_DEVICE) != RT_ERROR_NONE) {
-          GELOGE(FAILED, "Non-zero copy data node copy failed");
-          return FAILED;
+        rtError_t rt_ret = rtMemcpy(basic_addr, data_size, buffer.data, buffer.length, RT_MEMCPY_DEVICE_TO_DEVICE);
+        if (rt_ret != RT_ERROR_NONE) {
+          GELOGE(rt_ret, "Non-zero copy data node copy failed");
+          return RT_ERROR_TO_GE_STATUS(rt_ret);
         }
       }
       GELOGI("No need to exeucte zero copy task because this addr %p need direct copy.", basic_addr);
@@ -3385,7 +3387,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
         }
         uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
         if (task.UpdateTaskParam(addr_val, buffer_addr) != SUCCESS) {
-          return FAILED;
+          return ACL_ERROR_GE_PARAM_INVALID;
         }
       }
     }

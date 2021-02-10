@@ -809,7 +809,7 @@ target_compile_definitions(ge_ut_common PRIVATE
 )
 
 target_compile_options(ge_ut_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -822,14 +822,14 @@ target_link_libraries(ge_ut_common PRIVATE
 )
 
 # build common format
-add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common_format PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_ut_common_format PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -841,14 +841,14 @@ target_link_libraries(ge_ut_common_format PRIVATE
 )
 
 # build graph prepare common
-add_library(ge_prepare_common STATIC ${GRAPH_PREPARE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_prepare_common STATIC ${GRAPH_PREPARE_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_prepare_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_prepare_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -860,14 +860,14 @@ target_link_libraries(ge_prepare_common PRIVATE
 )
 
 # build graph optimize common
-add_library(ge_optimize_common STATIC ${GRAPH_OPTIMIZE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_optimize_common STATIC ${GRAPH_OPTIMIZE_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_optimize_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_optimize_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -879,14 +879,14 @@ target_link_libraries(ge_optimize_common PRIVATE
 )
 
 # build graph partition common
-add_library(ge_partition_common STATIC ${GRAPH_PARTITION_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_partition_common STATIC ${GRAPH_PARTITION_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_partition_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_partition_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -898,14 +898,14 @@ target_link_libraries(ge_partition_common PRIVATE
 )
 
 # build build graph load common
-add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_load_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_load_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -917,14 +917,14 @@ target_link_libraries(ge_load_common PRIVATE
 )
 
 # build graph execute common
-add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_execute_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_execute_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -936,14 +936,14 @@ target_link_libraries(ge_execute_common PRIVATE
 )
 
 # build graph build common
-add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_build_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_build_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -955,14 +955,14 @@ target_link_libraries(ge_build_common PRIVATE
 )
 
 # build graph pass common
-add_library(ge_pass_common STATIC ${GRAPH_PASS_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_pass_common STATIC ${GRAPH_PASS_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_pass_common PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_pass_common PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 
@@ -974,14 +974,14 @@ target_link_libraries(ge_pass_common PRIVATE
 )
 
 # build single_op common
-add_library(ge_single_op STATIC ${SINGLE_OP_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_single_op STATIC ${SINGLE_OP_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_single_op PRIVATE
     google=ascend_private
 )
 
 target_compile_options(ge_single_op PRIVATE
-    -g
+    -g --coverage -fprofile-arcs -ftest-coverage
     -Werror=format
 )
 

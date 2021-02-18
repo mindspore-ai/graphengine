@@ -71,7 +71,7 @@ const char *const kOutputTypeError = "The multiple out nodes set in output_type 
 const size_t kNodeNameIndex = 0;
 const size_t kIndexStrIndex = 1;
 const size_t kDTValueIndex = 2;
-const size_t kOmInfoSize = 5;
+const size_t kOmInfoSize = 4;
 }  // namespace
 
 // When the model is converted to a JSON file, the following operator attributes in the blacklist will be ignored
@@ -828,7 +828,7 @@ void GetGroupName(ge::proto::ModelDef &model_def) {
       });
 }
 
-FMK_FUNC_HOST_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def) {
+FMK_FUNC_HOST_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def, uint32_t modeldef_size) {
   std::cout << "============ Display Model Info start ============" << std::endl;
 
   auto model_attr_map = model_def->mutable_attr();
@@ -879,15 +879,15 @@ FMK_FUNC_HOST_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def) {
   if (list_size == kOmInfoSize) {
     std::cout << "om       info: "
               << "modeldef_size"
-              << "[" << iter->second.list().i(0) << " B], "
+              << "[" << modeldef_size << " B], "
               << "weight_data_size"
-              << "[" << iter->second.list().i(1) << " B], "
+              << "[" << iter->second.list().i(0) << " B], "
               << "tbe_kernels_size"
-              << "[" << iter->second.list().i(2) << " B], "
+              << "[" << iter->second.list().i(1) << " B], "
               << "cust_aicpu_kernel_store_size"
-              << "[" << iter->second.list().i(3) << " B], "
+              << "[" << iter->second.list().i(2) << " B], "
               << "task_info_size"
-              << "[" << iter->second.list().i(4) << " B]." << std::endl;
+              << "[" << iter->second.list().i(3) << " B]." << std::endl;
   } else {
     std::cout << "Display Model Info error, please check!"  << std::endl;
   };
@@ -955,7 +955,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
 
           ret = ModelSaver::SaveJsonToFile(json_file, j);
         } else {
-          PrintModelInfo(&model_def);
+          PrintModelInfo(&model_def, ir_part.size);
         }
       } else {
         ret = INTERNAL_ERROR;

@@ -104,7 +104,7 @@ GE_FUNC_VISIBILITY void UpdateOmgCtxWithParserCtx();
 
 GE_FUNC_VISIBILITY void UpdateParserCtxWithOmgCtx();
 
-GE_FUNC_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def);
+GE_FUNC_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def, uint32_t modeldef_size);
 }  // namespace ge
 
 namespace domi {

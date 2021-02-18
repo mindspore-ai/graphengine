@@ -59,7 +59,7 @@ NodePtr CreateNode(OpDescPtr op, ComputeGraphPtr owner_graph) { return owner_gra
 void CompareShape(const vector<int64_t> &shape1, const vector<int64_t> &shape2) {
   EXPECT_EQ(shape1.size(), shape2.size());
   if (shape1.size() == shape2.size()) {
-    for (int i = 0; i < shape1.size(); i++) {
+    for (size_t i = 0; i < shape1.size(); i++) {
       EXPECT_EQ(shape1[i], shape2[i]);
     }
   }
@@ -69,7 +69,7 @@ template <typename T>
 void CompareList(const vector<T> &val1, const vector<T> &val2) {
   EXPECT_EQ(val1.size(), val2.size());
   if (val1.size() == val2.size()) {
-    for (int i = 0; i < val1.size(); i++) {
+    for (size_t i = 0; i < val1.size(); i++) {
       EXPECT_EQ(val1[i], val2[i]);
     }
   }
@@ -128,6 +128,9 @@ static bool NamedAttrsSimpleCmp(const GeAttrValue &left, const GeAttrValue &righ
         if (i1 != i2) {
           return false;
         }
+      }
+      default: {
+        return true;
       }
     }
   }

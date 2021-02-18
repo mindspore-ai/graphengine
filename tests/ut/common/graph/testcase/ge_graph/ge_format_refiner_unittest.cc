@@ -58,7 +58,7 @@ namespace {
 ///             relu1
 ///              |
 ///            conv1
-///            /   \
+///            /   \.
 ///        var1  var2
 ///
 ut::GraphBuilder BuildGraph1() {
@@ -95,9 +95,9 @@ ut::GraphBuilder BuildGraph1() {
 ///             relu1
 ///              |
 ///             bn1 -----------------
-///             |   \    \     \     \
+///             |   \    \     \     \.
 ///           conv1 var3 var4  var5  var6
-///           |   \
+///           |   \.
 ///         var1  var2
 ///
 ut::GraphBuilder BuildGraph2() {
@@ -142,11 +142,11 @@ ut::GraphBuilder BuildGraph2() {
 ///             netoutput1
 ///               |
 ///              conv2
-///              |   \
+///              |   \.
 ///             relu1   var3
 ///              |
 ///            conv1
-///           /   \
+///           /   \.
 ///        var1  var2
 ///
 ut::GraphBuilder BuildGraph3() {
@@ -197,13 +197,13 @@ ut::GraphBuilder BuildGraph3() {
 ///             netoutput1
 ///               |
 ///              conv2
-///              |   \
+///              |   \.
 ///             relu1   var3
 ///              |
 ///              bn1
 ///              |
 ///            conv1
-///           /   \
+///           /   \.
 ///        var1  var2
 ///
 ut::GraphBuilder BuildGraph4() {
@@ -256,10 +256,10 @@ ut::GraphBuilder BuildGraph4() {
 ///              netoutput1
 ///                 |
 ///                apply1
-///               /  \
-///  relug1 --> bng1  \
-///     \    /  | \    \
-///      relu1  | |     \
+///               /  \.
+///  relug1 --> bng1  \.
+///     \    /  | \    \.
+///      relu1  | |     \.
 ///           \|  |     |
 ///           |   |     |
 ///           bn1 |     |
@@ -313,9 +313,9 @@ ut::GraphBuilder BuilderGraph5() {
 ///             netoutput1
 ///              |
 ///            AddN
-///           /   \          \
+///           /   \          \.
 ///        L2Loss  GatherV2   Constant
-///          /      \
+///          /      \.
 ///        Data1   Data2
 ///
 ut::GraphBuilder BuildGraph6() {
@@ -362,9 +362,9 @@ ut::GraphBuilder BuildGraph6() {
 ///             netoutput1
 ///              |
 ///            AddN
-///           /   \          \
+///           /   \          \.
 ///        L2Loss  GatherV2   Constant
-///          /      \
+///          /      \.
 ///        Data1   Data2
 ///
 ut::GraphBuilder BuildGraph7() {

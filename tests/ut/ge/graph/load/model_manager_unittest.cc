@@ -15,20 +15,17 @@
  */
 
 #include <gtest/gtest.h>
-#include <map>
-#include "common/debug/log.h"
-#include "common/types.h"
-#include "graph/utils/graph_utils.h"
+
 #define private public
 #define protected public
 #include "graph/load/model_manager/model_manager.h"
 #include "common/helper/om_file_helper.h"
+#include "graph/utils/graph_utils.h"
+#include "graph/debug/ge_attr_define.h"
 #include "common/op/ge_op_utils.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "graph/load/model_manager/davinci_model_parser.h"
-#undef private
-#undef protected
 
 using namespace std;
 using namespace testing;
@@ -39,20 +36,20 @@ const static std::string ENC_KEY = "0123456789abcdef0123456789abcdef0123456789ab
 
 class UtestModelManagerModelManager : public testing::Test {
  protected:
-  static Status LoadStub(const uint8_t *data, size_t len, ge::Model &model) {
+  static Status LoadStub(const uint8_t *data, size_t len, Model &model) {
     InitModelDefault(model);
-    return ge::SUCCESS;
+    return SUCCESS;
   }
 
-  static void InitModelDefault(ge::Model &model) {
-    ge::AttrUtils::SetInt(&model, ge::ATTR_MODEL_MEMORY_SIZE, 0);
-    ge::AttrUtils::SetInt(&model, ge::ATTR_MODEL_WEIGHT_SIZE, 0);
-    ge::AttrUtils::SetInt(&model, ge::ATTR_MODEL_STREAM_NUM, 0);
-    ge::AttrUtils::SetInt(&model, ge::ATTR_MODEL_EVENT_NUM, 0);
-    ge::AttrUtils::SetStr(&model, ge::ATTR_MODEL_TARGET_TYPE, "MINI");  // domi::MINI
+  static void InitModelDefault(Model &model) {
+    AttrUtils::SetInt(&model, ATTR_MODEL_MEMORY_SIZE, 0);
+    AttrUtils::SetInt(&model, ATTR_MODEL_WEIGHT_SIZE, 0);
+    AttrUtils::SetInt(&model, ATTR_MODEL_STREAM_NUM, 0);
+    AttrUtils::SetInt(&model, ATTR_MODEL_EVENT_NUM, 0);
+    AttrUtils::SetStr(&model, ATTR_MODEL_TARGET_TYPE, "MINI");  // domi::MINI
 
-    auto computeGraph = std::make_shared<ge::ComputeGraph>("graph");
-    auto graph = ge::GraphUtils::CreateGraphFromComputeGraph(computeGraph);
+    auto computeGraph = std::make_shared<ComputeGraph>("graph");
+    auto graph = GraphUtils::CreateGraphFromComputeGraph(computeGraph);
     model.SetGraph(graph);
   }
 
@@ -60,9 +57,8 @@ class UtestModelManagerModelManager : public testing::Test {
 
   void TearDown() {}
 
-  void GenUnencryptModelData(ge::ModelData &data) {
+  void GenUnencryptModelData(ModelData &data) {
     const int model_len = 10;
-    data.key;
     data.model_len = sizeof(ModelFileHeader) + model_len;
     data.model_data = new uint8_t[data.model_len];
     memset((uint8_t *)data.model_data + sizeof(ModelFileHeader), 10, model_len);
@@ -75,7 +71,7 @@ class UtestModelManagerModelManager : public testing::Test {
     header->is_checksum = ModelCheckType::CHECK;
   }
 
-  void GenEncryptModelData(ge::ModelData &data) {
+  void GenEncryptModelData(ModelData &data) {
     const int model_len = 10;
     data.key = ENC_KEY;
     data.model_data = new uint8_t[data.model_len];
@@ -88,10 +84,10 @@ class UtestModelManagerModelManager : public testing::Test {
     header->length = 10;  // encrypt_len;
   }
 
-  void LoadStandardModelData(ge::ModelData &data) {
+  void LoadStandardModelData(ModelData &data) {
     static const std::string STANDARD_MODEL_DATA_PATH =
       "llt/framework/domi/ut/ome/test/data/standard_partition_model.txt";
-    ge::proto::ModelDef model_def;
+    proto::ModelDef model_def;
     ReadProtoFromText(STANDARD_MODEL_DATA_PATH.c_str(), &model_def);
 
     data.model_len = model_def.ByteSizeLong();
@@ -100,79 +96,79 @@ class UtestModelManagerModelManager : public testing::Test {
   }
 };
 
-class DModelListener : public ge::ModelListener {
+class DModelListener : public ModelListener {
  public:
   DModelListener(){};
   uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode) { return 0; }
 };
 
 
-/*TEST_F(UtestModelManagerModelManager, case_load_incorrect_param) {
+TEST_F(UtestModelManagerModelManager, case_load_incorrect_param) {
   ModelManager mm;
   uint32_t model_id = 0;
-  ge::ModelData model;
-  EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, model, nullptr, nullptr));
-  ge::ModelData data;
+  ModelData data;
   // Load allow listener is null
-  EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, nullptr, nullptr));
+  EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID);
 }
 
 TEST_F(UtestModelManagerModelManager, case_load_model_len_too_short) {
   ModelManager mm;
-  ge::ModelData data;
+  ModelData data;
   data.model_len = 10;
+  data.model_data = (void *)&data;
   uint32_t model_id = 1;
-  EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN, nullptr));
+  EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_PARAM_INVALID);
+  data.model_data = nullptr;
 }
 
 TEST_F(UtestModelManagerModelManager, case_load_model_len_not_match) {
   ModelManager mm;
-  ge::ModelData data;
+  ModelData data;
   GenUnencryptModelData(data);
   data.model_len = sizeof(ModelFileHeader) + 1;
   uint32_t model_id = 1;
-  EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN, nullptr));
+  EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_PARAM_INVALID);
   delete[](uint8_t *) data.model_data;
 }
 
 TEST_F(UtestModelManagerModelManager, case_load_model_encypt_not_match) {
   ModelManager mm;
-  ge::ModelData data;
+  ModelData data;
   GenUnencryptModelData(data);
   data.key = ENC_KEY;
   uint32_t model_id = 1;
-  EXPECT_EQ(ge::PARAM_INVALID, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN, nullptr));
+  EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_PARAM_INVALID);
   delete[](uint8_t *) data.model_data;
 }
 
 TEST_F(UtestModelManagerModelManager, case_load_model_encypt_type_unsupported) {
   ModelManager mm;
-  ge::ModelData data;
+  ModelData data;
   GenUnencryptModelData(data);
   ModelFileHeader *header = (ModelFileHeader *)data.model_data;
   header->is_encrypt = 255;
   uint32_t model_id = 1;
-  EXPECT_EQ(ge::FAILED, mm.LoadModelOffline(model_id, data, UTEST_CALL_BACK_FUN, nullptr));
+  EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_PARAM_INVALID);
   delete[](uint8_t *) data.model_data;
 }
-
+/*
 shared_ptr<ModelListener> LabelCallBack(new DModelListener());
 
 // test HandleCommand
 TEST_F(UtestModelManagerModelManager, command_success1) {
   ModelManager manager;
-  ge::Command cmd;
+  Command cmd;
 
   cmd.cmd_type = "INFERENCE";
-  EXPECT_EQ(ge::PARAM_INVALID, manager.HandleCommand(cmd));
+  EXPECT_EQ(PARAM_INVALID, manager.HandleCommand(cmd));
 
   cmd.cmd_type = "NOT SUPPORT";
-  EXPECT_EQ(ge::PARAM_INVALID, manager.HandleCommand(cmd));
+  EXPECT_EQ(PARAM_INVALID, manager.HandleCommand(cmd));
 }
 
 TEST_F(UtestModelManagerModelManager, command_success2) {
   ModelManager manager;
-  ge::Command cmd;
+  Command cmd;
 
   cmd.cmd_type = "dump";
   cmd.cmd_params.push_back("status");
@@ -184,101 +180,101 @@ TEST_F(UtestModelManagerModelManager, command_success2) {
   cmd.cmd_params.push_back("layer");
   cmd.cmd_params.push_back("layer1");
 
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
 }
 
 // test profile
 TEST_F(UtestModelManagerModelManager, command_profile_success) {
   ModelManager manager;
-  ge::Command cmd;
+  Command cmd;
   cmd.cmd_type = "profile";
 
   cmd.cmd_params.push_back("ome");
   cmd.cmd_params.push_back("on");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   bool ome_profile_on = PropertiesManager::Instance().GetPropertyValue(OME_PROFILE) == "1";
   EXPECT_EQ(true, ome_profile_on);
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("ome");
   cmd.cmd_params.push_back("off");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   ome_profile_on = PropertiesManager::Instance().GetPropertyValue(OME_PROFILE) == "1";
   EXPECT_FALSE(ome_profile_on);
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("cce");
   cmd.cmd_params.push_back("on");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   bool cce_profile_on = PropertiesManager::Instance().GetPropertyValue(CCE_PROFILE) == "1";
   EXPECT_EQ(true, cce_profile_on);
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("cce");
   cmd.cmd_params.push_back("off");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   cce_profile_on = PropertiesManager::Instance().GetPropertyValue(CCE_PROFILE) == "1";
   EXPECT_FALSE(cce_profile_on);
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("runtime");
   cmd.cmd_params.push_back("on");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   bool rts_profile_on = PropertiesManager::Instance().GetPropertyValue(RTS_PROFILE) == "1";
   EXPECT_EQ(true, rts_profile_on);
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("runtime");
   cmd.cmd_params.push_back("off");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   rts_profile_on = PropertiesManager::Instance().GetPropertyValue(RTS_PROFILE) == "1";
   EXPECT_FALSE(rts_profile_on);
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("profiler_jobctx");
   cmd.cmd_params.push_back("jobctx");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   EXPECT_EQ("jobctx", PropertiesManager::Instance().GetPropertyValue(PROFILER_JOBCTX));
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("profiler_target_path");
   cmd.cmd_params.push_back("/test/target");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   EXPECT_EQ("/test/target", PropertiesManager::Instance().GetPropertyValue(PROFILER_TARGET_PATH));
 
   cmd.cmd_params.clear();
   cmd.cmd_params.push_back("RTS_PATH");
   cmd.cmd_params.push_back("/test/rts_path");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
   EXPECT_EQ("/test/rts_path", PropertiesManager::Instance().GetPropertyValue(RTS_PROFILE_PATH));
 }
 
 // test acl profiling
 TEST_F(UtestModelManagerModelManager, command_profiling) {
   ModelManager manager;
-  ge::Command cmd;
+  Command cmd;
   cmd.cmd_type = "profiling";
 
   cmd.cmd_params.push_back("config");
   cmd.cmd_params.push_back("on");
-  EXPECT_EQ(ge::SUCCESS, manager.HandleCommand(cmd));
+  EXPECT_EQ(SUCCESS, manager.HandleCommand(cmd));
 }
 
 TEST_F(UtestModelManagerModelManager, command_profile_failed) {
   ModelManager manager;
-  ge::Command cmd;
+  Command cmd;
   cmd.cmd_type = "profile";
 
   cmd.cmd_params.push_back("ome");
 
-  EXPECT_EQ(ge::PARAM_INVALID, manager.HandleCommand(cmd));
+  EXPECT_EQ(PARAM_INVALID, manager.HandleCommand(cmd));
 }
 
 // test Start
 TEST_F(UtestModelManagerModelManager, start_fail) {
   ModelManager manager;
   manager.model_map_[2] = nullptr;
-  EXPECT_EQ(ge::PARAM_INVALID, manager.Start(2));
+  EXPECT_EQ(PARAM_INVALID, manager.Start(2));
 }
 
 // test GetMaxUsedMemory
@@ -286,7 +282,7 @@ TEST_F(UtestModelManagerModelManager, get_max_used_memory_fail) {
   ModelManager manager;
   uint64_t max_size = 0;
   manager.model_map_[2] = nullptr;
-  EXPECT_EQ(ge::PARAM_INVALID, manager.GetMaxUsedMemory(2, max_size));
+  EXPECT_EQ(PARAM_INVALID, manager.GetMaxUsedMemory(2, max_size));
 }
 
 // test GetInputOutputDescInfo
@@ -295,7 +291,7 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_fail) {
   manager.model_map_[2] = nullptr;
   vector<InputOutputDescInfo> input_shape;
   vector<InputOutputDescInfo> output_shape;
-  EXPECT_EQ(ge::PARAM_INVALID, manager.GetInputOutputDescInfo(2, input_shape, output_shape));
+  EXPECT_EQ(PARAM_INVALID, manager.GetInputOutputDescInfo(2, input_shape, output_shape));
 }
 
 
@@ -306,7 +302,7 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_zero_copy_fail)
   manager.model_map_[2] = nullptr;
   vector<InputOutputDescInfo> input_shape;
   vector<InputOutputDescInfo> output_shape;
-  EXPECT_EQ(ge::PARAM_INVALID, manager.GetInputOutputDescInfoForZeroCopy(2, input_shape, output_shape));
+  EXPECT_EQ(PARAM_INVALID, manager.GetInputOutputDescInfoForZeroCopy(2, input_shape, output_shape));
 }
 *//*
 
@@ -314,7 +310,7 @@ TEST_F(UtestModelManagerModelManager, get_input_output_desc_info_zero_copy_fail)
 TEST_F(UtestModelManagerModelManager, stop_fail) {
   ModelManager manager;
   manager.model_map_[2] = nullptr;
-  EXPECT_EQ(ge::PARAM_INVALID, manager.Stop(2));
+  EXPECT_EQ(PARAM_INVALID, manager.Stop(2));
 }
 
 // build input_data
@@ -322,8 +318,8 @@ TEST_F(UtestModelManagerModelManager, check_data_len_success) {
   shared_ptr<ModelListener> g_label_call_back(new DModelListener());
   DavinciModel model(0, g_label_call_back);
   ModelManager model_manager;
-  ge::InputData input_data;
-  ge::DataBuffer data_buffer;
+  InputData input_data;
+  DataBuffer data_buffer;
   data_buffer.data = new char[51200];
   data_buffer.length = 51200;
   input_data.index = 0;
@@ -353,6 +349,6 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   vector<InputTensorInfo> inputs;
   inputs.emplace_back(input_tensor);
   auto ret = mm.DataInputTensor(model_id,inputs);
-  EXPECT_EQ(ge::UNSUPPORTED, ret);
+  EXPECT_EQ(UNSUPPORTED, ret);
 }
 }  // namespace ge

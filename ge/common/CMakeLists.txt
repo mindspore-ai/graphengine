@@ -170,7 +170,7 @@ target_include_directories(ge_common_static PRIVATE
 
 target_link_libraries(ge_common_static PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ascend_protobuf
+    ascend_protobuf_static
     json
     c_sec
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>

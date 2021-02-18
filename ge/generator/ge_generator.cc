@@ -627,12 +627,11 @@ namespace {
     bool is_dynamic = false;
     for (const auto &node : graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node);
-      if (node->GetType() == DATA || node->GetType() == CONSTANT || node->GetType() == CONSTANTOP ||
-          node->GetType() == NETOUTPUT) {
-        continue;
-      }
       auto op_desc = node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
+      if (op_desc->GetOpEngineName() != kAIcoreEngine) {
+        continue;
+      }
       if (AttrUtils::HasAttr(op_desc, kAttrSupportDynamicShape)) {
         is_dynamic = true;
         (void) AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, support_dynamic);

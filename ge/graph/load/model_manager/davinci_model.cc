@@ -147,7 +147,6 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       runtime_model_id_(0),
       version_(0),
       ge_model_(nullptr),
-      thread_id_(),
       listener_(listener),
       run_flg_(false),
       priority_(priority),
@@ -168,14 +167,14 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
 
 DavinciModel::~DavinciModel() {
   try {
+    GE_CHK_STATUS(ModelRunStop());
+
     Status ret = data_dumper_.UnloadDumpInfo();
     if (ret != SUCCESS) {
       GELOGW("UnloadDumpInfo failed, ret: %u.", ret);
     }
 
     ClearTaskAddrs();
-
-    GE_CHK_STATUS(ModelRunStop());
 
     op_list_.clear();
     tensor_name_to_fixed_addr_size_.clear();
@@ -730,9 +729,9 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 
   SetProfileTime(MODEL_LOAD_END);
   // collect profiling for ge
-  GE_CHK_STATUS_RET(InitModelProfile(), "Init model profile failed");
   auto &profiling_manager = ProfilingManager::Instance();
   if (profiling_manager.ProfilingModelLoadOn()) {
+    GE_CHK_STATUS_RET(InitModelProfile(), "Init model profile failed");
     Status p_ret = ReportProfilingData();
     if (p_ret != SUCCESS) {
       GELOGE(p_ret, "Report profiling data failed.");
@@ -740,7 +739,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
     }
   }
 
-  Shrink();
+  CREATE_STD_THREAD(shrink_id_, &DavinciModel::Shrink, this);
   return SUCCESS;
 }
 
@@ -2764,14 +2763,18 @@ void *DavinciModel::Run(DavinciModel *model) {
 /// @author
 ///
 Status DavinciModel::DestroyThread() {
-  GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, INTERNAL_ERROR, "data_inputer_ is nullptr.");
-
   run_flg_ = false;
 
-  data_inputer_->Stop();
+  if (data_inputer_ != nullptr) {
+    data_inputer_->Stop();
+  }
 
   if (thread_id_.joinable()) {
     thread_id_.join();
+  }
+
+  if (shrink_id_.joinable()) {
+    shrink_id_.join();
   }
 
   return SUCCESS;
@@ -2819,8 +2822,6 @@ Status DavinciModel::ModelRunStart() {
 Status DavinciModel::ModelRunStop() {
   LockRunFlg();
   GE_MAKE_GUARD(tmp_lock, [&] { UnlockRunFlg(); });
-
-  GE_IF_BOOL_EXEC(!run_flg_, return SUCCESS);
 
   GE_CHK_STATUS_RET(DestroyThread(), "DestoyThead failed.");
 

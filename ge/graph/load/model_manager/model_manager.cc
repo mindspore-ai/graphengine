@@ -270,18 +270,6 @@ ModelManager::~ModelManager() {
   GE_IF_BOOL_EXEC(device_count > 0, GE_CHK_RT(rtDeviceReset(0)));
 }
 
-///
-/// @ingroup domi_ome
-/// @brief set Device. If no device available, return failure
-/// @return Status run result
-/// @author
-///
-Status ModelManager::SetDevice(int32_t deviceId) const {
-  GE_CHK_RT_RET(rtSetDevice(deviceId));
-
-  return SUCCESS;
-}
-
 ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num,
                                         int32_t dynamic_type) {
   std::shared_ptr<DavinciModel> davinci_model = GetModel(model_id);
@@ -322,8 +310,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     return DoLoadHybridModelOnline(model_id, ge_root_model, listener);
   }
 
-  GE_CHK_STATUS_RET(SetDevice(static_cast<int32_t>(GetContext().DeviceId())), "Set device failed, model id:%u.",
-                    model_id);
   mmTimespec timespec = mmGetTickCount();
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, listener);
   if (davinci_model == nullptr) {
@@ -359,8 +345,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
   } while (0);
-
-  GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
 
   return ret;
 }
@@ -1055,11 +1039,15 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       ACL_ERROR_GE_PARAM_INVALID, "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
-  shared_ptr<DavinciModel> davinci_model = nullptr;
   mmTimespec timespec = mmGetTickCount();
 
   ModelHelper model_helper;
   Status ret = model_helper.LoadRootModel(model);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "load model failed.");
+    return ret;
+  }
+
   if (model_helper.GetModelType()) {
     bool is_shape_unknown = false;
     GE_CHK_STATUS_RET(model_helper.GetGeRootModel()->CheckIsUnknownShape(is_shape_unknown),
@@ -1068,20 +1056,12 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
       return DoLoadHybridModelOnline(model_id, model_helper.GetGeRootModel(), listener);
     }
   }
-  if (ret != SUCCESS) {
-    GELOGE(ret, "load model failed.");
-    return ret;
-  }
 
   do {
     GeModelPtr ge_model = model_helper.GetGeModel();
-    try {
-      davinci_model = std::make_shared<DavinciModel>(model.priority, listener);
-    } catch (std::bad_alloc &) {
+    shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(model.priority, listener);
+    if (davinci_model == nullptr) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed");
-      return ACL_ERROR_GE_MEMORY_ALLOCATION;
-    } catch (...) {
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed since other exception raise");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
     davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
@@ -1122,9 +1102,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     InsertModel(model_id, davinci_model);
 
     GELOGI("Parse model %u success.", model_id);
-    
+
     GE_IF_BOOL_EXEC(ret == SUCCESS, device_count++);
-    return SUCCESS;
   } while (0);
 
   return ret;

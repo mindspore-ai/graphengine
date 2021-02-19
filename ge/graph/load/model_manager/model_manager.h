@@ -247,8 +247,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
-  ge::Status SetDevice(int32_t deviceId) const;
-
   ge::Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
 
   ///

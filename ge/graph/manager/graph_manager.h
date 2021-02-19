@@ -336,7 +336,7 @@ class GraphManager {
   void RemoveModelCacheHelper(const GraphId &graph_id);
   ModelCacheHelperPtr FindModelCacheHelper(GraphId graph_id);
 
-  static void ConstructGeInput(std::vector<ge::GeTensor> &ge_inputs, PreRunArgs &args);
+  static void ConstructGeInput(const std::vector<InputTensorInfo> &inputs, std::vector<GeTensor> &ge_inputs);
   static void PreRunThread(GraphManager *graph_manager);
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);

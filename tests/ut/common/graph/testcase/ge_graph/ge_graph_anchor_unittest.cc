@@ -30,7 +30,7 @@
 using namespace ge;
 using namespace std;
 
-class UtestGeAnchor : public testing::Test { 
+class UtestGeAnchor : public testing::Test {
  protected:
   void SetUp() {}
 
@@ -294,7 +294,7 @@ TEST_F(UtestGeAnchor, data_anchor_replace_peer) {
   EXPECT_EQ(node1->GetOutDataAnchor(1)->LinkTo(node2->GetInDataAnchor(1)), GRAPH_SUCCESS);
   EXPECT_EQ(node1->GetOutDataAnchor(1)->LinkTo(node2->GetInDataAnchor(2)), GRAPH_SUCCESS);
 
-  int out_idx = 0;
+  size_t out_idx = 0;
   for (; out_idx < out_data_anchor->peer_anchors_.size(); out_idx++) {
     if (out_data_anchor->peer_anchors_[out_idx].lock() == in_data_anchor) {
       break;
@@ -302,7 +302,7 @@ TEST_F(UtestGeAnchor, data_anchor_replace_peer) {
   }
   EXPECT_EQ(out_idx, 1);
 
-  int in_idx = 0;
+  size_t in_idx = 0;
   for (; in_idx < in_data_anchor->peer_anchors_.size(); in_idx++) {
     if (in_data_anchor->peer_anchors_[in_idx].lock() == out_data_anchor) {
       break;
@@ -312,7 +312,7 @@ TEST_F(UtestGeAnchor, data_anchor_replace_peer) {
 
   out_data_anchor->ReplacePeer(in_data_anchor, node3->GetInDataAnchor(1), node3->GetOutDataAnchor(1));
 
-  int out_idx1 = 0;
+  size_t out_idx1 = 0;
   for (; out_idx1 < out_data_anchor->peer_anchors_.size(); out_idx1++) {
     if (out_data_anchor->peer_anchors_[out_idx1].lock() == node3->GetInDataAnchor(1)) {
       break;
@@ -320,7 +320,7 @@ TEST_F(UtestGeAnchor, data_anchor_replace_peer) {
   }
   EXPECT_EQ(out_idx1, out_idx);
 
-  int in_idx1 = 0;
+  size_t in_idx1 = 0;
   for (; in_idx1 < in_data_anchor->peer_anchors_.size(); in_idx1++) {
     if (in_data_anchor->peer_anchors_[in_idx1].lock() == node3->GetOutDataAnchor(1)) {
       break;
@@ -350,7 +350,7 @@ TEST_F(UtestGeAnchor, graph_utils_insert_node) {
   EXPECT_EQ(node1->GetOutDataAnchor(1)->LinkTo(node2->GetInDataAnchor(1)), GRAPH_SUCCESS);
   EXPECT_EQ(node1->GetOutDataAnchor(1)->LinkTo(node2->GetInDataAnchor(2)), GRAPH_SUCCESS);
 
-  int out_idx = 0;
+  size_t out_idx = 0;
   for (; out_idx < out_data_anchor->peer_anchors_.size(); out_idx++) {
     if (out_data_anchor->peer_anchors_[out_idx].lock() == in_data_anchor) {
       break;
@@ -358,7 +358,7 @@ TEST_F(UtestGeAnchor, graph_utils_insert_node) {
   }
   EXPECT_EQ(out_idx, 1);
 
-  int in_idx = 0;
+  size_t in_idx = 0;
   for (; in_idx < in_data_anchor->peer_anchors_.size(); in_idx++) {
     if (in_data_anchor->peer_anchors_[in_idx].lock() == out_data_anchor) {
       break;
@@ -368,7 +368,7 @@ TEST_F(UtestGeAnchor, graph_utils_insert_node) {
 
   GraphUtils::InsertNodeBetweenDataAnchors(out_data_anchor, in_data_anchor, node3);
 
-  int out_idx1 = 0;
+  size_t out_idx1 = 0;
   for (; out_idx1 < out_data_anchor->peer_anchors_.size(); out_idx1++) {
     if (out_data_anchor->peer_anchors_[out_idx1].lock() == node3->GetInDataAnchor(0)) {
       break;
@@ -376,7 +376,7 @@ TEST_F(UtestGeAnchor, graph_utils_insert_node) {
   }
   EXPECT_EQ(out_idx1, out_idx);
 
-  int in_idx1 = 0;
+  size_t in_idx1 = 0;
   for (; in_idx1 < in_data_anchor->peer_anchors_.size(); in_idx1++) {
     if (in_data_anchor->peer_anchors_[in_idx1].lock() == node3->GetOutDataAnchor(0)) {
       break;

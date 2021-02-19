@@ -27,6 +27,16 @@ using namespace std;
 namespace ge {
 extern OpDescPtr CreateOpDesc(string name, string type);
 
+class DModelListener : public ModelListener {
+ public:
+  DModelListener(){};
+  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result, vector<OutputTensorInfo> &outputs) {
+    return 0;
+  }
+};
+
+shared_ptr<ModelListener> g_local_call_back(new DModelListener());
+
 class UtestDavinciModel : public testing::Test {
  protected:
   void SetUp() {}
@@ -309,7 +319,7 @@ TEST_F(UtestDavinciModel, init_unknown) {
 }
 
 TEST_F(UtestDavinciModel, Init_variable_op) {
-  DavinciModel model(0, nullptr);
+  DavinciModel model(0, g_local_call_back);
   model.ge_model_ = make_shared<GeModel>();
   model.runtime_param_.mem_base = (uint8_t *)0x08000000;
   model.runtime_param_.mem_size = 5120000;
@@ -337,6 +347,12 @@ TEST_F(UtestDavinciModel, Init_variable_op) {
 
   EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
   EXPECT_EQ(model.SyncVarData(), SUCCESS);
+
+  OutputData output_data;
+  EXPECT_FALSE(model.has_output_node_);
+  EXPECT_EQ(model.CopyOutputData(1, output_data, RT_MEMCPY_DEVICE_TO_HOST), SUCCESS);
+
+  EXPECT_EQ(model.ReturnResult(1, false, true, &output_data), INTERNAL_ERROR);
 }
 
 TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {

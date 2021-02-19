@@ -2424,8 +2424,7 @@ void DavinciModel::SetProfileTime(ModelProcStage stage, int64_t endTime) {
 ///
 Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind) {
   if (!has_output_node_) {
-    Status ret = SyncVarData();
-    return ret;
+    return SyncVarData();
   }
 
   output_data.index = data_id;

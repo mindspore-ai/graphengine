@@ -374,63 +374,43 @@ bool IsContinuousInputConflict(const ge::NodePtr &node, const OpDescPtr &peer_op
   // If GetBool fail, is_peer_reference is false.
   (void) AttrUtils::GetBool(peer_op_desc, ATTR_NAME_REFERENCE, is_peer_reference);
   GE_IF_BOOL_EXEC(is_peer_reference,
-                  std::string error = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
+                  std::string warning = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
                       " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
-                      " requires continuous output. There may be conflict between the two." +
-                      "This node is not supported now.";
-                  GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
-                  return true;);
+                      " is ref. There may be conflict between the two.";
+                  GELOGW("%s", warning.c_str());
+                  return false;);
   return false;
 }
 
 Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
   Status ret;
+  // Stored nodes which need assign continuous input memory in `reverse topo order`
+  std::vector<NodePtr> nodes_stack;
+  std::map<NodePtr, uint32_t> node_2_continuous_type;
+
+  // Traverse nodes
   for (auto &node : compute_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node);
-    auto continuous_type = GetContinuousMemoryType(node->GetOpDesc());
-
+    uint32_t continuous_type;
+    auto iter = node_2_continuous_type.find(node);
+    if (iter == node_2_continuous_type.end()) {
+      continuous_type = GetContinuousMemoryType(node->GetOpDesc());
+      node_2_continuous_type.emplace(node, continuous_type);
+    } else {
+      continuous_type = iter->second;
+    }
     // Assign continuous input memory
     bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
-    int64_t memory_type = RT_MEMORY_HBM;
     if (continuous_input) {
-      int64_t mem_clean_start = 0;
-      int64_t mem_clean_size = 0;
-      GE_CHK_STATUS_RET(GetNodeMemoryType(node, memory_type, "input"), "Get node memory type failed.");
-      ret = AssignContinuousInputMemory(node, mem_clean_start, mem_clean_size, memory_type, continuous_type);
-      if (ret != ge::SUCCESS) {
-        GELOGE(ret, "Assign continuous input memory failed!");
-        return ret;
-      }
-
-      // Clean up atomic address, eg, hcom node
-      vector<int32_t> input_indexes;
-      // If GetListInt fail, input_indexes is empty.
-      (void) ge::AttrUtils::GetListInt(node->GetOpDesc(), ATOMIC_ATTR_INPUT_INDEX, input_indexes);
-      if (!input_indexes.empty() && input_indexes[0] == kAllInputAddrIsAtomic) {
-        // check whether there is an atomic conflict between the current node and the peer out node
-        if (!CheckInputIsSupportAtomic(node)) {
-          GELOGE(ge::FAILED,
-                 "There is an atomic conflict between the current node and the peer out node, not supported!");
-          return ge::FAILED;
-        }
-
-        const auto &in_control_anchor = node->GetInControlAnchor();
-        GE_CHECK_NOTNULL(in_control_anchor);
-        for (const auto &peer_out_control_anchor : in_control_anchor->GetPeerOutControlAnchors()) {
-          GE_CHECK_NOTNULL(peer_out_control_anchor);
-          auto peer_out_node = peer_out_control_anchor->GetOwnerNode();
-          if (peer_out_node->GetType() == ATOMICADDRCLEAN) {
-            ret = SetAtomicCleanAttr(peer_out_node, {mem_clean_start}, {mem_clean_size}, memory_type);
-            if (ret != SUCCESS) {
-              GELOGE(ret, "Failed to set attr for atomic addr clean node %s.", peer_out_node->GetName().c_str());
-              return ret;
-            }
-          }
-        }
+      if (AssignContinuousInputMemoryWithAtomicProcessDirectly(node, node_2_continuous_type)) {
+        GE_CHK_STATUS_RET(AssignContinuousInputMemoryWithAtomicProcess(node, continuous_type),
+                          "Assign node %s continuous input memory failed.", node->GetName().c_str())
+      } else {
+        nodes_stack.push_back(node);
       }
     }
-
     // Assign continuous output memory
+    int64_t memory_type = RT_MEMORY_HBM;
     bool continuous_output = ((continuous_type & kTypeOutput) != 0) || ((continuous_type & kTypeOutputNoPadding) != 0);
     if (continuous_output) {
       GE_CHK_STATUS_RET(GetNodeMemoryType(node, memory_type, "output"), "Get node memory type failed.");
@@ -440,6 +420,18 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
         return ret;
       }
     }
+  }
+  // Assign continuous input memory in `reverse topo order` which stored before
+  while (!nodes_stack.empty()){
+    auto node = nodes_stack.back();
+    nodes_stack.pop_back();
+    auto iter = node_2_continuous_type.find(node);
+    if (iter == node_2_continuous_type.end()) {
+      GELOGE(FAILED, "node %s has no continuous type!", node->GetName().c_str());
+      return FAILED;
+    }
+    GE_CHK_STATUS_RET(AssignContinuousInputMemoryWithAtomicProcess(node, iter->second),
+                      "Assign node %s continuous input memory failed.", node->GetName().c_str())
   }
   for (auto pair : memory_offset_) {
     GELOGD("After reassign continuous memory, memory type = %ld, memoffset = %zu.", pair.first,
@@ -463,7 +455,15 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
   int64_t mem_offset = iter->second.mem_offset_;
   int64_t extra_memory_size = 0;
   bool is_continuous_input_allocated = false;
-  (void) ge::AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_CONTINUOUS_INPUT_ALLOC, is_continuous_input_allocated);
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  vector<int64_t> output_list_this = op_desc->GetOutputOffset();
+  if (output_list_this.empty()) {
+    std::string error = "node:" + FmtToStr(op_desc->GetName()) + "has no output offset";
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    return FAILED;
+  }
+  (void) ge::AttrUtils::GetBool(op_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, is_continuous_input_allocated);
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     GE_IF_BOOL_EXEC(in_data_anchor == nullptr, continue);
     auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
@@ -505,6 +505,17 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     // when continuous input has been allocated first input is beginning offset
     bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
     if (is_allocated_first_input) {
+      std::map<int32_t, int32_t> out2ins;
+      GE_CHK_STATUS_RET(GetAllRef(node, out2ins), "Node: %s get all ref failed", node->GetName().c_str());
+      // output is beginning offset, set offset for input; only support this case now
+      if (out2ins.size() == 1 && out2ins.begin()->second == 0) {
+        output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
+        peer_op_desc->SetOutputOffset(output_list);
+      } else {
+        GELOGW("Node %s out %d ref in %d with total ref numbers %zu", node->GetName().c_str(), out2ins.begin()->first,
+               out2ins.begin()->second, out2ins.size());
+      }
+      // first input is beginning offset
       mem_offset = output_list.at(peer_out_data_anchor->GetIdx());
       continuous_mem_start = output_list.at(peer_out_data_anchor->GetIdx());
     } else {
@@ -882,7 +893,7 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
     if ((peer_op_desc->GetType() == CONSTANTOP) || (peer_op_desc->GetType() == AIPP_DATA_TYPE) ||
         (peer_op_desc->GetType() == VARIABLE)) {
       std::string error = "Op" + FmtToStr(node->GetName()) + "'s peer out node" +
-          FmtToStr(peer_op_desc->GetName()) + " is invalid, only support Constant/AippData/Variable";
+          FmtToStr(peer_op_desc->GetName()) + " is invalid, Constant/AippData/Variable is not supported";
       GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return false;
     }
@@ -948,7 +959,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
     output_list[output_index] = iter->second.mem_offset_;
     std::string batch_label;
     (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
-    GELOGI("[IMAS]Atomic output : Set %s name[%s] optype[%s] output[%ld] offset to [%zu] stream_id[%ld] memtype[%ld] "
+    GELOGI("[IMAS]Atomic output : Set %s name[%s] optype[%s] output[%ld] offset to [%zu] stream_id[%ld] memtype[%u] "
            "size[%ld] real_size[%ld] batch[%s].", compute_graph_->GetName().c_str(), op_desc->GetName().c_str(),
            node->GetType().c_str(), output_index, iter->second.mem_offset_, op_desc->GetStreamId(), RT_MEMORY_HBM,
            size, size, batch_label.c_str());
@@ -1028,7 +1039,7 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
       (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
       GELOGI(
           "[IMAS]Atomic ordinary workspace : Set %s name[%s] optype[%s] workspace[%lu] offset to [%zu] stream_id[%ld] "
-          "memtype[%ld] size[%ld] real_size[%ld] batch[%s].",
+          "memtype[%u] size[%ld] real_size[%ld] batch[%s].",
           compute_graph_->GetName().c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), workspace_index,
           mem_type_iter->second.mem_offset_, op_desc->GetStreamId(), RT_MEMORY_HBM, workspace_size, workspace_size,
           batch_label.c_str());
@@ -1069,7 +1080,7 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
       (void)ge::AttrUtils::GetStr(op_desc, ATTR_NAME_BATCH_LABEL, batch_label);
       GELOGI(
           "[IMAS]Atomic fusion workspace : Set %s name[%s] optype[%s] workspace[%lu] offset to [%zu] stream_id[%ld] "
-          "memtype[%ld] ssize[%ld] real_size[%ld] batch[%s].", compute_graph_->GetName().c_str(),
+          "memtype[%u] ssize[%ld] real_size[%ld] batch[%s].", compute_graph_->GetName().c_str(),
           op_desc->GetName().c_str(), op_desc->GetType().c_str(), workspace_index, mem_type_iter->second.mem_offset_,
           op_desc->GetStreamId(), RT_MEMORY_HBM, workspace_size, workspace_size, batch_label.c_str());
 
@@ -1502,4 +1513,92 @@ void GraphMemoryAssigner::PrintMemoryOffset() {
            pair.first, pair.second.mem_offset_);
   }
 }
+
+ge::Status GraphMemoryAssigner::GetAllRef(const NodePtr &node, map<int32_t, int32_t> &out2ins) {
+  for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
+    int32_t reuse_in_index = -1;
+    bool reuse_input_flag = GraphUtils::IsRefFromInput(out_data_anchor, reuse_in_index);
+    if (reuse_input_flag) {
+      if (node->GetInDataAnchor(reuse_in_index) != nullptr) {
+        out2ins.emplace(out_data_anchor->GetIdx(), reuse_in_index);
+      } else {
+        GELOGE(FAILED, "Invalid reuse_input value %d on output %d of node %s, please check attr reuse_input",
+               reuse_in_index, out_data_anchor->GetIdx(), node->GetName().c_str());
+        return FAILED;
+      }
+    }
+  }
+
+  return ge::SUCCESS;
+}
+
+bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
+  const NodePtr &input_continuous_node, map<NodePtr, uint32_t> &node_2_continuous_type) {
+  for (const auto &in_node : input_continuous_node->GetInDataNodes()) {
+    auto iter = node_2_continuous_type.find(in_node);
+    // In node's topo order in the front, so function can not be exception
+    auto continuous_type = iter->second;
+    bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
+    if (continuous_input) {
+      GELOGI("node %s 's precursor node %s need assign continuous input memory, store node firstly.",
+             input_continuous_node->GetName().c_str(), in_node->GetName().c_str());
+      return false;
+    }
+  }
+  for (const auto &out_node : input_continuous_node->GetOutDataNodes()) {
+    auto continuous_type = GetContinuousMemoryType(out_node->GetOpDesc());
+    node_2_continuous_type.emplace(out_node, continuous_type);
+    bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
+    if (continuous_input) {
+      GELOGI("node %s 's succeed node %s need assign continuous input memory, store node firstly.",
+             input_continuous_node->GetName().c_str(), out_node->GetName().c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(const NodePtr &input_continuous_node,
+                                                                             uint32_t continuous_type) {
+  int64_t mem_clean_start = 0;
+  int64_t mem_clean_size = 0;
+  int64_t memory_type = RT_MEMORY_HBM;
+
+  GE_CHK_STATUS_RET(GetNodeMemoryType(input_continuous_node, memory_type, "input"), "Get node memory type failed.");
+  auto ret = AssignContinuousInputMemory(input_continuous_node, mem_clean_start, mem_clean_size, memory_type, continuous_type);
+  if (ret != ge::SUCCESS) {
+    GELOGE(ret, "Assign continuous input memory failed!");
+    return ret;
+  }
+
+  // Clean up atomic address, eg, hcom node
+  vector<int32_t> input_indexes;
+  // If GetListInt fail, input_indexes is empty.
+  (void)ge::AttrUtils::GetListInt(input_continuous_node->GetOpDesc(), ATOMIC_ATTR_INPUT_INDEX, input_indexes);
+  if (!input_indexes.empty() && input_indexes[0] == kAllInputAddrIsAtomic) {
+    // check whether there is an atomic conflict between the current node and the peer out node
+    if (!CheckInputIsSupportAtomic(input_continuous_node)) {
+      GELOGE(ge::FAILED, "There is an atomic conflict between the current node and the peer out node, not supported!");
+      return ge::FAILED;
+    }
+
+    const auto &in_control_anchor = input_continuous_node->GetInControlAnchor();
+    GE_CHECK_NOTNULL(in_control_anchor);
+    for (const auto &peer_out_control_anchor : in_control_anchor->GetPeerOutControlAnchors()) {
+      GE_CHECK_NOTNULL(peer_out_control_anchor);
+      auto peer_out_node = peer_out_control_anchor->GetOwnerNode();
+      if (peer_out_node->GetType() == ATOMICADDRCLEAN) {
+        ret = SetAtomicCleanAttr(peer_out_node, {mem_clean_start}, {mem_clean_size}, memory_type);
+        if (ret != SUCCESS) {
+          GELOGE(ret, "Failed to set attr for atomic addr clean node %s.", peer_out_node->GetName().c_str());
+          return ret;
+        }
+      }
+    }
+  }
+
+  return ge::SUCCESS;
+}
+
 }  // namespace ge

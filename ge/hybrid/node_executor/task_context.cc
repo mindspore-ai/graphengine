@@ -27,10 +27,12 @@
 namespace ge {
 namespace hybrid {
 TaskContext::TaskContext(GraphExecutionContext *execution_context,
-                         const NodeItem *node_item,
+                         NodeState *node_state,
                          SubgraphContext *subgraph_context)
-    : node_item_(node_item), execution_context_(execution_context), subgraph_context_(subgraph_context) {
-}
+    : node_state_(node_state),
+      node_item_(node_state->GetNodeItem()),
+      execution_context_(execution_context),
+      subgraph_context_(subgraph_context) {}
 
 TaskContext::~TaskContext() {
   GELOGD("[%s] TaskContext destroyed.", node_item_->NodeName().c_str());
@@ -47,9 +49,10 @@ TaskContext::~TaskContext() {
   }
 }
 
-std::unique_ptr<TaskContext> TaskContext::Create(const NodeItem &node_item,
+std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
                                                  GraphExecutionContext *execution_context,
                                                  SubgraphContext *subgraph_context) {
+  const NodeItem &node_item = *node_state->GetNodeItem();
   GELOGI("[%s] To create task context, input start = %d, num_inputs = %d, output start = %d, num_outputs = %d.",
          node_item.NodeName().c_str(),
          node_item.input_start,
@@ -65,7 +68,7 @@ std::unique_ptr<TaskContext> TaskContext::Create(const NodeItem &node_item,
   }
 
   auto task_context = std::unique_ptr<TaskContext>(
-      new(std::nothrow)TaskContext(execution_context, &node_item, subgraph_context));
+      new(std::nothrow)TaskContext(execution_context, node_state, subgraph_context));
   if (task_context == nullptr) {
     GELOGE(MEMALLOC_FAILED, "[%s] Failed to create instance of TaskContext.", node_item.NodeName().c_str());
     return nullptr;
@@ -154,7 +157,7 @@ Status TaskContext::RegisterCallback(const std::function<void()> &callback_fun) 
     GELOGW("[%s] Callback is NULL", GetNodeName());
     return SUCCESS;
   }
-  auto ret = execution_context_->callback_manager->RegisterCallback(callback_fun);
+  auto ret = execution_context_->callback_manager->RegisterCallback(GetStream(), callback_fun);
   if (ret != SUCCESS) {
     GELOGE(ret, "[%s] Failed to register callback", GetNodeName());
     execution_context_->callback_manager->Destroy();
@@ -309,7 +312,7 @@ Status TaskContext::SetOutput(int index, const TensorValue &tensor) {
   return SUCCESS;
 }
 
-rtStream_t TaskContext::GetStream() {
+rtStream_t TaskContext::GetStream() const {
   return execution_context_->stream;
 }
 
@@ -534,6 +537,10 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream
   }
 
   return SUCCESS;
+}
+
+NodeState *TaskContext::GetNodeState() const {
+  return node_state_;
 }
 
 Status TaskContext::SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream_id) {

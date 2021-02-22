@@ -48,11 +48,15 @@
 namespace ge {
 namespace hybrid {
 struct GraphExecutionContext {
+  GraphExecutionContext();
+  ~GraphExecutionContext() = default;
+
   void SetErrorCode(Status error_code);
   Status GetStatus() const;
   Status Synchronize(rtStream_t rt_stream);
 
   uint64_t session_id = 0;
+  uint64_t context_id = 0;
   const HybridModel *model = nullptr;
   const GEThreadLocalContext *ge_context = nullptr;
   rtStream_t stream = nullptr;
@@ -67,6 +71,8 @@ struct GraphExecutionContext {
   std::atomic_bool is_eos_;
   long profiling_level = 0;
   long iteration = 0;
+
+ private:
   Status status = SUCCESS;
   mutable std::mutex mu;
 };
@@ -75,7 +81,8 @@ struct GraphExecutionContext {
 do { \
   if ((context != nullptr) && (context)->profiler != nullptr) { \
     if (node_name != nullptr) { \
-      context->profiler->RecordEvent(evt_type, "tid:%lu [%s] [%s] " fmt, GeLog::GetTid(), node_name, category, \
+      context->profiler->RecordEvent(evt_type, "tid:%lu [%s@%ld] [%s] " fmt,     \
+                                       GeLog::GetTid(), node_name, context->iteration, category, \
                                      ##__VA_ARGS__); \
     } else { \
       context->profiler->RecordEvent(evt_type, "tid:%lu [%s] " fmt, GeLog::GetTid(), category, ##__VA_ARGS__); \

@@ -125,16 +125,16 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
                              RT_MEMCPY_DEVICE_TO_HOST));
     }
     tensor.SetData(std::move(host_buffer));
-    string session_id = std::to_string(context_->GetSessionId());
+    string context_id = std::to_string(graph_context_->context_id);
     RuntimeInferenceContext *runtime_infer_ctx = nullptr;
-    GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(session_id, &runtime_infer_ctx),
-                            "Failed to get RuntimeInferenceContext, session_id = %s", session_id.c_str());
+    GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(context_id, &runtime_infer_ctx),
+                            "Failed to get RuntimeInferenceContext, context_id = %s", context_id.c_str());
     GE_CHK_STATUS_RET(runtime_infer_ctx->SetTensor(node_item.node_id, output_idx, std::move(tensor)),
                       "Failed to SetTensor, node = %s, output_index = %d", node_item.NodeName().c_str(), output_idx);
-    GELOGD("[%s] Output[%d] cached successfully in session: %s. node_id = %d, shape = [%s]",
+    GELOGD("[%s] Output[%d] cached successfully in context: %s. node_id = %d, shape = [%s]",
            node_item.NodeName().c_str(),
            output_idx,
-           session_id.c_str(),
+           context_id.c_str(),
            node_item.node_id,
            ge_tensor_desc->GetShape().ToString().c_str());
 
@@ -332,6 +332,7 @@ Status NodeDoneCallback::OnNodeDone() {
   if (node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE) {
     // update output tensor sizes
     GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(node_item));
+    GE_CHK_STATUS_RET_NOLOG(context_->GetNodeState()->GetShapeInferenceState().UpdateOutputDesc());
   }
   // PropagateOutputs for type == DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {
@@ -363,7 +364,7 @@ Status ExecutionEngine::ExecuteAsync(NodeState &node_state,
   RECORD_EXECUTION_EVENT(&execution_context, task_context->GetNodeName(), "Start");
   auto cb = std::shared_ptr<NodeDoneCallback>(new(std::nothrow) NodeDoneCallback(&execution_context, task_context));
   GE_CHECK_NOTNULL(cb);
-  auto callback = [&, cb]() {
+  auto callback = [task_context, cb]() {
     auto ret = cb->OnNodeDone();
     if (ret != SUCCESS) {
       task_context->OnError(ret);

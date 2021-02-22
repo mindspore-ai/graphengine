@@ -28,76 +28,76 @@ class CondPass : public BaseNodePass {
   /// @brief Get cond info for if / while
   /// @param [in] node: If / While op
   /// @param [out] graph: owner_graph of if node / while_cond subgraph
-  /// @param [out] cond_out_anchor: peer_cond_anchor
+  /// @param [out] peer_out_anchor: peer_cond_anchor
   /// @param [out] cond_in_anchor: cond_input
   /// @return Status
   ///
-  static Status GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &cond_out_anchor,
-                     InDataAnchorPtr &cond_in_anchor);
+  static Status GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &peer_out_anchor,
+                            InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Get cond info for if node
   /// @param [in] node: If op
   /// @param [out] graph: owner_graph of if node
-  /// @param [out] cond_out_anchor: peer_cond_anchor
+  /// @param [out] peer_out_anchor: peer_cond_anchor
   /// @param [out] cond_in_anchor: cond_input of if
   /// @return Status
   ///
-  static Status GetCondInfoForIf(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &cond_out_anchor,
-                          InDataAnchorPtr &cond_in_anchor);
+  static Status GetCondInfoForIf(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &peer_out_anchor,
+                                 InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Get cond info for while node
   /// @param [in] node: While op
   /// @param [out] graph: while_cond subgraph
-  /// @param [out] cond_out_anchor: peer_cond_anchor
+  /// @param [out] peer_out_anchor: peer_cond_anchor
   /// @param [out] cond_in_anchor: input of NetOutput in cond_graph
   /// @return Status
   ///
-  static Status GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &cond_out_anchor,
-                             InDataAnchorPtr &cond_in_anchor);
+  static Status GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph, OutDataAnchorPtr &peer_out_anchor,
+                                    InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Process Cond Op with non-scalar cond_input
   /// @param [in] graph
-  /// @param [in] out_anchor: peer_cond_anchor
-  /// @param [in] in_anchor: cond_input
+  /// @param [in] peer_out_anchor: peer_cond_anchor
+  /// @param [in] cond_in_anchor: cond_input
   /// @return Status
   ///
-  Status HandleNonScalarCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                             const InDataAnchorPtr &in_anchor);
+  Status HandleNonScalarCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &peer_out_anchor,
+                             const InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Process Cond Op with scalar-string cond_input
   /// @param [in] graph
-  /// @param [in] out_anchor: peer_cond_anchor
-  /// @param [in] in_anchor: cond_input
+  /// @param [in] peer_out_anchor: peer_cond_anchor
+  /// @param [in] cond_in_anchor: cond_input
   /// @return Status
   ///
-  Status HandleStringCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                          const InDataAnchorPtr &in_anchor);
+  Status HandleStringCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &peer_out_anchor,
+                          const InDataAnchorPtr &cond_in_anchor);
 
   ///
   /// @brief Process Cond Op with scalar cond_input
   /// @param [in] graph
-  /// @param [in] out_anchor: peer_cond_anchor
-  /// @param [in] in_anchor: cond_input
+  /// @param [in] peer_out_anchor: peer_cond_anchor
+  /// @param [in] cond_in_anchor: cond_input
   /// @param [in] src_type
   /// @return Status
   ///
-  Status HandleScalarCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                          const InDataAnchorPtr &in_anchor, DataType src_type);
+  Status HandleScalarCond(const ComputeGraphPtr &graph, const OutDataAnchorPtr &peer_out_anchor,
+                          const InDataAnchorPtr &cond_in_anchor, DataType src_type);
 
   ///
   /// @brief Insert node
   /// @param [in] graph
-  /// @param [in] out_anchor
-  /// @param [in] in_anchor
+  /// @param [in] peer_out_anchor
+  /// @param [in] in_data_anchor
   /// @param [in] type
   /// @return Status
   ///
-  Status InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_anchor,
-                    const InDataAnchorPtr &in_anchor, const std::string &type);
+  Status InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &peer_out_anchor,
+                    const InDataAnchorPtr &in_data_anchor, const std::string &type);
 
   ///
   /// @brief Add cast node

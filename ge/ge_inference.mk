@@ -70,6 +70,9 @@ GRAPH_MANAGER_LOCAL_SRC_FILES := \
 
 BUILER_SRC_FILES := \
     ir_build/ge_ir_build.cc \
+    ir_build/attr_options/utils.cc \
+    ir_build/attr_options/keep_dtype_option.cc \
+    ir_build/attr_options/weight_compress_option.cc \
     ir_build/atc_ir_common.cc \
 
 ANALYZER_SRC_FILES:= \
@@ -111,7 +114,6 @@ OMG_HOST_SRC_FILES := \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
-    graph/passes/dynamic_single_op_reset_shape_pass.cc \
     graph/passes/mark_agnostic_pass.cc \
     graph/common/omg_util.cc \
     graph/common/bcast.cc \

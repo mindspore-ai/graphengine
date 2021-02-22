@@ -28,6 +28,7 @@ namespace hybrid {
 namespace {
 // mem need release
 constexpr uint64_t kReleaseFlag = 1;
+const char *const kAicpuAllshape = "_AllShape";
 }
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_TF, AiCpuNodeExecutor);
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_CUSTOM, AiCpuNodeExecutor);
@@ -60,6 +61,7 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GELOGD("To update aicpu_task ext_info session_info session_id to %lu", session_id);
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "UpdateSessionInfoSessionId failed.");
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(!node_item_->is_dynamic), "UpdateExecuteMode failed.");
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
@@ -74,7 +76,7 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   return SUCCESS;
 }
 
-Status AicpuNodeTaskBase::UpdateOutputShapeFromExtInfo() {
+Status AicpuNodeTaskBase::UpdateOutputShapeFromExtInfo(TaskContext &task_context) {
   if (node_item_->num_outputs == 0) {
     GELOGD("Task [%s] output_num is 0, no need update output shape.", node_name_.c_str());
     return SUCCESS;
@@ -91,19 +93,19 @@ Status AicpuNodeTaskBase::UpdateOutputShapeFromExtInfo() {
     // not support update data type now, just for param
     DataType data_type;
     aicpu_ext_handle_.GetOutputShapeAndType(i, shape, data_type);
-    auto output_desc = node_item_->MutableOutputDesc(i);
-    GE_CHECK_NOTNULL(output_desc);
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, i, output_desc),
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(task_context, shape, i),
                       "Update node %s [%d]th output shape failed.",
                       node_name_.c_str(), i);
   }
   return SUCCESS;
 }
 
-Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new,
-                                                  int32_t output_index, GeTensorDescPtr &output_desc) {
+Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(TaskContext &task_context,
+                                                  const GeShape &shape_new,
+                                                  int32_t output_index) {
+  auto output_desc = task_context.MutableOutputDesc(output_index);
+  GE_CHECK_NOTNULL(output_desc);
   auto shape_old = output_desc->GetShape();
-  output_desc->SetShape(shape_new);
   GELOGD("Update node[%s] out[%d] shape from %s to %s.", node_name_.c_str(), output_index,
          shape_old.ToString().c_str(), shape_new.ToString().c_str());
 
@@ -111,9 +113,9 @@ Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new,
   auto origin_format = output_desc->GetOriginFormat();
   auto format = output_desc->GetFormat();
   if (origin_format == format) {
-    output_desc->SetOriginShape(shape_new);
-    return SUCCESS;
+    return task_context.GetNodeState()->UpdateOutputShapes(output_index, shape_new, shape_new);
   }
+
   // if format is not same need convert shape
   std::vector<int64_t> origin_dims_new;
   auto trans_ret = formats::TransShape(format, shape_new.GetDims(),
@@ -122,7 +124,8 @@ Status AicpuNodeTaskBase::UpdateShapeToOutputDesc(const GeShape &shape_new,
                     "Node[%s] out[%d] originFormat[%d] is not same as format[%d], but TransShape failed, shape=%s.",
                     node_name_.c_str(), output_index, origin_format, format, shape_new.ToString().c_str());
   auto origin_shape_new = GeShape(origin_dims_new);
-  output_desc->SetOriginShape(origin_shape_new);
+  GE_CHK_STATUS_RET(task_context.GetNodeState()->UpdateOutputShapes(output_index, shape_new, origin_shape_new),
+                    "Node[%s] failed to update update shape, index = %d", node_name_.c_str(), output_index);
   GELOGD("Node[%s] out[%d] originFormat[%d] is not same as format[%d], need update from %s ro %s.",
          node_name_.c_str(), output_index, origin_format, format,
          origin_shape_old.ToString().c_str(), origin_shape_new.ToString().c_str());
@@ -136,7 +139,6 @@ Status AicpuNodeTaskBase::UpdateExtInfo() {
     return SUCCESS;
   }
 
-  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(false), "UpdateExecuteMode failed.");
   for (auto i = 0; i < node_item_->num_inputs; ++i) {
     auto input_desc = node_item_->MutableInputDesc(i);
     GE_CHECK_NOTNULL(input_desc);
@@ -176,10 +178,14 @@ Status AicpuNodeTaskBase::UpdateArgs(TaskContext &context) {
   }
 
   GE_CHK_STATUS_RET(UpdateIoAddr(context), "Node[%s] update io addr failed.", node_name_.c_str());
-  if (node_item_->is_dynamic) {
-    // dynamic node need update ext info.
+  bool all_shape = false;
+  const OpDescPtr op_desc = node_item_->GetOpDesc();
+  (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
+  if (node_item_->is_dynamic || all_shape) {
+    // dynamic node and all_shape kernel need update ext info.
     GE_CHK_STATUS_RET(UpdateExtInfo(), "Node[%s] update ext info failed.", node_name_.c_str());
   }
+
   GELOGD("Node[%s] update args end.", node_name_.c_str());
   return SUCCESS;
 }
@@ -513,7 +519,6 @@ Status AicpuTfNodeTask::UpdateShapeByHbmBuffer(TaskContext &context,
                          node_name_.c_str(), node_item_->num_outputs, out_shape_hbm.size());
   for (auto i = 0; i < node_item_->num_outputs; ++i) {
     const auto &result_summary = output_summary_host_[i];
-    auto output_desc = node_item_->MutableOutputDesc(i);
     std::vector<int64_t> shape_dims;
     if (result_summary.shape_data_size > 0) {
       const auto &shape_hbm = out_shape_hbm[i];
@@ -531,7 +536,7 @@ Status AicpuTfNodeTask::UpdateShapeByHbmBuffer(TaskContext &context,
         GELOGD("Node[%s] [%d]th output dim[%u]=%ld.", node_name_.c_str(), i, dim_idx, shape_addr[dim_idx]);
       }
     }
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(GeShape(shape_dims), i, output_desc),
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(context, GeShape(shape_dims), i),
                       "Node[%s] update [%d]th output shape failed.",
                       node_name_.c_str(), i);
   }
@@ -634,7 +639,7 @@ Status AicpuTfNodeTask::TaskCallback(TaskContext &context) {
     // check need update shape, call update shape.
     if (unknown_type_ == DEPEND_SHAPE_RANGE) {
       // check result
-      callback_ret = UpdateOutputShapeFromExtInfo();
+      callback_ret = UpdateOutputShapeFromExtInfo(context);
     } else if (unknown_type_ == DEPEND_COMPUTE) {
       callback_ret = UpdateShapeAndDataByResultSummary(context);
     }
@@ -781,7 +786,7 @@ Status AicpuNodeTask::TaskCallback(TaskContext &context) {
   // check need update shape, call update shape.
   if (node_item_->is_dynamic && unknown_type_ == DEPEND_SHAPE_RANGE) {
     // check result
-    callback_ret = UpdateOutputShapeFromExtInfo();
+    callback_ret = UpdateOutputShapeFromExtInfo(context);
   } else {
     GELOGD("Node[%s] unknown shape type is %d no need update output shape.",
            node_name_.c_str(), unknown_type_);

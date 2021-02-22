@@ -30,16 +30,17 @@ class NodeTask;
 struct GraphExecutionContext;
 class SubgraphContext;
 class TaskContext;
+class NodeState;
 
 class ShapeFuture {
  public:
-  ShapeFuture(NodePtr src_node, uint32_t src_index, SubgraphContext *subgraph_context);
+  ShapeFuture(NodeState *src_node, uint32_t src_index, SubgraphContext *subgraph_context);
   ~ShapeFuture() = default;
   Status Get(GeShape &ori_shape, GeShape &shape);
-  Status GetTensorDesc(GeTensorDescPtr &tensor_desc);
+  Status GetTensorDesc(const GeTensorDesc **tensor_desc);
 
  private:
-  NodePtr src_node_;
+  NodeState *src_node_;
   uint32_t src_index_;
   SubgraphContext *subgraph_context_;
 };
@@ -53,10 +54,19 @@ struct ShapeInferenceState {
 
   Status AwaitShapesReady(const GraphExecutionContext &context);
 
+  Status UpdateOutputDesc();
+
+  const vector<GeTensorDesc> &GetOutputTensorDesc() const;
+
   const NodeItem &node_item;
 
  private:
+  friend struct NodeState;
   std::vector<std::pair<int, ShapeFuture>> shape_futures;
+  // do not directly update op_desc, in case race condition across pipelines
+  std::vector<GeTensorDesc> input_tensor_desc;
+  std::vector<GeTensorDesc> output_tensor_desc;
+
   int num_pending_shapes_ = 0;
   std::condition_variable ready_cv_;
   std::mutex mu_;
@@ -87,6 +97,8 @@ struct NodeState {
   ShapeInferenceState &GetShapeInferenceState() {
     return shape_inference_state_;
   }
+
+  Status UpdateOutputShapes(int index, const GeShape &shape, const GeShape &ori_shape);
 
   const shared_ptr<NodeTask> &GetKernelTask() const {
     return kernel_task_;

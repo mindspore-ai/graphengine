@@ -26,7 +26,9 @@ class GraphItem {
  public:
   GraphItem() = default;
   ~GraphItem();
+  Status GroupNodes();
   const vector<NodeItem *> &GetAllNodes() const;
+  const vector<NodeItem *> &GetAllNodes(int group) const;
   const vector<const NodeItem *> &GetInputNodes() const;
   Status GetOutputDescList(std::vector<ConstGeTensorDescPtr> &output_desc_list) const;
   const vector<std::pair<const NodeItem *, int>> &GetOutputEdges() const;
@@ -46,6 +48,10 @@ class GraphItem {
     name_ = name;
   }
 
+  size_t NumGroups() const {
+    return grouped_node_items_.size();
+  }
+
   const NodeItem *GetOutputNode() const;
 
   bool IsDynamic() const;
@@ -56,6 +62,7 @@ class GraphItem {
   friend class HybridModelBuilder;
   std::string name_;
   std::vector<NodeItem *> node_items_;
+  std::vector<std::vector<NodeItem *>> grouped_node_items_;
   std::vector<const NodeItem *> input_nodes_;
   const NodeItem *output_node_ = nullptr;
   // <src_node, out_index>

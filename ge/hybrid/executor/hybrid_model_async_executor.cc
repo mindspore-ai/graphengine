@@ -25,6 +25,7 @@ namespace ge {
 namespace hybrid {
 namespace {
 const int kDataOutputIndex = 0;
+const size_t kMinimumPiplineStages = 2;
 }
 HybridModelAsyncExecutor::HybridModelAsyncExecutor(HybridModel *model)
     : model_(model), run_flag_(false) {
@@ -95,7 +96,17 @@ Status HybridModelAsyncExecutor::Init() {
   executor_ = std::unique_ptr<HybridModelExecutor>(new(std::nothrow) HybridModelExecutor(model_, device_id_, stream_));
   GE_CHECK_NOTNULL(executor_);
   GE_CHK_STATUS_RET(executor_->Init(), "Failed to init hybrid engine");
+
+  GELOGI("HybridModel stage nums:%zu", model_->GetRootGraphItem()->NumGroups());
+  if (model_->GetRootGraphItem()->NumGroups() >= kMinimumPiplineStages) {
+    pipe_executor_ =
+        std::unique_ptr<HybridModelPipelineExecutor>(new(std::nothrow) HybridModelPipelineExecutor(model_, device_id_));
+    GE_CHECK_NOTNULL(pipe_executor_);
+    GE_CHK_STATUS_RET(pipe_executor_->Init(), "Failed to init hybrid engine");
+  }
+
   GE_CHK_STATUS_RET(InitInputDesc(), "Failed to init input tensors");
+
   return SUCCESS;
 }
 
@@ -135,7 +146,18 @@ Status HybridModelAsyncExecutor::RunInternal() {
         CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
         continue, "PreRun failed.");  // [No need to check value]
 
-    ret = executor_->Execute(args);
+    if (pipe_executor_ != nullptr) {
+      GELOGI("HybridModel will execute in pipeline mode");
+      auto iter_per_run = std::getenv("ITER_NUM");
+      if (iter_per_run) {
+        args.num_loops = static_cast<int>(strtol(iter_per_run, nullptr, 10));
+      }
+      ret = pipe_executor_->Execute(args);
+    } else {
+      GELOGI("HybridModel will execute in singleline mode");
+      ge::GetContext().SetSessionId(executor_->GetContext()->session_id);
+      ret = executor_->Execute(args);
+    }
     ret = HandleResult(ret, current_data.index, args, data_wrapper->GetOutput());
     if (ret != SUCCESS) {
       CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
@@ -219,7 +241,22 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         return PARAM_INVALID;
       }
       auto &tensor_desc = input_tensor_desc_[input_index];
-      tensor_desc->SetShape(GeShape(current_data.shapes[input_index]));
+      GeShape shape(current_data.shapes[input_index]);
+      std::vector<std::pair<int64_t, int64_t>> range;
+      auto range_ret = tensor_desc->GetShapeRange(range);
+      GE_CHK_BOOL_RET_STATUS(range_ret == GRAPH_SUCCESS, INTERNAL_ERROR,
+                             "Get shape range failed, ret=%u.", range_ret);
+      for (size_t k = 0; k < range.size(); ++k) {
+        if (k >= shape.GetDimNum()) {
+          break;
+        }
+        if (shape.GetDim(k) < range[k].first || shape.GetDim(k) > range[k].second) {
+          GELOGE(PARAM_INVALID, "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld]",
+                 input_index, k, shape.GetDim(k), range[k].first, range[k].second);
+          return PARAM_INVALID;
+        }
+      }
+      tensor_desc->SetShape(shape);
       args.input_desc[input_index] = tensor_desc;
       GELOGD("Update shape of input[%zu] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
       GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, tensor_size),

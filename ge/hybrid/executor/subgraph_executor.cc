@@ -24,6 +24,7 @@ namespace ge {
 namespace hybrid {
 namespace {
 constexpr int kDefaultThreadNum = 4;
+constexpr int kDefaultQueueSize = 16;
 constexpr int kDataInputIndex = 0;
 }
 
@@ -31,7 +32,8 @@ SubgraphExecutor::SubgraphExecutor(const GraphItem *graph_item, GraphExecutionCo
     : graph_item_(graph_item),
       context_(context),
       force_infer_shape_(force_infer_shape),
-      pre_run_pool_(kDefaultThreadNum) {
+      pre_run_pool_(kDefaultThreadNum),
+      ready_queue_(kDefaultQueueSize) {
 }
 
 SubgraphExecutor::~SubgraphExecutor() {
@@ -169,7 +171,7 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
   GE_CHECK_NOTNULL(node_state);
   node_state->SetKernelTask(node_item->kernel_task);
 
-  known_shape_task_context_ = TaskContext::Create(*node_item, context_, subgraph_context_.get());
+  known_shape_task_context_ = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
   GE_CHECK_NOTNULL(known_shape_task_context_);
 
   HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_),
@@ -201,11 +203,11 @@ Status SubgraphExecutor::ExecuteAsync(TaskContext &task_context) {
   return SUCCESS;
 }
 
-Status SubgraphExecutor::PrepareNodes() {
-  GELOGD("[%s] Start to prepare nodes. force infer shape = %s.",
+Status SubgraphExecutor::PrepareNodes(int group) {
+  GELOGD("[%s] Start to prepare nodes. group = %d",
          graph_item_->GetName().c_str(),
-         force_infer_shape_ ? "true" : "false");
-  auto &all_nodes = graph_item_->GetAllNodes();
+         group);
+  auto &all_nodes = graph_item_->GetAllNodes(group);
   for (auto all_node : all_nodes) {
     auto &node_item = *all_node;
     // for while op
@@ -240,7 +242,8 @@ Status SubgraphExecutor::PrepareNodes() {
         } else {
           node_state->SetKernelTask(node_item.kernel_task);
         }
-        auto unique_task_context = TaskContext::Create(*node_state->GetNodeItem(), context_, subgraph_context_.get());
+        auto unique_task_context =
+            TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
         GE_CHECK_NOTNULL(unique_task_context);
         const auto &task = node_state->GetKernelTask();
         if (task == nullptr) {
@@ -265,15 +268,17 @@ Status SubgraphExecutor::PrepareNodes() {
     GELOGD("[%s] Push node [%s] to queue.", graph_item_->GetName().c_str(), node_item.NodeName().c_str());
   }
 
+  GELOGD("[%s] Done preparing nodes successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
 }
 
-Status SubgraphExecutor::InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) {
-  const auto &node_item = *node_state.GetNodeItem();
+Status SubgraphExecutor::InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) const {
+  GetContext().SetSessionId(context_->context_id);
   HYBRID_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state),
-                        "[%s] Failed to InferShape.", node_state.GetName().c_str());
-  HYBRID_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_item),
-                        "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
+                    "[%s] Failed to InferShape.", node_state.GetName().c_str());
+  GetContext().SetSessionId(context_->session_id);
+  HYBRID_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_state),
+                    "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
   return SUCCESS;
 }
 
@@ -285,7 +290,7 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
   } else {
     node_state.SetKernelTask(node_item.kernel_task);
   }
-  auto unique_task_context = TaskContext::Create(*node_state.GetNodeItem(), context_, subgraph_context_.get());
+  auto unique_task_context = TaskContext::Create(&node_state, context_, subgraph_context_.get());
   GE_CHECK_NOTNULL(unique_task_context);
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
@@ -336,11 +341,11 @@ Status SubgraphExecutor::LaunchTasks() {
   }
 }
 
-Status SubgraphExecutor::ScheduleTasks() {
+Status SubgraphExecutor::ScheduleTasks(int group) {
   GELOGD("[%s] Start to schedule prepare workers.", graph_item_->GetName().c_str());
   auto prepare_future = std::async(std::launch::async, [&]() -> Status {
     GetContext().SetSessionId(context_->session_id);
-    auto ret = PrepareNodes();
+    auto ret = PrepareNodes(group);
     ready_queue_.Push(nullptr);
     return ret;
   });
@@ -480,6 +485,15 @@ Status SubgraphExecutor::EnableOutputZeroCopy(const vector<TensorValue> &outputs
 
   GELOGD("Done enabling zero copy for outputs successfully.");
   return SUCCESS;
+}
+
+Status SubgraphExecutor::PartialExecuteAsync(int task_group) {
+  return ScheduleTasks(task_group);
+}
+
+Status SubgraphExecutor::InitForPartialExecution(const vector<TensorValue> &inputs,
+                                                 const vector<ConstGeTensorDescPtr> &input_desc) {
+  return Init(inputs, input_desc);
 }
 }  // namespace hybrid
 }  // namespace ge

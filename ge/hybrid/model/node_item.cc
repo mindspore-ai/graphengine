@@ -21,8 +21,8 @@
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
-#include "hybrid/node_executor/node_executor.h"
 #include "hybrid/executor/worker/shape_inference_engine.h"
+#include "hybrid/node_executor/node_executor.h"
 
 namespace ge {
 namespace hybrid {
@@ -146,6 +146,20 @@ Status NodeItem::InitInputsAndOutputs() {
   GE_CHECK_LE(op_desc->GetOutputsSize(), INT32_MAX);
   num_inputs = static_cast<int>(op_desc->GetInputsSize());
   num_outputs = static_cast<int>(op_desc->GetOutputsSize());
+  if (AttrUtils::GetInt(op_desc, ::ge::ATTR_STAGE_LEVEL, group)) {
+    GELOGD("[%s] Got stage level from op_desc = %d", op_desc->GetName().c_str(), group);
+  } else {
+    if (AttrUtils::GetInt(node->GetOwnerComputeGraph(), ::ge::ATTR_STAGE_LEVEL, group)) {
+      GELOGD("[%s] Got stage level from parent graph = %d", op_desc->GetName().c_str(), group);
+    } else {
+      auto parent_node = node->GetOwnerComputeGraph()->GetParentNode();
+      if ((parent_node != nullptr) && (AttrUtils::GetInt(parent_node->GetOpDesc(), ::ge::ATTR_STAGE_LEVEL, group))) {
+        GELOGD("[%s] Got stage level from parent node = %d", op_desc->GetName().c_str(), group);
+      } else {
+        GELOGD("[%s] Node do not set stage level", op_desc->GetName().c_str());
+      }
+    }
+  }
   ResolveOptionalInputs();
   return SUCCESS;
 }
@@ -222,8 +236,8 @@ void NodeItem::ResolveUnknownShapeType() {
 Status NodeItem::Init() {
   GE_CHK_STATUS_RET_NOLOG(InitInputsAndOutputs());
   GE_CHK_STATUS_RET_NOLOG(ResolveDynamicState());
+  ResolveUnknownShapeType();
   if (is_dynamic) {
-    ResolveUnknownShapeType();
     GE_CHK_STATUS_RET_NOLOG(ResolveStaticInputsAndOutputs());
     GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
   }
@@ -244,6 +258,7 @@ std::string NodeItem::DebugString() const {
   ss << ", is_dynamic = " << (is_dynamic ? "True" : "False");
   ss << ", is_output_static = " << (is_output_shape_static ? "True" : "False");
   ss << ", unknown_shape_op_type = " << shape_inference_type;
+  ss << ", stage = " << group;
   ss << ", input_start = " << input_start;
   ss << ", num_inputs = " << num_inputs;
   ss << ", output_start = " << output_start;

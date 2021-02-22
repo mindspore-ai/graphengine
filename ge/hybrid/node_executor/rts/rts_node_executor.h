@@ -36,6 +36,11 @@ class IdentityNNodeTask : public IdentityNodeTask {
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
 };
 
+class ReadVariableOpNodeTask : public IdentityNodeTask {
+ public:
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+};
+
 class ProfilingTraceNodeTask :  public NodeTask {
  public:
   explicit ProfilingTraceNodeTask(const std::vector<domi::TaskDef> &task_defs) : task_defs_(task_defs) {}

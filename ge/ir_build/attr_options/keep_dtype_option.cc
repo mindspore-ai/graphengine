@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "keep_dtype_option.h"
+#include "attr_options.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -26,20 +26,6 @@ namespace ge {
 namespace {
 const size_t kMaxOpsNum = 10;
 }  // namespace
-bool IsOriginalOpFind(OpDescPtr &op_desc, const std::string &op_name) {
-  std::vector<std::string> original_op_names;
-  if (!AttrUtils::GetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, original_op_names)) {
-    return false;
-  }
-
-  for (auto &origin_name : original_op_names) {
-    if (origin_name == op_name) {
-      return true;
-    }
-  }
-
-  return false;
-}
 
 void KeepDtypeReportError(const std::vector<std::string> &invalid_list) {
   std::stringstream err_msg;
@@ -67,20 +53,20 @@ void KeepDtypeReportError(const std::vector<std::string> &invalid_list) {
   GELOGE(FAILED, "%s", err_msg.str().c_str());
 }
 
-Status DealKeepDtypeOption(const ComputeGraphPtr &graph, const std::string &keep_dtype) {
+graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path) {
   GE_CHECK_NOTNULL(graph);
-  if (keep_dtype.empty()) {
-    return SUCCESS;
+  if (cfg_path.empty()) {
+    return GRAPH_SUCCESS;
   }
-  std::string real_path = RealPath(keep_dtype.c_str());
+  std::string real_path = RealPath(cfg_path.c_str());
   if (real_path.empty()) {
-    GELOGE(PARAM_INVALID, "Can not get real path for %s.", keep_dtype.c_str());
-    return PARAM_INVALID;
+    GELOGE(GRAPH_PARAM_INVALID, "Can not get real path for %s.", cfg_path.c_str());
+    return GRAPH_PARAM_INVALID;
   }
   std::ifstream ifs(real_path);
   if (!ifs.is_open()) {
-    GELOGE(FAILED, "Open file %s failed", keep_dtype.c_str());
-    return FAILED;
+    GELOGE(GRAPH_FAILED, "Open file %s failed", cfg_path.c_str());
+    return GRAPH_FAILED;
   }
 
   std::string op_name;
@@ -108,9 +94,9 @@ Status DealKeepDtypeOption(const ComputeGraphPtr &graph, const std::string &keep
 
   if (!invalid_list.empty()) {
     KeepDtypeReportError(invalid_list);
-    return PARAM_INVALID;
+    return GRAPH_PARAM_INVALID;
   }
 
-  return SUCCESS;
+  return GRAPH_SUCCESS;
 }
 }  // namespace ge

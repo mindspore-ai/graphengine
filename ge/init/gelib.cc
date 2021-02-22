@@ -44,6 +44,7 @@
 #include "omm/csa_interact.h"
 #include "runtime/kernel.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
+#include "external/runtime/rt_error_codes.h"
 
 using Json = nlohmann::json;
 
@@ -76,6 +77,13 @@ Status GELib::Initialize(const map<string, string> &options) {
     GELOGE(ret, "GeLib initial failed.");
     return ret;
   }
+
+  ret = instancePtr_->SetAiCoreNum(new_options);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "GeLib initial: SetAiCoreNum failed.");
+    return ret;
+  }
+
   instancePtr_->SetDefaultPrecisionMode(new_options);
 
   if (new_options.find("ge.fpCeilingMode") == new_options.end()) {
@@ -249,6 +257,24 @@ Status GELib::SetRTSocVersion(const map<string, string> &options, map<string, st
     new_options.insert(std::make_pair(ge::SOC_VERSION, version));
   }
   return SUCCESS;
+}
+
+Status GELib::SetAiCoreNum(map<string, string> &options) {
+  // Already set or get AICORE_NUM from options in offline mode
+  if (options.find(AICORE_NUM) != options.end()) {
+    return SUCCESS;
+  }
+
+  uint32_t aicore_num = 0;
+  rtError_t ret = rtGetAiCoreCount(&aicore_num);
+  if (ret == ACL_ERROR_RT_FEATURE_NOT_SUPPORT) {  // offline without ATC Input of AiCoreNum
+    return SUCCESS;
+  } else if (ret == RT_ERROR_NONE) {  // online-mode
+    options.emplace(std::make_pair(AICORE_NUM, std::to_string(aicore_num)));
+    return SUCCESS;
+  }
+  GELOGE(FAILED, "rtGetAiCoreCount failed.");
+  return FAILED;
 }
 
 void GELib::InitOptions(const map<string, string> &options) {

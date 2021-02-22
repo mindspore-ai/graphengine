@@ -49,13 +49,13 @@ include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
 include_directories(${GE_CODE_DIR}/metadef/inc/external)
-include_directories(${GE_CODE_DIR}/parser)
-include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/metadef/inc/external/graph)
 include_directories(${GE_CODE_DIR}/metadef/inc/graph)
 include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/common)
 include_directories(${GE_CODE_DIR}/metadef/third_party)
+include_directories(${GE_CODE_DIR}/parser)
+include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
@@ -65,25 +65,9 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge/proto)
 
-set(COMMON_SRC_FILES
-    "${GE_CODE_DIR}/ge/common/properties_manager.cc"
-    "${GE_CODE_DIR}/ge/common/ge/plugin_manager.cc"
-    "${GE_CODE_DIR}/ge/common/ge/tbe_plugin_manager.cc"
+set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/option/ge_local_context.cc"
     "${GE_CODE_DIR}/metadef/graph/option/ge_context.cc"
-    "${GE_CODE_DIR}/ge/common/types.cc"
-    "${GE_CODE_DIR}/parser/parser/common/op_map.cc"
-    "${GE_CODE_DIR}/ge/common/fmk_error_codes.cc"
-    "${GE_CODE_DIR}/ge/common/op/ge_op_utils.cc"
-    "${GE_CODE_DIR}/ge/graph/manager/util/variable_accelerate_ctrl.cc"
-    "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_manager.cc"
-    "${GE_CODE_DIR}/ge/generator/ge_generator.cc"
-    "${GE_CODE_DIR}/ge/generator/generator_api.cc"
-    "${GE_CODE_DIR}/ge/graph/common/omg_util.cc"
-    "${GE_CODE_DIR}/ge/graph/common/bcast.cc"
-    "${GE_CODE_DIR}/ge/common/util.cc"
-    "${GE_CODE_DIR}/ge/common/ge/op_tiling_manager.cc"
-    "${GE_CODE_DIR}/ge/init/gelib.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
     "${GE_CODE_DIR}/metadef/graph/anchor.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
@@ -128,6 +112,38 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"
     "${GE_CODE_DIR}/metadef/register/register_format_transfer.cc"
     "${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
+    "${GE_CODE_DIR}/metadef/register/ops_kernel_builder_registry.cc"
+    "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
+    "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
+    "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
+)
+
+set(PARSER_SRC_FILES
+    "${GE_CODE_DIR}/parser/parser/common/op_map.cc"
+    "${GE_CODE_DIR}/parser/parser/common/pre_checker.cc"
+    "${GE_CODE_DIR}/parser/parser/common/convert/pb2json.cc"
+    "${GE_CODE_DIR}/parser/parser/common/parser_factory.cc"
+    "${GE_CODE_DIR}/parser/parser/common/model_saver.cc"
+    "${GE_CODE_DIR}/parser/parser/common/parser_types.cc"
+    "${GE_CODE_DIR}/parser/parser/common/parser_inner_ctx.cc"
+)
+
+set(COMMON_SRC_FILES
+    "${GE_CODE_DIR}/ge/common/properties_manager.cc"
+    "${GE_CODE_DIR}/ge/common/ge/plugin_manager.cc"
+    "${GE_CODE_DIR}/ge/common/ge/tbe_plugin_manager.cc"
+    "${GE_CODE_DIR}/ge/common/types.cc"
+    "${GE_CODE_DIR}/ge/common/fmk_error_codes.cc"
+    "${GE_CODE_DIR}/ge/common/op/ge_op_utils.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/util/variable_accelerate_ctrl.cc"
+    "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_manager.cc"
+    "${GE_CODE_DIR}/ge/generator/ge_generator.cc"
+    "${GE_CODE_DIR}/ge/generator/generator_api.cc"
+    "${GE_CODE_DIR}/ge/graph/common/omg_util.cc"
+    "${GE_CODE_DIR}/ge/graph/common/bcast.cc"
+    "${GE_CODE_DIR}/ge/common/util.cc"
+    "${GE_CODE_DIR}/ge/common/ge/op_tiling_manager.cc"
+    "${GE_CODE_DIR}/ge/init/gelib.cc"
     "${GE_CODE_DIR}/ge/engine_manager/dnnengine_manager.cc"
     "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_manager.cc"
     "${GE_CODE_DIR}/ge/session/session_manager.cc"
@@ -186,7 +202,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/atomic_addr_clean_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_same_addr_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_graph_unknown_status_pass.cc"
-    "${GE_CODE_DIR}/ge/graph/passes/dynamic_single_op_reset_shape_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/mark_agnostic_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dimension_compute_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dimension_adjust_pass.cc"
@@ -274,6 +289,9 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/partition/graph_partition.cc"
     "${GE_CODE_DIR}/ge/common/helper/model_cache_helper.cc"
     "${GE_CODE_DIR}/ge/ir_build/ge_ir_build.cc"
+    "${GE_CODE_DIR}/ge/ir_build/attr_options/utils.cc"
+    "${GE_CODE_DIR}/ge/ir_build/attr_options/keep_dtype_option.cc"
+    "${GE_CODE_DIR}/ge/ir_build/attr_options/weight_compress_option.cc"
     "${GE_CODE_DIR}/ge/graph/build/label_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/partition/stage_partition.cc"
@@ -312,17 +330,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/model_saver.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
     "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
-    "${GE_CODE_DIR}/metadef/register/ops_kernel_builder_registry.cc"
-    "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
-    "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
-    "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
-    "${GE_CODE_DIR}/parser/parser/common/pre_checker.cc"
-    "${GE_CODE_DIR}/parser/parser/common/convert/pb2json.cc"
-    "${GE_CODE_DIR}/parser/parser/common/parser_factory.cc"
-    "${GE_CODE_DIR}/parser/parser/common/model_saver.cc"
-    "${GE_CODE_DIR}/parser/parser/common/parser_types.cc"
-    "${GE_CODE_DIR}/parser/parser/common/parser_inner_ctx.cc"
     "${GE_CODE_DIR}/ge/session/omg.cc"
 )
 
@@ -345,6 +353,7 @@ set(COMMON_FORMAT_SRC_FILES
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
     "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/util/hcom_util.cc"
 )
 
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
@@ -742,6 +751,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
+    "graph/manager/hcom_util_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 
@@ -770,11 +780,37 @@ list(APPEND COMMON_SHARED_LIBRARIES
     hccl_stub
     error_manager_stub
 )
+
+# build graph
+add_library(ge_ut_graph STATIC
+    ${GRAPH_SRC_FILES} ${PARSER_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS}
+)
+
+target_compile_definitions(ge_ut_graph PRIVATE
+    google=ascend_private
+)
+
+target_compile_options(ge_ut_graph PRIVATE
+    -g
+)
+
+target_link_libraries(ge_ut_graph PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    c_sec
+    ascend_protobuf
+    json
+)
+
 # build common
-add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_ut_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_ut_common PRIVATE
@@ -782,13 +818,19 @@ target_link_libraries(ge_ut_common PRIVATE
     c_sec
     ascend_protobuf
     json
+    ge_ut_graph
 )
 
 # build common format
-add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common_format PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_ut_common_format PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_ut_common_format PRIVATE
@@ -799,10 +841,15 @@ target_link_libraries(ge_ut_common_format PRIVATE
 )
 
 # build graph prepare common
-add_library(ge_prepare_common STATIC ${GRAPH_PREPARE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_prepare_common STATIC ${GRAPH_PREPARE_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_prepare_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_prepare_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_prepare_common PRIVATE
@@ -813,10 +860,15 @@ target_link_libraries(ge_prepare_common PRIVATE
 )
 
 # build graph optimize common
-add_library(ge_optimize_common STATIC ${GRAPH_OPTIMIZE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_optimize_common STATIC ${GRAPH_OPTIMIZE_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_optimize_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_optimize_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_optimize_common PRIVATE
@@ -827,10 +879,15 @@ target_link_libraries(ge_optimize_common PRIVATE
 )
 
 # build graph partition common
-add_library(ge_partition_common STATIC ${GRAPH_PARTITION_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_partition_common STATIC ${GRAPH_PARTITION_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_partition_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_partition_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_partition_common PRIVATE
@@ -841,10 +898,15 @@ target_link_libraries(ge_partition_common PRIVATE
 )
 
 # build build graph load common
-add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_load_common STATIC ${GRAPH_LOAD_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_load_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_load_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_load_common PRIVATE
@@ -855,10 +917,15 @@ target_link_libraries(ge_load_common PRIVATE
 )
 
 # build graph execute common
-add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_execute_common STATIC ${GRAPH_EXECUTE_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_execute_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_execute_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_execute_common PRIVATE
@@ -869,10 +936,15 @@ target_link_libraries(ge_execute_common PRIVATE
 )
 
 # build graph build common
-add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_build_common STATIC ${GRAPH_BUILD_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_build_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_build_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_build_common PRIVATE
@@ -883,10 +955,15 @@ target_link_libraries(ge_build_common PRIVATE
 )
 
 # build graph pass common
-add_library(ge_pass_common STATIC ${GRAPH_PASS_COMMON_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_pass_common STATIC ${GRAPH_PASS_COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_pass_common PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_pass_common PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_pass_common PRIVATE
@@ -897,10 +974,15 @@ target_link_libraries(ge_pass_common PRIVATE
 )
 
 # build single_op common
-add_library(ge_single_op STATIC ${SINGLE_OP_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+add_library(ge_single_op STATIC ${SINGLE_OP_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_single_op PRIVATE
     google=ascend_private
+)
+
+target_compile_options(ge_single_op PRIVATE
+    -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ge_single_op PRIVATE
@@ -921,6 +1003,7 @@ add_executable(ut_libge_multiparts_utest
 
 target_compile_options(ut_libge_multiparts_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_compile_definitions(ut_libge_multiparts_utest PRIVATE
@@ -943,6 +1026,7 @@ add_executable(ut_libge_others_utest
 
 target_compile_options(ut_libge_others_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ut_libge_others_utest
@@ -960,6 +1044,7 @@ add_executable(ut_libge_kernel_utest
 
 target_compile_options(ut_libge_kernel_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_link_libraries(ut_libge_kernel_utest
@@ -978,6 +1063,7 @@ add_executable(ut_libge_distinct_load_utest
 
 target_compile_options(ut_libge_distinct_load_utest PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage
+    -Werror=format
 )
 
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE

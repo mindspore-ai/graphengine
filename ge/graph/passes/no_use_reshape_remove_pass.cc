@@ -83,10 +83,17 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   }
   if (to_be_deleted) {
     GELOGI("NoUseReshapeRemovePass remove useless node:%s", node->GetName().c_str());
-    auto ret = PassUtils::UnlinkNodeWithControlCopy(node, kReshapeShapeIndex);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "DimensionAdjustPass unlink node with control copy fail.");
-      return ret;
+    // if shape_input has no any input,which means a single const, it can be unlink from reshape
+    //   op(x)   const(shape)
+    //     \     /
+    //     reshape
+    auto shape_input_anchor = node->GetInDataAnchor(kReshapeShapeIndex);
+    if (shape_input_anchor != nullptr) {
+      auto shape_input = shape_input_anchor->GetOwnerNode();
+      GE_CHECK_NOTNULL(shape_input);
+      if (shape_input->GetInAllNodes().empty()) {
+        shape_input_anchor->UnlinkAll();
+      }
     }
     return IsolateAndDeleteNode(node, {kReshapeDataIndex});
   }

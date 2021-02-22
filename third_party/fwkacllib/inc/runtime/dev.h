@@ -62,6 +62,11 @@ typedef enum tagRtFeatureType {
     FEATURE_TYPE_RSV
 } rtFeatureType_t;
 
+typedef enum tagRtDeviceFeatureType {
+  FEATURE_TYPE_SCHE,
+  FEATURE_TYPE_END,
+} rtDeviceFeatureType_t;
+
 typedef enum tagMemcpyInfo {
     MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
     MEMCPY_INFO_RSV

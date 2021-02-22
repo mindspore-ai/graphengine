@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -488,7 +488,7 @@ include:
 */
 REG_OP(AsString)
     .INPUT(x, TensorType({DT_INT8, DT_INT16, DT_INT32, DT_INT64, DT_FLOAT, \
-        DT_DOUBLE, DT_BOOL}))
+        DT_DOUBLE, DT_BOOL, DT_COMPLEX64, DT_COMPLEX128}))
     .OUTPUT(y, TensorType({DT_STRING}))
     .ATTR(precision, Int, -1)
     .ATTR(scientific, Bool, false)

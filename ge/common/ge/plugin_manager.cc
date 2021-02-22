@@ -53,6 +53,7 @@ string PluginManager::GetPath() {
     GELOGW("Failed to read the shared library file path!");
     return string();
   } else {
+    GE_IF_BOOL_EXEC(dl_info.dli_fname == nullptr, return string());
     std::string so_path = dl_info.dli_fname;
     char path[MMPA_MAX_PATH] = {0};
     if (so_path.length() >= MMPA_MAX_PATH) {

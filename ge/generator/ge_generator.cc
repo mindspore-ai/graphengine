@@ -671,6 +671,8 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
+  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
+  impl_->is_offline_ = is_offline;
   if (!is_offline) {
     (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
   }
@@ -709,8 +711,6 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
-  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
-  impl_->is_offline_ = is_offline;
   GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, ge_root_model));
   map<string, GeAttrValue> op_attrs = op_desc_tmp->GetAllAttrs();
   GE_CHECK_NOTNULL(ge_root_model);
@@ -758,7 +758,7 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
   ModelBufferData model_buff;
   OpEngineType engine_type = ENGINE_SYS;
   Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
-  GELOGI("Finish build single offline model");
+  GELOGI("Finish build single offline model, status: %u", status);
   return status;
 }
 
@@ -777,7 +777,7 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
                                        ModelBufferData &model_buff) {
   GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
-  GELOGI("Finish build single online model");
+  GELOGI("Finish build single online model, status: %u", status);
   return status;
 }
 

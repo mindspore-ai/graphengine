@@ -66,16 +66,16 @@ REG_OP(RFFT)
     .OP_END_FACTORY_REG(RFFT)
 
 /**
-*@brief Inverse real-valued fast Fourier transform . \n
+*@brief Inverse real-valued fast Fourier transform. \n
 
 *@par Inputs:
 *@li x: A complex64 tensor.
-*@li fft_length: An int32 tensor of shape [1]. The FFT length . \n
+*@li fft_length: An int32 tensor of shape [1]. The FFT length. \n
 
 *@par Outputs:
 *@li y: A float32 tensor of the same rank as `input`. The inner-most
   dimension of `input` is replaced with the `fft_length` samples of its inverse
-  1D Fourier transform . \n
+  1D Fourier transform. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow IRFFT operator.
@@ -91,11 +91,11 @@ REG_OP(IRFFT)
 *@brief 2D fast Fourier transform. \n
 
 *@par Inputs:
-*@li x: A complex64 tensor..
+*@li x: A complex64 tensor.
 
 *@par Outputs:
 *@li y: A complex64 tensor of the same shape as `input`. The inner-most 2
-  dimensions of `input` are replaced with their 2D Fourier transform.\n
+  dimensions of `input` are replaced with their 2D Fourier transform. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow FFT2D operator.

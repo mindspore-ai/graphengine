@@ -716,6 +716,35 @@ REG_OP(CompressFcOp)
 .OUTPUT(compress_index, TensorType({DT_INT8}))
 .REQUIRED_ATTR(compress_parameters, ListInt)
 .OP_END_FACTORY_REG(CompressFcOp)
+
+/**
+*@brief Performs Col2im for each batch entry. \n
+
+*@par Inputs:
+*@li input_x: The Col Tensor. 5-D, shape: `(n, c1, kernel_h*kernel_w, ho*wo, c0)`. 
+where ho/wo is do = (output_d + 2*padding_d - dilation_d*(kernel_d - 1) - 1)//stride_d + 1     \n
+
+*@par Outputs:
+*@li output_y: The img Tensor. 5-D, shape: `(n, c1, output_h, output_w, c0)`. \n
+
+*@par Attributes:
+*@li kernel_shape: ListInt, value: `(kernel_h, kernel_w)`, the shape of kernel in convolution.
+*@li dilation: ListInt, value: `(dilation_h, dilation_w)`, the dilation in convolution.
+*@li padding: ListInt, value: `(padding_h, padding_w)`, the dilation in convolution.
+*@li stride:  ListInt, value: `(stride_h, stride_w)`, the dilation in convolution.  \n
+
+*@par Third-party framework compatibility
+* Compatible with Pytorch col2im/im2col_backward operator.
+*/
+REG_OP(Col2im)
+    .INPUT(x, TensorType({DT_FLOAT}))
+    .INPUT(output_size, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .REQUIRED_ATTR(kernel_size, ListInt)
+    .REQUIRED_ATTR(dilation, ListInt)
+    .REQUIRED_ATTR(padding, ListInt)
+    .REQUIRED_ATTR(stride, ListInt)
+    .OP_END_FACTORY_REG(Col2im)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_

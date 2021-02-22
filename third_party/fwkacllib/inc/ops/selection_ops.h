@@ -942,6 +942,8 @@ REG_OP(TopK)
     .OUTPUT(values, TensorType::RealNumberType())
     .OUTPUT(indices, TensorType({DT_INT32}))
     .ATTR(sorted, Bool, true)
+    .ATTR(largest, Bool, true)
+    .ATTR(dim, Int, -1)
     .OP_END_FACTORY_REG(TopK)
 /**
 *@brief Creates a new tensor by applying sparse "updates" to individual values or slices within a tensor (initially zero for numeric, empty for string) of the given "shape" according to "indices" . \n

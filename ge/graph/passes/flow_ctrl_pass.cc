@@ -80,6 +80,16 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
       graph_change = true;
     }
   }
+
+  // add edge operation below depends on memcpy node in itertor loop set single stream,or may cause block
+  for (auto &active_node : active_nodes_in_iter_loop_) {
+    auto ret = GraphUtils::AddEdge(active_node->GetOutControlAnchor(),
+                                   assign_add_node_in_fpbp_loop_->GetInControlAnchor());
+    if (ret != GRAPH_SUCCESS) {
+      GELOGW("add control edge between iter_loop_node:%s and fpbp_loop_node:%s fail, may cause block",
+              active_node->GetName().c_str(), assign_add_node_in_fpbp_loop_->GetName().c_str());
+    }
+  }
   GELOGI("FlowCtrl pass end, graph is %s.", graph_change ? "changed" : "not changed");
   return graph_change ? SUCCESS : NOT_CHANGED;
 }
@@ -279,16 +289,16 @@ Status FlowCtrlPass::CreateIterCtrlTrueBranch(ComputeGraphPtr &compute_graph, co
    *         loopIncrement
    */
   // Insert AssignAdd node
-  NodePtr assign_add_node =
+  assign_add_node_in_fpbp_loop_ =
       InsertAssignOp(compute_graph, ASSIGNADD, NODE_NAME_FLOWCTRL_LOOP_ASSIGNADD, loop_cond_node, loop_inc_node);
-  if (assign_add_node == nullptr || switch_node == nullptr) {
+  if (assign_add_node_in_fpbp_loop_ == nullptr || switch_node == nullptr) {
     GELOGE(PARAM_INVALID, "assign add node or switch node is null");
     return FAILED;
   }
 
   string active_name = switch_node->GetName() + "_StreamActive";
   // add attr for stream assign model to break branch.
-  GE_CHK_STATUS_RET(SetStreamLabel(assign_add_node, active_name), "set stream label failed");
+  GE_CHK_STATUS_RET(SetStreamLabel(assign_add_node_in_fpbp_loop_, active_name), "set stream label failed");
 
   // used for stream assign to find true branch
   GE_CHK_STATUS_RET(SetActiveLabelList(switch_node, { active_name }), "set active label list failed");
@@ -304,13 +314,15 @@ Status FlowCtrlPass::CreateIterCtrlTrueBranch(ComputeGraphPtr &compute_graph, co
                     DOMI_LOGE("set ATTR_NAME_IS_LOOP_ACTIVE failed"); return FAILED);
 
   // add ctrl edges
-  graphStatus add_ret = GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), assign_add_node->GetInControlAnchor());
+  graphStatus add_ret = GraphUtils::AddEdge(switch_node->GetOutControlAnchor(),
+                                            assign_add_node_in_fpbp_loop_->GetInControlAnchor());
   if (add_ret != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Add switch_node to assign_add_node ctrl edge failed, add_ret=%u.", add_ret);
     return FAILED;
   }
 
-  add_ret = GraphUtils::AddEdge(assign_add_node->GetOutControlAnchor(), active_node->GetInControlAnchor());
+  add_ret = GraphUtils::AddEdge(assign_add_node_in_fpbp_loop_->GetOutControlAnchor(),
+                                active_node->GetInControlAnchor());
   if (add_ret != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Add assign_add_node to active_node ctrl edge failed, add_ret=%u.", add_ret);
     return FAILED;
@@ -533,6 +545,7 @@ Status FlowCtrlPass::AddSpecialNodeIteratorCtrl(ComputeGraphPtr &compute_graph, 
   GE_CHK_STATUS_RET(SetActiveLabelList(switch_node, { active_name }), "set active label list failed");
   // used for stream assign to find active stream
   GE_CHK_STATUS_RET(SetActiveLabelList(active_node, { loop_pre_node->GetName() }), "set active label list failed");
+  active_nodes_in_iter_loop_.push_back(active_node);
   return SUCCESS;
 }
 }  // namespace ge

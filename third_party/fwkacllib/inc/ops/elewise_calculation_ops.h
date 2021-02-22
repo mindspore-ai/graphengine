@@ -32,6 +32,9 @@ namespace ge {
 *   float16, float32, double, int32, uint8, int16, int8, complex64, int64,
 *   qint8, quint8, qint32, uint16, complex128, uint32, uint64. It's a dynamic input. \n
 
+*@par Attributes:
+*N: An required attribute of type int32, means nums of inputs. \n
+
 *@par Outputs:
 *y: A Tensor. Has the same shape and type as the elements of "x". \n
 
@@ -3559,26 +3562,6 @@ REG_OP(MaxN)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(MaxN)
 
-/**
- * @brief Element-wise min of each of the input tensors (with Numpy-style broadcasting support). 
- * All inputs and outputs must have the same data type. This operator supports multidirectional 
- * (i.e., Numpy-style) broadcasting
- * 
- * @par inputs
- * one input including:
- * @li x: dynamic input A Tensor. Must be one of the following types: float32, float16, double, int32, int64
- * 
- * @par output
- * one output including:
- * @li y:A Tensor of the same type as x
- * 
- */
-REG_OP(MinN)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64,
-                                  DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64,
-                           DT_INT32, DT_INT64}))
-    .OP_END_FACTORY_REG(MinN)
 
 /**
  * @brief Calculates x * maske * value.
@@ -3640,8 +3623,7 @@ REG_OP(Lerp)
 * rtol: Defaults to "1e-03".
 *
 *@par Outputs:
-* num: A tensor of type int32.
-* diff: A tensor of type float16.
+* num: A tensor of type float32.
 *
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
@@ -3651,7 +3633,6 @@ REG_OP(DataCompare)
   .INPUT(x1, TensorType({ DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT32 }))
   .INPUT(x2, TensorType({ DT_FLOAT16, DT_FLOAT,DT_INT8, DT_UINT8, DT_INT32 }))
   .OUTPUT(num, TensorType({DT_FLOAT}))
-  .OUTPUT(diff, TensorType({DT_FLOAT16}))
   .ATTR(atol, Float, 1e-5)
   .ATTR(rtol, Float, 1e-3)
   .OP_END_FACTORY_REG(DataCompare)
@@ -3729,6 +3710,76 @@ REG_OP(IsClose)
     .ATTR(atol, Float, 1e-08)
     .ATTR(equal_nan, Bool, false)
     .OP_END_FACTORY_REG(IsClose)
+
+/**
+* @brief Returns the reverse tensor of the ArgMax operator of a tensor. \n
+
+* @par Inputs:
+* three input, including:
+* var: A Tensor of type float16, float32, int32 or int8. \n
+* indices: A Tensor of type int32. \n
+* updates: A Tensor of type float16, float32, int32 or int8. \n
+
+* @par Attributes:
+* @li dimension: An integer of type int, specifying the axis information of the index with the maximum value.\n
+
+* @par Outputs:
+* y: A Tensor of type float16, float32, int32 or int8. \n
+*
+*@attention Constraints:
+*@li indices: only support int32,and shape same to "updates"
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". 
+*@li y:A Tensor, the type and shape is same to "var" \n
+
+*@par Third-party framework compatibility
+* not support all scene like pytorch operator scatter
+* exp:
+* var.shape=[2,3,4,5], dim=2, the shape of indices and updates should be [2,3,5]
+* not support the shape of indices and updates is [2,3,2,5] like pytorch operator scatter. \n
+*/
+REG_OP(ArgMaxGrad)
+    .INPUT(var, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(updates, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .REQUIRED_ATTR(dimension, Int)
+    .OP_END_FACTORY_REG(ArgMaxGrad)
+
+/**
+* @brief Returns the reverse tensor of the ArgMax operator of a tensor. \n
+
+* @par Inputs:
+* three input, including:
+* var: A Tensor of type float16, float32, int32 or int8. \n
+* indices: A Tensor of type int32. \n
+* updates: A Tensor of type float16, float32, int32 or int8. \n
+* assist: A Tensor of int32,also a assist matrix and it's shape must match the shape of var \n
+
+* @par Attributes:
+* @li dimension: An integer of type int, specifying the axis information of the index with the maximum value.\n
+
+* @par Outputs:
+* y: A Tensor of type float16, float32, int32 or int8. \n
+
+*@attention Constraints:
+*@li indices: only support int32,and shape same to "updates"
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". 
+*@li y:A Tensor, the type and shape is same to "var" \n
+
+*@par Third-party framework compatibility
+* not support all scene like pytorch operator scatter
+* exp:
+* var.shape=[2,3,4,5], dim=2, the shape of indices and updates should be [2,3,5]
+* not support the shape of indices and updates is [2,3,2,5] like pytorch operator scatter. \n
+*/
+REG_OP(ArgMaxGradD)
+    .INPUT(var, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(updates, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(assist, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .REQUIRED_ATTR(dimension, Int)
+    .OP_END_FACTORY_REG(ArgMaxGradD)
 
 }  // namespace ge
 

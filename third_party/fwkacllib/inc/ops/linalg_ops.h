@@ -160,10 +160,8 @@ form square matrices.  \n
 */
 
 REG_OP(MatrixInverse)
-    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(adjoint, Bool, false)
     .OP_END_FACTORY_REG(MatrixInverse)
 
@@ -223,10 +221,8 @@ dimensions form square matrices.  \n
 */
 
 REG_OP(MatrixSolveLs)
-    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
-    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .INPUT(l2, TensorType({DT_DOUBLE}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
     .ATTR(fast, Bool, true)
@@ -259,12 +255,9 @@ dimensions form square matrices.  \n
 */
 
 REG_OP(MatrixTriangularSolve)
-    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
-    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_FLOAT16, \
-        DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(matrix, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(lower, Bool, true)
     .ATTR(adjoint, Bool, false)
     .OP_END_FACTORY_REG(MatrixTriangularSolve)
@@ -432,9 +425,9 @@ y: Tensor of shape `[..., M, K]` containing the solutions \n
 */
 
 REG_OP(TridiagonalSolve)
-    .INPUT(diagonals, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(diagonals, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .INPUT(rhs, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_COMPLEX64, DT_COMPLEX128}))
     .ATTR(partial_pivoting, Bool, true)
     .OP_END_FACTORY_REG(TridiagonalSolve)
 

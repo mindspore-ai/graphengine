@@ -408,8 +408,8 @@ REG_OP(BiasAddGrad)
     | Filter           | H        | [1, 255]
     |                  | W        | [1, 255]
     -------------------|----------|--------------
-    | out_backprop     | H        | [1, 4096]
-    |                  | W        | [1, 4096]
+    | out_backprop     | H*strideH| [1, 4096]
+    |                  | W*strideW| [1, 4096]
     -------------------|----------|--------------
     | y(fmap)          | H        | [1, 4096]
     |                  | W        | [1, 4096]
@@ -428,6 +428,7 @@ REG_OP(BiasAddGrad)
 @endverbatim
  * In Ascend910, fmap or out_backprop's H and W not support 1 when
  * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ * If filter_h = 1 and filter_w = 1, out_backprop_w * stride_h * stride_w < 4096
  *\n
  *
 *@par Outputs:
@@ -545,15 +546,16 @@ REG_OP(Conv2DBackpropInputD)
  * @li data_format: An optional string from: "NCHW". Defaults to "NCHW". \n
   Specify the data format of the input and output data.
  * @li offset_x: An optional integer for quantized deconvolution.
- * Defaults to "0".
+ * The negative offset added to the input image for int8 type. Ensure offset_x
+ * within the effective range of int8 [-128, 127]. Defaults to "0".
  *\n
  *\n
  * The following value range restrictions must be met:
 *@verbatim
     | Name             | Field    | Scope
     -------------------|----------|--------------
-    | x (out_backprop) | H        | [1, 4096]
-    |                  | W        | [1, 4096]
+    | x (out_backprop) | H*strideH| [1, 4096]
+    |                  | W*strideW| [1, 4096]
     -------------------|----------|--------------
     | Filter           | H        | [1, 255]
     |                  | W        | [1, 255]
@@ -577,6 +579,7 @@ REG_OP(Conv2DBackpropInputD)
 @endverbatim
  * In Ascend910, fmap or out_backprop's H and W not support 1 when
  * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ * If filter_h = 1 and filter_w = 1, out_backprop_w * stride_h * stride_w < 4096
  *\n
  *
 *@par Outputs:
@@ -1496,7 +1499,8 @@ REG_OP(Conv3DTransposeD)
  * @li output_padding: The size will be added in the output shape. Defaults
  * to [0, 0, 0, 0].
  * @li offset_x: An optional int. Input offset, used for quantized inference.
- * Defaults to "0".
+ * The negative offset added to the input image for int8 type. Ensure offset_x
+ * within the effective range of int8 [-128, 127]. Defaults to "0".
  *\n
  *\n
  * The following value range restrictions must be met:
@@ -1506,8 +1510,8 @@ REG_OP(Conv3DTransposeD)
     | input_size       | H        | [1, 4096]
     |                  | W        | [1, 4096]
     -------------------|----------|--------------
-    | x (out_backprop) | H        | [1, 4096]
-    |                  | W        | [1, 4096]
+    | x (out_backprop) | H*strideH| [1, 4096]
+    |                  | W*strideW| [1, 4096]
     -------------------|----------|--------------
     | filter           | H        | [1, 255]
     |                  | W        | [1, 255]
@@ -1531,6 +1535,7 @@ REG_OP(Conv3DTransposeD)
 @endverbatim
  * In Ascend910, fmap or out_backprop's H and W not support 1 when
  * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
+ * If filter_h = 1 and filter_w = 1, out_backprop_w * stride_h * stride_w < 4096
  *\n
  *
 *@par Outputs:

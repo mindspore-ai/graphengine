@@ -1042,6 +1042,7 @@ class DavinciModel {
   // For super kernel.
   SuperKernelTaskInfo skt_info_;
 
+  bool has_output_node_ = false;
   bool is_dynamic_aipp_ = false;
   vector<string> dynamic_output_shape_info_;
 

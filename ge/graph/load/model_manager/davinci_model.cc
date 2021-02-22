@@ -1095,6 +1095,7 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
 
   GELOGI("Init NetOutput node: %s.", op_desc->GetName().c_str());
   output_op_list.push_back(op_desc);
+  has_output_node_ = true;
   if (known_node_) {
     return SUCCESS;
   }
@@ -2422,9 +2423,8 @@ void DavinciModel::SetProfileTime(ModelProcStage stage, int64_t endTime) {
 /// @author
 ///
 Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind) {
-  if (output_addrs_list_.empty()) {
-    Status ret = SyncVarData();
-    return ret;
+  if (!has_output_node_) {
+    return SyncVarData();
   }
 
   output_data.index = data_id;
@@ -2582,7 +2582,7 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
     return INTERNAL_ERROR;
   }
 
-  if (output_addrs_list_.empty()) {
+  if (!has_output_node_) {
     GELOGW("Output tensor list is empty, model id: %u", model_id_);
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, INTERNAL_ERROR, outputs), "OnComputeDone failed.");
     return INTERNAL_ERROR;
@@ -2735,10 +2735,10 @@ void *DavinciModel::Run(DavinciModel *model) {
                     model->SetProfileTime(MODEL_AFTER_PROC_START));
     GE_TIMESTAMP_START(ReturnResult3);
     // copy output data from device to host
-    GE_IF_BOOL_EXEC(!model->output_addrs_list_.empty(),
-                    (void)model->ReturnResult(current_data.index, rslt_flg, false, data_wrapper->GetOutput()))
+    GE_IF_BOOL_EXEC(model->has_output_node_,
+                    (void)model->ReturnResult(current_data.index, rslt_flg, false, data_wrapper->GetOutput()));
     // copy output data from device to host for variable graph
-    GE_IF_BOOL_EXEC(model->output_addrs_list_.empty(), (void)model->ReturnNoOutput(current_data.index));
+    GE_IF_BOOL_EXEC(!model->has_output_node_, (void)model->ReturnNoOutput(current_data.index));
     GE_IF_BOOL_EXEC(model->is_first_execute_,
                     GE_TIMESTAMP_EVENT_END(ReturnResult3, "GraphExcute::CopyDataFromDeviceToHost"));
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(),
@@ -2890,7 +2890,7 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
     GELOGI("input %zu, v addr %p, r addr %p, p addr %p", i, addr_list[kDataIndex], addr, inputs[i]);
   }
 
-  if (output_addrs_list_.empty()) {
+  if (!has_output_node_) {
     GELOGW("output op num in graph is %zu", output_addrs_list_.size());
     return SUCCESS;
   }

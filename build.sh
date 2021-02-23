@@ -76,8 +76,8 @@ checkopts()
         ENABLE_GE_ST="on"
         ;;
       t)
-	      ENABLE_GE_UT="on"
-	      ;;
+        ENABLE_GE_UT="on"
+        ;;
       c)
         ENABLE_GE_COV="on"
         ;;
@@ -214,13 +214,14 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_others_utest ${OUTPUT_PATH}
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_kernel_utest ${OUTPUT_PATH}
 
-    ${OUTPUT_PATH}/ut_libgraph &&
-    ${OUTPUT_PATH}/ut_libge_multiparts_utest &&
-    ${OUTPUT_PATH}/ut_libge_distinct_load_utest &&
-    ${OUTPUT_PATH}/ut_libge_others_utest &&
-    ${OUTPUT_PATH}/ut_libge_kernel_utest
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libgraph && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_multiparts_utest && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_distinct_load_utest && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_others_utest && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_kernel_utest && ${RUN_TEST_CASE}
     if [[ "$?" -ne 0 ]]; then
         echo "!!! UT FAILED, PLEASE CHECK YOUR CHANGES !!!"
+        echo -e "\033[31m${RUN_TEST_CASE}\033[0m"
         exit 1;
     fi
     echo "Generating coverage statistics, please wait..."

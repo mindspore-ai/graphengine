@@ -147,7 +147,7 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
   return FAILED;
 }
 
-static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTensorDesc &tensor, int32_t index,
+static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const GeTensorDesc &tensor, int32_t index,
                         bool attr) {
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
@@ -671,6 +671,8 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
+  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
+  impl_->is_offline_ = is_offline;
   if (!is_offline) {
     (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
   }
@@ -709,8 +711,6 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
-  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
-  impl_->is_offline_ = is_offline;
   GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, ge_root_model));
   map<string, GeAttrValue> op_attrs = op_desc_tmp->GetAllAttrs();
   GE_CHECK_NOTNULL(ge_root_model);
@@ -723,7 +723,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   const ComputeGraphPtr root_graph = ge_root_model->GetRootGraph();
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
   GE_CHK_STATUS_RET_NOLOG(CheckDynamicSupport(ge_model, root_graph));
-  GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
+  GELOGI("After build model, The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
@@ -738,6 +738,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   } else {
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   }
+  GELOGI("Start save GeModel to Model buffer");
   GE_CHK_STATUS_RET_NOLOG(impl_->SaveModel(model_file_name, ge_model, model_buff));
   return SUCCESS;
 }
@@ -753,10 +754,12 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
  */
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, const string &model_file_name) {
-  GELOGI("Start to build single op offline model.");
+  GELOGI("Start to build single op offline model, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   ModelBufferData model_buff;
   OpEngineType engine_type = ENGINE_SYS;
-  return BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
+  Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
+  GELOGI("Finish build single offline model, status: %u", status);
+  return status;
 }
 
 /**
@@ -772,8 +775,10 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
-  GELOGI("Start to build single op online");
-  return BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
+  GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
+  Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
+  GELOGI("Finish build single online model, status: %u", status);
+  return status;
 }
 
 Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
@@ -798,8 +803,7 @@ Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor
     }
   } else {
     for (const auto &in_desc : inputs) {
-      GeTensorDesc input_desc = in_desc.GetTensorDesc();
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, in_desc.GetTensorDesc(), arg_index, true));
       arg_index++;
     }
   }

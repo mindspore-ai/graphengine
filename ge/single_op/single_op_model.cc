@@ -190,7 +190,7 @@ Status SingleOpModel::LoadAllNodes() {
     auto node = nodes.at(i);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    op_list_[i] = node;
+    op_list_[op_desc->GetId()] = node;
     auto op_type = op_desc->GetType();
     GELOGI("[%s] node[%zu] = %s, type = %s", model_name_.c_str(), i, node->GetName().c_str(), op_type.c_str());
 

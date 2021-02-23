@@ -18,23 +18,23 @@ project(ut_ge)
 set(CMAKE_CXX_STANDARD 11)
 
 set(PROTO_LIST
-        "${GE_CODE_DIR}/metadef/proto/om.proto"
-        "${GE_CODE_DIR}/metadef/proto/ge_ir.proto"
-        "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
-        "${GE_CODE_DIR}/metadef/proto/insert_op.proto"
-        "${GE_CODE_DIR}/metadef/proto/dump_task.proto"
-        "${GE_CODE_DIR}/metadef/proto/fwk_adapter.proto"
-        "${GE_CODE_DIR}/metadef/proto/op_mapping_info.proto"
-        "${GE_CODE_DIR}/metadef/proto/optimizer_priority.proto"
-        "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
-        "${GE_CODE_DIR}/metadef/proto/tensorflow/attr_value.proto"
-        "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor.proto"
-        "${GE_CODE_DIR}/metadef/proto/tensorflow/resource_handle.proto"
-        "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor_shape.proto"
-        "${GE_CODE_DIR}/metadef/proto/tensorflow/types.proto"
-        "${GE_CODE_DIR}/metadef/proto/tensorflow/node_def.proto"
-        "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
-        )
+    "${GE_CODE_DIR}/metadef/proto/om.proto"
+    "${GE_CODE_DIR}/metadef/proto/ge_ir.proto"
+    "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
+    "${GE_CODE_DIR}/metadef/proto/insert_op.proto"
+    "${GE_CODE_DIR}/metadef/proto/dump_task.proto"
+    "${GE_CODE_DIR}/metadef/proto/fwk_adapter.proto"
+    "${GE_CODE_DIR}/metadef/proto/op_mapping_info.proto"
+    "${GE_CODE_DIR}/metadef/proto/optimizer_priority.proto"
+    "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
+    "${GE_CODE_DIR}/metadef/proto/tensorflow/attr_value.proto"
+    "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor.proto"
+    "${GE_CODE_DIR}/metadef/proto/tensorflow/resource_handle.proto"
+    "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor_shape.proto"
+    "${GE_CODE_DIR}/metadef/proto/tensorflow/types.proto"
+    "${GE_CODE_DIR}/metadef/proto/tensorflow/node_def.proto"
+    "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
+    )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 
@@ -266,8 +266,8 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/hccl_group_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/set_input_output_offset_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_utils.cc"
@@ -627,7 +627,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     #"graph/load/new_model_manager_davinci_model_unittest.cc"
     "graph/load/model_manager_unittest.cc"
     #"graph/load/new_model_manager_task_build_unittest.cc"
-	"graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
+    "graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
     #"graph/load/output_net_output_unittest.cc"
@@ -638,7 +638,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/kernel_task_info_unittest.cc"
     "graph/load/memcpy_addr_async_task_info_unittest.cc"
     "graph/load/memcpy_async_task_info_unittest.cc"
-	"graph/load/cpu_queue_schedule_unittest.cc"
+    "graph/load/cpu_queue_schedule_unittest.cc"
     #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
     "graph/load/model_helper_unittest.cc"
@@ -671,7 +671,7 @@ set(PASS_TEST_FILES
     "graph/passes/trans_op_depth_fusion_pass_unittest.cc"
     "graph/passes/transop_nearby_allreduce_fusion_pass_unittest.cc"
     "graph/passes/constant_folding_pass_unittest.cc"
-	"graph/passes/fuse_data_nodes_with_common_input_pass_unittest.cc"
+    "graph/passes/fuse_data_nodes_with_common_input_pass_unittest.cc"
     "graph/passes/stop_gradient_pass_unittest.cc"
     "graph/passes/prevent_gradient_pass_unittest.cc"
     "graph/passes/identity_pass_unittest.cc"
@@ -753,6 +753,10 @@ set(MULTI_PARTS_TEST_FILES
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "session/omg_omg_unittest.cc"
+)
+
+set(GENERATOR_TEST_FILES
+    "generator/ge_generator_unittest.cc"
 )
 
 set(SINGLE_OP_TEST_FILES
@@ -1055,6 +1059,7 @@ target_link_libraries(ut_libge_kernel_utest
 # libge_distinct_load_utest
 add_executable(ut_libge_distinct_load_utest
         ${COMMON_TEST_FILES}
+        ${GENERATOR_TEST_FILES}
         ${DISTINCT_GRAPH_LOAD_TEST_FILES}
         ${DISTINCT_GRAPH_LOAD_SRC_FILES}
         ${SINGLE_OP_TEST_FILES}

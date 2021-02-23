@@ -121,6 +121,7 @@ void CachingAllocator::Finalize(uint32_t device_id) {
 }
 
 uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device_id) {
+  GELOGI("Start malloc pool memory, size = %zu, device id = %u", size, device_id);
   uint8_t *ptr = nullptr;
   size = GetBlockSize(size);
   Block *block = FindFreeBlock(size, org_ptr, device_id);
@@ -255,6 +256,7 @@ Block *CachingAllocator::SplitBlock(Block *block, size_t size, BlockBin &bin, ui
 }
 
 Status CachingAllocator::TryExtendCache(size_t size, uint32_t device_id) {
+  GELOGI("Try to extend cache. size = %zu, device id = %u", size, device_id);
   auto memory_size = GetAllocationSize(size);
   const std::string purpose = "Memory for caching.";
   auto memory_addr = memory_allocator_->MallocMemory(purpose, memory_size, device_id);

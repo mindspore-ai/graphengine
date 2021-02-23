@@ -61,6 +61,17 @@ TEST_F(UtestGraphCachingAllocatorTest, malloc_success) {
   MemManager::Instance().Finalize();
 }
 
+TEST_F(UtestGraphCachingAllocatorTest, extend_malloc_success) {
+  std::vector<rtMemType_t> mem_type;
+  mem_type.push_back(RT_MEMORY_HBM);
+  EXPECT_EQ(MemManager::Instance().Initialize(mem_type), SUCCESS);
+  uint8_t *ptr = MemManager::Instance().CachingInstance(RT_MEMORY_HBM).Malloc(kMByteSize);
+  EXPECT_NE(nullptr, ptr);
+  ptr = MemManager::Instance().CachingInstance(RT_MEMORY_HBM).Malloc(kBinSizeUnit32*kMByteSize);
+  EXPECT_NE(nullptr, ptr);
+  MemManager::Instance().Finalize();
+}
+
 TEST_F(UtestGraphCachingAllocatorTest, malloc_statics) {
   std::vector<rtMemType_t> mem_type;
   mem_type.push_back(RT_MEMORY_HBM);

@@ -27,12 +27,11 @@
 
 namespace ge {
 Status PrunePass::Run(ge::ComputeGraphPtr graph) {
-  GELOGD("PrunePass Start");
+  GELOGD("PrunePass Start, graph is [%s]", graph->GetName().c_str());
   if (graph == nullptr) {
     GELOGE(GE_GRAPH_ISNULL, "input compute graph is NULL.");
     return GE_GRAPH_ISNULL;
   }
-
   std::vector<NodePtr> out_nodes;
   std::unordered_set<NodePtr> nodes;
   for (NodePtr &node_ptr : graph->GetDirectNode()) {
@@ -42,7 +41,6 @@ Status PrunePass::Run(ge::ComputeGraphPtr graph) {
       out_nodes.push_back(node_ptr);
     }
   }
-
   if (out_nodes.empty()) {
     GELOGW("graph [%s] does not contain NETOUTPUT type node,no return value. Do nothing!", graph->GetName().c_str());
     return ge::SUCCESS;

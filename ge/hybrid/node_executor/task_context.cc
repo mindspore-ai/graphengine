@@ -36,16 +36,19 @@ TaskContext::TaskContext(GraphExecutionContext *execution_context,
 
 TaskContext::~TaskContext() {
   GELOGD("[%s] TaskContext destroyed.", node_item_->NodeName().c_str());
-  for (auto ws_addr : workspaces_) {
-    execution_context_->allocator->Deallocate(ws_addr);
-  }
-
   // release output
   for (int i = 0; i < NumOutputs(); ++i) {
     auto output_tensor = MutableOutput(i);
     if (output_tensor != nullptr) {
       output_tensor->Destroy();
     }
+  }
+}
+
+void TaskContext::ReleaseWorkspace() {
+  GELOGD("[%s] Start ReleaseWorkspace.", node_item_->NodeName().c_str());
+  for (auto ws_addr : workspaces_) {
+    execution_context_->allocator->Deallocate(ws_addr);
   }
 }
 

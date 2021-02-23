@@ -28,10 +28,9 @@ const size_t bin_ranges[kNumBins] = {kRoundBlockSize * kKByteSize,
                                      kBinSizeUnit8 * kMByteSize,
                                      kBinSizeUnit32 * kMByteSize,
                                      kBinSizeUnit128 * kMByteSize,
-                                     kGByteSize,
-                                     kBinSizeUnit4 * kGByteSize,
-                                     kBinSizeUnit16 * kGByteSize,
-                                     kBinSizeUnit26 * kGByteSize};
+                                     kBinSizeUnit256 * kMByteSize,
+                                     kBinSizeUnit512 * kMByteSize,
+                                     kGByteSize};
 
 static bool BlockComparator(const Block *left, const Block *right) {
   if (left->size != right->size) {
@@ -63,7 +62,10 @@ size_t GetBinIndex(size_t size) {
 
 size_t GetAllocationSize(size_t size) {
   size_t index = GetBinIndex(size);
-  return bin_ranges[index];
+  if (bin_ranges[index] >= size) {
+    return bin_ranges[index];
+  }
+  return kGByteSize * ((size + kGByteSize - 1) / kGByteSize);
 }
 
 ///

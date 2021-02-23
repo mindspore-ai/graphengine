@@ -752,6 +752,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/mem_assigner_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
+    "graph/manager/graph_caching_allocator_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 

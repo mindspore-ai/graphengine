@@ -520,7 +520,7 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    const GraphExecutionContext * graph_context = GetExecutionContext();
+    const GraphExecutionContext *graph_context = GetExecutionContext();
     GE_CHECK_NOTNULL(graph_context);
     const HybridModel *model = graph_context->model;
     GE_CHECK_NOTNULL(model);
@@ -551,7 +551,7 @@ Status TaskContext::SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    const GraphExecutionContext * graph_context = GetExecutionContext();
+    const GraphExecutionContext *graph_context = GetExecutionContext();
     GE_CHECK_NOTNULL(graph_context);
     const HybridModel *model = graph_context->model;
     GE_CHECK_NOTNULL(model);

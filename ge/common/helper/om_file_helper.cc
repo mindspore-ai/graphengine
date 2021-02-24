@@ -165,7 +165,7 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, const uint
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   size_t mem_offset = SIZE_OF_MODEL_PARTITION_TABLE(*partition_table);
-  GELOGD("ModelPartitionTable num :%u, ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
+  GELOGD("ModelPartitionTable num:%u, ModelFileHeader length:%zu, ModelPartitionTable length:%zu",
          partition_table->num, sizeof(ModelFileHeader), mem_offset);
   if (model_data_size <= mem_offset) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "invalid model data, partition_table->num:%u, model data size %u",
@@ -207,7 +207,8 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
            "ModelFileHeader length :%zu, ModelPartitionTable length :%zu",
            index, partition_table->num, sizeof(ModelFileHeader), partition_table_size);
     if (model_data_size <= cur_offset) {
-      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "invalid model data, partition_table->num:%u, model data size %u",
+      GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
+             "invalid model data, partition_table->num:%u, model data size %u",
              partition_table->num, model_data_size);
       return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
     }

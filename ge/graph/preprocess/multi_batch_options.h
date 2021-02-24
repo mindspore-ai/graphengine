@@ -105,7 +105,7 @@ GE_FUNC_VISIBILITY bool CheckDynamicBatchShape(const vector<int64_t> &shape, con
 /// @return 0: true/false
 ///
 GE_FUNC_VISIBILITY bool CheckDynamicImageSizeShape(const vector<int64_t> &shape, const string &data_name,
-                                const std::string &input_format);
+                                                   const std::string &input_format);
 
 }  // namespace multibatch
 }  // namespace ge

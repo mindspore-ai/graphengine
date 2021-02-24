@@ -991,7 +991,6 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
 Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option,
                                  vector<vector<std::pair<int64_t, int64_t>>> &range_vec) {
   // check both mode and shape_range option are all enabled
-
   auto mode_iter = graph_option.find(OPTION_EXEC_DYNAMIC_EXECUTE_MODE);
   bool enable_dynamic_execute_mode = (mode_iter != graph_option.end()) && (mode_iter->second == "dynamic_execute");
   if (!enable_dynamic_execute_mode) {
@@ -1272,9 +1271,10 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string,string> &graph_option) {
+Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
+                                 const std::map<string, string> &graph_option) {
   // Get shape range of input in dynamic_execute mode
-  vector<vector<std::pair<int64_t,int64_t>>> dynamic_shape_range_vec;
+  vector<vector<std::pair<int64_t, int64_t>>> dynamic_shape_range_vec;
   auto ret = GetDynamicInputShapeRange(user_input, graph_option, dynamic_shape_range_vec);
   GE_CHK_STATUS_RET(ret, "Graph option is not right on Dynamic execute mode.");
   compute_graph_->SaveDataFormat(ge::TypeUtils::DomiFormatToFormat(GetLocalOmgContext().format));
@@ -2012,7 +2012,8 @@ Status GraphPrepare::ProcessNetOutput() {
   return SUCCESS;
 }
 
-Status GraphPrepare::CheckAndUpdateInput(const std::vector<GeTensor> &user_input,const std::map<string,string> &graph_option) {
+Status GraphPrepare::CheckAndUpdateInput(const std::vector<GeTensor> &user_input,
+                                         const std::map<string, string> &graph_option) {
   compute_graph_->SetInputSize(user_input.size());
   if (user_input.empty()) {
     return SUCCESS;

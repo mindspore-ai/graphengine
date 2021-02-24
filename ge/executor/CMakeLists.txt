@@ -250,15 +250,14 @@ target_link_options(ge_executor_shared PRIVATE
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     msprofiler
+    static_mmpa
     -Wl,--no-as-needed
     ge_common
     runtime
     slog
-    mmpa
     graph
     register
     error_manager
-    ascend_hal_stub
     ascend_protobuf
     c_sec
     -Wl,--as-needed

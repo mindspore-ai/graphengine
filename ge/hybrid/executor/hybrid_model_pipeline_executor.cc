@@ -8,6 +8,7 @@ namespace ge {
 namespace hybrid {
 namespace {
 constexpr int kNumExecutors = 2;
+const int kMinLoopCount = 2;
 const int kIntBase = 10;
 const char *const kEnvProfilingLevel = "HYBRID_PROFILING_LEVEL";
 }
@@ -208,7 +209,7 @@ Status HybridModelPipelineExecutor::InitStageExecutors() {
 
 Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   int loop_count = args.num_loops;
-  GE_CHECK_GE(loop_count, 2);
+  GE_CHECK_GE(loop_count, kMinLoopCount);
 
   auto &inputs = args.inputs;
   auto &input_desc = args.input_desc;

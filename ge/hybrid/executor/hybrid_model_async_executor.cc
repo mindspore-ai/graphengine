@@ -26,6 +26,7 @@ namespace hybrid {
 namespace {
 const int kDataOutputIndex = 0;
 const size_t kMinimumPiplineStages = 2;
+const int kDefaultLoopCount = 10;
 }
 HybridModelAsyncExecutor::HybridModelAsyncExecutor(HybridModel *model)
     : model_(model), run_flag_(false) {
@@ -150,7 +151,7 @@ Status HybridModelAsyncExecutor::RunInternal() {
       GELOGI("HybridModel will execute in pipeline mode");
       auto iter_per_run = std::getenv("ITER_NUM");
       if (iter_per_run) {
-        args.num_loops = static_cast<int>(strtol(iter_per_run, nullptr, 10));
+        args.num_loops = static_cast<int>(strtol(iter_per_run, nullptr, kDefaultLoopCount));
       }
       ret = pipe_executor_->Execute(args);
     } else {

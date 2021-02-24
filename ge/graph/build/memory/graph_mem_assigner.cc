@@ -430,7 +430,7 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
       GELOGE(FAILED, "node %s has no continuous type!", node->GetName().c_str());
       return FAILED;
     }
-    GE_CHK_STATUS_RET(AssignContinuousInputMemoryWithAtomicProcess(node, iter->second),
+    GE_CHK_STATUS_RET(AssignContinuousInputMemoryWithAtomicProcess(node, iter->second, true),
                       "Assign node %s continuous input memory failed.", node->GetName().c_str())
   }
   for (auto pair : memory_offset_) {
@@ -441,7 +441,7 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
 }
 
 Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
-    int64_t &continuous_mem_size, int64_t memory_type, uint32_t continuous_type) {
+    int64_t &continuous_mem_size, int64_t memory_type, uint32_t continuous_type, bool reverse_refresh) {
   GELOGI("Current node %s needs continuous input.", node->GetName().c_str());
   auto iter = memory_offset_.find(memory_type);
   if (iter == memory_offset_.end()) {
@@ -508,12 +508,16 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
       std::map<int32_t, int32_t> out2ins;
       GE_CHK_STATUS_RET(GetAllRef(node, out2ins), "Node: %s get all ref failed", node->GetName().c_str());
       // output is beginning offset, set offset for input; only support this case now
-      if (out2ins.size() == 1 && out2ins.begin()->second == 0) {
+      if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
+        auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
         output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
         peer_op_desc->SetOutputOffset(output_list);
+        GELOGI("Node %s out %d ref in %d input node %s, use output offset %ld update %ld", node->GetName().c_str(),
+               out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(),
+               output_list_this.at(out2ins.begin()->first), peer_output_offset);
       } else {
-        GELOGW("Node %s out %d ref in %d with total ref numbers %zu", node->GetName().c_str(), out2ins.begin()->first,
-               out2ins.begin()->second, out2ins.size());
+        GELOGD("Node %s out %d ref in %d input node %s with total ref numbers %zu", node->GetName().c_str(),
+               out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(), out2ins.size());
       }
       // first input is beginning offset
       mem_offset = output_list.at(peer_out_data_anchor->GetIdx());
@@ -1535,6 +1539,11 @@ ge::Status GraphMemoryAssigner::GetAllRef(const NodePtr &node, map<int32_t, int3
 bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
   const NodePtr &input_continuous_node, map<NodePtr, uint32_t> &node_2_continuous_type) {
   for (const auto &in_node : input_continuous_node->GetInDataNodes()) {
+    if (in_node->GetType() == VARIABLE) {
+      GELOGI("node %s 's precursor node %s is variable, do not store.", input_continuous_node->GetName().c_str(),
+             in_node->GetName().c_str());
+      return true;
+    }
     auto iter = node_2_continuous_type.find(in_node);
     // In node's topo order in the front, so function can not be exception
     auto continuous_type = iter->second;
@@ -1560,13 +1569,15 @@ bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
 }
 
 ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(const NodePtr &input_continuous_node,
-                                                                             uint32_t continuous_type) {
+                                                                             uint32_t continuous_type,
+                                                                             bool reverse_refresh) {
   int64_t mem_clean_start = 0;
   int64_t mem_clean_size = 0;
   int64_t memory_type = RT_MEMORY_HBM;
 
   GE_CHK_STATUS_RET(GetNodeMemoryType(input_continuous_node, memory_type, "input"), "Get node memory type failed.");
-  auto ret = AssignContinuousInputMemory(input_continuous_node, mem_clean_start, mem_clean_size, memory_type, continuous_type);
+  auto ret = AssignContinuousInputMemory(input_continuous_node, mem_clean_start, mem_clean_size, memory_type,
+                                         continuous_type, reverse_refresh);
   if (ret != ge::SUCCESS) {
     GELOGE(ret, "Assign continuous input memory failed!");
     return ret;

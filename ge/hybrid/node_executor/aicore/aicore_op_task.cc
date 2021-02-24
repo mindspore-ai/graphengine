@@ -33,6 +33,20 @@ constexpr char const *kAttrOpParamSize = "op_para_size";
 constexpr char const *kAttrAtomicOpParamSize = "atomic_op_para_size";
 }  // namespace
 
+TbeHandleHolder::TbeHandleHolder(void *bin_handle)
+    : bin_handle_(bin_handle) {}
+
+TbeHandleHolder::~TbeHandleHolder() {
+  if (bin_handle_ != nullptr) {
+    GE_CHK_RT(rtDevBinaryUnRegister(bin_handle_));
+  }
+}
+
+bool TbeHandleRegistry::AddHandle(std::unique_ptr<TbeHandleHolder> &&holder) {
+  auto ret = registered_handles_.emplace(std::move(holder));
+  return ret.second;
+}
+
 Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   GE_CHK_STATUS_RET_NOLOG(InitWithTaskDef(op_desc, task_def));
   GE_CHK_STATUS_RET_NOLOG(InitTilingInfo(op_desc));
@@ -69,7 +83,7 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
   if (rt_ret != RT_ERROR_NONE || is_single_op_) {
     void *bin_handle = nullptr;
     if (!kernel_store.FindTBEHandle(stub_name_.c_str(), bin_handle)) {
-      GELOGI("TBE: can't find the kernel_name[%s] in HandleMap", stub_name_.c_str());
+      GELOGI("TBE: can't find the binfile_key[%s] in HandleMap", stub_name_.c_str());
       rtDevBinary_t binary;
       std::string json_string;
       GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, TVM_ATTR_NAME_MAGIC, json_string),
@@ -96,7 +110,7 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
       GE_IF_BOOL_EXEC(!meta_data.empty(), GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
       kernel_store.StoreTBEHandle(stub_name_.c_str(), bin_handle, tbe_kernel);
     } else {
-      GELOGI("TBE: find the kernel_name[%s] in HandleMap", stub_name_.c_str());
+      GELOGI("TBE: find the binfile_key[%s] in HandleMap", stub_name_.c_str());
       kernel_store.ReferTBEHandle(stub_name_.c_str());
     }
     std::string kernel_name;
@@ -108,25 +122,63 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
   return SUCCESS;
 }
 
-Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
-  GE_CHK_STATUS_RET(ValidateTaskDef(task_def),
-                    "[%s] Failed to validate task def: [%s]",
-                    op_desc.GetName().c_str(),
-                    task_def.DebugString().c_str());
+Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
+  TbeHandleRegistry &registry = TbeHandleRegistry::GetInstance();
+  auto tbe_kernel = op_desc.TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+  if (tbe_kernel == nullptr) {
+    GELOGE(INTERNAL_ERROR, "TBE: %s can't find tvm bin file!", op_desc.GetName().c_str());
+    return INTERNAL_ERROR;
+  }
 
+  void *bin_handle = nullptr;
+  GELOGD("Start to register kernel for node: [%s].", op_desc.GetName().c_str());
+  rtDevBinary_t binary;
+  std::string json_string;
+  GE_IF_BOOL_EXEC(AttrUtils::GetStr(&op_desc, TVM_ATTR_NAME_MAGIC, json_string),
+                  GELOGI("Get original type of session_graph_id."));
+  if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICPU") {
+    binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICPU;
+  } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF") {
+    binary.magic = RT_DEV_BINARY_MAGIC_ELF;
+  } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
+    binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+  } else {
+    GELOGE(PARAM_INVALID, "TBE: Invalid parameter magic number! json: %s", json_string.c_str());
+    return PARAM_INVALID;
+  }
+  binary.version = 0;
+  binary.data = tbe_kernel->GetBinData();
+  binary.length = tbe_kernel->GetBinDataSize();
+  GELOGI("TBE: binary.length: %lu", binary.length);
+  GE_CHK_RT_RET(rtRegisterAllKernel(&binary, &bin_handle));
+  handle_ = bin_handle;
+  auto holder = std::unique_ptr<TbeHandleHolder>(new (std::nothrow) TbeHandleHolder(handle_));
+  if (holder == nullptr) {
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create HandleHodler failed.");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+  }
+  if (!registry.AddHandle(std::move(holder))) {
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Add handle failed. node name = %s", op_desc.GetName().c_str());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
+  }
+  return SUCCESS;
+}
+
+Status AiCoreOpTask::InitWithKernelDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
   stub_name_ = kernel_def.stub_func();
-
   GE_CHK_STATUS_RET(RegisterTbeHandle(op_desc));
-
   GE_CHK_RT_RET(rtGetFunctionByName(stub_name_.c_str(), &stub_func_));
   args_size_ = kernel_def.args_size();
   block_dim_ = kernel_def.block_dim();
-
   // malloc args memory
   args_.reset(new(std::nothrow) uint8_t[args_size_]);
   GE_CHECK_NOTNULL(args_);
+  if (kernel_def.args().size() < args_size_) {
+    GELOGE(INTERNAL_ERROR, "args size of kernel_def is smaller than args_size_");
+    return INTERNAL_ERROR;
+  }
   errno_t err = memcpy_s(args_.get(), args_size_, kernel_def.args().data(), args_size_);
   if (err != EOK) {
     GELOGE(INTERNAL_ERROR, "AiCoreTask memcpy args failed.");
@@ -157,19 +209,75 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
          block_dim_,
          arg_base_,
          args_size_);
+  return SUCCESS;
+}
 
+Status AiCoreOpTask::InitWithKernelDefWithHandle(const OpDesc &op_desc, const domi::TaskDef &task_def) {
+  const domi::KernelDefWithHandle &kernel_with_handle = task_def.kernel_with_handle();
+  const domi::KernelContext &context = kernel_with_handle.context();
+
+  GE_CHK_STATUS_RET(RegisterKernelHandle(op_desc));
+  original_kernel_key_ = kernel_with_handle.original_kernel_key() + "_";
+  node_info_ = kernel_with_handle.node_info() + "/";
+  args_size_ = kernel_with_handle.args_size();
+  block_dim_ = kernel_with_handle.block_dim();
+  // malloc args memory
+  args_.reset(new(std::nothrow) uint8_t[args_size_]);
+  GE_CHECK_NOTNULL(args_);
+  if (kernel_with_handle.args().size() < args_size_) {
+    GELOGE(INTERNAL_ERROR, "args size of kernel_def is smaller than args_size_");
+    return INTERNAL_ERROR;
+  }
+  errno_t err = memcpy_s(args_.get(), args_size_, kernel_with_handle.args().data(), args_size_);
+
+  if (err != EOK) {
+    GELOGE(INTERNAL_ERROR, "AiCoreTask memcpy args failed.");
+    return INTERNAL_ERROR;
+  }
+
+  if (context.args_offset().size() < sizeof(uint16_t)) {
+    GELOGE(INTERNAL_ERROR, "Invalid args_offset, size = %zu.", context.args_offset().size());
+    return INTERNAL_ERROR;
+  }
+
+  const auto *args_offset_buffer = reinterpret_cast<const uint16_t *>(context.args_offset().data());
+  uint32_t offset = *args_offset_buffer;
+  if (offset > args_size_) {
+    GELOGE(INTERNAL_ERROR,
+           "[%s] Arg offset out of range. offset = %u, arg size = %u",
+           GetName().c_str(),
+           offset,
+           args_size_);
+    return INTERNAL_ERROR;
+  }
+
+  arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset);
+  max_arg_count_ = (args_size_ - offset) / sizeof(void *);
+  return SUCCESS;
+}
+
+Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
+  GE_CHK_STATUS_RET(ValidateTaskDef(task_def),
+                    "[%s] Failed to validate task def: [%s]",
+                    op_desc.GetName().c_str(),
+                    task_def.DebugString().c_str());
+
+  if (task_def.type() != RT_MODEL_TASK_ALL_KERNEL) {
+    GE_CHK_STATUS_RET(InitWithKernelDef(op_desc, task_def));
+  } else {
+    GE_CHK_STATUS_RET(InitWithKernelDefWithHandle(op_desc, task_def));
+  }
   return SUCCESS;
 }
 
 Status AiCoreOpTask::ValidateTaskDef(const domi::TaskDef &task_def) {
   auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-  if (task_type != RT_MODEL_TASK_KERNEL) {
+  if (task_type != RT_MODEL_TASK_KERNEL && task_type != RT_MODEL_TASK_ALL_KERNEL) {
     GELOGE(INTERNAL_ERROR, "Invalid task type (%d) in AiCore CreateTask.", static_cast<int>(task_type));
     return INTERNAL_ERROR;
   }
-
-  const domi::KernelDef &kernel_def = task_def.kernel();
-  const domi::KernelContext &context = kernel_def.context();
+  const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
+                                                            task_def.kernel_with_handle().context();
   auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
   if (kernel_type != ccKernelType::TE) {
     GELOGE(INTERNAL_ERROR, "Invalid kernel type(%d) in AiCore TaskDef.", static_cast<int>(kernel_type));
@@ -180,10 +288,9 @@ Status AiCoreOpTask::ValidateTaskDef(const domi::TaskDef &task_def) {
 }
 
 Status AiCoreOpTask::PrepareWithShape(TaskContext &context) {
-  if (tiling_buffer_ != nullptr) {
+  if (is_dynamic_) {
     return UpdateTilingInfo(context);
   }
-
   return SUCCESS;
 }
 
@@ -212,8 +319,14 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   clear_atomic_ = tiling_info.clear_atomic;
 
   tiling_data_ = tiling_info.tiling_data.str();
+  tiling_key_ = tiling_info.tiling_key;
+  GELOGD("Successfully getting [tiling_key] : %u", tiling_key_);
   if (tiling_data_.empty()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Tiling data is empty.", stub_name_.c_str());
+    GELOGD("[%s] Tiling data is empty.", op_desc->GetName().c_str());
+    return SUCCESS;
+  }
+  if (tiling_buffer_ == nullptr) {
+    GELOGE(INTERNAL_ERROR, "tiling_buffer is nullptr while tiling_data is not empty!");
     return INTERNAL_ERROR;
   }
 
@@ -296,16 +409,26 @@ Status AiCoreOpTask::UpdateArgs(TaskContext &task_context) {
 }
 
 Status AiCoreOpTask::LaunchKernel(rtStream_t stream) {
-  GELOGD("AiCoreOpTask LaunchKernel Start (task = %s, block_dim = %u).", stub_name_.c_str(), block_dim_);
-  GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), args_size_, nullptr, stream));
-  GELOGD("AiCoreOpTask LaunchKernel End (task = %s, block_dim = %u).", stub_name_.c_str(), block_dim_);
+  if (handle_ != nullptr) {
+    std::string dev_func = original_kernel_key_ + std::to_string(tiling_key_);
+    std::string kernel_info = node_info_ + std::to_string(tiling_key_);
+    GELOGD("AiCoreOpTask rtKernelLaunchWithHandle Start (dev_func = %s, block_dim = %u).", dev_func.c_str(),
+           block_dim_);
+    GE_CHK_RT_RET(rtKernelLaunchWithHandle(handle_, dev_func.c_str(), block_dim_, args_.get(), args_size_, nullptr,
+                                           stream, kernel_info.c_str()));
+    GELOGD("AiCoreOpTask rtKernelLaunchWithHandle End (dev_func = %s, block_dim = %u).", dev_func.c_str(),
+           block_dim_);
+  } else {
+    GELOGD("AiCoreOpTask LaunchKernel Start (task = %s, block_dim = %u).", stub_name_.c_str(), block_dim_);
+    GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), args_size_, nullptr, stream));
+    GELOGD("AiCoreOpTask LaunchKernel End (task = %s, block_dim = %u).", stub_name_.c_str(), block_dim_);
+  }
   return SUCCESS;
 }
 
 Status AiCoreOpTask::InitTilingInfo(const OpDesc &op_desc) {
-  bool dynamic_supported = false;
-  (void) AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, dynamic_supported);
-  if (!dynamic_supported) {
+  (void) AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, is_dynamic_);
+  if (!is_dynamic_) {
     GELOGD("[%s] Dynamic shape is not supported.", op_desc.GetName().c_str());
     return SUCCESS;
   }
@@ -314,22 +437,26 @@ Status AiCoreOpTask::InitTilingInfo(const OpDesc &op_desc) {
   int64_t max_size = -1;
   (void) AttrUtils::GetInt(op_desc, GetKeyForOpParamSize(), max_size);
   GELOGD("Got op param size by key: %s, ret = %ld", GetKeyForOpParamSize().c_str(), max_size);
-  if (max_size <= 0) {
+  if (max_size < 0) {
     GELOGE(PARAM_INVALID, "[%s] Invalid op_param_size: %ld.", op_desc.GetName().c_str(), max_size);
     return PARAM_INVALID;
   }
 
   auto allocator = NpuMemoryAllocator::GetAllocator();
   GE_CHECK_NOTNULL(allocator);
-  tiling_buffer_ = TensorBuffer::Create(allocator, static_cast<size_t>(max_size));
-  GE_CHECK_NOTNULL(tiling_buffer_);
+  if (max_size > 0) {
+    tiling_buffer_ = TensorBuffer::Create(allocator, static_cast<size_t>(max_size));
+    GE_CHECK_NOTNULL(tiling_buffer_);
+    GELOGD("[%s] Done allocating tiling buffer, size=%ld.", op_desc.GetName().c_str(), max_size);
+  } else {
+    GELOGD("op_param_size is 0, no need to create tiling buffer.");
+  }
 
-  GELOGD("[%s] Done allocating tiling buffer, size=%ld.", op_desc.GetName().c_str(), max_size);
   return SUCCESS;
 }
 
 bool AiCoreOpTask::IsDynamicShapeSupported() {
-  return tiling_buffer_ != nullptr;
+  return is_dynamic_;
 }
 
 const std::string &AiCoreOpTask::GetName() const {

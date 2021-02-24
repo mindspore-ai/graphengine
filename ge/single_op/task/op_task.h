@@ -78,6 +78,8 @@ class TbeOpTask : public OpTask {
   void SetSmDesc(void *sm_desc);
   void SetStubFunc(const std::string &name, const void *stub_func);
   void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim, const OpDescPtr &op_desc);
+  void SetKernelWithHandleArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
+                               const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
 
   Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc,
                        const vector<GeTensorDesc> &output_desc) override;
@@ -87,6 +89,7 @@ class TbeOpTask : public OpTask {
   const std::string &GetStubName() const;
   void EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, size_t max_tiling_size);
   uint32_t GetTaskType() const override;
+  void SetHandle(void *handle);
 
  private:
   friend class SingleOpModel;
@@ -107,6 +110,11 @@ class TbeOpTask : public OpTask {
   std::string tiling_data_;
   std::vector<void *> workspaces_;
   NodePtr node_;
+
+  uint32_t tiling_key_ = 0;
+  void* handle_ = nullptr;
+  std::string original_kernel_key_;
+  std::string node_info_;
 };
 
 class AiCpuBaseTask : public OpTask {

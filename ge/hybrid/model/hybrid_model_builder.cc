@@ -1199,6 +1199,8 @@ Status HybridModelBuilder::IndexTaskDefs() {
         op_index = task_def.kernel_ex().op_index();
       } else if (task_type == RT_MODEL_TASK_HCCL) {
         op_index = task_def.kernel_hccl().op_index();
+      } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
+        op_index = task_def.kernel_with_handle().context().op_index();
       } else {
         GELOGD("Skip task type: %d", static_cast<int>(task_type));
         continue;
@@ -1211,7 +1213,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
       }
 
       auto &node = iter->second;
-      if (task_type == RT_MODEL_TASK_KERNEL) {
+      if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
         ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
       }
 

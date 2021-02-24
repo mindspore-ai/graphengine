@@ -763,10 +763,15 @@ set(SINGLE_OP_TEST_FILES
     #"single_op/single_op_model_unittest.cc"
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
+    "single_op/single_op_task_unittest.cc"
 )
 
 set(PROFILING_MNG_TEST_FILES
     "profiling/ge_profiling_manager_unittest.cc"
+)
+
+set(HYBRID_TEST_FILES
+    "hybrid/ge_hybrid_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES
@@ -1064,6 +1069,7 @@ add_executable(ut_libge_distinct_load_utest
         ${DISTINCT_GRAPH_LOAD_SRC_FILES}
         ${SINGLE_OP_TEST_FILES}
         ${PROFILING_MNG_TEST_FILES}
+        ${HYBRID_TEST_FILES}
 )
 
 target_compile_options(ut_libge_distinct_load_utest PRIVATE

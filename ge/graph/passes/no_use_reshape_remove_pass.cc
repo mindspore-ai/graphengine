@@ -95,7 +95,8 @@ Status NoUseReshapeRemovePass::TryRemoveConstShapeInput(ge::NodePtr &reshape_nod
   if (shape_input_anchor == nullptr) {
     return SUCCESS;
   }
-  auto shape_input = shape_input_anchor->GetOwnerNode();
+  GE_CHECK_NOTNULL(shape_input_anchor->GetPeerOutAnchor());
+  auto shape_input = shape_input_anchor->GetPeerOutAnchor()->GetOwnerNode();
   GE_CHECK_NOTNULL(shape_input);
   if (shape_input->GetType() != CONSTANT && shape_input->GetType() != CONSTANTOP) {
     return SUCCESS;

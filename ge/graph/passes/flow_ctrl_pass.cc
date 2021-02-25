@@ -37,7 +37,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
     return NOT_CHANGED;
   }
 
-  GELOGI("FlowCtrl pass begin");
+  GELOGI("FlowCtrl pass begin.graph is [%s]", compute_graph->GetName().c_str());
   bool graph_change = false;
   // 1. Add FP/BP flow ctrl (big cycle)
   for (auto &node : compute_graph->GetDirectNode()) {

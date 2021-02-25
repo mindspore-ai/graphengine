@@ -323,6 +323,8 @@ Status NodeDoneCallback::OnNodeDone() {
                       node_item.NodeName().c_str());
   }
 
+  // release workspace
+  context_->ReleaseWorkspace();
   // release inputs
   for (int i = 0; i < context_->NumInputs(); ++i) {
     context_->ReleaseInput(i);

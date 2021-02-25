@@ -56,6 +56,7 @@ class TaskContext {
   void ReleaseInputsAndOutputs();
   bool NeedCallback();
   void ReleaseInput(int index);
+  void ReleaseWorkspace();
   const TensorValue *GetInput(int index) const;
   const TensorValue *GetOutput(int index) const;
   TensorValue *MutableOutput(int index);

@@ -78,19 +78,6 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
 
 Status ModelHelper::SaveSizeToModelDef(const GeModelPtr &ge_model) {
   vector<int64_t> om_info;
-  ModelPtr model_tmp = ge::MakeShared<ge::Model>(ge_model->GetName(), ge_model->GetPlatformVersion());
-  if (model_tmp == nullptr) {
-    GELOGE(FAILED, "Create Model %s Ptr failed", ge_model->GetName().c_str());
-    return FAILED;
-  }
-  model_tmp->SetGraph(ge_model->GetGraph());
-  model_tmp->SetVersion(ge_model->GetVersion());
-  model_tmp->SetAttr(ge_model->MutableAttrMap());
-  ge::Buffer model_buffer;
-  (void)model_tmp->Save(model_buffer);
-  GELOGD("SaveSizeToModelDef modeldef_size is %zu", model_buffer.GetSize());
-  om_info.push_back(model_buffer.GetSize());
-
   auto ge_model_weight = ge_model->GetWeight();
   GELOGD("SaveSizeToModelDef weight_data_size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
   om_info.push_back(ge_model_weight.GetSize());

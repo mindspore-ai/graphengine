@@ -2622,14 +2622,9 @@ Status GraphManager::IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_m
   return FAILED;
 }
 
-void GraphManager::ConstructGeInput(std::vector<ge::GeTensor> &ge_inputs, PreRunArgs &args) {
-  for (auto const &input : args.input_tensor) {
-    std::vector<int64_t> input_dims;
-    std::transform(input.dims.begin(), input.dims.end(), std::back_inserter(input_dims),
-                   [](int64_t x) -> int64_t { return x; });
-    GeShape input_shape(input_dims);
-    GeTensorDesc input_tensor_desc;
-    input_tensor_desc.SetShape(input_shape);
+void GraphManager::ConstructGeInput(const vector<InputTensorInfo> &inputs, vector<GeTensor> &ge_inputs) {
+  for (auto const &input : inputs) {
+    GeTensorDesc input_tensor_desc(GeShape(input.dims));
     input_tensor_desc.SetDataType(static_cast<ge::DataType>(input.data_type));
     ge_inputs.emplace_back(input_tensor_desc);
   }
@@ -2652,9 +2647,6 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     GetContext().SetSessionId(args.session_id);
     GetThreadLocalContext() = args.context;
     graph_manager->UpdateLocalOmgContext(args.graph_id);
-
-    std::vector<ge::GeTensor> ge_inputs;
-    ConstructGeInput(ge_inputs, args);
 
     // find graph
     GraphNodePtr graph_node = nullptr;
@@ -2709,6 +2701,8 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       // check need incre build.
       GeModelPtr ge_model = nullptr;
       if (graph_manager->IncreBuild(graph_node, ge_model) != SUCCESS) {
+        std::vector<GeTensor> ge_inputs;
+        ConstructGeInput(args.input_tensor, ge_inputs);
         ret = graph_manager->PreRun(graph_node, ge_inputs, ge_root_model, args.session_id);
         // release rts generate context
         RtContextUtil::GetInstance().DestroyRtContexts(args.session_id, graph_node->GetGraphId());

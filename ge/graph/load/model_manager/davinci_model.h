@@ -907,6 +907,7 @@ class DavinciModel {
   vector<int64_t> output_memory_size_list_;
 
   thread thread_id_;
+  thread shrink_id_;
 
   shared_ptr<ModelListener> listener_;
 
@@ -1041,6 +1042,7 @@ class DavinciModel {
   // For super kernel.
   SuperKernelTaskInfo skt_info_;
 
+  bool has_output_node_ = false;
   bool is_dynamic_aipp_ = false;
   vector<string> dynamic_output_shape_info_;
 

@@ -27,6 +27,16 @@ using namespace std;
 namespace ge {
 extern OpDescPtr CreateOpDesc(string name, string type);
 
+class DModelListener : public ModelListener {
+ public:
+  DModelListener(){};
+  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result, vector<OutputTensorInfo> &outputs) {
+    return 0;
+  }
+};
+
+shared_ptr<ModelListener> g_local_call_back(new DModelListener());
+
 class UtestDavinciModel : public testing::Test {
  protected:
   void SetUp() {}
@@ -38,7 +48,6 @@ int32_t MsprofReport(uint32_t moduleId, uint32_t type, void *data, uint32_t len)
   return 0;
 }
 
-/*
 TEST_F(UtestDavinciModel, init_success) {
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
@@ -46,7 +55,7 @@ TEST_F(UtestDavinciModel, init_success) {
 
   GeModelPtr ge_model = make_shared<GeModel>();
   ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
-  AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 5120000);
+  AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 10240);
   AttrUtils::SetInt(ge_model, ATTR_MODEL_STREAM_NUM, 1);
 
   shared_ptr<domi::ModelTaskDef> model_task_def = make_shared<domi::ModelTaskDef>();
@@ -54,60 +63,66 @@ TEST_F(UtestDavinciModel, init_success) {
 
   GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
   TensorUtils::SetSize(tensor, 512);
+  {
+    OpDescPtr op_desc = CreateOpDesc("data", DATA);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({1024});
+    NodePtr node = graph->AddNode(op_desc);    // op_index = 0
+  }
 
-  OpDescPtr op_input = CreateOpDesc("data", DATA);
-  op_input->AddInputDesc(tensor);
-  op_input->AddOutputDesc(tensor);
-  op_input->SetInputOffset({1024});
-  op_input->SetOutputOffset({1024});
-  NodePtr node_input = graph->AddNode(op_input);    // op_index = 0
+  {
+    OpDescPtr op_desc = CreateOpDesc("square", "Square");
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({1024});
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 1
 
-  OpDescPtr op_kernel = CreateOpDesc("square", "Square");
-  op_kernel->AddInputDesc(tensor);
-  op_kernel->AddOutputDesc(tensor);
-  op_kernel->SetInputOffset({1024});
-  op_kernel->SetOutputOffset({1024});
-  NodePtr node_kernel = graph->AddNode(op_kernel);  // op_index = 1
+    domi::TaskDef *task_def = model_task_def->add_task();
+    task_def->set_stream_id(0);
+    task_def->set_type(RT_MODEL_TASK_KERNEL);
+    domi::KernelDef *kernel_def = task_def->mutable_kernel();
+    kernel_def->set_stub_func("stub_func");
+    kernel_def->set_args_size(64);
+    string args(64, '1');
+    kernel_def->set_args(args.data(), 64);
+    domi::KernelContext *context = kernel_def->mutable_context();
+    context->set_op_index(op_desc->GetId());
+    context->set_kernel_type(2);    // ccKernelType::TE
+    uint16_t args_offset[9] = {0};
+    context->set_args_offset(args_offset, 9 * sizeof(uint16_t));
+  }
 
-  OpDescPtr op_memcpy = CreateOpDesc("memcpy", MEMCPYASYNC);
-  op_memcpy->AddInputDesc(tensor);
-  op_memcpy->AddOutputDesc(tensor);
-  op_memcpy->SetInputOffset({1024});
-  op_memcpy->SetOutputOffset({5120});
-  NodePtr node_memcpy = graph->AddNode(op_memcpy);  // op_index = 2
+  {
+    OpDescPtr op_desc = CreateOpDesc("memcpy", MEMCPYASYNC);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({5120});
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 2
 
-  OpDescPtr op_output = CreateOpDesc("output", NETOUTPUT);
-  op_output->AddInputDesc(tensor);
-  op_output->SetInputOffset({5120});
-  op_output->SetSrcName( { "memcpy" } );
-  op_output->SetSrcIndex( { 0 } );
-  NodePtr node_output = graph->AddNode(op_output);  // op_index = 3
+    domi::TaskDef *task_def = model_task_def->add_task();
+    task_def->set_stream_id(0);
+    task_def->set_type(RT_MODEL_TASK_MEMCPY_ASYNC);
+    domi::MemcpyAsyncDef *memcpy_async = task_def->mutable_memcpy_async();
+    memcpy_async->set_src(1024);
+    memcpy_async->set_dst(5120);
+    memcpy_async->set_dst_max(512);
+    memcpy_async->set_count(1);
+    memcpy_async->set_kind(RT_MEMCPY_DEVICE_TO_DEVICE);
+    memcpy_async->set_op_index(op_desc->GetId());
+  }
 
-
-  domi::TaskDef *task_def1 = model_task_def->add_task();
-  task_def1->set_stream_id(0);
-  task_def1->set_type(RT_MODEL_TASK_KERNEL);
-  domi::KernelDef *kernel_def = task_def1->mutable_kernel();
-  kernel_def->set_stub_func("stub_func");
-  kernel_def->set_args_size(64);
-  string args(64, '1');
-  kernel_def->set_args(args.data(), 64);
-  domi::KernelContext *context = kernel_def->mutable_context();
-  context->set_op_index(1);
-  context->set_kernel_type(2);    // ccKernelType::TE
-  uint16_t args_offset[9] = {0};
-  context->set_args_offset(args_offset, 9 * sizeof(uint16_t));
-
-  domi::TaskDef *task_def2 = model_task_def->add_task();
-  task_def2->set_stream_id(0);
-  task_def2->set_type(RT_MODEL_TASK_MEMCPY_ASYNC);
-  domi::MemcpyAsyncDef *memcpy_async = task_def2->mutable_memcpy_async();
-  memcpy_async->set_src(1024);
-  memcpy_async->set_dst(5120);
-  memcpy_async->set_dst_max(512);
-  memcpy_async->set_count(1);
-  memcpy_async->set_kind(RT_MEMCPY_DEVICE_TO_DEVICE);
-  memcpy_async->set_op_index(2);
+  {
+    OpDescPtr op_desc = CreateOpDesc("output", NETOUTPUT);
+    op_desc->AddInputDesc(tensor);
+    op_desc->SetInputOffset({5120});
+    op_desc->SetSrcName( { "memcpy" } );
+    op_desc->SetSrcIndex( { 0 } );
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 3
+  }
 
   EXPECT_EQ(model.Assign(ge_model), SUCCESS);
   EXPECT_EQ(model.Init(), SUCCESS);
@@ -124,7 +139,6 @@ TEST_F(UtestDavinciModel, init_success) {
 
   ProfilingManager::Instance().is_load_profiling_ = false;
 }
-*/
 
 TEST_F(UtestDavinciModel, init_data_op) {
   DavinciModel model(0, nullptr);
@@ -280,7 +294,9 @@ TEST_F(UtestDavinciModel, init_unknown) {
   memcpy_async->set_op_index(2);
 
   EXPECT_EQ(model.Assign(ge_model), SUCCESS);
+  ProfilingManager::Instance().is_load_profiling_ = true;
   EXPECT_EQ(model.Init(), SUCCESS);
+  ProfilingManager::Instance().is_load_profiling_ = false;
 
   EXPECT_EQ(model.input_addrs_list_.size(), 1);
   EXPECT_EQ(model.output_addrs_list_.size(), 1);
@@ -303,7 +319,7 @@ TEST_F(UtestDavinciModel, init_unknown) {
 }
 
 TEST_F(UtestDavinciModel, Init_variable_op) {
-  DavinciModel model(0, nullptr);
+  DavinciModel model(0, g_local_call_back);
   model.ge_model_ = make_shared<GeModel>();
   model.runtime_param_.mem_base = (uint8_t *)0x08000000;
   model.runtime_param_.mem_size = 5120000;
@@ -329,8 +345,14 @@ TEST_F(UtestDavinciModel, Init_variable_op) {
 
   EXPECT_EQ(model.InitNodes(graph), SUCCESS);
 
-  EXPECT_EQ(model.ReturnNoOutput(1), PARAM_INVALID);
+  EXPECT_EQ(model.ReturnNoOutput(1), SUCCESS);
   EXPECT_EQ(model.SyncVarData(), SUCCESS);
+
+  OutputData output_data;
+  EXPECT_FALSE(model.has_output_node_);
+  EXPECT_EQ(model.CopyOutputData(1, output_data, RT_MEMCPY_DEVICE_TO_HOST), SUCCESS);
+
+  EXPECT_EQ(model.ReturnResult(1, false, true, &output_data), INTERNAL_ERROR);
 }
 
 TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {
@@ -752,7 +774,6 @@ TEST_F(UtestDavinciModel, init_data_aipp_input_dims_normal) {
   EXPECT_EQ(model.op_list_.size(), 1);
 }
 
-/*
 // test label_set_task Init
 TEST_F(UtestDavinciModel, label_task_success) {
   DavinciModel model(0, nullptr);
@@ -760,7 +781,7 @@ TEST_F(UtestDavinciModel, label_task_success) {
 
   GeModelPtr ge_model = make_shared<GeModel>();
   ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
-  AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 5120000);
+  AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 10240);
   AttrUtils::SetInt(ge_model, ATTR_MODEL_STREAM_NUM, 1);
 
   shared_ptr<domi::ModelTaskDef> model_task_def = make_shared<domi::ModelTaskDef>();
@@ -769,7 +790,6 @@ TEST_F(UtestDavinciModel, label_task_success) {
   GeTensorDesc tensor(GeShape(), FORMAT_ND, DT_INT32);
   TensorUtils::SetSize(tensor, 64);
 
-  uint32_t op_index = 0;
   {
     OpDescPtr op_desc = CreateOpDesc("label_switch", LABELSWITCHBYINDEX);
     op_desc->AddInputDesc(tensor);
@@ -781,7 +801,7 @@ TEST_F(UtestDavinciModel, label_task_success) {
     task_def1->set_stream_id(0);
     task_def1->set_type(RT_MODEL_TASK_STREAM_LABEL_SWITCH_BY_INDEX);
     domi::LabelSwitchByIndexDef *label_task_def = task_def1->mutable_label_switch_by_index();
-    label_task_def->set_op_index(op_index++);
+    label_task_def->set_op_index(op_desc->GetId());
     label_task_def->set_label_max(2);
   }
 
@@ -794,7 +814,7 @@ TEST_F(UtestDavinciModel, label_task_success) {
     task_def1->set_stream_id(0);
     task_def1->set_type(RT_MODEL_TASK_LABEL_SET);
     domi::LabelSetDef *label_task_def = task_def1->mutable_label_set();
-    label_task_def->set_op_index(op_index++);
+    label_task_def->set_op_index(op_desc->GetId());
   }
 
   {
@@ -806,7 +826,7 @@ TEST_F(UtestDavinciModel, label_task_success) {
     task_def2->set_stream_id(0);
     task_def2->set_type(RT_MODEL_TASK_STREAM_LABEL_GOTO);
     domi::LabelGotoExDef *label_task_def = task_def2->mutable_label_goto_ex();
-    label_task_def->set_op_index(op_index++);
+    label_task_def->set_op_index(op_desc->GetId());
   }
 
   {
@@ -818,7 +838,7 @@ TEST_F(UtestDavinciModel, label_task_success) {
     task_def1->set_stream_id(0);
     task_def1->set_type(RT_MODEL_TASK_LABEL_SET);
     domi::LabelSetDef *label_task_def = task_def1->mutable_label_set();
-    label_task_def->set_op_index(op_index++);
+    label_task_def->set_op_index(op_desc->GetId());
   }
 
   {
@@ -830,7 +850,7 @@ TEST_F(UtestDavinciModel, label_task_success) {
     task_def1->set_stream_id(0);
     task_def1->set_type(RT_MODEL_TASK_LABEL_SET);
     domi::LabelSetDef *label_task_def = task_def1->mutable_label_set();
-    label_task_def->set_op_index(op_index++);
+    label_task_def->set_op_index(op_desc->GetId());
   }
 
   EXPECT_TRUE(AttrUtils::SetInt(ge_model, ATTR_MODEL_LABEL_NUM, 3));
@@ -840,7 +860,6 @@ TEST_F(UtestDavinciModel, label_task_success) {
   EXPECT_EQ(model.output_addrs_list_.size(), 0);
   EXPECT_EQ(model.task_list_.size(), 5);
 }
-*/ 
 
 TEST_F(UtestDavinciModel, LoadWithQueue_fail_with_diff_args) {
   DavinciModel model(0, nullptr);

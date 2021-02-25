@@ -33,7 +33,7 @@ class UtestOmg : public testing::Test {
 
 TEST_F(UtestOmg, display_model_info_failed) {
   ge::proto::ModelDef model_def;
-  PrintModelInfo(&model_def);
+  PrintModelInfo(&model_def, 1);
 }
 
 TEST_F(UtestOmg, display_model_info_success) {
@@ -46,7 +46,6 @@ TEST_F(UtestOmg, display_model_info_success) {
   attr_def->mutable_list()->add_i(2);
   attr_def->mutable_list()->add_i(3);
   attr_def->mutable_list()->add_i(4);
-  attr_def->mutable_list()->add_i(5);
-  PrintModelInfo(&model_def);
+  PrintModelInfo(&model_def, 1);
 }
 }  // namespace ge

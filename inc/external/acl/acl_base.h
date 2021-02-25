@@ -174,6 +174,12 @@ typedef enum {
     ACL_ERROR = 3,
 } aclLogLevel;
 
+typedef enum {
+    ACL_MEMTYPE_DEVICE = 0,
+    ACL_MEMTYPE_HOST = 1,
+} aclMemType;
+
+
 /**
  * @ingroup AscendCL
  * @brief Converts data of type aclFloat16 to data of type float
@@ -593,6 +599,18 @@ ACL_FUNC_VISIBILITY aclError aclSetTensorDynamicInput(aclTensorDesc *desc, const
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclSetTensorConst(aclTensorDesc *desc, void *dataBuffer, size_t length);
+
+/**
+ * @ingroup AscendCL
+ * @brief Set tensor memory type specified by the tensor description
+ *
+ * @param  desc [OUT]      pointer to the instance of aclTensorDesc
+ * @param  memType [IN]       ACL_MEMTYPE_DEVICE means device, ACL_MEMTYPE_HOST means host
+ *
+ * @retval ACL_SUCCESS     The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclSetTensorPlaceMent(aclTensorDesc *desc, aclMemType memType);
 
 /**
  * @ingroup AscendCL

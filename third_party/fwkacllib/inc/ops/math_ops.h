@@ -952,6 +952,36 @@ REG_OP(Angle)
     .ATTR(Tout, Type, DT_FLOAT)
     .OP_END_FACTORY_REG(Angle)
 
+/**
+*@brief Computes the gradient of SoftMarginLossGrad. \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li predict: A tensor. Must be one of the following types:
+*     float16, float32. \n
+* @li label: A tensor with same shape of predict. Must be one of the following types:
+*     float16, float32. \n
+* @li dout: A tensor with same shpae of predcit. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+* @li reduction: Specifies the reduction to apply to the output:
+*     'none' | 'mean' | 'sum'. Default: 'mean'. \n
+
+*@par Outputs:
+* gradient: A Tensor with the same type of predict. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator SoftMarginLoss Backward. \n
+*/
+REG_OP(SoftMarginLossGrad)
+    .INPUT(predict, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(dout, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SoftMarginLossGrad)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATH_OPS_H_

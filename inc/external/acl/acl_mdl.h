@@ -1203,6 +1203,18 @@ ACL_FUNC_VISIBILITY aclError aclmdlDestroyConfigHandle(aclmdlConfigHandle *handl
 ACL_FUNC_VISIBILITY aclError aclmdlSetConfigOpt(aclmdlConfigHandle *handle, aclmdlConfigAttr attr,
     const void *attrValue, size_t valueSize);
 
+/**
+ * @ingroup AscendCL
+ * @brief get real tensor name from modelDesc
+ *
+ * @param modelDesc [IN]  pointer to modelDesc
+ * @param name [IN]       tensor name
+ *
+ * @retval the pointer of real tensor name
+ * @retval Failure return NULL
+ */
+ACL_FUNC_VISIBILITY const char *aclmdlGetTensorRealName(const aclmdlDesc *modelDesc, const char *name);
+
 #ifdef __cplusplus
 }
 #endif

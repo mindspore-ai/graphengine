@@ -30,6 +30,11 @@ extern "C" {
 #define RT_EVENT_DEFAULT (0x00)
 #define RT_EVENT_WITH_FLAG (0x01)
 
+#define RT_EVENT_DDSYNC_NS    0x01U
+#define RT_EVENT_STREAM_MARK  0x02U
+#define RT_EVENT_DDSYNC       0x04U
+#define RT_EVENT_TIME_LINE    0x08U
+
 /**
  * @ingroup dvrt_event
  * @brief create event instance

@@ -25,6 +25,8 @@
 extern "C" {
 #endif
 
+#define ACL_EVENT_TIME_LINE 0x00000008u
+
 typedef enum aclrtRunMode {
     ACL_DEVICE,
     ACL_HOST,
@@ -424,6 +426,18 @@ ACL_FUNC_VISIBILITY aclError aclrtGetDeviceCount(uint32_t *count);
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclrtCreateEvent(aclrtEvent *event);
+
+/**
+ * @ingroup AscendCL
+ * @brief create event instance with flag
+ *
+ * @param event [OUT]   created event
+ * @param flag [IN]     event flag
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtCreateEventWithFlag(aclrtEvent *event, uint32_t flag);
 
 /**
  * @ingroup AscendCL

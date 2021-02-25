@@ -1206,6 +1206,34 @@ REG_OP(Centralization)
     .OP_END_FACTORY_REG(Centralization)
 
 /**
+ *@brief Calculate the loss. Creates a criterion that optimizes a two-class classification
+ logistic loss between input_x and input_y (containing 1 or -1). \n
+
+ *@par Inputs:
+ *One inputs, including:
+ * @li input_x: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+ * @li input_y: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+
+ *@par Attributes:
+ *@li lambd: An optional string.Defaults to "mean". \n
+
+ *@par Outputs:
+ *output_z: while reduction == "none", A Tensor with the same type and shape of input_x's. \n
+ *          while reduction == "sum" or "mean", A Tensor with the same type of input_x , shape of which is (1,)
+
+ *@par Third-party framework compatibility
+ *Compatible with the Pytorch operator SoftMarginLoss. \n
+ */
+REG_OP(SoftMarginLoss)
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(reduction, String, "mean")
+    .OUTPUT(output_z, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(SoftMarginLoss)
+
+/**
 * @brief Computes gradients of sigmoid_cross_entropy_with_logits_v2.
 
 * @par Inputs:

@@ -141,7 +141,7 @@ enum {
   IDEDD,         /**< IDE daemon device */
   IDEDH,         /**< IDE daemon host */
   HCCL,          /**< HCCL */
-  FMK,           /**< Framework */
+  FMK,           /**< Adapter */
   HIAIENGINE,    /**< Matrix */
   DVPP,          /**< DVPP */
   RUNTIME,       /**< Runtime */
@@ -162,11 +162,11 @@ enum {
   MDCDEFAULT, /**< MDC undefine */
   MDCSC,      /**< MDC spatial cognition */
   MDCPNC,
-  MLL,
+  MLL,      /**< abandon */
   DEVMM,    /**< Dlog memory managent */
   KERNEL,   /**< Kernel */
   LIBMEDIA, /**< Libmedia */
-  CCECPU,   /**< ai cpu */
+  CCECPU,   /**< aicpu shedule */
   ASCENDDK, /**< AscendDK */
   ROS,      /**< ROS */
   HCCP,
@@ -179,7 +179,7 @@ enum {
   TSDUMP,    /**< TSDUMP module */
   AICPU,     /**< AICPU module */
   LP,        /**< LP module */
-  TDT,
+  TDT,       /**< tsdaemon or aicpu shedule */
   FE,
   MD,
   MB,

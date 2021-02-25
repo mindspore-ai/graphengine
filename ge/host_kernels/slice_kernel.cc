@@ -56,6 +56,8 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
 
   // data type in input_x
   auto data_type = x_->GetTensorDesc().GetDataType();
+  uint32_t type_size = 0;
+  (void)TypeUtils::GetDataTypeLength(data_type, type_size);
   // check data type of begin and size
   if (begin->GetTensorDesc().GetDataType() != DT_INT32 || size->GetTensorDesc().GetDataType() != DT_INT32) {
     GELOGW("Data type of begin and size for slice are not DT_INT32.");
@@ -69,7 +71,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   GE_CHECK_NOTNULL(begin_data);
   GE_CHECK_NOTNULL(size_data);
 
-  size_t data_size = x_->GetData().size() / sizeof(int32_t);
+  size_t data_size = x_->GetData().size() / type_size;
   size_t begin_size = begin->GetData().size() / sizeof(int32_t);
   size_t size_size = size->GetData().size() / sizeof(int32_t);
   const ge::GeShape &x_shape = x_->GetTensorDesc().GetShape();

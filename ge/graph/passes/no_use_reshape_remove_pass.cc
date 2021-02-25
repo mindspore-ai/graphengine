@@ -82,13 +82,40 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
     }
   }
   if (to_be_deleted) {
-    GELOGI("NoUseReshapeRemovePass remove useless node:%s", node->GetName().c_str());
-    auto ret = PassUtils::UnlinkNodeWithControlCopy(node, kReshapeShapeIndex);
-    if (ret != SUCCESS) {
-      GELOGE(ret, "DimensionAdjustPass unlink node with control copy fail.");
-      return ret;
-    }
+    auto ret = TryRemoveConstShapeInput(node);
+    GE_CHK_STATUS_RET_NOLOG(ret);
+    GELOGI("NoUseReshapeRemovePass remove useless reshape node:%s", node->GetName().c_str());
     return IsolateAndDeleteNode(node, {kReshapeDataIndex});
+  }
+  return SUCCESS;
+}
+
+Status NoUseReshapeRemovePass::TryRemoveConstShapeInput(ge::NodePtr &reshape_node) {
+  auto shape_input_anchor = reshape_node->GetInDataAnchor(kReshapeShapeIndex);
+  if (shape_input_anchor == nullptr) {
+    return SUCCESS;
+  }
+  GE_CHECK_NOTNULL(shape_input_anchor->GetPeerOutAnchor());
+  auto shape_input = shape_input_anchor->GetPeerOutAnchor()->GetOwnerNode();
+  GE_CHECK_NOTNULL(shape_input);
+  if (shape_input->GetType() != CONSTANT && shape_input->GetType() != CONSTANTOP) {
+    return SUCCESS;
+  }
+  //   op(x)   const(shape)
+  //     \     /
+  //     reshape
+  // const input can unlink but should copy control_dependency
+  auto ret = PassUtils::UnlinkNodeWithControlCopy(reshape_node, kReshapeShapeIndex);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Unlink node %s with control copy failed.", shape_input->GetName().c_str());
+    return ret;
+  }
+
+  // remove const without any data_output
+  if (shape_input->GetOutDataNodesSize() == 0) {
+    auto ret = IsolateAndDeleteNode(shape_input, {});
+    GE_CHK_GRAPH_STATUS_RET(ret, "Fail to remove node %s", shape_input->GetName().c_str());
+    GELOGI("Remove useless shape input const %s.", shape_input->GetName().c_str());
   }
   return SUCCESS;
 }

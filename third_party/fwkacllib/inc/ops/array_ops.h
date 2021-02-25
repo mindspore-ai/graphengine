@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1153,6 +1153,79 @@ REG_OP(EditDistance)
     .OUTPUT(output, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(EditDistance)
 
+/**
+* @brief sort_v2.
+
+* @par Inputs:
+* @li x: An ND tensor of type float16.
+
+* @par Attributes:
+
+* @li axis: An optional int. The dimension to sort along. This value defaults to -1.
+* @li descending: An optional bool. Controls the sorting order (ascending or descending). This value defaults to False.
+
+* @par Outputs:
+* @li y: An ND tensor of type float16.
+
+* @attention Constraints:
+* @li Axis should select the last dim.
+* @li When the sorting data is less than 150K, it is recommended to use this tbe ops,
+ and the descending performance is better than the ascending.
+* @li The upper limit of data on Ascend910 is 2000K.
+*/
+REG_OP(SortV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(axis, Int, -1)
+    .ATTR(descending, Bool, false)
+    .OP_END_FACTORY_REG(SortV2)
+
+/**
+* @brief Expand the input tensor to a compatible shape. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li x: A Tensor. Must be one of the following types:
+*     float16, float32, int32, int8 ,uint8. \n
+* @li shape: A Tensor to specify the shape that the input tensor expanded to. \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x", and the shape specified by input and attr shape \n
+
+* @par Third-party framework compatibility
+* Compatible with the ONNX operator Expand.
+*/
+
+REG_OP(Expand)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .INPUT(shape, TensorType({DT_INT16, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .OP_END_FACTORY_REG(Expand)
+
+/**
+* @brief Expand the input tensor to a compatible shape. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li x: A Tensor. Must be one of the following types:
+*     float16, float32, int32, int8 ,uint8. \n
+
+* @par Attributes:
+* @li shape: A required listInt to specify the shape that the input tensor expanded to. \n
+
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x", and the shape specified by input and attr shape \n
+
+* @par Third-party framework compatibility
+* Compatible with the ONNX operator Expand.
+*/
+
+REG_OP(ExpandD)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .REQUIRED_ATTR(shape, ListInt)
+    .OP_END_FACTORY_REG(ExpandD)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

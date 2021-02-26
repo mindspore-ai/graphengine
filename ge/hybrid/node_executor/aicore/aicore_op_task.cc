@@ -131,7 +131,7 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
   }
 
   void *bin_handle = nullptr;
-  GELOGD("Start to register kernel for node: [%s].", op_desc.GetName().c_str());
+  GELOGD("Start to register kernel for node[%s].", op_desc.GetName().c_str());
   rtDevBinary_t binary;
   std::string json_string;
   GE_IF_BOOL_EXEC(AttrUtils::GetStr(&op_desc, TVM_ATTR_NAME_MAGIC, json_string),
@@ -149,7 +149,7 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
   binary.version = 0;
   binary.data = tbe_kernel->GetBinData();
   binary.length = tbe_kernel->GetBinDataSize();
-  GELOGI("TBE: binary.length: %lu", binary.length);
+  GELOGI("TBE: binary.length: %lu.", binary.length);
   GE_CHK_RT_RET(rtRegisterAllKernel(&binary, &bin_handle));
   handle_ = bin_handle;
   auto holder = std::unique_ptr<TbeHandleHolder>(new (std::nothrow) TbeHandleHolder(handle_));
@@ -351,6 +351,9 @@ Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info)
   GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
                     "Failed calc tiling data of node %s.",
                     node->GetName().c_str());
+  if (is_single_op_) {
+    tiling_info.clear_atomic = false;
+  }
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
   return SUCCESS;
 }

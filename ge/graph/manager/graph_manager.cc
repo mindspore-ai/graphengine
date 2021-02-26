@@ -2558,7 +2558,8 @@ Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge
                                    uint64_t session_id, RunAsyncCallback callback) {
   GELOGI("[GraphManager] Start to run graph async, graph_id=%u, inputsSize=%zu.", graph_id, inputs.size());
 
-  bool ret = prerun_args_q_.Push(PreRunArgs({graph_id, inputs, session_id, GetThreadLocalContext(), callback}));
+  bool ret = prerun_args_q_.Push(PreRunArgs({graph_id, inputs, session_id,
+    GetContext().WorkStreamId(), GetThreadLocalContext(), callback}));
   if (!ret) {
     GELOGE(FAILED, "[GraphManager] Run graph async failed, graph_id=%u.", graph_id);
     return FAILED;

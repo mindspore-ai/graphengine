@@ -223,7 +223,7 @@ class GraphManager {
                                                 const SubGraphInfoPtr &sub_graph_info_ptr,
                                                 const std::string &root_graph_name,
                                                 uint64_t session_id,
-                                                uint64_t work_stream_id;
+                                                uint64_t work_stream_id,
                                                 const GEThreadLocalContext &ge_context);
   Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
   void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);

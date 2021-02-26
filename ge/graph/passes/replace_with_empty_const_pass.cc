@@ -33,8 +33,8 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
     GELOGE(PARAM_INVALID, "Param [opDesc] must not be null.");
     return PARAM_INVALID;
   }
-  if (node->GetType() == CONSTANT || node->GetType() == CONSTANTOP) {
-    GELOGI("Node %s is const. Ignore current pass.", node->GetName().c_str());
+  if (node->GetType() == CONSTANT || node->GetType() == CONSTANTOP || node->GetType() == DATA) {
+    GELOGD("Node %s is const or data. Ignore current pass.", node->GetName().c_str());
     return SUCCESS;
   }
   // Node like no op, it has no output

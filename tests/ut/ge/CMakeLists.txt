@@ -354,6 +354,7 @@ set(COMMON_FORMAT_SRC_FILES
     "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
     "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
     "${GE_CODE_DIR}/ge/graph/manager/util/hcom_util.cc"
+    "${GE_CODE_DIR}/ge/common/dump/dump_manager.cc"
 )
 
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
@@ -730,6 +731,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph_ir/ge_operator_factory_unittest.cc"
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
+    "common/dump_manager_unittest.cc"
     "common/format_transfer_unittest.cc"
     "common/format_transfer_transpose_unittest.cc"
     "common/format_transfer_nchw_5d_unittest.cc"

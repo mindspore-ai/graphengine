@@ -46,6 +46,10 @@ void HybridModelAsyncExecutor::SetModelId(uint32_t model_id) {
   model_id_ = model_id;
 }
 
+void HybridModelAsyncExecutor::SetModelName(const string &model_name) {
+  om_name_ = model_name;
+}
+
 Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> &data) {
   GE_CHK_STATUS_EXEC(data_inputer_->Push(data), return domi::DATA_QUEUE_ISFULL,
                      "Data queue is full, please call again later, model_id %u ", model_id_);

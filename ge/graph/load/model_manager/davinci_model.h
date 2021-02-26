@@ -536,7 +536,7 @@ class DavinciModel {
                                    vector<InputOutputDims> &output_dims) const;
 
   // om file name
-  void SetOmName(string om_name) { om_name_ = om_name; }
+  void SetOmName(const string &om_name) { om_name_ = om_name; }
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }

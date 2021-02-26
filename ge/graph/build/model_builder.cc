@@ -19,6 +19,7 @@
 #include <set>
 #include <unordered_map>
 #include "common/ge/ge_util.h"
+#include "common/dump/dump_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
 #include "graph/attr_value.h"
@@ -429,7 +430,7 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(&model, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_),
                    GELOGE(FAILED, "SetBool of ATTR_NAME_SWITCH_FOR_L1_FUSION failed.");
                    return FAILED);
-  const DumpProperties &dump_properties = PropertiesManager::Instance().GetDumpProperties(session_id_);
+  const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(session_id_);
   bool is_op_debug = dump_properties.IsOpDebugOpen();
   if (is_op_debug) {
     if (!ge::AttrUtils::SetBool(&model, ATTR_OP_DEBUG_FLAG, is_op_debug)) {

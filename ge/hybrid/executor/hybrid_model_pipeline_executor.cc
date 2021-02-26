@@ -1,6 +1,7 @@
 #include "hybrid_model_pipeline_executor.h"
 
 #include "common/math/math_util.h"
+#include "common/dump/dump_manager.h"
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
 
@@ -145,7 +146,7 @@ Status StageExecutor::InitExecutionContext() {
   GE_CHECK_NOTNULL(context_.allocator);
   context_.callback_manager = std::unique_ptr<CallbackManager>(new (std::nothrow) CallbackManager());
   GE_CHECK_NOTNULL(context_.callback_manager);
-  context_.dump_properties = PropertiesManager::Instance().GetDumpProperties(context_.session_id);
+  context_.dump_properties = DumpManager::GetInstance().GetDumpProperties(context_.session_id);
   if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {
     context_.trace_enabled = true;
   }

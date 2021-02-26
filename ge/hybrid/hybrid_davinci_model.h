@@ -57,6 +57,8 @@ class HybridDavinciModel {
 
   void SetDeviceId(uint32_t device_id);
 
+  void SetModelName(const string &model_name);
+
   uint64_t GetSessionId();
 
   Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type);

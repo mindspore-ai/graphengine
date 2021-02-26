@@ -23,6 +23,7 @@
 #include "analyzer/analyzer.h"
 #include "adx_datadump_server.h"
 #include "common/dump/dump_properties.h"
+#include "common/dump/dump_manager.h"
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
@@ -374,13 +375,13 @@ Status InnerSession::AddDumpProperties(const DumpProperties &dump_properties) {
       is_dump_server_inited_ = true;
     }
   }
-  PropertiesManager::Instance().AddDumpProperties(session_id_, dump_properties);
+  DumpManager::GetInstance().AddDumpProperties(session_id_, dump_properties);
   return SUCCESS;
 }
 
 Status InnerSession::RemoveDumpProperties() {
-  PropertiesManager::Instance().RemoveDumpProperties(session_id_);
-  if (is_dump_server_inited_ && PropertiesManager::Instance().GetDumpPropertiesMap().empty()) {
+  DumpManager::GetInstance().RemoveDumpProperties(session_id_);
+  if (is_dump_server_inited_ && DumpManager::GetInstance().GetDumpPropertiesMap().empty()) {
     GE_IF_BOOL_EXEC(AdxDataDumpServerUnInit() != kDumpStatus, GELOGE(PARAM_INVALID, "Data dump server uninit failed");
                     return PARAM_INVALID)
     GELOGI("UnInit adx data dump server success");

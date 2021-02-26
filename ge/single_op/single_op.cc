@@ -199,6 +199,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     if (ret != SUCCESS) {
       return ret;
     }
+    GE_CHK_STATUS_RET(task->OpenDump(stream_), "Open single op %s dump filed",task->GetOpdesc()->GetName().c_str());
     GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(task, kShapeTypeStatic));
   }
 
@@ -279,6 +280,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   GE_CHECK_NOTNULL(op_task_);
 
   GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
+  GE_CHK_STATUS_RET_NOLOG(op_task_->OpenDump(stream_));
   GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;
 }

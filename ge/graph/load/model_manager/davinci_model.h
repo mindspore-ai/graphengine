@@ -840,9 +840,6 @@ class DavinciModel {
 
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
 
-  // get desc info of graph for profiling
-  Status GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_desc_info);
-
   void SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name);
 
   Status InitL1DataDumperArgs();

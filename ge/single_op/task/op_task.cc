@@ -23,6 +23,7 @@
 #include "aicpu/common/aicpu_task_struct.h"
 #include "common/dump/dump_manager.h"
 #include "common/dump/dump_op.h"
+#include "common/profiling/profiling_manager.h"
 #include "common/formats/formats.h"
 #include "common/math/math_util.h"
 #include "framework/common/debug/log.h"
@@ -108,15 +109,29 @@ void OpTask::SetModelArgs(std::string model_name, uint32_t model_id) {
   model_id_ = model_id;
 }
 
-Status OpTask::GetProfilingArgs(std::string &model_name, std::string &op_name, uint32_t &model_id,
-                                uint32_t &block_dim) {
-  model_name = model_name_;
-  model_id = model_id_;
-  block_dim = block_dim_;
+Status OpTask::GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id) {
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  auto rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Get task_id and stream_id failed ret: 0x%X.", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
   GE_CHECK_NOTNULL(op_desc_);
-  op_name = op_desc_->GetName();
+  string op_name = op_desc_->GetName();
+  GELOGD("Get profiling args of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
+  model_id = model_id_;
+  task_desc_info.model_name = model_name_;
+  task_desc_info.block_dim = block_dim_;
+  task_desc_info.task_id = task_id;
+  task_desc_info.stream_id = stream_id;
+  task_desc_info.op_name = op_name;
+  task_desc_info.op_type = op_desc_->GetType();
+  auto &prof_mgr = ProfilingManager::Instance();
+  prof_mgr.GetOpInputOutputInfo(op_desc_, task_desc_info);
   return SUCCESS;
 }
+
 Status OpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
   return UNSUPPORTED;
 }
@@ -153,7 +168,7 @@ Status OpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   return UNSUPPORTED;
 }
 
-uint32_t OpTask::GetTaskType() const { return kTaskTypeInvalid; }
+const std::string &OpTask::GetTaskType() const { return kTaskTypeInvalid; }
 
 TbeOpTask::~TbeOpTask() {
   if (sm_desc_ != nullptr) {
@@ -171,7 +186,7 @@ size_t TbeOpTask::GetArgSize() const { return arg_size_; }
 
 const std::string &TbeOpTask::GetStubName() const { return stub_name_; }
 
-uint32_t TbeOpTask::GetTaskType() const { return kTaskTypeAicore; }
+const std::string &TbeOpTask::GetTaskType() const { return kTaskTypeAicore; }
 
 void TbeOpTask::SetHandle(void *handle) {
   this->handle_ = handle;
@@ -834,7 +849,7 @@ Status AiCpuBaseTask::UpdateArgTable(const SingleOpModelParam &param) {
   return DoUpdateArgTable(param, false);
 }
 
-uint32_t AiCpuBaseTask::GetTaskType() const { return kTaskTypeAicpu; }
+const std::string &AiCpuBaseTask::GetTaskType() const { return kTaskTypeAicpu; }
 
 void AiCpuTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   arg_base = reinterpret_cast<uintptr_t *>(io_addr_host_.data());

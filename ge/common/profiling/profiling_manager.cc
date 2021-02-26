@@ -20,6 +20,8 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/string_util.h"
 #include "graph/ge_context.h"
+#include "graph/utils/type_utils.h"
+#include "graph/types.h"
 #include "runtime/base.h"
 #include "graph/load/model_manager/davinci_model.h"
 
@@ -31,12 +33,30 @@ const char *const kBpPoint = "bp_point";
 #ifdef DAVINCI_SUPPORT_PROFILING
 const size_t kReportMaxLen = 2048;
 const int32_t kMaxDeviceNum = 256;
+const uint32_t kInteval = 2;
 const std::string kConfigNumsdev = "devNums";
 const std::string kConfigDevIdList = "devIdList";
 const std::string kProfStart = "prof_start";
 const std::string kProfStop = "prof_stop";
 const std::string kProfModelSubscribe = "prof_model_subscribe";
 const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
+const std::string kModelName = "model_name";
+const std::string kModelId = "model_id";
+const std::string kOpNmae = "op_name";
+const std::string kOptype = "op_type";
+const std::string kBlockDim = "block_dims";
+const std::string kTaskId = "task_id";
+const std::string kStreamId = "stream_id";
+const std::string kShapeType = "shape_type";
+const std::string kCurIterNum = "cur_iter_num";
+const std::string kTaskType = "task_type";
+const std::string kInput = "input";
+const std::string kOutput = "output";
+const std::string kFormat = "format";
+const std::string kDataType = "data_type";
+const std::string kShape = "shape";
+const std::string kIdx = "idx";
+
 #endif
 }  // namespace
 
@@ -206,118 +226,69 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
 #endif
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingOpInputOutInfo(
+    const TaskDescInfo &task, Json &task_json) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  for (size_t i = 0; i < task.input_format.size(); i++) {
+    Json tmp_input;
+    tmp_input[kIdx] = i;
+    Format format = task.input_format[i];
+    tmp_input[kFormat] = TypeUtils::FormatToSerialString(format);
+    DataType data_type = task.input_data_type[i];
+    tmp_input[kDataType] = TypeUtils::DataTypeToSerialString(data_type);
+    tmp_input[kShape] = task.input_shape[i];
+    task_json[kInput] += tmp_input;
+  }
+
+  for (size_t i = 0; i < task.output_format.size(); i++) {
+    Json tmp_output;
+    tmp_output[kIdx] = i;
+    Format format = task.output_format[i];
+    tmp_output[kFormat] =  TypeUtils::FormatToSerialString(format);
+    DataType data_type = task.output_data_type[i];
+    tmp_output[kDataType] = TypeUtils::DataTypeToSerialString(data_type);
+    tmp_output[kShape] = task.output_shape[i];
+    task_json[kOutput] += tmp_output;
+  }
+#endif
+}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingTaskDescInfo(
-    uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id) {
+  uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
-  std::string data;
   for (const auto &task : task_desc_info) {
-    std::string model_name = task.model_name;
-    std::string op_name = task.op_name;
-    uint32_t block_dim = task.block_dim;
-    uint32_t task_id = task.task_id;
-    uint32_t stream_id = task.stream_id;
-    std::string shape_type = task.shape_type;
-    int64_t cur_iter_num = task.cur_iter_num;
-    uint32_t task_type = task.task_type;
-    data = model_name.append(" ")
-                     .append(op_name).append(" ")
-                     .append(std::to_string(block_dim)).append(" ")
-                     .append(std::to_string(task_id)).append(" ")
-                     .append(std::to_string(stream_id)).append(" ")
-                     .append(std::to_string(model_id)).append(" ")
-                     .append(shape_type).append(" ")
-                     .append(std::to_string(cur_iter_num)).append(" ")
-                     .append(std::to_string(task_type)).append("\n");
+    Json task_info;
+    task_info[kModelName] = task.model_name;
+    task_info[kModelId] = model_id;
+    task_info[kOpNmae] = task.op_name;
+    task_info[kOptype] = task.op_type;
+    task_info[kBlockDim] = task.block_dim;
+    task_info[kTaskType] = task.task_type;
+    task_info[kTaskId] = task.task_id;
+    task_info[kStreamId] = task.stream_id;
+    task_info[kCurIterNum] = task.cur_iter_num;
+    task_info[kShapeType] = task.shape_type;
+    ProfilingOpInputOutInfo(task, task_info);
 
-    ReporterData reporter_data{};
-    reporter_data.deviceId = device_id;
-    reporter_data.data = (unsigned char *)data.c_str();
-    reporter_data.dataLen = data.size();
-    int ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "task_desc_info", sizeof("task_desc_info"));
-    if (ret != EOK) {
-      GELOGE(ret, "Report data tag of task_desc_info memcpy error!");
+    std::string reported_data;
+    try {
+      reported_data = task_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
+    } catch (std::exception &e) {
+      GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+      return ;
+    } catch (...) {
+      GELOGE(FAILED, "Failed to convert JSON to string.");
       return;
     }
-
-    int32_t cb_ret = CallMsprofReport(reporter_data);
-    if (cb_ret != 0) {
-      GELOGE(cb_ret, "Reporter data of task_desc_info failed, ret:%d", cb_ret);
-      return;
-    }
-  }
-
-  data.clear();
-#endif
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingGraphDescInfo(
-    uint32_t model_id, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info, const int32_t &device_id) {
-#ifdef DAVINCI_SUPPORT_PROFILING
-  std::string data;
-  for (const auto &graph : compute_graph_desc_info) {
-    data.append("model_name:")
-        .append(graph.model_name)
-        .append(" op_name:")
-        .append(graph.op_name)
-        .append(" op_type:")
-        .append(graph.op_type);
-    for (size_t i = 0; i < graph.input_format.size(); ++i) {
-      data.append(" input_id:")
-          .append(std::to_string(i))
-          .append(" input_format:")
-          .append(std::to_string(graph.input_format.at(i)))
-          .append(" input_data_type:")
-          .append(std::to_string(graph.input_data_type.at(i)))
-          .append(" input_shape:\"");
-      size_t input_shape_len = graph.input_shape.at(i).size();
-      if (input_shape_len == 0) {
-        data.append("");
-      } else if (input_shape_len == 1) {
-        data.append(std::to_string(graph.input_shape.at(i).at(0)));
-      } else {
-        for (size_t j = 0; j < input_shape_len - 1; ++j) {
-          data.append(std::to_string(graph.input_shape.at(i).at(j))).append(",");
-        }
-        data.append(std::to_string(graph.input_shape.at(i).at(input_shape_len - 1)));
-      }
-
-      data.append("\"");
-    }
-
-    for (size_t i = 0; i < graph.output_format.size(); ++i) {
-      data.append(" output_id:")
-          .append(std::to_string(i))
-          .append(" output_format:")
-          .append(std::to_string(graph.output_format.at(i)))
-          .append(" output_data_type:")
-          .append(std::to_string(graph.output_data_type.at(i)))
-          .append(" output_shape:\"");
-      size_t output_shape_len = graph.output_shape.at(i).size();
-      if (output_shape_len == 0) {
-        data.append("");
-      } else if (output_shape_len == 1) {
-        data.append(std::to_string(graph.output_shape.at(i).at(0)));
-      } else {
-        for (size_t j = 0; j < output_shape_len - 1; ++j) {
-          data.append(std::to_string(graph.output_shape.at(i).at(j))).append(",");
-        }
-        data.append(std::to_string(graph.output_shape.at(i).at(output_shape_len - 1)));
-      }
-      data.append("\"");
-    }
-
-    data.append(" model_id:").append(std::to_string(model_id));
-    data.append(" task_id:").append(std::to_string(graph.task_id));
-    data.append(" stream_id:").append(std::to_string(graph.stream_id));
-    data.append("\n");
-
-    GraphDescReport(device_id, data);
-    data.clear();
+    reported_data.append(",")
+                 .append("\n");
+    ReportData(device_id, reported_data, "task_desc_info");
   }
 #endif
 }
 
-void ProfilingManager::GraphDescReport(const int32_t &device_id, const string &data) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportData(
+    const int32_t &device_id, const string &data, const string &tag_name) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   ReporterData reporter_data{};
   int ret = -1;
@@ -325,36 +296,38 @@ void ProfilingManager::GraphDescReport(const int32_t &device_id, const string &d
   size_t index = data.size() / kReportMaxLen;
   if (index >= 1) {
     reporter_data.deviceId = device_id;
-    ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "graph_desc_info", sizeof("graph_desc_info"));
-    GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag of graph_desc_info memcpy error!"); return;);
+    ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, tag_name.c_str(), tag_name.size());
+    GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag [%s] memcpy error!", tag_name.c_str()); return;);
     for (size_t i = 0; i < index; ++i) {
       reporter_data.data = (unsigned char *)data.c_str() + kReportMaxLen * i;
       reporter_data.dataLen = kReportMaxLen;
       cb_ret = CallMsprofReport(reporter_data);
-      GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data of graph_desc_info failed, ret:%d", cb_ret); return;);
+      GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data [%s] failed, ret:%d", tag_name.c_str(), cb_ret);
+                      return;);
     }
     reporter_data.dataLen = data.size() - kReportMaxLen * index;
     if (reporter_data.dataLen != 0) {
       reporter_data.data = (unsigned char *)data.c_str() + kReportMaxLen * index;
       cb_ret = CallMsprofReport(reporter_data);
-      GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data of graph_desc_info failed, ret:%d", cb_ret); return;);
+      GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data [%s] failed, ret:%d", tag_name.c_str(), cb_ret);
+                      return;);
     }
   } else {
     reporter_data.deviceId = device_id;
     reporter_data.data = (unsigned char *)data.c_str();
     reporter_data.dataLen = data.size();
-    ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, "graph_desc_info", sizeof("graph_desc_info"));
-    GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag of graph_desc_info memcpy error!"); return;);
+    ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, tag_name.c_str(), tag_name.size());
+    GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag [%s] memcpy error!", tag_name.c_str()); return;);
 
     cb_ret = CallMsprofReport(reporter_data);
-    GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data of graph_desc_info failed, ret:%d", cb_ret); return;);
+    GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data [%s] failed, ret:%d", tag_name.c_str(), cb_ret);
+                    return;);
   }
 #endif
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportProfilingData(
-    uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
-    const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info) {
+    uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   int32_t logic_device_id = 0;
   rtError_t rt_ret = rtGetDevice(&logic_device_id);
@@ -365,8 +338,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
   GELOGD("current logic_device_id:%d", logic_device_id);
   GELOGD("start ProfilingTaskDescInfo.");
   ProfilingTaskDescInfo(model_id, task_desc_info, logic_device_id);
-  GELOGD("start ProfilingGraphDescInfo.");
-  ProfilingGraphDescInfo(model_id, compute_graph_desc_info, logic_device_id);
   GELOGD("Report profiling data for GE end.");
 #endif
 }
@@ -811,6 +782,44 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMs
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_REPORT),
       static_cast<void *>(&reporter_data), sizeof(ReporterData));
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInputOutputInfo(
+    const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
+  std::vector<Format> input_format;
+  std::vector<std::vector<int64_t>> input_shape;
+  std::vector<DataType> input_data_type;
+  for (size_t i = 0; i < op->GetAllInputsSize(); ++i) {
+    GeTensorDescPtr input_tensor_desc = op->MutableInputDesc(i);
+    if (input_tensor_desc == nullptr) {
+      continue;
+    }
+    input_format.emplace_back(input_tensor_desc->GetFormat());
+    input_shape.emplace_back(input_tensor_desc->GetShape().GetDims());
+    input_data_type.emplace_back(input_tensor_desc->GetDataType());
+  }
+  std::vector<Format> output_format;
+  std::vector<std::vector<int64_t>> output_shape;
+  std::vector<DataType> output_data_type;
+  for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
+    GeTensorDescPtr output_tensor_desc = op->MutableOutputDesc(j);
+    if (output_tensor_desc == nullptr) {
+      continue;
+    }
+    output_format.emplace_back(output_tensor_desc->GetFormat());
+    output_shape.emplace_back(output_tensor_desc->GetShape().GetDims());
+    output_data_type.emplace_back(output_tensor_desc->GetDataType());
+  }
+
+  std::vector<Format> format_default =  { FORMAT_NULL };
+  std::vector<std::vector<int64_t>> shape_default = { {0} };
+  std::vector<DataType> data_type_default = { DT_UNDEFINED };
+  task_desc_info.input_format = input_format.empty() ? format_default : input_format;
+  task_desc_info.input_shape = input_shape.empty() ? shape_default : input_shape;
+  task_desc_info.input_data_type = input_data_type.empty() ? data_type_default : input_data_type;
+  task_desc_info.output_format = output_format.empty() ? format_default : output_format;
+  task_desc_info.output_shape = output_shape.empty() ? shape_default : output_shape;
+  task_desc_info.output_data_type = output_data_type.empty() ? data_type_default : output_data_type;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpPoint(

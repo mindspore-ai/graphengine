@@ -54,6 +54,8 @@ namespace {
 
 }  // namespace
 namespace ge {
+class OpDesc;
+using OpDescPtr = std::shared_ptr<OpDesc>;
 struct DeviceSubsInfo {
   uint64_t module;
   uint32_t subscribe_count;
@@ -82,12 +84,10 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   bool ProfilingModelExecuteOn() const;
   // is_execute_profiling_ only used by ge option and env
   bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; }
-  void ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
-                           const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info);
+  void ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info);
   void ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
                              const int32_t &device_id);
-  void ProfilingGraphDescInfo(uint32_t model_id, const std::vector<ComputeGraphDescInfo> &compute_graph_desc_info,
-                              const int32_t &device_id);
+  void ProfilingOpInputOutInfo(const TaskDescInfo &task, Json &task_json);
   Status PluginInit() const;
   void PluginUnInit() const;
   Status CallMsprofReport(ReporterData &reporter_data) const;
@@ -95,6 +95,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void SetMsprofCtrlCallback(MsprofCtrlCallback func) { prof_cb_.msprofCtrlCallback = func; }
   void SetMsprofReporterCallback(MsprofReporterCallback func) { prof_cb_.msprofReporterCallback = func; }
   void GetFpBpPoint(std::string &fp_point, std::string &bp_point);
+  void GetOpInputOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const;
+  void ReportData(const int32_t &device_id, const std::string &data, const std::string &tag_name);
  private:
   Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
   Status ParseOptions(const std::string &options);
@@ -103,7 +105,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   Status ProfParseDeviceId(const std::map<std::string, std::string> &config_para,
                                vector<int32_t> &device_list);
   uint64_t GetProfilingModule();
-  void GraphDescReport(const int32_t &device_id, const string &data);
   void UpdateDeviceIdModuleMap(string prof_type, uint64_t module, const vector<int32_t> &device_list);
   void UpdateSubscribeDeviceModuleMap(std::string prof_type, uint32_t device_id, uint64_t module);
 

@@ -890,4 +890,11 @@ TEST_F(UtestDavinciModel, Sink_model_profile) {
   model.SinkModelProfile();
 }
 
+TEST_F(UtestDavinciModel, Sink_time_profile) {
+  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = MsprofReport;
+  DavinciModel model(0, nullptr);
+  InputData current_data;
+  model.SinkTimeProfile(current_data);
+}
+
 }  // namespace ge

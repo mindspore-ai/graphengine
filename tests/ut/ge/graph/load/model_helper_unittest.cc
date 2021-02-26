@@ -18,6 +18,8 @@
 #define private public
 #define protected public
 #include "framework/common/helper/model_helper.h"
+#include "framework/omg/model_tool.h"
+#include "framework/omg/ge_init.h"
 #include "ge/model/ge_model.h"
 #undef private
 #undef protected

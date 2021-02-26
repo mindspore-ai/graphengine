@@ -92,6 +92,32 @@ const uint32_t kEndOfSequence = 0x0704000a;
 const uint32_t kEndOfSequenceNew = 507005;
 const int32_t kModelAbortNormal = 0x0704000e;
 const int32_t kModelAbortNormalNew = 507024;
+const uint32_t kInteval = 2;
+const char *const kModelName = "model_name";
+const char *const kModeleId = "model_id";
+const char *const kLoadStartTime = "load_start_time";
+const char *const kLoadEndTime = "load_end_time";
+const char *const kFusionOpInfo = "fusion_op_info";
+const char *const kFusionOpName = "fusion_op_name";
+const char *const kOriginalOpNum = "origin_op_num";
+const char *const kOriginalOpName = "origin_op_name";
+const char *const kStreamId = "stream_id";
+const char *const kFusionOpMemoryInfo = "memory_info";
+const char *const kInputSize = "input_size";
+const char *const kOutputSize = "output_size";
+const char *const kWeightSize = "weight_size";
+const char *const kWorkSpaceSize = "workspace_size";
+const char *const kTotalSize = "total_size";
+const char *const kTaskCount = "task_count";
+const char *const kTaskId = "task_id";
+const char* const kRequestId = "request_id";
+const char* const kThreadId = "thread_id";
+const char* const kInputBeginTime = "input_begin_time";
+const char* const kInputEndTime = "input_end_time";
+const char* const kInferBeginTime = "infer_begin_time";
+const char* const kInferEndTime = "infer_end_time";
+const char* const kOutputBeginTime = "output_start_time";
+const char* const kOutputEndTime = "output_end_time";
 
 inline bool IsDataOp(const std::string &node_type) {
   return (node_type == DATA_TYPE) || (node_type == AIPP_DATA_TYPE) || (node_type == ANN_DATA_TYPE);
@@ -744,13 +770,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
 }
 
 Status DavinciModel::ReportProfilingData() {
-  std::vector<ComputeGraphDescInfo> compute_graph_desc_info;
-  Status ret = GetComputeGraphInfo(compute_graph_desc_info);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "GetComputeGraphInfo failed.");
-    return ret;
-  }
-  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo(), compute_graph_desc_info);
+  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo());
   GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
 
   return SUCCESS;
@@ -2202,173 +2222,101 @@ Status DavinciModel::InitModelProfile() {
 }
 
 Status DavinciModel::SinkModelProfile() {
-  // profiling plugin must be registered
   auto &prof_mgr = ProfilingManager::Instance();
-  ReporterData reporter_data{};
-  // report model data tag name
-  std::string tag_name("model_load_info_" + std::to_string(this->Id()));
-  GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
-                   return FAILED, "Sink model tag memcpy error.");
-
   // Model Header
   std::string name = om_name_.empty() ? name_ : om_name_;
-  size_t name_len = name.size();
-  reporter_data.deviceId = device_id_;
-  reporter_data.data = (unsigned char *)&name_len;
-  reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
-
-  reporter_data.data = (unsigned char *)name.c_str();
-  reporter_data.dataLen = name.size();
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
-
   uint32_t model_id = this->Id();
-  reporter_data.data = (unsigned char *)&model_id;
-  reporter_data.dataLen = sizeof(uint32_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
-
-  // Load Start/End Time
   int64_t start_time = this->GetLoadBeginTime();
-  reporter_data.data = (unsigned char *)&start_time;
-  reporter_data.dataLen = sizeof(int64_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
-
   int64_t end_time = this->GetLoadEndTime();
-  reporter_data.data = (unsigned char *)&end_time;
-  reporter_data.dataLen = sizeof(int64_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
 
+  Json model_load_info;
+  model_load_info[kModelName] = name;
+  model_load_info[kModeleId] = model_id;
+  model_load_info[kLoadStartTime] = start_time;
+  model_load_info[kLoadEndTime] = end_time;
+  // fusion op info
   using CIT = std::multimap<uint32_t, uint32_t>::const_iterator;
   using Range = std::pair<CIT, CIT>;
   for (const ProfileInfo &profile : profile_list_) {
-    // op name after fusion
+    Json fusion_op_info;
     string fusion_op_name = profile.fusion_info.op_name;
-    int32_t fusion_op_name_len = fusion_op_name.size() == 0 ? 1 : fusion_op_name.size();
-    reporter_data.data = (unsigned char *)&fusion_op_name_len;
-    reporter_data.dataLen = sizeof(int32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    reporter_data.data = (unsigned char *)fusion_op_name.c_str();
-    reporter_data.dataLen = fusion_op_name_len;
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    // original op name before fusion
     uint32_t op_num = profile.fusion_info.original_op_names.size();
-    reporter_data.data = (unsigned char *)&op_num;
-    reporter_data.dataLen = sizeof(int32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
+    vector<string> original_name;
     for (uint32_t k = 0; k < op_num; k++) {
-      std::string op_name = profile.fusion_info.original_op_names[k];
-      int32_t op_name_len = op_name.size() == 0 ? 1 : op_name.size();
-      reporter_data.data = (unsigned char *)&op_name_len;
-      reporter_data.dataLen = sizeof(int32_t);
-      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                       "Reporter data fail, model id:%u.", this->Id());
-      reporter_data.data = (unsigned char *)op_name.c_str();
-      reporter_data.dataLen = op_name_len;
-      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                       "Reporter data fail, model id:%u.", this->Id());
+      original_name.emplace_back(profile.fusion_info.original_op_names[k]);
     }
-
-    // stream id info
     uint32_t stream_id = 0;
     auto iter = profiler_report_op_info_.find(fusion_op_name);
     if (iter != profiler_report_op_info_.end()) {
       stream_id = iter->second.second;
     }
-    reporter_data.data = (unsigned char *)&stream_id;
-    reporter_data.dataLen = sizeof(int32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    // memory info
-    reporter_data.data = (unsigned char *)&profile.memory_info;
-    reporter_data.dataLen = sizeof(profile.memory_info);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
-    // task info
-    reporter_data.data = (unsigned char *)&profile.task_count;
-    reporter_data.dataLen = sizeof(uint32_t);
-    GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                     "Reporter data fail, model id:%u.", this->Id());
-
+    fusion_op_info[kFusionOpName] = fusion_op_name;
+    fusion_op_info[kOriginalOpNum] = op_num;
+    fusion_op_info[kOriginalOpName] = original_name;
+    fusion_op_info[kStreamId] = stream_id;
+    fusion_op_info[kFusionOpMemoryInfo][kInputSize] = profile.memory_info.input_size;
+    fusion_op_info[kFusionOpMemoryInfo][kOutputSize] = profile.memory_info.output_size;
+    fusion_op_info[kFusionOpMemoryInfo][kWeightSize] = profile.memory_info.weight_size;
+    fusion_op_info[kFusionOpMemoryInfo][kWorkSpaceSize] = profile.memory_info.workspace_size;
+    fusion_op_info[kFusionOpMemoryInfo][kTotalSize] = profile.memory_info.total_size;
+    fusion_op_info[kTaskCount] = profile.task_count;
+    vector<uint32_t> task_id;
     Range task_range = op_id_map_.equal_range(profile.fusion_info.op_index);
     for (CIT idx = task_range.first; idx != task_range.second; ++idx) {
-      uint32_t task_id = idx->second;
-      reporter_data.data = (unsigned char *)&task_id;
-      reporter_data.dataLen = sizeof(uint32_t);
-      GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                       "Reporter data fail, model id:%u.", this->Id());
+      task_id.push_back(idx->second);
     }
+    fusion_op_info[kTaskId] = task_id;
+    model_load_info[kFusionOpInfo] += fusion_op_info;
   }
 
+  std::string tag_name("model_load_info_" + std::to_string(this->Id()));
+  std::string reported_data;
+  try {
+    reported_data = model_load_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
+  } catch (std::exception &e) {
+    GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+  } catch (...) {
+    GELOGE(FAILED, "Failed to convert JSON to string.");
+  }
+  reported_data.append(",")
+               .append("\n");
+  prof_mgr.ReportData(device_id_, reported_data, tag_name);
   return SUCCESS;
 }
 
 Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
-  // profiling plugin must be registered
   auto &prof_mgr = ProfilingManager::Instance();
-  ReporterData reporter_data{};
+
+  string name = om_name_.empty() ? name_ : om_name_;
+  Json model_time_info;
+  model_time_info[kModelName] = name;
+  model_time_info[kModeleId] = this->Id();
+  model_time_info[kRequestId] = current_data.request_id;
+  model_time_info[kThreadId] = GetDataInputTid();
+  model_time_info[kInputBeginTime] = time_info_.processBeginTime;
+  model_time_info[kInputEndTime] = time_info_.processEndTime;
+  model_time_info[kInferBeginTime] = time_info_.inferenceBeginTime;
+  model_time_info[kInferEndTime] = time_info_.inferenceEndTime;
+  model_time_info[kOutputBeginTime] = time_info_.dumpBeginTime;
+  model_time_info[kOutputEndTime] = time_info_.dumpEndTime;
+
   // report model data tag name
   std::string tag_name;
   tag_name.append("model_time_info_")
-      .append(std::to_string(this->Id()))
-      .append("_")
-      .append(std::to_string(current_data.index));
-
-  GE_CHK_BOOL_EXEC(memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN, tag_name.c_str(), tag_name.size()) == EOK,
-                   return FAILED, "Sink model tag memcpy error.");
-  // device id
-  reporter_data.deviceId = device_id_;
-
-  // Model Header
-  string name;
-  if (!om_name_.empty()) {
-    name = om_name_;
-  } else {
-    name = name_;
+    .append(std::to_string(this->Id()))
+    .append("_")
+    .append(std::to_string(current_data.index));
+  std::string reported_data;
+  try {
+    reported_data = model_time_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
+  } catch (std::exception &e) {
+    GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+  } catch (...) {
+    GELOGE(FAILED, "Failed to convert JSON to string.");
   }
-  size_t name_len = name.size();
-  reporter_data.data = (unsigned char *)&name_len;
-  reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
-
-  reporter_data.data = (unsigned char *)name.c_str();
-  reporter_data.dataLen = name.size();
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u.", this->Id());
-
-  // request id
-  uint64_t request_id = current_data.request_id;
-  reporter_data.data = (unsigned char *)&request_id;
-  reporter_data.dataLen = sizeof(uint32_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
-
-  // thread id
-  int32_t thread_id = GetDataInputTid();
-  reporter_data.data = (unsigned char *)&thread_id;
-  reporter_data.dataLen = sizeof(int32_t);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
-
-  // time info
-  time_info_.modelId = this->Id();
-  reporter_data.data = (unsigned char *)&time_info_;
-  reporter_data.dataLen = sizeof(struct timeInfo);
-  GE_CHK_BOOL_EXEC(prof_mgr.CallMsprofReport(reporter_data) == 0, return FAILED,
-                   "Reporter data fail, model id:%u, data index:%u.", this->Id(), current_data.index);
+  reported_data.append(",")
+               .append("\n");
+  prof_mgr.ReportData(device_id_, reported_data, tag_name);
 
   return SUCCESS;
 }
@@ -3069,13 +3017,15 @@ void DavinciModel::SaveProfilingTaskDescInfo(const OpDescPtr &op, const TaskInfo
     task_desc_info.model_name = name_;
   }
   task_desc_info.op_name = op->GetName();
+  task_desc_info.op_type = op->GetType();
   task_desc_info.block_dim = task_def.kernel().block_dim();
   task_desc_info.task_id = task->GetTaskID();
   task_desc_info.stream_id = task->GetStreamId();
   task_desc_info.shape_type = "static";
   task_desc_info.cur_iter_num = 0;
-  // task type
   task_desc_info.task_type = kTaskTypeInvalid;
+  auto &prof_mgr = ProfilingManager::Instance();
+  prof_mgr.GetOpInputOutputInfo(op, task_desc_info);
   auto model_task_type = static_cast<rtModelTaskType_t>(task_def.type());
   if (model_task_type == RT_MODEL_TASK_KERNEL) {
     const domi::KernelDef &kernel_def = task_def.kernel();
@@ -3107,7 +3057,6 @@ void DavinciModel::SaveProfilingTaskDescInfo(const OpDescPtr &op, const TaskInfo
       task_desc_info_.emplace_back(task_desc_info);
     }
   }
-  return;
 }
 
 Status DavinciModel::DistributeTask() {
@@ -4006,41 +3955,6 @@ void DavinciModel::PushHcclStream(rtStream_t value) {
 void DavinciModel::SaveHcclFollowStream(int64_t main_stream_id, rtStream_t stream) {
   std::lock_guard<std::mutex> lock(capacity_of_stream_mutex_);
   main_follow_stream_mapping_[main_stream_id].emplace_back(stream);
-}
-
-Status DavinciModel::GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_desc_info) {
-  auto &all_op_desc = data_dumper_.GetAllOpDescInfo();
-  for (auto &op_desc : all_op_desc) {
-    ComputeGraphDescInfo compute_graph_info;
-    if (!om_name_.empty()) {
-      compute_graph_info.model_name = om_name_;
-    } else {
-      compute_graph_info.model_name = name_;
-    }
-
-    std::vector<Format> format =  { FORMAT_NULL };
-    std::vector<std::vector<int64_t>> shape = { {0} };
-    std::vector<DataType> data_type = { DT_UNDEFINED };
-    compute_graph_info.op_name = op_desc.op_name;
-    compute_graph_info.op_type = op_desc.op_type;
-    compute_graph_info.input_format = op_desc.input_format.empty() ? format : op_desc.input_format;
-    compute_graph_info.input_shape = op_desc.input_shape.empty() ? shape : op_desc.input_shape;
-    compute_graph_info.input_data_type = op_desc.input_data_type.empty() ? data_type : op_desc.input_data_type;
-    compute_graph_info.output_format = op_desc.output_format.empty() ? format :  op_desc.output_format;
-    compute_graph_info.output_shape = op_desc.output_shape.empty() ? shape : op_desc.output_shape;
-    compute_graph_info.output_data_type = op_desc.output_data_type.empty() ? data_type : op_desc.output_data_type;
-    uint32_t task_id = 0;
-    uint32_t stream_id = 0;
-    auto iter = profiler_report_op_info_.find(op_desc.op_name);
-    if (iter != profiler_report_op_info_.end()) {
-      task_id = iter->second.first;
-      stream_id = iter->second.second;
-    }
-    compute_graph_info.task_id = task_id;
-    compute_graph_info.stream_id = stream_id;
-    graph_desc_info.emplace_back(compute_graph_info);
-  }
-  return SUCCESS;
 }
 
 void DavinciModel::SetTotalFixedAddrsSize(string tensor_name, int64_t fix_addr_size) {

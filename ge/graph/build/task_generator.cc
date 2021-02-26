@@ -852,7 +852,7 @@ Status TaskGenerator::FindProfilingTaskIndex(const ComputeGraphPtr &graph, Profi
 
   // subgraph  of dynamic graph no need to find index, has been found in parent graph
   if (IsSubGraphOfDynamicGraph(graph)) {
-    GELOGI("Graph[%s] is subgraph of dynamic graph, no nned to find index.", graph->GetName().c_str());
+    GELOGI("Graph[%s] is subgraph of dynamic graph, no need to find index.", graph->GetName().c_str());
     return SUCCESS;
   }
 

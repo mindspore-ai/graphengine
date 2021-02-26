@@ -113,12 +113,9 @@ class TaskContext {
   void *handle_ = nullptr;
 
   const std::vector<TaskDescInfo>& GetProfilingTaskDescInfo() const { return task_desc_info; }
-  Status SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t stream_id, uint32_t task_type, uint32_t block_dim);
+  Status SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t stream_id,
+                                   const std::string &task_type, uint32_t block_dim);
   void ClearProfilingTaskDescInfo() { task_desc_info.clear(); }
-
-  const std::vector<ComputeGraphDescInfo>& GetProfilingGraphDescInfo() const { return compute_graph_info; }
-  Status SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream_id);
-  void ClearProfilingGraphDescInfo() { compute_graph_info.clear(); }
 
  private:
   TaskContext(GraphExecutionContext *execution_context,
@@ -141,7 +138,6 @@ class TaskContext {
   uint32_t task_id_ = 0;
   uint32_t stream_id_ = 0;
   std::vector<TaskDescInfo> task_desc_info;
-  std::vector<ComputeGraphDescInfo> compute_graph_info;
 };
 }  // namespace hybrid
 }  // namespace ge

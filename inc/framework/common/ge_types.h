@@ -57,9 +57,9 @@ const char *const GE_ENGINE_ATTR_MEM_TYPE_HBM = "HBM";
 const char *const GE_OPTION_EXEC_PLACEMENT = "ge.exec.placement";
 
 // profiling data
-const uint32_t kTaskTypeAicore = 0;
-const uint32_t kTaskTypeAicpu = 1;
-const uint32_t kTaskTypeInvalid = 0xFFFF;
+const std::string kTaskTypeAicore = "AI_CORE";
+const std::string kTaskTypeAicpu = "AI_CPU";
+const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
 
 // Data cache, including data address and length
 struct DataBuffer {
@@ -251,27 +251,19 @@ struct Options {
 struct TaskDescInfo {
   std::string model_name;
   std::string op_name;
+  std::string op_type;
   uint32_t block_dim;
   uint32_t task_id;
   uint32_t stream_id;
   std::string shape_type;
   int64_t cur_iter_num;
-  uint32_t task_type;
-};
-
-// Profiling info of graph
-struct ComputeGraphDescInfo {
-  std::string model_name;
-  std::string op_name;
-  std::string op_type;
+  std::string task_type;
   std::vector<Format> input_format;
   std::vector<std::vector<int64_t>> input_shape;
   std::vector<DataType> input_data_type;
   std::vector<Format> output_format;
   std::vector<std::vector<int64_t>> output_shape;
   std::vector<DataType> output_data_type;
-  uint32_t task_id;
-  uint32_t stream_id;
 };
 
 struct OpDescInfo {

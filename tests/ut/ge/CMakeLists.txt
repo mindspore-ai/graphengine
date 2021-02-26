@@ -761,7 +761,7 @@ set(GENERATOR_TEST_FILES
 )
 
 set(SINGLE_OP_TEST_FILES
-    #"single_op/single_op_model_unittest.cc"
+    "single_op/single_op_model_unittest.cc"
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
     "single_op/single_op_task_unittest.cc"

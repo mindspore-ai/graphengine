@@ -63,8 +63,8 @@ class GraphPrepare {
   Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
-  Status UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string,string> &graph_option);
-  Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input, const std::map<string,string> &graph_option);
+  Status UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option);
+  Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option);
   Status CheckConstOp();
   Status VerifyConstOp(const NodePtr &node);
   Status CheckUserInput(const std::vector<GeTensor> &user_input);

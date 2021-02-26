@@ -157,8 +157,8 @@ ge::Status GraphMemoryAssigner::AssignMemory2HasRefAttrNode() {
 }
 
 ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &output_desc,
-                                                                  int64_t dim_index, int64_t &output_mem_size,
-                                                                  int64_t &batch_dim_num, int64_t &out_size) {
+                                             int64_t dim_index, int64_t &output_mem_size,
+                                             int64_t &batch_dim_num, int64_t &out_size) {
   graphStatus graph_status = ge::TensorUtils::GetSize(*output_desc, out_size);
   if (graph_status != GRAPH_SUCCESS) {
     GELOGE(FAILED, "Opdesc GetSize failed!");

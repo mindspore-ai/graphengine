@@ -1042,7 +1042,7 @@ Status TaskGenerator::InsertProfilingTaskAfter(const OpDescPtr &op_desc, const P
   }
   GELOGD("Insert bp profiling task: %d, insert end profiling task: %d, fp index: %u, bp index: %u, end index size: %zu",
          is_insert_bp_profiling_task, is_insert_end_profiling_task, profiling_point.fp_index, profiling_point.bp_index,
-         profiling_point.end_index.size() );
+         profiling_point.end_index.size());
 
   bool is_all_reduce = (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HVDCALLBACKALLREDUCE);
   if ((profiling_point.bp_index == node_index) || (!is_all_reduce && is_insert_bp_profiling_task)) {

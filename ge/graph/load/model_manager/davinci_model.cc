@@ -94,7 +94,7 @@ const int32_t kModelAbortNormal = 0x0704000e;
 const int32_t kModelAbortNormalNew = 507024;
 
 inline bool IsDataOp(const std::string &node_type) {
-  return node_type == DATA_TYPE || node_type == AIPP_DATA_TYPE || node_type == ANN_DATA_TYPE;
+  return (node_type == DATA_TYPE) || (node_type == AIPP_DATA_TYPE) || (node_type == ANN_DATA_TYPE);
 }
 
 inline bool IsTbeTask(const OpDescPtr &op_desc) {
@@ -187,12 +187,12 @@ DavinciModel::~DavinciModel() {
       UnbindTaskSinkStream();
       for (size_t i = 0; i < label_list_.size(); ++i) {
         if (label_list_[i] != nullptr) {
-          GE_LOGW_IF(rtLabelDestroy(label_list_[i]) != RT_ERROR_NONE, "Destroy label failed, index: %zu", i);
+          GE_LOGW_IF(rtLabelDestroy(label_list_[i]) != RT_ERROR_NONE, "Destroy label failed, index:%zu", i);
         }
       }
 
       for (size_t i = 0; i < stream_list_.size(); ++i) {
-        GE_LOGW_IF(rtStreamDestroy(stream_list_[i]) != RT_ERROR_NONE, "Destroy stream failed, index: %zu", i);
+        GE_LOGW_IF(rtStreamDestroy(stream_list_[i]) != RT_ERROR_NONE, "Destroy stream failed, index:%zu", i);
       }
 
       for (size_t i = 0; i < event_list_.size(); ++i) {
@@ -337,7 +337,7 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once.");
+    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once");
     return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
@@ -381,7 +381,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
     is_inner_p2p_mem_base_ = true;
   }
 
-  GE_CHK_STATUS_RET(InitVariableMem(), "Init variable memory failed.");
+  GE_CHK_STATUS_RET(InitVariableMem(), "Init variable memory failed");
   runtime_param_.mem_base = mem_base_;
   runtime_param_.weight_base = weights_mem_base_;
   runtime_param_.memory_infos[RT_MEMORY_P2P_DDR].memory_base = p2p_mem_base_;
@@ -391,7 +391,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
 Status DavinciModel::InitVariableMem() {
   // malloc variable memory base
   var_mem_base_ = VarManager::Instance(session_id_)->GetVarMemoryBase(RT_MEMORY_HBM);
-  if (TotalVarMemSize() && var_mem_base_ == nullptr) {
+  if (TotalVarMemSize() && (var_mem_base_ == nullptr)) {
     Status ret = VarManager::Instance(session_id_)->MallocVarMemory(TotalVarMemSize());
     if (ret != SUCCESS) {
       GELOGE(ret, "Malloc variable memory failed.");
@@ -500,25 +500,25 @@ Status DavinciModel::DoTaskSink() {
   }
 
   GE_CHK_RT_RET(rtGetAicpuDeploy(&deploy_type_));
-  GELOGI("do task_sink. AiCpu deploy type is: %x.", deploy_type_);
+  GELOGI("do task_sink. AiCpu deploy type is: %x", deploy_type_);
 
   GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
 
   if (known_node_) {
-    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed.");
+    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed");
   }
 
-  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
+  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed");
 
-  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
+  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed");
 
-  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed");
 
-  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
+  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed");
 
   GE_CHK_RT_RET(rtModelLoadComplete(rt_model_handle_));
 
@@ -3332,7 +3332,7 @@ Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &outp
 ///
 Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                                       const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label) {
-  string input_or_output = "input";
+  string input_or_output;
   is_input ? input_or_output = "input" : input_or_output = "output";
   if (blobs.size() != data_info.size()) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
@@ -3342,7 +3342,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
 
   for (const auto &data : data_info) {
     if (data.first >= blobs.size()) {  // check data index.
-      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+             "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
              input_or_output.c_str(), data.first, blobs.size());
       return ACL_ERROR_GE_PARAM_INVALID;
     }
@@ -4133,10 +4134,10 @@ Status DavinciModel::InitAippInputOutputDims(uint32_t index, const OpDescPtr &op
       int64_t data_input_size;
       (void)TensorUtils::GetSize(*(op_desc->GetInputDescPtr(kDataIndex)), data_input_size);
       GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s",
-        index, op_desc->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
-        TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
-        TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),
-        formats::JoinToString(data_input_desc->GetShape().GetDims()).c_str());
+          index, op_desc->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
+          TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
+          TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),
+          formats::JoinToString(data_input_desc->GetShape().GetDims()).c_str());
     }
   }
 

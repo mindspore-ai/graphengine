@@ -454,7 +454,8 @@ Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &
     if (all_data_dims[i] < 0) {
       cur_dynamic_dims.push_back(dynamic_dims[i]);
     } else if (static_cast<uint64_t>(all_data_dims[i]) != dynamic_dims[i]) {
-      GELOGE(ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID, "Static dims should be same, index: %zu value: %lu should be %ld",
+      GELOGE(ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID,
+             "Static dims should be same, index: %zu value: %lu should be %ld",
              i, dynamic_dims[i], all_data_dims[i]);
       return ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID;
     }

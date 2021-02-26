@@ -43,7 +43,7 @@ Status ReshapeRemovePass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   GE_CHECK_NOTNULL(node->GetOpDesc());
   int key = kToBeDeleteOp.find(node->GetType()) == kToBeDeleteOp.end() ? kOpNoDelete : kToBeDeleteOp[node->GetType()];
-  switch(key) {
+  switch (key) {
     case kReshapeType: {
       bool is_shape_unknown = false;
       if (NodeUtils::GetNodeUnknownShapeStatus(*node, is_shape_unknown) == GRAPH_SUCCESS) {

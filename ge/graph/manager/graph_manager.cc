@@ -2254,9 +2254,8 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage2::AfterMergePasses::LinkGenMaskNodesPass",
                                                new (std::nothrow)
                                                    LinkGenMaskNodesPass(options_.stream_max_parallel_num)));
-  GE_CHK_STATUS_RET(
-    after_merge_passes.AddPass("OptimizeStage2::HcclContinuousMemcpyPass",
-                                 new (std::nothrow) HcclContinuousMemcpyPass));
+  GE_CHK_STATUS_RET(after_merge_passes.AddPass("OptimizeStage2::HcclContinuousMemcpyPass",
+                                               new (std::nothrow) HcclContinuousMemcpyPass));
 
   GE_TIMESTAMP_START(after_merge_passes);
   auto ret = after_merge_passes.Run(compute_graph);

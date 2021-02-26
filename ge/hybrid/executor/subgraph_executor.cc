@@ -275,10 +275,10 @@ Status SubgraphExecutor::PrepareNodes(int group) {
 Status SubgraphExecutor::InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) const {
   GetContext().SetSessionId(context_->context_id);
   HYBRID_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state),
-                    "[%s] Failed to InferShape.", node_state.GetName().c_str());
+                        "[%s] Failed to InferShape.", node_state.GetName().c_str());
   GetContext().SetSessionId(context_->session_id);
   HYBRID_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_state),
-                    "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
+                        "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
   return SUCCESS;
 }
 

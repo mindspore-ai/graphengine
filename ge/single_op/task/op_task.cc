@@ -385,7 +385,8 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
                                                                               num_inputs_,
                                                                               num_outputs_,
                                                                               unknown_type_));
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, ACL_ERROR_GE_MEMORY_ALLOCATION, "Malloc aicpu_ext_handle mem failed!");
+  GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, ACL_ERROR_GE_MEMORY_ALLOCATION,
+                         "Malloc aicpu_ext_handle mem failed!");
 
   Status ret = aicpu_ext_handle_->Parse(kernel_ext_info);
   if (ret != SUCCESS) {
@@ -423,7 +424,7 @@ Status AiCpuBaseTask::SetInputConst() {
   return SUCCESS;
 }
 
-Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, 
+Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
                                     std::vector<GeTensorDesc> &output_desc,
                                     rtStream_t stream) {
   GELOGI("Update ext info begin, unknown_type=%d.", unknown_type_);

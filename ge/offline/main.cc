@@ -62,19 +62,18 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+namespace {
 static bool is_dynamic_input = false;
-
 const char *const kModeSupport = "only support 0(model to framework model), "
                                  "1(framework model to json), 3(only pre-check), "
                                  "5(pbtxt to json), 6(display model info)";
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
-
-static const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
-static const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
-static const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
-
+const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
+const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
+const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
 // limit available mem size 2G
 const long kMinAvailableMem = 2097152;  // 2 * 1024 * 1024
+}  // namespace
 
 DEFINE_string(model, "", "The model file.");
 DEFINE_string(output, "", "The output file path&name.");

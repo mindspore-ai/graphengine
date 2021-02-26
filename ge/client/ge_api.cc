@@ -212,7 +212,7 @@ std::string GEGetErrorMsg() {
 }
 
 std::string GEGetWarningMsg() {
-  return ErrorManager::GetInstance.GetWarningMessage();
+  return ErrorManager::GetInstance().GetWarningMessage();
 }
 
 // Initialize session，which calls innerSession

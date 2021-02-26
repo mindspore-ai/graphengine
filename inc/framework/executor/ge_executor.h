@@ -260,6 +260,7 @@ class GE_FUNC_VISIBILITY GeExecutor {
   static ge::Status LoadSingleOp(const std::string &modelName, const ge::ModelData &modelData, void *stream,
                                  SingleOp **single_op);
 
+
   static ge::Status ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,
                                  std::vector<DataBuffer> &outputs);
 

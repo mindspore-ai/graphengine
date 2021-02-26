@@ -891,6 +891,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
       model.model_data = nullptr;
     }
   };
+  GE_MAKE_GUARD(release, callback);
 
   uint8_t *model_data = nullptr;
   uint32_t model_len = 0;
@@ -903,17 +904,17 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
     return ret;
   }
 
-  OmFileLoadHelper omFileLoadHelper;
-  ret = omFileLoadHelper.Init(model_data, model_len);
-  if (ret != ge::GRAPH_SUCCESS) {
+  OmFileLoadHelper om_load_helper;
+  ret = om_load_helper.Init(model_data, model_len);
+  if (ret != SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Om file init failed"});
     GELOGE(ge::FAILED, "Om file init failed.");
     return ret;
   }
 
   ModelPartition ir_part;
-  ret = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
-  if (ret != ge::GRAPH_SUCCESS) {
+  ret = om_load_helper.GetModelPartition(MODEL_DEF, ir_part);
+  if (ret != SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Get model part failed"});
     GELOGE(ge::FAILED, "Get model part failed.");
     return ret;

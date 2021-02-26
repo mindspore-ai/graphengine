@@ -543,7 +543,10 @@ Status GEInit::Initialize(const map<string, string> &options) {
 }
 
 Status GEInit::Finalize() {
-  return GELib::GetInstance()->Finalize();
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr != nullptr) {
+    return instance_ptr->Finalize();
+  }
 }
 
 string GEInit::GetPath() {

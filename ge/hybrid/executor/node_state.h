@@ -30,7 +30,7 @@ class NodeTask;
 struct GraphExecutionContext;
 class SubgraphContext;
 class TaskContext;
-class NodeState;
+struct NodeState;
 
 class ShapeFuture {
  public:

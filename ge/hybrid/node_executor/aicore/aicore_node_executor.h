@@ -24,7 +24,6 @@
 
 namespace ge {
 namespace hybrid {
-
 class TaskCompiler {
  public:
   TaskCompiler() = default;
@@ -42,11 +41,11 @@ class AiCoreNodeTaskRegistry {
     return instance;
   }
 
-  std::shared_ptr<NodeTask> GetTask(const std::string &node_key);
-  bool AddTask(const std::string &node_key, const std::shared_ptr<NodeTask> task);
+  std::shared_ptr<AiCoreNodeTask> GetTask(const std::string &node_key);
+  bool AddTask(const std::string &node_key, const std::shared_ptr<AiCoreNodeTask> &task);
  private:
   AiCoreNodeTaskRegistry() = default;
-  std::map<std::string, std::shared_ptr<NodeTask>> reg_node_tasks_;
+  std::map<std::string, std::shared_ptr<AiCoreNodeTask>> reg_node_tasks_;
   std::mutex mutex_;
 };
 
@@ -59,8 +58,12 @@ class AiCoreNodeTask : public NodeTask {
 
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+
+  const vector<int64_t> &GetWorkspaceSizes() const;
+  void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
  private:
   std::vector<std::unique_ptr<AiCoreOpTask>> tasks_;
+  std::vector<int64_t> workspace_sizes_;
 };
 
 class AiCoreNodeExecutor : public NodeExecutor {

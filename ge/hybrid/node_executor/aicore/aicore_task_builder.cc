@@ -37,7 +37,7 @@ AiCoreTaskBuilder::AiCoreTaskBuilder(const OpDescPtr &op_desc, const std::vector
     : op_desc_(op_desc), task_defs_(task_defs) {
 }
 
-Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<NodeTask> &node_task,
+Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<AiCoreNodeTask> &node_task,
                                     bool ignore_failure_on_atomic,
                                     bool is_single_op) {
   GE_CHECK_NOTNULL(op_desc_);

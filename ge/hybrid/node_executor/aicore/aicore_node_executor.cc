@@ -66,7 +66,7 @@ Status AiCoreNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &nod
   }
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), *task_defs);
-  std::unique_ptr<NodeTask> node_task;
+  std::unique_ptr<AiCoreNodeTask> node_task;
   GE_CHK_STATUS_RET(builder.BuildTask(node_task, true, is_single_op),
                     "[%s] Failed to build op tasks.", node->GetName().c_str());
   task = std::move(node_task);
@@ -99,7 +99,7 @@ Status AiCoreNodeExecutor::GenNodeKey(const NodePtr &node, std::string &node_key
   return SUCCESS;
 }
 
-bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::shared_ptr<NodeTask> task) {
+bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::shared_ptr<AiCoreNodeTask> &task) {
   GE_CHECK_NOTNULL(task);
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = reg_node_tasks_.find(node_key);
@@ -111,7 +111,7 @@ bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::sha
   return ret.second;
 }
 
-std::shared_ptr<NodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &node_key) {
+std::shared_ptr<AiCoreNodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &node_key) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = reg_node_tasks_.find(node_key);
   return (iter != reg_node_tasks_.end()) ? iter->second : nullptr;
@@ -140,9 +140,12 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
 
   auto node_key = std::to_string(model.GetModelId()) + "/" + shape_key;
   GELOGD("NodeKey for %s = %s", node->GetName().c_str(), node_key.c_str());
-  task = registry.GetTask(node_key);
+  auto aicore_task = registry.GetTask(node_key);
   if (task != nullptr) {
+    // The workspaces needed by a operator may differ with different shapes
+    op_desc->SetWorkspaceBytes(aicore_task->GetWorkspaceSizes());
     GELOGI("AiCoreNodeExecutor(%s) CompileTask Skip.", node->GetName().c_str());
+    task = std::move(aicore_task);
     return SUCCESS;
   }
 
@@ -153,16 +156,18 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
   GELOGD("successfully generated task_defs: %s", node->GetName().c_str());
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), task_defs);
-  std::unique_ptr<NodeTask> node_task;
+  std::unique_ptr<AiCoreNodeTask> node_task;
   GE_CHK_STATUS_RET(builder.BuildTask(node_task, false), "[%s] Failed to build op tasks.", node->GetName().c_str());
-  task = std::move(node_task);
+  node_task->SetWorkspaceSizes(op_desc->GetWorkspaceBytes());
+  aicore_task = std::move(node_task);
   GELOGD("successfully created node task: %s", node->GetName().c_str());
 
-  if (!registry.AddTask(node_key, task)) {
+  if (!registry.AddTask(node_key, aicore_task)) {
     GELOGE(INTERNAL_ERROR, "Add NodeTask failed, op name = %s.", node->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
+  task = std::move(aicore_task);
   GELOGI("AiCoreNodeExecutor(%s) CompileTask End.", node->GetName().c_str());
   return SUCCESS;
 }
@@ -245,6 +250,14 @@ bool AiCoreNodeTask::IsSupportDynamicShape() {
   }
 
   return true;
+}
+
+const vector<int64_t> &AiCoreNodeTask::GetWorkspaceSizes() const {
+  return workspace_sizes_;
+}
+
+void AiCoreNodeTask::SetWorkspaceSizes(const vector<int64_t> &workspace_sizes) {
+  workspace_sizes_ = workspace_sizes;
 }
 
 TaskCompilerFactory &TaskCompilerFactory::GetInstance() {

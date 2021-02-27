@@ -185,7 +185,7 @@ build_graphengine()
     # build all the target
     TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin opensrc_ascendcl ${TARGET}"
   fi
-  
+
   make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install
   if [ $? -ne 0 ]
   then
@@ -250,8 +250,8 @@ generate_package()
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
-  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so")
-  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so")
+  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so" "liberror_manager.so")
+  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "libhost_cpu_engine.so" "libhost_cpu_opskernel_builder.so" "optimizer_priority.pbtxt")
   PARSER_LIB=("lib_caffe_parser.so" "libfmk_onnx_parser.so" "libfmk_parser.so" "libparser_common.so")
 
@@ -270,7 +270,7 @@ generate_package()
   mk_dir "${OUTPUT_PATH}/${FWK_BIN_PATH}"
   mk_dir "${OUTPUT_PATH}/${FWK_INCLUDE_PATH}"
   mk_dir "${OUTPUT_PATH}/${ATC_INCLUDE_PATH}"
- 
+
   cd "${OUTPUT_PATH}"
 
   find ./ -name graphengine_lib.tar -exec rm {} \;

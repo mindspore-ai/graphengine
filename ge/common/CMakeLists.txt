@@ -54,7 +54,7 @@ set(SRC_LIST
     "util.cc"
     "properties_manager.cc"
     "types.cc"
-    "model_parser/base.cc"
+    "model_parser/model_parser.cc"
     "kernel_store.cc"
     "tbe_kernel_store.cc"
     "cust_aicpu_kernel_store.cc"

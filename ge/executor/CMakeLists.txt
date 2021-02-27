@@ -33,7 +33,6 @@ set(SRC_LIST
     "../model/ge_model.cc"
     "../model/ge_root_model.cc"
     "../graph/load/model_manager/davinci_model.cc"
-    "../graph/load/model_manager/davinci_model_parser.cc"
     "../graph/load/model_manager/model_manager.cc"
     "../graph/load/model_manager/tbe_handle_store.cc"
     "../graph/load/model_manager/cpu_queue_schedule.cc"

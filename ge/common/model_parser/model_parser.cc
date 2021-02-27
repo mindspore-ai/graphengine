@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-#include "common/model_parser/base.h"
-#include "common/helper/model_helper.h"
-#include <securec.h>
+#include "common/model_parser/model_parser.h"
+
 #include <fstream>
-#include <memory>
 #include <string>
 
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/debug/log.h"
-#include "framework/common/util.h"
+#include "securec.h"
+#include "common/helper/model_helper.h"
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelParserBase::ModelParserBase() {}

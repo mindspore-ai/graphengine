@@ -21,7 +21,7 @@
 
 #include "common/debug/log.h"
 #include "common/l2_cache_optimize.h"
-#include "common/model_parser/base.h"
+#include "common/model_parser/model_parser.h"
 #include "common/properties_manager.h"
 #include "common/types.h"
 
@@ -31,7 +31,6 @@
 #include "common/op/ge_op_utils.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/load/model_manager/model_manager.h"
 //#include "new_op_test_utils.h"
 #undef private

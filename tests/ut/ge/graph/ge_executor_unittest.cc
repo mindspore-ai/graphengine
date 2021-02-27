@@ -34,7 +34,6 @@
 #include "common/types.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/task_info/kernel_task_info.h"
 #include "graph/load/model_manager/task_info/kernel_ex_task_info.h"

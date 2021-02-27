@@ -27,7 +27,7 @@
 #include "common/util.h"
 #include "common/string_util.h"
 #include "common/properties_manager.h"
-#include "common/model_parser/base.h"
+#include "common/model_parser/model_parser.h"
 #include "graph/model.h"
 #include "cce/dnn.h"
 #include "ge/ge_api_types.h"

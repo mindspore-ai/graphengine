@@ -20,19 +20,13 @@
 #include <vector>
 
 #include "common/helper/model_helper.h"
-#include "common/util.h"
+#include "common/model_parser/model_parser.h"
 #include "graph/ge_context.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "omm/csa_interact.h"
-#include "runtime/dev.h"
 
 namespace ge {
-GraphLoader::GraphLoader() = default;
-
-GraphLoader::~GraphLoader() = default;
-
 Status GraphLoader::UnloadModel(uint32_t model_id) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
@@ -120,7 +114,6 @@ Status GraphLoader::GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size) {
 
 Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string &key_path, int32_t priority,
                                      ModelData &model_data) {
-  Status ret;
   if (!CheckInputPathValid(path)) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
@@ -132,16 +125,15 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
-  ret = DavinciModelParser::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
+  Status ret = ModelParserBase::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
   if (ret != SUCCESS) {
     GELOGE(ret, "LoadModelFromFile: Load failed. ret = %u", ret);
     if (model_data.model_data != nullptr) {
       delete[] static_cast<char *>(model_data.model_data);
       model_data.model_data = nullptr;
     }
-    return ret;
   }
-    return SUCCESS;
+  return ret;
 }
 
 Status GraphLoader::CommandHandle(const Command &command) {

@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-#include <climits>
+#include "common/helper/model_cache_helper.h"
+
 #include <cstdio>
 #include <fstream>
 #include <functional>
 
-#include "common/ge/ge_util.h"
-#include "common/helper/model_cache_helper.h"
-#include "common/types.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/ge_types.h"
+#include "common/model_parser/model_parser.h"
 #include "framework/common/helper/model_helper.h"
-#include "framework/common/util.h"
-#include "graph/detail/attributes_holder.h"
 #include "graph/detail/model_serialize_imp.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
-#include "graph/model.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "init/gelib.h"
@@ -1682,7 +1675,7 @@ Status ModelCacheHelper::LoadOmModelFromCache(GeModelPtr &ge_model) const {
   string key_path;
   int32_t priority = 0;
   ModelData model_data;
-  ret = DavinciModelParser::LoadFromFile(om_path.c_str(), key_path.c_str(), priority, model_data);
+  ret = ModelParserBase::LoadFromFile(om_path.c_str(), key_path.c_str(), priority, model_data);
   if (ret != SUCCESS) {
     GELOGW("LoadOmModelFromCache: Load model from file failed. ret = %u", ret);
     return ret;

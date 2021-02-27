@@ -363,7 +363,7 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once");
+    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once.");
     return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
@@ -386,7 +386,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
-    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu].",
             runtime_param_.graph_id, mem_base_, data_size);
 
     if (!is_inner_weight_base_) {
@@ -2589,6 +2589,7 @@ void *DavinciModel::Run(DavinciModel *model) {
   bool seq_end_flag = false;
   uint32_t model_id = model->Id();
   uint32_t device_id = model->GetDeviceId();
+  GetContext().SetWorkStreamId(model->GetWorkStreamId());
 
   GELOGI("Model Run thread start, model_id:%u.", model_id);
   rtError_t rt_ret = rtSetDevice(static_cast<int32_t>(device_id));
@@ -2755,6 +2756,7 @@ Status DavinciModel::ModelRunStart() {
   int64_t maxDumpOpNum = std::strtol(opt.c_str(), nullptr, kDecimal);
   maxDumpOpNum_ = maxDumpOpNum;
 
+  work_stream_id_ = GetContext().WorkStreamId();
   CREATE_STD_THREAD(thread_id_, DavinciModel::Run, this);
   GELOGI("model tread create success, model id:%u.", model_id_);
   return SUCCESS;

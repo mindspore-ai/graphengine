@@ -293,7 +293,7 @@ Status GraphManager::InitDynamicParams(ComputeGraphPtr &compute_graph) {
       return FAILED;
     }
     if ((op_desc->GetType() == DATA) || (op_type == kGetNextName)) {
-      GELOGI("Need to process multi batch for compute graph.");
+      GELOGI("Need to process multi batch for compute graph. op_type:%s", op_desc->GetType().c_str());
       GetLocalOmgContext().need_multi_batch = true;
       break;
     }
@@ -348,7 +348,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
     for (auto &subgraph : compute_graph->GetAllSubgraphs()) {
       (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
     }
-    GELOGD("Get graph session_graph_id attr failed, set session id to default value: [0]");
+    GELOGD("Get graph session_graph_id attr failed, set session id to default value: [0].");
   }
 
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
@@ -541,7 +541,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     }
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
                                             compute_graph->GetGraphID(), subgraph,
-                                            compute_graph->GetName(), session_id,
+                                            compute_graph->GetName(), session_id, GetContext().WorkStreamId(),
                                             GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
@@ -557,7 +557,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
       }
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
                                               compute_graph->GetGraphID(), subgraph,
-                                              compute_graph->GetName(), session_id,
+                                              compute_graph->GetName(), session_id, GetContext().WorkStreamId(),
                                               GetThreadLocalContext());
       if (!f.valid()) {
         GELOGE(FAILED, "Future is invalid");
@@ -734,8 +734,8 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
 }
 
 Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint64_t session_id, uint32_t graph_id) {
-  GELOGD("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.", session_id, graph_id,
-         static_cast<int>(mode), ge::GetContext().DeviceId());
+  GELOGD("set rt_context, session id: %lu, graph id: %u, mode %d, device id:%u.",
+         session_id, graph_id, static_cast<int>(mode), ge::GetContext().DeviceId());
 
   rtError_t rt_ret = rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
@@ -758,7 +758,7 @@ Status GraphManager::RunCustomPass(const GraphNodePtr &graph_node) {
 
   GE_TIMESTAMP_START(RunCustomPass);
   GraphPtr graph = std::const_pointer_cast<Graph>(const_graph);
-  GE_CHK_STATUS_RET(CustomPassHelper::Instance().Run(graph), "Graph[%s] run custom pass fail.",
+  GE_CHK_STATUS_RET(CustomPassHelper::Instance().Run(graph), "Graph[%s] run custom pass fail",
                     comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(RunCustomPass, "GraphBuilder::RunCustomPass");
   return SUCCESS;
@@ -776,7 +776,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   GE_CHK_STATUS_RET(analyzer_instance->BuildJsonObject(session_id, compute_graph->GetGraphID()),
                     "BuildJsonObject Failed")
 
-  GEEVENT("PreRun start, graph node size %zu, session id %lu, graph id %u, graph name %s",
+  GEEVENT("PreRun start, graph node size %zu, session id %lu, graph id %u, graph name %s.",
           compute_graph->GetDirectNodesSize(), session_id, compute_graph->GetGraphID(),
           compute_graph->GetName().c_str());
   GE_DUMP(compute_graph, "PreRunBegin");
@@ -797,7 +797,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   if (run_optimize_original_graph) {
     Status ret = PreRunOptimizeOriginalGraph(graph_node, inputs, compute_graph, session_id);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Run PreRunOptimizeOriginalGraph failed for graph:%s.", compute_graph->GetName().c_str());
+      GELOGE(ret, "Run PreRunOptimizeOriginalGraph failed for graph:%s", compute_graph->GetName().c_str());
       return ret;
     }
   }
@@ -869,7 +869,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
       // release rts generate context
       RtContextUtil::GetInstance().DestroyRtContexts(session_id, graph_node->GetGraphId());
       if (ret != SUCCESS) {
-        GELOGE(ret, "PreRun Failed.");
+        GELOGE(ret, "PreRun Failed. graph_id:%u", graph_node->GetGraphId());
         return ret;
       }
     }
@@ -1209,7 +1209,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
 
 Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                                 GeRootModelPtr &ge_root_model, uint64_t session_id, bool async) {
-  GELOGD("[BuildGraph] start to build graph, graph_id=%u.", graph_id);
+  GELOGD("[BuildGraph] start to build graph, graph_id:%u.", graph_id);
   if (inputs.empty()) {
     GELOGW("[BuildGraph] BuildGraph warning: empty GeTensor inputs");
   }
@@ -1241,7 +1241,7 @@ Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTen
   ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
   graph_node->SetRunFlag(false);
   if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_PRERUN_FAILED, "[BuildGraph] StartForRunGraph failed!");
+    GELOGE(GE_GRAPH_PRERUN_FAILED, "[BuildGraph] StartForRunGraph failed! graph_id:%u", graph_id);
     return GE_GRAPH_PRERUN_FAILED;
   }
 
@@ -2508,8 +2508,10 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
                                                      const SubGraphInfoPtr &sub_graph_info_ptr,
                                                      const std::string &root_graph_name,
                                                      uint64_t session_id,
+                                                     uint64_t work_stream_id,
                                                      const GEThreadLocalContext &ge_context) {
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
+    GetContext().SetWorkStreamId(work_stream_id);
     GetContext().SetSessionId(session_id);
     GetThreadLocalContext() = ge_context;
     graph_manager->UpdateLocalOmgContext(root_graph_id);
@@ -2556,7 +2558,8 @@ Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge
                                    uint64_t session_id, RunAsyncCallback callback) {
   GELOGI("[GraphManager] Start to run graph async, graph_id=%u, inputsSize=%zu.", graph_id, inputs.size());
 
-  bool ret = prerun_args_q_.Push(PreRunArgs({graph_id, inputs, session_id, GetThreadLocalContext(), callback}));
+  bool ret = prerun_args_q_.Push(PreRunArgs({graph_id, inputs, session_id,
+    GetContext().WorkStreamId(), GetThreadLocalContext(), callback}));
   if (!ret) {
     GELOGE(FAILED, "[GraphManager] Run graph async failed, graph_id=%u.", graph_id);
     return FAILED;
@@ -2643,6 +2646,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
 
     GELOGI("A new loop start.");
 
+    GetContext().SetWorkStreamId(args.work_stream_id);
     GetContext().SetSessionId(args.session_id);
     GetThreadLocalContext() = args.context;
     graph_manager->UpdateLocalOmgContext(args.graph_id);
@@ -2724,8 +2728,8 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       ge_root_model = graph_node->GetGeRootModel();
     }
 
-    graph_manager->run_args_q_.Push(RunArgs( { graph_node, args.graph_id, args.session_id, args.input_tensor,
-        ge_root_model, GetThreadLocalContext(), args.callback }));
+    graph_manager->run_args_q_.Push(RunArgs( { graph_node, args.graph_id, args.session_id, args.work_stream_id,
+        args.input_tensor, ge_root_model, GetThreadLocalContext(), args.callback }));
     GELOGI("Loop end.");
   }
 }
@@ -2824,6 +2828,7 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
 
     GELOGI("A new loop start.");
 
+    GetContext().SetWorkStreamId(args.work_stream_id);
     GetContext().SetSessionId(args.session_id);
     GetThreadLocalContext() = args.context;
     graph_manager->UpdateLocalOmgContext(args.graph_id);

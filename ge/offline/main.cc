@@ -1325,6 +1325,7 @@ int init(int argc, char* argv[]) {
     return ret;
   }
 
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   return 0;
 }
 

@@ -53,6 +53,7 @@ TEST_F(UtestGeGenerator, test_build_single_op_offline) {
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, "offline_"), GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
 }
 
+/*
 TEST_F(UtestGeGenerator, test_build_single_op_online) {
   GeTensorDesc tensor_desc(GeShape(), FORMAT_NCHW, DT_FLOAT);
   TensorUtils::SetSize(tensor_desc, 512);
@@ -72,5 +73,6 @@ TEST_F(UtestGeGenerator, test_build_single_op_online) {
   ModelBufferData model_buffer;
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_SYS, model_buffer), GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
 }
+*/
 
 }  // namespace ge

@@ -941,7 +941,7 @@ Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelDa
 
 Status GeExecutor::LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                        DynamicSingleOp **single_op) {
-  return LoadDynamicSingleOp((model_name, modelData, stream, single_op, 0);
+  return LoadDynamicSingleOp(model_name, modelData, stream, single_op, 0);
 }
 
 Status GeExecutor::LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,

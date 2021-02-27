@@ -109,5 +109,5 @@ TEST_F(UtestGeHybrid, task_update_tiling_info) {
   ge::AttrUtils::SetStr(op_desc, "compile_info_json", "json");
   auto node = graph->AddNode(op_desc);
   optiling::OpRunInfo tiling_info;
-  ASSERT_EQ(aicore_task->CalcTilingInfo(node, tiling_info), SUCCESS)
+  ASSERT_EQ(aicore_task->CalcTilingInfo(node, tiling_info), SUCCESS);
 }

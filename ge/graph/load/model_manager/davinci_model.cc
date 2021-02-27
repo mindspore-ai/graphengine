@@ -337,7 +337,7 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once");
+    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once.");
     return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
@@ -360,7 +360,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
-    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu].",
             runtime_param_.graph_id, mem_base_, data_size);
 
     if (!is_inner_weight_base_) {

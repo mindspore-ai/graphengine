@@ -99,3 +99,15 @@ TEST_F(UtestGeHybrid, aicore_op_task_init_success) {
   aicore_task->tiling_key_ = 1;
   ASSERT_EQ(aicore_task->LaunchKernel(stream), SUCCESS);
 }
+
+TEST_F(UtestGeHybrid, task_update_tiling_info) {
+  auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
+  aicore_task->is_single_op_ = true;
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  ge::AttrUtils::SetStr(op_desc, "compile_info_key", "key");
+  ge::AttrUtils::SetStr(op_desc, "compile_info_json", "json");
+  auto node = graph->AddNode(op_desc);
+  optiling::OpRunInfo tiling_info;
+  ASSERT_EQ(aicore_task->CalcTilingInfo(node, tiling_info), SUCCESS)
+}

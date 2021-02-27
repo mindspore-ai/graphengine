@@ -760,6 +760,10 @@ set(GENERATOR_TEST_FILES
     "generator/ge_generator_unittest.cc"
 )
 
+set(EXECUTOR_TEST_FILES
+    "exeutor/ge_exeutor_unittest.cc"
+)
+
 set(SINGLE_OP_TEST_FILES
     "single_op/single_op_model_unittest.cc"
     "single_op/single_op_manager_unittest.cc"
@@ -1066,6 +1070,7 @@ target_link_libraries(ut_libge_kernel_utest
 add_executable(ut_libge_distinct_load_utest
         ${COMMON_TEST_FILES}
         ${GENERATOR_TEST_FILES}
+        ${EXECUTOR_TEST_FILES}
         ${DISTINCT_GRAPH_LOAD_TEST_FILES}
         ${DISTINCT_GRAPH_LOAD_SRC_FILES}
         ${SINGLE_OP_TEST_FILES}

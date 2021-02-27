@@ -293,7 +293,7 @@ Status GraphManager::InitDynamicParams(ComputeGraphPtr &compute_graph) {
       return FAILED;
     }
     if ((op_desc->GetType() == DATA) || (op_type == kGetNextName)) {
-      GELOGI("Need to process multi batch for compute graph. op_type:%s", op_desc->GetType(),c_str());
+      GELOGI("Need to process multi batch for compute graph. op_type:%s", op_desc->GetType().c_str());
       GetLocalOmgContext().need_multi_batch = true;
       break;
     }

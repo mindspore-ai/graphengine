@@ -30,8 +30,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOpManager::~SingleOpManag
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFromModel(const std::string &model_name,
                                                                                         const ModelData &model_data,
                                                                                         void *stream,
-                                                                                        SingleOp **single_op) {
-  GELOGI("GetOpFromModel in. model name = %s", model_name.c_str());
+                                                                                        SingleOp **single_op,
+                                                                                        const uint64_t model_id) {
+  GELOGI("GetOpFromModel in. model name = %s, model id = %lu", model_name.c_str(), model_id);
   if (single_op == nullptr) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "single op is null");
     return ACL_ERROR_GE_INTERNAL_ERROR;
@@ -99,7 +100,9 @@ StreamResource *SingleOpManager::TryGetResource(uintptr_t resource_id) {
 Status SingleOpManager::GetDynamicOpFromModel(const string &model_name,
                                               const ModelData &model_data,
                                               void *stream,
-                                              DynamicSingleOp **single_op) {
+                                              DynamicSingleOp **single_op,
+                                              const uint64_t model_id) {
+  GELOGI("GetOpFromModel in. model name = %s, model id = %lu", model_name.c_str(), model_id);
   if (!tiling_func_registered_) {
     RegisterTilingFunc();
   }

@@ -351,6 +351,9 @@ Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info)
   GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
                     "Failed calc tiling data of node %s.",
                     node->GetName().c_str());
+  if (is_single_op_) {
+    tiling_info.clear_atomic = false;
+  }
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
   return SUCCESS;
 }

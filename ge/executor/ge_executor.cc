@@ -935,7 +935,7 @@ Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelDa
 }
 
 Status GeExecutor::LoadSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
-                                SingleOp **single_op, const uint64_t model_id) {
+                                  SingleOp **single_op, const uint64_t model_id) {
   return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op, model_id);
 }
 
@@ -945,7 +945,7 @@ Status GeExecutor::LoadDynamicSingleOp(const std::string &model_name, const ge::
 }
 
 Status GeExecutor::LoadDynamicSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
-                                       DynamicSingleOp **single_op, const uint64_t model_id) {
+                                         DynamicSingleOp **single_op, const uint64_t model_id) {
   return SingleOpManager::GetInstance().GetDynamicOpFromModel(model_name, modelData, stream, single_op, model_id);
 }
 

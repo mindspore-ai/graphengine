@@ -108,6 +108,26 @@ static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {
   ge::AttrUtils::SetInt(op_desc, ge::ATTR_NAME_STREAM_SWITCH_COND, 0);
   return op_desc;
 }
+
+TEST_F(UtestGeExecutor, load_data_from_file) {
+  GeExecutor ge_executor;
+  ge_executor.isInit_ = true;
+
+  string test_smap = "/tmp/" + std::to_string(getpid()) + "_maps";
+  string self_smap = "/proc/" + std::to_string(getpid()) + "/maps";
+  string copy_smap = "cp " + self_smap + " " + test_smap;
+  EXPECT_EQ(system(copy_smap.c_str()), 0);
+
+  ModelData model_data;
+  EXPECT_EQ(ge_executor.LoadDataFromFile(test_smap, model_data), SUCCESS);
+
+  EXPECT_NE(model_data.model_data, nullptr);
+  delete[] static_cast<char *>(model_data.model_data);
+  model_data.model_data = nullptr;
+
+  ge_executor.isInit_ = false;
+}
+
 /*
 TEST_F(UtestGeExecutor, fail_UnloadModel_model_manager_stop_unload_error) {
   uint32_t model_id = 1;

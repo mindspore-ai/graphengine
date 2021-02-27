@@ -135,6 +135,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/types.cc"
     "${GE_CODE_DIR}/ge/common/fmk_error_codes.cc"
     "${GE_CODE_DIR}/ge/common/op/ge_op_utils.cc"
+    "${GE_CODE_DIR}/ge/common/context/ctx.cc"
     "${GE_CODE_DIR}/ge/graph/manager/util/variable_accelerate_ctrl.cc"
     "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_manager.cc"
     "${GE_CODE_DIR}/ge/generator/ge_generator.cc"
@@ -779,7 +780,6 @@ set(OTHERS_TEST_FILES
 )
 
 list(APPEND COMMON_SHARED_LIBRARIES
-    omg_stub
     c_sec
     slog_stub
     cce_ge_stub

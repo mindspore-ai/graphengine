@@ -30,6 +30,7 @@
 #include "framework/common/debug/log.h"
 #include "graph/ge_context.h"
 #include "hybrid/executor/hybrid_execution_context.h"
+#include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/manager/graph_mem_allocator.h"
@@ -242,4 +243,20 @@ TEST_F(UtestGeHybrid, init_weight_success) {
   ge_sub_model->SetWeight(weight_buffer);
   ret = hybrid_model_builder.InitWeights();
   ASSERT_EQ(ret,PARAM_INVALID);
+}
+
+  TEST_F(UtestGeHybrid, hybrid_model_executor) {
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("abc");
+  GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
+  //auto graph_item = std::unique_ptr<GraphItem>(new(std::nothrow)GraphItem());
+  HybridModel model(root_model);
+  //model.root_graph_item_ = graph_item;
+  HybridModel *model_ptr = &model;
+
+  uint32_t device_id = 0;
+  rtStream_t stream;
+  HybridModelExecutor executor(model_ptr, device_id, stream);
+  executor.Init();
+  HybridModelExecutor::ExecuteArgs args;
+  executor.Execute(args);
 }

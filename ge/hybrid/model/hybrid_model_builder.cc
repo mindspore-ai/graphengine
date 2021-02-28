@@ -134,7 +134,7 @@ HybridModelBuilder::HybridModelBuilder(HybridModel &hybrid_model)
 
 Status HybridModelBuilder::Build() {
   GE_CHK_STATUS_RET(ValidateParams(), "[Invoke][ValidateParams] failed, model_name_:[%s]", GetGraphName());
-                    hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
+  hybrid_model_.model_name_ = ge_root_model_->GetModelName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   GE_CHK_STATUS_RET(InitRuntimeParams(), "[Invoke][InitRuntimeParams] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET(RecoverGraphUnknownFlag(),
@@ -160,7 +160,7 @@ Status HybridModelBuilder::Build() {
 
 Status HybridModelBuilder::BuildForSingleOp() {
   GE_CHK_STATUS_RET(ValidateParams(), "[Invoke][ValidateParams] failed, model_name_:[%s]", GetGraphName());
-  hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
+  hybrid_model_.model_name_ = ge_root_model_->GetModelName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   auto ret = ge_root_model_->GetSubgraphInstanceNameToModel();
   const GeModelPtr ge_model = ret[ge_root_model_->GetRootGraph()->GetName()];

@@ -42,6 +42,10 @@ class GeRootModel {
 
   std::vector<uint32_t> GetAllModelId() const { return model_ids_; }
 
+  void SetModelName(const std::string &model_name) { model_name_ = model_name; }
+  
+  const std::string &GetModelName() const { return model_name_; };
+  
   Status CheckIsUnknownShape(bool &is_dynamic_shape);
 
   void SetRootGraph(ComputeGraphPtr graph) { root_graph_ = graph; }
@@ -57,6 +61,7 @@ class GeRootModel {
   // In multithread online secenario, same graph can owns different davinci_model for for concurrency
   std::vector<uint32_t> model_ids_;
   bool train_flag_ = false;
+  std::string model_name_;
 };
 }  // namespace ge
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;

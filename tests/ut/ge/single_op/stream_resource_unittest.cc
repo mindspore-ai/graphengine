@@ -58,7 +58,7 @@ TEST_F(UtestStreamResource, test_malloc_memory) {
   ASSERT_NE(res.MallocMemory(purpose, 100), nullptr);
 }
 
-TEST_F(UtestStreamResource, test_malloc_memory) {
+TEST_F(UtestStreamResource, test_build_op) {
   StreamResource res((uintptr_t)1);
   ModelData model_data;
   SingleOp *single_op = nullptr;

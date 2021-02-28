@@ -126,7 +126,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
     auto dump_properties = context.GetDumpProperties();
     if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
       davinci_model_->SetDumpProperties(dump_properties);
-      void *global_step = context.GetExecutionContext()->global_step;;
+      void *global_step = context.GetExecutionContext()->global_step;
       davinci_model_->SetKnownShapeGlobalStep(global_step);
     }
     int32_t device_id = 0;

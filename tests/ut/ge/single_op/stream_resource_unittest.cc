@@ -63,11 +63,11 @@ TEST_F(UtestStreamResource, test_malloc_memory) {
   ModelData model_data;
   SingleOp *single_op = nullptr;
   DynamicSingleOp *dynamic_single_op = nullptr;
-  res.op_map_[0] = &single_op;
-  res.dynamic_op_map_[1] = &dynamic_single_op;
+  res.op_map_[0].reset(single_op);
+  res.dynamic_op_map_[1].reset(dynamic_single_op);
 
-  ASSERT_EQ(res.BuildOperator(model_data, &single_op, 0), SUCCESS);
-  ASSERT_EQ(res.BuildDynamicOperator(model_data, &dynamic_single_op, 1), SUCCESS);
+  EXPECT_EQ(res.BuildOperator(model_data, &single_op, 0), SUCCESS);
+  EXPECT_EQ(res.BuildDynamicOperator(model_data, &dynamic_single_op, 1), SUCCESS);
 }
 
 /*

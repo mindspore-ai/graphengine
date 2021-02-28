@@ -71,6 +71,7 @@ struct GraphExecutionContext {
   std::atomic_bool is_eos_;
   long profiling_level = 0;
   long iteration = 0;
+  void *global_step = nullptr;
 
  private:
   Status status = SUCCESS;

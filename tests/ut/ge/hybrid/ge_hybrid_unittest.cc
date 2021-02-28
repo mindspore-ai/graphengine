@@ -248,15 +248,11 @@ TEST_F(UtestGeHybrid, init_weight_success) {
   TEST_F(UtestGeHybrid, hybrid_model_executor) {
   ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("abc");
   GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
-  //auto graph_item = std::unique_ptr<GraphItem>(new(std::nothrow)GraphItem());
   HybridModel model(root_model);
-  //model.root_graph_item_ = graph_item;
   HybridModel *model_ptr = &model;
 
   uint32_t device_id = 0;
   rtStream_t stream;
   HybridModelExecutor executor(model_ptr, device_id, stream);
   executor.Init();
-  HybridModelExecutor::ExecuteArgs args;
-  executor.Execute(args);
 }

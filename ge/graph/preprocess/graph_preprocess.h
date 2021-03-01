@@ -23,7 +23,7 @@
 #include <vector>
 #include "common/debug/log.h"
 #include "common/debug/memory_dumper.h"
-#include "common/model_parser/base.h"
+#include "common/model_parser/model_parser.h"
 #include "common/properties_manager.h"
 #include "common/string_util.h"
 #include "common/types.h"

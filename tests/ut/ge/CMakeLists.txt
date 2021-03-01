@@ -135,6 +135,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/types.cc"
     "${GE_CODE_DIR}/ge/common/fmk_error_codes.cc"
     "${GE_CODE_DIR}/ge/common/op/ge_op_utils.cc"
+    "${GE_CODE_DIR}/ge/common/context/ctx.cc"
     "${GE_CODE_DIR}/ge/graph/manager/util/variable_accelerate_ctrl.cc"
     "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_manager.cc"
     "${GE_CODE_DIR}/ge/generator/ge_generator.cc"
@@ -163,7 +164,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/dump/dump_manager.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/model/ge_root_model.cc"
-    "${GE_CODE_DIR}/ge/common/model_parser/base.cc"
+    "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/data_dumper.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_manager.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_server.cc"
@@ -393,14 +394,13 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/util/debug.cc"
     "${GE_CODE_DIR}/ge/common/properties_manager.cc"
     "${GE_CODE_DIR}/ge/common/profiling/profiling_manager.cc"
-    "${GE_CODE_DIR}/ge/common/model_parser/base.cc"
+    "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/util.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/cpu_queue_schedule.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/data_dumper.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/data_inputer.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/davinci_model.cc"
-    "${GE_CODE_DIR}/ge/graph/load/model_manager/davinci_model_parser.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_manager.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_utils.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/tbe_handle_store.cc"
@@ -458,7 +458,7 @@ set(GRAPH_BUILD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
-    "${GE_CODE_DIR}/ge/common/model_parser/base.cc"
+    "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
     "${GE_CODE_DIR}/ge/graph/build/run_context.cc"
     "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
 )
@@ -784,7 +784,6 @@ set(OTHERS_TEST_FILES
 )
 
 list(APPEND COMMON_SHARED_LIBRARIES
-    omg_stub
     c_sec
     slog_stub
     cce_ge_stub

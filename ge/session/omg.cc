@@ -23,7 +23,7 @@
 #include "common/debug/memory_dumper.h"
 #include "common/ge/ge_util.h"
 #include "common/helper/model_helper.h"
-#include "common/model_parser/base.h"
+#include "common/model_parser/model_parser.h"
 #include "common/model_saver.h"
 #include "common/properties_manager.h"
 #include "common/string_util.h"

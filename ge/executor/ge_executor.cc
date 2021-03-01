@@ -16,7 +16,6 @@
 
 #include "executor/ge_executor.h"
 #include <cce/cce.h>
-#include <cce/compiler_stub.h>
 #include <ctime>
 #include <iostream>
 #include "common/debug/log.h"
@@ -24,19 +23,11 @@
 #include "common/helper/model_helper.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/dump/dump_manager.h"
-#include "common/util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/util.h"
 #include "graph/execute/graph_execute.h"
 #include "graph/load/graph_loader.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
-#include "graph/model.h"
-#include "graph/utils/graph_utils.h"
-#include "mmpa/mmpa_api.h"
 #include "single_op/single_op_manager.h"
-#include "graph/manager/graph_var_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
 

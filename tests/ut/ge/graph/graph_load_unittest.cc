@@ -24,7 +24,6 @@
 #include "common/helper/model_helper.h"
 #include "common/op/ge_op_utils.h"
 #include "common/types.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/op_desc.h"
 #include "graph/types.h"
 #include "graph/utils/attr_utils.h"

@@ -27,8 +27,8 @@ rtError_t rtGetStreamId(rtStream_t stream, int32_t *stream_id) {
 }
 
 rtError_t rtCtxGetCurrent(rtContext_t *ctx) {
-  int x = 1;
-  *ctx = (void *)x;
+  uintptr_t x = 1;
+  *ctx = (rtContext_t *)x;
   return RT_ERROR_NONE;
 }
 
@@ -163,7 +163,7 @@ rtError_t rtSetKernelReportCallback(rtKernelReportCallback callback) {
   rt_kernel_info.module_addr = (void *)100;
   rt_kernel_info.module_size = 100;
 
-  rtStream_t stream;
+  rtStream_t stream = nullptr;
   callback(stream, &rt_kernel_info);
   return RT_ERROR_NONE;
 }
@@ -200,7 +200,8 @@ rtError_t rtModelCreate(rtModel_t *model, uint32_t flag) {
 }
 
 rtError_t rtModelDestroy(rtModel_t model) {
-  delete model;
+  uint32_t *stub = static_cast<uint32_t *>(model);
+  delete stub;
   return RT_ERROR_NONE;
 }
 

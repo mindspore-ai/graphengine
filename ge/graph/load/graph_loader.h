@@ -32,9 +32,9 @@
 namespace ge {
 class GraphLoader {
  public:
-  GraphLoader();
+  GraphLoader() = default;
 
-  virtual ~GraphLoader();
+  virtual ~GraphLoader() = default;
 
   GraphLoader(const GraphLoader &in) = delete;
 

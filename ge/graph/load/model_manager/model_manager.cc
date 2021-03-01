@@ -18,23 +18,15 @@
 
 #include <string>
 
-#include "mmpa/mmpa_api.h"
 #include "aicpu/aicpu_schedule/aicpu_op_type_list.h"
+#include "common/model_parser/model_parser.h"
 #include "common/dump/dump_manager.h"
 #include "common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
-#include "common/properties_manager.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/util.h"
 #include "graph/common/ge_call_wrapper.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "model/ge_root_model.h"
-#include "graph/common/local_context.h"
-#include "graph/utils/attr_utils.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "hybrid/hybrid_davinci_model.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -1403,7 +1395,7 @@ Status ModelManager::LaunchCustAicpuSo() {
 Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &mem_size, size_t &weight_size) {
   uint8_t *model_data = nullptr;
   uint32_t model_len = 0;
-  Status ret = DavinciModelParser::ParseModelContent(model, model_data, model_len);
+  Status ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_PARAM_INVALID, "parse model content failed!");
 
   OmFileLoadHelper om_file_helper;

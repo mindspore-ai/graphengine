@@ -16,15 +16,9 @@
 
 #include "framework/common/helper/model_helper.h"
 
-#include "common/ge/ge_util.h"
-#include "common/util/error_manager/error_manager.h"
-#include "framework/common/debug/log.h"
-#include "framework/common/util.h"
-#include "framework/common/debug/ge_log.h"
+#include "common/model_parser/model_parser.h"
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
-#include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 
 using std::string;
@@ -464,7 +458,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
     return ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA;
   }
 
-  Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
+  Status status = ModelParserBase::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Parse model content failed!");
     return ACL_ERROR_GE_PARAM_INVALID;
@@ -513,7 +507,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
     return INTERNAL_ERROR;
   }
 
-  Status status = ge::DavinciModelParser::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
+  Status status = ModelParserBase::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Parse model content failed!");
     return ACL_ERROR_GE_PARAM_INVALID;

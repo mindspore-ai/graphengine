@@ -118,6 +118,7 @@ const char* const kInferBeginTime = "infer_begin_time";
 const char* const kInferEndTime = "infer_end_time";
 const char* const kOutputBeginTime = "output_start_time";
 const char* const kOutputEndTime = "output_end_time";
+const uint32_t kStringHeadElems = 2;
 
 inline bool IsDataOp(const std::string &node_type) {
   return (node_type == DATA_TYPE) || (node_type == AIPP_DATA_TYPE) || (node_type == ANN_DATA_TYPE);
@@ -531,20 +532,20 @@ Status DavinciModel::DoTaskSink() {
   GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
 
   if (known_node_) {
-    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed");
+    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed.");
   }
 
-  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed");
+  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
 
-  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed");
+  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
 
-  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed");
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
 
-  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed");
+  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
 
   GE_CHK_RT_RET(rtModelLoadComplete(rt_model_handle_));
 
@@ -557,7 +558,7 @@ Status DavinciModel::SetTSDevice() {
   int64_t value = 0;
   bool ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_CORE_TYPE, value);
   uint32_t core_type = ret ? static_cast<uint32_t>(value) : 0;
-  GELOGD("SetTSDevice: %u", core_type);
+  GELOGD("SetTSDevice: %u.", core_type);
   rtError_t rt_ret = rtSetTSDevice(core_type);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "SetTSDevice failed, ret: 0x%X", rt_ret);
@@ -646,9 +647,9 @@ void DavinciModel::OpDebugUnRegister() {
 // initialize op sequence and call initialization function of each op respectively
 Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   // validating params
-  GELOGI("Priority is %d", priority_);
+  GELOGI("Priority is %d.", priority_);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(priority_ < 0 || priority_ > 7, return PARAM_INVALID,
-                                 "Priority must between 0-7, now is %d", priority_);
+                                 "Priority must between 0-7, now is %d.", priority_);
   GE_CHK_BOOL_RET_STATUS(ge_model_ != nullptr, PARAM_INVALID, "GeModel is null.");
   Graph graph = ge_model_->GetGraph();
   ComputeGraphPtr compute_graph = GraphUtils::GetComputeGraph(graph);
@@ -658,7 +659,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   InitRuntimeParams();
 
   // RTS set aicore or vectorcore
-  GE_CHK_STATUS_RET(SetTSDevice(), "SetTSDevice failed");
+  GE_CHK_STATUS_RET(SetTSDevice(), "SetTSDevice failed.");
 
   version_ = ge_model_->GetVersion();
   name_ = ge_model_->GetName();
@@ -709,7 +710,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   runtime_param_.graph_id = compute_graph->GetGraphID();
 
   // op debug register
-  GE_CHK_STATUS_RET(OpDebugRegister(), "OpDebugRegister failed");
+  GE_CHK_STATUS_RET(OpDebugRegister(), "OpDebugRegister failed.");
 
   GE_TIMESTAMP_START(TransAllVarData);
   GE_CHK_STATUS_RET(TransAllVarData(compute_graph, runtime_param_.graph_id), "TransAllVarData failed.");
@@ -717,7 +718,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(compute_graph, session_id_, device_id_), "copy var data failed.");
 
   GE_TIMESTAMP_START(InitModelMem);
-  GELOGD("Known node is %d", known_node_);
+  GELOGD("Known node is %d.", known_node_);
   GE_CHK_STATUS_RET_NOLOG(InitWeightMem(dev_ptr, weight_ptr, weight_size));
   if (!known_node_) {
     GE_CHK_STATUS_RET_NOLOG(InitFeatureMapAndP2PMem(dev_ptr, mem_size));
@@ -735,10 +736,10 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
                     (void)ge::AttrUtils::SetStr(op_desc, VAR_ATTR_VAR_IS_BROADCAST, "var_is_restore"););
   }
 
-  GE_CHK_STATUS_RET(InitNodes(compute_graph), "Init nodes failed");
+  GE_CHK_STATUS_RET(InitNodes(compute_graph), "Init nodes failed.");
 
   GE_TIMESTAMP_START(DoTaskSink);
-  GE_CHK_STATUS_RET(DoTaskSink(), "Task sink failed");
+  GE_CHK_STATUS_RET(DoTaskSink(), "Task sink failed.");
   GE_TIMESTAMP_END(DoTaskSink, "GraphLoader::DoTaskSink");
 
   /// In zero copy model, if a aicpu operator is connected to the first or last layer, before model execution,
@@ -3424,15 +3425,31 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
       elem_num = 1;
     }
     uint64_t *buff = reinterpret_cast<uint64_t *>(tensor->MutableData().data());
-    GE_CHK_BOOL_RET_STATUS(ge::CheckInt64Uint32MulOverflow(elem_num, kBytes) == SUCCESS, FAILED,
-                           "Shape size is invalid");
-    uint64_t offset = static_cast<uint64_t>(elem_num * kBytes);
+#ifndef ONLY_COMPILE_OPEN_SRC
+    if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) != SUCCESS) {
+      GELOGE(FAILED, "Shape size is invalid");
+      return FAILED;
+    }
+    uint64_t offset = elem_num * kBytes * kStringHeadElems;
+
+    uint64_t hbm_raw_data_base_addr =
+        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_output_addr[0])) + offset;
+    for (int64_t i = elem_num - 1; i >= 0; --i) {
+      buff[i * kStringHeadElems] = hbm_raw_data_base_addr + (buff[i * kStringHeadElems] - buff[0]);
+    }
+#else
+    if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes) != SUCCESS) {
+      GELOGE(FAILED, "Shape size is invalid");
+      return FAILED;
+    }
+    uint64_t offset = elem_num * kBytes;
 
     uint64_t hbm_raw_data_base_addr =
         static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_output_addr[0])) + offset;
     for (int64_t i = elem_num - 1; i >= 0; --i) {
       buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
     }
+#endif
   }
   GELOGI("[IMAS]InitConstant memcpy graph_%u type[V] name[%s] output[%d] memaddr[%p] mem_size[%lu] datasize[%zu]",
          runtime_param_.graph_id, op_desc->GetName().c_str(), 0, v_output_addr[0], v_output_size[0],

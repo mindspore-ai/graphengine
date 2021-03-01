@@ -34,7 +34,7 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
     return PARAM_INVALID;
   }
   if (node->GetType() == CONSTANT || node->GetType() == CONSTANTOP || node->GetType() == DATA) {
-    GELOGD("Node %s is const or data. Ignore current pass.", node->GetName().c_str());
+    GELOGD("Node %s is const. Ignore current pass.", node->GetName().c_str());
     return SUCCESS;
   }
   // Node like no op, it has no output

@@ -37,12 +37,14 @@ class SingleOpManager {
   Status GetOpFromModel(const std::string &model_name,
                         const ge::ModelData &model_data,
                         void *stream,
-                        SingleOp **single_op);
+                        SingleOp **single_op,
+                        const uint64_t model_id);
 
   Status GetDynamicOpFromModel(const std::string &model_name,
                                const ge::ModelData &model_data,
                                void *stream,
-                               DynamicSingleOp **dynamic_single_op);
+                               DynamicSingleOp **dynamic_single_op,
+                               const uint64_t model_id);
 
   StreamResource *GetResource(uintptr_t resource_id, rtStream_t stream);
 

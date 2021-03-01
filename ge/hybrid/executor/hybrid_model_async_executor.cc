@@ -251,7 +251,8 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         if (k >= shape.GetDimNum()) {
           break;
         }
-        if (shape.GetDim(k) < range[k].first || shape.GetDim(k) > range[k].second) {
+        // range[k].second can be -1
+        if (shape.GetDim(k) < range[k].first || (range[k].second >= 0 && shape.GetDim(k) > range[k].second)) {
           GELOGE(PARAM_INVALID, "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld]",
                  input_index, k, shape.GetDim(k), range[k].first, range[k].second);
           return PARAM_INVALID;

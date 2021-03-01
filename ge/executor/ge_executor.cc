@@ -931,12 +931,22 @@ Status GeExecutor::GetMemAndWeightSize(const void *model_data, size_t model_size
 
 Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                 SingleOp **single_op) {
-  return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op);
+  return LoadSingleOpV2(model_name, modelData, stream, single_op, 0);
+}
+
+Status GeExecutor::LoadSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                  SingleOp **single_op, const uint64_t model_id) {
+  return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op, model_id);
 }
 
 Status GeExecutor::LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                        DynamicSingleOp **single_op) {
-  return SingleOpManager::GetInstance().GetDynamicOpFromModel(model_name, modelData, stream, single_op);
+  return LoadDynamicSingleOpV2(model_name, modelData, stream, single_op, 0);
+}
+
+Status GeExecutor::LoadDynamicSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                         DynamicSingleOp **single_op, const uint64_t model_id) {
+  return SingleOpManager::GetInstance().GetDynamicOpFromModel(model_name, modelData, stream, single_op, model_id);
 }
 
 Status GeExecutor::ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,

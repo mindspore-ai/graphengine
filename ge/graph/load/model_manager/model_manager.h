@@ -73,7 +73,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge::GeRootModel> &ge_root_model,
                              std::shared_ptr<ModelListener> listener);
 
-  ge::Status DoLoadHybridModelOnline(uint32_t model_id, const shared_ptr<ge::GeRootModel> &ge_root_model,
+  ge::Status DoLoadHybridModelOnline(uint32_t model_id, const string &model_name, const shared_ptr<ge::GeRootModel> &ge_root_model,
                                      const std::shared_ptr<ModelListener> &listener);
 
   ///

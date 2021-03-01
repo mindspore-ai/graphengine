@@ -37,6 +37,7 @@ constexpr int kLaunchRetryTimes = 1000;
 constexpr int kSleepTime = 10;
 constexpr uint64_t kReleaseFlag = 1;
 constexpr int kCopyNum = 2;
+constexpr uint64_t kInferSessionId = 0;
 void FreeHbm(void *var) {
   if (var) {
     (void)rtFree(var);
@@ -45,7 +46,7 @@ void FreeHbm(void *var) {
 }  // namespace
 
 Status OpTask::OpenDump(rtStream_t stream) {
-  if (DumpManager::GetInstance().GetDumpProperties().IsSingleOpNeedDump()) {
+  if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
     GELOGI("Dump is open in single op, start to set dump info");
     std::vector<uint64_t> input_addrs;
     std::vector<uint64_t> output_adds;
@@ -69,7 +70,7 @@ Status OpTask::OpenDump(rtStream_t stream) {
       uint64_t output_addr = arg_base[input_size + j];
       output_adds.emplace_back(output_addr);
     }
-    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(), op_desc_, input_addrs, output_adds, stream);
+    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(kInferSessionId), op_desc_, input_addrs, output_adds, stream);
     auto status = dump_op_.LaunchDumpOp();
     if (status != SUCCESS) {
       GELOGE(status, "Launch dump op failed in single op");
@@ -209,11 +210,6 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
     return RT_ERROR_TO_GE_STATUS(ret);
   }
   GELOGI("[TASK_INFO] %s", this->stub_name_.c_str());
-  auto status = OpenDump(stream);
-  if (status != SUCCESS) {
-    GELOGE(status, "Open dump failed in the tbe single op %s", this->stub_name_.c_str());
-    return status;
-  }
 
   return SUCCESS;
 }
@@ -506,6 +502,10 @@ Status AiCpuBaseTask::UpdateOutputShape(vector<GeTensorDesc> &output_desc) {
     aicpu_ext_handle_->GetOutputShapeAndType(i, shape, data_type);
     GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]),
                       "AiCpuCCTask Update [%zu]th output shape failed.", i);
+    if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
+      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]),
+                      "AiCpuCCTask Update [%zu]th output desc failed.", i);
+    }
   }
   GELOGD("Update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape finished.");
   return SUCCESS;
@@ -616,12 +616,6 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
 
-  auto status = OpenDump(stream);
-  if (status != SUCCESS) {
-    GELOGE(status, "Open dump failed in aicpu single op %s", this->op_type_.c_str());
-    return status;
-  }
-
   GELOGD("Done launch kernel successfully. task = %s", this->op_type_.c_str());
   return SUCCESS;
 }
@@ -715,6 +709,10 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
 
     GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(GeShape(shape_dims), output_desc[i]),
                       "AiCpuTask update [%zu]th output shape failed.", i);
+    if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
+      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]),
+                      "AiCpuTask update [%zu]th output desc failed.", i);
+    }
   }
   return SUCCESS;
 }
@@ -891,12 +889,6 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
-  auto status = OpenDump(stream);
-  if (status != SUCCESS) {
-    GELOGE(status, "Open dump failed in the aicpucc single op %s", this->kernel_name_.c_str());
-    return status;
-  }
-
   return SUCCESS;
 }
 

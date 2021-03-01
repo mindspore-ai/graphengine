@@ -47,6 +47,7 @@ const char *const kDeleteCustOp = "deleteCustOp";
 const int kTimeSpecNano = 1000000000;
 const int kTimeSpecMiro = 1000000;
 const int kOpNameMaxSize = 100;
+const uint64_t kInferSessionId = 0;
 #pragma pack(push, 1)
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
@@ -270,13 +271,14 @@ ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uin
   return SUCCESS;
 }
 
-ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const shared_ptr<ge::GeRootModel> &ge_root_model,
+ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string &model_name, const shared_ptr<ge::GeRootModel> &ge_root_model,
                                                  const shared_ptr<ModelListener> &listener) {
   auto hybrid_model = hybrid::HybridDavinciModel::Create(ge_root_model);
   GE_CHECK_NOTNULL(hybrid_model);
   hybrid_model->SetListener(listener);
   hybrid_model->SetModelId(model_id);
   hybrid_model->SetDeviceId(GetContext().DeviceId());
+  hybrid_model->SetModelName(model_name);
   GE_CHK_STATUS_RET(hybrid_model->Init(), "Failed to init hybrid model. model_id = %u", model_id);
   auto shared_model = std::shared_ptr<hybrid::HybridDavinciModel>(hybrid_model.release());
   InsertModel(model_id, shared_model);
@@ -296,10 +298,11 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   }
 
   bool is_shape_unknown = false;
+  string model_name = "";
   GE_CHK_STATUS_RET(ge_root_model->CheckIsUnknownShape(is_shape_unknown), "CheckIsUnknownShape failed, model id:%u",
                     model_id);
   if (is_shape_unknown || GetContext().GetHostExecFlag()) {
-    return DoLoadHybridModelOnline(model_id, ge_root_model, listener);
+    return DoLoadHybridModelOnline(model_id, model_name, ge_root_model, listener);
   }
 
   mmTimespec timespec = mmGetTickCount();
@@ -313,7 +316,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   davinci_model->SetId(model_id);
   davinci_model->SetDeviceId(GetContext().DeviceId());
 
-  const DumpProperties &dump_properties = PropertiesManager::Instance().GetDumpProperties(GetContext().SessionId());
+  const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(GetContext().SessionId());
   davinci_model->SetDumpProperties(dump_properties);
   dump_properties_ = dump_properties;
 
@@ -1028,7 +1031,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model, shared_ptr<ModelListener> listener,
                                       void *dev_ptr, size_t mem_size, void *weight_ptr, size_t weight_size) {
   GE_CHK_BOOL_RET_STATUS(model.key.empty() || mmAccess2(model.key.c_str(), M_F_OK) == EN_OK,
-      ACL_ERROR_GE_PARAM_INVALID, "input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
+      ACL_ERROR_GE_PARAM_INVALID, "Input key file path %s is invalid, %s", model.key.c_str(), strerror(errno));
   GenModelId(&model_id);
 
   mmTimespec timespec = mmGetTickCount();
@@ -1045,7 +1048,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     GE_CHK_STATUS_RET(model_helper.GetGeRootModel()->CheckIsUnknownShape(is_shape_unknown),
                       "CheckIsUnknownShape failed, model id:%u", model_id);
     if (is_shape_unknown || GetContext().GetHostExecFlag()) {
-      return DoLoadHybridModelOnline(model_id, model_helper.GetGeRootModel(), listener);
+      return DoLoadHybridModelOnline(model_id, model.om_name, model_helper.GetGeRootModel(), listener);
     }
   }
 
@@ -1073,8 +1076,8 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     }
     davinci_model->SetDeviceId(device_id);
     davinci_model->SetOmName(model.om_name);
-    if (DumpManager::GetInstance().GetDumpProperties().IsDumpOpen()) {
-      davinci_model->SetDumpProperties(DumpManager::GetInstance().GetDumpProperties());
+    if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsDumpOpen()) {
+      davinci_model->SetDumpProperties(DumpManager::GetInstance().GetDumpProperties(kInferSessionId));
     } else {
       davinci_model->SetDumpProperties(dump_properties_);
     }
@@ -1084,9 +1087,9 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     /// Update session_id for infer in load model to avoid the same session_id.
     uint64_t new_session_id;
     ret = GenSessionId(new_session_id);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Generate session_id for infer failed.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Generate session_id for inference failed.");
     ret = davinci_model->UpdateSessionId(new_session_id);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Update session_id for infer failed.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "Update session_id for inference failed.");
 
     ret = davinci_model->Init(dev_ptr, mem_size, weight_ptr, weight_size);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, break, "DavinciInit failed.");

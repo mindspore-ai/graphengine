@@ -28,14 +28,14 @@ class DumpManager {
   static DumpManager &GetInstance();
 
   Status SetDumpConf(const DumpConfig &dump_config);
-  const DumpProperties &GetDumpProperties();
-  void SetModelName(const std::string &model_name);
-  const std::string &GetModelName();
+  const DumpProperties &GetDumpProperties(uint64_t session_id);
+  const std::map<uint64_t, DumpProperties> &GetDumpPropertiesMap() { return dump_properties_map_; }
+  void AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties);
+  void RemoveDumpProperties(uint64_t session_id);
 
  private:
-  DumpProperties dump_properties_;
   std::mutex mutex_;
-  std::string model_name_;
+  std::map<uint64_t, DumpProperties> dump_properties_map_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_DUMP_DUMP_MANAGER_H_

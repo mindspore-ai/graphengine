@@ -122,6 +122,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::ClearDumpI
   dump_path_.clear();
   dump_step_.clear();
   dump_mode_.clear();
+  dump_op_switch_.clear();
+  dump_status_.clear();
   is_op_debug_ = false;
   op_debug_mode_ = 0;
 }
@@ -201,7 +203,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperti
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpOpSwitch(
-    const std::string dump_op_switch) {
+    const std::string &dump_op_switch) {
   dump_op_switch_ = dump_op_switch;
 }
 
@@ -230,6 +232,8 @@ void DumpProperties::CopyFrom(const DumpProperties &other) {
     dump_path_ = other.dump_path_;
     dump_step_ = other.dump_step_;
     dump_mode_ = other.dump_mode_;
+    dump_status_ = other.dump_status_;
+    dump_op_switch_ = other.dump_op_switch_;
 
     model_dump_properties_map_ = other.model_dump_properties_map_;
     is_op_debug_ = other.is_op_debug_;

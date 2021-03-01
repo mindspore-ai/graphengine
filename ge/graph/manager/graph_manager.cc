@@ -26,6 +26,7 @@
 
 #include "common/math/math_util.h"
 #include "common/thread_pool.h"
+#include "common/dump/dump_manager.h"
 #include "analyzer/analyzer.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/common/local_context.h"
@@ -3120,7 +3121,7 @@ Status GraphManager::Build(const GraphNodePtr &graph_node, ComputeGraphPtr &comp
   }
 
   bool is_always_dump = false;
-  if (!PropertiesManager::Instance().GetDumpProperties(session_id).GetDumpPath().empty()) {
+  if (!DumpManager::GetInstance().GetDumpProperties(session_id).GetDumpPath().empty()) {
     is_always_dump = true;
   }
 

@@ -765,7 +765,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
     }
   }
 
-  CREATE_STD_THREAD(shrink_id_, &DavinciModel::Shrink, this);
+  Shrink();
   return SUCCESS;
 }
 
@@ -2720,10 +2720,6 @@ Status DavinciModel::DestroyThread() {
 
   if (thread_id_.joinable()) {
     thread_id_.join();
-  }
-
-  if (shrink_id_.joinable()) {
-    shrink_id_.join();
   }
 
   return SUCCESS;

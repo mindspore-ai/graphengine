@@ -906,7 +906,6 @@ class DavinciModel {
   vector<int64_t> output_memory_size_list_;
 
   thread thread_id_;
-  thread shrink_id_;
 
   shared_ptr<ModelListener> listener_;
 

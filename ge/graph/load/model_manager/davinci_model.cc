@@ -2292,7 +2292,7 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   model_time_info[kModelName] = name;
   model_time_info[kModeleId] = this->Id();
   model_time_info[kRequestId] = current_data.request_id;
-  model_time_info[kThreadId] = GetDataInputTid();
+  model_time_info[kThreadId] = mmGetTid();
   model_time_info[kInputBeginTime] = time_info_.processBeginTime;
   model_time_info[kInputEndTime] = time_info_.processEndTime;
   model_time_info[kInferBeginTime] = time_info_.inferenceBeginTime;

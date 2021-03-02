@@ -165,14 +165,6 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
     }
   }
 
-  for (const auto &data_nodes : graph_nodes) {
-    if (data_nodes.second.size() != graph_nodes.begin()->second.size()) {
-      GELOGE(FAILED, "Subgraph %s has invalid Data nodes[%zu != %zu]",
-             data_nodes.first->GetName().c_str(), data_nodes.second.size(), graph_nodes.begin()->second.size());
-      return FAILED;
-    }
-  }
-
   return SUCCESS;
 }
 

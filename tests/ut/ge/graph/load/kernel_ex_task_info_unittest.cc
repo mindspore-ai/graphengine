@@ -146,4 +146,12 @@ TEST_F(UtestKernelExTaskInfo, kernel_ex_task_ext_info) {
   EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
 }
 
+TEST_F(UtestKernelExTaskInfo, parse_update_addr) {
+  const string ext_info = {3,0,0,0,4,0,0,0,4,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
 }  // namespace ge

@@ -61,6 +61,8 @@ class AicpuExtInfoHandler {
 
   Status GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type);
 
+  bool IsNeedRefreshIOAddr();
+
  private:
 
   Status ParseExtShapeType(AicpuExtInfo *aicpu_ext_info);
@@ -68,6 +70,7 @@ class AicpuExtInfoHandler {
   Status ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtBitMap(AicpuExtInfo *aicpu_ext_info);
+  Status ParseExtUpdateAddr(AicpuExtInfo *aicpu_ext_info);
 
   static Status UpdateShapeAndType(const GeShape &shape,
                                    DataType data_type,
@@ -84,6 +87,7 @@ class AicpuExtInfoHandler {
   UnknowShapeOpType unknown_type_;
   AicpuSessionInfo *session_info_ = nullptr;
   uint64_t *bit_map_ = nullptr;
+  uint32_t *update_addr_ = nullptr;
 
   std::unique_ptr<uint8_t[]> ext_info_;
   size_t ext_info_len_ = 0;

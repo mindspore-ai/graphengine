@@ -2590,7 +2590,7 @@ void *DavinciModel::Run(DavinciModel *model) {
   bool seq_end_flag = false;
   uint32_t model_id = model->Id();
   uint32_t device_id = model->GetDeviceId();
-  GetContext().SetWorkStreamId(model->GetWorkStreamId());
+  ErrorManager::GetInstance().SetErrorContext(model->GetErrorContext());
 
   GELOGI("Model Run thread start, model_id:%u.", model_id);
   rtError_t rt_ret = rtSetDevice(static_cast<int32_t>(device_id));
@@ -2753,7 +2753,7 @@ Status DavinciModel::ModelRunStart() {
   int64_t maxDumpOpNum = std::strtol(opt.c_str(), nullptr, kDecimal);
   maxDumpOpNum_ = maxDumpOpNum;
 
-  work_stream_id_ = GetContext().WorkStreamId();
+  error_context_ = ErrorManager::GetInstance().GetErrorContext();
   CREATE_STD_THREAD(thread_id_, DavinciModel::Run, this);
   GELOGI("model tread create success, model id:%u.", model_id_);
   return SUCCESS;

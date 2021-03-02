@@ -542,7 +542,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     }
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
                                             compute_graph->GetGraphID(), subgraph,
-                                            compute_graph->GetName(), session_id, GetContext().WorkStreamId(),
+                                            compute_graph->GetName(), session_id,
+                                            ErrorManager::GetInstance().GetErrorContext(),
                                             GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
@@ -558,7 +559,8 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
       }
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
                                               compute_graph->GetGraphID(), subgraph,
-                                              compute_graph->GetName(), session_id, GetContext().WorkStreamId(),
+                                              compute_graph->GetName(), session_id,
+                                              ErrorManager::GetInstance().GetErrorContext(),
                                               GetThreadLocalContext());
       if (!f.valid()) {
         GELOGE(FAILED, "Future is invalid");
@@ -2509,10 +2511,10 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
                                                      const SubGraphInfoPtr &sub_graph_info_ptr,
                                                      const std::string &root_graph_name,
                                                      uint64_t session_id,
-                                                     uint64_t work_stream_id,
+                                                     const struct ErrorMessage::Context &error_context,
                                                      const GEThreadLocalContext &ge_context) {
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
-    GetContext().SetWorkStreamId(work_stream_id);
+    ErrorManager::GetInstance().SetErrorContext(error_context);
     GetContext().SetSessionId(session_id);
     GetThreadLocalContext() = ge_context;
     graph_manager->UpdateLocalOmgContext(root_graph_id);
@@ -2560,7 +2562,8 @@ Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge
   GELOGI("[GraphManager] Start to run graph async, graph_id=%u, inputsSize=%zu.", graph_id, inputs.size());
 
   bool ret = prerun_args_q_.Push(PreRunArgs({graph_id, inputs, session_id,
-    GetContext().WorkStreamId(), GetThreadLocalContext(), callback}));
+    ErrorManager::GetInstance().GetErrorContext(),
+    GetThreadLocalContext(), callback}));
   if (!ret) {
     GELOGE(FAILED, "[GraphManager] Run graph async failed, graph_id=%u.", graph_id);
     return FAILED;
@@ -2647,7 +2650,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
 
     GELOGI("A new loop start.");
 
-    GetContext().SetWorkStreamId(args.work_stream_id);
+    ErrorManager::GetInstance().SetErrorContext(args.error_context);
     GetContext().SetSessionId(args.session_id);
     GetThreadLocalContext() = args.context;
     graph_manager->UpdateLocalOmgContext(args.graph_id);
@@ -2729,7 +2732,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
       ge_root_model = graph_node->GetGeRootModel();
     }
 
-    graph_manager->run_args_q_.Push(RunArgs( { graph_node, args.graph_id, args.session_id, args.work_stream_id,
+    graph_manager->run_args_q_.Push(RunArgs( { graph_node, args.graph_id, args.session_id, args.error_context,
         args.input_tensor, ge_root_model, GetThreadLocalContext(), args.callback }));
     GELOGI("Loop end.");
   }
@@ -2829,7 +2832,7 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
 
     GELOGI("A new loop start.");
 
-    GetContext().SetWorkStreamId(args.work_stream_id);
+    ErrorManager::GetInstance().SetErrorContext(args.error_context);
     GetContext().SetSessionId(args.session_id);
     GetThreadLocalContext() = args.context;
     graph_manager->UpdateLocalOmgContext(args.graph_id);

@@ -46,14 +46,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
-  SingleOp *op = res->GetOperator(model_data.model_data);
+  SingleOp *op = res->GetOperator(model_id);
   if (op != nullptr) {
     GELOGD("Got operator from stream cache");
     *single_op = op;
     return SUCCESS;
   }
 
-  return res->BuildOperator(model_name, model_data, single_op);
+  return res->BuildOperator(model_data, single_op, model_id);
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::ReleaseResource(void *stream) {
@@ -116,14 +116,14 @@ Status SingleOpManager::GetDynamicOpFromModel(const string &model_name,
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
-  DynamicSingleOp *op = res->GetDynamicOperator(model_data.model_data);
+  DynamicSingleOp *op = res->GetDynamicOperator(model_id);
   if (op != nullptr) {
     GELOGD("Got operator from stream cache");
     *single_op = op;
     return SUCCESS;
   }
 
-  return res->BuildDynamicOperator(model_name, model_data, single_op);
+  return res->BuildDynamicOperator(model_data, single_op, model_id);
 }
 
 void SingleOpManager::RegisterTilingFunc() {

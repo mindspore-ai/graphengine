@@ -46,17 +46,22 @@ graphStatus WeightCompressFunc(ComputeGraphPtr &graph, const string &cfg_path) {
 
   vector<string> compress_node_vec = StringUtils::Split(compress_nodes, ';');
   for (size_t i = 0; i < compress_node_vec.size(); ++i) {
+    bool is_find = false;
     for (auto &node_ptr : graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node_ptr);
       auto op_desc = node_ptr->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
 
       if ((op_desc->GetName() == compress_node_vec[i]) || IsOriginalOpFind(op_desc, compress_node_vec[i])) {
+        is_find = true;
         if (!ge::AttrUtils::SetBool(op_desc, ge::ATTR_NAME_COMPRESS_WEIGHT, true)) {
           GELOGE(GRAPH_FAILED, "node %s SetBool failed.", compress_node_vec[i].c_str());
           return GRAPH_FAILED;
         }
       }
+    }
+    if (!is_find) {
+      GELOGW("node %s is not in graph", compress_node_vec[i].c_str());
     }
   }
   return GRAPH_SUCCESS;

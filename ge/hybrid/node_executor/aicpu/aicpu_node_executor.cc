@@ -61,7 +61,9 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GELOGD("To update aicpu_task ext_info session_info session_id to %lu", session_id);
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "UpdateSessionInfoSessionId failed.");
-  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(!node_item_->is_dynamic), "UpdateExecuteMode failed.");
+
+  bool execute_mode = !aicpu_ext_handle_.IsNeedRefreshIOAddr() && !node_item_->is_dynamic;
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(execute_mode), "UpdateExecuteMode failed.");
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),

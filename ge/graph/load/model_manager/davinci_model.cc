@@ -3988,7 +3988,7 @@ Status DavinciModel::InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc)
   vector<string> inputs;
   if (AttrUtils::GetListStr(op_desc, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
     std::string input = inputs[kAippOriginInputIndex];
-    GELOGI("origin input str: %s", input.c_str());
+    GELOGI("origin input str: %s.", input.c_str());
     std::vector<std::string> infos = ge::StringUtils::Split(input, ':');
     if (infos.size() != kAippInfoNum) {
       GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID, "origin input str is invalid[%zu, %u].", infos.size(), kAippInfoNum);
@@ -4062,7 +4062,7 @@ Status DavinciModel::InitAippInputOutputDims(uint32_t index, const OpDescPtr &op
       ConstGeTensorDescPtr data_input_desc = op_desc->GetInputDescPtr(kDataIndex);
       int64_t data_input_size;
       (void)TensorUtils::GetSize(*(op_desc->GetInputDescPtr(kDataIndex)), data_input_size);
-      GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s",
+      GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s.",
           index, op_desc->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
           TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
           TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),

@@ -29,6 +29,7 @@
 #include "common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/properties_manager.h"
+#include "common/dump/opdebug_register.h"
 #include "common/types.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
@@ -984,6 +985,7 @@ class DavinciModel {
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
+  OpdebugRegister opdebug_register_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
   map<OpDescPtr, void *> saved_task_addrs_;  // release after DavinciModel::Init
@@ -1021,8 +1023,6 @@ class DavinciModel {
   // for op debug
   mutex debug_reg_mutex_;
   bool is_op_debug_reg_ = false;
-  void *op_debug_addr_ = nullptr;
-  void *p2p_debug_addr_ = nullptr;
   bool is_online_infer_dynamic_ = false;
   bool is_getnext_sink_dynamic_ = false;
   vector<int32_t> cur_dynamic_dims_;

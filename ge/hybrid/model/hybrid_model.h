@@ -61,6 +61,10 @@ class HybridModel {
     device_id_ = device_id;
   }
 
+  uint32_t GetDeviceId() {
+    return device_id_;
+  }
+
   void SetModelId(uint32_t model_id) {
     model_id_ = model_id;
   }

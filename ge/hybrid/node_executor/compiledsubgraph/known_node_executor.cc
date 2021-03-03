@@ -124,7 +124,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
   }
   if (!load_flag_) {
     auto dump_properties = context.GetDumpProperties();
-    if (dump_properties.IsDumpOpen()) {
+    if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
       davinci_model_->SetDumpProperties(dump_properties);
       void *global_step = nullptr;
       TensorValue *varible_global_step = context.GetVariable(NODE_NAME_GLOBAL_STEP);

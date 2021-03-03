@@ -232,6 +232,8 @@ DavinciModel::~DavinciModel() {
 
       FreeP2PMem();
 
+      OpDebugUnRegister();
+
       if (l1_fusion_addr_ != nullptr) {
         GE_CHK_RT(rtFree(l1_fusion_addr_));
       }
@@ -241,8 +243,6 @@ DavinciModel::~DavinciModel() {
         rt_model_handle_ = nullptr;
       }
     }
-
-    OpDebugUnRegister();
 
     ReleaseTask();
     CleanTbeHandle();
@@ -568,77 +568,21 @@ Status DavinciModel::SetTSDevice() {
 }
 
 Status DavinciModel::OpDebugRegister() {
-  bool is_op_debug = false;
-  (void)ge::AttrUtils::GetBool(ge_model_, ATTR_OP_DEBUG_FLAG, is_op_debug);
-  GELOGD("The value of op debug in ge_model is %d.", is_op_debug);
-  if (is_op_debug) {
-    debug_reg_mutex_.lock();
-    rtError_t rt_ret = rtMalloc(&op_debug_addr_, kOpDebugMemorySize, RT_MEMORY_DDR);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
+  if (GetDumpProperties().IsOpDebugOpen()) {
+     uint32_t op_debug_mode = GetDumpProperties().GetOpDebugMode();
+    auto ret = opdebug_register_.RegisterDebugForModel(rt_model_handle_, op_debug_mode, data_dumper_);
+    if (ret != SUCCESS) {
+      GELOGE(ret,"Register known shape op debug failed, ret: 0x%X",ret);
+      return ret;
     }
-
-    uint64_t debug_addrs_tmp = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(op_debug_addr_));
-
-    // For data dump, aicpu needs the pointer to pointer that save the real debug address.
-    rt_ret = rtMalloc(&p2p_debug_addr_, kDebugP2pSize, RT_MEMORY_HBM);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
-    }
-    rt_ret = rtMemcpy(p2p_debug_addr_, sizeof(uint64_t), &debug_addrs_tmp, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtMemcpy to p2p_addr error: 0x%X", rt_ret);
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
-    }
-
-    uint32_t op_debug_mode = 0;
-    (void)ge::AttrUtils::GetInt(ge_model_, ATTR_OP_DEBUG_MODE, op_debug_mode);
-    GELOGD("The value of op_debug_mode in ge_model_ is %u.", op_debug_mode);
-    uint32_t debug_task_id = 0;
-    uint32_t debug_stream_id = 0;
-    rt_ret = rtDebugRegister(rt_model_handle_, op_debug_mode, op_debug_addr_, &debug_stream_id, &debug_task_id);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtDebugRegister error, ret: 0x%X", rt_ret);
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
-    }
-    GELOGI("debug_task_id:%d, debug_stream_id:%u", debug_task_id, debug_stream_id);
     is_op_debug_reg_ = true;
-
-    data_dumper_.SaveOpDebugId(debug_task_id, debug_stream_id, p2p_debug_addr_, is_op_debug);
   }
-
   return SUCCESS;
 }
 
 void DavinciModel::OpDebugUnRegister() {
   if (is_op_debug_reg_) {
-    debug_reg_mutex_.unlock();
-    rtError_t rt_ret = RT_ERROR_NONE;
-    if (rt_model_handle_ != nullptr) {
-      GELOGD("start call debug_unregister.");
-      rt_ret = rtDebugUnRegister(rt_model_handle_);
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGW("rtDebugUnRegister failed, ret: 0x%X", rt_ret);
-      }
-    }
-
-    if (op_debug_addr_ != nullptr) {
-      rt_ret = rtFree(op_debug_addr_);
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGW("rtFree failed, ret: 0x%X", rt_ret);
-      }
-      op_debug_addr_ = nullptr;
-    }
-
-    if (p2p_debug_addr_ != nullptr) {
-      rt_ret = rtFree(p2p_debug_addr_);
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGW("rtFree failed, ret: 0x%X", rt_ret);
-      }
-      p2p_debug_addr_ = nullptr;
-    }
+    opdebug_register_.UnregisterDebugForModel(rt_model_handle_);
     is_op_debug_reg_ = false;
   }
   return;

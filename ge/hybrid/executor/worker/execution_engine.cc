@@ -266,9 +266,9 @@ Status NodeDoneCallback::OnNodeDone() {
   RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[Compute] End");
   RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[Callback] Start");
 
-  auto dump_path = context_->GetDumpProperties().GetDumpPath();
-  if (!dump_path.empty()) {
-    GELOGI("Start to dump dynamic shape,dump_path is %s", dump_path.c_str());
+  const DumpProperties &dump_properties = context_->GetDumpProperties();
+  if (dump_properties.IsDumpOpen() || context_->IsOverFlow()) {
+    GELOGI("Start to dump dynamic shape op");
     GE_CHK_STATUS_RET(DumpDynamicNode(), "Failed to dump dynamic node");
   }
 

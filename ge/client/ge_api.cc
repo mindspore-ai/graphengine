@@ -80,6 +80,12 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitializeImpl(const std::map<string, string> &options) {
   GELOGT(TRACE_INIT, "GEInitialize start");
+  std::string path_base = ge::GELib::GetPath();
+  auto ret = ErrorManager::GetInstance().Init(path_base);
+  if (ret != SUCCESS) {
+    GELOGE(GE_CLI_INIT_FAILED, "ErrorManager init fail");
+    return ret;
+  }
 
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   // 0.check init status
@@ -114,7 +120,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
   GE_TIMESTAMP_START(GELibInitialize);
-  Status ret = ge::GELib::Initialize(options);
+  ret = ge::GELib::Initialize(options);
   GE_TIMESTAMP_END(GELibInitialize, "GEInitialize::GELibInitialize");
   if (ret != SUCCESS) {
     GELOGE(GE_CLI_INIT_FAILED, "geInitialize failed, error code = %u", ret);

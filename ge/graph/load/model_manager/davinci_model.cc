@@ -2590,7 +2590,7 @@ void *DavinciModel::Run(DavinciModel *model) {
   bool seq_end_flag = false;
   uint32_t model_id = model->Id();
   uint32_t device_id = model->GetDeviceId();
-  GetContext().SetWorkStreamId(model->GetWorkStreamId());
+  ErrorManager::GetInstance().SetErrorContext(model->GetErrorContext());
 
   GELOGI("Model Run thread start, model_id:%u.", model_id);
   rtError_t rt_ret = rtSetDevice(static_cast<int32_t>(device_id));
@@ -2753,7 +2753,7 @@ Status DavinciModel::ModelRunStart() {
   int64_t maxDumpOpNum = std::strtol(opt.c_str(), nullptr, kDecimal);
   maxDumpOpNum_ = maxDumpOpNum;
 
-  work_stream_id_ = GetContext().WorkStreamId();
+  error_context_ = ErrorManager::GetInstance().GetErrorContext();
   CREATE_STD_THREAD(thread_id_, DavinciModel::Run, this);
   GELOGI("model tread create success, model id:%u.", model_id_);
   return SUCCESS;
@@ -3988,7 +3988,7 @@ Status DavinciModel::InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc)
   vector<string> inputs;
   if (AttrUtils::GetListStr(op_desc, ATTR_NAME_AIPP_INPUTS, inputs) && !inputs.empty()) {
     std::string input = inputs[kAippOriginInputIndex];
-    GELOGI("origin input str: %s", input.c_str());
+    GELOGI("origin input str: %s.", input.c_str());
     std::vector<std::string> infos = ge::StringUtils::Split(input, ':');
     if (infos.size() != kAippInfoNum) {
       GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID, "origin input str is invalid[%zu, %u].", infos.size(), kAippInfoNum);
@@ -4062,7 +4062,7 @@ Status DavinciModel::InitAippInputOutputDims(uint32_t index, const OpDescPtr &op
       ConstGeTensorDescPtr data_input_desc = op_desc->GetInputDescPtr(kDataIndex);
       int64_t data_input_size;
       (void)TensorUtils::GetSize(*(op_desc->GetInputDescPtr(kDataIndex)), data_input_size);
-      GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s",
+      GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s.",
           index, op_desc->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
           TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
           TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),

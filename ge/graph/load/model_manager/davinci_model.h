@@ -412,7 +412,7 @@ class DavinciModel {
   ///
   uint64_t GetSessionId() const { return session_id_; }
 
-  uint64_t GetWorkStreamId() const { return work_stream_id_; }
+  const struct ErrorMessage::Context &GetErrorContext() const { return error_context_; }
 
   ///
   /// @ingroup ge
@@ -958,7 +958,7 @@ class DavinciModel {
   vector<uintptr_t> output_mbuf_list_;  // output mbuf created by dequeue task.
 
   uint64_t session_id_;
-  uint64_t work_stream_id_;
+  struct ErrorMessage::Context error_context_;
 
   uint32_t device_id_;
 

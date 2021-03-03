@@ -16,6 +16,8 @@
 
 #include "common/util/error_manager/error_manager.h"
 
+using namespace ErrorMessage;
+
   ErrorManager &ErrorManager::GetInstance() {
     static ErrorManager instance;
     return instance;
@@ -58,7 +60,7 @@
   /// @param [in] value: vector parameter value
   ///
   void ErrorManager::ATCReportErrMessage(std::string error_code, const std::vector<std::string> &key,
-                                         const std::vector<std::string> &value) { 
+                                         const std::vector<std::string> &value) {
   }
 
   ///
@@ -78,3 +80,17 @@
   int ErrorManager::GetMstuneCompileFailedMsg(const std::string &graph_name, std::map<std::string, std::vector<std::string>> &msg_map) { return 0; }
 
 
+  void ErrorManager::GenWorkStreamIdDefault() {}
+
+  void ErrorManager::GenWorkStreamIdBySessionGraph(uint64_t session_id, uint64_t graph_id) {}
+
+  const std::string &ErrorManager::GetLogHeader() { return "[TEST][TEST]"; }
+
+  struct Context &ErrorManager::GetErrorContext() {
+    struct Context error_context;
+    return error_context;
+  }
+
+void ErrorManager::SetErrorContext(struct Context error_context) {}
+
+void ErrorManager::SetStage(const std::string &first_stage, const std::string &second_stage) {}

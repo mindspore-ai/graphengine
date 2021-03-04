@@ -76,7 +76,7 @@ TEST_F(UtestReplaceWithEmptyConstPass, replace_whith_empty_const_success) {
 
   // run pass on const1, graph still has 5 nodes
   auto const1 = graph->FindNode("const1");
-  Status ret = replace_with_empty_const_pass.Run(const1);
+  ret = replace_with_empty_const_pass.Run(const1);
   EXPECT_EQ(ret, SUCCESS);
   EXPECT_EQ(graph->GetDirectNodesSize(),5);
 

@@ -48,7 +48,8 @@ bool NeedHybridModel(GeModelPtr &ge_model) {
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   int32_t kernel_task_num = 0;
   for (int i = 0; i < tasks.size(); ++i) {
-    if (static_cast<rtModelTaskType_t>(tasks[i].type()) == RT_MODEL_TASK_KERNEL) {
+    auto task_type = static_cast<rtModelTaskType_t>(tasks[i].type());
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
       kernel_task_num++;
       if (kernel_task_num > 1) {
         return true;
@@ -254,9 +255,9 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
     GELOGI("[%s] Task[%d], type = %u, DebugString = %s", model_name_.c_str(), i, task_def.type(),
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-    if (task_type == RT_MODEL_TASK_KERNEL) {
-      const domi::KernelDef &kernel_def = task_def.kernel();
-      const auto &context = kernel_def.context();
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
+      const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
+                                                                task_def.kernel_with_handle().context();
       auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
       if (kernel_type == ccKernelType::TE) {
         GELOGD("Building TBE task");

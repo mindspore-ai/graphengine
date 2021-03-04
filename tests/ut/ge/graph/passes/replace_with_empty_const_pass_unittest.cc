@@ -75,7 +75,7 @@ TEST_F(UtestReplaceWithEmptyConstPass, replace_whith_empty_const_success) {
   EXPECT_EQ(graph->GetDirectNodesSize(),5);
 
   auto cast1 = graph->FindNode("cast1");
-  ret = replace_with_empty_const_pass.Run(cast1)
+  ret = replace_with_empty_const_pass.Run(cast1);
   EXPECT_EQ(cast1->GetOutAllNodes().size(),0);
   auto conv2d = graph->FindNode("conv2d");
   EXPECT_EQ(conv2d->GetInDataNodes().at(0)->GetType(),"Const");

@@ -48,7 +48,6 @@ ut::GraphBuilder Graph1Builder() {
   add1->GetOpDesc()->AddInputDesc(GeTensorDesc(GeShape({1,1,8,8}),FORMAT_NCHW));
   add1->GetOpDesc()->AddInputDesc(GeTensorDesc(GeShape({1,1,8,8}),FORMAT_NCHW));
   add1->GetOpDesc()->AddOutputDesc(GeTensorDesc(GeShape({1,1,8,8}),FORMAT_NCHW));
-  cast1->GetOpDesc()->AddOutputDesc(GeTensorDesc(GeShape({1,1,8,8}),FORMAT_NCHW));
   GeTensorDesc empty_tensor(GeShape({1,0,8,8}),FORMAT_NCHW);
   cast1->GetOpDesc()->UpdateOutputDesc(0,empty_tensor);
 

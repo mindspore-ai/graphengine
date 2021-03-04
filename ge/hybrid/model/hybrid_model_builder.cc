@@ -1131,19 +1131,22 @@ Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const
       op_index = task_def.kernel_ex().op_index();
     } else if (task_type == RT_MODEL_TASK_HCCL) {
       op_index = task_def.kernel_hccl().op_index();
+    } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
+      op_index = task_def.kernel_with_handle().context().op_index();
     } else {
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
       continue;
     }
+    GELOGD("op_index = %u, task_type = %d", op_index, task_type);
 
     auto iter = node_map.find(op_index);
     if (iter == node_map.end()) {
-      GELOGE(INTERNAL_ERROR, "Failed to get node by index = %u", op_index);
+      GELOGE(INTERNAL_ERROR, "Failed to get node by op_index = %u", op_index);
       return INTERNAL_ERROR;
     }
 
     auto &node = iter->second;
-    if (task_type == RT_MODEL_TASK_KERNEL) {
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
       ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
     }
 

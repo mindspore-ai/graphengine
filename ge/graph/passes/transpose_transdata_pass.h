@@ -26,9 +26,9 @@ class TransposeTransDataPass : public BaseNodePass {
  private:
   Status CheckOneInAndOneOutDataAnchor(NodePtr &node) const;
   Status RemoveTranspose(NodePtr &node);
-  bool FusionIfNeed(OpDescPtr &op_desc, OpDescPtr &transdata_op_desc);
+  bool FusionIfNeed(OpDescPtr &op_desc, NodePtr &node);
   void CopyInputEdges(NodePtr &origin_node, NodePtr &new_node);
-  bool TransDataCheckAccuracySupported(const OpDescPtr &op_desc);
+  bool TransDataCheckAccuracySupported(NodePtr &node);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_TRANSPOSE_TRANSDATA_PASS_H_

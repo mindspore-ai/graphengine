@@ -86,7 +86,7 @@ Status TransposeTransDataPass::Run(NodePtr &node) {
     if (CheckOneInAndOneOutDataAnchor(out_node)) {
       return FAILED;
     }
-    if (!FusionIfNeed(op_desc, out_op_desc)) {
+    if (!FusionIfNeed(op_desc, out_node)) {
       continue;
     }
     CopyInputEdges(node, out_node);
@@ -152,7 +152,8 @@ Status TransposeTransDataPass::RemoveTranspose(NodePtr &node) {
   return SUCCESS;
 }
 
-bool TransposeTransDataPass::FusionIfNeed(OpDescPtr &op_desc, OpDescPtr &transdata_op_desc) {
+bool TransposeTransDataPass::FusionIfNeed(OpDescPtr &op_desc, NodePtr &node) {
+  auto transdata_op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
   GE_CHECK_NOTNULL(transdata_op_desc);
   auto out_input_desc = transdata_op_desc->MutableInputDesc(0);
@@ -187,7 +188,7 @@ bool TransposeTransDataPass::FusionIfNeed(OpDescPtr &op_desc, OpDescPtr &transda
   out_input_desc->SetFormat(src_format);
   out_input_desc->SetShape(src_shape);
 
-  if (!TransDataCheckAccuracySupported(transdata_op_desc)) {
+  if (!TransDataCheckAccuracySupported(node)) {
     out_input_desc->SetFormat(out_input_format);
     out_input_desc->SetShape(out_input_shape);
     return false;
@@ -224,7 +225,8 @@ void TransposeTransDataPass::CopyInputEdges(NodePtr &origin_node, NodePtr &new_n
     GraphUtils::CopyInCtrlEdges(origin_node, new_node) != GRAPH_SUCCESS, GELOGW("Copy in ctrl edges failed"); return);
 }
 
-bool TransposeTransDataPass::TransDataCheckAccuracySupported(const OpDescPtr &op_desc) {
+bool TransposeTransDataPass::TransDataCheckAccuracySupported(NodePtr &node) {
+  const OpDescPtr &op_desc = node->GetOpDesc();
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
     GELOGW("GELib not initialized");
@@ -244,7 +246,7 @@ bool TransposeTransDataPass::TransDataCheckAccuracySupported(const OpDescPtr &op
     auto &kernel_name = it.opKernelLib;
     auto kernel_info_store = kernel_map.find(kernel_name);
     if (kernel_info_store != kernel_map.end()) {
-      if (kernel_info_store->second->CheckAccuracySupported(op_desc, unsupported_reason, true)) {
+      if (kernel_info_store->second->CheckAccuracySupported(node, unsupported_reason, true)) {
         return true;
       }
     }

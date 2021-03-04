@@ -53,26 +53,20 @@ TEST_F(UtestGeGenerator, test_build_single_op_offline) {
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, "offline_"), GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
 }
 
-/*
 TEST_F(UtestGeGenerator, test_build_single_op_online) {
-  GeTensorDesc tensor_desc(GeShape(), FORMAT_NCHW, DT_FLOAT);
-  TensorUtils::SetSize(tensor_desc, 512);
-
+  GeTensorDesc tensor_desc;
   shared_ptr<OpDesc> op_desc = make_shared<OpDesc>("Add", "add");
-  EXPECT_EQ(op_desc->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
-  EXPECT_EQ(op_desc->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
-  EXPECT_EQ(op_desc->AddOutputDesc(tensor_desc), GRAPH_SUCCESS);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
 
   GeTensor tensor(tensor_desc);
   const vector<GeTensor> inputs = { tensor, tensor };
   const vector<GeTensor> outputs = { tensor };
 
-  // not Initialize, impl is null.
   GeGenerator generator;
   generator.Initialize({});
   ModelBufferData model_buffer;
-  EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_SYS, model_buffer), GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+  EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_AIVECTOR, model_buffer), FAILED);
 }
-*/
-
 }  // namespace ge

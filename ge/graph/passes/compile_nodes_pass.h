@@ -39,7 +39,7 @@ class CompileNodesPass : public GraphPass {
  private:
   graphStatus GetSupportedKernel(const NodePtr &node, const std::shared_ptr<GELib> instance, string &kernel_lib_name);
   bool CheckAccuracySupport(const OpsKernelInfoStorePtr &kernel_info, const std::shared_ptr<GELib> instance,
-                            OpDescPtr &op_desc);
+                            const NodePtr &node);
   graphStatus CompileNodes(const std::shared_ptr<GELib> instance,
                            std::unordered_map<string, vector<NodePtr>> &kernel_to_compile_nodes);
 };

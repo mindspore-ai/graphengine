@@ -66,7 +66,8 @@ bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
 }  // namespace
 
 namespace ge {
-static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engine_type) {
+static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_type) {
+  const OpDescPtr &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
   if (engine_type == ENGINE_SYS) {
     GELOGI("CheckEngineType: use default engine.");
@@ -123,7 +124,7 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
   auto kernel_info_store = kernel_map.find(kernel_name);
   if (kernel_info_store != kernel_map.end()) {
     std::string unsupported_reason;
-    if (kernel_info_store->second->CheckSupported(op_desc, unsupported_reason)) {
+    if (kernel_info_store->second->CheckSupported(node, unsupported_reason)) {
       op_desc->SetOpEngineName(op_engine_name);
       op_desc->SetOpKernelLibName(kernel_name);
       GELOGI("CheckEngineType:Set OpKernelLibName %s and engine name %s into op_desc %s", kernel_name.c_str(),
@@ -692,22 +693,23 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   OpDescPtr op_desc_tmp = AttrUtils::CloneOpDesc(op_desc);
   GE_CHECK_NOTNULL(op_desc_tmp);
 
-  // 1. check engine type when compile online
+  // 1. Create ComputeGraph.
+  string name = ge::CurrentTimeInStr() + "_" + model_file_name;
+  Graph graph;
+  GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph), "make graph fail.");
+
+  // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {
-    Status ret = CheckEngineTypeSupport(op_desc, engine_type);
+    auto comp_graph = GraphUtils::GetComputeGraph(graph);
+    GE_CHECK_NOTNULL(comp_graph);
+    auto node = comp_graph->FindNode(op_desc->GetName());
+    Status ret = CheckEngineTypeSupport(node, engine_type);
     if (ret != SUCCESS) {
       GELOGE(ret, "check engine type failed.");
       return ret;
     }
   }
 
-  // 2. Create ComputeGraph.
-  string name = ge::CurrentTimeInStr() + "_" + model_file_name;
-  Graph graph;
-  if (BuildSingleOpGraph(op_desc, inputs, outputs, name, graph) != ge::SUCCESS) {
-    GELOGE(GRAPH_FAILED, "make graph fail.");
-    return GRAPH_FAILED;
-  }
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;

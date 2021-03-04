@@ -3421,7 +3421,6 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
       elem_num = 1;
     }
     uint64_t *buff = reinterpret_cast<uint64_t *>(tensor->MutableData().data());
-#ifndef ONLY_COMPILE_OPEN_SRC
     if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) != SUCCESS) {
       GELOGE(FAILED, "Shape size is invalid");
       return FAILED;
@@ -3433,19 +3432,6 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
     for (int64_t i = elem_num - 1; i >= 0; --i) {
       buff[i * kStringHeadElems] = hbm_raw_data_base_addr + (buff[i * kStringHeadElems] - buff[0]);
     }
-#else
-    if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes) != SUCCESS) {
-      GELOGE(FAILED, "Shape size is invalid");
-      return FAILED;
-    }
-    uint64_t offset = elem_num * kBytes;
-
-    uint64_t hbm_raw_data_base_addr =
-        static_cast<uint64_t>(reinterpret_cast<uintptr_t>(v_output_addr[0])) + offset;
-    for (int64_t i = elem_num - 1; i >= 0; --i) {
-      buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
-    }
-#endif
   }
   GELOGI("[IMAS]InitConstant memcpy graph_%u type[V] name[%s] output[%d] memaddr[%p] mem_size[%lu] datasize[%zu]",
          runtime_param_.graph_id, op_desc->GetName().c_str(), 0, v_output_addr[0], v_output_size[0],

@@ -27,11 +27,7 @@ const uint32_t kFalseIndex = 0;
 /// Extra 8 bytes store pointer of string
 /// Extra 8 bytes store length of string
 /// Extra 1 byte store '\0'
-#ifndef ONLY_COMPILE_OPEN_SRC
 const int32_t kStrHeadLen = sizeof(ge::StringHead) + 1;
-#else
-const int32_t kStrHeadLen = 9;
-#endif
 const int32_t kInvalidRetVal = -1;
 }
 

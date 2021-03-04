@@ -28,7 +28,10 @@
 
 namespace ge {
 namespace model_runner {
+namespace {
 const int kOffsetUnit = 8;
+const uint32_t kStringHeadElems = 2;
+}  // namespace
 RuntimeModel::~RuntimeModel() {
   GELOGI("RuntimeModel destructor start");
 
@@ -496,10 +499,15 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
         return false;
       }
       uint64_t *buff = reinterpret_cast<uint64_t *>(const_cast<char *>(constant->weight_data.data()));
-      int64_t offset = elem_num * kOffsetUnit;
+      uint32_t head_len = kOffsetUnit * kStringHeadElems;
+      if (ge::CheckInt64Uint32MulOverflow(elem_num, head_len) != SUCCESS) {
+        GELOGE(FAILED, "Shape size is invalid");
+        return false;
+      }
+      int64_t offset = elem_num * head_len;
       uintptr_t hbm_raw_data_base_addr = reinterpret_cast<uintptr_t>(constant->output_addrs[0]) + offset;
       for (int64_t i = elem_num - 1; i >= 0; --i) {
-        buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
+        buff[i * kStringHeadElems] = hbm_raw_data_base_addr + (buff[i * kStringHeadElems] - buff[0]);
       }
     }
 

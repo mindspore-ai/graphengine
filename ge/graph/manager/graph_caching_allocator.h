@@ -143,9 +143,9 @@ class CachingAllocator {
   ///
   /// @ingroup ge_graph
   /// @brief free all cached blocks to right bin and release the memory when memory is not enough
-  /// @return void
+  /// @return free cached memory size
   ///
-  void FreeCachedBlocks();
+  size_t FreeCachedBlocks();
 
   ///
   /// @ingroup ge_graph
@@ -182,6 +182,13 @@ class CachingAllocator {
   ///
   Block *SplitBlock(Block *block, size_t size, BlockBin &bin, uint32_t device_id);
 
+  ///
+  /// @ingroup ge_graph
+  /// @brief print the memory info in pool
+  /// @return void
+  ///
+  void PrintStatics();
+
  private:
   rtMemType_t memory_type_;
 
@@ -196,6 +203,9 @@ class CachingAllocator {
 
   // block bins by different block size
   BlockBin *free_block_bins_[kNumBins];
+
+  // malloced memorys from device
+  std::map<size_t, size_t> malloced_memory_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_MANAGER_GRAPH_CACHING_ALLOCATOR_H_

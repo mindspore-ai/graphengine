@@ -141,7 +141,7 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
   auto node_key = std::to_string(model.GetModelId()) + "/" + shape_key;
   GELOGD("NodeKey for %s = %s", node->GetName().c_str(), node_key.c_str());
   auto aicore_task = registry.GetTask(node_key);
-  if (task != nullptr) {
+  if (aicore_task != nullptr) {
     // The workspaces needed by a operator may differ with different shapes
     op_desc->SetWorkspaceBytes(aicore_task->GetWorkspaceSizes());
     GELOGI("AiCoreNodeExecutor(%s) CompileTask Skip.", node->GetName().c_str());

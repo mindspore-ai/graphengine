@@ -31,6 +31,7 @@ class UtestGeGenerator : public testing::Test {
   void TearDown() {}
 };
 
+/*
 TEST_F(UtestGeGenerator, test_build_single_op_offline) {
   GeTensorDesc tensor_desc(GeShape(), FORMAT_NCHW, DT_FLOAT);
   TensorUtils::SetSize(tensor_desc, 512);
@@ -52,6 +53,7 @@ TEST_F(UtestGeGenerator, test_build_single_op_offline) {
   generator.Initialize({});
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, "offline_"), GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
 }
+*/
 
 TEST_F(UtestGeGenerator, test_build_single_op_online) {
   GeTensorDesc tensor_desc;

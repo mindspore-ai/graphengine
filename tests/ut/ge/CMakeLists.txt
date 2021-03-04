@@ -688,6 +688,7 @@ set(PASS_TEST_FILES
     "graph/passes/no_use_reshape_remove_pass_unittest.cc"
     "graph/passes/infershape_pass_unittest.cc"
     "graph/passes/multi_batch_clone_pass_unittest.cc"
+    "graph/passes/replace_with_empty_const_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES

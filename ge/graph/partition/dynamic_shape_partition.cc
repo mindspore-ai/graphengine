@@ -57,6 +57,17 @@ static bool IsInExperimentalMode(const ComputeGraphPtr &root_graph) {
     if (is_singleop) {
       return false;
     }
+    // if input_node in root_graph is dynamic shape, skip dynamic partition
+    // whole graph as one unknown graph
+    if (node->GetType() == DATA && node->GetOwnerComputeGraph()->GetParentNode() == nullptr) {
+      auto op_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto data_output_desc = op_desc->GetOutputDescPtr(0);
+      GE_CHECK_NOTNULL(data_output_desc);
+      if (data_output_desc->GetShape().IsUnknownShape()) {
+        return false;
+      }
+    }
 
     for (const auto &input_desc : node->GetOpDesc()->GetAllInputsDesc()) {
       auto type = input_desc.GetDataType();

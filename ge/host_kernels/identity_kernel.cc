@@ -61,4 +61,5 @@ Status IdentityKernel::Compute(const ge::OpDescPtr op_desc, const std::vector<ge
   return SUCCESS;
 }
 REGISTER_KERNEL(IDENTITY, IdentityKernel);
+REGISTER_KERNEL(PLACEHOLDERWITHDEFAULT, IdentityKernel);
 }  // namespace ge

@@ -236,7 +236,7 @@ Status TaskContext::AllocateOutput(int index,
            ref_node->GetName().c_str(),
            ref_node->GetType().c_str());
 
-    TensorValue *ref_tensor = execution_context_->model->GetVariable(ref_node->GetName());
+    TensorValue *ref_tensor = execution_context_->model->GetTensor(ref_node);
     GE_CHECK_NOTNULL(ref_tensor);
     outputs_start_[index] = *ref_tensor;
   } else {

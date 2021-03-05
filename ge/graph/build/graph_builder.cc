@@ -394,6 +394,10 @@ static Status InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchor
 }
 
 static Status GenerateTaskForConstant(const std::shared_ptr<ComputeGraph> &graph) {
+  if (graph->GetGraphUnknownFlag()) {
+    GELOGI("Graph %s is unknown graph, ignore gen_task for constant.", graph->GetName().c_str());
+    return SUCCESS;
+  }
   for (auto &node : graph->GetDirectNode()) {
     // CONSTANT not generate task, so insert IDENTITY between CONSTANT and NETOUTPUT
     auto op_desc = node->GetOpDesc();

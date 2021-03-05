@@ -18,6 +18,8 @@
 #define private public
 #define protected public
 #include "framework/common/helper/model_helper.h"
+#include "framework/omg/model_tool.h"
+#include "framework/omg/ge_init.h"
 #include "ge/model/ge_model.h"
 #undef private
 #undef protected
@@ -48,5 +50,22 @@ TEST_F(UtestModelHelper, save_size_to_modeldef)
   ge_model->SetModelTaskDef(task);
   ModelHelper model_helper;
   EXPECT_EQ(SUCCESS, model_helper.SaveSizeToModelDef(ge_model));
+}
+
+TEST_F(UtestModelHelper, atc_test)
+{
+  ge::proto::ModelDef model_def;
+  uint32_t modeldef_size = 0;
+
+  GEInit::Finalize();
+  char buffer[1024];
+  getcwd(buffer, 1024);
+  string path=buffer;
+  string file_path=path + "/Makefile";
+
+  ModelTool::GetModelInfoFromOm(file_path.c_str(), model_def, modeldef_size);
+  ModelTool::GetModelInfoFromOm("123.om", model_def, modeldef_size);
+  ModelTool::GetModelInfoFromPbtxt(file_path.c_str(), model_def);
+  ModelTool::GetModelInfoFromPbtxt("123.pbtxt", model_def);
 }
 }  // namespace ge

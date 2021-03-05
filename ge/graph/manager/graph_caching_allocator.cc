@@ -85,6 +85,15 @@ bool ShouldSplit(const Block *block, size_t size) {
   return static_cast<double>(size) <= (static_cast<double>(block->size) * kSplitThreshold);
 }
 
+void IncreaseCount(std::map<size_t, size_t> &count, size_t size) {
+  auto it = count.find(size);
+  if (it != count.end()) {
+    it->second++;
+  } else  {
+    count.emplace(size, 1);
+  }
+}
+
 CachingAllocator::CachingAllocator(rtMemType_t memory_type) : memory_type_(memory_type), memory_allocator_(nullptr) {
   for (uint32_t i = 0; i < kNumBins; ++i) {
     free_block_bins_[i] = nullptr;
@@ -116,6 +125,7 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
 
 void CachingAllocator::Finalize(uint32_t device_id) {
   GELOGI("Device id %u", device_id);
+  PrintStatics();
   FreeBlocks();
   FreeBlockBins();
 }
@@ -205,8 +215,7 @@ BlockBin *CachingAllocator::GetBlockBin(size_t size) {
 }
 
 Block *CachingAllocator::FindFreeBlock(size_t size, uint8_t *org_ptr, uint32_t device_id) {
-  // org_ptr - 1, try to find ptr same as org_ptr
-  Block key(device_id, size, (org_ptr == nullptr ? nullptr : org_ptr - 1));
+  Block key(device_id, size, org_ptr);
   BlockBin *bin = GetBlockBin(size);
   if (bin == nullptr) {
     GELOGE(ge::FAILED, "Get block bin failed size = %zu", size);
@@ -262,18 +271,22 @@ Status CachingAllocator::TryExtendCache(size_t size, uint32_t device_id) {
   auto memory_addr = memory_allocator_->MallocMemory(purpose, memory_size, device_id);
   // try to free caches and malloc again when malloc memory failed
   if (memory_addr == nullptr) {
-    FreeCachedBlocks();
+    size_t free_cached_memory_size = FreeCachedBlocks();
     memory_addr = memory_allocator_->MallocMemory(purpose, memory_size, device_id);
     if (memory_addr == nullptr) {
       GELOGE(ge::FAILED, "TryExtendCache failed, no enough memory for size = %zu, device_id = %u", memory_size,
              device_id);
       return ge::FAILED;
     }
+    GELOGT(TRACE_RUNNING, "Try to free cached memory size:%zu and malloc memory size:%zu success.",
+           free_cached_memory_size, memory_size);
   }
+
   if (AddToBlockBin(memory_addr, memory_size, device_id) != ge::SUCCESS) {
     (void)memory_allocator_->FreeMemory(memory_addr);
     return ge::FAILED;
   }
+  PrintStatics();
   return ge::SUCCESS;
 }
 
@@ -294,13 +307,15 @@ Status CachingAllocator::AddToBlockBin(uint8_t *ptr, size_t size, uint32_t devic
   block->size = size;
 
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  IncreaseCount(malloced_memory_, block->size);
   bin->insert(block);
   return ge::SUCCESS;
 }
 
-void CachingAllocator::FreeCachedBlocks() {
+size_t CachingAllocator::FreeCachedBlocks() {
   GELOGI("Free cached blocks");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  size_t free_cached_memory_size = 0;
   for (uint32_t i = 0; i < kNumBins; ++i) {
     auto pool = free_block_bins_[i];
     if (pool == nullptr) {
@@ -311,6 +326,14 @@ void CachingAllocator::FreeCachedBlocks() {
       // free block memory that has not been split
       if ((block != nullptr) && (block->ptr != nullptr) && (block->prev == nullptr) && (block->next == nullptr) &&
           (memory_allocator_->FreeMemory(block->ptr) == ge::SUCCESS)) {
+        auto itcount = malloced_memory_.find(block->size);
+        free_cached_memory_size += block->size;
+        if (itcount != malloced_memory_.end()) {
+          itcount->second--;
+          if (itcount->second == 0) {
+            malloced_memory_.erase(itcount);
+          }
+        }
         pool->erase(it++);
         delete block;
         continue;
@@ -318,6 +341,7 @@ void CachingAllocator::FreeCachedBlocks() {
       ++it;
     }
   }
+  return free_cached_memory_size;
 }
 
 void CachingAllocator::FreeBlocks() {
@@ -328,8 +352,7 @@ void CachingAllocator::FreeBlocks() {
     FreeBlock(it.second);
   }
   allocated_blocks_.clear();
-
-  FreeCachedBlocks();
+  (void) FreeCachedBlocks();
 }
 
 void CachingAllocator::FreeBlockBins() {
@@ -341,5 +364,61 @@ void CachingAllocator::FreeBlockBins() {
       free_block_bins_[i] = nullptr;
     }
   }
+}
+
+void PrintCount(std::map<size_t, size_t> &count, const std::string &name, size_t total_size, size_t total_count) {
+  GELOGI("%6s total[size:%10zu count:%10zu]", name.c_str(), total_size, total_count);
+  for (auto &it : count) {
+    GELOGI("    |- block[size:%10zu count:%10zu]", it.first, it.second);
+  }
+}
+
+void CachingAllocator::PrintStatics() {
+  if (!IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {
+    return;
+  }
+  size_t total_using_size = 0;
+  size_t total_using_count = 0;
+  size_t total_free_size = 0;
+  size_t total_free_count = 0;
+  size_t total_malloc_size = 0;
+  size_t total_malloc_count = 0;
+  std::map<size_t, size_t> using_block;
+  std::map<size_t, size_t> free_block;
+  std::map<size_t, size_t> malloc_block;
+  do {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    for (uint32_t i = 0; i < kNumBins; ++i) {
+      auto pool = free_block_bins_[i];
+      if (pool == nullptr) {
+        continue;
+      }
+      for (auto it = pool->begin(); it != pool->end(); ++it) {
+        if ((*it) != nullptr) {
+          total_free_size += (*it)->size;
+          IncreaseCount(free_block, (*it)->size);
+          total_free_count++;
+        }
+      }
+    }
+
+    for (auto &it : allocated_blocks_) {
+      if (it.second != nullptr) {
+        total_using_size += it.second->size;
+        IncreaseCount(using_block, it.second->size);
+        total_using_count++;
+      }
+    }
+
+    for (auto &it : malloced_memory_) {
+      total_malloc_size += it.first * it.second;
+      total_malloc_count += it.second;
+      malloc_block[it.first] = it.second;
+    }
+  } while (0);
+
+  PrintCount(malloc_block, "Malloc", total_malloc_size, total_malloc_count);
+  PrintCount(using_block, "Using", total_using_size, total_using_count);
+  PrintCount(free_block, "Free", total_free_size, total_free_count);
 }
 }  // namespace ge

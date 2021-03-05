@@ -949,6 +949,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
   ge::Graph graph;
   std::vector<ge::GeTensor> inputs;
   if (FLAGS_framework == domi::MINDSPORE) {
+    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
     // load model from file
     ge::Model load_model = ge::Model("loadmodel", "version2");
     auto ret1 = load_model.LoadFromFile(FLAGS_model);
@@ -987,10 +988,12 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     atc_params.insert(std::pair<string, string>(string(ge::OUTPUT_DATATYPE), FLAGS_output_type));
     atc_params.insert(std::pair<string, string>("output", output));
 
+    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kParser);
     Status ret =
         ParseGraph(graph, atc_params, FLAGS_model.c_str(), FLAGS_weight.c_str(), (domi::FrameworkType)FLAGS_framework,
                    FLAGS_op_name_map.c_str(), FLAGS_target.c_str(), (ge::RunMode)FLAGS_mode, is_dynamic_input);
 
+    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
     // in ONLY_PRE_CHECK mode, pre-checking report has already saved in ParseGraph
     if (FLAGS_mode == ge::ONLY_PRE_CHECK) {
       (void)ge_generator.Finalize();
@@ -1088,6 +1091,7 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
     return domi::FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kParser);
   vector<ge::SingleOpBuildParam> build_params;
   if (ge::SingleOpParser::ParseSingleOpList(json_file_path, build_params) != ge::SUCCESS) {
     DOMI_LOGE("parse single op json file failed");
@@ -1220,6 +1224,7 @@ domi::Status GenerateOmModel() {
     return domi::FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   if (FLAGS_display_model_info == "1") {
     GELOGI("need to display model info.");
     return ge::ConvertOm(FLAGS_output.c_str(), "", false);
@@ -1229,6 +1234,7 @@ domi::Status GenerateOmModel() {
 }
 
 domi::Status ConvertModelToJson() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "Check convert json params flags failed!");
 
@@ -1239,6 +1245,7 @@ domi::Status ConvertModelToJson() {
 }
 
 domi::Status DisplayModelInfo() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   // No model path passed in
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(FLAGS_om == "",
       ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"om"});
@@ -1287,6 +1294,7 @@ bool CheckRet(domi::Status ret) {
 }
 
 domi::Status ConvertPbtxtToJson() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   if (ret != domi::SUCCESS) {
     GELOGE(ge::FAILED, "Check convert json params flags failed!");
@@ -1374,6 +1382,7 @@ bool CheckMemInfo() {
 }
 
 int main(int argc, char* argv[]) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   Status ret = domi::SUCCESS;
   std::cout << "ATC start working now, please wait for a moment." << std::endl;
 
@@ -1414,6 +1423,7 @@ int main(int argc, char* argv[]) {
     }
   } while (0);
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
   if (!CheckRet(ret)) {
     std::cout << "ATC run failed, Please check the detail log, Try \'atc --help\' for more information" << std::endl;
     int result = ErrorManager::GetInstance().OutputErrMessage(STDOUT_FILENO);

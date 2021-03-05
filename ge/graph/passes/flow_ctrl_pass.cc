@@ -87,7 +87,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
                                    assign_add_node_in_fpbp_loop_->GetInControlAnchor());
     if (ret != GRAPH_SUCCESS) {
       GELOGW("add control edge between iter_loop_node:%s and fpbp_loop_node:%s fail, may cause block",
-              active_node->GetName().c_str(), assign_add_node_in_fpbp_loop_->GetName().c_str());
+             active_node->GetName().c_str(), assign_add_node_in_fpbp_loop_->GetName().c_str());
     }
   }
   GELOGI("FlowCtrl pass end, graph is %s.", graph_change ? "changed" : "not changed");

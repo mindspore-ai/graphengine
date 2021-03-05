@@ -214,12 +214,12 @@ DavinciModel::~DavinciModel() {
       UnbindTaskSinkStream();
       for (size_t i = 0; i < label_list_.size(); ++i) {
         if (label_list_[i] != nullptr) {
-          GE_LOGW_IF(rtLabelDestroy(label_list_[i]) != RT_ERROR_NONE, "Destroy label failed, index:%zu", i);
+          GE_LOGW_IF(rtLabelDestroy(label_list_[i]) != RT_ERROR_NONE, "Destroy label failed, index:%zu.", i);
         }
       }
 
       for (size_t i = 0; i < stream_list_.size(); ++i) {
-        GE_LOGW_IF(rtStreamDestroy(stream_list_[i]) != RT_ERROR_NONE, "Destroy stream failed, index:%zu", i);
+        GE_LOGW_IF(rtStreamDestroy(stream_list_[i]) != RT_ERROR_NONE, "Destroy stream failed, index:%zu.", i);
       }
 
       for (size_t i = 0; i < event_list_.size(); ++i) {
@@ -278,7 +278,7 @@ void DavinciModel::UnbindHcomStream() {
     for (size_t i = 0; i < all_hccl_stream_list_.size(); i++) {
       GE_LOGW_IF(rtModelUnbindStream(rt_model_handle_, all_hccl_stream_list_[i]) != RT_ERROR_NONE,
                  "Unbind hccl stream from model failed! Index: %zu", i);
-      GE_LOGW_IF(rtStreamDestroy(all_hccl_stream_list_[i]) != RT_ERROR_NONE, "Destroy hccl stream for rt_model failed!")
+      GE_LOGW_IF(rtStreamDestroy(all_hccl_stream_list_[i]) != RT_ERROR_NONE, "Destroy hccl stream for rt_model failed")
     }
   }
   return;
@@ -364,7 +364,7 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once.");
+    GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once");
     return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
@@ -387,7 +387,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
-    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu].",
+    GEEVENT("[IMAS]InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]",
             runtime_param_.graph_id, mem_base_, data_size);
 
     if (!is_inner_weight_base_) {
@@ -408,7 +408,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
     is_inner_p2p_mem_base_ = true;
   }
 
-  GE_CHK_STATUS_RET(InitVariableMem(), "Init variable memory failed");
+  GE_CHK_STATUS_RET(InitVariableMem(), "Init variable memory failed.");
   runtime_param_.mem_base = mem_base_;
   runtime_param_.weight_base = weights_mem_base_;
   runtime_param_.memory_infos[RT_MEMORY_P2P_DDR].memory_base = p2p_mem_base_;
@@ -480,7 +480,7 @@ void DavinciModel::CheckHasHcomOp(const ComputeGraphPtr &compute_graph) {
 
   for (const auto &node : compute_graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGW("Node OpDesc is nullptr"); continue);
+    GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGW("Node OpDesc is nullptr."); continue);
     if (hcom_opp_types.count(op_desc->GetType()) > 0) {
       uint32_t stream_id = static_cast<uint32_t>(op_desc->GetStreamId());
       hcom_streams_.emplace(stream_id);
@@ -527,25 +527,25 @@ Status DavinciModel::DoTaskSink() {
   }
 
   GE_CHK_RT_RET(rtGetAicpuDeploy(&deploy_type_));
-  GELOGI("do task_sink. AiCpu deploy type is: %x", deploy_type_);
+  GELOGI("do task_sink. AiCpu deploy type is: %x.", deploy_type_);
 
-  GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
+  GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed");
 
   if (known_node_) {
-    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed.");
+    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed");
   }
 
-  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
+  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed");
 
-  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
+  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed");
 
-  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed");
 
-  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
+  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed");
 
   GE_CHK_RT_RET(rtModelLoadComplete(rt_model_handle_));
 
@@ -558,7 +558,7 @@ Status DavinciModel::SetTSDevice() {
   int64_t value = 0;
   bool ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_CORE_TYPE, value);
   uint32_t core_type = ret ? static_cast<uint32_t>(value) : 0;
-  GELOGD("SetTSDevice: %u.", core_type);
+  GELOGD("SetTSDevice: %u", core_type);
   rtError_t rt_ret = rtSetTSDevice(core_type);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "SetTSDevice failed, ret: 0x%X", rt_ret);
@@ -570,7 +570,7 @@ Status DavinciModel::SetTSDevice() {
 Status DavinciModel::OpDebugRegister() {
   bool is_op_debug = false;
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_OP_DEBUG_FLAG, is_op_debug);
-  GELOGD("The value of op debug in ge_model is %d.", is_op_debug);
+  GELOGD("The value of op debug in ge_model is %d", is_op_debug);
   if (is_op_debug) {
     debug_reg_mutex_.lock();
     rtError_t rt_ret = rtMalloc(&op_debug_addr_, kOpDebugMemorySize, RT_MEMORY_DDR);
@@ -2575,7 +2575,7 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
 /// @return Status result
 ///
 Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
-  GELOGI("ReturnNoOutput model id:%u", model_id_);
+  GELOGI("ReturnNoOutput model id:%u.", model_id_);
 
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null!");
   std::vector<ge::OutputTensorInfo> outputs;
@@ -2601,6 +2601,7 @@ void *DavinciModel::Run(DavinciModel *model) {
   // DeviceReset before thread run finished!
   GE_MAKE_GUARD(not_used_var, [&] { GE_CHK_RT(rtDeviceReset(device_id)); });
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
   while (model->RunFlag()) {
     bool rslt_flg = true;
     if (model->GetDataInputer() == nullptr) {

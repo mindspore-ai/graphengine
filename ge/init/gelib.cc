@@ -71,6 +71,7 @@ Status GELib::Initialize(const map<string, string> &options) {
     return GE_CLI_INIT_FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kSystemInit);
   map<string, string> new_options;
   Status ret = instancePtr_->SetRTSocVersion(options, new_options);
   if (ret != SUCCESS) {
@@ -110,6 +111,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return SUCCESS;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kSystemInit);
   GELOGI("GE System initial.");
   GE_TIMESTAMP_START(SystemInitialize);
   Status initSystemStatus = SystemInitialize(options);
@@ -120,6 +122,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initSystemStatus;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kEngineInit);
   GELOGI("engineManager initial.");
   GE_TIMESTAMP_START(EngineInitialize);
   Status initEmStatus = engineManager_.Initialize(options);
@@ -130,6 +133,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initEmStatus;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsKernelInit);
   GELOGI("opsManager initial.");
   GE_TIMESTAMP_START(OpsManagerInitialize);
   Status initOpsStatus = opsManager_.Initialize(options);
@@ -140,6 +144,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initOpsStatus;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsKernelBuilderInit);
   GELOGI("opsBuilderManager initial.");
   GE_TIMESTAMP_START(OpsKernelBuilderManagerInitialize);
   Status initOpsBuilderStatus = OpsKernelBuilderManager::Instance().Initialize(options);
@@ -150,6 +155,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initOpsBuilderStatus;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   GELOGI("sessionManager initial.");
   GE_TIMESTAMP_START(SessionManagerInitialize);
   Status initSmStatus = sessionManager_.Initialize(options);
@@ -423,6 +429,7 @@ string GELib::GetPath() { return PluginManager::GetPath(); }
 
 // Finalize all modules
 Status GELib::Finalize() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
   GELOGI("finalization start");
   // Finalization is not allowed before initialization
   if (!init_flag_) {

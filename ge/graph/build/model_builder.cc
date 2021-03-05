@@ -684,6 +684,7 @@ Status ModelBuilder::PreBuildModel() {
 Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_CHK_STATUS_RET(AdjustInputTensorFlag(), "AdjustInputTensorFlag failed!");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kStreamAlloc);
   // Assign logical streams.
   StreamAllocator stream_allocator(compute_graph_, subgraphs_);
   GE_TIMESTAMP_START(AssignLogicalStreams);
@@ -691,6 +692,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
                     "Assign logical streams failed.");
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kMemoryAlloc);
   // Assign functional op labels.
   auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
   (void)AttrUtils::GetInt(*root_graph, ATTR_MODEL_LABEL_NUM, label_num_);
@@ -701,6 +703,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
                     "Assign Memory Failed!");
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GE_TIMESTAMP_START(SetInputOutputOffset);
   SetInputOutputOffsetPass input_output_offset;
   GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_), "Set input output offset failed.");
@@ -711,12 +714,14 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_CHK_STATUS_RET(CompileSingleOp(), "ATC builder CompileSingleOp() return fail.");
   GE_TIMESTAMP_EVENT_END(CompileSingleOp, "GraphBuilder::CompileSingleOp");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kStreamAlloc);
   // Refresh real streams and insert event nodes.
   GE_TIMESTAMP_START(RefreshRealStream);
   GE_CHK_STATUS_RET(stream_allocator.RefreshRealStream(stream_num_, event_num_), "RefreshRealStream failed.");
   huge_streams_ = stream_allocator.GetHugeStreams();
   GE_TIMESTAMP_END(RefreshRealStream, "GraphBuilder::RefreshRealStream");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GE_TIMESTAMP_START(MergeWeights);
   GE_CHK_STATUS_RET(MergeWeights(), "MergeWeights Failed!");
   GE_TIMESTAMP_END(MergeWeights, "GraphBuilder::MergeWeights");

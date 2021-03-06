@@ -527,25 +527,25 @@ Status DavinciModel::DoTaskSink() {
   }
 
   GE_CHK_RT_RET(rtGetAicpuDeploy(&deploy_type_));
-  GELOGI("do task_sink. AiCpu deploy type is: %x.", deploy_type_);
+  GELOGI("Do task_sink. AiCpu deploy type is: %x.", deploy_type_);
 
-  GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed");
+  GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
 
   if (known_node_) {
-    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed");
+    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed.");
   }
 
-  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed");
+  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
 
-  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed");
+  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
 
-  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed");
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
 
-  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed");
+  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
 
   GE_CHK_RT_RET(rtModelLoadComplete(rt_model_handle_));
 
@@ -558,7 +558,7 @@ Status DavinciModel::SetTSDevice() {
   int64_t value = 0;
   bool ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_CORE_TYPE, value);
   uint32_t core_type = ret ? static_cast<uint32_t>(value) : 0;
-  GELOGD("SetTSDevice: %u", core_type);
+  GELOGD("SetTSDevice: %u.", core_type);
   rtError_t rt_ret = rtSetTSDevice(core_type);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "SetTSDevice failed, ret: 0x%X", rt_ret);
@@ -570,7 +570,7 @@ Status DavinciModel::SetTSDevice() {
 Status DavinciModel::OpDebugRegister() {
   bool is_op_debug = false;
   (void)ge::AttrUtils::GetBool(ge_model_, ATTR_OP_DEBUG_FLAG, is_op_debug);
-  GELOGD("The value of op debug in ge_model is %d", is_op_debug);
+  GELOGD("The value of op debug in ge_model is %d.", is_op_debug);
   if (is_op_debug) {
     debug_reg_mutex_.lock();
     rtError_t rt_ret = rtMalloc(&op_debug_addr_, kOpDebugMemorySize, RT_MEMORY_DDR);

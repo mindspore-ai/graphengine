@@ -67,7 +67,7 @@ OpDescPtr SameTransdataBreadthFusionPass::GetCastOp(const GeTensorDesc &in_desc,
   auto fusion_cast_op_count = atomic_fusion_cast_op_count.fetch_add(1);
   std::stringstream cast_op_name;
   cast_op_name << "fusion_cast_" << fusion_cast_op_count;
-  auto node_op = ge::OperatorFactory::CreateOperator(cast_op_name.str(), CAST);
+  auto node_op = ge::OperatorFactory::CreateOperator(cast_op_name.str().c_str(), CAST);
   auto cast_op = ge::OpDescUtils::GetOpDescFromOperator(node_op);
   node_op.BreakConnect();
   if (cast_op == nullptr) {

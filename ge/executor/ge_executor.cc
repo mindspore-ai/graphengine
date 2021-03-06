@@ -47,7 +47,7 @@ void GetGeTensorDescFromDomiInfo(std::vector<ge::TensorDesc> &ge_descs,
   uint32_t idx = 0;
   for (auto desc_item : domi_descs) {
     ge::TensorDesc ge_desc;
-    ge_desc.SetName(desc_item.name);
+    ge_desc.SetName(desc_item.name.c_str());
     ge_desc.SetDataType(static_cast<ge::DataType>(desc_item.data_type));
     ge_desc.SetFormat(static_cast<ge::Format>(formats[idx]));
     std::vector<int64_t> shape_dims;

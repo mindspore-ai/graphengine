@@ -554,6 +554,7 @@ Status GEInit::Finalize() {
   if (instance_ptr != nullptr) {
     return instance_ptr->Finalize();
   }
+  return SUCCESS;
 }
 
 string GEInit::GetPath() {

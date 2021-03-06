@@ -271,7 +271,8 @@ ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uin
   return SUCCESS;
 }
 
-ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string &model_name, const shared_ptr<ge::GeRootModel> &ge_root_model,
+ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string &model_name,
+                                                 const shared_ptr<ge::GeRootModel> &ge_root_model,
                                                  const shared_ptr<ModelListener> &listener) {
   auto hybrid_model = hybrid::HybridDavinciModel::Create(ge_root_model);
   GE_CHECK_NOTNULL(hybrid_model);

@@ -70,7 +70,8 @@ Status OpTask::OpenDump(rtStream_t stream) {
       uint64_t output_addr = arg_base[input_size + j];
       output_adds.emplace_back(output_addr);
     }
-    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(kInferSessionId), op_desc_, input_addrs, output_adds, stream);
+    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(kInferSessionId),
+                         op_desc_, input_addrs, output_adds, stream);
     auto status = dump_op_.LaunchDumpOp();
     if (status != SUCCESS) {
       GELOGE(status, "Launch dump op failed in single op");
@@ -504,7 +505,7 @@ Status AiCpuBaseTask::UpdateOutputShape(vector<GeTensorDesc> &output_desc) {
                       "AiCpuCCTask Update [%zu]th output shape failed.", i);
     if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
       GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]),
-                      "AiCpuCCTask Update [%zu]th output desc failed.", i);
+                        "AiCpuCCTask Update [%zu]th output desc failed.", i);
     }
   }
   GELOGD("Update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape finished.");
@@ -711,7 +712,7 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
                       "AiCpuTask update [%zu]th output shape failed.", i);
     if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
       GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]),
-                      "AiCpuTask update [%zu]th output desc failed.", i);
+                        "AiCpuTask update [%zu]th output desc failed.", i);
     }
   }
   return SUCCESS;

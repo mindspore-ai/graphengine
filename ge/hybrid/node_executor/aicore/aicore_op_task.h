@@ -30,7 +30,7 @@ namespace ge {
 namespace hybrid {
 class TbeHandleHolder {
  public:
-  TbeHandleHolder(void *bin_handle);
+  explicit TbeHandleHolder(void *bin_handle);
   ~TbeHandleHolder();
 
   void SetBinHandle(void *bin_handle) { bin_handle_ = bin_handle; }

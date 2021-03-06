@@ -798,11 +798,17 @@ void SaveCustomCaffeProtoPath() {
 Status CreateInputsForInference(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
+  int64_t index = 0;
   for (ge::NodePtr &input_node : compute_graph->GetAllNodes()) {
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == ge::DATA) {
+      if (!op->HasAttr(ge::ATTR_NAME_INDEX)) {
+        (void)ge::AttrUtils::SetInt(op, ge::ATTR_NAME_INDEX, index);
+        GELOGD("Set attr index:%ld for data op:%s", index, op->GetName().c_str());
+      }
+      index++;
       GELOGI("Data op inputDesc size is: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();

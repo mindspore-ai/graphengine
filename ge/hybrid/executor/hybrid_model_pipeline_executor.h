@@ -60,7 +60,7 @@ class StageExecutor {
   BlockingQueue<StageTask> task_queue_;
   std::unique_ptr<SubgraphExecutor> root_graph_executor_;
   GraphExecutionContext context_;
-  StageExecutor *next_executor_;
+  StageExecutor *next_executor_ = nullptr;
 
   rtStream_t stream_ = nullptr;
 };

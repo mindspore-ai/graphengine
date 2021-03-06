@@ -387,7 +387,7 @@ Status ModelUtils::GetVarAddr(const RuntimeParam &model_param, const ConstOpDesc
         GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p", reinterpret_cast<uint8_t *>(offset));
         return PARAM_INVALID;
       }
-      var_addr = reinterpret_cast<uint8_t *>(offset);
+      var_addr = reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset));
       break;
     case RT_MEMORY_HBM:
       VALIDATE_MEM_RANGE(op_desc, model_param.var_size, offset - model_param.logic_var_base);

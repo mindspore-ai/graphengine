@@ -124,7 +124,7 @@ inline bool IsDataOp(const std::string &node_type) {
   return (node_type == DATA_TYPE) || (node_type == AIPP_DATA_TYPE) || (node_type == ANN_DATA_TYPE);
 }
 
-inline bool IsTbeTask(const OpDescPtr &op_desc) {
+bool IsTbeTask(const OpDescPtr &op_desc) {
   uint32_t run_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, run_mode)) {
     return false;
@@ -1214,7 +1214,7 @@ void DavinciModel::GetAllGearsInfo(const NodePtr &node) {
       }
       if (!gear_info.empty()) {
         all_gears_info_.emplace_back(gear_info);
-        GELOGD("Init all gears info from %s, gaer info is %s.", node->GetName().c_str(),
+        GELOGD("Init all gears info from %s, gaer info is %s", node->GetName().c_str(),
                formats::JoinToString(gear_info).c_str());
       }
     }
@@ -1283,7 +1283,7 @@ Status DavinciModel::GetGearAndRealOutSizeInfo(const ComputeGraphPtr &graph, con
 
 Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_t input_index,
                                              const NodePtr &case_node) {
-  GELOGD("Start get output size of %s, which is %zu input to netoutput.", case_node->GetName().c_str(), input_index);
+  GELOGD("Start get output size of %s, which is %zu input to netoutput", case_node->GetName().c_str(), input_index);
   const auto &func_desc = case_node->GetOpDesc();
   GE_CHECK_NOTNULL(func_desc);
   std::map<vector<int32_t>, int64_t> gear_and_real_out_size_info;
@@ -1328,7 +1328,7 @@ Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_
 }
 
 Status DavinciModel::GetGearAndRealOutShapeInfo(const ComputeGraphPtr &graph, const NodePtr &node) {
-  GELOGD("Start to get dynamic output dims of %s.", node->GetName().c_str());
+  GELOGD("Start to get dynamic output dims of %s", node->GetName().c_str());
   merge_nodes_gear_and_real_out_shape_info_.clear();
   size_t idx = 0;
   for (const auto &in_anchor : node->GetAllInDataAnchors()) {
@@ -1342,7 +1342,7 @@ Status DavinciModel::GetGearAndRealOutShapeInfo(const ComputeGraphPtr &graph, co
     if ((peer_node->GetType() == CASE) && (op_desc->HasAttr(ATTR_INSERT_BY_MBATCH))) {
       std::vector<std::string> dynamic_output_shape_info;
       if (!AttrUtils::GetListStr(node->GetOpDesc(), ATTR_NAME_DYNAMIC_OUTPUT_DIMS, dynamic_output_shape_info)) {
-        GELOGD("Can not get dynamic output dims attr from %s.", node->GetName().c_str());
+        GELOGD("Can not get dynamic output dims attr from %s", node->GetName().c_str());
         return SUCCESS;
       }
       GELOGI("Dynamic output shape info is %s", formats::JoinToString(dynamic_output_shape_info).c_str());
@@ -1362,7 +1362,7 @@ Status DavinciModel::GetGearAndRealOutShapeInfo(const ComputeGraphPtr &graph, co
             output_shape.emplace_back(it[i]);
           }
           gear_and_real_out_shape_info[all_gears_info_[gear_index]] = output_shape;
-          GELOGD("Get real gear index is: %zu, gear info is %s, output shape is %s.",
+          GELOGD("Get real gear index is: %zu, gear info is %s, output shape is %s",
                  gear_index, formats::JoinToString(all_gears_info_[gear_index]).c_str(),
                  formats::JoinToString(output_shape).c_str());
         }
@@ -1385,7 +1385,7 @@ void DavinciModel::ParseDynamicOutShape(const std::vector<std::string> &str_info
       }
       shape.emplace_back(std::strtol(dim.c_str(), nullptr, kDecimal));
     }
-    GELOGI("Shape from attr is %s.", formats::JoinToString(shape).c_str());
+    GELOGI("Shape from attr is %s", formats::JoinToString(shape).c_str());
     vec_info.emplace_back(shape);
   }
 }
@@ -1428,7 +1428,7 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
     return INTERNAL_ERROR;
   }
 
-  GELOGI("InitLabelSet: label[%u]=%p stream[%u]=%p.", label_index, rt_label, stream_id, stream);
+  GELOGI("InitLabelSet: label[%u]=%p stream[%u]=%p", label_index, rt_label, stream_id, stream);
   label_id_indication_.insert(label_index);
   label_list_[label_index] = rt_label;
   return SUCCESS;
@@ -1831,7 +1831,7 @@ void DavinciModel::GetUserDesignateShapeOrder(std::vector<std::string> &user_inp
 ///
 Status DavinciModel::InitAippInfo(uint32_t index, const OpDescPtr &op_desc) {
   if (!op_desc->HasAttr(ATTR_NAME_AIPP)) {
-    GELOGW("There is not AIPP related with index %u.", index);
+    GELOGW("There is not AIPP related with index %u", index);
     return SUCCESS;
   }
 
@@ -1861,7 +1861,7 @@ Status DavinciModel::InitAippInfo(uint32_t index, const OpDescPtr &op_desc) {
 Status DavinciModel::GetAippInfo(uint32_t index, AippConfigInfo &aipp_info) const {
   const auto it = aipp_info_list_.find(index);
   if (it == aipp_info_list_.end()) {
-    GELOGW("there is not AIPP related with index %u.", index);
+    GELOGW("there is not AIPP related with index %u", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
@@ -1871,7 +1871,7 @@ Status DavinciModel::GetAippInfo(uint32_t index, AippConfigInfo &aipp_info) cons
 
 Status DavinciModel::InitAippType(uint32_t index, const OpDescPtr &op_desc, const map<uint32_t, OpDescPtr> &data_list) {
   if (!op_desc->HasAttr(ATTR_DATA_RELATED_AIPP_MODE)) {
-    GELOGW("There is no aipp releated info with index %u.", index);
+    GELOGW("There is no aipp releated info with index %u", index);
     return SUCCESS;
   }
 
@@ -1916,7 +1916,7 @@ Status DavinciModel::GetAippType(uint32_t index, InputAippType &aipp_type, size_
   GE_CHK_BOOL_RET_STATUS(index < input_addrs_list_.size(), PARAM_INVALID, "Index %u is invalid", index);
   const auto it = aipp_type_list_.find(index);
   if (it == aipp_type_list_.end()) {
-    GELOGW("There is no aipp releated info with index %u.", index);
+    GELOGW("There is no aipp releated info with index %u", index);
     aipp_type = DATA_WITHOUT_AIPP;
     aipp_index = 0xFFFFFFFF;
     return SUCCESS;

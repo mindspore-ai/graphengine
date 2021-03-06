@@ -600,7 +600,7 @@ Status MultiBatchGraphCopyer::LabelInBatchBranchStatus() {
       for (auto &in_node : node->GetInDataNodes()) {
         if (origin_nodes_status_.find(in_node.get()) != origin_nodes_status_.end()) {
           if (origin_nodes_status_.find(node.get()) == origin_nodes_status_.end()) {
-            origin_nodes_status_[node.get()] == kNodeInBatchBranch;
+            origin_nodes_status_[node.get()] = kNodeInBatchBranch;
             ResetEnterStatus(frame_enters, node);
             changed = true;
           }

@@ -601,6 +601,8 @@ std::string Cluster::DebugString() const {
     case KNOWN_SHAPE:
       ss << "KNOW";
       break;
+    default:
+      break;
   }
   ss << "[" << id_ << "](size:" << nodes_.size() << ")";
   ss << "(" << min_ << "," << max_ << ")(";

@@ -4659,14 +4659,14 @@ TEST_F(UtestFormatTranspose, invalid_data_shape) {
   FormatTransferTranspose transfer;
   std::vector<int64_t> dst_shape;
   EXPECT_EQ(transfer.TransShape(FORMAT_NCHW, std::vector<int64_t>({}), DT_FLOAT16, FORMAT_HWCN, dst_shape),
-            ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+            ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTranspose, invalid_src_format) {
   FormatTransferTranspose transfer;
   std::vector<int64_t> dst_shape;
   EXPECT_EQ(transfer.TransShape(FORMAT_NC1HWC0, std::vector<int64_t>({1, 3, 8, 8}), DT_FLOAT16, FORMAT_HWCN, dst_shape),
-            ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+            ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTranspose, invalid_dst_format) {
@@ -4674,7 +4674,7 @@ TEST_F(UtestFormatTranspose, invalid_dst_format) {
   std::vector<int64_t> dst_shape;
   std::vector<int64_t> src_shape;
   EXPECT_EQ(transfer.TransShape(FORMAT_NCHW, src_shape, DT_FLOAT16, FORMAT_C1HWNC0, dst_shape),
-            ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+            ACL_ERROR_GE_FORMAT_INVALID);
 }
 }  // namespace formats
 }  // namespace ge

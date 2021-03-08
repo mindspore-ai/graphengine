@@ -32,7 +32,7 @@ Status TransShapeToFz(int64_t d, int64_t n, int64_t c, int64_t h, int64_t w, Dat
                       std::vector<int64_t> &dst_shape) {
   auto c0 = GetCubeSizeByDataType(data_type);
   if (c0 < 0) {
-    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
   auto c1 = Ceil(c, c0);
@@ -50,7 +50,7 @@ Status TransShapeToFz(int64_t d, int64_t n, int64_t c, int64_t h, int64_t w, Dat
 Status TransShapeDhwncToFz3DTranspose(const std::vector<int64_t> &src_shape, DataType data_type,
                                       std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kDhwncDimsNum)) {
-    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   auto d = src_shape.at(kDhwncD);
   auto h = src_shape.at(kDhwncH);
@@ -62,7 +62,7 @@ Status TransShapeDhwncToFz3DTranspose(const std::vector<int64_t> &src_shape, Dat
 }
 Status TransFormatDhwncToFz3DTranspose(const TransArgs &args, TransResult &result) {
   if (!CheckShapeValid(args.src_shape, kDhwncDimsNum)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   int64_t d = args.src_shape[kDhwncD];
   int64_t h = args.src_shape[kDhwncH];
@@ -95,10 +95,10 @@ Status TransFormatDhwncToFz3DTranspose(const TransArgs &args, TransResult &resul
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   for (int64_t di = 0; di < d; di++) {
@@ -123,9 +123,9 @@ Status TransFormatDhwncToFz3DTranspose(const TransArgs &args, TransResult &resul
                                args.data + src_idx * data_size, static_cast<size_t>(data_size));
               }
               if (ret != EOK) {
-                GELOGE(INTERNAL_ERROR, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
+                GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
                        dst_offset, ret, pad_zero);
-                return INTERNAL_ERROR;
+                return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
               }
             }
           }
@@ -150,28 +150,28 @@ Status FormatTransferDhwncFractalZ3DTranspose::TransFormat(const TransArgs &args
     return ret;
   }
   if (!IsTransShapeDstCorrect(args, expect_shape)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
   if (args.src_format == ge::FORMAT_DHWNC && args.dst_format == ge::FORMAT_FRACTAL_Z_3D_TRANSPOSE) {
     return TransFormatDhwncToFz3DTranspose(args, result);
   }
 
-  return UNSUPPORTED;
+  return ACL_ERROR_GE_FORMAT_INVALID;
 }
 
 Status FormatTransferDhwncFractalZ3DTranspose::TransShape(Format src_format, const std::vector<int64_t> &src_shape,
                                                           DataType data_type, Format dst_format,
                                                           std::vector<int64_t> &dst_shape) {
   if (CheckDataTypeSupport(data_type) != SUCCESS) {
-    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
   if (src_format == FORMAT_DHWNC && dst_format == FORMAT_FRACTAL_Z_3D_TRANSPOSE) {
     return TransShapeDhwncToFz3DTranspose(src_shape, data_type, dst_shape);
   }
 
-  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
+  return ACL_ERROR_GE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferDhwncFractalZ3DTranspose, FORMAT_DHWNC, FORMAT_FRACTAL_Z_3D_TRANSPOSE)

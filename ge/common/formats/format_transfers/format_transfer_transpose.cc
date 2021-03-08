@@ -141,7 +141,7 @@ std::vector<int64_t> TransShapeByPerm(const std::vector<int64_t> &src_shape, con
 Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, DataType src_data_type,
                  const std::vector<int64_t> &perm_arg, TransResult &result) {
   if (!IsTransposeArgValid(src, src_shape, src_data_type, perm_arg)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   auto dst_shape = TransShapeByPerm(src_shape, perm_arg);
@@ -172,12 +172,12 @@ Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, Data
     auto ret = memcpy_s(dst.get() + dst_offset_bytes, static_cast<size_t>(protected_size), src + src_offset,
                         static_cast<size_t>(data_size));
     if (ret != EOK) {
-      GELOGE(INTERNAL_ERROR,
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
              "Failed to transpose, src shape %s, perm arg %s, dst shape %s, "
              "failed to write to dst offset %ld, current dim offset %s",
              ShapeToString(src_shape).c_str(), ShapeToString(perm_arg).c_str(), ShapeToString(dst_shape).c_str(),
              dst_offset_bytes, ShapeToString(dst_indexes).c_str());
-      return INTERNAL_ERROR;
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
     AddOne(dst_shape, dst_indexes);
     ++dst_index;
@@ -192,14 +192,14 @@ Status TransposeWithShapeCheck(const uint8_t *data, const std::vector<int64_t> &
                                const std::vector<int64_t> &dst_shape, DataType src_data_type,
                                const std::vector<int64_t> &perm_arg, TransResult &result) {
   if (!IsTransposeArgValid(data, src_shape, src_data_type, perm_arg)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   auto expected_shape = TransShapeByPerm(src_shape, perm_arg);
   if (dst_shape != expected_shape) {
     std::string error = "Failed to trans axis for perm_arg" +
         FmtToStr(ShapeToString(perm_arg)) + ", invalid dst shape" +
         FmtToStr(ShapeToString(dst_shape)) + ", expect" + FmtToStr(ShapeToString(expected_shape));
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_SHAPE_INVALID, error.c_str());
   }
 
   return Transpose(data, src_shape, src_data_type, perm_arg, result);
@@ -211,16 +211,16 @@ Status GetPermByForamt(Format src_format, Format dst_format, std::vector<int64_t
     std::string error = "Failed to trans shape, do not support transpose from format " +
         FmtToStr(TypeUtils::FormatToSerialString(src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID, error.c_str());
-    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_FORMAT_INVALID;
   }
   auto iter = dst_iter->second.find(dst_format);
   if (iter == dst_iter->second.end()) {
     std::string error = "Failed to trans shape, do not support transpose from format " +
         FmtToStr(TypeUtils::FormatToSerialString(src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID, error.c_str());
-    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_FORMAT_INVALID;
   }
   perm = iter->second;
   return SUCCESS;
@@ -233,7 +233,7 @@ Status FormatTransferTranspose::TransFormat(const TransArgs &args, TransResult &
     return ret;
   }
   if (!IsTransShapeDstCorrect(args, expected_shape)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
   return Transpose(args.data, args.src_shape, args.src_data_type, perm_args[args.src_format][args.dst_format], result);
@@ -244,7 +244,7 @@ Status FormatTransferTranspose::TransShape(Format src_format, const std::vector<
   std::vector<int64_t> perm_arg;
   GE_CHK_STATUS_RET_NOLOG(GetPermByForamt(src_format, dst_format, perm_arg));
   if (!IsShapeArgValid(src_shape, perm_arg)) {
-    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   dst_shape = TransShapeByPerm(src_shape, perm_arg);
   return SUCCESS;

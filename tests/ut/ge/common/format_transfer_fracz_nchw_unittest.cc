@@ -39,7 +39,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_data_type) {
   TransResult result;
 
   FormatTransferFracZNchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_Invalid_src_format_reserved) {
@@ -50,7 +50,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_Invalid_src_format_reserved) 
       reinterpret_cast<uint8_t *>(data), FORMAT_RESERVED, FORMAT_NCHW, {16, 1, 16, 16}, {1, 1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_dst_format_reserved) {
@@ -61,7 +61,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_dst_format_reserved) 
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_RESERVED, {16, 1, 16, 16}, {1, 1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_shape) {
@@ -72,7 +72,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_shape) {
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_NCHW, {16, 1, 1, 16, 16}, {1, 1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_shape2) {
@@ -83,7 +83,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_shape2) {
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_NCHW, {16, 1, -16, 16}, {1, 1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_dst_shape) {
@@ -94,7 +94,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_dst_shape) {
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_NCHW, {16, 1, 16, 16}, {1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_dst_shape2) {
@@ -105,7 +105,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_dst_shape2) {
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_NCHW, {16, 1, 16, 16}, {1, -1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_dst_shape_relation1) {
@@ -116,7 +116,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_dst_shape_relatio
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_NCHW, {16, 1, 16, 16}, {1, 17, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_dst_shape_relation2) {
@@ -127,7 +127,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_invalid_src_dst_shape_relatio
       reinterpret_cast<uint8_t *>(data), FORMAT_FRACTAL_Z, FORMAT_NCHW, {16, 1, 16, 16}, {17, 1, 4, 4}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_fp16_success_lt_cube) {
@@ -302,7 +302,7 @@ TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_fp16_success_eq_cube) {
   }
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+  EXPECT_EQ(status, ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferFraczNchw, fracz_to_nchw_fp16_success_gt_cube) {

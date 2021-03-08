@@ -365,7 +365,7 @@ TEST_F(UtestDataTypeTransfer, invalid_src_data_type) {
   TransResult result;
 
   DataTypeTransfer transfer;
-  EXPECT_EQ(transfer.TransDataType(args, result), UNSUPPORTED);
+  EXPECT_EQ(transfer.TransDataType(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 
 /*
@@ -386,8 +386,8 @@ TEST_F(UtestDataTypeTransfer, unsupprot_trans) {
   TransResult result;
 
   DataTypeTransfer transfer;
-  EXPECT_EQ(transfer.TransDataType(args, result), UNSUPPORTED);
-  EXPECT_EQ(TransDataType(args, result), UNSUPPORTED);
+  EXPECT_EQ(transfer.TransDataType(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
+  EXPECT_EQ(TransDataType(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 
 TEST_F(UtestDataTypeTransfer, unsupprot_trans2) {
@@ -396,8 +396,8 @@ TEST_F(UtestDataTypeTransfer, unsupprot_trans2) {
   TransResult result;
 
   DataTypeTransfer transfer;
-  EXPECT_EQ(transfer.TransDataType(args, result), UNSUPPORTED);
-  EXPECT_EQ(TransDataType(args, result), UNSUPPORTED);
+  EXPECT_EQ(transfer.TransDataType(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
+  EXPECT_EQ(TransDataType(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 }  // namespace formats
 }  // namespace ge

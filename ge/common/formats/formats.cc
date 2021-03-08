@@ -38,14 +38,14 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
     std::string error = "Failed to trans data from format " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_FORMAT_INVALID;
   }
 
   auto src_shape_size = GetItemNumByShape(args.src_shape);
   if (args.data == nullptr && src_shape_size != 0) {
-    GELOGE(PARAM_INVALID, "Invalid input null data");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Invalid input null data");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   return transfer->TransFormat(args, result);
@@ -64,8 +64,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_form
     std::string error = "Failed to trans data from format " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID, error.c_str());
-    return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_FORMAT_INVALID;
   }
 
   return transfer->TransShape(src_format, src_shape, data_type, dst_format, dst_shape);
@@ -77,13 +77,13 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransDataType(const CastAr
     std::string error = "Failed to trans data from datatype " +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type)) + " to " +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_DATATYPE_INVALID, error.c_str());
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
 
   if (args.data == nullptr && args.src_data_size != 0) {
-    GELOGE(PARAM_INVALID, "Invalid input null data");
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Invalid input null data");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   return transfer->TransDataType(args, result);

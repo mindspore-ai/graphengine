@@ -33,11 +33,11 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(compute_graph);
 
   if (!PassUtils::IsNeedTrainIteFlowCtrl(compute_graph)) {
-    GELOGI("No need FlowCtrl for graph %u", compute_graph->GetGraphID());
+    GELOGI("No need FlowCtrl for graph %u.", compute_graph->GetGraphID());
     return NOT_CHANGED;
   }
 
-  GELOGI("FlowCtrl pass begin.graph is [%s]", compute_graph->GetName().c_str());
+  GELOGI("FlowCtrl pass begin.graph is [%s].", compute_graph->GetName().c_str());
   bool graph_change = false;
   // 1. Add FP/BP flow ctrl (big cycle)
   for (auto &node : compute_graph->GetDirectNode()) {
@@ -86,7 +86,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
     auto ret = GraphUtils::AddEdge(active_node->GetOutControlAnchor(),
                                    assign_add_node_in_fpbp_loop_->GetInControlAnchor());
     if (ret != GRAPH_SUCCESS) {
-      GELOGW("add control edge between iter_loop_node:%s and fpbp_loop_node:%s fail, may cause block",
+      GELOGW("add control edge between iter_loop_node:%s and fpbp_loop_node:%s fail, may cause block.",
              active_node->GetName().c_str(), assign_add_node_in_fpbp_loop_->GetName().c_str());
     }
   }

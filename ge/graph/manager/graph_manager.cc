@@ -3090,6 +3090,15 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     sub_graph->SetSessionID(session_id);
     sub_graph->SetGraphID(graph_node->GetGraphId());
   }
+  bool off_superkernel = false;
+  if (AttrUtils::GetBool(compute_graph, ATTR_NAME_OFF_SUPERKERNEL_ATTR, off_superkernel)) {
+    GELOGI("Compute graph %s get superkernel flag %d.", compute_graph->GetName().c_str(), off_superkernel);
+    if (!AttrUtils::SetBool(merged_compute_graph, ATTR_NAME_OFF_SUPERKERNEL_ATTR, off_superkernel)) {
+      GELOGE(FAILED, "Compute graph %s set superkernel flag %d failed", merged_compute_graph->GetName().c_str(),
+             off_superkernel);
+      return FAILED;
+    }
+  }
   GE_TIMESTAMP_EVENT_END(MergeSubgraph, "OptimizeSubgraph::MergeSubGraph");
   GE_DUMP(merged_compute_graph, "mergedComputeGraph");
   compute_graph = merged_compute_graph;

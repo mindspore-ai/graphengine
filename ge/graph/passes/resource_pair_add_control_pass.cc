@@ -71,7 +71,7 @@ Status ResourcePairAddControlPass::Run(ComputeGraphPtr graph) {
         }
         auto to_prefix_2_node = to_item_prefix_2_node->second.find(prefix);
         if (to_prefix_2_node == to_item_prefix_2_node->second.end()) {
-          GELOGw("find peer prefix node fail, suffix:%s, from_type:%s, to_type:%s", prefix.c_str(),
+          GELOGW("find peer prefix node fail, suffix:%s, from_type:%s, to_type:%s", prefix.c_str(),
                  resource_type_pair.first.c_str(), resource_type_pair.second.c_str());
           continue;
         }

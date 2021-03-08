@@ -63,16 +63,17 @@ Status ResourcePairRemoveControlPass::Run(ComputeGraphPtr graph) {
         NodePtr from_node = prefix_2_node.second;
         GE_CHECK_NOTNULL(from_node);
         auto to_item_prefix_2_node = prefix_2_node_per_type.find(resource_type_pair.second);
+        // stackpush and stackpop may exist in two subgraphs, no necessary to report error
         if (to_item_prefix_2_node == prefix_2_node_per_type.end()) {
-          GELOGE(INTERNAL_ERROR, "find peer type node fail, suffix:%s, from_type:%s, to_type:%s", prefix.c_str(),
+          GELOGW("find peer type node fail, suffix:%s, from_type:%s, to_type:%s", prefix.c_str(),
                  resource_type_pair.first.c_str(), resource_type_pair.second.c_str());
-          return domi::PARAM_INVALID;
+          continue;
         }
         auto to_prefix_2_node = to_item_prefix_2_node->second.find(prefix);
         if (to_prefix_2_node == to_item_prefix_2_node->second.end()) {
-          GELOGE(INTERNAL_ERROR, "find peer prefix node fail, suffix:%s, from_type:%s, to_type:%s", prefix.c_str(),
+          GELOGW("find peer prefix node fail, suffix:%s, from_type:%s, to_type:%s", prefix.c_str(),
                  resource_type_pair.first.c_str(), resource_type_pair.second.c_str());
-          return domi::PARAM_INVALID;
+          continue;
         }
         NodePtr to_node = to_prefix_2_node->second;
         GE_CHECK_NOTNULL(to_node);

@@ -86,7 +86,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
     auto ret = GraphUtils::AddEdge(active_node->GetOutControlAnchor(),
                                    assign_add_node_in_fpbp_loop_->GetInControlAnchor());
     if (ret != GRAPH_SUCCESS) {
-      GELOGW("add control edge between iter_loop_node:%s and fpbp_loop_node:%s fail, may cause block.",
+      GELOGW("add control edge between iter_loop_node:%s and fpbp_loop_node:%s fail, may cause block",
              active_node->GetName().c_str(), assign_add_node_in_fpbp_loop_->GetName().c_str());
     }
   }
@@ -387,7 +387,7 @@ Status FlowCtrlPass::CreateIterCtrlFalseBranch(ComputeGraphPtr &compute_graph, c
       GELOGE(FAILED, "Insert model_exit node:%s for IterCtrlTrueStream failed.", model_exit_name.c_str());
       return FAILED;
     }
-    GE_CHK_STATUS_RET(SetStreamLabel(model_exit_node, model_exit_name), "set stream label failed.");
+    GE_CHK_STATUS_RET(SetStreamLabel(model_exit_node, model_exit_name), "set stream label failed");
 
     add_ret = GraphUtils::AddEdge(active_node->GetOutControlAnchor(), model_exit_node->GetInControlAnchor());
     if (add_ret != GRAPH_SUCCESS) {

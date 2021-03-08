@@ -64,7 +64,7 @@ const std::string kInputFormat = "input_format";
  * @param cfg_path   [IN] the config file path
  * @return graphStatus
  */
-typedef graphStatus (*SetOpAttrFun)(ComputeGraphPtr &graph, const std::string &cfg_path);
+using SetOpAttrFun = graphStatus (*)(ComputeGraphPtr &graph, const std::string &cfg_path);
 
 const std::map<aclgrphAttrType, SetOpAttrFun> kAttrTypeFuncMap = {
   {ATTR_TYPE_KEEP_DTYPE, KeepDtypeFunc},

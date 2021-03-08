@@ -261,7 +261,9 @@ Status ModelBuilder::SetInputOutputDesc() {
     GE_IF_BOOL_EXEC(n->GetInAllNodes().empty() && n->GetOutAllNodes().empty(), continue;);
 
     SetInputIsConst(n);
-    if (IsGeLocalOp(n->GetOpDesc())) {
+    bool is_unknow = false;
+    (void)NodeUtils::GetNodeUnknownShapeStatus(*n, is_unknow);
+    if ((IsGeLocalOp(n->GetOpDesc())) && (!is_unknow)) {
       GE_CHK_STATUS_RET(CalcOutputSize(n), "Calculate output size failed");
     }
     ret = AdjustConstWeightSize(n, weight_offset_);

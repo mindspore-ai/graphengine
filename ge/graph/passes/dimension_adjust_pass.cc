@@ -29,13 +29,13 @@ const int kRemoveInputIndex = 1;
 
 Status DimensionAdjustPass::Run(ge::NodePtr &node) {
   if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "node is nullptr");
+    GELOGE(PARAM_INVALID, "node is nullptr.");
     return PARAM_INVALID;
   }
 
   OpDescPtr op_desc_ptr = node->GetOpDesc();
   if (op_desc_ptr == nullptr) {
-    GELOGE(PARAM_INVALID, "GetOpDesc return nullptr");
+    GELOGE(PARAM_INVALID, "GetOpDesc return nullptr.");
     return PARAM_INVALID;
   }
 

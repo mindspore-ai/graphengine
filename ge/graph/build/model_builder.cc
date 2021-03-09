@@ -712,7 +712,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_TIMESTAMP_START(SetInputOutputOffset);
   SetInputOutputOffsetPass input_output_offset;
   GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_), "Set input output offset failed.");
-  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run.");
+  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run");
 
   // Compile single op in graph build stage
   GE_TIMESTAMP_START(CompileSingleOp);

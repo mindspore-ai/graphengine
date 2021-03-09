@@ -532,20 +532,20 @@ Status DavinciModel::DoTaskSink() {
   GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
 
   if (known_node_) {
-    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed.");
+    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed");
   }
 
-  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed.");
+  GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed");
 
-  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed.");
+  GE_CHK_STATUS_RET(ModelManager::GetInstance()->CheckAicpuOpList(ge_model_), "Check aicpu op type failed");
 
-  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed.");
+  GE_CHK_STATUS_RET(InitEntryTask(), "InitEntryTask failed");
 
-  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed.");
+  GE_CHK_STATUS_RET(InitL1DataDumperArgs(), "InitL1DataDumperArgs failed");
 
-  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed.");
+  GE_CHK_STATUS_RET(DistributeTask(), "Distribute failed");
 
   GE_CHK_RT_RET(rtModelLoadComplete(rt_model_handle_));
 

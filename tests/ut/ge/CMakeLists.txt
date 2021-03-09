@@ -1029,7 +1029,8 @@ target_compile_definitions(ut_libge_multiparts_utest PRIVATE
 
 target_link_libraries(ut_libge_multiparts_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
+    ge_build_common ge_load_common ge_execute_common ge_optimize_common ge_partition_common ge_prepare_common ge_single_op ge_ut_common
+    gtest gtest_main gmock gmock_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
 )
 
 # libge_others_utest
@@ -1048,7 +1049,8 @@ target_compile_options(ut_libge_others_utest PRIVATE
 
 target_link_libraries(ut_libge_others_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_load_common ge_execute_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
+    ge_load_common ge_execute_common ge_ut_common
+    gtest gtest_main gmock gmock_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
 )
 
 # libge_kernel_utest
@@ -1066,7 +1068,8 @@ target_compile_options(ut_libge_kernel_utest PRIVATE
 
 target_link_libraries(ut_libge_kernel_utest
     $<BUILD_INTERFACE:intf_pub>
-    ge_load_common ge_ut_common gtest gtest_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
+    ge_load_common ge_ut_common
+    gtest gtest_main gmock gmock_main ascend_protobuf ${COMMON_SHARED_LIBRARIES} json -lrt -ldl -lgcov
 )
 
 # libge_distinct_load_utest
@@ -1091,10 +1094,10 @@ target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
 )
 
 target_link_libraries(ut_libge_distinct_load_utest
-	${COMMON_SHARED_LIBRARIES}
-	$<BUILD_INTERFACE:intf_pub>
-        ge_execute_common ge_ut_common_format ge_load_common
-        ge_single_op   ge_prepare_common
-        ge_optimize_common  ge_build_common ge_partition_common ge_ut_common
-        gtest gtest_main ascend_protobuf json c_sec -lrt -ldl -lpthread -lgcov
+    ${COMMON_SHARED_LIBRARIES}
+    $<BUILD_INTERFACE:intf_pub>
+    ge_execute_common ge_ut_common_format ge_load_common
+    ge_single_op   ge_prepare_common
+    ge_optimize_common  ge_build_common ge_partition_common ge_ut_common
+    gtest gtest_main gmock gmock_main ascend_protobuf json c_sec -lrt -ldl -lpthread -lgcov
 )

@@ -42,7 +42,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_data_type_uint8) {
   TransResult result;
 
   FormatTransferHwcnC1hwncoc0 transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_data_type_int32) {
@@ -57,7 +57,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_data_type_int32) {
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_C1HWNCoC0, {4, 4, 3, 1}, {1, 4, 4, 1, 16, 16}, DT_INT32};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_format_nchw) {
@@ -72,10 +72,10 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_format_nchw) {
       reinterpret_cast<uint8_t *>(data), FORMAT_NCHW, FORMAT_C1HWNCoC0, {4, 4, 3, 1}, {1, 4, 4, 1, 16, 16}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID);
+  EXPECT_EQ(status, ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_format_nc1khkwhwc0) {
@@ -90,7 +90,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_format_nc1khkwhw
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_NC1KHKWHWC0, {4, 4, 3, 1}, {1, 4, 4, 1, 16, 16}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape) {
@@ -105,7 +105,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape) {
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_NC1KHKWHWC0, {4, 4, 3}, {1, 4, 4, 1, 16, 16}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape2) {
@@ -120,7 +120,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape2) {
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_C1HWNCoC0, {4, 4}, {1, 4, 4, 1, 16, 16}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape3) {
@@ -139,10 +139,10 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_src_shape3) {
                  DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID);
+  EXPECT_EQ(status, ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_format) {
@@ -157,7 +157,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_format) {
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_NC1KHKWHWC0, {4, 4, 3, 1}, {1, 1, 4, 4, 16, 16}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_shape2) {
@@ -172,7 +172,7 @@ TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_invalid_dst_shape2) {
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, FORMAT_C1HWNCoC0, {4, 4, 3, 1}, {2, 4, 4, 1, 16, 16}, DT_FLOAT};
 
   TransResult result;
-  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
 }
 
 TEST_F(UtestFormatTransferHwcnC1hwncoc0, hwcn_to_6d_fp16_success_lt_cube) {

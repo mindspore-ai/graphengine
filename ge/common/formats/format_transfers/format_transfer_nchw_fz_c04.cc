@@ -45,7 +45,7 @@ Status CheckDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_
 Status TransShape(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type, std::vector<int64_t> &dst_shape) {
   auto c0 = GetCubeSizeByDataType(data_type);
   if (c0 < 0) {
-    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   auto chw = c * h * w;
 
@@ -59,9 +59,9 @@ Status TransShape(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type
   dst_shape.push_back(c0);
 
   if (!IsShapeValid(dst_shape)) {
-    GELOGE(ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID, "Failed to check dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s",
            ShapeToString(dst_shape).c_str());
-    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   return SUCCESS;
 }
@@ -69,7 +69,7 @@ Status TransShape(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type
 Status TransShapeNchwToFzC04(const std::vector<int64_t> &src_shape, DataType data_type,
                              std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {
-    return ACL_ERROR_GE_TRANSSHAPE_SHAPE_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
   auto n = src_shape.at(kNchwN);
@@ -94,8 +94,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   std::vector<int64_t> expect_shape = {n, h, w, c};
   auto ret = ge::formats::Transpose(data, args.src_shape, args.src_data_type, perm_arg_1, trans_result_1);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to Transpose from NCHW to HWCN");
-    return NOT_CHANGED;
+    GELOGE(ret, "Failed to Transpose from NCHW to HWCN");
+    return ret;
   }
 
   TransArgs args_tmp = args;
@@ -104,8 +104,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   // check size it should be same with original
   size_t expect_size = n * c * h * w * size;  // before has do check about mul
   if (trans_result_1.length != expect_size) {
-    GELOGE(INTERNAL_ERROR, "size is not match after transpose!");
-    return NOT_CHANGED;
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "size is not match after transpose!");
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   // prepare for padding in chw
@@ -118,20 +118,20 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
 
   // data overflow check totally
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(h_o, w_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", h_o, w_o);
-                  return INTERNAL_ERROR);
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", h_o, w_o);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(n_o, c_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", n_o, c_o);
-                  return INTERNAL_ERROR);
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", n_o, c_o);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
   auto t1 = h_o * w_o;
   auto t2 = n_o * c_o;
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
-                  return INTERNAL_ERROR);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
 
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
-                  return INTERNAL_ERROR);
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
   int64_t dst_size = total_ele_cnt * size;
   if (dst_size == 0) {
     result.length = 0;
@@ -140,15 +140,15 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto retMem = memset_s(dst.get(), dst_size, 0, dst_size);
   if (retMem != EOK) {
-    GELOGE(INTERNAL_ERROR, "memst failed!");
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memst failed!");
+    return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
   // copy data
   auto block = c * h * w * size;
@@ -159,8 +159,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   for (auto k = 0; k < n; k++) {
     ret = memcpy_s(p_d + k * stride, protectSize, p_s + k * block, block);
     if (ret != EOK) {
-      GELOGE(INTERNAL_ERROR, "memcpy_s failed!");
-      return INTERNAL_ERROR;
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memcpy_s failed!");
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
     protectSize = protectSize - block;
   }
@@ -169,8 +169,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   std::vector<int64_t> perm_arg_2 = {2, 0, 1, 3};
   ret = ge::formats::Transpose(dst.get(), shape_o, args.src_data_type, perm_arg_2, result);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to Transpose from NCHW to HWCN");
-    return NOT_CHANGED;
+    GELOGE(ret, "Failed to Transpose from NCHW to HWCN");
+    return ret;
   }
 
   return SUCCESS;
@@ -180,7 +180,7 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
   args_tmp = args;
   auto src_shape = args_tmp.src_shape;
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
 
@@ -190,8 +190,8 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
   auto w = src_shape.at(kNchwW);
 
   if (c > kMaxDimsNumC) {
-    GELOGE(PARAM_INVALID, "Invalie dim c num[%lu].It should be in (0,4]", c);
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Invalie dim c num[%lu].It should be in (0,4]", c);
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
   auto n_o = Ceil(n, c0) * c0;
@@ -205,21 +205,21 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
 
   // data overflow check
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(h_o, w_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", h_o, w_o);
-                  return INTERNAL_ERROR);
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", h_o, w_o);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(n_o, c_o),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", n_o, c_o);
-                  return INTERNAL_ERROR);
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", n_o, c_o);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
   auto t1 = h_o * w_o;
   auto t2 = n_o * c_o;
-  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
-                  return INTERNAL_ERROR);
+  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
 
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
   int size = GetSizeByDataType(args.src_data_type);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
-                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
-                  return INTERNAL_ERROR);
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
+                  return ACL_ERROR_GE_INTERNAL_ERROR);
 
   int64_t dst_size = total_ele_cnt * size;
   if (dst_size == 0) {
@@ -228,15 +228,15 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
 
   dst.reset(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    return OUT_OF_MEMORY;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto ret = memset_s(dst.get(), dst_size, 0, dst_size);
   if (ret != EOK) {
-    GELOGE(INTERNAL_ERROR, "memst failed!");
-    return INTERNAL_ERROR;
+    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memst failed!");
+    return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
 
   auto p_s = args.data;
@@ -249,8 +249,8 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
       ret = memcpy_s(p_d + (i * c_o * h_o * w_o + j * h_o * w_o) * size, protectSize,
                      p_s + (i * c * h * w + j * h * w) * size, block);
       if (ret != EOK) {
-        GELOGE(INTERNAL_ERROR, "memcpy_s failed!");
-        return INTERNAL_ERROR;
+        GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memcpy_s failed!");
+        return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
       }
       protectSize = protectSize - block;
     }
@@ -270,7 +270,7 @@ Status FormatTransferNchwToFZC04::TransFormat(const TransArgs &args, TransResult
   std::shared_ptr<uint8_t> dst = nullptr;
   auto ret = PaddingNC(args, args_tmp, dst);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Padding in NC axis failed!");
+    GELOGE(ret, "Padding in NC axis failed!");
     return ret;
   }
 
@@ -281,26 +281,26 @@ Status FormatTransferNchwToFZC04::TransFormat(const TransArgs &args, TransResult
   }
 
   if (!IsTransShapeDstCorrect(args_tmp, expect_shape)) {
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
   if (args_tmp.src_format == FORMAT_NCHW && args_tmp.dst_format == FORMAT_FRACTAL_Z_C04) {
     return TransFormatFromNchwToFzC04(args_tmp, result);
   }
 
-  return UNSUPPORTED;
+  return ACL_ERROR_GE_FORMAT_INVALID;
 }
 
 Status FormatTransferNchwToFZC04::TransShape(Format src_format, const std::vector<int64_t> &src_shape,
                                              DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
   if (CheckDataTypeSupport(data_type) != SUCCESS) {
-    return ACL_ERROR_GE_TRANSSHAPE_DATATYPE_INVALID;
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (src_format == FORMAT_NCHW && dst_format == FORMAT_FRACTAL_Z_C04) {
     return TransShapeNchwToFzC04(src_shape, data_type, dst_shape);
   }
 
-  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
+  return ACL_ERROR_GE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferNchwToFZC04, FORMAT_NCHW, FORMAT_FRACTAL_Z_C04)

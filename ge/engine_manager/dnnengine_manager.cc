@@ -217,7 +217,7 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
       std::string unsupported_reason;
       // It will be replaced by engine' checksupport
       uint64_t start_time = GetCurrentTimestamp();
-      if (kernel_info_store->second->CheckSupported(op_desc, unsupported_reason)) {
+      if (kernel_info_store->second->CheckSupported(node_ptr, unsupported_reason)) {
         checksupport_cost_[kernel_name] += GetCurrentTimestamp() - start_time;
         op_desc->SetOpEngineName(it.engine);
         op_desc->SetOpKernelLibName(kernel_name);

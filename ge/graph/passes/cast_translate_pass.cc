@@ -167,7 +167,7 @@ bool CastTranslatePass::IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans
     trans_op_outdesc->SetDataType(cast_out_datatype);
   }
 
-  if (!TranslateCheckAccuracySupported(trans_op_desc)) {
+  if (!TranslateCheckAccuracySupported(trans_node)) {
     if (is_src_cast) {
       trans_op_desc->MutableInputDesc(0)->SetDataType(trans_in_datatype);
     } else {
@@ -271,7 +271,8 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
   return SUCCESS;
 }
 
-bool CastTranslatePass::TranslateCheckAccuracySupported(const OpDescPtr &op_desc) {
+bool CastTranslatePass::TranslateCheckAccuracySupported(NodePtr &node) {
+  const OpDescPtr &op_desc = node->GetOpDesc();
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
     GELOGW("GE is not initialized or is finalized.");
@@ -293,7 +294,7 @@ bool CastTranslatePass::TranslateCheckAccuracySupported(const OpDescPtr &op_desc
     auto kernel_info_store = kernel_map.find(kernel_name);
     if (kernel_info_store != kernel_map.end()) {
       if (kernel_info_store->second != nullptr &&
-          kernel_info_store->second->CheckAccuracySupported(op_desc, unsupported_reason)) {
+          kernel_info_store->second->CheckAccuracySupported(node, unsupported_reason)) {
         return true;
       }
     }

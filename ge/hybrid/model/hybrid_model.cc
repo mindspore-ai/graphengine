@@ -225,23 +225,19 @@ Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, st
     GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
 
     Format format = op_desc->GetInputDescPtr(0)->GetFormat();
-    input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+    DataType data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+    input.data_type = static_cast<uint32_t>(data_type);
     input.name = op_desc->GetName();
-
-    int64_t input_size = 0;
-    GE_CHK_STATUS_RET(TensorUtils::GetSize(*op_desc->GetInputDescPtr(0), input_size), "get input size failed.");
-
-    // support dynamic shape
-    if (input_size < 0) {
-      GELOGD("dynamic shape scene, input size is unknown. "
-             "format=%d, data_type=%d, input_size=%ld",
-             format, input.data_type, input_size);
-      input_size = kMemSizeUnknownShape;   // -1
+    GeShape shape = op_desc->GetInputDescPtr(0)->GetShape();
+    int64_t tensor_size = 0;
+    if (TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size) != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "Calculate tensor mem size failed.");
+      return FAILED;
     }
-
-    // not support dynamic shape input for now, so input_size here will be not less than zero.
-    input.size = input_size;
-
+    if (tensor_size == kMemSizeUnknownShape) {
+      tensor_size = 0;
+    }
+    input.size = static_cast<uint64_t>(tensor_size);
     CreateInputDimsInfo(op_desc, input);
 
     formats.push_back(format);
@@ -284,6 +280,9 @@ void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc,
   }
   int64_t tensor_size = 0;
   (void)TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size);
+  if (tensor_size == kMemSizeUnknownShape) {
+    tensor_size = 0;
+  }
   output_desc_info.size = static_cast<uint64_t>(tensor_size);
   output_desc_info.data_type = output_desc->GetDataType();
 }

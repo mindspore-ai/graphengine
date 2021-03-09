@@ -311,6 +311,9 @@ const std::string OP_BANK_UPDATE_FLAG = "ge.op_bank_update";
 // 0: data multi; 1: model multi;
 const std::string HCOM_MULTI_MODE = "ge.hcomMultiMode";
 
+// atc and ir option
+const char *const INPUT_SHAPE_RANGE = "input_shape_range";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -390,6 +393,7 @@ static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 #ifdef __GNUC__
 const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              INPUT_SHAPE,
+                                                             INPUT_SHAPE_RANGE,
                                                              OP_NAME_MAP,
                                                              DYNAMIC_BATCH_SIZE,
                                                              DYNAMIC_IMAGE_SIZE,

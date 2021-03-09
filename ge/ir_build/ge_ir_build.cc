@@ -55,6 +55,7 @@ const std::string IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT = "0";
 const std::string IR_OPTION_ENABLE_COMPRESS_WEIGHT_DEFAULT = "false";
 const std::string KEEP_DTYPE_OPTION = "keep_dtype";
 const std::string kInputShape = "input_shape";
+const std::string kInputShapeRange = "input_shape_range";
 const std::string kInputFormat = "input_format";
 
 /**
@@ -289,13 +290,20 @@ graphStatus Impl::InferShapePrepare(const ComputeGraphPtr &compute_graph) {
 
 graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
   GELOGD("Enter Update Data Attr Process!");
-  if (options_.find(kInputShape) == options_.end()) {
-    return GRAPH_SUCCESS;
-  }
+  std::string input_shape = (options_.find(kInputShape) == options_.end()) ? "" : options_[kInputShape];
+  std::string input_shape_range = (options_.find(kInputShapeRange) == options_.end()) ? "" : options_[kInputShapeRange];
+
   map<string, vector<int64_t>> shape_map;
   vector<pair<string, vector<int64_t>>> user_shape_map;
-  GE_CHK_BOOL_EXEC(ParseInputShape(options_[kInputShape], shape_map, user_shape_map, true),
-    return GRAPH_PARAM_INVALID, "parse input shape failed!");
+  if (!input_shape.empty()) {
+    GE_CHK_BOOL_EXEC(ParseInputShape(input_shape, shape_map, user_shape_map, true),
+                     return GRAPH_PARAM_INVALID, "Parse input shape failed!");
+  }
+  std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
+  if (!input_shape_range.empty()) {
+    GE_CHK_BOOL_EXEC(ParseInputShapeRange(input_shape_range, shape_range_map),
+                     return GRAPH_PARAM_INVALID, "Parse input shape range failed.");
+  }
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   for (ge::NodePtr &input_node : compute_graph->GetDirectNode()) {
@@ -303,21 +311,31 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
-      auto tensor_input = op->MutableInputDesc(0);
-      auto tensor_output = op->MutableOutputDesc(0);
-      GE_CHECK_NOTNULL(tensor_input);
-      GE_CHECK_NOTNULL(tensor_output);
-      string data_op_name = op->GetName();
-      auto iter = shape_map.find(data_op_name);
-      if (iter != shape_map.end()) {
-        tensor_input->SetShape(ge::GeShape(iter->second));
-        tensor_output->SetShape(ge::GeShape(iter->second));
-        GELOGD("update input [%s] shape info", data_op_name.c_str());
-      } else {
-        GELOGI("no need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
+      if (UpdateDataOpShape(op, shape_map) != SUCCESS) {
+        GELOGE(GRAPH_FAILED, "Update data op [%s] shape failed.", op->GetName().c_str());
+        return GRAPH_FAILED;
+      }
+      if (UpdateDataOpShapeRange(op, shape_range_map) != SUCCESS) {
+        GELOGE(GRAPH_FAILED, "Update data op [%s] shape range failed.", op->GetName().c_str());
+        return GRAPH_FAILED;
+      }
+      if (shape_range_map.empty()) {
+        auto tensor_input = op->MutableInputDesc(0);
+        GE_CHECK_NOTNULL(tensor_input);
+        GeShape shape = tensor_input->GetShape();
+        std::vector<std::pair<int64_t, int64_t>> shape_range;
+        if (tensor_input->GetShapeRange(shape_range) != GRAPH_SUCCESS) {
+          GELOGE(GRAPH_FAILED, "[%s] Get shape range failed.", op->GetName().c_str());
+          return GRAPH_FAILED;
+        }
+        if (TensorUtils::CheckShapeByShapeRange(shape, shape_range) != SUCCESS) {
+          GELOGE(GRAPH_FAILED, "[%s] Check shape by shape range failed.", op->GetName().c_str());
+          return GRAPH_FAILED;
+        }
       }
     }
   }
+
   return GRAPH_SUCCESS;
 }
 
@@ -400,9 +418,11 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
                                   : options_[ge::ir_option::DYNAMIC_IMAGE_SIZE];
   string dynamic_dims =
       options_.find(ge::ir_option::DYNAMIC_DIMS) == options_.end() ? "" : options_[ge::ir_option::DYNAMIC_DIMS];
+  string input_shape_range =
+    options_.find(ge::INPUT_SHAPE_RANGE) == options_.end() ? "" : options_[ge::INPUT_SHAPE_RANGE];
 
   auto status = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims, input_shape,
-                                            input_format, is_dynamic_input_);
+                                            input_shape_range, input_format, is_dynamic_input_);
   if (status != ge::SUCCESS) {
     GELOGE(GRAPH_PARAM_INVALID, "Check dynamic input size failed!");
     return GRAPH_PARAM_INVALID;

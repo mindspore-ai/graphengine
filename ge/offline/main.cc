@@ -84,6 +84,10 @@ DEFINE_string(input_shape, "",
               "Optional; shape of input data. Required when framework is caffe "
               "or TensorFLow or MindSpore or Onnx. "
               "Format: \"input_name1:n1,c1,h1,w1;input_name2:n2,c2,h2,w2\"");
+DEFINE_string(input_shape_range, "",
+              "Optional; shape range of input data. Required when framework is caffe "
+              "or TensorFLow or Onnx. "
+              "Format: \"input_name1:[n1~n2,c1,h1,w1];input_name2:[n2~n3,c2,h2,w2]\"");
 DEFINE_bool(h, false, "show this help message");
 DEFINE_string(cal_conf, "", "Optional; the calibration config file.");
 
@@ -240,6 +244,7 @@ class GFlagUtils {
         "  --framework         Framework type. 0:Caffe; 1:MindSpore; 3:Tensorflow; 5:Onnx\n"
         "  --input_format      Format of input data. E.g.: \"NCHW\"\n"
         "  --input_shape       Shape of input data. Separate multiple nodes with semicolons (;). "
+        "  --input_shape_range Shape range of input data. Separate multiple nodes with semicolons (;)."
         "Use double quotation marks (\") to enclose each argument.\n"
         "                      E.g.: \"input_name1:n1,c1,h1,w1;input_name2:n2,c2,h2,w2\"\n"
         "  --dynamic_batch_size Set dynamic batch size. E.g.: \"batchsize1,batchsize2,batchsize3\"\n"
@@ -373,7 +378,7 @@ class GFlagUtils {
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ge::CheckDynamicInputParamValid(FLAGS_dynamic_batch_size, FLAGS_dynamic_image_size,
-                                        FLAGS_dynamic_dims, FLAGS_input_shape,
+                                        FLAGS_dynamic_dims, FLAGS_input_shape, FLAGS_input_shape_range,
                                         FLAGS_input_format, is_dynamic_input) != ge::SUCCESS,
         ret = ge::FAILED, "check dynamic size(batch size, image size or dims) failed!");
 
@@ -985,6 +990,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
   } else {
     std::map<string, string> atc_params;
     atc_params.insert(std::pair<string, string>("input_shape", FLAGS_input_shape));
+    atc_params.insert(std::pair<string, string>(ge::INPUT_SHAPE_RANGE, FLAGS_input_shape_range));
     atc_params.insert(std::pair<string, string>("out_nodes", FLAGS_out_nodes));
     atc_params.insert(std::pair<string, string>("input_format", FLAGS_input_format));
     atc_params.insert(std::pair<string, string>("check_report", FLAGS_check_report));

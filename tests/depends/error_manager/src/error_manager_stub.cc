@@ -40,6 +40,10 @@ using namespace ErrorMessage;
     return 0;
   }
 
+  int ErrorManager::ReportInterErrMessage(std::string error_code, const std::string &error_msg) {
+    return 0;
+  }
+
   ///
   /// @brief output error message
   /// @param [in] handle: print handle

@@ -532,7 +532,7 @@ Status DavinciModel::DoTaskSink() {
   GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
 
   if (known_node_) {
-    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node args failed");
+    GE_CHK_STATUS_RET(MallocKnownArgs(), "Mallloc known node's args failed");
   }
 
   GE_CHK_STATUS_RET(InitTaskInfo(*model_task_def.get()), "InitTaskInfo failed");

@@ -273,6 +273,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/set_input_output_offset_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_utils.cc"
@@ -518,6 +519,7 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/compile_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/common/transop_util.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
     #"${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/folding_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/variable_op_pass.cc"
@@ -695,6 +697,7 @@ set(PASS_TEST_FILES
     "graph/passes/multi_batch_clone_pass_unittest.cc"
     "graph/passes/replace_with_empty_const_pass_unittest.cc"
     "graph/passes/transpose_transdata_pass_unittest.cc"
+    "graph/passes/parallel_group_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES

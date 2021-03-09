@@ -22,6 +22,10 @@
 using std::string;
 
 namespace ge {
+namespace {
+const int64_t kLoopType = 1;
+}
+
 Status NextIterationPass::Run(ComputeGraphPtr graph) {
   GELOGD("NextIterationPass Enter");
   /// Enter-----------+
@@ -121,7 +125,10 @@ Status NextIterationPass::FindWhileGroups() {
         if (switch_node == nullptr) {
           continue;
         }
-
+        if (!AttrUtils::SetInt(switch_node->GetOpDesc(), ATTR_NAME_STREAM_SWITCH_TYPE, kLoopType)) {
+          GELOGE(INTERNAL_ERROR, "set int failed");
+          return INTERNAL_ERROR;
+        }
         NodePtr loop_cond = nullptr;
         if (FindTargetNode(switch_node, LOOPCOND, true, loop_cond) != SUCCESS) {
           GELOGE(INTERNAL_ERROR, "Get LoopCond node failed, frame_name: %s.", frame_name.c_str());

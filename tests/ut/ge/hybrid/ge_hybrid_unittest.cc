@@ -34,6 +34,7 @@
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/types.h"
+#include "graph/utils/tensor_utils.h"
 
 #undef private
 #undef protected
@@ -212,7 +213,7 @@ TEST_F(UtestGeHybrid, init_weight_success) {
   ConstGeTensorPtr constTensor_0 =
     std::make_shared<GeTensor>(tensor_desc_0, (uint8_t *)&data_vec_0[0], data_vec_0.size() * sizeof(int32_t));
   AttrUtils::SetTensor(const_op_desc, ge::ATTR_NAME_WEIGHTS, constTensor_0);
-  const_op_desc->AddOutputDesc(constTensor_0);
+  const_op_desc->AddOutputDesc(tensor_desc_0);
   NodePtr const_node = sub_graph->AddNode(const_op_desc);
   graph->AddSubgraph("sub", sub_graph);
 

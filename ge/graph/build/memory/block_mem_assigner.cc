@@ -597,7 +597,7 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
       int64_t size = 0;
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(output_desc, size) != SUCCESS, GELOGI("Get size failed"));
       GE_IF_BOOL_EXEC(size < 0,
-        GELOGE(FAILED, "[check][TensorSize]tensor_size:%ld is invalid, maybe it is unknown shape node, Node_name:%s",
+        GELOGE(FAILED, "[Check][TensorSize]tensor_size:%ld is invalid, maybe it is unknown shape node, Node_name:%s",
           size, node_op_desc->GetName().c_str());
         REPORT_INNER_ERROR("E19999", "tensor_size:%ld is invalid, maybe it is unknown shape node, Node_name:%s",
           size, node_op_desc->GetName().c_str());
@@ -691,21 +691,21 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
   if (static_cast<size_t>(out_index) < n->GetAllOutDataAnchors().size()) {
     auto out_anchor = n->GetOutDataAnchor(out_index);
     GE_IF_BOOL_EXEC(out_anchor == nullptr,
-                    GELOGE(FAILED, "[check][anchor]Node[%s] output[%u] anchor is null.",
+                    GELOGE(FAILED, "[Check][Anchor]Node[%s] output[%u] anchor is null.",
                       n->GetName().c_str(), out_index);
                     REPORT_INNER_ERROR("E19999", "output anchor is null, node_name: %s output_index: %u.",
                       n->GetName().c_str(), out_index);
                     return false;);
     for (auto const &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
       GE_IF_BOOL_EXEC(peer_in_anchor == nullptr,
-                      GELOGE(FAILED, "[check][anchor]Node[%s] output[%u] peer_in_anchor 0 is null.",
+                      GELOGE(FAILED, "[Check][Anchor]Node[%s] output[%u] peer_in_anchor 0 is null.",
                         n->GetName().c_str(), out_index);
                       REPORT_INNER_ERROR("E19999", "output anchor peer is null, node_name: %s output_index: %u.",
                         n->GetName().c_str(), out_index);
                       return false;);
       auto peer_node = peer_in_anchor->GetOwnerNode();
       GE_IF_BOOL_EXEC(peer_node == nullptr,
-                      GELOGE(FAILED, "[check][node]Node[%s] output[%u] peer node is null.",
+                      GELOGE(FAILED, "[Check][Node]Node[%s] output[%u] peer node is null.",
                         n->GetName().c_str(), out_index);
                       REPORT_INNER_ERROR("E19999", "output anchor peer node is null, node_name: %s output_index: %u.",
                         n->GetName().c_str(), out_index);
@@ -715,7 +715,7 @@ bool BlockMemAssigner::IsOutNodeSetContinuousInput(const NodePtr &n, uint32_t ou
       bool is_input_continuous = false;
       auto peer_in_node_desc = peer_node->GetOpDesc();
       GE_IF_BOOL_EXEC(peer_in_node_desc == nullptr,
-                      GELOGE(FAILED, "[check][op_desc]Node[%s] output[%u] nodedesc is null.",
+                      GELOGE(FAILED, "[Check][OpDesc]Node[%s] output[%u] nodedesc is null.",
                         n->GetName().c_str(), out_index);
                       REPORT_INNER_ERROR("E19999", "output anchor peer op_desc is null, node_name:%s output_index:%u.",
                         n->GetName().c_str(), out_index);
@@ -818,7 +818,7 @@ bool BlockMemAssigner::IsContinuousMemoryReuse(const NodePtr &n, const NodePtr &
     if ((in_anchor == nullptr) || (in_anchor->GetPeerOutAnchor() == nullptr) ||
         (in_anchor->GetPeerOutAnchor()->GetOwnerNode() == nullptr) ||
         (in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetOpDesc() == nullptr)) {
-      GELOGE(FAILED, "[check][op_desc]Node[%s] output[%u] peer input node desc is null.",
+      GELOGE(FAILED, "[Check][OpDesc]Node[%s] output[%u] peer input node desc is null.",
         n->GetName().c_str(), out_index);
       REPORT_INNER_ERROR("E19999", "get output anchor peer op_desc fail, node_name: %s output_index: %u.",
                          n->GetName().c_str(), out_index);
@@ -1107,7 +1107,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
                                            const bool continuous, int64_t memory_type) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr,
     REPORT_INNER_ERROR("E19999", "Input parameter n(type:node_ptr) is null, apply memory failed");
-    return nullptr, "[check][param]Input parameter n(type:node_ptr) is null.");
+    return nullptr, "[Check][Param]Input parameter n(type:node_ptr) is null.");
   auto node_op_desc = n->GetOpDesc();
   GE_IF_BOOL_EXEC(node_op_desc == nullptr, return nullptr);
   std::string batch_label;
@@ -1162,7 +1162,7 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(block == nullptr,
     REPORT_INNER_ERROR("E19999", "new a memoryblock object failed. node_name:%s out_index:%u",
       n->GetName().c_str(), out_index);
-    return nullptr, "[new][object]new MemoryBlock failed, node_name:%s out_index:%u", n->GetName().c_str(), out_index);
+    return nullptr, "[New][Object]new MemoryBlock failed, node_name:%s out_index:%u", n->GetName().c_str(), out_index);
 
   // Data and netoutput need zero copy block
   block->is_zero_copy_ = IsZeroCopyBlock(n, continuous);
@@ -1227,7 +1227,7 @@ Status BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vector<in
   auto node_op_desc = n->GetOpDesc();
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node_op_desc == nullptr,
     REPORT_INNER_ERROR("E19999", "Input parameter n(type:OpDescPtr) is null");
-    return INTERNAL_ERROR, "[check][param]Input parameter n(type:OpDescPtr) is null");
+    return INTERNAL_ERROR, "[Check][Param]Input parameter n(type:OpDescPtr) is null");
 
   // continuous output support ref only when all output ref input
   bool isAllOutputRef = true;

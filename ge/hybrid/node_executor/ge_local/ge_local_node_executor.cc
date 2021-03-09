@@ -33,6 +33,7 @@ const std::map<std::string, std::vector<uint32_t>>
                                           {RESHAPE, {}},
                                           {EXPANDDIMS, {}},
                                           {SQUEEZE, {}},
+                                          {UNSQUEEZE, {}},
                                           {BROADCASTGRADIENTARGS, {}}
                                          };
 

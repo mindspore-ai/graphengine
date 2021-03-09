@@ -56,10 +56,10 @@ inline bool IsLogEnable(int module_name, int log_level) {
   return (enable == 1);
 }
 
-#define GELOGE(ERROR_CODE, fmt, ...)                                                                      \
-  dlog_error(GE_MODULE_NAME, "%lu %s: ErrorNo: %d(%s) %s" fmt, GeLog::GetTid(), __FUNCTION__, ERROR_CODE, \
-             ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()),                                                  \
-             ErrorManager::GetInstance().GetLogHeader().c_str(), ##__VA_ARGS__)
+#define GELOGE(ERROR_CODE, fmt, ...)                                                                         \
+  dlog_error(GE_MODULE_NAME, "%lu %s: ErrorNo: %d(%s) %s" fmt, GeLog::GetTid(), __FUNCTION__, ERROR_CODE,    \
+             ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(), \
+             ##__VA_ARGS__)
 #define GELOGW(fmt, ...)                      \
   if (IsLogEnable(GE_MODULE_NAME, DLOG_WARN)) \
   dlog_warn(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), __FUNCTION__, ##__VA_ARGS__)

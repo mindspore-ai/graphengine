@@ -31,7 +31,7 @@ TEST_F(UTEST_opdebug_register, register_debug_for_model_success) {
   OpdebugRegister opdebug_register;
   rtModel_t model_handle = (void*)0x111;
   uint32_t op_debug_mode = 1;
-  DataDumper data_dumper;
+  DataDumper data_dumper({});
   auto ret = opdebug_register.RegisterDebugForModel(model_handle, op_debug_mode, data_dumper);
   opdebug_register.UnregisterDebugForModel(model_handle);
   EXPECT_EQ(ret, ge::SUCCESS);
@@ -41,7 +41,7 @@ TEST_F(UTEST_opdebug_register, register_debug_for_stream_success) {
   OpdebugRegister opdebug_register;
   rtStream_t stream = (void*)0x111;
   uint32_t op_debug_mode = 1;
-  DataDumper data_dumper;
+  DataDumper data_dumper({});
   auto ret = opdebug_register.RegisterDebugForStream(stream, op_debug_mode, data_dumper);
   opdebug_register.UnregisterDebugForStream(stream);
   EXPECT_EQ(ret, ge::SUCCESS);

@@ -29,7 +29,7 @@ const size_t kMinimumPiplineStages = 2;
 const int kDefaultLoopCount = 10;
 }
 HybridModelAsyncExecutor::HybridModelAsyncExecutor(HybridModel *model)
-    : model_(model), run_flag_(false) {
+    : model_(model), run_flag_(false), data_dumper_(nullptr) {
 }
 
 HybridModelAsyncExecutor::~HybridModelAsyncExecutor() {

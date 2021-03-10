@@ -36,9 +36,21 @@
 namespace ge {
 class DataDumper {
  public:
-  DataDumper() : runtime_param_{} {}
-
-  explicit DataDumper(const RuntimeParam &rsh) : runtime_param_(rsh) {}
+  explicit DataDumper(RuntimeParam *rsh)
+      : model_name_(),
+        model_id_(0),
+        runtime_param_(rsh),
+        dev_mem_load_(nullptr),
+        dev_mem_unload_(nullptr),
+        op_list_(),
+        input_map_(),
+        load_flag_(false),
+        device_id_(0),
+        global_step_(0),
+        loop_per_iter_(0),
+        loop_cond_(0),
+        compute_graph_(nullptr),
+        ref_info_() {}
 
   ~DataDumper();
 
@@ -93,10 +105,10 @@ class DataDumper {
   // for inference data dump
   std::string om_name_;
 
-  uint32_t model_id_ = 0;
-  const RuntimeParam &runtime_param_;
-  void *dev_mem_load_ = nullptr;
-  void *dev_mem_unload_ = nullptr;
+  uint32_t model_id_;
+  RuntimeParam *runtime_param_;
+  void *dev_mem_load_;
+  void *dev_mem_unload_;
 
   struct InnerDumpInfo;
   struct InnerInputMapping;
@@ -107,12 +119,12 @@ class DataDumper {
   uint32_t end_graph_stream_id_ = 0;
   bool is_end_graph_ = false;
   std::multimap<std::string, InnerInputMapping> input_map_;  // release after DavinciModel::Init
-  bool load_flag_ = false;
-  uint32_t device_id_ = 0;
-  uintptr_t global_step_ = 0;
-  uintptr_t loop_per_iter_ = 0;
-  uintptr_t loop_cond_ = 0;
-  ComputeGraphPtr compute_graph_ = nullptr;  // release after DavinciModel::Init
+  bool load_flag_;
+  uint32_t device_id_;
+  uintptr_t global_step_;
+  uintptr_t loop_per_iter_;
+  uintptr_t loop_cond_;
+  ComputeGraphPtr compute_graph_;  // release after DavinciModel::Init
   std::map<OpDescPtr, void *> ref_info_;     // release after DavinciModel::Init
   void *l1_fusion_addr_ = nullptr;
 

@@ -184,7 +184,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       last_execute_mode_(INITIALIZATION),
       session_id_(0),
       device_id_(0),
-      maxDumpOpNum_(0), data_dumper_(runtime_param_),
+      maxDumpOpNum_(0), data_dumper_(&runtime_param_),
       iterator_count_(0),
       is_l1_fusion_enable_(false),
       is_first_execute_(true) {
@@ -654,12 +654,12 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   runtime_param_.graph_id = compute_graph->GetGraphID();
 
   // op debug register
-  GE_CHK_STATUS_RET(OpDebugRegister(), "OpDebugRegister failed.");
+  GE_CHK_STATUS_RET(OpDebugRegister(), "OpDebugRegister failed");
 
   GE_TIMESTAMP_START(TransAllVarData);
-  GE_CHK_STATUS_RET(TransAllVarData(compute_graph, runtime_param_.graph_id), "TransAllVarData failed.");
+  GE_CHK_STATUS_RET(TransAllVarData(compute_graph, runtime_param_.graph_id), "TransAllVarData failed");
   GE_TIMESTAMP_END(TransAllVarData, "GraphLoader::TransAllVarData");
-  GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(compute_graph, session_id_, device_id_), "copy var data failed.");
+  GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(compute_graph, session_id_, device_id_), "copy var data failed");
 
   GE_TIMESTAMP_START(InitModelMem);
   GELOGD("Known node is %d.", known_node_);
@@ -667,7 +667,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   if (!known_node_) {
     GE_CHK_STATUS_RET_NOLOG(InitFeatureMapAndP2PMem(dev_ptr, mem_size));
     data_inputer_ = new (std::nothrow) DataInputer();
-    GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, MEMALLOC_FAILED, "data_inputer_ is nullptr.");
+    GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, MEMALLOC_FAILED, "data_inputer_ is nullptr");
   }
   fixed_mem_base_ = reinterpret_cast<uintptr_t>(mem_base_);
   GE_TIMESTAMP_END(InitModelMem, "GraphLoader::InitModelMem");

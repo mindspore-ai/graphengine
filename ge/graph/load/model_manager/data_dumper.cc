@@ -385,7 +385,7 @@ Status DataDumper::DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_inf
 
 Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
   const auto &output_descs = inner_dump_info.op->GetAllOutputsDesc();
-  const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, inner_dump_info.op);
+  const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (output_descs.size() != output_addrs.size()) {
     GELOGE(PARAM_INVALID, "Invalid output desc addrs size %zu, op %s has %zu output desc.", output_addrs.size(),
            inner_dump_info.op->GetName().c_str(), output_descs.size());
@@ -436,7 +436,7 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
   // else data, const or variable op
   aicpu::dump::Output output;
   auto output_tensor = inner_dump_info.op->GetOutputDescPtr(inner_dump_info.output_anchor_index);
-  const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, inner_dump_info.op);
+  const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (output_tensor == nullptr) {
     GELOGE(PARAM_INVALID, "output_tensor is null, index: %d, size: %zu.", inner_dump_info.output_anchor_index,
            inner_dump_info.op->GetOutputsSize());
@@ -540,7 +540,7 @@ Status DataDumper::DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info
 Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
   GELOGI("Start dump input");
   const auto &input_descs = inner_dump_info.op->GetAllInputsDesc();
-  const std::vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(runtime_param_, inner_dump_info.op);
+  const std::vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (input_descs.size() != input_addrs.size()) {
     GELOGE(PARAM_INVALID, "Invalid input desc addrs size %zu, op %s has %zu input desc.", input_addrs.size(),
            inner_dump_info.op->GetName().c_str(), input_descs.size());

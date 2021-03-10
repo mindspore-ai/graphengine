@@ -101,7 +101,7 @@ CachingAllocator::CachingAllocator(rtMemType_t memory_type) : memory_type_(memor
 }
 
 Status CachingAllocator::Initialize(uint32_t device_id) {
-  GELOGI("Device id %u", device_id);
+  GELOGI("Device id %u.", device_id);
   // when redo Initialize free old memory
   FreeBlocks();
   std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -124,14 +124,14 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
 }
 
 void CachingAllocator::Finalize(uint32_t device_id) {
-  GELOGI("Device id %u", device_id);
+  GELOGI("Device id %u.", device_id);
   PrintStatics();
   FreeBlocks();
   FreeBlockBins();
 }
 
 uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device_id) {
-  GELOGI("Start malloc pool memory, size = %zu, device id = %u", size, device_id);
+  GELOGI("Start malloc pool memory, size = %zu, device id = %u.", size, device_id);
   uint8_t *ptr = nullptr;
   size = GetBlockSize(size);
   Block *block = FindFreeBlock(size, org_ptr, device_id);
@@ -152,7 +152,7 @@ uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device
 }
 
 Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
-  GELOGI("Free device id = %u", device_id);
+  GELOGI("Free device id = %u.", device_id);
   if (ptr == nullptr) {
     GELOGE(PARAM_INVALID, "Invalid memory pointer");
     return ge::PARAM_INVALID;
@@ -174,7 +174,7 @@ void CachingAllocator::FreeBlock(Block *block) {
   if (block == nullptr || !block->allocated) {
     return;
   }
-  GELOGI("Free block size = %zu", block->size);
+  GELOGI("Free block size = %zu.", block->size);
 
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   block->allocated = false;
@@ -227,7 +227,7 @@ Block *CachingAllocator::FindFreeBlock(size_t size, uint8_t *org_ptr, uint32_t d
     Block *block = *it;
     bin->erase(it);
     if (block != nullptr) {
-      GELOGI("Find block size = %zu", block->size);
+      GELOGI("Find block size = %zu.", block->size);
       if (ShouldSplit(block, size)) {
         block = SplitBlock(block, size, *bin, device_id);
       }
@@ -235,7 +235,7 @@ Block *CachingAllocator::FindFreeBlock(size_t size, uint8_t *org_ptr, uint32_t d
       if (block->ptr != nullptr) {
         block->allocated = true;
         allocated_blocks_[block->ptr] = block;
-        GELOGI("Malloc device id = %u, size= %zu", device_id, size);
+        GELOGI("Malloc device id = %u, size= %zu.", device_id, size);
       }
     }
 
@@ -265,7 +265,7 @@ Block *CachingAllocator::SplitBlock(Block *block, size_t size, BlockBin &bin, ui
 }
 
 Status CachingAllocator::TryExtendCache(size_t size, uint32_t device_id) {
-  GELOGI("Try to extend cache. size = %zu, device id = %u", size, device_id);
+  GELOGI("Try to extend cache. size = %zu, device id = %u.", size, device_id);
   auto memory_size = GetAllocationSize(size);
   const std::string purpose = "Memory for caching.";
   auto memory_addr = memory_allocator_->MallocMemory(purpose, memory_size, device_id);
@@ -302,7 +302,7 @@ Status CachingAllocator::AddToBlockBin(uint8_t *ptr, size_t size, uint32_t devic
     return ge::FAILED;
   }
 
-  GELOGI("Block size = %zu", size);
+  GELOGI("Block size = %zu.", size);
   block->ptr = ptr;
   block->size = size;
 
@@ -313,7 +313,7 @@ Status CachingAllocator::AddToBlockBin(uint8_t *ptr, size_t size, uint32_t devic
 }
 
 size_t CachingAllocator::FreeCachedBlocks() {
-  GELOGI("Free cached blocks");
+  GELOGI("Free cached blocks.");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   size_t free_cached_memory_size = 0;
   for (uint32_t i = 0; i < kNumBins; ++i) {

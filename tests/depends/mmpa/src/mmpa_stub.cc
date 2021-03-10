@@ -269,7 +269,7 @@ CHAR *mmDlerror()
 
 INT32 mmDladdr(VOID *addr, mmDlInfo *info)
 {
-  return 0;
+  return -1;
 }
 
 VOID *mmDlopen(const CHAR *fileName, INT32 mode)

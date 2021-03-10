@@ -70,7 +70,10 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
     return SUCCESS;
   }
   if ((all_memory_size.front() <= 0) || (log(kLogBase) == 0)) {
-    GELOGE(FAILED, "Memory size:%ld is invalid.", all_memory_size.front());
+    GELOGE(FAILED, "[Check][MemRangeStep]first mem_range_step:%ld less than 0,invalid,"
+          "maybe has dynamic shape in graph", all_memory_size.front());
+    REPORT_INNER_ERROR("E19999", "first mem_range_step:%ld less than 0,invalid,"
+          "maybe has dynamic shape in graph", all_memory_size.front());
     return FAILED;
   }
   // Memory size is 512 aligned, so it is not necessary to take less than 512
@@ -81,12 +84,18 @@ Status BinaryBlockMemAssigner::GetMemoryRanges(vector<int64_t> &range_ceils) {
   GELOGD("Range number: %zu", range_number);
 
   vector<vector<int64_t>> ranges(range_number);
-  GE_CHK_BOOL_EXEC((range_number != 0), return PARAM_INVALID, "range_number can't be 0.");
+  GE_CHK_BOOL_EXEC((range_number != 0),
+    REPORT_INNER_ERROR("E19999", "inner data[range_number] is 0, judge invalid");
+    return PARAM_INVALID,
+    "[Check][RangeNumber]inner data is 0, judge invalid.");
   size_t range_number_limit = all_memory_size.size() / range_number;
   int64_t range_ceil = min_memory_size;
   for (size_t i = 1; i <= range_number; i++) {
     GE_IF_BOOL_EXEC(TypeUtils::CheckUint64MulOverflow(static_cast<uint64_t>(range_ceil), kRangeCeilInterval),
-                    GELOGE(FAILED, "Multiply result is out of range.");
+                    GELOGE(FAILED, "[Check][MemRangeCeil]Multiply result is out of range,"
+                      "range_ceil:%ld, interval:%u", range_ceil, kRangeCeilInterval);
+                    REPORT_INNER_ERROR("E19999", "process mem_range_ceil,multiply result out of range,"
+                      "range_ceil:%ld, interval:%u", range_ceil, kRangeCeilInterval);
                     return FAILED);
     range_ceil *= kRangeCeilInterval;  // The block size of each interval is doubled every time.
     for (auto iter = all_memory_size.begin(); iter != all_memory_size.end();) {

@@ -166,15 +166,6 @@
     }                                                   \
   } while (0)
 
-// Check if the container is empty
-#define GE_CHECK_VECTOR_NOT_EMPTY(vector)               \
-  do {                                                  \
-    if (vector.empty()) {                               \
-      DOMI_LOGE("param[%s] is empty!", #vector);        \
-      return ge::FAILED;                                \
-    }                                                   \
-  } while (0)
-
 // Check if the value on the left is greater than or equal to the value on the right
 #define GE_CHECK_GE(lhs, rhs)                               \
   do {                                                      \
@@ -207,6 +198,17 @@
       delete[] var;              \
       var = nullptr;             \
     }                            \
+  } while (0)
+
+#define GE_FREE_RT_LOG(addr)                                        \
+  do {                                                              \
+    if (addr != nullptr) {                                          \
+      rtError_t error = rtFree(addr);                               \
+      if (error != RT_ERROR_NONE) {                                 \
+        GELOGE(RT_FAILED, "Call rtFree failed, error: %#x", error); \
+      }                                                             \
+      addr = nullptr;                                               \
+    }                                                               \
   } while (0)
 
 /**

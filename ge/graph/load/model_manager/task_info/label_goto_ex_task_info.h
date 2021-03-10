@@ -22,16 +22,18 @@
 namespace ge {
 class LabelGotoExTaskInfo : public TaskInfo {
  public:
-  LabelGotoExTaskInfo() : label_(nullptr) {}
+  LabelGotoExTaskInfo() = default;
 
-  ~LabelGotoExTaskInfo() override { label_ = nullptr; }
+  ~LabelGotoExTaskInfo() override;
 
   Status Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
   Status Distribute() override;
 
  private:
-  void *label_;
+  void *index_value_{nullptr};    // switch index input.
+  void *args_{nullptr};           // label info memory.
+  uint32_t args_size_{0};         // label info length.
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_

@@ -434,7 +434,7 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
                       "Assign node %s continuous input memory failed.", node->GetName().c_str())
   }
   for (auto pair : memory_offset_) {
-    GELOGD("After reassign continuous memory, memory type = %ld, memoffset = %zu.", pair.first,
+    GELOGD("After reassign continuous memory, memory type = %ld, mem_offset = %zu.", pair.first,
            pair.second.mem_offset_);
   }
   return ge::SUCCESS;
@@ -512,11 +512,11 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
         auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
         output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
         peer_op_desc->SetOutputOffset(output_list);
-        GELOGI("Node %s out %d ref in %d input node %s, use output offset %ld update %ld", node->GetName().c_str(),
+        GELOGI("Node %s out %d ref in %d input node %s, use output offset %ld update %ld.", node->GetName().c_str(),
                out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(),
                output_list_this.at(out2ins.begin()->first), peer_output_offset);
       } else {
-        GELOGD("Node %s out %d ref in %d input node %s with total ref numbers %zu", node->GetName().c_str(),
+        GELOGD("Node %s out %d ref in %d input node %s with total ref numbers %zu.", node->GetName().c_str(),
                out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(), out2ins.size());
       }
       // first input is beginning offset
@@ -542,7 +542,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     }
 
     GELOGI("[IMAS]Continuous input : Set %s name[%s] optype[%s] output[%d] offset to [%zu] stream_id[%ld] memtype[%ld] "
-        "size[%zu] realsize[%ld] nopadding[%d].", node->GetOwnerComputeGraph()->GetName().c_str(),
+        "size[%zu] realsize[%ld] nopadding size[%d].", node->GetOwnerComputeGraph()->GetName().c_str(),
         peer_op_desc->GetName().c_str(), node->GetType().c_str(), peer_out_data_anchor->GetIdx(),
         output_list.at(peer_out_data_anchor->GetIdx()), peer_op_desc->GetStreamId(), memory_type,
         is_continuous_input_allocated ? 0UL : align_size, real_size, is_nopadding);
@@ -1549,7 +1549,7 @@ bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
     auto continuous_type = iter->second;
     bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
     if (continuous_input) {
-      GELOGI("node %s 's precursor node %s need assign continuous input memory, store node firstly.",
+      GELOGI("Node %s 's precursor node %s need assign continuous input memory, store node firstly.",
              input_continuous_node->GetName().c_str(), in_node->GetName().c_str());
       return false;
     }
@@ -1559,7 +1559,7 @@ bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
     node_2_continuous_type.emplace(out_node, continuous_type);
     bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
     if (continuous_input) {
-      GELOGI("node %s 's succeed node %s need assign continuous input memory, store node firstly.",
+      GELOGI("Node %s 's succeed node %s need assign continuous input memory, store node firstly.",
              input_continuous_node->GetName().c_str(), out_node->GetName().c_str());
       return false;
     }

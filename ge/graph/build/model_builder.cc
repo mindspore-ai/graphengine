@@ -366,8 +366,11 @@ void ModelBuilder::InitL1FusionOption() {
   string buffer_optimize = "off_optimize";
   graphStatus ret = ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
   if (ret == GRAPH_SUCCESS) {
-    is_l1_fusion_enable_ = (buffer_optimize == "l1_optimize");
-    GELOGD("The value of %s is %s.", BUFFER_OPTIMIZE.c_str(), buffer_optimize.c_str());
+    bool off_superkernel = false;
+    (void)AttrUtils::GetBool(compute_graph_, ATTR_NAME_OFF_SUPERKERNEL_ATTR, off_superkernel);
+    is_l1_fusion_enable_ = ((buffer_optimize == "l1_optimize") && (!off_superkernel));
+    GELOGI("Compute graph %s the value of %s is %s, superkernel flag %d.", compute_graph_->GetName().c_str(),
+           BUFFER_OPTIMIZE.c_str(), buffer_optimize.c_str(), is_l1_fusion_enable_);
   } else {
     GELOGW("The value of %s is empty.", kEnableL1Fusion.c_str());
   }
@@ -709,7 +712,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_TIMESTAMP_START(SetInputOutputOffset);
   SetInputOutputOffsetPass input_output_offset;
   GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_), "Set input output offset failed.");
-  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run.");
+  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run");
 
   // Compile single op in graph build stage
   GE_TIMESTAMP_START(CompileSingleOp);

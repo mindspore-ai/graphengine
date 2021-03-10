@@ -36,52 +36,31 @@ class UtestGeAnchorUtils : public testing::Test {
 
 TEST_F(UtestGeAnchorUtils, base) {
   ComputeGraphPtr graph_ptr = std::make_shared<ComputeGraph>("name");
-  if (graph_ptr == nullptr) {
-    return;
-  }
   OpDescPtr desc_ptr = std::make_shared<OpDesc>("name1", "type1");
-  if (desc_ptr == nullptr) {
-    return;
-  }
   NodePtr n1 = graph_ptr->AddNode(desc_ptr);
   InDataAnchorPtr a1 = std::make_shared<InDataAnchor>(n1, 0);
-  if (a1 == nullptr) {
-    return;
-  }
 
   EXPECT_EQ(AnchorUtils::SetFormat(a1, FORMAT_ND), GRAPH_SUCCESS);
   Format f1 = AnchorUtils::GetFormat(a1);
   EXPECT_EQ(f1, FORMAT_ND);
 
   InDataAnchorPtr a2 = std::make_shared<InDataAnchor>(n1, 0);
-  if (a2 == nullptr) {
-    return;
-  }
   EXPECT_EQ(AnchorUtils::SetFormat(nullptr, FORMAT_ND), GRAPH_FAILED);
   Format f2 = AnchorUtils::GetFormat(nullptr);
   EXPECT_EQ(f2, FORMAT_RESERVED);
 
   // has control edge
   OpDescPtr desc_ptr1 = std::make_shared<OpDesc>("name1", "type1");
-  if (desc_ptr1 == nullptr) {
-    return;
-  }
   EXPECT_EQ(desc_ptr1->AddInputDesc("x", GeTensorDesc(GeShape({1, 16, 16, 16}), FORMAT_NCHW)), GRAPH_SUCCESS);
   EXPECT_EQ(desc_ptr1->AddInputDesc("w", GeTensorDesc(GeShape({1, 1, 1, 1}), FORMAT_NCHW)), GRAPH_SUCCESS);
   EXPECT_EQ(desc_ptr1->AddOutputDesc("y", GeTensorDesc(GeShape({1, 32, 8, 8}), FORMAT_NCHW)), GRAPH_SUCCESS);
 
   OpDescPtr desc_ptr2 = std::make_shared<OpDesc>("name2", "type2");
-  if (desc_ptr2 == nullptr) {
-    return;
-  }
   EXPECT_EQ(desc_ptr2->AddInputDesc("x", GeTensorDesc(GeShape({1, 16, 16, 16}), FORMAT_NCHW)), GRAPH_SUCCESS);
   EXPECT_EQ(desc_ptr2->AddInputDesc("w", GeTensorDesc(GeShape({1, 1, 1, 1}), FORMAT_NCHW)), GRAPH_SUCCESS);
   EXPECT_EQ(desc_ptr2->AddOutputDesc("y", GeTensorDesc(GeShape({1, 32, 8, 8}), FORMAT_NCHW)), GRAPH_SUCCESS);
 
   ComputeGraphPtr graph_ptr1 = std::make_shared<ComputeGraph>("name");
-  if (graph_ptr1 == nullptr) {
-    return;
-  }
   n1 = graph_ptr1->AddNode(desc_ptr1);
   NodePtr n2 = graph_ptr1->AddNode(desc_ptr2);
 

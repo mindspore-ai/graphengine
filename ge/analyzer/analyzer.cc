@@ -103,7 +103,7 @@ ge::Status Analyzer::Initialize() {
   // Initialize file
   string real_path = RealPath(kFilePath.c_str());
   if (real_path.empty()) {
-    GELOGE(FAILED, "File path is invalid.");
+    GELOGE(FAILED, "[Check][AnalyzeFilePath]File path is empty, Path invalid.");
     return FAILED;
   }
   json_file_name_ = real_path + "/" + kAnalyzeFile;
@@ -155,12 +155,12 @@ std::shared_ptr<GraphInfo> Analyzer::GetJsonObject(uint64_t session_id, uint64_t
   std::lock_guard<std::recursive_mutex> lg(mutex_);
   auto iter = graph_infos_.find(session_id);
   if (iter == graph_infos_.end()) {
-    GELOGE(PARAM_INVALID, "session_id:%lu does not exist!", session_id);
+    GELOGE(PARAM_INVALID, "[Check][Session_id]session_id:%lu does not exist! graph_id:%lu.", session_id, graph_id);
     return nullptr;
   } else {
     auto iter1 = (iter->second).find(graph_id);
     if (iter1 == (iter->second).end()) {
-      GELOGE(PARAM_INVALID, "graph_id:%lu does not exist!", graph_id);
+      GELOGE(PARAM_INVALID, "[Check][Graph_id]graph_id:%lu does not exist! session_id:%lu.", graph_id, session_id);
       return nullptr;
     }
     GELOGI("GetJsonObject Success!session_id:%lu graph_id:%lu", session_id, graph_id);
@@ -186,11 +186,11 @@ ge::Status Analyzer::CreateAnalyzerFile() {
   std::lock_guard<std::mutex> lg(file_mutex_);
   int fd = open(json_file_name_.c_str(), O_WRONLY | O_CREAT | O_TRUNC, kFileAuthority);
   if (fd < 0) {
-    GELOGE(INTERNAL_ERROR, "Fail to open the file: %s.", json_file_name_.c_str());
+    GELOGE(INTERNAL_ERROR, "[FileOpen][AnalyzeFile]Fail to open the analyze file: %s.", json_file_name_.c_str());
     return INTERNAL_ERROR;
   }
   if (close(fd) != 0) {
-    GELOGE(INTERNAL_ERROR, "Fail to close the file: %s.", json_file_name_.c_str());
+    GELOGE(INTERNAL_ERROR, "[FileClose][AnalyzeFile]Fail to close the analyze file: %s.", json_file_name_.c_str());
     return INTERNAL_ERROR;
   }
   is_json_file_create_ = true;
@@ -200,7 +200,7 @@ ge::Status Analyzer::CreateAnalyzerFile() {
 }
 
 ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_id) {
-  GELOGD("start to save analyze file!");
+  GELOGD("start to save analyze file.");
 
   auto graph_info = GetJsonObject(session_id, graph_id);
   GE_CHECK_NOTNULL(graph_info);
@@ -211,7 +211,7 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
   std::lock_guard<std::mutex> lg(file_mutex_);
   json_file_.open(json_file_name_, std::ios::app);
   if (!json_file_.is_open()) {
-    GELOGE(FAILED, "analyzer file does not exist[%s]", json_file_name_.c_str());
+    GELOGE(FAILED, "[Check][AnalyzeFile]analyze file does not exist[%s]", json_file_name_.c_str());
     return PARAM_INVALID;
   }
 
@@ -221,7 +221,7 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
   try {
     json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
   } catch (nlohmann::detail::type_error &e) {
-    GELOGE(FAILED, "analyzer file [%s] failed because [%s]", json_file_name_.c_str(), e.what());
+    GELOGE(FAILED, "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s], session_id:%lu, graph_id:%lu", json_file_name_.c_str(), e.what(), session_id, graph_id);
     ret_failed = true;
   }
   json_file_.close();
@@ -229,7 +229,7 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
 }
 
 ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
-  GELOGD("start to do analyzer!");
+  GELOGD("start to do analyzer process!");
 
   auto pnode = data_info.node_ptr;
   GE_CHECK_NOTNULL(pnode);
@@ -241,7 +241,7 @@ ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
   GE_CHECK_NOTNULL(graph_info);
   auto status = SaveOpInfo(desc, data_info, graph_info);
   if (status != SUCCESS) {
-    GELOGE(status, "save op info failed!");
+    GELOGE(status, "[Check][SaveOpInfo]save op info: desc_name [%s] desc_type [%s] failed!", desc->GetName().c_str(), desc->GetType().c_str());
     return FAILED;
   }
   // create json file

@@ -53,7 +53,7 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kHwcnDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s.", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   auto cube_size = GetCubeSizeByDataType(args.src_data_type);
@@ -144,11 +144,11 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
       result.length = static_cast<size_t>(total_size);
       return SUCCESS;
     }
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Get %ld total size from dst shape %s, src shape %s", total_size,
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Get %ld total size from dst shape %s, src shape %s.", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  GELOGD("Begin to trans format from C1HWNCoC0 to HWCN, src shape %s, data type %s, dst shape %s, memory size %ld",
+  GELOGD("Begin to trans format from C1HWNCoC0 to HWCN, src shape %s, data type %s, dst shape %s, memory size %ld.",
          ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
          ShapeToString(args.dst_shape).c_str(), total_size);
   ret = GetDstDataAfterTrans(args, result, size, total_size);
@@ -163,7 +163,7 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
 
 Status FormatTransferC1hwncoc0Hwcn::TransShape(Format src_format, const std::vector<int64_t> &src_shape,
                                                DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
-  GELOGD("The shape derivation from C1HWNCoC0 to HWCN is not unique. Trans shape in this direction is not supported");
+  GELOGD("The shape derivation from C1HWNCoC0 to HWCN is not unique. Trans shape in this direction is not supported.");
   return ACL_ERROR_GE_FORMAT_INVALID;
 }
 

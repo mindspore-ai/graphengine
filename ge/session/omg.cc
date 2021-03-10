@@ -576,6 +576,7 @@ Status InitDomiOmgContext(const string &input_shape, const string &input_format,
     GELOGE(PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
     return PARAM_INVALID;
   }
+
   return SUCCESS;
 }
 
@@ -787,6 +788,12 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   PreChecker::Instance().Clear();
 
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC weights parse ret fail.");
+
+  // parser input shape range and update op shape range
+  std::string input_shape_range;
+  ParseAtcParms(atc_params, INPUT_SHAPE_RANGE, input_shape_range);
+  GE_RETURN_WITH_LOG_IF_ERROR(UpdateDynamicInputShapeRange(compute_graph, input_shape_range),
+                             "Update input shape range failed");
 
   GELOGI("ATC parser success.");
 

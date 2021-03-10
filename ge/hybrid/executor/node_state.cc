@@ -44,6 +44,27 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
   }
 }
 
+Status ShapeInferenceState::CheckInputShapeByShapeRange(const GeTensorDesc &tensor_desc,
+                                                        const GeTensorDesc &target_tensor_desc) const {
+  std::vector<std::pair<int64_t, int64_t>> shape_range;
+  if (tensor_desc.GetShapeRange(shape_range) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "Get shape range failed.");
+    return PARAM_INVALID;
+  }
+  if (shape_range.empty()) {
+    GELOGD("Shape range is empty, no need to check input shape.");
+    return SUCCESS;
+  }
+
+  GeShape target_shape = target_tensor_desc.GetShape();
+  if (TensorUtils::CheckShapeByShapeRange(target_shape, shape_range) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "Check shape by shape range failed.");
+    return PARAM_INVALID;
+  }
+
+  return SUCCESS;
+}
+
 Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target) {
   if (node_item.IsInputShapeStatic(idx)) {
     GELOGD("[%s] Trying to update static shape, idx = %d. old shape = [%s], new shape = [%s]",
@@ -54,19 +75,31 @@ Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target
     return SUCCESS;
   }
 
+  std::lock_guard<std::mutex> lk(mu_);
+  auto &input_desc = input_tensor_desc[idx];
+  if (CheckInputShapeByShapeRange(input_desc, target) != SUCCESS) {
+    GELOGE(FAILED, "[%s] Check input shape by shape range failed.", node_item.NodeName().c_str());
+    return FAILED;
+  }
+  GeShape shape = target.GetShape();
+  input_desc.SetShape(shape);
+  input_desc.SetOriginShape(target.GetOriginShape());
   int64_t tensor_size = -1;
   (void) TensorUtils::GetSize(target, tensor_size);
+  if (tensor_size <= 0) {
+    Format format = input_desc.GetFormat();
+    DataType data_type = input_desc.GetDataType();
+    if (TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size) != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "[%s] Calculate tensor memory size failed.", node_item.NodeName().c_str());
+      return FAILED;
+    }
+  }
   GELOGD("[%s] Update input shape [%d] with Shape: [%s] and OriginalShape: [%s], size = %ld",
          node_item.NodeName().c_str(),
          idx,
-         target.GetShape().ToString().c_str(),
+         shape.ToString().c_str(),
          target.GetOriginShape().ToString().c_str(),
          tensor_size);
-
-  std::lock_guard<std::mutex> lk(mu_);
-  auto &input_desc = input_tensor_desc[idx];
-  input_desc.SetShape(target.GetShape());
-  input_desc.SetOriginShape(target.GetOriginShape());
   (void) TensorUtils::SetSize(input_desc, tensor_size);
   if (--num_pending_shapes_ <= 0) {
     ready_cv_.notify_all();

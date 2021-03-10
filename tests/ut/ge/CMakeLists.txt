@@ -45,6 +45,7 @@ include_directories(${GE_CODE_DIR}/inc)
 include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/ge)
 include_directories(${GE_CODE_DIR}/ge/inc)
+include_directories(${GE_CODE_DIR}/ge/ir_build)
 include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
@@ -61,6 +62,7 @@ include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain)
 include_directories(${GE_CODE_DIR}/tests/ut/ge)
+include_directories(${GE_CODE_DIR}/tests/ut/common)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge/proto)
@@ -732,6 +734,7 @@ set(KERNEL_TEST_FILES
 
 set(MULTI_PARTS_TEST_FILES
     "graph_ir/ge_operator_factory_unittest.cc"
+	"graph_ir/ge_ir_build_unittest.cc"
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
     "common/dump_manager_unittest.cc"

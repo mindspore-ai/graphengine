@@ -19,7 +19,9 @@
 #include "framework/common/string_util.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
+#include "graph/compute_graph.h"
 #include "graph/utils/type_utils.h"
+#include "graph/utils/tensor_utils.h"
 
 using std::pair;
 using std::string;
@@ -52,6 +54,11 @@ const char *const kCompressWeightError = "it must be appointed when appoint para
 const char *const kSelectImplmodeError = "only support high_performance, high_precision";
 const char *const kDynamicBatchSizeError = "It can only contains digit, \",\", \" \"";
 const char *const kKeepDtypeError = "file not found";
+const char *const kInputShapeRangeInvalid = "format of shape range is invalid";
+const char *const kShapeRangeValueConvertError = "transfer from string to int64 error";
+const char *const kInputShapeRangeSample1 = "\"input_name1:[n1~n2,c1,h1,w1]\"";
+const char *const kInputShapeRangeSample2 = "\"[]\"";
+const char *const kInputShapeRangeSample3 = "\"[1~20,3,3~6,-1]\"";
 
 vector<string> SplitInputShape(const std::string &input_shape) {
   vector<string> shape_pair_vec;
@@ -257,8 +264,132 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
   return true;
 }
 
+bool StringToLongNoThrow(const string &str, long &val) {
+  try {
+    val = std::stol(str);
+    return true;
+  } catch (const std::invalid_argument) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                    {str, kShapeRangeValueConvertError, kInputShapeRangeSample3});
+    GELOGE(PARAM_INVALID,
+           "Parse input parameter [--input_shape_range]'s shape range[%s] failed, reason: %s, correct sample is %s.",
+           str.c_str(), kShapeRangeValueConvertError, kInputShapeRangeSample3);
+  } catch (const std::out_of_range) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                    {str, kShapeRangeValueConvertError, kInputShapeRangeSample3});
+    GELOGE(PARAM_INVALID,
+           "Parse input parameter [--input_shape_range]'s shape range[%s] failed, reason: %s, correct sample is %s.",
+           str.c_str(), kShapeRangeValueConvertError, kInputShapeRangeSample3);
+  }
+  return false;
+}
+
+bool ParseSingleShapeRange(std::string &shape_range, vector<pair<int64_t, int64_t>> &shape_range_vec) {
+  vector<char> square_brackets;
+  for (auto ch : shape_range) {
+    if (ch == '[' || ch == ']') {
+      square_brackets.push_back(ch);
+    }
+  }
+
+  bool is_square_brackets = (square_brackets[0] == '[') && (square_brackets[1] == ']') && (square_brackets.size() == 2);
+  if (!is_square_brackets) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                    {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample2});
+    GELOGE(PARAM_INVALID,
+           "Parse input parameter [--input_shape_range]'s shape range[%s] failed, reason: %s, correct sample is %s.",
+           shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample2);
+    return false;
+  }
+  // trim start bytes, after that, single input should be "1~20,3,3~6,-1"
+  if (ge::StringUtils::StartWith(shape_range, "[")) {
+    shape_range = shape_range.substr(1, shape_range.size() - 1);
+  }
+  // parse shape_range of single input. eg. "1~20,3,3~6,-1"
+  vector<string> dim_range_set = ge::StringUtils::Split(shape_range, ',');
+  for (const auto &range_pair_str : dim_range_set) {
+    vector<string> range_pair_set = ge::StringUtils::Split(range_pair_str, '~');
+    pair<int64_t, int64_t> range_pair;
+    if (range_pair_set.size() == 1) {
+      long range_value = 0;
+      if (!StringToLongNoThrow(range_pair_set.at(0), range_value)) {
+        return false;
+      }
+      if (range_value < 0) {
+        range_pair = std::make_pair(1, range_value);
+      } else {
+        range_pair = std::make_pair(range_value, range_value);
+      }
+    } else if (range_pair_set.size() == 2) {
+      // unknown dim, should get range.
+      long range_left = 0;
+      if (!StringToLongNoThrow(range_pair_set.at(0), range_left)) {
+        return false;
+      }
+      long range_right = 0;
+      if (!StringToLongNoThrow(range_pair_set.at(1), range_right)) {
+        return false;
+      }
+      if (range_left < 0 || (range_right < 0)) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                        {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample3});
+        GELOGE(PARAM_INVALID,
+               "Parse input parameter [--input_shape_range]'s shape range[%s] failed, reason: %s, correct sample is %s.",
+               shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample3);
+        return false;
+      }
+      range_pair = std::make_pair(range_left, range_right);
+    } else {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                      {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample3});
+      GELOGE(PARAM_INVALID,
+             "Parse input parameter [--input_shape_range]'s shape range[%s] failed, reason: %s, correct sample is %s.",
+             shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample3);
+      return false;
+    }
+    shape_range_vec.emplace_back(range_pair);
+  }
+  return true;
+}
+
+bool ParseInputShapeRange(const std::string &shape_range,
+                          std::map<string, std::vector<std::pair<int64_t, int64_t>>> &shape_range_map) {
+  GELOGD("Input shape range %s", shape_range.c_str());
+
+  vector<string> shape_range_vec = StringUtils::Split(shape_range, ';');
+  const int DEFAULT_SHAPE_RANGE_PAIR_SIZE = 2;
+  for (const auto &shape_range_item : shape_range_vec) {
+    vector<string> shape_range_pair_vec = SplitInputShape(shape_range_item);
+    if (shape_range_pair_vec.size() != DEFAULT_SHAPE_RANGE_PAIR_SIZE) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                      {shape_range, kSplitError1, kInputShapeRangeSample1});
+      GELOGE(PARAM_INVALID, "Parse input parameter [--input_shape_range]'s shape range[%s] failed, "
+             "reason: %s, correct sample is %s.", shape_range.c_str(), kSplitError1, kInputShapeRangeSample1);
+      return false;
+    }
+    if (shape_range_pair_vec[1].empty()) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape", "reason", "sample"},
+                                                      {shape_range, kEmptyError, kInputShapeRangeSample1});
+      GELOGE(PARAM_INVALID, "Parse input parameter [--input_shape_range]'s shape range[%s] failed,"
+             "reason: %s, correct sample is %s.", shape_range.c_str(), kEmptyError, kInputShapeRangeSample1);
+      return false;
+    }
+
+    string shape_range_str = shape_range_pair_vec[1];
+    vector<pair<int64_t, int64_t>> shape_range_val;
+    if (!ParseSingleShapeRange(shape_range_str, shape_range_val)) {
+      GELOGE(PARAM_INVALID, "Parse single shape range %s error.", shape_range_str.c_str());
+      return false;
+    }
+    shape_range_map.emplace(make_pair(StringUtils::Trim(shape_range_pair_vec[0]), shape_range_val));
+  }
+  
+  return true;
+}
+
 Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_image_size, string &dynamic_dims,
-                                   const string input_shape, const string input_format, bool &is_dynamic_input) {
+                                   const string input_shape, const string input_shape_range, const string input_format,
+                                   bool &is_dynamic_input) {
   int32_t param_size = static_cast<int32_t>(!dynamic_batch_size.empty()) +
                        static_cast<int32_t>(!dynamic_image_size.empty()) + static_cast<int32_t>(!dynamic_dims.empty());
   if (param_size > 1) {
@@ -269,6 +400,13 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
   }
 
   if (param_size == 0) {
+    if (!input_shape_range.empty()) {
+      std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
+      if(!ParseInputShapeRange(input_shape_range, shape_range_map)) {
+        GELOGE(ge::PARAM_INVALID, "Failed to parse input shape range: %s", input_shape_range.c_str());
+        return ge::PARAM_INVALID;
+      }
+    }
     return ge::SUCCESS;
   }
 
@@ -546,4 +684,91 @@ void EraseEndSemicolon(string &param) {
     param.erase(param.end() - 1);
   }
 }
+
+Status UpdateDataOpShape(const OpDescPtr &op, map<string, vector<int64_t>> &shape_map) {
+  GE_CHECK_NOTNULL(op);
+  if (shape_map.empty()) {
+    GELOGI("Shape map of data op [%s] is empty, no need to update.", op->GetName().c_str());
+    return SUCCESS;
+  }
+
+  auto tensor_input = op->MutableInputDesc(0);
+  auto tensor_output = op->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL(tensor_input);
+  GE_CHECK_NOTNULL(tensor_output);
+  string data_op_name = op->GetName();
+  auto iter = shape_map.find(data_op_name);
+  if (iter != shape_map.end()) {
+    tensor_input->SetShape(ge::GeShape(iter->second));
+    tensor_output->SetShape(ge::GeShape(iter->second));
+    GELOGI("Update input [%s] shape info", data_op_name.c_str());
+  } else {
+    GELOGI("No need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
+  }
+
+  return SUCCESS;
+}
+
+Status UpdateDataOpShapeRange(const OpDescPtr &op,
+                              map<string, vector<pair<int64_t, int64_t>>> &shape_range_map) {
+  GE_CHECK_NOTNULL(op);
+  if (shape_range_map.empty()) {
+    GELOGI("Shape range map of data op [%s] is empty.", op->GetName().c_str());
+    return SUCCESS;
+  }
+
+  auto tensor_input = op->MutableInputDesc(0);
+  GE_CHECK_NOTNULL(tensor_input);
+  string data_op_name = op->GetName();
+  auto origin_shape = tensor_input->GetShape();
+  auto iter = shape_range_map.find(data_op_name);
+  if (iter != shape_range_map.end()) {
+    auto cur_shape_range = iter->second;
+    if (TensorUtils::CheckShapeByShapeRange(origin_shape, cur_shape_range) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "[%s] Check shape by shape range failed.", op->GetName().c_str());
+      return PARAM_INVALID;
+    }
+    for (size_t idx = 0; idx < cur_shape_range.size(); idx++) {
+      auto left_range = cur_shape_range[idx].first;
+      auto right_range = cur_shape_range[idx].second;
+      if (left_range != right_range) {
+        origin_shape.SetDim(idx, UNKNOWN_DIM);
+      }
+    }
+    tensor_input->SetShape(origin_shape);
+    tensor_input->SetShapeRange(cur_shape_range);
+    GELOGI("Update input [%s] shape range info", data_op_name.c_str());
+  } else {
+    GELOGI("No need to update input [%s] attr because not found from input_shape_range.", data_op_name.c_str());
+  }
+
+  return SUCCESS;
+}
+
+Status UpdateDynamicInputShapeRange(const ge::ComputeGraphPtr &compute_graph, const string &input_shape_range) {
+  if (input_shape_range.empty()) {
+    return SUCCESS;
+  }
+  GE_CHECK_NOTNULL(compute_graph);
+
+  map<string, vector<pair<int64_t, int64_t>>> shape_range_map;
+  if (!ParseInputShapeRange(input_shape_range, shape_range_map)) {
+    GELOGE(PARAM_INVALID, "Parse input shape range failed.");
+    return PARAM_INVALID;
+  }
+
+  for (NodePtr &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    OpDescPtr op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      if (UpdateDataOpShapeRange(op, shape_range_map) != SUCCESS) {
+        GELOGE(FAILED, "Update data op [%s] input shape range failed.", op->GetName().c_str());
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 }  // namespace ge

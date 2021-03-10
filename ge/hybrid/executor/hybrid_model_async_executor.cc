@@ -444,29 +444,18 @@ Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,
     TensorValue tensor_value(inputs[i].data, inputs[i].length);
     args.inputs[i] = tensor_value;
   }
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    args.outputs.emplace_back(TensorValue(outputs[i].data, outputs[i].length));
+  }
+  // usr must designate input tensorDesc when input shape is dynamic in inference
+  for (size_t i = 0; i < input_desc.size(); ++i) {
+    ConstGeTensorDescPtr tensor_desc_ptr = MakeShared<GeTensorDesc>(input_desc[i]);
+    args.input_desc.emplace_back(tensor_desc_ptr);
+  }
+
   GE_CHK_STATUS_RET(executor_->Execute(args), "Failed to execute model.");
   for (const auto &output_tensor_desc : args.output_desc) {
     output_desc.emplace_back(*output_tensor_desc);
-  }
-
-  for (size_t i = 0; i < args.outputs.size(); ++i) {
-    int64_t output_real_size = 0;
-    ge::graphStatus graph_status = TensorUtils::GetTensorSizeInBytes(output_desc[i], output_real_size);
-    if (graph_status != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Get tensor size in bytes failed.");
-      return FAILED;
-    }
-    if (output_real_size > 0) {
-      if (outputs[i].length < static_cast<uint64_t>(output_real_size)) {
-        GELOGE(FAILED, "output idx[%zu], the memory size of output[%lu] given by "
-                       "user should be greater than or equal to the real size of output[%ld]",
-               i, outputs[i].length, output_real_size);
-        return FAILED;
-      }
-      GE_CHK_RT_RET(rtMemcpy(outputs[i].data, outputs[i].length, args.outputs[i].GetData(), output_real_size,
-                             RT_MEMCPY_DEVICE_TO_DEVICE));
-    }
-    outputs[i].length = output_real_size;
   }
 
   return SUCCESS;

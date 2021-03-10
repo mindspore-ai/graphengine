@@ -65,6 +65,7 @@ class TaskContext {
   int64_t GetSessionId() const;
   uint64_t GetIterationNumber() const;
 
+
   void NodeDone();
   void OnError(Status error);
 
@@ -106,6 +107,9 @@ class TaskContext {
   uint32_t GetStreamId() const;
   void SetStreamId(uint32_t stream_id);
 
+  void SetOverFlow(bool is_over_flow);
+  bool IsOverFlow();
+
   Status Synchronize();
 
   bool IsForceInferShape() const;
@@ -138,6 +142,7 @@ class TaskContext {
   uint32_t task_id_ = 0;
   uint32_t stream_id_ = 0;
   std::vector<TaskDescInfo> task_desc_info;
+  bool is_over_flow_ = false;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -104,8 +104,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const DumpProperties &DumpManager::GetDumpProperties(
   uint64_t session_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // If session_id is not found in dump_properties_map_, operator[] will insert one.
-  return dump_properties_map_[session_id];
+  auto iter = dump_properties_map_.find(session_id);
+  if (iter != dump_properties_map_.end()) {
+    return iter->second;
+  }
+  static DumpProperties default_properties;
+  return default_properties;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpManager::AddDumpProperties(

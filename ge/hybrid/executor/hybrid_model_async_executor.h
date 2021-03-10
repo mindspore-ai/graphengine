@@ -21,7 +21,9 @@
 #include <future>
 #include "external/ge/ge_api_error_codes.h"
 #include "external/ge/ge_api_types.h"
+#include "common/dump/opdebug_register.h"
 #include "graph/load/model_manager/data_inputer.h"
+#include "graph/load/model_manager/data_dumper.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/executor/hybrid_model_pipeline_executor.h"
 #include "runtime/stream.h"
@@ -77,6 +79,8 @@ class HybridModelAsyncExecutor {
 
   Status PrepareInputs(const InputData &current_data, HybridModelExecutor::ExecuteArgs &args);
 
+  Status DumpOpDebug();
+
   std::mutex mu_;
   HybridModel *model_;
   uint32_t device_id_ = 0U;
@@ -94,6 +98,9 @@ class HybridModelAsyncExecutor {
   std::vector<bool> is_input_dynamic_;
   std::shared_ptr<ModelListener> listener_;
   string om_name_;
+  DataDumper data_dumper_;
+  bool is_op_debug_reg_ = false;
+  OpdebugRegister op_debug_register_;
 };
 }  // namespace hybrid
 }  // namespace ge

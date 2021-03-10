@@ -17,6 +17,7 @@
 #include "aicore_node_executor.h"
 #include "framework/common/taskdown_common.h"
 #include "hybrid/executor/hybrid_execution_context.h"
+#include "external/runtime/rt_error_codes.h"
 
 namespace ge {
 namespace hybrid {
@@ -189,6 +190,7 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     }
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
+    GE_CHK_STATUS_RET_NOLOG(CheckOverflow(context));
     // save profiling data
     uint32_t task_id = 0;
     uint32_t stream_id = 0;
@@ -257,6 +259,25 @@ const vector<int64_t> &AiCoreNodeTask::GetWorkspaceSizes() const {
 
 void AiCoreNodeTask::SetWorkspaceSizes(const vector<int64_t> &workspace_sizes) {
   workspace_sizes_ = workspace_sizes;
+}
+
+Status AiCoreNodeTask::CheckOverflow(TaskContext &context) {
+  const DumpProperties &dump_properties = context.GetDumpProperties();
+  if (dump_properties.IsOpDebugOpen()) {
+    GELOGD("Op %s is doing overflow check in hybrid engine", context.GetNodeName());
+    auto rt_ret = rtStreamSynchronize(context.GetStream());
+    if (rt_ret == ACL_ERROR_RT_AICORE_OVER_FLOW) {
+      context.SetOverFlow(true);
+      GELOGW("Dynamic shape op %s is over flow", context.GetNodeName());
+      return SUCCESS;
+    } else if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(rt_ret, "rtstreamsynchronize failed");
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    return SUCCESS;
+  }
+  GELOGD("Opdebug is not open in hybrid engine");
+  return SUCCESS;
 }
 
 TaskCompilerFactory &TaskCompilerFactory::GetInstance() {

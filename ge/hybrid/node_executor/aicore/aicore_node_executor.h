@@ -62,6 +62,7 @@ class AiCoreNodeTask : public NodeTask {
   const vector<int64_t> &GetWorkspaceSizes() const;
   void SetWorkspaceSizes(const vector<int64_t> &workspace_sizes);
  private:
+  Status CheckOverflow(TaskContext &context);
   std::vector<std::unique_ptr<AiCoreOpTask>> tasks_;
   std::vector<int64_t> workspace_sizes_;
 };

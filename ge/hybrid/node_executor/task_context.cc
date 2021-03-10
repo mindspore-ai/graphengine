@@ -350,6 +350,14 @@ void TaskContext::SetStreamId(uint32_t stream_id) {
   stream_id_ = stream_id;
 }
 
+void TaskContext::SetOverFlow(bool is_over_flow) {
+  is_over_flow_ = is_over_flow;
+}
+
+bool TaskContext::IsOverFlow() {
+  return is_over_flow_;
+}
+
 Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr) {
   GE_CHECK_NOTNULL(buffer);
   if (ori_addr == nullptr) {

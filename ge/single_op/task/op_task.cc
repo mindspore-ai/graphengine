@@ -491,21 +491,18 @@ Status AiCpuBaseTask::UpdateOutputShape(vector<GeTensorDesc> &output_desc) {
   }
   GELOGD("Start to update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape.");
 
-  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_->GetExtInfo(),
-                         aicpu_ext_handle_->GetExtInfoLen(),
-                         ext_info_addr_dev_,
-                         aicpu_ext_handle_->GetExtInfoLen(),
-                         RT_MEMCPY_DEVICE_TO_HOST));
+  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_->GetExtInfo(), aicpu_ext_handle_->GetExtInfoLen(), ext_info_addr_dev_,
+                         aicpu_ext_handle_->GetExtInfoLen(), RT_MEMCPY_DEVICE_TO_HOST));
 
   for (size_t i = 0; i < num_outputs_; ++i) {
     GeShape shape;
     DataType data_type;
     aicpu_ext_handle_->GetOutputShapeAndType(i, shape, data_type);
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]),
-                      "AiCpuCCTask Update [%zu]th output shape failed.", i);
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]), "AiCpuCCTask Update [%zu]th output shape failed.",
+                      i);
     if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
-      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]),
-                        "AiCpuCCTask Update [%zu]th output desc failed.", i);
+      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]), "AiCpuCCTask Update [%zu]th output desc failed.",
+                        i);
     }
   }
   GELOGD("Update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape finished.");
@@ -697,10 +694,10 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
       const auto &shape_hbm = out_shape_hbm_[i];
 
       uint32_t dim_num = result_summary.shape_data_size / sizeof(int64_t);
-      std::unique_ptr<int64_t[]> shape_addr(new(std::nothrow) int64_t[dim_num]());
+      std::unique_ptr<int64_t[]> shape_addr(new (std::nothrow) int64_t[dim_num]());
       GE_CHECK_NOTNULL(shape_addr);
-      GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size,
-                             shape_hbm, result_summary.shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
+      GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size, shape_hbm,
+                             result_summary.shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
 
       for (uint32_t dim_idx = 0; dim_idx < dim_num; ++dim_idx) {
         shape_dims.emplace_back(shape_addr[dim_idx]);
@@ -711,12 +708,13 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
     GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(GeShape(shape_dims), output_desc[i]),
                       "AiCpuTask update [%zu]th output shape failed.", i);
     if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
-      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]),
-                        "AiCpuTask update [%zu]th output desc failed.", i);
+      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]), "AiCpuTask update [%zu]th output desc failed.",
+                        i);
     }
   }
   return SUCCESS;
 }
+
 
 Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc,
                                                     vector<DataBuffer> &outputs,

@@ -18,6 +18,8 @@
 
 using namespace ErrorMessage;
 
+thread_local Context ErrorManager::error_context_ = {0, "", "", ""};
+
   ErrorManager &ErrorManager::GetInstance() {
     static ErrorManager instance;
     return instance;
@@ -88,7 +90,7 @@ using namespace ErrorMessage;
 
   void ErrorManager::GenWorkStreamIdBySessionGraph(uint64_t session_id, uint64_t graph_id) {}
 
-  const std::string &ErrorManager::GetLogHeader() { return "[TEST][TEST]"; }
+  const std::string &ErrorManager::GetLogHeader() { return error_context_.log_header; }
 
   struct Context &ErrorManager::GetErrorContext() {
     struct Context error_context;

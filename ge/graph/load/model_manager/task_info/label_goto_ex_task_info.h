@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_
-#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_
+#ifndef GE_GRAPH_LOAD_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_
+#define GE_GRAPH_LOAD_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_
 
 #include "graph/load/model_manager/task_info/task_info.h"
 
@@ -36,4 +36,4 @@ class LabelGotoExTaskInfo : public TaskInfo {
   uint32_t args_size_{0};         // label info length.
 };
 }  // namespace ge
-#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_
+#endif  // GE_GRAPH_LOAD_MODEL_MANAGER_TASK_INFO_LABEL_GOTO_EX_TASK_INFO_H_

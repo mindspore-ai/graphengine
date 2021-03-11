@@ -218,6 +218,8 @@ TEST_F(UtestGeHybrid, init_weight_success) {
   graph->AddSubgraph("sub", sub_graph);
 
   GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  GeModelPtr ge_sub_model = make_shared<GeModelPtr>(sub_graph);
+  ge_root_model->SetSubgraphInstanceNameToModel("sub",ge_sub_model);
   HybridModel hybrid_model(ge_root_model);
   HybridModelBuilder hybrid_model_builder(hybrid_model);
   auto ret = hybrid_model_builder.InitWeights();

@@ -41,7 +41,7 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   // Wait for "const input nodes" if node's shape inference function requires any.
   // Even if output shape is static, there are cases that the const-input will be used in OpTiling and Execution
   GE_CHK_STATUS_RET_NOLOG(AwaitDependentNodes(node_state));
-  if (node_item.is_output_shape_static) {
+  if (node_item.is_output_shape_static && !node_item.is_need_force_infershape) {
     return SUCCESS;
   }
 

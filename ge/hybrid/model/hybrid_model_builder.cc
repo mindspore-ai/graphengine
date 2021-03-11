@@ -50,6 +50,7 @@ const char *const kProfilingBpNode = "ProfilingBpNode";
 const char *const kProfilingEndNode = "ProfilingEndNode";
 const char *const kProfilingArNode = "ProfilingAllReduceNode";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
+const char *const kForceInfershape = "_force_infershape_when_running";
 
 Status SetOutputNameAttr(ComputeGraph &graph) {
   vector<string> output_names;
@@ -171,6 +172,9 @@ Status HybridModelBuilder::ValidateParams() {
 
 Status HybridModelBuilder::BuildNodeItem(const NodePtr &node, NodeItem &node_item) {
   auto op_desc = node->GetOpDesc();
+  GE_CHK_STATUS_RET(ParseForceInfershapeNodes(node, node_item),
+                    "[%s] Failed to parse force_infershape node.",
+                    node_item.NodeName().c_str());
   vector<string> dependencies = node->GetOpDesc()->GetOpInferDepends();
   GE_CHK_STATUS_RET(ParseDependentInputNodes(node_item, dependencies),
                     "[%s] Failed to parse node dependencies.",
@@ -260,6 +264,17 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
                                   (executor_type == NodeExecutorManager::ExecutorType::AICPU_CUSTOM);
   *node_item = new_node.get();
   node_items[node] = std::move(new_node);
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::ParseForceInfershapeNodes(const NodePtr &node, NodeItem &node_item) {
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  // not care result, if no this attr, stand for the op does not need force infershape
+  (void)AttrUtils::GetBool(op_desc, kForceInfershape, node_item.is_need_force_infershape);
+  GELOGD("node [%s] is need do infershape , flag is %d",
+    op_desc->GetName().c_str(),
+    node_item.is_need_force_infershape);
   return SUCCESS;
 }
 

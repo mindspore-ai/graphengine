@@ -38,6 +38,7 @@ REGISTER_OP_CREATOR(ExpandDims, GeDeletedOp);
 REGISTER_OP_CREATOR(Reshape, GeDeletedOp);
 REGISTER_OP_CREATOR(ReFormat, GeDeletedOp);
 REGISTER_OP_CREATOR(Squeeze, GeDeletedOp);
+REGISTER_OP_CREATOR(Unsqueeze, GeDeletedOp);
 REGISTER_OP_CREATOR(Size, GeDeletedOp);
 REGISTER_OP_CREATOR(Shape, GeDeletedOp);
 REGISTER_OP_CREATOR(ShapeN, GeDeletedOp);

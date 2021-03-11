@@ -152,6 +152,20 @@ TEST_F(UtestGeHybrid, index_taskdefs_failed) {
   ASSERT_EQ(hybrid_model_builder.IndexTaskDefs(graph, ge_model), INTERNAL_ERROR);
 }
 
+TEST_F(UtestGeHybrid, parse_force_infershape_nodes) {
+  const char *const kForceInfershape = "_force_infershape_when_running";
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Conv2D", "Conv2D");
+  ge::AttrUtils::SetBool(op_desc, kForceInfershape, true);
+  auto node = graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> new_node;
+  NodeItem::Create(node, new_node);
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  HybridModel hybrid_model(ge_root_model);
+  HybridModelBuilder hybrid_model_builder(hybrid_model);
+  ASSERT_EQ(hybrid_model_builder.ParseForceInfershapeNodes(node, *new_node), SUCCESS);
+}
+
 TEST_F(UtestGeHybrid, index_taskdefs_success) {
   // build aicore task
   domi::ModelTaskDef model_task_def;

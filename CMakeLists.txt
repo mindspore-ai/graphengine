@@ -136,6 +136,7 @@ elseif (ENABLE_D OR ENABLE_ACL)
 
     # common libraries
     find_module(slog libalog.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
+    find_module(error_manager liberror_manager.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
     find_module(static_mmpa libmmpa.a ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
 
     if (ENABLE_D)
@@ -155,6 +156,7 @@ elseif(ENABLE_MS_TESTCASES)
 
     # common libraries
     find_module(slog libalog.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
+    find_module(error_manager liberror_manager.so ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
     find_module(static_mmpa libmmpa.a ${ASCEND_MS_RUNTIME_PATH} ${ATLAS_MS_RUNTIME_PATH})
 
     set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)

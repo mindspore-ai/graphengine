@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,24 @@ REG_OP(Bucketize)
     .OP_END_FACTORY_REG(Bucketize)
 
 /**
+*@brief Returns a new tensor with the truncated integer values of the elements of input. \n
+
+*@par Inputs:
+*One inputs, including:
+*   @li input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
+
+*@par Outputs:
+*y: A tensor with the same type and shape of input_x \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Trunc. \n
+*/
+REG_OP(Trunc)
+    .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OP_END_FACTORY_REG(Trunc)
+	
+/**
 *@brief Computes the sum along sparse segments of a tensor . \n
 
 *@par Inputs:
@@ -364,6 +382,27 @@ REG_OP(GetNext)
     .ATTR(output_num, Int, 1)
     .ATTR(channel_name, String, "")
     .OP_END_FACTORY_REG(GetNext)
+
+/**
+*@brief Get dynamic dims after GetNext. \n
+
+*@par Inputs:
+*input: A nested structure of Tensor objects, from GetNext's output. \n
+
+*@par Attributes:
+*@li shape_info: GE shape_info for each inputs, -1 means unknow dim.
+*@li N: Inputs number. \n
+
+*@par Outputs:
+*dims: GE unknow dims, a vector of int64. \n
+*/
+
+REG_OP(GetDynamicDims)
+    .DYNAMIC_INPUT(input, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(dims, TensorType({DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(shape_info, ListInt)
+    .REQUIRED_ATTR(N, Int)
+    .OP_END_FACTORY_REG(GetDynamicDims)
 
 /**
 *@brief End of sequence . \n
@@ -624,6 +663,7 @@ REG_OP(NLLLoss)
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
@@ -653,6 +693,7 @@ REG_OP(NLLLossGrad)
     .INPUT(total_weight, TensorType({DT_FLOAT}))
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
@@ -710,6 +751,9 @@ REG_OP(IFMR)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(WtsARQ)
@@ -741,6 +785,9 @@ REG_OP(WtsARQ)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQ)
@@ -768,6 +815,9 @@ REG_OP(ActsULQ)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQInputGrad)
@@ -790,6 +840,9 @@ REG_OP(ActsULQInputGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMaxGrad)
@@ -812,6 +865,9 @@ REG_OP(ActULQClampMaxGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMinGrad)
@@ -820,6 +876,111 @@ REG_OP(ActULQClampMinGrad)
   .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(clamp_min_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActULQClampMinGrad)
+
+/**
+* @brief Computes Lp norm.
+
+* @par Inputs:
+* @li x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* @li y: An ND tensor of type float16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNorm.
+*/
+REG_OP(LpNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNorm)
+
+/**
+* @brief get complex.
+
+* @par Inputs:
+* @li real: An ND tensor of type  float32. double
+* @li imag: An ND tensor of type  float32. double \n
+*
+* @par Outputs:
+* @li out: An ND tensor of type complex64, complex128 \n
+*/
+REG_OP(Complex)
+    .INPUT(real, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(imag, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(out, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .ATTR(Tout, Type, DT_COMPLEX64)
+    .OP_END_FACTORY_REG(Complex)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Imag)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Imag)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Angle)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Angle)
+
+/**
+*@brief Computes the gradient of SoftMarginLossGrad. \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li predict: A tensor. Must be one of the following types:
+*     float16, float32. \n
+* @li label: A tensor with same shape of predict. Must be one of the following types:
+*     float16, float32. \n
+* @li dout: A tensor with same shpae of predcit. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+* @li reduction: Specifies the reduction to apply to the output:
+*     'none' | 'mean' | 'sum'. Default: 'mean'. \n
+
+*@par Outputs:
+* gradient: A Tensor with the same type of predict. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator SoftMarginLoss Backward. \n
+*/
+REG_OP(SoftMarginLossGrad)
+    .INPUT(predict, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(dout, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SoftMarginLossGrad)
 
 }  // namespace ge
 

@@ -173,13 +173,7 @@ typedef void (*rtCallback_t)(void *fnData);
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aicube
  */
-#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41415247
-
-/**
- * @ingroup rt_kernel
- * @brief magic number of elf binary for aivector
- */
-#define RT_DEV_BINARY_MAGIC_ELF_AIVECTOR 0x41415248
+#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41494343
 
 /**
  * @ingroup rt_kernel_flags

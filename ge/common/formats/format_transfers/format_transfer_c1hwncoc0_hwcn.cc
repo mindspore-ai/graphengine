@@ -39,22 +39,22 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
     std::string error = "Dose not support trans format from " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
+    return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
     std::string error = "Failed to trans shape from NC1HWNCoC0 to HWCN, invalid data type" +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_DATATYPE_INVALID, error.c_str());
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kC1hwncoc0DimsNum)) {
-    GELOGE(PARAM_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kHwcnDimsNum)) {
-    GELOGE(PARAM_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
-    return PARAM_INVALID;
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s.", ShapeToString(dst_shape).c_str());
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
   auto cube_size = GetCubeSizeByDataType(args.src_data_type);
   if (src_shape.at(kC1hwncoc0C1) != (dst_shape.at(kHwcnC) - 1) / cube_size + 1 ||
@@ -63,8 +63,8 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
       src_shape.at(kC1hwncoc0C0) != cube_size) {
     std::string error = "Failed to check relationship between src and dst shape, src shape" +
         FmtToStr(ShapeToString(src_shape)) + ", dst shape" + FmtToStr(ShapeToString(dst_shape));
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
-    return PARAM_INVALID;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_SHAPE_INVALID, error.c_str());
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
   return SUCCESS;
@@ -73,10 +73,10 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size, int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
-    return OUT_OF_MEMORY;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   auto h = args.src_shape.at(kC1hwncoc0H);
@@ -114,12 +114,12 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
-            GELOGE(INTERNAL_ERROR,
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
                    "Failed to copy data from C1HWNCoC0[%ld, %ld, %ld, %ld, %ld, %ld] offset %ld to "
                    "HWCN[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                    c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset,
                    ret);
-            return INTERNAL_ERROR;
+            return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
       }
@@ -132,8 +132,9 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
 }  // namespace
 
 Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResult &result) {
-  if (CheckArgsForC1hwncoc0ToHwcn(args) != SUCCESS) {
-    return PARAM_INVALID;
+  Status ret = CheckArgsForC1hwncoc0ToHwcn(args);
+  if (ret != SUCCESS) {
+    return ret;
   }
   int size = GetSizeByDataType(args.src_data_type);
   int64_t total_size = GetItemNumByShape(args.dst_shape) * size;
@@ -143,26 +144,27 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
       result.length = static_cast<size_t>(total_size);
       return SUCCESS;
     }
-    GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Get %ld total size from dst shape %s, src shape %s.", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
-    return PARAM_INVALID;
+    return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  GELOGD("Begin to trans format from C1HWNCoC0 to HWCN, src shape %s, data type %s, dst shape %s, memory size %ld",
+  GELOGD("Begin to trans format from C1HWNCoC0 to HWCN, src shape %s, data type %s, dst shape %s, memory size %ld.",
          ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
          ShapeToString(args.dst_shape).c_str(), total_size);
-  if (GetDstDataAfterTrans(args, result, size, total_size) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
+  ret = GetDstDataAfterTrans(args, result, size, total_size);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
            ShapeToString(args.dst_shape).c_str(), total_size);
-    return INTERNAL_ERROR;
+    return ret;
   }
   return SUCCESS;
 }
 
 Status FormatTransferC1hwncoc0Hwcn::TransShape(Format src_format, const std::vector<int64_t> &src_shape,
                                                DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
-  GELOGD("The shape derivation from C1HWNCoC0 to HWCN is not unique. Trans shape in this direction is not supported");
-  return ACL_ERROR_GE_TRANSSHAPE_FORMAT_INVALID;
+  GELOGD("The shape derivation from C1HWNCoC0 to HWCN is not unique. Trans shape in this direction is not supported.");
+  return ACL_ERROR_GE_FORMAT_INVALID;
 }
 
 REGISTER_FORMAT_TRANSFER(FormatTransferC1hwncoc0Hwcn, FORMAT_C1HWNCoC0, FORMAT_HWCN)

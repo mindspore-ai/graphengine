@@ -140,7 +140,8 @@ bool HcclContinuousMemcpyPass::IsDataNode(const std::string& node_type) {
 /// @param [in] ge::OutDataAnchorPtr in_node
 /// @return ge::NodePtr
 ///
-NodePtr HcclContinuousMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
+NodePtr HcclContinuousMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph,
+                                                     const OutDataAnchorPtr &out_data_anchor) {
   GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
   NodePtr pre_node = out_data_anchor->GetOwnerNode();
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
@@ -205,8 +206,9 @@ std::string HcclContinuousMemcpyPass::CheckDuplicateName(const std::string &node
 /// @param [in] InDataAnchorPtr hccl_in_anchor
 /// @return status
 ///
-Status HcclContinuousMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
-                                            const InDataAnchorPtr &hccl_in_anchor) {
+Status HcclContinuousMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph,
+                                                      const OutDataAnchorPtr &src_out_anchor,
+                                                      const InDataAnchorPtr &hccl_in_anchor) {
   GE_CHECK_NOTNULL(src_out_anchor->GetOwnerNode());
   GE_CHECK_NOTNULL(hccl_in_anchor->GetOwnerNode());
 
@@ -235,8 +237,9 @@ Status HcclContinuousMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &gra
 /// @param [in] InDataAnchorPtr hccl_in_anchor
 /// @return status
 ///
-Status HcclContinuousMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
-                                                const InDataAnchorPtr &hccl_in_anchor) {
+Status HcclContinuousMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph,
+                                                          const OutDataAnchorPtr &src_out_anchor,
+                                                          const InDataAnchorPtr &hccl_in_anchor) {
   GELOGI("Between op %s and op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
          hccl_in_anchor->GetOwnerNode()->GetName().c_str());
   NodePtr memcpy_node = CreateIdentityNode(graph, src_out_anchor);
@@ -274,8 +277,8 @@ Status HcclContinuousMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr 
 /// @return status
 ///
 Status HcclContinuousMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &graph,
-                                                        const OutDataAnchorPtr &var_out_anchor,
-                                                        const InDataAnchorPtr &hccl_in_anchor) {
+                                                                  const OutDataAnchorPtr &var_out_anchor,
+                                                                  const InDataAnchorPtr &hccl_in_anchor) {
   if (hccl_in_anchor->GetOwnerNode()->GetType() != HCOMBROADCAST) {
     GELOGD("%s not broadcast, no need to insert assign node", hccl_in_anchor->GetOwnerNode()->GetName().c_str());
     return SUCCESS;
@@ -354,8 +357,9 @@ Status HcclContinuousMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeG
 /// @param [in] ge::OutDataAnchorPtr variable node out anchor
 /// @return ge::NodePtr
 ///
-NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr &out_data_anchor) {
-  GE_CHECK_NOTNULL_EXEC(graph , return nullptr);
+NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
+                                                   const OutDataAnchorPtr &out_data_anchor) {
+  GE_CHECK_NOTNULL_EXEC(graph, return nullptr);
   NodePtr pre_node = out_data_anchor->GetOwnerNode();
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
   if (pre_op_desc == nullptr) {

@@ -19,6 +19,7 @@
 #include <set>
 #include <unordered_map>
 #include "common/ge/ge_util.h"
+#include "common/dump/dump_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
 #include "graph/attr_value.h"
@@ -260,7 +261,9 @@ Status ModelBuilder::SetInputOutputDesc() {
     GE_IF_BOOL_EXEC(n->GetInAllNodes().empty() && n->GetOutAllNodes().empty(), continue;);
 
     SetInputIsConst(n);
-    if (IsGeLocalOp(n->GetOpDesc())) {
+    bool is_unknow = false;
+    (void)NodeUtils::GetNodeUnknownShapeStatus(*n, is_unknow);
+    if ((IsGeLocalOp(n->GetOpDesc())) && (!is_unknow)) {
       GE_CHK_STATUS_RET(CalcOutputSize(n), "Calculate output size failed");
     }
     ret = AdjustConstWeightSize(n, weight_offset_);
@@ -363,8 +366,11 @@ void ModelBuilder::InitL1FusionOption() {
   string buffer_optimize = "off_optimize";
   graphStatus ret = ge::GetContext().GetOption(BUFFER_OPTIMIZE, buffer_optimize);
   if (ret == GRAPH_SUCCESS) {
-    is_l1_fusion_enable_ = (buffer_optimize == "l1_optimize");
-    GELOGD("The value of %s is %s.", BUFFER_OPTIMIZE.c_str(), buffer_optimize.c_str());
+    bool off_superkernel = false;
+    (void)AttrUtils::GetBool(compute_graph_, ATTR_NAME_OFF_SUPERKERNEL_ATTR, off_superkernel);
+    is_l1_fusion_enable_ = ((buffer_optimize == "l1_optimize") && (!off_superkernel));
+    GELOGI("Compute graph %s the value of %s is %s, superkernel flag %d.", compute_graph_->GetName().c_str(),
+           BUFFER_OPTIMIZE.c_str(), buffer_optimize.c_str(), is_l1_fusion_enable_);
   } else {
     GELOGW("The value of %s is empty.", kEnableL1Fusion.c_str());
   }
@@ -429,7 +435,7 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(&model, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_),
                    GELOGE(FAILED, "SetBool of ATTR_NAME_SWITCH_FOR_L1_FUSION failed.");
                    return FAILED);
-  const DumpProperties &dump_properties = PropertiesManager::Instance().GetDumpProperties(session_id_);
+  const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(session_id_);
   bool is_op_debug = dump_properties.IsOpDebugOpen();
   if (is_op_debug) {
     if (!ge::AttrUtils::SetBool(&model, ATTR_OP_DEBUG_FLAG, is_op_debug)) {
@@ -683,6 +689,7 @@ Status ModelBuilder::PreBuildModel() {
 Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_CHK_STATUS_RET(AdjustInputTensorFlag(), "AdjustInputTensorFlag failed!");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kStreamAlloc);
   // Assign logical streams.
   StreamAllocator stream_allocator(compute_graph_, subgraphs_);
   GE_TIMESTAMP_START(AssignLogicalStreams);
@@ -690,6 +697,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
                     "Assign logical streams failed.");
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kMemoryAlloc);
   // Assign functional op labels.
   auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
   (void)AttrUtils::GetInt(*root_graph, ATTR_MODEL_LABEL_NUM, label_num_);
@@ -700,22 +708,25 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
                     "Assign Memory Failed!");
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GE_TIMESTAMP_START(SetInputOutputOffset);
   SetInputOutputOffsetPass input_output_offset;
   GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_), "Set input output offset failed.");
-  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run.");
+  GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run");
 
   // Compile single op in graph build stage
   GE_TIMESTAMP_START(CompileSingleOp);
   GE_CHK_STATUS_RET(CompileSingleOp(), "ATC builder CompileSingleOp() return fail.");
   GE_TIMESTAMP_EVENT_END(CompileSingleOp, "GraphBuilder::CompileSingleOp");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kStreamAlloc);
   // Refresh real streams and insert event nodes.
   GE_TIMESTAMP_START(RefreshRealStream);
   GE_CHK_STATUS_RET(stream_allocator.RefreshRealStream(stream_num_, event_num_), "RefreshRealStream failed.");
   huge_streams_ = stream_allocator.GetHugeStreams();
   GE_TIMESTAMP_END(RefreshRealStream, "GraphBuilder::RefreshRealStream");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GE_TIMESTAMP_START(MergeWeights);
   GE_CHK_STATUS_RET(MergeWeights(), "MergeWeights Failed!");
   GE_TIMESTAMP_END(MergeWeights, "GraphBuilder::MergeWeights");

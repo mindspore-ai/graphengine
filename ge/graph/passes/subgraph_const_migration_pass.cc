@@ -385,7 +385,7 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &gra
 
   // Break Move and follow, Link Data and follow.
   const auto &out_anchor = const_node->GetOutDataAnchor(kZeroIndex);
-  const auto in_anchors =out_anchor->GetPeerInDataAnchors();
+  const auto in_anchors = out_anchor->GetPeerInDataAnchors();
   for (const auto in_anchor : in_anchors) {
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
     GELOGI("Remove Edge: %s %s", const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());

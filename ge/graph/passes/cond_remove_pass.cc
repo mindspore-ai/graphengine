@@ -25,8 +25,9 @@ const uint32_t kElseBranchIndex = 1;
 const uint32_t kTrueIndex = 1;
 const uint32_t kFalseIndex = 0;
 /// Extra 8 bytes store pointer of string
+/// Extra 8 bytes store length of string
 /// Extra 1 byte store '\0'
-const int32_t kStrHeadLen = 9;
+const int32_t kStrHeadLen = sizeof(ge::StringHead) + 1;
 const int32_t kInvalidRetVal = -1;
 }
 

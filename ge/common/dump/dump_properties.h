@@ -65,7 +65,7 @@ class DumpProperties {
 
   const std::string &GetDumpStatus() const;
 
-  void SetDumpOpSwitch(const std::string dump_op_switch);
+  void SetDumpOpSwitch(const std::string &dump_op_switch);
 
   const std::string &GetDumpOpSwitch() const;
 
@@ -81,11 +81,11 @@ class DumpProperties {
 
   const std::string &GetEnableDumpDebug() const {return enable_dump_debug_;}
 
+
  private:
   void CopyFrom(const DumpProperties &other);
 
   void SetDumpDebugOptions();
-
   std::string enable_dump_;
   std::string enable_dump_debug_;
 

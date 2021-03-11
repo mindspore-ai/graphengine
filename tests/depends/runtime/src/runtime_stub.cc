@@ -27,8 +27,8 @@ rtError_t rtGetStreamId(rtStream_t stream, int32_t *stream_id) {
 }
 
 rtError_t rtCtxGetCurrent(rtContext_t *ctx) {
-  int x = 1;
-  *ctx = (void *)x;
+  uintptr_t x = 1;
+  *ctx = (rtContext_t *)x;
   return RT_ERROR_NONE;
 }
 
@@ -131,7 +131,14 @@ rtError_t rtFunctionRegister(void *bin_handle, const void *stub_func, const char
 
 rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **handle) { return RT_ERROR_NONE; }
 
+rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **handle) { return RT_ERROR_NONE; }
+
 rtError_t rtKernelConfigTransArg(const void *ptr, uint64_t size, uint32_t flag, void **arg) { return RT_ERROR_NONE; }
+
+rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim, void *args, uint32_t argsSize,
+                                   rtSmDesc_t *smDesc, rtStream_t stream, const void *kernelInfo) {
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtKernelLaunch(const void *stub_func, uint32_t block_dim, void *args, uint32_t args_size, rtSmDesc_t *sm_desc,
                          rtStream_t stream) {
@@ -156,7 +163,7 @@ rtError_t rtSetKernelReportCallback(rtKernelReportCallback callback) {
   rt_kernel_info.module_addr = (void *)100;
   rt_kernel_info.module_size = 100;
 
-  rtStream_t stream;
+  rtStream_t stream = nullptr;
   callback(stream, &rt_kernel_info);
   return RT_ERROR_NONE;
 }
@@ -193,7 +200,8 @@ rtError_t rtModelCreate(rtModel_t *model, uint32_t flag) {
 }
 
 rtError_t rtModelDestroy(rtModel_t model) {
-  delete model;
+  uint32_t *stub = static_cast<uint32_t *>(model);
+  delete stub;
   return RT_ERROR_NONE;
 }
 
@@ -422,4 +430,8 @@ rtError_t rtModelExit(rtModel_t model, rtStream_t stream)
 rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId)
 {
  return RT_ERROR_NONE;
+}
+
+rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, const void *addr, uint32_t *streamId, uint32_t *taskId) {
+  return RT_ERROR_NONE;
 }

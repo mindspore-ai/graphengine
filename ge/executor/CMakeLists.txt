@@ -17,6 +17,7 @@ set(SRC_LIST
     "../common/dump/dump_properties.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
+    "../common/dump/opdebug_register.cc"
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
@@ -33,7 +34,6 @@ set(SRC_LIST
     "../model/ge_model.cc"
     "../model/ge_root_model.cc"
     "../graph/load/model_manager/davinci_model.cc"
-    "../graph/load/model_manager/davinci_model_parser.cc"
     "../graph/load/model_manager/model_manager.cc"
     "../graph/load/model_manager/tbe_handle_store.cc"
     "../graph/load/model_manager/cpu_queue_schedule.cc"
@@ -250,15 +250,14 @@ target_link_options(ge_executor_shared PRIVATE
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     msprofiler
+    static_mmpa
     -Wl,--no-as-needed
     ge_common
     runtime
     slog
-    mmpa
     graph
     register
     error_manager
-    ascend_hal_stub
     ascend_protobuf
     c_sec
     -Wl,--as-needed

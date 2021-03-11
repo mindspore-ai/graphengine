@@ -26,6 +26,7 @@ namespace hybrid {
 namespace {
 const int kDataOutputIndex = 0;
 const size_t kMinimumPiplineStages = 2;
+const int kDefaultLoopCount = 10;
 }
 HybridModelAsyncExecutor::HybridModelAsyncExecutor(HybridModel *model)
     : model_(model), run_flag_(false) {
@@ -43,6 +44,10 @@ void HybridModelAsyncExecutor::SetDeviceId(uint32_t device_id) {
 
 void HybridModelAsyncExecutor::SetModelId(uint32_t model_id) {
   model_id_ = model_id;
+}
+
+void HybridModelAsyncExecutor::SetModelName(const string &model_name) {
+  om_name_ = model_name;
 }
 
 Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> &data) {
@@ -80,6 +85,10 @@ Status HybridModelAsyncExecutor::Stop() {
     ret = future_.get();
   }
 
+  if (is_op_debug_reg_) {
+    op_debug_register_.UnregisterDebugForStream(stream_);
+  }
+
   if (stream_ != nullptr) {
     GE_CHK_RT(rtStreamDestroy(stream_));
     stream_ = nullptr;
@@ -96,6 +105,7 @@ Status HybridModelAsyncExecutor::Init() {
   executor_ = std::unique_ptr<HybridModelExecutor>(new(std::nothrow) HybridModelExecutor(model_, device_id_, stream_));
   GE_CHECK_NOTNULL(executor_);
   GE_CHK_STATUS_RET(executor_->Init(), "Failed to init hybrid engine");
+  GE_CHK_STATUS_RET(DumpOpDebug(),"Dump op debug failed in hybrid engine");
 
   GELOGI("HybridModel stage nums:%zu", model_->GetRootGraphItem()->NumGroups());
   if (model_->GetRootGraphItem()->NumGroups() >= kMinimumPiplineStages) {
@@ -150,7 +160,7 @@ Status HybridModelAsyncExecutor::RunInternal() {
       GELOGI("HybridModel will execute in pipeline mode");
       auto iter_per_run = std::getenv("ITER_NUM");
       if (iter_per_run) {
-        args.num_loops = static_cast<int>(strtol(iter_per_run, nullptr, 10));
+        args.num_loops = static_cast<int>(strtol(iter_per_run, nullptr, kDefaultLoopCount));
       }
       ret = pipe_executor_->Execute(args);
     } else {
@@ -250,7 +260,8 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         if (k >= shape.GetDimNum()) {
           break;
         }
-        if (shape.GetDim(k) < range[k].first || shape.GetDim(k) > range[k].second) {
+        // range[k].second can be -1
+        if (shape.GetDim(k) < range[k].first || (range[k].second >= 0 && shape.GetDim(k) > range[k].second)) {
           GELOGE(PARAM_INVALID, "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld]",
                  input_index, k, shape.GetDim(k), range[k].first, range[k].second);
           return PARAM_INVALID;
@@ -452,8 +463,8 @@ Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,
                i, outputs[i].length, output_real_size);
         return FAILED;
       }
-      GE_CHK_RT_RET(rtMemcpy(outputs[i].data, outputs[i].length, args.outputs[i].GetData(), output_real_size, 
-                    RT_MEMCPY_DEVICE_TO_DEVICE));
+      GE_CHK_RT_RET(rtMemcpy(outputs[i].data, outputs[i].length, args.outputs[i].GetData(), output_real_size,
+                             RT_MEMCPY_DEVICE_TO_DEVICE));
     }
     outputs[i].length = output_real_size;
   }
@@ -502,5 +513,40 @@ Status HybridModelAsyncExecutor::Execute(const vector<GeTensor> &inputs, vector<
 
   return SUCCESS;
 }
+Status HybridModelAsyncExecutor::DumpOpDebug() {
+  const DumpProperties &dump_properties = executor_->GetContext()->dump_properties;
+  if (dump_properties.IsOpDebugOpen()) {
+    GELOGD("Opdebug is open in hybrid engine");
+    uint32_t op_debug_mode = dump_properties.GetOpDebugMode();
+    GE_CHK_RT_RET(op_debug_register_.RegisterDebugForStream(stream_, op_debug_mode, data_dumper_));
+    is_op_debug_reg_ = true;
+    data_dumper_.SetDumpProperties(dump_properties);
+    data_dumper_.SetModelName(model_->GetModelName());
+    data_dumper_.SetModelId(model_->GetModelId());
+    data_dumper_.SetDeviceId(model_->GetDeviceId());
+    void *global_step = nullptr;
+    TensorValue *varible_global_step = model_->GetVariable(NODE_NAME_GLOBAL_STEP);
+    if (varible_global_step != nullptr) {
+      global_step = const_cast<void *>(varible_global_step->GetData());
+    }
+
+    void *loop_per_iter = nullptr;
+    TensorValue *varible_loop_per_iter = model_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);
+    if (varible_loop_per_iter != nullptr) {
+      loop_per_iter = const_cast<void *>(varible_loop_per_iter->GetData());
+    }
+
+    void *loop_cond = nullptr;
+    TensorValue *varible_loop_cond = model_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_COND);
+    if (varible_loop_cond != nullptr) {
+      loop_cond = const_cast<void *>(varible_loop_cond->GetData());
+    }
+    data_dumper_.SetLoopAddr(global_step, loop_per_iter, loop_cond);
+    GE_CHK_STATUS_RET(data_dumper_.LoadDumpInfo(), "LoadDumpInfo failed in hybrid engine");
+    GELOGD("Dump op debug SUCCESS in hybrid engine");
+  }
+  return SUCCESS;
+}
+
 }  // namespace hybrid
 }  // namespace ge

@@ -110,7 +110,7 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
     return ge::GE_GRAPH_PARAM_NULLPTR;
   }
   // begin accuracy supported check
-  if (!CheckAccuracySupport(kernel_info, instance, op_desc)) {
+  if (!CheckAccuracySupport(kernel_info, instance, node)) {
     // if check accuracy support failed , try to go to other engine.
     GELOGD("Check Accuracy Supported return not support, node name is %s. Try to go to other engine.",
            op_desc->GetName().c_str());
@@ -123,7 +123,7 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
         continue;
       }
       OpsKernelInfoStorePtr tmp_kernel_info = it->second;
-      if (CheckAccuracySupport(tmp_kernel_info, instance, op_desc)) {
+      if (CheckAccuracySupport(tmp_kernel_info, instance, node)) {
         kernel_lib_name = tmp_kernel_name;
         GELOGD("Find kernel lib %s support node:%s, type:%s , get kernel lib success.", tmp_kernel_name.c_str(),
                node->GetName().c_str(), op_desc->GetType().c_str());
@@ -138,14 +138,9 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
 }
 
 bool CompileNodesPass::CheckAccuracySupport(const OpsKernelInfoStorePtr &kernel_info,
-                                            const std::shared_ptr<GELib> instance, OpDescPtr &op_desc) {
-  auto ge_desc = MakeShared<ge::OpDescPtr>(op_desc);
-  if (ge_desc == nullptr) {
-    GELOGE(GE_GRAPH_MEMORY_ALLOC_FAILED, "Fail to malloc op desc.");
-    return false;
-  }
+                                            const std::shared_ptr<GELib> instance, const NodePtr &node) {
   string reason;
-  if (!(kernel_info->CheckAccuracySupported(*ge_desc, reason, true))) {
+  if (!(kernel_info->CheckAccuracySupported(node, reason, true))) {
     return false;
   }
   return true;

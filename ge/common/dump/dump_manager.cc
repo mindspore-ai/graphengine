@@ -22,6 +22,7 @@ namespace {
 const char *const kDumpOFF = "OFF";
 const char *const kDumpoff = "off";
 const char *const kDumpOn = "on";
+const uint64_t kInferSessionId = 0;
 }  // namespace
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpManager &DumpManager::GetInstance() {
@@ -30,15 +31,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpManager &DumpManager::GetIn
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf(const DumpConfig &dump_config) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  dump_properties_.ClearDumpPropertyValue();
-  dump_properties_.ClearDumpInfo();
+  DumpProperties dump_properties;
   std::string dump_status;
   std::string dump_path;
   std::string dump_mode;
   std::string dump_op_switch;
 
   if (dump_config.dump_status.empty()) {
+    dump_properties_map_.emplace(kInferSessionId, dump_properties);
     GELOGI("Dump does not open");
     return SUCCESS;
   }
@@ -46,14 +46,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   dump_status = dump_config.dump_status;
   GELOGI("Dump status is %s", dump_status.c_str());
   if (dump_config.dump_status == kDumpoff || dump_config.dump_status == kDumpOFF) {
-    dump_properties_.ClearDumpPropertyValue();
+    dump_properties.ClearDumpPropertyValue();
+    dump_properties_map_.emplace(kInferSessionId, dump_properties);
     return SUCCESS;
   }
-  dump_properties_.SetDumpStatus(dump_status);
+  dump_properties.SetDumpStatus(dump_status);
 
   dump_op_switch = dump_config.dump_op_switch;
-  dump_properties_.SetDumpOpSwitch(dump_op_switch);
+  dump_properties.SetDumpOpSwitch(dump_op_switch);
   if (dump_op_switch == kDumpoff && dump_config.dump_list.empty()) {
+    dump_properties_map_.emplace(kInferSessionId, dump_properties);
     GELOGE(PARAM_INVALID, "Dump list is invalid,dump_op_switch is %s", dump_op_switch.c_str());
     return PARAM_INVALID;
   }
@@ -67,15 +69,15 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
         GELOGI("Dump layer is %s in model", layer.c_str());
         dump_layers.insert(layer);
       }
-      dump_properties_.AddPropertyValue(model_name, dump_layers);
+      dump_properties.AddPropertyValue(model_name, dump_layers);
     }
     if (dump_op_switch == kDumpOn) {
-      GELOGI("Start to dump model and single op,dumo op switch is %s", dump_op_switch.c_str());
+      GELOGI("Start to dump model and single op,dump op switch is %s", dump_op_switch.c_str());
     } else {
       GELOGI("Only dump model,dump op switch is %s", dump_op_switch.c_str());
     }
   } else {
-    GELOGI("Only dump single op,dumo op switch is %s", dump_op_switch.c_str());
+    GELOGI("Only dump single op,dump op switch is %s", dump_op_switch.c_str());
   }
 
   dump_path = dump_config.dump_path;
@@ -89,27 +91,39 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   }
   dump_path = dump_path + CurrentTimeInStr() + "/";
   GELOGI("Dump path is %s", dump_path.c_str());
-  dump_properties_.SetDumpPath(dump_path);
+  dump_properties.SetDumpPath(dump_path);
 
   dump_mode = dump_config.dump_mode;
   GELOGI("Dump mode is %s", dump_mode.c_str());
-  dump_properties_.SetDumpMode(dump_mode);
+  dump_properties.SetDumpMode(dump_mode);
+  dump_properties_map_.emplace(kInferSessionId, dump_properties);
 
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const DumpProperties &DumpManager::GetDumpProperties() {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const DumpProperties &DumpManager::GetDumpProperties(
+  uint64_t session_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  return dump_properties_;
+  auto iter = dump_properties_map_.find(session_id);
+  if (iter != dump_properties_map_.end()) {
+    return iter->second;
+  }
+  static DumpProperties default_properties;
+  return default_properties;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpManager::SetModelName(const std::string &model_name) {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpManager::AddDumpProperties(
+  uint64_t session_id, const DumpProperties &dump_properties) {
   std::lock_guard<std::mutex> lock(mutex_);
-  model_name_ = model_name;
+  dump_properties_map_.emplace(session_id, dump_properties);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpManager::GetModelName() {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpManager::RemoveDumpProperties(uint64_t session_id) {
   std::lock_guard<std::mutex> lock(mutex_);
-  return model_name_;
+  auto iter = dump_properties_map_.find(session_id);
+  if (iter != dump_properties_map_.end()) {
+    dump_properties_map_.erase(iter);
+  }
 }
+
 }  // namespace ge

@@ -124,7 +124,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
   }
   if (!load_flag_) {
     auto dump_properties = context.GetDumpProperties();
-    if (dump_properties.IsDumpOpen()) {
+    if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
       davinci_model_->SetDumpProperties(dump_properties);
       void *global_step = nullptr;
       TensorValue *varible_global_step = context.GetVariable(NODE_NAME_GLOBAL_STEP);
@@ -179,6 +179,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   // set known node flag as true
   davinci_model->SetKnownNode(true);
   davinci_model->SetId(model.GetModelId());
+  davinci_model->SetOmName(model.GetOmName());
   // set model id as root node's node id
   davinci_model->SetSubModelId(node->GetOpDesc()->GetId());
   GELOGD("KnownNodeExecutor::LoadTask node id %ld.", node->GetOpDesc()->GetId());

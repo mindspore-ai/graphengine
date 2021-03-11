@@ -142,6 +142,9 @@ class FlowCtrlPass : public GraphPass {
   ///         false: only one dataSet exist
   ///
   bool CheckMultiDataSet(ComputeGraphPtr &compute_graph);
+
+  NodePtr assign_add_node_in_fpbp_loop_ = nullptr;
+  std::vector<NodePtr> active_nodes_in_iter_loop_;
 };
 }  // namespace ge
 

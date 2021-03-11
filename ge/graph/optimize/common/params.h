@@ -55,7 +55,7 @@ class Params : public Singleton<Params> {
   Params() : target_("MINI") {}
 
   string target_;
-  uint8_t target_8bit_ = 0;
+  uint8_t target_8bit_ = TARGET_TYPE_MINI_8BIT;
 };
 }  // namespace ge
 

@@ -76,8 +76,8 @@ checkopts()
         ENABLE_GE_ST="on"
         ;;
       t)
-	      ENABLE_GE_UT="on"
-	      ;;
+        ENABLE_GE_UT="on"
+        ;;
       c)
         ENABLE_GE_COV="on"
         ;;
@@ -185,7 +185,7 @@ build_graphengine()
     # build all the target
     TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin opensrc_ascendcl ${TARGET}"
   fi
-  
+
   make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install
   if [ $? -ne 0 ]
   then
@@ -214,13 +214,14 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_others_utest ${OUTPUT_PATH}
     cp ${BUILD_PATH}/tests/ut/ge/ut_libge_kernel_utest ${OUTPUT_PATH}
 
-    ${OUTPUT_PATH}/ut_libgraph &&
-    ${OUTPUT_PATH}/ut_libge_multiparts_utest &&
-    ${OUTPUT_PATH}/ut_libge_distinct_load_utest &&
-    ${OUTPUT_PATH}/ut_libge_others_utest &&
-    ${OUTPUT_PATH}/ut_libge_kernel_utest
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libgraph && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_multiparts_utest && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_distinct_load_utest && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_others_utest && ${RUN_TEST_CASE} &&
+    RUN_TEST_CASE=${OUTPUT_PATH}/ut_libge_kernel_utest && ${RUN_TEST_CASE}
     if [[ "$?" -ne 0 ]]; then
         echo "!!! UT FAILED, PLEASE CHECK YOUR CHANGES !!!"
+        echo -e "\033[31m${RUN_TEST_CASE}\033[0m"
         exit 1;
     fi
     echo "Generating coverage statistics, please wait..."
@@ -249,8 +250,8 @@ generate_package()
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
-  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so")
-  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so")
+  ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so" "liberror_manager.so")
+  FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "libhost_cpu_engine.so" "libhost_cpu_opskernel_builder.so" "optimizer_priority.pbtxt")
   PARSER_LIB=("lib_caffe_parser.so" "libfmk_onnx_parser.so" "libfmk_parser.so" "libparser_common.so")
 
@@ -269,7 +270,7 @@ generate_package()
   mk_dir "${OUTPUT_PATH}/${FWK_BIN_PATH}"
   mk_dir "${OUTPUT_PATH}/${FWK_INCLUDE_PATH}"
   mk_dir "${OUTPUT_PATH}/${ATC_INCLUDE_PATH}"
- 
+
   cd "${OUTPUT_PATH}"
 
   find ./ -name graphengine_lib.tar -exec rm {} \;

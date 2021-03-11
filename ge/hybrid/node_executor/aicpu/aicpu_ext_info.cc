@@ -67,6 +67,9 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
       case aicpu::FWKAdapter::FWK_ADPT_EXT_BITMAP:
         GE_CHK_STATUS_RET(ParseExtBitMap(aicpu_ext_info), "Parse ext bit map failed.");
         break;
+      case aicpu::FWKAdapter::FWK_ADPT_EXT_UPDATE_ADDR:
+        GE_CHK_STATUS_RET(ParseExtUpdateAddr(aicpu_ext_info), "Parse ext update_addr failed.");
+        break;
       default:
         GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.",
                node_name_.c_str(), aicpu_ext_info->infoType, aicpu_ext_info->infoLen);
@@ -153,6 +156,16 @@ Status AicpuExtInfoHandler::ParseExtBitMap(AicpuExtInfo *aicpu_ext_info) {
   return SUCCESS;
 }
 
+Status AicpuExtInfoHandler::ParseExtUpdateAddr(AicpuExtInfo *aicpu_ext_info) {
+  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(uint32_t), PARAM_INVALID,
+                         "Node[%s] parse update_addr info failed as infoLen must be %zu but %u.",
+                         node_name_.c_str(), sizeof(uint32_t), aicpu_ext_info->infoLen);
+
+  update_addr_ = reinterpret_cast<uint32_t *>(aicpu_ext_info->infoMsg);
+  GELOGI("Node[%s] update_addr info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
+  return SUCCESS;
+}
+
 Status AicpuExtInfoHandler::UpdateExecuteMode(bool flag) {
   if (bit_map_ == nullptr) {
     GELOGD("There is no bit_map in ext_info, no need update.");
@@ -231,6 +244,10 @@ Status AicpuExtInfoHandler::GetOutputShapeAndType(uint32_t output_index, GeShape
                          node_name_.c_str());
   GetShapeAndType(output_shape_and_type_[output_index], shape, data_type);
   return SUCCESS;
+}
+
+bool AicpuExtInfoHandler::IsNeedRefreshIOAddr() {
+  return update_addr_ != nullptr && *update_addr_ != static_cast<uint32_t>(aicpu::FWKAdapter::FWK_ADPT_UPDATE_NULL);
 }
 
 Status AicpuExtInfoHandler::UpdateShapeAndType(const GeShape &shape, DataType data_type,

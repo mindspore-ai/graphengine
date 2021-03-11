@@ -111,7 +111,7 @@ Status CastKernel(const CastArgs &args, uint8_t *dst, const size_t data_size, co
   };
   auto it = transfer_handle.find(trans_mode);
   if (it == transfer_handle.end()) {
-    return UNSUPPORTED;
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   } else {
     return (it->second)(args, dst, data_size);
   }
@@ -127,8 +127,8 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
     std::string error = "Failed to trans data from datatype " +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type)) + " to " +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type)) + " , it is not supported.";
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
-    return UNSUPPORTED;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_DATATYPE_INVALID, error.c_str());
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   auto trans_mode = iter->second;
 
@@ -136,14 +136,14 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
   if (size <= 0) {
     std::string error = "Failed to calc size from data type" +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type)) + ", it is not supported.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
-    return PARAM_INVALID;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_DATATYPE_INVALID, error.c_str());
+    return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (args.src_data_size > static_cast<size_t>(SIZE_MAX / size)) {
     std::string error = "args.src_data_size" + FmtToStr(args.src_data_size) +
         " or data type size" + FmtToStr(size) + " is too big";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error.c_str());
-    return PARAM_INVALID;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_PARAM_INVALID, error.c_str());
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
   size_t total_size = static_cast<size_t>(args.src_data_size * size);
   result.length = total_size;
@@ -154,8 +154,8 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to alloc the memory for dst buf %zu, data size %zu", total_size, args.src_data_size);
-    return OUT_OF_MEMORY;
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to alloc the memory for dst buf %zu, data size %zu", total_size, args.src_data_size);
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   if (CastKernel(args, dst.get(), args.src_data_size, trans_mode) != SUCCESS) {
@@ -163,8 +163,8 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
         FmtToStr(TypeUtils::DataTypeToSerialString(args.src_data_type)) + " to " +
         FmtToStr(TypeUtils::DataTypeToSerialString(args.dst_data_type)) + ", data size is " +
         FmtToStr(std::to_string(args.src_data_size));
-    GE_ERRORLOG_AND_ERRORMSG(INTERNAL_ERROR, error.c_str());
-    return INTERNAL_ERROR;
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_INTERNAL_ERROR, error.c_str());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   result.data = dst;
   return SUCCESS;

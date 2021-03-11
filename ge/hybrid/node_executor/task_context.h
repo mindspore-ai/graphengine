@@ -56,6 +56,7 @@ class TaskContext {
   void ReleaseInputsAndOutputs();
   bool NeedCallback();
   void ReleaseInput(int index);
+  void ReleaseWorkspace();
   const TensorValue *GetInput(int index) const;
   const TensorValue *GetOutput(int index) const;
   TensorValue *MutableOutput(int index);
@@ -63,6 +64,7 @@ class TaskContext {
   rtStream_t GetStream() const;
   int64_t GetSessionId() const;
   uint64_t GetIterationNumber() const;
+
 
   void NodeDone();
   void OnError(Status error);
@@ -105,6 +107,9 @@ class TaskContext {
   uint32_t GetStreamId() const;
   void SetStreamId(uint32_t stream_id);
 
+  void SetOverFlow(bool is_over_flow);
+  bool IsOverFlow();
+
   Status Synchronize();
 
   bool IsForceInferShape() const;
@@ -112,12 +117,9 @@ class TaskContext {
   void *handle_ = nullptr;
 
   const std::vector<TaskDescInfo>& GetProfilingTaskDescInfo() const { return task_desc_info; }
-  Status SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t stream_id, uint32_t task_type, uint32_t block_dim);
+  Status SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t stream_id,
+                                   const std::string &task_type, uint32_t block_dim);
   void ClearProfilingTaskDescInfo() { task_desc_info.clear(); }
-
-  const std::vector<ComputeGraphDescInfo>& GetProfilingGraphDescInfo() const { return compute_graph_info; }
-  Status SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream_id);
-  void ClearProfilingGraphDescInfo() { compute_graph_info.clear(); }
 
  private:
   TaskContext(GraphExecutionContext *execution_context,
@@ -140,7 +142,7 @@ class TaskContext {
   uint32_t task_id_ = 0;
   uint32_t stream_id_ = 0;
   std::vector<TaskDescInfo> task_desc_info;
-  std::vector<ComputeGraphDescInfo> compute_graph_info;
+  bool is_over_flow_ = false;
 };
 }  // namespace hybrid
 }  // namespace ge

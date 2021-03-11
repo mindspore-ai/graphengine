@@ -36,16 +36,19 @@ TaskContext::TaskContext(GraphExecutionContext *execution_context,
 
 TaskContext::~TaskContext() {
   GELOGD("[%s] TaskContext destroyed.", node_item_->NodeName().c_str());
-  for (auto ws_addr : workspaces_) {
-    execution_context_->allocator->Deallocate(ws_addr);
-  }
-
   // release output
   for (int i = 0; i < NumOutputs(); ++i) {
     auto output_tensor = MutableOutput(i);
     if (output_tensor != nullptr) {
       output_tensor->Destroy();
     }
+  }
+}
+
+void TaskContext::ReleaseWorkspace() {
+  GELOGD("[%s] Start ReleaseWorkspace.", node_item_->NodeName().c_str());
+  for (auto ws_addr : workspaces_) {
+    execution_context_->allocator->Deallocate(ws_addr);
   }
 }
 
@@ -347,6 +350,14 @@ void TaskContext::SetStreamId(uint32_t stream_id) {
   stream_id_ = stream_id;
 }
 
+void TaskContext::SetOverFlow(bool is_over_flow) {
+  is_over_flow_ = is_over_flow;
+}
+
+bool TaskContext::IsOverFlow() {
+  return is_over_flow_;
+}
+
 Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr) {
   GE_CHECK_NOTNULL(buffer);
   if (ori_addr == nullptr) {
@@ -512,21 +523,21 @@ Status TaskContext::Synchronize() {
 }
 
 Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id,
-                                              uint32_t task_type, uint32_t block_dim) {
+                                              const std::string &task_type, uint32_t block_dim) {
   if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    const GraphExecutionContext * graph_context = GetExecutionContext();
+    const GraphExecutionContext *graph_context = GetExecutionContext();
     GE_CHECK_NOTNULL(graph_context);
     const HybridModel *model = graph_context->model;
     GE_CHECK_NOTNULL(model);
 
-    std::string op_name = op_desc->GetName();
     std::string dynamic_model_name = model->GetModelName();
     TaskDescInfo tmp_task_desc_info;
     tmp_task_desc_info.model_name = dynamic_model_name;
-    tmp_task_desc_info.op_name = op_name;
+    tmp_task_desc_info.op_name = op_desc->GetName();
+    tmp_task_desc_info.op_type = op_desc->GetType();
     tmp_task_desc_info.block_dim = block_dim;
     tmp_task_desc_info.task_type = task_type;
     tmp_task_desc_info.task_id = task_id;
@@ -541,32 +552,6 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream
 
 NodeState *TaskContext::GetNodeState() const {
   return node_state_;
-}
-
-Status TaskContext::SaveProfilingGraphDescInfo(uint32_t task_id, uint32_t stream_id) {
-  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
-    const NodeItem &node_item = GetNodeItem();
-    auto op_desc = node_item.GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-    const GraphExecutionContext * graph_context = GetExecutionContext();
-    GE_CHECK_NOTNULL(graph_context);
-    const HybridModel *model = graph_context->model;
-    GE_CHECK_NOTNULL(model);
-
-    std::string dynamic_model_name = model->GetModelName();
-    auto op_mode = static_cast<uint32_t>(domi::ImplyType::INVALID);
-    if (AttrUtils::GetInt(op_desc, ATTR_NAME_IMPLY_TYPE, op_mode) &&
-        op_mode == static_cast<uint32_t>(domi::ImplyType::TVM)) {
-      ComputeGraphDescInfo tmp_compute_graph_info;
-      tmp_compute_graph_info.model_name = dynamic_model_name;
-      tmp_compute_graph_info.op_name = op_desc->GetName();
-      tmp_compute_graph_info.op_type = op_desc->GetType();
-      tmp_compute_graph_info.task_id = task_id;
-      tmp_compute_graph_info.stream_id = stream_id;
-      compute_graph_info.emplace_back(tmp_compute_graph_info);
-    }
-  }
-  return SUCCESS;
 }
 
 }  // namespace hybrid

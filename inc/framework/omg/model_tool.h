@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-#include "graph/load/model_manager/davinci_model_parser.h"
+#ifndef INC_FRAMEWORK_OMG_MODEL_TOOL_H_
+#define INC_FRAMEWORK_OMG_MODEL_TOOL_H_
+
+#include <memory>
+#include <string>
+
+#include "framework/common/debug/ge_log.h"
+#include "proto/ge_ir.pb.h"
 
 namespace ge {
-DavinciModelParser::DavinciModelParser() {}
+class GE_FUNC_VISIBILITY ModelTool {
+ public:
+  static Status GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef &model_def, uint32_t &modeldef_size);
 
-DavinciModelParser::~DavinciModelParser() {}
+  static Status GetModelInfoFromPbtxt(const char *model_file, ge::proto::ModelDef &model_def);
+};
 }  // namespace ge
+
+#endif  // INC_FRAMEWORK_OMG_MODEL_TOOL_H_

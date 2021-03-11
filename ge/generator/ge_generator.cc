@@ -66,7 +66,8 @@ bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
 }  // namespace
 
 namespace ge {
-static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engine_type) {
+static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_type) {
+  const OpDescPtr &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
   if (engine_type == ENGINE_SYS) {
     GELOGI("CheckEngineType: use default engine.");
@@ -123,7 +124,7 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
   auto kernel_info_store = kernel_map.find(kernel_name);
   if (kernel_info_store != kernel_map.end()) {
     std::string unsupported_reason;
-    if (kernel_info_store->second->CheckSupported(op_desc, unsupported_reason)) {
+    if (kernel_info_store->second->CheckSupported(node, unsupported_reason)) {
       op_desc->SetOpEngineName(op_engine_name);
       op_desc->SetOpKernelLibName(kernel_name);
       GELOGI("CheckEngineType:Set OpKernelLibName %s and engine name %s into op_desc %s", kernel_name.c_str(),
@@ -147,7 +148,7 @@ static Status CheckEngineTypeSupport(const OpDescPtr &op_desc, OpEngineType engi
   return FAILED;
 }
 
-static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, GeTensorDesc &tensor, int32_t index,
+static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const GeTensorDesc &tensor, int32_t index,
                         bool attr) {
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
@@ -326,6 +327,8 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;
   }
+
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
   string opsproto_path;
   GetOpsProtoPath(opsproto_path);
   GELOGI("Get opsproto path is %s", opsproto_path.c_str());
@@ -374,6 +377,7 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
 }
 
 Status GeGenerator::Finalize() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   Status ret = impl_->graph_manager_.Finalize();
   if (ret != SUCCESS) {
@@ -385,12 +389,14 @@ Status GeGenerator::Finalize() {
 
 Status GeGenerator::GenerateOfflineModel(const Graph &graph, const string &file_name_prefix,
                                          const vector<GeTensor> &inputs) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGI("Start to generate offline model.");
   ModelBufferData model;
   return GenerateModel(graph, file_name_prefix, inputs, model, true);
 }
 
 Status GeGenerator::GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ModelBufferData &model) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   return GenerateModel(graph, "online", inputs, model, false);
 }
 
@@ -671,6 +677,8 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline) {
+  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
+  impl_->is_offline_ = is_offline;
   if (!is_offline) {
     (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
   }
@@ -690,27 +698,26 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   OpDescPtr op_desc_tmp = AttrUtils::CloneOpDesc(op_desc);
   GE_CHECK_NOTNULL(op_desc_tmp);
 
-  // 1. check engine type when compile online
+  // 1. Create ComputeGraph.
+  string name = ge::CurrentTimeInStr() + "_" + model_file_name;
+  Graph graph;
+  GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph), "make graph fail.");
+
+  // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {
-    Status ret = CheckEngineTypeSupport(op_desc, engine_type);
+    auto comp_graph = GraphUtils::GetComputeGraph(graph);
+    GE_CHECK_NOTNULL(comp_graph);
+    auto node = comp_graph->FindNode(op_desc->GetName());
+    Status ret = CheckEngineTypeSupport(node, engine_type);
     if (ret != SUCCESS) {
       GELOGE(ret, "check engine type failed.");
       return ret;
     }
   }
 
-  // 2. Create ComputeGraph.
-  string name = ge::CurrentTimeInStr() + "_" + model_file_name;
-  Graph graph;
-  if (BuildSingleOpGraph(op_desc, inputs, outputs, name, graph) != ge::SUCCESS) {
-    GELOGE(GRAPH_FAILED, "make graph fail.");
-    return GRAPH_FAILED;
-  }
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
-  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
-  impl_->is_offline_ = is_offline;
   GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, ge_root_model));
   map<string, GeAttrValue> op_attrs = op_desc_tmp->GetAllAttrs();
   GE_CHECK_NOTNULL(ge_root_model);
@@ -723,7 +730,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   const ComputeGraphPtr root_graph = ge_root_model->GetRootGraph();
   GeModelPtr &ge_model = name_to_ge_model.begin()->second;
   GE_CHK_STATUS_RET_NOLOG(CheckDynamicSupport(ge_model, root_graph));
-  GELOGD("The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
+  GELOGI("After build model, The opType in op_desc_tmp is [%s]", op_desc_tmp->GetType().c_str());
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
@@ -738,6 +745,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   } else {
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   }
+  GELOGI("Start save GeModel to Model buffer");
   GE_CHK_STATUS_RET_NOLOG(impl_->SaveModel(model_file_name, ge_model, model_buff));
   return SUCCESS;
 }
@@ -753,10 +761,13 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
  */
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, const string &model_file_name) {
-  GELOGI("Start to build single op offline model.");
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  GELOGI("Start to build single op offline model, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   ModelBufferData model_buff;
   OpEngineType engine_type = ENGINE_SYS;
-  return BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
+  Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
+  GELOGI("Finish build single offline model, status: %u", status);
+  return status;
 }
 
 /**
@@ -772,8 +783,11 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
-  GELOGI("Start to build single op online");
-  return BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
+  Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
+  GELOGI("Finish build single online model, status: %u", status);
+  return status;
 }
 
 Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
@@ -798,8 +812,7 @@ Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor
     }
   } else {
     for (const auto &in_desc : inputs) {
-      GeTensorDesc input_desc = in_desc.GetTensorDesc();
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, input_desc, arg_index, true));
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, in_desc.GetTensorDesc(), arg_index, true));
       arg_index++;
     }
   }
@@ -908,6 +921,7 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
     ret = graph_manager_.BuildGraph(graph_id, inputs, ge_root_model, session_id);
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", graph_id);
     VarManagerPool::Instance().RemoveVarManager(session_id);

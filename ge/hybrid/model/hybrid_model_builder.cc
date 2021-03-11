@@ -42,6 +42,7 @@ const uint64_t kProfilingFpStartLogid = 1U;
 const uint64_t kProfilingBpEndLogid = 2U;
 const uint64_t kProfilingIterEndLogid = 65535U;
 const int kBytes = 8;
+const uint32_t kStringHeadElems = 2;
 const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 const char *const kProfilingGraph = "ProfilingGraph";
 const char *const kProfilingFpNode = "ProfilingFpNode";
@@ -852,13 +853,13 @@ Status HybridModelBuilder::HandleDtString(const GeTensor &tensor, void *var_addr
 
     auto &mutable_tensor = const_cast<GeTensor &>(tensor);
     uint64_t *buff = reinterpret_cast<uint64_t *>(mutable_tensor.MutableData().data());
-    GE_CHK_BOOL_RET_STATUS(ge::CheckInt64Uint32MulOverflow(elem_num, kBytes) == SUCCESS, FAILED,
+    GE_CHK_BOOL_RET_STATUS(ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) == SUCCESS, FAILED,
                            "Shape size is invalid");
-    auto offset = static_cast<uint64_t>(elem_num * kBytes);
+    auto offset = static_cast<uint64_t>(elem_num * kBytes * kStringHeadElems);
     auto hbm_raw_data_base_addr =
         static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_addr) + offset);
     for (int64_t i = elem_num - 1; i >= 0; --i) {
-      buff[i] = hbm_raw_data_base_addr + (buff[i] - buff[0]);
+      buff[i * kStringHeadElems] = hbm_raw_data_base_addr + (buff[i * kStringHeadElems] - buff[0]);
     }
   }
 
@@ -1131,23 +1132,26 @@ Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const
       op_index = task_def.kernel_ex().op_index();
     } else if (task_type == RT_MODEL_TASK_HCCL) {
       op_index = task_def.kernel_hccl().op_index();
+    } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
+      op_index = task_def.kernel_with_handle().context().op_index();
     } else {
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
       continue;
     }
+    GELOGD("op_index = %u, task_type = %d.", op_index, task_type);
 
     auto iter = node_map.find(op_index);
     if (iter == node_map.end()) {
-      GELOGE(INTERNAL_ERROR, "Failed to get node by index = %u", op_index);
+      GELOGE(INTERNAL_ERROR, "Failed to get node by op_index = %u.", op_index);
       return INTERNAL_ERROR;
     }
 
     auto &node = iter->second;
-    if (task_type == RT_MODEL_TASK_KERNEL) {
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
       ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
     }
 
-    GELOGD("Task loaded for node: %s, task type = %d, op_index = %u", node->GetName().c_str(), task_type, op_index);
+    GELOGD("Task loaded for node: %s, task type = %d, op_index = %u.", node->GetName().c_str(), task_type, op_index);
     hybrid_model_.task_defs_[node].emplace_back(task_def);
   }
 
@@ -1199,6 +1203,8 @@ Status HybridModelBuilder::IndexTaskDefs() {
         op_index = task_def.kernel_ex().op_index();
       } else if (task_type == RT_MODEL_TASK_HCCL) {
         op_index = task_def.kernel_hccl().op_index();
+      } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
+        op_index = task_def.kernel_with_handle().context().op_index();
       } else {
         GELOGD("Skip task type: %d", static_cast<int>(task_type));
         continue;
@@ -1211,7 +1217,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
       }
 
       auto &node = iter->second;
-      if (task_type == RT_MODEL_TASK_KERNEL) {
+      if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
         ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
       }
 

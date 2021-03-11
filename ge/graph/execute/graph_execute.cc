@@ -19,12 +19,8 @@
 #include <memory>
 #include <string>
 
-#include "common/ge_inner_error_codes.h"
-#include "common/model_parser/base.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "omm/csa_interact.h"
-#include "runtime/dev.h"
-#include "runtime/mem.h"
 
 namespace ge {
 GraphExecutor::GraphExecutor()

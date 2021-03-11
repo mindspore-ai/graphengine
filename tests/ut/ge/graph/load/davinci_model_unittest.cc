@@ -15,6 +15,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #define private public
 #define protected public
@@ -890,4 +891,55 @@ TEST_F(UtestDavinciModel, Sink_model_profile) {
   model.SinkModelProfile();
 }
 
+TEST_F(UtestDavinciModel, Sink_time_profile) {
+  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = MsprofReport;
+  DavinciModel model(0, nullptr);
+  InputData current_data;
+  model.SinkTimeProfile(current_data);
+}
+
+class ClassTest {
+public:
+    virtual ~ClassTest() {}
+
+    virtual int func0() {
+        return 0;
+    }
+    virtual int func1(int a) {
+        return a;
+    }
+    virtual int func2(int a, int b) {
+        return a + b;
+    }
+    virtual int func3(int a, int b) const {
+        return a - b;
+    }
+};
+
+class MockTest : public ClassTest {
+public:
+    MOCK_METHOD0(func0, int());
+    MOCK_METHOD1(func1, int(int a));
+    MOCK_METHOD2(func2, int(int a, int b));
+
+    MOCK_CONST_METHOD2(func3, int(int a, int b));
+};
+
+TEST_F(UtestDavinciModel, simple_test_gmock) {
+    MockTest mock_stub;
+
+    ON_CALL(mock_stub, func0()).WillByDefault(testing::Return(250));
+    EXPECT_EQ(mock_stub.func0(), 250);
+    EXPECT_EQ(mock_stub.func0(), 250);
+    EXPECT_EQ(mock_stub.func0(), 250);
+
+    EXPECT_CALL(mock_stub, func1(testing::_)).Times(2).WillOnce(testing::Return(1024)).WillOnce(testing::Return(250));
+    EXPECT_EQ(mock_stub.func1(1), 1024);
+    EXPECT_EQ(mock_stub.func1(1), 250);
+
+    EXPECT_CALL(mock_stub, func2(testing::_, 5)).Times(3).WillRepeatedly(testing::Return(1023));
+    EXPECT_EQ(mock_stub.func2(1, 5), 1023);
+    EXPECT_EQ(mock_stub.func2(2, 5), 1023);
+    EXPECT_EQ(mock_stub.func2(3, 5), 1023);
+}
 }  // namespace ge

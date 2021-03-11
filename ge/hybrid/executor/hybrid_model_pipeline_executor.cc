@@ -1,6 +1,7 @@
 #include "hybrid_model_pipeline_executor.h"
 
 #include "common/math/math_util.h"
+#include "common/dump/dump_manager.h"
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
 
@@ -8,6 +9,7 @@ namespace ge {
 namespace hybrid {
 namespace {
 constexpr int kNumExecutors = 2;
+const int kMinLoopCount = 2;
 const int kIntBase = 10;
 const char *const kEnvProfilingLevel = "HYBRID_PROFILING_LEVEL";
 }
@@ -144,7 +146,7 @@ Status StageExecutor::InitExecutionContext() {
   GE_CHECK_NOTNULL(context_.allocator);
   context_.callback_manager = std::unique_ptr<CallbackManager>(new (std::nothrow) CallbackManager());
   GE_CHECK_NOTNULL(context_.callback_manager);
-  context_.dump_properties = PropertiesManager::Instance().GetDumpProperties(context_.session_id);
+  context_.dump_properties = DumpManager::GetInstance().GetDumpProperties(context_.session_id);
   if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {
     context_.trace_enabled = true;
   }
@@ -208,7 +210,7 @@ Status HybridModelPipelineExecutor::InitStageExecutors() {
 
 Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   int loop_count = args.num_loops;
-  GE_CHECK_GE(loop_count, 2);
+  GE_CHECK_GE(loop_count, kMinLoopCount);
 
   auto &inputs = args.inputs;
   auto &input_desc = args.input_desc;

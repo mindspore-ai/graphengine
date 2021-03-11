@@ -32,6 +32,9 @@ class NoUseReshapeRemovePass : public BaseNodePass {
   /// @author
   ///
   Status Run(ge::NodePtr &node) override;
+
+ private:
+  Status TryRemoveConstShapeInput(NodePtr &reshape_node);
 };
 }  // namespace ge
 

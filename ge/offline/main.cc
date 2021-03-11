@@ -62,19 +62,18 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
+namespace {
 static bool is_dynamic_input = false;
-
 const char *const kModeSupport = "only support 0(model to framework model), "
                                  "1(framework model to json), 3(only pre-check), "
                                  "5(pbtxt to json), 6(display model info)";
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
-
-static const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
-static const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
-static const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
-
+const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
+const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
+const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
 // limit available mem size 2G
 const long kMinAvailableMem = 2097152;  // 2 * 1024 * 1024
+}  // namespace
 
 DEFINE_string(model, "", "The model file.");
 DEFINE_string(output, "", "The output file path&name.");
@@ -799,11 +798,17 @@ void SaveCustomCaffeProtoPath() {
 Status CreateInputsForInference(const ge::Graph &graph, vector<ge::GeTensor> &inputs) {
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
+  int64_t index = 0;
   for (ge::NodePtr &input_node : compute_graph->GetAllNodes()) {
     GE_CHECK_NOTNULL(input_node);
     ge::OpDescPtr op = input_node->GetOpDesc();
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == ge::DATA) {
+      if (!op->HasAttr(ge::ATTR_NAME_INDEX)) {
+        (void)ge::AttrUtils::SetInt(op, ge::ATTR_NAME_INDEX, index);
+        GELOGD("Set attr index:%ld for data op:%s", index, op->GetName().c_str());
+      }
+      index++;
       GELOGI("Data op inputDesc size is: %zu", op->GetAllInputsDesc().size());
       ge::GeTensorDesc tensor = op->GetInputDesc(0);
       string data_op_name = op->GetName();
@@ -950,6 +955,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
   ge::Graph graph;
   std::vector<ge::GeTensor> inputs;
   if (FLAGS_framework == domi::MINDSPORE) {
+    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
     // load model from file
     ge::Model load_model = ge::Model("loadmodel", "version2");
     auto ret1 = load_model.LoadFromFile(FLAGS_model);
@@ -988,10 +994,12 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     atc_params.insert(std::pair<string, string>(string(ge::OUTPUT_DATATYPE), FLAGS_output_type));
     atc_params.insert(std::pair<string, string>("output", output));
 
+    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kParser);
     Status ret =
         ParseGraph(graph, atc_params, FLAGS_model.c_str(), FLAGS_weight.c_str(), (domi::FrameworkType)FLAGS_framework,
                    FLAGS_op_name_map.c_str(), FLAGS_target.c_str(), (ge::RunMode)FLAGS_mode, is_dynamic_input);
 
+    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
     // in ONLY_PRE_CHECK mode, pre-checking report has already saved in ParseGraph
     if (FLAGS_mode == ge::ONLY_PRE_CHECK) {
       (void)ge_generator.Finalize();
@@ -1089,6 +1097,7 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
     return domi::FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kParser);
   vector<ge::SingleOpBuildParam> build_params;
   if (ge::SingleOpParser::ParseSingleOpList(json_file_path, build_params) != ge::SUCCESS) {
     DOMI_LOGE("parse single op json file failed");
@@ -1221,6 +1230,7 @@ domi::Status GenerateOmModel() {
     return domi::FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   if (FLAGS_display_model_info == "1") {
     GELOGI("need to display model info.");
     return ge::ConvertOm(FLAGS_output.c_str(), "", false);
@@ -1230,6 +1240,7 @@ domi::Status GenerateOmModel() {
 }
 
 domi::Status ConvertModelToJson() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "Check convert json params flags failed!");
 
@@ -1240,6 +1251,7 @@ domi::Status ConvertModelToJson() {
 }
 
 domi::Status DisplayModelInfo() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   // No model path passed in
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(FLAGS_om == "",
       ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"om"});
@@ -1288,6 +1300,7 @@ bool CheckRet(domi::Status ret) {
 }
 
 domi::Status ConvertPbtxtToJson() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   if (ret != domi::SUCCESS) {
     GELOGE(ge::FAILED, "Check convert json params flags failed!");
@@ -1326,6 +1339,7 @@ int init(int argc, char* argv[]) {
     return ret;
   }
 
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   return 0;
 }
 
@@ -1374,6 +1388,7 @@ bool CheckMemInfo() {
 }
 
 int main(int argc, char* argv[]) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   Status ret = domi::SUCCESS;
   std::cout << "ATC start working now, please wait for a moment." << std::endl;
 
@@ -1414,6 +1429,7 @@ int main(int argc, char* argv[]) {
     }
   } while (0);
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
   if (!CheckRet(ret)) {
     std::cout << "ATC run failed, Please check the detail log, Try \'atc --help\' for more information" << std::endl;
     int result = ErrorManager::GetInstance().OutputErrMessage(STDOUT_FILENO);

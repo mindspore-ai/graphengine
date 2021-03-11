@@ -23,6 +23,7 @@
 #include "aicpu/common/aicpu_task_struct.h"
 #include "common/dump/dump_manager.h"
 #include "common/dump/dump_op.h"
+#include "common/profiling/profiling_manager.h"
 #include "common/formats/formats.h"
 #include "common/math/math_util.h"
 #include "framework/common/debug/log.h"
@@ -36,6 +37,7 @@ constexpr int kLaunchRetryTimes = 1000;
 constexpr int kSleepTime = 10;
 constexpr uint64_t kReleaseFlag = 1;
 constexpr int kCopyNum = 2;
+constexpr uint64_t kInferSessionId = 0;
 void FreeHbm(void *var) {
   if (var) {
     (void)rtFree(var);
@@ -44,7 +46,7 @@ void FreeHbm(void *var) {
 }  // namespace
 
 Status OpTask::OpenDump(rtStream_t stream) {
-  if (DumpManager::GetInstance().GetDumpProperties().IsSingleOpNeedDump()) {
+  if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
     GELOGI("Dump is open in single op, start to set dump info");
     std::vector<uint64_t> input_addrs;
     std::vector<uint64_t> output_adds;
@@ -68,7 +70,8 @@ Status OpTask::OpenDump(rtStream_t stream) {
       uint64_t output_addr = arg_base[input_size + j];
       output_adds.emplace_back(output_addr);
     }
-    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(), op_desc_, input_addrs, output_adds, stream);
+    dump_op_.SetDumpInfo(DumpManager::GetInstance().GetDumpProperties(kInferSessionId),
+                         op_desc_, input_addrs, output_adds, stream);
     auto status = dump_op_.LaunchDumpOp();
     if (status != SUCCESS) {
       GELOGE(status, "Launch dump op failed in single op");
@@ -93,6 +96,14 @@ void TbeOpTask::SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size
   op_desc_ = op_desc;
 }
 
+void TbeOpTask::SetKernelWithHandleArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
+                                        const OpDescPtr &op_desc,
+                                        const domi::KernelDefWithHandle &kernel_def_with_handle) {
+  SetKernelArgs(std::move(args), arg_size, block_dim, op_desc);
+  original_kernel_key_ = kernel_def_with_handle.original_kernel_key();
+  node_info_ = kernel_def_with_handle.node_info();
+}
+
 void TbeOpTask::SetSmDesc(void *sm_desc) { sm_desc_ = sm_desc; }
 
 void OpTask::SetModelArgs(std::string model_name, uint32_t model_id) {
@@ -100,15 +111,29 @@ void OpTask::SetModelArgs(std::string model_name, uint32_t model_id) {
   model_id_ = model_id;
 }
 
-Status OpTask::GetProfilingArgs(std::string &model_name, std::string &op_name, uint32_t &model_id,
-                                uint32_t &block_dim) {
-  model_name = model_name_;
-  model_id = model_id_;
-  block_dim = block_dim_;
+Status OpTask::GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id) {
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  auto rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Get task_id and stream_id failed ret: 0x%X.", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
   GE_CHECK_NOTNULL(op_desc_);
-  op_name = op_desc_->GetName();
+  string op_name = op_desc_->GetName();
+  GELOGD("Get profiling args of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
+  model_id = model_id_;
+  task_desc_info.model_name = model_name_;
+  task_desc_info.block_dim = block_dim_;
+  task_desc_info.task_id = task_id;
+  task_desc_info.stream_id = stream_id;
+  task_desc_info.op_name = op_name;
+  task_desc_info.op_type = op_desc_->GetType();
+  auto &prof_mgr = ProfilingManager::Instance();
+  prof_mgr.GetOpInputOutputInfo(op_desc_, task_desc_info);
   return SUCCESS;
 }
+
 Status OpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
   return UNSUPPORTED;
 }
@@ -145,7 +170,7 @@ Status OpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   return UNSUPPORTED;
 }
 
-uint32_t OpTask::GetTaskType() const { return kTaskTypeInvalid; }
+const std::string &OpTask::GetTaskType() const { return kTaskTypeInvalid; }
 
 TbeOpTask::~TbeOpTask() {
   if (sm_desc_ != nullptr) {
@@ -163,7 +188,11 @@ size_t TbeOpTask::GetArgSize() const { return arg_size_; }
 
 const std::string &TbeOpTask::GetStubName() const { return stub_name_; }
 
-uint32_t TbeOpTask::GetTaskType() const { return kTaskTypeAicore; }
+const std::string &TbeOpTask::GetTaskType() const { return kTaskTypeAicore; }
+
+void TbeOpTask::SetHandle(void *handle) {
+  this->handle_ = handle;
+}
 
 Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   GELOGD("To invoke rtKernelLaunch. task = %s, block_dim = %u", this->stub_name_.c_str(), block_dim_);
@@ -182,11 +211,6 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
     return RT_ERROR_TO_GE_STATUS(ret);
   }
   GELOGI("[TASK_INFO] %s", this->stub_name_.c_str());
-  auto status = OpenDump(stream);
-  if (status != SUCCESS) {
-    GELOGE(status, "Open dump failed in the tbe single op %s", this->stub_name_.c_str());
-    return status;
-  }
 
   return SUCCESS;
 }
@@ -204,8 +228,9 @@ Status TbeOpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const ve
   }
   block_dim_ = run_info.block_dim;
   tiling_data_ = run_info.tiling_data.str();
-  GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu", block_dim_,
-         tiling_data_.size());
+  tiling_key_ = run_info.tiling_key;
+  GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu, tiling_key = %u", block_dim_,
+         tiling_data_.size(), tiling_key_);
 
   GE_CHK_STATUS_RET(AllocateWorkspaces(run_info.workspaces), "Failed to allocate workspaces");
   return SUCCESS;
@@ -329,8 +354,17 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   }
 
   GELOGD("[%s] Start to invoke rtKernelLaunch", node_->GetName().c_str());
-  GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), arg_size_, nullptr, stream));
-  GELOGD("[%s] Done invoking rtKernelLaunch successfully", node_->GetName().c_str());
+  if (handle_ == nullptr) {
+    GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), arg_size_, nullptr, stream));
+    GELOGD("[%s] Done invoking rtKernelLaunch successfully", node_->GetName().c_str());
+  } else {
+    std::string dev_func = original_kernel_key_ + "_" + std::to_string(tiling_key_);
+    std::string kernel_info = node_info_ + "/" + std::to_string(tiling_key_);
+    GE_CHK_RT_RET(rtKernelLaunchWithHandle(handle_, dev_func.c_str(), block_dim_, args_.get(), arg_size_, nullptr,
+                                           stream, kernel_info.c_str()));
+    GELOGD("[%s] Done invoking rtKernelLaunchWithHandle successfully", node_->GetName().c_str());
+  }
+
   return SUCCESS;
 }
 
@@ -363,7 +397,8 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
                                                                               num_inputs_,
                                                                               num_outputs_,
                                                                               unknown_type_));
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, ACL_ERROR_GE_MEMORY_ALLOCATION, "Malloc aicpu_ext_handle mem failed!");
+  GE_CHK_BOOL_RET_STATUS(aicpu_ext_handle_ != nullptr, ACL_ERROR_GE_MEMORY_ALLOCATION,
+                         "Malloc aicpu_ext_handle mem failed!");
 
   Status ret = aicpu_ext_handle_->Parse(kernel_ext_info);
   if (ret != SUCCESS) {
@@ -401,7 +436,7 @@ Status AiCpuBaseTask::SetInputConst() {
   return SUCCESS;
 }
 
-Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc, 
+Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
                                     std::vector<GeTensorDesc> &output_desc,
                                     rtStream_t stream) {
   GELOGI("Update ext info begin, unknown_type=%d.", unknown_type_);
@@ -456,18 +491,19 @@ Status AiCpuBaseTask::UpdateOutputShape(vector<GeTensorDesc> &output_desc) {
   }
   GELOGD("Start to update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape.");
 
-  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_->GetExtInfo(),
-                         aicpu_ext_handle_->GetExtInfoLen(),
-                         ext_info_addr_dev_,
-                         aicpu_ext_handle_->GetExtInfoLen(),
-                         RT_MEMCPY_DEVICE_TO_HOST));
+  GE_CHK_RT_RET(rtMemcpy(aicpu_ext_handle_->GetExtInfo(), aicpu_ext_handle_->GetExtInfoLen(), ext_info_addr_dev_,
+                         aicpu_ext_handle_->GetExtInfoLen(), RT_MEMCPY_DEVICE_TO_HOST));
 
   for (size_t i = 0; i < num_outputs_; ++i) {
     GeShape shape;
     DataType data_type;
     aicpu_ext_handle_->GetOutputShapeAndType(i, shape, data_type);
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]),
-                      "AiCpuCCTask Update [%zu]th output shape failed.", i);
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]), "AiCpuCCTask Update [%zu]th output shape failed.",
+                      i);
+    if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
+      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]), "AiCpuCCTask Update [%zu]th output desc failed.",
+                        i);
+    }
   }
   GELOGD("Update DEPEND_SHAPE_RANGE AiCpuBaseTask outputshape finished.");
   return SUCCESS;
@@ -578,12 +614,6 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
 
-  auto status = OpenDump(stream);
-  if (status != SUCCESS) {
-    GELOGE(status, "Open dump failed in aicpu single op %s", this->op_type_.c_str());
-    return status;
-  }
-
   GELOGD("Done launch kernel successfully. task = %s", this->op_type_.c_str());
   return SUCCESS;
 }
@@ -664,10 +694,10 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
       const auto &shape_hbm = out_shape_hbm_[i];
 
       uint32_t dim_num = result_summary.shape_data_size / sizeof(int64_t);
-      std::unique_ptr<int64_t[]> shape_addr(new(std::nothrow) int64_t[dim_num]());
+      std::unique_ptr<int64_t[]> shape_addr(new (std::nothrow) int64_t[dim_num]());
       GE_CHECK_NOTNULL(shape_addr);
-      GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size,
-                             shape_hbm, result_summary.shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
+      GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), result_summary.shape_data_size, shape_hbm,
+                             result_summary.shape_data_size, RT_MEMCPY_DEVICE_TO_HOST));
 
       for (uint32_t dim_idx = 0; dim_idx < dim_num; ++dim_idx) {
         shape_dims.emplace_back(shape_addr[dim_idx]);
@@ -677,9 +707,14 @@ Status AiCpuTask::UpdateShapeByHbmBuffer(vector<GeTensorDesc> &output_desc) {
 
     GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(GeShape(shape_dims), output_desc[i]),
                       "AiCpuTask update [%zu]th output shape failed.", i);
+    if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
+      GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]), "AiCpuTask update [%zu]th output desc failed.",
+                        i);
+    }
   }
   return SUCCESS;
 }
+
 
 Status AiCpuTask::UpdateShapeAndDataByResultSummary(vector<GeTensorDesc> &output_desc,
                                                     vector<DataBuffer> &outputs,
@@ -811,7 +846,7 @@ Status AiCpuBaseTask::UpdateArgTable(const SingleOpModelParam &param) {
   return DoUpdateArgTable(param, false);
 }
 
-uint32_t AiCpuBaseTask::GetTaskType() const { return kTaskTypeAicpu; }
+const std::string &AiCpuBaseTask::GetTaskType() const { return kTaskTypeAicpu; }
 
 void AiCpuTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   arg_base = reinterpret_cast<uintptr_t *>(io_addr_host_.data());
@@ -853,12 +888,6 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
-  auto status = OpenDump(stream);
-  if (status != SUCCESS) {
-    GELOGE(status, "Open dump failed in the aicpucc single op %s", this->kernel_name_.c_str());
-    return status;
-  }
-
   return SUCCESS;
 }
 

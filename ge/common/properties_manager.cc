@@ -165,24 +165,4 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetProp
   delimiter = de;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &PropertiesManager::GetDumpProperties(
-    uint64_t session_id) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  // If session_id is not found in dump_properties_map_, operator[] will insert one.
-  return dump_properties_map_[session_id];
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::AddDumpProperties(
-    uint64_t session_id, const DumpProperties &dump_properties) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  dump_properties_map_.emplace(session_id, dump_properties);
-}
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::RemoveDumpProperties(uint64_t session_id) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  auto iter = dump_properties_map_.find(session_id);
-  if (iter != dump_properties_map_.end()) {
-    dump_properties_map_.erase(iter);
-  }
-}
 }  // namespace ge

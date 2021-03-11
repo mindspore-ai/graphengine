@@ -35,7 +35,7 @@ class CastTranslatePass : public BaseNodePass {
   bool IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans_node, bool &is_src_cast);
   bool CheckOpSupportOptimize(NodePtr &node, bool &is_src_cast);
   Status FuseDstNTranslates(NodePtr &node);
-  bool TranslateCheckAccuracySupported(const OpDescPtr &op_desc);
+  bool TranslateCheckAccuracySupported(NodePtr &node);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_CAST_TRANSLATE_PASS_H_

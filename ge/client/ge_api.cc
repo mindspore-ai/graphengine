@@ -32,6 +32,7 @@
 #include "graph/common/ge_call_wrapper.h"
 #include "register/op_registry.h"
 #include "common/ge/tbe_plugin_manager.h"
+#include "common/util/error_manager/error_manager.h"
 #include "toolchain/plog.h"
 
 using domi::OpRegistry;
@@ -78,12 +79,21 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
 
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitializeImpl(const std::map<string, string> &options) {
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   GELOGT(TRACE_INIT, "GEInitialize start");
+  std::string path_base = ge::GELib::GetPath();
+  auto ret = ErrorManager::GetInstance().Init(path_base);
+  if (ret != SUCCESS) {
+    GELOGE(GE_CLI_INIT_FAILED, "ErrorManager init fail");
+    return ret;
+  }
+
   // 0.check init status
   if (g_ge_initialized) {
     GELOGW("GEInitialize is called more than once");
     return SUCCESS;
   }
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
   // Load OpsProto lib plugin
   std::string opsproto_path;
   GetOpsProtoPath(opsproto_path);
@@ -98,6 +108,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
     return FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   // check options is valid
   GE_TIMESTAMP_START(CheckOptionsValid);
   if (CheckOptionsValid(options) != SUCCESS) {
@@ -105,13 +116,15 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   }
   GE_TIMESTAMP_END(CheckOptionsValid, "GEInitialize::CheckOptionsValid");
 
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
   GE_TIMESTAMP_START(InitPreparation);
   TBEPluginManager::Instance().InitPreparation(options);
   GE_TIMESTAMP_END(InitPreparation, "GEInitialize::InitPreparation");
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   GE_TIMESTAMP_START(GELibInitialize);
-  Status ret = ge::GELib::Initialize(options);
+  ret = ge::GELib::Initialize(options);
   GE_TIMESTAMP_END(GELibInitialize, "GEInitialize::GELibInitialize");
   if (ret != SUCCESS) {
     GELOGE(GE_CLI_INIT_FAILED, "geInitialize failed, error code = %u", ret);
@@ -130,6 +143,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
 
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   if (DlogReportInitialize() != SUCCESS) {
     GELOGW("Dlog report device log initialize failed.");
   }
@@ -137,6 +151,7 @@ Status GEInitialize(const std::map<string, string> &options) {
 }
 
 Status GEInitialize(const std::map<AscendString, AscendString> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   std::map<std::string, std::string> str_options;
   for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
@@ -156,7 +171,10 @@ Status GEInitialize(const std::map<AscendString, AscendString> &options) {
 
 // GE finalize, releasing all resources
 Status GEFinalize() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
   GELOGT(TRACE_INIT, "GEFinalize start");
+
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   // check init status
   if (!g_ge_initialized) {
     GELOGW("GEFinalize is called before GEInitialize");
@@ -202,9 +220,20 @@ Status GEFinalize() {
   return ret;
 }
 
+std::string GEGetErrorMsg() {
+  return ErrorManager::GetInstance().GetErrorMessage();
+}
+
+std::string GEGetWarningMsg() {
+  return ErrorManager::GetInstance().GetWarningMessage();
+}
+
 // Initialize session，which calls innerSession
 Session::Session(const std::map<string, string> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session Constructor start");
+
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   // check init status
   sessionId_ = 0;
   if (!g_ge_initialized) {
@@ -234,7 +263,10 @@ Session::Session(const std::map<string, string> &options) {
 }
 
 Session::Session(const std::map<AscendString, AscendString> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session Constructor start");
+
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   // check init status
   sessionId_ = 0;
   if (!g_ge_initialized) {
@@ -275,6 +307,7 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
 
 // session destructor
 Session::~Session() {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
   GELOGT(TRACE_INIT, "Session Destructor start");
   // 0.check init status
   if (!g_ge_initialized) {
@@ -310,12 +343,16 @@ Session::~Session() {
 }
 
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   std::map<std::string, std::string> options;
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   return AddGraph(graph_id, graph, options);
 }
 
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
@@ -333,7 +370,9 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<s
 
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
                          const std::map<AscendString, AscendString> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
@@ -360,13 +399,17 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
 }
 
 Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::map<AscendString, AscendString> options;
   return AddGraphWithCopy(graph_id, graph, options);
 }
 
 Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
                                  const std::map<AscendString, AscendString> &options) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
@@ -387,8 +430,10 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
 }
 
 Status Session::RemoveGraph(uint32_t graph_id) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session RemoveGraph start");
 
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   // call RemoveGraph
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (!instance_ptr || !instance_ptr->InitFlag()) {
@@ -455,8 +500,10 @@ void PrintOutputResult(std::vector<Tensor> &outputs) {
 }
 
 Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session RunGraph start");
 
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::vector<Tensor> graph_inputs = inputs;
   // call RunGraph
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
@@ -483,10 +530,12 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
 }
 
 Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback) {
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, key, callback);
 }
 
 Status Session::RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback) {
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   std::string str_key;
   if (key != nullptr) {
     str_key = key;
@@ -495,6 +544,8 @@ Status Session::RegisterCallBackFunc(const char *key, const session::pCallBackFu
 }
 
 Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
@@ -511,6 +562,8 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
 
 Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
                               RunAsyncCallback callback) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
@@ -529,6 +582,8 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
 }
 
 Status Session::GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
@@ -544,6 +599,8 @@ Status Session::GetVariables(const std::vector<std::string> &var_names, std::vec
 }
 
 Status Session::GetVariables(const std::vector<AscendString> &var_names, std::vector<Tensor> &var_values) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");

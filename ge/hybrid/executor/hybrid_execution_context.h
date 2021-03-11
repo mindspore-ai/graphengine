@@ -62,9 +62,9 @@ struct GraphExecutionContext {
   rtStream_t stream = nullptr;
   rtContext_t rt_context = nullptr;
   rtContext_t rt_gen_context = nullptr;
-  std::unique_ptr<CallbackManager> callback_manager;
+  std::unique_ptr<CallbackManager> callback_manager = nullptr;
   NpuMemoryAllocator *allocator = nullptr;
-  mutable std::unique_ptr<HybridProfiler> profiler;
+  mutable std::unique_ptr<HybridProfiler> profiler = nullptr;
   DumpProperties dump_properties;
   bool trace_enabled = false;
   bool dump_enabled = false;

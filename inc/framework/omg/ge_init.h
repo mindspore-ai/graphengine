@@ -14,33 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_PARSER_H_
-#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_PARSER_H_
-
-#include <securec.h>
-#include <memory>
-
-#include "common/debug/log.h"
-#include "common/ge_types.h"
-#include "common/model_parser/base.h"
-#include "common/types.h"
-#include "common/util.h"
+#ifndef INC_FRAMEWORK_OMG_GE_INIT_H_
+#define INC_FRAMEWORK_OMG_GE_INIT_H_
+#include <map>
+#include <string>
+#include "common/ge_inner_error_codes.h"
 
 namespace ge {
-class DavinciModelParser : public ModelParserBase {
+class GE_FUNC_VISIBILITY GEInit {
  public:
-  ///
-  /// @ingroup hiai
-  /// @brief constructor
-  ///
-  DavinciModelParser();
+  // GE Environment Initialize, return Status: SUCCESS,FAILED
+  static Status Initialize(const std::map<std::string, std::string> &options);
 
-  ///
-  /// @ingroup hiai
-  /// @brief destructor
-  ///
-  ~DavinciModelParser();
+  static std::string GetPath();
+
+  // GE Environment Finalize, return Status: SUCCESS,FAILED
+  static Status Finalize();
 };
 }  // namespace ge
 
-#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_PARSER_H_
+#endif  // INC_FRAMEWORK_OMG_GE_INIT_H_

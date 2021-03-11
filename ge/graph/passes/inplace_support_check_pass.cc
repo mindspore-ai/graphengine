@@ -23,9 +23,9 @@ namespace ge {
 namespace {
 constexpr uint32_t kInplaceSupportOutputIndex = 0;
 constexpr uint32_t kInplaceSupportOutputNum = 1;
-static const std::set<std::string> kSrcNodeTypes = { ge::DATA, ge::ANN_DATA, ge::AIPPDATA,
-                                                     ge::CONSTANT, ge::CONSTANTOP,
-                                                     ge::VARIABLE, ge::VARIABLEV2 };
+const std::set<std::string> kSrcNodeTypes = { ge::DATA, ge::ANN_DATA, ge::AIPPDATA,
+                                              ge::CONSTANT, ge::CONSTANTOP,
+                                              ge::VARIABLE, ge::VARIABLEV2 };
 }
 Status InplaceSupportCheckPass::Run(NodePtr &node) {
   GELOGD("InplaceSupportCheckPass running");

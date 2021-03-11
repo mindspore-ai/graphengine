@@ -16,7 +16,6 @@
 
 #include "executor/ge_executor.h"
 #include <cce/cce.h>
-#include <cce/compiler_stub.h>
 #include <ctime>
 #include <iostream>
 #include "common/debug/log.h"
@@ -24,19 +23,11 @@
 #include "common/helper/model_helper.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/dump/dump_manager.h"
-#include "common/util.h"
-#include "framework/common/debug/ge_log.h"
-#include "framework/common/util.h"
 #include "graph/execute/graph_execute.h"
 #include "graph/load/graph_loader.h"
-#include "graph/load/model_manager/davinci_model_parser.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_mem_allocator.h"
-#include "graph/model.h"
-#include "graph/utils/graph_utils.h"
-#include "mmpa/mmpa_api.h"
 #include "single_op/single_op_manager.h"
-#include "graph/manager/graph_var_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
 
@@ -56,7 +47,7 @@ void GetGeTensorDescFromDomiInfo(std::vector<ge::TensorDesc> &ge_descs,
   uint32_t idx = 0;
   for (auto desc_item : domi_descs) {
     ge::TensorDesc ge_desc;
-    ge_desc.SetName(desc_item.name);
+    ge_desc.SetName(desc_item.name.c_str());
     ge_desc.SetDataType(static_cast<ge::DataType>(desc_item.data_type));
     ge_desc.SetFormat(static_cast<ge::Format>(formats[idx]));
     std::vector<int64_t> shape_dims;
@@ -454,7 +445,8 @@ Status GeExecutor::GetCurDynamicDims(uint32_t model_id, const vector<uint64_t> &
     if (all_data_dims[i] < 0) {
       cur_dynamic_dims.push_back(dynamic_dims[i]);
     } else if (static_cast<uint64_t>(all_data_dims[i]) != dynamic_dims[i]) {
-      GELOGE(ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID, "Static dims should be same, index: %zu value: %lu should be %ld",
+      GELOGE(ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID,
+             "Static dims should be same, index: %zu value: %lu should be %ld",
              i, dynamic_dims[i], all_data_dims[i]);
       return ACL_ERROR_GE_DYNAMIC_INPUT_LENGTH_INVALID;
     }
@@ -930,12 +922,22 @@ Status GeExecutor::GetMemAndWeightSize(const void *model_data, size_t model_size
 
 Status GeExecutor::LoadSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                 SingleOp **single_op) {
-  return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op);
+  return LoadSingleOpV2(model_name, modelData, stream, single_op, 0);
+}
+
+Status GeExecutor::LoadSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                  SingleOp **single_op, const uint64_t model_id) {
+  return SingleOpManager::GetInstance().GetOpFromModel(model_name, modelData, stream, single_op, model_id);
 }
 
 Status GeExecutor::LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                        DynamicSingleOp **single_op) {
-  return SingleOpManager::GetInstance().GetDynamicOpFromModel(model_name, modelData, stream, single_op);
+  return LoadDynamicSingleOpV2(model_name, modelData, stream, single_op, 0);
+}
+
+Status GeExecutor::LoadDynamicSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                         DynamicSingleOp **single_op, const uint64_t model_id) {
+  return SingleOpManager::GetInstance().GetDynamicOpFromModel(model_name, modelData, stream, single_op, model_id);
 }
 
 Status GeExecutor::ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,

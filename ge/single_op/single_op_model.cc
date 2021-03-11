@@ -48,7 +48,8 @@ bool NeedHybridModel(GeModelPtr &ge_model) {
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   int32_t kernel_task_num = 0;
   for (int i = 0; i < tasks.size(); ++i) {
-    if (static_cast<rtModelTaskType_t>(tasks[i].type()) == RT_MODEL_TASK_KERNEL) {
+    auto task_type = static_cast<rtModelTaskType_t>(tasks[i].type());
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
       kernel_task_num++;
       if (kernel_task_num > 1) {
         return true;
@@ -190,7 +191,7 @@ Status SingleOpModel::LoadAllNodes() {
     auto node = nodes.at(i);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    op_list_[i] = node;
+    op_list_[op_desc->GetId()] = node;
     auto op_type = op_desc->GetType();
     GELOGI("[%s] node[%zu] = %s, type = %s", model_name_.c_str(), i, node->GetName().c_str(), op_type.c_str());
 
@@ -254,14 +255,14 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
     GELOGI("[%s] Task[%d], type = %u, DebugString = %s", model_name_.c_str(), i, task_def.type(),
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-    if (task_type == RT_MODEL_TASK_KERNEL) {
-      const domi::KernelDef &kernel_def = task_def.kernel();
-      const auto &context = kernel_def.context();
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
+      const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
+                                                                task_def.kernel_with_handle().context();
       auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
       if (kernel_type == ccKernelType::TE) {
         GELOGD("Building TBE task");
         TbeOpTask *tbe_task = nullptr;
-        auto ret = BuildKernelTask(task_def.kernel(), &tbe_task);
+        auto ret = BuildKernelTask(task_def, &tbe_task);
         if (ret != SUCCESS) {
           return ret;
         }
@@ -332,9 +333,11 @@ void SingleOpModel::ParseArgTable(OpTask *task, SingleOp &op) {
   }
 }
 
-Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTask **task) {
+Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask **task) {
   GE_CHECK_NOTNULL(task);
-  const auto &context = kernel_def.context();
+  auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+  const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
+                                                            task_def.kernel_with_handle().context();
   auto iter = op_list_.find(context.op_index());
   if (iter == op_list_.end()) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "op desc not found. op index = %u", context.op_index());
@@ -347,7 +350,7 @@ Status SingleOpModel::BuildKernelTask(const domi::KernelDef &kernel_def, TbeOpTa
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
-  auto builder = TbeTaskBuilder(model_name_, iter->second, kernel_def);
+  auto builder = TbeTaskBuilder(model_name_, iter->second, task_def);
   auto ret = builder.BuildTask(*tbe_task, model_params_);
   if (ret != SUCCESS) {
     delete tbe_task;
@@ -418,13 +421,15 @@ Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
 }
 
 Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingleOp &single_op) {
-  const domi::KernelDef &kernel_def = task_def.kernel();
-  const auto &context = kernel_def.context();
+  auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+  const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
+                                                            task_def.kernel_with_handle().context();
+
   auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
   if (kernel_type == ccKernelType::TE) {
     GELOGD("Building TBE task");
     TbeOpTask *tbe_task = nullptr;
-    GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def.kernel(), &tbe_task));
+    GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def, &tbe_task));
     tbe_task->SetModelArgs(model_name_, model_id_);
     single_op.op_task_.reset(tbe_task);
   } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
@@ -453,7 +458,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
     GELOGI("[%s] Task[%d], type = %u, DebugString = %s", model_name_.c_str(), i, task_def.type(),
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-    if (task_type == RT_MODEL_TASK_KERNEL) {
+    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
       if (single_op.op_task_ != nullptr) {
         GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID, "Do not support dynamic op with multiple tasks.");
         return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;

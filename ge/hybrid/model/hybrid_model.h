@@ -61,8 +61,20 @@ class HybridModel {
     device_id_ = device_id;
   }
 
+  uint32_t GetDeviceId() {
+    return device_id_;
+  }
+
   void SetModelId(uint32_t model_id) {
     model_id_ = model_id;
+  }
+
+  void SetModelName(const string &model_name) {
+    om_name_ = model_name;
+  }
+
+  const std::string &GetOmName() const {
+    return om_name_;
   }
 
   uint32_t GetModelId() const {
@@ -143,6 +155,7 @@ class HybridModel {
   uint8_t *var_mem_base_ = nullptr;
   std::unique_ptr<TensorBuffer> weight_buffer_;
   RuntimeParam root_runtime_param_;
+  string om_name_;
 };
 }  // namespace hybrid
 }  // namespace ge

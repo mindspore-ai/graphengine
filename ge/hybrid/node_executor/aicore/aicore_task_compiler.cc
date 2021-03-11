@@ -61,11 +61,11 @@ Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::Task
   GE_CHECK_NOTNULL(node);
   GELOGI("AiCoreTaskCompiler(%s) CompileOp Start.", node->GetName().c_str());
 
-
+  auto op_desc = node->GetOpDesc();
+  op_desc->SetWorkspaceBytes({});
   GE_CHK_STATUS_RET_NOLOG(DoCompileOp(node));
   GELOGD("successfully compiled op: %s", node->GetName().c_str());
 
-  auto op_desc = node->GetOpDesc();
   std::vector<int64_t> input_offsets(op_desc->GetInputsSize(), kMemBase);
   std::vector<int64_t> output_offsets(op_desc->GetOutputsSize(), kMemBase);
   op_desc->SetInputOffset(input_offsets);

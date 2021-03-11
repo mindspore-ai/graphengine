@@ -17,6 +17,7 @@
 #include "aicore_node_executor.h"
 #include "framework/common/taskdown_common.h"
 #include "hybrid/executor/hybrid_execution_context.h"
+#include "external/runtime/rt_error_codes.h"
 
 namespace ge {
 namespace hybrid {
@@ -66,7 +67,7 @@ Status AiCoreNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &nod
   }
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), *task_defs);
-  std::unique_ptr<NodeTask> node_task;
+  std::unique_ptr<AiCoreNodeTask> node_task;
   GE_CHK_STATUS_RET(builder.BuildTask(node_task, true, is_single_op),
                     "[%s] Failed to build op tasks.", node->GetName().c_str());
   task = std::move(node_task);
@@ -99,7 +100,7 @@ Status AiCoreNodeExecutor::GenNodeKey(const NodePtr &node, std::string &node_key
   return SUCCESS;
 }
 
-bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::shared_ptr<NodeTask> task) {
+bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::shared_ptr<AiCoreNodeTask> &task) {
   GE_CHECK_NOTNULL(task);
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = reg_node_tasks_.find(node_key);
@@ -111,7 +112,7 @@ bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::sha
   return ret.second;
 }
 
-std::shared_ptr<NodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &node_key) {
+std::shared_ptr<AiCoreNodeTask> AiCoreNodeTaskRegistry::GetTask(const std::string &node_key) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = reg_node_tasks_.find(node_key);
   return (iter != reg_node_tasks_.end()) ? iter->second : nullptr;
@@ -140,9 +141,12 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
 
   auto node_key = std::to_string(model.GetModelId()) + "/" + shape_key;
   GELOGD("NodeKey for %s = %s", node->GetName().c_str(), node_key.c_str());
-  task = registry.GetTask(node_key);
-  if (task != nullptr) {
+  auto aicore_task = registry.GetTask(node_key);
+  if (aicore_task != nullptr) {
+    // The workspaces needed by a operator may differ with different shapes
+    op_desc->SetWorkspaceBytes(aicore_task->GetWorkspaceSizes());
     GELOGI("AiCoreNodeExecutor(%s) CompileTask Skip.", node->GetName().c_str());
+    task = std::move(aicore_task);
     return SUCCESS;
   }
 
@@ -153,16 +157,18 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
   GELOGD("successfully generated task_defs: %s", node->GetName().c_str());
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), task_defs);
-  std::unique_ptr<NodeTask> node_task;
+  std::unique_ptr<AiCoreNodeTask> node_task;
   GE_CHK_STATUS_RET(builder.BuildTask(node_task, false), "[%s] Failed to build op tasks.", node->GetName().c_str());
-  task = std::move(node_task);
+  node_task->SetWorkspaceSizes(op_desc->GetWorkspaceBytes());
+  aicore_task = std::move(node_task);
   GELOGD("successfully created node task: %s", node->GetName().c_str());
 
-  if (!registry.AddTask(node_key, task)) {
+  if (!registry.AddTask(node_key, aicore_task)) {
     GELOGE(INTERNAL_ERROR, "Add NodeTask failed, op name = %s.", node->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
+  task = std::move(aicore_task);
   GELOGI("AiCoreNodeExecutor(%s) CompileTask End.", node->GetName().c_str());
   return SUCCESS;
 }
@@ -184,17 +190,17 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     }
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
+    GE_CHK_STATUS_RET_NOLOG(CheckOverflow(context));
     // save profiling data
     uint32_t task_id = 0;
     uint32_t stream_id = 0;
     rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id); // must be called after Launch kernel
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "Get task_id and stream_id failed.");
-      return FAILED;
+      GELOGE(RT_FAILED, "Get task_id and stream_id failed, ret: 0x%X.", rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     GELOGD("Aicore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
     (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicore, (*it)->GetBlockDim());
-    (void)context.SaveProfilingGraphDescInfo(task_id, stream_id);
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }
@@ -245,6 +251,33 @@ bool AiCoreNodeTask::IsSupportDynamicShape() {
   }
 
   return true;
+}
+
+const vector<int64_t> &AiCoreNodeTask::GetWorkspaceSizes() const {
+  return workspace_sizes_;
+}
+
+void AiCoreNodeTask::SetWorkspaceSizes(const vector<int64_t> &workspace_sizes) {
+  workspace_sizes_ = workspace_sizes;
+}
+
+Status AiCoreNodeTask::CheckOverflow(TaskContext &context) {
+  const DumpProperties &dump_properties = context.GetDumpProperties();
+  if (dump_properties.IsOpDebugOpen()) {
+    GELOGD("Op %s is doing overflow check in hybrid engine", context.GetNodeName());
+    auto rt_ret = rtStreamSynchronize(context.GetStream());
+    if (rt_ret == ACL_ERROR_RT_AICORE_OVER_FLOW) {
+      context.SetOverFlow(true);
+      GELOGW("Dynamic shape op %s is over flow", context.GetNodeName());
+      return SUCCESS;
+    } else if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(rt_ret, "rtstreamsynchronize failed");
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    return SUCCESS;
+  }
+  GELOGD("Opdebug is not open in hybrid engine");
+  return SUCCESS;
 }
 
 TaskCompilerFactory &TaskCompilerFactory::GetInstance() {

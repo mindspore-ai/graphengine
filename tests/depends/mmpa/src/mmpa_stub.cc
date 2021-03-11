@@ -230,7 +230,16 @@ INT32 mmGetTimeOfDay(mmTimeval *timeVal, mmTimezone *timeZone)
 
 INT32 mmRealPath(const CHAR *path, CHAR *realPath, INT32 realPathLen)
 {
-  return 0;
+  INT32 ret = EN_OK;
+  if (path == nullptr || realPath == nullptr || realPathLen < MMPA_MAX_PATH) {
+    return EN_INVALID_PARAM;
+  }
+
+  char *ptr = realpath(path, realPath);
+  if (ptr == nullptr) {
+    ret = EN_ERROR;
+  }
+  return ret;
 }
 
 INT32 mmGetErrorCode()
@@ -255,7 +264,7 @@ INT32 mmDlclose(VOID *handle)
 
 CHAR *mmDlerror()
 {
-  return "";
+  return dlerror();
 }
 
 INT32 mmDladdr(VOID *addr, mmDlInfo *info)

@@ -29,6 +29,7 @@
 #include "common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/properties_manager.h"
+#include "common/dump/opdebug_register.h"
 #include "common/types.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
@@ -412,6 +413,8 @@ class DavinciModel {
   ///
   uint64_t GetSessionId() const { return session_id_; }
 
+  const struct ErrorMessage::Context &GetErrorContext() const { return error_context_; }
+
   ///
   /// @ingroup ge
   /// @brief SetDeviceId
@@ -536,7 +539,7 @@ class DavinciModel {
                                    vector<InputOutputDims> &output_dims) const;
 
   // om file name
-  void SetOmName(string om_name) { om_name_ = om_name; }
+  void SetOmName(const string &om_name) { om_name_ = om_name; }
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
@@ -840,9 +843,6 @@ class DavinciModel {
 
   Status TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id);
 
-  // get desc info of graph for profiling
-  Status GetComputeGraphInfo(vector<ComputeGraphDescInfo> &graph_desc_info);
-
   void SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name);
 
   Status InitL1DataDumperArgs();
@@ -907,7 +907,6 @@ class DavinciModel {
   vector<int64_t> output_memory_size_list_;
 
   thread thread_id_;
-  thread shrink_id_;
 
   shared_ptr<ModelListener> listener_;
 
@@ -960,6 +959,7 @@ class DavinciModel {
   vector<uintptr_t> output_mbuf_list_;  // output mbuf created by dequeue task.
 
   uint64_t session_id_;
+  struct ErrorMessage::Context error_context_;
 
   uint32_t device_id_;
 
@@ -985,6 +985,7 @@ class DavinciModel {
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
+  OpdebugRegister opdebug_register_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
   map<OpDescPtr, void *> saved_task_addrs_;  // release after DavinciModel::Init
@@ -1022,8 +1023,6 @@ class DavinciModel {
   // for op debug
   mutex debug_reg_mutex_;
   bool is_op_debug_reg_ = false;
-  void *op_debug_addr_ = nullptr;
-  void *p2p_debug_addr_ = nullptr;
   bool is_online_infer_dynamic_ = false;
   bool is_getnext_sink_dynamic_ = false;
   vector<int32_t> cur_dynamic_dims_;

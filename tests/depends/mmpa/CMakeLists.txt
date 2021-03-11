@@ -29,6 +29,11 @@ include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/external)
 
 add_library(mmpa_stub SHARED ${SRCS})
+
+target_compile_options(mmpa_stub PRIVATE
+    -g
+)
+
 target_link_libraries(mmpa_stub PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed

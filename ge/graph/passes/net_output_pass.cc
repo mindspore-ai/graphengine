@@ -458,7 +458,7 @@ Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Compute graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
-  GELOGI("NetOutputPass Run.");
+  GELOGI("NetOutputPass Run.graph is [%s]", graph->GetName().c_str());
   NodePtr output_node = graph->FindFirstNodeMatchType(NETOUTPUT);
   // save user targets node
   SaveAndRemoveTargets(graph);

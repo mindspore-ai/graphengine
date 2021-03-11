@@ -26,6 +26,7 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "graph/manager/host_mem_allocator.h"
 #include "graph/node.h"
 #include "runtime/mem.h"
 
@@ -139,7 +140,6 @@ class MemoryAllocator {
 using MemoryAllocatorPtr = std::shared_ptr<MemoryAllocator>;
 class CachingAllocator;
 class RdmaPoolAllocator;
-class HostMemAllocator;
 class MemManager {
  public:
   MemManager();

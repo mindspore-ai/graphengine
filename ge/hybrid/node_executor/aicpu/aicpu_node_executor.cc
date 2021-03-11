@@ -61,7 +61,9 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GELOGD("To update aicpu_task ext_info session_info session_id to %lu", session_id);
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "UpdateSessionInfoSessionId failed.");
-  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(!node_item_->is_dynamic), "UpdateExecuteMode failed.");
+
+  bool execute_mode = !aicpu_ext_handle_.IsNeedRefreshIOAddr() && !node_item_->is_dynamic;
+  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(execute_mode), "UpdateExecuteMode failed.");
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
@@ -201,12 +203,11 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
   uint32_t stream_id = 0;
   rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id); // must be called after Launch kernel
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Get task_id and stream_id failed.");
-    return FAILED;
+    GELOGE(RT_FAILED, "Get task_id and stream_id failed, ret: 0x%X.", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGD("Aicpu node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
   (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicpu, 0);
-  (void)context.SaveProfilingGraphDescInfo(task_id, stream_id);
   auto callback = [=, &context]() {
     GELOGD("Node[%s] callback start.", node_name_.c_str());
     RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[TaskCallback] Start");
@@ -359,6 +360,7 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
     need_sync_ = true;
   }
   auto task_defs = model.GetTaskDefs(node_item_->node);
+  GE_CHECK_NOTNULL(task_defs);
   if (unknown_type_ == DEPEND_COMPUTE) {
     GE_CHK_STATUS_RET_NOLOG(SetMemCopyTask((*task_defs)[1]));
   }
@@ -668,7 +670,7 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
   auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
   if (kernel_type == ccKernelType::CUST_AI_CPU) {
     bool loaded = false;
-    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name, loaded), 
+    GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc, so_name, loaded),
                       "load cust aicpu so failed.");
     if (!loaded) {
       GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "Launch cust aicpu so failed.");

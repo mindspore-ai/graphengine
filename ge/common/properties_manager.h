@@ -83,13 +83,6 @@ class PropertiesManager {
    */
   void SetPropertyDelimiter(const std::string &de);
 
-  DumpProperties &GetDumpProperties(uint64_t session_id);
-
-  const map<uint64_t, DumpProperties> &GetDumpPropertiesMap() { return dump_properties_map_; }
-
-  void AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties);
-  void RemoveDumpProperties(uint64_t session_id);
-
  private:
   // Private construct, destructor
   PropertiesManager();
@@ -111,8 +104,6 @@ class PropertiesManager {
 
   std::map<std::string, std::string> properties_map_;
   std::mutex mutex_;
-
-  std::map<uint64_t, DumpProperties> dump_properties_map_;
 };
 }  // namespace ge
 

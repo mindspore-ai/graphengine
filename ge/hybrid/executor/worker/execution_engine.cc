@@ -70,8 +70,6 @@ class NodeDoneCallback {
   Status PrepareConstInputs(const NodeItem &node_item);
   Status DumpDynamicNode();
   Status ProfilingReport();
-  Status GetGraphDescInfo(const NodePtr node, const HybridModel *model,
-                          std::vector<ComputeGraphDescInfo> &compute_graph_info);
   Status GetTaskDescInfo(const NodePtr node, const HybridModel *model,
                          std::vector<TaskDescInfo> &task_desc_info);
   GraphExecutionContext *graph_context_;
@@ -159,51 +157,14 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
   }
 
   GELOGD("GetTaskDescInfo of node [%s] start.", node->GetName().c_str());
+  auto &prof_mgr = ProfilingManager::Instance();
   task_desc_info = context_->GetProfilingTaskDescInfo();
   context_->ClearProfilingTaskDescInfo();
-
-  return SUCCESS;
-}
-
-Status NodeDoneCallback::GetGraphDescInfo(const NodePtr node, const HybridModel *model,
-                                          std::vector<ComputeGraphDescInfo> &compute_graph_info) {
-  GE_CHECK_NOTNULL(node);
-  GE_CHECK_NOTNULL(model);
-
-  GELOGD("GetComputeGraphInfo of node [%s] start.", node->GetName().c_str());
-  compute_graph_info = context_->GetProfilingGraphDescInfo();
-  context_->ClearProfilingGraphDescInfo();
-
-  auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
-  for (auto &tmp_compute_graph_info : compute_graph_info) {
-    // default
-    if (op_desc->GetAllInputsSize() == 0) {
-      tmp_compute_graph_info.input_format = { FORMAT_NULL };
-      tmp_compute_graph_info.input_shape = { {0} };
-      tmp_compute_graph_info.input_data_type = { DT_UNDEFINED };
-    }
-    for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
-      GeTensorDescPtr input_desc = op_desc->MutableInputDesc(i);
-      if (input_desc == nullptr) {
-        continue;
-      }
-      tmp_compute_graph_info.input_format.emplace_back(input_desc->GetFormat());
-      tmp_compute_graph_info.input_shape.emplace_back(input_desc->GetShape().GetDims());
-      tmp_compute_graph_info.input_data_type.emplace_back(input_desc->GetDataType());
-    }
-
-    if (op_desc->GetOutputsSize() == 0) {
-      tmp_compute_graph_info.output_format = { FORMAT_NULL };
-      tmp_compute_graph_info.output_shape = { {0} };
-      tmp_compute_graph_info.output_data_type = { DT_UNDEFINED };
-    }
-    for (size_t j = 0; j < op_desc->GetOutputsSize(); ++j) {
-      GeTensorDesc output_desc = op_desc->GetOutputDesc(j);
-      tmp_compute_graph_info.output_format.emplace_back(output_desc.GetFormat());
-      tmp_compute_graph_info.output_shape.emplace_back(output_desc.GetShape().GetDims());
-      tmp_compute_graph_info.output_data_type.emplace_back(output_desc.GetDataType());
-    }
+  for (auto &tmp_task_desc : task_desc_info) {
+    // save op input and output info
+    auto op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    prof_mgr.GetOpInputOutputInfo(op_desc, tmp_task_desc);
   }
 
   return SUCCESS;
@@ -233,15 +194,8 @@ Status NodeDoneCallback::ProfilingReport() {
     return profiling_ret;
   }
 
-  std::vector<ComputeGraphDescInfo> compute_graph_info;
-  profiling_ret = GetGraphDescInfo(node, model, compute_graph_info);
-  if (profiling_ret != RT_ERROR_NONE) {
-    GELOGE(profiling_ret, "Get graph info of node[%s] failed.", node->GetName().c_str());
-    return profiling_ret;
-  }
-
   auto &profiling_manager = ProfilingManager::Instance();
-  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info, compute_graph_info);
+  profiling_manager.ReportProfilingData(model->GetModelId(), task_desc_info);
   return SUCCESS;
 }
 
@@ -312,9 +266,9 @@ Status NodeDoneCallback::OnNodeDone() {
   RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[Compute] End");
   RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[Callback] Start");
 
-  auto dump_path = context_->GetDumpProperties().GetDumpPath();
-  if (!dump_path.empty()) {
-    GELOGI("Start to dump dynamic shape,dump_path is %s", dump_path.c_str());
+  const DumpProperties &dump_properties = context_->GetDumpProperties();
+  if (dump_properties.IsDumpOpen() || context_->IsOverFlow()) {
+    GELOGI("Start to dump dynamic shape op");
     GE_CHK_STATUS_RET(DumpDynamicNode(), "Failed to dump dynamic node");
   }
 
@@ -323,6 +277,8 @@ Status NodeDoneCallback::OnNodeDone() {
                       node_item.NodeName().c_str());
   }
 
+  // release workspace
+  context_->ReleaseWorkspace();
   // release inputs
   for (int i = 0; i < context_->NumInputs(); ++i) {
     context_->ReleaseInput(i);

@@ -42,6 +42,10 @@ GE_FUNC_VISIBILITY Status GEInitialize(const std::map<AscendString, AscendString
 // Finalize GE, release all resources
 GE_FUNC_VISIBILITY Status GEFinalize();
 
+GE_FUNC_VISIBILITY std::string GEGetErrorMsg();
+
+GE_FUNC_VISIBILITY std::string GEGetWarningMsg();
+
 class GE_FUNC_VISIBILITY Session {
  public:
   ATTRIBUTED_DEPRECATED(Session(const std::map<AscendString, AscendString> &))

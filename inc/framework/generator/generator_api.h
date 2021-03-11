@@ -55,7 +55,8 @@ typedef void *OpTensor_t;
 /// @return 0 for success / others for fail
 ///
 GE_FUNC_VISIBILITY extern Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int in_num,
-                                 const OpTensor_t *out_tensor, int out_num, const OpAttr_t attr, const char *om_file);
+                                                    const OpTensor_t *out_tensor, int out_num, const OpAttr_t attr,
+                                                    const char *om_file);
 
 ///
 /// @ingroup ge

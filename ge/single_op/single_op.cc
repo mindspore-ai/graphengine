@@ -45,40 +45,24 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
     return SUCCESS;
   }
 
-  string model_name;
-  string op_name;
+  TaskDescInfo tmp_task_desc_info;
   uint32_t model_id;
-  uint32_t block_dim;
-  if (op_task->GetProfilingArgs(model_name, op_name, model_id, block_dim) != SUCCESS) {
+  if (op_task->GetProfilingArgs(tmp_task_desc_info, model_id) != SUCCESS) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Get profiling data of task failed");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
-  GELOGD("ProfilingReport of op[%s] model[%s] start.", op_name.c_str(), model_name.c_str());
-  std::vector<TaskDescInfo> task_desc_info;
-  uint32_t task_id = 0;
-  uint32_t stream_id = 0;
-  auto rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Get task_id and stream_id failed.");
-    return RT_ERROR_TO_GE_STATUS(rt_ret);
-  }
+  GELOGD("ProfilingReport of op[%s] model[%s] start.",
+         tmp_task_desc_info.op_name.c_str(), tmp_task_desc_info.model_name.c_str());
 
-  TaskDescInfo tmp_task_desc_info;
-  tmp_task_desc_info.model_name = model_name;
-  tmp_task_desc_info.op_name = op_name;
-  tmp_task_desc_info.block_dim = block_dim;
-  tmp_task_desc_info.task_id = task_id;
-  tmp_task_desc_info.stream_id = stream_id;
   tmp_task_desc_info.shape_type = shape_type;
   tmp_task_desc_info.cur_iter_num = 0;
   tmp_task_desc_info.task_type = op_task->GetTaskType();
-  GELOGD("GetTaskDescInfo of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
+
+  std::vector<TaskDescInfo> task_desc_info;
   task_desc_info.emplace_back(tmp_task_desc_info);
 
-  std::vector<ComputeGraphDescInfo> compute_graph_info;
-
   auto &profiling_manager = ProfilingManager::Instance();
-  profiling_manager.ReportProfilingData(model_id, task_desc_info, compute_graph_info);
+  profiling_manager.ReportProfilingData(model_id, task_desc_info);
   return SUCCESS;
 }
 }  // namespace
@@ -199,6 +183,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     if (ret != SUCCESS) {
       return ret;
     }
+    GE_CHK_STATUS_RET(task->OpenDump(stream_), "Open single op %s dump filed",task->GetOpdesc()->GetName().c_str());
     GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(task, kShapeTypeStatic));
   }
 
@@ -279,6 +264,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   GE_CHECK_NOTNULL(op_task_);
 
   GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
+  GE_CHK_STATUS_RET_NOLOG(op_task_->OpenDump(stream_));
   GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;
 }

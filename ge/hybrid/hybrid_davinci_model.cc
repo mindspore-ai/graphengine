@@ -76,6 +76,11 @@ class HybridDavinciModel::Impl {
     executor_.SetDeviceId(device_id);
   }
 
+  void SetModelName(const string &model_name) {
+    model_.SetModelName(model_name);
+    executor_.SetModelName(model_name);
+  }
+
   uint64_t GetSessionId() {
     return model_.GetSessionId();
   }
@@ -173,6 +178,12 @@ void HybridDavinciModel::SetModelId(uint32_t model_id) {
 void HybridDavinciModel::SetDeviceId(uint32_t device_id) {
   if (impl_ != nullptr) {
     impl_->SetDeviceId(device_id);
+  }
+}
+
+void HybridDavinciModel::SetModelName(const string &model_name) {
+  if (impl_ != nullptr) {
+    impl_->SetModelName(model_name);
   }
 }
 

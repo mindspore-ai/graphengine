@@ -219,9 +219,9 @@ Status DumpOp::LaunchDumpOp() {
   op_mapping_info.set_dump_path(dump_path);
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(dump_properties_.GetDumpStep());
-  if (!dynamic_model_name_.empty()) {
+  op_mapping_info.set_model_id(dynamic_model_id_);
+  if (!dynamic_model_name_.empty() && dump_properties_.IsDumpOpen()) {
     op_mapping_info.set_model_name(dynamic_model_name_);
-    op_mapping_info.set_model_id(dynamic_model_id_);
   }
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
   GELOGI("Dump step is %s ,dump path is %s ,in Launch dump op", dump_properties_.GetDumpStep().c_str(),
@@ -253,7 +253,7 @@ Status DumpOp::LaunchDumpOp() {
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
   }
-  if (dump_properties_.GetDumpMode() == kDumpAll) {
+  if (dump_properties_.GetDumpMode() == kDumpAll || dump_properties_.IsOpDebugOpen()) {
     auto ret = DumpOutput(task);
     if (ret != SUCCESS) {
       GELOGE(ret, "Dump output failed when in dumping all");

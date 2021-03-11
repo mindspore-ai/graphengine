@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
-#define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
+#ifndef GE_GRAPH_LOAD_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
+#define GE_GRAPH_LOAD_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
 
 #include "graph/load/model_manager/task_info/task_info.h"
 
 namespace ge {
 class LabelSwitchByIndexTaskInfo : public TaskInfo {
  public:
-  LabelSwitchByIndexTaskInfo()
-      : index_value_(nullptr), branch_max_(0), args_(nullptr), args_size_(0), fixed_addr_offset_(0) {}
+  LabelSwitchByIndexTaskInfo() = default;
 
   ~LabelSwitchByIndexTaskInfo() override;
 
@@ -34,12 +33,11 @@ class LabelSwitchByIndexTaskInfo : public TaskInfo {
   Status CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) override;
 
  private:
-  void *index_value_;    // switch index input.
-  uint32_t branch_max_;  // max branch count.
-  void *args_;           // label info memory.
-  uint32_t args_size_;   // label info length.
-  std::vector<rtLabel_t> label_list_;
-  int64_t fixed_addr_offset_;
+  void *index_value_{nullptr};    // switch index input.
+  uint32_t branch_max_{0};        // max branch count.
+  void *args_{nullptr};           // label info memory.
+  uint32_t args_size_{0};         // label info length.
+  int64_t fixed_addr_offset_{0};
 };
 }  // namespace ge
-#endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_
+#endif  // GE_GRAPH_LOAD_MODEL_MANAGER_TASK_INFO_LABEL_SWITCH_BY_INDEX_TASK_INFO_H_

@@ -319,20 +319,6 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
         GELOGE(GRAPH_FAILED, "Update data op [%s] shape range failed.", op->GetName().c_str());
         return GRAPH_FAILED;
       }
-      if (shape_range_map.empty()) {
-        auto tensor_input = op->MutableInputDesc(0);
-        GE_CHECK_NOTNULL(tensor_input);
-        GeShape shape = tensor_input->GetShape();
-        std::vector<std::pair<int64_t, int64_t>> shape_range;
-        if (tensor_input->GetShapeRange(shape_range) != GRAPH_SUCCESS) {
-          GELOGE(GRAPH_FAILED, "[%s] Get shape range failed.", op->GetName().c_str());
-          return GRAPH_FAILED;
-        }
-        if (TensorUtils::CheckShapeByShapeRange(shape, shape_range) != SUCCESS) {
-          GELOGE(GRAPH_FAILED, "[%s] Check shape by shape range failed.", op->GetName().c_str());
-          return GRAPH_FAILED;
-        }
-      }
     }
   }
 

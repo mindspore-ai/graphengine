@@ -171,17 +171,17 @@ Status GEInitialize(const std::map<AscendString, AscendString> &options) {
 
 // GE finalize, releasing all resources
 Status GEFinalize() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
-  GELOGT(TRACE_INIT, "GEFinalize start");
-
-  ErrorManager::GetInstance().GenWorkStreamIdDefault();
+  std::lock_guard<std::mutex> lock(g_ge_release_mutex);
   // check init status
   if (!g_ge_initialized) {
-    GELOGW("GEFinalize is called before GEInitialize");
+    GELOGW("[FINAL][FINAL]GEFinalize is called before GEInitialize");
     return SUCCESS;
   }
 
-  std::lock_guard<std::mutex> lock(g_ge_release_mutex);
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
+  GELOGT(TRACE_INIT, "GEFinalize start");
+
   // call Finalize
   Status ret = SUCCESS;
   Status middle_ret;

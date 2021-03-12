@@ -937,6 +937,10 @@ add_library(atc_stub_ge_compiler SHARED
 
 add_dependencies(atc_stub_ge_compiler ge_stub)
 
+target_compile_options(atc_stub_ge_compiler PRIVATE
+    -fno-common
+)
+
 target_link_libraries(atc_stub_ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
 )

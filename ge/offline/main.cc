@@ -70,7 +70,7 @@ const char *const kModeSupport = "only support 0(model to framework model), "
 const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
 const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
 const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
-const char *const kONNXFormatSupport = "only support NCHW, ND in ONNX model";
+const char *const kONNXFormatSupport = "only support NCHW, ND, NCDHW in ONNX model";
 // limit available mem size 2G
 const long kMinAvailableMem = 2097152;  // 2 * 1024 * 1024
 }  // namespace

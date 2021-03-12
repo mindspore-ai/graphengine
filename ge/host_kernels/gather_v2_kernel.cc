@@ -208,7 +208,7 @@ Status GatherV2Kernel::GenData(const int64_t data_num, ConstGeTensorPtr tensor_x
       ret = ProcessAxis3<T>(tensor_x, output);
       break;
     default:
-      GELOGI("Only support 4 dims and below but input axis is %ld", axis);
+      GELOGI("Only support 4 dims and below but input axis is %ld.", axis);
       return NOT_CHANGED;
   }
   return ret;
@@ -267,7 +267,7 @@ Status GatherV2Kernel::Process(int64_t axis, DataType data_type, ConstGeTensorPt
       ret = GenData<uint64_t>(data_num, input_tensor_ptr, axis, output_ptr);
       break;
     default:
-      GELOGI("GatherV2Kernel does not support this Data type:%s", TypeUtils::DataTypeToSerialString(data_type).c_str());
+      GELOGI("GatherV2Kernel does not support this Data type:%s.", TypeUtils::DataTypeToSerialString(data_type).c_str());
       return NOT_CHANGED;
   }
   return ret;
@@ -278,7 +278,7 @@ Status GatherV2Kernel::SaveIndicesByDataType(ConstGeTensorPtr indices_tensor_ptr
     auto indices_ptr = const_cast<int32_t *>(reinterpret_cast<const int32_t *>(indices_tensor_ptr->GetData().data()));
     for (int64_t i = 0; i < indices_shape.GetShapeSize(); i++) {
       if (*(indices_ptr + i) < 0 || *(indices_ptr + i) >= x_shape.GetDim(axis)) {
-        GELOGW("indices %ld value is not in range [0, %ld)", i, x_shape.GetDim(axis));
+        GELOGW("indices %ld value is not in range [0, %ld).", i, x_shape.GetDim(axis));
         return NOT_CHANGED;
       }
       indicates_.push_back(*(indices_ptr + i));
@@ -288,7 +288,7 @@ Status GatherV2Kernel::SaveIndicesByDataType(ConstGeTensorPtr indices_tensor_ptr
     auto indices_ptr = const_cast<int64_t *>(reinterpret_cast<const int64_t *>(indices_tensor_ptr->GetData().data()));
     for (int64_t i = 0; i < indices_shape.GetShapeSize(); i++) {
       if (*(indices_ptr + i) < 0 || *(indices_ptr + i) >= x_shape.GetDim(axis)) {
-        GELOGW("indices %ld value is not in range [0, %ld)", i, x_shape.GetDim(axis));
+        GELOGW("indices %ld value is not in range [0, %ld).", i, x_shape.GetDim(axis));
         return NOT_CHANGED;
       }
       indicates_.push_back(*(indices_ptr + i));
@@ -330,13 +330,13 @@ Status GatherV2Kernel::Check(const OpDescPtr &op_desc_ptr, const vector<ConstGeT
   auto axis_shape = tensor2->GetTensorDesc().GetShape();
   // axis must be scalar
   if (axis_shape.GetDimNum() != 0) {
-    GELOGW("axis must be scalar but its shape is %zu", axis_shape.GetDimNum());
+    GELOGW("axis must be scalar but its shape is %zu.", axis_shape.GetDimNum());
     return NOT_CHANGED;
   }
   auto axis_data_type = tensor2->GetTensorDesc().GetDataType();
   bool is_valid_axis_data_type = axis_data_type == DT_INT32 || axis_data_type == DT_INT64;
   if (!is_valid_axis_data_type) {
-    GELOGW("axis datatype must be DT_INT32 or DT_INT64");
+    GELOGW("axis datatype must be DT_INT32 or DT_INT64.");
     return NOT_CHANGED;
   }
 
@@ -344,42 +344,42 @@ Status GatherV2Kernel::Check(const OpDescPtr &op_desc_ptr, const vector<ConstGeT
   auto indices_data_type = tensor1->GetTensorDesc().GetDataType();
   bool is_valid_indices_data_type = indices_data_type == DT_INT32 || indices_data_type == DT_INT64;
   if (!is_valid_indices_data_type) {
-    GELOGW("indices datatype must be DT_INT32 or DT_INT64");
+    GELOGW("indices datatype must be DT_INT32 or DT_INT64.");
     return NOT_CHANGED;
   }
   if (indices_shape.GetDimNum() > kMaxIndicatesDims) {
-    GELOGW("indices input only support 0 or 1 dims");
+    GELOGW("indices input only support 0 or 1 dims.");
     return NOT_CHANGED;
   }
   return SUCCESS;
 }
 void GatherV2Kernel::DebugPrint(int64_t axis, const GeShape &x_shape, const GeShape &indices_shape,
                                 const std::vector<int64_t> &y_shape) {
-  GELOGD("GatherV2Kernel axis:%ld x_shape:%zu indices_shape:%zu y_shape:%zu", axis, x_shape.GetDimNum(),
+  GELOGD("GatherV2Kernel axis:%ld x_shape:%zu indices_shape:%zu y_shape:%zu.", axis, x_shape.GetDimNum(),
          indices_shape.GetDimNum(), y_shape.size());
   for (size_t i = 0; i < x_shape.GetDimNum(); i++) {
-    GELOGD("GatherV2Kernel x_shape[%zu]: %ld", i, x_shape.GetDim(i));
+    GELOGD("GatherV2Kernel x_shape[%zu]: %ld.", i, x_shape.GetDim(i));
   }
   for (size_t i = 0; i < indices_shape.GetDimNum(); i++) {
-    GELOGD("GatherV2Kernel indices_shape[%zu]: %ld", i, indices_shape.GetDim(i));
+    GELOGD("GatherV2Kernel indices_shape[%zu]: %ld.", i, indices_shape.GetDim(i));
   }
   for (size_t i = 0; i < y_shape.size(); i++) {
-    GELOGD("GatherV2Kernel y_shape[%zu]: %ld", i, y_shape[i]);
+    GELOGD("GatherV2Kernel y_shape[%zu]: %ld.", i, y_shape[i]);
   }
   for (auto ele : indicates_) {
-    GELOGD("GatherV2Kernel indices:%ld", ele);
+    GELOGD("GatherV2Kernel indices:%ld.", ele);
   }
 }
 
 Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGeTensorPtr> &input,
                                vector<GeTensorPtr> &v_output) {
-  GELOGI("Enter GatherV2Kernel Process.");
+  GELOGI("Enter GatherV2Kernel Process");
   Status ret = Check(op_desc_ptr, input, v_output);
   if (ret != SUCCESS) {
-    GELOGW("param check failed.");
+    GELOGW("param check failed");
     return NOT_CHANGED;
   }
-  GELOGI("GatherV2Kernel[%s] start Process.", op_desc_ptr->GetName().c_str());
+  GELOGI("GatherV2Kernel[%s] start Process", op_desc_ptr->GetName().c_str());
   ConstGeTensorPtr tensor0 = input.at(kGatherV2InputIndexZero);
   ConstGeTensorPtr tensor1 = input.at(kGatherV2InputIndexOne);
   ConstGeTensorPtr tensor2 = input.at(kGatherV2InputIndexTwo);
@@ -394,7 +394,7 @@ Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGe
   axis = axis >= 0 ? axis : axis + x_shape.GetDimNum();
   // check axis value
   if (axis < 0 || (axis + 1) > static_cast<int64_t>(x_shape.GetDimNum())) {
-    GELOGW("axis is invalid");
+    GELOGW("axis is invalid!");
     return NOT_CHANGED;
   }
   auto indices_data_type = tensor1->GetTensorDesc().GetDataType();
@@ -407,7 +407,7 @@ Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGe
   // check input data type
   auto x_data_type = tensor0->GetTensorDesc().GetDataType();
   if (supported_type.find(x_data_type) == supported_type.end()) {
-    GELOGI("GatherV2Kernel does not support this Data type:%s", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
+    GELOGI("GatherV2Kernel does not support this Data type:%s.", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
     return NOT_CHANGED;
   }
   // calc output shape
@@ -442,13 +442,13 @@ Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGe
   auto ret_y = CalcStride(ystride_, y_shape);
   ret = (ret_x == SUCCESS && ret_y == SUCCESS) ? SUCCESS : NOT_CHANGED;
   if (ret != SUCCESS) {
-    GELOGE(ret, "CalcStride Failed");
+    GELOGE(ret, "CalcStride Failed.");
     return ret;
   }
 
   ret = Process(axis, x_data_type, tensor0, output_ptr);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GenData failed, data_type: %s", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
+    GELOGE(ret, "GenData failed, data_type: %s.", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
     return ret;
   }
 

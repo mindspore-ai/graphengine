@@ -77,10 +77,6 @@ Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target
 
   std::lock_guard<std::mutex> lk(mu_);
   auto &input_desc = input_tensor_desc[idx];
-  if (CheckInputShapeByShapeRange(input_desc, target) != SUCCESS) {
-    GELOGE(FAILED, "[%s] Check input shape by shape range failed.", node_item.NodeName().c_str());
-    return FAILED;
-  }
   GeShape shape = target.GetShape();
   input_desc.SetShape(shape);
   input_desc.SetOriginShape(target.GetOriginShape());

@@ -208,7 +208,7 @@ Status GatherV2Kernel::GenData(const int64_t data_num, ConstGeTensorPtr tensor_x
       ret = ProcessAxis3<T>(tensor_x, output);
       break;
     default:
-      GELOGI("Only support 4 dims and below but input axis is %ld.", axis);
+      GELOGI("Only support 4 dims and below but input axis is %ld", axis);
       return NOT_CHANGED;
   }
   return ret;
@@ -267,7 +267,7 @@ Status GatherV2Kernel::Process(int64_t axis, DataType data_type, ConstGeTensorPt
       ret = GenData<uint64_t>(data_num, input_tensor_ptr, axis, output_ptr);
       break;
     default:
-      GELOGI("GatherV2Kernel does not support this Data type:%s.", TypeUtils::DataTypeToSerialString(data_type).c_str());
+      GELOGI("GatherV2Kernel does not support this Data type:%s", TypeUtils::DataTypeToSerialString(data_type).c_str());
       return NOT_CHANGED;
   }
   return ret;
@@ -330,13 +330,13 @@ Status GatherV2Kernel::Check(const OpDescPtr &op_desc_ptr, const vector<ConstGeT
   auto axis_shape = tensor2->GetTensorDesc().GetShape();
   // axis must be scalar
   if (axis_shape.GetDimNum() != 0) {
-    GELOGW("axis must be scalar but its shape is %zu.", axis_shape.GetDimNum());
+    GELOGW("axis must be scalar but its shape is %zu", axis_shape.GetDimNum());
     return NOT_CHANGED;
   }
   auto axis_data_type = tensor2->GetTensorDesc().GetDataType();
   bool is_valid_axis_data_type = axis_data_type == DT_INT32 || axis_data_type == DT_INT64;
   if (!is_valid_axis_data_type) {
-    GELOGW("axis datatype must be DT_INT32 or DT_INT64.");
+    GELOGW("axis datatype must be DT_INT32 or DT_INT64");
     return NOT_CHANGED;
   }
 
@@ -442,13 +442,13 @@ Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGe
   auto ret_y = CalcStride(ystride_, y_shape);
   ret = (ret_x == SUCCESS && ret_y == SUCCESS) ? SUCCESS : NOT_CHANGED;
   if (ret != SUCCESS) {
-    GELOGE(ret, "CalcStride Failed.");
+    GELOGE(ret, "CalcStride Failed");
     return ret;
   }
 
   ret = Process(axis, x_data_type, tensor0, output_ptr);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GenData failed, data_type: %s.", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
+    GELOGE(ret, "GenData failed, data_type: %s", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
     return ret;
   }
 

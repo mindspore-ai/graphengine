@@ -2455,6 +2455,25 @@ REG_OP(Eltwise)
     .OP_END_FACTORY_REG(Eltwise)
 
 /**
+ *@brief Computes the inverse error function of each element of input. \n
+
+ *@par Inputs:
+ *One inputs, including:
+ * @li input_x: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+
+ *@par Outputs:
+ *y: A Tensor with the same type and shape of input_x's. \n
+
+ *@par Third-party framework compatibility
+ *Compatible with the Pytorch operator Erfinv. \n
+ */
+REG_OP(Erfinv)
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(Erfinv)
+
+/**
 *@brief Computes element-wise population count. \n
 
 *@par Inputs:

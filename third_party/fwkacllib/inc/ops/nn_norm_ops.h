@@ -428,6 +428,33 @@ REG_OP(MVN)
     .OP_END_FACTORY_REG(MVN)
 
 /**
+*@brief Normalizes the input . \n
+
+*@par Inputs:
+* One input:
+*x: An NCHW tensor of type float16 or float32 . \n
+
+*@par Attributes:
+*@li eps: An optional float32 epsilon for not dividing by zero. Defaults to "1e-9" . \n
+*@li axes: A list of Intefers, along which axis to reduce. Defaults to "[0, 2, 3]" . \n
+
+*@par Outputs:
+*y: An NCHW tensor of type float16 or float32 . \n
+
+*@attention Constraints:
+* The input tensor must have the NCHW format, whose shape length must be 4.
+*@par Third-party framework compatibility
+* Compatible with the ONNX operator MeanVarianceNormalization.
+*/
+
+REG_OP(MVNV2)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))  /* "Result, has same element type as inputs" */
+    .ATTR(eps, Float, 1e-9)
+    .ATTR(axes, ListInt, {0, 2, 3})
+    .OP_END_FACTORY_REG(MVNV2)
+
+/**
 *@brief Normalizes the input "x1" . \n
 
 *@par Inputs:
@@ -1204,6 +1231,33 @@ REG_OP(Centralization)
     .OUTPUT(y, TensorType({ DT_FLOAT, DT_FLOAT16 }))
     .ATTR(axes, ListInt, {-1})
     .OP_END_FACTORY_REG(Centralization)
+
+/**
+*@brief Roll the tensor along the given dimension(s).
+* Elements that are shifted beyond the last position are re-introduced at the first position.
+* If a dimension is not specified, the tensor will be flattened before rolling and then restored to the original shape. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A tensor . Must be one of the following types:
+*     float16, float32, int32, uint32, int8, uint8. \n
+
+*@par Attributes:
+* @li shifts: The number of places by which the elements of the tensor are shifted. \n
+* @li dims: Axis along which to roll. \n
+
+*@par Outputs:
+* y: A Tensor with the same type and shape of x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Roll. \n
+*/
+REG_OP(Roll)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8}))
+    .REQUIRED_ATTR(shifts, ListInt)
+    .ATTR(dims, ListInt, {})
+    .OP_END_FACTORY_REG(Roll)
 
 /**
  *@brief Calculate the loss. Creates a criterion that optimizes a two-class classification

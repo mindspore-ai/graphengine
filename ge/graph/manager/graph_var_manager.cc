@@ -347,14 +347,18 @@ ge::Status VarManager::Init(const uint32_t &version, const uint64_t &session_id,
                             const uint64_t &job_id) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   GELOGI("VarManager::Init, session id = %lu.", session_id);
-  version_ = version;
-  device_id_ = device_id;
-  session_id_ = session_id;
-  job_id_ = job_id;
-  var_resource_ = std::unique_ptr<VarResource>(new (std::nothrow) VarResource(session_id_));
   if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
+    version_ = version;
+    device_id_ = device_id;
+    session_id_ = session_id;
+    job_id_ = job_id;
+    var_resource_ = std::unique_ptr<VarResource>(new (std::nothrow) VarResource(session_id_));
+    if (var_resource_ == nullptr) {
+      GELOGW("VarManager init failed session id = %lu.", session_id);
+      return ge::INTERNAL_ERROR;
+    }
+  } else {
+    GELOGW("VarManager::has been inited, session id = %lu.", session_id);
   }
   return SUCCESS;
 }

@@ -917,6 +917,15 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
 
   static std::atomic<uint64_t> atomic_session_id(0);
   auto session_id = atomic_session_id.fetch_add(1);
+  // This is a temporary add for graph with variable
+  auto version = static_cast<int32_t>(SessionVersion::ClOUD_VERSION);
+  const int DEFAULT_DEVICE_ID = 0;
+  const int DEFAULT_JOB_ID= 0;
+  ret = VarManager::Instance(session_id)->Init(version, session_id, DEFAULT_DEVICE_ID, DEFAULT_JOB_ID);
+  GELOGI("Start init var instance, session_id %lu", session_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "Failed init var instance, session_id %lu", session_id);
+  }
   if (is_singleop_unregistered_) {
     ret = graph_manager_.BuildGraphForUnregisteredOp(graph_id, inputs, ge_root_model, session_id);
   } else {

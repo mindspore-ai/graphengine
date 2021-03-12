@@ -212,6 +212,7 @@ target_link_libraries(ge_executor PRIVATE
 add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_executor_shared PRIVATE
+    -fno-common
     -Werror
     -O2
     -Wno-deprecated-declarations

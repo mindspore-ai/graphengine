@@ -74,4 +74,18 @@ TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
       EXPECT_EQ(result_shape.GetDim(i), expect_shape.at(i));
   }
 }
+
+TEST_F(UtestGraphPreproces, test_check_user_input) {
+  ge::GraphPrepare graph_prepare;
+  graph_prepare.compute_graph_ = BuildGraph1();
+
+  vector<int64_t> dim = {2, -3};
+  GeTensor tensor;
+  tensor.SetTensorDesc(GeTensorDesc(GeShape(dim)));
+  std::vector<GeTensor> user_input;
+  user_input.emplace_back(tensor);
+
+  Status ret = graph_prepare.CheckUserInput(user_input);
+  EXPECT_EQ(ret, GE_GRAPH_INIT_FAILED);
+}
 }

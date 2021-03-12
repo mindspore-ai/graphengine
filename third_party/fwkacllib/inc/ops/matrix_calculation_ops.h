@@ -1065,7 +1065,37 @@ REG_OP(Tril)
     .ATTR(diagonal, Int, 0)
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(Tril)
+/**
+*@brief Concatenates a list of N tensors along the first dimension.
+*@par Inputs:
+* Two inputs, including:
+* @li values: A list of Tensors. Must be one of the following types:  int32, float16, float32.
+*     Tensors to be concatenated. All must have size 1 in the first dimension and same shape.
+*     It's a dynamic input.
+* @li shape: A Tensor of the same type as "x".
+* The final shape of the result. Should be equal to the shapes of any input
+* but with the number of input values in the first dimension . \n
 
+*@par Attributes:
+*equation: The subscripts for the Einstein summation. \n
+*tensor_size: tensor size of input \n
+
+*@par Outputs:
+*@li y: Sums the product of the elements of the input operands along dimensions specified
+ using a notation based on the Einstein summation convention. \n
+
+*@attention Constraints:
+*Input tensor_size must be Int. \n
+
+*@par Third-party framework compatibility
+*Compatible with Pytorch einsum operator.
+*/
+REG_OP(EinSum)
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(equation, String)
+    .REQUIRED_ATTR(tensor_size, Int)
+    .OP_END_FACTORY_REG(EinSum)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_MATRIX_CALCULATION_OPS_H_

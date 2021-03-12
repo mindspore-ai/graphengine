@@ -132,6 +132,11 @@ typedef struct tagRtPlatformConfig {
     uint32_t platformConfig;
 } rtPlatformConfig_t;
 
+typedef enum tagRTTaskTimeoutType {
+    RT_TIMEOUT_TYPE_OP_WAIT = 0,
+    RT_TIMEOUT_TYPE_OP_EXECUTE,
+} rtTaskTimeoutType_t;
+
 /**
  * @ingroup
  * @brief get AI core count
@@ -202,6 +207,24 @@ RTS_API rtError_t rtGetRuntimeVersion(uint32_t *runtimeVersion);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetDeviceCapability(int32_t deviceId, int32_t moduleType, int32_t featureType, int32_t *value);
+
+/**
+ * @ingroup
+ * @brief set event wait task timeout time.
+ * @param [in] timeout
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetOpWaitTimeOut(uint32_t timeout);
+
+/**
+ * @ingroup
+ * @brief set op execute task timeout time.
+ * @param [in] timeout
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetOpExecuteTimeOut(uint32_t timeout);
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }

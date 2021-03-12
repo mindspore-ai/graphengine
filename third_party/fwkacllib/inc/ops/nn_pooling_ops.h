@@ -1502,14 +1502,14 @@ REG_OP(AdaptiveAvgPool2d)
 * @brief Compute gradients of adaptive averagev2 pooling function.
 
 * @par Inputs:
-* @li input_grad: A NCHW Tensor. Must be one of the following data types:
+* @li input_grad: A Tensor. Must be one of the following data types:
 * float16, float32.
 
 * @par Attributes:
 * @li orig_input_shape: A required tuple or list of type int32.
 
 * @par Outputs:
-* @li output_grad: A tensor with the same shape and type as "orig_input_shape".
+* @li output_grad: A tensor with the same type as "input_grad".
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator AdaptiveAvgPool2dGrad.

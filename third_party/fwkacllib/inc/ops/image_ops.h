@@ -1517,6 +1517,96 @@ REG_OP(DenseImageWarp)
     .OP_END_FACTORY_REG(DenseImageWarp)
 
 /**
+*@brief Calculate the resize_d function. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+*@li sizes: An optional listInt. \n
+*@li scales: An optional listFloat.
+    Defaults to none. \n
+*@li roi: An optional listInt.
+    Defaults to none. \n
+*@li coordinate_transformation_mode: An optional String.
+    Defaults to "half_pixel". \n
+*@li cubic_coeff_a: An optional float.
+    Defaults to -0.75. \n
+*@li exclude_outside: An optional int.
+    Defaults to 0. \n
+*@li extrapolation_value: An optional float.
+    Defaults to 0.0. \n
+*@li mode: An optional String.
+    Defaults to "nearest". \n
+*@li nearest_mode: An optional String.
+    Defaults to "round_prefer_floor". \n
+
+*@par Outputs:
+*y: A Tensor with the same type of x's,
+    shape depends on x and sizes. \n
+*/
+REG_OP(ResizeD)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(sizes, ListInt)
+    .ATTR(scales, ListFloat, {})
+    .ATTR(roi, ListInt, {})
+    .ATTR(coordinate_transformation_mode, String, "half_pixel")
+    .ATTR(cubic_coeff_a, Float, -0.75)
+    .ATTR(exclude_outside, Int, 0)
+    .ATTR(extrapolation_value, Float, 0.0)
+    .ATTR(mode, String, "nearest")
+    .ATTR(nearest_mode, String, "round_prefer_floor")
+    .OP_END_FACTORY_REG(ResizeD)
+
+/**
+*@brief Calculate the resize_grad_d function. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li grads: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+*@li original_size: An optional listInt. \n
+*@li roi: An optional listInt.
+    Defaults to none. \n
+*@li scales: An optional listFloat.
+    Defaults to none. \n
+*@li coordinate_transformation_mode: An optional String.
+    Defaults to "half_pixel". \n
+*@li cubic_coeff_a: An optional float.
+    Defaults to -0.75. \n
+*@li exclude_outside: An optional int.
+    Defaults to 0. \n
+*@li extrapolation_value: An optional float.
+    Defaults to 0.0. \n
+*@li mode: An optional String.
+    Defaults to "nearest". \n
+*@li nearest_mode: An optional String.
+    Defaults to "round_prefer_floor". \n
+
+*@par Outputs:
+*y: A Tensor with the same type of x's,
+    shape depends on x and sizes. \n
+*/
+REG_OP(ResizeGradD)
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(original_size, ListInt)
+    .ATTR(roi, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .ATTR(coordinate_transformation_mode, String, "half_pixel")
+    .ATTR(cubic_coeff_a, Float, -0.75)
+    .ATTR(exclude_outside, Int, 0)
+    .ATTR(extrapolation_value, Float, 0.0)
+    .ATTR(mode, String, "nearest")
+    .ATTR(nearest_mode, String, "round_prefer_floor")
+    .OP_END_FACTORY_REG(ResizeGradD)
+
+/**
 *@brief Computes the gradients of DenseImageWarp with respect to image and flow. \n
 
 *@par Inputs:
@@ -1535,5 +1625,81 @@ REG_OP(DenseImageWarpGrad)
     .OUTPUT(grad_image, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(grad_flow, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(DenseImageWarpGrad)
+
+/**
+*@brief This operation samples input X by using interpolation based on flow field grid,
+ which is usually gennerated by affine_grid. The grid of shape [N, H, W, 2] is the concatenation of
+ (x, y) coordinates with shape [N, H, W] each, where x is indexing the 4th dimension (in width dimension) of
+ input data x and y is indexng the 3rd dimention (in height dimension), finally results is
+ the interpolation value of 4 nearest corner points. The output tensor shape will be [N, C, H, W].
+
+*@par Inputs:
+*@li x: 4-D Tensor with shape `[batch, channels, height, width]`.
+*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]`.
+
+*@par Attributes:
+*@li interpolation_mode: An optional string specifying the interpolation method. Only 'bilinear' is
+ supported for now .
+*@li padding_mode: An optional string specifying the pad method. Only 'zeros' is supported for now .
+*@li align_corners: An optional bool. If "true", the centers of the corner
+ pixels of the input and output tensors are aligned. Defaults to "false" .
+
+*@par Outputs:
+*y: Returns 4-D Tensor with the same dtype as `X`.
+
+*@par Third-party framework compatibility
+*Compatible with pytorch GridSampler2D operator.
+*/
+REG_OP(GridSampler2D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(interpolation_mode, String, "bilinear")
+    .ATTR(padding_mode, String, "zeros")
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(GridSampler2D)
+
+/**
+*@brief This operation unnormalize input Grid, which is usually gennerated by affine_grid.
+
+*@par Inputs:
+*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]`.
+*@li assist: Assist matrix, a 4-D tensor of type float16.
+
+*@par Attributes:
+*@li align_corners: An optional bool. If "true", the centers of the corner
+ pixels of the input and output tensors are aligned. Defaults to "false" .
+
+*@par Outputs:
+*diff: Returns 4-D Tensor with the same shape and dtype as `grid`.
+*position: Returns 4-D Tensor with the same shape as `grid`.
+*/
+REG_OP(GridUnnormal)
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(assist, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(diff, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(position, TensorType({DT_INT32}))
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(GridUnnormal)
+
+/**
+*@brief This operation unfold input X based on unnormalized grid, which is gennerated by GridUnnormal.
+
+*@par Inputs:
+*@li x: 4-D Tensor with shape `[batch, channels, height, width]`.
+*@li position: 4-D Tensor with shape `[batch, output_height, output_width, 2]`.
+
+*@par Attributes:
+*@li padding_mode: An optional string specifying the pad method. Only 'zeros' is supported for now .
+
+*@par Outputs:
+*y: Returns 4-D Tensor with the same dtype as `x`.
+*/
+REG_OP(ImageUnfold)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(position, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(padding_mode, String, "zeros")
+    .OP_END_FACTORY_REG(ImageUnfold)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

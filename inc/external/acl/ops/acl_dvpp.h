@@ -53,123 +53,109 @@ typedef void (*aclvencCallback)(acldvppPicDesc *input, acldvppStreamDesc *output
 
 // Supported Pixel Format
 enum acldvppPixelFormat {
-    PIXEL_FORMAT_YUV_400 = 0, // 0
-    PIXEL_FORMAT_YUV_SEMIPLANAR_420 = 1, // 1
-    PIXEL_FORMAT_YVU_SEMIPLANAR_420 = 2, // 2
-    PIXEL_FORMAT_YUV_SEMIPLANAR_422 = 3, // 3
-    PIXEL_FORMAT_YVU_SEMIPLANAR_422 = 4, // 4
-    PIXEL_FORMAT_YUV_SEMIPLANAR_444 = 5, // 5
-    PIXEL_FORMAT_YVU_SEMIPLANAR_444 = 6, // 6
-    PIXEL_FORMAT_YUYV_PACKED_422 = 7, // 7
-    PIXEL_FORMAT_UYVY_PACKED_422 = 8, // 8
-    PIXEL_FORMAT_YVYU_PACKED_422 = 9, // 9
-    PIXEL_FORMAT_VYUY_PACKED_422 = 10, // 10
-    PIXEL_FORMAT_YUV_PACKED_444 = 11, // 11
-    PIXEL_FORMAT_RGB_888 = 12, // 12
-    PIXEL_FORMAT_BGR_888 = 13, // 13
-    PIXEL_FORMAT_ARGB_8888 = 14, // 14
-    PIXEL_FORMAT_ABGR_8888 = 15, // 15
-    PIXEL_FORMAT_RGBA_8888 = 16, // 16
-    PIXEL_FORMAT_BGRA_8888 = 17, // 17
-    PIXEL_FORMAT_YUV_SEMI_PLANNER_420_10BIT = 18, // 18
-    PIXEL_FORMAT_YVU_SEMI_PLANNER_420_10BIT = 19, // 19
-    PIXEL_FORMAT_YVU_PLANAR_420 = 20, // 20
-    PIXEL_FORMAT_YVU_PLANAR_422,
-    PIXEL_FORMAT_YVU_PLANAR_444,
-    PIXEL_FORMAT_RGB_444 = 23,
-    PIXEL_FORMAT_BGR_444,
-    PIXEL_FORMAT_ARGB_4444,
-    PIXEL_FORMAT_ABGR_4444,
-    PIXEL_FORMAT_RGBA_4444,
-    PIXEL_FORMAT_BGRA_4444,
-    PIXEL_FORMAT_RGB_555,
-    PIXEL_FORMAT_BGR_555,
-    PIXEL_FORMAT_RGB_565,
-    PIXEL_FORMAT_BGR_565,
-    PIXEL_FORMAT_ARGB_1555,
-    PIXEL_FORMAT_ABGR_1555,
-    PIXEL_FORMAT_RGBA_1555,
-    PIXEL_FORMAT_BGRA_1555,
-    PIXEL_FORMAT_ARGB_8565,
-    PIXEL_FORMAT_ABGR_8565,
-    PIXEL_FORMAT_RGBA_8565,
-    PIXEL_FORMAT_BGRA_8565,
-    PIXEL_FORMAT_RGB_BAYER_8BPP = 50,
-    PIXEL_FORMAT_RGB_BAYER_10BPP,
-    PIXEL_FORMAT_RGB_BAYER_12BPP,
-    PIXEL_FORMAT_RGB_BAYER_14BPP,
-    PIXEL_FORMAT_RGB_BAYER_16BPP,
-    PIXEL_FORMAT_BGR_888_PLANAR = 70,
-    PIXEL_FORMAT_HSV_888_PACKAGE,
-    PIXEL_FORMAT_HSV_888_PLANAR,
-    PIXEL_FORMAT_LAB_888_PACKAGE,
-    PIXEL_FORMAT_LAB_888_PLANAR,
-    PIXEL_FORMAT_S8C1,
-    PIXEL_FORMAT_S8C2_PACKAGE,
-    PIXEL_FORMAT_S8C2_PLANAR,
-    PIXEL_FORMAT_S16C1,
-    PIXEL_FORMAT_U8C1,
-    PIXEL_FORMAT_U16C1,
-    PIXEL_FORMAT_S32C1,
-    PIXEL_FORMAT_U32C1,
-    PIXEL_FORMAT_U64C1,
-    PIXEL_FORMAT_S64C1,
-    PIXEL_FORMAT_YUV_SEMIPLANAR_440 = 1000,
-    PIXEL_FORMAT_YVU_SEMIPLANAR_440,
-    PIXEL_FORMAT_FLOAT32,
-    PIXEL_FORMAT_BUTT,
-    PIXEL_FORMAT_UNKNOWN = 10000
+  PIXEL_FORMAT_YUV_400 = 0,                      // 0
+  PIXEL_FORMAT_YUV_SEMIPLANAR_420 = 1,           // 1
+  PIXEL_FORMAT_YVU_SEMIPLANAR_420 = 2,           // 2
+  PIXEL_FORMAT_YUV_SEMIPLANAR_422 = 3,           // 3
+  PIXEL_FORMAT_YVU_SEMIPLANAR_422 = 4,           // 4
+  PIXEL_FORMAT_YUV_SEMIPLANAR_444 = 5,           // 5
+  PIXEL_FORMAT_YVU_SEMIPLANAR_444 = 6,           // 6
+  PIXEL_FORMAT_YUYV_PACKED_422 = 7,              // 7
+  PIXEL_FORMAT_UYVY_PACKED_422 = 8,              // 8
+  PIXEL_FORMAT_YVYU_PACKED_422 = 9,              // 9
+  PIXEL_FORMAT_VYUY_PACKED_422 = 10,             // 10
+  PIXEL_FORMAT_YUV_PACKED_444 = 11,              // 11
+  PIXEL_FORMAT_RGB_888 = 12,                     // 12
+  PIXEL_FORMAT_BGR_888 = 13,                     // 13
+  PIXEL_FORMAT_ARGB_8888 = 14,                   // 14
+  PIXEL_FORMAT_ABGR_8888 = 15,                   // 15
+  PIXEL_FORMAT_RGBA_8888 = 16,                   // 16
+  PIXEL_FORMAT_BGRA_8888 = 17,                   // 17
+  PIXEL_FORMAT_YUV_SEMI_PLANNER_420_10BIT = 18,  // 18
+  PIXEL_FORMAT_YVU_SEMI_PLANNER_420_10BIT = 19,  // 19
+  PIXEL_FORMAT_YVU_PLANAR_420 = 20,              // 20
+  PIXEL_FORMAT_YVU_PLANAR_422,
+  PIXEL_FORMAT_YVU_PLANAR_444,
+  PIXEL_FORMAT_RGB_444 = 23,
+  PIXEL_FORMAT_BGR_444,
+  PIXEL_FORMAT_ARGB_4444,
+  PIXEL_FORMAT_ABGR_4444,
+  PIXEL_FORMAT_RGBA_4444,
+  PIXEL_FORMAT_BGRA_4444,
+  PIXEL_FORMAT_RGB_555,
+  PIXEL_FORMAT_BGR_555,
+  PIXEL_FORMAT_RGB_565,
+  PIXEL_FORMAT_BGR_565,
+  PIXEL_FORMAT_ARGB_1555,
+  PIXEL_FORMAT_ABGR_1555,
+  PIXEL_FORMAT_RGBA_1555,
+  PIXEL_FORMAT_BGRA_1555,
+  PIXEL_FORMAT_ARGB_8565,
+  PIXEL_FORMAT_ABGR_8565,
+  PIXEL_FORMAT_RGBA_8565,
+  PIXEL_FORMAT_BGRA_8565,
+  PIXEL_FORMAT_RGB_BAYER_8BPP = 50,
+  PIXEL_FORMAT_RGB_BAYER_10BPP,
+  PIXEL_FORMAT_RGB_BAYER_12BPP,
+  PIXEL_FORMAT_RGB_BAYER_14BPP,
+  PIXEL_FORMAT_RGB_BAYER_16BPP,
+  PIXEL_FORMAT_BGR_888_PLANAR = 70,
+  PIXEL_FORMAT_HSV_888_PACKAGE,
+  PIXEL_FORMAT_HSV_888_PLANAR,
+  PIXEL_FORMAT_LAB_888_PACKAGE,
+  PIXEL_FORMAT_LAB_888_PLANAR,
+  PIXEL_FORMAT_S8C1,
+  PIXEL_FORMAT_S8C2_PACKAGE,
+  PIXEL_FORMAT_S8C2_PLANAR,
+  PIXEL_FORMAT_S16C1,
+  PIXEL_FORMAT_U8C1,
+  PIXEL_FORMAT_U16C1,
+  PIXEL_FORMAT_S32C1,
+  PIXEL_FORMAT_U32C1,
+  PIXEL_FORMAT_U64C1,
+  PIXEL_FORMAT_S64C1,
+  PIXEL_FORMAT_YUV_SEMIPLANAR_440 = 1000,
+  PIXEL_FORMAT_YVU_SEMIPLANAR_440,
+  PIXEL_FORMAT_FLOAT32,
+  PIXEL_FORMAT_BUTT,
+  PIXEL_FORMAT_UNKNOWN = 10000
 };
 
 // Stream Format
-enum acldvppStreamFormat {
-    H265_MAIN_LEVEL = 0,
-    H264_BASELINE_LEVEL,
-    H264_MAIN_LEVEL,
-    H264_HIGH_LEVEL
-};
+enum acldvppStreamFormat { H265_MAIN_LEVEL = 0, H264_BASELINE_LEVEL, H264_MAIN_LEVEL, H264_HIGH_LEVEL };
 
 // Supported Channel Mode
-enum acldvppChannelMode {
-    DVPP_CHNMODE_VPC = 1,
-    DVPP_CHNMODE_JPEGD = 2,
-    DVPP_CHNMODE_JPEGE = 4
-};
+enum acldvppChannelMode { DVPP_CHNMODE_VPC = 1, DVPP_CHNMODE_JPEGD = 2, DVPP_CHNMODE_JPEGE = 4 };
 
 // Supported Border Type
-enum acldvppBorderType {
-    BORDER_CONSTANT = 0,
-    BORDER_REPLICATE,
-    BORDER_REFLECT,
-    BORDER_REFLECT_101
-};
+enum acldvppBorderType { BORDER_CONSTANT = 0, BORDER_REPLICATE, BORDER_REFLECT, BORDER_REFLECT_101 };
 
 // Venc parameter type
 enum aclvencChannelDescParamType {
-    ACL_VENC_THREAD_ID_UINT64 = 0,
-    ACL_VENC_CALLBACK_PTR,
-    ACL_VENC_PIXEL_FORMAT_UINT32,
-    ACL_VENC_ENCODE_TYPE_UINT32,
-    ACL_VENC_PIC_WIDTH_UINT32,
-    ACL_VENC_PIC_HEIGHT_UINT32,
-    ACL_VENC_KEY_FRAME_INTERVAL_UINT32,
-    ACL_VENC_BUF_ADDR_PTR,
-    ACL_VENC_BUF_SIZE_UINT32,
-    ACL_VENC_RC_MODE_UINT32,
-    ACL_VENC_SRC_RATE_UINT32,
-    ACL_VENC_MAX_BITRATE_UINT32,
-    ACL_VENC_MAX_IP_PROP_UINT32
+  ACL_VENC_THREAD_ID_UINT64 = 0,
+  ACL_VENC_CALLBACK_PTR,
+  ACL_VENC_PIXEL_FORMAT_UINT32,
+  ACL_VENC_ENCODE_TYPE_UINT32,
+  ACL_VENC_PIC_WIDTH_UINT32,
+  ACL_VENC_PIC_HEIGHT_UINT32,
+  ACL_VENC_KEY_FRAME_INTERVAL_UINT32,
+  ACL_VENC_BUF_ADDR_PTR,
+  ACL_VENC_BUF_SIZE_UINT32,
+  ACL_VENC_RC_MODE_UINT32,
+  ACL_VENC_SRC_RATE_UINT32,
+  ACL_VENC_MAX_BITRATE_UINT32,
+  ACL_VENC_MAX_IP_PROP_UINT32
 };
 
 // Jpeg picture format
 enum acldvppJpegFormat {
-    ACL_JPEG_CSS_444 = 0,
-    ACL_JPEG_CSS_422,
-    ACL_JPEG_CSS_420,
-    ACL_JPEG_CSS_GRAY,
-    ACL_JPEG_CSS_440,
-    ACL_JPEG_CSS_411,
-    ACL_JPEG_CSS_UNKNOWN = 1000
+  ACL_JPEG_CSS_444 = 0,
+  ACL_JPEG_CSS_422,
+  ACL_JPEG_CSS_420,
+  ACL_JPEG_CSS_GRAY,
+  ACL_JPEG_CSS_440,
+  ACL_JPEG_CSS_411,
+  ACL_JPEG_CSS_UNKNOWN = 1000
 };
 
 /**
@@ -523,9 +509,7 @@ ACL_FUNC_VISIBILITY uint32_t acldvppGetPicDescRetCode(const acldvppPicDesc *picD
  * @retval null for failed.
  * @retval other success
  */
-ACL_FUNC_VISIBILITY acldvppRoiConfig *acldvppCreateRoiConfig(uint32_t left,
-                                                             uint32_t right,
-                                                             uint32_t top,
+ACL_FUNC_VISIBILITY acldvppRoiConfig *acldvppCreateRoiConfig(uint32_t left, uint32_t right, uint32_t top,
                                                              uint32_t bottom);
 
 /**
@@ -604,10 +588,7 @@ ACL_FUNC_VISIBILITY aclError acldvppSetRoiConfigBottom(acldvppRoiConfig *config,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppSetRoiConfig(acldvppRoiConfig *config,
-                                                 uint32_t left,
-                                                 uint32_t right,
-                                                 uint32_t top,
+ACL_FUNC_VISIBILITY aclError acldvppSetRoiConfig(acldvppRoiConfig *config, uint32_t left, uint32_t right, uint32_t top,
                                                  uint32_t bottom);
 
 /**
@@ -1096,7 +1077,8 @@ ACL_FUNC_VISIBILITY aclError aclvencSetChannelDescMaxBitRate(aclvencChannelDesc 
  * @retval ACL_SUCCESS for success, other for failure
  */
 ACL_FUNC_VISIBILITY aclError aclvencSetChannelDescParam(aclvencChannelDesc *channelDesc,
-    aclvencChannelDescParamType paramType, size_t length, const void *param);
+                                                        aclvencChannelDescParamType paramType, size_t length,
+                                                        const void *param);
 
 /**
  * @ingroup AscendCL
@@ -1245,7 +1227,8 @@ ACL_FUNC_VISIBILITY uint32_t aclvencGetChannelDescMaxBitRate(const aclvencChanne
  * @retval ACL_SUCCESS for success, other for failure
  */
 ACL_FUNC_VISIBILITY aclError aclvencGetChannelDescParam(const aclvencChannelDesc *channelDesc,
-    aclvencChannelDescParamType paramType, size_t length, size_t *paramRetSize, void *param);
+                                                        aclvencChannelDescParamType paramType, size_t length,
+                                                        size_t *paramRetSize, void *param);
 
 /**
  * @ingroup AscendCL
@@ -1545,10 +1528,7 @@ ACL_FUNC_VISIBILITY aclError aclvdecDestroyFrameConfig(aclvdecFrameConfig *vdecF
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfo(const void *data,
-                                                     uint32_t size,
-                                                     uint32_t *width,
-                                                     uint32_t *height,
+ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfo(const void *data, uint32_t size, uint32_t *width, uint32_t *height,
                                                      int32_t *components);
 
 /**
@@ -1565,11 +1545,8 @@ ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfo(const void *data,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfoV2(const void *data,
-                                                       uint32_t size,
-                                                       uint32_t *width,
-                                                       uint32_t *height,
-                                                       int32_t *components,
+ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfoV2(const void *data, uint32_t size, uint32_t *width,
+                                                       uint32_t *height, int32_t *components,
                                                        acldvppJpegFormat *format);
 
 /**
@@ -1584,8 +1561,7 @@ ACL_FUNC_VISIBILITY aclError acldvppJpegGetImageInfoV2(const void *data,
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError acldvppJpegPredictEncSize(const acldvppPicDesc *inputDesc,
-                                                       const acldvppJpegeConfig *config,
-                                                       uint32_t *size);
+                                                       const acldvppJpegeConfig *config, uint32_t *size);
 
 /**
  * @ingroup AscendCL
@@ -1599,10 +1575,8 @@ ACL_FUNC_VISIBILITY aclError acldvppJpegPredictEncSize(const acldvppPicDesc *inp
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppJpegPredictDecSize(const void *data,
-                                                       uint32_t dataSize,
-                                                       acldvppPixelFormat outputPixelFormat,
-                                                       uint32_t *decSize);
+ACL_FUNC_VISIBILITY aclError acldvppJpegPredictDecSize(const void *data, uint32_t dataSize,
+                                                       acldvppPixelFormat outputPixelFormat, uint32_t *decSize);
 
 /**
  * @ingroup AscendCL
@@ -1617,11 +1591,8 @@ ACL_FUNC_VISIBILITY aclError acldvppJpegPredictDecSize(const void *data,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppPngGetImageInfo(const void *data,
-                                                    uint32_t dataSize,
-                                                    uint32_t *width,
-                                                    uint32_t *height,
-                                                    int32_t *components);
+ACL_FUNC_VISIBILITY aclError acldvppPngGetImageInfo(const void *data, uint32_t dataSize, uint32_t *width,
+                                                    uint32_t *height, int32_t *components);
 
 /**
  * @ingroup AscendCL
@@ -1635,10 +1606,8 @@ ACL_FUNC_VISIBILITY aclError acldvppPngGetImageInfo(const void *data,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppPngPredictDecSize(const void *data,
-                                                      uint32_t dataSize,
-                                                      acldvppPixelFormat outputPixelFormat,
-                                                      uint32_t *decSize);
+ACL_FUNC_VISIBILITY aclError acldvppPngPredictDecSize(const void *data, uint32_t dataSize,
+                                                      acldvppPixelFormat outputPixelFormat, uint32_t *decSize);
 
 /**
  * @ingroup AscendCL
@@ -1702,10 +1671,8 @@ ACL_FUNC_VISIBILITY aclError acldvppDestroyChannel(acldvppChannelDesc *channelDe
  * @see acldvppCreateChannel | acldvppCreatePicDesc
  * | acldvppCreateResizeConfig
  */
-ACL_FUNC_VISIBILITY aclError acldvppVpcResizeAsync(acldvppChannelDesc *channelDesc,
-                                                   acldvppPicDesc *inputDesc,
-                                                   acldvppPicDesc *outputDesc,
-                                                   acldvppResizeConfig *resizeConfig,
+ACL_FUNC_VISIBILITY aclError acldvppVpcResizeAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                   acldvppPicDesc *outputDesc, acldvppResizeConfig *resizeConfig,
                                                    aclrtStream stream);
 
 /**
@@ -1714,7 +1681,7 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcResizeAsync(acldvppChannelDesc *channelDe
  *
  * @par Function
  * crop the input picture according to the specified area,
- * and then store the  picture in the output memory as the output picture
+ * and then store the picture in the output memory as the output picture
  *
  * @par Restriction
  * Width alignment requirements:
@@ -1732,20 +1699,56 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcResizeAsync(acldvppChannelDesc *channelDe
  * @li The height of the input image is aligned to 2.
  * High stride minimum 6 and maximum 4096.
  *
- * @param channelDesc [IN]  the channel destruction
- * @param inputDesc [IN]    crop input picture destruction
- * @param outputDesc [IN|OUT]  crop output picture destruction
- * @param cropArea [IN]     crop area config
- * @param stream [IN]       crop task stream
+ * @param channelDesc [IN]      the channel destruction
+ * @param inputDesc [IN]        crop input picture destruction
+ * @param outputDesc [IN|OUT]   crop output picture destruction
+ * @param cropArea [IN]         crop area config
+ * @param stream [IN]           crop task stream
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppVpcCropAsync(acldvppChannelDesc *channelDesc,
-                                                 acldvppPicDesc *inputDesc,
-                                                 acldvppPicDesc *outputDesc,
-                                                 acldvppRoiConfig *cropArea,
+ACL_FUNC_VISIBILITY aclError acldvppVpcCropAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                 acldvppPicDesc *outputDesc, acldvppRoiConfig *cropArea,
                                                  aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief dvpp vpc crop and resize config.
+ *
+ * @par Function
+ * crop the input picture with resize config according to the specified area,
+ * and then store the picture in the output memory as the output picture
+ *
+ * @par Restriction
+ * Width alignment requirements:
+ * @li The minimum stride is 32 and the maximum is 4096 * 4
+ * (that is, an image in argb format with a width of 4096);
+ * @li For 8K scaling, widthStride is required to be aligned to 2;
+ * @li For non 8K scaling, the calculation formula for widthStride
+ * is different for different image formats:
+ *   @li yuv400sp, yuv420sp, yuv422sp, yuv444sp: input image width aligned to 16
+ *   @li yuv422packed: input image width * 2 and then align to 16
+ *   @li yuv444packed, rgb888: input image width alignment * 3, alignment to 16
+ *   @li xrgb8888: input image width * 4, align to 16
+ *   @li HFBC:input image width
+ * Height alignment requirements:
+ * @li The height of the input image is aligned to 2.
+ * High stride minimum 6 and maximum 4096.
+ *
+ * @param channelDesc [IN]     the channel destruction
+ * @param inputDesc [IN]       crop input picture destruction
+ * @param outputDesc [IN|OUT]  crop output picture destruction
+ * @param cropArea [IN]        crop area config
+ * @param resizeConfig [IN]    resize config
+ * @param stream [IN]          crop and resize config task stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError acldvppVpcCropResizeAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                       acldvppPicDesc *outputDesc, acldvppRoiConfig *cropArea,
+                                                       acldvppResizeConfig *resizeConfig, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -1769,12 +1772,37 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcCropAsync(acldvppChannelDesc *channelDesc
  * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig
  */
 ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropAsync(acldvppChannelDesc *channelDesc,
-                                                      acldvppBatchPicDesc *srcBatchPicDescs,
-                                                      uint32_t *roiNums,
-                                                      uint32_t size,
-                                                      acldvppBatchPicDesc *dstBatchPicDescs,
-                                                      acldvppRoiConfig *cropAreas[],
-                                                      aclrtStream stream);
+                                                      acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums,
+                                                      uint32_t size, acldvppBatchPicDesc *dstBatchPicDescs,
+                                                      acldvppRoiConfig *cropAreas[], aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief dvpp vpc batch crop and resize config.
+ *
+ * @par Function
+ * crop the input batch picture with resize config according to the specified area
+ * as the output batch pictures
+ *
+ * @param channelDesc [IN]             the channel destruction
+ * @param srcBatchPicDescs [IN]        crop input batch picture destruction
+ * @param roiNums [IN]                 roi config numbers
+ * @param size [IN]                    roiNum size
+ * @param dstBatchPicDescs [IN|OUT]    crop output batch picture destruction
+ * @param cropAreas [IN]               crop area configs
+ * @param resizeConfig [IN]            resize config
+ * @param stream [IN]                  crop batch and resize config task stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig | acldvppCreateDvppConfig
+ */
+ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropResizeAsync(acldvppChannelDesc *channelDesc,
+                                                            acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums,
+                                                            uint32_t size, acldvppBatchPicDesc *dstBatchPicDescs,
+                                                            acldvppRoiConfig *cropAreas[],
+                                                            acldvppResizeConfig *resizeConfig, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -1797,12 +1825,36 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropAsync(acldvppChannelDesc *channe
  *
  * @see acldvppCreateChannel | acldvppCreatePicDesc | acldvppCreateRoiConfig
  */
-ACL_FUNC_VISIBILITY aclError acldvppVpcCropAndPasteAsync(acldvppChannelDesc *channelDesc,
-                                                         acldvppPicDesc *inputDesc,
-                                                         acldvppPicDesc *outputDesc,
-                                                         acldvppRoiConfig *cropArea,
-                                                         acldvppRoiConfig *pasteArea,
-                                                         aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppVpcCropAndPasteAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                         acldvppPicDesc *outputDesc, acldvppRoiConfig *cropArea,
+                                                         acldvppRoiConfig *pasteArea, aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief dvpp vpc crop, resize config and paste.
+ *
+ * @par Function
+ * crop the input picture with resize config according to the specified area,
+ * and paste the picture to the specified position of the target picture
+ * as the output picture
+ *
+ * @param channelDesc [IN]       thechannel destruction
+ * @param inputDesc [IN]         crop and paste input picture destruction
+ * @param outputDesc [IN|OUT]    crop and paste output picture destruction
+ * @param cropArea [IN]          crop area config
+ * @param pasteArea [IN]         paste area config
+ * @param resizeConfig [IN]      resize config
+ * @param stream [IN]            crop, paste and resize task stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acldvppCreateChannel | acldvppCreatePicDesc | acldvppCreateRoiConfig | acldvppCreateResizeConfig
+ */
+ACL_FUNC_VISIBILITY aclError acldvppVpcCropResizePasteAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                            acldvppPicDesc *outputDesc, acldvppRoiConfig *cropArea,
+                                                            acldvppRoiConfig *pasteArea,
+                                                            acldvppResizeConfig *resizeConfig, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -1827,14 +1879,40 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcCropAndPasteAsync(acldvppChannelDesc *cha
  *
  * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig
  */
- ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropAndPasteAsync(acldvppChannelDesc *channelDesc,
-                                                               acldvppBatchPicDesc *srcBatchPicDescs,
-                                                               uint32_t *roiNums,
-                                                               uint32_t size,
-                                                               acldvppBatchPicDesc *dstBatchPicDescs,
-                                                               acldvppRoiConfig *cropAreas[],
-                                                               acldvppRoiConfig *pasteAreas[],
-                                                               aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropAndPasteAsync(acldvppChannelDesc *channelDesc,
+                                                              acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums,
+                                                              uint32_t size, acldvppBatchPicDesc *dstBatchPicDescs,
+                                                              acldvppRoiConfig *cropAreas[],
+                                                              acldvppRoiConfig *pasteAreas[], aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief dvpp vpc batch crop, resize config and paste.
+ *
+ * @par Function
+ * crop the input batch picture with resize config according to the specified area,
+ * and paste the pictures to the specified position of the target pictures
+ * as the output batch pictures
+ *
+ * @param channelDesc [IN]             the channel destruction
+ * @param srcBatchPicDescs [IN]        crop input batch picture destruction
+ * @param roiNums [IN]                 roi config numbers
+ * @param size [IN]                    roiNum size
+ * @param dstBatchPicDescs [IN|OUT]    crop output batch picture destruction
+ * @param cropAreas [IN]               crop area configs
+ * @param pasteAreas [IN]              paste area configs
+ * @param resizeConfig [IN]            resize config
+ * @param stream [IN]                  crop batch and resize config task stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig | acldvppCreateResizeConfig
+ */
+ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropResizePasteAsync(
+  acldvppChannelDesc *channelDesc, acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums, uint32_t size,
+  acldvppBatchPicDesc *dstBatchPicDescs, acldvppRoiConfig *cropAreas[], acldvppRoiConfig *pasteAreas[],
+  acldvppResizeConfig *resizeConfig, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -1862,11 +1940,8 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcCropAndPasteAsync(acldvppChannelDesc *cha
  *
  * @see acldvppCreateChannel | acldvppCreatePicDesc
  */
-ACL_FUNC_VISIBILITY aclError acldvppJpegDecodeAsync(acldvppChannelDesc *channelDesc,
-                                                    const void *data,
-                                                    uint32_t size,
-                                                    acldvppPicDesc *outputDesc,
-                                                    aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppJpegDecodeAsync(acldvppChannelDesc *channelDesc, const void *data, uint32_t size,
+                                                    acldvppPicDesc *outputDesc, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -1884,11 +1959,8 @@ ACL_FUNC_VISIBILITY aclError acldvppJpegDecodeAsync(acldvppChannelDesc *channelD
  *
  * @see acldvppCreateChannel | acldvppCreateJpegeConfig
  */
-ACL_FUNC_VISIBILITY aclError acldvppJpegEncodeAsync(acldvppChannelDesc *channelDesc,
-                                                    acldvppPicDesc *inputDesc,
-                                                    const void *data,
-                                                    uint32_t *size,
-                                                    acldvppJpegeConfig *config,
+ACL_FUNC_VISIBILITY aclError acldvppJpegEncodeAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                    const void *data, uint32_t *size, acldvppJpegeConfig *config,
                                                     aclrtStream stream);
 
 /**
@@ -1906,11 +1978,8 @@ ACL_FUNC_VISIBILITY aclError acldvppJpegEncodeAsync(acldvppChannelDesc *channelD
  *
  * @see acldvppCreateChannel | acldvppCreatePicDesc
  */
-ACL_FUNC_VISIBILITY aclError acldvppPngDecodeAsync(acldvppChannelDesc *channelDesc,
-                                                   const void *data,
-                                                   uint32_t size,
-                                                   acldvppPicDesc *outputDesc,
-                                                   aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppPngDecodeAsync(acldvppChannelDesc *channelDesc, const void *data, uint32_t size,
+                                                   acldvppPicDesc *outputDesc, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -1965,11 +2034,8 @@ ACL_FUNC_VISIBILITY aclError aclvdecDestroyChannel(aclvdecChannelDesc *channelDe
  *
  * @see aclvdecCreateChannel | acldvppCreateStreamDesc | acldvppCreatePicDesc
  */
-ACL_FUNC_VISIBILITY aclError aclvdecSendFrame(aclvdecChannelDesc *channelDesc,
-                                              acldvppStreamDesc *input,
-                                              acldvppPicDesc *output,
-                                              aclvdecFrameConfig *config,
-                                              void *userData);
+ACL_FUNC_VISIBILITY aclError aclvdecSendFrame(aclvdecChannelDesc *channelDesc, acldvppStreamDesc *input,
+                                              acldvppPicDesc *output, aclvdecFrameConfig *config, void *userData);
 
 /**
  * @ingroup AscendCL
@@ -1988,10 +2054,8 @@ ACL_FUNC_VISIBILITY aclError aclvdecSendFrame(aclvdecChannelDesc *channelDesc,
  *
  * @see aclvdecCreateChannel | acldvppCreateStreamDesc | acldvppCreatePicDesc | aclvdecSendFrame
  */
-ACL_FUNC_VISIBILITY aclError aclvdecSendSkippedFrame(aclvdecChannelDesc *channelDesc,
-                                                     acldvppStreamDesc *input,
-                                                     aclvdecFrameConfig *config,
-                                                     void *userData);
+ACL_FUNC_VISIBILITY aclError aclvdecSendSkippedFrame(aclvdecChannelDesc *channelDesc, acldvppStreamDesc *input,
+                                                     aclvdecFrameConfig *config, void *userData);
 
 /**
  * @ingroup AscendCL
@@ -2012,10 +2076,8 @@ ACL_FUNC_VISIBILITY aclError aclvdecSendSkippedFrame(aclvdecChannelDesc *channel
  *
  * @see acldvppCreateChannel | acldvppCreatePicDesc
  */
-ACL_FUNC_VISIBILITY aclError acldvppVpcConvertColorAsync(acldvppChannelDesc *channelDesc,
-                                                         acldvppPicDesc *inputDesc,
-                                                         acldvppPicDesc *outputDesc,
-                                                         aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppVpcConvertColorAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                         acldvppPicDesc *outputDesc, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -2037,11 +2099,8 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcConvertColorAsync(acldvppChannelDesc *cha
  *
  * @see acldvppCreateChannel | acldvppCreatePicDesc
  */
-ACL_FUNC_VISIBILITY aclError acldvppVpcPyrDownAsync(acldvppChannelDesc *channelDesc,
-                                                    acldvppPicDesc *inputDesc,
-                                                    acldvppPicDesc *outputDesc,
-                                                    void *reserve,
-                                                    aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppVpcPyrDownAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *inputDesc,
+                                                    acldvppPicDesc *outputDesc, void *reserve, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -2053,8 +2112,7 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcPyrDownAsync(acldvppChannelDesc *channelD
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppSetChannelDescMode(acldvppChannelDesc *channelDesc,
-                                                       uint32_t mode);
+ACL_FUNC_VISIBILITY aclError acldvppSetChannelDescMode(acldvppChannelDesc *channelDesc, uint32_t mode);
 
 /**
  * @ingroup AscendCL
@@ -2089,8 +2147,7 @@ ACL_FUNC_VISIBILITY uint32_t acldvppGetResizeConfigInterpolation(const acldvppRe
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclvdecSetChannelDescOutMode(aclvdecChannelDesc *channelDesc,
-                                                          uint32_t outMode);
+ACL_FUNC_VISIBILITY aclError aclvdecSetChannelDescOutMode(aclvdecChannelDesc *channelDesc, uint32_t outMode);
 
 /**
  * @ingroup AscendCL
@@ -2187,9 +2244,7 @@ ACL_FUNC_VISIBILITY uint32_t acldvppGetLutMapDims(const acldvppLutMap *lutMap);
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppGetLutMapData(const acldvppLutMap *lutMap,
-                                                  uint32_t dim,
-                                                  uint8_t **data,
+ACL_FUNC_VISIBILITY aclError acldvppGetLutMapData(const acldvppLutMap *lutMap, uint32_t dim, uint8_t **data,
                                                   uint32_t *len);
 /**
  * @ingroup AscendCL
@@ -2207,10 +2262,8 @@ ACL_FUNC_VISIBILITY aclError acldvppGetLutMapData(const acldvppLutMap *lutMap,
  * @see acldvppCreateChannel|acldvppCreatePicDesc|acldvppCreateLutMap
  */
 ACL_FUNC_VISIBILITY aclError acldvppVpcEqualizeHistAsync(const acldvppChannelDesc *channelDesc,
-                                                         const acldvppPicDesc *inputDesc,
-                                                         acldvppPicDesc *outputDesc,
-                                                         const acldvppLutMap *lutMap,
-                                                         aclrtStream stream);
+                                                         const acldvppPicDesc *inputDesc, acldvppPicDesc *outputDesc,
+                                                         const acldvppLutMap *lutMap, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -2231,8 +2284,7 @@ ACL_FUNC_VISIBILITY acldvppBorderConfig *acldvppCreateBorderConfig();
  *
  * @retval ACL_SUCCESS for success, other for failure
  */
-ACL_FUNC_VISIBILITY aclError acldvppSetBorderConfigValue(acldvppBorderConfig *borderConfig,
-                                                         uint32_t index,
+ACL_FUNC_VISIBILITY aclError acldvppSetBorderConfigValue(acldvppBorderConfig *borderConfig, uint32_t index,
                                                          double value);
 
 /**
@@ -2377,10 +2429,8 @@ ACL_FUNC_VISIBILITY aclError acldvppDestroyBorderConfig(acldvppBorderConfig *bor
  * @see acldvppCreateChannel|acldvppCreatePicDesc|acldvppCreateBorderConfig
  */
 ACL_FUNC_VISIBILITY aclError acldvppVpcMakeBorderAsync(const acldvppChannelDesc *channelDesc,
-                                                       const acldvppPicDesc *inputDesc,
-                                                       acldvppPicDesc *outputDesc,
-                                                       const acldvppBorderConfig *borderConfig,
-                                                       aclrtStream stream);
+                                                       const acldvppPicDesc *inputDesc, acldvppPicDesc *outputDesc,
+                                                       const acldvppBorderConfig *borderConfig, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -2397,11 +2447,8 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcMakeBorderAsync(const acldvppChannelDesc 
  *
  * @see acldvppCreateChannel | acldvppCreatePicDesc | acldvppCreateHist
  */
-ACL_FUNC_VISIBILITY aclError acldvppVpcCalcHistAsync(acldvppChannelDesc *channelDesc,
-                                                     acldvppPicDesc *srcPicDesc,
-                                                     acldvppHist *hist,
-                                                     void *reserve,
-                                                     aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError acldvppVpcCalcHistAsync(acldvppChannelDesc *channelDesc, acldvppPicDesc *srcPicDesc,
+                                                     acldvppHist *hist, void *reserve, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -2410,7 +2457,7 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcCalcHistAsync(acldvppChannelDesc *channel
  * @retval null for failed.
  * @retval OtherValues success.
  */
-ACL_FUNC_VISIBILITY acldvppHist* acldvppCreateHist();
+ACL_FUNC_VISIBILITY acldvppHist *acldvppCreateHist();
 
 /**
  * @ingroup AscendCL
@@ -2467,7 +2514,7 @@ ACL_FUNC_VISIBILITY aclError acldvppGetHistData(acldvppHist *hist, uint32_t dim,
  *
  * @see acldvppCreateHist | acldvppVpcCalcHistAsync
  */
-ACL_FUNC_VISIBILITY uint32_t acldvppGetHistRetCode(acldvppHist* hist);
+ACL_FUNC_VISIBILITY uint32_t acldvppGetHistRetCode(acldvppHist *hist);
 
 /**
  * @ingroup AscendCL
@@ -2486,8 +2533,36 @@ ACL_FUNC_VISIBILITY uint32_t acldvppGetHistRetCode(acldvppHist* hist);
  */
 ACL_FUNC_VISIBILITY aclError acldvppClearHist(acldvppHist *hist);
 
+/**
+ * @ingroup AscendCL
+ * @brief dvpp vpc batch crop, resize config and make border.
+ *
+ * @par Function
+ * crop the input batch picture with resize config and border configs according to the specified area
+ * as the output batch pictures
+ *
+ * @param channelDesc [IN]              the channel destruction
+ * @param srcBatchPicDescs [IN]         crop input batch picture destruction
+ * @param roiNums [IN]                  roi config numbers
+ * @param size [IN]                     roiNum size
+ * @param dstBatchPicDescs [IN|OUT]     crop output batch picture destruction
+ * @param cropAreas [IN]                crop area configs
+ * @param borderCfgs [IN]               border configs
+ * @param resizeConfig [IN]             resize config
+ * @param stream [IN]                   crop batch, resize config and make border task stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig | acldvppCreateResizeConfig
+ */
+ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropResizeMakeBorderAsync(
+  acldvppChannelDesc *channelDesc, acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums, uint32_t size,
+  acldvppBatchPicDesc *dstBatchPicDescs, acldvppRoiConfig *cropAreas[], acldvppBorderConfig *borderCfgs[],
+  acldvppResizeConfig *resizeConfig, aclrtStream stream);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_OPS_ACL_DVPP_H_
+#endif  // INC_EXTERNAL_ACL_OPS_ACL_DVPP_H_

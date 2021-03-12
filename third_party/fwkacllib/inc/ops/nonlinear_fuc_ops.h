@@ -531,6 +531,34 @@ REG_OP(Elu)
     .OP_END_FACTORY_REG(Elu)
 
 /**
+*@brief Continuously Differentiable Exponential Linear Uints:
+*       Perform the linear uint element-wise on the input tensor X using formula:
+*       max(0, x) + min(0, alpha * (exp(x/alpha) - 1)). \n
+
+*@par Inputs:
+*x: A float16, float32 or double, for the input data type . \n
+
+*@par Attributes:
+*alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+
+*@par Outputs:
+*y: A float16, float32 or double, for the normalized result . \n
+
+*@attention Constraints:
+*@li The input is of type float16 or float32 . \n
+
+*@par Multiple batches supported or not
+*Supported
+*@par Third-party framework compatibility
+*@li Compatible with ONNX's Celu operator
+*/
+REG_OP(Celu)
+    .INPUT(x, TensorType::FloatingDataType())
+    .OUTPUT(y, TensorType::FloatingDataType())
+    .ATTR(alpha, Float, 1.0)
+    .OP_END_FACTORY_REG(Celu)
+
+/**
 *@brief Computes gradients for the exponential linear (Elu) operation.
 *
 *@par Inputs:

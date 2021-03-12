@@ -101,7 +101,7 @@ REG_OP(FillD)
 */
 REG_OP(BroadcastTo)
     .INPUT(x, TensorType::BasicType())
-    .INPUT(shape, TensorType({DT_INT32}))
+    .INPUT(shape, TensorType({DT_INT32,DT_INT64}))
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(BroadcastTo)
 

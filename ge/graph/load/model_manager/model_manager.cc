@@ -298,10 +298,8 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     GenModelId(&model_id);
   }
 
-  bool is_shape_unknown = false;
   string model_name = "";
-  GE_CHK_STATUS_RET(ge_root_model->CheckIsUnknownShape(is_shape_unknown), "CheckIsUnknownShape failed, model id:%u",
-                    model_id);
+  bool is_shape_unknown = ge_root_model->GetRootGraph()->GetGraphUnknownFlag();
   if (is_shape_unknown || GetContext().GetHostExecFlag()) {
     return DoLoadHybridModelOnline(model_id, model_name, ge_root_model, listener);
   }

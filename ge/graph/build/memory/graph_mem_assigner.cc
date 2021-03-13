@@ -803,9 +803,9 @@ Status GraphMemoryAssigner::FilterAtomicNodesForMemoryAssign(
               (void) ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_REFERENCE, is_reference);
               if (is_reference) {
                 REPORT_INNER_ERROR("E19999", "Op:%s cannot have both atomic and is_reference attribute, "
-                                   "not support now", peer_in_node_desc->GetName());
+                                   "not support now", peer_in_node_desc->GetName().c_str());
                 GELOGE(FAILED, "[Check][Attr]Op:%s cannot have both atomic and is_reference attribute, "
-                               "not support now", peer_in_node_desc->GetName());
+                               "not support now", peer_in_node_desc->GetName().c_str());
                 return ge::PARAM_INVALID;
               }
 

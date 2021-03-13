@@ -5354,14 +5354,14 @@ TEST_F(UtestFormatTransferNhwcFz, build_transfer_uint8) {
   EXPECT_NE(transfer, nullptr);
 }
 
-TEST_F(UtestFormatTransferNhwcFz, invalid_data_type) {
-  uint16_t data[1 * 4 * 4 * 1] = {0};
-  TransArgs args{
-      reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_NZ, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_VARIANT};
-  FormatTransferFractalZ transfer;
-  EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
-            ACL_ERROR_GE_DATATYPE_INVALID);
-}
+// TEST_F(UtestFormatTransferNhwcFz, invalid_data_type) {
+//   uint16_t data[1 * 4 * 4 * 1] = {0};
+//   TransArgs args{
+//       reinterpret_cast<uint8_t *>(data), FORMAT_NHWC, FORMAT_FRACTAL_NZ, {1, 4, 4}, {1, 1, 1, 16, 16}, DT_VARIANT};
+//   FormatTransferFractalZ transfer;
+//   EXPECT_EQ(transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape),
+//             ACL_ERROR_GE_DATATYPE_INVALID);
+// }
 
 TEST_F(UtestFormatTransferNhwcFz, invalid_data_format) {
   uint16_t data[1 * 4 * 4 * 1] = {0};

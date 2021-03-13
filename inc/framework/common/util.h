@@ -113,12 +113,12 @@
   } while (0)
 
 // Check if the parameter is null. If yes, return PARAM_INVALID and record the error
-#define GE_CHECK_NOTNULL(val)                         \
-  do {                                                \
-    if (val == nullptr) {                             \
-      DOMI_LOGE("param[%s] must not be null.", #val); \
-      return ge::PARAM_INVALID;                       \
-    }                                                 \
+#define GE_CHECK_NOTNULL(val)                                                     \
+  do {                                                                            \
+    if (val == nullptr) {                                                         \
+      DOMI_LOGE("[Check][Param:%s]null is invalid when %s.", #val, __FUNCTION__); \
+      return ge::PARAM_INVALID;                                                   \
+    }                                                                             \
   } while (0)
 
 // Check if the parameter is null. If yes, just return and record the error

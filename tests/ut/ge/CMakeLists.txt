@@ -55,6 +55,7 @@ include_directories(${GE_CODE_DIR}/metadef/inc/graph)
 include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/common)
 include_directories(${GE_CODE_DIR}/metadef/third_party)
+include_directories(${GE_CODE_DIR}/metadef/third_party/transformer/inc)
 include_directories(${GE_CODE_DIR}/parser)
 include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
@@ -87,8 +88,8 @@ set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/node.cc"
     "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
     "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cpp"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cpp"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cc"
     "${GE_CODE_DIR}/metadef/graph/operator.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"

@@ -87,8 +87,9 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
   } else {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "engine type",
-        "it only support kEngineNameDefault/kAIcoreEngine/kVectorEngine"});
-    GELOGE(FAILED, "CheckEngineType: engine type: %d not support.", static_cast<int>(engine_type));
+        "it only support default/AIcoreEngine/VectorEngine"});
+    GELOGE(FAILED, "[Check][EngineType]value:%d not support, "
+           "only support default/AIcoreEngine/VectorEngine now", static_cast<int>(engine_type));
     return FAILED;
   }
 
@@ -192,17 +193,20 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
 
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
-  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail");
-  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail");
+  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                   "[Add][InputDesc]fail for node:%s", data_op->GetName().c_str());
+  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                   "[Add][OutputDesc]fail for node:%s", data_op->GetName().c_str());
   if (attr) {
-    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, index), return FAILED, "Set index fail");
+    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, index), return FAILED,
+                     "[Set][Attr:%s]fail for node:%s", ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
   }
 
   ge::NodePtr arg_node = graph->AddNode(data_op);
   GE_CHK_BOOL_EXEC(arg_node != nullptr, return FAILED, "Insert Data node fail");
 
   GE_CHK_STATUS(GraphUtils::AddEdge(arg_node->GetOutDataAnchor(0), node->GetInDataAnchor(index)),
-                "Add edge[%s->%s] fail", data_op->GetName().c_str(), node->GetName().c_str());
+                "[Add][Edge]fail from node:%s to node:%s", data_op->GetName().c_str(), node->GetName().c_str());
 
   return SUCCESS;
 }
@@ -217,20 +221,23 @@ static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, cons
   for (const auto &out_desc : outputs) {
     GeTensorDesc tensor = out_desc.GetTensorDesc();
     TensorUtils::SetInputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail.");
+    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                     "[Add][InputDesc]fail for node:%s", op_desc->GetName().c_str());
 
     TensorUtils::SetInputTensor(tensor, false);
     TensorUtils::SetOutputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail.");
+    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                     "[Add][OutputDesc]fail for node:%s", op_desc->GetName().c_str());
     count++;
   }
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   ge::NodePtr out_node = graph->AddNode(op_desc);
-  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED, "Insert Output node fail");
+  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED,
+                   "[Add][Node:%s]fail in graph:%u", op_desc->GetName().c_str(), graph->GetGraphID());
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
   for (int32_t i = 0; i < count; ++i) {
     GE_CHK_STATUS(GraphUtils::AddEdge(node->GetOutDataAnchor(i), out_node->GetInDataAnchor(i)),
-                  "Add edge[%s->%s] fail", node->GetName().c_str(), out_node->GetName().c_str());
+                  "[Add][Edge]fail from node:%s to node:%s", node->GetName().c_str(), out_node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -250,7 +257,7 @@ static void GetOpsProtoPath(string &opsproto_path) {
     return;
   }
   string path_base = PluginManager::GetPath();
-  GELOGI("path_base is %s.", path_base.c_str());
+  GELOGI("path_base is %s", path_base.c_str());
   path_base = path_base.substr(0, path_base.rfind('/'));
   path_base = path_base.substr(0, path_base.rfind('/') + 1);
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
@@ -335,7 +342,7 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
   ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
   string opsproto_path;
   GetOpsProtoPath(opsproto_path);
-  GELOGI("Get opsproto path is %s.", opsproto_path.c_str());
+  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
   OpsProtoManager *manager = OpsProtoManager::Instance();
   map<string, string> option_tmp;
   option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));
@@ -714,7 +721,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     auto node = comp_graph->FindNode(op_desc->GetName());
     Status ret = CheckEngineTypeSupport(node, engine_type);
     if (ret != SUCCESS) {
-      GELOGE(ret, "check engine type failed");
+      GELOGE(ret, "[Check][EngineType]value:%d for node:%s not support", engine_type, node->GetName().c_str());
       return ret;
     }
   }
@@ -788,9 +795,9 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
-  GELOGI("Start to build single op online, input size: %zu, output size: %zu.", inputs.size(), outputs.size());
+  GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
-  GELOGI("Finish build single online model, status: %u.", status);
+  GELOGI("Finish build single online model, status: %u", status);
   return status;
 }
 

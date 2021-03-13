@@ -87,10 +87,10 @@ bool ShouldSplit(const Block *block, size_t size) {
 
 void IncreaseCount(std::map<size_t, size_t> &count, size_t size) {
   auto it = count.find(size);
-  if (it != count.end()) {
-    it->second++;
-  } else  {
+  if (it == count.end()) {
     count.emplace(size, 1);
+  } else  {
+    it->second++;
   }
 }
 
@@ -132,18 +132,18 @@ void CachingAllocator::Finalize(uint32_t device_id) {
 
 uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device_id) {
   GELOGI("Start malloc pool memory, size = %zu, device id = %u", size, device_id);
-  uint8_t *ptr = nullptr;
   size = GetBlockSize(size);
+  uint8_t *ptr = nullptr;
   Block *block = FindFreeBlock(size, org_ptr, device_id);
-  if (block != nullptr) {
-    ptr = block->ptr;
-  } else {
+  if (block == nullptr) {
     if (ge::SUCCESS == TryExtendCache(size, device_id)) {
       block = FindFreeBlock(size, org_ptr, device_id);
       if (block != nullptr) {
         ptr = block->ptr;
       }
     }
+  } else {
+    ptr = block->ptr;
   }
   if (ptr == nullptr) {
     GELOGE(FAILED, "Malloc failed device id = %u, size= %zu", device_id, size);
@@ -187,7 +187,7 @@ void CachingAllocator::FreeBlock(Block *block) {
 }
 
 void CachingAllocator::MergeBlocks(Block *dst, Block *src, BlockBin &bin) {
-  if (!CanMerge(dst) || !CanMerge(src)) {
+  if (!CanMerge(src) || !CanMerge(dst)) {
     return;
   }
 

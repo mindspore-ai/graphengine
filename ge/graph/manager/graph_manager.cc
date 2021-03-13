@@ -359,7 +359,10 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   std::shared_ptr<Graph> graph_ptr = MakeShared<ge::Graph>(graph);
   GE_IF_BOOL_EXEC(graph_ptr == nullptr, GELOGE(FAILED, "GraphPtr make shared failed");
                   return FAILED);
-
+  // update option about tuning graph
+  ParseOption(options, BUILD_MODE, options_.build_mode);
+  ParseOption(options, BUILD_STEP, options_.build_step);
+  ParseOption(options, TUNING_PATH, options_.tuning_path);
   graph_node->SetGraph(graph_ptr);
   graph_node->SetOptions(options);
   AddGraphNode(graph_id, graph_node);
@@ -433,6 +436,10 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
     GELOGE(FAILED, "GraphPtr make shared failed");
     return FAILED;
   }
+  // update option about tuning graph
+  ParseOption(options, BUILD_MODE, options_.build_mode);
+  ParseOption(options, BUILD_STEP, options_.build_step);
+  ParseOption(options, TUNING_PATH, options_.tuning_path);
 
   graph_node->SetGraph(graph_ptr);
   graph_node->SetOptions(options);
@@ -1466,6 +1473,10 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   GE_IF_BOOL_EXEC(ret != SUCCESS,
                   GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.compressFlag value is invalid, must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
+  // Set Build model and step
+  ParseOption(options, BUILD_MODE, options_.build_mode);
+  ParseOption(options, BUILD_STEP, options_.build_step);
+  ParseOption(options, BUILD_STEP, options_.tuning_path);
 
   // ge.graphType.
   options_.run_graph_flag = true;
@@ -1514,10 +1525,6 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   GELOGD("Dynamic dims params: input shape is %s, dynamic dims is %s, dynamic node type is %d",
          options_.input_shape.c_str(), options_.dynamic_dims.c_str(), options_.dynamic_node_type);
 
-  // Set Build model and step
-  ParseOption(options, BUILD_MODE, options_.build_mode);
-  ParseOption(options, BUILD_STEP, options_.build_step);
-
   return SUCCESS;
 }
 
@@ -1549,6 +1556,7 @@ void GraphManager::ParseOption(const std::map<std::string, std::string> &options
                                std::string &option) {
   auto iter = options.find(key);
   if (iter != options.end()) {
+    GELOGD("Set option %s from value %s to value%s", key.c_str(), option.c_str(), iter->second.c_str());
     option = iter->second;
   }
 }
@@ -3130,6 +3138,21 @@ Status GraphManager::ConvertGraphToFile(ComputeGraphPtr &compute_graph, GraphPar
       tuning_subgraphs.push_back(sub_graph_tmp);
     } else {
       non_tuning_subgraphs.push_back(sub_graph_tmp);
+    }
+  }
+  // for function graphs to tune
+  for (auto &function_graph : compute_graph->GetAllSubgraphs()) {
+    auto subgraph_list = sub_graph_map[function_graph];
+    for (const auto &sub_graph_info_ptr : subgraph_list) {
+      GE_CHECK_NOTNULL(sub_graph_info_ptr);
+      ComputeGraphPtr sub_graph_tmp = sub_graph_info_ptr->GetSubGraph();
+      // need to tuning
+      if (sub_graph_info_ptr->GetEngineName() == kVectorEngine ||
+          sub_graph_info_ptr->GetEngineName() == kAIcoreEngine) {
+        tuning_subgraphs.push_back(sub_graph_tmp);
+      } else {
+        non_tuning_subgraphs.push_back(sub_graph_tmp);
+      }
     }
   }
   return TuningUtils::ConvertGraphToFile(tuning_subgraphs, non_tuning_subgraphs, exe_flag, path);

@@ -1305,7 +1305,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
       auto format = desc.GetFormat();
       auto origin_format = desc.GetOriginFormat();
       // data maybe internal format [FRACTAL_NZ] at singleop process such as GEMM.
-      bool need_check_internal_format = (!IsTansDataOpData(input_node)) && (!options_.is_single_op);
+      auto tune_flag = (options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_BUILDER);
+      bool need_check_internal_format = (!IsTansDataOpData(input_node)) && (!options_.is_single_op) && (!tune_flag);
       if (need_check_internal_format) {
         bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
         if (is_internal) {
@@ -1347,19 +1348,22 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
         return FAILED;
       }
       ge::TensorUtils::SetSize(desc, shape_size);
-      graphStatus graph_ret = op->UpdateInputDesc(0, desc);
-      if (graph_ret != GRAPH_SUCCESS) {
-        GELOGE(graph_ret, "UpdateInputDesc fail, graph_ret:%u", graph_ret);
-        return graph_ret;
+      if (!tune_flag) {
+        graphStatus graph_ret = op->UpdateInputDesc(0, desc);
+        if (graph_ret != GRAPH_SUCCESS) {
+          GELOGE(graph_ret, "UpdateInputDesc fail, graph_ret:%u", graph_ret);
+          return graph_ret;
+        }
+        // Size will be recalculated in the build stage
+        ge::TensorUtils::SetSize(desc, 0);
+        graph_ret = op->UpdateOutputDesc(0, desc);
+        if (graph_ret != GRAPH_SUCCESS) {
+          GELOGE(graph_ret, "UpdateOutputDesc fail, graph_ret:%u", graph_ret);
+          return graph_ret;
+        }
+      } else {
+        GELOGI("data %s skip update info in tune mode", op->GetName().c_str());
       }
-      // Size will be recalculated in the build stage
-      ge::TensorUtils::SetSize(desc, 0);
-      graph_ret = op->UpdateOutputDesc(0, desc);
-      if (graph_ret != GRAPH_SUCCESS) {
-        GELOGE(graph_ret, "UpdateOutputDesc fail, graph_ret:%u", graph_ret);
-        return graph_ret;
-      }
-
       if (!dynamic_shape_range_vec.empty()) {
         ret = UpdateDynamicInputShapeRange(index, dynamic_shape_range_vec, op, desc);
         GE_CHK_STATUS_RET(ret, "Fail to update dynamic input shape range on %s.", op->GetName().c_str());

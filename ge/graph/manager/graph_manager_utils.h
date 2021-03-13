@@ -249,6 +249,7 @@ struct GraphManagerOptions {
   std::string save_original_model;
   std::string build_mode;
   std::string build_step;
+  std::string tuning_path;
   std::string input_shape;
   std::string dynamic_dims;
   int32_t dynamic_node_type = -1;
@@ -275,7 +276,8 @@ struct GraphManagerOptions {
         is_single_op(false),
         save_original_model("false"),
         build_mode(""),
-        build_step("") {}
+        build_step(""),
+        tuning_path(""){}
 };
 }  // namespace ge
 

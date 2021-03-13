@@ -55,7 +55,7 @@ void VectorCoreDNNEngine::GetAttributes(DNNEngineAttribute &attrs) const { attrs
 
 AICpuDNNEngine::AICpuDNNEngine(const std::string &engine_name) {
   engine_attribute_.engine_name = engine_name;
-  engine_attribute_.compute_cost = COST_3;
+  engine_attribute_.compute_cost = COST_2;
   engine_attribute_.runtime_type = DEVICE;
   engine_attribute_.engine_input_format = FORMAT_RESERVED;
   engine_attribute_.engine_output_format = FORMAT_RESERVED;
@@ -71,7 +71,7 @@ void AICpuDNNEngine::GetAttributes(DNNEngineAttribute &attrs) const { attrs = en
 
 AICpuTFDNNEngine::AICpuTFDNNEngine(const std::string &engine_name) {
   engine_attribute_.engine_name = engine_name;
-  engine_attribute_.compute_cost = COST_2;
+  engine_attribute_.compute_cost = COST_3;
   engine_attribute_.runtime_type = DEVICE;
   engine_attribute_.engine_input_format = FORMAT_RESERVED;
   engine_attribute_.engine_output_format = FORMAT_RESERVED;

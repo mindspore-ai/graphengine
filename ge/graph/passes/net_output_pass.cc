@@ -555,6 +555,8 @@ void NetOutputPass::AddInOutForNetOutputOp(const ComputeGraphPtr &graph, OpDescP
       return;
     }
     ge::GeTensorDesc out_desc = src_node->GetOpDesc()->GetOutputDesc(src_index);
+    out_desc.SetFormat(FORMAT_ND);
+    out_desc.SetOriginFormat(FORMAT_ND);
     GE_IF_BOOL_EXEC(net_output_desc->AddInputDesc(out_desc) != SUCCESS, GELOGW("add input desc failed"); return );
     is_input_const.push_back(PassUtils::IsConstant(src_node));
     ++iter;

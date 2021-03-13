@@ -24,7 +24,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "../graph/passes/graph_builder_utils.h"
-#include "../graph/manager/graph_manager.h
+#include "../graph/manager/graph_manager.h"
 
 using namespace std;
 

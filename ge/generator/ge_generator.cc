@@ -50,6 +50,8 @@ const char *const kFileNameSuffix = "online";
 const char *const kAicpuAllshape = "_AllShape";
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 const int64_t kDynamicDimValue = -2;
+const int kDefaultDeviceId = 0;
+const int kDefaultJobId = 0;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
     {ge::ENGINE_SYS, kEngineNameDefault},
@@ -919,12 +921,10 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   auto session_id = atomic_session_id.fetch_add(1);
   // This is a temporary add for graph with variable
   auto version = static_cast<int32_t>(SessionVersion::ClOUD_VERSION);
-  const int DEFAULT_DEVICE_ID = 0;
-  const int DEFAULT_JOB_ID= 0;
-  ret = VarManager::Instance(session_id)->Init(version, session_id, DEFAULT_DEVICE_ID, DEFAULT_JOB_ID);
+  ret = VarManager::Instance(session_id)->Init(version, session_id, kDefaultDeviceId, kDefaultJobId);
   GELOGI("Start init var instance, session_id %lu", session_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed init var instance, session_id %lu", session_id);
+    GELOGW("Failed init var instance, session_id %lu", session_id);
   }
   if (is_singleop_unregistered_) {
     ret = graph_manager_.BuildGraphForUnregisteredOp(graph_id, inputs, ge_root_model, session_id);

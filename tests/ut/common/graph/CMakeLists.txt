@@ -98,8 +98,8 @@ set(SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/utils/transformer_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
     "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cpp"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cpp"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cc"
 )
 
 #add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})

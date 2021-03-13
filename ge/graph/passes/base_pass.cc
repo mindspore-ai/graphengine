@@ -31,7 +31,7 @@ constexpr size_t kMaxOneInNodes = 1000;
 // Each iteration, we take about 0.3k memory on the stack, we should change the recursion to loop later
 constexpr int kMaxRecursiveDepth = 20;
 
-void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::queue<NodePtr> &input_edge_nodes,
+void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::deque<NodePtr> &input_edge_nodes,
                             std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_last) {
   nodes_last.clear();
   for (auto &node : graph->GetDirectNode()) {
@@ -40,7 +40,7 @@ void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::queue<NodePtr> &i
     }
     size_t in_nums = node->GetInNodes().size();
     if (in_nums == 0) {
-      input_edge_nodes.push(node);
+      input_edge_nodes.push_back(node);
       nodes_seen.insert(node.get());
     } else if (in_nums > kMaxOneInNodes) {
       nodes_last.insert(node);
@@ -48,7 +48,7 @@ void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::queue<NodePtr> &i
   }
 }
 
-void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::queue<NodePtr> &nodes_to_pass,
+void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::deque<NodePtr> &nodes_to_pass,
                       std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_last) {
   for (auto &node : nodes) {
     if (node == nullptr) {
@@ -60,13 +60,14 @@ void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::queue<NodePtr> &n
 
     bool all_in_nodes_seen = node->IsAllInNodesSeen(nodes_seen);
     if (all_in_nodes_seen && nodes_seen.insert(node.get()).second) {
-      nodes_to_pass.push(node);
+      nodes_to_pass.push_back(node);
     }
   }
 }
 
 Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unordered_set<NodePtr> &nodes_re_pass,
-                 std::unordered_set<NodePtr> &nodes_deleted, std::unordered_set<Node *> &nodes_seen) {
+                 std::unordered_set<NodePtr> &nodes_re_pass_immediately, std::unordered_set<NodePtr> &nodes_deleted,
+                 std::unordered_set<Node *> &nodes_seen) {
   if (node == nullptr) {
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
@@ -99,6 +100,21 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, std::unorder
       if (nodes_seen.count(node_to_re_pass.get()) > 0 || node_to_re_pass->IsAllInNodesSeen(nodes_seen)) {
         GELOGD("The node %s will be re-pass later", node_to_re_pass->GetName().c_str());
         nodes_re_pass.insert(node_to_re_pass);
+      } else {
+        GELOGD("The node %s are not all seen, don't set repass this time", node_to_re_pass->GetName().c_str());
+      }
+    }
+
+    auto nodes_to_re_pass_immediately = name_to_pass.second->GetNodesNeedRePassImmediately();
+    for (const auto &node_to_re_pass : nodes_to_re_pass_immediately) {
+      if (node_to_re_pass == nullptr) {
+        GELOGW("Found null re-pass node when executing %s on node %s type %s", name_to_pass.first.c_str(),
+               node->GetName().c_str(), node->GetType().c_str());
+        continue;
+      }
+      if (nodes_seen.count(node_to_re_pass.get()) > 0 || node_to_re_pass->IsAllInNodesSeen(nodes_seen)) {
+        GELOGD("The node %s will be re-pass immediately.", node_to_re_pass->GetName().c_str());
+        nodes_re_pass_immediately.insert(node_to_re_pass);
       } else {
         GELOGD("The node %s are not all seen, don't set repass this time", node_to_re_pass->GetName().c_str());
       }
@@ -181,10 +197,11 @@ Status GEPass::Run(const NamesToPass &names_to_passes) {
 
 Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
   GELOGD("Begin to run pass on graph, passes count %zu", names_to_passes.size());
-  std::queue<NodePtr> nodes;
+  std::deque<NodePtr> nodes;
   std::unordered_set<Node *> nodes_seen;
   std::unordered_set<NodePtr> nodes_deleted;
   std::unordered_set<NodePtr> nodes_re_pass;
+  std::unordered_set<NodePtr> nodes_re_pass_immediately;
   std::unordered_set<NodePtr> nodes_last;
   GetAllNodesNoInputEdge(graph_, nodes, nodes_seen, nodes_last);
   GELOGD("Start points count %zu", nodes.size());
@@ -192,14 +209,14 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
 
   do {
     for (auto &node : nodes_re_pass) {
-      nodes.push(node);
+      nodes.push_back(node);
       nodes_seen.insert(node.get());
     }
     nodes_re_pass.clear();
 
     while (!nodes.empty()) {
       NodePtr node = nodes.front();
-      nodes.pop();
+      nodes.pop_front();
 
       (void)nodes_re_pass.erase(node);
       GE_IF_BOOL_EXEC(node == nullptr, GELOGW("node is null"); continue);
@@ -210,7 +227,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
 
       AddNextIterNodes(node->GetOutNodes(), nodes, nodes_seen, nodes_last);
 
-      auto ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_deleted, nodes_seen);
+      auto ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_re_pass_immediately, nodes_deleted, nodes_seen);
       if (ret != SUCCESS) {
         GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
                node->GetName().c_str(), node->GetType().c_str(), ret);
@@ -227,7 +244,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
       if (has_sub_graph) {
         GELOGD("There are subgraphs on node %s, run passes for for the second time", node->GetName().c_str());
         SetFlagOption(kOptimizeAfterSubGraph, names_to_passes);
-        ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_deleted, nodes_seen);
+        ret = RunPasses(node, names_to_passes, nodes_re_pass, nodes_re_pass_immediately, nodes_deleted, nodes_seen);
         if (ret != SUCCESS) {
           GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
                  node->GetName().c_str(), node->GetType().c_str(), ret);
@@ -239,12 +256,16 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         // should be called each time at the begin of the iteration
         ClearOption(names_to_passes);
       }
+      for(auto &node : nodes_re_pass_immediately){
+        nodes.push_front(node);
+      }
+      nodes_re_pass_immediately.clear();
     }
 
     for (auto &node : nodes_last) {
       bool all_in_nodes_seen = node->IsAllInNodesSeen(nodes_seen);
       if (all_in_nodes_seen && nodes_seen.insert(node.get()).second) {
-        nodes.push(node);
+        nodes.push_back(node);
       }
     }
     nodes_last.clear();

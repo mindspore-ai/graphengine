@@ -150,6 +150,7 @@ elseif(ENABLE_MS_TESTCASES)
     include(cmake/external_libs/protobuf_static.cmake)
     include(cmake/external_libs/protoc.cmake)
     include(cmake/external_libs/securec.cmake)
+    include(cmake/external_libs/json.cmake)
     include(cmake/FindModule.cmake)
     include(cmake/intf_pub_linux.cmake)
 

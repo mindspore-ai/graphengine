@@ -202,6 +202,8 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
     GE_CHECK_NOTNULL(src_op_desc);
     uint32_t peer_index = static_cast<uint32_t>(in_anchor->GetPeerOutAnchor()->GetIdx());
     ge::GeTensorDesc output_in_desc = src_op_desc->GetOutputDesc(peer_index);
+    output_in_desc.SetFormat(FORMAT_ND);
+    output_in_desc.SetOriginFormat(FORMAT_ND);
     if (net_output_desc->UpdateInputDesc(index, output_in_desc) != GRAPH_SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Update input desc failed, index:%u.", index);
       return INTERNAL_ERROR;

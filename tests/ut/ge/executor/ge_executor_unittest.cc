@@ -39,4 +39,10 @@ TEST_F(UtestGeExecutor, test_single_op_exec) {
   EXPECT_EQ(exeutor.LoadSingleOp(model_name, model_data, nullptr, nullptr), ACL_ERROR_GE_INTERNAL_ERROR);
   EXPECT_EQ(exeutor.LoadDynamicSingleOp(model_name, model_data, nullptr, nullptr), PARAM_INVALID);
 }
+
+TEST_F(UtestGeExecutor, test_ge_initialize) {
+  GeExecutor executor;
+  EXPECT_EQ(executor.Initialize(), SUCCESS);
+  EXPECT_EQ(executor.Initialize(), SUCCESS);
+}
 }  // namespace ge

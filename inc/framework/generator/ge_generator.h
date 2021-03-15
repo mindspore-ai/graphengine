@@ -29,6 +29,7 @@
 #include "graph/op_desc.h"
 #include "graph/detail/attributes_holder.h"
 #include "omg/omg_inner_types.h"
+#include "model/ge_root_model.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY GeGenerator {
@@ -98,6 +99,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
                        const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                        bool is_offline = true);
   Status CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
+  Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
 
   class Impl;
 

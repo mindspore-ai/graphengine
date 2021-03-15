@@ -31,6 +31,7 @@
 #include "common/scope_guard.h"
 #include "common/thread_pool.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/util.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
@@ -297,6 +298,11 @@ void DavinciModel::ReleaseTask() {
       GE_CHK_STATUS(task->Release(), "Release task failed.");
     }
   }
+
+  for (auto &item : label_goto_args_) {
+    GE_FREE_RT_LOG(item.second.first);
+  }
+  label_goto_args_.clear();
 }
 
 Status DavinciModel::Assign(const GeModelPtr &ge_model) {
@@ -1332,6 +1338,39 @@ void DavinciModel::ParseDynamicOutShape(const std::vector<std::string> &str_info
     GELOGI("Shape from attr is %s", formats::JoinToString(shape).c_str());
     vec_info.emplace_back(shape);
   }
+}
+
+Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type, void *&arg_addr, uint32_t &arg_size) {
+  std::lock_guard<std::mutex> lock(label_args_mutex_);
+  auto it = label_goto_args_.find(label_index);
+  if (it != label_goto_args_.end()) {
+    arg_addr = it->second.first;
+    arg_size = it->second.second;
+    return SUCCESS;
+  }
+
+  if (label_index >= label_list_.size()) {
+    GELOGE(PARAM_INVALID, "LabelGotoExTaskInfo: Invalid label id:%u, label size:%zu", label_index, label_list_.size());
+    return INTERNAL_ERROR;
+  }
+  GE_CHECK_NOTNULL(label_list_[label_index]);
+  vector<rtLabel_t> label_used = { label_list_[label_index] };
+
+  arg_size = label_used.size() * sizeof(rtLabelDevInfo);
+  rtError_t rt_ret = rtMalloc(&arg_addr, arg_size, mem_type);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rtMalloc failed, error: %#x", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+
+  rt_ret = rtLabelListCpy(label_used.data(), label_used.size(), arg_addr, arg_size);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rtLabelListCpy failed, error: %#x", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+
+  label_goto_args_[label_index] = { arg_addr, arg_size };
+  return SUCCESS;
 }
 
 /// @ingroup ge

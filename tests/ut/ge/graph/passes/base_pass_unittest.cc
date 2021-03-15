@@ -75,6 +75,7 @@ class UtestTestPass : public BaseNodePass {
         return SUCCESS;
       }
       if(need_repass){
+        AttrUtils::SetBool(node->GetOpDesc(),"need_infer_again_", false);
         AddImmediateRePassNode(node);
       }
       else{

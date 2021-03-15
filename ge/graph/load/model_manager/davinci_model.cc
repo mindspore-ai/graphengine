@@ -1350,7 +1350,7 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   }
 
   if (label_index >= label_list_.size()) {
-    GELOGE(PARAM_INVALID, "LabelGotoExTaskInfo: Invalid label id:%u, label size:%zu", label_index, label_list_.size());
+    GELOGE(INTERNAL_ERROR, "Invalid label id:%u, label size:%zu", label_index, label_list_.size());
     return INTERNAL_ERROR;
   }
   GE_CHECK_NOTNULL(label_list_[label_index]);
@@ -1363,13 +1363,13 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
+  label_goto_args_[label_index] = { arg_addr, arg_size };
   rt_ret = rtLabelListCpy(label_used.data(), label_used.size(), arg_addr, arg_size);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rtLabelListCpy failed, error: %#x", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
-  label_goto_args_[label_index] = { arg_addr, arg_size };
   return SUCCESS;
 }
 

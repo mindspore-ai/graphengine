@@ -42,17 +42,16 @@ Status InferShapePass::Run(NodePtr &node) {
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }
-  if(node->GetType() == WHILE){
+  if (node->GetType() == WHILE) {
     bool need_repass = false;
-    AttrUtils::GetBool(node->GetOpDesc(),"need_infer_again_", need_repass);
-    if(!OptionExists(kOptimizeAfterSubGraph)){
+    AttrUtils::GetBool(node->GetOpDesc(), "need_infer_again_", need_repass);
+    if (!OptionExists(kOptimizeAfterSubGraph)) {
       return SUCCESS;
     }
-    if(need_repass){
+    if (need_repass) {
       AddImmediateRePassNode(node);
       GELOGD("Node %s need repass immediately.", node->GetName().c_str());
-    }
-    else{
+    } else {
       // clear attr on while
       node->GetOpDesc()->DelAttr("need_infer_again_");
     }

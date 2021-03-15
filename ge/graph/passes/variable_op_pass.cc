@@ -119,8 +119,9 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
     return INTERNAL_ERROR;
   }
 
+  auto graph_id = GraphUtils::FindRootGraph(graph)->GetGraphID();
   GELOGD("Begin to run variable op pass on graph %s, session %lu, graph id %u", graph->GetName().c_str(),
-         GetContext().SessionId(), graph->GetGraphID());
+         GetContext().SessionId(), graph_id);
 
   if (var_accelerate_ctrl_ == nullptr) {
     GELOGE(INTERNAL_ERROR, "Failed to run var op pass, the variable accelerate control is null");
@@ -176,7 +177,7 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
       GELOGE(INTERNAL_ERROR, "Failed to update the format fusion road for var %s", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    ret = VarManager::Instance(graph->GetSessionID())->SetChangedGraphId(node->GetName(), graph->GetGraphID());
+    ret = VarManager::Instance(graph->GetSessionID())->SetChangedGraphId(node->GetName(), graph_id);
     if (ret != SUCCESS) {
       GELOGE(INTERNAL_ERROR, "Failed to update the graph id for var %s", node->GetName().c_str());
       return INTERNAL_ERROR;

@@ -73,7 +73,8 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size, int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;

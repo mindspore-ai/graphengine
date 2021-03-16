@@ -273,8 +273,8 @@ Status HybridModelBuilder::ParseForceInfershapeNodes(const NodePtr &node, NodeIt
   // not care result, if no this attr, stand for the op does not need force infershape
   (void)AttrUtils::GetBool(op_desc, kForceInfershape, node_item.is_need_force_infershape);
   GELOGD("node [%s] is need do infershape , flag is %d",
-    op_desc->GetName().c_str(),
-    node_item.is_need_force_infershape);
+         op_desc->GetName().c_str(),
+         node_item.is_need_force_infershape);
   return SUCCESS;
 }
 

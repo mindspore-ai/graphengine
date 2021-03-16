@@ -127,7 +127,8 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       dst == nullptr,
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+             "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
              TypeUtils::FormatToSerialString(args.src_format).c_str(),
              TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
@@ -173,7 +174,8 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
             }
           }
           if (ret != EOK) {
-            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d pad mode %d", offset,
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                   "Failed to operate the dst memory at offset %ld, error-code %d pad mode %d", offset,
                    ret, need_pad_zero);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
@@ -213,7 +215,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       dst == nullptr,
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+             "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
              TypeUtils::FormatToSerialString(args.src_format).c_str(),
              TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
@@ -235,7 +238,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
                              static_cast<size_t>(data_size));
             } else {
               if (protected_size < data_size) {
-                GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
+                GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                       "Failed to operate the dst memory, protected_size is %ld and size is %ld",
                        protected_size, data_size);
                 return ACL_ERROR_GE_PARAM_INVALID;
               }
@@ -247,7 +251,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
               }
             }
             if (ret != EOK) {
-              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
+              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                     "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
                      dst_offset, ret, pad_zero);
               return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
             }
@@ -288,7 +293,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       dst == nullptr,
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+             "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
              TypeUtils::FormatToSerialString(args.src_format).c_str(),
              TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
@@ -310,7 +316,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
                              static_cast<size_t>(data_size));
             } else {
               if (protected_size < data_size) {
-                GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
+                GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                       "Failed to operate the dst memory, protected_size is %ld and size is %ld",
                        protected_size, data_size);
                 return ACL_ERROR_GE_PARAM_INVALID;
               }
@@ -322,7 +329,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
               }
             }
             if (ret != EOK) {
-              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
+              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                     "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
                      dst_offset, ret, pad_zero);
               return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
             }

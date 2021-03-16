@@ -273,6 +273,8 @@ class DavinciModel {
 
   const vector<rtLabel_t> &GetLabelList() const { return label_list_; }
 
+  Status GetLabelGotoAddr(uint32_t label_index, rtMemType_t memory_type, void *&addr, uint32_t &size);
+
   Status DestroyThread();
 
   // get Op
@@ -929,6 +931,9 @@ class DavinciModel {
 
   vector<rtLabel_t> label_list_;
   set<uint32_t> label_id_indication_;
+
+  mutex label_args_mutex_;
+  map<uint32_t, pair<void *, uint32_t>> label_goto_args_;
 
   mutex outside_addrs_mutex_;
   vector<ZeroCopyTask> zero_copy_tasks_;  // Task used Data or NetOutput addr.

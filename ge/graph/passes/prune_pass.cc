@@ -27,7 +27,7 @@
 
 namespace ge {
 Status PrunePass::Run(ge::ComputeGraphPtr graph) {
-  GELOGD("PrunePass Start, graph is [%s]", graph->GetName().c_str());
+  GELOGD("PrunePass Start, graph is [%s].", graph->GetName().c_str());
   if (graph == nullptr) {
     GELOGE(GE_GRAPH_ISNULL, "input compute graph is NULL.");
     return GE_GRAPH_ISNULL;
@@ -42,7 +42,7 @@ Status PrunePass::Run(ge::ComputeGraphPtr graph) {
     }
   }
   if (out_nodes.empty()) {
-    GELOGW("graph [%s] does not contain NETOUTPUT type node,no return value. Do nothing!", graph->GetName().c_str());
+    GELOGW("graph [%s] does not contain NETOUTPUT type node, no return value. Do nothing!", graph->GetName().c_str());
     return ge::SUCCESS;
   }
 

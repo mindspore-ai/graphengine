@@ -93,7 +93,7 @@ bool LinkGenMaskNodesPass::AreAllInputsConst(const NodePtr &node) const {
 void LinkGenMaskNodesPass::GetAllGenMaskNodes(ComputeGraphPtr graph, vector<NodePtr> &gen_mask_nodes) const {
   set<NodePtr> nodes_set;
   for (const NodePtr &node : graph->GetDirectNode()) {
-    if (node->GetType() != DROPOUTDOMASK) {
+    if (node->GetType() != DROPOUTDOMASK && node->GetType() != DROPOUTDOMASKV3 && node->GetType() != DROPOUTDOMASKV3D) {
       continue;
     }
 

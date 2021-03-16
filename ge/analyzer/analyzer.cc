@@ -155,7 +155,7 @@ std::shared_ptr<GraphInfo> Analyzer::GetJsonObject(uint64_t session_id, uint64_t
   std::lock_guard<std::recursive_mutex> lg(mutex_);
   auto iter = graph_infos_.find(session_id);
   if (iter == graph_infos_.end()) {
-    GELOGE(PARAM_INVALID, "[Check][Session_id]session_id:%lu does not exist! graph_id:%lu.", session_id, graph_id);
+    GELOGE(PARAM_INVALID, "[Check][Session_id]session_id:%lu does not exist! graph_id:%lu", session_id, graph_id);
     return nullptr;
   } else {
     auto iter1 = (iter->second).find(graph_id);
@@ -195,7 +195,7 @@ ge::Status Analyzer::CreateAnalyzerFile() {
   }
   is_json_file_create_ = true;
 
-  GELOGD("success to create analyzer file[%s]!", json_file_name_.c_str());
+  GELOGD("success to create analyzer file[%s].", json_file_name_.c_str());
   return SUCCESS;
 }
 

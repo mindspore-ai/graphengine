@@ -149,14 +149,16 @@ Status NodeItem::InitInputsAndOutputs() {
   if (AttrUtils::GetInt(op_desc, ::ge::ATTR_STAGE_LEVEL, group)) {
     GELOGD("[%s] Got stage level from op_desc = %d", op_desc->GetName().c_str(), group);
   } else {
-    if (AttrUtils::GetInt(node->GetOwnerComputeGraph(), ::ge::ATTR_STAGE_LEVEL, group)) {
-      GELOGD("[%s] Got stage level from parent graph = %d", op_desc->GetName().c_str(), group);
-    } else {
-      auto parent_node = node->GetOwnerComputeGraph()->GetParentNode();
-      if ((parent_node != nullptr) && (AttrUtils::GetInt(parent_node->GetOpDesc(), ::ge::ATTR_STAGE_LEVEL, group))) {
-        GELOGD("[%s] Got stage level from parent node = %d", op_desc->GetName().c_str(), group);
+    if (node->GetOwnerComputeGraph() != nullptr) {
+      if (AttrUtils::GetInt(node->GetOwnerComputeGraph(), ::ge::ATTR_STAGE_LEVEL, group)) {
+        GELOGD("[%s] Got stage level from parent graph = %d", op_desc->GetName().c_str(), group);
       } else {
-        GELOGD("[%s] Node do not set stage level", op_desc->GetName().c_str());
+        auto parent_node = node->GetOwnerComputeGraph()->GetParentNode();
+        if ((parent_node != nullptr) && (AttrUtils::GetInt(parent_node->GetOpDesc(), ::ge::ATTR_STAGE_LEVEL, group))) {
+          GELOGD("[%s] Got stage level from parent node = %d", op_desc->GetName().c_str(), group);
+        } else {
+          GELOGD("[%s] Node do not set stage level", op_desc->GetName().c_str());
+        }
       }
     }
   }

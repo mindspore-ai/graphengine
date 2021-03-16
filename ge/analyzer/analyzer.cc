@@ -221,7 +221,10 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
   try {
     json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
   } catch (nlohmann::detail::type_error &e) {
-    GELOGE(FAILED, "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s], session_id:%lu, graph_id:%lu", json_file_name_.c_str(), e.what(), session_id, graph_id);
+    GELOGE(FAILED, 
+           "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s],
+           session_id:%lu, graph_id:%lu",
+           json_file_name_.c_str(), e.what(), session_id, graph_id);
     ret_failed = true;
   }
   json_file_.close();
@@ -241,7 +244,9 @@ ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
   GE_CHECK_NOTNULL(graph_info);
   auto status = SaveOpInfo(desc, data_info, graph_info);
   if (status != SUCCESS) {
-    GELOGE(status, "[Check][SaveOpInfo]save op info: desc_name [%s] desc_type [%s] failed!", desc->GetName().c_str(), desc->GetType().c_str());
+    GELOGE(status, 
+           "[Check][SaveOpInfo]save op info: desc_name [%s] desc_type [%s] failed!",
+           desc->GetName().c_str(), desc->GetType().c_str());
     return FAILED;
   }
   // create json file

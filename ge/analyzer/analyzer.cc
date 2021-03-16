@@ -222,8 +222,8 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
     json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
   } catch (nlohmann::detail::type_error &e) {
     GELOGE(FAILED, 
-           "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s],
-           session_id:%lu, graph_id:%lu",
+           "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s],"
+	   "session_id:%lu, graph_id:%lu",
            json_file_name_.c_str(), e.what(), session_id, graph_id);
     ret_failed = true;
   }

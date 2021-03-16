@@ -977,7 +977,7 @@ add_library(fwk_stub_ge_runner SHARED
 
 add_dependencies(fwk_stub_ge_runner ge_stub)
 
-target_compile_options(atc_stub_ge_compiler PRIVATE
+target_compile_options(fwk_stub_ge_runner PRIVATE
     -fno-common
 )
 

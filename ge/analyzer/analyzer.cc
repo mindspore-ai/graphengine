@@ -195,12 +195,12 @@ ge::Status Analyzer::CreateAnalyzerFile() {
   }
   is_json_file_create_ = true;
 
-  GELOGD("success to create analyzer file[%s].", json_file_name_.c_str());
+  GELOGD("success to create analyzer file[%s]!", json_file_name_.c_str());
   return SUCCESS;
 }
 
 ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_id) {
-  GELOGD("start to save analyze file.");
+  GELOGD("start to save analyze file!");
 
   auto graph_info = GetJsonObject(session_id, graph_id);
   GE_CHECK_NOTNULL(graph_info);

@@ -793,7 +793,7 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   std::string input_shape_range;
   ParseAtcParms(atc_params, INPUT_SHAPE_RANGE, input_shape_range);
   GE_RETURN_WITH_LOG_IF_ERROR(UpdateDynamicInputShapeRange(compute_graph, input_shape_range),
-                             "Update input shape range failed");
+                              "Update input shape range failed");
 
   GELOGI("ATC parser success.");
 

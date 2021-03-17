@@ -27,7 +27,7 @@
 
 namespace ge {
 Status PrunePass::Run(ge::ComputeGraphPtr graph) {
-  GELOGD("PrunePass Start, graph is [%s].", graph->GetName().c_str());
+  GELOGD("PrunePass Start, graph is [%s]", graph->GetName().c_str());
   if (graph == nullptr) {
     GELOGE(GE_GRAPH_ISNULL, "input compute graph is NULL.");
     return GE_GRAPH_ISNULL;

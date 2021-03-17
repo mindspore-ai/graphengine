@@ -44,6 +44,7 @@ namespace ge {
 namespace {
 const size_t kDataOutputNum = 1;
 
+
 bool NeedHybridModel(GeModelPtr &ge_model) {
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   int32_t kernel_task_num = 0;

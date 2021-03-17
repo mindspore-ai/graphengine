@@ -9136,23 +9136,23 @@ TEST_F(UtestFormatTransferNdFractNz, invalid_src_data_type2) {
   EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
 }
 
-TEST_F(UtestFormatTransferNdFractNz, invalid_src_data_type3) {
-  uint16_t data[1 * 1 * 1 * 16 * 16] = {0};
-  TransArgs args{reinterpret_cast<uint8_t *>(data),
-                 FORMAT_FRACTAL_NZ,
-                 FORMAT_NHWC,
-                 {1, 1, 1, 16, 16},
-                 {
-                     1,
-                     1,
-                     4,
-                     4,
-                 },
-                 DT_STRING};
-  TransResult result;
-  FormatTransferFractalNzND transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
-}
+// TEST_F(UtestFormatTransferNdFractNz, invalid_src_data_type3) {
+//   uint16_t data[1 * 1 * 1 * 16 * 16] = {0};
+//   TransArgs args{reinterpret_cast<uint8_t *>(data),
+//                  FORMAT_FRACTAL_NZ,
+//                  FORMAT_NHWC,
+//                  {1, 1, 1, 16, 16},
+//                  {
+//                      1,
+//                      1,
+//                      4,
+//                      4,
+//                  },
+//                  DT_VARIANT};
+//   TransResult result;
+//   FormatTransferFractalNzND transfer;
+//   EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
+// }
 
 TEST_F(UtestFormatTransferNdFractNz, invalid_dst_format2) {
   uint16_t data[1 * 1 * 1 * 1 * 16 * 16] = {0};

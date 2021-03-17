@@ -144,6 +144,7 @@ Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, DataType data_t
   auto w = src_shape.at(kHwcnW);
   auto c = src_shape.at(kHwcnC);
   auto n = src_shape.at(kHwcnN);
+
   return TransShapeToFz(n, c, h, w, data_type, dst_shape);
 }
 
@@ -406,7 +407,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
               }
             }
             if (ret != EOK) {
-              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
+              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                     "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
                      dst_offset, ret, pad_zero);
               return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
             }

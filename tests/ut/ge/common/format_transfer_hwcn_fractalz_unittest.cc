@@ -34427,6 +34427,40 @@ TEST_F(UtestFormatTransferHwcnFz, fp32_2c_2n_pad) {
   }
 }
 
+TEST_F(UtestFormatTransferHwcnFz, fp16_1c_1n_with_groups) {
+   uint16_t data[1 * 1 * 1 * 2] = {19, 88};
+   uint16_t ret[1 * 1 * 16 * 16] ={19 , 0, 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 88, 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,};
+  FormatTransferFractalZ transfer;
+  ge::Format old_format = FORMAT_FRACTAL_Z;
+  int32_t groups = 2;
+  ge::Format  new_format = static_cast<ge::Foramt>(ge::GetFormatFromSub(old_format, groups));
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, new_format, std::vector<int64_t>({1, 1, 1, 2}),
+      std::vector<int64_t>({1, 1, 16, 16}), DT_FLOAT16};
+
+  TransResult result;
+  EXPECT_EQ(transfer.TransFormat(args, result), SUCCESS);
+  EXPECT_EQ(result.length, sizeof(ret) / sizeof(ret[0]) * 2);
+  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+    EXPECT_EQ((reinterpret_cast<uint16_t *>(result.data.get()))[i], ret[i]);
+  }
+}
+
 TEST_F(UtestFormatTransferHwcnFz, build_transfer_fp32) {
   float data[5 * 5 * 31 * 17];
   TransArgs args{
@@ -34454,6 +34488,24 @@ TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8) {
   EXPECT_NE(transfer, nullptr);
 }
 
+TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8) {
+  int8_t data[4 * 4 * 3 * 1];
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data),     FORMAT_HWCN, FORMAT_FRACTAL_Z, std::vector<int64_t>({4, 4, 3, 1}),
+      std::vector<int64_t>({16, 1, 16, 32}), DT_INT8};
+  auto transfer = BuildFormatTransfer(args);
+  EXPECT_NE(transfer, nullptr);
+}
+
+TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8) {
+  int8_t data[4 * 4 * 3 * 1];
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data),     FORMAT_HWCN, FORMAT_FRACTAL_Z, std::vector<int64_t>({4, 4, 3, 1}),
+      std::vector<int64_t>({16, 1, 16, 32}), DT_INT8};
+  auto transfer = BuildFormatTransfer(args);
+  EXPECT_NE(transfer, nullptr);
+}
+
 TEST_F(UtestFormatTransferHwcnFz, build_transfer_not_support) {
   float data[50 * 2 * 16 * 16];
   TransArgs args{
@@ -34461,6 +34513,15 @@ TEST_F(UtestFormatTransferHwcnFz, build_transfer_not_support) {
       std::vector<int64_t>({5, 5, 31, 17}), DT_FLOAT};
   auto transfer = BuildFormatTransfer(args);
   EXPECT_EQ(transfer, nullptr);
+}
+
+TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8_with_groups) {
+  int8_t data[4 * 4 * 3 * 1];
+  TransArgs args{
+      reinterpret_cast<uint8_t *>(data),     FORMAT_HWCN, FORMAT_FRACTAL_Z, std::vector<int64_t>({4, 4, 3, 1}),
+      std::vector<int64_t>({16, 1, 16, 32}), DT_INT8};
+  auto transfer = BuildFormatTransfer(args);
+  EXPECT_NE(transfer, nullptr);
 }
 }  // namespace formats
 }  // namespace ge

@@ -299,9 +299,10 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   }
   auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
   string model_name = "";
-  bool is_shape_unknown = false;
+  bool is_shape_unknown = ge_root_model->GetRootGraph()->GetGraphUnknownFlag();
+  bool is_dsp_partitioned_graph = false;
   (void)AttrUtils::GetBool(ge_root_model->GetRootGraph(), ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_shape_unknown);
-  if (is_shape_unknown || GetContext().GetHostExecFlag()) {
+  if (is_shape_unknown || is_dsp_partitioned_graph || GetContext().GetHostExecFlag()) {
     return DoLoadHybridModelOnline(model_id, model_name, ge_root_model, listener);
   }
 

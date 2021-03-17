@@ -42,7 +42,7 @@ Status PrunePass::Run(ge::ComputeGraphPtr graph) {
     }
   }
   if (out_nodes.empty()) {
-    GELOGW("graph [%s] does not contain NETOUTPUT type node, no return value. Do nothing!", graph->GetName().c_str());
+    GELOGW("graph [%s] does not contain NETOUTPUT type node,no return value. Do nothing!", graph->GetName().c_str());
     return ge::SUCCESS;
   }
 

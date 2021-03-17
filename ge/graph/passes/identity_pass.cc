@@ -54,10 +54,10 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
     }
 
     GE_CHK_STATUS_RET(GetOriginalType(in_node, node_type),
-                      "Failed to get node type from node %s.", node->GetName().c_str());
+                      "Failed to get node type from node %s", node->GetName().c_str());
     bool need_skip = (node_type != SWITCH) && (node_type != REFSWITCH) && (node_type != SWITCHN);
     if (need_skip) {
-      GELOGD("skip identity %s connected to switch.", node->GetName().c_str());
+      GELOGD("skip identity %s connected to switch", node->GetName().c_str());
       break;
     }
     GE_CHECK_NOTNULL(node->GetOutControlAnchor());

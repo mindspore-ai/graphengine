@@ -276,7 +276,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   if (cin_ori == 0 || cout_ori == 0) {
     GELOGE(GRAPH_FAILED,
         "Cin_ori, cout_ori must not be equal 0, "
-        "and current cin_ori, cout_ori, groups are %d %d %d",
+        "and current cin_ori, cout_ori, groups are %lld %lld %lld",
         cin_ori, cout_ori, groups);
     return GRAPH_FAILED;
   }

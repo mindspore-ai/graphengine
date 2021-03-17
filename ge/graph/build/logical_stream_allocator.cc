@@ -70,7 +70,7 @@ Status AssignByLabelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &
       auto iter = label_streams.find(stream_label);
       if (iter == label_streams.end()) {
         subgraph->stream_id = next_stream;
-        GELOGI("Assign new stream %ld for label %s.", next_stream, stream_label.c_str());
+        GELOGI("[Assign][NewStreamId] %ld for label %s.", next_stream, stream_label.c_str());
 
         label_streams.emplace(stream_label, next_stream);
         next_stream++;
@@ -102,7 +102,7 @@ Status IndependentStreamPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
     auto iter = label_streams.find(stream_label);
     if (iter == label_streams.end()) {
       subgraph->stream_id = next_stream;
-      GELOGI("Assign new independent stream %ld for engine %s (label: %s).", next_stream, engine.c_str(),
+      GELOGI("[Assign][NewStreamId:independent] %ld for engine %s (label: %s).", next_stream, engine.c_str(),
              stream_label.c_str());
 
       label_streams.emplace(stream_label, next_stream);
@@ -137,8 +137,8 @@ Status AssignByDependencyPass::Run(ComputeGraphPtr graph, const vector<SubgraphP
       } else {
         int64_t stream_id = AssignNewStream(reusable_subgraph);
         subgraph->stream_id = stream_id;
-        GELOGI("Reusable subgraph %s has not been assigned a stream, now assign new stream %ld.",
-               reusable_subgraph->name.c_str(), stream_id);
+        GELOGI("[Assign][NewStreamId] %ld for Reusable subgraph %s cause has not been assigned before.",
+               stream_id, reusable_subgraph->name.c_str());
       }
 
       if (reusable_subgraph->reused_subgraph != nullptr) {
@@ -147,7 +147,8 @@ Status AssignByDependencyPass::Run(ComputeGraphPtr graph, const vector<SubgraphP
 
       subgraph->reused_subgraph = reusable_subgraph;
       reused_subgraphs_.emplace_back(subgraph, reusable_subgraph);
-      GELOGI("Subgraph %s of engine %s reuses stream of subgraph %s of engine %s.", subgraph->name.c_str(),
+      GELOGI("[Reuse][Stream]Subgraph %s of engine %s reuses stream of subgraph %s of engine %s.",
+             subgraph->name.c_str(),
              subgraph->engine_conf.id.c_str(), reusable_subgraph->name.c_str(),
              reusable_subgraph->engine_conf.id.c_str());
     }
@@ -259,7 +260,7 @@ int64_t AssignByDependencyPass::AssignNewStream(SubgraphPtr subgraph) {
     engine_stream_num_[engine_name] = stream_id + 1;
   }
 
-  GELOGI("Subgraph %s assigns new temp stream %ld (engine: %s).", subgraph->name.c_str(), stream_id,
+  GELOGI("[Assign][NewStreamId:temp]id:%ld for Subgraph %s (engine: %s).", stream_id, subgraph->name.c_str(),
          engine_name.c_str());
 
   return stream_id;
@@ -292,7 +293,7 @@ void AssignByDependencyPass::UpdateAssignedSubgraphs(Context &context) {
       GELOGI("Subgraph %s of engine %s reuses default stream %ld.", subgraph->name.c_str(),
              subgraph->engine_conf.id.c_str(), context.default_stream);
     } else {
-      GELOGI("Stream of subgraph %s has been updated to %ld.", subgraph->name.c_str(), subgraph->stream_id);
+      GELOGI("[Update][StreamId]id:%ld for subgraph %s.", subgraph->stream_id, subgraph->name.c_str());
     }
   }
 }
@@ -303,7 +304,7 @@ void AssignByDependencyPass::UpdateReusedSubgraphs() {
     auto &cur_subgraph = item.first;
     auto &reused_graph = item.second;
     cur_subgraph->stream_id = reused_graph->stream_id;
-    GELOGI("Stream of subgraph %s has been updated to %ld.", cur_subgraph->name.c_str(), cur_subgraph->stream_id);
+    GELOGI("[Update][StreamId]id:%ld for subgraph %s.", cur_subgraph->stream_id, cur_subgraph->name.c_str());
   }
 }
 
@@ -340,7 +341,7 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
              engine_name.c_str());
       return INTERNAL_ERROR;
     } else {
-      GELOGI("Subgraph %s is assigned stream %ld (engine: %s).", subgraph->name.c_str(), subgraph->stream_id,
+      GELOGI("[Assign][StreamId] %ld for Subgraph %s (engine: %s).", subgraph->stream_id, subgraph->name.c_str(),
              engine_name.c_str());
     }
   }
@@ -363,12 +364,12 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
         GELOGD("Node %s of type %s in subgraph %s is assigned parent stream %ld (engine: %s).", node->GetName().c_str(),
                node->GetType().c_str(), subgraph->name.c_str(), context.default_stream, engine_name.c_str());
       } else if (IsEngineSkip(*subgraph) && node->GetInNodes().empty()) {
-        GELOGD("Node %s of type %s in subgraph %s doesn't need to assign a stream (engine: %s).",
+        GELOGD("[Skip][StreamIdAssign]Node %s of type %s in subgraph %s doesn't need (engine: %s).",
                node->GetName().c_str(), node->GetType().c_str(), subgraph->name.c_str(), engine_name.c_str());
       } else {
         node->GetOpDesc()->SetStreamId(stream_id);
-        GELOGD("Node %s of type %s in subgraph %s is assigned stream %ld (engine: %s).", node->GetName().c_str(),
-               node->GetType().c_str(), subgraph->name.c_str(), stream_id, engine_name.c_str());
+        GELOGD("[Assign][StreamId]id:%ld for Node %s of type %s in subgraph %s (engine: %s).", stream_id,
+               node->GetName().c_str(), node->GetType().c_str(), subgraph->name.c_str(), engine_name.c_str());
       }
     }
   }
@@ -397,8 +398,8 @@ int64_t UpdateForSkippedEnginePass::GetSingleInoutStream(const NodePtr &node) co
 
   if (stream_ids.size() == 1) {
     int64_t stream_id = *(stream_ids.begin());
-    GELOGI("The stream of all input and output nodes of node %s (type: %s) is %ld.", node->GetName().c_str(),
-           node->GetType().c_str(), stream_id);
+    GELOGI("[Get][SingleStreamId]The stream of all input and output nodes of node %s (type: %s) is %ld.",
+           node->GetName().c_str(), node->GetType().c_str(), stream_id);
     return stream_id;
   }
 
@@ -437,8 +438,8 @@ Status UpdateForSkippedEnginePass::Run(ComputeGraphPtr graph, const vector<Subgr
         int64_t inout_stream = GetSingleInoutStream(node);
         if (inout_stream != kInvalidStream) {
           op_desc->SetStreamId(inout_stream);
-          GELOGI("Node %s of type %s reassign to stream %ld from stream %ld.", node->GetName().c_str(),
-                 node->GetType().c_str(), inout_stream, stream_id);
+          GELOGI("[Reassign][StreamId]%ld for %ld Node %s of type %s from stream %ld.",
+                 inout_stream, node->GetName().c_str(), node->GetType().c_str(), stream_id);
         }
       }
     }

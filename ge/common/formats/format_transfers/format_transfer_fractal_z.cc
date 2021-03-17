@@ -275,9 +275,9 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   int64_t cout_ori = n_dim / groups;
   if (cin_ori == 0 || cout_ori == 0) {
     GELOGE(GRAPH_FAILED,
-        "Cin_ori, cout_ori must not be equal 0, "
-        "and current cin_ori, cout_ori, groups are %lld %lld %lld",
-        cin_ori, cout_ori, groups);
+           "Cin_ori, cout_ori must not be equal 0, "
+           "and current cin_ori, cout_ori, groups are %ld %ld %ld",
+           in_ori, cout_ori, groups);
     return GRAPH_FAILED;
   }
   const int64_t cube_k = args.src_data_type == DT_INT8 ? 32 : 16;

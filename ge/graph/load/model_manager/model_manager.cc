@@ -286,6 +286,17 @@ ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string
   return SUCCESS;
 }
 
+bool ModelManager::IsNeedHybridLoad(ge::GeRootModel &ge_root_model) {
+  auto root_graph = ge_root_model.GetRootGraph();
+  if (root_graph == nullptr) {
+    GELOGE(FAILED, "no model on root model");
+    return false;
+  }
+  bool is_shape_unknown = root_graph->GetGraphUnknownFlag();
+  bool is_dsp_partitioned_graph = false;
+  (void)AttrUtils::GetBool(root_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dsp_partitioned_graph);
+  return is_shape_unknown || is_dsp_partitioned_graph || GetContext().GetHostExecFlag();
+}
 ///
 /// @ingroup domi_ome
 /// @brief load model online
@@ -299,10 +310,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   }
   auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
   string model_name = "";
-  bool is_shape_unknown = ge_root_model->GetRootGraph()->GetGraphUnknownFlag();
-  bool is_dsp_partitioned_graph = false;
-  (void)AttrUtils::GetBool(ge_root_model->GetRootGraph(), ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_shape_unknown);
-  if (is_shape_unknown || is_dsp_partitioned_graph || GetContext().GetHostExecFlag()) {
+  if (IsNeedHybridLoad(*ge_root_model)) {
     return DoLoadHybridModelOnline(model_id, model_name, ge_root_model, listener);
   }
 

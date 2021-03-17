@@ -663,6 +663,20 @@ namespace {
     }
     return SUCCESS;
   }
+
+  Status CheckNoAicore(const ComputeGraphPtr &graph, bool &no_aicore) {
+    no_aicore = true;
+    for (const auto &node : graph->GetDirectNode()) {
+      GE_CHECK_NOTNULL(node);
+      auto op_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      if (op_desc->GetOpEngineName() == kAIcoreEngine) {
+        no_aicore = false;
+        return SUCCESS;
+      }
+    }
+    return SUCCESS;
+  }
 }
 
 Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
@@ -745,7 +759,9 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
-  if (all_shape) {
+  bool no_aicore = true;
+  GE_CHK_STATUS_RET_NOLOG(CheckNoAicore(root_graph, no_aicore));
+  if (all_shape && no_aicore) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;

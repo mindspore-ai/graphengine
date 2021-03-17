@@ -41,7 +41,6 @@ target_link_options(engine PRIVATE
 target_link_libraries(engine PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     -Wl,--no-as-needed
-    c_sec
     slog
     -Wl,--as-needed
     -lrt

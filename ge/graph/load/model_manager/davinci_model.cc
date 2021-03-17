@@ -3874,7 +3874,7 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
   }
 
   std::vector<NodePtr> variable_node_list;
-  for (ge::NodePtr &node : graph->GetDirectNode()) {
+  for (ge::NodePtr &node : graph->GetAllNodes()) {
     if (node == nullptr) {
       continue;
     }

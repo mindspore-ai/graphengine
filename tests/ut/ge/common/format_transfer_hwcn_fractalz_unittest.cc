@@ -34448,7 +34448,7 @@ TEST_F(UtestFormatTransferHwcnFz, fp16_1c_1n_with_groups) {
   FormatTransferFractalZ transfer;
   ge::Format old_format = FORMAT_FRACTAL_Z;
   int32_t groups = 2;
-  ge::Format  new_format = static_cast<ge::Foramt>(ge::GetFormatFromSub(old_format, groups));
+  ge::Format  new_format = static_cast<ge::Format>(ge::GetFormatFromSub(old_format, groups));
   TransArgs args{
       reinterpret_cast<uint8_t *>(data), FORMAT_HWCN, new_format, std::vector<int64_t>({1, 1, 1, 2}),
       std::vector<int64_t>({1, 1, 16, 16}), DT_FLOAT16};

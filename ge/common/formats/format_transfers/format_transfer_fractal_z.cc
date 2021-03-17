@@ -304,8 +304,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
   ret = memset_s(dst.get(), size_output_data, 0, size_output_data);
   if (ret != EOK) {
-      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory , error-code %d, ret %d",
-                   ret);
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory, ret %d", ret);
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
   for (int64_t g = 0; g < groups; g++) {

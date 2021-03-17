@@ -90,6 +90,7 @@ set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
     "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cc"
     "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/expand_dimension.cc"
     "${GE_CODE_DIR}/metadef/graph/operator.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"

@@ -977,6 +977,10 @@ add_library(fwk_stub_ge_runner SHARED
 
 add_dependencies(fwk_stub_ge_runner ge_stub)
 
+target_compile_options(fwk_stub_ge_runner PRIVATE
+    -fno-common
+)
+
 target_link_libraries(fwk_stub_ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
 )

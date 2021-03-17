@@ -34444,7 +34444,7 @@ TEST_F(UtestFormatTransferHwcnFz, fp16_1c_1n_with_groups) {
                                     0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
                                     0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
                                     0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,
-                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0,};
+                                    0 , 0 , 0, 0 ,0 , 0, 0, 0 , 0 , 0 , 0, 0, 0 , 0 , 0, 0};
   FormatTransferFractalZ transfer;
   ge::Format old_format = FORMAT_FRACTAL_Z;
   int32_t groups = 2;

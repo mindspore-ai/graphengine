@@ -12,7 +12,7 @@ set(PROTO_LIST
     "${METADEF_DIR}/proto/tensorflow/tensor.proto"
     "${METADEF_DIR}/proto/tensorflow/tensor_shape.proto"
     "${METADEF_DIR}/proto/tensorflow/types.proto"
-    "${METADEF_DIR}/proto/tensorflow/versions.proto" 
+    "${METADEF_DIR}/proto/tensorflow/versions.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -163,7 +163,7 @@ target_include_directories(ge_common_static PRIVATE
 
 target_link_libraries(ge_common_static PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    ascend_protobuf
+    ascend_protobuf_static
     json
     c_sec
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>

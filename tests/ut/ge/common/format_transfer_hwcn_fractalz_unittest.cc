@@ -34488,24 +34488,6 @@ TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8) {
   EXPECT_NE(transfer, nullptr);
 }
 
-TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8) {
-  int8_t data[4 * 4 * 3 * 1];
-  TransArgs args{
-      reinterpret_cast<uint8_t *>(data),     FORMAT_HWCN, FORMAT_FRACTAL_Z, std::vector<int64_t>({4, 4, 3, 1}),
-      std::vector<int64_t>({16, 1, 16, 32}), DT_INT8};
-  auto transfer = BuildFormatTransfer(args);
-  EXPECT_NE(transfer, nullptr);
-}
-
-TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8) {
-  int8_t data[4 * 4 * 3 * 1];
-  TransArgs args{
-      reinterpret_cast<uint8_t *>(data),     FORMAT_HWCN, FORMAT_FRACTAL_Z, std::vector<int64_t>({4, 4, 3, 1}),
-      std::vector<int64_t>({16, 1, 16, 32}), DT_INT8};
-  auto transfer = BuildFormatTransfer(args);
-  EXPECT_NE(transfer, nullptr);
-}
-
 TEST_F(UtestFormatTransferHwcnFz, build_transfer_not_support) {
   float data[50 * 2 * 16 * 16];
   TransArgs args{
@@ -34513,15 +34495,6 @@ TEST_F(UtestFormatTransferHwcnFz, build_transfer_not_support) {
       std::vector<int64_t>({5, 5, 31, 17}), DT_FLOAT};
   auto transfer = BuildFormatTransfer(args);
   EXPECT_EQ(transfer, nullptr);
-}
-
-TEST_F(UtestFormatTransferHwcnFz, build_transfer_int8_with_groups) {
-  int8_t data[4 * 4 * 3 * 1];
-  TransArgs args{
-      reinterpret_cast<uint8_t *>(data),     FORMAT_HWCN, FORMAT_FRACTAL_Z, std::vector<int64_t>({4, 4, 3, 1}),
-      std::vector<int64_t>({16, 1, 16, 32}), DT_INT8};
-  auto transfer = BuildFormatTransfer(args);
-  EXPECT_NE(transfer, nullptr);
 }
 }  // namespace formats
 }  // namespace ge

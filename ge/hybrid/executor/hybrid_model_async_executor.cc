@@ -105,7 +105,7 @@ Status HybridModelAsyncExecutor::Init() {
   executor_ = std::unique_ptr<HybridModelExecutor>(new(std::nothrow) HybridModelExecutor(model_, device_id_, stream_));
   GE_CHECK_NOTNULL(executor_);
   GE_CHK_STATUS_RET(executor_->Init(), "Failed to init hybrid engine");
-  GE_CHK_STATUS_RET(DumpOpDebug(),"Dump op debug failed in hybrid engine");
+  GE_CHK_STATUS_RET(DumpOpDebug(), "Dump op debug failed in hybrid engine");
 
   GELOGI("HybridModel stage nums:%zu", model_->GetRootGraphItem()->NumGroups());
   if (model_->GetRootGraphItem()->NumGroups() >= kMinimumPiplineStages) {

@@ -285,10 +285,27 @@ typedef struct tagTaskInfo {
     } u;
 } rtTaskInfo_t;
 
+typedef struct tagNodeInfo_t {
+    uint32_t nodeIdx;
+    uint32_t reserved[1];
+} rtNodeInfo;
+
+typedef struct tagHwtsInfo_t {
+    uint16_t taskId;
+    uint16_t sqExeHead;
+    uint16_t streamExeHead;
+    uint16_t reserved[2];
+} rtHwtsInfo;
+
 typedef struct tagLabelDevInfo_t {
     uint16_t modelId;
     uint16_t streamId;
     uint16_t labelId;
+    union {
+        rtNodeInfo nodeInfo;
+        rtHwtsInfo hwtsInfo;
+        uint16_t reserved[5];
+    }u;
 }rtLabelDevInfo;
 
 typedef rtError_t (*rtTaskGenCallback)(rtModel_t model, rtTaskInfo_t *taskInfo);

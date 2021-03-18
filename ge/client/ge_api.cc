@@ -72,9 +72,7 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
       GELOGE(PARAM_INVALID,"[Check][JobId]Failed,"
              "the job_id [%s] string length > max string length: %d",
 	     job_id_iter->second.c_str(), kMaxStrLen);
-      REPORT_INPUT_ERROR("E10051", "Check job_id [%s] failed," 
-			 "the job_id string length > max string length: %d",
-			 job_id_iter->second.c_str(), kMaxStrLen);
+      REPORT_INPUT_ERROR("E10051", std::vector<std::string>({"id","length"}), std::vector<std::string(job_id_iter->second.c_str(), kMaxStrLen.to_string()));
       return FAILED;
     }
   }
@@ -249,7 +247,7 @@ Session::Session(const std::map<string, string> &options) {
   if (!g_ge_initialized) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Construct][Session]Failed because lack GEInitialize call before.");
-    REPORT_INPUT_ERROR("E10052",
+    REPORT_INNER_ERROR("E19999",
                        "Creating session failed because lack GEInitialize call before.");
     return;
   }
@@ -286,7 +284,7 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
   if (!g_ge_initialized) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Construct][Session]Failed because lack GEInitialize call before.");
-    REPORT_INPUT_ERROR("E10052",
+    REPORT_INNER_ERROR("E19999",
                        "Creating session failed because lack GEInitialize call before.");
     return;
   }
@@ -463,7 +461,7 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
   Status ret = instance_ptr->SessionManagerObj().AddGraphWithCopy(sessionId_, graph_id, graph, str_options);
   if (ret != SUCCESS) {
     GELOGE(ret,
-           "[Add][Graph]Failed, error code:%s, session_id:%lu, graph_id:%u.",
+           "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
 	   ret, sessionId_, graph_id);
     return FAILED;
   }
@@ -471,7 +469,7 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
   return ret;
 }
 
-//Remove Graph
+// Remove Graph
 Status Session::RemoveGraph(uint32_t graph_id) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session RemoveGraph start");
@@ -678,12 +676,12 @@ Status Session::GetVariables(const std::vector<AscendString> &var_names, std::ve
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-  GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-         "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.",
-	 "graph_id:%u.", graph_id);
-  REPORT_INNER_ERROR("E19999",
-                     "GetVariables failed, the GELib instance is nullptr or is not InitFlag.",
-		     "graph_id:%u", graph_id);
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.",
+	   "graph_id:%u.", graph_id);
+    REPORT_INNER_ERROR("E19999",
+                       "GetVariables failed, the GELib instance is nullptr or is not InitFlag.",
+		       "graph_id:%u", graph_id);
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Get Variables");

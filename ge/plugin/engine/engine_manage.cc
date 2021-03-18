@@ -21,6 +21,7 @@
 #include <utility>
 
 #include "common/ge/ge_util.h"
+#include "securec.h"
 #include "framework/common/debug/ge_log.h"
 #include "plugin/engine/dnnengines.h"
 
@@ -29,7 +30,8 @@ std::unique_ptr<std::map<std::string, DNNEnginePtr>> EngineManager::engine_map_;
 
 Status EngineManager::RegisterEngine(const std::string &engine_name, DNNEnginePtr engine_ptr) {
   if (engine_ptr == nullptr) {
-    GELOGE(FAILED, "enginePtr is nullptr");
+    GELOGE(FAILED, "[Register][Engine] failed, as input engine_ptr is nullptr");
+    REPORT_INNER_ERROR("E19999", "RegisterEngine failed for input engine_ptr is nullptr.");
     return FAILED;
   }
 
@@ -64,7 +66,8 @@ void RegisterAiCoreEngine() {
   DNNEngineAttribute attr_aicore = {ai_core, mem_type_aicore, COST_0, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr aicore_engine_ptr = MakeShared<AICoreDNNEngine>(attr_aicore);
   if (aicore_engine_ptr == nullptr) {
-    GELOGE(ge::FAILED, "make aiCoreEnginePtr failed");
+    GELOGE(ge::FAILED, "[Register][AiCoreEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterAiCoreEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(ai_core, aicore_engine_ptr) != SUCCESS) {
@@ -80,7 +83,8 @@ void RegisterVectorEngine() {
                                          DEVICE,      FORMAT_RESERVED,  FORMAT_RESERVED};
   DNNEnginePtr vectorcore_engine_ptr = MakeShared<VectorCoreDNNEngine>(attr_vector_core);
   if (vectorcore_engine_ptr == nullptr) {
-    GELOGE(ge::FAILED, "make vectorCoreEnginePtr failed");
+    GELOGE(ge::FAILED, "[Register][VectorEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterVectorEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(vector_core, vectorcore_engine_ptr) != SUCCESS) {
@@ -95,7 +99,8 @@ void RegisterAiCpuEngine() {
   DNNEngineAttribute attr_aicpu = {vm_aicpu, mem_type_aicpu, COST_3, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr vm_engine_ptr = MakeShared<AICpuDNNEngine>(attr_aicpu);
   if (vm_engine_ptr == nullptr) {
-    GELOGE(ge::FAILED, "make vm_engine_ptr failed");
+    GELOGE(ge::FAILED, "[Register][AiCpuEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterAiCpuEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(vm_aicpu, vm_engine_ptr) != SUCCESS) {
@@ -110,7 +115,8 @@ void RegisterAiCpuTFEngine() {
   DNNEngineAttribute attr_aicpu_tf = {vm_aicpu_tf, mem_type_aicpu_tf, COST_2, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr vm_engine_ptr = MakeShared<AICpuTFDNNEngine>(attr_aicpu_tf);
   if (vm_engine_ptr == nullptr) {
-    GELOGE(ge::FAILED, "make vm_engine_ptr failed");
+    GELOGE(ge::FAILED, "[Register][AiCpuTFEngine]make vm_engine_ptr failed");
+    REPORT_INNER_ERROR("E19999", "RegisterAiCpuTFEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(vm_aicpu_tf, vm_engine_ptr) != SUCCESS) {
@@ -126,7 +132,8 @@ void RegisterGeLocalEngine() {
   DNNEngineAttribute attr_ge_local = {vm_ge_local, mem_type_ge_local, COST_9, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr ge_local_engine = MakeShared<GeLocalDNNEngine>(attr_ge_local);
   if (ge_local_engine == nullptr) {
-    GELOGE(ge::FAILED, "make ge_local_engine failed");
+    GELOGE(ge::FAILED, "[Register][GeLocalEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterGeLocalEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(vm_ge_local, ge_local_engine) != SUCCESS) {
@@ -139,10 +146,12 @@ void RegisterHostCpuEngine() {
   std::vector<std::string> mem_type_host_cpu;
   mem_type_host_cpu.emplace_back(GE_ENGINE_ATTR_MEM_TYPE_HBM);
   // HostCpu use minimum priority, set it as 10
-  DNNEngineAttribute attr_host_cpu = {vm_host_cpu, mem_type_host_cpu, COST_10, HOST, FORMAT_RESERVED, FORMAT_RESERVED};
+  DNNEngineAttribute attr_host_cpu = {vm_host_cpu, mem_type_host_cpu, COST_10,
+      HOST, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr host_cpu_engine = MakeShared<HostCpuDNNEngine>(attr_host_cpu);
   if (host_cpu_engine == nullptr) {
-    GELOGE(ge::FAILED, "make host_cpu_engine failed");
+    GELOGE(ge::FAILED, "[Register][HostCpuEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterHostCpuEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(vm_host_cpu, host_cpu_engine) != SUCCESS) {
@@ -157,7 +166,8 @@ void RegisterRtsEngine() {
   DNNEngineAttribute attr_rts = {vm_rts, mem_type_rts, COST_1, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr rts_engine = MakeShared<RtsDNNEngine>(attr_rts);
   if (rts_engine == nullptr) {
-    GELOGE(ge::FAILED, "make rts_engine failed");
+    GELOGE(ge::FAILED, "[Register][RtsEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterRtsEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(vm_rts, rts_engine) != SUCCESS) {
@@ -172,7 +182,8 @@ void RegisterHcclEngine() {
   DNNEngineAttribute attr_hccl = {dnn_hccl, mem_type_hccl, COST_1, DEVICE, FORMAT_RESERVED, FORMAT_RESERVED};
   DNNEnginePtr hccl_engine = MakeShared<HcclDNNEngine>(attr_hccl);
   if (hccl_engine == nullptr) {
-    GELOGE(ge::FAILED, "make hccl_engine failed");
+    GELOGE(ge::FAILED, "[Register][HcclEngine] failed, as malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "RegisterHcclEngine failed for new DNNEnginePtr failed.");
     return;
   }
   if (EngineManager::RegisterEngine(dnn_hccl, hccl_engine) != SUCCESS) {

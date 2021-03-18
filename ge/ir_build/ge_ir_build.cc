@@ -85,21 +85,21 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
                                          ? IR_OPTION_DISABLE_REUSE_MEMORY_DEFAULT
                                          : global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY];
   GE_CHK_BOOL_EXEC(ge::CheckDisableReuseMemoryParamValid(disable_reuse_memory) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check disable_reuse_memory failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][DisableReuseMemory] failed!");
   global_options[ge::ir_option::EXEC_DISABLE_REUSED_MEMORY] = disable_reuse_memory;
   // check buffer_optimize
   std::string buffer_optimize = global_options.find(ge::ir_option::BUFFER_OPTIMIZE) == global_options.end()
                                     ? IR_OPTION_BUFFER_OPTIMIZE_DEFAULT
                                     : global_options[ge::ir_option::BUFFER_OPTIMIZE];
   GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(buffer_optimize) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check buffer optimize failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][BufferOptimize] failed!");
   global_options[ge::ir_option::BUFFER_OPTIMIZE] = buffer_optimize;
   // check enable_single_stream
   std::string enable_single_stream = global_options.find(ge::ir_option::ENABLE_SINGLE_STREAM) == global_options.end()
                                          ? ""
                                          : global_options[ge::ir_option::ENABLE_SINGLE_STREAM];
   GE_CHK_BOOL_EXEC(ge::CheckEnableSingleStreamParamValid(enable_single_stream) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check enable single stream failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][EnableSingleStream] failed!");
   // check compress_weight
   std::string enable_compress_weight = global_options.find(ge::ir_option::ENABLE_COMPRESS_WEIGHT) ==
                                            global_options.end()
@@ -109,7 +109,7 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
                                          ? ""
                                          : global_options[ge::ir_option::COMPRESS_WEIGHT_CONF];
   GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(enable_compress_weight, compress_weight_conf) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check compress weight failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][CompressWeight] failed!");
   global_options[ge::ir_option::ENABLE_COMPRESS_WEIGHT] = (enable_compress_weight == "true") ?
                                                      ge::kEnableCompressWeightTrue :
                                                      ge::kEnableCompressWeightFalse;
@@ -124,7 +124,7 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
                                        : global_options[ge::ir_option::OP_SELECT_IMPL_MODE];
   GE_CHK_BOOL_EXEC(
       ge::CheckImplmodeParamValid(optypelist_for_implmode, op_select_implmode) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check optypelist_for_implmode and op_select_implmode failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][Implmode] failed!");
   global_options[ge::ir_option::OP_SELECT_IMPL_MODE] = op_select_implmode;
 
   // set precision mode default value
@@ -144,7 +144,7 @@ static void GetOpsProtoPath(string &opsproto_path) {
     string path = path_env;
     string file_path = RealPath(path.c_str());
     if (file_path.empty()) {
-      GELOGE(FAILED, "File path %s is invalid.", path.c_str());
+      GELOGE(FAILED, "[Check][Path] %s is invalid.", path.c_str());
       return;
     }
     opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
@@ -172,7 +172,7 @@ graphStatus aclgrphBuildInitializeImpl(std::map<std::string, std::string> &globa
   GELOGD("Enter aclgrphInitialize start!");
   // check global options
   if (CheckGlobalOptions(global_options) != GRAPH_SUCCESS) {
-    GELOGE(GRAPH_PARAM_INVALID, "Check global options falied!");
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][Global Options] falied!");
     return GRAPH_PARAM_INVALID;
   }
 
@@ -186,7 +186,7 @@ graphStatus aclgrphBuildInitializeImpl(std::map<std::string, std::string> &globa
     GELOGI("aclgrphInitialize start!");
     auto ret = ge::GELib::Initialize(global_options);
     if (ret != ge::SUCCESS) {
-      GELOGE(ret, "GE initialize failed!");
+      GELOGE(ret, "[Init][GELib] failed!");
       return GRAPH_FAILED;
     }
   }
@@ -211,7 +211,7 @@ graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_
   std::map<std::string, std::string> tmp_global_options;
   for (auto &option : global_options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
-      GELOGE(GRAPH_FAILED, "AclgrphBuildInitialize option is nullptr.");
+      GELOGE(GRAPH_FAILED, "[Check][Options]AclgrphBuildInitialize option is nullptr.");
       return GRAPH_FAILED;
     }
     std::string key = option.first.GetString();
@@ -281,7 +281,7 @@ graphStatus Impl::InferShapePrepare(const ComputeGraphPtr &compute_graph) {
 
   auto ret = prepare_infershape.Run(compute_graph);
   if ((ret != SUCCESS) && (ret != NOT_CHANGED)) {
-    GELOGE(ret, "Prepair for infershape failed, ret:%d", ret);
+    GELOGE(ret, "[Prepair][InferShape] failed, ret:%d", ret);
     return ret;
   }
   GELOGD("Prepair for infershape success!");
@@ -297,12 +297,12 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
   vector<pair<string, vector<int64_t>>> user_shape_map;
   if (!input_shape.empty()) {
     GE_CHK_BOOL_EXEC(ParseInputShape(input_shape, shape_map, user_shape_map, true),
-                     return GRAPH_PARAM_INVALID, "Parse input shape failed!");
+                     return GRAPH_PARAM_INVALID, "[Parse][InputShape] failed!");
   }
   std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
   if (!input_shape_range.empty()) {
     GE_CHK_BOOL_EXEC(ParseInputShapeRange(input_shape_range, shape_range_map),
-                     return GRAPH_PARAM_INVALID, "Parse input shape range failed.");
+                     return GRAPH_PARAM_INVALID, "[Parse][InputShapeRange] failed.");
   }
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
@@ -312,13 +312,13 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
     GE_CHECK_NOTNULL(op);
     if (op->GetType() == DATA) {
       if (UpdateDataOpShape(op, shape_map) != SUCCESS) {
-        GELOGE(GRAPH_FAILED, "Update data op [%s] shape failed.", op->GetName().c_str());
+        GELOGE(GRAPH_FAILED, "[Update][DataOpShape] fail for op:%s.", op->GetName().c_str());
         return GRAPH_FAILED;
       }
       if (UpdateDataOpShapeRange(op, shape_range_map) != SUCCESS) {
-        GELOGE(GRAPH_FAILED, "Update data op [%s] shape range failed.", op->GetName().c_str());
+        GELOGE(GRAPH_FAILED, "[Update][DataOpShapeRange] fail for op:%s.", op->GetName().c_str());
         return GRAPH_FAILED;
-      }
+      }     
     }
   }
 
@@ -331,8 +331,8 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
     if (it == ge::ir_option::ir_builder_suppported_options.end()) {
       auto it_lx_fusion = ir_builder_supported_options_for_lx_fusion.find(ele.first);
       if (it_lx_fusion == ir_builder_supported_options_for_lx_fusion.end()) {
-        GELOGE(GRAPH_PARAM_INVALID, "input options include unsupported option(%s).Please check!",
-               ele.first.c_str());
+        GELOGE(GRAPH_PARAM_INVALID, "[Check][Options] unsupported option(%s), Please check!",
+            ele.first.c_str());
         return GRAPH_PARAM_INVALID;
       }
     }
@@ -343,7 +343,7 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   auto it = options_.find(BUILD_MODE);
   if (it != options_.end() && !(it->second.empty())) {
     if (build_mode_options.find(it->second) == build_mode_options.end()) {
-      GELOGE(GRAPH_PARAM_INVALID, "Build mode:%s is unsupported. Please check!", it->second.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildMode]:%s is unsupported. Please check!", it->second.c_str());
       return GRAPH_PARAM_INVALID;
     }
     build_mode = it->second;
@@ -351,12 +351,12 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   it = options_.find(BUILD_STEP);
   if (it != options_.end() && !(it->second.empty())) {
     if (build_step_options.find(it->second) == build_step_options.end()) {
-      GELOGE(GRAPH_PARAM_INVALID, "Build step:%s is unsupported. Please check!", it->second.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildStep]:%s is unsupported. Please check!", it->second.c_str());
       return GRAPH_PARAM_INVALID;
     }
   } else {
     if (build_mode == BUILD_MODE_TUNING) {
-      GELOGE(GRAPH_PARAM_INVALID, "Build mode tuning must specify build step. Please check!");
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildMode] tuning must specify build step. Please check!");
       return GRAPH_PARAM_INVALID;
     }
   }
@@ -376,7 +376,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   // 1. check options
   graphStatus ret = CheckOptions(options);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "User input options are illegal! Please check!");
+    GELOGE(ret, "[Check][Options] options are illegal! Please check!");
     return ret;
   }
   ret = UpdateDataOpAttr(graph);
@@ -410,7 +410,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   auto status = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims, input_shape,
                                             input_shape_range, input_format, is_dynamic_input_);
   if (status != ge::SUCCESS) {
-    GELOGE(GRAPH_PARAM_INVALID, "Check dynamic input size failed!");
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][DynamicInput] failed!");
     return GRAPH_PARAM_INVALID;
   }
   GELOGD("User input dynamic_batch_size:%s, dynamic_image_size:%s, dynamic_dims:%s.", dynamic_batch_size.c_str(),
@@ -423,16 +423,16 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
                                 ? ""
                                 : options_[ge::ir_option::OUTPUT_TYPE];
   GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check output type failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][OutputType] failed!");
   // check insert_op_conf
   std::string insert_op_conf = options_.find(ge::ir_option::INSERT_OP_FILE) == options_.end()
                                    ? ""
                                    : options_[ge::ir_option::INSERT_OP_FILE];
   GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
-      return ge::GRAPH_PARAM_INVALID, "check insert op conf failed!");
+      return ge::GRAPH_PARAM_INVALID, "[Check][InsertOpConf] failed!");
 
   GE_CHK_BOOL_EXEC(insert_op_conf.empty() || dynamic_dims.empty(),
-                   return ge::GRAPH_PARAM_INVALID, "dynamic dims function does not support aipp");
+                   return ge::GRAPH_PARAM_INVALID, "[Check][Data]dynamic dims function does not support aipp");
 
   // for IR builder.Only support om mode, so here fixed;
   options_.insert(std::pair<string, string>(string(IR_OPTION_MODE), to_string(0)));
@@ -448,7 +448,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   // 3. init generator with options_
   ret = generator_.Initialize(options_, omg_context_);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "generator Initialize failed!");
+    GELOGE(ret, "[Init][Generator]failed!");
     return ret;
   }
   // 4.parse and init Context with input shape format and net format info
@@ -517,7 +517,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
   // 1. init GeGenerator with user optios
   graphStatus ret = Init(graph, options);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "Build ir model Init failed!");
+    GELOGE(ret, "[Init][GeGenerator]Build ir model Init failed!");
     return ret;
   }
 
@@ -526,7 +526,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
   if (!omg_context_.is_dynamic_input) {  // if dynamic input , no need to creat inputs
     ret = CreateInputsForIRBuild(graph, inputs);
     if (ret != GRAPH_SUCCESS) {
-      GELOGE(ret, "CreateInputsForIRBuild failed!");
+      GELOGE(ret, "[Create][InputsForIRBuild] failed!");
       return ret;
     }
   }
@@ -534,7 +534,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
   // 3. build IR model
   ret = generator_.GenerateOnlineModel(graph, inputs, model);
   if (ret != GRAPH_SUCCESS) {
-    GELOGE(ret, "GenerateOnlineModel failed!");
+    GELOGE(ret, "[Generate][OnlineModel] failed!");
     return ret;
   }
 
@@ -553,7 +553,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
     if (iter != ge::input_format_str_to_geformat.end()) {
       omg_context_.format = iter->second;
     } else {
-      GELOGE(GRAPH_PARAM_INVALID, "Input format %s not support , expect ND/NCHW/NHWC/CHWN/NC1HWC0/NHWC1C0.",
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][Param:InputForamt] %s not support , expect ND/NCHW/NHWC/CHWN/NC1HWC0/NHWC1C0.",
              input_format.c_str());
       return GRAPH_PARAM_INVALID;
     }
@@ -564,7 +564,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
   }
 
   if (!ParseInputShape(input_shape, omg_context_.input_dims, omg_context_.user_input_dims, is_dynamic_input)) {
-    GELOGE(GRAPH_PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:ImputShape] Failed, shape: %s", input_shape.c_str());
     return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;
@@ -585,7 +585,7 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendStrin
   std::map<std::string, std::string> tmp_build_options;
   for (auto &option : build_options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
-      GELOGE(GRAPH_FAILED, "AclgrphBuildInitialize option is nullptr.");
+      GELOGE(GRAPH_FAILED, "[Check][Options]AclgrphBuildInitialize option is nullptr.");
       return GRAPH_FAILED;
     }
     std::string key = option.first.GetString();
@@ -601,7 +601,7 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
-    GELOGE(GRAPH_PARAM_INVALID, "input model is illegal");
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][ModelBufferData] model is illegal");
     return GRAPH_PARAM_INVALID;
   }
   return FileSaver::SaveToFile((output_file + ".om"), reinterpret_cast<void *>(model.data.get()),
@@ -612,11 +612,11 @@ graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &mod
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
-    GELOGE(GRAPH_PARAM_INVALID, "Input model is illegal");
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][ModelBufferData]model is illegal");
     return GRAPH_PARAM_INVALID;
   }
   if (output_file == nullptr) {
-    GELOGE(GRAPH_PARAM_INVALID, "Output file is nullptr.");
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][OutputFile]file is nullptr.");
     return GRAPH_PARAM_INVALID;
   }
   std::string str_output_file = output_file;
@@ -641,7 +641,7 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
   GE_CHECK_NOTNULL(file);
 
   if (len > PATH_MAX || len != strlen(file) || strlen(file) == 0) {
-    GELOGE(GRAPH_PARAM_INVALID, "File path invalid.");
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][FilePath]file invalid.");
     return GRAPH_PARAM_INVALID;
   }
 
@@ -675,7 +675,7 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
 
   char path[PATH_MAX] = {0};
   if (realpath(file_path.c_str(), path) == nullptr) {
-    GELOGE(GRAPH_PARAM_INVALID, "Dump file path:%s  is invalid.", file);
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][DumpFile] path:%s is invalid.", file);
     return GRAPH_PARAM_INVALID;
   }
 
@@ -710,7 +710,7 @@ graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<Tenso
     ge::TensorUtils::SetOutputTensor(tensor_desc, false);
 
     if (op_desc->AddInputDesc(tensor_desc) != ge::GRAPH_SUCCESS) {
-      GELOGE(ge::FAILED, "AddInputDesc fail.");
+      GELOGE(ge::FAILED, "[Add][InputDesc] fail.");
       return ge::FAILED;
     }
     input_tensors.emplace_back(tensor_desc);
@@ -734,7 +734,7 @@ graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<Tenso
   ge::GeGenerator generator;
   std::string graph_name = ge::CurrentTimeInStr() + "_graph";
   if (generator.BuildSingleOpGraph(op_desc, input_tensors, output_tensors, graph_name, graph) != ge::SUCCESS) {
-    GELOGE(GRAPH_FAILED, "make graph fail.");
+    GELOGE(GRAPH_FAILED, "[Make][Graph] fail.");
     return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;
@@ -747,7 +747,7 @@ static std::string AttrTypeToSerialString(aclgrphAttrType attr_type) {
   } else {
     ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
         {"AttrTypeToSerialString", "attr_type[" + std::to_string(attr_type) + "] is not support"});
-    GELOGE(GRAPH_FAILED, "AttrTypeToSerialString: attr_type not support %u", attr_type);
+    GELOGE(GRAPH_FAILED, "[Check][AclgrphAttrType] attr_type not support %u", attr_type);
     return "UNDEFINED";
   }
 }
@@ -762,7 +762,7 @@ graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char
 
   auto iter = kAttrTypeFuncMap.find(attr_type);
   if (iter == kAttrTypeFuncMap.end()) {
-    GELOGE(GRAPH_FAILED, "attr type: %s is not support", AttrTypeToSerialString(attr_type).c_str());
+    GELOGE(GRAPH_FAILED, "[Check][AclgrphAttrType]%s is not support", AttrTypeToSerialString(attr_type).c_str());
     return GRAPH_FAILED;
   }
 

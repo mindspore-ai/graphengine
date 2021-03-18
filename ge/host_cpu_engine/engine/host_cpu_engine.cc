@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <securec.h>
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "host_cpu_engine/common/constant/constant.h"
@@ -34,7 +35,8 @@ Status HostCpuEngine::Initialize(const std::map<string, string> &options) {
   if (ops_kernel_store_ == nullptr) {
     ops_kernel_store_ = MakeShared<HostCpuOpsKernelInfoStore>();
     if (ops_kernel_store_ == nullptr) {
-      GELOGE(FAILED, "Make HostCpuOpsKernelInfoStore failed.");
+      GELOGE(FAILED, "[Create][HostCpuEngine]Make HostCpuOpsKernelInfoStore failed.");
+      REPORT_INNER_ERROR("E19999", "HostCpuEngine::Initialize failed for new HostCpuEngine.");
       return FAILED;
     }
   }

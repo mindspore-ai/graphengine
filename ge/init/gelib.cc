@@ -68,7 +68,8 @@ Status GELib::Initialize(const map<string, string> &options) {
   // Multiple initializations are not allowed
   instancePtr_ = MakeShared<GELib>();
   if (instancePtr_ == nullptr) {
-    GELOGE(GE_CLI_INIT_FAILED, "GeLib initialize failed, malloc shared_ptr failed.");
+    GELOGE(GE_CLI_INIT_FAILED, "[Create][GELib]GeLib initialize failed, malloc shared_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "GELib Init failed for new GeLib failed.");
     return GE_CLI_INIT_FAILED;
   }
 
@@ -76,13 +77,15 @@ Status GELib::Initialize(const map<string, string> &options) {
   map<string, string> new_options;
   Status ret = instancePtr_->SetRTSocVersion(options, new_options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GeLib initial failed.");
+    GELOGE(ret, "[Set][RTSocVersion]GeLib initial: SetRTSocVersion failed.");
+    REPORT_CALL_ERROR("E19999", "SetRTSocVersion failed.");
     return ret;
   }
 
   ret = instancePtr_->SetAiCoreNum(new_options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GeLib initial: SetAiCoreNum failed.");
+    GELOGE(ret, "[Set][AiCoreNum]GeLib initial: SetAiCoreNum failed.");
+    REPORT_CALL_ERROR("E19999", "SetAiCoreNum failed.");
     return ret;
   }
 
@@ -97,7 +100,8 @@ Status GELib::Initialize(const map<string, string> &options) {
   GE_TIMESTAMP_START(Init);
   ret = instancePtr_->InnerInitialize(new_options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GeLib initial failed.");
+    GELOGE(ret, "[Init][GeLib]GeLib initial failed.");
+    REPORT_CALL_ERROR("E19999", "GELib::InnerInitialize failed.");
     instancePtr_ = nullptr;
     return ret;
   }
@@ -118,7 +122,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initSystemStatus = SystemInitialize(options);
   GE_TIMESTAMP_END(SystemInitialize, "InnerInitialize::SystemInitialize");
   if (initSystemStatus != SUCCESS) {
-    GELOGE(initSystemStatus, "GE system initial failed.");
+    GELOGE(initSystemStatus, "[Init][GESystem]GE system initial failed.");
     RollbackInit();
     return initSystemStatus;
   }
@@ -129,7 +133,8 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initEmStatus = engineManager_.Initialize(options);
   GE_TIMESTAMP_END(EngineInitialize, "InnerInitialize::EngineInitialize");
   if (initEmStatus != SUCCESS) {
-    GELOGE(initEmStatus, "GE engine manager initial failed.");
+    GELOGE(initEmStatus, "[Init][EngineManager]GE engine manager initial failed.");
+    REPORT_CALL_ERROR("E19999", "EngineManager initialize failed.");
     RollbackInit();
     return initEmStatus;
   }
@@ -140,7 +145,8 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initOpsStatus = opsManager_.Initialize(options);
   GE_TIMESTAMP_END(OpsManagerInitialize, "InnerInitialize::OpsManagerInitialize");
   if (initOpsStatus != SUCCESS) {
-    GELOGE(initOpsStatus, "GE ops manager initial failed.");
+    GELOGE(initOpsStatus, "[Init][OpsManager]GE ops manager initial failed.");
+    REPORT_CALL_ERROR("E19999", "OpsManager initialize failed.");
     RollbackInit();
     return initOpsStatus;
   }
@@ -151,7 +157,8 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initOpsBuilderStatus = OpsKernelBuilderManager::Instance().Initialize(options);
   GE_TIMESTAMP_END(OpsKernelBuilderManagerInitialize, "InnerInitialize::OpsKernelBuilderManager");
   if (initOpsBuilderStatus != SUCCESS) {
-    GELOGE(initOpsBuilderStatus, "GE ops builder manager initial failed.");
+    GELOGE(initOpsBuilderStatus, "[Init][OpsKernelBuilderManager]GE ops builder manager initial failed.");
+    REPORT_CALL_ERROR("E19999", "OpsBuilderManager initialize failed.");
     RollbackInit();
     return initOpsBuilderStatus;
   }
@@ -162,7 +169,8 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initSmStatus = sessionManager_.Initialize(options);
   GE_TIMESTAMP_END(SessionManagerInitialize, "InnerInitialize::SessionManagerInitialize");
   if (initSmStatus != SUCCESS) {
-    GELOGE(initSmStatus, "GE session manager initial failed.");
+    GELOGE(initSmStatus, "[Init][SessionManager] GE session manager initial failed.");
+    REPORT_CALL_ERROR("E19999", "SessionManager initialize failed.");
     RollbackInit();
     return initSmStatus;
   }
@@ -172,7 +180,8 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
   GE_TIMESTAMP_END(HostCpuEngineInitialize, "InnerInitialize::HostCpuEngineInitialize");
   if (initHostCpuEngineStatus != SUCCESS) {
-    GELOGE(initHostCpuEngineStatus, "Failed to initialize HostCpuEngine");
+    GELOGE(initHostCpuEngineStatus, "[Init][HostCpuEngine]Failed to initialize HostCpuEngine.");
+    REPORT_CALL_ERROR("E19999", "HostCpuEngine initialize failed.");
     RollbackInit();
     return initHostCpuEngineStatus;
   }
@@ -180,7 +189,8 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
   GELOGI("Start to init Analyzer!");
   Status init_analyzer_status = ge::Analyzer::GetInstance()->Initialize();
   if (init_analyzer_status != SUCCESS) {
-    GELOGE(init_analyzer_status, "Failed to initialize HostCpuEngine");
+    GELOGE(init_analyzer_status, "[Init][Analyzer]Failed to initialize Analyzer.");
+    REPORT_CALL_ERROR("E19999", "ge::Analyzer initialize failed.");
     RollbackInit();
     return init_analyzer_status;
   }
@@ -205,7 +215,8 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
   GE_IF_BOOL_EXEC(model_manager->EnableExceptionDump(options) != SUCCESS,
-                  GELOGE(FAILED, "Enable exception dump failed");
+                  REPORT_CALL_ERROR("E19999", "ModelManager EnableExceptionDump failed.");
+                  GELOGE(FAILED, "[Enable][ExceptionDump] failed.");
                   return FAILED);
   // 1.`is_train_mode_` means case: train
   // 2.`(!is_train_mode_) && (options_.device_id != kDefaultDeviceIdForInfer)` means case: online infer
@@ -259,7 +270,10 @@ Status GELib::SetRTSocVersion(const map<string, string> &options, map<string, st
     GELOGI("SOC_VERSION is not exist in options");
     char version[kSocVersionLen] = {0};
     rtError_t rt_ret = rtGetSocVersion(version, kSocVersionLen);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(rt_ret, "rtGetSocVersion failed"); return FAILED;)
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, 
+        REPORT_CALL_ERROR("E19999", "rtGetSocVersion failed.");
+        GELOGE(rt_ret, "[Get][SocVersion]rtGetSocVersion failed");
+        return FAILED;)
     GELOGI("Succeeded in getting SOC_VERSION[%s] from runtime.", version);
     new_options.insert(std::make_pair(ge::SOC_VERSION, version));
   }
@@ -280,7 +294,8 @@ Status GELib::SetAiCoreNum(map<string, string> &options) {
     options.emplace(std::make_pair(AICORE_NUM, std::to_string(aicore_num)));
     return SUCCESS;
   }
-  GELOGE(FAILED, "rtGetAiCoreCount failed.");
+  GELOGE(FAILED, "[Get][AiCoreCount]rtGetAiCoreCount failed.");
+  REPORT_CALL_ERROR("E19999", "rtGetAiCoreCount failed.");
   return FAILED;
 }
 
@@ -355,7 +370,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   mem_type.push_back(RT_MEMORY_P2P_DDR);
   Status initMmStatus = MemManager::Instance().Initialize(mem_type);
   if (initMmStatus != SUCCESS) {
-    GELOGE(initMmStatus, "[Initialize] MemoryAllocatorManager initialize failed.");
+    GELOGE(initMmStatus, "[Init][MemManager] MemoryAllocatorManager initialize failed.");
+    REPORT_CALL_ERROR("E19999", "MemManager initialize failed.");
     return initMmStatus;
   }
 
@@ -363,7 +379,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   // Update CSA file
   CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
-  GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
+  GE_LOGE_IF(ret != SUCCESS, "[Write][JobState] failed, ret:%u ", ret);
 
   // set device id
   GELOGI("set logical device id:%u", options.device_id);
@@ -394,7 +410,7 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
 
   // Update CSA file
   Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_SUCCEED);
-  GE_LOGE_IF(ret != SUCCESS, "write job state failed, ret:%u", ret);
+  GE_LOGE_IF(ret != SUCCESS, "[Write][JobState] failed, ret:%u ", ret);
 
   is_system_inited = false;
   is_shutdown = true;
@@ -410,7 +426,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithout
   mem_type.push_back(RT_MEMORY_P2P_DDR);
   Status initMmStatus = MemManager::Instance().Initialize(mem_type);
   if (initMmStatus != SUCCESS) {
-    GELOGE(initMmStatus, "[Initialize] MemoryAllocatorManager initialize failed.");
+    GELOGE(initMmStatus, "[Init][MemoryManager] initialize failed.");
+    REPORT_CALL_ERROR("E19999", "MemManager initialize failed.");
     return initMmStatus;
   }
   GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
@@ -506,7 +523,8 @@ Status GELib::Finalize() {
   instancePtr_ = nullptr;
   init_flag_ = false;
   if (final_state != SUCCESS) {
-    GELOGE(FAILED, "finalization failed.");
+    GELOGE(FAILED, "[Check][State]finalization failed.");
+    REPORT_INNER_ERROR("E19999", "GELib::Finalize failed.");
     return final_state;
   }
   GELOGI("finalization success.");

@@ -56,7 +56,8 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
   std::map<string, string> options(options_const);
   Status ret = InitPluginOptions(options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[OpsKernelManager] [Initialize] parse pluginFlag from ge options failed.");
+    GELOGE(ret, "[Init][PluginOptions] parse pluginFlag from ge options failed.");
+    REPORT_CALL_ERROR("E19999", "InitPluginOptions failed.");
     return ret;
   }
 
@@ -85,7 +86,8 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     initialize_ = options;
     Status rst0 = plugin_manager_.InvokeAll<map<string, string> &, Status>(kInitialize, initialize_);
     if (rst0 == FAILED) {
-      GELOGE(GE_OPS_GET_NO_VALID_SO, "There is invalid so about OpsKernelInfoStore.");
+      GELOGE(GE_OPS_GET_NO_VALID_SO, "[Invoke][OpsKernelInfo]PluginManager InvokeAll failed.");
+      REPORT_INNER_ERROR("E19999", "PluginManager InvokeAll failed.")
       return GE_OPS_GET_NO_VALID_SO;
     }
     Status rst1 =
@@ -114,18 +116,21 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     }
     ret = InitGraphOptimizerPriority();
     if ((ret != SUCCESS)) {
-      GELOGE(ret, "Init graph optimizer priority failed.");
+      GELOGE(ret, "[Init][GraphOptimizerPriority] failed.");
+      REPORT_CALL_ERROR("E19999", "InitGraphOptimizerPriority failed.");
       return ret;
     }
     init_flag_ = true;
     return SUCCESS;
   } else {
-    GELOGE(ret, "Failed to find any valid so file.");
+    GELOGE(ret, "[Check][SoFile] not find any valid so file.");
+    REPORT_INNER_ERROR("E19999", "OpsKernelManager::Initialize failed for not find any valid so file.");
     return ret;
   }
 }
 
-void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path, const std::map<string, string>& options) {
+void OpsKernelManager::GetExternalEnginePath(std::string &extern_engine_path,
+    const std::map<string, string>& options) {
   GELOGI("Enter get external engine so path schedule");
   const char *path_env = std::getenv("ASCEND_ENGINE_PATH");
   if (path_env != nullptr) {
@@ -175,21 +180,35 @@ Status OpsKernelManager::ParsePluginOptions(const map<string, string> &options, 
       } else if (flag == 1) {
         enable_flag = true;
       } else {
-        GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:%s, its value %s is invalid, it must be 0 or 1.",
-               plugin_name.c_str(), iter->second.c_str());
+        GELOGE(GE_GRAPH_OPTIONS_INVALID, 
+            "[Parse][PluginOptions]option_key:%s, its value %s is invalid, it must be 0 or 1.",
+            plugin_name.c_str(), iter->second.c_str());
+        REPORT_INNER_ERROR("E19999", "ParsePluginOptions failed, option_key:%s, "
+            "its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(), iter->second.c_str());
         return GE_GRAPH_OPTIONS_INVALID;
       }
     } catch (std::invalid_argument &) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
-             iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, 
+      	  "[Parse][PluginOptions] failed, option_key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
+          iter->second.c_str());
+      REPORT_INNER_ERROR("E19999", 
+      	  "ParsePluginOptions failed, option_key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
+          iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     } catch (std::out_of_range &) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
-             iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, 
+      	  "[Parse][PluginOptions]failed, option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
+          iter->second.c_str());
+      REPORT_INNER_ERROR("E19999", 
+      	  "ParsePluginOptions failed, option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
+          iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     } catch (...) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "option_key:%s, its value %s is invalid, it must be 0 or 1.",
-             plugin_name.c_str(), iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, 
+          "[Parse][PluginOptions]option_key:%s, its value %s is invalid, it must be 0 or 1.",
+          plugin_name.c_str(), iter->second.c_str());
+      REPORT_INNER_ERROR("E19999", "ParsePluginOptions failed, option_key:%s, "
+          "its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(), iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
   } else {
@@ -203,13 +222,15 @@ Status OpsKernelManager::ParsePluginOptions(const map<string, string> &options, 
 Status OpsKernelManager::CheckPluginPtr() const {
   for (auto iter = ops_kernel_store_.begin(); iter != ops_kernel_store_.end(); ++iter) {
     if (iter->second == nullptr) {
-      GELOGE(INTERNAL_ERROR, "CheckPluginPtr OpsKernelInfoStorePtr is null");
+      GELOGE(INTERNAL_ERROR, "[Check][PluginPtr] OpsKernelInfoStorePtr key=%s is null", iter->first.c_str());
+      REPORT_INNER_ERROR("E19999", "CheckPluginPtr OpsKernelInfoStorePtr key=%s is null", iter->first.c_str());
       return FAILED;
     }
   }
   for (auto iter1 = graph_optimizers_.begin(); iter1 != graph_optimizers_.end(); ++iter1) {
     if (iter1->second == nullptr) {
-      GELOGE(INTERNAL_ERROR, "CheckPluginPtr GraphOptimizerPtr is null");
+      GELOGE(INTERNAL_ERROR, "[Check][PluginPtr] GraphOptimizerPtr key=%s is null", iter1->first.c_str());
+      REPORT_INNER_ERROR("E19999", "GraphOptimizerPtr key=%s is null", iter1->first.c_str());
       return FAILED;
     }
   }
@@ -222,7 +243,9 @@ Status OpsKernelManager::InitOpKernelInfoStores(const map<string, string> &optio
     GELOGI("OpKernelInfoStore name: %s.", (it.first).c_str());
     Status ret = it.second->Initialize(options);
     if (ret != SUCCESS) {
-      GELOGE(GE_OPS_KERNEL_STORE_INIT_FAILED, "OpKernelInfoStore: %s initialize failed.", (it.first).c_str());
+      GELOGE(GE_OPS_KERNEL_STORE_INIT_FAILED, 
+          "[Init][OpKernelLib]OpKernelInfoStore: %s initialize failed.", (it.first).c_str());
+      REPORT_CALL_ERROR("E19999", "OpKernelInfoStore: %s initialize failed.", (it.first).c_str());
       return GE_OPS_KERNEL_STORE_INIT_FAILED;
     }
   }
@@ -247,7 +270,8 @@ void OpsKernelManager::InitOpsKernelInfo() {
   }
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "InitOpsKernelInfo failed.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][GELib]malloc instance_ptr failed.");
+    REPORT_INNER_ERROR("E19999", "InitOpsKernelInfo failed for new GELib.");
     return;
   }
   // sort opinfo of ops_kernel_info_
@@ -291,7 +315,8 @@ Status OpsKernelManager::InitGraphOptimzers(const map<string, string> &options) 
     GE_CHK_STATUS_RET(it.second->GetAttributes(attrs))
     std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
     if (instance_ptr == nullptr) {
-      GELOGE(GE_CLI_GE_NOT_INITIALIZED, "InitGraphOptimzers failed.");
+      GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][GELib]malloc instance_ptr failed.");
+      REPORT_INNER_ERROR("E19999", "InitGraphOptimzers failed for new GELib.");
       return GE_CLI_GE_NOT_INITIALIZED;
     }
     if (!instance_ptr->DNNEngineManagerObj().IsEngineRegistered(attrs.engineName)) {
@@ -300,7 +325,9 @@ Status OpsKernelManager::InitGraphOptimzers(const map<string, string> &options) 
     }
     Status ret = it.second->Initialize(options);
     if (ret != SUCCESS) {
-      GELOGE(GE_OPS_GRAPH_OPTIMIZER_INIT_FAILED, "GraphOptimzer: %s initialize failed.", (it.first).c_str());
+      GELOGE(GE_OPS_GRAPH_OPTIMIZER_INIT_FAILED, 
+          "[Init][GraphOptimzer]GraphOptimzer: %s initialize failed.", (it.first).c_str());
+      REPORT_CALL_ERROR("E19999", "InitGraphOptimzers failed. %s initialize failed.", (it.first).c_str());
       return GE_OPS_GRAPH_OPTIMIZER_INIT_FAILED;
     }
   }
@@ -317,7 +344,8 @@ Status OpsKernelManager::Finalize() {
     GELOGI("OpsKernelStore finalize, name: %s.", (iter->first).c_str());
     Status status = iter->second->Finalize();
     if (SUCCESS != status) {
-      GELOGE(status, "OpsKernelStore finalize failed, name: %s.", (iter->first).c_str());
+      GELOGE(status, "[Check][Status]OpsKernelStore finalize failed, name: %s.", (iter->first).c_str());
+      REPORT_CALL_ERROR("E19999", "OpsKernelStore finalize failed, name: %s.", (iter->first).c_str());
       return status;
     }
   }
@@ -325,14 +353,16 @@ Status OpsKernelManager::Finalize() {
     GELOGI("GraphOptimzers finalize, name: %s.", (iter->first).c_str());
     Status status = iter->second->Finalize();
     if (status != SUCCESS) {
-      GELOGE(status, "GraphOptimzers finalize failed, name: %s.", (iter->first).c_str());
+      GELOGE(status, "[Check][Status]GraphOptimzers finalize failed, name: %s.", (iter->first).c_str());
+      REPORT_CALL_ERROR("E19999", "GraphOptimzers finalize failed, name: %s.", (iter->first).c_str());
       return status;
     }
   }
 
   Status ret = FinalizeOpsKernel();
   if (ret != SUCCESS) {
-    GELOGE(ret, "free ops kernel resource failed.");
+    GELOGE(ret, "[Free][Ops Kernel Resource] failed.");
+    REPORT_CALL_ERROR("E19999", "FinalizeOpsKernel failed, Free Ops kernel resource failed.");
     return ret;
   }
 
@@ -443,7 +473,8 @@ Status OpsKernelManager::FinalizeOpsKernel() {
   GELOGI("ge invoke ops kernal finalize.");
   Status ret = plugin_manager_.InvokeAll<Status>(kFinalize);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Finalize] invoke Fe finalize failed.");
+    GELOGE(ret, "[Finalize][Check][Status] invoke Fe finalize failed.");
+    REPORT_INNER_ERROR("E19999", "PluginManager InvokeAll failed.");
     return ret;
   }
 

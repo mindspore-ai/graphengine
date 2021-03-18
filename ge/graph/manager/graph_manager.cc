@@ -2897,9 +2897,9 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
       graph_manager->graph_executor_.SetTrainFlag(graph_manager->options_.train_graph_flag);
     }
 
+    args.graph_node->SetRunFlag(false);
     ret = graph_manager->graph_executor_.ExecuteGraphAsync(args.graph_id, args.graph_node->GetGeRootModel(),
                                                            args.input_tensor);
-    args.graph_node->SetRunFlag(false);
     if (ret != SUCCESS) {
       ReturnError(graph_manager, args.callback, ret, "ExecuteGraphAsync failed, thread exit.");
       args.graph_node->Unlock();

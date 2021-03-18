@@ -94,5 +94,4 @@ TEST_F(UtestDynamicShapePartition, single_op_scene_success) {
   DynamicShapePartitioner partitioner(graph);
   EXPECT_EQ(partitioner.Partition(), SUCCESS);
 }
-
 } // namespace ge

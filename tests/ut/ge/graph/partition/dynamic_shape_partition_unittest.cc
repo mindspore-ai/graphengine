@@ -17,6 +17,10 @@
 #include <gtest/gtest.h>
 #include "graph/partition/dynamic_shape_partition.h"
 #include "compute_graph.h"
+#include "inc/framework/common/types.h"
+#include "utils/graph_utils.h"
+#include "graph/debug/ge_attr_define.h"
+
 
 #define private public
 #define protected public
@@ -75,7 +79,7 @@ class UtestDynamicShapePartition : public testing::Test {
 
 // test Init_EndGraphTaskInfo_failed
 TEST_F(UtestDynamicShapePartition, single_op_scene_success) {
-  ComputeGraphPtr computeGraph("default");
+  ComputeGraphPtr graph = shared_ptr<ComputeGraph>("default");
 
   NodePtr node1 =
       NodeBuilder("node1", CONSTANTOP).AddInputDesc({1, 1, 224, 224}).AddOutputDesc({1, 1, 224, 224}).Build(graph);

@@ -695,6 +695,7 @@ set(PASS_TEST_FILES
     "graph/passes/infershape_pass_unittest.cc"
     "graph/passes/multi_batch_clone_pass_unittest.cc"
     "graph/passes/replace_with_empty_const_pass_unittest.cc"
+    "graph/passes/link_gen_mask_nodes_pass_unittest.cc"
     "graph/passes/transpose_transdata_pass_unittest.cc"
 )
 

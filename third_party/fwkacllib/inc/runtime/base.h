@@ -339,7 +339,7 @@ RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream);
+RTS_API rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream);
 
 /**
  * @ingroup dvrt_base

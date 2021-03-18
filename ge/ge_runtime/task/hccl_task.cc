@@ -52,15 +52,7 @@ HcclTask::HcclTask(const ModelContext &model_context, const std::shared_ptr<Hccl
   }
 }
 
-HcclTask::~HcclTask() {
-  if (workspace_mem_ != nullptr) {
-    rtError_t rt_ret = rtFree(workspace_mem_);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtFree workspace_mem_ failed! ret: 0x%X.", rt_ret);
-    }
-    workspace_mem_ = nullptr;
-  }
-}
+HcclTask::~HcclTask() {}
 
 bool HcclTask::Distribute() {
   // Ops kernel info store
@@ -79,11 +71,7 @@ bool HcclTask::Distribute() {
   SetSecondaryStream();
 
   if (task_info_->workspace_size() > 0) {
-    rtError_t rt_ret = rtMalloc(&workspace_mem_, task_info_->workspace_size(), RT_MEMORYINFO_HBM);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-      return false;
-    }
+    workspace_mem_ = task_info_->workspace_addr();
   }
 
   GELOGI("HcclTaskInfo Distribute Start. begin to call function LoadTask in hccl.");

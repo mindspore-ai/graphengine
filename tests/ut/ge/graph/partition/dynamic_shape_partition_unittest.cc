@@ -77,9 +77,8 @@ class UtestDynamicShapePartition : public testing::Test {
     void TearDown() {}
 };
 
-// test Init_EndGraphTaskInfo_failed
 TEST_F(UtestDynamicShapePartition, single_op_scene_success) {
-  ComputeGraphPtr graph = shared_ptr<ComputeGraph>("default");
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("default");
 
   NodePtr node1 =
       NodeBuilder("node1", CONSTANTOP).AddInputDesc({1, 1, 224, 224}).AddOutputDesc({1, 1, 224, 224}).Build(graph);

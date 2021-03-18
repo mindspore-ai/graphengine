@@ -23,17 +23,9 @@
 extern "C" {
 #endif
 
-typedef enum aclTransType {
-    ACL_TRANS_N,
-    ACL_TRANS_T,
-    ACL_TRANS_NZ,
-    ACL_TRANS_NZ_T
-} aclTransType;
+typedef enum aclTransType { ACL_TRANS_N, ACL_TRANS_T, ACL_TRANS_NZ, ACL_TRANS_NZ_T } aclTransType;
 
-typedef enum aclComputeType {
-    ACL_COMPUTE_HIGH_PRECISION,
-    ACL_COMPUTE_LOW_PRECISION
-} aclComputeType;
+typedef enum aclComputeType { ACL_COMPUTE_HIGH_PRECISION, ACL_COMPUTE_LOW_PRECISION } aclComputeType;
 
 /**
  * @ingroup AscendCL
@@ -61,12 +53,11 @@ typedef enum aclComputeType {
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
-*/
-ACL_FUNC_VISIBILITY aclError aclblasGemvEx(aclTransType transA, int m, int n,
-    const void *alpha, const void *a, int lda, aclDataType dataTypeA,
-    const void *x, int incx, aclDataType dataTypeX,
-    const void *beta, void *y, int incy, aclDataType dataTypeY,
-    aclComputeType type, aclrtStream stream);
+ */
+ACL_FUNC_VISIBILITY aclError aclblasGemvEx(aclTransType transA, int m, int n, const void *alpha, const void *a, int lda,
+                                           aclDataType dataTypeA, const void *x, int incx, aclDataType dataTypeX,
+                                           const void *beta, void *y, int incy, aclDataType dataTypeY,
+                                           aclComputeType type, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -83,15 +74,10 @@ ACL_FUNC_VISIBILITY aclError aclblasGemvEx(aclTransType transA, int m, int n,
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
-*/
-ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForGemvEx(aclTransType transA,
-                                                          int m,
-                                                          int n,
-                                                          aclDataType dataTypeA,
-                                                          aclDataType dataTypeX,
-                                                          aclDataType dataTypeY,
-                                                          aclComputeType type,
-                                                          aclopHandle **handle);
+ */
+ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForGemvEx(aclTransType transA, int m, int n, aclDataType dataTypeA,
+                                                          aclDataType dataTypeX, aclDataType dataTypeY,
+                                                          aclComputeType type, aclopHandle **handle);
 
 /**
  * @ingroup AscendCL
@@ -115,18 +101,9 @@ ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForGemvEx(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasHgemv(aclTransType transA,
-                                          int m,
-                                          int n,
-                                          const aclFloat16 *alpha,
-                                          const aclFloat16 *a,
-                                          int lda,
-                                          const aclFloat16 *x,
-                                          int incx,
-                                          const aclFloat16 *beta,
-                                          aclFloat16 *y,
-                                          int incy,
-                                          aclComputeType type,
+ACL_FUNC_VISIBILITY aclError aclblasHgemv(aclTransType transA, int m, int n, const aclFloat16 *alpha,
+                                          const aclFloat16 *a, int lda, const aclFloat16 *x, int incx,
+                                          const aclFloat16 *beta, aclFloat16 *y, int incy, aclComputeType type,
                                           aclrtStream stream);
 
 /**
@@ -142,10 +119,7 @@ ACL_FUNC_VISIBILITY aclError aclblasHgemv(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForHgemv(aclTransType transA,
-                                                         int m,
-                                                         int n,
-                                                         aclComputeType type,
+ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForHgemv(aclTransType transA, int m, int n, aclComputeType type,
                                                          aclopHandle **handle);
 
 /**
@@ -171,19 +145,9 @@ ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForHgemv(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasS8gemv(aclTransType transA,
-                                           int m,
-                                           int n,
-                                           const int32_t *alpha,
-                                           const int8_t *a,
-                                           int lda,
-                                           const int8_t *x,
-                                           int incx,
-                                           const int32_t *beta,
-                                           int32_t *y,
-                                           int incy,
-                                           aclComputeType type,
-                                           aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclblasS8gemv(aclTransType transA, int m, int n, const int32_t *alpha, const int8_t *a,
+                                           int lda, const int8_t *x, int incx, const int32_t *beta, int32_t *y,
+                                           int incy, aclComputeType type, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -198,10 +162,7 @@ ACL_FUNC_VISIBILITY aclError aclblasS8gemv(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForS8gemv(aclTransType transA,
-                                                          int m,
-                                                          int n,
-                                                          aclComputeType type,
+ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForS8gemv(aclTransType transA, int m, int n, aclComputeType type,
                                                           aclopHandle **handle);
 
 /**
@@ -233,26 +194,11 @@ ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForS8gemv(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasGemmEx(aclTransType transA,
-                                           aclTransType transB,
-                                           aclTransType transC,
-                                           int m,
-                                           int n,
-                                           int k,
-                                           const void *alpha,
-                                           const void *matrixA,
-                                           int lda,
-                                           aclDataType dataTypeA,
-                                           const void *matrixB,
-                                           int ldb,
-                                           aclDataType dataTypeB,
-                                           const void *beta,
-                                           void *matrixC,
-                                           int ldc,
-                                           aclDataType dataTypeC,
-                                           aclComputeType type,
-                                           aclrtStream stream);
-
+ACL_FUNC_VISIBILITY aclError aclblasGemmEx(aclTransType transA, aclTransType transB, aclTransType transC, int m, int n,
+                                           int k, const void *alpha, const void *matrixA, int lda,
+                                           aclDataType dataTypeA, const void *matrixB, int ldb, aclDataType dataTypeB,
+                                           const void *beta, void *matrixC, int ldc, aclDataType dataTypeC,
+                                           aclComputeType type, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -274,18 +220,10 @@ ACL_FUNC_VISIBILITY aclError aclblasGemmEx(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForGemmEx(aclTransType transA,
-                                                          aclTransType transB,
-                                                          aclTransType transC,
-                                                          int m,
-                                                          int n,
-                                                          int k,
-                                                          aclDataType dataTypeA,
-                                                          aclDataType dataTypeB,
-                                                          aclDataType dataTypeC,
-                                                          aclComputeType type,
-                                                          aclopHandle **handle);
-
+ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForGemmEx(aclTransType transA, aclTransType transB, aclTransType transC,
+                                                          int m, int n, int k, aclDataType dataTypeA,
+                                                          aclDataType dataTypeB, aclDataType dataTypeC,
+                                                          aclComputeType type, aclopHandle **handle);
 
 /**
  * @ingroup AscendCL
@@ -313,22 +251,10 @@ ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForGemmEx(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasHgemm(aclTransType transA,
-                                          aclTransType transB,
-                                          aclTransType transC,
-                                          int m,
-                                          int n,
-                                          int k,
-                                          const aclFloat16 *alpha,
-                                          const aclFloat16 *matrixA,
-                                          int lda,
-                                          const aclFloat16 *matrixB,
-                                          int ldb,
-                                          const aclFloat16 *beta,
-                                          aclFloat16 *matrixC,
-                                          int ldc,
-                                          aclComputeType type,
-                                          aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclblasHgemm(aclTransType transA, aclTransType transB, aclTransType transC, int m, int n,
+                                          int k, const aclFloat16 *alpha, const aclFloat16 *matrixA, int lda,
+                                          const aclFloat16 *matrixB, int ldb, const aclFloat16 *beta,
+                                          aclFloat16 *matrixC, int ldc, aclComputeType type, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -346,13 +272,8 @@ ACL_FUNC_VISIBILITY aclError aclblasHgemm(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForHgemm(aclTransType transA,
-                                                         aclTransType transB,
-                                                         aclTransType transC,
-                                                         int m,
-                                                         int n,
-                                                         int k,
-                                                         aclComputeType type,
+ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForHgemm(aclTransType transA, aclTransType transB, aclTransType transC,
+                                                         int m, int n, int k, aclComputeType type,
                                                          aclopHandle **handle);
 
 /**
@@ -381,23 +302,10 @@ ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForHgemm(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasS8gemm(aclTransType transA,
-                                           aclTransType transB,
-                                           aclTransType transC,
-                                           int m,
-                                           int n,
-                                           int k,
-                                           const int32_t *alpha,
-                                           const int8_t *matrixA,
-                                           int lda,
-                                           const int8_t *matrixB,
-                                           int ldb,
-                                           const int32_t *beta,
-                                           int32_t *matrixC,
-                                           int ldc,
-                                           aclComputeType type,
-                                           aclrtStream stream);
-
+ACL_FUNC_VISIBILITY aclError aclblasS8gemm(aclTransType transA, aclTransType transB, aclTransType transC, int m, int n,
+                                           int k, const int32_t *alpha, const int8_t *matrixA, int lda,
+                                           const int8_t *matrixB, int ldb, const int32_t *beta, int32_t *matrixC,
+                                           int ldc, aclComputeType type, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -415,17 +323,12 @@ ACL_FUNC_VISIBILITY aclError aclblasS8gemm(aclTransType transA,
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForS8gemm(aclTransType transA,
-                                                          aclTransType transB,
-                                                          aclTransType transC,
-                                                          int m,
-                                                          int n,
-                                                          int k,
-                                                          aclComputeType type,
+ACL_FUNC_VISIBILITY aclError aclblasCreateHandleForS8gemm(aclTransType transA, aclTransType transB, aclTransType transC,
+                                                          int m, int n, int k, aclComputeType type,
                                                           aclopHandle **handle);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_OPS_ACL_CBLAS_H_
+#endif  // INC_EXTERNAL_ACL_OPS_ACL_CBLAS_H_

@@ -129,6 +129,9 @@ class KernelTaskInfo : public TaskInfo {
   bool IsL1FusionOp(const OpDescPtr &op_desc);
   void SetIoAddrs(const OpDescPtr &op_desc);
   void InitDumpTask(uint32_t offset);
+  void SetContinuousArgs(uint32_t args_size, DavinciModel *davinci_model);
+  void SetNoncontinuousArgs(uint32_t args_size, DavinciModel *davinci_model);
+  Status CopyNoncontinuousArgs(uint16_t offset);
 
   // For super kernel
   Status SaveSKTDumpInfo();
@@ -163,6 +166,8 @@ class KernelTaskInfo : public TaskInfo {
   uint32_t hybrid_args_offset_ = 0;
   int64_t fixed_addr_offset_ = 0;
   std::unique_ptr<uint8_t[]> args_addr = nullptr;
+  uint16_t io_addr_offset_ = 0;
+  bool l2_buffer_on_ = false;
   bool call_save_dump_ = false;
 
   // aicpu ext_info device mem

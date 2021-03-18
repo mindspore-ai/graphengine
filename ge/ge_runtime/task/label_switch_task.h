@@ -32,6 +32,7 @@ class LabelSwitchTask : public TaskRepeater<LabelSwitchTaskInfo> {
 
  private:
   bool CheckParamValid();
+  void CopyLabelList();
 
   std::shared_ptr<LabelSwitchTaskInfo> task_info_;
   void *stream_;

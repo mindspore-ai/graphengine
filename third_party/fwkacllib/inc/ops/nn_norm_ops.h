@@ -526,6 +526,31 @@ REG_OP(LayerNorm)
     .OP_END_FACTORY_REG(LayerNorm)
 
 /**
+*@brief Returns a tensor where each sub-tensor of input along dimension 
+*       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
+
+*@par Inputs:
+*One input, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Attributes:
+* @li p: Specify L_p norm, the type is float. 
+* @li dim: The processed dim, the type is int.
+* @li maxnorm: Threshold for comparison, the type is float.  \n
+
+*@par Outputs:
+*One outputs, including:
+* @li y: shape and dtype of output, should be same shape and type as input.
+*/
+REG_OP(Renorm)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(p, Float)
+    .REQUIRED_ATTR(dim, Int)
+    .REQUIRED_ATTR(maxnorm, Float)
+    .OP_END_FACTORY_REG(Renorm)
+
+/**
 *@brief LayerNormGrad operator interface implementation
 *  calculating: dy, x, variance, mean, gamma
 *  pd_xl = data_dy*data_gamma

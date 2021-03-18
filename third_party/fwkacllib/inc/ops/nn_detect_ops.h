@@ -254,22 +254,22 @@ is min_size/sqrt(aspect_ratio), the width is min_size*sqrt(aspect_ratio). Defaul
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
- REG_OP(PriorBox)
-     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .REQUIRED_ATTR(min_size, ListFloat)
-     .REQUIRED_ATTR(max_size, ListFloat)
-     .REQUIRED_ATTR(aspect_ratio, ListFloat)
-     .ATTR(img_h, Int, 0)
-     .ATTR(img_w, Int, 0)
-     .ATTR(step_h, Float, 0.0)
-     .ATTR(step_w, Float, 0.0)
-     .ATTR(flip, Bool, true)
-     .ATTR(clip, Bool, false)
-     .ATTR(offset, Float, 0.5)
-     .ATTR(variance, ListFloat, {0.1})
-     .OP_END_FACTORY_REG(PriorBox);
+REG_OP(PriorBox)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(min_size, ListFloat)
+    .REQUIRED_ATTR(max_size, ListFloat)
+    .REQUIRED_ATTR(aspect_ratio, ListFloat)
+    .ATTR(img_h, Int, 0)
+    .ATTR(img_w, Int, 0)
+    .ATTR(step_h, Float, 0.0)
+    .ATTR(step_w, Float, 0.0)
+    .ATTR(flip, Bool, true)
+    .ATTR(clip, Bool, false)
+    .ATTR(offset, Float, 0.5)
+    .ATTR(variance, ListFloat, {0.1})
+    .OP_END_FACTORY_REG(PriorBox);
 
 /**
 *@brief Performs SSD prior box detection, with four additional matrices and the "aspect_ratio" attribute deleted compared to PriorBox . \n
@@ -306,25 +306,25 @@ is min_size/sqrt(aspect_ratio), the width is min_size*sqrt(aspect_ratio). Defaul
 *@par Restrictions:
 *Warning: THIS FUNCTION IS DEPRECATED. Please use PriorBox instead.
 */
- REG_OP(PriorBoxD)
-     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(data_h, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(data_w, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(box_height, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(box_width, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .REQUIRED_ATTR(min_size, ListFloat)
-     .REQUIRED_ATTR(max_size, ListFloat)
-     .ATTR(img_h, Int, 0)
-     .ATTR(img_w, Int, 0)
-     .ATTR(step_h, Float, 0.0)
-     .ATTR(step_w, Float, 0.0)
-     .ATTR(flip, Bool, true)
-     .ATTR(clip, Bool, false)
-     .ATTR(offset, Float, 0.5)
-     .ATTR(variance, ListFloat, {0.1})
-     .OP_END_FACTORY_REG(PriorBoxD);
+REG_OP(PriorBoxD)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(data_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(data_w, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(box_height, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(box_width, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(min_size, ListFloat)
+    .REQUIRED_ATTR(max_size, ListFloat)
+    .ATTR(img_h, Int, 0)
+    .ATTR(img_w, Int, 0)
+    .ATTR(step_h, Float, 0.0)
+    .ATTR(step_w, Float, 0.0)
+    .ATTR(flip, Bool, true)
+    .ATTR(clip, Bool, false)
+    .ATTR(offset, Float, 0.5)
+    .ATTR(variance, ListFloat, {0.1})
+    .OP_END_FACTORY_REG(PriorBoxD);
 
 /**
 *@brief Performs SSD prior box detection, with four additional matrices and the "aspect_ratio" attribute deleted compared to PriorBox . \n
@@ -358,22 +358,22 @@ is min_size/sqrt(aspect_ratio), the width is min_size*sqrt(aspect_ratio). Defaul
 *@par Restrictions:
 *Warning: THIS FUNCTION IS DEPRECATED. Please use PriorBox instead.
 */
- REG_OP(PriorBoxDV2)
-     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-     .REQUIRED_ATTR(min_size, ListFloat)
-     .REQUIRED_ATTR(max_size, ListFloat)
-     .ATTR(img_h, Int, 0)
-     .ATTR(img_w, Int, 0)
-     .ATTR(step_h, Float, 0.0)
-     .ATTR(step_w, Float, 0.0)
-     .ATTR(flip, Bool, true)
-     .ATTR(clip, Bool, false)
-     .ATTR(offset, Float, 0.5)
-     .ATTR(variance, ListFloat, {0.1})
-     .OP_END_FACTORY_REG(PriorBoxDV2);
+REG_OP(PriorBoxDV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(min_size, ListFloat)
+    .REQUIRED_ATTR(max_size, ListFloat)
+    .ATTR(img_h, Int, 0)
+    .ATTR(img_w, Int, 0)
+    .ATTR(step_h, Float, 0.0)
+    .ATTR(step_w, Float, 0.0)
+    .ATTR(flip, Bool, true)
+    .ATTR(clip, Bool, false)
+    .ATTR(offset, Float, 0.5)
+    .ATTR(variance, ListFloat, {0.1})
+    .OP_END_FACTORY_REG(PriorBoxDV2);
 
 /**
 *@brief Performs Position Sensitive ROI Pooling . \n
@@ -531,10 +531,10 @@ as xx...xyy...yww...whh...hbb...bc0c0..c0c1c1...c1......cncn...cn . \n
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(Yolo)
-    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(obj_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(classes_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(coord_data, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(obj_prob, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(classes_prob, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(boxes, Int, 3)
     .ATTR(coords, Int, 4)
     .ATTR(classes, Int, 80)
@@ -584,10 +584,10 @@ REG_OP(Yolo)
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(YoloV2DetectionOutput)
-    .INPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(biases, ListFloat)
     .ATTR(boxes, Int, 5)
     .ATTR(coords, Int, 4)
@@ -598,7 +598,7 @@ REG_OP(YoloV2DetectionOutput)
     .ATTR(score_threshold, Float, 0.5)
     .ATTR(iou_threshold, Float, 0.45)
     .ATTR(pre_nms_topn, Int, 512)
-    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV2DetectionOutput)
 
@@ -647,12 +647,12 @@ REG_OP(YoloV2DetectionOutput)
 *Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV2DetectionOutput instead.
 */
 REG_OP(YoloV2DetectionOutputD)
-    .INPUT(coord_data, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(windex, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(hindex, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(windex, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(hindex, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(biases, ListFloat)
     .ATTR(boxes, Int, 5)
     .ATTR(coords, Int, 4)
@@ -663,7 +663,7 @@ REG_OP(YoloV2DetectionOutputD)
     .ATTR(score_threshold, Float, 0.5)
     .ATTR(iou_threshold, Float, 0.45)
     .ATTR(pre_nms_topn, Int, 512)
-    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV2DetectionOutputD)
 
@@ -707,16 +707,16 @@ REG_OP(YoloV2DetectionOutputD)
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(YoloV3DetectionOutput)
-    .INPUT(coord_data_low, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(coord_data_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(coord_data_high, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data_low, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(coord_data_mid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(coord_data_high, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob_low, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob_mid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob_high, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob_low, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob_mid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob_high, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(biases_low, ListFloat)
     .REQUIRED_ATTR(biases_mid, ListFloat)
     .REQUIRED_ATTR(biases_high, ListFloat)
@@ -729,7 +729,7 @@ REG_OP(YoloV3DetectionOutput)
     .ATTR(score_threshold, Float, 0.5)
     .ATTR(iou_threshold, Float, 0.45)
     .ATTR(pre_nms_topn, Int, 512)
-    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV3DetectionOutput)
 
@@ -776,22 +776,22 @@ s
 *Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV3DetectionOutput instead.
 */
 REG_OP(YoloV3DetectionOutputD)
-    .INPUT(coord_data_low, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(coord_data_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(coord_data_high, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(obj_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob_low, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob_mid, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(classes_prob_high, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(img_info, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(windex1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(windex2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(windex3, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(hindex1, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(hindex2, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(hindex3, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(coord_data_low, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(coord_data_mid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(coord_data_high, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob_low, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob_mid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(obj_prob_high, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob_low, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob_mid, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(classes_prob_high, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(img_info, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(windex1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(windex2, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(windex3, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(hindex1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(hindex2, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(hindex3, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(biases_low, ListFloat)
     .REQUIRED_ATTR(biases_mid, ListFloat)
     .REQUIRED_ATTR(biases_high, ListFloat)
@@ -804,7 +804,7 @@ REG_OP(YoloV3DetectionOutputD)
     .ATTR(score_threshold, Float, 0.5)
     .ATTR(iou_threshold, Float, 0.45)
     .ATTR(pre_nms_topn, Int, 512)
-    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV3DetectionOutputD)
 
@@ -848,7 +848,7 @@ There are three Yolo operators at Yolov3DetectionOutput's preceding layer on Yol
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(YoloV3DetectionOutputV2)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(biases, ListFloat)
     .ATTR(boxes, Int, 3)
     .ATTR(coords, Int, 4)
@@ -862,7 +862,7 @@ REG_OP(YoloV3DetectionOutputV2)
     .ATTR(N, Int, 10)
     .ATTR(resize_origin_img_to_net, Bool, false)
     .ATTR(out_box_dim, Int, 3)
-    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV3DetectionOutputV2)
 
@@ -910,9 +910,9 @@ REG_OP(YoloV3DetectionOutputV2)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use YoloV3DetectionOutputV2 instead.
 */
 REG_OP(YoloV3DetectionOutputV2D)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .DYNAMIC_INPUT(windex, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .DYNAMIC_INPUT(hindex, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_INPUT(windex, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .DYNAMIC_INPUT(hindex, TensorType({DT_FLOAT16, DT_FLOAT}))
     .REQUIRED_ATTR(biases, ListFloat)
     .ATTR(boxes, Int, 3)
     .ATTR(coords, Int, 4)
@@ -926,7 +926,7 @@ REG_OP(YoloV3DetectionOutputV2D)
     .ATTR(N, Int, 10)
     .ATTR(resize_origin_img_to_net, Bool, false)
     .ATTR(out_box_dim, Int, 3)
-    .OUTPUT(box_out, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(box_out, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(box_out_num, TensorType({DT_INT32}))
     .OP_END_FACTORY_REG(YoloV3DetectionOutputV2D)
 
@@ -1466,9 +1466,9 @@ REG_OP(NormalizeBBox)
 * y: A Tensor. Must have the same type as box_predictions.
 */
 REG_OP(DecodeBboxV2)
-    .INPUT(boxes, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .INPUT(anchors, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(anchors, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(scales, ListFloat, {1.0, 1.0, 1.0, 1.0})
     .ATTR(decode_clip, Float, 0.0)
     .ATTR(reversed_box, Bool, false)
@@ -1592,7 +1592,6 @@ selected indices from the boxes tensor, where M <= max_output_size. \n
 *Compatible with onnx NonMaxSuppression operator.
 */
 
-
 REG_OP(NonMaxSuppressionV7)
     .INPUT(boxes, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(scores, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1641,13 +1640,91 @@ REG_OP(RoiExtractor)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(finest_scale, Int, 56)
     .ATTR(roi_scale_factor, Float, 0)
-    .ATTR(spatial_scale, ListFloat, { 1.f/4, 1.f/8, 1.f/16, 1.f/32 })
+    .ATTR(spatial_scale, ListFloat, {1.f / 4, 1.f / 8, 1.f / 16, 1.f / 32})
     .ATTR(pooled_height, Int, 7)
     .ATTR(pooled_width, Int, 7)
     .ATTR(sample_num, Int, 0)
     .ATTR(pool_mode, String, "avg")
     .ATTR(aligned, Bool, true)
     .OP_END_FACTORY_REG(RoiExtractor)
+
+/**
+*@brief Performs Position Sensitive PS ROI Pooling . \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
+* map, dimension C1 must be equal to
+* (int(output_dim+15)/C0))*group_size*group_size.
+*@li rois: A tensor of type float16 or float32, with shape
+* [batch, 5, rois_num], describing the ROIs, each ROI consists of five
+* elements: "batch_id", "x1", "y1", "x2", and "y2", which "batch_id" indicates
+* the index of the input feature map, "x1", "y1", "x2", or "y2" must be
+* greater than or equal to "0.0" . \n
+
+*@par Attributes:
+*@li output_dim: A required int32, specifying the number of output channels,
+* must be greater than 0.
+*@li group_size: A required int32, specifying the number of groups to encode
+* position-sensitive score maps, must be within the range (0, 128).
+*@li spatial_scale: A required float32, scaling factor for mapping the input
+* coordinates to the ROI coordinates . \n
+
+*@par Outputs:
+*y: An NC1HWC0 tensor of type float16 or float32, describing the result
+* feature map . \n
+
+*@attention Constraints:
+* HC1HWC0: channel must be Group_size squared, rois_num is a multiple of 16
+*/
+REG_OP(PSROIPoolingV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(spatial_scale, Float)
+    .REQUIRED_ATTR(output_dim, Int)
+    .REQUIRED_ATTR(group_size, Int)
+    .OP_END_FACTORY_REG(PSROIPoolingV2)
+
+/**
+*@brief Performs Position Sensitive PS ROI Pooling Grad . \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li x: An NC1HWC0 tensor of type float16 or float32, describing the result
+* feature map . \n
+*@li rois: A tensor of type float16 or float32, with shape
+* [batch, 5, rois_num], describing the ROIs, each ROI consists of five
+* elements: "batch_id", "x1", "y1", "x2", and "y2", which "batch_id" indicates
+* the index of the input feature map, "x1", "y1", "x2", or "y2" must be
+* greater than or equal to "0.0" . \n
+
+*@par Attributes:
+*@li output_dim: A required int32, specifying the number of output channels,
+* must be greater than 0.
+*@li group_size: A required int32, specifying the number of groups to encode
+* position-sensitive score maps, must be within the range (0, 128).
+*@li spatial_scale: A required float32, scaling factor for mapping the input
+* coordinates to the ROI coordinates . \n
+*@li input_size: A required listInt, mapping the gradinput size: (H, W)
+
+*@par Outputs:
+*y: An NC1HWC0 tensor of type float16 or float32, describing the feature
+* map, dimension C1 must be equal to
+* (int(output_dim+15)/C0))*group_size*group_size.
+
+*@attention Constraints:
+* HC1HWC0: channel must be Group_size squared, rois_num is a multiple of 16
+*/
+REG_OP(PSROIPoolingGradV2D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(rois, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(spatial_scale, Float)
+    .REQUIRED_ATTR(output_dim, Int)
+    .REQUIRED_ATTR(group_size, Int)
+    .REQUIRED_ATTR(input_size, ListInt)
+    .OP_END_FACTORY_REG(PSROIPoolingGradV2D)
 
 }  // namespace ge
 

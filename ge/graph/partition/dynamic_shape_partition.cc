@@ -48,50 +48,23 @@ namespace ge {
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
-static bool IsInExperimentalMode(const ComputeGraphPtr &root_graph) {
+static bool IsSingleOpScene(const ComputeGraphPtr &root_graph) {
   for (const auto &node : root_graph->GetAllNodes()) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     // not do partition in single op scene.
     bool is_singleop = false;
     (void)AttrUtils::GetBool(node->GetOpDesc(), ATTR_SINGLE_OP_SCENE, is_singleop);
     if (is_singleop) {
-      return false;
-    }
-
-    for (const auto &input_desc : node->GetOpDesc()->GetAllInputsDesc()) {
-      auto type = input_desc.GetDataType();
-      if (type == DT_STRING || type == DT_RESOURCE || type == DT_STRING_REF) {
-        if (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") == nullptr) {
-          return false;
-        } else {
-          GEEVENT("In dynamic shape scene, model contains data type:"
-                 "DT_STRING/DT_RESOURCE/DT_STRING_REF may not be supported well "
-                 "temporarily, please retry with \"unset EXPERIMENTAL_DYNAMIC_PARTITION\".");
-          break;
-        }
-      }
-    }
-    for (const auto &output_desc : node->GetOpDesc()->GetAllOutputsDesc()) {
-      auto type = output_desc.GetDataType();
-      if (type == DT_STRING || type == DT_RESOURCE || type == DT_STRING_REF) {
-        if (std::getenv("EXPERIMENTAL_DYNAMIC_PARTITION") == nullptr) {
-          return false;
-        } else {
-          GEEVENT("In dynamic shape scene, model contains data type:"
-                 "DT_STRING/DT_RESOURCE/DT_STRING_REF may not be supported well "
-                 "temporarily, please retry with \"unset EXPERIMENTAL_DYNAMIC_PARTITION\".");
-          break;
-        }
-      }
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 Status DynamicShapePartitioner::Partition() {
   REQUIRE_NOT_NULL(root_graph_, "Graph is nullptr.");
-  if (!IsInExperimentalMode(root_graph_)) {
-    GELOGD("Skip dynamic shape partition as not in experimental mode.");
+  if (IsSingleOpScene(root_graph_)) {
+    GELOGD("Skip dynamic shape partition as in single op scene.");
     REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
             "Failed set dynamic shape partitioned flag on root graph.");
     return SUCCESS;

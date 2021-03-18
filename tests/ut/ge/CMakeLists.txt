@@ -765,6 +765,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
+    "graph/partition/dynamic_shape_partition_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 

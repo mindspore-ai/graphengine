@@ -40,7 +40,7 @@ static bool BlockComparator(const Block *left, const Block *right) {
 }
 
 bool CanMerge(Block *block) {
-  if (block == nullptr || block->allocated || !block->IsSplit()) {
+  if ((block == nullptr) || block->allocated || !block->IsSplit()) {
     return false;
   }
   return true;
@@ -52,7 +52,7 @@ size_t GetBinIndex(size_t size) {
     if (size <= range) {
       break;
     }
-    ++index;
+    index++;
   }
   if (index > kNumBins - 1) {
     index = kNumBins - 1;
@@ -87,15 +87,15 @@ bool ShouldSplit(const Block *block, size_t size) {
 
 void IncreaseCount(std::map<size_t, size_t> &count, size_t size) {
   auto it = count.find(size);
-  if (it != count.end()) {
-    it->second++;
-  } else  {
+  if (it == count.end()) {
     count.emplace(size, 1);
+  } else  {
+    it->second++;
   }
 }
 
 CachingAllocator::CachingAllocator(rtMemType_t memory_type) : memory_type_(memory_type), memory_allocator_(nullptr) {
-  for (uint32_t i = 0; i < kNumBins; ++i) {
+  for (uint32_t i = 0; i < kNumBins; i++) {
     free_block_bins_[i] = nullptr;
   }
 }
@@ -105,7 +105,7 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
   // when redo Initialize free old memory
   FreeBlocks();
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  for (uint32_t i = 0; i < kNumBins; ++i) {
+  for (uint32_t i = 0; i < kNumBins; i++) {
     if (free_block_bins_[i] != nullptr) {
       continue;
     }
@@ -132,18 +132,18 @@ void CachingAllocator::Finalize(uint32_t device_id) {
 
 uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device_id) {
   GELOGI("Start malloc pool memory, size = %zu, device id = %u", size, device_id);
-  uint8_t *ptr = nullptr;
   size = GetBlockSize(size);
+  uint8_t *ptr = nullptr;
   Block *block = FindFreeBlock(size, org_ptr, device_id);
-  if (block != nullptr) {
-    ptr = block->ptr;
-  } else {
+  if (block == nullptr) {
     if (ge::SUCCESS == TryExtendCache(size, device_id)) {
       block = FindFreeBlock(size, org_ptr, device_id);
       if (block != nullptr) {
         ptr = block->ptr;
       }
     }
+  } else {
+    ptr = block->ptr;
   }
   if (ptr == nullptr) {
     GELOGE(FAILED, "Malloc failed device id = %u, size= %zu", device_id, size);
@@ -171,7 +171,7 @@ Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
 }
 
 void CachingAllocator::FreeBlock(Block *block) {
-  if (block == nullptr || !block->allocated) {
+  if ((block == nullptr) || !block->allocated) {
     return;
   }
   GELOGI("Free block size = %zu", block->size);
@@ -187,7 +187,7 @@ void CachingAllocator::FreeBlock(Block *block) {
 }
 
 void CachingAllocator::MergeBlocks(Block *dst, Block *src, BlockBin &bin) {
-  if (!CanMerge(dst) || !CanMerge(src)) {
+  if (!CanMerge(src) || !CanMerge(dst)) {
     return;
   }
 
@@ -316,7 +316,7 @@ size_t CachingAllocator::FreeCachedBlocks() {
   GELOGI("Free cached blocks");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   size_t free_cached_memory_size = 0;
-  for (uint32_t i = 0; i < kNumBins; ++i) {
+  for (uint32_t i = 0; i < kNumBins; i++) {
     auto pool = free_block_bins_[i];
     if (pool == nullptr) {
       continue;
@@ -324,7 +324,8 @@ size_t CachingAllocator::FreeCachedBlocks() {
     for (auto it = pool->begin(); it != pool->end();) {
       Block *block = *it;
       // free block memory that has not been split
-      if ((block != nullptr) && (block->ptr != nullptr) && (block->prev == nullptr) && (block->next == nullptr) &&
+      if ((block != nullptr) && (block->ptr != nullptr) &&
+          (block->prev == nullptr) && (block->next == nullptr) &&
           (memory_allocator_->FreeMemory(block->ptr) == ge::SUCCESS)) {
         auto itcount = malloced_memory_.find(block->size);
         free_cached_memory_size += block->size;
@@ -345,7 +346,7 @@ size_t CachingAllocator::FreeCachedBlocks() {
 }
 
 void CachingAllocator::FreeBlocks() {
-  GELOGI("Free blocks");
+  GELOGI("Free blocks.");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   // free allocated blocks and put to cache
   for (auto &it : allocated_blocks_) {
@@ -356,9 +357,9 @@ void CachingAllocator::FreeBlocks() {
 }
 
 void CachingAllocator::FreeBlockBins() {
-  GELOGI("Free block bins");
+  GELOGI("Free block bins.");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  for (uint32_t i = 0; i < kNumBins; ++i) {
+  for (uint32_t i = 0; i < kNumBins; i++) {
     if (free_block_bins_[i] != nullptr) {
       delete free_block_bins_[i];
       free_block_bins_[i] = nullptr;
@@ -367,9 +368,9 @@ void CachingAllocator::FreeBlockBins() {
 }
 
 void PrintCount(std::map<size_t, size_t> &count, const std::string &name, size_t total_size, size_t total_count) {
-  GELOGI("%6s total[size:%10zu count:%10zu]", name.c_str(), total_size, total_count);
+  GELOGI("%6s total[size:%10zu count:%10zu].", name.c_str(), total_size, total_count);
   for (auto &it : count) {
-    GELOGI("    |- block[size:%10zu count:%10zu]", it.first, it.second);
+    GELOGI("    |- block[size:%10zu count:%10zu].", it.first, it.second);
   }
 }
 
@@ -383,20 +384,20 @@ void CachingAllocator::PrintStatics() {
   size_t total_free_count = 0;
   size_t total_malloc_size = 0;
   size_t total_malloc_count = 0;
-  std::map<size_t, size_t> using_block;
-  std::map<size_t, size_t> free_block;
-  std::map<size_t, size_t> malloc_block;
+  std::map<size_t, size_t> using_block_stat;
+  std::map<size_t, size_t> free_block_stat;
+  std::map<size_t, size_t> malloc_block_stat;
   do {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
-    for (uint32_t i = 0; i < kNumBins; ++i) {
+    for (uint32_t i = 0; i < kNumBins; i++) {
       auto pool = free_block_bins_[i];
       if (pool == nullptr) {
         continue;
       }
-      for (auto it = pool->begin(); it != pool->end(); ++it) {
+      for (auto it = pool->begin(); it != pool->end(); it++) {
         if ((*it) != nullptr) {
           total_free_size += (*it)->size;
-          IncreaseCount(free_block, (*it)->size);
+          IncreaseCount(free_block_stat, (*it)->size);
           total_free_count++;
         }
       }
@@ -405,7 +406,7 @@ void CachingAllocator::PrintStatics() {
     for (auto &it : allocated_blocks_) {
       if (it.second != nullptr) {
         total_using_size += it.second->size;
-        IncreaseCount(using_block, it.second->size);
+        IncreaseCount(using_block_stat, it.second->size);
         total_using_count++;
       }
     }
@@ -413,12 +414,12 @@ void CachingAllocator::PrintStatics() {
     for (auto &it : malloced_memory_) {
       total_malloc_size += it.first * it.second;
       total_malloc_count += it.second;
-      malloc_block[it.first] = it.second;
+      malloc_block_stat[it.first] = it.second;
     }
   } while (0);
 
-  PrintCount(malloc_block, "Malloc", total_malloc_size, total_malloc_count);
-  PrintCount(using_block, "Using", total_using_size, total_using_count);
-  PrintCount(free_block, "Free", total_free_size, total_free_count);
+  PrintCount(malloc_block_stat, "Malloc", total_malloc_size, total_malloc_count);
+  PrintCount(using_block_stat, "Using", total_using_size, total_using_count);
+  PrintCount(free_block_stat, "Free", total_free_size, total_free_count);
 }
 }  // namespace ge

@@ -50,9 +50,13 @@ const char *const kFileNameSuffix = "online";
 const char *const kAicpuAllshape = "_AllShape";
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 const int64_t kDynamicDimValue = -2;
+const int kDefaultDeviceId = 0;
+const int kDefaultJobId = 0;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
-    {ge::ENGINE_SYS, kEngineNameDefault}, {ge::ENGINE_AICORE, kAIcoreEngine}, {ge::ENGINE_VECTOR, kVectorEngine}};
+    {ge::ENGINE_SYS, kEngineNameDefault},
+    {ge::ENGINE_AICORE, kAIcoreEngine},
+    {ge::ENGINE_VECTOR, kVectorEngine}};
 
 bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.GetAllInputsDescPtr()) {
@@ -83,8 +87,9 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
   } else {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "engine type",
-        "it only support kEngineNameDefault/kAIcoreEngine/kVectorEngine"});
-    GELOGE(FAILED, "CheckEngineType: engine type: %d not support", static_cast<int>(engine_type));
+        "it only support default/AIcoreEngine/VectorEngine"});
+    GELOGE(FAILED, "[Check][EngineType]value:%d not support, "
+           "only support default/AIcoreEngine/VectorEngine now", static_cast<int>(engine_type));
     return FAILED;
   }
 
@@ -188,17 +193,20 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
 
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
-  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail.");
-  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail.");
+  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                   "[Add][InputDesc]fail for node:%s", data_op->GetName().c_str());
+  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                   "[Add][OutputDesc]fail for node:%s", data_op->GetName().c_str());
   if (attr) {
-    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, index), return FAILED, "Set index fail.");
+    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, index), return FAILED,
+                     "[Set][Attr:%s]fail for node:%s", ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
   }
 
   ge::NodePtr arg_node = graph->AddNode(data_op);
-  GE_CHK_BOOL_EXEC(arg_node != nullptr, return FAILED, "Insert Data node fail.");
+  GE_CHK_BOOL_EXEC(arg_node != nullptr, return FAILED, "Insert Data node fail");
 
   GE_CHK_STATUS(GraphUtils::AddEdge(arg_node->GetOutDataAnchor(0), node->GetInDataAnchor(index)),
-                "Add edge[%s->%s] fail.", data_op->GetName().c_str(), node->GetName().c_str());
+                "[Add][Edge]fail from node:%s to node:%s", data_op->GetName().c_str(), node->GetName().c_str());
 
   return SUCCESS;
 }
@@ -213,20 +221,23 @@ static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, cons
   for (const auto &out_desc : outputs) {
     GeTensorDesc tensor = out_desc.GetTensorDesc();
     TensorUtils::SetInputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail");
+    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                     "[Add][InputDesc]fail for node:%s", op_desc->GetName().c_str());
 
     TensorUtils::SetInputTensor(tensor, false);
     TensorUtils::SetOutputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail");
+    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                     "[Add][OutputDesc]fail for node:%s", op_desc->GetName().c_str());
     count++;
   }
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   ge::NodePtr out_node = graph->AddNode(op_desc);
-  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED, "Insert Output node fail.");
+  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED,
+                   "[Add][Node:%s]fail in graph:%u", op_desc->GetName().c_str(), graph->GetGraphID());
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
   for (int32_t i = 0; i < count; ++i) {
     GE_CHK_STATUS(GraphUtils::AddEdge(node->GetOutDataAnchor(i), out_node->GetInDataAnchor(i)),
-                  "Add edge[%s->%s] fail.", node->GetName().c_str(), out_node->GetName().c_str());
+                  "[Add][Edge]fail from node:%s to node:%s", node->GetName().c_str(), out_node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -710,7 +721,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     auto node = comp_graph->FindNode(op_desc->GetName());
     Status ret = CheckEngineTypeSupport(node, engine_type);
     if (ret != SUCCESS) {
-      GELOGE(ret, "check engine type failed.");
+      GELOGE(ret, "[Check][EngineType]value:%d for node:%s not support", engine_type, node->GetName().c_str());
       return ret;
     }
   }
@@ -915,6 +926,13 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
 
   static std::atomic<uint64_t> atomic_session_id(0);
   auto session_id = atomic_session_id.fetch_add(1);
+  // This is a temporary add for graph with variable
+  auto version = static_cast<int32_t>(SessionVersion::ClOUD_VERSION);
+  ret = VarManager::Instance(session_id)->Init(version, session_id, kDefaultDeviceId, kDefaultJobId);
+  GELOGI("Start init var instance, session_id %lu", session_id);
+  if (ret != SUCCESS) {
+    GELOGW("Failed init var instance, session_id %lu", session_id);
+  }
   if (is_singleop_unregistered_) {
     ret = graph_manager_.BuildGraphForUnregisteredOp(graph_id, inputs, ge_root_model, session_id);
   } else {

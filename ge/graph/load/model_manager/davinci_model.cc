@@ -31,6 +31,7 @@
 #include "common/scope_guard.h"
 #include "common/thread_pool.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/util.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
@@ -184,7 +185,7 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       last_execute_mode_(INITIALIZATION),
       session_id_(0),
       device_id_(0),
-      maxDumpOpNum_(0), data_dumper_(runtime_param_),
+      maxDumpOpNum_(0), data_dumper_(&runtime_param_),
       iterator_count_(0),
       is_l1_fusion_enable_(false),
       is_first_execute_(true) {
@@ -297,6 +298,11 @@ void DavinciModel::ReleaseTask() {
       GE_CHK_STATUS(task->Release(), "Release task failed.");
     }
   }
+
+  for (auto &item : label_goto_args_) {
+    GE_FREE_RT_LOG(item.second.first);
+  }
+  label_goto_args_.clear();
 }
 
 Status DavinciModel::Assign(const GeModelPtr &ge_model) {
@@ -654,12 +660,12 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   runtime_param_.graph_id = compute_graph->GetGraphID();
 
   // op debug register
-  GE_CHK_STATUS_RET(OpDebugRegister(), "OpDebugRegister failed.");
+  GE_CHK_STATUS_RET(OpDebugRegister(), "OpDebugRegister failed");
 
   GE_TIMESTAMP_START(TransAllVarData);
-  GE_CHK_STATUS_RET(TransAllVarData(compute_graph, runtime_param_.graph_id), "TransAllVarData failed.");
+  GE_CHK_STATUS_RET(TransAllVarData(compute_graph, runtime_param_.graph_id), "TransAllVarData failed");
   GE_TIMESTAMP_END(TransAllVarData, "GraphLoader::TransAllVarData");
-  GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(compute_graph, session_id_, device_id_), "copy var data failed.");
+  GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(compute_graph, session_id_, device_id_), "copy var data failed");
 
   GE_TIMESTAMP_START(InitModelMem);
   GELOGD("Known node is %d.", known_node_);
@@ -667,7 +673,7 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   if (!known_node_) {
     GE_CHK_STATUS_RET_NOLOG(InitFeatureMapAndP2PMem(dev_ptr, mem_size));
     data_inputer_ = new (std::nothrow) DataInputer();
-    GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, MEMALLOC_FAILED, "data_inputer_ is nullptr.");
+    GE_CHK_BOOL_RET_STATUS(data_inputer_ != nullptr, MEMALLOC_FAILED, "data_inputer_ is nullptr");
   }
   fixed_mem_base_ = reinterpret_cast<uintptr_t>(mem_base_);
   GE_TIMESTAMP_END(InitModelMem, "GraphLoader::InitModelMem");
@@ -1332,6 +1338,39 @@ void DavinciModel::ParseDynamicOutShape(const std::vector<std::string> &str_info
     GELOGI("Shape from attr is %s", formats::JoinToString(shape).c_str());
     vec_info.emplace_back(shape);
   }
+}
+
+Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type, void *&arg_addr, uint32_t &arg_size) {
+  std::lock_guard<std::mutex> lock(label_args_mutex_);
+  auto it = label_goto_args_.find(label_index);
+  if (it != label_goto_args_.end()) {
+    arg_addr = it->second.first;
+    arg_size = it->second.second;
+    return SUCCESS;
+  }
+
+  if (label_index >= label_list_.size()) {
+    GELOGE(INTERNAL_ERROR, "Invalid label id:%u, label size:%zu", label_index, label_list_.size());
+    return INTERNAL_ERROR;
+  }
+  GE_CHECK_NOTNULL(label_list_[label_index]);
+  vector<rtLabel_t> label_used = { label_list_[label_index] };
+
+  arg_size = label_used.size() * sizeof(rtLabelDevInfo);
+  rtError_t rt_ret = rtMalloc(&arg_addr, arg_size, mem_type);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rtMalloc failed, error: %#x", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+
+  label_goto_args_[label_index] = { arg_addr, arg_size };
+  rt_ret = rtLabelListCpy(label_used.data(), label_used.size(), arg_addr, arg_size);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rtLabelListCpy failed, error: %#x", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+
+  return SUCCESS;
 }
 
 /// @ingroup ge

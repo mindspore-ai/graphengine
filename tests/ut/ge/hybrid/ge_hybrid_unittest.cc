@@ -15,8 +15,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <vector>
-
 #include "runtime/rt.h"
 
 #define protected public
@@ -25,7 +25,6 @@
 #include "hybrid/model/hybrid_model.h"
 #include "model/ge_model.h"
 #include "model/ge_root_model.h"
-
 #include "hybrid/node_executor/aicore/aicore_op_task.h"
 #include "framework/common/taskdown_common.h"
 #include "framework/common/debug/log.h"
@@ -33,7 +32,10 @@
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
+#include "graph/manager/graph_mem_allocator.h"
+#include "hybrid/common/npu_memory_allocator.h"
 #include "graph/types.h"
+#include "graph/utils/tensor_utils.h"
 
 #undef private
 #undef protected
@@ -42,6 +44,7 @@ using namespace std;
 using namespace testing;
 using namespace ge;
 using namespace hybrid;
+
 
 class UtestGeHybrid : public testing::Test {
  protected:
@@ -152,6 +155,20 @@ TEST_F(UtestGeHybrid, index_taskdefs_failed) {
   ASSERT_EQ(hybrid_model_builder.IndexTaskDefs(graph, ge_model), INTERNAL_ERROR);
 }
 
+TEST_F(UtestGeHybrid, parse_force_infershape_nodes) {
+  const char *const kForceInfershape = "_force_infershape_when_running";
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Conv2D", "Conv2D");
+  ge::AttrUtils::SetBool(op_desc, kForceInfershape, true);
+  auto node = graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> new_node;
+  NodeItem::Create(node, new_node);
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  HybridModel hybrid_model(ge_root_model);
+  HybridModelBuilder hybrid_model_builder(hybrid_model);
+  ASSERT_EQ(hybrid_model_builder.ParseForceInfershapeNodes(node, *new_node), SUCCESS);
+}
+
 TEST_F(UtestGeHybrid, index_taskdefs_success) {
   // build aicore task
   domi::ModelTaskDef model_task_def;
@@ -190,4 +207,39 @@ TEST_F(UtestGeHybrid, index_taskdefs_success) {
   HybridModelBuilder hybrid_model_builder(hybrid_model);
 
   ASSERT_EQ(hybrid_model_builder.IndexTaskDefs(graph, ge_model), SUCCESS);
+}
+
+TEST_F(UtestGeHybrid, init_weight_success) {
+  NpuMemoryAllocator::allocators_.emplace(make_pair(0, nullptr));
+  // make graph with sub_graph
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("root_graph");
+  OpDescPtr op_desc = CreateOpDesc("if", IF);
+  NodePtr node = graph->AddNode(op_desc);
+  // make sub graph
+  ComputeGraphPtr sub_graph = std::make_shared<ComputeGraph>("if_sub_graph");
+  OpDescPtr const_op_desc = CreateOpDesc("const", CONSTANT);
+  vector<int64_t> dims_vec_0 = {2, 1, 4, 1, 2};
+  vector<int32_t> data_vec_0 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+  GeTensorDesc tensor_desc_0(GeShape(dims_vec_0), FORMAT_NCHW, DT_INT32);
+  (void)TensorUtils::SetRealDimCnt(tensor_desc_0, dims_vec_0.size());
+  ConstGeTensorPtr constTensor_0 =
+    std::make_shared<GeTensor>(tensor_desc_0, (uint8_t *)&data_vec_0[0], data_vec_0.size() * sizeof(int32_t));
+  AttrUtils::SetTensor(const_op_desc, ge::ATTR_NAME_WEIGHTS, constTensor_0);
+  const_op_desc->AddOutputDesc(tensor_desc_0);
+  NodePtr const_node = sub_graph->AddNode(const_op_desc);
+  graph->AddSubgraph("sub", sub_graph);
+
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  GeModelPtr ge_sub_model = make_shared<GeModel>();
+  //Buffer weight_buffer = Buffer(128,0);
+  //ge_sub_model->SetWeight(weight_buffer);
+  ge_root_model->SetSubgraphInstanceNameToModel("sub",ge_sub_model);
+  HybridModel hybrid_model(ge_root_model);
+  HybridModelBuilder hybrid_model_builder(hybrid_model);
+  auto ret = hybrid_model_builder.InitWeights();
+  ASSERT_EQ(ret,SUCCESS);
+  Buffer weight_buffer = Buffer(128,0);
+  ge_sub_model->SetWeight(weight_buffer);
+  ret = hybrid_model_builder.InitWeights();
+  ASSERT_EQ(ret,PARAM_INVALID);
 }

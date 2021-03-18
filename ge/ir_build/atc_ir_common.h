@@ -31,7 +31,7 @@
 namespace ge {
 static std::set<std::string> caffe_support_input_format = {"NCHW", "ND"};
 static std::set<std::string> tf_support_input_format = {"NCHW", "NHWC", "ND", "NCDHW", "NDHWC"};
-static std::set<std::string> onnx_support_input_format = {"NCHW", "ND"};
+static std::set<std::string> onnx_support_input_format = {"NCHW", "ND", "NCDHW"};
 
 static std::map<std::string, domiTensorFormat_t> input_format_str_to_geformat = {
     {"ND", domi::DOMI_TENSOR_ND},
@@ -59,10 +59,13 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
 
 Status CheckDynamicInputParamValid(std::string &dynamic_batch_size, std::string &dynamic_image_size,
                                    std::string &dynamic_dims, const std::string input_shape,
-                                   const std::string input_format, bool &is_dynamic_input);
+                                   const std::string input_shape_range, const std::string input_format,
+                                   bool &is_dynamic_input);
 
 bool ParseInputShape(const std::string &input_shape, std::map<string, std::vector<int64_t>> &shape_map,
                      std::vector<std::pair<string, vector<int64_t>>> &user_shape_map, bool is_dynamic_input = false);
+bool ParseInputShapeRange(const std::string &shape_range,
+                          std::map<string, std::vector<std::pair<int64_t, int64_t>>> &shape_range_map);
 
 Status CheckOutputTypeParamValid(const std::string output_type);
 Status CheckBufferOptimizeParamValid(const std::string buffer_optimize);
@@ -76,5 +79,9 @@ Status CheckInputFormat(const string &input_format);
 Status CheckKeepTypeParamValid(const std::string &keep_dtype);
 void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips);
 void EraseEndSemicolon(std::string &param);
+Status UpdateDataOpShape(const OpDescPtr &op, std::map<std::string, std::vector<int64_t>> &shape_map);
+Status UpdateDataOpShapeRange(const OpDescPtr &op,
+                              std::map<std::string, std::vector<std::pair<int64_t, int64_t>>> &shape_range_map);
+Status UpdateDynamicInputShapeRange(const ge::ComputeGraphPtr &compute_graph, const string &input_shape_range);
 }
 #endif  // FRAMEWORK_DOMI_ATC_IR_COMMON_H_

@@ -33,13 +33,21 @@ using std::queue;
 namespace ge {
 LogicalStreamPass::LogicalStreamPass(const string &name) : name_(name) {}
 
-const string &LogicalStreamPass::GetName() const { return name_; }
+const string &LogicalStreamPass::GetName() const {
+  return name_;
+}
 
-bool LogicalStreamPass::IsEngineSkip(const Subgraph &subgraph) const { return subgraph.engine_conf.skip_assign_stream; }
+bool LogicalStreamPass::IsEngineSkip(const Subgraph &subgraph) const {
+  return subgraph.engine_conf.skip_assign_stream;
+}
 
-bool LogicalStreamPass::IsEngineAttach(const Subgraph &subgraph) const { return subgraph.engine_conf.attach; }
+bool LogicalStreamPass::IsEngineAttach(const Subgraph &subgraph) const {
+  return subgraph.engine_conf.attach;
+}
 
-bool LogicalStreamPass::IsEngineIndependent(const Subgraph &subgraph) const { return subgraph.engine_conf.independent; }
+bool LogicalStreamPass::IsEngineIndependent(const Subgraph &subgraph) const {
+  return subgraph.engine_conf.independent;
+}
 
 bool LogicalStreamPass::HasStreamLabel(const Subgraph &subgraph) const {
   return !subgraph.subgraph_info.GetStreamLabel().empty();
@@ -60,14 +68,14 @@ Status AssignByLabelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &
       // Subgraphs of the same stream_label are assigned to the same stream,
       // and different stream_labels are assigned new streams.
       auto iter = label_streams.find(stream_label);
-      if (iter != label_streams.end()) {
-        subgraph->stream_id = iter->second;
-      } else {
+      if (iter == label_streams.end()) {
         subgraph->stream_id = next_stream;
         GELOGI("Assign new stream %ld for label %s.", next_stream, stream_label.c_str());
 
         label_streams.emplace(stream_label, next_stream);
-        ++next_stream;
+        next_stream++;
+      } else {
+        subgraph->stream_id = iter->second;
       }
       changed = true;
     }
@@ -92,15 +100,15 @@ Status IndependentStreamPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
     const string &stream_label = subgraph->subgraph_info.GetStreamLabel();
     auto &label_streams = engine_streams[engine];
     auto iter = label_streams.find(stream_label);
-    if (iter != label_streams.end()) {
-      subgraph->stream_id = iter->second;
-    } else {
+    if (iter == label_streams.end()) {
       subgraph->stream_id = next_stream;
       GELOGI("Assign new independent stream %ld for engine %s (label: %s).", next_stream, engine.c_str(),
              stream_label.c_str());
 
       label_streams.emplace(stream_label, next_stream);
-      ++next_stream;
+      next_stream++;
+    } else {
+      subgraph->stream_id = iter->second;
     }
     changed = true;
   }
@@ -121,7 +129,9 @@ Status AssignByDependencyPass::Run(ComputeGraphPtr graph, const vector<SubgraphP
     }
 
     SubgraphPtr reusable_subgraph = GetReusableSubgraph(subgraph, end_subgraph_map, pld_subgraph_map);
-    if (reusable_subgraph != nullptr) {
+    if (reusable_subgraph == nullptr) {
+      (void)AssignNewStream(subgraph);
+    } else {
       if (HasAssignedStream(*reusable_subgraph)) {
         subgraph->stream_id = reusable_subgraph->stream_id;
       } else {
@@ -140,8 +150,6 @@ Status AssignByDependencyPass::Run(ComputeGraphPtr graph, const vector<SubgraphP
       GELOGI("Subgraph %s of engine %s reuses stream of subgraph %s of engine %s.", subgraph->name.c_str(),
              subgraph->engine_conf.id.c_str(), reusable_subgraph->name.c_str(),
              reusable_subgraph->engine_conf.id.c_str());
-    } else {
-      (void)AssignNewStream(subgraph);
     }
     changed = true;
   }
@@ -191,13 +199,15 @@ bool AssignByDependencyPass::CouldReuse(const SubgraphPtr &subgraph, const Subgr
     auto iter = pld_subgraph_map.find(end_pld_pair.second);
     if (iter != pld_subgraph_map.end()) {
       const SubgraphPtr &pred_subgraph_succ = iter->second;
-      if (pred_subgraph_succ != subgraph && pred_subgraph_succ->engine_conf.id == pred_subgraph->engine_conf.id) {
+      if ((pred_subgraph_succ != subgraph) &&
+          (pred_subgraph_succ->engine_conf.id == pred_subgraph->engine_conf.id)) {
         return false;
       }
     }
   }
 
-  if ((subgraph->engine_conf.id == pred_subgraph->engine_conf.id) || IsEngineAttach(*subgraph)) {
+  if ((subgraph->engine_conf.id == pred_subgraph->engine_conf.id) ||
+      IsEngineAttach(*subgraph)) {
     return true;
   }
 
@@ -406,7 +416,7 @@ Status UpdateForSkippedEnginePass::Run(ComputeGraphPtr graph, const vector<Subgr
         auto op_desc = node->GetOpDesc();
         GE_CHECK_NOTNULL(op_desc);
         auto stream_id = op_desc->GetStreamId();
-        if (stream_id != kInvalidStream && !HasStreamLabel(*subgraph)) {
+        if ((stream_id != kInvalidStream) && !HasStreamLabel(*subgraph)) {
           ops_without_label.emplace(op_desc);
         }
       }
@@ -463,7 +473,7 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
 
   for (const NodePtr &node : graph->GetDirectNode()) {
     if (!IsHcomNode(node->GetType()) ||
-        node->GetInDataNodes().size() <= 1) {
+        (node->GetInDataNodes().size() <= 1)) {
       continue;
     }
 
@@ -575,7 +585,7 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
   GE_CHECK_NOTNULL(graph);
 
   NodePtr parent_node = graph->GetParentNode();
-  if (parent_node == nullptr || parent_node->GetOpDesc() == nullptr) {
+  if ((parent_node == nullptr) || (parent_node->GetOpDesc() == nullptr)) {
     context_.default_stream = kInvalidStream;
   } else {
     context_.default_stream = parent_node->GetOpDesc()->GetStreamId();
@@ -597,7 +607,7 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
     return status;
   }
 
-  GELOGD("Subgraphs of graph %s:", graph->GetName().c_str());
+  GELOGD("Subgraphs of graph %s", graph->GetName().c_str());
   for (const auto &subgraph : subgraphs) {
     if (subgraph != nullptr) {
       GELOGD("subgraph: %s", subgraph->name.c_str());
@@ -686,7 +696,7 @@ void LogicalStreamAllocator::RefreshContinuousStreams(const ComputeGraphPtr &gra
       auto op_desc = node->GetOpDesc();
       if (op_desc != nullptr) {
         int64_t stream_id = op_desc->GetStreamId();
-        if (stream_id != kInvalidStream && stream_id < stream_num) {
+        if ((stream_id != kInvalidStream) && (stream_id < stream_num)) {
           stream_has_node[stream_id] = true;
         }
       }
@@ -695,10 +705,10 @@ void LogicalStreamAllocator::RefreshContinuousStreams(const ComputeGraphPtr &gra
 
   context_.next_stream = 0;
   vector<int64_t> old_to_new_streams(stream_num, kInvalidStream);
-  for (size_t old_stream = 0; old_stream < stream_has_node.size(); ++old_stream) {
+  for (size_t old_stream = 0; old_stream < stream_has_node.size(); old_stream++) {
     if (stream_has_node[old_stream]) {
       old_to_new_streams[old_stream] = context_.next_stream;
-      ++context_.next_stream;
+      context_.next_stream++;
     }
   }
 
@@ -706,7 +716,7 @@ void LogicalStreamAllocator::RefreshContinuousStreams(const ComputeGraphPtr &gra
     auto op_desc = node->GetOpDesc();
     if (op_desc != nullptr) {
       int64_t stream_id = op_desc->GetStreamId();
-      if (stream_id != kInvalidStream && stream_id < stream_num) {
+      if ((stream_id != kInvalidStream) && (stream_id < stream_num)) {
         op_desc->SetStreamId(old_to_new_streams[stream_id]);
       }
     }

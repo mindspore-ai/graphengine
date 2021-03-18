@@ -297,12 +297,11 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   if (model_id == INVALID_MODEL_ID) {
     GenModelId(&model_id);
   }
-
-  bool is_shape_unknown = false;
+  auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
   string model_name = "";
-  GE_CHK_STATUS_RET(ge_root_model->CheckIsUnknownShape(is_shape_unknown), "CheckIsUnknownShape failed, model id:%u",
-                    model_id);
-  if (is_shape_unknown || GetContext().GetHostExecFlag()) {
+  bool is_shape_unknown = ge_root_model->GetRootGraph()->GetGraphUnknownFlag();
+  // if multi subgraph is known, do hybrid load process
+  if (is_shape_unknown || GetContext().GetHostExecFlag() || (name_to_model.size() > 1)) {
     return DoLoadHybridModelOnline(model_id, model_name, ge_root_model, listener);
   }
 
@@ -324,7 +323,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   auto root_graph = ge_root_model->GetRootGraph();
   GE_CHECK_NOTNULL(root_graph);
   string root_model_name = root_graph->GetName();
-  auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
   GeModelPtr ge_model = name_to_model[root_model_name];
   Status ret = SUCCESS;
   do {

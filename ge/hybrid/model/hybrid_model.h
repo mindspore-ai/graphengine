@@ -154,6 +154,7 @@ class HybridModel {
   uint32_t model_id_ = 0;
   uint8_t *var_mem_base_ = nullptr;
   std::unique_ptr<TensorBuffer> weight_buffer_;
+  std::map<string, std::unique_ptr<TensorBuffer>> weight_buffer_map_;
   RuntimeParam root_runtime_param_;
   string om_name_;
 };

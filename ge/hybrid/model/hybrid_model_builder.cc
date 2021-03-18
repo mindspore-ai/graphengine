@@ -50,6 +50,7 @@ const char *const kProfilingBpNode = "ProfilingBpNode";
 const char *const kProfilingEndNode = "ProfilingEndNode";
 const char *const kProfilingArNode = "ProfilingAllReduceNode";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
+const char *const kForceInfershape = "_force_infershape_when_running";
 
 Status SetOutputNameAttr(ComputeGraph &graph) {
   vector<string> output_names;
@@ -171,6 +172,9 @@ Status HybridModelBuilder::ValidateParams() {
 
 Status HybridModelBuilder::BuildNodeItem(const NodePtr &node, NodeItem &node_item) {
   auto op_desc = node->GetOpDesc();
+  GE_CHK_STATUS_RET(ParseForceInfershapeNodes(node, node_item),
+                    "[%s] Failed to parse force_infershape node.",
+                    node_item.NodeName().c_str());
   vector<string> dependencies = node->GetOpDesc()->GetOpInferDepends();
   GE_CHK_STATUS_RET(ParseDependentInputNodes(node_item, dependencies),
                     "[%s] Failed to parse node dependencies.",
@@ -260,6 +264,17 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
                                   (executor_type == NodeExecutorManager::ExecutorType::AICPU_CUSTOM);
   *node_item = new_node.get();
   node_items[node] = std::move(new_node);
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::ParseForceInfershapeNodes(const NodePtr &node, NodeItem &node_item) {
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  // not care result, if no this attr, stand for the op does not need force infershape
+  (void)AttrUtils::GetBool(op_desc, kForceInfershape, node_item.is_need_force_infershape);
+  GELOGD("node [%s] is need do infershape , flag is %d",
+    op_desc->GetName().c_str(),
+    node_item.is_need_force_infershape);
   return SUCCESS;
 }
 
@@ -997,70 +1012,65 @@ Status HybridModelBuilder::InitVariableTensors() {
 
 Status HybridModelBuilder::InitWeights() {
   // For constant in root graph
-  const auto &root_graph = ge_root_model_->GetRootGraph();
-  const auto &subgraph_models = ge_root_model_->GetSubgraphInstanceNameToModel();
-  auto iter = subgraph_models.find(root_graph->GetName());
-  if (iter == subgraph_models.end()) {
-    GELOGD("Root graph model not found");
-    return SUCCESS;
-  }
-
-  auto &root_model = iter->second;
-  const auto &weight_buffer = root_model->GetWeight();
-  if (weight_buffer.GetSize() == 0) {
-    GELOGD("weight is empty");
-    return SUCCESS;
-  }
-
-  auto allocator = NpuMemoryAllocator::GetAllocator();
-  GE_CHECK_NOTNULL(allocator);
-  hybrid_model_.weight_buffer_ = TensorBuffer::Create(allocator, weight_buffer.size());
-  GE_CHECK_NOTNULL(hybrid_model_.weight_buffer_);
-  auto weight_base = reinterpret_cast<uint8_t *>(hybrid_model_.weight_buffer_->GetData());
-  GE_CHK_RT_RET(rtMemcpy(weight_base,
-                         hybrid_model_.weight_buffer_->GetSize(),
-                         weight_buffer.GetData(),
-                         weight_buffer.GetSize(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
-
-  GELOGI("Init weight mem successfully, weight base %p, weight size = %zu",
-         weight_base,
-         hybrid_model_.weight_buffer_->GetSize());
-  for (auto &node : root_graph->GetDirectNode()) {
-    if (node->GetType() != CONSTANT) {
-      continue;
+  for (const auto &subgraph_model : ge_root_model_->GetSubgraphInstanceNameToModel()) {
+    const auto &weight_buffer = subgraph_model.second->GetWeight();
+    if (weight_buffer.GetSize() == 0) {
+      GELOGD("weight is empty");
+      return SUCCESS;
     }
 
-    auto op_desc = node->GetOpDesc();
-    auto v_weights = ModelUtils::GetWeights(op_desc);
-    if (v_weights.empty()) {
-      GELOGE(INTERNAL_ERROR, "[%s] Constant has no value", node->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
-    auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
-    GE_CHECK_NOTNULL(ge_tensor);
-    const GeTensorDesc &tensor_desc = ge_tensor->GetTensorDesc();
-    int64_t tensor_size = 0;
-    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetSize(*op_desc->MutableOutputDesc(0), tensor_size),
-                            "[%s] Failed to get tensor size",
-                            node->GetName().c_str());
-    int64_t data_offset = 0;
-    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetDataOffset(tensor_desc, data_offset),
-                            "[%s] Failed to get data offset",
-                            node->GetName().c_str());
-    GELOGD("[%s] Start to init Constant node [%s], size = %ld, offset = %ld",
-           GetGraphName(),
-           node->GetName().c_str(),
-           tensor_size,
-           data_offset);
+    auto allocator = NpuMemoryAllocator::GetAllocator();
+    GE_CHECK_NOTNULL(allocator);
+    auto sub_weight_buffer = TensorBuffer::Create(allocator, weight_buffer.size());
+    GE_CHECK_NOTNULL(sub_weight_buffer);
+    auto weight_base = reinterpret_cast<uint8_t *>(sub_weight_buffer->GetData());
+    GE_CHK_RT_RET(rtMemcpy(weight_base,
+                           sub_weight_buffer->GetSize(),
+                           weight_buffer.GetData(),
+                           weight_buffer.GetSize(),
+                           RT_MEMCPY_HOST_TO_DEVICE));
 
-    auto tensor_buffer = TensorBuffer::Create(weight_base + data_offset, tensor_size);
-    GE_CHECK_NOTNULL(tensor_buffer);
-    std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(std::move(tensor_buffer)));
-    GE_CHECK_NOTNULL(constant_tensor);
-    constant_tensor->SetName("Constant_" + op_desc->GetName());
-    hybrid_model_.constant_tensors_.emplace(node, std::move(constant_tensor));
-    GELOGD("[%s] Constant node [%s] added, size = %ld", GetGraphName(), node->GetName().c_str(), tensor_size);
+    GELOGI("Init weight mem successfully, weight base %p, weight size = %zu",
+           weight_base,
+           sub_weight_buffer->GetSize());
+    auto root_graph = GraphUtils::GetComputeGraph(subgraph_model.second->GetGraph());
+    hybrid_model_.weight_buffer_map_.emplace(root_graph->GetName(),std::move(sub_weight_buffer));
+    for (auto &node : root_graph->GetDirectNode()) {
+      if (node->GetType() != CONSTANT) {
+        continue;
+      }
+
+      auto op_desc = node->GetOpDesc();
+      auto v_weights = ModelUtils::GetWeights(op_desc);
+      if (v_weights.empty()) {
+        GELOGE(INTERNAL_ERROR, "[%s] Constant has no value", node->GetName().c_str());
+        return INTERNAL_ERROR;
+      }
+      auto *ge_tensor = const_cast<GeTensor *>(v_weights[0].get());
+      GE_CHECK_NOTNULL(ge_tensor);
+      const GeTensorDesc &tensor_desc = ge_tensor->GetTensorDesc();
+      int64_t tensor_size = 0;
+      GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetSize(*op_desc->MutableOutputDesc(0), tensor_size),
+                              "[%s] Failed to get tensor size",
+                              node->GetName().c_str());
+      int64_t data_offset = 0;
+      GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetDataOffset(tensor_desc, data_offset),
+                              "[%s] Failed to get data offset",
+                              node->GetName().c_str());
+      GELOGD("[%s] Start to init Constant node [%s], size = %ld, offset = %ld",
+             GetGraphName(),
+             node->GetName().c_str(),
+             tensor_size,
+             data_offset);
+
+      auto tensor_buffer = TensorBuffer::Create(weight_base + data_offset, tensor_size);
+      GE_CHECK_NOTNULL(tensor_buffer);
+      std::unique_ptr<TensorValue> constant_tensor(new (std::nothrow)TensorValue(std::move(tensor_buffer)));
+      GE_CHECK_NOTNULL(constant_tensor);
+      constant_tensor->SetName("Constant_" + op_desc->GetName());
+      hybrid_model_.constant_tensors_.emplace(node, std::move(constant_tensor));
+      GELOGD("[%s] Constant node [%s] added, size = %ld", GetGraphName(), node->GetName().c_str(), tensor_size);
+    }
   }
   return SUCCESS;
 }

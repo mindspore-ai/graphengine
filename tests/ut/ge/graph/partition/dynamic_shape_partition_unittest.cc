@@ -92,7 +92,7 @@ TEST_F(UtestDynamicShapePartition, single_op_scene_success) {
 
   (void)AttrUtils::SetBool(add_n_node->GetOpDesc(), ATTR_SINGLE_OP_SCENE, true);
 
-  DynamicShapePartitioner partitioner(computeGraph);
+  DynamicShapePartitioner partitioner(graph);
   EXPECT_EQ(partitioner.Partition(), SUCCESS);
 }
 

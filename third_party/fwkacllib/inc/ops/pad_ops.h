@@ -418,7 +418,7 @@ REG_OP(EmbeddingRankId)
 */
 REG_OP(FillV2)
     .INPUT(dims, TensorType({DT_INT16, DT_INT32, DT_INT64}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
     .ATTR(value, Float, 0)
     .OP_END_FACTORY_REG(FillV2)
 
@@ -437,7 +437,7 @@ REG_OP(FillV2)
 * Compatible with the ONNX operator ConstantOfShape.
 */
 REG_OP(FillV2D)
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64}))
     .ATTR(value, Float, 0)
     .REQUIRED_ATTR(dims, ListInt)
     .OP_END_FACTORY_REG(FillV2D)

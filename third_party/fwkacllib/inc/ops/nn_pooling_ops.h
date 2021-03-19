@@ -397,8 +397,8 @@ No default value.
 specifying the stride of the sliding window for each dimension of
 the input tensor. No default value.
 *@li padding: A required string type of float16.
-*@li pads: A list type of int32. Default value {0, 0, 0}.
-*@li dilation: A list type of int32. Default value {1, 1, 1}.
+*@li pads: A list type of int32. Default value {0,0,0,0,0,0}.
+*@li dilation: A list type of int32. Default value {1,1,1,1,1,1}.
 *@li ceil_mode: A ceil mode number of int32 . Default value 0.
 *@li data_format: An optional string. Defaults to "NDHWC" . \n
 
@@ -421,8 +421,8 @@ REG_OP(MaxPool3D)
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
-    .ATTR(pads, ListInt, {0,0,0})
-    .ATTR(dilation, ListInt, {1,1,1})
+    .ATTR(pads, ListInt, {0,0,0,0,0,0})
+    .ATTR(dilation, ListInt, {1,1,1,1,1,1})
     .ATTR(ceil_mode, Int, 0)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(MaxPool3D)

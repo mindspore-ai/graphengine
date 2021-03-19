@@ -67,8 +67,8 @@ Status NeedHybridModel(GeModelPtr &ge_model, bool &flag) {
   for (int i = 0; i < tasks.size(); ++i) {
     auto task_type = static_cast<rtModelTaskType_t>(tasks[i].type());
     if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
-      const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
-                                                                task_def.kernel_with_handle().context();
+      const auto &context = task_type == RT_MODEL_TASK_KERNEL ? tasks[i].kernel().context() :
+                                                                tasks[i].kernel_with_handle().context();
       auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
       if (kernel_type == ccKernelType::TE) {
         if (infer_depend_flag) {

@@ -25,7 +25,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/type_utils.h"
-
+#include "iostream"
 namespace ge {
 namespace formats {
 namespace {
@@ -519,7 +519,8 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
     return TransFormatNhwcToFz(args, result);
   }
   if ((args.src_format == FORMAT_HWCN) && (GetPrimaryFormat(args.dst_format) == FORMAT_FRACTAL_Z)) {
-    if (GetSubFormat(args.dst_format) >= 1) {
+    if (GetSubFormat(args.dst_format) > 1) {
+       std::cout<<"come in groups process"<<std::endl;
       return TransFormatHwcnToFzWithGroups(args, result, GetSubFormat(args.dst_format));
     }
     return TransFormatHwcnToFz(args, result);
@@ -541,7 +542,7 @@ Status FormatTransferFractalZ::TransShape(Format src_format, const std::vector<i
     return TransShapeNhwcToFz(src_shape, data_type, dst_shape);
   }
   if ((src_format == FORMAT_HWCN) && (GetPrimaryFormat(dst_format) == FORMAT_FRACTAL_Z)) {
-    if (GetSubFormat(dst_format) >= 1) {
+    if (GetSubFormat(dst_format) > 1) {
         return TransShapeHwcnToFzWithGroups(src_shape, data_type, dst_shape, GetSubFormat(dst_format));
      }
     return TransShapeHwcnToFz(src_shape, data_type, dst_shape);

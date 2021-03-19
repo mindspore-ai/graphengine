@@ -428,7 +428,8 @@ Status AippOp::ConvertRelatedInputNameToRank() {
   if (!convert_flag) {
     string error_msg = "Top name " + related_input_name + "convert rank failed, Please"
                        " ensure top name in aipp config is the top name of data node.";
-    GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+    GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+    REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
     return PARAM_INVALID;
   }
 

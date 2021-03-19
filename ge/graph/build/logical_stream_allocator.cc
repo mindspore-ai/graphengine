@@ -466,7 +466,7 @@ Status AllReduceParallelPass::Run(ComputeGraphPtr graph, const vector<SubgraphPt
     return NOT_CHANGED;
   }
 
-  GELOGI("AllReduceParallelPass is enabled.");
+  GELOGI("[Run][AllReduceParallelPass] start");
   GE_DUMP(graph, "BeforeAllReduceParallel");
 
   // All successors of HcomAllReduce.
@@ -576,7 +576,7 @@ Status LogicalStreamAllocator::Assign(const ComputeGraphPtr &root_graph, const G
   RefreshContinuousStreams(root_graph);
 
   stream_num = context_.next_stream;
-  GELOGI("Assigned logical stream num: %ld.", stream_num);
+  GELOGI("[Assign][LogicalStream] At last, stream num: %ld.", stream_num);
 
   return SUCCESS;
 }
@@ -608,7 +608,7 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
     return status;
   }
 
-  GELOGD("Subgraphs of graph %s", graph->GetName().c_str());
+  GELOGD("[Show][Subgraphs] in graph %s", graph->GetName().c_str());
   for (const auto &subgraph : subgraphs) {
     if (subgraph != nullptr) {
       GELOGD("subgraph: %s", subgraph->name.c_str());
@@ -675,9 +675,9 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
 
     Status status = pass->Run(graph, subgraphs, context_);
     if (status == SUCCESS) {
-      GELOGD("Stream pass %s return SUCCESS.", pass->GetName().c_str());
+      GELOGD("[Show][Status]Stream pass %s return SUCCESS.", pass->GetName().c_str());
     } else if (status == NOT_CHANGED) {
-      GELOGD("Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
+      GELOGD("[Show][Status]Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
     } else {
       GELOGE(status, "Stream pass %s failed.", pass->GetName().c_str());
       return status;

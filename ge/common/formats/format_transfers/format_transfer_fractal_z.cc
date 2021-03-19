@@ -518,6 +518,7 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
   if (args.src_format == FORMAT_NHWC && args.dst_format == FORMAT_FRACTAL_Z) {
     return TransFormatNhwcToFz(args, result);
   }
+  std::cout<<"FORMAT:"<<args.dst_format<<std::endl;
   if ((args.src_format == FORMAT_HWCN) && (GetPrimaryFormat(args.dst_format) == FORMAT_FRACTAL_Z)) {
     if (GetSubFormat(args.dst_format) > 1) {
        std::cout<<"come in groups process"<<std::endl;

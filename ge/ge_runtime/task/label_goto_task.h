@@ -18,6 +18,9 @@
 #define GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
 
 #include <memory>
+#include <vector>
+#include <map>
+#include <mutex>
 #include "ge_runtime/task/task.h"
 
 namespace ge {
@@ -31,13 +34,40 @@ class LabelGotoTask : public TaskRepeater<LabelGotoTaskInfo> {
   bool Distribute() override;
 
  private:
-  bool CheckParamValid();
+  class LabelGuard;
+  class LabelManager;
 
   std::shared_ptr<LabelGotoTaskInfo> task_info_;
-  void *stream_{nullptr};
-  void *label_{nullptr};
-  void *label_info_{nullptr};
-  void *index_value_{nullptr};
+  void *stream_;
+  void *label_;
+  std::shared_ptr<LabelGuard> label_info_;
+  void *index_value_;
+  uint32_t label_id_;
+  rtModel_t rt_model_handle_;
+  std::shared_ptr<LabelManager> label_manager_;
+};
+
+class LabelGotoTask::LabelGuard {
+ public:
+  explicit LabelGuard(void *label_info) : label_info_(reinterpret_cast<uintptr_t>(label_info)) {}
+  ~LabelGuard();
+  void *GetLabelInfo() { return reinterpret_cast<void *>(label_info_); }
+
+ private:
+  uintptr_t label_info_;
+};
+
+class LabelGotoTask::LabelManager {
+ public:
+  static std::shared_ptr<LabelManager> GetInstance();
+  std::shared_ptr<LabelGuard> GetLabelInfo(rtModel_t model, uint32_t label_id, void *label);
+
+ private:
+  std::mutex model_info_mapping_mutex_;
+  std::map<rtModel_t, std::map<uint32_t, std::weak_ptr<LabelGuard>>> model_info_mapping_;
+
+  static std::weak_ptr<LabelManager> instance_;
+  static std::mutex instance_mutex_;
 };
 }  // namespace model_runner
 }  // namespace ge

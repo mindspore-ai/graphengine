@@ -663,23 +663,23 @@ namespace {
     }
     return SUCCESS;
   }
+}
 
-  bool CheckNoAicore(const ComputeGraphPtr &graph) {
-    for (const auto &node : graph->GetDirectNode()) {
-      if (node == nullptr) {
-        continue;
-      }
-      auto op_desc = node->GetOpDesc();
-      if (op_desc == nullptr) {
-        continue;
-      }
-      if (op_desc->GetOpEngineName() == kAIcoreEngine) {
-        return false;
-      }
+bool GeGenerator::CheckNoAicore(const ComputeGraphPtr &graph) {
+  for (const auto &node : graph->GetDirectNode()) {
+    if (node == nullptr) {
+      continue;
     }
-    return true;
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    if (op_desc->GetOpEngineName() == kAIcoreEngine) {
+      return false;
+    }
   }
-}  // namespace
+  return true;
+}
 
 Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                      const vector<GeTensor> &outputs) {

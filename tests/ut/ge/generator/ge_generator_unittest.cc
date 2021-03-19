@@ -87,6 +87,13 @@ TEST_F(UtestGeGenerator, test_build_single_op_online) {
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_AIVECTOR, model_buffer), FAILED);
 }
 
+TEST_F(UtestGeGenerator, test_build_single_op_online) {
+  GeGenerator generator;
+  generator.Initialize({});
+  auto graph = MakeGraph();
+  EXPECT_EQ(generator.CheckNoAicore(graph), true);
+}
+
 TEST_F(UtestGeGenerator, test_graph_manager) {
   GraphManager graph_manager;
   GraphPartitioner graph_partitioner;

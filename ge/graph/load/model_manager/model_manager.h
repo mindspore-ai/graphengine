@@ -294,6 +294,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
                                        std::vector<InputOutputDims> &output_dims);
 
   bool IsDynamicShape(uint32_t model_id);
+  bool IsNeedHybridLoad(ge::GeRootModel &ge_root_model);
   ge::Status GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info);
 
   ge::Status EnableExceptionDump(const std::map<string, string> &options);
@@ -339,6 +340,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status DeleteModel(uint32_t id);
 
   void GenModelId(uint32_t *id);
+
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;

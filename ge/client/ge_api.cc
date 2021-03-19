@@ -349,8 +349,7 @@ Session::~Session() {
 
     ret = instance_ptr->SessionManagerObj().DestroySession(session_id);
   } catch (google::protobuf::FatalException &e) {
-    GELOGE(GE_CLI_SESS_DESTROY_FAILED,
-           "[Destruct][Session]Failed because get fatalException, reason:%s.", e_what());
+    GELOGE(GE_CLI_SESS_DESTROY_FAILED, "[Destruct][Session]Failed because get fatalException.");
   }
 
   // check return status, return, update session id if success
@@ -653,18 +652,15 @@ Status Session::GetVariables(const std::vector<std::string> &var_names, std::vec
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
-           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag,",
-	   "graph_id:%u.", graph_id);
+           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.");
     REPORT_INNER_ERROR("E19999",
-                        "GetVariables failed, the GELib instance is nullptr or is not InitFlag.",
-			"graph_id:%u.", graph_id);
+                       "GetVariables failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Get Variables");
   Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, var_names, var_values);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu, graph_id:%u.",
-           ret, sessionId_, graph_id);
+    GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu.", ret, sessionId_);
     return FAILED;
   }
   return SUCCESS;
@@ -677,29 +673,24 @@ Status Session::GetVariables(const std::vector<AscendString> &var_names, std::ve
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.",
-	   "graph_id:%u.", graph_id);
+           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.");
     REPORT_INNER_ERROR("E19999",
-                       "GetVariables failed, the GELib instance is nullptr or is not InitFlag.",
-		       "graph_id:%u", graph_id);
+                       "GetVariables failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Get Variables");
   std::vector<ge::string> str_var_names;
   for (auto &var_name : var_names) {
     if (var_name.GetString() == nullptr) {
-      GELOGE(FAILED, "[Get][Variable]Failed, variables' names are nullptr, graph_id:%u.",
-		      graph_id);
-      REPORT_INNER_ERROR("E19999", "GetVariables failed, variables' names are nullptr,"
-		         "graph_id:%u.", graph_id);
+      GELOGE(FAILED, "[Get][Variable]Failed, variables' names are nullptr.");
+      REPORT_INNER_ERROR("E19999", "GetVariables failed, variables' names are nullptr.");
       return FAILED;
     }
     str_var_names.emplace_back(var_name.GetString());
   }
   Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, str_var_names, var_values);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu, graph_id:%u.",
-           ret, sessionId_, graph_id);
+    GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu.", ret, sessionId_);
     return FAILED;
   }
   return SUCCESS;

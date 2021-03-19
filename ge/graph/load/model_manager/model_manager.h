@@ -340,7 +340,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ge::Status DeleteModel(uint32_t id);
 
   void GenModelId(uint32_t *id);
-  bool IsNeedHybridLoad();
 
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;

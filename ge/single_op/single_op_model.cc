@@ -61,7 +61,7 @@ Status IfInferDepend(GeModelPtr &ge_model, bool &flag) {
 
 Status NeedHybridModel(GeModelPtr &ge_model, bool &flag) {
   bool infer_depend_flag = false;
-  GE_CHK_STATUS_RET(IfInferDepend(ge_model, infer_depend_flag), "[Check][IfInferDepend] failed.");
+  GE_CHK_STATUS_RET(IfInferDepend(ge_model, infer_depend_flag), "[Check][InferDepend] failed.");
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   int32_t kernel_task_num = 0;
   for (int i = 0; i < tasks.size(); ++i) {
@@ -531,7 +531,7 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
   bool need_hybrid_model = false;
-  GE_CHK_STATUS_RET_NOLOG(NeedHybridModel(ge_model, need_hybrid_model), "[Check][NeedHybridModel] failed.");
+  GE_CHK_STATUS_RET(NeedHybridModel(ge_model, need_hybrid_model), "[Check][NeedHybridModel] failed.");
   if (need_hybrid_model) {
     GELOGD("Build single op HybridModel.");
     GE_CHK_STATUS_RET_NOLOG(hybrid::NodeExecutorManager::GetInstance().EnsureInitialized());

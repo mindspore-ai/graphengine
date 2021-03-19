@@ -87,7 +87,7 @@ TEST_F(UtestGeGenerator, test_build_single_op_online) {
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_AIVECTOR, model_buffer), FAILED);
 }
 
-TEST_F(UtestGeGenerator, test_build_single_op_online) {
+TEST_F(UtestGeGenerator, test_check_aicore) {
   GeGenerator generator;
   generator.Initialize({});
   auto graph = MakeGraph();

@@ -665,7 +665,6 @@ namespace {
   }
 
   Status CheckNoAicore(const ComputeGraphPtr &graph, bool &no_aicore) {
-    no_aicore = true;
     for (const auto &node : graph->GetDirectNode()) {
       GE_CHECK_NOTNULL(node);
       auto op_desc = node->GetOpDesc();

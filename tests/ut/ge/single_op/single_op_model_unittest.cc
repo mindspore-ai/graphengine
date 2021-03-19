@@ -17,7 +17,6 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-//#include "cce/taskdown_common.hpp"
 #include "graph/load/model_manager/model_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "runtime/rt.h"
@@ -196,4 +195,31 @@ TEST_F(UtestSingleOpModel, test_op_task_get_profiler_args) {
   ASSERT_EQ(model_id, 1);
 }
 
+TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
+  string model_data_str = "123456789";
+  SingleOpModel model("model", model_data_str.c_str(), model_data_str.size());
+  model.netoutput_op_ = make_shared<OpDesc>("NetOutput", "NetOutput");
+  model.model_helper_.model_ = ge::MakeShared<ge::GeModel>();
+
+  // make graph
+  auto compute_graph = make_shared<ComputeGraph>("graph");
+  auto data_op = make_shared<OpDesc>("Data", DATA);
+  auto data_node = compute_graph->AddNode(data_op);
+  auto graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+  model.model_helper_.model_->SetGraph(graph);
+
+  // set task_def
+  auto model_task_def = make_shared<domi::ModelTaskDef>();
+  domi::TaskDef *task_def = model_task_def->add_task();
+  task_def->set_type(RT_MODEL_TASK_KERNEL);
+  domi::KernelDef *kernel_def = task_def->mutable_kernel();
+  domi::KernelContext *context = kernel_def->mutable_context();
+  context->set_kernel_type(2);    // ccKernelType::TE
+  model.model_helper_.model_->SetModelTaskDef(model_task_def);
+
+  std::mutex stream_mu_;
+  DynamicSingleOp dynamic_single_op(0, &stream_mu_, nullptr);
+  StreamResource res((uintptr_t)1);
+  model.BuildDynamicOp(res, dynamic_single_op);
+}
 

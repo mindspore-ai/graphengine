@@ -693,6 +693,22 @@ namespace {
   }
 }
 
+bool GeGenerator::CheckNoAicore(const ComputeGraphPtr &graph) {
+  for (const auto &node : graph->GetDirectNode()) {
+    if (node == nullptr) {
+      continue;
+    }
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    if (op_desc->GetOpEngineName() == kAIcoreEngine) {
+      return false;
+    }
+  }
+  return true;
+}
+
 Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                      const vector<GeTensor> &outputs) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
@@ -773,7 +789,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
-  if (all_shape) {
+  if (all_shape && CheckNoAicore(root_graph)) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;

@@ -25,6 +25,7 @@
 #include "graph/utils/graph_utils.h"
 #include "../graph/passes/graph_builder_utils.h"
 #include "../graph/manager/graph_manager.h"
+#include "all_ops.h"
 
 using namespace std;
 
@@ -109,5 +110,15 @@ TEST_F(UtestGeGenerator, test_graph_manager) {
   graph_partitioner.graph_2_subgraph_list_.insert({root_graph, {sgi, sgi_gelocal}});
   graph_partitioner.graph_2_subgraph_list_.insert({sub_graph, {sgi, sgi_gelocal}});
   EXPECT_EQ(graph_manager.ConvertGraphToFile(root_graph, graph_partitioner, "./"), GRAPH_SUCCESS);
+}
+
+TEST_F(UtestGeGenerator, test_set_model_name) {
+  GeGenerator generator;
+  generator.Initialize({});
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(GeRootModel());
+  ComputeGraphPtr graph = make_shared<ComputeGraph>(ComputeGraph("graph"));
+  (void)AttrUtils::SetBool(graph, "_dynamic_shape_partitioned", true);
+  ge_root_model->root_graph_ = std::move(graph);
+  EXPECT_EQ(generator.SetModelNameForDump(ge_root_model), SUCCESS);
 }
 }  // namespace ge

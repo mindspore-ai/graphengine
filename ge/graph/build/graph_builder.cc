@@ -387,7 +387,7 @@ static Status InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDataAnchor
   GE_CHECK_NOTNULL(out_anchor);
   NodePtr in_node = out_anchor->GetOwnerNode();
   GE_CHECK_NOTNULL(in_node);
-  OpDescBuilder op_desc_builder(name, MEMCPYADDRASYNC);
+  OpDescBuilder op_desc_builder(name, MEMCPYASYNC);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(0))
                                      .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
                                      .Build();

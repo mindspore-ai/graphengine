@@ -508,7 +508,7 @@ BlockMemAssigner::BlockMemAssigner(ComputeGraphPtr compute_graph, const map<stri
       symbol_to_anchors_(symbol_to_anchors), anchor_to_symbol_(anchor_to_symbol), life_time_(0) {}
 
 BlockMemAssigner::~BlockMemAssigner() {
-  GELOGD("blocks_store_ size : %lu", blocks_store_.size());
+  GELOGD("[Destruct][BlockMemAssigner]blocks_store_ size : %lu", blocks_store_.size());
   for (MemoryBlock *memory_block : blocks_store_) {
     GE_DELETE_NEW_SINGLE(memory_block);
   }
@@ -2156,7 +2156,7 @@ void BlockMemAssigner::SetOpMemOffset(bool is_zero_copy) {
 Status BlockMemAssigner::Assign() {
   vector<int64_t> ranges;
   if (GetMemoryRanges(ranges) != SUCCESS) {
-    GELOGE(FAILED, "GetMemoryRanges Fail!");
+    GELOGE(FAILED, "[Get][MemoryRanges] Fail!");
     return FAILED;
   }
   GE_IF_BOOL_EXEC(ranges.empty(), return SUCCESS);

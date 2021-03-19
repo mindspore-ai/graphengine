@@ -42,7 +42,7 @@ Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_
 
 Status HybridMemAssigner::Assign() {
   if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Get ref-mapping for graph %d failed.", compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
     return FAILED;
   }
 

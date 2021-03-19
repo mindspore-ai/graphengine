@@ -759,7 +759,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
   bool no_aicore = true;
-  GE_CHK_STATUS_RET_NOLOG(CheckNoAicore(root_graph, no_aicore));
+  GE_CHK_STATUS_RET(CheckNoAicore(root_graph, no_aicore), "[Check][NoAicore] failed.");
   if (all_shape && no_aicore) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;

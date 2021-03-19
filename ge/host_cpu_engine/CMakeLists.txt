@@ -3,6 +3,7 @@ set(PROTO_LIST
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge_atcstub PROTO_ATCSTUB_SRCS PROTO_ATCSTUB_HDRS ${PROTO_LIST})
 
 set(SRC_LIST
     "engine/host_cpu_engine.cc"
@@ -61,7 +62,7 @@ target_link_libraries(host_cpu_engine PRIVATE
 )
 
 ############ atcstub/libhost_cpu_engine.so ############
-add_library(atc_host_cpu_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
+add_library(atc_host_cpu_engine SHARED ${SRC_LIST} ${PROTO_ATCSTUB_HDRS})
 
 target_compile_options(atc_host_cpu_engine PRIVATE
     -Werror
@@ -84,7 +85,7 @@ target_include_directories(atc_host_cpu_engine PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_atcstub
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####

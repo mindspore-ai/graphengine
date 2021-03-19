@@ -60,12 +60,14 @@ graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path) {
   }
   std::string real_path = RealPath(cfg_path.c_str());
   if (real_path.empty()) {
-    GELOGE(GRAPH_PARAM_INVALID, "Can not get real path for %s.", cfg_path.c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Get][Path]Can not get real path for %s.", cfg_path.c_str());
+    REPORT_INPUT_ERROR("E10410", std::vector<std::string>({"cfgpath"}), std::vector<std::string>({cfg_path}));
     return GRAPH_PARAM_INVALID;
   }
   std::ifstream ifs(real_path);
   if (!ifs.is_open()) {
-    GELOGE(GRAPH_FAILED, "Open file %s failed", cfg_path.c_str());
+    GELOGE(GRAPH_FAILED, "[Open][File] %s failed", cfg_path.c_str());
+    REPORT_INPUT_ERROR("E10411", std::vector<std::string>({"cfgpath"}), std::vector<std::string>({cfg_path}));
     return GRAPH_FAILED;
   }
 

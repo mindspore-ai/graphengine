@@ -48,7 +48,7 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
   TaskDescInfo tmp_task_desc_info;
   uint32_t model_id;
   if (op_task->GetProfilingArgs(tmp_task_desc_info, model_id) != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Get profiling data of task failed");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Get][ProfilingArgs] failed.");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   GELOGD("ProfilingReport of op[%s] model[%s] start.",
@@ -81,8 +81,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOp::~SingleOp() {
 Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::vector<DataBuffer> &outputs) {
   auto num_inputs = inputs.size();
   if (num_inputs != input_sizes_.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Input num mismatch. model expect %zu, but given %zu", input_addr_list_.size(),
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, 
+        "[Check][Param:inputs]Input num mismatch. model expect %zu, but given %zu", input_addr_list_.size(),
            inputs.size());
+    REPORT_INPUT_ERROR("E10401", std::vector<std::string>({"expect_size", "input_size"}), 
+        std::vector<std::string>({std::to_string(input_addr_list_.size()), std::to_string(num_inputs)}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -92,16 +95,22 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
     GELOGI("Input [%zu], aligned_size:%zu, inputs.length:%lu, input_sizes_:%zu",
            i, aligned_size, inputs[i].length, input_sizes_[i]);
     if (aligned_size < input_sizes_[i]) {
-      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Input size mismatch. index = %zu, model expect %zu,"
-                            " but given %zu(after align)", i, input_sizes_[i], aligned_size);
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, 
+          "[Check][Param:inputs]Input size mismatch. index = %zu, model expect %zu, but given %zu(after align)", 
+          i, input_sizes_[i], aligned_size);
+      REPORT_INPUT_ERROR("E10402", std::vector<std::string>({"index", "expect_size", "input_size"}), 
+          std::vector<std::string>({std::to_string(i), std::to_string(input_sizes_[i]), std::to_string(aligned_size)})
+          );
       return ACL_ERROR_GE_PARAM_INVALID;
     }
   }
 
   auto num_outputs = outputs.size();
   if (num_outputs != output_sizes_.size()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "output num mismatch. model expect %zu, but given %zu",
-           output_sizes_.size(), outputs.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param:outputs]output num mismatch. model expect %zu, but given %zu",
+        output_sizes_.size(), outputs.size());
+    REPORT_INPUT_ERROR("E10403", std::vector<std::string>({"expect_size", "input_size"}), 
+        std::vector<std::string>({std::to_string(output_sizes_.size()), std::to_string(outputs.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -111,8 +120,12 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
     GELOGI("Output [%zu], aligned_size:%zu, outputs.length:%lu, output_sizes_:%zu",
            i, aligned_size, outputs[i].length, output_sizes_[i]);
     if (aligned_size < output_sizes_[i]) {
-      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Output size mismatch. index = %zu, model expect %zu,"
-                            "but given %zu(after align)", i, output_sizes_[i], aligned_size);
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, 
+          "[Check][Param:outputs]Output size mismatch. index = %zu, model expect %zu, but given %zu(after align)",
+          i, output_sizes_[i], aligned_size);
+      REPORT_INPUT_ERROR("E10404", std::vector<std::string>({"index", "expect_size", "input_size"}),
+          std::vector<std::string>({std::to_string(i), std::to_string(output_sizes_[i]), std::to_string(aligned_size)})
+          );
       return ACL_ERROR_GE_PARAM_INVALID;
     }
   }
@@ -168,9 +181,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     GELOGD("Memory base changed, new memory base = %p", current_mem_base);
     for (auto &task : tasks_) {
       auto new_address = BuildTaskUtils::GetAddresses(task->GetOpdesc(), *running_param_);
-      GE_CHK_STATUS_RET(task->UpdateArgTable(*running_param_),
-                        "[%s] Failed to update arg table",
-                        task->GetOpdesc()->GetName().c_str());
+      GE_CHK_STATUS_RET(task->UpdateArgTable(*running_param_), "[Update][ArgTable] failed, single op:%s.",
+          task->GetOpdesc()->GetName().c_str());
     }
   }
   ret = UpdateArgs(inputs, outputs);
@@ -183,7 +195,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
     if (ret != SUCCESS) {
       return ret;
     }
-    GE_CHK_STATUS_RET(task->OpenDump(stream_), "Open single op %s dump filed",task->GetOpdesc()->GetName().c_str());
+    GE_CHK_STATUS_RET(task->OpenDump(stream_), "[Open][Dump]failed, single op:%s.", 
+        task->GetOpdesc()->GetName().c_str());
     GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(task, kShapeTypeStatic));
   }
 
@@ -204,33 +217,35 @@ Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
                                        std::vector<DataBuffer> &outputs) const {
   if (inputs.size() != input_desc.size()) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "Input number mismatches input desc number. Input num = %zu, input desc num = %zu",
-           inputs.size(),
-           input_desc.size());
+        "[Check][Param:inputs]Input number mismatches input desc number. Input num = %zu, input desc num = %zu",
+        inputs.size(), input_desc.size());
+    REPORT_INPUT_ERROR("E10405", std::vector<std::string>({"input_num", "input_desc_num"}),
+        std::vector<std::string>({std::to_string(inputs.size()), std::to_string(input_desc.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (outputs.size() != output_desc.size()) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "Output number mismatches output desc number. Output num = %zu, output desc num = %zu",
-           outputs.size(),
-           output_desc.size());
+        "[Check][Param:outputs]Output number mismatches output desc number. Output num = %zu, output desc num = %zu",
+        outputs.size(), output_desc.size());
+    REPORT_INPUT_ERROR("E10406", std::vector<std::string>({"out_num", "out_desc_num"}),
+        std::vector<std::string>({std::to_string(outputs.size()), std::to_string(output_desc.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (input_desc.size() != num_inputs_) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "Input number mismatches. expect %zu, but given %zu",
-           num_inputs_,
-           input_desc.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param:input_desc]Input number mismatches. expect %zu, but given %zu",
+        num_inputs_, input_desc.size());
+    REPORT_INPUT_ERROR("E10401", std::vector<std::string>({"expect_num", "input_num"}),
+        std::vector<std::string>({std::to_string(num_inputs_), std::to_string(input_desc.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   if (output_desc.size() != num_outputs_) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "Output number mismatches. expect %zu, but given %zu",
-           num_outputs_,
-           output_desc.size());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param:output_desc]Output number mismatches. expect %zu, but given %zu",
+        num_outputs_, output_desc.size());
+    REPORT_INPUT_ERROR("E10408", std::vector<std::string>({"expect_num", "input_num"}),
+        std::vector<std::string>({std::to_string(num_outputs_), std::to_string(output_desc.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 

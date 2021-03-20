@@ -850,6 +850,7 @@ Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor
   ge::ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>(graph_name);
   GE_CHECK_NOTNULL_EXEC(compute_graph, return INTERNAL_ERROR);
 
+
   // 1. Add Node to ComputeGraph.
   NodePtr op_node = compute_graph->AddNode(op_desc);
   GE_CHECK_NOTNULL_EXEC(op_node, return INTERNAL_ERROR);

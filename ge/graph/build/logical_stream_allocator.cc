@@ -377,6 +377,48 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
   return SUCCESS;
 }
 
+Status UpdateForParallelGroupPass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &subgraphs, Context &context) {
+  std::map<int, vector<OpDescPtr>> stream_op_map;
+  for (const SubgraphPtr &subgraph : subgraphs) {
+    auto compute_graph = subgraph->subgraph_info.GetSubGraph();
+    for (const NodePtr &node : compute_graph->GetDirectNode()) {
+      OpDescPtr op_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      if (op_desc->HasAttr(ATTR_NAME_PARALLEL_GROUP)) {
+        int64_t op_desc_stream_id = op_desc->GetStreamId();
+        stream_op_map[op_desc_stream_id].push_back(op_desc);
+      }
+    }
+  }
+  for (const auto &itr : stream_op_map) {
+    if (itr.first == kInvalidStream) {
+      continue;
+    }
+    std::map<std::string, int64_t> group_2_stream_id;
+    for (const auto &op_desc : itr.second) {
+      std::string group_name;
+      if (!AttrUtils::GetStr(op_desc, ATTR_NAME_PARALLEL_GROUP, group_name)) {
+        GELOGE(FAILED, "[GetAttr][OpDesc]Get node %s ATTR_NAME_PARALLEL_GROUP failed.", op_desc->GetName().c_str());
+        REPORT_INNER_ERROR("E19999", "Get node %s ATTR_NAME_PARALLEL_GROUP failed.", op_desc->GetName().c_str());
+        return FAILED;
+      }
+      const auto &itr = group_2_stream_id.find(group_name);
+      int64_t new_stream_id = kInvalidStream;
+      int64_t old_stream_id = op_desc->GetStreamId();
+      if (itr != group_2_stream_id.end()) {
+        new_stream_id = itr->second;
+      } else {
+        new_stream_id = context.next_stream++;
+        group_2_stream_id[group_name] = new_stream_id;
+      }
+      op_desc->SetStreamId(new_stream_id);
+      GELOGD("Node %s assigned stream %ld from stream %ld.",
+             op_desc->GetName().c_str(), new_stream_id, old_stream_id);
+    }
+  }
+  return SUCCESS;
+}
+
 int64_t UpdateForSkippedEnginePass::GetSingleInoutStream(const NodePtr &node) const {
   set<int64_t> stream_ids;
 
@@ -666,6 +708,7 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
     passes.emplace_back(MakeShared<IndependentStreamPass>());
     passes.emplace_back(MakeShared<AssignByDependencyPass>());
     passes.emplace_back(MakeShared<NodeStreamUpdatePass>());
+    passes.emplace_back(MakeShared<UpdateForParallelGroupPass>());
     passes.emplace_back(MakeShared<AllReduceParallelPass>());
     passes.emplace_back(MakeShared<UpdateForSkippedEnginePass>());
   }

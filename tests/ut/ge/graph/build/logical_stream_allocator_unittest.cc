@@ -32,6 +32,7 @@
 #include "graph/compute_graph.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/debug/ge_attr_define.h"
 
 using namespace std;
 
@@ -151,6 +152,22 @@ class UtestLogicalStreamAllocator : public testing::Test {
   SubGraphInfoPtr CreateSubgraph(const string &engine, const string &stream_label = "", int in_num = 1,
                                  int out_num = 1) {
     return CreateSubgraphWithName("graph", engine, stream_label, in_num, out_num);
+  }
+
+  SubGraphInfoPtr CreateParallelGroupSubgraphWithName(const string &name, const string &engine,
+                                                      const string &stream_label = "",
+                                                      std::string group_name = "1") {
+    ComputeGraphPtr compute_graph = make_shared<ComputeGraph>(name);
+    OpDescPtr op_desc = std::make_shared<OpDesc>("relu", "Relu");
+    op_desc->AddInputDesc(GeTensorDesc());
+    op_desc->AddOutputDesc(GeTensorDesc());
+    AttrUtils::SetStr(op_desc, ATTR_NAME_PARALLEL_GROUP, group_name);
+    compute_graph->AddNode(op_desc);
+
+    SubGraphInfoPtr subgraph = BuildSubGraph(compute_graph, engine, stream_label);
+    AddPlaceHolderAndEnd(subgraph, 1, 1);
+
+    return subgraph;
   }
 
   void LinkSubGraph(SubGraphInfoPtr subgraph1, const string &end_name, SubGraphInfoPtr subgraph2,
@@ -876,6 +893,32 @@ TEST_F(UtestLogicalStreamAllocator, test_all_reduce_parallel_pass) {
   ret = allreduce_pass->Run(graph, subgraphs, context);
 
   EXPECT_EQ(ret, NOT_CHANGED);
+}
+
+TEST_F(UtestLogicalStreamAllocator, test_parallel_group) {
+  SubGraphInfoPtr data = CreateDataSubgraph();
+  SubGraphInfoPtr subgraph1 = CreateParallelGroupSubgraphWithName("graph1", "engine1", "");
+  SubGraphInfoPtr subgraph2 = CreateParallelGroupSubgraphWithName("graph2", "engine2", "", "2");
+  SubGraphInfoPtr subgraph3 = CreateParallelGroupSubgraphWithName("graph3", "engine3", "", "3");
+  SubGraphInfoPtr subgraph4 = CreateParallelGroupSubgraphWithName("graph4", "engine4", "", "4");
+  LinkSubGraph(data, "end", subgraph1, "placeholder");
+  LinkSubGraph(subgraph1, "end", subgraph2, "placeholder");
+  LinkSubGraph(subgraph2, "end", subgraph3, "placeholder");
+  LinkSubGraph(subgraph3, "end", subgraph4, "placeholder");
+
+  EngineConfPtr conf1 = make_shared<EngineConf>();
+  conf1->id = subgraph1->GetEngineName();
+  EngineConfPtr conf2 = make_shared<EngineConf>();
+  conf2->id = subgraph2->GetEngineName();
+  conf2->attach = false;
+  EngineConfPtr conf3 = make_shared<EngineConf>();
+  conf3->id = subgraph3->GetEngineName();
+  conf3->attach = false;
+  EngineConfPtr conf4 = make_shared<EngineConf>();
+  conf4->id = subgraph4->GetEngineName();
+
+  Status status = AssignLogicalStreams({subgraph1, subgraph2, subgraph3, subgraph4}, {conf1, conf2, conf3, conf4});
+  EXPECT_EQ(status, ge::SUCCESS);
 }
 
 }  // namespace ge

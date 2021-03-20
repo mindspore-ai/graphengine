@@ -93,6 +93,7 @@
 #include "graph/passes/global_step_insert_pass.h"
 #include "graph/passes/memcpy_addr_async_pass.h"
 #include "graph/passes/hccl_continuous_memcpy_pass.h"
+#include "graph/passes/parallel_group_pass.h"
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
@@ -2380,6 +2381,12 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   MemcpyAddrAsyncPass memcpy_addr;
   GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph), "Add memcpy_addr_async node failed.");
   GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
+
+  // Handle parallel group .
+  GE_TIMESTAMP_START(ParallelGroup);
+  ParallelGroupPass parallel_group_pass;
+  GE_CHK_STATUS_RET(parallel_group_pass.Run(compute_graph), "Handle parallel group failed.");
+  GE_TIMESTAMP_END(ParallelGroup, "ParallelGroupPass::Run.");
 
   // After while sub graph handle, mark all node rw type
   auto result = GetCompilerStages(compute_graph->GetGraphID()).optimizer.HandleMemoryRWConflict(compute_graph);

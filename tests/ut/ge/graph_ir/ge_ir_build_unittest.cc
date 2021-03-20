@@ -97,4 +97,14 @@ TEST(UtestIrCommon, update_dynamic_shape_range_failed) {
   input_shape_range = "input1:[1, 2~-3, -1]";
   ret = UpdateDynamicInputShapeRange(graph, input_shape_range);
   EXPECT_EQ(ret, ge::PARAM_INVALID);
+
+  //5
+  input_shape_range = "input:[1, 2~3, -1]";
+  ret = UpdateDynamicInputShapeRange(graph, input_shape_range);
+  EXPECT_EQ(ret, ge::PARAM_INVALID);
+
+  //6
+  input_shape_range = "addn1:[1, 2~3, -1]";
+  ret = UpdateDynamicInputShapeRange(graph, input_shape_range);
+  EXPECT_EQ(ret, ge::PARAM_INVALID);
 }

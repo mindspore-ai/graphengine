@@ -293,7 +293,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   std::cout<<"cout_opt:"<<cout_opt<<std::endl;
   std::cout<<"c1_dim:"<<c1_dim<<std::endl;
   std::cout<<"g_dim:"<<g_dim<<std::endl;
-  int64_t data_size = GetCubeSizeByDataType(args.src_data_type);
+  int64_t data_size = GetSizeByDataType(args.src_data_type);
   std::cout<<"data_size:"<<data_size<<std::endl;
   int64_t size_output_data =
     g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;

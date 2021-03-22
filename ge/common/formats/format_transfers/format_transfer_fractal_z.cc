@@ -319,16 +319,13 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
               int64_t src_co = g * cout_ori + n;
               int64_t tempory = dst_ci % cube_k;
               int64_t srx_inx = 0;
-              int64_t dst_inx =
-                  (g / e_mult) * kDim * c1_dim * h_dim * w_dim * cout_opt *
-                      cube_k +
-                  d * c1_dim * h_dim * w_dim * cout_opt * cube_k +
-                  (dst_ci / cube_k) * h_dim * w_dim * cout_opt * cube_k +
-                  h * w_dim * cout_opt * cube_k + w * cout_opt * cube_k +
-                  dst_co * cube_k + tempory;
-              srx_inx = d * h_dim * w_dim * c_dim * n_dim +
-                          h * w_dim * c_dim * n_dim + w * c_dim * n_dim +
-                          c * n_dim + src_co;
+              int64_t dst_inx = (g / e_mult) * kDim * c1_dim * h_dim * w_dim * cout_opt * cube_k +
+                                d * c1_dim * h_dim * w_dim * cout_opt * cube_k +
+                                (dst_ci / cube_k) * h_dim * w_dim * cout_opt * cube_k +
+                                h * w_dim * cout_opt * cube_k + w * cout_opt * cube_k +
+                                dst_co * cube_k + tempory;
+              srx_inx = d * h_dim * w_dim * c_dim * n_dim + h * w_dim * c_dim * n_dim +
+                        w * c_dim * n_dim + c * n_dim + src_co;
               char *dst_data = reinterpret_cast<char *>(dst.get() + dst_inx * data_size);
               const char *src_data = reinterpret_cast<const char *>(args.data + srx_inx * data_size);
               for (int64_t index = 0; index < data_size; index++) {

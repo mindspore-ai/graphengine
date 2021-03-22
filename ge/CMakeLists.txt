@@ -66,6 +66,11 @@ target_compile_definitions(ge_proto_client PRIVATE
     google=ascend_private
 )
 
+target_include_directories(ge_proto_client PRIVATE
+    ${CMAKE_BINARY_DIR}/proto/ge_client
+    ${CMAKE_BINARY_DIR}/proto/ge_client/proto
+)
+
 target_compile_options(ge_proto_client PRIVATE
     -O2
     -fno-common

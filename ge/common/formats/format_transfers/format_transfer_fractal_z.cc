@@ -419,6 +419,7 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
 
   result.data = dst;
   result.length = static_cast<size_t>(dst_size);
+  std::cout<<"result.length"<<result.length<<std::endl;
   return SUCCESS;
 }
 

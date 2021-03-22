@@ -31,6 +31,7 @@ set(PROTO_HEADER_LIST
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
 protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
+protobuf_generate(ge_client PROTO_CLIENT_HEADER_SRCS PROTO_CLIENT_HEADER_HDRS ${PROTO_HEADER_LIST})
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_proto_common.a ############
@@ -56,13 +57,18 @@ target_link_libraries(ge_proto_common PRIVATE
 
 ############ libge_proto_client.a ############
 add_library(ge_proto_client STATIC
-    ${PROTO_HEADER_HDRS}
+    ${PROTO_CLIENT_HEADER_HDRS}
     ${PROTO_CLIENT_SRCS}
 )
 
 target_compile_definitions(ge_proto_client PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     google=ascend_private
+)
+
+target_include_directories(ge_proto_client PRIVATE
+    ${CMAKE_BINARY_DIR}/proto/ge_client
+    ${CMAKE_BINARY_DIR}/proto/ge_client/proto
 )
 
 target_compile_options(ge_proto_client PRIVATE

@@ -342,6 +342,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   }
   result.data = dst;
   result.length = static_cast<size_t>(size_output_data);
+  std::cout<<"result.length groups"<<result.length<<std::endl;
   return SUCCESS;
 }
 Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {

@@ -289,16 +289,10 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   int64_t c1_dim = cin_opt / cube_k;
   int64_t g_dim = DivCeil(groups, e_mult);
   int64_t dim_cin = cin_opt / cube_k;
-  std::cout<<"cin_opt:"<<cin_opt<<std::endl;
-  std::cout<<"cout_opt:"<<cout_opt<<std::endl;
-  std::cout<<"c1_dim:"<<c1_dim<<std::endl;
-  std::cout<<"g_dim:"<<g_dim<<std::endl;
   int64_t data_size = GetSizeByDataType(args.src_data_type);
-  std::cout<<"data_size:"<<data_size<<std::endl;
   int64_t size_output_data =
     g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;
   GE_CHK_BOOL_EXEC_NOLOG(size_output_data != 0, result.length = static_cast<size_t>(size_output_data);
-  std::cout<<"size_output_data:"<<size_output_data<<std::endl;
   return SUCCESS;);
   errno_t ret = EOK;
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[size_output_data], std::default_delete<uint8_t[]>());
@@ -348,7 +342,6 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   }
   result.data = dst;
   result.length = static_cast<size_t>(size_output_data);
-  std::cout<<"result.length groups"<<result.length<<std::endl;
   return SUCCESS;
 }
 Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
@@ -426,7 +419,6 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
 
   result.data = dst;
   result.length = static_cast<size_t>(dst_size);
-  std::cout<<"result.length"<<result.length<<std::endl;
   return SUCCESS;
 }
 
@@ -526,11 +518,8 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
   if (args.src_format == FORMAT_NHWC && args.dst_format == FORMAT_FRACTAL_Z) {
     return TransFormatNhwcToFz(args, result);
   }
-  std::cout<<"FORMAT:"<<args.dst_format<<std::endl;
   if ((args.src_format == FORMAT_HWCN) && (GetPrimaryFormat(args.dst_format) == FORMAT_FRACTAL_Z)) {
     if (GetSubFormat(args.dst_format) > 1) {
-      std::cout<<"FORMAT_02:"<<GetSubFormat(args.dst_format)<<std::endl;
-       std::cout<<"come in groups process"<<std::endl;
       return TransFormatHwcnToFzWithGroups(args, result, GetSubFormat(args.dst_format));
     }
     return TransFormatHwcnToFz(args, result);

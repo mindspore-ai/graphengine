@@ -155,12 +155,12 @@ std::shared_ptr<GraphInfo> Analyzer::GetJsonObject(uint64_t session_id, uint64_t
   std::lock_guard<std::recursive_mutex> lg(mutex_);
   auto iter = graph_infos_.find(session_id);
   if (iter == graph_infos_.end()) {
-    GELOGE(PARAM_INVALID, "[Check][Session_id]session_id:%lu does not exist! graph_id:%lu.", session_id, graph_id);
+    GELOGE(PARAM_INVALID, "[Check][SessionId]session_id:%lu does not exist! graph_id:%lu", session_id, graph_id);
     return nullptr;
   } else {
     auto iter1 = (iter->second).find(graph_id);
     if (iter1 == (iter->second).end()) {
-      GELOGE(PARAM_INVALID, "[Check][Graph_id]graph_id:%lu does not exist! session_id:%lu.", graph_id, session_id);
+      GELOGE(PARAM_INVALID, "[Check][GraphId]graph_id:%lu does not exist! session_id:%lu.", graph_id, session_id);
       return nullptr;
     }
     GELOGI("GetJsonObject Success!session_id:%lu graph_id:%lu", session_id, graph_id);
@@ -200,7 +200,7 @@ ge::Status Analyzer::CreateAnalyzerFile() {
 }
 
 ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_id) {
-  GELOGD("start to save analyze file.");
+  GELOGD("start to save analyze file");
 
   auto graph_info = GetJsonObject(session_id, graph_id);
   GE_CHECK_NOTNULL(graph_info);
@@ -221,7 +221,10 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
   try {
     json_file_ << jsn.dump(kJsonDumpLevel) << std::endl;
   } catch (nlohmann::detail::type_error &e) {
-    GELOGE(FAILED, "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s], session_id:%lu, graph_id:%lu", json_file_name_.c_str(), e.what(), session_id, graph_id);
+    GELOGE(FAILED,
+           "[Json.dump][GraphInfo]json.dump to analyze file [%s] failed because [%s],"
+	         "session_id:%lu, graph_id:%lu",
+           json_file_name_.c_str(), e.what(), session_id, graph_id);
     ret_failed = true;
   }
   json_file_.close();
@@ -229,7 +232,7 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
 }
 
 ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
-  GELOGD("start to do analyzer process!");
+  GELOGD("start to do analyzer process");
 
   auto pnode = data_info.node_ptr;
   GE_CHECK_NOTNULL(pnode);
@@ -241,7 +244,9 @@ ge::Status Analyzer::DoAnalyze(DataInfo &data_info) {
   GE_CHECK_NOTNULL(graph_info);
   auto status = SaveOpInfo(desc, data_info, graph_info);
   if (status != SUCCESS) {
-    GELOGE(status, "[Check][SaveOpInfo]save op info: desc_name [%s] desc_type [%s] failed!", desc->GetName().c_str(), desc->GetType().c_str());
+    GELOGE(status,
+           "[Check][SaveOpInfo]save op info: desc_name [%s] desc_type [%s] failed!",
+           desc->GetName().c_str(), desc->GetType().c_str());
     return FAILED;
   }
   // create json file

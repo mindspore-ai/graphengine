@@ -384,7 +384,8 @@ Status ModelUtils::GetVarAddr(const RuntimeParam &model_param, const ConstOpDesc
   switch (mem_type) {
     case RT_MEMORY_RDMA_HBM:
       if (offset < 0) {
-        GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p", reinterpret_cast<uint8_t *>(offset));
+        GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p",
+               reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset)));
         return PARAM_INVALID;
       }
       var_addr = reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset));

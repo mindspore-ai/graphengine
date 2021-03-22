@@ -37,7 +37,7 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
     std::string error = "Dose not support trans format from " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
+    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
@@ -59,9 +59,10 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
   }
   int64_t c1 = Ceil(dst_shape.at(kNchwC), c0);
   int64_t n0 = Ceil(dst_shape.at(kNchwN), static_cast<int64_t>(kNiSize));
-  if (src_shape.at(kFracZHWC1) != dst_shape.at(kNchwH) * dst_shape.at(kNchwW) * c1 || src_shape.at(kFracZC0) != c0 ||
-      src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
+  if (src_shape.at(kFracZHWC1) != dst_shape.at(kNchwH) * dst_shape.at(kNchwW) * c1 ||
+      src_shape.at(kFracZC0) != c0 || src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
+           "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
@@ -72,7 +73,8 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const int size, const int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;

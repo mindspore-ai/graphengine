@@ -125,7 +125,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
                   return ACL_ERROR_GE_INTERNAL_ERROR);
   auto t1 = h_o * w_o;
   auto t2 = n_o * c_o;
-  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
+  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2),
+                  GELOGE(INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
                   return ACL_ERROR_GE_INTERNAL_ERROR);
 
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
@@ -140,7 +141,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
@@ -212,7 +214,8 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
                   return ACL_ERROR_GE_INTERNAL_ERROR);
   auto t1 = h_o * w_o;
   auto t2 = n_o * c_o;
-  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2), GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
+  GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2),
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,"int64 mul overflow.A[%ld], B[%ld]", t1, t2);
                   return ACL_ERROR_GE_INTERNAL_ERROR);
 
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
@@ -228,7 +231,8 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
 
   dst.reset(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
@@ -275,7 +279,8 @@ Status FormatTransferNchwToFZC04::TransFormat(const TransArgs &args, TransResult
   }
 
   std::vector<int64_t> expect_shape;
-  ret = TransShape(args_tmp.src_format, args_tmp.src_shape, args_tmp.src_data_type, args_tmp.dst_format, expect_shape);
+  ret = TransShape(args_tmp.src_format, args_tmp.src_shape, args_tmp.src_data_type,
+                   args_tmp.dst_format, expect_shape);
   if (ret != SUCCESS) {
     return ret;
   }

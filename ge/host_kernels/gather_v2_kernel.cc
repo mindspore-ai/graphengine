@@ -407,7 +407,8 @@ Status GatherV2Kernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGe
   // check input data type
   auto x_data_type = tensor0->GetTensorDesc().GetDataType();
   if (supported_type.find(x_data_type) == supported_type.end()) {
-    GELOGI("GatherV2Kernel does not support this Data type:%s.", TypeUtils::DataTypeToSerialString(x_data_type).c_str());
+    GELOGI("GatherV2Kernel does not support this Data type:%s.",
+           TypeUtils::DataTypeToSerialString(x_data_type).c_str());
     return NOT_CHANGED;
   }
   // calc output shape

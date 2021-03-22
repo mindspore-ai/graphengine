@@ -43,7 +43,7 @@ Status InferShapePass::Run(NodePtr &node) {
     return GE_GRAPH_INFERSHAPE_FAILED;
   }
   bool need_repass = false;
-  auto has_attr = AttrUtils::GetBool(node->GetOpDesc(), "need_infer_again_", need_repass);
+  auto has_attr = AttrUtils::GetBool(node->GetOpDesc(), "_need_infer_again", need_repass);
   if (has_attr) {
     if (!OptionExists(kOptimizeAfterSubGraph)) {
       return SUCCESS;
@@ -53,7 +53,7 @@ Status InferShapePass::Run(NodePtr &node) {
       GELOGD("Node %s need repass immediately.", node->GetName().c_str());
     } else {
       // clear attr on while
-      node->GetOpDesc()->DelAttr("need_infer_again_");
+      node->GetOpDesc()->DelAttr("_need_infer_again");
     }
   }
   return SUCCESS;

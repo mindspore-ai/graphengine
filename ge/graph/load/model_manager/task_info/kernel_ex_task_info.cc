@@ -228,14 +228,14 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   if (addrs_size > 0) {
     rtError_t rt_ret = rtMalloc(&input_output_addr_, addrs_size, RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail ret:0x%X, size:%u, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail ret:0x%X, size:%lu, when KernelExTaskInfo %s",
                                       rt_ret, addrs_size, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     rt_ret = rtMemcpy(input_output_addr_, addrs_size, io_addrs.data(), addrs_size, RT_MEMCPY_HOST_TO_DEVICE);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%u, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%lu, when KernelExTaskInfo %s",
                                       rt_ret, addrs_size, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)

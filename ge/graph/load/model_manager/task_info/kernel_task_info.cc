@@ -1052,7 +1052,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     auto addrs_size = sizeof(uint64_t) * io_addrs.size();
     sec_ret = memcpy_s(reinterpret_cast<void *>(io_addr), addrs_size, io_addrs.data(), addrs_size);
     if (sec_ret != EOK) {
-      REPORT_CALL_ERROR("E19999", "Call memcpy_s fail, size:%u, ret:0x%X, when KernelTaskInfo %s",
+      REPORT_CALL_ERROR("E19999", "Call memcpy_s fail, size:%lu, ret:0x%X, when KernelTaskInfo %s",
                         addrs_size, sec_ret, __FUNCTION__);
       GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
       return FAILED;

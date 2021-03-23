@@ -69,6 +69,7 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
   GELOGD("Begin to Get TaskInfo. session_id=%lu", session_id);
   // Check params
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param graph is null, session_id:%lu, when %s", session_id, __FUNCTION__);
     GELOGE(PARAM_INVALID, "GetTaskInfo param graph is null. session_id=%lu", session_id);
     return PARAM_INVALID;
   }
@@ -93,6 +94,8 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
     op_name.push_back(iter.second);
   }
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(model, ATTR_MODEL_TASK_INDEX_OP_NAME, op_name),
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for model:%s when %s",
+                                      ATTR_MODEL_TASK_INDEX_OP_NAME.c_str(), model.GetName().c_str(), __FUNCTION__);
                    GELOGE(FAILED, "SetListStr failed.");
                    return FAILED);
 
@@ -106,6 +109,8 @@ Status TaskGenerator::GetTaskInfo(Model &model, ComputeGraphPtr &graph, uint64_t
   for (const TaskDef &task_def_temp : task_def_list) {
     TaskDef *task_def = model_task_def.add_task();
     if (task_def == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Add task_def in ModelTaskDef fail, session_id:%lu, graph:%s, model:%s, when %s",
+                         session_id, graph->GetName().c_str(), model.GetName().c_str(), __FUNCTION__);
       GELOGE(FAILED, "task_def is nullptr.");
       return FAILED;
     }
@@ -126,30 +131,44 @@ Status TaskGenerator::AddModelTaskToModel(const ModelTaskDef &model_task_def, ui
                                           RunContext &run_context) {
   GE_CHK_BOOL_EXEC(
       AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_BASE_ADDR, reinterpret_cast<uintptr_t>(run_context.dataMemBase)),
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for model:%s when %s",
+                         MODEL_ATTR_TASK_GEN_BASE_ADDR.c_str(), model.GetName().c_str(), __FUNCTION__);
       GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_BASE_ADDR failed.");
       return FAILED);
   GE_CHK_BOOL_EXEC(
       AttrUtils::SetInt(model, MODEL_ATTR_TASK_GEN_WEIGHT_ADDR, reinterpret_cast<uintptr_t>(run_context.weightMemBase)),
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for model:%s when %s",
+                         MODEL_ATTR_TASK_GEN_WEIGHT_ADDR.c_str(), model.GetName().c_str(), __FUNCTION__);
       GELOGE(FAILED, "SetInt MODEL_ATTR_TASK_GEN_WEIGHT_ADDR failed.");
       return FAILED);
   GE_CHK_BOOL_EXEC(AttrUtils::SetInt(model, ATTR_MODEL_TASK_GEN_VAR_ADDR, reinterpret_cast<uintptr_t>(var_mem_base_)),
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for model:%s when %s",
+                                      ATTR_MODEL_TASK_GEN_VAR_ADDR.c_str(), model.GetName().c_str(), __FUNCTION__);
                    GELOGE(FAILED, "SetInt ATTR_MODEL_TASK_GEN_VAR_ADDR failed.");
                    return FAILED);
   GE_CHK_BOOL_EXEC(AttrUtils::SetInt(model, ATTR_MODEL_VAR_SIZE, var_mem_size_),
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for model:%s when %s",
+                                      ATTR_MODEL_VAR_SIZE.c_str(), model.GetName().c_str(), __FUNCTION__);
                    GELOGE(FAILED, "SetInt ATTR_MODEL_VAR_SIZE failed.");
                    return FAILED);
   GE_CHK_BOOL_EXEC(AttrUtils::SetInt(model, MODEL_ATTR_SESSION_ID, session_id),
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for mode:%s when %s",
+                                      MODEL_ATTR_SESSION_ID.c_str(), model.GetName().c_str(), __FUNCTION__);
                    GELOGE(FAILED, "SetInt MODEL_ATTR_SESSION_ID failed.");
                    return FAILED);
 
   size_t task_size = model_task_def.ByteSizeLong();
   ge::Buffer serial_buff(task_size);
   if (!model_task_def.SerializePartialToArray(serial_buff.GetData(), static_cast<int>(task_size))) {
+    REPORT_INNER_ERROR("E19999", "model_task_def's serialize failed,  model name = %s, task_size=%zu when %s",
+                       model.GetName().c_str(), task_size, __FUNCTION__);
     GELOGE(FAILED, "model_task_def's serialize failed,  model name = %s, task_size=%zu.", model.GetName().c_str(),
            task_size);
     return FAILED;
   }
   if (!AttrUtils::SetZeroCopyBytes(model, MODEL_ATTR_TASKS, std::move(serial_buff))) {
+    REPORT_INNER_ERROR("E19999", "Set model task to model failed,  model name = %s, task_size=%zu.",
+                       model.GetName().c_str(), task_size, __FUNCTION__);
     GELOGE(FAILED, "Set model task to model failed,  model name = %s, task_size=%zu.", model.GetName().c_str(),
            task_size);
     return FAILED;
@@ -167,7 +186,10 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
     for (int64_t input : input_offsets) {
       input_var.push_back(VarManager::Instance(session_id)->IsVarAddr(input));
     }
-    GE_CHK_BOOL_EXEC(AttrUtils::SetListBool(op_desc, kIsInputVar, input_var), GELOGE(FAILED, "SetListBool failed.");
+    GE_CHK_BOOL_EXEC(AttrUtils::SetListBool(op_desc, kIsInputVar, input_var),
+                     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s) when %s", kIsInputVar,
+                                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                     GELOGE(FAILED, "SetListBool failed.");
                      return FAILED);
   }
 
@@ -177,7 +199,10 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
     for (int64_t output : output_offsets) {
       output_var.push_back(VarManager::Instance(session_id)->IsVarAddr(output));
     }
-    GE_CHK_BOOL_EXEC(AttrUtils::SetListBool(op_desc, kIsOutputVar, output_var), GELOGE(FAILED, "SetListBool failed.");
+    GE_CHK_BOOL_EXEC(AttrUtils::SetListBool(op_desc, kIsOutputVar, output_var),
+                     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s) when %s", kIsOutputVar,
+                                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                     GELOGE(FAILED, "SetListBool failed.");
                      return FAILED);
   }
   return SUCCESS;
@@ -252,6 +277,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   GELOGD("Beign to generate task, graph name is %s.", graph->GetName().c_str());
   std::shared_ptr<GELib> ge_lib = GELib::GetInstance();
   if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Check GELib instance not init before when %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GenerateTask failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -319,6 +345,8 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     }
     auto kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
     if (kernel_info_store == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Get ops kernel info store failed for op:%s(%s), op_kernel_name:%s when %s",
+                         node->GetName().c_str(), node->GetType().c_str(), op_kernel_lib_name.c_str(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR,
              "No ops kernel store or ops kernel builder found. node:%s(%s), op_kernel_lib_name=%s.",
              name.c_str(),
@@ -344,6 +372,8 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     auto ret = OpsKernelBuilderManager::Instance().GenerateTask(*node, run_context, task_def_list);
     GE_TIMESTAMP_ADD(GenerateTask);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Call OpsKernelBuilderManager GenerateTask fail for op:%s(%s) when %s",
+                        node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
       GELOGE(ret, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task failed.",
              op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id);
       return ret;
@@ -353,6 +383,9 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     size_t task_list_size_after = task_def_list.size();
     // If tasks is reduced
     if (task_list_size_after < task_list_size_before) {
+      REPORT_INNER_ERROR("E19999", "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task "
+                         "but task num from %zu to %zu, check invalid", op_kernel_lib_name.c_str(), name.c_str(),
+                         type.c_str(), op_id, stream_id, task_list_size_before, task_list_size_after);
       GELOGE(FAILED, "Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task. but task num from %zu to %zu.",
              op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id, task_list_size_before,
              task_list_size_after);
@@ -417,6 +450,9 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       size_t task_list_size_before = task_def_list.size();
       OpsKernelInfoStorePtr kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
       if (kernel_info_store == nullptr) {
+        REPORT_INNER_ERROR("E19999", "Get ops kernel info store failed for op:%s(%s), op_kernel_name:%s when %s",
+                           op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                           op_kernel_lib_name.c_str(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR,
                "Fusion: No ops kernel store or ops kernel builder found. fusion_node:%s(%s), op_kernel_lib_name=%s.",
                fusion_node_name.c_str(), fusion_node_type.c_str(), op_kernel_lib_name.c_str());
@@ -433,6 +469,9 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       int64_t op_id = op_desc->GetId();
       int64_t stream_id = op_desc->GetStreamId();
       if (stream_id < 0 || stream_id >= (int64_t)run_context.graphStreamList.size()) {
+        REPORT_INNER_ERROR("E19999", "Fusion: fusion_node[name:%s(%s), id:%ld] stream id is invalid, "
+                           "stream list size=%zu, when %s", fusion_node_name.c_str(), fusion_node_type.c_str(),
+                           op_id, run_context.graphStreamList.size(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "Fusion: fusion_node[name:%s(%s), id:%ld] stream id is invalid, stream list size=%zu",
                fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, run_context.graphStreamList.size());
         return INTERNAL_ERROR;
@@ -444,6 +483,9 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
              op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id);
       ret = OpsKernelBuilderManager::Instance().GenerateTask(*fusion_node, run_context, task_def_list);
       if (ret != SUCCESS) {
+        REPORT_CALL_ERROR("E19999", " Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
+                          "id:%ld, stream_id:%ld] task failed when %s", op_kernel_lib_name.c_str(),
+                          fusion_node_name.c_str(), fusion_node_type.c_str(), op_id, stream_id, __FUNCTION__);
         GELOGE(ret,
                "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
                "id:%ld, stream_id:%ld] task failed.",
@@ -455,6 +497,10 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       size_t task_list_size_after = task_def_list.size();
       // if tasks is reduced
       if (task_list_size_after < task_list_size_before) {
+        REPORT_INNER_ERROR("E19999", "InsertProfilingTask for fusion_node:[fusion_node_name:%s(%s), "
+                           "id:%ld, stream_id:%ld] task, but task num from %zu to %zu, check invalid when %s",
+                           op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(),
+                           op_id, stream_id, task_list_size_before, task_list_size_after, __FUNCTION__);
         GELOGE(FAILED,
                "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "
                "id:%ld, stream_id:%ld] task. but task num from %zu to %zu.",
@@ -489,6 +535,8 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
 
 Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
   if (NodeUtils::SetAllAnchorStatus(node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "SetAllAnchorStatus fail for op:%s(%s) when %s",
+                      node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "NodeUtils::SetAllAnchorStatus failed.");
     return INTERNAL_ERROR;
   }
@@ -496,6 +544,8 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
     auto peer_anchor = anchor->GetPeerOutAnchor();
     if (peer_anchor == nullptr) {
       if (AnchorUtils::SetStatus(anchor, ANCHOR_SUSPEND) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Set in peer anchor status fail for op:%s(%s), anchor_index:%d, when %s",
+                          node->GetName().c_str(), node->GetType().c_str(), anchor->GetIdx(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "AnchorUtils::SetStatus failed.");
         return INTERNAL_ERROR;
       }
@@ -506,11 +556,15 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
     bool is_const = NodeUtils::GetConstOpType(peer_anchor->GetOwnerNode(), const_type);
     if (is_const && (const_type == CONSTANT)) {
       if (AnchorUtils::SetStatus(anchor, ANCHOR_CONST) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Set in anchor CONST status fail for op:%s(%s), anchor_index:%d, when %s",
+                          node->GetName().c_str(), node->GetType().c_str(), anchor->GetIdx(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "AnchorUtils::SetStatus failed.");
         return INTERNAL_ERROR;
       }
     } else {
       if (AnchorUtils::SetStatus(anchor, ANCHOR_DATA) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Set in anchor DATA status fail for op:%s(%s), anchor_index:%d, when %s",
+                          node->GetName().c_str(), node->GetType().c_str(), anchor->GetIdx(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "AnchorUtils::SetStatus failed.");
         return INTERNAL_ERROR;
       }
@@ -523,12 +577,15 @@ Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
 Status TaskGenerator::MarkNodeAndSetIndex(ComputeGraphPtr &graph) {
   auto ge_lib = GELib::GetInstance();
   if ((ge_lib == nullptr) || !ge_lib->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Check GELib instance not init before when %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
 
   const auto all_nodes = graph->GetNodes(graph->GetGraphUnknownFlag());
   if (all_nodes.empty()) {
+    REPORT_INNER_ERROR("E19999", "Check param all_nodes empty in graph:%s when %s",
+                       graph->GetName().c_str(), __FUNCTION__);
     GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Graph's node is empty");
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
@@ -584,6 +641,9 @@ Status TaskGenerator::MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_
     for (auto &op_desc : continuous_ops) {
       string op_kernel_lib_name = op_desc->GetOpKernelLibName();
       if (op_kernel_lib_name.empty()) {
+        REPORT_INNER_ERROR("E19999", "Get ops kernel info store failed for op:%s(%s), op_kernel_name:%s when %s",
+                           op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                           op_kernel_lib_name.c_str(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "node:%s(%s) get op kernel lib failed.", op_desc->GetName().c_str(),
                op_desc->GetType().c_str());
         return INTERNAL_ERROR;
@@ -599,9 +659,17 @@ Status TaskGenerator::MarkFirstAndLastOps(const vector<OpDescPtr> &ops, bool is_
 
     for (auto &it : first_and_last_ops) {
       auto &op_pair = it.second;
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_pair.first, kIsFirstNode, true), GELOGE(FAILED, "SetBool failed.");
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_pair.first, kIsFirstNode, true),
+                       REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s) when %s", kIsFirstNode,
+                                          op_pair.first->GetName().c_str(), op_pair.first->GetType().c_str(),
+                                          __FUNCTION__);
+                       GELOGE(FAILED, "SetBool failed.");
                        return FAILED);
-      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_pair.second, kIsLastNode, true), GELOGE(FAILED, "SetBool failed.");
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(op_pair.second, kIsLastNode, true),
+                       REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s) when %s", kIsLastNode,
+                                          op_pair.second->GetName().c_str(), op_pair.second->GetType().c_str(),
+                                          __FUNCTION__);
+                       GELOGE(FAILED, "SetBool failed.");
                        return FAILED);
     }
   }
@@ -906,6 +974,8 @@ Status TaskGenerator::InsertProfilingArTaskBefore(const OpDescPtr &op_desc, std:
     for (size_t i = 0; i < all_reduce_nodes.size(); i++) {
       if (all_reduce_nodes[i] == node_index) {
         GE_IF_BOOL_EXEC(TypeUtils::CheckUint64MulOverflow(i, kProfilingArStep),
+                        REPORT_INNER_ERROR("E19999", "Multiply result is out of range when calc profiling ar log id "
+                                           "for node:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
                         GELOGE(FAILED, "Multiply result is out of range.");
                         return FAILED);
         ar_log_id = i * kProfilingArStep + kProfilingArStartLogid;
@@ -998,6 +1068,8 @@ Status TaskGenerator::InsertProfilingArTaskAfter(const OpDescPtr &op_desc, std::
     for (size_t i = 0; i < all_reduce_nodes.size(); i++) {
       if (all_reduce_nodes[i] == node_index) {
         GE_IF_BOOL_EXEC(TypeUtils::CheckUint64MulOverflow(i, kProfilingArStep),
+                        REPORT_INNER_ERROR("E19999", "Multiply result is out of range when calc profiling ar log id "
+                                           "for node:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
                         GELOGE(FAILED, "Multiply result is out of range.");
                         return FAILED);
         ar_log_id = i * kProfilingArStep + kProfilingArEndLogid;
@@ -1107,6 +1179,7 @@ Status TaskGenerator::SetUnknownShapeStream(RunContext &run_context, rtStream_t 
   run_context.stream = stream;
   rtError_t rt_ret = rtModelBindStream(run_context.model, stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtModelBindStream fail, ret:0x%X when %s", rt_ret, __FUNCTION__);
     GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     GE_CHK_RT_RET(rtStreamDestroy(stream));
     return FAILED;

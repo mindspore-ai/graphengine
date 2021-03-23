@@ -28,6 +28,7 @@ LabelAllocator::LabelAllocator(const ComputeGraphPtr &graph) : compute_graph_(gr
 
 Status LabelAllocator::AssignFunctionalLabels() {
   if (compute_graph_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr when AssignFunctionalLabels");
     GELOGE(INTERNAL_ERROR, "ComputeGraph not set, Assign labels failed.");
     return INTERNAL_ERROR;
   }
@@ -46,11 +47,15 @@ Status LabelAllocator::AssignFunctionalLabels() {
   for (auto node : functional_nodes) {
     LabelMakerPtr maker = LabelMakerFactory::Instance().Create(node->GetType(), compute_graph_, node);
     if (maker == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Check Node:%s(%s) label maker not registed when AssignFunctionalLabels",
+                        node->GetName().c_str(), node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Node: %s label maker not registed.", node->GetType().c_str());
       return INTERNAL_ERROR;
     }
 
     if (maker->Run(label_index) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Node:%s(%s) run label maker failed when AssignFunctionalLabels",
+                        node->GetName().c_str(), node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Node: %s run label maker failed.", node->GetType().c_str());
       return INTERNAL_ERROR;
     }
@@ -63,6 +68,7 @@ Status LabelAllocator::AssignFunctionalLabels() {
 
 bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<NodePtr> &functional_nodes) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr when CollectFunctionalNode");
     GELOGE(INTERNAL_ERROR, "Sub ComputeGraph is null.");
     return false;
   }
@@ -74,12 +80,16 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
 
   NodePtr func_node = graph->GetParentNode();
   if (func_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Parent node not set in node:%s(%s), graph:%s",
+                       func_node->GetName().c_str(), func_node->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Parent functional node not set: %s.", graph->GetName().c_str());
     return false;
   }
 
   ComputeGraphPtr owner_graph = func_node->GetOwnerComputeGraph();
   if (owner_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "ComputeGraph owner not set in node:%s(%s), graph:%s",
+                       func_node->GetName().c_str(), func_node->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "ComputeGraph owner not set: %s.", func_node->GetName().c_str());
     return false;
   }

@@ -711,7 +711,7 @@ bool GeGenerator::CheckNoAicore(const ComputeGraphPtr &graph) {
 }
 
 void GeGenerator::RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
-  for (auto input : inputs) {
+  for (auto &input : inputs) {
     GeTensorDesc input_desc = input.GetTensorDesc();
     bool is_const = false;
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);

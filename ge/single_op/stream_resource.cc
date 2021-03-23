@@ -41,7 +41,7 @@ StreamResource::~StreamResource() {
   }
 }
 
-SingleOp *StreamResource::GetOperator(const void *key) {
+SingleOp *StreamResource::GetOperator(const uint64_t key) {
   std::lock_guard<std::mutex> lk(mu_);
   auto it = op_map_.find(key);
   if (it == op_map_.end()) {
@@ -51,7 +51,7 @@ SingleOp *StreamResource::GetOperator(const void *key) {
   return it->second.get();
 }
 
-DynamicSingleOp *StreamResource::GetDynamicOperator(const void *key) {
+DynamicSingleOp *StreamResource::GetDynamicOperator(const uint64_t key) {
   std::lock_guard<std::mutex> lk(mu_);
   auto it = dynamic_op_map_.find(key);
   if (it == dynamic_op_map_.end()) {
@@ -134,11 +134,12 @@ uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
   return buffer;
 }
 
-Status StreamResource::BuildDynamicOperator(const string &model_name,
-                                            const ModelData &model_data,
-                                            DynamicSingleOp **single_op) {
+Status StreamResource::BuildDynamicOperator(const ModelData &model_data,
+                                            DynamicSingleOp **single_op,
+                                            const uint64_t model_id) {
+  const string &model_name = std::to_string(model_id);
   std::lock_guard<std::mutex> lk(mu_);
-  auto it = dynamic_op_map_.find(model_data.model_data);
+  auto it = dynamic_op_map_.find(model_id);
   if (it != dynamic_op_map_.end()) {
     *single_op = it->second.get();
     return SUCCESS;
@@ -158,13 +159,14 @@ Status StreamResource::BuildDynamicOperator(const string &model_name,
   GE_CHK_STATUS_RET(model.BuildDynamicOp(*this, *new_op),
                     "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
   *single_op = new_op.get();
-  dynamic_op_map_[model_data.model_data] = std::move(new_op);
+  dynamic_op_map_[model_id] = std::move(new_op);
   return SUCCESS;
 }
 
-Status StreamResource::BuildOperator(const string &model_name, const ModelData &model_data, SingleOp **single_op) {
+Status StreamResource::BuildOperator(const ModelData &model_data, SingleOp **single_op, const uint64_t model_id) {
+  const string &model_name = std::to_string(model_id);
   std::lock_guard<std::mutex> lk(mu_);
-  auto it = op_map_.find(model_data.model_data);
+  auto it = op_map_.find(model_id);
   if (it != op_map_.end()) {
     *single_op = it->second.get();
     return SUCCESS;
@@ -187,7 +189,7 @@ Status StreamResource::BuildOperator(const string &model_name, const ModelData &
   GE_CHK_STATUS_RET(model.BuildOp(*this, *new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
 
   *single_op = new_op.get();
-  op_map_[model_data.model_data] = std::move(new_op);
+  op_map_[model_id] = std::move(new_op);
   return SUCCESS;
 }
 

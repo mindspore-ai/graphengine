@@ -39,11 +39,11 @@ class StreamResource {
   StreamResource &operator=(StreamResource &&) = delete;
   void SetStream(rtStream_t stream);
 
-  SingleOp *GetOperator(const void *key);
-  DynamicSingleOp *GetDynamicOperator(const void *key);
+  SingleOp *GetOperator(const uint64_t key);
+  DynamicSingleOp *GetDynamicOperator(const uint64_t key);
 
-  Status BuildOperator(const std::string &model_name, const ModelData &model_data, SingleOp **single_op);
-  Status BuildDynamicOperator(const std::string &model_name, const ModelData &model_data, DynamicSingleOp **single_op);
+  Status BuildOperator(const ModelData &model_data, SingleOp **single_op, const uint64_t model_id);
+  Status BuildDynamicOperator(const ModelData &model_data, DynamicSingleOp **single_op, const uint64_t model_id);
 
   uint8_t *MallocMemory(const std::string &purpose, size_t size, bool holding_lock = true);
   uint8_t *MallocWeight(const std::string &purpose, size_t size);
@@ -59,8 +59,8 @@ class StreamResource {
   size_t max_memory_size_ = 0;
   std::vector<uint8_t *> memory_list_;
   std::vector<uint8_t *> weight_list_;
-  std::unordered_map<const void *, std::unique_ptr<SingleOp>> op_map_;
-  std::unordered_map<const void *, std::unique_ptr<DynamicSingleOp>> dynamic_op_map_;
+  std::unordered_map<uint64_t, std::unique_ptr<SingleOp>> op_map_;
+  std::unordered_map<uint64_t, std::unique_ptr<DynamicSingleOp>> dynamic_op_map_;
   rtStream_t stream_ = nullptr;
   std::mutex mu_;
   std::mutex stream_mu_;

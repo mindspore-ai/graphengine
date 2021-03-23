@@ -87,7 +87,7 @@ Status OpsKernelManager::Initialize(const map<string, string> &options_const) {
     Status rst0 = plugin_manager_.InvokeAll<map<string, string> &, Status>(kInitialize, initialize_);
     if (rst0 == FAILED) {
       GELOGE(GE_OPS_GET_NO_VALID_SO, "[Invoke][OpsKernelInfo]PluginManager InvokeAll failed.");
-      REPORT_INNER_ERROR("E19999", "PluginManager InvokeAll failed.")
+      REPORT_INNER_ERROR("E19999", "PluginManager InvokeAll failed.");
       return GE_OPS_GET_NO_VALID_SO;
     }
     Status rst1 =

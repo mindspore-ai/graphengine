@@ -714,7 +714,7 @@ void GeGenerator::RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &
   for (auto input : inputs) {
     GeTensorDesc input_desc = input.GetTensorDesc();
     bool is_const = false;
-    (void)AttrUtils::GetBool(tensor, CONST_ATTR_NAME_INPUT, is_const);
+    (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
     if (!is_const) {
       outputs.emplace_back(input);
     }

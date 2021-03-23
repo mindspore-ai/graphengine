@@ -128,4 +128,13 @@ TEST_F(UtestGeGenerator, test_set_model_name) {
   ge_root_model->root_graph_ = std::move(graph);
   EXPECT_EQ(generator.SetModelNameForDump(ge_root_model), SUCCESS);
 }
+
+TEST_F(UtestGeGenerator, test_remove_const) {
+  GeGenerator generator;
+  GeTensorDesc tensor_desc;
+  GeTensor tensor(tensor_desc);
+  const vector<GeTensor> inputs = {tensor};
+  vector<GeTensor> outputs;
+  generator.RemoveConst(inputs, outputs);
+}
 }  // namespace ge

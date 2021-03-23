@@ -338,6 +338,9 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
     }
   }
   result.data = dst;
+  for (int i = 0; i < 256; ++i) {
+  std::cout<<(reinterpret_cast<uint16_t *>(result.data.get()))[i]<<std::endl;
+  }
   result.length = static_cast<size_t>(size_output_data);
   return SUCCESS;
 }

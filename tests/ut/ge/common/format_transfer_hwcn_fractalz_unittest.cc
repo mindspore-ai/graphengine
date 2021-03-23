@@ -34461,7 +34461,7 @@ TEST_F(UtestFormatTransferHwcnFz, fp16_1c_1n_with_groups) {
   }
 }
 
-TEST_F(UtestFormatTransferHwcnFz, fp16_1c_1n_with_groups) {
+TEST_F(UtestFormatTransferHwcnFz, fp16_1c_1n_with_groups_wewe) {
 uint16_t data[3 * 3 * 4 * 8] = {
 -11 , 99  ,-68 ,   2 , -14 ,-59 , -24 ,-100,
   4 , 65  ,-11 ,  -7 , -74 ,-28 ,  71 , -81,

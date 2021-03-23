@@ -34,7 +34,7 @@ namespace ge {
 Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
   if (CheckPath(file_path) != SUCCESS) {
     GELOGE(FAILED, "[Open][File]Check output file failed, file_path:%s.", file_path);
-    REPORT_INPUT_ERROR("E10052", std::vector<std::string>({"path"}), std::vector<std::string>({file_path}));
+    REPORT_INNER_ERROR("E19999", "Check output file failed, file_path:%s.", file_path);
     return FAILED;
   }
 
@@ -46,7 +46,8 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
   fd = mmOpen2(real_path, M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_INVALID_PARAM || fd == EN_ERROR) {
     // -1: Failed to open file; - 2: Illegal parameter
-    GELOGE(FAILED, "[Open][File]Open file failed. mmpa_errno = fd:%d, error:%s", fd, strerror(errno));
+    GELOGE(FAILED, "[Open][File]Failed. mmpa_errno = %d, %s", fd, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Open file failed, mmpa_errno = %d, error:%s.", fd, strerror(errno));
     return FAILED;
   }
   return SUCCESS;
@@ -63,7 +64,9 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
     while (size > size_1g) {
       write_count = mmWrite(fd, reinterpret_cast<void *>(seek), size_1g);
       if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
-        GELOGE(FAILED, "[Write][Data]Write data failed. mmpa_errorno = write_count:%ld, error:%s", write_count, strerror(errno));
+        GELOGE(FAILED, "[Write][Data]Failed, mmpa_errorno = %ld, error:%s", write_count, strerror(errno));
+	REPORT_INNER_ERROR("E19999", "Write data failed, mmpa_errorno = %ld, error:%s.",
+			   write_count, strerror(errno));
         return FAILED;
       }
       size -= size_1g;
@@ -76,7 +79,9 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
 
   // -1: Failed to write to file; - 2: Illegal parameter
   if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
-    GELOGE(FAILED, "[Write][Data]Write data failed. mmpa_errorno = write_count:%ld, error:%s", write_count, strerror(errno));
+    GELOGE(FAILED, "[Write][Data]Failed. mmpa_errorno = %ld, error:%s", write_count, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Write data failed, mmpa_errorno = %ld, error:%s.",
+                       write_count, strerror(errno));
     return FAILED;
   }
 
@@ -87,7 +92,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
                                      int len) {
   if (data == nullptr || len <= 0) {
     GELOGE(FAILED, "[Save][File]Failed, model_data is null or the length[%d] is less than 1.", len);
-    REPORT_INNER_ERROR("E19999", "Init save file failed, model_data is null or the length:%d is less than 1.", len);
+    REPORT_INNER_ERROR("E19999", "Save file failed, model_data is null or the length:%d is less than 1.", len);
     return FAILED;
   }
 
@@ -106,7 +111,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   } while (0);
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
-    GELOGE(FAILED, "[Save][File]Close file failed, error_code:%u.", ret);
+    GELOGE(FAILED, "[Save][File]Failed, error_code:%u.", ret);
     ret = FAILED;
   }
   return ret;
@@ -195,8 +200,10 @@ Status FileSaver::SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::CheckPath(const std::string &file_path) {
   // Determine file path length
   if (file_path.size() >= MMPA_MAX_PATH) {
-    GELOGE(FAILED, "[Check][FilePath]Failed, file path's length:%zu > mmpa_max_path:%zu", file_path.size(), MMPA_MAX_PATH);
-    REPORT_INPUT_ERROR("E10053", std::vector<std::string>({"length"}), std:;vector<std::string>({std::to_string(file_path.size())}));
+    GELOGE(FAILED, "[Check][FilePath]Failed, file path's length:%zu > mmpa_max_path:%zu",
+           file_path.size(), MMPA_MAX_PATH);
+    REPORT_INNER_ERROR("E19999", "Check file path failed, file path's length:%zu > mmpa_max_path:%zu",
+                       file_path.size(), MMPA_MAX_PATH);
     return FAILED;
   }
 
@@ -341,7 +348,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(co
 
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
-    GELOGE(FAILED, "[Save][File]Close file failed, error_code:%u.", ret);
+    GELOGE(FAILED, "[Save][File]Failed, error_code:%u.", ret);
     ret = FAILED;
   }
   return ret;

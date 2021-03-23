@@ -592,7 +592,7 @@ Status GeGenerator::SetModelNameForDump(const GeRootModelPtr &ge_root_model) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
     GELOGE(FAILED, "[Check][GetModelNameStep]Get model_name failed. Param --output is invalid, root graph name: %s",
            ge_root_model->GetRootGraph()->GetName().c_str());
-    REPORT_CALL_ERROR("E19999", "Get model_name failed. Param --output is invalid,",
+    REPORT_CALL_ERROR("E19999", "Get model_name failed. Param --output is invalid,"
                       "root graph name: %s", ge_root_model->GetRootGraph()->GetName().c_str());
     return PARAM_INVALID;
   }

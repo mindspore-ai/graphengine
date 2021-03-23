@@ -124,13 +124,15 @@ Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
       if (another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_name and related_input_rank!"
                            " Please ensure param is the same with the first aipp config(related_input_name).";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
       if (item->related_input_name() == another_item->related_input_name()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_name"
                            " param is different in different aipp config.";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
     }
@@ -150,13 +152,15 @@ Status InsertNewOpUtil::CheckInputRankPositionNoRepeat() {
       if (!another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_rank and related_input_name!"
                            " Please ensure param is the same with the first aipp config(related_input_rank).";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
       if (item->related_input_rank() == another_item->related_input_rank()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_rank"
                           " param is different in different aipp config.";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
     }
@@ -212,7 +216,7 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
         }
       }
     }
-    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), 
+    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt),
         PARAM_INVALID,
         "Can not config part of outputs of Data node to support AIPP, config all "
         "of the outputs of Data to support AIPP, or config none of them");

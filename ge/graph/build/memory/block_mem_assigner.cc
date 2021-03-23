@@ -508,7 +508,7 @@ BlockMemAssigner::BlockMemAssigner(ComputeGraphPtr compute_graph, const map<stri
       symbol_to_anchors_(symbol_to_anchors), anchor_to_symbol_(anchor_to_symbol), life_time_(0) {}
 
 BlockMemAssigner::~BlockMemAssigner() {
-  GELOGD("blocks_store_ size : %lu", blocks_store_.size());
+  GELOGD("[Destruct][BlockMemAssigner]blocks_store_ size : %lu", blocks_store_.size());
   for (MemoryBlock *memory_block : blocks_store_) {
     GE_DELETE_NEW_SINGLE(memory_block);
   }
@@ -597,11 +597,13 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
       int64_t size = 0;
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(output_desc, size) != SUCCESS, GELOGI("Get size failed"));
       GE_IF_BOOL_EXEC(size < 0,
-        GELOGE(FAILED, "[Check][TensorSize]tensor_size:%ld is invalid, maybe it is unknown shape node, Node_name:%s",
-               size, node_op_desc->GetName().c_str());
-        REPORT_INNER_ERROR("E19999", "tensor_size:%ld is invalid, maybe it is unknown shape node, Node_name:%s",
-                           size, node_op_desc->GetName().c_str());
-        return;);
+                      GELOGE(FAILED, "[Check][TensorSize]tensor_size:%ld is invalid, "
+                             "maybe it is unknown shape node, Node_name:%s",
+                             size, node_op_desc->GetName().c_str());
+                      REPORT_INNER_ERROR("E19999", "tensor_size:%ld is invalid, "
+                                         "maybe it is unknown shape node, Node_name:%s",
+                                         size, node_op_desc->GetName().c_str());
+                      return;);
       batch_all_memory_size[batch_label].emplace_back(size);
       if (batch_total_size.find(batch_label) == batch_total_size.end()) {
         batch_total_size[batch_label] = size;
@@ -1105,9 +1107,10 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
                                            OpMemoryType mem_type, const NodePtr &n, uint32_t out_index,
                                            const vector<bool> &workspace_reuse_flag, const bool is_op_reuse_mem,
                                            const bool continuous, int64_t memory_type) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr,
-    REPORT_INNER_ERROR("E19999", "Input parameter n(type:node_ptr) is null, apply memory failed");
-    return nullptr, "[Check][Param]Input parameter n(type:node_ptr) is null.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      n == nullptr,
+      REPORT_INNER_ERROR("E19999", "Input parameter n(type:node_ptr) is null, apply memory failed");
+      return nullptr, "[Check][Param]Input parameter n(type:node_ptr) is null.");
   auto node_op_desc = n->GetOpDesc();
   GE_IF_BOOL_EXEC(node_op_desc == nullptr, return nullptr);
   std::string batch_label;
@@ -1159,10 +1162,12 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   }
 
   auto block = new (std::nothrow) MemoryBlock(block_size, node_op_desc->GetStreamId(), is_reuse_memory, memory_type);
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(block == nullptr,
-    REPORT_INNER_ERROR("E19999", "new a memoryblock object failed. node_name:%s out_index:%u",
-      n->GetName().c_str(), out_index);
-    return nullptr, "[New][Object]new MemoryBlock failed, node_name:%s out_index:%u", n->GetName().c_str(), out_index);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      block == nullptr,
+      REPORT_INNER_ERROR("E19999", "new a memoryblock object failed. node_name:%s out_index:%u",
+                         n->GetName().c_str(), out_index);
+      return nullptr,
+      "[New][Object]new MemoryBlock failed, node_name:%s out_index:%u", n->GetName().c_str(), out_index);
 
   // Data and netoutput need zero copy block
   block->is_zero_copy_ = IsZeroCopyBlock(n, continuous);
@@ -1221,13 +1226,15 @@ void BlockMemAssigner::ContinuousOutRefCheck(bool &isAllOutputRef, bool &isOutpu
 
 Status BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vector<int64_t> &ranges,
                                                const bool is_op_reuse_mem) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr,
-    REPORT_INNER_ERROR("E19999", "Input parameter n(type:node_ptr) is null");
-    return INTERNAL_ERROR, "[check][param]Input parameter n(type:NodePtr) is null.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      n == nullptr,
+      REPORT_INNER_ERROR("E19999", "Input parameter n(type:node_ptr) is null");
+      return INTERNAL_ERROR, "[check][param]Input parameter n(type:NodePtr) is null.");
   auto node_op_desc = n->GetOpDesc();
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node_op_desc == nullptr,
-    REPORT_INNER_ERROR("E19999", "Input parameter n(type:OpDescPtr) is null");
-    return INTERNAL_ERROR, "[Check][Param]Input parameter n(type:OpDescPtr) is null");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      node_op_desc == nullptr,
+      REPORT_INNER_ERROR("E19999", "Input parameter n(type:OpDescPtr) is null");
+      return INTERNAL_ERROR, "[Check][Param]Input parameter n(type:OpDescPtr) is null");
 
   // continuous output support ref only when all output ref input
   bool isAllOutputRef = true;
@@ -1319,26 +1326,33 @@ Status BlockMemAssigner::ApplyContinuousMemory(const NodePtr &n, const vector<in
 
 MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, const vector<int64_t> &ranges,
                                               const bool is_op_reuse_mem, const bool continuous) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(n == nullptr,
-    REPORT_INNER_ERROR("E19999", "Input parameter n(type:NodePtr) is null");
-    return nullptr, "[Check][Param]Input parameter n(type:NodePtr) is null");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      n == nullptr,
+      REPORT_INNER_ERROR("E19999", "Input parameter n(type:NodePtr) is null");
+      return nullptr, "[Check][Param]Input parameter n(type:NodePtr) is null");
   auto node_op_desc = n->GetOpDesc();
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node_op_desc == nullptr,
-    REPORT_INNER_ERROR("E19999", "Input parameter n(type:OpDescPtr) is null");
-    return nullptr, "[Check][Param]Input parameter n(type:OpDescPtr) is null");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      node_op_desc == nullptr,
+      REPORT_INNER_ERROR("E19999", "Input parameter n(type:OpDescPtr) is null");
+      return nullptr, "[Check][Param]Input parameter n(type:OpDescPtr) is null");
   MemoryBlock *block = nullptr;
   NodeIndexIO node_index_io(n, index, kOut);
   int64_t size = 0;
   auto output_op_desc = node_op_desc->GetOutputDescPtr(index);
-  GE_IF_BOOL_EXEC(output_op_desc == nullptr,
-    REPORT_INNER_ERROR("E19999", "get output_desc failed, node_name:%s, output_index:%u", n->GetName().c_str(), index);
-    GELOGE(FAILED, "[Get][OutputDesc]node_name:%s, output_index:%u", n->GetName().c_str(), index);
-    return nullptr);
+  GE_IF_BOOL_EXEC(
+      output_op_desc == nullptr,
+      REPORT_INNER_ERROR("E19999", "get output_desc failed, node_name:%s, output_index:%u",
+                         n->GetName().c_str(), index);
+      GELOGE(FAILED, "[Get][OutputDesc]node_name:%s, output_index:%u", n->GetName().c_str(), index);
+      return nullptr);
   GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_op_desc, size) != SUCCESS, GELOGI("Get size failed"));
   size_t no_align_size = 0;
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(GetNoAlignSize(*node_op_desc, index, no_align_size) != SUCCESS,
-    REPORT_CALL_ERROR("E19999", "Get no align size failed, node_name:%s, output_index:%u", n->GetName().c_str(), index);
-    return nullptr, "[Get][TensorSize]Get no align size, node_name:%s, output_index:%u", n->GetName().c_str(), index);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+      GetNoAlignSize(*node_op_desc, index, no_align_size) != SUCCESS,
+      REPORT_CALL_ERROR("E19999", "Get no align size failed, node_name:%s, output_index:%u",
+                        n->GetName().c_str(), index);
+      return nullptr,
+      "[Get][TensorSize]Get no align size, node_name:%s, output_index:%u", n->GetName().c_str(), index);
 
   std::string symbol;
   bool reuse_input = false;
@@ -1392,24 +1406,28 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
     vector<bool> workspace_reuse_flag;
     block = ApplyMemory(block_size, size, no_align_size, kOutput, n, index,
                         workspace_reuse_flag, is_op_reuse_mem, continuous, memory_type);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(block == nullptr,
-      REPORT_CALL_ERROR("E19999", "apply out Memory failed, node_name:%s, block_size:%ld, out_index:%u",
-        n->GetName().c_str(), block_size, index);
-      return nullptr, "[Apply][Memory]node_name:%s, block_size:%ld, out_index:%u",
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
+        block == nullptr,
+        REPORT_CALL_ERROR("E19999", "apply out Memory failed, node_name:%s, block_size:%ld, out_index:%u",
+                          n->GetName().c_str(), block_size, index);
+        return nullptr,
+        "[Apply][Memory]node_name:%s, block_size:%ld, out_index:%u",
         n->GetName().c_str(), block_size, index);
   }
   int out_count = 0;
-  GE_IF_BOOL_EXEC(index >= n->GetAllOutDataAnchors().size(),
-    REPORT_INNER_ERROR("E19999", "out index:%u exceed out_size:%lu, node_name:%s",
-                       index, n->GetAllOutDataAnchors().size(), n->GetName().c_str());
-    GELOGE(FAILED, "[Check][OutIndex]index:%u exceed out_size:%lu, node_name:%s",
-           index, n->GetAllOutDataAnchors().size(), n->GetName().c_str());
-    return nullptr);
+  GE_IF_BOOL_EXEC(
+      index >= n->GetAllOutDataAnchors().size(),
+      REPORT_INNER_ERROR("E19999", "out index:%u exceed out_size:%lu, node_name:%s",
+                         index, n->GetAllOutDataAnchors().size(), n->GetName().c_str());
+      GELOGE(FAILED, "[Check][OutIndex]index:%u exceed out_size:%lu, node_name:%s",
+             index, n->GetAllOutDataAnchors().size(), n->GetName().c_str());
+      return nullptr);
   auto out_data_anchor = n->GetOutDataAnchor(index);
-  GE_IF_BOOL_EXEC(out_data_anchor == nullptr,
-    REPORT_INNER_ERROR("E19999", "out anchor is null, index:%u, node_name:%s", index, n->GetName().c_str());
-    GELOGE(FAILED, "[Check][OutAnchor]is null, index:%u, node_name:%s", index, n->GetName().c_str());
-    return nullptr);
+  GE_IF_BOOL_EXEC(
+      out_data_anchor == nullptr,
+      REPORT_INNER_ERROR("E19999", "out anchor is null, index:%u, node_name:%s", index, n->GetName().c_str());
+      GELOGE(FAILED, "[Check][OutAnchor]is null, index:%u, node_name:%s", index, n->GetName().c_str());
+      return nullptr);
   for (const auto &in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     auto owner_node = in_anchor->GetOwnerNode();
     auto op_desc = owner_node->GetOpDesc();
@@ -1618,10 +1636,11 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
     REPORT_INNER_ERROR("E19999", "Attr[%s] size:%zu not equal to node output size:%zu, node_name:%s",
                        ATTR_NAME_OUTPUT_MEM_TYPE_LIST.c_str(), memorys_type.size(),
                        op_desc->GetOutputsSize(), op_desc->GetName().c_str());
-    GELOGE(INTERNAL_ERROR,
-           "[Check][MemTypeAttr]Attr %s size:%zu not equal to node output size:%zu, node_name:%s",
-           ATTR_NAME_OUTPUT_MEM_TYPE_LIST.c_str(), memorys_type.size(),
-           op_desc->GetOutputsSize(), op_desc->GetName().c_str());
+    GELOGE(
+        INTERNAL_ERROR,
+        "[Check][MemTypeAttr]Attr %s size:%zu not equal to node output size:%zu, node_name:%s",
+        ATTR_NAME_OUTPUT_MEM_TYPE_LIST.c_str(), memorys_type.size(),
+        op_desc->GetOutputsSize(), op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -1751,7 +1770,8 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
                          TVM_ATTR_NAME_WORKSPACE_TYPE.c_str(), tvm_workspace_memory_type.size(),
                          temp.size(), n->GetName().c_str());
       GELOGE(INTERNAL_ERROR, "[Check][Attr]Attr %s size:%zu is not equal to workspace size:%zu, node_name:%s",
-             TVM_ATTR_NAME_WORKSPACE_TYPE.c_str(), tvm_workspace_memory_type.size(), temp.size(), n->GetName().c_str());
+             TVM_ATTR_NAME_WORKSPACE_TYPE.c_str(), tvm_workspace_memory_type.size(),
+             temp.size(), n->GetName().c_str());
       return;
     }
     for (size_t i = 0; i < temp.size(); i++) {
@@ -2136,7 +2156,7 @@ void BlockMemAssigner::SetOpMemOffset(bool is_zero_copy) {
 Status BlockMemAssigner::Assign() {
   vector<int64_t> ranges;
   if (GetMemoryRanges(ranges) != SUCCESS) {
-    GELOGE(FAILED, "GetMemoryRanges Fail!");
+    GELOGE(FAILED, "[Get][MemoryRanges] Fail!");
     return FAILED;
   }
   GE_IF_BOOL_EXEC(ranges.empty(), return SUCCESS);

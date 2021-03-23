@@ -1225,7 +1225,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
       GE_CHK_BOOL_EXEC(AttrUtils::SetInt(op_desc_ptr, RECV_ATTR_EVENT_ID, event_id),
                        REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed, event_id:%u, when %s",
                                           RECV_ATTR_EVENT_ID.c_str(),
-                                          node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
+                                          node->GetName().c_str(), node->GetType().c_str(), event_id, __FUNCTION__);
                        GELOGE(FAILED, "SetInt failed.");
                        return FAILED);
       (void)AttrUtils::SetListStr(op_desc_ptr, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES,

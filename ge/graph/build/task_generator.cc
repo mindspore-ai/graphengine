@@ -167,7 +167,7 @@ Status TaskGenerator::AddModelTaskToModel(const ModelTaskDef &model_task_def, ui
     return FAILED;
   }
   if (!AttrUtils::SetZeroCopyBytes(model, MODEL_ATTR_TASKS, std::move(serial_buff))) {
-    REPORT_INNER_ERROR("E19999", "Set model task to model failed,  model name = %s, task_size=%zu.",
+    REPORT_INNER_ERROR("E19999", "Set model task to model failed,  model name = %s, task_size=%zu when %s",
                        model.GetName().c_str(), task_size, __FUNCTION__);
     GELOGE(FAILED, "Set model task to model failed,  model name = %s, task_size=%zu.", model.GetName().c_str(),
            task_size);
@@ -497,9 +497,9 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
       size_t task_list_size_after = task_def_list.size();
       // if tasks is reduced
       if (task_list_size_after < task_list_size_before) {
-        REPORT_INNER_ERROR("E19999", "InsertProfilingTask for fusion_node:[fusion_node_name:%s(%s), "
+        REPORT_INNER_ERROR("E19999", "InsertProfilingTask for fusion_node:[fusion_node_name:%s(%s), kernel_name:%s"
                            "id:%ld, stream_id:%ld] task, but task num from %zu to %zu, check invalid when %s",
-                           op_kernel_lib_name.c_str(), fusion_node_name.c_str(), fusion_node_type.c_str(),
+                           fusion_node_name.c_str(), fusion_node_type.c_str(), op_kernel_lib_name.c_str(),
                            op_id, stream_id, task_list_size_before, task_list_size_after, __FUNCTION__);
         GELOGE(FAILED,
                "Fusion: Call %s to generate fusion_node:[fusion_node_name:%s(%s), "

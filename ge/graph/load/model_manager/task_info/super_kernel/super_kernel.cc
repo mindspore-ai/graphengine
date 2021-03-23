@@ -27,14 +27,14 @@ Status SuperKernel::Launch(rtStream_t stream, uint32_t dump_flag) {
 
   rtError_t rt_ret = rtMalloc(reinterpret_cast<void **>(&device_args_addr_), sizeof(args), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%u, ret:0x%X when %s",
+                  REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%lu, ret:0x%X when %s",
                                     sizeof(args), rt_ret, __FUNCTION__);
                   GELOGE(RT_FAILED, "rtMalloc failied. error: 0x%X", rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
   rt_ret = rtMemcpy(reinterpret_cast<void *>(device_args_addr_), sizeof(args), reinterpret_cast<void *>(args),
                     sizeof(args), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail, size:%u, ret:0x%X when %s",
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail, size:%lu, ret:0x%X when %s",
                                     sizeof(args), rt_ret, __FUNCTION__);
                   GELOGE(RT_FAILED, "rtMemcpy failied. error: 0x%X", rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)

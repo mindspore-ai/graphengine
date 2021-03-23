@@ -55,7 +55,7 @@ Status OpsKernelBuilderManager::Initialize(const map<std::string, std::string> &
   }
 
   auto &kernel_builders = OpsKernelBuilderRegistry::GetInstance().GetAll();
-  GELOGI("Number of OpBuild = %zu", kernel_builders.size());
+  GELOGI("[Show][OpsKernelBuilderNum]Number of OpBuild = %zu", kernel_builders.size());
 
   for (const auto &it : kernel_builders) {
     const std::string &kernel_lib_name = it.first;

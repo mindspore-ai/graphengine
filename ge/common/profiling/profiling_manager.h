@@ -119,7 +119,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   MsprofCallback prof_cb_;
   std::string fp_point_;
   std::string bp_point_;
+#ifdef ONLY_COMPILE_OPEN_SRC
   uint32_t reporter_max_len_ = 0;
+#endif
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

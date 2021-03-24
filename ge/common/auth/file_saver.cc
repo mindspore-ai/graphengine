@@ -234,7 +234,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 FileSaver::SaveToFile(const string &file_path, const ge::ModelData &model, const ModelFileHeader *model_file_header) {
   if (file_path.empty() || model.model_data == nullptr || model.model_len == 0) {
     GELOGE(FAILED, "[Save][File]Incorrect input param, file_path is empty or model_data is nullptr or model_len is 0");
-    REPORT_INNER_ERROR("E19999", "Save file failed, at least one of the input parameters(file_path, model_data, model_len) is incorrect")
+    REPORT_INNER_ERROR("E19999", "Save file failed, at least one of the input parameters(file_path, model_data, model_len) is incorrect");
     return FAILED;
   }
 

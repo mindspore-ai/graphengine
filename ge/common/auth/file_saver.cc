@@ -33,8 +33,8 @@ const int kFileOpSuccess = 0;
 namespace ge {
 Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
   if (CheckPath(file_path) != SUCCESS) {
-    GELOGE(FAILED, "[Open][File]Check output file failed, file_path:%s.", file_path);
-    REPORT_INNER_ERROR("E19999", "Check output file failed, file_path:%s.", file_path);
+    GELOGE(FAILED, "[Open][File]Check output file failed, file_path:%s.", file_path.c_str());
+    REPORT_INNER_ERROR("E19999", "Check output file failed, file_path:%s.", file_path.c_str());
     return FAILED;
   }
 
@@ -200,9 +200,9 @@ Status FileSaver::SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::CheckPath(const std::string &file_path) {
   // Determine file path length
   if (file_path.size() >= MMPA_MAX_PATH) {
-    GELOGE(FAILED, "[Check][FilePath]Failed, file path's length:%zu > mmpa_max_path:%zu",
+    GELOGE(FAILED, "[Check][FilePath]Failed, file path's length:%zu > mmpa_max_path:%d",
            file_path.size(), MMPA_MAX_PATH);
-    REPORT_INNER_ERROR("E19999", "Check file path failed, file path's length:%zu > mmpa_max_path:%zu",
+    REPORT_INNER_ERROR("E19999", "Check file path failed, file path's length:%zu > mmpa_max_path:%d",
                        file_path.size(), MMPA_MAX_PATH);
     return FAILED;
   }

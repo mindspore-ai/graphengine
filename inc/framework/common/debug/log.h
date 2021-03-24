@@ -19,6 +19,7 @@
 
 #include <string>
 #include <sstream>
+#include <securec.h>
 
 #include "runtime/rt.h"
 #include "common/string_util.h"
@@ -105,6 +106,7 @@
   do {                                             \
     bool b = (expr);                               \
     if (!b) {                                      \
+      REPORT_INNER_ERROR("E19999", __VA_ARGS__);   \
       GELOGE(_status, __VA_ARGS__);                \
       return _status;                              \
     }                                              \
@@ -193,6 +195,7 @@
   {                                                                     \
     bool b = (expr);                                                    \
     if (b) {                                                            \
+      REPORT_INNER_ERROR("E19999", __VA_ARGS__);                        \
       DOMI_LOGE(__VA_ARGS__);                                           \
       exec_expr;                                                        \
       return _status;                                                   \

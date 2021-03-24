@@ -1215,6 +1215,7 @@ Status GraphMemoryAssigner::CheckOffset() {
   std::map<std::string, std::string> anchor_to_symbol;
   std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors;
   if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get ref-mapping for graph %s failed", compute_graph_->GetName().c_str());
     GELOGE(FAILED, "[Get][RefMapping]fail for graph %s", compute_graph_->GetName().c_str());
     return FAILED;
   }

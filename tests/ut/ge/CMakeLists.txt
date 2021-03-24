@@ -33,7 +33,7 @@ set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor_shape.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/types.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/node_def.proto"
-    "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
+    "${GE_CODE_DIR}/metadef/proto/onnx/ge_onnx.proto"
     )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})

@@ -18,6 +18,12 @@
 
 using namespace ErrorMessage;
 
+namespace ErrorMessage {
+int FormatErrorMessage(char *str_dst, size_t dst_max, const char *format, ...) {
+  return 1;
+}
+}
+
 thread_local Context ErrorManager::error_context_ = {0, "", "", ""};
 
   ErrorManager &ErrorManager::GetInstance() {

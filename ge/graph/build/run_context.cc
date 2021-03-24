@@ -27,15 +27,21 @@ Status RunContextUtil::InitMemInfo(uint8_t *data_mem_base, uint64_t data_mem_siz
                                    std::map<int64_t, uint64_t> mem_type_to_data_mem_size, uint8_t *weight_mem_base,
                                    uint64_t weight_mem_size) {
   if ((data_mem_size > 0) && (data_mem_base == nullptr)) {
+    REPORT_INNER_ERROR("E19999", "InitMemInfo param data_mem_base is null but data_mem_size = %lu", data_mem_size);
     GELOGE(PARAM_INVALID, "InitMemInfo param data_mem_base is null but data_mem_size = %lu.", data_mem_size);
     return PARAM_INVALID;
   }
   if ((weight_mem_size > 0) && (weight_mem_base == nullptr)) {
+    REPORT_INNER_ERROR("E19999", "InitMemInfo param weight_mem_base is null but weight_mem_size = %lu",
+                       weight_mem_size);
     GELOGE(PARAM_INVALID, "InitMemInfo param weight_mem_base is null but weight_mem_size = %lu.", weight_mem_size);
     return PARAM_INVALID;
   }
   if (mem_type_to_data_mem_base.empty() || mem_type_to_data_mem_size.empty() ||
       mem_type_to_data_mem_base.size() != mem_type_to_data_mem_size.size()) {
+    REPORT_INNER_ERROR("E19999", "InitMemInfo param mem_type_to_data_mem_base size[%zu] "
+                       "is not equal to the size of mem_type_to_data_mem_size[%zu].",
+                       mem_type_to_data_mem_base.size(), mem_type_to_data_mem_size.size());
     GELOGE(PARAM_INVALID,
            "InitMemInfo param mem_type_to_data_mem_base size[%zu] is not equal to the size of "
            "mem_type_to_data_mem_size[%zu].",
@@ -55,6 +61,7 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
   // Create rt model
   rtError_t rt_ret = rtModelCreate(&rt_model_, 0);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "call rtModelCreate fail, ret:%d, when %s", static_cast<int>(rt_ret), __FUNCTION__);
     GELOGE(RT_FAILED, "rtModelCreate failed. rt_ret = %d", static_cast<int>(rt_ret));
     return RT_FAILED;
   }
@@ -64,6 +71,8 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
     rtStream_t stream = nullptr;
     rt_ret = rtStreamCreate(&stream, 0);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "call rtStreamCreate fail, ret:%d, index:%u, when %s",
+                        static_cast<int>(rt_ret), i, __FUNCTION__);
       GELOGE(RT_FAILED, "rtStreamCreate failed. rt_ret = %d, index = %u", static_cast<int>(rt_ret), i);
       return RT_FAILED;
     }
@@ -71,6 +80,8 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
 
     rt_ret = rtModelBindStream(rt_model_, stream, 0);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "call rtModelBindStream fail, ret:%d, index:%u, when %s",
+                        static_cast<int>(rt_ret), i, __FUNCTION__);
       GELOGE(RT_FAILED, "Bind stream and model failed. rt_ret = %d, index = %u", static_cast<int>(rt_ret), i);
       return RT_FAILED;
     }
@@ -81,6 +92,8 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
     rtEvent_t event = nullptr;
     rt_ret = rtEventCreate(&event);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "call rtEventCreate fail, ret:%d, index:%u, when %s",
+                        static_cast<int>(rt_ret), i, __FUNCTION__);
       GELOGE(RT_FAILED, "rtEventCreate failed. rt_ret = %d, index = %u", static_cast<int>(rt_ret), i);
       return RT_FAILED;
     }
@@ -92,6 +105,8 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
     rtLabel_t label = nullptr;
     rt_ret = rtLabelCreateV2(&label, rt_model_);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "call rtLabelCreateV2 fail, ret:%d, index:%u, when %s",
+                        static_cast<int>(rt_ret), i, __FUNCTION__);
       GELOGE(RT_FAILED, "rtLabelCreate failed. rt_ret = %d, index = %u", static_cast<int>(rt_ret), i);
       return RT_FAILED;
     }
@@ -143,12 +158,15 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
   GELOGD("Begin to Create RunContext, session_id = %lu", session_id);
   // check params
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param graph nullptr, session_id:%lu, when %s", session_id, __FUNCTION__);
     GELOGE(PARAM_INVALID, "CreateRunContext param graph is null. session_id=%lu", session_id);
     return PARAM_INVALID;
   }
 
   uint32_t stream_num = 0;
   if (!AttrUtils::GetInt(&model, ATTR_MODEL_STREAM_NUM, stream_num)) {
+    REPORT_INNER_ERROR("Get Attr:%s fail for model, session_id:%lu, when %s",
+                       ATTR_MODEL_STREAM_NUM.c_str(), session_id, __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Get stream_num attr from model_def failed. session_id=%lu", session_id);
     return INTERNAL_ERROR;
   }
@@ -156,6 +174,8 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
 
   uint32_t event_num = 0;
   if (!AttrUtils::GetInt(&model, ATTR_MODEL_EVENT_NUM, event_num)) {
+    REPORT_INNER_ERROR("Get Attr:%s fail for model, session_id:%lu, when %s",
+                       ATTR_MODEL_EVENT_NUM.c_str(), session_id, __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Get event_num attr from model failed. session_id=%lu", session_id);
     return INTERNAL_ERROR;
   }
@@ -163,6 +183,8 @@ Status RunContextUtil::CreateRunContext(Model &model, const ComputeGraphPtr &gra
 
   uint32_t label_num = 0;
   if (!AttrUtils::GetInt(&model, ATTR_MODEL_LABEL_NUM, label_num)) {
+    REPORT_INNER_ERROR("Get Attr:%s fail for model, session_id:%lu, when %s",
+                       ATTR_MODEL_LABEL_NUM.c_str(), session_id, __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Get label_num attr from model failed. session_id=%lu", session_id);
     return INTERNAL_ERROR;
   }

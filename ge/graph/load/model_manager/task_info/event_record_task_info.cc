@@ -23,6 +23,7 @@ namespace ge {
 Status EventRecordTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("EventRecordTaskInfo Init Start.");
   if (davinci_model == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr when EventRecordTaskInfo %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "davinci_model is null!");
     return PARAM_INVALID;
   }
@@ -34,6 +35,8 @@ Status EventRecordTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
 
   const auto &eventList = davinci_model->GetEventList();
   if (task_def.event_id() >= eventList.size()) {
+    REPORT_INNER_ERROR("E19999", "Task event_id:%u > model event size:%zu, check invalid when EventRecordTaskInfo %s",
+                       task_def.event_id(), eventList.size(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "event list size:%zu, cur:%u!", eventList.size(), task_def.event_id());
     return INTERNAL_ERROR;
   }
@@ -47,6 +50,7 @@ Status EventRecordTaskInfo::Distribute() {
   GELOGI("EventRecordTaskInfo Distribute Start.");
   rtError_t rt_ret = rtEventRecord(event_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventRecord fail ret:0x%X, when EventRecordTaskInfo %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

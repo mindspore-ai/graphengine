@@ -94,7 +94,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Open(const
   fd_ = OpenFile(filename);
   if (fd_ == kInvalidFd) {
     GELOGE(FAILED, "[Open][File]Failed, filename:%s.", filename);
-    REPORT_INNER_ERROR("E19999", "Open file:%s failed.", filename)
+    REPORT_INNER_ERROR("E19999", "Open file:%s failed.", filename);
     return FAILED;
   }
 

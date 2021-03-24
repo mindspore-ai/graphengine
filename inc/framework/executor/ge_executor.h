@@ -274,11 +274,17 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeExecutor {
   static ge::Status LoadSingleOp(const std::string &modelName, const ge::ModelData &modelData, void *stream,
                                  SingleOp **single_op);
 
+  static ge::Status LoadSingleOpV2(const std::string &modelName, const ge::ModelData &modelData, void *stream,
+                                   SingleOp **single_op, const uint64_t model_id);
+
   static ge::Status ExecuteAsync(SingleOp *executor, const std::vector<DataBuffer> &inputs,
                                  std::vector<DataBuffer> &outputs);
 
   static ge::Status LoadDynamicSingleOp(const std::string &model_name, const ge::ModelData &modelData, void *stream,
                                         DynamicSingleOp **single_op);
+
+  static ge::Status LoadDynamicSingleOpV2(const std::string &model_name, const ge::ModelData &modelData, void *stream,
+                                          DynamicSingleOp **single_op, const uint64_t model_id);
 
   static ge::Status ExecuteAsync(DynamicSingleOp *executor, const std::vector<GeTensorDesc> &input_desc,
                                  const std::vector<DataBuffer> &inputs, std::vector<GeTensorDesc> &output_desc,

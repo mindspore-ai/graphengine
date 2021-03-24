@@ -130,7 +130,7 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
       VarManager::Instance(session_id)->GetVarAddr(var_node->GetName(), var_tensor_desc, &dev_ptr, memory_type));
 
   int out_list_size = static_cast<int>(output_list.size());
-  if (index > out_list_size) {
+  if (index >= out_list_size) {
     REPORT_INNER_ERROR("E19999", "param index:%d >= output_list.size() %d in node %s, "
                        "check invalid when SetOutVariableAttr", index, out_list_size, node->GetName().c_str());
     GELOGE(FAILED, "index %d >= output_list.size() %d", index, out_list_size);
@@ -177,7 +177,7 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
 
   auto broad_cast_index = static_cast<size_t>(broad_cast_info.idx);
   auto input_tensor_desc_ptr_vistor = op_desc->GetAllInputsDescPtr();
-  if (input_tensor_desc_ptr_vistor.size() < broad_cast_index) {
+  if (input_tensor_desc_ptr_vistor.size() <= broad_cast_index) {
     REPORT_INNER_ERROR("E19999", "Get broadcast op %s input tensor desc size [%zu] < idx [%d]",
                        node->GetName().c_str(), input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
     GELOGE(FAILED, "Get broadcast op %s input tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),

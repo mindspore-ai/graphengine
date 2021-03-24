@@ -796,7 +796,7 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
     REPORT_INNER_ERROR("E19999", "context.args_offset().size():%zu / sizeof(uint16_t) is less than "
                        "kCustomAicpuArgsLen:%u, op:%s(%s), check invalid when KernelTaskInfo %s",
                        context.args_offset().size(), kCustomAicpuArgsLen,
-                       op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), __FUNCTION__);
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "context.args_offset().size() / sizeof(uint16_t) is less than kCustomAicpuArgsLen");
     return PARAM_INVALID;
   }

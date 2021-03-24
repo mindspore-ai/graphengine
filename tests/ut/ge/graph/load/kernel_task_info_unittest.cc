@@ -496,6 +496,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_init_cce_task) {
   KernelTaskInfo kernel_task_info;
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   kernel_def->set_flowtable("InitCceTask");
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -529,6 +530,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed1) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   EXPECT_EQ(kernel_task_info.InitCceTask(*kernel_def), INTERNAL_ERROR);
@@ -546,6 +548,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed2) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
@@ -569,6 +572,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed3) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
@@ -594,6 +598,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed4) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
@@ -620,6 +625,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed5) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
@@ -647,6 +653,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed6) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
@@ -675,6 +682,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_cce_task_failed7) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   // KernelTaskInfo::SetContext  -> SUCCESS
@@ -769,6 +777,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_cce_args) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -815,6 +824,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_cce_args_failed1) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -856,6 +866,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_set_flowtable) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -887,6 +898,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_set_flowtable_failed1) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -911,6 +923,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_set_flowtable_failed2) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -935,6 +948,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_set_flowtable_failed3) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = model.op_list_[0];
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
   domi::KernelContext *context = kernel_def->mutable_context();
@@ -988,6 +1002,7 @@ TEST_F(UtestKernelTaskInfo, success_distribute_dump_task) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   domi::KernelDef *kernel_def = task_def.mutable_kernel();
 
@@ -1033,6 +1048,7 @@ TEST_F(UtestKernelTaskInfo, success_store_input_output_tensor) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   std::vector<void *> input_data_addrs;
   std::vector<void *> output_data_addrs;
@@ -1062,6 +1078,7 @@ TEST_F(UtestKernelTaskInfo, fail_release) {
   domi::TaskDef task_def;
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   std::vector<void *> input_data_addrs;
   std::vector<void *> output_data_addrs;
@@ -1091,6 +1108,7 @@ TEST_F(UtestKernelTaskInfo, update_l2data_success) {
   DavinciModel model(0, nullptr);
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
   domi::KernelDef kernel_def;
 
   EXPECT_EQ(kernel_task_info.UpdateL2Data(kernel_def), SUCCESS);
@@ -1168,6 +1186,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_args_te) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.kernel_type_ = ccKernelType::TE;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
   EXPECT_EQ(kernel_task_info.UpdateArgs(), SUCCESS);
 }
 
@@ -1177,6 +1196,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_update_args_aicpu) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.kernel_type_ = ccKernelType::TE;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
   kernel_task_info.args_size_ = 120;
   kernel_task_info.args_addr = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[kernel_task_info.args_size_]);
   kernel_task_info.io_addrs_ = { (void*)0x12345678, (void*)0x22345678 };
@@ -1191,6 +1211,7 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_super_kernel_info) {
 
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   EXPECT_EQ(kernel_task_info.SaveSuperKernelInfo(), SUCCESS);
 

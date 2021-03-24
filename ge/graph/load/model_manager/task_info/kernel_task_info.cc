@@ -508,9 +508,9 @@ Status KernelTaskInfo::CopyNoncontinuousArgs(uint16_t offset) {
 
   // copy args to device
   rtError_t rt_ret = rtMemcpy(args_, args_size_, args_addr.get(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
-  REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail for op:%s(%s), size:%u, ret:0x%X, when KernelTaskInfo %s",
-                    op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), args_size_, rt_ret, __FUNCTION__);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy, size:%u, ret:0x%X, when KernelTaskInfo %s",
+                      args_size_, rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

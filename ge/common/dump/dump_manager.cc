@@ -96,7 +96,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   dump_mode = dump_config.dump_mode;
   GELOGI("Dump mode is %s", dump_mode.c_str());
   dump_properties.SetDumpMode(dump_mode);
-  dump_properties_map_.emplace(kInferSessionId, dump_properties);
+  dump_properties_map_[kInferSessionId] = dump_properties;
 
   return SUCCESS;
 }

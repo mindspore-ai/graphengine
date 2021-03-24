@@ -337,7 +337,7 @@ uint32_t GetContinuousMemoryType(const OpDescPtr &op_desc) {
   }
 
   if (continuous_type != 0) {
-    GELOGI("[Get][MemType:Continuous]Current node %s, value is %d", op_desc->GetName().c_str(), continuous_type);
+    GELOGI("[Get][MemType:Continuous]Current node %s, value is %d.", op_desc->GetName().c_str(), continuous_type);
   }
   return continuous_type;
 }
@@ -482,7 +482,7 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
                       "[Assign][Memory:Continuous:Input]fail for node:%s.", node->GetName().c_str())
   }
   for (auto pair : memory_offset_) {
-    GELOGD("[Reassign][Memory:Continuous]At last, memory type = %ld, mem offset = %zu.", pair.first,
+    GELOGD("[Reassign][Memory:Continuous]At last, memory type = %ld, mem offset = %zu", pair.first,
            pair.second.mem_offset_);
   }
   return ge::SUCCESS;

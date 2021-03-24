@@ -189,6 +189,28 @@ RTS_API rtError_t rtStreamActive(rtStream_t activeStream, rtStream_t stream);
  */
 RTS_API rtError_t rtStreamSwitchN(void *ptr, uint32_t size, void *valuePtr, rtStream_t *trueStreamPtr,
                                   uint32_t elementSize, rtStream_t stream, rtSwitchDataType_t dataType);
+
+/*
+ * @ingroup dvrt_stream
+ * @brief enable debug for dump overflow exception with stream
+ * @param [in] addr: ddr address of kernel exception dumpped
+ * @param [in] stream: stream handle
+ * @param [in] flag: debug flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, const void *addr,
+                                   uint32_t *streamId, uint32_t *taskId);
+
+/*
+ * @ingroup rt_model
+ * @brief disable debug for dump overflow exception with stream
+ * @param [in] stream: stream handle
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtDebugUnRegisterForStream(rtStream_t stream);
+
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif

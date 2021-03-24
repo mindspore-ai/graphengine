@@ -113,11 +113,11 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromArray(const v
 
 // Get file length
 long GetFileLength(const std::string &input_file) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(input_file.empty(), return -1, "input_file path is null.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(input_file.empty(), return -1, "input_file path is null");
 
   std::string real_path = RealPath(input_file.c_str());
 
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), return -1, "input_file path '%s' not valid", input_file.c_str());
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(real_path.empty(), return -1, "input_file path '%s' not valid.", input_file.c_str());
   unsigned long long file_length = 0;
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     mmGetFileSize(input_file.c_str(), &file_length) != EN_OK,
@@ -318,7 +318,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t GetCurrentSecondTimestap() {
   mmTimeval tv{};
   int ret = mmGetTimeOfDay(&tv, nullptr);
-  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed: ret=%d", ret);
+  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed: ret=%d.", ret);
   auto total_use_time = tv.tv_sec;  // seconds
   return static_cast<uint32_t>(total_use_time);
 }
@@ -349,7 +349,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInt64MulOverflow(int6
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char *path) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path == nullptr, return "", "path pointer is NULL.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path == nullptr, return "", "path pointer is NULL");
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(path) >= MMPA_MAX_PATH,
                                  ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"},
                                                                                  {path, std::to_string(MMPA_MAX_PATH)});

@@ -33,8 +33,8 @@ const int kFileOpSuccess = 0;
 namespace ge {
 Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
   if (CheckPath(file_path) != SUCCESS) {
-    GELOGE(FAILED, "[Open][File]Check output file failed, file_path:%s.", file_path.c_str());
-    REPORT_INNER_ERROR("E19999", "Check output file failed, file_path:%s.", file_path.c_str());
+    GELOGE(FAILED, "[Check][FilePath]Check output file failed, file_path:%s.", file_path.c_str());
+    REPORT_CALL_ERROR("E19999", "Check output file failed, file_path:%s.", file_path.c_str());
     return FAILED;
   }
 
@@ -91,7 +91,7 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
 Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFileHeader &file_header, const void *data,
                                      int len) {
   if (data == nullptr || len <= 0) {
-    GELOGE(FAILED, "[Save][File]Failed, model_data is null or the length[%d] is less than 1.", len);
+    GELOGE(FAILED, "[Check][Param]Failed, model_data is null or the length[%d] is less than 1.", len);
     REPORT_INNER_ERROR("E19999", "Save file failed, model_data is null or the length:%d is less than 1.", len);
     return FAILED;
   }
@@ -111,7 +111,8 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   } while (0);
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
-    GELOGE(FAILED, "[Save][File]Failed, error_code:%u.", ret);
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u.", ret);
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u.", ret);
     ret = FAILED;
   }
   return ret;
@@ -332,7 +333,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(const string &file_path, const void *data,
                                                                               int len) {
   if (data == nullptr || len <= 0) {
-    GELOGE(FAILED, "[Save][File]Failed, model_data is null or the length[%d] is less than 1.", len);
+    GELOGE(FAILED, "[Check][Param]Failed, model_data is null or the length[%d] is less than 1.", len);
     REPORT_INNER_ERROR("E19999", "Save file failed, the model_data is null or its length:%d is less than 1.", len);
     return FAILED;
   }
@@ -348,7 +349,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(co
 
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
-    GELOGE(FAILED, "[Save][File]Failed, error_code:%u.", ret);
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u.", ret);
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u.", ret);
     ret = FAILED;
   }
   return ret;

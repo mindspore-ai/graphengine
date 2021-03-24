@@ -49,18 +49,6 @@ static int64_t Lcm(int64_t a, int64_t b) {
   int64_t temp = (a * b) / (Measure(a, b));
   return temp;
 }
-// get the result of two number divisor and let result round up
-static int64_t DivCeil(int64_t a, int64_t b) {
-  if (b == 0) {
-    return -1;
-  } else {
-    int64_t ret = a / b;
-    if ((a % b) != 0) {
-      ret++;
-    }
-    return ret;
-  }
-}
 
 Status CheckDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_type) > 0 ? SUCCESS : UNSUPPORTED; }
 
@@ -94,22 +82,22 @@ Status TransShapeToFz(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_
   return SUCCESS;
 }
 
-Status TransShapeToFzWithGroups(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type, std::vector<int64_t> &dst_shape
-       , int64_t groups) {
+Status TransShapeToFzWithGroups(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type, std::vector<int64_t> &dst_shape,
+  int64_t groups) {
   auto c0 = GetCubeSizeByDataType(data_type);
   if (c0 < 0) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   int64_t cin_ori = c;
   int64_t cout_ori = n / groups;
-  int64_t cube_k =  data_type == DT_INT8 ? 32 : 16;
+  int64_t cube_k = GetCubeSizeByDataType(data_type);
   int64_t e_mult = std::min(
       Lcm(Lcm(cin_ori, cube_k) / (cin_ori), Lcm(cout_ori, kCubeN) / (cout_ori)),
       groups);
-  int64_t cin_opt = DivCeil(e_mult * cin_ori, cube_k) * cube_k;
+  int64_t cin_opt = Ceil(e_mult * cin_ori, cube_k) * cube_k;
   int64_t c1_dim = cin_opt / cube_k;
-  int64_t g_dim = DivCeil(groups, e_mult);
-  auto n1 = DivCeil(cout_ori * e_mult, kCubeN);
+  int64_t g_dim = Ceil(groups, e_mult);
+  auto n1 = Ceil(cout_ori * e_mult, kCubeN);
   dst_shape.clear();
   dst_shape.push_back(g_dim * c1_dim * h * w);
   dst_shape.push_back(n1);
@@ -274,24 +262,21 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   int64_t cin_ori = c_dim;
   int64_t cout_ori = n_dim / groups;
   if (cin_ori == 0 || cout_ori == 0) {
-    GELOGE(GRAPH_FAILED,
-           "Cin_ori, cout_ori must not be equal 0, "
-           "and current cin_ori, cout_ori, groups are %ld %ld %ld",
-           cin_ori, cout_ori, groups);
+    GELOGE(GRAPH_FAILED, "Cin_ori, cout_ori must not be equal 0, and current cin_ori, cout_ori,"
+          "groups are %ld %ld %ld",cin_ori, cout_ori, groups);
     return GRAPH_FAILED;
   }
-  const int64_t cube_k = args.src_data_type == DT_INT8 ? 32 : 16;
+  const int64_t cube_k = GetCubeSizeByDataType(data_type);
   int64_t e_mult = std::min(
       Lcm(Lcm(cin_ori, cube_k) / (cin_ori), Lcm(cout_ori, kCubeN) / (cout_ori)),
       groups);
-  int64_t cin_opt = DivCeil(e_mult * cin_ori, cube_k) * cube_k;
-  int64_t cout_opt = DivCeil(e_mult * cout_ori, kCubeN) * kCubeN;
+  int64_t cin_opt = Ceil(e_mult * cin_ori, cube_k) * cube_k;
+  int64_t cout_opt = Ceil(e_mult * cout_ori, kCubeN) * kCubeN;
   int64_t c1_dim = cin_opt / cube_k;
-  int64_t g_dim = DivCeil(groups, e_mult);
+  int64_t g_dim = Ceil(groups, e_mult);
   int64_t dim_cin = cin_opt / cube_k;
   int64_t data_size = GetSizeByDataType(args.src_data_type);
-  int64_t size_output_data =
-    g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;
+  int64_t size_output_data = g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;
   GE_CHK_BOOL_EXEC_NOLOG(size_output_data != 0, result.length = static_cast<size_t>(size_output_data);
   return SUCCESS;);
   errno_t ret = EOK;
@@ -302,7 +287,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
              TypeUtils::FormatToSerialString(args.src_format).c_str(),
              TypeUtils::FormatToSerialString(args.dst_format).c_str(), size_output_data);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
-  ret = memset_s(dst.get(), size_output_data, 0, size_output_data);
+  ret = memset_s(dst.get(), static_cast<size_t>(size_output_data), 0, static_cast<size_t>(size_output_data));
   if (ret != EOK) {
       GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory, ret is %d", ret);
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;

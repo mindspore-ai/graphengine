@@ -865,7 +865,7 @@ Status ModelBuilder::CompileSingleOp() {
     GELOGI("[GEPERFTRACE] The node size of compile op of %s is %zu", kernel_lib_name.c_str(), node_vector.size());
     GE_TIMESTAMP_ADD(BatchCompileOp);
     if (ret != ge::SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Batch compile op failed, kernel lib name, node size:%u, when %s",
+      REPORT_CALL_ERROR("E19999", "Batch compile op failed, kernel lib name, node size:%zu, when %s",
                         node_vector.size(), __FUNCTION__);
       GELOGE(ret, "Compile op failed, kernel lib name is %s", kernel_lib_name.c_str());
       return ret;

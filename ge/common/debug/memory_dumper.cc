@@ -66,7 +66,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
 
   // Close the file
   if (mmClose(fd) != EN_OK) {  // mmClose return 0: success
-    GELOGE(FAILED, "[Close][File]Failed, error_code:%u, filename:%s.", ret, file_name);
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u, filename:%s.", ret, filename);
     REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u, filename:%s.", ret, filename);
     ret = FAILED;
   }

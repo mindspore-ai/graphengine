@@ -720,6 +720,7 @@ TEST_F(UtestKernelTaskInfo, success_kernel_taskInfo_init_set_context) {
   context->set_args_count(1);
   context->set_args_offset("args111111", 10);
 
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
   EXPECT_EQ(kernel_task_info.SetContext(*kernel_def), SUCCESS);
 
   EXPECT_EQ(kernel_task_info.Release(), SUCCESS);
@@ -741,6 +742,7 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_set_context_failed1) {
   context->set_is_flowtable(true);
   context->set_args_count(0);
 
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
   EXPECT_EQ(kernel_task_info.SetContext(*kernel_def), INTERNAL_ERROR);
 
   kernel_def->clear_context();
@@ -759,6 +761,8 @@ TEST_F(UtestKernelTaskInfo, kernel_taskInfo_init_set_context_failed2) {
   context->set_is_flowtable(true);
   context->set_args_count(5);
   context->set_args_offset("\0\0");  // args_offset = 0
+
+  kernel_task_info.op_desc_ = CreateOpDesc("FrameworkOp", "FrameworkOp");
 
   EXPECT_EQ(kernel_task_info.SetContext(*kernel_def), PARAM_INVALID);
 

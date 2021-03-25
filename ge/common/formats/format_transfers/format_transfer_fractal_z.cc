@@ -286,7 +286,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
       TypeUtils::FormatToSerialString(args.src_format).c_str(),
       TypeUtils::FormatToSerialString(args.dst_format).c_str(), size_output_data);
-	    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   ret = memset_s(dst.get(), static_cast<size_t>(size_output_data), 0, static_cast<size_t>(size_output_data));
   if (ret != EOK) {

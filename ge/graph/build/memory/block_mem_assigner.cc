@@ -430,17 +430,14 @@ void SetLastUsedInputMemAttr(NodePtr &node, int input_index) {
   }
   auto node_op_desc = node->GetOpDesc();
   if (node_op_desc != nullptr) {
-    auto input_desc = node_op_desc->GetInputDesc(input_index);
-    if (!ge::AttrUtils::SetInt(input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, true)) {
+    auto input_desc = node_op_desc->MutableInputDesc(input_index);
+    if (!ge::AttrUtils::SetInt(*input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, true)) {
       GELOGW("Set %s input[%d] ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE to true failed.", node_op_desc->GetName().c_str(),
              input_index);
       return;
     }
     GELOGD("Set %s input[%d] ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE to true success.", node_op_desc->GetName().c_str(),
            input_index);
-    if (node_op_desc->UpdateInputDesc(input_index, input_desc) != GRAPH_SUCCESS) {
-      GELOGW("Update %s input[%d] desc failed.", node_op_desc->GetName().c_str(), input_index);
-    }
   }
 }
 
@@ -593,9 +590,9 @@ void BlockMemAssigner::GetOutAndWorkSpaceMem(vector<int64_t> &all_memory_size) {
     }
 
     for (auto &out_anchor : n->GetAllOutDataAnchors()) {
-      GeTensorDesc output_desc = node_op_desc->GetOutputDesc(out_anchor->GetIdx());
+      auto output_desc = node_op_desc->GetOutputDescPtr(out_anchor->GetIdx());
       int64_t size = 0;
-      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(output_desc, size) != SUCCESS, GELOGI("Get size failed"));
+      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(*output_desc, size) != SUCCESS, GELOGI("Get size failed"));
       GE_IF_BOOL_EXEC(size < 0,
                       GELOGE(FAILED, "[Check][TensorSize]tensor_size:%ld is invalid, "
                              "maybe it is unknown shape node, Node_name:%s",

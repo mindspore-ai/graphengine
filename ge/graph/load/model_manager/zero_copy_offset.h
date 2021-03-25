@@ -58,15 +58,15 @@ class ZeroCopyOffset {
   uint32_t GetDataCount() const { return data_count_; }
   uint32_t GetAddrCount() const { return addr_count_; }
   // value of *data_info_ from davinci_model
-  std::vector<std::pair<int64_t, void *>> GetDataInfo() const { return data_info_; }
+  const std::vector<std::pair<int64_t, void *>> &GetDataInfo() const { return data_info_; }
   // relative_offset from zero_copy_relative_offset_
-  std::vector<int64_t> GetRelativeOffset() const { return relative_offset_; }
+  const std::vector<int64_t> &GetRelativeOffset() const { return relative_offset_; }
   // data_size of Data/Netoutput
   int64_t GetDataSize() const { return data_size_; }
   // value of *outside_addrs_ from davinci_model
   const std::vector<std::map<const void *, std::vector<void *>>> &GetOutsideAddrs() const { return outside_addrs_; }
   // name of op
-  std::string GetOpName() const { return op_name_; }
+  const std::string &GetOpName() const { return op_name_; }
   const bool IsRelativeOffsetValid() const { return valid_relative_offset_; }
 
  private:

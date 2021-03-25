@@ -35,9 +35,9 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "utils/node_utils.h"
 
 namespace ge {
-
 Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std::vector<int64_t> &data,
                                               std::vector<GeTensorPtr> &v_output, const bool scalar_output) {
   Status ret = SUCCESS;
@@ -244,6 +244,12 @@ NodePtr PassUtils::GetInDataNode(const ConstNodePtr &node, int index) {
 
   auto src_node = peer_out_data_anchor->GetOwnerNode();
   return src_node;
+}
+
+NodePtr PassUtils::GetInNodeCrossSubgraphByIndex(const ConstNodePtr &node, int index) {
+  auto src_node = GetInDataNode(node, index);
+
+  return NodeUtils::GetInNodeCrossSubgraph(src_node);
 }
 
 bool PassUtils::IsNeedTrainIteFlowCtrl(const ComputeGraphPtr &compute_graph) {

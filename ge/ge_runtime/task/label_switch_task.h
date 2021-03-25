@@ -19,6 +19,7 @@
 
 #include <memory>
 #include "ge_runtime/task/task.h"
+#include "ge_runtime/task/label_manager.h"
 
 namespace ge {
 namespace model_runner {
@@ -35,8 +36,9 @@ class LabelSwitchTask : public TaskRepeater<LabelSwitchTaskInfo> {
 
   std::shared_ptr<LabelSwitchTaskInfo> task_info_;
   void *stream_;
-  std::vector<void *> all_label_resource_;
-  void *label_info_;
+  rtModel_t rt_model_handle_;
+  std::shared_ptr<LabelGuard> label_info_;
+  std::shared_ptr<LabelManager> label_manager_;
 };
 }  // namespace model_runner
 }  // namespace ge

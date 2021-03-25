@@ -276,7 +276,7 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   int64_t dim_cin = cin_opt / cube_k;
   int64_t data_size = GetSizeByDataType(args.src_data_type);
   int64_t size_output_data = g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;
-  if(size_output_data == 0){
+  if (size_output_data == 0) {
     result.length = static_cast<size_t>(size_output_data);
     return SUCCESS;
   }

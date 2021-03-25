@@ -3683,33 +3683,34 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   GE_CHK_STATUS_RET(InitModelStream(stream), "Init model stream failed.");
   is_dynamic_ = input_data.is_dynamic_batch;
 
-  GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_PRE_PROC_START));
+  bool profiling_model_execute_on = ProfilingManager::Instance().ProfilingModelExecuteOn();
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_PRE_PROC_START));
   Status ret = CopyModelData(input_data, output_data, is_dynamic_);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Copy input data to model failed. model id: %u",
                                  model_id_);
 
   GELOGD("current_data.index=%u", input_data.index);
-  GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_PRE_PROC_END));
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_PRE_PROC_END));
 
   if (!task_list_.empty()) {
     GELOGD("rtModelExecute do");
-    GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_INFER_START));
+    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_INFER_START));
     rtError_t rt_ret = rtModelExecute(rt_model_handle_, rt_model_stream_, 0);
     GE_CHK_RT_EXEC(rt_ret, return RT_ERROR_TO_GE_STATUS(rt_ret));
-    GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_INFER_END));
+    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_INFER_END));
     GELOGD("rtModelExecute end");
   }
 
   if (!is_async_mode_) {
-    GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_START));
+    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_START));
     ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
         "Copy Output data to user failed.");
-    GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), SetProfileTime(MODEL_AFTER_PROC_END));
+    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_END));
   }
 
   // report model time data
-  GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(), (void)SinkTimeProfile(input_data));
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, (void)SinkTimeProfile(input_data));
   GELOGD("Model run end, model id:%u", model_id_);
   return SUCCESS;
 }

@@ -201,8 +201,7 @@ void ModelBuilder::SetInputIsConst(const ge::NodePtr &n) {
     }
   }
 
-  std::string input_const_info = ToString(is_input_const);
-  GELOGD("update opdesc:%s InputConst:%s", node_op_desc->GetName().c_str(), input_const_info.c_str());
+  GELOGD("update opdesc:%s InputConst:%s", node_op_desc->GetName().c_str(), ToString(is_input_const).c_str());
   node_op_desc->SetIsInputConst(is_input_const);
 }
 

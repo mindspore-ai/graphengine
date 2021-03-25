@@ -249,3 +249,17 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_continuous_input) {
   EXPECT_EQ(addn1->GetOpDesc()->GetOutputOffset()[0], 500);
   EXPECT_EQ(addn2->GetOpDesc()->GetOutputOffset()[0], 600);
 }
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_set_last_used_attr) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  MakeGraph(graph);
+  auto node_f = graph->FindNode("F");
+  MemoryAssigner memory_assigner(graph);
+  map<int64_t, size_t> mem_offset;
+  size_t zero_memory_size = 0;
+  EXPECT_EQ(memory_assigner.AssignMemory(false, mem_offset, zero_memory_size), GRAPH_SUCCESS);
+
+  int32_t flag = 0;
+  (void) ge::AttrUtils::GetInt(node_f->GetOpDesc()->GetInputDesc(0), ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, flag);
+  EXPECT_EQ(flag, 1);
+}

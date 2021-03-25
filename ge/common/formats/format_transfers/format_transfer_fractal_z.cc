@@ -277,8 +277,8 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   int64_t data_size = GetSizeByDataType(args.src_data_type);
   int64_t size_output_data = g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;
   if (size_output_data == 0) {
-    result.length = static_cast<size_t>(size_output_data);
-    return SUCCESS;
+      result.length = static_cast<size_t>(size_output_data);
+      return SUCCESS;
   }
   errno_t ret = EOK;
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[size_output_data], std::default_delete<uint8_t[]>());

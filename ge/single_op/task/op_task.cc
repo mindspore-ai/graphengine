@@ -124,7 +124,7 @@ Status OpTask::GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id
   }
   GE_CHECK_NOTNULL(op_desc_);
   string op_name = op_desc_->GetName();
-  GELOGD("Get profiling args of op [%s] end, task_id[%u], stream_id[%u]", op_name.c_str(), task_id, stream_id);
+  GELOGD("Get profiling args of op [%s] end, task_id[%u], stream_id[%u].", op_name.c_str(), task_id, stream_id);
   model_id = model_id_;
   task_desc_info.model_name = model_name_;
   task_desc_info.block_dim = block_dim_;
@@ -471,6 +471,10 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
         "[Check][Size]Input_desc size is %zu, but get non_const_index is %zu", input_desc.size(), non_const_index);
     GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, input_desc[non_const_index]),
         "[Update][InputShapeAndType]failed, input_index:%zu.", input_index);
+    if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
+      GE_CHK_STATUS_RET(op_desc_->UpdateInputDesc(input_index, input_desc[non_const_index]),
+                        "AiCpuTask Update [%zu]th input desc failed.",input_index);
+    }
     non_const_index++;
   }
 
@@ -478,6 +482,10 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
     for (size_t j = 0; j < num_outputs_; ++j) {
       GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]), 
           "[Update][OutputShapeAndType] failed, Output:%zu.", j);
+      if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
+        GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(j, output_desc[j]),
+                          "AiCpuTask Update [%zu]th output desc failed.",j);
+    }                  
     }
   }
 

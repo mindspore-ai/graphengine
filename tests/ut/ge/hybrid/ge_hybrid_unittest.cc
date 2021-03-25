@@ -51,7 +51,9 @@ class UtestGeHybrid : public testing::Test {
  protected:
   void SetUp() {}
 
-  void TearDown() {}
+  void TearDown() {
+    NpuMemoryAllocator::allocators_.clear();
+  }
 };
 
 static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {

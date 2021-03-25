@@ -251,6 +251,10 @@ bool NodeItem::IsControlOp() const {
   return ge::hybrid::IsControlOp(op_desc->GetType());
 }
 
+bool NodeItem::IsHcclOp() const {
+  return NodeExecutorManager::GetInstance().ResolveExecutorType(*node) == NodeExecutorManager::ExecutorType::HCCL;
+}
+
 std::string NodeItem::DebugString() const {
   std::stringstream ss;
   ss << "Node: ";

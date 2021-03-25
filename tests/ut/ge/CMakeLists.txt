@@ -793,6 +793,7 @@ set(PROFILING_MNG_TEST_FILES
 
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
+    "hybrid/known_node_executor_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

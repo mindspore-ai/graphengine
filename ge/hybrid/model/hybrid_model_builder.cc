@@ -806,7 +806,7 @@ Status HybridModelBuilder::LoadGraph() {
     }
   }
 
-  GE_CHK_STATUS_RET(ParseDependentForHcclNodes(), "Failed to establish dependencies for hccl ops");
+  GE_CHK_STATUS_RET(ParseDependentByParallelGroup(), "Failed to establish dependencies for hccl ops");
   GELOGI("Done loading all subgraphs successfully.");
   return SUCCESS;
 }
@@ -1907,7 +1907,7 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     NodeItem *node_item = nullptr;
     GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node, &node_item));
     GE_CHK_STATUS_RET_NOLOG(BuildNodeItem(node, *node_item));
-    GE_CHK_STATUS_RET_NOLOG(ParseParallelGroups(node_item));
+    GE_CHK_STATUS_RET_NOLOG(CollectParallelGroups(node_item));
     GE_CHK_STATUS_RET_NOLOG(UpdateAnchorStatus(node)); // needed by FE generate task
 
     node_item->input_start = input_start;
@@ -2015,16 +2015,16 @@ Status HybridModelBuilder::CheckAicpuOpList() {
   return SUCCESS;
 }
 
-Status HybridModelBuilder::ParseParallelGroups(NodeItem *node_item) {
+Status HybridModelBuilder::CollectParallelGroups(NodeItem *node_item) {
   const auto &node = node_item->node;
   auto executor_type = NodeExecutorManager::GetInstance().ResolveExecutorType(*node);
   if (executor_type == NodeExecutorManager::ExecutorType::HCCL) {
     std::string parallel_group;
     if (AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_PARALLEL_GROUP, parallel_group)) {
       GELOGD("[%s] Got parallel group = %s", node_item->NodeName().c_str(), parallel_group.c_str());
-      group_to_nodes_[parallel_group].emplace(node_item);
+      parallel_group_to_nodes_[parallel_group].emplace(node_item);
       std::set<std::string> group{parallel_group};
-      node_to_groups_[node_item].emplace(parallel_group);
+      node_to_parallel_groups_[node_item].emplace(parallel_group);
     }
   } else if (executor_type == NodeExecutorManager::ExecutorType::COMPILED_SUBGRAPH) {
     std::set<std::string> parallel_groups;
@@ -2049,25 +2049,28 @@ Status HybridModelBuilder::ParseParallelGroups(NodeItem *node_item) {
 
     if (!parallel_groups.empty()) {
       for (const auto &parallel_group : parallel_groups) {
-        group_to_nodes_[parallel_group].emplace(node_item);
+        parallel_group_to_nodes_[parallel_group].emplace(node_item);
         GELOGD("[%s] has parallel group: %s", node_item->NodeName().c_str(), parallel_group.c_str());
       }
-      node_to_groups_.emplace(node_item, std::move(parallel_groups));
+      node_to_parallel_groups_.emplace(node_item, std::move(parallel_groups));
     }
   }
 
   return SUCCESS;
 }
 
-Status HybridModelBuilder::ParseDependentForHcclNodes() {
-  for (const auto &it : node_to_groups_) {
+Status HybridModelBuilder::ParseDependentByParallelGroup() {
+  for (const auto &it : node_to_parallel_groups_) {
     auto node_item = it.first;
     auto dst_engine_type = NodeExecutorManager::GetInstance().ResolveExecutorType(*node_item->node);
     for (const auto &parallel_group : it.second) {
-      auto &dependent_nodes = group_to_nodes_[parallel_group];
+      auto &dependent_nodes = parallel_group_to_nodes_[parallel_group];
       NodeItem *nearest_dep_node = nullptr;
       int max_id = -1;
       for (auto &dep_node : dependent_nodes) {
+        if (node_item == dep_node) {
+          continue;
+        }
         auto src_engine_type = NodeExecutorManager::GetInstance().ResolveExecutorType(*dep_node->node);
         if (src_engine_type == dst_engine_type) {
           continue;

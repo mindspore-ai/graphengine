@@ -67,8 +67,9 @@ struct DataBuffer {
   void *data;       // Data address
   uint64_t length;  // Data length
   bool isDataSupportMemShare = false;
-  DataBuffer(void *dataIn, uint64_t len, bool isSupportMemShare)
-      : data(dataIn), length(len), isDataSupportMemShare(isSupportMemShare) {}
+  uint32_t placement = 0;
+  DataBuffer(void *dataIn, uint64_t len, bool isSupportMemShare, uint32_t placement = 0)
+      : data(dataIn), length(len), isDataSupportMemShare(isSupportMemShare), placement(placement) {}
 
   DataBuffer() : data(nullptr), length(0), isDataSupportMemShare(false) {}
 };

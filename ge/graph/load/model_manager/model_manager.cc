@@ -292,7 +292,7 @@ ge::Status ModelManager::SetDynamicSize(uint32_t model_id, const std::vector<uin
   return SUCCESS;
 }
 
-ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string &model_name,
+ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string &om_name,
                                                  const shared_ptr<ge::GeRootModel> &ge_root_model,
                                                  const shared_ptr<ModelListener> &listener) {
   auto hybrid_model = hybrid::HybridDavinciModel::Create(ge_root_model);
@@ -300,7 +300,7 @@ ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string
   hybrid_model->SetListener(listener);
   hybrid_model->SetModelId(model_id);
   hybrid_model->SetDeviceId(GetContext().DeviceId());
-  hybrid_model->SetModelName(model_name);
+  hybrid_model->SetOmName(om_name);
   GE_CHK_STATUS_RET(hybrid_model->Init(), "Failed to init hybrid model. model_id = %u", model_id);
   auto shared_model = std::shared_ptr<hybrid::HybridDavinciModel>(hybrid_model.release());
   InsertModel(model_id, shared_model);
@@ -332,9 +332,9 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     GenModelId(&model_id);
   }
   auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
-  string model_name = "";
+  string om_name;
   if (IsNeedHybridLoad(*ge_root_model)) {
-    return DoLoadHybridModelOnline(model_id, model_name, ge_root_model, listener);
+    return DoLoadHybridModelOnline(model_id, om_name, ge_root_model, listener);
   }
 
   mmTimespec timespec = mmGetTickCount();

@@ -46,10 +46,6 @@ void HybridModelAsyncExecutor::SetModelId(uint32_t model_id) {
   model_id_ = model_id;
 }
 
-void HybridModelAsyncExecutor::SetModelName(const string &model_name) {
-  om_name_ = model_name;
-}
-
 Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> &data) {
   if (data_inputer_->Push(data) != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Data queue is full, please call again later when %s, model_id %u.",

@@ -446,10 +446,7 @@ Status KernelTaskInfo::Distribute() {
         call_skt, task_id_, skt_id_, skt_info.last_task_id, stub_func_name_.c_str(), stub_func_, block_dim_, stream_);
     // l1 fusion enable and env flag open (kCloseSkt for skt debug)
     bool open_dump = false;
-    auto all_dump_model = davinci_model_->GetDumpProperties().GetAllDumpModel();
-    if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
-        all_dump_model.find(davinci_model_->Name()) != all_dump_model.end() ||
-        all_dump_model.find(davinci_model_->OmName()) != all_dump_model.end()) {
+    if (davinci_model_->ModelNeedDump()) {
       open_dump = true;
     }
     if (call_skt && (env_flag != kCloseSkt) && !open_dump) {
@@ -1088,8 +1085,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
 }
 
 void KernelTaskInfo::InitDumpTask(uint32_t offset) {
-  if (davinci_model_->GetDumpProperties().IsLayerNeedDump(davinci_model_->Name(), davinci_model_->OmName(),
-                                                          op_desc_->GetName())) {
+  if (davinci_model_->OpNeedDump(op_desc_->GetName())) {
     if (IsL1FusionOp(op_desc_)) {
       dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
     } else {

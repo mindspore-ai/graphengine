@@ -3221,9 +3221,8 @@ Status DavinciModel::DistributeTask() {
                              task_def.kernel_ex().op_index());
     OpDescPtr op = GetOpByIndex(op_index);
     GE_CHECK_NOTNULL(op);
-
     if (reinterpret_cast<void *>(task->GetDumpArgs()) != nullptr) {
-      bool call_dump = GetDumpProperties().IsLayerNeedDump(name_, om_name_, op->GetName()) && task->CallSaveDumpInfo();
+      bool call_dump = OpNeedDump(op->GetName()) && task->CallSaveDumpInfo();
       if (call_dump || is_op_debug_reg_) {
         SaveDumpTask(task->GetTaskID(), task->GetStreamId(), op, task->GetDumpArgs());
       }
@@ -3243,11 +3242,16 @@ Status DavinciModel::DistributeTask() {
   return SUCCESS;
 }
 
-void DavinciModel::SetEndGraphId(uint32_t task_id, uint32_t stream_id) {
+bool DavinciModel::ModelNeedDump() {
   auto all_dump_model = GetDumpProperties().GetAllDumpModel();
-  bool findByOmName = all_dump_model.find(om_name_) != all_dump_model.end();
-  bool findByModelName = all_dump_model.find(name_) != all_dump_model.end();
-  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() || findByOmName || findByModelName) {
+  bool ret = all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
+             all_dump_model.find(dump_model_name_) != all_dump_model.end() ||
+             all_dump_model.find(om_name_) != all_dump_model.end();
+  return ret;
+}
+
+void DavinciModel::SetEndGraphId(uint32_t task_id, uint32_t stream_id) {
+  if (ModelNeedDump()) {
     GELOGI("start save end_graph_info to dumper, task_id is %u, stream_id is %u", task_id, stream_id);
     data_dumper_.SaveEndGraphId(task_id, stream_id);
   }
@@ -4107,7 +4111,10 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
 }
 
 void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<string, OpDescPtr> &variable_by_name) {
-  data_dumper_.SetModelName(name_);
+  if(dump_model_name_.empty()) {
+    dump_model_name_ = name_;
+  }
+  data_dumper_.SetModelName(dump_model_name_);
   data_dumper_.SetModelId(model_id_);
   data_dumper_.SetOmName(om_name_);
   data_dumper_.SetComputeGraph(graph);
@@ -4308,7 +4315,7 @@ int64_t DavinciModel::GetFixedAddrsSize(string tensor_name) {
 Status DavinciModel::InitL1DataDumperArgs() {
   auto all_dump_model = GetDumpProperties().GetAllDumpModel();
   bool find_by_om_name = all_dump_model.find(om_name_) != all_dump_model.end();
-  bool find_by_model_name = all_dump_model.find(name_) != all_dump_model.end();
+  bool find_by_model_name = all_dump_model.find(dump_model_name_) != all_dump_model.end();
   bool dump_l1fusion_op =
     (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end()) || find_by_om_name || find_by_model_name;
   if (dump_l1fusion_op) {

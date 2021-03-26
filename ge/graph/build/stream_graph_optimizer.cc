@@ -125,8 +125,8 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
         GE_CHECK_NOTNULL(op_desc);
         int64_t stream_id = op_desc->GetStreamId();
         if (static_cast<size_t>(stream_id) >= run_context.graphStreamList.size()) {
-          REPORT_INNER_ERROR("E19999", "Check stream_id:%ld in op:%s(%s) is bigger than run_context.graphStreamList.size():%zu "
-                             "when %s", stream_id, op_desc->GetName().c_str(),
+          REPORT_INNER_ERROR("E19999", "Check stream_id:%ld in op:%s(%s) is bigger than "
+                             "run_context.graphStreamList.size():%zu when %s", stream_id, op_desc->GetName().c_str(),
                              op_desc->GetType().c_str(), run_context.graphStreamList.size(), __FUNCTION__);
           GELOGE(FAILED, "stream_id %ld is bigger than run_context.graphStreamList.size() %zu", stream_id,
                  run_context.graphStreamList.size());
@@ -141,10 +141,10 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
         for (auto iter = graph_optimizers.begin(); iter != graph_optimizers.end(); ++iter) {
           GE_CHECK_NOTNULL(*iter);
           Status ret = (*iter)->OptimizeStreamGraph(*subgraph, run_context);
-          REPORT_CALL_ERROR("E19999", "Call optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
-                            "Optimizer num: %zu, ret: %u", subgraph->GetName().c_str(), engine_name.c_str(),
-                            graph_optimizers.size(), ret);
           if (ret != SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Call optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
+                              "Optimizer num: %zu, ret: %u", subgraph->GetName().c_str(), engine_name.c_str(),
+                              graph_optimizers.size(), ret);
             GELOGE(
               ret,
               "[optimizeStreamedSubGraph]: optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "

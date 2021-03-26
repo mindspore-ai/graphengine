@@ -258,7 +258,7 @@ static void GetOpsProtoPath(string &opsproto_path) {
     return;
   }
   string path_base = PluginManager::GetPath();
-  GELOGI("path_base is %s", path_base.c_str());
+  GELOGI("[Show][LibPathBase]path_base is %s", path_base.c_str());
   path_base = path_base.substr(0, path_base.rfind('/'));
   path_base = path_base.substr(0, path_base.rfind('/') + 1);
   opsproto_path = (path_base + "ops/op_proto/custom/" + ":") + (path_base + "ops/op_proto/built-in/");
@@ -343,7 +343,7 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
   ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
   string opsproto_path;
   GetOpsProtoPath(opsproto_path);
-  GELOGI("Get opsproto path is %s", opsproto_path.c_str());
+  GELOGI("[Get][opsproto] from path %s", opsproto_path.c_str());
   OpsProtoManager *manager = OpsProtoManager::Instance();
   map<string, string> option_tmp;
   option_tmp.emplace(std::pair<string, string>(string("ge.opsProtoLibPath"), opsproto_path));

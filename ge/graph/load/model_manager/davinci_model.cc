@@ -2875,23 +2875,16 @@ Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vec
   GELOGI("DavinciModel::UpdateKnownNodeArgs in");
   GE_CHK_STATUS_RET(CreateKnownZeroCopyMap(inputs, outputs),
                     "DavinciModel::UpdateKnownNodeArgs create map for input/output zero copy.");
-  if (!base_addr_not_changed_) {
-    total_io_addrs_.clear();
-    orig_total_io_addrs_.clear();
-    for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
-      auto &task = task_list_[task_index];
-      if (task != nullptr) {
-        Status ret = task->UpdateArgs();
-        if (ret != SUCCESS) {
-          GELOGE(FAILED, "task %zu created by davinci model is nullptr.", task_index);
-          return FAILED;
-        }
+  total_io_addrs_.clear();
+  for (size_t task_index = 0; task_index < task_list_.size(); ++task_index) {
+    auto &task = task_list_[task_index];
+    if (task != nullptr) {
+      Status ret = task->UpdateArgs();
+      if (ret != SUCCESS) {
+        GELOGE(FAILED, "task %zu created by davinci model is nullptr.", task_index);
+        return FAILED;
       }
     }
-    // cache latest iterator io addr
-    orig_total_io_addrs_ = total_io_addrs_;
-  } else {
-    total_io_addrs_ = orig_total_io_addrs_;
   }
   GE_CHK_STATUS_RET(UpdateKnownZeroCopyAddr(total_io_addrs_, false), "DavinciModel::UpdateKnownZeroCopyAddr failed.");
 

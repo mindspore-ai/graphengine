@@ -31,7 +31,6 @@ const char *const kFpPoint = "fp_point";
 const char *const kBpPoint = "bp_point";
 
 #ifdef DAVINCI_SUPPORT_PROFILING
-const size_t kReportMaxLen = 1024;
 const int32_t kMaxDeviceNum = 256;
 const uint32_t kInteval = 2;
 const std::string kConfigNumsdev = "devNums";
@@ -293,10 +292,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportDa
   ReporterData reporter_data{};
   int ret = -1;
   int32_t cb_ret = -1;
-  size_t report_max_len = kReportMaxLen;
-#ifdef ONLY_COMPILE_OPEN_SRC
-  report_max_len = reporter_max_len_;
-#endif
+  size_t report_max_len = reporter_max_len_;
   size_t index = data.size() / report_max_len;
   if (index >= 1) {
     reporter_data.deviceId = device_id;
@@ -763,7 +759,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
     GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter] profiling init failed, ret = %d.", cb_ret);
     return INTERNAL_ERROR;
   }
-#ifdef ONLY_COMPILE_OPEN_SRC
+
   cb_ret = prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_DATA_MAX_LEN),
@@ -773,7 +769,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
     GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter] Get profiling reporter data max len failed, ret = %d.", cb_ret);
     return INTERNAL_ERROR;
   }
-#endif
 
  return SUCCESS;
 }

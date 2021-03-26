@@ -231,12 +231,6 @@ Status NodeDoneCallback::DumpDynamicNode() {
   uint32_t model_id = model->GetModelId();
   dump_op_.SetDynamicModelInfo(dynamic_model_name, model_id);
 
-  void *global_step = nullptr;
-  TensorValue *varible_global_step = context_->GetVariable(NODE_NAME_GLOBAL_STEP);
-  if (varible_global_step != nullptr) {
-    global_step = const_cast<void *>(varible_global_step->GetData());
-  }
-
   void *loop_per_iter = nullptr;
   TensorValue *varible_loop_per_iter = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);
   if (varible_loop_per_iter != nullptr) {
@@ -248,6 +242,7 @@ Status NodeDoneCallback::DumpDynamicNode() {
   if (varible_loop_cond != nullptr) {
     loop_cond = const_cast<void *>(varible_loop_cond->GetData());
   }
+  void *global_step = context_->GetExecutionContext()->global_step;
   dump_op_.SetLoopAddr(global_step, loop_per_iter, loop_cond);
 
   GE_CHK_STATUS_RET(dump_op_.LaunchDumpOp(), "Failed to launch dump op in hybird model");

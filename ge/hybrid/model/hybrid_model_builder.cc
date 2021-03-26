@@ -1092,7 +1092,6 @@ Status HybridModelBuilder::LoadTasks() {
   std::map<int64_t, NodeItem *> ordered_partitioned_calls;
   for (auto &it : hybrid_model_.node_items_) {
     auto &node_item = it.second;
-    auto &node_ptr = node_item->node;
     if (node_item->node_type == NETOUTPUT) {
       continue;
     }

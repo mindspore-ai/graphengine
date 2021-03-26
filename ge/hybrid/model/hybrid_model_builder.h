@@ -57,6 +57,7 @@ class HybridModelBuilder {
   Status ValidateParams();
   Status LoadGraph();
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
+  Status LoadTask(NodeItem &node_item);
   Status LoadTasks();
   Status IdentifyVariableOutputs(NodeItem &node_item);
   Status IdentifySameInputs(NodeItem &node_item);

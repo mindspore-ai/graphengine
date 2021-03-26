@@ -1444,8 +1444,7 @@ REG_OP(MaxPoolV3Grad)
 
 *@par Inputs:
 *x: A tensor of shape is 4d, format is support NHWC.
-*filter: A tensor of shape is 3d, the type is same with x,
-and the c dimension is same with x. \n
+*filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x. \n
 
 *@par Attributes:
 *@li strides: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C dimensions are 1.
@@ -1472,6 +1471,82 @@ REG_OP(Dilation2D)
     .ATTR(ceil_mode, Bool, false)
     .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(Dilation2D)
+
+/*
+* @brief Performs Dilation2DBackpropFilter on the input. \n
+
+*@par Inputs:
+*x: A tensor of shape is 4d, format is support NHWC
+*filter: A tensor of shape is 3d the type is same with x,
+*out_backprop: Has the same type and format as input "x" and the c dimension is same with x. \n
+
+*@par Attributes
+*@li stride: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C
+dimension are 1
+*@li rates: A required list of 4 ints, the rates of the N and C dimensions are 1
+*@li padding_mode: A optional string. Defaults to "SAME", it support SAME and VALID
+*@li pads: A optional list of 4 ints. \n
+
+*@par Outputs:
+*y: The output tensor. Has the same type and format as input "filter" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Dilation2D
+*/
+
+REG_OP(Dilation2DBackpropFilter)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(filter,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(out_backprop,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .OUTPUT(y,
+            TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(rates, ListInt)
+    .ATTR(padding_mode, String, "SAME")
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
+    .ATTR(ceil_mode, Bool, false)
+    .ATTR(data_format, String, "NHWC")
+    .OP_END_FACTORY_REG(Dilation2DBackpropFilter)
+
+/*
+* @brief Performs Dilation2DBackpropInput on the input. \n
+
+*@par Inputs:
+*x: A tensor of shape is 4d, format is support NHWC
+*filter: A tensor of shape is 3d the type is same with x,
+*out_backprop: Has the same type and format as input "x" and the c dimension is same with x. \n
+
+*@par Attributes
+*@li stride: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C
+dimension are 1
+*@li rates: A required list of 4 ints, the rates of the N and C dimensions are 1
+*@li padding_mode: A optional string. Defaults to "SAME", it support SAME and VALID
+*@li pads: A optional list of 4 ints. \n
+
+*@par Outputs:
+*y: The output tensor. Has the same type and format as input "filter" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Dilation2D
+*/
+
+REG_OP(Dilation2DBackpropInput)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(filter,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(out_backprop,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .OUTPUT(y,
+            TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(rates, ListInt)
+    .ATTR(padding_mode, String, "SAME")
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
+    .ATTR(ceil_mode, Bool, false)
+    .ATTR(data_format, String, "NHWC")
+    .OP_END_FACTORY_REG(Dilation2DBackpropInput)
 
 /**
 * @brief Applies a 2D adaptive average pooling over  

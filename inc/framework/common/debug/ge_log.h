@@ -84,9 +84,10 @@ inline bool IsLogEnable(int module_name, int log_level) {
                ##__VA_ARGS__);                                                                                     \
   } while (0)
 
-#define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                              \
-  dlog_error(MOD_NAME, "%lu %s: ErrorNo: %d(%s) " fmt, GeLog::GetTid(), __FUNCTION__, ERROR_CODE, \
-             ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ##__VA_ARGS__)
+#define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                                         \
+  dlog_error(MOD_NAME, "%lu %s: ErrorNo: %d(%s) %s" fmt, GeLog::GetTid(), __FUNCTION__, ERROR_CODE,          \
+             ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(), \
+             ##__VA_ARGS__)
 
 // print memory when it is greater than 1KB.
 #define GE_PRINT_DYNAMIC_MEMORY(FUNC, PURPOSE, SIZE)                                                        \

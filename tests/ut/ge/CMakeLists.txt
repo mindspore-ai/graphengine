@@ -767,6 +767,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "graph/build/task_generator_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"

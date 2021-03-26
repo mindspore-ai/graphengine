@@ -49,6 +49,7 @@ const char *const kIsLastNode = "is_last_node";
 const char *const kIsInputVar = "INPUT_IS_VAR";
 const char *const kIsOutputVar = "OUTPUT_IS_VAR";
 const char *const kProfilingMode = "PROFILING_MODE";
+const char *const kIteratorV2 = "IteratorV2";
 const uint32_t kProfilingArStep = 2;
 const uint64_t kProfilingFpStartLogid = 1;
 const uint64_t kProfilingBpEndLogid = 2;
@@ -57,6 +58,7 @@ const uint64_t kProfilingArEndLogid = 4;
 const uint64_t kProfilingIterEndLogid = 65535;
 const int64_t kHashFactor = 100000;
 const int64_t kInvalidGroupId = -1;
+const std::set<std::string> kFpNodeTypes = {ge::DATA, ge::GETNEXT, kIteratorV2};
 }  // namespace
 namespace ge {
 TaskGenerator::TaskGenerator(uint8_t *var_mem_base, uint64_t var_mem_size) {
@@ -689,8 +691,10 @@ Status TaskGenerator::AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingP
     if (op_kernel_lib_name.empty()) {
       continue;
     }
-
-    if (op_desc->GetType() == GETNEXT || op_desc->GetType() == DATA) {
+    auto type = op_desc->GetType();
+    std::string original_type;
+    (void)AttrUtils::GetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, original_type);
+    if (kFpNodeTypes.find(type) != kFpNodeTypes.end() || kFpNodeTypes.find(original_type) != kFpNodeTypes.end()) {
       auto out_anchor = node->GetOutDataAnchor(0);
       for (auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
         GE_CHECK_NOTNULL(peer_in_anchor);

@@ -31,7 +31,7 @@ const char *const kFpPoint = "fp_point";
 const char *const kBpPoint = "bp_point";
 
 #ifdef DAVINCI_SUPPORT_PROFILING
-const size_t kReportMaxLen = 2048;
+const size_t kReportMaxLen = 1024;
 const int32_t kMaxDeviceNum = 256;
 const uint32_t kInteval = 2;
 const std::string kConfigNumsdev = "devNums";

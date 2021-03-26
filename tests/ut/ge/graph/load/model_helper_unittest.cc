@@ -36,13 +36,6 @@ class UtestModelHelper : public testing::Test {
   void TearDown() override {}
 };
 
-TEST_F(UtestModelHelper, save_size_to_modeldef_failed)
-{
-  GeModelPtr ge_model = ge::MakeShared<ge::GeModel>();
-  ModelHelper model_helper;
-  EXPECT_EQ(ACL_ERROR_GE_MEMORY_ALLOCATION, model_helper.SaveSizeToModelDef(ge_model));
-}
-
 TEST_F(UtestModelHelper, save_size_to_modeldef)
 {
   GeModelPtr ge_model = ge::MakeShared<ge::GeModel>();

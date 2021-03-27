@@ -844,9 +844,12 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
  * @param [in] vector<GeTensor> &inputs: Operator input data description information.
  * @param [in] vector<GeTensor> &outputs: Operator output data description information.
  * @param [in] engine_type: specific engine.
+ * @param [in] compile_flag: op build flag, compile flag by acl
  * @param [out] ModelBufferData &Model_buff: Model_buff: model buffer of the op.
  * @return SUCCESS handle successfully / others handle failed
  */
+
+// old process will be deleted
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
@@ -855,6 +858,12 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
   Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
   GELOGI("Finish build single online model, status: %u", status);
   return status;
+}
+
+Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
+                                       const vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
+                                       ModelBufferData &model_buff) {
+  return SUCCESS;
 }
 
 Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs,

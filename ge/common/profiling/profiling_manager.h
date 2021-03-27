@@ -97,6 +97,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void GetFpBpPoint(std::string &fp_point, std::string &bp_point);
   void GetOpInputOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const;
   void ReportData(const int32_t &device_id, const std::string &data, const std::string &tag_name);
+  Status ProfileStepInfo(uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id);
  private:
   Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
   Status ParseOptions(const std::string &options);

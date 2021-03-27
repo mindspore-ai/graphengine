@@ -1097,6 +1097,7 @@ Status HybridModelBuilder::LoadTasks() {
     }
     if (node_item->node_type == PARTITIONEDCALL) {
       ordered_partitioned_calls.emplace(node_item->node_id, node_item.get());
+      continue;
     }
     GE_CHK_STATUS_RET_NOLOG(LoadTask(*node_item));
   }
@@ -2029,14 +2030,14 @@ Status HybridModelBuilder::CollectParallelGroups(NodeItem *node_item) {
   if (executor_type == NodeExecutorManager::ExecutorType::HCCL) {
     std::string parallel_group;
     if (AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_PARALLEL_GROUP, parallel_group)) {
-      GELOGD("[%s] Got parallel group = %s", node_item->NodeName().c_str(), parallel_group.c_str());
+      GELOGD("[%s] Got parallel group = [%s]", node_item->NodeName().c_str(), parallel_group.c_str());
       parallel_group_to_nodes_[parallel_group].emplace(node_item);
       std::set<std::string> group{parallel_group};
       node_to_parallel_groups_[node_item].emplace(parallel_group);
     }
   } else if (executor_type == NodeExecutorManager::ExecutorType::COMPILED_SUBGRAPH) {
     std::set<std::string> parallel_groups;
-    GELOGD("[%s] Parse parallel group for known-shaped subgraph", node_item->NodeName().c_str());
+    GELOGD("[%s] To collect parallel group for known-shaped subgraph", node_item->NodeName().c_str());
     for (const auto &subgraph_name : node->GetOpDesc()->GetSubgraphInstanceNames()) {
       GELOGD("[%s] Start to get parallel group from subgraph: %s",
              node_item->NodeName().c_str(),

@@ -56,8 +56,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   dump_properties.SetDumpOpSwitch(dump_op_switch);
   if (dump_op_switch == kDumpoff && dump_config.dump_list.empty()) {
     dump_properties_map_.emplace(kInferSessionId, dump_properties);
-    GELOGE(PARAM_INVALID, "[Check][DumpList]Failed, dump_op_switch is %s.", dump_op_switch.c_str());
-    REPORT_INNER_ERROR("E19999", "Check dump list failed, dump_op_switch is %s.", dump_op_switch.c_str());
+    GELOGE(PARAM_INVALID, "Dump list is invalid, dump_op_switch is %s", dump_op_switch.c_str())
     return PARAM_INVALID;
   }
 
@@ -83,8 +82,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
 
   dump_path = dump_config.dump_path;
   if (dump_path.empty()) {
-    GELOGE(PARAM_INVALID, "[Check][DumpPath]Failed, it is empty.");
-    REPORT_INNER_ERROR("E19999", "Check dump path failed, it is empty.");
+    GELOGE(PARAM_INVALID, "Dump path is empty");
     return PARAM_INVALID;
   }
 

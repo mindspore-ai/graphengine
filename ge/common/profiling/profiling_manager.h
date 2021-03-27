@@ -27,6 +27,7 @@
 #include "framework/common/ge_types.h"
 #include "external/register/register_types.h"
 #include "toolchain/prof_callback.h"
+#include "runtime/stream.h"
 
 using std::map;
 using std::string;

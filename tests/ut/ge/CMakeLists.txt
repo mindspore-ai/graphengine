@@ -840,7 +840,6 @@ add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common PRIVATE
     google=ascend_private
-    DAVINCI_SUPPORT_PROFILING
     $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
@@ -862,7 +861,6 @@ add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_F
 
 target_compile_definitions(ge_ut_common_format PRIVATE
     google=ascend_private
-    DAVINCI_SUPPORT_PROFILING
     $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
@@ -1113,7 +1111,6 @@ target_compile_options(ut_libge_distinct_load_utest PRIVATE
 
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
     google=ascend_private
-    DAVINCI_SUPPORT_PROFILING
     $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 

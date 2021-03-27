@@ -78,9 +78,3 @@ TEST_F(UtestGeProfilinganager, plungin_init_) {
   EXPECT_EQ(ret, INTERNAL_ERROR);
   ProfilingManager::Instance().prof_cb_.msprofReporterCallback = nullptr;
 }
-
-TEST_F(UtestGeProfilinganager, test_step_info) {
-  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = ReporterCallback;
-  EXPECT_EQ(ProfilingManager::Instance().ProfileStepInfo(0, 0, 0, nullptr, 0), SUCCESS);
-  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = nullptr;
-}

@@ -291,7 +291,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfileStepInfo(
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfileStepInfo(
   uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   rtError_t rt_ret = RT_ERROR_NONE;
@@ -338,7 +338,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfileStepInfo(
   }
   reported_data.append(",")
                .append("\n");
-  ProfilingManager::Instance().ReportData(device_id, reported_data, "step_info");
+  ReportData(device_id, reported_data, "step_info");
 #endif
   return SUCCESS;
 }

@@ -1097,6 +1097,7 @@ Status HybridModelBuilder::LoadTasks() {
     }
     if (node_item->node_type == PARTITIONEDCALL) {
       ordered_partitioned_calls.emplace(node_item->node_id, node_item.get());
+      continue;
     }
     GE_CHK_STATUS_RET_NOLOG(LoadTask(*node_item));
   }

@@ -667,6 +667,7 @@ set(PASS_TEST_FILES
     "graph/passes/merge_pass_unittest.cc"
     #"graph/passes/switch_pass_unittest.cc"
     "graph/passes/switch_logic_remove_pass_unittest.cc"
+    "graph/passes/switch_dead_branch_elimination_unittest.cc"
     "graph/passes/assert_pass_unittest.cc"
     "graph/passes/dropout_pass_unittest.cc"
     "graph/passes/unused_const_pass_unittest.cc"

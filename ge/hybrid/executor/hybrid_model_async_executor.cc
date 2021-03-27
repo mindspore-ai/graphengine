@@ -297,19 +297,20 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
                            data_buf.length,
                            mem_size);
 
-    GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%zu] memaddr[%p] mem_size[%zu] datasize[%lu]",
-           model_->root_runtime_param_.graph_id,
-           input_index,
-           args.inputs[input_index].GetData(),
-           mem_size,
-           data_buf.length);
-    GE_CHK_RT_RET(rtMemcpy(args.inputs[input_index].MutableData(),
-                           mem_size,
-                           data_buf.data,
-                           data_buf.length,
-                           RT_MEMCPY_HOST_TO_DEVICE));
+    if (data_buf.length > 0) {
+      GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%zu] memaddr[%p] mem_size[%zu] datasize[%lu]",
+             model_->root_runtime_param_.graph_id,
+             input_index,
+             args.inputs[input_index].GetData(),
+             mem_size,
+             data_buf.length);
+      GE_CHK_RT_RET(rtMemcpy(args.inputs[input_index].MutableData(),
+                             mem_size,
+                             data_buf.data,
+                             data_buf.length,
+                             RT_MEMCPY_HOST_TO_DEVICE));
+    }
   }
-
   return SUCCESS;
 }
 

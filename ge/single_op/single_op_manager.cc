@@ -34,7 +34,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
                                                                                         const uint64_t model_id) {
   GELOGI("GetOpFromModel in. model name = %s, model id = %lu", model_name.c_str(), model_id);
   if (single_op == nullptr) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "single op is null");
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Param:single_op] is null.");
+    REPORT_INPUT_ERROR("E10412", std::vector<std::string>({"inputparam"}), std::vector<std::string>({"single_op"}));
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
@@ -42,7 +43,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
   GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
   StreamResource *res = GetResource(resource_id, stream);
   if (res == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "GetResource failed");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Get][Resource] failed.");
+    REPORT_CALL_ERROR("E19999", "GetOpFromModel fail because GetResource return nullptr.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -112,7 +114,8 @@ Status SingleOpManager::GetDynamicOpFromModel(const string &model_name,
   GE_CHK_STATUS_RET(GetResourceId(stream, resource_id));
   StreamResource *res = GetResource(resource_id, stream);
   if (res == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "GetResource failed");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Get][Resource] failed.");
+    REPORT_CALL_ERROR("E19999", "GetDynamicOpFromModel fail because GetResource return nullptr.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -143,7 +146,9 @@ Status SingleOpManager::GetResourceId(rtStream_t stream, uintptr_t &resource_id)
     rtContext_t rt_cur_ctx = nullptr;
     auto rt_err = rtCtxGetCurrent(&rt_cur_ctx);
     if (rt_err != RT_ERROR_NONE) {
-      GELOGE(rt_err, "get current context failed, runtime result is %d", static_cast<int>(rt_err));
+      GELOGE(rt_err, "[Get][CurrentContext] failed, runtime result is %d", static_cast<int>(rt_err));
+      REPORT_CALL_ERROR("E19999", 
+          "GetResourceId failed because rtCtxGetCurrent result is %d", static_cast<int>(rt_err));
       return RT_ERROR_TO_GE_STATUS(rt_err);
     }
     // use current context as resource key instead

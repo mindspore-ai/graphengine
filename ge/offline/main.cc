@@ -341,10 +341,10 @@ class GFlagUtils {
   static Status CheckDumpInfershapeJsonFlags() {
     Status ret = CheckFrameWorkValid(FLAGS_framework, FLAGS_weight);
     GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED,
-                       "check custom aicpu run so failed!");
+                       "[Check][Param:FrameWork]%d value is invalid.", FLAGS_framework);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_weight != "" && !ge::CheckInputPathValid(FLAGS_weight, "--weight"),
-        return domi::FAILED, "Input parameter[--weight]'s value[%s] is invalid!",
+        return domi::FAILED, "[Check][Param:weight]value:%s: is invalid, path can not reach.",
         FLAGS_weight.c_str());
     return domi::SUCCESS;
   }
@@ -355,34 +355,34 @@ class GFlagUtils {
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_model == "",
         ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"model"});
-        ret = ge::FAILED, "Input parameter[--model]'s value is empty!");
+        ret = ge::FAILED, "[Check][Param]Input parameter[--model]'s value is empty!");
 
     // check param disable_reuse_memory
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ge::CheckDisableReuseMemoryParamValid(to_string(FLAGS_disable_reuse_memory)) != ge::SUCCESS,
-        ret = ge::FAILED, "check disable_reuse_memory failed!");
+        ret = ge::FAILED, "[Check][DisableReuseMemory]failed!");
 
     // check optypelist_for_implmode and op_select_implmode
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ge::CheckImplmodeParamValid(FLAGS_optypelist_for_implmode,
                                     FLAGS_op_select_implmode) != ge::SUCCESS,
-        ret = ge::FAILED, "check optypelist_for_implmode and op_select_implmode failed!");
+        ret = ge::FAILED, "[Check][ImplMode]check optypelist_for_implmode and op_select_implmode failed!");
     // No output file information passed in
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_mode == GEN_OM_MODEL && FLAGS_output == "",
         ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"output"});
-        ret = ge::FAILED, "Input parameter[--output]'s value is empty!");
+        ret = ge::FAILED, "[Check][Param]Input parameter[--output]'s value is empty!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         CheckFrameWorkValid(FLAGS_framework, FLAGS_weight) != ge::SUCCESS,
         ret = ge::FAILED,
-        "CheckFrameWorkValid failed");
+        "[Check][FrameWork] failed for input --FLAGS_framework and --FLAGS_weight invalid.");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ge::CheckDynamicInputParamValid(FLAGS_dynamic_batch_size, FLAGS_dynamic_image_size,
                                         FLAGS_dynamic_dims, FLAGS_input_shape, FLAGS_input_shape_range,
                                         FLAGS_input_format, is_dynamic_input) != ge::SUCCESS,
-        ret = ge::FAILED, "check dynamic size(batch size, image size or dims) failed!");
+        ret = ge::FAILED, "[Check][DynamicInput]dynamic size(batch size, image size or dims) invalid!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         !FLAGS_insert_op_conf.empty() && !FLAGS_dynamic_dims.empty(),
@@ -390,26 +390,26 @@ class GFlagUtils {
                                                         {"parameter", "value", "reason"},
                                                         {"--insert_op_conf", FLAGS_insert_op_conf,
                                                          "dynamic dims function does not support aipp"});
-        ret = ge::FAILED, "dynamic dims function does not support aipp");
+        ret = ge::FAILED, "[Check][Param]dynamic dims function does not support aipp");
 
 #if !defined(__ANDROID__) && !defined(ANDROID)
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!CheckEncryptModeValid(FLAGS_encrypt_mode), ret = ge::FAILED,
-                                   "encrypt_mode %d not valid!!", FLAGS_encrypt_mode);
+                                   "[Check][EncryptMode]value %d not valid!!", FLAGS_encrypt_mode);
 
     if (FLAGS_encrypt_mode == 0) {  // Encryption mode
       GELOGI("ge will run with encrypt!");
 
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_encrypt_key), ret = ge::FAILED,
-                                     "encrypt_key file not found!!");
+                                     "[Check][InputPath]encrypt_key file not found!!");
 
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_certificate), ret = ge::FAILED,
-                                     "certificate file not found!!");
+                                     "[Check][InputPath]certificate file not found!!");
 
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_hardware_key), ret = ge::FAILED,
-                                     "hardware_key file not found!!");
+                                     "[Check][InputPath]hardware_key file not found!!");
 
       GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_private_key), ret = ge::FAILED,
-                                     "private_key file not found!!");
+                                     "[Check][InputPath]private_key file not found!!");
     } else {  // No encryption
       GELOGI("ge will run without encrypt!");
     }
@@ -420,41 +420,41 @@ class GFlagUtils {
      */
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_model != "" && !ge::CheckInputPathValid(FLAGS_model, "--model"), ret = ge::FAILED,
-        "model file %s not found!!", FLAGS_model.c_str());
+        "[Check][InputPath]model file %s not found!!", FLAGS_model.c_str());
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_weight != "" && !ge::CheckInputPathValid(FLAGS_weight, "--weight"),
-        ret = ge::FAILED, "weight file %s not found!!",
+        ret = ge::FAILED, "[Check][InputPath]weight file %s not found!!",
         FLAGS_weight.c_str());
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_cal_conf != "" && !ge::CheckInputPathValid(FLAGS_cal_conf, "--cal_conf"),
-        ret = ge::FAILED, "calibration config file %s not found!!",
+        ret = ge::FAILED, "[Check][InputPath]calibration config file %s not found!!",
         FLAGS_cal_conf.c_str());
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_op_name_map != "" && !ge::CheckInputPathValid(FLAGS_op_name_map, "--op_name_map"),
-        ret = ge::FAILED, "op config file %s not found!!",
+        ret = ge::FAILED, "[Check][InputPath]op config file %s not found!!",
         FLAGS_op_name_map.c_str());
 
     GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(FLAGS_insert_op_conf)) == ge::SUCCESS,
-                     ret = ge::FAILED, "check insert op conf failed!");
+                     ret = ge::FAILED, "[Check][InsertOpConf]failed!");
 
     GE_CHK_BOOL_EXEC(ge::CheckCompressWeightParamValid(
         FLAGS_enable_compress_weight, FLAGS_compress_weight_conf) == ge::SUCCESS,
-        ret = ge::FAILED, "check compress weight failed!");
+        ret = ge::FAILED, "[Check][CompressWeight]failed!");
 
     GE_CHK_BOOL_EXEC(ge::CheckKeepTypeParamValid(FLAGS_keep_dtype) == ge::SUCCESS,
-        ret = ge::FAILED, "check keep dtype failed!");
+        ret = ge::FAILED, "[Check][KeepType]failed!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         !ge::CheckOutputPathValid(FLAGS_check_report, "--check_report"), ret = ge::FAILED,
-        "check_report file %s not found!!", FLAGS_check_report.c_str());
+        "[Check][OutputPath]]check_report file %s not found!!", FLAGS_check_report.c_str());
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_mode == GEN_OM_MODEL && FLAGS_output != "" &&
         (!ge::CheckOutputPathValid(FLAGS_output, "--output") || !CheckPathWithName(FLAGS_output)),
-        ret = ge::FAILED, "output path %s is not valid!!", FLAGS_output.c_str());
+        ret = ge::FAILED, "[Check][OutputPath]output path %s is not valid!!", FLAGS_output.c_str());
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_save_original_model != "" &&
@@ -463,18 +463,18 @@ class GFlagUtils {
         ErrorManager::GetInstance().ATCReportErrMessage(
             "E10005", {"parameter", "value"}, {"save_original_model", FLAGS_save_original_model});
         ret = ge::FAILED,
-        "Input parameter[--save_original_model]'s value[%s] must be true or false.",
+        "[Check][Parameter]Input parameter[--save_original_model]'s value[%s] must be true or false.",
         FLAGS_save_original_model.c_str());
     GE_CHK_BOOL_EXEC(ge::CheckBufferOptimizeParamValid(FLAGS_buffer_optimize) == ge::SUCCESS,
-        ret = ge::FAILED, "check output type failed!");
+        ret = ge::FAILED, "[Check][BufferOptimize]check output type failed!");
 
     GE_CHK_BOOL_EXEC(
         ge::CheckEnableSingleStreamParamValid(std::string(FLAGS_enable_single_stream)) == ge::SUCCESS,
-        ret = ge::FAILED, "check enable single stream failed!");
+        ret = ge::FAILED, "[Check][EnableSingleStream]failed!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((FLAGS_display_model_info != "0") && (FLAGS_display_model_info != "1"),
       ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"display_model_info"});
-      ret = ge::FAILED, "Input parameter[--display_model_info]'s value must be 1 or 0.");
+      ret = ge::FAILED, "[Check][Parameter]Input parameter[--display_model_info]'s value must be 1 or 0.");
 
     return ret;
   }
@@ -491,25 +491,25 @@ class GFlagUtils {
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(FLAGS_om == "",
         ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"om"});
         ret = ge::FAILED,
-        "Input parameter[--om]'s value is empty!!");
+        "[Check][Parameter]Input parameter[--om]'s value is empty!!");
 
     // JSON path not passed in
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(FLAGS_json == "",
         ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"json"});
         ret = ge::FAILED,
-        "Input parameter[--json]'s value is empty!!");
+        "[Check][Parameter]Input parameter[--json]'s value is empty!!");
 
     // Check if the model path is valid
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_om != "" && !ge::CheckInputPathValid(FLAGS_om, "--om"),
         ret = ge::FAILED,
-        "model file path is invalid: %s.", FLAGS_om.c_str());
+        "[Check][InputPath]model file path is invalid: %s.", FLAGS_om.c_str());
 
     // Check whether the JSON path is valid
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_json != "" && !ge::CheckOutputPathValid(FLAGS_json, "--json"),
         ret = ge::FAILED,
-        "json file path is invalid: %s.", FLAGS_json.c_str());
+        "[Check][OutputPath]json file path is invalid: %s.", FLAGS_json.c_str());
 
     return ret;
   }
@@ -574,7 +574,8 @@ class GFlagUtils {
     if (fileName.size() > static_cast<int>(PATH_MAX)) {
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E10021", {"parameter", "size"}, {"output", std::to_string(PATH_MAX)});
-      GELOGE(ge::FAILED, "Input parameter[--output]'s path is too long, it must be less than %d", PATH_MAX);
+      GELOGE(ge::FAILED, 
+          "[Check][Path]Input parameter[--output]'s path is too long, it must be less than %d", PATH_MAX);
       return false;
     }
 
@@ -632,8 +633,8 @@ static bool CheckInputFormat() {
     // only support NCHW ND
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, kCaffeFormatSupport});
-    GELOGE(ge::FAILED,
-        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), kCaffeFormatSupport);
+    GELOGE(ge::FAILED, "[Check][InputFormat]Invalid value for --input_format[%s], %s.", 
+        FLAGS_input_format.c_str(), kCaffeFormatSupport);
     return false;
   } else if ((FLAGS_framework == static_cast<int32_t>(domi::TENSORFLOW))) { // tf
     if (ge::tf_support_input_format.find(FLAGS_input_format) != ge::tf_support_input_format.end()) {
@@ -642,8 +643,8 @@ static bool CheckInputFormat() {
     // only support NCHW NHWC ND NCDHW NDHWC
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, kTFFormatSupport});
-    GELOGE(ge::FAILED,
-        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), kTFFormatSupport);
+    GELOGE(ge::FAILED, "[Check][InputFormat]Invalid value for --input_format[%s], %s.", 
+        FLAGS_input_format.c_str(), kTFFormatSupport);
     return false;
   } else if (FLAGS_framework == static_cast<int32_t>(domi::ONNX)) {
     if (ge::onnx_support_input_format.find(FLAGS_input_format) != ge::onnx_support_input_format.end()) {
@@ -652,8 +653,8 @@ static bool CheckInputFormat() {
     // only support NCHW ND
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10001", {"parameter", "value", "reason"}, {"--input_format", FLAGS_input_format, kONNXFormatSupport});
-    GELOGE(ge::FAILED,
-        "Invalid value for --input_format[%s], %s.", FLAGS_input_format.c_str(), kONNXFormatSupport);
+    GELOGE(ge::FAILED, "[Check][InputFormat]Invalid value for --input_format[%s], %s.", 
+        FLAGS_input_format.c_str(), kONNXFormatSupport);
     return false;
   }
   return true;
@@ -846,11 +847,11 @@ Status CreateInputsForInference(const ge::Graph &graph, vector<ge::GeTensor> &in
 
 domi::Status GenerateInfershapeJson() {
   if (!CheckInputFormat()) {
-    GELOGE(ge::FAILED, "Check input_format failed");
+    GELOGE(ge::FAILED, "[Check][InputFormat] failed.");
     return domi::FAILED;
   }
   Status ret = GFlagUtils::CheckDumpInfershapeJsonFlags();
-  GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "Check flags failed!");
+  GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "[Check][DumpInfershapeJsonFlags] failed!");
 
   ge::GeGenerator ge_generator;
   std::map<string, string> options;
@@ -897,13 +898,14 @@ static Status ConvertModelToJson(int fwk_type, const string &model_file, const s
     ErrorManager::GetInstance().ATCReportErrMessage(
       "E10001", {"parameter", "value", "reason"},
       {"--framework", std::to_string(fwk_type), kModelToJsonSupport});
-    GELOGE(ge::FAILED, "Invalid value for --framework[%d], %s.", fwk_type, kModelToJsonSupport);
+    GELOGE(ge::FAILED, "[Convert][ModelToJson]Invalid value for --framework[%d], %s.", 
+        fwk_type, kModelToJsonSupport);
     ret = ge::FAILED;
   }
 
   if (FLAGS_dump_mode != "0" && FLAGS_dump_mode != "1") {
     ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"dump_mode"});
-    GELOGE(ge::FAILED, "Input parameter[--dump_mode]'s value must be 1 or 0.");
+    GELOGE(ge::FAILED, "[Convert][ModelToJson] Input parameter[--dump_mode]'s value must be 1 or 0.");
     ret = ge::FAILED;
   }
 
@@ -978,12 +980,13 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     graph = load_model.GetGraph();
 
     GE_CHK_STATUS_EXEC(ge::InitDomiOmgContext(FLAGS_input_shape, FLAGS_input_format, "", is_dynamic_input),
-                       GELOGE(ge::FAILED, "ATC Generate call InitDomiOmgContext ret fail");
+                       GELOGE(ge::FAILED, "[Init][DomiOmgContext]ATC Generate call InitDomiOmgContext ret fail");
                        (void)ge_generator.Finalize(); (void)ge::GELib::GetInstance()->Finalize(); return domi::FAILED);
 
     Status ret = CreateInputsForInference(graph, inputs);
     if (ret != ge::SUCCESS) {
-      GELOGE(ge::FAILED, "create inputs for inference failed.");
+      GELOGE(ge::FAILED, "[Create][InputsForInference] failed.");
+      REPORT_CALL_ERROR("E19999", "CreateInputsForInference failed for input --graph and --inputs.");
       (void)ge_generator.Finalize();
       (void)ge::GELib::GetInstance()->Finalize();
       return domi::FAILED;
@@ -1085,7 +1088,7 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
   // check optypelist_for_implmode and op_select_implmode
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       ge::CheckImplmodeParamValid(FLAGS_optypelist_for_implmode, FLAGS_op_select_implmode) != ge::SUCCESS,
-      return ge::FAILED, "check optypelist_for_implmode and op_select_implmode failed!");
+      return ge::FAILED, "[Check][ImplmodeParam] fail for input optypelist_for_implmode and op_select_implmode.");
 
   std::map<string, string> options;
   // need to be changed when ge.ini plan is done
@@ -1138,12 +1141,12 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
 
 domi::Status GenerateOmModel() {
   if (!CheckInputFormat()) {
-    GELOGE(ge::FAILED, "Check input_format failed");
+    GELOGE(ge::FAILED, "[Check][InputFormat]failed.");
     return domi::FAILED;
   }
   Status ret = GFlagUtils::CheckFlags();
   GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED,
-                   "Check flags failed! Please check whether some atc params that include semicolons[;] use double "
+                   "[Check][Flags] failed! Please check whether some atc params that include semicolons[;] use double "
                    "quotation marks (\") to enclose each argument such as out_nodes, input_shape, dynamic_image_size");
 #if !defined(__ANDROID__) && !defined(ANDROID)
   // Load custom operator Library
@@ -1151,7 +1154,7 @@ domi::Status GenerateOmModel() {
 
   SaveCustomCaffeProtoPath();
 
-  GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "check custom aicpu run so failed!");
+  GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "[Check][Flags]check custom aicpu run so failed!");
 #endif
 
   const int f_stream_num = 1;
@@ -1250,7 +1253,7 @@ domi::Status GenerateOmModel() {
 domi::Status ConvertModelToJson() {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
-  GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "Check convert json params flags failed!");
+  GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "[CheckConver][JsonParamFlags] failed!");
 
   ret = ConvertModelToJson(FLAGS_framework, FLAGS_om, FLAGS_json);
 
@@ -1264,13 +1267,13 @@ domi::Status DisplayModelInfo() {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(FLAGS_om == "",
       ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"om"});
       return ge::FAILED,
-      "Input parameter[--om]'s value is empty!!");
+      "[Check][Parameter]Input parameter[--om]'s value is empty!!");
 
   // Check if the model path is valid
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       FLAGS_om != "" && !ge::CheckInputPathValid(FLAGS_om, "--om"),
       return ge::FAILED,
-      "model file path is invalid: %s.", FLAGS_om.c_str());
+      "[Check][InputPath]model file path is invalid: %s.", FLAGS_om.c_str());
 
   if (FLAGS_framework == -1) {
     return ge::ConvertOm(FLAGS_om.c_str(), "", false);
@@ -1311,13 +1314,15 @@ domi::Status ConvertPbtxtToJson() {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   if (ret != domi::SUCCESS) {
-    GELOGE(ge::FAILED, "Check convert json params flags failed!");
+    GELOGE(ge::FAILED, "[CheckConver][JsonParamFlags] failed!");
     return domi::FAILED;
   }
 
   ret = ge::ConvertPbtxtToJson(FLAGS_om.c_str(), FLAGS_json.c_str());
   if (ret != domi::SUCCESS) {
-    GELOGE(ge::FAILED, "ConvertPbtxtToJson fail.");
+    GELOGE(ge::FAILED, "[Convert][PbtxtToJson] fail.");
+    REPORT_CALL_ERROR("E19999", "ConvertPbtxtToJson failed, FLAGS_om:%s, FLAGS_json:%s.",
+        FLAGS_om.c_str(), FLAGS_json.c_str());
     return domi::FAILED;
   }
 
@@ -1386,8 +1391,8 @@ bool CheckMemInfo() {
   GELOGI("Get mem available [%lu kB].", current_mem_available);
   std::cout << "Current available mem is " << current_mem_available << "kB." << std::endl;
   if ((current_mem_available > 0) && (current_mem_available < kMinAvailableMem)) {
-    GELOGE(ge::PARAM_INVALID, "Current available mem [%lu kB] can not be smaller than [%lu kB] .",
-           current_mem_available, kMinAvailableMem);
+    GELOGE(ge::PARAM_INVALID, "[Check][MemSize]Current available mem [%lu kB] can not be smaller than [%lu kB] .",
+        current_mem_available, kMinAvailableMem);
     ErrorManager::GetInstance().ATCReportErrMessage("E10044", {"value", "min_value"},
                                                     {to_string(current_mem_available), to_string(kMinAvailableMem)});
     return false;
@@ -1407,7 +1412,7 @@ int main(int argc, char* argv[]) {
   }
   do {
     if (!CheckMemInfo()) {
-      GELOGE(ge::PARAM_INVALID, "Current available mem is too small");
+      GELOGE(ge::PARAM_INVALID, "[Check][MemInfo]Current available mem is too small.");
       ret = domi::FAILED;
       break;
     }
@@ -1421,17 +1426,17 @@ int main(int argc, char* argv[]) {
       GE_IF_BOOL_EXEC(GenerateOmModel() != domi::SUCCESS, ret = domi::FAILED; break);
     } else if (MODEL_TO_JSON == FLAGS_mode) {  // Mode 1, transfer model to JSON
       GE_CHK_BOOL_EXEC(ConvertModelToJson() == domi::SUCCESS, ret = domi::FAILED;
-                       break, "ATC ConvertJson execute failed!!");
+                       break, "[Convert][ModelToJson]ATC ConvertJson execute failed!!");
     } else if (FLAGS_mode == ge::RunMode::PBTXT_TO_JSON) {
       GE_CHK_BOOL_EXEC(ConvertPbtxtToJson() == domi::SUCCESS, ret = domi::FAILED;
-                       break, "ATC convert pbtxt to json execute failed!!");
+                       break, "[Convert][PbtxtToJson]ATC convert pbtxt to json execute failed!!");
     } else if (FLAGS_mode == ge::RunMode::DISPLAY_OM_INFO) {
       GE_CHK_BOOL_EXEC(DisplayModelInfo() == domi::SUCCESS, ret = domi::FAILED;
-        break, "ATC DisplayModelInfo failed!!");
+        break, "[Display][ModelInfo]ATC DisplayModelInfo failed!!");
     } else {
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E10001", {"parameter", "value", "reason"}, {"--mode", std::to_string(FLAGS_mode), kModeSupport});
-      GELOGE(ge::PARAM_INVALID, "Invalid value for --mode[%d], %s.", FLAGS_mode, kModeSupport);
+      GELOGE(ge::PARAM_INVALID, "[Check][Parameter]Invalid value for --mode[%d], %s.", FLAGS_mode, kModeSupport);
       ret = domi::FAILED;
       break;
     }

@@ -112,8 +112,10 @@ Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bi
     ret = rtDevBinaryRegister(&binary, bin_handle);
   }
   if (ret != RT_ERROR_NONE) {
-    GELOGE(ret, "DoRegisterBinary failed, bin key = %s, core_type = %ld, rt ret = %d", stub_name_.c_str(),
-           param.core_type, static_cast<int>(ret));
+    GELOGE(ret, "[DoRegister][Binary] failed, bin key = %s, core_type = %ld, rt ret = %d", stub_name_.c_str(),
+        param.core_type, static_cast<int>(ret));
+    REPORT_CALL_ERROR("E19999", "DoRegisterBinary failed, bin key = %s, core_type = %ld, rt ret = %d", 
+        stub_name_.c_str(), param.core_type, static_cast<int>(ret));
     return ret;
   }
 
@@ -127,8 +129,10 @@ Status TbeTaskBuilder::DoRegisterMeta(void *bin_handle) {
   if (!meta_data.empty()) {
     auto rt_ret = rtMetadataRegister(bin_handle, meta_data.c_str());
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "rtMetadataRegister failed. bin key = %s, meta_data = %s, rt ret = %d", stub_name_.c_str(),
-             meta_data.c_str(), static_cast<int>(rt_ret));
+      GELOGE(rt_ret, "[Invoke][rtMetadataRegister] failed. bin key = %s, meta_data = %s, rt ret = %d", 
+          stub_name_.c_str(), meta_data.c_str(), static_cast<int>(rt_ret));
+      REPORT_CALL_ERROR("E19999", "rtMetadataRegister failed, bin key = %s, meta_data = %s, rt ret = %d", 
+          stub_name_.c_str(), meta_data.c_str(), static_cast<int>(rt_ret));
       return rt_ret;
     }
   }
@@ -139,8 +143,10 @@ Status TbeTaskBuilder::DoRegisterMeta(void *bin_handle) {
 Status TbeTaskBuilder::DoRegisterFunction(void *bin_handle, const char *stub_name, const char *kernel_name) {
   auto rt_ret = rtFunctionRegister(bin_handle, stub_name, stub_name, kernel_name, FUNC_MODE_NORMAL);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtFunctionRegister failed. bin key = %s, kernel name = %s, rt ret = %d", stub_name, kernel_name,
-           static_cast<int>(rt_ret));
+    GELOGE(rt_ret, "[Invoke][rtFunctionRegister] failed. bin key = %s, kernel name = %s, rt ret = %d", 
+        stub_name, kernel_name, static_cast<int>(rt_ret));
+    REPORT_CALL_ERROR("E19999", "rtFunctionRegister failed. bin key = %s, kernel name = %s, rt ret = %d", 
+        stub_name, kernel_name, static_cast<int>(rt_ret));
     return rt_ret;
   }
 
@@ -197,27 +203,32 @@ Status TbeTaskBuilder::RegisterKernel(TbeOpTask &task, const SingleOpModelParam 
 
     auto tbe_kernel = GetTbeKernel(op_desc_);
     if (tbe_kernel == nullptr) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
-             op_desc_->GetName().c_str());
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TbeKernel] fail for OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
+          op_desc_->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "GetTbeKernel fail for OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
+          op_desc_->GetName().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
 
     auto holder = std::unique_ptr<KernelHolder>(new (std::nothrow) KernelHolder(stub_func, tbe_kernel));
     if (holder == nullptr) {
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create KernelHodler failed.");
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Create][KernelHodler] failed.");
+      REPORT_INNER_ERROR("E19999", "Create KernelHodler failed.");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
 
     void *bin_handle = nullptr;
     auto ret = DoRegisterKernel(*tbe_kernel, stub_func, &bin_handle, param);
     if (ret != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "RegisterKernel failed. stub name = %s", stub_name_.c_str());
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Register][Kernel] failed. stub name = %s", stub_name_.c_str());
+      REPORT_CALL_ERROR("E19999", "DoRegisterKernel failed, stub name = %s", stub_name_.c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     holder->SetBinHandle(bin_handle);
     if (!registry.AddKernel(stub_name_, std::move(holder))) {
       // should not happen. only one thread can reach here
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Add kernel failed. stub name = %s", stub_name_.c_str());
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Add][Kernel] failed. stub name = %s", stub_name_.c_str());
+      REPORT_CALL_ERROR("E19999", "AddKernel failed. stub name = %s", stub_name_.c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
   }
@@ -231,24 +242,29 @@ Status TbeTaskBuilder::RegisterKernelWithHandle(TbeOpTask &task, const SingleOpM
   HandleRegistry &registry = HandleRegistry::GetInstance();
   auto tbe_kernel = GetTbeKernel(op_desc_);
   if (tbe_kernel == nullptr) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
-           op_desc_->GetName().c_str());
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TbeKernel] fail for OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
+        op_desc_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "GetTbeKernel fail for OP EXT ATTR NAME TBE_KERNEL not found. op = %s",
+        op_desc_->GetName().c_str());
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   void *bin_handle = nullptr;
   auto ret = DoRegisterKernel(*tbe_kernel, nullptr, &bin_handle, param);
   if (ret != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "RegisterKernel failed. node name = %s", op_desc_->GetName().c_str());
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Register][Kernel] failed. node name = %s", op_desc_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "DoRegisterKernel failed, node name = %s", op_desc_->GetName().c_str());
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   handle_ = bin_handle;
   auto holder = std::unique_ptr<HandleHolder>(new (std::nothrow) HandleHolder(handle_));
   if (holder == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create HandleHodler failed.");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Create][HandleHolder] failed.");
+    REPORT_INNER_ERROR("E19999", "Create HandleHolder failed.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   if (!registry.AddHandle(std::move(holder))) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Add handle failed. node name = %s", op_desc_->GetName().c_str());
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Add][Handle] failed. node name = %s", op_desc_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "AddHandle failed, node name = %s", op_desc_->GetName().c_str());
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
@@ -274,14 +290,16 @@ Status TbeTaskBuilder::GetSmDesc(void **sm_desc, const SingleOpModelParam &param
 
     auto rt_ret = rtMemAllocManaged(sm_desc, sm_desc_str.size(), RT_MEMORY_SPM);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "rtMemAllocManaged failed, ret: %d", static_cast<int>(rt_ret));
+      GELOGE(rt_ret, "[Invoke][rtMemAllocManaged] failed, ret: %d.", static_cast<int>(rt_ret));
+      REPORT_CALL_ERROR("E19999", "rtMemAllocManaged failed, ret: %d.", static_cast<int>(rt_ret));
       return rt_ret;
     }
 
     rt_ret = rtMemcpy(*sm_desc, sm_desc_str.size(), sm_desc_str.data(), sm_desc_str.size(), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       (void)rtMemFreeManaged(*sm_desc);
-      GELOGE(rt_ret, "rtMemcpy, ret: %d", static_cast<int>(rt_ret));
+      GELOGE(rt_ret, "[Update][Param:sm_desc] fail for rtMemcpy return: %d.", static_cast<int>(rt_ret));
+      REPORT_INNER_ERROR("E19999", "rtMemcpy failed, ret:%d.", static_cast<int>(rt_ret));
       return rt_ret;
     }
   }
@@ -296,7 +314,9 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
 
   auto rt_ret = rtMemcpy(args.get(), arg_size, kernel_def_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtMemcpy args failed, size = %zu, ret = %d", arg_size, static_cast<int>(rt_ret));
+    GELOGE(rt_ret, "[Update][Kernel_def:args] rtMemcpy failed, size = %zu, ret = %d", 
+        arg_size, static_cast<int>(rt_ret));
+    REPORT_INNER_ERROR("E19999", "rtMemcpy failed, size = %zu, ret = %d", arg_size, static_cast<int>(rt_ret));
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
@@ -315,7 +335,8 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
     uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
     rt_ret = rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "rtMemcpy addresses failed, ret = %d", static_cast<int>(rt_ret));
+      GELOGE(rt_ret, "[Update][Kernel_def:args] rtMemcpy addresses failed, ret = %d", static_cast<int>(rt_ret));
+      REPORT_INNER_ERROR("E19999", "rtMemcpy failed, ret = %d", static_cast<int>(rt_ret));
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
   }
@@ -332,7 +353,9 @@ Status TbeTaskBuilder::SetKernelWithHandleArgs(TbeOpTask &task, const SingleOpMo
 
   auto rt_ret = rtMemcpy(args.get(), arg_size, kernel_def_with_handle_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtMemcpy args failed, size = %zu, ret = %d", arg_size, static_cast<int>(rt_ret));
+    GELOGE(rt_ret, "[Update][Kernel_def:args]rtMemcpy failed, size = %zu, ret = %d", 
+        arg_size, static_cast<int>(rt_ret));
+    REPORT_INNER_ERROR("E19999", "rtMemcpy failed, size = %zu, ret = %d", arg_size, static_cast<int>(rt_ret));
     return rt_ret;
   }
 
@@ -351,7 +374,8 @@ Status TbeTaskBuilder::SetKernelWithHandleArgs(TbeOpTask &task, const SingleOpMo
     uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
     rt_ret = rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "rtMemcpy addresses failed, ret = %d", static_cast<int>(rt_ret));
+      GELOGE(rt_ret, "[Update][Kernel_def:args] rtMemcpy addresses failed, ret = %d", static_cast<int>(rt_ret));
+      REPORT_INNER_ERROR("E19999", "rtMemcpy failed, ret = %d", static_cast<int>(rt_ret));
       return rt_ret;
     }
   }
@@ -384,7 +408,8 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
     void *stub_func = nullptr;
     auto rt_ret = rtGetFunctionByName(stub_name_.c_str(), &stub_func);
     if (rt_ret != SUCCESS) {
-      GELOGE(rt_ret, "rtGetFunctionByName failed.");
+      GELOGE(rt_ret, "[Get][FunctionByName] failed. stub_name:%s.", stub_name_.c_str());
+      REPORT_CALL_ERROR("E19999", "rtGetFunctionByName failed, stub_name:%s.", stub_name_.c_str());
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     task.SetStubFunc(stub_name_, stub_func);
@@ -399,7 +424,10 @@ Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
   (void)AttrUtils::GetInt(op_desc_, kAttrOpParamSize, max_size);
   GELOGD("Got op param size by key: %s, ret = %ld", kAttrOpParamSize, max_size);
   if (max_size < 0) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[%s] Invalid op_param_size: %ld.", op_desc_->GetName().c_str(), max_size);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Get][Int] %s Invalid op_param_size: %ld.", 
+        op_desc_->GetName().c_str(), max_size);
+    REPORT_CALL_ERROR("E19999", "AttrUtils::GetInt failed, %s Invalid op_param_size: %ld.", 
+        op_desc_->GetName().c_str(), max_size);
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   void *tiling_buffer = nullptr;

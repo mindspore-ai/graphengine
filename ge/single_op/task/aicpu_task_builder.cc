@@ -30,7 +30,8 @@ namespace ge {
     auto sec_ret = memcpy_s(&fwk_op_kernel, sizeof(STR_FWK_OP_KERNEL),
                             kernel_def_.args().data(), kernel_def_.args().size());
     if (sec_ret != EOK) {
-      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "memcpy failed, ret: %d", sec_ret);
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Memcpy_s][Param:fwk_op_kernel] failed, ret: %d", sec_ret);
+      REPORT_INNER_ERROR("E19999", "memcpy_s fwk_op_kernel failed, ret:%d.", sec_ret);
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
 
@@ -45,7 +46,8 @@ namespace ge {
     void *fwk_op_args = nullptr;
     auto rt_ret = rtMalloc(&fwk_op_args, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "malloc arg memory failed, ret = %d", rt_ret);
+      GELOGE(rt_ret, "[RtMalloc][Memory] failed, ret = %d", rt_ret);
+      REPORT_INNER_ERROR("E19999", "rtMalloc Memory failed, ret = %d", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
 
@@ -53,7 +55,8 @@ namespace ge {
                       sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
     if (rt_ret != RT_ERROR_NONE) {
       (void)rtFree(fwk_op_args);
-      GELOGE(rt_ret, "copy args failed, ret = %d", rt_ret);
+      GELOGE(rt_ret, "[rtMemcpy][Fwk_Op_Args] failed, ret = %d", rt_ret);
+      REPORT_INNER_ERROR("E19999", "rtMemcpy fwk_op_args failed, ret = %d", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     *args = fwk_op_args;
@@ -62,8 +65,10 @@ namespace ge {
 
   Status AiCpuTaskBuilder::InitWorkspaceAndIO(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag) {
     if (kernel_def_.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
-      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
-             sizeof(STR_FWK_OP_KERNEL), kernel_def_.args_size());
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
+          sizeof(STR_FWK_OP_KERNEL), kernel_def_.args_size());
+      REPORT_INNER_ERROR("E19999", "sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
+          sizeof(STR_FWK_OP_KERNEL), kernel_def_.args_size());
       return ACL_ERROR_GE_PARAM_INVALID;
     }
     GE_CHK_RT_RET(rtMalloc(&task.workspace_addr_, kernel_def_.task_info_size(), RT_MEMORY_HBM));
@@ -97,16 +102,16 @@ namespace ge {
     auto &kernel_ext_info = kernel_def_.kernel_ext_info();
     auto kernel_ext_info_size = kernel_def_.kernel_ext_info_size();
     GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, ACL_ERROR_GE_PARAM_INVALID,
-                           "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
+                           "[Check][Size]task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
                            kernel_ext_info.size(), kernel_ext_info_size);
-    GE_CHK_STATUS_RET(task.SetExtInfoAndType(kernel_ext_info, kernel_id), "Init ext info failed.");
+    GE_CHK_STATUS_RET(task.SetExtInfoAndType(kernel_ext_info, kernel_id), "[Set][ExtInfoAndType]failed.");
 
     if (task.ext_info_addr_dev_ != nullptr) {
       fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoAddr =  reinterpret_cast<uintptr_t>(task.ext_info_addr_dev_);
       fwk_op_kernel.fwkKernelBase.fwk_kernel.extInfoLen = kernel_ext_info_size;
     }
-    GE_CHK_STATUS_RET(task.SetInputConst(), "AiCpuTask set input_const failed.");
-    GE_CHK_STATUS_RET(task.InitForSummaryAndCopy(), "AiCpuTask init for summary and copy task failed.");
+    GE_CHK_STATUS_RET(task.SetInputConst(), "[Set][InputConst] failed.");
+    GE_CHK_STATUS_RET(task.InitForSummaryAndCopy(), "[Init][SummaryAndCopy] failed.");
 
     fwk_op_kernel.fwkKernelBase.fwk_kernel.sessionID = ULLONG_MAX;
     fwk_op_kernel.fwkKernelBase.fwk_kernel.kernelID = kernel_id;

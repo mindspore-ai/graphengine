@@ -26,7 +26,8 @@ AiCpuCCTaskBuilder::AiCpuCCTaskBuilder(const OpDescPtr &op_desc, const domi::Ker
 Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task, const SingleOpModelParam &param) {
   size_t aicpu_arg_size = kernel_def_.args_size();
   if (aicpu_arg_size <= sizeof(aicpu::AicpuParamHead)) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
+    REPORT_INNER_ERROR("E19999", "aicpu_arg_size is invalid, value = %zu", aicpu_arg_size);
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -36,13 +37,15 @@ Status AiCpuCCTaskBuilder::SetKernelArgs(AiCpuCCTask &task, const SingleOpModelP
   std::unique_ptr<uint8_t[]> aicpu_args;
   aicpu_args.reset(new(std::nothrow) uint8_t[aicpu_arg_size]());
   if (aicpu_args == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "malloc failed, size = %zu", aicpu_arg_size);
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[New][Memory] failed, size = %zu", aicpu_arg_size);
+    REPORT_INNER_ERROR("E19999", "new Memory failed, size = %zu", aicpu_arg_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   auto err = memcpy_s(aicpu_args.get(), aicpu_arg_size, kernel_def_.args().data(), aicpu_arg_size);
   if (err != EOK) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "memcpy_s args failed, size = %zu, err = %d", aicpu_arg_size, err);
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Memcpy_s][Args] failed, size = %zu, err = %d", aicpu_arg_size, err);
+    REPORT_INNER_ERROR("E19999", "memcpy_s aicpu_args failed, size = %zu, err = %d", aicpu_arg_size, err);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
@@ -76,9 +79,9 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id, cons
     task.dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
     bool loaded = false;
     GE_CHK_STATUS_RET(ModelManager::GetInstance()->LoadCustAicpuSo(op_desc_, so_name, loaded), 
-                      "launch cust aicpu so failed");
+                      "[Load][CustAicpuSo] failed.");
     if (!loaded) {
-      GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "launch cust aicpu so failed.");
+      GE_CHK_STATUS_RET(ModelManager::GetInstance()->LaunchCustAicpuSo(), "[Launch][CustAicpuSo] failed.");
     }
   }
 
@@ -89,18 +92,19 @@ Status AiCpuCCTaskBuilder::BuildTask(AiCpuCCTask &task, uint64_t kernel_id, cons
   auto &kernel_ext_info = kernel_def_.kernel_ext_info();
   auto kernel_ext_info_size = kernel_def_.kernel_ext_info_size();
   GE_CHK_BOOL_RET_STATUS(kernel_ext_info.size() == kernel_ext_info_size, FAILED,
-                         "task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
+                         "[Check][Size]task def kernel_ext_info.size=%zu, but kernel_ext_info_size=%u.",
                          kernel_ext_info.size(), kernel_ext_info_size);
 
   ret = task.SetExtInfoAndType(kernel_ext_info, kernel_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Init ext info failed.");
+    GELOGE(ret, "[Set][ExtInfoAndType]failed, kernel_id=%lu.", kernel_id);
+    REPORT_CALL_ERROR("E19999", "SetExtInfoAndType failed, kernel_id=%lu.", kernel_id);
     return ret;
   }
-  GE_CHK_STATUS_RET(task.SetInputConst(), "AiCpuCCTask set input_const failed.");
+  GE_CHK_STATUS_RET(task.SetInputConst(), "[Set][InputConst] failed.");
 
   if (task.GetUnknownType() == DEPEND_COMPUTE) {
-    GELOGE(FAILED, "AiCpuCCTask unknown type is depend compute, it's not supported now.");
+    GELOGE(FAILED, "[Get][UnknownType] is depend compute, it's not supported now.");
     return FAILED;
   }
   auto aicpu_param_head = reinterpret_cast<aicpu::AicpuParamHead *>(task.args_.get());

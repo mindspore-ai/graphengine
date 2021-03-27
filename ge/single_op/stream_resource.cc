@@ -29,14 +29,14 @@ StreamResource::~StreamResource() {
   for (auto mem : memory_list_) {
     if (mem != nullptr) {
       auto rt_ret = rtFree(mem);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtFree failed"));
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[Free][Rt] failed."));
     }
   }
 
   for (auto weight : weight_list_) {
     if (weight != nullptr) {
       auto rt_ret = rtFree(weight);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtFree failed"));
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[Free][Rt] failed."));
     }
   }
 }
@@ -95,16 +95,18 @@ uint8_t *StreamResource::DoMallocMemory(const std::string &purpose,
   uint8_t *buffer = nullptr;
   auto ret = rtMalloc(reinterpret_cast<void **>(&buffer), size, RT_MEMORY_HBM);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMalloc failed, size = %zu, ret = %d", size, ret);
+    GELOGE(RT_FAILED, "[RtMalloc][Memory] failed, size = %zu, ret = %d", size, ret);
+    REPORT_INNER_ERROR("E19999", "rtMalloc failed, size = %zu, ret = %d, when %s.", size, ret, __FUNCTION__);
     return nullptr;
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, purpose.c_str(), size)
 
   ret = rtMemset(buffer, size, 0U, size);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMemset failed, ret = %d", ret);
+    GELOGE(RT_FAILED, "[RtMemset][Memory] failed, ret = %d", ret);
+    REPORT_INNER_ERROR("E19999", "rtMemset failed, ret = %d, when %s.", ret, __FUNCTION__);
     auto rt_ret = rtFree(buffer);
-    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtFree failed"));
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[RtFree][Memory] failed"));
     return nullptr;
   }
 
@@ -129,7 +131,9 @@ uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
   uint8_t *buffer = nullptr;
   auto ret = rtMalloc(reinterpret_cast<void **>(&buffer), size, RT_MEMORY_HBM);
   if (ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMalloc failed, size = %zu, ret = %d", size, ret);
+    GELOGE(RT_FAILED, "[RtMalloc][Memory] failed, size = %zu, ret = %d", size, ret);
+    REPORT_INNER_ERROR("E19999", "rtMalloc failed, size = %zu, ret = %d when %s.", 
+        size, ret, __FUNCTION__);
     return nullptr;
   }
 
@@ -152,7 +156,8 @@ Status StreamResource::BuildDynamicOperator(const ModelData &model_data,
   SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
   auto ret = model.Init();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
+    GELOGE(ret, "[Init][SingleOpModel] failed. model = %s, ret = %u", model_name.c_str(), ret);
+    REPORT_CALL_ERROR("E19999", "SingleOpModel init failed, model = %s, ret = %u", model_name.c_str(), ret);
     return ret;
   }
 
@@ -161,7 +166,7 @@ Status StreamResource::BuildDynamicOperator(const ModelData &model_data,
 
   GELOGI("To build operator: %s", model_name.c_str());
   GE_CHK_STATUS_RET(model.BuildDynamicOp(*this, *new_op),
-                    "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
+                    "[Build][DynamicOp]failed. op = %s, ret = %u", model_name.c_str(), ret);
   *single_op = new_op.get();
   dynamic_op_map_[model_id] = std::move(new_op);
   return SUCCESS;
@@ -179,18 +184,20 @@ Status StreamResource::BuildOperator(const ModelData &model_data, SingleOp **sin
   SingleOpModel model(model_name, model_data.model_data, model_data.model_len);
   auto ret = model.Init();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Init model failed. model = %s, ret = %u", model_name.c_str(), ret);
+    GELOGE(ret, "[Init][SingleOpModel] failed. model = %s, ret = %u", model_name.c_str(), ret);
+    REPORT_CALL_ERROR("E19999", "SingleOpModel init failed, model = %s, ret = %u", model_name.c_str(), ret);
     return ret;
   }
 
   auto new_op = std::unique_ptr<SingleOp>(new(std::nothrow) SingleOp(this, &stream_mu_, stream_));
   if (new_op == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "new SingleOp failed");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[New][SingleOp] failed.");
+    REPORT_INNER_ERROR("E19999", "new SingleOp failed when %s.", __FUNCTION__);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   GELOGI("To build operator: %s", model_name.c_str());
-  GE_CHK_STATUS_RET(model.BuildOp(*this, *new_op), "Build op failed. op = %s, ret = %u", model_name.c_str(), ret);
+  GE_CHK_STATUS_RET(model.BuildOp(*this, *new_op), "[Build][Op] failed. op = %s, ret = %u", model_name.c_str(), ret);
 
   *single_op = new_op.get();
   op_map_[model_id] = std::move(new_op);

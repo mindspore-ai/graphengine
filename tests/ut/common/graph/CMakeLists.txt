@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/om.proto"
     "${GE_CODE_DIR}/metadef/proto/ge_ir.proto"
-    "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
+    "${GE_CODE_DIR}/metadef/proto/onnx/ge_onnx.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})

@@ -31,7 +31,6 @@ const char *const kFpPoint = "fp_point";
 const char *const kBpPoint = "bp_point";
 
 #ifdef DAVINCI_SUPPORT_PROFILING
-const size_t kReportMaxLen = 2048;
 const int32_t kMaxDeviceNum = 256;
 const uint32_t kInteval = 2;
 const std::string kConfigNumsdev = "devNums";
@@ -293,21 +292,22 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportDa
   ReporterData reporter_data{};
   int ret = -1;
   int32_t cb_ret = -1;
-  size_t index = data.size() / kReportMaxLen;
+  size_t report_max_len = reporter_max_len_;
+  size_t index = data.size() / report_max_len;
   if (index >= 1) {
     reporter_data.deviceId = device_id;
     ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, tag_name.c_str(), tag_name.size());
     GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag [%s] memcpy error!", tag_name.c_str()); return;);
     for (size_t i = 0; i < index; ++i) {
-      reporter_data.data = (unsigned char *)data.c_str() + kReportMaxLen * i;
-      reporter_data.dataLen = kReportMaxLen;
+      reporter_data.data = (unsigned char *)data.c_str() + report_max_len * i;
+      reporter_data.dataLen = report_max_len;
       cb_ret = CallMsprofReport(reporter_data);
       GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data [%s] failed, ret:%d", tag_name.c_str(), cb_ret);
                       return;);
     }
-    reporter_data.dataLen = data.size() - kReportMaxLen * index;
+    reporter_data.dataLen = data.size() - report_max_len * index;
     if (reporter_data.dataLen != 0) {
-      reporter_data.data = (unsigned char *)data.c_str() + kReportMaxLen * index;
+      reporter_data.data = (unsigned char *)data.c_str() + report_max_len * index;
       cb_ret = CallMsprofReport(reporter_data);
       GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data [%s] failed, ret:%d", tag_name.c_str(), cb_ret);
                       return;);
@@ -745,15 +745,32 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
   return  execute_model_prof_on;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::PluginInit() const {
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::PluginInit() {
   if (prof_cb_.msprofReporterCallback == nullptr) {
     GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
     return ge::PARAM_INVALID;
   }
-  return prof_cb_.msprofReporterCallback(
+  int32_t cb_ret = prof_cb_.msprofReporterCallback(
       static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_INIT),
       nullptr, 0);
+  if (cb_ret != MSPROF_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Profiling reporter init failed, ret = %d.", cb_ret);
+    GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter] profiling init failed, ret = %d.", cb_ret);
+    return INTERNAL_ERROR;
+  }
+
+  cb_ret = prof_cb_.msprofReporterCallback(
+      static_cast<uint32_t>(MsprofReporterModuleId::MSPROF_MODULE_FRAMEWORK),
+      static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_DATA_MAX_LEN),
+      &reporter_max_len_, sizeof(uint32_t));
+  if (cb_ret != MSPROF_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Get profiling reporter data max len failed, ret = %d.", cb_ret);
+    GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter] Get profiling reporter data max len failed, ret = %d.", cb_ret);
+    return INTERNAL_ERROR;
+  }
+
+ return SUCCESS;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUnInit() const {

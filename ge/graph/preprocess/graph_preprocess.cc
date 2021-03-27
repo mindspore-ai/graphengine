@@ -619,19 +619,25 @@ Status ProcessInputDtDynShape(NodePtr &node_ptr, bool &is_dynamic_batch, NodePtr
     return SUCCESS;
   }
   input->SetDataType(dt_set);
-  int64_t input_shape_size = 0;
-  int64_t output_shape_size = 0;
-  ge::graphStatus input_graph_status = ge::TensorUtils::GetTensorSizeInBytes(*input, input_shape_size);
-  ge::graphStatus output_graph_status = ge::TensorUtils::GetTensorMemorySizeInBytes(*input, output_shape_size);
-  if (input_graph_status != ge::GRAPH_SUCCESS && output_graph_status != ge::GRAPH_SUCCESS) {
-    GELOGE(GRAPH_FAILED, "GetTensorSize failed!");
-    return FAILED;
-  }
-  ge::TensorUtils::SetSize(*input, input_shape_size);
   const GeTensorDescPtr &output = op_desc->MutableOutputDesc(0);
   GE_CHECK_NOTNULL(output);
   output->SetDataType(dt_set);
-  ge::TensorUtils::SetSize(*output, output_shape_size);
+
+  GeShape shape = input->GetShape();
+  if (!shape.IsUnknownShape()) {
+    int64_t input_shape_size = 0;
+    int64_t output_shape_size = 0;
+    ge::graphStatus input_graph_status = ge::TensorUtils::GetTensorSizeInBytes(*input, input_shape_size);
+    ge::graphStatus output_graph_status = ge::TensorUtils::GetTensorMemorySizeInBytes(*input, output_shape_size);
+    if (input_graph_status != ge::GRAPH_SUCCESS && output_graph_status != ge::GRAPH_SUCCESS) {
+      GELOGE(GRAPH_FAILED, "[Process][InputOp] Get tensor size of op [%s] failed!", node_ptr->GetName().c_str());
+      return FAILED;
+    }
+    ge::TensorUtils::SetSize(*input, input_shape_size);
+    ge::TensorUtils::SetSize(*output, output_shape_size);
+    GELOGI("[Process][InputDynShape] Set input and output size of node [%s] success.", node_ptr->GetName().c_str());
+  }
+
   if (is_dynamic_batch) {
     GELOGI("The node [%s] dtype set fp16", switchn_node->GetName().c_str());
     auto switchn_op_desc = switchn_node->GetOpDesc();
@@ -1255,6 +1261,12 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
   GeTensorDesc output = op_desc_ptr->GetOutputDesc(0);
+  GeShape output_shape = output.GetShape();
+  if (output_shape.IsUnknownShape()) {
+    GELOGD("[Adjust][DataOpOutput] Shape of op [%s] output is unknown.", node->GetName().c_str());
+    return SUCCESS;
+  }
+
   int64_t tensor_size = 0;
   graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(output, tensor_size);
   if (graph_status != GRAPH_SUCCESS) {

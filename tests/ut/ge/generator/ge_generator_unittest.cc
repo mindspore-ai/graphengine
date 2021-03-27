@@ -88,6 +88,24 @@ TEST_F(UtestGeGenerator, test_build_single_op_online) {
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_AIVECTOR, model_buffer), FAILED);
 }
 
+TEST_F(UtestGeGenerator, test_singleop_fuzz_build) {
+  GeTensorDesc tensor_desc;
+  shared_ptr<OpDesc> op_desc = make_shared<OpDesc>("Add", "add");
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
+
+  GeTensor tensor(tensor_desc);
+  const vector<GeTensor> inputs = { tensor, tensor };
+  const vector<GeTensor> outputs = { tensor };
+
+  GeGenerator generator;
+  generator.Initialize({});
+  ModelBufferData model_buffer;
+  bool compile_flag = true;
+  EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, ENGINE_AIVECTOR, compile_flag, model_buffer), SUCCESS);
+}
+
 TEST_F(UtestGeGenerator, test_check_aicore) {
   GeGenerator generator;
   generator.Initialize({});
@@ -127,5 +145,14 @@ TEST_F(UtestGeGenerator, test_set_model_name) {
   (void)AttrUtils::SetBool(graph, "_dynamic_shape_partitioned", true);
   ge_root_model->root_graph_ = std::move(graph);
   EXPECT_EQ(generator.SetModelNameForDump(ge_root_model), SUCCESS);
+}
+
+TEST_F(UtestGeGenerator, test_remove_const) {
+  GeGenerator generator;
+  GeTensorDesc tensor_desc;
+  GeTensor tensor(tensor_desc);
+  const vector<GeTensor> inputs = {tensor};
+  vector<GeTensor> outputs;
+  generator.RemoveConst(inputs, outputs);
 }
 }  // namespace ge

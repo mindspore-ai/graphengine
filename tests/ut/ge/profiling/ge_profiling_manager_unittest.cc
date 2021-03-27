@@ -37,6 +37,10 @@ class UtestGeProfilinganager : public testing::Test {
   void TearDown() override {}
 };
 
+int32_t ReporterCallback(uint32_t moduleId, uint32_t type, void *data, uint32_t len) {
+  return -1;
+}
+
 TEST_F(UtestGeProfilinganager, init_success) {
   setenv("PROFILING_MODE", "true", true);
   Options options;
@@ -53,16 +57,24 @@ TEST_F(UtestGeProfilinganager, init_success) {
 }
 
 TEST_F(UtestGeProfilinganager, ParseOptions) {
-setenv("PROFILING_MODE", "true", true);
-Options options;
-options.device_id = 0;
-options.job_id = "0";
-options.profiling_mode = "1";
-options.profiling_options = R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","fp_point":"Data_0","bp_point":"addn","ai_core_metrics":"ResourceConflictRatio"})";
+  setenv("PROFILING_MODE", "true", true);
+  Options options;
+  options.device_id = 0;
+  options.job_id = "0";
+  options.profiling_mode = "1";
+  options.profiling_options = R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","fp_point":"Data_0","bp_point":"addn","ai_core_metrics":"ResourceConflictRatio"})";
 
 
-struct MsprofGeOptions prof_conf = {{ 0 }};
+  struct MsprofGeOptions prof_conf = {{ 0 }};
 
-Status ret = ProfilingManager::Instance().ParseOptions(options.profiling_options);
-EXPECT_EQ(ret, ge::SUCCESS);
+  Status ret = ProfilingManager::Instance().ParseOptions(options.profiling_options);
+  EXPECT_EQ(ret, ge::SUCCESS);
+}
+
+TEST_F(UtestGeProfilinganager, plungin_init_) {
+  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = ReporterCallback;
+
+  Status ret = ProfilingManager::Instance().PluginInit();
+  EXPECT_EQ(ret, INTERNAL_ERROR);
+  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = nullptr;
 }

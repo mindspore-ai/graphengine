@@ -279,7 +279,7 @@ Status SubexpressionMigrationPass::GraphNodeMigration(const ComputeGraphPtr &gra
       const auto &in_anchor = in_anchors.at(i);
       const auto &base_node = in_anchor->GetOwnerNode();
       GELOGD("Get Data direct node: %s", base_node->GetName().c_str());
-      if (!base_node->GetHostNode()) {
+      if (!base_node->GetHostNode() || base_node->GetType() == SWITCH) {
         continue;
       }
 

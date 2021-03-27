@@ -88,7 +88,6 @@ Status OpdebugRegister::RegisterDebugForStream(rtStream_t stream, uint32_t op_de
 
   uint32_t debug_stream_id = 0;
   uint32_t debug_task_id = 0;
-#ifdef ONLY_COMPILE_OPEN_SRC
   auto rt_ret = rtDebugRegisterForStream(stream, op_debug_mode, op_debug_addr_, &debug_stream_id, &debug_task_id);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[Register][rtDebug]Failed in stream overflow, ret:0x%X, op_debug_mode:%u.",
@@ -97,7 +96,6 @@ Status OpdebugRegister::RegisterDebugForStream(rtStream_t stream, uint32_t op_de
                        rt_ret, op_debug_mode);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-#endif
   GELOGD("debug_task_id:%u, debug_stream_id:%u in stream overflow.", debug_task_id, debug_stream_id);
   data_dumper.SaveOpDebugId(debug_task_id, debug_stream_id, p2p_debug_addr_, true);
   return SUCCESS;
@@ -105,7 +103,6 @@ Status OpdebugRegister::RegisterDebugForStream(rtStream_t stream, uint32_t op_de
 
 void OpdebugRegister::UnregisterDebugForStream(rtStream_t stream) {
   rtError_t rt_ret = RT_ERROR_NONE;
-#ifdef ONLY_COMPILE_OPEN_SRC
   if (stream != nullptr) {
     GELOGD("start call rtDebugUnRegisterForStream in unknown shape over flow.");
     rt_ret = rtDebugUnRegisterForStream(stream);
@@ -113,7 +110,6 @@ void OpdebugRegister::UnregisterDebugForStream(rtStream_t stream) {
       GELOGW("rtDebugUnRegisterForStream failed, ret: 0x%X", rt_ret);
     }
   }
-#endif
 
   if (op_debug_addr_ != nullptr) {
     rt_ret = rtFree(op_debug_addr_);

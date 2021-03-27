@@ -44,6 +44,9 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   std::string cond_name = while_desc->GetSubgraphInstanceName(kCondBranchIndex);
   std::string body_name = while_desc->GetSubgraphInstanceName(kBodyBranchIndex);
   if (cond_name.empty() || body_name.empty()) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s) cond subgraph index:%d or body subgraph index:%d name is empty, "
+                       "check invalid when %s", while_desc->GetName().c_str(), while_desc->GetType().c_str(),
+                       kCondBranchIndex, kBodyBranchIndex,  __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Node: %s has invalid subgraph, cond branch: %s, body branch: %s.",
            while_desc->GetName().c_str(), cond_name.c_str(), body_name.c_str());
     return FAILED;
@@ -67,32 +70,44 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
 
   NodePtr cond_stream_active = AddStreamActive(cond_graph, cond_active_name);
   if (cond_stream_active == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add StreamActive node in graph:%s fail when %s",
+                      cond_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", cond_graph->GetName().c_str());
     return FAILED;
   }
 
   if (AddLabelSetEnter(cond_graph, cond_enter_name, cond_enter_index, cond_stream_active) == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add LabelSetEnter node in graph:%s fail when %s",
+                      cond_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", cond_graph->GetName().c_str());
     return FAILED;
   }
 
   NodePtr body_stream_active = AddStreamActive(body_graph, body_active_name);
   if (body_stream_active == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add StreamActive node in graph:%s fail when %s",
+                      body_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", body_graph->GetName().c_str());
     return FAILED;
   }
 
   if (AddLabelSetEnter(body_graph, body_enter_name, body_enter_index, body_stream_active) == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add LabelSetEnter node in graph:%s fail when %s",
+                      body_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", body_graph->GetName().c_str());
     return FAILED;
   }
 
   if (AddLabelGotoLeave(body_graph, goto_leave_name, cond_enter_index) == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add LabelGotoLeave node in graph:%s fail when %s",
+                      body_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label goto failed.", body_graph->GetName().c_str());
     return FAILED;
   }
 
   if (AddLabelSetLeave(body_graph, body_leave_name, body_leave_index) == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add LabelSetLeave node in graph:%s fail when %s",
+                      body_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", body_graph->GetName().c_str());
     return FAILED;
   }
@@ -109,6 +124,8 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   const std::vector<uint32_t> switch_labels = {body_leave_index, body_enter_index};
   NodePtr switch_node = AddLabelSwitchLeave(cond_graph, cond_leave_name, pred_desc, switch_labels);
   if (switch_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add LabelSwitchLeave node in graph:%s fail when %s",
+                      cond_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", cond_graph->GetName().c_str());
     return FAILED;
   }
@@ -124,6 +141,9 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   InDataAnchorPtr in_anchor = all_in_data.at(kCondOutputIndex);
   GE_CHECK_NOTNULL(in_anchor);
   if (GraphUtils::AddEdge(in_anchor->GetPeerOutAnchor(), switch_node->GetInDataAnchor(kCondOutputIndex)) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add ctrl edge from %s to %s in graph:%s fail when %s",
+                      in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetName().c_str(),
+                      switch_node->GetName().c_str(), cond_graph  ->GetName().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Node: %s Add pred data input failed.", switch_node->GetName().c_str());
     return FAILED;
   }

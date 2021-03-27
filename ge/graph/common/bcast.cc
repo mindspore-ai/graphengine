@@ -73,6 +73,8 @@ Status BCast::SetShapeDifferentInfo(const kVecInt &x, const kVecInt &y) {
       y_bcast_i = x_i;
       grad_y_reduce_idx_.push_back(n - 1 - i);
     } else {
+      REPORT_INNER_ERROR("E19999", "SetShapeDifferentInfo failed. Two tensor shapes are not compatible "
+                         "according to the broadcasting rule.");
       GELOGE(domi::PARAM_INVALID,
              "SetShapeDifferentInfo failed. Two tensor shapes are not compatible "
              "according to the broadcasting rule.");

@@ -33,7 +33,7 @@ set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor_shape.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/types.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/node_def.proto"
-    "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
+    "${GE_CODE_DIR}/metadef/proto/onnx/ge_onnx.proto"
     )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -670,6 +670,7 @@ set(PASS_TEST_FILES
     "graph/passes/merge_pass_unittest.cc"
     #"graph/passes/switch_pass_unittest.cc"
     "graph/passes/switch_logic_remove_pass_unittest.cc"
+    "graph/passes/switch_dead_branch_elimination_unittest.cc"
     "graph/passes/assert_pass_unittest.cc"
     "graph/passes/dropout_pass_unittest.cc"
     "graph/passes/unused_const_pass_unittest.cc"
@@ -736,6 +737,7 @@ set(KERNEL_TEST_FILES
     "graph/passes/folding_kernel/gather_v2_kernel_unittest.cc"
     "graph/passes/folding_kernel/slice_kernel_unittest.cc"
     "graph/passes/folding_kernel/dynamic_stitch_kernel_unittest.cc"
+    "graph/passes/atomic_addr_clean_pass_unittest.cc"
 )
 
 set(MULTI_PARTS_TEST_FILES
@@ -764,7 +766,9 @@ set(MULTI_PARTS_TEST_FILES
     "common/ge_format_util_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
+    "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "graph/build/task_generator_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
@@ -793,6 +797,7 @@ set(PROFILING_MNG_TEST_FILES
 
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
+    "hybrid/known_node_executor_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

@@ -942,4 +942,52 @@ TEST_F(UtestDavinciModel, simple_test_gmock) {
     EXPECT_EQ(mock_stub.func2(2, 5), 1023);
     EXPECT_EQ(mock_stub.func2(3, 5), 1023);
 }
+
+TEST_F(UtestDavinciModel, NnExecute) {
+  DavinciModel model(0, nullptr);
+  ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
+  ProfilingManager::Instance().is_load_profiling_ = true;
+
+  GeModelPtr ge_model = make_shared<GeModel>();
+  ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
+  AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 10240);
+  AttrUtils::SetInt(ge_model, ATTR_MODEL_STREAM_NUM, 1);
+
+  shared_ptr<domi::ModelTaskDef> model_task_def = make_shared<domi::ModelTaskDef>();
+  ge_model->SetModelTaskDef(model_task_def);
+
+  GeTensorDesc tensor(GeShape({1,4,128,128}), FORMAT_NCHW, DT_FLOAT);
+  TensorUtils::SetSize(tensor, 512);
+  {
+    OpDescPtr op_desc = CreateOpDesc("data", DATA);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({1024});
+    NodePtr node = graph->AddNode(op_desc);    // op_index = 0
+  }
+
+  {
+    OpDescPtr op_desc = CreateOpDesc("output", NETOUTPUT);
+    op_desc->AddInputDesc(tensor);
+    op_desc->SetInputOffset({5120});
+    op_desc->SetSrcName( { "memcpy" } );
+    op_desc->SetSrcIndex( { 0 } );
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 3
+  }
+
+  EXPECT_EQ(model.Assign(ge_model), SUCCESS);
+  EXPECT_EQ(model.Init(), SUCCESS);
+
+  rtStream_t stream = nullptr;
+  InputData input_data;
+  OutputData output_data;
+  vector<OutputTensorInfo> outputs;
+  EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
+  EXPECT_EQ(output_data.blobs.size(), 1);
+  EXPECT_EQ(outputs.size(), 1);
+  input_data.blobs = output_data.blobs;
+  EXPECT_EQ(input_data.blobs.size(), 1);
+  EXPECT_EQ(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
+}
 }  // namespace ge

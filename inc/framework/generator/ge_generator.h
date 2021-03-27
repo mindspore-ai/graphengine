@@ -76,10 +76,13 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] inputs: input tensors.
   /// @param [in] outputs: output tensors.
   /// @param [in] engine_type: engine type.
+  /// @param [in] compile_flag: op build flag, accurate build is 0, fuzz build is 1
   /// @param [out] model_buff: model buff of op.
   /// @return SUCCESS or FAILED
   Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                             OpEngineType engine_type, ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
+                            OpEngineType engine_type, int32_t compile_flag, ModelBufferData &model_buff);
   ///
   /// @ingroup ge
   /// @brief: Build single Op into model buff.
@@ -99,6 +102,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
                        const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                        bool is_offline = true);
   bool CheckNoAicore(const ComputeGraphPtr &graph);
+  void RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
   Status CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;

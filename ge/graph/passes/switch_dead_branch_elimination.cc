@@ -94,6 +94,12 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
+
+  // If two nodes aren't in same graph, get node's direct in_node instead of pred_node.
+  if (node->GetOwnerComputeGraph() != pred_node->GetOwnerComputeGraph()) {
+    pred_node = PassUtils::GetInDataNode(node, kPredInputIndex);
+  }
+
   // link pred's in control nodes to switch
   if (GraphUtils::CopyInCtrlEdges(pred_node, node) != GRAPH_SUCCESS) {
     return FAILED;
@@ -131,7 +137,7 @@ Status SwitchDeadBranchElimination::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  auto pred_node = PassUtils::GetInDataNode(node, kPredInputIndex);
+  auto pred_node = PassUtils::GetInNodeCrossSubgraphByIndex(node, kPredInputIndex);
   if (pred_node == nullptr) {
     GELOGD("[%s] Pred input is null.", node->GetName().c_str());
     return SUCCESS;
@@ -143,7 +149,7 @@ Status SwitchDeadBranchElimination::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  auto input_node = PassUtils::GetInDataNode(node, kDataInputIndex);
+  auto input_node = PassUtils::GetInNodeCrossSubgraphByIndex(node, kDataInputIndex);
   if (input_node == nullptr) {
     GELOGD("[%s] Data input is null.", node->GetName().c_str());
     return SUCCESS;

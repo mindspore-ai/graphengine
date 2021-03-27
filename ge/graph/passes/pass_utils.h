@@ -30,6 +30,8 @@ class PassUtils {
 
   static NodePtr GetInDataNode(const ConstNodePtr &node, int index);
 
+  static NodePtr GetInNodeCrossSubgraphByIndex(const ConstNodePtr &node, int index);
+
   static bool IsConstant(const ConstNodePtr &node);
 
   static Status SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, const NodePtr &src_node);

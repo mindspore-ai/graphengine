@@ -448,6 +448,8 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
 
         // select first stream_switch
         NodePtr stream_switch = switch_list.front();
+        // set stream_label
+        GE_CHK_STATUS_RET(SetStreamLabel(stream_switch, cast_node->GetName()), "Set stream label failed.");
         OpDescPtr switch_desc = stream_switch->GetOpDesc();
         GE_CHECK_NOTNULL(switch_desc);
         switch_desc->SetName(CheckDuplicateName(cond_group + "/" + STREAMSWITCH + (true_branch_flag ? "_t" : "_f")));

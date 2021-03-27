@@ -48,6 +48,9 @@ const std::string kBlockDim = "block_dims";
 const std::string kTaskId = "task_id";
 const std::string kStreamId = "stream_id";
 const std::string kThreadId = "thread_id";
+const std::string kIndexId = "index_id";
+const std::string kTimeStamp = "time_stamp";
+const std::string kTagId = "tag_id";
 const std::string kShapeType = "shape_type";
 const std::string kCurIterNum = "cur_iter_num";
 const std::string kTaskType = "task_type";
@@ -318,7 +321,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfileStepInfo(
 
   Json step_info;
   step_info[kIndexId] = index_id;
-  step_info[kModeleId] = model_id;
+  step_info[kModelId] = model_id;
   step_info[kTimeStamp] = time;
   step_info[kTagId] = tag_id;
   step_info[kTaskId] = task_id;

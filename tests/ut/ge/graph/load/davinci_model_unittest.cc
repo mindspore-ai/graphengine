@@ -988,6 +988,10 @@ TEST_F(UtestDavinciModel, NnExecute) {
   EXPECT_EQ(outputs.size(), 1);
   input_data.blobs = output_data.blobs;
   EXPECT_EQ(input_data.blobs.size(), 1);
+
+  ProfilingManager::Instance().prof_cb_.msprofReporterCallback = MsprofReport;
+  ProfilingManager::Instance().device_id_.emplace_back(0);
+  model.task_list_.resize(1);
   EXPECT_EQ(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
 }
 }  // namespace ge

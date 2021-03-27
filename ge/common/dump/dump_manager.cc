@@ -56,7 +56,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   dump_properties.SetDumpOpSwitch(dump_op_switch);
   if (dump_op_switch == kDumpoff && dump_config.dump_list.empty()) {
     dump_properties_map_.emplace(kInferSessionId, dump_properties);
-    GELOGE(PARAM_INVALID, "Dump list is invalid,dump_op_switch is %s", dump_op_switch.c_str())
+    GELOGE(PARAM_INVALID, "Dump list is invalid,dump_op_switch is %s", dump_op_switch.c_str());
     return PARAM_INVALID;
   }
 

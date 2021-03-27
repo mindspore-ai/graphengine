@@ -157,24 +157,24 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
 
   rtError_t rt_ret = rtMalloc(&proto_dev_mem_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMalloc failed, ret:0x%X", rt_ret);
+    GELOGE(rt_ret, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMemcpy(proto_dev_mem_, proto_size, proto_msg.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMemcpy failed, ret:0x%X", rt_ret);
+    GELOGE(rt_ret, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMalloc(&proto_size_dev_mem_, sizeof(size_t), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMalloc failed, ret:0x%X", rt_ret);
+    GELOGE(rt_ret, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtMemcpy(proto_size_dev_mem_, sizeof(size_t), &proto_size, sizeof(size_t), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMemcpy failed, ret:0x%X", rt_ret);
+    GELOGE(rt_ret, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 

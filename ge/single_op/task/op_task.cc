@@ -796,8 +796,8 @@ Status AiCpuTask::SetMemCopyTask(const domi::KernelExDef &kernel_def) {
   if (kernel_def.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
         sizeof(STR_FWK_OP_KERNEL), kernel_def.args_size());
-    REPORT_INPUT_ERROR("E10409", std::vector<std::string>({"op_kernel_size", "args_size"}),
-        std::vector<std::string>({std::to_string(sizeof(STR_FWK_OP_KERNEL)), std::to_string(kernel_def.args_size())}));
+    REPORT_INNER_ERROR("E19999", "[sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
+        sizeof(STR_FWK_OP_KERNEL), kernel_def.args_size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   GE_CHK_RT_RET(rtMalloc(&copy_workspace_buf_, kernel_def.task_info_size(), RT_MEMORY_HBM));

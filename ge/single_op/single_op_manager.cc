@@ -35,7 +35,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::GetOpFr
   GELOGI("GetOpFromModel in. model name = %s, model id = %lu", model_name.c_str(), model_id);
   if (single_op == nullptr) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Param:single_op] is null.");
-    REPORT_INPUT_ERROR("E10412", std::vector<std::string>(), std::vector<std::string>());
+    REPORT_INPUT_ERROR("E10412", std::vector<std::string>({"inputparam"}), std::vector<std::string>({"single_op"}));
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 

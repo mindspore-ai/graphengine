@@ -37,7 +37,7 @@ graphStatus WeightCompressFunc(ComputeGraphPtr &graph, const string &cfg_path) {
   std::ifstream ifs(real_path);
   if (!ifs.is_open()) {
     GELOGE(GRAPH_FAILED, "[Open][File] %s failed", cfg_path.c_str());
-    REPORT_INPUT_ERROR("E10411", std::vector<std::string>({"cfgpath"}), std::vector<std::string>({cfg_path}));
+    REPORT_INNER_ERROR("E19999", "open file:%s failed.", cfg_path.c_str());
     return GRAPH_FAILED;
   }
 

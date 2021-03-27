@@ -84,7 +84,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, 
         "[Check][Param:inputs]Input num mismatch. model expect %zu, but given %zu", input_addr_list_.size(),
            inputs.size());
-    REPORT_INPUT_ERROR("E10401", std::vector<std::string>({"expect_size", "input_size"}), 
+    REPORT_INPUT_ERROR("E10401", std::vector<std::string>({"expect_num", "input_num"}), 
         std::vector<std::string>({std::to_string(input_addr_list_.size()), std::to_string(num_inputs)}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
@@ -109,7 +109,7 @@ Status SingleOp::ValidateArgs(const std::vector<DataBuffer> &inputs, const std::
   if (num_outputs != output_sizes_.size()) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param:outputs]output num mismatch. model expect %zu, but given %zu",
         output_sizes_.size(), outputs.size());
-    REPORT_INPUT_ERROR("E10403", std::vector<std::string>({"expect_size", "input_size"}), 
+    REPORT_INPUT_ERROR("E10403", std::vector<std::string>({"expect_num", "input_num"}), 
         std::vector<std::string>({std::to_string(output_sizes_.size()), std::to_string(outputs.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }
@@ -244,7 +244,7 @@ Status DynamicSingleOp::ValidateParams(const vector<GeTensorDesc> &input_desc,
   if (output_desc.size() != num_outputs_) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param:output_desc]Output number mismatches. expect %zu, but given %zu",
         num_outputs_, output_desc.size());
-    REPORT_INPUT_ERROR("E10408", std::vector<std::string>({"expect_num", "input_num"}),
+    REPORT_INPUT_ERROR("E10403", std::vector<std::string>({"expect_num", "input_num"}),
         std::vector<std::string>({std::to_string(num_outputs_), std::to_string(output_desc.size())}));
     return ACL_ERROR_GE_PARAM_INVALID;
   }

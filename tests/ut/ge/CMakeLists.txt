@@ -737,6 +737,7 @@ set(KERNEL_TEST_FILES
     "graph/passes/folding_kernel/gather_v2_kernel_unittest.cc"
     "graph/passes/folding_kernel/slice_kernel_unittest.cc"
     "graph/passes/folding_kernel/dynamic_stitch_kernel_unittest.cc"
+    "graph/passes/atomic_addr_clean_pass_unittest.cc"
 )
 
 set(MULTI_PARTS_TEST_FILES

@@ -731,6 +731,7 @@ set(KERNEL_TEST_FILES
     "graph/passes/folding_kernel/gather_v2_kernel_unittest.cc"
     "graph/passes/folding_kernel/slice_kernel_unittest.cc"
     "graph/passes/folding_kernel/dynamic_stitch_kernel_unittest.cc"
+    "graph/passes/atomic_addr_clean_pass_unittest.cc"
 )
 
 set(MULTI_PARTS_TEST_FILES
@@ -760,6 +761,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "graph/build/task_generator_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"

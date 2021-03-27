@@ -1089,14 +1089,14 @@ Status HybridModelBuilder::LoadTask(NodeItem &node_item) {
 
 Status HybridModelBuilder::LoadTasks() {
   GE_CHK_STATUS_RET(CheckAicpuOpList(), "Check Aicpu op failed.");
-  std::map<int64_t, NodeItem *> ordered_partitioned_calls;
+  std::map<std::string, NodeItem *> ordered_partitioned_calls;
   for (auto &it : hybrid_model_.node_items_) {
     auto &node_item = it.second;
     if (node_item->node_type == NETOUTPUT) {
       continue;
     }
     if (node_item->node_type == PARTITIONEDCALL) {
-      ordered_partitioned_calls.emplace(node_item->node_id, node_item.get());
+      ordered_partitioned_calls.emplace(node_item->node_name, node_item.get());
       continue;
     }
     GE_CHK_STATUS_RET_NOLOG(LoadTask(*node_item));
@@ -2092,13 +2092,15 @@ Status HybridModelBuilder::ParseDependentByParallelGroup() {
       }
 
       if (nearest_dep_node != nullptr) {
-        GELOGD("Add dependency for nodes of same parallel group[%s], src = [%s], dst = [%s]",
+        GELOGD("Add dependency for nodes with the same parallel group[%s], src = [%s], dst = [%s]",
                parallel_group.c_str(),
                nearest_dep_node->NodeName().c_str(),
                node_item->NodeName().c_str());
         auto &deps = node_item->dependents_for_execution;
         if (std::find(deps.begin(), deps.end(), nearest_dep_node->node) != deps.end()) {
-          GELOGD("Already has dependency, skip it");
+          GELOGD("%s->%s Already has dependency, skip it",
+                 nearest_dep_node->node->GetName().c_str(),
+                 node_item->NodeName().c_str());
           continue;
         }
         nearest_dep_node->has_observer = true;

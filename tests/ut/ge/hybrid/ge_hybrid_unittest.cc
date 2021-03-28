@@ -315,16 +315,21 @@ TEST_F(UtestGeHybrid, test_parse_parallel_group) {
   ASSERT_EQ(builder.parallel_group_to_nodes_["group_1"].size(), 2);
   ASSERT_EQ(builder.parallel_group_to_nodes_["group_2"].size(), 1);
 
-  ASSERT_FALSE(node_item->has_observer);
-  ASSERT_TRUE(node_item_1->dependents_for_execution.empty());
+  builder.parallel_group_to_nodes_.clear();
+  builder.node_ref_inputs_.clear();
+  model.node_items_[node] = std::move(node_item);
+  model.node_items_[node_1] = std::move(node_item_1);
+
+  ASSERT_FALSE(model.node_items_[node]->has_observer);
+  ASSERT_TRUE(model.node_items_[node_1]->dependents_for_execution.empty());
   ASSERT_EQ(builder.ParseDependentByParallelGroup(), SUCCESS);
-  ASSERT_TRUE(node_item->has_observer);
-  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
-  ASSERT_EQ(node_item_1->dependents_for_execution[0], node);
+  ASSERT_TRUE(model.node_items_[node]->has_observer);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution.size(), 1);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution[0], node);
 
   // repeat parse
   ASSERT_EQ(builder.ParseDependentByParallelGroup(), SUCCESS);
-  ASSERT_TRUE(node_item->has_observer);
-  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
-  ASSERT_EQ(node_item_1->dependents_for_execution[0], node);
+  ASSERT_TRUE(model.node_items_[node]->has_observer);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution.size(), 1);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution[0], node);
 }

@@ -4676,5 +4676,24 @@ TEST_F(UtestFormatTranspose, invalid_dst_format) {
   EXPECT_EQ(transfer.TransShape(FORMAT_NCHW, src_shape, DT_FLOAT16, FORMAT_C1HWNC0, dst_shape),
             ACL_ERROR_GE_FORMAT_INVALID);
 }
+
+TEST_F(UtestFormatTranspose, invalid_src_data) {
+  uint8_t *data = nullptr;
+  TransArgs args{data, FORMAT_NCHW, FORMAT_NHWC, std::vector<int64_t>({1, 3, 8, 8}), std::vector<int64_t>({1, 8, 8, 3}), DT_INT64};
+  FormatTransferTranspose transpose;
+  TransResult result;
+  EXPECT_EQ(transpose.TransFormat(args, result), ACL_ERROR_GE_PARAM_INVALID);
+
+  uint16_t data1[3] = {14583, 12849, 14184};
+  TransArgs args1{reinterpret_cast<uint8_t *>(data1), FORMAT_NCHW, FORMAT_NHWC, std::vector<int64_t>({-1, 3, 1, 1}), std::vector<int64_t>({1, 1, 1, 3}), DT_INT64};
+  FormatTransferTranspose transpose1;
+  TransResult result1;
+  EXPECT_EQ(transpose1.TransFormat(args1, result1), ACL_ERROR_GE_SHAPE_INVALID);
+
+  TransArgs args2{reinterpret_cast<uint8_t *>(data1), FORMAT_NCHW, FORMAT_NHWC, std::vector<int64_t>({3, 1, 1}), std::vector<int64_t>({1, 1, 1, 3}), DT_INT64};
+  FormatTransferTranspose transpose2;
+  TransResult result2;
+  EXPECT_EQ(transpose2.TransFormat(args2, result2), ACL_ERROR_GE_SHAPE_INVALID);
+}
 }  // namespace formats
 }  // namespace ge

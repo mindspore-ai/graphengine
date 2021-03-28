@@ -58,6 +58,7 @@ TEST_F(UtestGraphCachingAllocatorTest, malloc_success) {
   EXPECT_EQ(MemManager::Instance().Initialize(mem_type), SUCCESS);
   uint8_t *ptr = MemManager::Instance().CachingInstance(RT_MEMORY_HBM).Malloc(kMByteSize);
   EXPECT_NE(nullptr, ptr);
+  MemManager::Instance().CachingInstance(RT_MEMORY_HBM).TryFreeBlocks();
   MemManager::Instance().Finalize();
 }
 

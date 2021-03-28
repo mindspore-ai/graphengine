@@ -3701,12 +3701,14 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
       GE_CHK_STATUS_RET_NOLOG(
         ProfilingManager::Instance().ProfileStepInfo(index_id, model_id, 0, rt_model_stream_, device_id));
     }
+  
     GELOGD("rtModelExecute do");
     GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_INFER_START));
     rtError_t rt_ret = rtModelExecute(rt_model_handle_, rt_model_stream_, 0);
     GE_CHK_RT_EXEC(rt_ret, return RT_ERROR_TO_GE_STATUS(rt_ret));
     GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_INFER_END));
     GELOGD("rtModelExecute end");
+
     if (profiling_model_execute_on) {
       GE_CHK_STATUS_RET_NOLOG(
         ProfilingManager::Instance().ProfileStepInfo(index_id, model_id, 1, rt_model_stream_, device_id));

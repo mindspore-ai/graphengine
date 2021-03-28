@@ -86,9 +86,11 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   if (prof_mgr.ProfilingModelExecuteOn()) {
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 0, stream_, device_id));
   }
+
   HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc, args.outputs),
                         "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
+
   if (prof_mgr.ProfilingModelExecuteOn()) {
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 1, stream_, device_id));
   }

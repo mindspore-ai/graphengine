@@ -854,6 +854,7 @@ target_link_libraries(ge_ut_common PRIVATE
     ascend_protobuf
     json
     ge_ut_graph
+    runtime_stub
 )
 
 # build common format

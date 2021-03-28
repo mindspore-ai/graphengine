@@ -78,11 +78,11 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
 
-  // tag_id 0 means step begin, 1 meas step end.
   uint64_t index_id = context_.iteration + 1;
   uint64_t model_id = static_cast<uint64_t>(model_->GetModelId());
   int32_t device_id = static_cast<int32_t>(device_id_);
   auto &prof_mgr = ProfilingManager::Instance();
+  // tag_id 0 means step begin, 1 meas step end.
   if (prof_mgr.ProfilingModelExecuteOn()) {
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 0, stream_, device_id));
   }

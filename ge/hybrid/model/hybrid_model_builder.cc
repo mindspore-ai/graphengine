@@ -1089,14 +1089,14 @@ Status HybridModelBuilder::LoadTask(NodeItem &node_item) {
 
 Status HybridModelBuilder::LoadTasks() {
   GE_CHK_STATUS_RET(CheckAicpuOpList(), "Check Aicpu op failed.");
-  std::map<std::string, NodeItem *> ordered_partitioned_calls;
+  std::map<int, std::map<std::string, NodeItem *>> ordered_partitioned_calls;
   for (auto &it : hybrid_model_.node_items_) {
     auto &node_item = it.second;
     if (node_item->node_type == NETOUTPUT) {
       continue;
     }
     if (node_item->node_type == PARTITIONEDCALL) {
-      ordered_partitioned_calls.emplace(node_item->node_name, node_item.get());
+      ordered_partitioned_calls[node_item->node_id][node_item->node_name] = node_item.get();
       continue;
     }
     GE_CHK_STATUS_RET_NOLOG(LoadTask(*node_item));
@@ -1104,7 +1104,9 @@ Status HybridModelBuilder::LoadTasks() {
 
   // HCCL operators need to be loaded in the same order across different processes
   for (auto &it : ordered_partitioned_calls) {
-    GE_CHK_STATUS_RET_NOLOG(LoadTask(*it.second));
+    for (auto &it2 : it.second) {
+      GE_CHK_STATUS_RET_NOLOG(LoadTask(*it2.second));
+    }
   }
 
   return SUCCESS;

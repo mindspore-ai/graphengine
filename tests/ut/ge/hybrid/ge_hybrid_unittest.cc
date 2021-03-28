@@ -329,7 +329,7 @@ TEST_F(UtestGeHybrid, test_parse_parallel_group) {
 
   // repeat parse
   ASSERT_EQ(builder.ParseDependentByParallelGroup(), SUCCESS);
-  ASSERT_TRUE(node_item->has_observer);
-  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
-  ASSERT_EQ(node_item_1->dependents_for_execution[0], node);
+  ASSERT_TRUE(model.node_items_[node]->has_observer);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution.size(), 1);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution[0], node);
 }

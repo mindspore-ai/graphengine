@@ -356,6 +356,14 @@ void CachingAllocator::FreeBlocks() {
   (void) FreeCachedBlocks();
 }
 
+void CachingAllocator::TryFreeBlocks() {
+  GELOGI("Try free blocks.");
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (allocated_blocks_.empty()) {
+    (void) FreeCachedBlocks();
+  }
+}
+
 void CachingAllocator::FreeBlockBins() {
   GELOGI("Free block bins.");
   std::lock_guard<std::recursive_mutex> lock(mutex_);

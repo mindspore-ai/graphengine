@@ -320,12 +320,12 @@ TEST_F(UtestGeHybrid, test_parse_parallel_group) {
   model.node_items_[node] = std::move(node_item);
   model.node_items_[node_1] = std::move(node_item_1);
 
-  ASSERT_FALSE(node_item->has_observer);
-  ASSERT_TRUE(node_item_1->dependents_for_execution.empty());
+  ASSERT_FALSE(model.node_items_[node]->has_observer);
+  ASSERT_TRUE(model.node_items_[node_1]->dependents_for_execution.empty());
   ASSERT_EQ(builder.ParseDependentByParallelGroup(), SUCCESS);
   ASSERT_TRUE(node_item->has_observer);
-  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
-  ASSERT_EQ(node_item_1->dependents_for_execution[0], node);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution.size(), 1);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution[0], node);
 
   // repeat parse
   ASSERT_EQ(builder.ParseDependentByParallelGroup(), SUCCESS);

@@ -3417,7 +3417,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
                                       const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label) {
   if (blobs.size() != data_info.size()) {
     REPORT_INNER_ERROR("E19999", "%s blob size:%ld from user != op_size:%ld in model, mode_id:%u"
-                       "check invalid when DavinciModel %s", input_or_output.c_str(),
+                       "check invalid when DavinciModel %s", is_input ? "input" : "output",
                        blobs.size(), data_info.size(), model_id_, __FUNCTION__);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
            is_input ? "input" : "output", data_info.size(), blobs.size());
@@ -3427,7 +3427,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
   for (const auto &data : data_info) {
     if (data.first >= blobs.size()) {  // check data index.
       REPORT_INNER_ERROR("E19999", "%s data index:%u from model >= blobs.size:%zu from user, mode_id:%u"
-                         "check invalid when DavinciModel %s", input_or_output.c_str(),
+                         "check invalid when DavinciModel %s", is_input ? "input" : "output",
                          data.first, blobs.size(), model_id_, __FUNCTION__);
       GELOGE(ACL_ERROR_GE_PARAM_INVALID,
              "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
@@ -3438,7 +3438,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     const DataBuffer &buffer = blobs[data.first];  // index of data.
     if (buffer.data == nullptr) {
       REPORT_INNER_ERROR("E19999", "%s buffer from user is nullptr, index:%u, mode_id:%u"
-                         "check invalid when DavinciModel %s", input_or_output.c_str(),
+                         "check invalid when DavinciModel %s", is_input ? "input" : "output",
                          data.first, model_id_, __FUNCTION__);
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "data_buf.data is nullptr, index=%u", data.first);
       return ACL_ERROR_GE_PARAM_INVALID;
@@ -4180,7 +4180,7 @@ Status DavinciModel::GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_inpu
   if (it == orig_input_info_.end()) {
     REPORT_INNER_ERROR("E19999", "Get index:%u from orig_input_info_ fail, model_id:%u, when DavinciModel %s",
                        index, model_id_, __FUNCTION__);
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "There is not AIPP related with index %u.", index);
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
@@ -4263,7 +4263,7 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, vector<InputOutpu
   if (it == aipp_dims_info_.end()) {
     REPORT_INNER_ERROR("E19999", "Get index:%u from aipp_dims_info_ fail, model_id:%u, when DavinciModel %s",
                        index, model_id_, __FUNCTION__);
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "There is not AIPP related with index %u.", index);
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 

@@ -313,7 +313,7 @@ Status FormatTransferFractalZz::TransFormat(const TransArgs &args, TransResult &
 		       ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());		  
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
-  if (!CheckShape(args.src_format, args.src_shape) || !IsShapeValid(args.dst_shape) {
+  if (!CheckShape(args.src_format, args.src_shape) || !IsShapeValid(args.dst_shape)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
            "[Check][Shape]Failed, not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
 	   TypeUtils::FormatToSerialString(args.src_format).c_str(),

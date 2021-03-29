@@ -118,14 +118,14 @@ Status CheckShapeRelation(const TransArgs &args, ShapeVector &hw_shape) {
   ShapeVector expect_src_shape;
   auto ret = TransShapeToFracZz(args.dst_shape, args.src_data_type, expect_src_shape, hw_shape);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Transfer][ShapeToFracZz] Failed from %s to %s, shape %s to %s, data type %s, error_code %u",
+    GELOGE(ret, "[Transfer][ShapeToFracZz] Failed from %s to %s, shape %s to %s, data type %s",
            TypeUtils::FormatToSerialString(args.dst_format).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(), ShapeToString(args.dst_shape).c_str(),
-           ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), ret);
-    REPORT_INNER_ERROR(ret, "Failed to transfer shape from %s to %s, shape %s to %s, data type %s, error_code %u",
+           ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+    REPORT_INNER_ERROR(ret, "Failed to transfer shape from %s to %s, shape %s to %s, data type %s",
 		       TypeUtils::FormatToSerialString(args.dst_format).c_str(),
 		       TypeUtils::FormatToSerialString(args.src_format).c_str(), ShapeToString(args.dst_shape).c_str(),
-		       ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(), ret);
+		       ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ret;
   }
   if (!IsTransShapeSrcCorrect(args, expect_src_shape)) {

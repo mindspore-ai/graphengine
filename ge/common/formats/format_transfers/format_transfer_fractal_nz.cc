@@ -334,27 +334,23 @@ Status FormatTransferFractalNz::TransShape(Format src_format, const ShapeVector 
                                            Format dst_format, ShapeVector &dst_shape) {
   if (!IsDataTypeSupport(data_type)) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID,
-           "[Check][Datatype]Failed, trans format from %s to %s, src shape %s, dst shape %s, data type %s is not supported",
-	   TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	   TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-	   ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+           "[Check][Datatype]Failed, trans format from %s to %s, src shape %s, data type %s is not supported",
+	   TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str(),
+	   ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
     REPORT_INNER_ERROR("E19999",
-		       "Check datatype failed, trans format from %s to %s, src shape %s, dst shape %s, data type %s is not supported",
-		       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-		       TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-		       ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+		       "Check datatype failed, trans format from %s to %s, src shape %s, data type %s is not supported",
+		       TypeUtils::FormatToSerialString(src_format).c_str(),TypeUtils::FormatToSerialString(dst_format).c_str(),
+		       ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShape(src_format, src_shape)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
-           "[Check][Shape]Failed, trans format from %s to %s, src shape %s, dst shape %s, data type %s is not supported",
-	   TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	   TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-	   ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
-    REPORT_INNER_ERROR("E19999",  "Check shape failed, trans format from %s to %s, src shape %s, dst shape %s, data type %s is not supported",
-		       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-		       TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
-		       ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+           "[Check][Shape]Failed, trans format from %s to %s, src shape %s, data type %s is not supported",
+	   TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str(),
+	   ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
+    REPORT_INNER_ERROR("E19999",  "Check shape failed, trans format from %s to %s, src shape %s, data type %s is not supported",
+		       TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(args.dst_format).c_str(),
+		       ShapeToString(src_shape).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   ShapeVector hw_shape;

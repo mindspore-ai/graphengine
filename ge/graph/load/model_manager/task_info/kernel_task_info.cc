@@ -492,11 +492,13 @@ void KernelTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
 
 Status KernelTaskInfo::CopyNoncontinuousArgs(uint16_t offset) {
   GE_CHECK_NOTNULL(davinci_model_);
-  davinci_model_->UpdateKnownZeroCopyAddr(io_addrs_);
-  auto addr_size = kAddrLen * io_addrs_.size();
+  // copy new io addrs
+  vector<void *> io_addrs = io_addrs_;
+  davinci_model_->UpdateKnownZeroCopyAddr(io_addrs);
+  auto addr_size = kAddrLen * io_addrs.size();
 
   // copy io addr
-  errno_t sec_ret = memcpy_s(args_addr.get() + offset, addr_size, io_addrs_.data(), addr_size);
+  errno_t sec_ret = memcpy_s(args_addr.get() + offset, addr_size, io_addrs.data(), addr_size);
   if (sec_ret != EOK) {
     REPORT_CALL_ERROR("E19999", "Call memcpy_s fail, size:%zu, ret:0x%X, when KernelTaskInfo %s",
                       addr_size, sec_ret, __FUNCTION__);

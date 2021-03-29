@@ -126,11 +126,11 @@ bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const NodePtr &node, int6
 
 bool AtomicAddrCleanPass::CheckSkipInsertInLoopGraph(const NodePtr &node) {
   OpDescPtr op_desc = node->GetOpDesc();
-  std::map<string, std::map<int, int>> node_workspace_offset;
+  std::map<string, std::map<int64_t, int64_t>> atomic_workspace_index_size;
   bool has_atomic_input = op_desc->HasAttr(ATOMIC_ATTR_INPUT_INDEX);
   bool has_atomic_output = op_desc->HasAttr(ATOMIC_ATTR_OUTPUT_INDEX);
-  node_workspace_offset = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_OFFSET, node_workspace_offset);
-  if (!has_atomic_input && has_atomic_output && node_workspace_offset.empty()) {
+  atomic_workspace_index_size = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, atomic_workspace_index_size);
+  if (!has_atomic_input && has_atomic_output && atomic_workspace_index_size.empty()) {
     std::vector<int64_t> atomic_output_index;
     (void) ge::AttrUtils::GetListInt(op_desc, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_index);
     bool is_all_output_peer_also_atomic = true;
@@ -332,11 +332,11 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   }
 
   // 2.Check atomic attr in node
-  std::map<string, std::map<int, int>> node_workspace_offset;
+  std::map<string, std::map<int64_t, int64_t>> atomic_workspace_index_size;
   bool has_atomic_input = op_desc->HasAttr(ATOMIC_ATTR_INPUT_INDEX);
   bool has_atomic_output = op_desc->HasAttr(ATOMIC_ATTR_OUTPUT_INDEX);
-  node_workspace_offset = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_OFFSET, node_workspace_offset);
-  if (!has_atomic_input && !has_atomic_output && node_workspace_offset.empty()) {
+  atomic_workspace_index_size = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, atomic_workspace_index_size);
+  if (!has_atomic_input && !has_atomic_output && atomic_workspace_index_size.empty()) {
     return false;
   }
 

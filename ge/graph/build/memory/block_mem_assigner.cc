@@ -1735,7 +1735,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
 ///
 void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
   (void)ge::GetContext().GetOption(OPTION_EXEC_DISABLE_REUSED_MEMORY, ge_disable_reuse_mem_env_);
-  GELOGD("Reuse memory %s", ge_disable_reuse_mem_env_ == "1" ? "close" : "open");
+  GEEVENT("Reuse memory %s", ge_disable_reuse_mem_env_ == "1" ? "close" : "open");
   string op_no_reuse_mem_str;
   const char *op_no_reuse_mem = std::getenv(OP_NO_REUSE_MEM);
   GE_IF_BOOL_EXEC(op_no_reuse_mem != nullptr, op_no_reuse_mem_str = string(op_no_reuse_mem);
@@ -2125,7 +2125,7 @@ void SetBlockOpMemOffset(MemoryBlock *block, int32_t child_block_level) {
 
   child_block_level++;
   for (MemoryBlock *child_block : block->ChildBlockList()) {
-      SetBlockOpMemOffset(child_block, child_block_level);
+    SetBlockOpMemOffset(child_block, child_block_level);
   }
 }
 

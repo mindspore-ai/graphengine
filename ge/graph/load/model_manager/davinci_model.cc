@@ -2137,7 +2137,6 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
 
 Status DavinciModel::SyncVarData() {
   GELOGI("Sync var data, model id:%u", model_id_);
-  Status ret = SUCCESS;
 
   if (global_step_addr_ != nullptr && global_step_size_ != 0) {
     const vector<uint64_t> v_step = { iterator_count_ };
@@ -2145,7 +2144,7 @@ Status DavinciModel::SyncVarData() {
                            RT_MEMCPY_HOST_TO_DEVICE));
   }
 
-  return ret;
+  return SUCCESS;
 }
 
 Status DavinciModel::InitModelProfile() {
@@ -3262,11 +3261,9 @@ Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &outp
 ///
 Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                                       const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label) {
-  string input_or_output;
-  is_input ? input_or_output = "input" : input_or_output = "output";
   if (blobs.size() != data_info.size()) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
-           input_or_output.c_str(), data_info.size(), blobs.size());
+           is_input ? "input" : "output", data_info.size(), blobs.size());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -3274,7 +3271,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     if (data.first >= blobs.size()) {  // check data index.
       GELOGE(ACL_ERROR_GE_PARAM_INVALID,
              "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
-             input_or_output.c_str(), data.first, blobs.size());
+             is_input ? "input" : "output", data.first, blobs.size());
       return ACL_ERROR_GE_PARAM_INVALID;
     }
 
@@ -3306,21 +3303,20 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     }
 
     for (size_t count = 0; count < data.second.GetDataCount(); ++count) {
-      int64_t size = data.second.GetDataInfo().at(count).first;
       void *addr = data.second.GetDataInfo().at(count).second;
       void *buffer_addr = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer.data) +
                                                    data.second.GetRelativeOffset().at(count));
       GELOGI("[ZCPY] Copy %s blobs_index %u, virtual_addr: %p, size: %ld, user_data_addr: %p, batch_label: %s",
-             input_or_output.c_str(), data.first, addr, size, buffer_addr, batch_label.c_str());
+             is_input ? "input" : "output", data.first, addr, data.second.GetDataInfo().at(count).first,
+             buffer_addr, batch_label.c_str());
       // For input data, just copy for rts task.
-      for (ZeroCopyTask &task : zero_copy_tasks_) {
-        if (task.GetBatchLabel() != kDefaultBatchLable && task.GetBatchLabel() != batch_label) {
+      for (auto &task : zero_copy_tasks_) {
+        bool not_same_batch = (task.GetBatchLabel() != kDefaultBatchLable && task.GetBatchLabel() != batch_label);
+        if (not_same_batch) {
           continue;
         }
         uintptr_t addr_val = reinterpret_cast<uintptr_t>(addr);
-        if (task.UpdateTaskParam(addr_val, buffer_addr) != SUCCESS) {
-          return ACL_ERROR_GE_PARAM_INVALID;
-        }
+        (void)task.UpdateTaskParam(addr_val, buffer_addr);
       }
     }
   }
@@ -3980,7 +3976,7 @@ Status DavinciModel::InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc)
 Status DavinciModel::GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) const {
   const auto it = orig_input_info_.find(index);
   if (it == orig_input_info_.end()) {
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "There is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 
@@ -4014,7 +4010,7 @@ void DavinciModel::ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_
 
 Status DavinciModel::InitAippInputOutputDims(uint32_t index, const OpDescPtr &op_desc) {
   if (!op_desc->HasAttr(ATTR_NAME_AIPP_INPUTS) || !op_desc->HasAttr(ATTR_NAME_AIPP_OUTPUTS)) {
-    GELOGI("there is not AIPP related with index %u.", index);
+    GELOGI("There is not AIPP related with index %u.", index);
     return SUCCESS;
   }
 
@@ -4031,7 +4027,7 @@ Status DavinciModel::InitAippInputOutputDims(uint32_t index, const OpDescPtr &op
       ConstGeTensorDescPtr data_input_desc = op_desc->GetInputDescPtr(kDataIndex);
       int64_t data_input_size;
       (void)TensorUtils::GetSize(*(op_desc->GetInputDescPtr(kDataIndex)), data_input_size);
-      GELOGD("related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s.",
+      GELOGD("Related Data[%d]: tensor_name: %s, dim_num: %zu, tensor_size: %zu, format: %s, data_type: %s, shape: %s.",
           index, op_desc->GetName().c_str(), data_input_desc->GetShape().GetDimNum(), data_input_size,
           TypeUtils::FormatToSerialString(data_input_desc->GetFormat()).c_str(),
           TypeUtils::DataTypeToSerialString(data_input_desc->GetDataType()).c_str(),
@@ -4058,7 +4054,7 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, vector<InputOutpu
                                                vector<InputOutputDims> &output_dims) const {
   const auto it = aipp_dims_info_.find(index);
   if (it == aipp_dims_info_.end()) {
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "There is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 

@@ -155,4 +155,17 @@ TEST_F(UtestGeGenerator, test_remove_const) {
   vector<GeTensor> outputs;
   generator.RemoveConst(inputs, outputs);
 }
+
+TEST_F(UtestGeGenerator, test_generate_online_model) {
+  GeTensorDesc tensor_desc;
+  GeTensor tensor(tensor_desc);
+  const vector<GeTensor> inputs = { tensor, tensor };
+  auto compute_graph = MakeGraph();
+  compute_graph->TopologicalSorting();
+  Graph graph = ge::GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+  GeGenerator generator;
+  generator.Initialize({});
+  std::string name;
+  EXPECT_NE(generator.GenerateOfflineModel(graph, name, inputs), SUCCESS);
+}
 }  // namespace ge

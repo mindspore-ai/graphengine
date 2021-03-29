@@ -36,6 +36,7 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "model/ge_model.h"
+#include "analyzer/analyzer.h"
 
 using std::map;
 using std::string;
@@ -1007,13 +1008,13 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", graph_id);
-    VarManagerPool::Instance().RemoveVarManager(session_id);
-    return GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
+    ret = GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
 
+  RtContextUtil::GetInstance().DestroyRtContexts(session_id);
+  Analyzer::GetInstance()->DestroySessionJsonObject(session_id);
   VarManagerPool::Instance().RemoveVarManager(session_id);
-
-  return SUCCESS;
+  return ret;
 }
 
 Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph) {

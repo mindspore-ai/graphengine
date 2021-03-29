@@ -4261,13 +4261,9 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, vector<InputOutpu
                                                vector<InputOutputDims> &output_dims) const {
   const auto it = aipp_dims_info_.find(index);
   if (it == aipp_dims_info_.end()) {
-<<<<<<< Updated upstream
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "There is not AIPP related with index %u.", index);
-=======
     REPORT_INNER_ERROR("E19999", "Get index:%u from aipp_dims_info_ fail, model_id:%u, when DavinciModel %s",
                        index, model_id_, __FUNCTION__);
-    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
->>>>>>> Stashed changes
+    GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "There is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
 

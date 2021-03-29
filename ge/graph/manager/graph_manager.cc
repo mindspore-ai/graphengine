@@ -166,14 +166,14 @@ Status GraphManager::Initialize(const std::map<string, string> &options) {
   // malloc
   graph_run_listener_ = MakeShared<GraphModelListener>(sync_run_mutex_, condition_);
   if (graph_run_listener_ == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New GraphModelListener fail when GraphManager %s", __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New GraphModelListener fail when GraphManager %s", __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;
   }
   // graph context
   graph_context_ = MakeShared<GraphContext>();
   if (graph_context_ == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New GraphModelListener fail when GraphManager %s", __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New GraphModelListener fail when GraphManager %s", __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make shared failed.");
     return MEMALLOC_FAILED;
   }
@@ -366,14 +366,14 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
 
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   GE_IF_BOOL_EXEC(graph_node == nullptr,
-                  REPORT_INNER_ERROR("E19999", "New GraphNode fail, graph_id:%u, when GraphManager %s",
-                                     graph_id, __FUNCTION__);
+                  REPORT_CALL_ERROR("E19999", "New GraphNode fail, graph_id:%u, when GraphManager %s",
+                                    graph_id, __FUNCTION__);
                   GELOGE(FAILED, "GraphNode make shared failed");
                   return FAILED);
   std::shared_ptr<Graph> graph_ptr = MakeShared<ge::Graph>(graph);
   GE_IF_BOOL_EXEC(graph_ptr == nullptr,
-                  REPORT_INNER_ERROR("E19999", "New Graph fail, graph_id:%u, when GraphManager %s",
-                                     graph_id, __FUNCTION__);
+                  REPORT_CALL_ERROR("E19999", "New Graph fail, graph_id:%u, when GraphManager %s",
+                                    graph_id, __FUNCTION__);
                   GELOGE(FAILED, "GraphPtr make shared failed");
                   return FAILED);
   // update option about tuning graph
@@ -457,8 +457,8 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
   }
   std::shared_ptr<Graph> graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
   if (graph_ptr == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New Graph fail, graph_id:%u, when GraphManager %s",
-                       graph_id, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New Graph fail, graph_id:%u, when GraphManager %s",
+                      graph_id, __FUNCTION__);
     GELOGE(FAILED, "GraphPtr make shared failed");
     return FAILED;
   }

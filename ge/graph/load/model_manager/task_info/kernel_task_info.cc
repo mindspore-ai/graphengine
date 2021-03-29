@@ -782,8 +782,8 @@ Status KernelTaskInfo::InitAICPUCustomTask(uint32_t op_index, const domi::Kernel
   const uint32_t kCustomAicpuArgsLen = 5;
   ctx_.argsOffset = new (std::nothrow) uint16_t[kCustomAicpuArgsLen]();
   if (ctx_.argsOffset == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New ctx_.argsOffset fail, size:%u, op:%s(%s), when KernelTaskInfo %s",
-                       kCustomAicpuArgsLen, op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New ctx_.argsOffset fail, size:%u, op:%s(%s), when KernelTaskInfo %s",
+                      kCustomAicpuArgsLen, op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "ctx_.argsOffset is null!");
     return PARAM_INVALID;
   }
@@ -1273,8 +1273,8 @@ Status KernelTaskInfo::SetContext(const domi::KernelDef &kernel_def) {
   // ctx_.argsOffset stores the offset of the internal information of agrs_, equal to the ctx_.argsCount
   ctx_.argsOffset = new (std::nothrow) uint16_t[ctx_.argsCount]();
   if (ctx_.argsOffset == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New ctx_.argsOffset fail, size:%u, when KernelTaskInfo %s",
-                       ctx_.argsCount, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New ctx_.argsOffset fail, size:%u, when KernelTaskInfo %s",
+                      ctx_.argsCount, __FUNCTION__);
     GELOGE(PARAM_INVALID, "(param [ctx_.argsOffset] must not be null.");
     return PARAM_INVALID;
   }

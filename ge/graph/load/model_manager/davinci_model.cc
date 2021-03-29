@@ -1627,8 +1627,8 @@ Status DavinciModel::CpuModelDequeue(uint32_t queue_id) {
   GELOGI("Set CpuKernel model dequeue task enter.");
   std::shared_ptr<CpuTaskModelDequeue> dequeue_task = MakeShared<CpuTaskModelDequeue>(rt_entry_stream_);
   if (dequeue_task == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskModelDequeue failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskModelDequeue failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskModelDequeue task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1651,8 +1651,8 @@ Status DavinciModel::CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
   GELOGI("Set CpuKernel model zero_copy task enter.");
   std::shared_ptr<CpuTaskZeroCopy> zero_copy = MakeShared<CpuTaskZeroCopy>(rt_entry_stream_);
   if (zero_copy == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskZeroCopy failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskZeroCopy failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskZeroCopy task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1726,8 +1726,8 @@ Status DavinciModel::CpuModelPrepareOutput(uintptr_t addr, uint32_t size) {
 
   std::shared_ptr<CpuTaskPrepareOutput> prepare_output = MakeShared<CpuTaskPrepareOutput>(rt_entry_stream_);
   if (prepare_output == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskPrepareOutput failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskPrepareOutput failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskPrepareOutput task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1752,8 +1752,8 @@ Status DavinciModel::CpuActiveStream() {
   GELOGI("Set CpuKernel active stream task enter.");
   std::shared_ptr<CpuTaskActiveEntry> active_entry = MakeShared<CpuTaskActiveEntry>(rt_entry_stream_);
   if (active_entry == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskActiveEntry task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1775,8 +1775,8 @@ Status DavinciModel::CpuWaitEndGraph() {
   GELOGI("Set CpuKernel wait end graph task enter.");
   std::shared_ptr<CpuTaskWaitEndGraph> wait_endgraph = MakeShared<CpuTaskWaitEndGraph>(rt_entry_stream_);
   if (wait_endgraph == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskWaitEndGraph failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskWaitEndGraph failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskWaitEndGraph task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1813,8 +1813,8 @@ Status DavinciModel::CpuModelEnqueue(uint32_t queue_id, uintptr_t out_mbuf) {
   GELOGI("Set CpuKernel model enqueue task enter.");
   std::shared_ptr<CpuTaskModelEnqueue> model_enqueue = MakeShared<CpuTaskModelEnqueue>(rt_entry_stream_);
   if (model_enqueue == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskModelEnqueue failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskModelEnqueue failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskModelEnqueue task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1835,8 +1835,8 @@ Status DavinciModel::CpuModelRepeat() {
   GELOGI("Set CpuKernel repeat task enter.");
   std::shared_ptr<CpuTaskModelRepeat> model_repeat = MakeShared<CpuTaskModelRepeat>(rt_entry_stream_);
   if (model_repeat == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New CpuTaskModelRepeat failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskModelRepeat failed, model_id:%u, when DavinciModel %s",
+                      model_id_, __FUNCTION__);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskModelRepeat task failed.");
     return MEMALLOC_FAILED;
   }
@@ -2608,8 +2608,8 @@ Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputT
   for (size_t i = 0; i < output_buffer_size.size(); ++i) {
     std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[output_buffer_size[i]]);
     if (data_buf == nullptr) {
-      REPORT_INNER_ERROR("E19999", "New buffer failed, size:%ld, model_id:%u when DavinciModel %s",
-                         output_buffer_size[i], model_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "New buffer failed, size:%ld, model_id:%u when DavinciModel %s",
+                        output_buffer_size[i], model_id_, __FUNCTION__);
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Malloc buffer failed.");
       return GE_GRAPH_MALLOC_FAILED;
     }
@@ -3926,8 +3926,8 @@ Status DavinciModel::AddHeadStream() {
     for (auto s : active_stream_list_) {
       std::shared_ptr<CpuTaskActiveEntry> active_entry = MakeShared<CpuTaskActiveEntry>(rt_head_stream_);
       if (active_entry == nullptr) {
-        REPORT_INNER_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u, when DavinciModel %s",
-                           model_id_, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u, when DavinciModel %s",
+                          model_id_, __FUNCTION__);
         GELOGE(MEMALLOC_FAILED, "Make CpuTaskActiveEntry task failed.");
         return MEMALLOC_FAILED;
       }

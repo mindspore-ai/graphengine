@@ -301,8 +301,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
                      return GE_GRAPH_EXECUTE_FAILED);
     std::unique_ptr<uint8_t> outBufTmp(new (std::nothrow) uint8_t[outputDataTmp.length]);
     if (outBufTmp == nullptr) {
-      REPORT_INNER_ERROR("E19999", "New output buffer fail, length:%lu, model:%u, when %s",
-                         outputDataTmp.length, model_id, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "New output buffer fail, length:%lu, model:%u, when %s",
+                        outputDataTmp.length, model_id, __FUNCTION__);
       GELOGE(FAILED, "Failed to allocate memory.");
       return FAILED;
     }

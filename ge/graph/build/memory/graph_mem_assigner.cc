@@ -118,8 +118,8 @@ Status GraphMemoryAssigner::AssignMemory() {
   if (variable_assigner == nullptr) {
     GELOGE(ge::FAILED, "[New][Object:VariableMemoryAssigner]graph_id:%u, graph_name:%s",
            compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory, "
-                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory, "
+                      "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
@@ -140,8 +140,8 @@ ge::Status GraphMemoryAssigner::AssignVarAttr2Nodes() {
   if (variable_assigner == nullptr) {
     GELOGE(ge::FAILED, "[New][Object:VariableMemoryAssigner]graph_id:%u, graph_name:%s",
            compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory, "
-                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory, "
+                      "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
   if (variable_assigner->AssignVarAttr2Nodes() != ge::SUCCESS) {
@@ -156,8 +156,8 @@ ge::Status GraphMemoryAssigner::AssignMemory2HasRefAttrNode() {
   if (variable_assigner == nullptr) {
     GELOGE(ge::FAILED, "[New][Object:VariableMemoryAssigner]graph_id:%u, graph_name:%s",
            compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory, "
-                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory, "
+                      "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
   }
   if (variable_assigner->AssignMemory2HasRefAttrNode() != ge::SUCCESS) {
     return ge::FAILED;
@@ -171,7 +171,7 @@ ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &out
   graphStatus graph_status = ge::TensorUtils::GetSize(*output_desc, out_size);
   if (graph_status != GRAPH_SUCCESS) {
     GELOGE(FAILED, "[Get][TensorSize]");
-    REPORT_INNER_ERROR("E19999", "New Object:VariableMemoryAssigner failed when assign graph memory");
+    REPORT_INNER_ERROR("E19999", "Get tensor size failed when %s", __FUNCTION__);
     return FAILED;
   }
 

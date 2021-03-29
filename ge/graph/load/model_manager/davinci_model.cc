@@ -3416,8 +3416,8 @@ Status DavinciModel::CopyModelData(const InputData &input_data, OutputData &outp
 Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                                       const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label) {
   if (blobs.size() != data_info.size()) {
-    REPORT_INNER_ERROR("E19999", "%s blob size:%ld from user != op_size:%ld in model, mode_id:%u"
-                       "check invalid when DavinciModel %s", is_input ? "input" : "output",
+    REPORT_INNER_ERROR("E19999", "is_input:%d blob size:%ld from user != op_size:%ld in model, mode_id:%u"
+                       "check invalid when DavinciModel %s", is_input,
                        blobs.size(), data_info.size(), model_id_, __FUNCTION__);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
            is_input ? "input" : "output", data_info.size(), blobs.size());
@@ -3426,8 +3426,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
 
   for (const auto &data : data_info) {
     if (data.first >= blobs.size()) {  // check data index.
-      REPORT_INNER_ERROR("E19999", "%s data index:%u from model >= blobs.size:%zu from user, mode_id:%u"
-                         "check invalid when DavinciModel %s", is_input ? "input" : "output",
+      REPORT_INNER_ERROR("E19999", "is_input:%d, data index:%u from model >= blobs.size:%zu from user, mode_id:%u"
+                         "check invalid when DavinciModel %s", is_input,
                          data.first, blobs.size(), model_id_, __FUNCTION__);
       GELOGE(ACL_ERROR_GE_PARAM_INVALID,
              "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
@@ -3437,8 +3437,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
 
     const DataBuffer &buffer = blobs[data.first];  // index of data.
     if (buffer.data == nullptr) {
-      REPORT_INNER_ERROR("E19999", "%s buffer from user is nullptr, index:%u, mode_id:%u"
-                         "check invalid when DavinciModel %s", is_input ? "input" : "output",
+      REPORT_INNER_ERROR("E19999", "is_input:%d buffer from user is nullptr, index:%u, mode_id:%u"
+                         "check invalid when DavinciModel %s", is_input,
                          data.first, model_id_, __FUNCTION__);
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "data_buf.data is nullptr, index=%u", data.first);
       return ACL_ERROR_GE_PARAM_INVALID;

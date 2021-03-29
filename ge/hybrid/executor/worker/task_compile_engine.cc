@@ -32,7 +32,8 @@ Status TaskCompileEngine::Compile(NodeState &node_state, GraphExecutionContext *
   shared_ptr<NodeTask> kernel_task;
   auto ret = node_item.node_executor->CompileTask(*context->model, node_item.node, kernel_task);
   RECORD_COMPILE_EVENT(context, node_state.GetName().c_str(), "[Compile] End");
-  GE_CHK_STATUS_RET(ret, "Failed to create task for node: %s", node_item.NodeName().c_str());
+  GE_CHK_STATUS_RET(ret, "[Compile][Task] failed for node: %s, when TaskCompileEngine %s.", 
+      node_item.NodeName().c_str(), __FUNCTION__);
   node_state.SetKernelTask(kernel_task);
   GELOGI("Compiling node %s successfully", node_state.GetName().c_str());
   return SUCCESS;

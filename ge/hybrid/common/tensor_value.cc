@@ -32,7 +32,8 @@ std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator
   }
 
   if (allocator == nullptr) {
-    GELOGE(INTERNAL_ERROR, "allocator is NULL");
+    GELOGE(INTERNAL_ERROR, "[Check][Param:NpuMemoryAllocator] allocator is NULL, when %s.", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "input allocator is NULL, when %s.", __FUNCTION__);
     return nullptr;
   }
 
@@ -42,7 +43,8 @@ std::unique_ptr<TensorBuffer> TensorBuffer::Create(NpuMemoryAllocator *allocator
   }
   buffer = allocator->Allocate(size, attr);
   if (buffer == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Failed to allocate memory. size = %zu", size);
+    GELOGE(MEMALLOC_FAILED, "[Allocate][Memory] Failed. size = %zu, when %s.", size, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "allocate failed, size = %zu, when %s.", size, __FUNCTION__);
     return nullptr;
   }
 

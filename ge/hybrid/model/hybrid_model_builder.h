@@ -57,14 +57,17 @@ class HybridModelBuilder {
   Status ValidateParams();
   Status LoadGraph();
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
+  Status LoadTask(NodeItem &node_item);
   Status LoadTasks();
   Status IdentifyVariableOutputs(NodeItem &node_item);
   Status IdentifySameInputs(NodeItem &node_item);
   Status BuildNodeItem(const NodePtr &node, NodeItem &node_item);
   Status GetOrCreateNodeItem(const NodePtr &node, NodeItem **node_item);
   Status ParseForceInfershapeNodes(const NodePtr &node, NodeItem &node_item);
+  Status CollectParallelGroups(NodeItem *node_item);
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);
-  Status ParseDependentForFusedSubgraph(NodeItem &node_item);
+  Status ParseDependentForFusedSubgraph(NodeItem &node_item, std::set<ge::NodePtr> &dependencies);
+  Status ParseDependentByParallelGroup();
   Status IndexTaskDefs();
   Status IndexTaskDefs(const ComputeGraphPtr &sub_graph, const GeModelPtr &ge_model);
   Status IndexSpecialNodes();
@@ -97,12 +100,14 @@ class HybridModelBuilder {
   NodeItem *MutableNodeItem(const NodePtr &node);
 
   GeRootModelPtr ge_root_model_;
+  ComputeGraphPtr root_graph_;
   std::map<std::string, GeModelPtr> subgraph_models_;
   std::map<std::string, NodePtr> constant_op_nodes_;
+  std::map<std::string, std::set<NodeItem *>> parallel_group_to_nodes_;
+  std::map<NodeItem *, std::set<std::string>> node_to_parallel_groups_;
 
   HybridModel &hybrid_model_;
   std::map<NodePtr, std::vector<std::pair<int, NodePtr>>> node_ref_inputs_;
-  int node_index = 0;
 
   RuntimeParam &runtime_param_;
   VarManager *var_manager_ = nullptr;

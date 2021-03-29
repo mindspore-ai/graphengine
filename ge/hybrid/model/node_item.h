@@ -67,6 +67,8 @@ struct NodeItem {
 
   bool IsControlOp() const;
 
+  bool IsHcclOp() const;
+
   void SetToDynamic();
 
   std::string DebugString() const;

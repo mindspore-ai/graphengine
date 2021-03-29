@@ -3293,7 +3293,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     void *basic_addr = data.second.GetBasicAddr();
     uint64_t data_size = data.second.GetDataSize();
     if (copy_only_addrs_.count(basic_addr) > 0) {
-      if (is_input) {
+      if (is_input && buffer.length > 0) {
         GELOGI("[IMAS] Find addr %p need direct copy from user malloc input %p", basic_addr, buffer.data);
         rtError_t rt_ret = rtMemcpy(basic_addr, data_size, buffer.data, buffer.length, RT_MEMCPY_DEVICE_TO_DEVICE);
         if (rt_ret != RT_ERROR_NONE) {

@@ -64,6 +64,7 @@ class BaseNodePass {
   void init() {
     nodes_need_re_pass_.clear();
     nodes_deleted_.clear();
+    nodes_need_re_pass_immediately_.clear();
   }
 
  protected:

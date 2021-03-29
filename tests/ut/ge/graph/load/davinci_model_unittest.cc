@@ -22,6 +22,7 @@
 #include "graph/utils/graph_utils.h"
 #include "common/profiling/profiling_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
+#include "graph/manager/graph_var_manager.h"
 
 using namespace std;
 
@@ -51,6 +52,10 @@ int32_t MsprofReport(uint32_t moduleId, uint32_t type, void *data, uint32_t len)
 
 TEST_F(UtestDavinciModel, init_success) {
   DavinciModel model(0, nullptr);
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  map<string, string> options;
+  options[GRAPH_MEMORY_MAX_SIZE] = "1048576";
+  VarManager::Instance(0)->SetMemoryMallocSize(options);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
   ProfilingManager::Instance().is_load_profiling_ = true;
 
@@ -777,6 +782,10 @@ TEST_F(UtestDavinciModel, init_data_aipp_input_dims_normal) {
 
 // test label_set_task Init
 TEST_F(UtestDavinciModel, label_task_success) {
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  map<string, string> options;
+  options[GRAPH_MEMORY_MAX_SIZE] = "1048576";
+  VarManager::Instance(0)->SetMemoryMallocSize(options);
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
@@ -944,6 +953,11 @@ TEST_F(UtestDavinciModel, simple_test_gmock) {
 }
 
 TEST_F(UtestDavinciModel, NnExecute) {
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  map<string, string> options;
+  options[GRAPH_MEMORY_MAX_SIZE] = "1048576";
+  VarManager::Instance(0)->SetMemoryMallocSize(options);
+
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
   ProfilingManager::Instance().is_load_profiling_ = true;
@@ -965,6 +979,26 @@ TEST_F(UtestDavinciModel, NnExecute) {
     op_desc->SetInputOffset({1024});
     op_desc->SetOutputOffset({1024});
     NodePtr node = graph->AddNode(op_desc);    // op_index = 0
+  }
+
+  {
+    OpDescPtr op_desc = CreateOpDesc("memcpy", MEMCPYASYNC);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({5120});
+    NodePtr node = graph->AddNode(op_desc);
+
+    domi::TaskDef *task_def = model_task_def->add_task();
+    task_def->set_stream_id(0);
+    task_def->set_type(RT_MODEL_TASK_MEMCPY_ASYNC);
+    domi::MemcpyAsyncDef *memcpy_async = task_def->mutable_memcpy_async();
+    memcpy_async->set_src(1024);
+    memcpy_async->set_dst(5120);
+    memcpy_async->set_dst_max(512);
+    memcpy_async->set_count(1);
+    memcpy_async->set_kind(RT_MEMCPY_DEVICE_TO_DEVICE);
+    memcpy_async->set_op_index(op_desc->GetId());
   }
 
   {

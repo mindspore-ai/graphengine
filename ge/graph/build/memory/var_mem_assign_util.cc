@@ -311,6 +311,7 @@ Status VarMemAssignUtil::SetOutTransNodeToAssign(const ge::NodePtr &node, const 
 }
 
 Status VarMemAssignUtil::AssignMemory2HasRefAttrNode(ge::ComputeGraphPtr &compute_graph) {
+  GraphToNodeMap graph_to_node;
   for (const ge::NodePtr &n : compute_graph->GetAllNodes()) {
     string ref_var_src_var_name;
     auto op_desc = n->GetOpDesc();
@@ -318,7 +319,8 @@ Status VarMemAssignUtil::AssignMemory2HasRefAttrNode(ge::ComputeGraphPtr &comput
     for (uint32_t idx = 0; idx < op_desc->GetOutputsSize(); idx += 1) {
       const auto out_desc = op_desc->MutableOutputDesc(idx);
       if (ge::AttrUtils::GetStr(out_desc, REF_VAR_SRC_VAR_NAME, ref_var_src_var_name)) {
-        GE_CHK_STATUS_RET(AssignData2VarRef(n, ref_var_src_var_name, compute_graph->GetSessionID(), idx));
+        GE_CHK_STATUS_RET(
+          AssignData2VarRef(n, ref_var_src_var_name, compute_graph->GetSessionID(), idx, graph_to_node));
       }
     }
   }
@@ -326,16 +328,37 @@ Status VarMemAssignUtil::AssignMemory2HasRefAttrNode(ge::ComputeGraphPtr &comput
 }
 
 Status VarMemAssignUtil::AssignData2VarRef(const ge::NodePtr &has_ref_attr_node, const string &src_var_name,
-                                           uint64_t session_id, uint32_t out_index) {
+                                           uint64_t session_id, uint32_t out_index,
+                                           GraphToNodeMap &graph_to_node) {
   // Get ref_var_src_var address
   auto root_graph = GraphUtils::FindRootGraph(has_ref_attr_node->GetOwnerComputeGraph());
   GE_CHECK_NOTNULL(root_graph);
-  ge::NodePtr var_ref_src_var = root_graph->FindNode(src_var_name);
-  if (var_ref_src_var == nullptr) {
+  // Cache mapping (name to nodeptr) simproves query performance
+  auto &name_to_node = graph_to_node[root_graph];
+  if (name_to_node.empty()) {
+    for (const ge::NodePtr &n : root_graph->GetDirectNode()) {
+      name_to_node.emplace(n->GetName(), n);
+    }
     for (auto sub_graph : root_graph->GetAllSubgraphs()) {
-        auto node_ptr = sub_graph->FindNode(src_var_name);
-        if (node_ptr != nullptr) {
-          var_ref_src_var = node_ptr;
+      auto &name_to_node_sub = graph_to_node[sub_graph];
+      if (name_to_node_sub.empty()) {
+        for (const ge::NodePtr &n : sub_graph->GetDirectNode()) {
+          name_to_node_sub.emplace(n->GetName(), n);
+        }
+      }
+    }
+  }
+
+  ge::NodePtr var_ref_src_var = nullptr;
+  auto it = name_to_node.find(src_var_name);
+  if ((it != name_to_node.end()) && (it->second != nullptr)) {
+    var_ref_src_var = it->second;
+  } else {
+    for (auto sub_graph : root_graph->GetAllSubgraphs()) {
+      auto &name_to_node_sub = graph_to_node[sub_graph];
+      it = name_to_node_sub.find(src_var_name);
+      if ((it != name_to_node_sub.end()) && (it->second != nullptr)) {
+          var_ref_src_var = it->second;
           break;
         }
     }

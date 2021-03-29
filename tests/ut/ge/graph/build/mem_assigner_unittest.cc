@@ -33,6 +33,7 @@
 #include "graph/build/memory/graph_mem_assigner.h"
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/max_block_mem_assigner.h"
+#include "graph/manager/graph_var_manager.h"
 #undef protected
 #undef private
 
@@ -77,8 +78,8 @@ class UtestMemoryAssignerTest : public testing::Test {
     op_def->SetWorkspaceBytes(workspace_bytes);
     return op_def;
   }
-  void MakeGraph(ge::ComputeGraphPtr &graph) {
-    ge::OpDescPtr op_def_a = CreateOpWithWsSize("A", 6000);
+  void MakeGraph(ge::ComputeGraphPtr &graph, const string &type = "some") {
+    ge::OpDescPtr op_def_a = CreateOpWithWsSize("A", 6000, type);
     op_def_a->SetStreamId(0);
     ge::OpDescPtr op_def_b = CreateOpWithWsSize("B", 120000);
     op_def_b->SetStreamId(0);
@@ -262,4 +263,39 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_set_last_used_attr) {
   int32_t flag = 0;
   (void) ge::AttrUtils::GetInt(node_f->GetOpDesc()->GetInputDesc(0), ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, flag);
   EXPECT_EQ(flag, 1);
+}
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_ref_var) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  MakeGraph(graph, VARIABLE);
+  auto node_a = graph->FindNode("A");
+  auto node_b = graph->FindNode("B");
+  std::string value = "A";
+  (void) ge::AttrUtils::SetStr(node_b->GetOpDesc()->MutableOutputDesc(0), REF_VAR_SRC_VAR_NAME, value);
+  MemoryAssigner memory_assigner(graph);
+  map<int64_t, size_t> mem_offset;
+  size_t zero_memory_size = 0;
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  EXPECT_EQ(memory_assigner.AssignMemory(false, mem_offset, zero_memory_size), GRAPH_SUCCESS);
+
+  EXPECT_EQ(node_b->GetOpDesc()->GetOutputOffset()[0], node_a->GetOpDesc()->GetOutputOffset()[0]);
+}
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_ref_var_not_found) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  MakeGraph(graph, VARIABLE);
+
+  ge::ComputeGraphPtr sub_graph = make_shared<ge::ComputeGraph>("");
+  MakeReuseGraph(sub_graph);
+  graph->AddSubGraph(sub_graph);
+
+  auto node_a = graph->FindNode("A");
+  auto node_b = graph->FindNode("B");
+  std::string value = "M";
+  (void) ge::AttrUtils::SetStr(node_b->GetOpDesc()->MutableOutputDesc(0), REF_VAR_SRC_VAR_NAME, value);
+  MemoryAssigner memory_assigner(graph);
+  map<int64_t, size_t> mem_offset;
+  size_t zero_memory_size = 0;
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  EXPECT_NE(memory_assigner.AssignMemory(false, mem_offset, zero_memory_size), GRAPH_SUCCESS);
 }

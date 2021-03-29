@@ -49,11 +49,13 @@ Status CheckArgsForC1hwncoc0ToHwcn(const TransArgs &args) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kC1hwncoc0DimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][SrcShape]Failed, src shape %s", ShapeToString(src_shape).c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to check src shape %s", ShapeToString(src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kHwcnDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s.", ShapeToString(dst_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][DSTShape]Failed, dst shape %s.", ShapeToString(dst_shape).c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   auto cube_size = GetCubeSizeByDataType(args.src_data_type);
@@ -74,9 +76,12 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
-           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+           "[Allocate][DSTMemory]Failed to trans format from %s to %s, memory for dst buf %ld, shape %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to trans format from %s to %s and allocate memory for dst buf %ld, shape %s",
+                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                       TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -116,10 +121,12 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
                               static_cast<size_t>(size));
           if (ret != EOK) {
             GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
-                   "Failed to copy data from C1HWNCoC0[%ld, %ld, %ld, %ld, %ld, %ld] offset %ld to "
+                   "[Operate][Memory]Failed to copy data from C1HWNCoC0[%ld, %ld, %ld, %ld, %ld, %ld] offset %ld to "
                    "HWCN[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
-                   c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset,
-                   ret);
+                   c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
+	    REPORT_INNER_ERROR("E19999", "Failed to copy data from C1HWNCoC0[%ld, %ld, %ld, %ld, %ld, %ld] offset %ld to "
+			       "HWCN[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
+			       c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -145,8 +152,8 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
       result.length = static_cast<size_t>(total_size);
       return SUCCESS;
     }
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Get %ld total size from dst shape %s, src shape %s.", total_size,
-           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Get %ld total size from dst shape %s, src shape %s.",
+           total_size, ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   GELOGD("Begin to trans format from C1HWNCoC0 to HWCN, src shape %s, data type %s, dst shape %s, memory size %ld.",
@@ -154,9 +161,12 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
          ShapeToString(args.dst_shape).c_str(), total_size);
   ret = GetDstDataAfterTrans(args, result, size, total_size);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
+    GELOGE(ret, "[Get][Data]Failed when after trans, src shape %s, data type %s, dst shape %s, memory size %ld, error_code %u",
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           ShapeToString(args.dst_shape).c_str(), total_size);
+           ShapeToString(args.dst_shape).c_str(), total_size, ret);
+    REPORT_INNER_ERROR("E19999", "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld, error_code %u",
+	   ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+	   ShapeToString(args.dst_shape).c_str(), total_size, ret);
     return ret;
   }
   return SUCCESS;

@@ -554,5 +554,16 @@ NodeState *TaskContext::GetNodeState() const {
   return node_state_;
 }
 
+Status TaskContext::GetInputDesc(int index, GeTensorDesc &tensor_desc) const {
+  return node_item_->GetInputDesc(index, tensor_desc);
+}
+
+Status TaskContext::UpdateInputDesc(int index, const GeTensorDesc &tensor_desc) {
+  return const_cast<NodeItem *>(node_item_)->UpdateInputDesc(index, tensor_desc);
+}
+
+Status TaskContext::GetOutputDesc(int index, GeTensorDesc &tensor_desc) const {
+  return node_item_->GetOutputDesc(index, tensor_desc);
+}
 }  // namespace hybrid
 }  // namespace ge

@@ -601,6 +601,7 @@ Status HybridModelBuilder::MergeNetOutputNode(ComputeGraph &graph) {
 
 Status HybridModelBuilder::UnfoldSubgraphs(ComputeGraphPtr &root_graph, ComputeGraphPtr &merged_graph) {
   merged_graph = MakeShared<ComputeGraph>("MergedGraph");
+  merged_graph->SetGraphUnknownFlag(root_graph->GetGraphUnknownFlag());
   for (const auto &node : root_graph->GetDirectNode()) {
     GE_CHECK_NOTNULL(node);
     auto op_desc = node->GetOpDesc();

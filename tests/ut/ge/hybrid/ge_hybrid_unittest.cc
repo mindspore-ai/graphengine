@@ -383,3 +383,45 @@ TEST_F(UtestGeHybrid, unfold_subgraphs_success) {
   HybridModelBuilder hybrid_model_builder(hybrid_model);
   EXPECT_EQ(hybrid_model_builder.UnfoldSubgraphs(root_graph, merged_graph), SUCCESS);
 }
+
+TEST_F(UtestGeHybrid, TestTaskContext) {
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  GeShape shape({2, 16});
+  GeTensorDesc tensor_desc(shape);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
+  auto node = graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphExecutionContext execution_context;
+  SubgraphContext subgraph_context(nullptr, &execution_context);
+  subgraph_context.all_inputs_.resize(2);
+  subgraph_context.all_outputs_.resize(1);
+
+  NodeState node_state(*node_item, &subgraph_context);
+  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  ASSERT_TRUE(task_context != nullptr);
+  auto desc = task_context->MutableInputDesc(2);
+  ASSERT_TRUE(desc == nullptr);
+  desc = task_context->MutableOutputDesc(0);
+  ASSERT_TRUE(desc != nullptr);
+  ASSERT_EQ(desc->GetShape().GetDims(), shape.GetDims());
+  GeTensorDesc output_desc;
+  ASSERT_EQ(task_context->GetOutputDesc(0, output_desc), SUCCESS);
+  ASSERT_EQ(output_desc.GetShape().GetDims(), shape.GetDims());
+
+  desc = task_context->MutableInputDesc(0);
+  ASSERT_TRUE(desc != nullptr);
+  ASSERT_EQ(desc->GetShape().GetDims(), shape.GetDims());
+  GeShape new_shape({8, 2});
+  tensor_desc.SetShape(new_shape);
+  task_context->UpdateInputDesc(1, tensor_desc);
+  GeTensorDesc new_desc;
+  ASSERT_EQ(task_context->GetInputDesc(1, new_desc), SUCCESS);
+  ASSERT_EQ(new_desc.GetShape().GetDims(), new_shape.GetDims());
+}

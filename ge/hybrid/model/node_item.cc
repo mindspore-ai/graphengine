@@ -297,7 +297,7 @@ void NodeItem::SetToDynamic() {
   }
 }
 
-GeTensorDescPtr NodeItem::MutableInputDesc(int index) const {
+GeTensorDescPtr NodeItem::DoGetInputDesc(int index) const {
   if (!has_optional_inputs) {
     return op_desc->MutableInputDesc(static_cast<uint32_t>(index));
   }
@@ -312,6 +312,40 @@ GeTensorDescPtr NodeItem::MutableInputDesc(int index) const {
   }
 
   return op_desc->MutableInputDesc(input_desc_indices_[index]);
+}
+
+GeTensorDescPtr NodeItem::MutableInputDesc(int index) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  return DoGetInputDesc(index);
+}
+
+Status NodeItem::GetInputDesc(int index, GeTensorDesc &tensor_desc) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto input_desc = DoGetInputDesc(index);
+  GE_CHECK_NOTNULL(input_desc);
+  tensor_desc = *input_desc;
+  return SUCCESS;
+}
+
+Status NodeItem::GetOutputDesc(int index, GeTensorDesc &tensor_desc) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+  GE_CHECK_NOTNULL(output_desc);
+  tensor_desc = *output_desc;
+  return SUCCESS;
+}
+
+GeTensorDescPtr NodeItem::MutableOutputDesc(int index) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  return op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+}
+
+Status NodeItem::UpdateInputDesc(int index, const GeTensorDesc &tensor_desc) {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto input_desc = DoGetInputDesc(index);
+  GE_CHECK_NOTNULL(input_desc);
+  *input_desc = tensor_desc;
+  return SUCCESS;
 }
 
 Status NodeItem::GetCanonicalInputIndex(uint32_t index, int &canonical_index) const {

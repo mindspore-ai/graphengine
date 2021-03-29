@@ -40,7 +40,7 @@ Status FusionStopTaskInfo::Distribute() {
   GELOGI("FusionStopTaskInfo Distribute Start.");
   rtError_t rt_ret = rtKernelFusionEnd(stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtKernelFusionEnd fail ret:0x%X, when FusionStopTaskInfo %s",
+    REPORT_CALL_ERROR("E19999", "Call rtKernelFusionEnd failed, ret:0x%X, when FusionStopTaskInfo %s",
                       rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);

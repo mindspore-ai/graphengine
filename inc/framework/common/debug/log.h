@@ -232,13 +232,14 @@
   }
 
 // If expr is not RT_ERROR_NONE, print the log and return
-#define GE_CHK_RT_RET(expr)                                \
-  do {                                                     \
-    rtError_t _rt_ret = (expr);                            \
-    if (_rt_ret != RT_ERROR_NONE) {                        \
-      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
-      return RT_ERROR_TO_GE_STATUS(_rt_ret);               \
-    }                                                      \
+#define GE_CHK_RT_RET(expr)                                                                         \
+  do {                                                                                              \
+    rtError_t _rt_ret = (expr);                                                                     \
+    if (_rt_ret != RT_ERROR_NONE) {                                                                 \
+      REPORT_CALL_ERROR("E19999", "Call %s fail, ret: 0x%X when %s", #expr, _rt_ret, __FUNCTION__); \
+      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret);                                          \
+      return RT_ERROR_TO_GE_STATUS(_rt_ret);                                                        \
+    }                                                                                               \
   } while (0);
 
 // If expr is true, execute exec_expr without printing logs

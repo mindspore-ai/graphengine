@@ -51,7 +51,7 @@ Status EventWaitTaskInfo::Distribute() {
   GELOGI("EventWaitTaskInfo Distribute Start.");
   rtError_t rt_ret = rtStreamWaitEvent(stream_, event_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtStreamWaitEvent fail ret:0x%X, when EventWaitTaskInfo %s",
+    REPORT_CALL_ERROR("E19999", "Call rtStreamWaitEvent failed, ret:0x%X, when EventWaitTaskInfo %s",
                       rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -59,7 +59,7 @@ Status EventWaitTaskInfo::Distribute() {
 
   rt_ret = rtEventReset(event_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtEventReset fail ret:0x%X, when EventWaitTaskInfo %s",
+    REPORT_CALL_ERROR("E19999", "Call rtEventReset failed, ret:0x%X, when EventWaitTaskInfo %s",
                       rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);

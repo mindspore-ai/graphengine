@@ -1039,9 +1039,13 @@ Status HybridModelBuilder::InitWeights() {
     GELOGI("Init weight mem successfully, weight base %p, weight size = %zu",
            weight_base,
            sub_weight_buffer->GetSize());
-    auto root_graph = ge_root_model_->GetRootGraph()->GetSubgraph(subgraph_model.first);
-    hybrid_model_.weight_buffer_map_.emplace(root_graph->GetName(), std::move(sub_weight_buffer));
-    for (auto &node : root_graph->GetDirectNode()) {
+    auto subgraph = GraphUtils::GetComputeGraph(subgraph_model.second->GetGraph());
+    if (subgraph != ge_root_model_->GetRootGraph()) {
+      subgraph = ge_root_model_->GetRootGraph()->GetSubgraph(subgraph_model.first);
+    }
+    GE_CHECK_NOTNULL(subgraph);
+    hybrid_model_.weight_buffer_map_.emplace(subgraph->GetName(), std::move(sub_weight_buffer));
+    for (auto &node : subgraph->GetDirectNode()) {
       if (node->GetType() != CONSTANT) {
         continue;
       }

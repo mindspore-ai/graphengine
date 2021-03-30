@@ -18,6 +18,7 @@
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
 #include "common/dump/dump_manager.h"
+#include "common/profiling/profiling_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -77,9 +78,22 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
 
+  uint64_t index_id = context_.iteration + 1;
+  uint64_t model_id = static_cast<uint64_t>(model_->GetModelId());
+  int32_t device_id = static_cast<int32_t>(device_id_);
+  auto &prof_mgr = ProfilingManager::Instance();
+  // tag_id 0 means step begin, 1 meas step end.
+  if (prof_mgr.ProfilingModelExecuteOn()) {
+    GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 0, stream_, device_id));
+  }
+
   HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc, args.outputs),
                         "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
+
+  if (prof_mgr.ProfilingModelExecuteOn()) {
+    GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 1, stream_, device_id));
+  }
 
   HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");

@@ -708,6 +708,7 @@ target_compile_definitions(ge_runner PRIVATE
     DAVINCI_CLOUD
     google=ascend_private
     FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_runner PRIVATE
@@ -783,6 +784,7 @@ target_compile_definitions(ge_compiler PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
     FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_compiler PRIVATE

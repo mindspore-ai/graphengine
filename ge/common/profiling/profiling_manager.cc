@@ -24,6 +24,7 @@
 #include "graph/types.h"
 #include "runtime/base.h"
 #include "graph/load/model_manager/davinci_model.h"
+#include "mmpa/mmpa_api.h"
 
 namespace {
 const char *const kTrainingTrace = "training_trace";
@@ -46,6 +47,10 @@ const std::string kOptype = "op_type";
 const std::string kBlockDim = "block_dims";
 const std::string kTaskId = "task_id";
 const std::string kStreamId = "stream_id";
+const std::string kThreadId = "thread_id";
+const std::string kIndexId = "index_id";
+const std::string kTimeStamp = "time_stamp";
+const std::string kTagId = "tag_id";
 const std::string kShapeType = "shape_type";
 const std::string kCurIterNum = "cur_iter_num";
 const std::string kTaskType = "task_type";
@@ -284,6 +289,58 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     ReportData(device_id, reported_data, "task_desc_info");
   }
 #endif
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfileStepInfo(
+  uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id) {
+#ifdef DAVINCI_SUPPORT_PROFILING
+  rtError_t rt_ret = RT_ERROR_NONE;
+#ifndef ONLY_COMPILE_OPEN_SRC
+  GELOGD("Profiling Step Info TraceTask execute async start, index_id = %lu, model_id = %lu, tag_id = %u",
+         index_id, model_id, tag_id);
+  rt_ret = rtProfilerTraceEx(index_id, model_id, tag_id, stream);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "[Call][rtProfilerTraceEx] failed, ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  GELOGD("Profiling Step Info TraceTask execute async success, index_id = %lu, model_id = %lu, tag_id = %u",
+         index_id, model_id, tag_id);
+#endif
+
+  mmTimespec timespec = mmGetTickCount();
+  // 1000 ^ 3 converts second to nanosecond
+  int64_t time = timespec.tv_sec * 1000 * 1000 * 1000 + timespec.tv_nsec;
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "[Get][RtsInfo] task_id and stream_id failed, ret: 0x%X.", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  GELOGD("Get profiling args, task_id[%u], stream_id[%u]", task_id, stream_id);
+
+  Json step_info;
+  step_info[kIndexId] = index_id;
+  step_info[kModelId] = model_id;
+  step_info[kTimeStamp] = time;
+  step_info[kTagId] = tag_id;
+  step_info[kTaskId] = task_id;
+  step_info[kStreamId] = stream_id;
+  step_info[kThreadId] = mmGetTid();
+
+  std::string reported_data;
+  try {
+    reported_data = step_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
+  } catch (std::exception &e) {
+    GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+  } catch (...) {
+    GELOGE(FAILED, "Failed to convert JSON to string.");
+  }
+  reported_data.append(",")
+               .append("\n");
+  ReportData(device_id, reported_data, "step_info");
+#endif
+  return SUCCESS;
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportData(

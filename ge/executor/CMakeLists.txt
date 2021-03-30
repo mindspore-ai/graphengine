@@ -179,6 +179,7 @@ target_compile_definitions(ge_executor PRIVATE
     google=ascend_private
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
     LOG_CPP
 )
 
@@ -225,6 +226,7 @@ target_compile_definitions(ge_executor_shared PRIVATE
     DAVINCI_SUPPORT_PROFILING
     google=ascend_private
     FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(ge_executor_shared PRIVATE

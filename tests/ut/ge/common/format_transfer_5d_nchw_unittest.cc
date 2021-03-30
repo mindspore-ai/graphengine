@@ -569,7 +569,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_shape1) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_shape2) {
@@ -579,7 +579,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_shape2) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_dst_shape1) {
@@ -588,7 +588,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_dst_shape1) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_dst_shape2) {
@@ -598,7 +598,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_dst_shape2) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_dst_shape_relation) {
@@ -608,7 +608,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_dst_shape_relation) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_SHAPE_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_format) {
@@ -618,10 +618,10 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_format) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
   Status status =
       transfer.TransShape(args.src_format, args.src_shape, args.src_data_type, args.dst_format, args.dst_shape);
-  EXPECT_EQ(status, ACL_ERROR_GE_FORMAT_INVALID);
+  EXPECT_EQ(status, UNSUPPORTED);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_dst_format) {
@@ -631,7 +631,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_dst_format) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_FORMAT_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 
 TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_data_type) {
@@ -642,7 +642,7 @@ TEST_F(UTEST_FormatTransferNc1hwc0ToNchw, invalid_src_data_type) {
   TransResult result;
 
   FormatTransferNc1hwc0Nchw transfer;
-  EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);
+  EXPECT_EQ(transfer.TransFormat(args, result), PARAM_INVALID);
 }
 }  // namespace formats
 }  // namespace ge

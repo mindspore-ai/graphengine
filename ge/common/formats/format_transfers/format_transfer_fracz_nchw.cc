@@ -37,7 +37,7 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
     std::string error = "Dose not support trans format from " +
         FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
         FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
-    GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
+    GE_ERRORLOG_AND_ERRORMSG(UNSUPPORTED, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {

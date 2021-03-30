@@ -81,6 +81,8 @@ Status RdmaPoolAllocator::InitMemory(size_t mem_size) {
   auto device_id = GetContext().DeviceId();
   GELOGD("Init Rdma Memory with size [%zu] for devid:[%u]", mem_size, device_id);
   if (rdma_base_addr_ != nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param rdma_base_addr_ is nullptr, check invalid when RdmaPoolAllocator %s",
+                       __FUNCTION__);
     GELOGE(GE_MULTI_INIT, "Rdma pool has been malloced");
     return GE_MULTI_INIT;
   }
@@ -100,6 +102,7 @@ Status RdmaPoolAllocator::InitMemory(size_t mem_size) {
   // Init with a base block.
   auto *base_block = new (std::nothrow) Block(device_id, mem_size, rdma_base_addr_);
   if (base_block == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New Block failed, device_id:%u, when RdmaPoolAllocator %s", device_id, __FUNCTION__);
     GELOGE(GE_GRAPH_MALLOC_FAILED, "Block malloc failed");
     return GE_GRAPH_MALLOC_FAILED;
   }
@@ -118,6 +121,8 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
     block_bin_.erase(it);
     block->allocated = true;
     if (block->ptr == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Rdmapool memory address is nullptr, device_id:%u, check invalid when RdmaPoolAllocator %s",
+                         device_id, __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "Rdmapool memory address is nullptr.");
       return nullptr;
     }
@@ -150,6 +155,8 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
 Status RdmaPoolAllocator::Free(uint8_t *memory_addr, uint32_t device_id) {
   GELOGI("Free rdma memory, device id = %u", device_id);
   if (memory_addr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param memory_addr is nullptr, device_id:%u, check invalid when RdmaPoolAllocator %s",
+                       device_id, __FUNCTION__);
     GELOGE(GE_GRAPH_FREE_FAILED, "Invalid memory pointer");
     return GE_GRAPH_FREE_FAILED;
   }
@@ -157,6 +164,8 @@ Status RdmaPoolAllocator::Free(uint8_t *memory_addr, uint32_t device_id) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = allocated_blocks_.find(memory_addr);
   if (it == allocated_blocks_.end()) {
+    REPORT_INNER_ERROR("E19999", "Param memory_addr is not allocated before, device_id:%u, "
+                       "check invalid when RdmaPoolAllocator %s", device_id, __FUNCTION__);
     GELOGE(PARAM_INVALID, "Invalid memory pointer");
     return PARAM_INVALID;
   }
@@ -199,6 +208,8 @@ void RdmaPoolAllocator::MergeBlocks(Block *dst, Block *src) {
 
 Status RdmaPoolAllocator::GetBaseAddr(uint64_t &base_addr, uint64_t &mem_size) {
   if (rdma_base_addr_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param rdma_base_addr_ is nullptr, check invalid when RdmaPoolAllocator %s",
+                       __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Rdma base addr is nullptr.");
     return INTERNAL_ERROR;
   }

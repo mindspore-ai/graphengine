@@ -34,6 +34,7 @@ uint8_t *HostMemAllocator::Malloc(size_t size) {
   std::lock_guard<std::mutex> lock(mutex_);
   std::shared_ptr<AlignedPtr> aligned_ptr = MakeShared<AlignedPtr>(size);
   if (aligned_ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "New AlignedPtr fail, when HostMemAllocator %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "make shared_ptr for AlignedPtr failed");
     return nullptr;
   }
@@ -44,6 +45,7 @@ uint8_t *HostMemAllocator::Malloc(size_t size) {
 
 Status HostMemAllocator::Free(const void *memory_addr) {
   if (memory_addr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param memory_addr is nullptr, check invalid when HostMemAllocator %s", __FUNCTION__);
     GELOGE(GE_GRAPH_FREE_FAILED, "Invalid memory pointer");
     return GE_GRAPH_FREE_FAILED;
   }
@@ -51,6 +53,8 @@ Status HostMemAllocator::Free(const void *memory_addr) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = allocated_blocks_.find(memory_addr);
   if (it == allocated_blocks_.end()) {
+    REPORT_INNER_ERROR("E19999", "Memory_addr is not alloc before, check invalid when HostMemAllocator %s",
+                       __FUNCTION__);
     GELOGE(PARAM_INVALID, "Invalid memory pointer");
     return PARAM_INVALID;
   }

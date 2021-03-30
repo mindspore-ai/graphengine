@@ -70,7 +70,7 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   {
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndTypeForRunning(node_item.node, true),
-        "[Invoke][InferShapeAndType] for %s failed when %s.", node_item.NodeName().c_str(), __FUNCTION__);
+        "[Invoke][InferShapeAndType] for %s failed.", node_item.NodeName().c_str());
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] End");
   }
 
@@ -172,7 +172,7 @@ Status ShapeInferenceEngine::InferShapeForSubgraph(const NodeItem &node_item, co
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndType(node));
     GELOGD("[%s] Done invoking InferShapeAndType", node->GetName().c_str());
     GE_CHK_STATUS_RET(UpdatePeerNodeShape(*node),
-        "[Update][PeerNodeShape] failed for [%s] when %s.", node->GetName().c_str(), __FUNCTION__);
+        "[Update][PeerNodeShape] failed for [%s].", node->GetName().c_str());
   }
 
   for (auto &it : fused_subgraph.output_mapping) {
@@ -204,8 +204,7 @@ Status ShapeInferenceEngine::UpdatePeerNodeShape(const Node &node) {
       GE_CHECK_NOTNULL(peer_op_desc);
       auto peer_input_desc = peer_op_desc->MutableInputDesc(peer_anchor->GetIdx());
       if (peer_input_desc == nullptr) {
-        GELOGE(GRAPH_FAILED, "[Call][MutableInputDesc] for %s return nullptr when ShapeInferenceEngine %s.", 
-            peer_op_desc->GetName().c_str(), __FUNCTION__);
+        GELOGE(GRAPH_FAILED, "[Call][MutableInputDesc] for %s return nullptr.", peer_op_desc->GetName().c_str());
         REPORT_CALL_ERROR("E19999", "%s call MutableInputDesc return nullptr when ShapeInferenceEngine %s.", 
             peer_op_desc->GetName().c_str(), __FUNCTION__);    
         continue;
@@ -233,8 +232,8 @@ Status ShapeInferenceEngine::CanonicalizeShape(GeTensorDesc &tensor_desc,
   if (tensor_shape.IsUnknownShape()) {
     if (!fallback_with_range) {
       GELOGE(INTERNAL_ERROR, 
-          "[Is][UnknownShape] Output shape is still unknown after shape inference. "
-          "shape = [%s] when ShapeInferenceEngine %s.", tensor_shape.ToString().c_str(), __FUNCTION__);
+          "[Is][UnknownShape] Output shape is still unknown after shape inference. shape = [%s].", 
+          tensor_shape.ToString().c_str());
       REPORT_INNER_ERROR("E19999", "Output shape is still unknown after shape inference. "
           "shape = [%s] when ShapeInferenceEngine %s.", tensor_shape.ToString().c_str(), __FUNCTION__);    
       return INTERNAL_ERROR;
@@ -244,8 +243,8 @@ Status ShapeInferenceEngine::CanonicalizeShape(GeTensorDesc &tensor_desc,
     std::vector<std::pair<int64_t, int64_t>> shape_range;
     GE_CHK_GRAPH_STATUS_RET(tensor_desc.GetShapeRange(shape_range), "Failed to get shape range");
     if (shape_range.size() != shape.size()) {
-      GELOGE(INTERNAL_ERROR, "[Check][Size] Number of shape ranges (%zu) mismatches that of dims (%zu)" 
-          " when ShapeInferenceEngine %s.", shape_range.size(), shape.size(), __FUNCTION__);
+      GELOGE(INTERNAL_ERROR, "[Check][Size] Number of shape ranges (%zu) mismatches that of dims (%zu).", 
+          shape_range.size(), shape.size());
       REPORT_INNER_ERROR("E19999", "Number of shape ranges (%zu) mismatches that of dims (%zu)" 
           " when ShapeInferenceEngine %s.", shape_range.size(), shape.size(), __FUNCTION__);    
       return INTERNAL_ERROR;
@@ -271,8 +270,8 @@ Status ShapeInferenceEngine::CalcTensorSize(DataType data_type,
   GELOGD("To calc tensor size by shape = [%s]", GeShape(shape).ToString().c_str());
   uint32_t type_size;
   if (!TypeUtils::GetDataTypeLength(data_type, type_size)) {
-    GELOGE(INTERNAL_ERROR, "[Get][DataTypeLength] failed for type:%s when ShapeInferenceEngine %s.", 
-        TypeUtils::DataTypeToSerialString(data_type).c_str(), __FUNCTION__);
+    GELOGE(INTERNAL_ERROR, "[Get][DataTypeLength] failed for type:%s.", 
+        TypeUtils::DataTypeToSerialString(data_type).c_str());
     REPORT_CALL_ERROR("E19999", "GetDataTypeLength failed for type:%s when ShapeInferenceEngine %s.", 
         TypeUtils::DataTypeToSerialString(data_type).c_str(), __FUNCTION__);    
     return INTERNAL_ERROR;
@@ -287,7 +286,7 @@ Status ShapeInferenceEngine::CalcTensorSize(DataType data_type,
   }
 
   GE_CHK_STATUS_RET(CheckInt64AddOverflow(tensor_size, kAlignment - 1),
-      "[Check][Overflow]Tensor size is too large: %ld, shape = [%s]",
+      "[Check][Overflow]Tensor size is too large: %ld, shape = [%s] Shape size will overflow when add align.",
       tensor_size, GeShape(shape).ToString().c_str());
   tensor_size = (tensor_size + kAlignment - 1) / kAlignment * kAlignment;
   return SUCCESS;
@@ -301,14 +300,23 @@ Status ShapeInferenceEngine::CalcOutputTensorSizes(const NodeItem &node_item, bo
     const auto &shape = tensor_desc->MutableShape();
     // modify on copy
     auto dims = shape.GetDims();
-    GE_CHK_STATUS_RET(CanonicalizeShape(*tensor_desc, dims, fallback_with_range),
-        "[Canonicalize][Shape] failed for [%s], output %zu, when ShapeInferenceEngine %s.",
-        node_item.NodeName().c_str(), output_index, __FUNCTION__);
-
+    auto _status = CanonicalizeShape(*tensor_desc, dims, fallback_with_range);    
+    if(_status != SUCCESS){
+      REPORT_CALL_ERROR("E19999", "Invoke CanonicalizeShape failed when ShapeInferenceEngine %s, node:%s, output:%zu.",
+          node_item.NodeName().c_str(), __FUNCTION__, output_index);
+      GELOGE(ge::FAILED, "[Canonicalize][Shape] failed for [%s], output %zu.",
+          node_item.NodeName().c_str(), output_index); 
+      return _status; 
+    }
     int64_t tensor_size;
-    GE_CHK_STATUS_RET(CalcTensorSize(tensor_desc->GetDataType(), dims, tensor_size),
-        "[Calc][TensorSize] failed for [%s], output %zu when ShapeInferenceEngine %s.",
-        node_item.NodeName().c_str(), output_index, __FUNCTION__);
+    _status = CalcTensorSize(tensor_desc->GetDataType(), dims, tensor_size);
+    if(_status != SUCCESS){
+      REPORT_CALL_ERROR("E19999", "Invoke CalcTensorSize failed when ShapeInferenceEngine %s, node:%s, output:%zu.",
+          node_item.NodeName().c_str(), __FUNCTION__, output_index);
+      GELOGE(ge::FAILED, "[Calc][TensorSize] failed for [%s], output %zu.",
+          node_item.NodeName().c_str(), output_index); 
+      return _status; 
+    }    
     GELOGD("[%s] Tensor size of output %zu = %ld", node_item.NodeName().c_str(), output_index, tensor_size);
     (void) TensorUtils::SetSize(*tensor_desc, tensor_size);
   }

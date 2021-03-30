@@ -40,8 +40,8 @@ void HybridProfiler::RecordEvent(EventType event_type, const char *fmt, ...) {
 
   char buf[kEventDescMax];
   if (vsnprintf_s(buf, kEventDescMax, kEventDescMax - 1, fmt, args) == -1) {
-    GELOGE(FAILED, "[Parse][Param:fmt]Format %s failed when HybridProfiler %s.", fmt, __FUNCTION__);
-    REPORT_INNER_ERROR("E19999", "Parse Format %s failed when HybridProfiler %s.", fmt, __FUNCTION__);
+    GELOGE(FAILED, "[Parse][Param:fmt]Format %s failed.", fmt);
+    REPORT_CALL_ERROR("E19999", "Parse Format %s failed when HybridProfiler %s.", fmt, __FUNCTION__);
     va_end(args);
     return;
   }

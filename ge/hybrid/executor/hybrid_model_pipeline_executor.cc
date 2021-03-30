@@ -59,8 +59,8 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     task_queue_.Pop(task_info);
     GELOGD("[Executor: %d] Got task, stage = %d, iteration = %ld", id_, task_info.stage, task_info.iteration);
     if (task_info.iteration >= pipe_config_->iteration_end) {
-      GELOGE(INTERNAL_ERROR, "[Check][Range][Executor: %d] Unexpected iteration: %d when StageExecutor %s.", 
-          id_, task_info.iteration, __FUNCTION__);
+      GELOGE(INTERNAL_ERROR, "[Check][Range][Executor: %d] Unexpected iteration: %d.", 
+          id_, task_info.iteration);
       REPORT_INNER_ERROR("E19999", "[Executor: %d] Unexpected iteration: %d when StageExecutor %s.", 
           id_, task_info.iteration, __FUNCTION__);
       return INTERNAL_ERROR;
@@ -97,10 +97,10 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     auto sync_result = Synchronize();
     if (sync_result != SUCCESS) {
       GELOGE(sync_result, 
-          "[Invoke][Synchronize][Executor: %d] Failed to sync result when StageExecutor %s. iteration = %d", 
-          id_, __FUNCTION__, task_info.iteration);
-      REPORT_CALL_ERROR("E19999", "[Executor: %d] Failed to sync result when StageExecutor %s. iteration = %d", 
-          id_, __FUNCTION__, task_info.iteration);
+          "[Invoke][Synchronize][Executor: %d] Failed to sync result:%d. iteration = %d", 
+          id_, sync_result, task_info.iteration);
+      REPORT_CALL_ERROR("E19999", "[Executor: %d] Failed to sync result:%d when StageExecutor %s. iteration = %d", 
+          id_, sync_result, __FUNCTION__, task_info.iteration);
       context_.profiler->Dump(std::cout);
       context_.callback_manager->Destroy();
       RuntimeInferenceContext::DestroyContext(std::to_string(context_.context_id));
@@ -249,8 +249,7 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
     GELOGD("Start to sync result of executor[%zu]", i);
     auto ret = futures[i].get();
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Check][Result][Executor: %zu] Failed to schedule tasks when HybridModelPipelineExecutor %s.",
-          i, __FUNCTION__);
+      GELOGE(ret, "[Check][Result][Executor: %zu] Failed to schedule tasks.", i);
       REPORT_INNER_ERROR("E19999", "[Executor: %zu] Failed to schedule tasks when HybridModelPipelineExecutor %s.",
           i, __FUNCTION__);
       has_error = true;
@@ -260,8 +259,7 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
     ret = stage_executors_[i]->Synchronize();
 
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Invoke][Synchronize] failed for [Executor: %zu] when HybridModelPipelineExecutor %s.",
-          i, __FUNCTION__);
+      GELOGE(ret, "[Invoke][Synchronize] failed for [Executor: %zu].", i);
       REPORT_CALL_ERROR("E19999", "[Executor: %zu] failed to Synchronize result when HybridModelPipelineExecutor %s.",
           i, __FUNCTION__);    
       has_error = true;
@@ -279,7 +277,7 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
   iteration_ = config_.iteration_end;
 
   if (has_error) {
-    GELOGE(FAILED, "[Check][Error]Error occurred while execution when HybridModelPipelineExecutor %s.", __FUNCTION__);
+    GELOGE(FAILED, "[Check][Error]Error occurred while execution.");
     REPORT_INNER_ERROR("E19999", "Error occurred while execution when HybridModelPipelineExecutor %s.", __FUNCTION__);
     return FAILED;
   }

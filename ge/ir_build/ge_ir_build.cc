@@ -503,8 +503,17 @@ graphStatus Impl::CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTe
       string data_type_str = ge::TypeUtils::DataTypeToSerialString(data_type);
       GELOGD("Data op get data type:%s from InputDesc in ge ir graph.", data_type_str.c_str());
 
+      std::vector<std::pair<int64_t, int64_t>> shape_range;
+      if (tensor.GetShapeRange(shape_range) != GRAPH_SUCCESS) {
+        GELOGE(FAILED, "[Creat][Input] Data op [%s] get shape range failed.", data_op_name.c_str());
+        return FAILED;
+      }
       ge::GeTensor inputTensor;
       ge::GeTensorDesc desc(data_shape, ge::Format(data_format), data_type);
+      if (desc.SetShapeRange(shape_range) != GRAPH_SUCCESS) {
+        GELOGE(FAILED, "[Creat][Input] Data op [%s] set shape range failed.", data_op_name.c_str());
+        return FAILED;
+      }
       inputTensor.SetTensorDesc(desc);
       inputs.push_back(inputTensor);
     }

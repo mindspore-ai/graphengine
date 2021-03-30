@@ -154,47 +154,75 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
 
 Status FileSaver::SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
                                            ModelPartitionTable &model_partition_table,
-                                           const std::vector<ModelPartition> &partitionDatas,
+                                           const std::vector<ModelPartition> &partition_datas,
                                            ge::ModelBufferData &model) {
-  GE_CHK_BOOL_RET_STATUS(
-      !partitionDatas.empty() && model_partition_table.num != 0 && model_partition_table.num == partitionDatas.size(),
-      FAILED, "Invalid param:partition data size is (%u), model_partition_table.num is (%zu).",
-      model_partition_table.num, partitionDatas.size());
-  uint32_t model_header_size = sizeof(ModelFileHeader);
-  uint32_t table_size = static_cast<uint32_t>(SIZE_OF_MODEL_PARTITION_TABLE(model_partition_table));
-  uint32_t total_size = model_header_size + table_size;
+  const vector<ModelPartitionTable *> model_partition_tables = { &model_partition_table };
+  const std::vector<std::vector<ModelPartition>> all_partition_datas = { partition_datas };
+  return SaveToBuffWithFileHeader(file_header, model_partition_tables, all_partition_datas, model);
+}
 
-  for (const auto &partitionData : partitionDatas) {
-    auto ret = ge::CheckUint32AddOverflow(total_size, partitionData.size);
-    GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "add uint32 overflow!");
-    total_size = total_size + partitionData.size;
+Status FileSaver::SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
+                                           const vector<ModelPartitionTable *> &model_partition_tables,
+                                           const std::vector<std::vector<ModelPartition>> &all_partition_datas,
+                                           ge::ModelBufferData &model) {
+  GE_CHK_BOOL_RET_STATUS(model_partition_tables.size() == all_partition_datas.size(), PARAM_INVALID,
+                         "Model table size %zu does not match partition size %zu.",
+                         model_partition_tables.size(), all_partition_datas.size());
+  for (size_t index = 0; index < model_partition_tables.size(); ++index) {
+    auto &cur_partiton_data = all_partition_datas[index];
+    auto &cur_model_partition_table = *model_partition_tables[index];
+    GE_CHK_BOOL_RET_STATUS(!cur_partiton_data.empty() && cur_model_partition_table.num != 0
+                           && cur_model_partition_table.num == cur_partiton_data.size(), FAILED,
+                           "Invalid param: partition data size is (%zu), model_partition_table.num is (%u).",
+                           cur_partiton_data.size(), cur_model_partition_table.num);
   }
+
+  uint64_t model_header_size = sizeof(ModelFileHeader);
+  uint64_t total_size = model_header_size;
+  for (size_t index = 0; index < model_partition_tables.size(); ++index) {
+    auto &cur_model_partition_table = *model_partition_tables[index];
+    total_size += static_cast<uint64_t>(SIZE_OF_MODEL_PARTITION_TABLE(cur_model_partition_table));
+    auto &cur_partition_data = all_partition_datas[index];
+    for (const auto &partition_data : cur_partition_data) {
+      auto ret = ge::CheckUint64AddOverflow(total_size, partition_data.size);
+      GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "Add uint64 overflow!");
+      total_size += partition_data.size;
+    }
+  }
+  // save to buff
   auto buff = reinterpret_cast<uint8_t *>(malloc(total_size));
-  GE_CHK_BOOL_RET_STATUS(buff != nullptr, FAILED, "malloc failed!");
-  GE_PRINT_DYNAMIC_MEMORY(malloc, "file buffer.", total_size)
+  GE_CHK_BOOL_RET_STATUS(buff != nullptr, FAILED, "Malloc failed!");
+  GE_PRINT_DYNAMIC_MEMORY(malloc, "File buffer.", total_size)
   model.data.reset(buff, [](uint8_t *buff) {
     GELOGD("Free online model memory.");
     free(buff);
     buff = nullptr;
   });
   model.length = total_size;
-  uint32_t left_space = total_size;
-  auto ret_mem1 = memcpy_s(buff, left_space, reinterpret_cast<void *>(const_cast<ModelFileHeader *>(&file_header)),
-                           model_header_size);
-  GE_CHK_BOOL_RET_STATUS(ret_mem1 == 0, FAILED, "memcpy_s failed!");
+  uint64_t left_space = total_size;
+  auto ret_mem = memcpy_s(buff, left_space, reinterpret_cast<void *>(const_cast<ModelFileHeader *>(&file_header)),
+                          model_header_size);
+  GE_CHK_BOOL_RET_STATUS(ret_mem == EOK, FAILED, "Memcpy_s failed!");
   buff += model_header_size;
   left_space -= model_header_size;
-  auto ret_mem2 = memcpy_s(buff, left_space, reinterpret_cast<void *>(&model_partition_table), table_size);
-  GE_CHK_BOOL_RET_STATUS(ret_mem2 == 0, FAILED, "memcpy_s failed!");
-  buff += table_size;
-  left_space -= table_size;
-  for (const auto &partitionData : partitionDatas) {
-    auto ret_mem3 = memcpy_s(buff, left_space, reinterpret_cast<void *>(const_cast<uint8_t *>(partitionData.data)),
-                             partitionData.size);
-    GE_CHK_BOOL_RET_STATUS(ret_mem3 == 0, FAILED, "memcpy failed!");
-    buff += partitionData.size;
-    left_space -= partitionData.size;
+
+  for (size_t index = 0; index < model_partition_tables.size(); ++index) {
+    auto &cur_tabel = *model_partition_tables[index];
+    uint64_t table_size = static_cast<uint64_t>(SIZE_OF_MODEL_PARTITION_TABLE(cur_tabel));
+    ret_mem = memcpy_s(buff, left_space, reinterpret_cast<void *>(&cur_tabel), table_size);
+    GE_CHK_BOOL_RET_STATUS(ret_mem == EOK, FAILED, "Memcpy_s failed!");
+    buff += table_size;
+    left_space -= table_size;
+    auto &cur_partition_data = all_partition_datas[index];
+    for (const auto &partition_data : cur_partition_data) {
+      ret_mem = memcpy_s(buff, left_space, reinterpret_cast<void *>(const_cast<uint8_t *>(partition_data.data)),
+                         partition_data.size);
+      GE_CHK_BOOL_RET_STATUS(ret_mem == EOK, FAILED, "Memcpy_s failed!");
+      buff += partition_data.size;
+      left_space -= partition_data.size;
+    }
   }
+
   return SUCCESS;
 }
 

@@ -46,27 +46,6 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
   }
 }
 
-Status ShapeInferenceState::CheckInputShapeByShapeRange(const GeTensorDesc &tensor_desc,
-                                                        const GeTensorDesc &target_tensor_desc) const {
-  std::vector<std::pair<int64_t, int64_t>> shape_range;
-  if (tensor_desc.GetShapeRange(shape_range) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Get shape range failed.");
-    return PARAM_INVALID;
-  }
-  if (shape_range.empty()) {
-    GELOGD("Shape range is empty, no need to check input shape.");
-    return SUCCESS;
-  }
-
-  GeShape target_shape = target_tensor_desc.GetShape();
-  if (TensorUtils::CheckShapeByShapeRange(target_shape, shape_range) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Check shape by shape range failed.");
-    return PARAM_INVALID;
-  }
-
-  return SUCCESS;
-}
-
 Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target) {
   if (node_item.IsInputShapeStatic(idx)) {
     GELOGD("[%s] Trying to update static shape, idx = %d. old shape = [%s], new shape = [%s]",

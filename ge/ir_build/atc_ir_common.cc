@@ -59,7 +59,7 @@ const char *const kKeepDtypeError = "file not found";
 const char *const kInputShapeRangeInvalid = "format of shape range is invalid";
 const char *const kShapeRangeValueConvertError = "transfer from string to int64 error";
 const char *const kInputShapeRangeSample1 = "\"input_name1:[n1~n2,c1,h1,w1]\"";
-const char *const kInputShapeRangeSample2 = "\"[]\"";
+const char *const kInputShapeRangeSample2 = "\"[1~20]\"";
 const char *const kInputShapeRangeSample3 = "\"[1~20,3,3~6,-1]\"";
 
 vector<string> SplitInputShape(const std::string &input_shape) {
@@ -301,8 +301,8 @@ bool ParseSingleShapeRange(std::string &shape_range, vector<pair<int64_t, int64_
     }
   }
 
-  bool is_square_brackets = (square_brackets[0] == '[') && (square_brackets[1] == ']') &&
-                            (square_brackets.size() == kSquareBracketsSize);
+  bool is_square_brackets = (square_brackets.size() == kSquareBracketsSize) &&
+                            (square_brackets[0] == '[') && (square_brackets[1] == ']');
   if (!is_square_brackets) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
                                                     {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample2});

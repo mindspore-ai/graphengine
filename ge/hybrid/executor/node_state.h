@@ -58,8 +58,6 @@ struct ShapeInferenceState {
 
   const vector<GeTensorDesc> &GetOutputTensorDesc() const;
 
-  Status CheckInputShapeByShapeRange(const GeTensorDesc &tensor_desc, const GeTensorDesc &target_tensor_desc) const;
-
   const NodeItem &node_item;
 
  private:

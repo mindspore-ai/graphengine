@@ -95,6 +95,7 @@
 #include "graph/passes/memcpy_addr_async_pass.h"
 #include "graph/passes/hccl_continuous_memcpy_pass.h"
 #include "graph/passes/parallel_group_pass.h"
+#include "graph/passes/buffer_pool_memory_pass.h"
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
@@ -2527,6 +2528,12 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   MemcpyAddrAsyncPass memcpy_addr;
   GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph), "Add memcpy_addr_async node failed.");
   GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
+
+  // Process offset and dependency for buffer pool memory assigner.
+  GE_TIMESTAMP_START(BufferPoolMemoryPass);
+  BufferPoolMemoryPass buffer_pool_mem_pass;
+  GE_CHK_STATUS_RET(buffer_pool_mem_pass.Run(compute_graph), "Failed to process for buffer pool allocator.");
+  GE_TIMESTAMP_END(BufferPoolMemoryPass, "BufferPoolMemoryPass::Run.");
 
   // Handle parallel group .
   GE_TIMESTAMP_START(ParallelGroup);

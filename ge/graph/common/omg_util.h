@@ -27,6 +27,11 @@
 #include "graph/node.h"
 
 namespace ge {
+namespace {
+const int64_t kBufferPoolMemAlignSize = 512;
+const uint32_t kBufferPoolNodeOutIndex = 0;
+const uint32_t kEventReuseThreshold = 65500;
+} // namespace
 ///
 /// @brief get the Original Type of FrameworkOp
 /// @param [in] node
@@ -96,6 +101,22 @@ Status SetCyclicDependenceFlag(const ge::NodePtr &node);
 /// @return Status
 ///
 Status SetNextIteration(const ge::NodePtr &node, const std::string &next);
+
+///
+/// @brief Align the memory
+/// @param [in/out] memory size
+/// @param [in] alinment
+/// @return void
+///
+void AlignMemSize(int64_t &mem_size, int64_t align_size);
+
+///
+/// @brief Get memory size from tensor desc
+/// @param [in] node
+/// @param [out] memory size
+/// @return Status
+///
+Status GetMemorySize(const NodePtr &node, int64_t &output_size);
 }  // namespace ge
 
 #endif  // GE_GRAPH_COMMON_OMG_UTIL_H_

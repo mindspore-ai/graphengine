@@ -222,6 +222,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/hccl_group_pass.cc \
     graph/passes/memcpy_addr_async_pass.cc \
     graph/passes/set_input_output_offset_pass.cc \
+    graph/passes/buffer_pool_memory_pass.cc \
 
 OMG_DEVICE_SRC_FILES := $(OMG_HOST_SRC_FILES)
 

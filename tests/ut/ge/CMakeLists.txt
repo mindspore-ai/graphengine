@@ -276,6 +276,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/buffer_pool_memory_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_utils.cc"
@@ -323,6 +324,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/build/memory/block_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/build/memory/binary_block_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/build/memory/max_block_mem_assigner.cc"
+    "${GE_CODE_DIR}/ge/graph/build/memory/buffer_pool_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_var_manager.cc"
     "${GE_CODE_DIR}/ge/analyzer/analyzer.cc"
@@ -627,6 +629,7 @@ set(SINGLE_OP_SRC_FILES
 # test files
 set(COMMON_TEST_FILES
     "graph/passes/graph_builder_utils.cc"
+    "graph/utils/buffer_pool_graph_builder.cc"
     "test.cc"
 )
 
@@ -703,6 +706,7 @@ set(PASS_TEST_FILES
     "graph/passes/link_gen_mask_nodes_pass_unittest.cc"
     "graph/passes/transpose_transdata_pass_unittest.cc"
     "graph/passes/parallel_group_pass_unittest.cc"
+    "graph/passes/buffer_pool_memory_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -771,6 +775,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
     "graph/build/task_generator_unittest.cc"
+    "graph/build/buffer_pool_mem_assigner_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"

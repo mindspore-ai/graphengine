@@ -1655,6 +1655,8 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
   bool is_atomic = false;
   // If GetBool fail, is_atomic is false.
   (void)ge::AttrUtils::GetBool(op_desc, ATOMIC_ATTR_IS_ATOMIC_NODE, is_atomic);
+  bool is_buffer_pool_mem_supported = (op_desc->HasAttr(ATTR_NAME_BUFFER_POOL_ID)) &&
+                                      (op_desc->HasAttr(ATTR_NAME_BUFFER_POOL_SIZE)) && (!root_unknown_shape_flag_);
   // Allocate memory for the current node and release node memory of the same size in the workspace
   GE_IF_BOOL_EXEC(ge_disable_reuse_mem_env_ != "1",
                   for (auto iter = stream_workspace_blocks_.begin(); iter != stream_workspace_blocks_.end();
@@ -1694,7 +1696,7 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
       GE_IF_BOOL_EXEC(!no_need_assign_memory,
           no_need_assign_memory = IsAtomicOutputMemory(node, i, is_atomic, out_node_set_continuous_input););
     }
-    no_need_assign_memory = (no_need_assign_memory || IsKnownSubgraphData(node));
+    no_need_assign_memory = (no_need_assign_memory || IsKnownSubgraphData(node) || is_buffer_pool_mem_supported);
     if (no_need_assign_memory) {
       zero_memory_list_.emplace_back(node, kOutput, i, false);
       continue;
@@ -1740,6 +1742,13 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
   const char *op_no_reuse_mem = std::getenv(OP_NO_REUSE_MEM);
   GE_IF_BOOL_EXEC(op_no_reuse_mem != nullptr, op_no_reuse_mem_str = string(op_no_reuse_mem);
                   CheckAndGetOpReuseEnv(op_no_reuse_mem_str, op_no_reuse_mem_vec_, op_reuse_env_valid_););
+  auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
+  if (root_graph == nullptr) {
+    GELOGE(INTERNAL_ERROR, "[Check][RootGraph]Root graph is nullptr, graph:%s.", compute_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Root graph is nullptr, graph:%s.", compute_graph_->GetName().c_str());
+    return;
+  }
+  root_unknown_shape_flag_ = root_graph->GetGraphUnknownFlag();
 
   for (NodePtr &n : compute_graph_->GetAllNodes()) {
     auto node_op_desc = n->GetOpDesc();

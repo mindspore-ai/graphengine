@@ -18,6 +18,7 @@
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/common/omg_util.h"
 
 namespace ge {
 RunContextUtil::~RunContextUtil() { DestroyRtModelResources(); }
@@ -88,9 +89,11 @@ Status RunContextUtil::CreateRtModelResources(uint32_t stream_num, uint32_t even
   }
 
   // Create rt event
+  uint32_t create_flag = static_cast<uint32_t>((event_num > kEventReuseThreshold) ? RT_EVENT_WITH_FLAG :
+                                                                                    RT_EVENT_DEFAULT);
   for (uint32_t i = 0; i < event_num; ++i) {
     rtEvent_t event = nullptr;
-    rt_ret = rtEventCreate(&event);
+    rt_ret = rtEventCreateWithFlag(&event, create_flag);
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "call rtEventCreate fail, ret:%d, index:%u, when %s",
                         static_cast<int>(rt_ret), i, __FUNCTION__);

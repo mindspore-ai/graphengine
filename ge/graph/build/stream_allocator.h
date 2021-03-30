@@ -71,6 +71,10 @@ class StreamAllocator {
   Status SetActiveStreamsForLoop();
   Status CheckStreamActived() const;
 
+  Status ReuseEvent(bool send_to,
+    const std::unordered_map<std::string, ge::NodePtr> &name_to_node_map,
+    const std::unordered_map<ge::NodePtr, std::vector<std::pair<std::string, uint32_t>>> &node_to_event_id);
+  Status RefreshEventsWithReuse();
   Status RefreshContinuousEvents();
 
   Status InsertSyncEventNodes();

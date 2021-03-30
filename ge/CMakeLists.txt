@@ -329,6 +329,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/memcpy_addr_async_pass.cc"
     "graph/passes/parallel_group_pass.cc"
     "graph/passes/set_input_output_offset_pass.cc"
+    "graph/passes/buffer_pool_memory_pass.cc"
     "graph/preprocess/graph_preprocess.cc"
     "graph/preprocess/insert_op/ge_aipp_op.cc"
     "graph/preprocess/insert_op/util_insert_aipp_op.cc"
@@ -407,6 +408,7 @@ set(TRAIN_SRC_LIST
     "graph/build/memory/hybrid_mem_assigner.cc"
     "graph/build/memory/max_block_mem_assigner.cc"
     "graph/build/memory/var_mem_assign_util.cc"
+    "graph/build/memory/buffer_pool_mem_assigner.cc"
 )
 
 set(INFER_SRC_LIST
@@ -617,6 +619,7 @@ set(INFER_SRC_LIST
     "graph/passes/memcpy_addr_async_pass.cc"
     "graph/passes/set_input_output_offset_pass.cc"
     "graph/passes/parallel_group_pass.cc"
+    "graph/passes/buffer_pool_memory_pass.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/util/rt_context_util.cc"
     "graph/manager/util/variable_accelerate_ctrl.cc"
@@ -680,6 +683,7 @@ set(INFER_SRC_LIST
     "graph/build/memory/hybrid_mem_assigner.cc"
     "graph/build/memory/max_block_mem_assigner.cc"
     "graph/build/memory/var_mem_assign_util.cc"
+    "graph/build/memory/buffer_pool_mem_assigner.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)

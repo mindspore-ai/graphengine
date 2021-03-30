@@ -60,6 +60,7 @@
 #include "securec.h"
 #include "graph/common/local_context.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "graph/common/omg_util.h"
 
 // create std::thread, catch exceptions using try/catch
 #define CREATE_STD_THREAD(thread_id, func, args)                                                  \
@@ -664,9 +665,12 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
     GELOGI("Logical stream index:%u, stream:%p, rtstream: %d.", i, stream, rt_stream_id);
   }
 
-  for (uint32_t i = 0; i < EventNum(); i++) {
-    rtEvent_t rt_event;
-    GE_CHK_RT_RET(rtEventCreate(&rt_event));
+  uint32_t event_num = EventNum();
+  uint32_t create_flag = static_cast<uint32_t>((event_num > kEventReuseThreshold) ? RT_EVENT_WITH_FLAG :
+                                                                                    RT_EVENT_DEFAULT);
+  for (uint32_t i = 0; i < event_num; ++i) {
+    rtEvent_t rt_event = nullptr;
+    GE_CHK_RT_RET(rtEventCreateWithFlag(&rt_event, create_flag));
     event_list_.push_back(rt_event);
   }
 

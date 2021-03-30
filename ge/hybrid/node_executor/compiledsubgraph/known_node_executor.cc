@@ -105,11 +105,6 @@ Status KnownNodeTask::Init(TaskContext &context) {
         "known node task allocate workspace failed.");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(),
                            "[KnownNodeTask_AllocateWorkspace] End, size %zu", davinci_model_->TotalMemSize());
-    bool addr_not_changed = false;
-    if (davinci_model_->GetRuntimeParam().mem_base == buffer) {
-      addr_not_changed = true;
-    }
-    davinci_model_->SetKnownNodeAddrNotChanged(addr_not_changed);
     // update mem base
     davinci_model_->UpdateMemBase(static_cast<uint8_t *>(buffer));
     GELOGI("KnownNodeTask::Init mem base is %p, size %lu.",

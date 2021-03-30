@@ -8,6 +8,7 @@ set(PROTO_LIST
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
 
 set(SRC_LIST
     "ge_executor.cc"
@@ -162,7 +163,7 @@ set(SRC_LIST
 )
 
 ######## libge_executor.a ########
-add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
 
 target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
@@ -191,7 +192,7 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_static
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/cce

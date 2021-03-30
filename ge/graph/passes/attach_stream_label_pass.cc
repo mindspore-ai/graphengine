@@ -137,7 +137,6 @@ Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &strea
       return INTERNAL_ERROR;
     }
     stream_label = node->GetInDataNodes().at(0)->GetName();
-    GE_CHK_STATUS_RET(SetStreamLabel(node, stream_label), "Set stream label failed.");
     bool value = false;
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);

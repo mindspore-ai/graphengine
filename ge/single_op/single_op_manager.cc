@@ -19,6 +19,9 @@
 #include <mutex>
 #include <string>
 
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_caching_allocator.h"
+
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOpManager::~SingleOpManager() {
   for (auto &it : stream_resources_) {
@@ -67,6 +70,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::Release
   delete it->second;
   it->second = nullptr;
   (void)stream_resources_.erase(it);
+  MemManager::Instance().CachingInstance(RT_MEMORY_HBM).TryFreeBlocks();
   return SUCCESS;
 }
 

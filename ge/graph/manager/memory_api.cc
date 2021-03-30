@@ -75,8 +75,8 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
 
   HcclResult hccl_ret = hcom_remote_mem_register(reg_addrs.get(), table_len);
   if (hccl_ret != HCCL_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Call hcom_remote_mem_register failed, ret:%u, when %s",
-                      hccl_ret.c_str(), __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call hcom_remote_mem_register failed, ret:%d, when %s",
+                      hccl_ret, __FUNCTION__);
     GELOGE(HCCL_E_INTERNAL, "Rdma mem register failed, ret: 0x%X", hccl_ret);
     return HCCL_E_INTERNAL;
   }

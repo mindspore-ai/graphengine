@@ -990,7 +990,7 @@ VarManager *VarManagerPool::GetVarManager(uint64_t session_id) {
 
   VarManager *var_manager = new (std::nothrow) VarManager(session_id);
   if (var_manager == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New VarManager fali, session_id:%lu, when VarManager %s", session_id, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "New VarManager fail, session_id:%lu, when VarManager %s", session_id, __FUNCTION__);
     GELOGE(INTERNAL_ERROR,
            "VarManager::Instance find session by "
            "session_id[%lu] failed.",

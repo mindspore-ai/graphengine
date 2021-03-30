@@ -102,6 +102,10 @@ Status DistinguishGetNextAndData(ComputeGraphPtr &graph, vector<NodePtr> &data_n
 Status CheckSequenceOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_nodes) {
   GELOGD("Start check input sequence from data nodes and input shape.");
   if (data_nodes.size() != GetLocalOmgContext().user_input_dims.size()) {
+    REPORT_INNER_ERROR("E19999", "Count:%zu of data_nodes in graph:%s should be equal to "
+                       "input_shape count:%zu from option, check invalid when %s",
+                       data_nodes.size(), graph->GetName().c_str(), GetLocalOmgContext().user_input_dims.size(),
+                       __FUNCTION__);
     GELOGE(PARAM_INVALID, "The count of input shape:%zu should be equal to the count of data num:%zu.",
            GetLocalOmgContext().user_input_dims.size(), data_nodes.size());
     return PARAM_INVALID;
@@ -119,6 +123,11 @@ Status CheckSequenceOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_n
       continue;
     }
     if (dynamic_dims.size() != output_shape.size()) {
+      REPORT_INNER_ERROR("E19999", "The output shape of %s is %s, the input shape from options of %s is %s, graph:%s,"
+                         "check invalid when %s", data_node->GetName().c_str(),
+                         formats::JoinToString(output_shape).c_str(),
+                         GetLocalOmgContext().user_input_dims.at(i).first.c_str(),
+                         formats::JoinToString(dynamic_dims).c_str(), graph->GetName().c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "The output shape of %s is %s, the input shape from options of %s is %s.",
              data_node->GetName().c_str(), formats::JoinToString(output_shape).c_str(),
              GetLocalOmgContext().user_input_dims.at(i).first.c_str(), formats::JoinToString(dynamic_dims).c_str());
@@ -126,6 +135,11 @@ Status CheckSequenceOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_n
     }
     for (size_t j = 0; j < dynamic_dims.size(); ++j) {
       if (dynamic_dims.at(j) != kDynmaicDims && dynamic_dims.at(j) != output_shape.at(j)) {
+        REPORT_INNER_ERROR("E19999", "Value of input shape %s from option and output shape %s of data op:%s "
+                           "should be equal to %d, index:%zu, graph:%s, check invalid when %s",
+                           formats::JoinToString(dynamic_dims).c_str(),
+                           formats::JoinToString(output_shape).c_str(), data_node->GetName().c_str(), kDynmaicDims,
+                           j, graph->GetName().c_str(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "Value of input shape %s should be equal to %s.",
                formats::JoinToString(dynamic_dims).c_str(), formats::JoinToString(output_shape).c_str());
         return INTERNAL_ERROR;
@@ -138,6 +152,9 @@ Status CheckSequenceOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_n
 Status CheckSequenceOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &getnext_sink_node) {
   GELOGD("Start check input sequence from getnext sink nodes and input shape.");
   if (getnext_sink_node.size() != kNumOfGetnextNode) {
+    REPORT_INNER_ERROR("E19999", "Not support dynamic dims when a graph with multi getnext nodes, graph:%s, "
+                       "num of getnext node:%zu, check invalid when %s",
+                       graph->GetName().c_str(), getnext_sink_node.size(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Not support dynamic dims when a graph with multi getnext nodes.");
     return PARAM_INVALID;
   }
@@ -147,6 +164,9 @@ Status CheckSequenceOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &get
   GE_CHECK_NOTNULL(op_desc);
   size_t data_count = data_node->GetAllOutDataAnchors().size() / kDivisionConst;
   if (data_count != GetLocalOmgContext().user_input_dims.size()) {
+    REPORT_INNER_ERROR("E19999", "Output desc count of %s is %zu, should be equal to count of input shape: %zu, "
+                       "graph:%s, check invalid when %s", op_desc->GetName().c_str(), data_count,
+                       GetLocalOmgContext().user_input_dims.size(), graph->GetName().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Output count of %s is %zu, should be equal to count of input shape: %zu",
            op_desc->GetName().c_str(), data_count, GetLocalOmgContext().user_input_dims.size());
     return PARAM_INVALID;
@@ -161,6 +181,12 @@ Status CheckSequenceOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &get
       continue;
     }
     if (dynamic_dims.size() != output_shape.size()) {
+      REPORT_INNER_ERROR("E19999", "The %zu output_shape of %s is %s not equal to the input_shape:%s "
+                         "from options of %s, graph:%s, check invalid when %s", i,
+                         data_node->GetName().c_str(), formats::JoinToString(output_shape).c_str(),
+                         formats::JoinToString(dynamic_dims).c_str(),
+                         GetLocalOmgContext().user_input_dims.at(i).first.c_str(),
+                         graph->GetName().c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "the output_shape of %s is %s, the input_shape from options of %s is %s.",
              data_node->GetName().c_str(), formats::JoinToString(output_shape).c_str(),
              GetLocalOmgContext().user_input_dims.at(i).first.c_str(), formats::JoinToString(dynamic_dims).c_str());
@@ -168,6 +194,11 @@ Status CheckSequenceOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &get
     }
     for (size_t j = 0; j < dynamic_dims.size(); ++j) {
       if (dynamic_dims.at(j) != kDynmaicDims && dynamic_dims.at(j) != output_shape.at(j)) {
+        REPORT_INNER_ERROR("E19999", "Value of input shape %s from option and output shape %s of data op:%s "
+                           "should be equal to %d, index:%zu, graph:%s, check invalid when %s",
+                           formats::JoinToString(dynamic_dims).c_str(),
+                           formats::JoinToString(output_shape).c_str(), data_node->GetName().c_str(), kDynmaicDims,
+                           j, graph->GetName().c_str(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "value of input_shape %s should be equal to %s.",
                formats::JoinToString(dynamic_dims).c_str(), formats::JoinToString(output_shape).c_str());
         return INTERNAL_ERROR;
@@ -215,6 +246,10 @@ Status CheckSequenceOfOptions(ComputeGraphPtr &graph, vector<NodePtr> &data_node
 Status UpdateNameOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_nodes) {
   GELOGD("Update first value of input shape by data nodes.");
   if (data_nodes.size() != GetLocalOmgContext().user_input_dims.size()) {
+    REPORT_INNER_ERROR("E19999", "Count:%zu of data_nodes in graph:%s should be equal to "
+                       "input_shape count:%zu from option, check invalid when %s",
+                       data_nodes.size(), graph->GetName().c_str(), GetLocalOmgContext().user_input_dims.size(),
+                       __FUNCTION__);
     GELOGE(PARAM_INVALID, "count of data_nodes: %zu should be equal to input_shape count: %zu.",
            data_nodes.size(), GetLocalOmgContext().user_input_dims.size());
     return PARAM_INVALID;
@@ -229,6 +264,9 @@ Status UpdateNameOfData(ComputeGraphPtr &graph, const vector<NodePtr> &data_node
 Status UpdateNameOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &getnext_sink_nodes) {
   GELOGD("Update first value of input shape by getnext sink nodes.");
   if (getnext_sink_nodes.size() != kNumOfGetnextNode) {
+    REPORT_INNER_ERROR("E19999", "Not support dynamic dims when a graph with multi getnext nodes, graph:%s, "
+                       "num of getnext node:%zu, check invalid when %s",
+                       graph->GetName().c_str(), getnext_sink_nodes.size(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Not support dynamic dims when a graph with multi getnext nodes.");
     return PARAM_INVALID;
   }
@@ -239,6 +277,9 @@ Status UpdateNameOfGetnext(ComputeGraphPtr &graph, const vector<NodePtr> &getnex
   // user want getnext dynamic, just getnext or data+getnext_sink
   size_t data_count = input_node->GetAllOutDataAnchors().size() / kDivisionConst;
   if (data_count != GetLocalOmgContext().user_input_dims.size()) {
+    REPORT_INNER_ERROR("E19999", "Output desc count of %s is %zu, should be equal to count of input shape: %zu, "
+                       "graph:%s, check invalid when %s", op_desc->GetName().c_str(), data_count,
+                       GetLocalOmgContext().user_input_dims.size(), graph->GetName().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Output count of %s is %zu, should be equal to count of input shape: %zu",
            op_desc->GetName().c_str(), data_count, GetLocalOmgContext().user_input_dims.size());
     return PARAM_INVALID;
@@ -299,6 +340,9 @@ Status DeleteIdentityInsertByAdapter(ComputeGraphPtr &graph) {
           if (dst_node->GetType() == IDENTITY) {
             GELOGI("Need to remove %s.", dst_node->GetName().c_str());
             if (ge::GraphUtils::RemoveNodeWithoutRelink(graph, dst_node) != GRAPH_SUCCESS) {
+              REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) from graph:%s failed when %s",
+                                dst_node->GetName().c_str(), dst_node->GetType().c_str(), graph->GetName().c_str(),
+                                __FUNCTION__);
               GELOGE(FAILED, "Remove Identity node %s failed.", dst_node->GetName().c_str());
               return FAILED;
             }
@@ -322,6 +366,8 @@ Status CheckNegativeCountOfOptions(const std::vector<std::vector<int64_t>> &shap
     }
     for (size_t i = 0; i < shapes.size(); ++i) {
       if (shapes.at(i).size() != negative_count) {
+        REPORT_INNER_ERROR("E19999", "gear num of dynamic_dims is %zu should be equal to num:%zu from option, "
+                           "check invalid when %s", shapes.at(i).size(), negative_count, __FUNCTION__);
         GELOGE(PARAM_INVALID, "Each gear num of dynamic_dims is %zu should be equal to %zu.", shapes.at(i).size(),
                negative_count);
         return PARAM_INVALID;
@@ -533,6 +579,8 @@ Status StampDynamicType(const OpDescPtr &op_desc) {
     dynamic_type = static_cast<int32_t>(DYNAMIC_DIMS);
   }
   if (!AttrUtils::SetInt(op_desc, ATTR_DYNAMIC_TYPE, dynamic_type)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to node:%s(%s) failed when %s",
+                      ATTR_DYNAMIC_TYPE.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to add dynamic type attr for node %s", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }

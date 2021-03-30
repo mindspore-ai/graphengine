@@ -25,7 +25,9 @@ Status MergeToStreamMergePass::Run(ComputeGraphPtr graph) {
 
   bypass_nodes_.clear();
   for (const auto &node : graph->GetDirectNode()) {
-    if ((node->GetType() != MERGE) && (node->GetType() != REFMERGE)) {
+    std::string type;
+    GE_CHK_STATUS_RET(GetOriginalType(node, type), "Get node type failed.");
+    if ((type != MERGE) && (type != REFMERGE)) {
       continue;
     }
 

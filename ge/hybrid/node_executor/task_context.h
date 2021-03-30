@@ -50,9 +50,12 @@ class TaskContext {
   const char *GetNodeName() const;
   TensorValue *MutableInput(int index);
   ConstGeTensorDescPtr GetInputDesc(int index) const;
+  Status GetInputDesc(int index, GeTensorDesc &tensor_desc) const;
   ConstGeTensorDescPtr GetOutputDesc(int index) const;
+  Status GetOutputDesc(int index, GeTensorDesc &tensor_desc) const;
   GeTensorDescPtr MutableInputDesc(int index) const;
   GeTensorDescPtr MutableOutputDesc(int index) const;
+  Status UpdateInputDesc(int index, const GeTensorDesc &tensor_desc);
   void ReleaseInputsAndOutputs();
   bool NeedCallback();
   void ReleaseInput(int index);

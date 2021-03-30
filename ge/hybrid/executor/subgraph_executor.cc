@@ -44,7 +44,8 @@ Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                               const std::vector<ConstGeTensorDescPtr> &input_desc) {
   subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_, context_));
   GE_CHECK_NOTNULL(subgraph_context_);
-  GE_CHK_STATUS_RET(subgraph_context_->Init(), "[%s] Failed to init subgraph context.", graph_item_->GetName().c_str());
+  GE_CHK_STATUS_RET(subgraph_context_->Init(), 
+      "[Init][SubgraphContext][%s] Failed to init subgraph context.", graph_item_->GetName().c_str());
 
   shape_inference_engine_.reset(new(std::nothrow) ShapeInferenceEngine(context_, subgraph_context_.get()));
   GE_CHECK_NOTNULL(shape_inference_engine_);
@@ -55,8 +56,8 @@ Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                       graph_item_->GetName().c_str());
   } else {
     GE_CHK_STATUS_RET(InitInputsForKnownShape(inputs),
-                      "[%s] Failed to init subgraph executor for known shape subgraph.",
-                      graph_item_->GetName().c_str());
+        "[Invoke][InitInputsForKnownShape][%s] Failed to init subgraph executor for known shape subgraph.",
+        graph_item_->GetName().c_str());
   }
 
   return SUCCESS;
@@ -67,8 +68,12 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
   // Number of inputs of parent node should be greater or equal than that of subgraph
   auto input_nodes = graph_item_->GetInputNodes();
   if (inputs.size() < input_nodes.size()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs [%zu] inputs.",
-           graph_item_->GetName().c_str(), inputs.size(), input_nodes.size());
+    GELOGE(INTERNAL_ERROR, 
+        "[Check][Size][%s] Number of inputs [%zu] is not sufficient for subgraph which needs [%zu] inputs.",
+        graph_item_->GetName().c_str(), inputs.size(), input_nodes.size());
+    REPORT_INNER_ERROR("E19999", 
+        "Number of inputs [%zu] is not sufficient for subgraph which needs [%zu] inputs when SubgraphExecutor %s.",
+        graph_item_->GetName().c_str(), inputs.size(), input_nodes.size(), __FUNCTION__);
     return INTERNAL_ERROR;
   }
 
@@ -87,9 +92,7 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
            input_tensor.DebugString().c_str());
 
     GE_CHK_STATUS_RET(subgraph_context_->SetInput(*input_node, kDataInputIndex, input_tensor),
-                      "[%s] Failed to set input tensor[%zu]",
-                      graph_item_->GetName().c_str(),
-                      i);
+        "[Invoke][SetInput] failed for grap_item[%s] input tensor[%zu]", graph_item_->GetName().c_str(), i);
 
     if (force_infer_shape_ || input_node->is_dynamic) {
       GELOGD("[%s] Start to update input[%zu] for subgraph data node.", graph_item_->GetName().c_str(), i);
@@ -112,11 +115,11 @@ Status SubgraphExecutor::InitInputsForKnownShape(const std::vector<TensorValue> 
     auto &parent_input_index = input_index_mapping[i];
     if (static_cast<size_t>(parent_input_index) >= inputs.size()) {
       GELOGE(INTERNAL_ERROR,
-             "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs",
-             graph_item_->GetName().c_str(),
-             inputs.size(),
-             parent_input_index + 1);
-
+          "[Check][Size][%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs",
+          graph_item_->GetName().c_str(), inputs.size(), parent_input_index + 1);
+      REPORT_INNER_ERROR("E19999", 
+          "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs when %s.",
+          graph_item_->GetName().c_str(), inputs.size(), parent_input_index + 1, __FUNCTION__);
       return INTERNAL_ERROR;
     }
 
@@ -136,10 +139,10 @@ Status SubgraphExecutor::ExecuteAsync(const std::vector<TensorValue> &inputs,
                                       const std::vector<ConstGeTensorDescPtr> &input_desc,
                                       const std::vector<TensorValue> &outputs) {
   GELOGD("[%s] is dynamic = %s", graph_item_->GetName().c_str(), graph_item_->IsDynamic() ? "true" : "false");
-  GE_CHK_STATUS_RET(Init(inputs, input_desc), "[%s] Failed to init executor.", graph_item_->GetName().c_str());
+  GE_CHK_STATUS_RET(Init(inputs, input_desc), "[Invoke][Init]failed for [%s].", graph_item_->GetName().c_str());
   if (!outputs.empty()) {
     GE_CHK_STATUS_RET(EnableOutputZeroCopy(outputs),
-                      "Failed to enable output zero copy by user provided outputs.");
+        "[Invoke][EnableOutputZeroCopy] Failed by user provided outputs.");
   }
   if (!graph_item_->IsDynamic()) {
     return ExecuteAsyncForKnownShape(inputs);
@@ -194,12 +197,11 @@ Status SubgraphExecutor::ExecuteAsync(TaskContext &task_context) {
   }
 
   GE_CHK_STATUS_RET(ExecuteAsync(inputs, input_desc),
-                    "[%s] Failed to execute subgraph.",
-                    graph_item_->GetName().c_str());
+      "[Invoke][ExecuteAsync] failed for [%s].", graph_item_->GetName().c_str());
 
   GE_CHK_STATUS_RET(SetOutputsToParentNode(task_context),
-                    "[%s] Failed to set output shapes to parent node.",
-                    graph_item_->GetName().c_str());
+      "[Invoke][SetOutputsToParentNode][%s] Failed to set output shapes to parent node.",
+      graph_item_->GetName().c_str());
   return SUCCESS;
 }
 
@@ -239,7 +241,7 @@ Status SubgraphExecutor::PrepareNodes(int group) {
         if (node_item.kernel_task == nullptr) {
           GELOGW("[%s] Node of static shape got no task.", node_item.NodeName().c_str());
           GE_CHK_STATUS_RET(TaskCompileEngine::Compile(*p_node_state, context_),
-                            "[%s] Failed to create task.", p_node_state->GetName().c_str());
+              "[Invoke][Compile] failed for [%s].", p_node_state->GetName().c_str());
         } else {
           node_state->SetKernelTask(node_item.kernel_task);
         }
@@ -248,7 +250,9 @@ Status SubgraphExecutor::PrepareNodes(int group) {
         GE_CHECK_NOTNULL(unique_task_context);
         const auto &task = node_state->GetKernelTask();
         if (task == nullptr) {
-          GELOGE(INTERNAL_ERROR, "[%s] NodeTask is null.", node_state->GetName().c_str());
+          GELOGE(INTERNAL_ERROR, "[Get][KernelTask] failed for[%s], NodeTask is null.", node_state->GetName().c_str());
+          REPORT_CALL_ERROR("E19999", "invoke GetKernelTask failed for %s when %s, nodetask is null.",
+              node_state->GetName().c_str(), __FUNCTION__);
           return INTERNAL_ERROR;
         }
         auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
@@ -261,8 +265,10 @@ Status SubgraphExecutor::PrepareNodes(int group) {
         GELOGD("Got end of sequence");
         return SUCCESS;
       }
-      GELOGE(INTERNAL_ERROR, "[%s] Error occurs while launching tasks. quit from preparing nodes.",
-             graph_item_->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Check][State][%s] Error occurs while launching tasks. quit from preparing nodes.",
+          graph_item_->GetName().c_str());
+      REPORT_INNER_ERROR("E19999", "[%s] Error occurs while launching tasks. quit from preparing nodes when %s.",
+          graph_item_->GetName().c_str(), __FUNCTION__);
       return INTERNAL_ERROR;
     }
 
@@ -275,9 +281,9 @@ Status SubgraphExecutor::PrepareNodes(int group) {
 
 Status SubgraphExecutor::InferShape(ShapeInferenceEngine *shape_inference_engine, NodeState &node_state) const {
   HYBRID_CHK_STATUS_RET(shape_inference_engine->InferShape(node_state),
-                        "[%s] Failed to InferShape.", node_state.GetName().c_str());
+      "[Invoke][InferShape] failed for [%s].", node_state.GetName().c_str());
   HYBRID_CHK_STATUS_RET(shape_inference_engine->PropagateOutputShapes(node_state),
-                        "[%s] Failed to PropagateOutputShapes.", node_state.GetName().c_str());
+      "[Invoke][PropagateOutputShapes] failed for [%s].", node_state.GetName().c_str());
   return SUCCESS;
 }
 
@@ -285,7 +291,7 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
   auto &node_item = *node_state.GetNodeItem();
   if (node_item.kernel_task == nullptr) {
     GE_CHK_STATUS_RET(TaskCompileEngine::Compile(node_state, ctx),
-                      "Failed to create task for node[%s]", node_state.GetName().c_str());
+        "[Invoke][Compile] Failed for node[%s]", node_state.GetName().c_str());
   } else {
     node_state.SetKernelTask(node_item.kernel_task);
   }
@@ -293,7 +299,9 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
   GE_CHECK_NOTNULL(unique_task_context);
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
-    GELOGE(INTERNAL_ERROR, "[%s] NodeTask is null.", node_state.GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Invoke][GetKernelTask] failed for[%s], NodeTask is null.", node_state.GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "invoke GetKernelTask failed for %s, NodeTask is null when %s.",
+        node_state.GetName().c_str(), __FUNCTION__);
     return INTERNAL_ERROR;
   }
   auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
@@ -309,7 +317,8 @@ Status SubgraphExecutor::LaunchTasks() {
   while (true) {
     NodeState *node_state = nullptr;
     if (!ready_queue_.Pop(node_state)) {
-      GELOGE(INTERNAL_ERROR, "[%s] Failed to pop node.", graph_item_->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Invoke][Pop] failed for [%s].", graph_item_->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "invoke pop failed for %s when %s", graph_item_->GetName().c_str(), __FUNCTION__);
       return INTERNAL_ERROR;
     }
 
@@ -334,8 +343,7 @@ Status SubgraphExecutor::LaunchTasks() {
     GE_CHECK_NOTNULL(shared_task_context);
     shared_task_context->SetForceInferShape(force_infer_shape_);
     HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, shared_task_context, *context_),
-                          "[%s] Execute node failed.",
-                          node_state->GetName().c_str());
+        "[Invoke][ExecuteAsync] failed for [%s].", node_state->GetName().c_str());
     GELOGD("[%s] Done executing node successfully.", node_state->GetName().c_str());
   }
 }
@@ -361,8 +369,7 @@ Status SubgraphExecutor::ScheduleTasks(int group) {
   }
 
   GE_CHK_STATUS_RET(prepare_future.get(),
-                    "[%s] Error occurred in task preparation.",
-                    graph_item_->GetName().c_str());
+      "[Invoke][get] [%s] Error occurred in task preparation.", graph_item_->GetName().c_str());
 
   GELOGD("[%s] Done launching all tasks successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
@@ -373,17 +380,17 @@ Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs) {
 }
 
 Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs, std::vector<ConstGeTensorDescPtr> &output_desc) {
-  GE_CHK_STATUS_RET(GetOutputs(outputs), "[%s] Failed to get output tensors.", graph_item_->GetName().c_str());
+  GE_CHK_STATUS_RET(GetOutputs(outputs), "[Invoke][GetOutputs] failed for [%s].", graph_item_->GetName().c_str());
 
   // copy output data from op to designated position
   GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc),
-                    "[%s] Failed to get output tensor desc.",
-                    graph_item_->GetName().c_str());
+      "[Invoke][GetOutputDescList][%s] Failed to get output tensor desc.", graph_item_->GetName().c_str());
   if (outputs.size() != output_desc.size()) {
     GELOGE(INTERNAL_ERROR,
-           "Number of output tensors(%zu) mismatch number of output tensor desc(%zu).",
-           outputs.size(),
-           output_desc.size());
+        "[Check][Size]Number of output tensors(%zu) mismatch number of output tensor desc(%zu).",
+        outputs.size(), output_desc.size());
+    REPORT_INNER_ERROR("E19999", "Number of output tensors(%zu) mismatch number of output tensor desc(%zu) when %s.",
+        outputs.size(), output_desc.size(), __FUNCTION__);
     return INTERNAL_ERROR;
   }
   return SUCCESS;
@@ -401,17 +408,15 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
   std::vector<TensorValue> outputs;
   std::vector<ConstGeTensorDescPtr> output_desc_list;
   GE_CHK_STATUS_RET(subgraph_context_->GetOutputs(outputs),
-                    "[%s] Failed to get output tensors.",
-                    graph_item_->GetName().c_str());
+      "[Invoke][GetOutputs][%s] Failed to get output tensors.", graph_item_->GetName().c_str());
   GE_CHK_STATUS_RET(graph_item_->GetOutputDescList(output_desc_list),
-                    "[%s] Failed to get output tensor desc.",
-                    graph_item_->GetName().c_str());
+      "[Invoke][GetOutputDescList][%s] Failed to get output tensor desc.", graph_item_->GetName().c_str());
 
   if (outputs.size() != output_desc_list.size()) {
-    GELOGE(INTERNAL_ERROR, "[%s] num output tensors = %zu, num output tensor desc = %zu",
-           graph_item_->GetName().c_str(),
-           outputs.size(),
-           output_desc_list.size());
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] num output tensors = %zu, num output tensor desc = %zu",
+        graph_item_->GetName().c_str(), outputs.size(), output_desc_list.size());
+    REPORT_INNER_ERROR("E19999", "[%s] num output tensors = %zu, num output tensor desc = %zu when %s",
+        graph_item_->GetName().c_str(), outputs.size(), output_desc_list.size(), __FUNCTION__);
     return INTERNAL_ERROR;
   }
 
@@ -460,9 +465,10 @@ Status SubgraphExecutor::EnableOutputZeroCopy(const vector<TensorValue> &outputs
   const auto &output_edges = graph_item_->GetOutputEdges();
   // Op -> MetOutput, set the output tensor of Op that output to the NetOutput node
   if (outputs.size() != output_edges.size()) {
-    GELOGE(PARAM_INVALID, "Output number mismatches, expect = %zu, but given = %zu",
-           output_edges.size(),
-           outputs.size());
+    GELOGE(PARAM_INVALID, "[Check][Size]Output number mismatches, expect = %zu, but given = %zu",
+        output_edges.size(), outputs.size());
+    REPORT_INNER_ERROR("E19999", "Output number mismatches, expect = %zu, but given = %zu when %s",
+        output_edges.size(), outputs.size(), __FUNCTION__);
     return PARAM_INVALID;
   }
 
@@ -478,9 +484,7 @@ Status SubgraphExecutor::EnableOutputZeroCopy(const vector<TensorValue> &outputs
            output_tensor.DebugString().c_str());
 
     GE_CHK_STATUS_RET(subgraph_context_->SetOutput(*output_node, output_idx, output_tensor),
-                      "[%s] Failed to set input tensor[%zu]",
-                      graph_item_->GetName().c_str(),
-                      i);
+        "[Invoke][SetOutput][%s] Failed to set input tensor[%zu]", graph_item_->GetName().c_str(), i);
   }
 
   GELOGD("Done enabling zero copy for outputs successfully.");

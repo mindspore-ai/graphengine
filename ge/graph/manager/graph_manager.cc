@@ -55,6 +55,7 @@
 #include "graph/passes/dimension_compute_pass.h"
 #include "graph/passes/flow_ctrl_pass.h"
 #include "graph/passes/fuse_data_nodes_with_common_input_pass.h"
+#include "graph/passes/hccl_tailing_optimization_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/input_output_connection_identify_pass.h"
 #include "graph/passes/iterator_op_pass.h"
@@ -2389,6 +2390,14 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
     // Reason: Make sure that the var "global_step" can be partitioned to known sub graph and allocated memory
     GE_CHK_STATUS_RET(
         graph_pass.AddPass("OptimizeStage1_3::GlobalStepInsertPass", new (std::nothrow) GlobalStepInsertPass))
+
+    std::string hccl_tailing_optimize;
+    if (GetContext().GetOption("ge.exec.hccl_tailing_optimize", hccl_tailing_optimize) == SUCCESS &&
+        hccl_tailing_optimize == "1") {
+      GELOGI("Add hccl tailing optimize stage");
+      GE_CHK_STATUS_RET(
+        graph_pass.AddPass("OptimizeStage1_3::HcclTailingOptimizationPass", new (std::nothrow) HcclTailingOptimizationPass))
+    }
   }
   GE_TIMESTAMP_START(graph_pass);
   ret = graph_pass.Run(compute_graph);

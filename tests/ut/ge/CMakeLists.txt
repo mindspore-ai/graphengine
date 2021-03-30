@@ -270,6 +270,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/link_gen_mask_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/replace_with_empty_const_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/hccl_group_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/hccl_tailing_optimization_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/set_input_output_offset_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"

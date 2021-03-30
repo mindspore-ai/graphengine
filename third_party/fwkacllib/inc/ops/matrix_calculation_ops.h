@@ -369,7 +369,7 @@ REG_OP(MatrixSetDiagD)
  * int64, complex64, qint8, quint8, qint32, uint16, complex128, half, uint32,
  * uint64
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32, int64
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor.
 *Must be one of the following types: float16, float32, int8, uint8, double,
  * int64, complex64, qint8, quint8, qint32, uint16, complex128, half, uint32,
@@ -429,7 +429,7 @@ REG_OP(TensorScatterUpdate)
 *@li var: An ND Tensor . \n
 
 *Must be one of the following types: float16, float32, int32, int8, uint8
-*@li indices: An ND Tensor of type int32 or int64.
+*@li indices: An ND Tensor of type int32 or int64
 
 
 *@li updates: An Tensor. format:NCHW, NHWC . \n
@@ -447,10 +447,10 @@ REG_OP(TensorScatterUpdate)
 * Compatible with the TensorFlow operator ScatterAdd.
 */
 REG_OP(ScatterAdd)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterAdd)
 
@@ -463,7 +463,7 @@ REG_OP(ScatterAdd)
 *Must be one of the following types: float16, float, int32, int8, uint8
 
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 
@@ -478,10 +478,10 @@ REG_OP(ScatterAdd)
 * Compatible with the TensorFlow operator ScatterDiv.
 */
 REG_OP(ScatterDiv)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterDiv)
 
@@ -493,7 +493,7 @@ REG_OP(ScatterDiv)
 *@li var: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@par Attributes:
@@ -507,10 +507,10 @@ REG_OP(ScatterDiv)
 * Compatible with the TensorFlow operator ScatterNdAdd.
 */
 REG_OP(ScatterNdAdd)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterNdAdd)
 
@@ -550,7 +550,7 @@ REG_OP(TensorScatterAdd)
 *@li var: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32, int64
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 
@@ -565,10 +565,10 @@ REG_OP(TensorScatterAdd)
 * Compatible with the TensorFlow operator ScatterNdSub.
 */
 REG_OP(ScatterNdSub)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterNdSub)
 
@@ -608,7 +608,7 @@ REG_OP(TensorScatterSub)
 *@li var: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32, int64
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@par Attributes:
@@ -622,10 +622,10 @@ REG_OP(TensorScatterSub)
 * Compatible with the TensorFlow operator ScatterSub.
 */
 REG_OP(ScatterSub)
-    .INPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(updates, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterSub)
 
@@ -796,7 +796,7 @@ REG_OP(ConfusionMatrix)
 *@li var: An ND Tensor.
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor . \n
 
 *Must be one of the following types: float16, float, int32, int8, uint8
@@ -813,7 +813,7 @@ REG_OP(ConfusionMatrix)
 */
 REG_OP(ScatterMul)
     .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(indices, TensorType::IndexNumberType())
     .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
@@ -826,13 +826,13 @@ REG_OP(ScatterMul)
 *@par Inputs:
 * Three inputs, including:
 *@li var: An ND Tensor.
-*Must be one of the following types: float16, float, int32
+*Must be one of the following types: float16, float, int32, int8, uint8
 
 *@li indices: An ND Tensor.
-*Must be one of the following types: int32
+*Must be one of the following types: int32 or int64
 
 *@li updates: An ND Tensor.
-*Must be one of the following types: float16, float, int32
+*Must be one of the following types: float16, float, int32, int8, uint8
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False". If "True", the operation
@@ -845,10 +845,10 @@ REG_OP(ScatterMul)
 * Compatible with the TensorFlow operator ScatterMin.
 */
 REG_OP(ScatterMin)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterMin)
 
@@ -859,13 +859,13 @@ REG_OP(ScatterMin)
 * Three inputs, including:
 *@li var: An ND Tensor . \n
 
-*Must be one of the following types: float16, float, int32
+*Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An NCHW, NHWC, or ND Tensor . \n
 
-*Must be one of the following types: int32
+*Must be one of the following types: int32 or int64
 *@li updates: An NCHW, NHWC, or ND Tensor . \n
 
-*Must be one of the following types: float16, float, int32
+*Must be one of the following types: float16, float, int32, int8, uint8
 
 *@par Attributes:
 *use_locking: An optional bool. Defaults to "False".
@@ -878,10 +878,10 @@ REG_OP(ScatterMin)
 * Compatible with the TensorFlow operator ScatterMax.
 */
 REG_OP(ScatterMax)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterMax)
 
@@ -895,7 +895,7 @@ REG_OP(ScatterMax)
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An ND Tensor . \n
 
-*Must be one of the following types: int32
+*Must be one of the following types: int32 or int64
 *@li updates: An ND Tensor . \n
 
 *Must be one of the following types: float16, float, int32, int8, uint8
@@ -911,10 +911,10 @@ REG_OP(ScatterMax)
 * Compatible with the TensorFlow operator ScatterUpdate.
 */
 REG_OP(ScatterUpdate)
-    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
-    .INPUT(indices, TensorType({DT_INT32}))
-    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
-    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT8,DT_UINT8}))
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
     .ATTR(use_locking, Bool, false)
     .OP_END_FACTORY_REG(ScatterUpdate)
 

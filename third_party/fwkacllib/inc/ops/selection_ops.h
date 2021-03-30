@@ -1006,9 +1006,9 @@ REG_OP(TopK)
 
 *@par Inputs:
 *Inputs including:
-* @li indices: A required index tensor. Must be one of the following types: float32, float16, int32, int8, uint8.
-* @li x: A required slice tensor. Must be one of the following types: float32, float16, int32, int8, uint8.
-* @li shape: A required list of int32, specifying the output shape.
+* @li indices: A required index tensor. Must be one of the following types: int32 or int64.
+* @li x: A required slice tensor. Must be one of the following types: float32, float16, int32, int8, uint8...
+* @li shape: A required list of int32 or int64, specifying the output shape.
 *@par Outputs:
 *y:A output Tensor with same datatype as "updates" . \n
 
@@ -1019,7 +1019,7 @@ REG_OP(TopK)
 * Compatible with the TensorFlow operator ScatterNd.
 */
 REG_OP(ScatterNd)
-    .INPUT(indices, TensorType::BasicType())
+    .INPUT(indices, TensorType::IndexNumberType())
     .INPUT(x, TensorType::BasicType())
     .INPUT(shape, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
@@ -1032,11 +1032,11 @@ REG_OP(ScatterNd)
 *@par Inputs:
 *Inputs including:
 * @li indices: A required index tensor. Must be one of the following types:
- * float, float16, int32, int16. format:ND.
+ * int32 or int64. format:ND.
 * @li x: A required slice tensor. Must be one of the following types:
- * float, float16, int32, int16. format:ND.
+ * float16, float, int32, int8, uint8. format:ND.
 *@par Attributes:
-* @li shape: A required list of int32, specifying the output shape.
+* @li shape: A required list of int32 or int64, specifying the output shape.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". format:ND . \n
 
@@ -1051,8 +1051,8 @@ REG_OP(ScatterNd)
 */
 REG_OP(ScatterNdD)
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(ScatterNdD)
 

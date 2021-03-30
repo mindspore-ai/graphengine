@@ -111,6 +111,7 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
     }
     auto bin_ptr = new (std::nothrow) BlockBin(BlockComparator);
     if (bin_ptr == nullptr) {
+      REPORT_CALL_ERROR("E19999", "New BlockBin fail, device_id:%u, when CachingAllocator %s", device_id, __FUNCTION__);
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc BlockBin failed.");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
@@ -146,6 +147,8 @@ uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device
     ptr = block->ptr;
   }
   if (ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "FindFreeBlock fail, size:%zu, device_id:%u, when CachingAllocator %s",
+                       size, device_id, __FUNCTION__);
     GELOGE(FAILED, "Malloc failed device id = %u, size= %zu", device_id, size);
   }
   return ptr;
@@ -154,6 +157,8 @@ uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device
 Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
   GELOGI("Free device id = %u", device_id);
   if (ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param ptr is nullptr, device_id:%u, check invalid when CachingAllocator %s",
+                       device_id, __FUNCTION__);
     GELOGE(PARAM_INVALID, "Invalid memory pointer");
     return ge::PARAM_INVALID;
   }
@@ -161,6 +166,8 @@ Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = allocated_blocks_.find(ptr);
   if (it == allocated_blocks_.end()) {
+    REPORT_INNER_ERROR("E19999", "Param ptr not allocated before, device_id:%u, check invalid when CachingAllocator %s",
+                       device_id, __FUNCTION__);
     GELOGE(PARAM_INVALID, "Invalid memory pointer");
     return ge::PARAM_INVALID;
   }
@@ -218,6 +225,8 @@ Block *CachingAllocator::FindFreeBlock(size_t size, uint8_t *org_ptr, uint32_t d
   Block key(device_id, size, org_ptr);
   BlockBin *bin = GetBlockBin(size);
   if (bin == nullptr) {
+    REPORT_INNER_ERROR("E19999", "GetBlockBin fail, size:%zu, device_id:%u, when CachingAllocator %s",
+                       size, device_id, __FUNCTION__);
     GELOGE(ge::FAILED, "Get block bin failed size = %zu", size);
     return nullptr;
   }
@@ -249,6 +258,8 @@ Block *CachingAllocator::SplitBlock(Block *block, size_t size, BlockBin &bin, ui
   Block *remaining = block;
   Block *new_block = new (std::nothrow) Block(device_id, size, &bin, block->ptr);
   if (new_block == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New Block fail, size:%zu, device_id:%u, when CachingAllocator %s",
+                      size, device_id, __FUNCTION__);
     GELOGE(ge::FAILED, "Alloc block failed size = %zu", size);
     return block;
   }
@@ -293,11 +304,15 @@ Status CachingAllocator::TryExtendCache(size_t size, uint32_t device_id) {
 Status CachingAllocator::AddToBlockBin(uint8_t *ptr, size_t size, uint32_t device_id) {
   BlockBin *bin = GetBlockBin(size);
   if (bin == nullptr) {
+    REPORT_INNER_ERROR("E19999", "GetBlockBin fail, size:%zu, device_id:%u, when CachingAllocator %s",
+                       size, device_id, __FUNCTION__);
     GELOGE(ge::FAILED, "Get block bin failed size = %zu", size);
     return ge::FAILED;
   }
   Block *block = new (std::nothrow) Block(device_id, size, bin, nullptr);
   if (block == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New Block fail, size:%zu, device_id:%u, when CachingAllocator %s",
+                      size, device_id, __FUNCTION__);
     GELOGE(ge::FAILED, "Alloc block failed size = %zu", size);
     return ge::FAILED;
   }

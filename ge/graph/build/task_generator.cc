@@ -1183,7 +1183,7 @@ Status TaskGenerator::SetUnknownShapeStream(RunContext &run_context, rtStream_t 
   run_context.stream = stream;
   rtError_t rt_ret = rtModelBindStream(run_context.model, stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtModelBindStream fail, ret:0x%X when %s", rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtModelBindStream failed, ret:0x%X when %s", rt_ret, __FUNCTION__);
     GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     GE_CHK_RT_RET(rtStreamDestroy(stream));
     return FAILED;

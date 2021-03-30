@@ -99,11 +99,17 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 
       auto kernel_size = sizeof(uint64_t) * (v_aicpu_kernel.size());
       rtError_t rt_ret = rtMalloc(&aicpu_kernel_addr, kernel_size, RT_MEMORY_HBM);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
+                      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%zu, ret: 0x%X when ModelManager %s",
+                                        kernel_size, rt_ret, __FUNCTION__);
+                      GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
                       return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
       rt_ret = rtMemcpy(aicpu_kernel_addr, kernel_size, v_aicpu_kernel.data(), kernel_size, RT_MEMCPY_HOST_TO_DEVICE);
-      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
+      GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
+                      REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret: 0x%X when ModelManager %s",
+                                        kernel_size, rt_ret, __FUNCTION__);
+                      GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
                       GE_CHK_RT(rtFree(aicpu_kernel_addr)); return RT_ERROR_TO_GE_STATUS(rt_ret);)
       uint64_t kernel_id_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(aicpu_kernel_addr));
       param_base.fwkKernelBase.fwk_kernel.kernelID = kernel_id_addr;
@@ -114,6 +120,8 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 
   rtError_t rt_ret = rtMalloc(&(devicebase), sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%zu, ret: 0x%X when ModelManager %s",
+                      sizeof(STR_FWK_OP_KERNEL), rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "malloc device memory failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -122,6 +130,8 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   rt_ret =
       rtMemcpy(devicebase, sizeof(STR_FWK_OP_KERNEL), &param_base, sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret: 0x%X when ModelManager %s",
+                      sizeof(STR_FWK_OP_KERNEL), rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "memory copy to device failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
@@ -131,6 +141,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   rtStream_t stream = nullptr;
   rt_ret = rtStreamCreate(&stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamCreate failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "create stream failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
@@ -139,6 +150,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
 
   rt_ret = rtKernelLaunchEx(devicebase, sizeof(STR_FWK_OP_KERNEL), 0, stream);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtKernelLaunchEx failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "rtKernelLaunchEx failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
@@ -147,6 +159,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   }
   rt_ret = rtStreamSynchronize(stream);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamSynchronize failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "rtStreamSynchronize failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
@@ -156,6 +169,7 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   if (aicpu_kernel_addr != nullptr) {
     rt_ret = rtFree(aicpu_kernel_addr);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtFree failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
       GELOGE(RT_FAILED, "free memory failed. ret: 0x%X", rt_ret);
       GE_CHK_RT(rtFree(devicebase));
       GE_CHK_RT(rtStreamDestroy(stream));
@@ -164,12 +178,14 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   }
   rt_ret = rtFree(devicebase);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtFree failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "free memory failed. ret: 0x%X", rt_ret);
     GE_CHK_RT(rtStreamDestroy(stream));
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtStreamDestroy(stream);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamDestroy failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "rtStreamDestroy failed. ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -216,6 +232,8 @@ ge::Status ModelManager::DestroyAicpuSessionForInfer(uint32_t model_id) {
 
   auto it = model_map_.find(model_id);
   if (it == model_map_.end()) {
+    REPORT_INNER_ERROR("E19999", "Param model_id:%u can't find in model_map, check invalid when ModelManager %s",
+                       model_id, __FUNCTION__);
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", model_id);
     return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
@@ -233,6 +251,8 @@ ge::Status ModelManager::DestroyAicpuKernel(uint64_t session_id, uint32_t model_
     Status ret = KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType::FWK_ADPT_KERNEL_DESTROY, session_id, model_id,
                                 sub_model_id);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Call KernelLaunchEx fail, model_id:%u, sub_model_id:%u, session_id:%lu, "
+                        "when ModelManager %s", model_id, sub_model_id, session_id, __FUNCTION__);
       GELOGE(FAILED, "Destroy aicpu kernel failed.");
       return FAILED;
     }
@@ -289,6 +309,8 @@ ge::Status ModelManager::DoLoadHybridModelOnline(uint32_t model_id, const string
 bool ModelManager::IsNeedHybridLoad(ge::GeRootModel &ge_root_model) {
   auto root_graph = ge_root_model.GetRootGraph();
   if (root_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "root graph in param ge_root_model is nullptr, model_id:%u, "
+                       "check invalid when ModelManager %s", ge_root_model.GetModelId(), __FUNCTION__);
     GELOGE(FAILED, "no model on root model");
     return false;
   }
@@ -317,6 +339,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   mmTimespec timespec = mmGetTickCount();
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, listener);
   if (davinci_model == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New DavinciModel fail, model_id:%u, when ModelManager %s", model_id, __FUNCTION__);
     GELOGE(FAILED, "davinci_model is nullptr");
     return FAILED;
   }
@@ -381,6 +404,8 @@ Status ModelManager::DeleteModel(uint32_t id) {
   } else if (hybrid_model_it != hybrid_model_map_.end()) {
     (void)hybrid_model_map_.erase(hybrid_model_it);
   } else {
+    REPORT_INNER_ERROR("E19999", "model_id:%u not exist in model_map, check invalid when ModelManager %s",
+                       id, __FUNCTION__);
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
     return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
@@ -427,6 +452,8 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
 
   Status status = data_wrap->Init(input_data, output_data);
   if (status != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Init InputDataWrapper failed, input data index: %u, when ModelManager %s",
+                       input_data.index, __FUNCTION__);
     GELOGE(domi::PUSH_DATA_FAILED, "Init InputDataWrapper failed, input data index: %u.", input_data.index);
     return domi::PUSH_DATA_FAILED;
   }
@@ -443,6 +470,8 @@ Status ModelManager::DataInput(const InputData &input_data, OutputData &output_d
   DataInputer *inputer = model->GetDataInputer();
   GE_CHECK_NOTNULL(inputer);
   if (inputer->Push(data_wrap) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "DataInputer queue is full, please call again later, model_id %u, when ModelManager %s",
+                       model_id, __FUNCTION__);
     GELOGE(domi::DATA_QUEUE_ISFULL, "Data queue is full, please call again later, model_id %u ", model_id);
     return domi::DATA_QUEUE_ISFULL;
   }
@@ -456,6 +485,9 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
                                        vector<int32_t> &cur_dynamic_dims) {
   GELOGD("Start get cur dynamic dims.");
   if (user_real_input_dims.size() != user_input_dims.size()) {
+    REPORT_INNER_ERROR("E19999", "Param user_real_input_dims.size:%zu != user_input_dims.size:%zu, "
+                       "check invalid when ModelManager %s",
+                       user_real_input_dims.size(), user_input_dims.size(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR,
            "The input count of user: %zu should be equal to the data count of graph: %zu",
            user_real_input_dims.size(), user_input_dims.size());
@@ -464,6 +496,9 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
 
   for (size_t i = 0; i < user_input_dims.size(); ++i) {
     if (user_real_input_dims[i].size() != user_input_dims[i].second.size()) {
+      REPORT_INNER_ERROR("E19999", "Param user_real_input_dims[%zu].size:%zu != user_input_dims[%zu].size:%zu, "
+                         "check invalid when ModelManager %s", i, user_real_input_dims[i].size(),
+                         i, user_input_dims[i].second.size(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR,
              "The shape size: %zu of dynamic input: %s should be equal to the shape size of input shape: %zu.",
              user_real_input_dims[i].size(), user_input_dims[i].first.c_str(), user_input_dims[i].second.size());
@@ -485,6 +520,8 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
     }
   }
   if (!cur_dynamic_dims_valid) {
+    REPORT_INNER_ERROR("E19999", "cur dynamic dims is %s, not exist in options, check invalid "
+                       "when ModelManager %s", formats::JoinToString(cur_dynamic_dims).c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Cur dynamic dims is %s, not exist in options.",
            formats::JoinToString(cur_dynamic_dims).c_str());
     return INTERNAL_ERROR;
@@ -636,6 +673,8 @@ Status ModelManager::HandleCommand(const Command &command) {
 
   auto iter = cmds.find(command.cmd_type);
   if (iter == cmds.end()) {
+    REPORT_INNER_ERROR("E19999", "Unsupported command:%s check when ModelManager %s",
+                       command.cmd_type.c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Unsupported command: %s", command.cmd_type.c_str());
     return PARAM_INVALID;
   } else {
@@ -646,6 +685,9 @@ Status ModelManager::HandleCommand(const Command &command) {
 Status ModelManager::GetModelByCmd(const Command &command,
                                    std::shared_ptr<DavinciModel> &davinci_model) {
   if (command.cmd_params.size() < kCmdParSize) {
+    REPORT_INNER_ERROR("E19999", "command.cmd_params.size:%zu < kCmdParSize:%u, command_type:%s, "
+                       "check invalid when ModelManager %s", command.cmd_params.size(), kCmdParSize,
+                       command.cmd_type.c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "When the cmd_type is '%s', the size of cmd_params must larger than 2.",
         command.cmd_type.c_str());
     return PARAM_INVALID;
@@ -658,12 +700,18 @@ Status ModelManager::GetModelByCmd(const Command &command,
     try {
       model_id = std::stoi(value);
     } catch (std::invalid_argument &) {
+      REPORT_INNER_ERROR("E19999", "%s param:%s, check invalid when ModelManager %s", PROFILE_MODEL_ID.c_str(),
+                         value.c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "Model id: %s is invalid.", value.c_str());
       return PARAM_INVALID;
     } catch (std::out_of_range &) {
+      REPORT_INNER_ERROR("E19999", "%s param:%s, check out of range when ModelManager %s", PROFILE_MODEL_ID.c_str(),
+                         value.c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "Model id: %s is out of range.", value.c_str());
       return PARAM_INVALID;
     } catch (...) {
+      REPORT_INNER_ERROR("E19999", "%s param:%s, check cannot change to int when ModelManager %s",
+                         PROFILE_MODEL_ID.c_str(), value.c_str(), __FUNCTION__);
       GELOGE(FAILED, "Model id: %s cannot change to int.", value.c_str());
       return FAILED;
     }
@@ -672,10 +720,14 @@ Status ModelManager::GetModelByCmd(const Command &command,
     GE_CHECK_NOTNULL(model_manager);
     davinci_model = model_manager->GetModel(static_cast<uint32_t>(model_id));
     if (davinci_model == nullptr) {
+      REPORT_INNER_ERROR("E19999", "GetModel from model_manager fail, model_id:%u, when ModelManager %s",
+                         model_id, __FUNCTION__);
       GELOGE(FAILED, "Model id: %d is invaild or model is not loaded.", model_id);
       return FAILED;
     }
   } else {
+    REPORT_INNER_ERROR("E19999", "Fisrt cmd_param not %s, check invalid when ModelManager %s",
+                       PROFILE_MODEL_ID.c_str(), __FUNCTION__);
     GELOGE(FAILED, "The model_id parameter is not found in the command.");
     return FAILED;
   }
@@ -739,10 +791,14 @@ Status ModelManager::HandleProfFinalizeCommand(const Command &command) {
  */
 Status ModelManager::HandleProfStartCommand(const Command &command) {
   if (command.cmd_params.size() < kProfStartCmdParaSize) {
+    REPORT_INNER_ERROR("E19999", "command.cmd_params.size:%zu < %zu, check invalid when ModelManager %s",
+                       command.cmd_params.size(), kProfStartCmdParaSize, __FUNCTION__);
     GELOGE(PARAM_INVALID, "When the cmd_type is 'profile start', the size of cmd_params must larger than 2.");
     return PARAM_INVALID;
   }
   if (command.cmd_params.size() > kProfCmdParaMaxSize) {
+    REPORT_INNER_ERROR("E19999", "command.cmd_params.size:%zu > %zu, check invalid when ModelManager %s",
+                       command.cmd_params.size(), kProfCmdParaMaxSize, __FUNCTION__);
     GELOGE(PARAM_INVALID, "Command para size[%zu] larger than max[1000].", command.cmd_params.size());
     return PARAM_INVALID;
   }
@@ -765,10 +821,14 @@ Status ModelManager::HandleProfStartCommand(const Command &command) {
 
 Status ModelManager::HandleProfStopCommand(const Command &command) {
   if (command.cmd_params.size() < kProfStartCmdParaSize) {
+    REPORT_INNER_ERROR("E19999", "command.cmd_params.size:%zu < %zu, check invalid when ModelManager %s",
+                       command.cmd_params.size(), kProfStartCmdParaSize, __FUNCTION__);
     GELOGE(PARAM_INVALID, "When the cmd_type is 'profile stop', the size of cmd_params must larger than 2.");
     return PARAM_INVALID;
   }
   if (command.cmd_params.size() > kProfCmdParaMaxSize) {
+    REPORT_INNER_ERROR("E19999", "command.cmd_params.size:%zu > %zu, check invalid when ModelManager %s",
+                       command.cmd_params.size(), kProfCmdParaMaxSize, __FUNCTION__);
     GELOGE(PARAM_INVALID, "Command para size[%zu] larger than max[1000].", command.cmd_params.size());
     return PARAM_INVALID;
   }
@@ -794,6 +854,8 @@ static Status ParserPara(const Command &command, const string &dump_key, string 
   if (iter != command.cmd_params.end()) {
     ++iter;
     if (iter == command.cmd_params.end()) {
+      REPORT_INNER_ERROR("E19999", "dump_key:%s can't find in command.param, check invalid when ModelManager %s",
+                         dump_key.c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "Invalid access.");
       return PARAM_INVALID;
     }
@@ -804,6 +866,8 @@ static Status ParserPara(const Command &command, const string &dump_key, string 
 
 Status ModelManager::HandleDumpCommand(const Command &command) {
   if (command.cmd_params.size() % kDumpCmdPairSize != 0) {
+    REPORT_INNER_ERROR("E19999", "command.cmd_params.size:%zu MOD 2 != 0, check invalid when ModelManager %s",
+                       command.cmd_params.size(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "When the cmd_type is 'dump', the size of cmd_params must be a even number.");
     return PARAM_INVALID;
   }
@@ -1020,6 +1084,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 
   mmTimeval tv;
   if (mmGetTimeOfDay(&tv, nullptr) != 0) {
+    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail when ModelManager %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }
@@ -1064,6 +1129,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     GeModelPtr ge_model = model_helper.GetGeModel();
     shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(model.priority, listener);
     if (davinci_model == nullptr) {
+      REPORT_CALL_ERROR("E19999", "New DavinciModel fail when ModelManager %s", __FUNCTION__);
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Make shared failed");
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
@@ -1079,6 +1145,7 @@ Status ModelManager::LoadModelOffline(uint32_t &model_id, const ModelData &model
     int32_t device_id = 0;
     rtError_t rt_ret = rtGetDevice(&device_id);
     if (rt_ret != RT_ERROR_NONE || device_id < 0) {
+      REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, ret = 0x%X, when ModelManager %s", rt_ret, __FUNCTION__);
       GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -1137,6 +1204,7 @@ Status ModelManager::LoadModelWithQ(uint32_t &model_id, const ModelData &model_d
 
   shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(model_data.priority, nullptr);
   if (davinci_model == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New DavinciModel fail when ModelManager %s", __FUNCTION__);
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create model failed.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
@@ -1257,6 +1325,7 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
   if (rt_error != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, ret = 0x%X, when ModelManager %s", rt_error, __FUNCTION__);
     GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_error));
     return RT_FAILED;
   }
@@ -1292,6 +1361,7 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
   if (rt_error != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, ret = 0x%X, when ModelManager %s", rt_error, __FUNCTION__);
     GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_error));
     return RT_FAILED;
   }
@@ -1317,12 +1387,16 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
 
     status = rtMalloc(&d_aicpu_data, aicpu_data_length, RT_MEMORY_HBM);
     if (status != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret = 0x%X, when ModelManager %s",
+                        aicpu_data_length, status, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
       return RT_ERROR_TO_GE_STATUS(status);
     }
     allocated_mem.push_back(d_aicpu_data);
     status = rtMalloc(&d_so_name, so_name.size(), RT_MEMORY_HBM);
     if (status != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X, when ModelManager %s",
+                        so_name.size(), status, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
       return RT_ERROR_TO_GE_STATUS(status);
     }
@@ -1345,6 +1419,8 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   uint32_t args_size = sizeof(CustAicpuSoBuf) * v_cust_so.size();
   status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%u, ret = 0x%X, when ModelManager %s",
+                      args_size, status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1359,6 +1435,8 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   uint32_t batch_args_size = sizeof(BatchLoadOpFromBufArgs);
   status = rtMalloc(&batch_args, batch_args_size, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%u, ret = 0x%X, when ModelManager %s",
+                      batch_args_size, status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1371,6 +1449,8 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
 
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamSynchronize fail, ret = 0x%X, when ModelManager %s",
+                      status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1415,6 +1495,8 @@ Status ModelManager::GetModelMemAndWeightSize(const ModelData &model, size_t &me
 
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_data);
   if (partition_table->num == 1) {
+    REPORT_INNER_ERROR("E19999", "partition_table num in model_data is 1, check invalid when ModelManager %s",
+                       __FUNCTION__);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "om model is error,please use executable om model");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
@@ -1481,6 +1563,8 @@ ge::Status ModelManager::SyncExecuteModel(uint32_t model_id, const vector<GeTens
                                           vector<GeTensor> &outputs) {
   auto model = GetHybridModel(model_id);
   if (model == nullptr) {
+    REPORT_INNER_ERROR("E19999", "partition_table num in model_data is 1, check invalid when ModelManager %s",
+                       __FUNCTION__);
     GELOGE(FAILED, "Hybrid model not found. model id = %u.", model_id);
     return FAILED;
   }
@@ -1509,6 +1593,8 @@ Status ModelManager::EnableExceptionDump(const std::map<string, string> &options
     if (iter->second == "1") {
       rtError_t rt_ret = rtSetTaskFailCallback(reinterpret_cast<rtTaskFailCallback>(ExceptionCallback));
       if (rt_ret != RT_ERROR_NONE) {
+        REPORT_CALL_ERROR("E19999", "Call rtSetTaskFailCallback fail, ret = 0x%X, when ModelManager %s",
+                          rt_ret, __FUNCTION__);
         GELOGE(RT_FAILED, "rtSetTaskFailCallback failed");
         return RT_ERROR_TO_GE_STATUS(rt_ret);
       }
@@ -1556,6 +1642,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   // malloc sysOpInfoList in SysOpCheckInfo
   status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X, when ModelManager %s",
+                      op_nums * sizeof(SysOpInfo), status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1564,6 +1652,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   // malloc sysOpInfoList in SysOpCheckResp
   status = rtMalloc(&d_res_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X, when ModelManager %s",
+                      op_nums * sizeof(SysOpInfo), status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1572,6 +1662,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   // malloc returnCodeList in SysOpCheckResp
   status = rtMalloc(&d_ret_code_list, op_nums * sizeof(ReturnCode), RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X, when ModelManager %s",
+                      op_nums * sizeof(ReturnCode), status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1583,6 +1675,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     void *d_op_type_name = nullptr;
     status = rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM);
     if (status != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%lu, ret = 0x%X, when ModelManager %s",
+                        op_type.length(), status, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
       return RT_ERROR_TO_GE_STATUS(status);
     }
@@ -1600,6 +1694,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     void *d_op_type_name = nullptr;
     status = rtMalloc(&d_op_type_name, op_type.size(), RT_MEMORY_HBM);
     if (status != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%lu, ret = 0x%X, when ModelManager %s",
+                        op_type.length(), status, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
       return RT_ERROR_TO_GE_STATUS(status);
     }
@@ -1628,6 +1724,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   uint32_t args_size = sizeof(SysOpCheckInfo) + sizeof(SysOpCheckResp);
   status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%u, ret = 0x%X, when ModelManager %s",
+                      args_size, status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt failed, status: 0x%x", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
@@ -1643,6 +1741,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
 
   status = rtStreamSynchronize(stream);
   if (status != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamSynchronize fail, ret = 0x%X, when ModelManager %s",
+                      status, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt stream sync failed, status: 0x%x", status);
     GE_CHK_RT(rtStreamDestroy(stream));
     return RT_ERROR_TO_GE_STATUS(status);
@@ -1675,6 +1775,9 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
                        reinterpret_cast<void *>(static_cast<uintptr_t>(op_check_info_res.sysOpInfoList)),
                        sizeof(SysOpInfo) * res_op_nums, RT_MEMCPY_DEVICE_TO_HOST));
     if (res_ret_code_list.size() != res_aicpu_op_info_list.size() || res_ret_code_list.size() != res_op_nums) {
+      REPORT_INNER_ERROR("E19999", "res_ret_code_list.size:%zu res_aicpu_op_info_list.size:%zu res_op_nums:%lu "
+                         "not equal, check invalid when ModelManager %s",
+                         res_ret_code_list.size(), res_aicpu_op_info_list.size(), res_op_nums, __FUNCTION__);
       GELOGE(FAILED, "Number of retcode is not equal to number of op type.");
       GE_CHK_RT(rtStreamDestroy(stream));
       return FAILED;
@@ -1698,6 +1801,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
                      "<0: op_type, 1: format, 2: datatype> \n";
     }
     fail_reason += "not support.";
+    REPORT_INNER_ERROR("E19999", "Check aicpu op_type failed, details:%s when ModelManager %s",
+                       fail_reason.c_str(), __FUNCTION__);
     GELOGE(FAILED, "Check aicpu op_type failed. details: %s", fail_reason.c_str());
     GE_CHK_RT(rtStreamDestroy(stream));
     return FAILED;

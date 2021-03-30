@@ -30,7 +30,7 @@ HcclTaskInfo::~HcclTaskInfo() {
   if (private_def_ != nullptr) {
     rtError_t ret = rtFreeHost(private_def_);
     if (ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail ret:0x%X, when HcclTaskInfo %s", ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X, when HcclTaskInfo %s", ret, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rtFree Fail, ret = 0x%X.", ret);
     }
     private_def_ = nullptr;
@@ -179,7 +179,7 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
     rtError_t rt_ret =
         rtStreamCreateWithFlags(&stream, davinci_model->Priority(), RT_STREAM_PERSISTENT | RT_STREAM_FORCE_COPY);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtStreamCreateWithFlags fail ret:0x%X, stream_idx:%ld, stream_num:%ld, "
+      REPORT_CALL_ERROR("E19999", "Call rtStreamCreateWithFlags failed, ret:0x%X, stream_idx:%ld, stream_num:%ld, "
                         "when HcclTaskInfo %s", rt_ret, i, stream_num, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -187,7 +187,7 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
     // Create slave stream, inactive by default, activated by hccl
     rt_ret = rtModelBindStream(davinci_model->GetRtModelHandle(), stream, RT_MODEL_WAIT_ACTIVE_STREAM);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtModelBindStream fail ret:0x%X, stream_idx:%ld, stream_num:%ld, "
+      REPORT_CALL_ERROR("E19999", "Call rtModelBindStream failed, ret:0x%X, stream_idx:%ld, stream_num:%ld, "
                         "when HcclTaskInfo %s", rt_ret, i, stream_num, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
       (void)rtStreamDestroy(stream);
@@ -332,7 +332,7 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
       private_def_len_ = private_def_temp.size();
       rtError_t ret = rtMallocHost(&private_def_, private_def_len_);
       if (ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMallocHost fail ret:0x%X, size:%u, when HcclTaskInfo %s",
+        REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, ret:0x%X, size:%u, when HcclTaskInfo %s",
                           ret, private_def_len_, __FUNCTION__);
         GELOGE(RT_FAILED, "Call rtMallocHost Fail, ret = 0x%X.", ret);
         return;
@@ -341,7 +341,7 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
       ret = rtMemcpy(private_def_, private_def_len_, task.private_def().c_str(), private_def_len_,
                      RT_MEMCPY_HOST_TO_HOST);
       if (ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%u, when HcclTaskInfo %s",
+        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%u, when HcclTaskInfo %s",
                           ret, private_def_len_, __FUNCTION__);
         GELOGE(RT_FAILED, "Call rtMemcpy Fail, ret = 0x%X.", ret);
         return;

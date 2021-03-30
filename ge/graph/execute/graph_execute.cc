@@ -40,7 +40,7 @@ GraphExecutor::~GraphExecutor() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(buffer_addr);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail, ret:0x%X when %s", rt_ret, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X when %s", rt_ret, __FUNCTION__);
         GELOGE(RT_FAILED, "[GraphManager] subgraph free buffer failed, ret: 0x%X", rt_ret);
       }
     }
@@ -106,7 +106,7 @@ Status GraphExecutor::FreeInOutBuffer() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(*iter);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail, ret:0x%X when %s", rt_ret, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X when %s", rt_ret, __FUNCTION__);
         GELOGE(RT_FAILED, "[GraphManager] subgraph free buffer failed, ret: 0x%X", rt_ret);
         (void)buffer_addr_.erase(buffer_addr_.begin(), iter);
         return GE_GRAPH_FREE_FAILED;
@@ -152,7 +152,7 @@ Status GraphExecutor::MallocInOutBuffer(const std::vector<uint64_t> &buffer_size
     void *tmp_buf = nullptr;
     rt_ret = rtMallocHost(&tmp_buf, buffer_size[i]);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMallocHost fail, size:%lu, ret:0x%X when %s",
+      REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, size:%lu, ret:0x%X when %s",
                         buffer_size[i], rt_ret, __FUNCTION__);
       GELOGE(RT_FAILED, "[GraphManager] subgraph malloc buffer failed, ret: 0x%X", rt_ret);
       return GE_GRAPH_MALLOC_FAILED;
@@ -199,7 +199,7 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
       rtError_t rt_ret = rtMemcpy(addrVec[i], bufferSizeVec[i], in_tensor->GetData().data(),
                                   in_tensor->GetData().size(), RT_MEMCPY_HOST_TO_HOST);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail, dst_size:%lu, src_size:%zu, ret:0x%X when %s",
+        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, dst_size:%lu, src_size:%zu, ret:0x%X when %s",
                           bufferSizeVec[i], in_tensor->GetData().size(), rt_ret, __FUNCTION__);
         GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
         return RT_FAILED;
@@ -301,8 +301,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
                      return GE_GRAPH_EXECUTE_FAILED);
     std::unique_ptr<uint8_t> outBufTmp(new (std::nothrow) uint8_t[outputDataTmp.length]);
     if (outBufTmp == nullptr) {
-      REPORT_INNER_ERROR("E19999", "New output buffer fail, length:%lu, model:%u, when %s",
-                         outputDataTmp.length, model_id, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "New output buffer fail, length:%lu, model:%u, when %s",
+                        outputDataTmp.length, model_id, __FUNCTION__);
       GELOGE(FAILED, "Failed to allocate memory.");
       return FAILED;
     }
@@ -310,7 +310,7 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
     rtError_t ret_value = rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length,
                                    RT_MEMCPY_HOST_TO_HOST);
     CHECK_FALSE_EXEC(ret_value == RT_ERROR_NONE,
-                     REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail, dst_size:%lu, src_size:%zu, ret:0x%X when %s",
+                     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, dst_size:%lu, src_size:%zu, ret:0x%X when %s",
                                        outputDataTmp.length, outputDataTmp.length, ret_value, __FUNCTION__);
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Call rt api rtMemcpy failed, ret: 0x%X", ret);
                      return GE_GRAPH_EXECUTE_FAILED);

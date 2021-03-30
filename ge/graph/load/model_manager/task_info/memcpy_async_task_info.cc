@@ -36,6 +36,8 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   dst_max_ = memcpy_async.dst_max();
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async.op_index());
   if (op_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u when MemcpyAsyncTaskInfo %s",
+                       memcpy_async.op_index(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
     return INTERNAL_ERROR;
   }
@@ -86,6 +88,8 @@ Status MemcpyAsyncTaskInfo::Distribute() {
 
   rtError_t rt_ret = rtMemcpyAsync(dst_, dst_max_, src_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpyAsync failed, size:%lu, ret:0x%X, when MemcpyAsyncTaskInfo %s",
+                      dst_max_, rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

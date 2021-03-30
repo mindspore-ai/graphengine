@@ -53,7 +53,7 @@ Status EndGraphTaskInfo::Distribute() {
     GELOGI("Start to call rtEndGraphEx");
     rtError_t rt_ret = rtEndGraphEx(model_, stream_, kDumpFlag);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtEndGraphEx fail ret:0x%X, when EndGraphTaskInfo %s", rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtEndGraphEx failed, ret:0x%X, when EndGraphTaskInfo %s", rt_ret, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rtEndGraphEx failed, ret: 0x%x", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -61,7 +61,7 @@ Status EndGraphTaskInfo::Distribute() {
     GELOGI("Start to call rtEndGraph");
     rtError_t rt_ret = rtEndGraph(model_, stream_);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtEndGraph fail ret:0x%X, when EndGraphTaskInfo %s", rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtEndGraph failed, ret:0x%X, when EndGraphTaskInfo %s", rt_ret, __FUNCTION__);
       GELOGE(RT_FAILED, "Call rtEndGraph failed, ret: 0x%x", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -71,7 +71,8 @@ Status EndGraphTaskInfo::Distribute() {
   uint32_t stream_id = 0;
   rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtModelGetTaskId fail ret:0x%X, when EndGraphTaskInfo %s", rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtModelGetTaskId failed, ret:0x%X, when EndGraphTaskInfo %s",
+                      rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

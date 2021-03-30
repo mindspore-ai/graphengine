@@ -75,14 +75,14 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
   }
   auto rt_ret = rtMalloc(&ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret:0x%X, when KernelExTaskInfo %s",
+                  REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%zu, ret:0x%X, when KernelExTaskInfo %s",
                                     ext_info.size(), rt_ret, __FUNCTION__);
                   GELOGE(RT_FAILED, "rtMalloc ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
   rt_ret = rtMemcpy(ext_info_addr_, ext_handle->GetExtInfoLen(), ext_handle->GetExtInfo(),
                     ext_handle->GetExtInfoLen(), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail, size:%zu, ret:0x%X, when KernelExTaskInfo %s",
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret:0x%X, when KernelExTaskInfo %s",
                                     ext_handle->GetExtInfoLen(), rt_ret, __FUNCTION__);
                   GELOGE(RT_FAILED, "rtMemcpy ext_info error: 0x%X, size=%zu", rt_ret, ext_info.size());
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
@@ -169,7 +169,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     void *workspace_base_addr = nullptr;
     rtError_t rt_ret = rtMalloc(&workspace_base_addr, kernel_ex_def.task_info_size(), RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%u, ret:0x%X, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X, when KernelExTaskInfo %s",
                                       kernel_ex_def.task_info_size(), rt_ret, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMalloc error, ret: Ox%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret););
@@ -183,7 +183,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 
     rt_ret = rtMalloc(&kernel_buf_, kernel_buf_size_, RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail ret:0x%X, size:%u, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret:0x%X, size:%u, when KernelExTaskInfo %s",
                                       rt_ret, kernel_buf_size_, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMalloc error: 0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
@@ -191,7 +191,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     rt_ret = rtMemcpy(kernel_buf_, kernel_buf_size_, static_cast<void *>(&fwk_op_kernel), kernel_buf_size_,
                       RT_MEMCPY_HOST_TO_DEVICE);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%u, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%u, when KernelExTaskInfo %s",
                                       rt_ret, kernel_buf_size_, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
@@ -228,14 +228,14 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   if (addrs_size > 0) {
     rtError_t rt_ret = rtMalloc(&input_output_addr_, addrs_size, RT_MEMORY_HBM);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail ret:0x%X, size:%lu, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret:0x%X, size:%lu, when KernelExTaskInfo %s",
                                       rt_ret, addrs_size, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     rt_ret = rtMemcpy(input_output_addr_, addrs_size, io_addrs.data(), addrs_size, RT_MEMCPY_HOST_TO_DEVICE);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                    REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%lu, when KernelExTaskInfo %s",
+                    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%lu, when KernelExTaskInfo %s",
                                       rt_ret, addrs_size, __FUNCTION__);
                     GELOGE(RT_FAILED, "rtMemcpy to input_output_addr_ error: 0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
@@ -257,7 +257,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   // 4. Return result
   rtError_t rt_ret = rtMalloc(&kernel_buf_, sizeof(STR_FWK_OP_KERNEL), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMalloc fail ret:0x%X, size:%zu, when KernelExTaskInfo %s",
+                  REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret:0x%X, size:%zu, when KernelExTaskInfo %s",
                                     rt_ret, sizeof(STR_FWK_OP_KERNEL), __FUNCTION__);
                   GELOGE(RT_FAILED, "rtMalloc error: 0x%X", rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
@@ -265,7 +265,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   rt_ret = rtMemcpy(kernel_buf_, sizeof(STR_FWK_OP_KERNEL), static_cast<void *>(&fwk_op_kernel),
                     sizeof(STR_FWK_OP_KERNEL), RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%zu, when KernelExTaskInfo %s",
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%zu, when KernelExTaskInfo %s",
                                     rt_ret, sizeof(STR_FWK_OP_KERNEL), __FUNCTION__);
                   GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
@@ -397,7 +397,7 @@ Status KernelExTaskInfo::CopyTaskInfo(const domi::KernelExDef &kernel_def, const
   rtError_t rt_ret = rtMemcpy(workspace_data_addrs[0], kernel_def.task_info_size(), kernel_def.task_info().data(),
                               kernel_def.task_info_size(), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy fail ret:0x%X, size:%d, when KernelExTaskInfo %s",
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%d, when KernelExTaskInfo %s",
                       rt_ret, kernel_def.task_info_size(), __FUNCTION__);
     GELOGE(RT_FAILED, "rtMemcpy error: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -410,7 +410,8 @@ Status KernelExTaskInfo::Distribute() {
   GELOGI("KernelExTaskInfo Distribute Start.");
   rtError_t rt_ret = rtKernelLaunchEx(kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtKernelLaunchEx fail ret:0x%X when KernelExTaskInfo %s", rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtKernelLaunchEx failed, ret:0x%X when KernelExTaskInfo %s",
+                      rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -425,7 +426,8 @@ Status KernelExTaskInfo::Distribute() {
   uint32_t stream_id = 0;  //  for profiling
   rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtModelGetTaskId fail ret:0x%X when KernelExTaskInfo %s", rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtModelGetTaskId failed, ret:0x%X when KernelExTaskInfo %s",
+                      rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

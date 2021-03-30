@@ -325,6 +325,7 @@ Status DataDumper::GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vis
   }
   int64_t output_size = 0;
   if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(index), output_size) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get tensor size fail when DataDumper %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "Get output size filed");
     return PARAM_INVALID;
   }
@@ -387,6 +388,9 @@ Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicp
   const auto &output_descs = inner_dump_info.op->GetAllOutputsDesc();
   const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (output_descs.size() != output_addrs.size()) {
+    REPORT_INNER_ERROR("E19999", "output_desc size:%zu != output addr size:%zu in op:%s(%s) when DataDumper %s",
+                       output_descs.size(), output_addrs.size(),
+                       inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Invalid output desc addrs size %zu, op %s has %zu output desc.", output_addrs.size(),
            inner_dump_info.op->GetName().c_str(), output_descs.size());
     return PARAM_INVALID;
@@ -411,6 +415,9 @@ Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicp
         GELOGI("[L1Fusion] DumpOutputWithTask[%s] output[%zu] is l1 addr.", inner_dump_info.op->GetName().c_str(), i);
         int64_t output_size = 0;
         if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Get output tensor size fail in op:%s(%s), index:%zu, when DataDumper %s",
+                            inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(), i,
+                            __FUNCTION__);
           GELOGE(PARAM_INVALID, "Get output size failed.");
           return PARAM_INVALID;
         }
@@ -438,6 +445,10 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
   auto output_tensor = inner_dump_info.op->GetOutputDescPtr(inner_dump_info.output_anchor_index);
   const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (output_tensor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "output_desc tensor is nullptr in op:%s(%s), index:%u, "
+                       "check invalid when DataDumper %s",
+                       inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(),
+                       inner_dump_info.output_anchor_index, __FUNCTION__);
     GELOGE(PARAM_INVALID, "output_tensor is null, index: %d, size: %zu.", inner_dump_info.output_anchor_index,
            inner_dump_info.op->GetOutputsSize());
     return PARAM_INVALID;
@@ -461,6 +472,9 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
   output.set_original_output_data_type(static_cast<int32_t>(output_tensor->GetOriginDataType()));
   // due to lhisi virtual addr bug, cannot use args now
   if (inner_dump_info.output_anchor_index >= static_cast<int>(output_addrs.size())) {
+    REPORT_INNER_ERROR("E19999", "output_anchor_index:%u >= output addr size:%zu in op:%s(%s), "
+                       "check invalid when DataDumper %s", inner_dump_info.output_anchor_index, output_addrs.size(),
+                       inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Index is out of range.");
     return FAILED;
   }
@@ -487,6 +501,7 @@ Status DataDumper::GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor
   if (AttrUtils::GetInt(tensor_descs.at(index), ATTR_NAME_INPUT_ORIGIN_SIZE, input_size)) {
     GELOGI("Get aipp input size according to attr is %ld", input_size);
   } else if (TensorUtils::GetTensorSizeInBytes(tensor_descs.at(index), input_size) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get tensor size fail when DataDumper %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "Get input size filed");
     return PARAM_INVALID;
   }
@@ -542,6 +557,9 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
   const auto &input_descs = inner_dump_info.op->GetAllInputsDesc();
   const std::vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (input_descs.size() != input_addrs.size()) {
+    REPORT_INNER_ERROR("E19999", "input_desc size:%zu != input addr size:%zu in op:%s(%s) when DataDumper %s",
+                       input_descs.size(), input_addrs.size(),
+                       inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Invalid input desc addrs size %zu, op %s has %zu input desc.", input_addrs.size(),
            inner_dump_info.op->GetName().c_str(), input_descs.size());
     return PARAM_INVALID;
@@ -567,6 +585,9 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
         if (AttrUtils::GetInt(input_descs.at(i), ATTR_NAME_INPUT_ORIGIN_SIZE, input_size)) {
           GELOGI("Get aipp input size according to attr is %ld", input_size);
         } else if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Get input tensor size fail in op:%s(%s), index:%zu, when DataDumper %s",
+                            inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(), i,
+                            __FUNCTION__);
           GELOGE(PARAM_INVALID, "Get input size failed.");
           return PARAM_INVALID;
         }
@@ -595,6 +616,7 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
   if (!ret || proto_size == 0) {
+    REPORT_INNER_ERROR("E19999", "Serialize proto to string fail when DataDumper %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
     return PARAM_INVALID;
   }
@@ -606,6 +628,8 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
 
   rtError_t rt_ret = rtMalloc(&dev_mem_load_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%zu, ret:0x%X, when DataDumper %s",
+                      proto_size, rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -613,12 +637,15 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
 
   rt_ret = rtMemcpy(dev_mem_load_, proto_size, proto_str.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret:0x%X, when DataDumper %s",
+                      proto_size, rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtDatadumpInfoLoad(dev_mem_load_, proto_size);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtDatadumpInfoLoad failed, ret:0x%X, when DataDumper %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rtDatadumpInfoLoad failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -633,6 +660,7 @@ Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
   if (!ret || proto_size == 0) {
+    REPORT_INNER_ERROR("E19999", "Serialize proto to string fail when DataDumper %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "Protobuf SerializeToString failed, proto size %zu.", proto_size);
     return PARAM_INVALID;
   }
@@ -644,6 +672,8 @@ Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_
 
   rtError_t rt_ret = rtMalloc(&dev_mem_unload_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%zu, ret:0x%X, when DataDumper %s",
+                      proto_size, rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -651,12 +681,15 @@ Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_
 
   rt_ret = rtMemcpy(dev_mem_unload_, proto_size, proto_str.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret:0x%X, when DataDumper %s",
+                      proto_size, rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtDatadumpInfoLoad(dev_mem_unload_, proto_size);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtDatadumpInfoLoad failed, ret:0x%X, when DataDumper %s", rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "Call rtDatadumpInfoLoad failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -941,6 +974,7 @@ Status DataDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> exceptio
       std::unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
       bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);
       if (!ret || proto_size == 0) {
+        REPORT_INNER_ERROR("E19999", "Serialize proto to string fail when DataDumper %s", __FUNCTION__);
         GELOGE(PARAM_INVALID, "Dump data proto serialize failed");
         return PARAM_INVALID;
       }

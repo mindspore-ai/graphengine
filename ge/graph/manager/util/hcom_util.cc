@@ -40,6 +40,9 @@ Status HcomOmeUtil::GetHcclDataType(const ge::ConstOpDescPtr &op_desc,
     if (op_desc->GetType() == HCOMRECEIVE) {
       bool ret = ge::AttrUtils::GetDataType(op_desc, HCOM_ATTR_DATA_TYPE, src_data_type);
       if (ret == false) {
+        REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail when HcomOmeUtil %s",
+                           HCOM_ATTR_DATA_TYPE.c_str(),
+                           op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
         GELOGE(PARAM_INVALID, "op:HcomReceive, op desc no attr: dtype.");
         return PARAM_INVALID;
       }
@@ -51,6 +54,10 @@ Status HcomOmeUtil::GetHcclDataType(const ge::ConstOpDescPtr &op_desc,
 
     auto iter = kConstOpHcclDataType.find(static_cast<int64_t>(src_data_type));
     if (iter == kConstOpHcclDataType.end()) {
+      REPORT_INNER_ERROR("E19999", "Attr:%s in op:%s(%s), value data_type:%s, not support in kConstOpHcclDataType now, "
+                         "check invalid when HcomOmeUtil %s", HCOM_ATTR_DATA_TYPE.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                         ge::TypeUtils::DataTypeToSerialString(src_data_type).c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID,
              "HcomOmeUtil::  Node: %s Optype: %s HcomDataType cann't support! Current Davinci Data Type : %s",
              op_desc->GetName().c_str(), op_desc->GetType().c_str(),
@@ -76,6 +83,8 @@ Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, HcclDataType
                                  int &count) {
   GE_CHECK_NOTNULL(op_desc);
   if (!IsHCOMOp(op_desc->GetType())) {
+    REPORT_INNER_ERROR("E19999", "Op:%s(%s) is not hcom op, check invalid when HcomOmeUtil %s",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "HcomOmeUtil:: operator is not Hcom operator.");
     return PARAM_INVALID;
   }
@@ -142,6 +151,8 @@ Status HcomOmeUtil::GetHorovodCount(const ge::ConstOpDescPtr &op_desc,
                                     std::vector<GETaskKernelHcclInfo> &kernel_hccl_infos) {
   GE_CHECK_NOTNULL(op_desc);
   if (!IsHorovodOp(op_desc->GetType())) {
+    REPORT_INNER_ERROR("E19999", "Op:%s(%s) is not horovod op, check invalid when HcomOmeUtil %s",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "HcomOmeUtil:: operator is not Horovod operator.");
     return PARAM_INVALID;
   }
@@ -213,7 +224,11 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, Hccl
 
   if (IsHCOMOp(op_desc->GetType())) {
     std::string hcom_op_type;
-    GE_CHK_BOOL_EXEC(ge::AttrUtils::GetStr(op_desc, HCOM_ATTR_REDUCE_TYPE, hcom_op_type), return PARAM_INVALID,
+    GE_CHK_BOOL_EXEC(ge::AttrUtils::GetStr(op_desc, HCOM_ATTR_REDUCE_TYPE, hcom_op_type),
+                     REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail when HcomOmeUtil %s",
+                                        HCOM_ATTR_REDUCE_TYPE.c_str(),
+                                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                     return PARAM_INVALID,
                      "HcomOmeUtil:: Node: %s Optype: %s Get HCOM_ATTR_REDUCE_TYPE fail, not support!",
                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
 
@@ -226,6 +241,9 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, Hccl
     } else if (hcom_op_type == "sum") {
       op_type = HCCL_REDUCE_SUM;
     } else {
+      REPORT_INNER_ERROR("E19999", "Attr:%s in Op:%s(%s), hcom_op_type value:%s is not support now, "
+                         "check invalid when HcomOmeUtil %s", HCOM_ATTR_REDUCE_TYPE.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), hcom_op_type.c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "HcomOmeUtil::Get HCOM_ATTR_REDUCE_TYPE fail, [%s] not support!", hcom_op_type.c_str());
       return PARAM_INVALID;
     }
@@ -234,12 +252,18 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, Hccl
   if (IsHorovodOp(op_desc->GetType())) {
     int64_t horovod_op_type;
     GE_CHK_BOOL_EXEC(ge::AttrUtils::GetInt(op_desc, ATTR_HOROVOD_ATTR_REDUCE_TYPE, horovod_op_type),
+                     REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail when HcomOmeUtil %s",
+                                        ATTR_HOROVOD_ATTR_REDUCE_TYPE.c_str(),
+                                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
                      return PARAM_INVALID,
                      "HcomOmeUtil:: Node: %s Optype: %s Get ATTR_HOROVOD_ATTR_REDUCE_TYPE fail, not support!",
                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
 
     auto iter = kHorovodRedOpToHcclRedOp.find(static_cast<HorovodReduceOp>(horovod_op_type));
     if (iter == kHorovodRedOpToHcclRedOp.end()) {
+      REPORT_INNER_ERROR("E19999", "Attr:%s in Op:%s(%s), horovod_op_type value:%ld is not support now, "
+                         "check invalid when HcomOmeUtil %s", ATTR_HOROVOD_ATTR_REDUCE_TYPE.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), horovod_op_type, __FUNCTION__);
       GELOGE(PARAM_INVALID, "HcomOmeUtil::  Node: %s Optype: %s HcomOpType cann't support! Current HcomOpType : %ld",
              op_desc->GetName().c_str(), op_desc->GetType().c_str(), horovod_op_type);
       return PARAM_INVALID;
@@ -252,7 +276,11 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, Hccl
 
 Status HcomOmeUtil::GetHcclRootId(const ge::ConstOpDescPtr &op_desc, int64_t &root_id) {
   GE_CHECK_NOTNULL(op_desc);
-  GE_CHK_BOOL_EXEC(ge::AttrUtils::GetInt(op_desc, HCOM_ATTR_ROOT_RANK, root_id), return PARAM_INVALID,
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::GetInt(op_desc, HCOM_ATTR_ROOT_RANK, root_id),
+                   REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail when HcomOmeUtil %s",
+                                      HCOM_ATTR_ROOT_RANK.c_str(),
+                                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                   return PARAM_INVALID,
                    "HcomOmeUtil::Node %s Optype: %s Get HCOM_ATTR_ROOT_INDEX fail, not support!",
                    op_desc->GetName().c_str(), op_desc->GetType().c_str());
 
@@ -293,6 +321,9 @@ Status HcomOmeUtil::CheckKernelHcclInfo(const ge::ConstOpDescPtr &op_desc,
                                         std::vector<GETaskKernelHcclInfo> &kernel_hccl_infos) {
   GE_CHECK_NOTNULL(op_desc);
   if (IsHCOMOp(op_desc->GetType()) && kernel_hccl_infos.size() != 1) {
+    REPORT_INNER_ERROR("E19999", "Op:%s(%s) is not hcom op or param kernel_hccl_infos.size:%zu != 1, "
+                       "check invalid when HcomOmeUtil %s",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), kernel_hccl_infos.size(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "HcomOmeUtil:: in Hcom scenario, the number of GETaskKernelHcclInfo is invalid.");
     return PARAM_INVALID;
   }
@@ -302,6 +333,10 @@ Status HcomOmeUtil::CheckKernelHcclInfo(const ge::ConstOpDescPtr &op_desc,
       return SUCCESS;
     }
     if (kernel_hccl_infos.empty() || op_desc->GetInputsSize() != kernel_hccl_infos.size()) {
+      REPORT_INNER_ERROR("E19999", "Param kernel_hccl_infos.size:%zu is empty or not equal to input_desc size:%zu "
+                         "in op:%s(%s), check invalid when HcomOmeUtil %s",
+                         kernel_hccl_infos.size(), op_desc->GetInputsSize(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "HcomOmeUtil:: in Horovod scenario, the number of GETaskKernelHcclInfo is invalid.");
       return PARAM_INVALID;
     }

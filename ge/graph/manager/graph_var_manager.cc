@@ -482,7 +482,7 @@ Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
   if (iter == mem_resource_map_.end()) {
     mem_resource = MemResource::BuildMemResourceFromType(memory_type);
     if (mem_resource == nullptr) {
-      REPORT_INNER_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu when VarManager %s",
+      REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu when VarManager %s",
                          memory_type, session_id_, __FUNCTION__);
       GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
       return ge::INTERNAL_ERROR;
@@ -514,8 +514,8 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   size_t mem_offset = 0;
   ge::Status result = TensorUtils::GetSize(tensor_desc, tensor_desc_size);
   if (result != ge::SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Get size from tensor fail, var_name:%s, memory_type:%d, session_id:%lu, "
-                       "when VarManager %s", var_name.c_str(), memory_type, session_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Get size from tensor fail, var_name:%s, memory_type:%d, session_id:%lu, "
+                      "when VarManager %s", var_name.c_str(), memory_type, session_id_, __FUNCTION__);
     GELOGE(result, "get size from TensorDesc failed");
     return result;
   }
@@ -525,8 +525,8 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   if (it == mem_resource_map_.end()) {
     mem_resource = MemResource::BuildMemResourceFromType(memory_type);
     if (mem_resource == nullptr) {
-      REPORT_INNER_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu when VarManager %s",
-                         memory_type, session_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu when VarManager %s",
+                        memory_type, session_id_, __FUNCTION__);
       GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
       return ge::INTERNAL_ERROR;
     } else {

@@ -37,6 +37,7 @@ GraphOptimize::GraphOptimize()
 
 void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when %s", __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[AddNodeInputProperty]: compute_graph is nullptr.");
     return;
   }
@@ -78,6 +79,7 @@ void AddNodeInputProperty(ComputeGraphPtr &compute_graph) {
 
 Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std::string &engine_name) {
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeSubGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
   }
@@ -87,6 +89,7 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
 
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GraphOptimzer: GE is  not initialized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -105,6 +108,9 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
       for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
         Status ret = (*iter)->OptimizeFusedGraphAfterGraphSlice(*(compute_graph));
         if (ret != SUCCESS) {
+          REPORT_INNER_ERROR("E19999", "Call OptimizeFusedGraphAfterGraphSlice failed, ret:%d, engine_name:%s, "
+                             "graph_name:%s when GraphOptimize %s", ret, engine_name.c_str(),
+                             compute_graph->GetName().c_str(), __FUNCTION__);
           GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraphAfterGraphSlice]: graph optimize failed, ret:%d", ret);
           return ret;
         }
@@ -115,6 +121,9 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
     for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
       ret = (*iter)->OptimizeFusedGraph(*(compute_graph));
       if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeFusedGraph failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s when GraphOptimize %s", ret, engine_name.c_str(),
+                           compute_graph->GetName().c_str(), __FUNCTION__);
         GELOGE(ret, "[OptimizeSubGraph][OptimizeFusedGraph]: graph optimize failed, ret:%d", ret);
         return ret;
       }
@@ -132,6 +141,7 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
     return SUCCESS;
   }
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeOriginalGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
   }
@@ -139,6 +149,7 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
   Status ret = SUCCESS;
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeOriginalGraph failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -155,6 +166,9 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
       }
       ret = (iter->second)->OptimizeOriginalGraph(*compute_graph);
       if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeOriginalGraph failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s when GraphOptimize %s", ret, iter->first.c_str(),
+                           compute_graph->GetName().c_str(), __FUNCTION__);
         GELOGE(ret, "[OptimizeOriginalGraph]: graph optimize failed, ret:%d", ret);
         return ret;
       }
@@ -174,6 +188,7 @@ Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_
   Status ret = SUCCESS;
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeOriginalGraph failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -191,6 +206,9 @@ Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_
       GELOGI("Begin to refine running format by engine %s", iter->first.c_str());
       ret = (iter->second)->OptimizeOriginalGraphJudgeInsert(*compute_graph);
       if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeOriginalGraphJudgeInsert failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s when GraphOptimize %s", ret, iter->first.c_str(),
+                           compute_graph->GetName().c_str(), __FUNCTION__);
         GELOGE(ret, "[OptimizeOriginalGraphJudgeInsert]: graph optimize failed, ret:%d", ret);
         return ret;
       }
@@ -201,12 +219,14 @@ Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_
 
 Status GraphOptimize::OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeOriginalGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
   }
 
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeOriginalGraph failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -224,6 +244,9 @@ Status GraphOptimize::OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_
       }
       ret = iter->second->OptimizeGraphPrepare(*compute_graph);
       if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeGraphPrepare failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s when GraphOptimize %s", ret, iter->first.c_str(),
+                           compute_graph->GetName().c_str(), __FUNCTION__);
         GELOGE(ret, "[OptimizeOriginalGraphForQuantize]: graph optimize failed, ret:%u", ret);
         return ret;
       }
@@ -234,12 +257,14 @@ Status GraphOptimize::OptimizeOriginalGraphForQuantize(ComputeGraphPtr &compute_
 
 Status GraphOptimize::OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeGraphBeforeBuildForRts]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
   }
 
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeGraphBeforeBuildForRts failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -258,6 +283,9 @@ Status GraphOptimize::OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_gr
       }
       ret = iter->second->OptimizeGraphBeforeBuild(*compute_graph);
       if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeGraphBeforeBuild failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s when GraphOptimize %s", ret, iter->first.c_str(),
+                           compute_graph->GetName().c_str(), __FUNCTION__);
         GELOGE(ret, "[OptimizeGraphBeforeBuildForRts]: graph optimize failed, ret:%u", ret);
         return ret;
       }
@@ -268,6 +296,8 @@ Status GraphOptimize::OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_gr
 
 Status GraphOptimize::SetOptions(const ge::GraphManagerOptions &options) {
   if (options.framework_type >= static_cast<int32_t>(domi::FrameworkType::FRAMEWORK_RESERVED)) {
+    REPORT_INNER_ERROR("E19999", "Param framework_type:%d in option check invalid when GraphOptimize %s",
+                       options.framework_type, __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIONS_INVALID, "Optimize Type %d invalid.", options.framework_type);
     return GE_GRAPH_OPTIONS_INVALID;
   }
@@ -342,12 +372,14 @@ Status GraphOptimize::IdentifyReference(ComputeGraphPtr &compute_graph) {
 }
 Status GraphOptimize::OptimizeWholeGraph(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[OptimizeWholeGraph]: compute_graph is nullptr.");
     return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
   }
 
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when GraphOptimize %s", __FUNCTION__);
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeWholeGraph failed.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -366,6 +398,9 @@ Status GraphOptimize::OptimizeWholeGraph(ComputeGraphPtr &compute_graph) {
       ret = iter.second->OptimizeWholeGraph(*compute_graph);
       GE_DUMP(compute_graph, "OptimizeWholeGraph" + iter.first);
       if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeWholeGraph failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s when GraphOptimize %s", ret, iter.first.c_str(),
+                           compute_graph->GetName().c_str(), __FUNCTION__);
         GELOGE(ret, "[OptimizeWholeGraph]: graph optimize failed, ret:%u", ret);
         return ret;
       }

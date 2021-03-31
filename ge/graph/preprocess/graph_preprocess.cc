@@ -416,7 +416,7 @@ Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
       GE_CHK_STATUS_RET(SetStreamLabel(last_node, stream_label), "set stream label failed");
     }
     GE_CHK_BOOL_EXEC((ge::AttrUtils::SetBool(last_node->GetOpDesc(), ge::ATTR_INSERTED_BY_GE, true)),
-                     REPORT_CALL_ERROR("E19999", "Set Attr:%s of node:%s(%s) failed when %s",
+                     REPORT_CALL_ERROR("E19999", "Set Attr:%s to node:%s(%s) failed when %s",
                                        ge::ATTR_INSERTED_BY_GE.c_str(),
                                        last_node->GetName().c_str(), last_node->GetType().c_str(), __FUNCTION__);
                      return INTERNAL_ERROR, "Set attr ATTR_INSERTED_BY_GE failed.");

@@ -3094,12 +3094,13 @@ Status DavinciModel::MallocKnownArgs() {
       return ret;
     }
   }
+  rtError_t rt_ret;
   bool is_support = false;
   GE_CHK_STATUS_RET_NOLOG(CheckCapability(FEATURE_TYPE_MEMORY, MEMORY_INFO_TS_4G_LIMITED, is_support));
   auto mem_type = is_support ? RT_MEMORY_TS_4G : RT_MEMORY_HBM;
   // malloc args memory
   if (total_args_size_ != 0) {
-    rt_ret = rtMalloc(&args_, total_args_size_, RT_MEMORY_HBM);
+    rt_ret = rtMalloc(&args_, total_args_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
                         total_args_size_, rt_ret, __FUNCTION__);

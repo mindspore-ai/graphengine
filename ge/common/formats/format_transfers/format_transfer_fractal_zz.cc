@@ -140,7 +140,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size](), std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
@@ -179,7 +180,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
-            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                   "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -217,7 +219,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size](), std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
@@ -257,7 +260,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
-            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                   "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -273,7 +277,8 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
-            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                   "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -288,14 +293,16 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
 
 Status FormatTransferFractalZz::TransFormat(const TransArgs &args, TransResult &result) {
   if (!IsDataTypeSupport(args.src_data_type)) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID,
+           "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShape(args.src_format, args.src_shape) || !IsShapeValid(args.dst_shape)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
+           "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
@@ -339,7 +346,8 @@ Status FormatTransferFractalZz::TransShape(Format src_format, const ShapeVector 
 
 Status FormatTransferFractalZzND::TransFormat(const TransArgs &args, TransResult &result) {
   if (!IsDataTypeSupport(args.src_data_type)) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID,
+           "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
@@ -347,7 +355,8 @@ Status FormatTransferFractalZzND::TransFormat(const TransArgs &args, TransResult
   }
 
   if (!IsShapeValid(args.src_shape) || !CheckShape(args.dst_format, args.dst_shape)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
+           "Not support trans format from %s to %s, src shape %s, dst shape %s, data type %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());

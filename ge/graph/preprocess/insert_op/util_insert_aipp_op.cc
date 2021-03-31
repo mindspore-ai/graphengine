@@ -212,7 +212,7 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
         }
       }
     }
-    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), 
+    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt),
         PARAM_INVALID,
         "Can not config part of outputs of Data node to support AIPP, config all "
         "of the outputs of Data to support AIPP, or config none of them");

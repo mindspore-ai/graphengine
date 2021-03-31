@@ -61,7 +61,8 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
   if (src_shape.at(kNc1hwc0H) != dst_shape.at(kNhwcH) || src_shape.at(kNc1hwc0W) != dst_shape.at(kNhwcW) ||
       src_shape.at(kNc1hwc0N) != dst_shape.at(kNhwcN) || src_shape.at(kNc1hwc0C0) != c0 ||
       src_shape.at(kNc1hwc0C1) != (Ceil(dst_shape.at(kNhwcC), c0))) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
+           "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
@@ -72,7 +73,8 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const int size, const int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;

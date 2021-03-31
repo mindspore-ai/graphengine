@@ -43,6 +43,11 @@ rtError_t rtEventCreate(rtEvent_t *event) {
   *event = new int[EVENT_LENTH];
   return RT_ERROR_NONE;
 }
+
+rtError_t rtEventCreateWithFlag(rtEvent_t *event, uint32_t flag) {
+  return rtEventCreate(event);
+}
+
 rtError_t rtEventRecord(rtEvent_t event, rtStream_t stream) { return RT_ERROR_NONE; }
 
 rtError_t rtEventSynchronize(rtEvent_t event) { return RT_ERROR_NONE; }

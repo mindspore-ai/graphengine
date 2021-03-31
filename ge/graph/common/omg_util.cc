@@ -21,6 +21,8 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/tensor_utils.h"
+#include "common/math/math_util.h"
 
 namespace ge {
 ///
@@ -202,6 +204,44 @@ Status SetNextIteration(const ge::NodePtr &node, const std::string &next) {
     return FAILED;
   }
 
+  return SUCCESS;
+}
+
+///
+/// @brief Align the memory
+/// @param [in/out] memory size
+/// @param [in] alinment
+/// @return void
+///
+void AlignMemSize(int64_t &mem_size, int64_t align_size) {
+  if (mem_size <= 0) {
+    return;
+  }
+  mem_size = (mem_size + align_size - 1) / align_size * align_size;
+}
+
+///
+/// @brief Get memory size from tensor desc
+/// @param [in] node
+/// @param [out] memory size
+/// @return Status
+///
+Status GetMemorySize(const NodePtr &node, int64_t &output_size) {
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  auto output_op_desc = node->GetOpDesc()->GetOutputDescPtr(kBufferPoolNodeOutIndex);
+  GE_CHECK_NOTNULL(output_op_desc);
+  int64_t size = 0;
+  auto ret = ge::TensorUtils::GetSize(*output_op_desc, size);
+  if (ret != ge::GRAPH_SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "[Get][Size]Node:%s.", node->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to get output size, node:%s.", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  FMK_INT64_ADDCHECK(size, kBufferPoolMemAlignSize);
+  AlignMemSize(size, kBufferPoolMemAlignSize);
+  // The HCOM operator requires an additional 512 bytes before and after
+  FMK_INT64_ADDCHECK(size, (kBufferPoolMemAlignSize + kBufferPoolMemAlignSize));
+  output_size = kBufferPoolMemAlignSize + size + kBufferPoolMemAlignSize;
   return SUCCESS;
 }
 }  // namespace ge

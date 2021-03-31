@@ -30,6 +30,7 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/build/memory/buffer_pool_mem_assigner.h"
 
 namespace {
 const int kAllInputAddrIsAtomic = -1;
@@ -231,6 +232,7 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size
 
   GE_CHK_STATUS_RET(ReAssignContinuousMemory(is_loop_graph), "ReAssignContinuousMemory Failed!");
   GE_CHK_STATUS_RET(ReAssignAtomicMemory(is_loop_graph), "ReAssignAtomicMemory Failed!");
+  GE_CHK_STATUS_RET(AssignBufferPoolMemory(), "AssignBufferPoolMemory Failed!");
 
   size_t total_mem_offset = 0;
   for (auto pair : memory_offset_) {
@@ -1735,4 +1737,54 @@ ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(con
   return ge::SUCCESS;
 }
 
+Status GraphMemoryAssigner::AssignBufferPoolMemory() {
+  auto is_buffer_pool_mem_enable = [] (const ComputeGraphPtr &graph) -> bool {
+    for (NodePtr &node : graph->GetAllNodes()) {
+      auto op_desc = node->GetOpDesc();
+      if (op_desc == nullptr) {
+        continue;
+      }
+      bool has_attrs = op_desc->HasAttr(ATTR_NAME_BUFFER_POOL_ID) && op_desc->HasAttr(ATTR_NAME_BUFFER_POOL_SIZE);
+      if (has_attrs) {
+        return true;
+      }
+    }
+    return false;
+  };
+  auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
+  GE_CHECK_NOTNULL(root_graph);
+  if (root_graph->GetGraphUnknownFlag()) {
+    GELOGI("[Check][Enable]Unknown root graph does not support buffer pool memory, graph:%s.",
+           compute_graph_->GetName().c_str());
+    return SUCCESS;
+  }
+  if (!is_buffer_pool_mem_enable(compute_graph_)) {
+    GELOGD("[Check][Enable]Buffer pool memory is not enable, graph:%s.", compute_graph_->GetName().c_str());
+    return SUCCESS;
+  }
+  map<int64_t, size_t> mem_type_to_offset;
+  for (const auto &pair : memory_offset_) {
+    mem_type_to_offset[pair.first] = pair.second.mem_offset_;
+  }
+  BufferPoolMemAssigner buffer_pool_mem_assigner(compute_graph_, mem_type_to_offset);
+  Status status = buffer_pool_mem_assigner.Assign();
+  if (status != SUCCESS) {
+    GELOGE(status, "[Assign][BufferPoolMem]Graph:%s.", compute_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to assign buffer pool memory, graph:%s.", compute_graph_->GetName().c_str());
+    return status;
+  }
+  int64_t mem_type = buffer_pool_mem_assigner.GetMemType();
+  auto iter = memory_offset_.find(mem_type);
+  if (iter == memory_offset_.end()) {
+    GELOGE(FAILED, "[Check][MemType]Memory type is not supported, graph:%s, mem type:%ld.",
+           compute_graph_->GetName().c_str(), mem_type);
+    REPORT_INNER_ERROR("E19999", "Memory type is not supported, graph:%s, mem type:%ld.",
+                       compute_graph_->GetName().c_str(), mem_type);
+    return FAILED;
+  }
+  iter->second.mem_offset_ = buffer_pool_mem_assigner.GetMemOffset();
+  GELOGI("[Assign][BufferPoolMem]Assign buffer pool memory successfully, graph:%s, mem type:%ld, mem offset:%zu.",
+         compute_graph_->GetName().c_str(), mem_type, buffer_pool_mem_assigner.GetMemOffset());
+  return SUCCESS;
+}
 }  // namespace ge

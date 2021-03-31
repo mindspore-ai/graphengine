@@ -27,6 +27,8 @@
 #include "graph/ge_context.h"
 #include "graph/utils/graph_utils.h"
 #include "init/gelib.h"
+#include "common/string_util.h"
+#include "common/util/error_manager/error_manager.h"
 
 using std::map;
 using std::set;
@@ -38,6 +40,13 @@ const int64_t kTaskNumPerNormalNode = 3;
 const int64_t kTaskNumPerHcclNode = 245;
 const char *const kTrueStr = "true";
 const char *const kFalseStr = "false";
+const size_t kEventMultiplexingItemCount = 3;
+const size_t kKeyWordIndex = 0;
+const size_t kNodeNameIndex = 1;
+const size_t kEventIdIndex = 2;
+const char *const kSend = "SendTo";
+const char *const kRecv = "RecvFrom";
+const char kDelim = ';';
 
 inline bool HasContinuousStreamLabel(const ge::OpDescPtr &op_desc, std::string &continuous_stream_label) {
   if (ge::AttrUtils::GetStr(op_desc, ge::ATTR_NAME_CONTINUOUS_STREAM_LABEL, continuous_stream_label)) {
@@ -51,6 +60,97 @@ bool IsHcclOp(const string &op_type) {
   const set<string> hccl_op_types({ge::HCOMBROADCAST, ge::HCOMALLGATHER,
                                    ge::HCOMALLREDUCE, ge::HCOMREDUCESCATTER, ge::HCOMREDUCE});
   return hccl_op_types.find(op_type) != hccl_op_types.end();
+}
+
+ge::Status ParseNodeEventMultiplexing(const ge::NodePtr &node,
+    const std::vector<std::string> &raw_event_multiplexing,
+    std::unordered_map<ge::NodePtr, std::vector<std::pair<std::string, uint32_t>>> &node_to_send,
+    std::unordered_map<ge::NodePtr, std::vector<std::pair<std::string, uint32_t>>> &node_to_recv) {
+  GE_CHECK_NOTNULL(node);
+  for (const auto &str : raw_event_multiplexing) {
+    std::vector<std::string> ele = ge::StringUtils::Split(str, kDelim);
+    if (ele.size() != kEventMultiplexingItemCount) {
+      GELOGE(ge::PARAM_INVALID, "[Check][RawMultiplexing]Size error, node:%s, require size:%zu, actually:%zu.",
+             node->GetName().c_str(), kEventMultiplexingItemCount, ele.size());
+      REPORT_INNER_ERROR("E19999", "Raw event multiplexing is invalid, node:%s, require size:%zu, actually:%zu.",
+                         node->GetName().c_str(), kEventMultiplexingItemCount, ele.size());
+      return ge::PARAM_INVALID;
+    }
+    int value;
+    try {
+      value = std::stoi(ele[kEventIdIndex]);
+    } catch (std::invalid_argument &) {
+      GELOGE(ge::PARAM_INVALID, "[Throw][Exception]Event id is invalid, node:%s, raw:%s.",
+             node->GetName().c_str(), ele[kEventIdIndex].c_str());
+      REPORT_INNER_ERROR("E19999", "Event id is invalid, node:%s, raw:%s.",
+                         node->GetName().c_str(), ele[kEventIdIndex].c_str());
+      return ge::PARAM_INVALID;
+    } catch (std::out_of_range &) {
+      GELOGE(ge::PARAM_INVALID, "[Throw][Exception]Event id is out of range, node:%s, raw:%s.",
+             node->GetName().c_str(), ele[kEventIdIndex].c_str());
+      REPORT_INNER_ERROR("E19999", "Event id is out of range, node:%s, raw:%s.",
+                         node->GetName().c_str(), ele[kEventIdIndex].c_str());
+      return ge::PARAM_INVALID;
+    }
+    if (value < 0) {
+      GELOGE(ge::PARAM_INVALID, "[Check][EventId]Event id is out of range, node:%s, raw:%s, value:%d.",
+             node->GetName().c_str(), ele[kEventIdIndex].c_str(), value);
+      REPORT_INNER_ERROR("E19999", "Event id is out of range, node:%s, raw:%s, value:%d.",
+                         node->GetName().c_str(), ele[kEventIdIndex].c_str(), value);
+      return ge::PARAM_INVALID;
+    }
+    if (ele[kKeyWordIndex] == kSend) {
+      node_to_send[node].emplace_back(std::make_pair(ele[kNodeNameIndex], static_cast<uint32_t>(value)));
+    } else if (ele[kKeyWordIndex] == kRecv) {
+      node_to_recv[node].emplace_back(std::make_pair(ele[kNodeNameIndex], static_cast<uint32_t>(value)));
+    } else {
+      GELOGE(ge::PARAM_INVALID, "[Check][KeyWord]Key word is not supported, node:%s, key:%s.",
+             node->GetName().c_str(), ele[kEventIdIndex].c_str());
+      REPORT_INNER_ERROR("E19999", "Key word is not supported, node:%s, key:%s.",
+                         node->GetName().c_str(), ele[kEventIdIndex].c_str());
+      return ge::PARAM_INVALID;
+    }
+  }
+  return ge::SUCCESS;
+}
+
+ge::Status ParseAllNodeEventMultiplexing(const ge::ComputeGraphPtr &graph,
+    std::unordered_map<std::string, ge::NodePtr> &name_to_node_map,
+    std::unordered_map<ge::NodePtr, std::vector<std::pair<std::string, uint32_t>>> &node_to_send,
+    std::unordered_map<ge::NodePtr, std::vector<std::pair<std::string, uint32_t>>> &node_to_recv) {
+  for (const auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+    ge::OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    name_to_node_map.insert({node->GetName(), node});
+    std::vector<std::string> raw_event_multiplexing;
+    if (!(op_desc->HasAttr(ge::ATTR_NAME_EVENT_MULTIPLEXING))) {
+      continue;
+    }
+    bool get_attr = ge::AttrUtils::GetListStr(op_desc, ge::ATTR_NAME_EVENT_MULTIPLEXING, raw_event_multiplexing);
+    if (!get_attr) {
+      GELOGE(ge::PARAM_INVALID, "[Get][Attr]Node:%s.", node->GetName().c_str());
+      REPORT_INNER_ERROR("E19999", "Failed to get raw event multiplexing, node:%s.", node->GetName().c_str());
+      return ge::PARAM_INVALID;
+    }
+    auto parse_ret = ParseNodeEventMultiplexing(node, raw_event_multiplexing, node_to_send, node_to_recv);
+    if (parse_ret != ge::SUCCESS) {
+      GELOGE(parse_ret, "[Parse][Eventmultiplexing]Node:%s.", node->GetName().c_str());
+      REPORT_INNER_ERROR("E19999", "Failed to parse node event multiplexing, node:%s.", node->GetName().c_str());
+      return parse_ret;
+    }
+  }
+  return ge::SUCCESS;
+}
+
+std::vector<uint32_t> GetIntersection(std::vector<uint32_t> &a, std::vector<uint32_t> &b) {
+  std::unordered_set<uint32_t> ele_of_a(a.begin(), a.end());
+  std::vector<uint32_t> res;
+  for (auto &ele : b) {
+    if (ele_of_a.count(ele) > 0) {
+      res.emplace_back(ele);
+    }
+  }
+  return res;
 }
 }  // namespace
 
@@ -147,6 +247,12 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
   status = RefreshContinuousEvents();
   if (status != SUCCESS) {
     GELOGE(status, "RefreshContinuousEvents failed!");
+    return status;
+  }
+
+  status = RefreshEventsWithReuse();
+  if (status != SUCCESS) {
+    GELOGE(status, "[Refresh][Events]RefreshEventsWithReuse failed!");
     return status;
   }
 
@@ -1161,6 +1267,94 @@ Status StreamAllocator::CheckStreamActived() const {
   return SUCCESS;
 }
 
+Status StreamAllocator::ReuseEvent(bool send_to,
+    const std::unordered_map<std::string, ge::NodePtr> &name_to_node_map,
+    const std::unordered_map<ge::NodePtr, std::vector<std::pair<std::string, uint32_t>>> &node_to_event_id) {
+  for (const auto &node_event_id : node_to_event_id) {
+    ge::NodePtr curr_node = node_event_id.first;
+    NodePtr send_node = send_to ? curr_node : nullptr;
+    NodePtr recv_node = send_to ? nullptr : curr_node;
+    for (const auto &event_pair : node_event_id.second) {
+      auto peer_node_iter = name_to_node_map.find(event_pair.first);
+      if (peer_node_iter == name_to_node_map.end()) {
+        GELOGE(PARAM_INVALID, "[Get][Node]Name:%s.", event_pair.first.c_str());
+        REPORT_INNER_ERROR("E19999", "Failed to find node, name:%s.", event_pair.first.c_str());
+        return PARAM_INVALID;
+      }
+      recv_node = send_to ? peer_node_iter->second : recv_node;
+      send_node = send_to ? send_node : peer_node_iter->second;
+      GE_CHECK_NOTNULL(send_node);
+      GE_CHECK_NOTNULL(recv_node);
+      auto event_id = GetIntersection(node_to_send_events_[send_node], node_to_recv_events_[recv_node]);
+      uint32_t new_event = event_pair.second + event_num_;
+      if (event_id.empty()) {
+        GELOGI("[Check][Optimized]Send:%s, recv:%s.", send_node->GetName().c_str(), recv_node->GetName().c_str());
+        continue;
+      } else if (event_id.size() != 1) {
+        GELOGW("[Check][Event]More than one event are found between %s and %s, event num:%zu.",
+               send_node->GetName().c_str(), recv_node->GetName().c_str(), event_id.size());
+      }
+      uint32_t old_event = event_id[0];
+      auto reuse_event_id = [] (vector<uint32_t> &event_list, uint32_t old_event, uint32_t new_event) -> void {
+        event_list.erase(std::remove(event_list.begin(), event_list.end(), old_event), event_list.end());
+        event_list.push_back(new_event);
+        return;
+      };
+      reuse_event_id(node_to_send_events_[send_node], old_event, new_event);
+      reuse_event_id(node_to_recv_events_[recv_node], old_event, new_event);
+      GELOGI("[Reuse][Event]Replace event successfully, send node:%s, recv node:%s, old id:%u, new id:%u.",
+             send_node->GetName().c_str(), recv_node->GetName().c_str(), old_event, new_event);
+    }
+  }
+  return ge::SUCCESS;
+}
+
+// Refresh events to reuse events
+Status StreamAllocator::RefreshEventsWithReuse() {
+  GELOGI("[Refresh][Events]Refresh events with reuse, stream num:%ld, original event num:%u.", stream_num_, event_num_);
+  if (event_num_ <= kEventReuseThreshold) {
+    GELOGI("[Check][ReuseThreshold]Event used num is %u, less than %u, skip reuse.",
+           event_num_, kEventReuseThreshold);
+    return SUCCESS;
+  }
+  std::unordered_map<std::string, NodePtr> name_to_node_map;
+  std::unordered_map<NodePtr, std::vector<std::pair<std::string, uint32_t>>> node_to_send;
+  std::unordered_map<NodePtr, std::vector<std::pair<std::string, uint32_t>>> node_to_recv;
+  Status ret = ParseAllNodeEventMultiplexing(whole_graph_, name_to_node_map, node_to_send, node_to_recv);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Parse][AllNodeEventMultiplexing]Graph:%s.", whole_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to parse all node event multiplexing, graph:%s.",
+                       whole_graph_->GetName().c_str());
+    return ret;
+  }
+  if (node_to_send.empty() && node_to_recv.empty()) {
+    return SUCCESS;
+  }
+
+  ret = ReuseEvent(true, name_to_node_map, node_to_send);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Reuse][Event]Phase:Send, graph:%s.", whole_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to reuse event, phase:Send, graph:%s.", whole_graph_->GetName().c_str());
+    return ret;
+  }
+
+  ret = ReuseEvent(false, name_to_node_map, node_to_recv);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Reuse][Event]Phase:Recv, graph:%s.", whole_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to reuse event, phase:Recv, graph:%s.", whole_graph_->GetName().c_str());
+    return ret;
+  }
+
+  Status status = RefreshContinuousEvents();
+  if (status != SUCCESS) {
+    GELOGE(status, "[Refresh][ContinuousEvents]Graph:%s.", whole_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to refresh continuous events, graph:%s.", whole_graph_->GetName().c_str());
+    return status;
+  }
+  GELOGI("[Refresh][Events]RefreshEventsWithReuse successfully, event num:%u.", event_num_);
+  return SUCCESS;
+}
+
 // Refresh events to continuous events
 Status StreamAllocator::RefreshContinuousEvents() {
   // Establish a mapping relationship from old to new event id
@@ -1168,8 +1362,10 @@ Status StreamAllocator::RefreshContinuousEvents() {
   uint32_t new_event_id = 0;
   for (const auto &one_pair : node_to_send_events_) {
     for (const auto &event_id : one_pair.second) {
-      old_to_new_events[event_id] = new_event_id;
-      new_event_id++;
+      if (old_to_new_events.find(event_id) == old_to_new_events.end()) {
+        old_to_new_events[event_id] = new_event_id;
+        new_event_id++;
+      }
     }
   }
 
@@ -1208,6 +1404,7 @@ Status StreamAllocator::RefreshContinuousEvents() {
 
 // Insert the real send/recv node in the graph
 Status StreamAllocator::InsertSyncEventNodes() {
+  unordered_map<string, uint32_t> sync_event_name;
   for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     // Add the node corresponding to the recv event
     vector<uint32_t> recv_event_id_list;
@@ -1217,6 +1414,13 @@ Status StreamAllocator::InsertSyncEventNodes() {
     GE_CHECK_NOTNULL(node->GetOutControlAnchor());
     for (auto &event_id : recv_event_id_list) {
       string recv_node_name = whole_graph_->GetName() + "_Recv_" + to_string(event_id);
+      auto iter = sync_event_name.find(recv_node_name);
+      if (iter == sync_event_name.end()) {
+          sync_event_name[recv_node_name] = 1;
+      } else {
+          recv_node_name = recv_node_name + "_Reuse_" + to_string(iter->second);
+          ++(iter->second);
+      }
       OpDescPtr op_desc_ptr = MakeShared<OpDesc>(recv_node_name, RECV);
       GE_CHECK_NOTNULL(op_desc_ptr);
 
@@ -1251,6 +1455,13 @@ Status StreamAllocator::InsertSyncEventNodes() {
 
     for (auto &event_id : send_event_id_list) {
       string send_node_name = whole_graph_->GetName() + "_Send_" + to_string(event_id);
+      auto iter = sync_event_name.find(send_node_name);
+      if (iter == sync_event_name.end()) {
+          sync_event_name[send_node_name] = 1;
+      } else {
+        send_node_name = send_node_name + "_Reuse_" + to_string(iter->second);
+          ++(iter->second);
+      }
       OpDescPtr op_desc_ptr = MakeShared<OpDesc>(send_node_name, SEND);
       GE_CHECK_NOTNULL(op_desc_ptr);
 
@@ -1300,12 +1511,16 @@ void StreamAllocator::DumpEvents() {
     GELOGD("After RefreshRealStream: stream %ld.", stream_id);
 
     for (const auto &node : one_pair.second) {
+      if (node == nullptr || node->GetOpDesc() == nullptr) {
+        continue;
+      }
       string send_event_str;
       for (const auto &send_event_id : node_to_send_events_[node]) {
         send_event_str += " " + to_string(send_event_id);
       }
       if (!send_event_str.empty()) {
-        GELOGI("node: %s, send events: %s", node->GetName().c_str(), send_event_str.c_str());
+        GELOGI("node: %s, id: %ld, stream id :%ld, send events: %s.", node->GetName().c_str(),
+               node->GetOpDesc()->GetId(), node->GetOpDesc()->GetStreamId(), send_event_str.c_str());
       }
 
       string recv_event_str;
@@ -1313,7 +1528,8 @@ void StreamAllocator::DumpEvents() {
         recv_event_str += " " + to_string(recv_event_id);
       }
       if (!recv_event_str.empty()) {
-        GELOGI("node: %s, recv events: %s", node->GetName().c_str(), recv_event_str.c_str());
+        GELOGI("node: %s, id: %ld, stream id :%ld, recv events: %s.", node->GetName().c_str(),
+               node->GetOpDesc()->GetId(), node->GetOpDesc()->GetStreamId(), recv_event_str.c_str());
       }
     }
   }

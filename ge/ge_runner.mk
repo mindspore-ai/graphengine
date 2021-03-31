@@ -246,6 +246,7 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/end_of_sequence_add_control_pass.cc \
     graph/passes/memcpy_addr_async_pass.cc \
     graph/passes/set_input_output_offset_pass.cc \
+    graph/passes/buffer_pool_memory_pass.cc \
     graph/preprocess/graph_preprocess.cc \
     graph/preprocess/insert_op/ge_aipp_op.cc \
     graph/preprocess/insert_op/util_insert_aipp_op.cc \

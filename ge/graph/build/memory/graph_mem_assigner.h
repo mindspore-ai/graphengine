@@ -188,6 +188,8 @@ class GraphMemoryAssigner {
 
   void PrintMemoryOffset();
 
+  Status AssignBufferPoolMemory();
+
   MemoryOffsetMap memory_offset_;
   ge::ComputeGraphPtr compute_graph_;
   HybridMemAssignerPtr mem_assigner_;

@@ -276,9 +276,9 @@ TEST_F(UtestGeHybrid, test_parse_parallel_group) {
   op_desc->SetOpKernelLibName("ops_kernel_info_hccl");
   GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
   HybridModel model(root_model);
+  model.root_graph_ = compute_graph;
 
   HybridModelBuilder builder(model);
-  builder.root_graph_ = compute_graph;
   ASSERT_EQ(builder.CollectParallelGroups(node_item.get()), SUCCESS);
 
   ASSERT_EQ(builder.node_to_parallel_groups_.size(), 1);

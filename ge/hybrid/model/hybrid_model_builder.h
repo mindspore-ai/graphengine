@@ -100,7 +100,6 @@ class HybridModelBuilder {
   NodeItem *MutableNodeItem(const NodePtr &node);
 
   GeRootModelPtr ge_root_model_;
-  ComputeGraphPtr root_graph_;
   std::map<std::string, GeModelPtr> subgraph_models_;
   std::map<std::string, NodePtr> constant_op_nodes_;
   std::map<std::string, std::set<NodeItem *>> parallel_group_to_nodes_;

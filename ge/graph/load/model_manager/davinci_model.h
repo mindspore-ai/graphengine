@@ -531,6 +531,7 @@ class DavinciModel {
   void SetKnownNode(bool known_node) { known_node_ = known_node; }
   bool IsKnownNode() { return known_node_; }
   Status MallocKnownArgs();
+  Status CheckCapability(rtFeatureType_t featureType, int32_t featureInfo, bool &is_support) const;
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
   Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, bool update_args = true);

@@ -67,6 +67,7 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
   future_ = std::async(std::launch::async, [&]() -> Status {
     GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     GetContext().SetSessionId(executor_->GetContext()->session_id);
+    GetContext().SetContextId(executor_->GetContext()->context_id);
     return RunInternal();
   });
 
@@ -166,6 +167,7 @@ Status HybridModelAsyncExecutor::RunInternal() {
     } else {
       GELOGI("HybridModel will execute in singleline mode");
       ge::GetContext().SetSessionId(executor_->GetContext()->session_id);
+      ge::GetContext().SetContextId(executor_->GetContext()->context_id);
       ret = executor_->Execute(args);
     }
     ret = HandleResult(ret, current_data.index, args, data_wrapper->GetOutput());

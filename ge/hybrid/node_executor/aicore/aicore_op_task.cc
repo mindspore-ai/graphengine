@@ -307,11 +307,9 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 
   auto execution_context = context.GetExecutionContext();
 
-  GetContext().SetSessionId(execution_context->context_id);
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CalcTilingInfo] Start");
   GE_CHK_STATUS_RET(CalcTilingInfo(node, tiling_info));
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CalcTilingInfo] End");
-  GetContext().SetSessionId(execution_context->session_id);
 
   // update op args by tiling info
   block_dim_ = static_cast<uint32_t>(tiling_info.block_dim);

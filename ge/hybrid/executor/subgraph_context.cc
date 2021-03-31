@@ -50,10 +50,10 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
 Status SubgraphContext::SetInput(int index, const TensorValue &tensor) {
   if (static_cast<size_t>(index) >= all_inputs_.size()) {
     GELOGE(INTERNAL_ERROR,
-        "[Check][Param:index]output index output range. all input num = %zu, input index = %d",
+        "[Check][Param:index]input index out of range. all input num = %zu, input index = %d",
         all_inputs_.size(), index);
-    REPORT_INNER_ERROR("E19999", 
-        "input param index out range when SubgraphContext %s, all input num = %zu, input index = %d.",
+    REPORT_INNER_ERROR("E19999",
+        "input param index out of range when SubgraphContext %s, all input num = %zu, input index = %d.",
         __FUNCTION__, all_inputs_.size(), index);
     return INTERNAL_ERROR;
   }
@@ -70,9 +70,9 @@ Status SubgraphContext::SetOutput(const NodeItem &node_item, int output_index, c
   auto index = node_item.output_start + output_index;
   if ((output_index >= node_item.num_outputs) || (static_cast<size_t>(index) >= all_outputs_.size())) {
     GELOGE(INTERNAL_ERROR,
-        "[Check][Param:output_index]output index output range. all output num = %zu, node_item = %s,"
+        "[Check][Param:output_index]output index out of range. all output num = %zu, node_item = %s,"
         "output index = %d.", all_outputs_.size(), node_item.DebugString().c_str(), output_index);
-    REPORT_INNER_ERROR("E19999", "output index output range when SubgraphContext %s. "
+    REPORT_INNER_ERROR("E19999", "output index out of range when SubgraphContext %s. "
         "all output num = %zu, node_item = %s, output index = %d.",
         __FUNCTION__, all_outputs_.size(), node_item.DebugString().c_str(), output_index);
     return INTERNAL_ERROR;
@@ -129,9 +129,10 @@ Status SubgraphContext::Await(const NodePtr &node) {
 
 void SubgraphContext::OnError(Status error) {
   if (error != END_OF_SEQUENCE) {
-    GELOGE(error, "[Check][Param:error][%s] Error occurred while executing graph.", graph_item_->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "[%s] Error occurred while executing graph when SubgraphContext %s.",
-        graph_item_->GetName().c_str(), __FUNCTION__);
+    GELOGE(error, "[Check][Param:error][%s] Error:%d occurred while executing graph.",
+        graph_item_->GetName().c_str(), error);
+    REPORT_INNER_ERROR("E19999", "[%s] Error:%d occurred while executing graph when SubgraphContext %s.",
+        graph_item_->GetName().c_str(), error, __FUNCTION__);
   }
   node_done_manager_.Destroy();
 }

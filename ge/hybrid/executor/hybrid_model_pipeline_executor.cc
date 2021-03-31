@@ -59,9 +59,9 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     task_queue_.Pop(task_info);
     GELOGD("[Executor: %d] Got task, stage = %d, iteration = %ld", id_, task_info.stage, task_info.iteration);
     if (task_info.iteration >= pipe_config_->iteration_end) {
-      GELOGE(INTERNAL_ERROR, "[Check][Range][Executor: %d] Unexpected iteration: %d.", 
+      GELOGE(INTERNAL_ERROR, "[Check][Range][Executor: %d] Unexpected iteration: %ld.",
           id_, task_info.iteration);
-      REPORT_INNER_ERROR("E19999", "[Executor: %d] Unexpected iteration: %d when StageExecutor %s.", 
+      REPORT_INNER_ERROR("E19999", "[Executor: %d] Unexpected iteration: %ld when StageExecutor %s.",
           id_, task_info.iteration, __FUNCTION__);
       return INTERNAL_ERROR;
     }
@@ -69,16 +69,16 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     if (task_info.event != nullptr) {
       GELOGD("[%d] Add StreamWaitEvent", id_);
       GE_CHK_RT_RET(rtStreamWaitEvent(stream_, task_info.event));
-      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] [Stage = %d] End", task_info.iteration - 1,
+      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] End", task_info.iteration - 1,
                                    task_info.stage);
     }
 
-    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] [Stage = %d] Start", task_info.iteration,
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %lld] [Stage = %d] Start", task_info.iteration,
                                  task_info.stage);
 
     if (task_info.stage == 0) {
       GELOGD("[Executor: %d] To ResetExecutionContext", id_);
-      GE_CHK_STATUS_RET(ResetExecutionContext(context_), 
+      GE_CHK_STATUS_RET(ResetExecutionContext(context_),
           "[Invoke][ResetExecutionContext][Executor: %d] Failed to reset context", id_);
       context_.iteration = task_info.iteration;
       GE_CHK_STATUS_RET_NOLOG(SetInputs(inputs, input_desc));
@@ -96,10 +96,10 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
 
     auto sync_result = Synchronize();
     if (sync_result != SUCCESS) {
-      GELOGE(sync_result, 
-          "[Invoke][Synchronize][Executor: %d] Failed to sync result:%d. iteration = %d", 
+      GELOGE(sync_result,
+          "[Invoke][Synchronize][Executor: %d] Failed to sync result:%d. iteration = %ld",
           id_, sync_result, task_info.iteration);
-      REPORT_CALL_ERROR("E19999", "[Executor: %d] Failed to sync result:%d when StageExecutor %s. iteration = %d", 
+      REPORT_CALL_ERROR("E19999", "[Executor: %d] Failed to sync result:%d when StageExecutor %s. iteration = %ld",
           id_, sync_result, __FUNCTION__, task_info.iteration);
       context_.profiler->Dump(std::cout);
       context_.callback_manager->Destroy();
@@ -107,11 +107,11 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
       return sync_result;
     }
 
-    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] [Stage = %d] End", task_info.iteration, task_info.stage);
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] End", task_info.iteration, task_info.stage);
 
     // if not end stage
     if (task_info.stage >= pipe_config_->num_stages - 1) {
-      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] Schedule End", task_info.iteration);
+      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] Schedule End", task_info.iteration);
       GELOGD("[Executor: %d] End of iteration [%ld]", id_, task_info.iteration);
       context_.callback_manager->Destroy();
       RuntimeInferenceContext::DestroyContext(std::to_string(context_.context_id));
@@ -261,7 +261,7 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
     if (ret != SUCCESS) {
       GELOGE(ret, "[Invoke][Synchronize] failed for [Executor: %zu].", i);
       REPORT_CALL_ERROR("E19999", "[Executor: %zu] failed to Synchronize result when HybridModelPipelineExecutor %s.",
-          i, __FUNCTION__);    
+          i, __FUNCTION__);
       has_error = true;
       continue;
     }

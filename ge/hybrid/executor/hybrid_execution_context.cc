@@ -59,9 +59,8 @@ Status GraphExecutionContext::Synchronize(rtStream_t rt_stream) {
     return SUCCESS;
   }
 
-  GELOGE(RT_FAILED, 
-      "[Invoke][rtStreamSynchronize] failed, ret = %d", rt_ret);
-  REPORT_CALL_ERROR("E19999", 
+  GELOGE(RT_FAILED, "[Invoke][rtStreamSynchronize] failed, ret = %d", rt_ret);
+  REPORT_CALL_ERROR("E19999",
       "invoke rtStreamSynchronize failed when GraphExecutionContext %s, ret = %d", __FUNCTION__, rt_ret);
   return RT_FAILED;
 }

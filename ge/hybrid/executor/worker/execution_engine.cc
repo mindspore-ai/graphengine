@@ -105,7 +105,7 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
           "[Check][Size][%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s.",
           node_item.NodeName().c_str(), output_idx, tensor_size,
           output_tensor->DebugString().c_str());
-      REPORT_INNER_ERROR("E19999", 
+      REPORT_INNER_ERROR("E19999",
           "[%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s when %s.",
           node_item.NodeName().c_str(), output_idx, tensor_size,
           output_tensor->DebugString().c_str(), __FUNCTION__);
@@ -423,7 +423,7 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
             "[Check][Size] for [%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu.",
             task_context.GetNodeName(), i, expected_size, input_tensor->GetSize());
         REPORT_INNER_ERROR("E19999", "[%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu when %s.",
-            task_context.GetNodeName(), i, expected_size, input_tensor->GetSize(), __FUNCTION__);    
+            task_context.GetNodeName(), i, expected_size, input_tensor->GetSize(), __FUNCTION__);
         return INTERNAL_ERROR;
       }
     }

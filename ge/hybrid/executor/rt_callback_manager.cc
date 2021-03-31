@@ -76,7 +76,7 @@ Status CallbackManager::CallbackProcess(rtContext_t context) {
     auto rt_err = rtEventSynchronize(event);
     if (rt_err != RT_ERROR_NONE) {
       GELOGE(RT_FAILED, "[Invoke][rtEventSynchronize] failed. ret = %d", rt_err);
-      REPORT_CALL_ERROR("E19999", 
+      REPORT_CALL_ERROR("E19999",
           "Invoke rtEventSynchronize failed when CallbackManager %s, ret = %d.", __FUNCTION__, rt_err);
       GE_CHK_RT(rtEventDestroy(event));
       return RT_FAILED;

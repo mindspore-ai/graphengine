@@ -49,9 +49,9 @@ void HybridProfiler::RecordEvent(EventType event_type, const char *fmt, ...) {
   va_end(args);
   auto index = counter_++;
   if (index >= static_cast<int>(events_.size())) {
-    GELOGE(INTERNAL_ERROR, 
+    GELOGE(INTERNAL_ERROR,
         "[Check][Range]index out of range. index = %d, max event size = %zu", index, events_.size());
-    REPORT_INNER_ERROR("E19999", "index out of range when HybridProfiler %s. index = %d, max event size = %zu", 
+    REPORT_INNER_ERROR("E19999", "index out of range when HybridProfiler %s. index = %d, max event size = %zu",
         __FUNCTION__, index, events_.size());
     return;
   }

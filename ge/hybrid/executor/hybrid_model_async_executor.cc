@@ -51,10 +51,10 @@ void HybridModelAsyncExecutor::SetModelName(const string &model_name) {
 }
 
 Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> &data) {
-  if(data_inputer_->Push(data) != SUCCESS){
+  if (data_inputer_->Push(data) != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Data queue is full, please call again later when %s, model_id %u.",
         __FUNCTION__, model_id_);
-    GELOGE(domi::DATA_QUEUE_ISFULL, 
+    GELOGE(domi::DATA_QUEUE_ISFULL,
         "[Push][Data] Data queue is full, please call again later, model_id %u ", model_id_);
     return domi::DATA_QUEUE_ISFULL;
   }
@@ -65,9 +65,9 @@ Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> 
 Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &listener) {
   GELOGD("HybridModelExecutor::Start IN, has listener = %d", listener != nullptr);
   std::lock_guard<std::mutex> lk(mu_);
-  if(run_flag_){
-    REPORT_INNER_ERROR("E19999", "Model already started when HybridModelAsyncExecutor %s, model_id:%u.", 
-        __FUNCTION__, model_id_);
+  if (run_flag_) {
+    REPORT_INNER_ERROR("E19999",
+        "Model already started when HybridModelAsyncExecutor %s, model_id:%u.", __FUNCTION__, model_id_);
     GELOGE(INTERNAL_ERROR, "[Check][RunState] Model already started, model_id:%u.", model_id_);
     return INTERNAL_ERROR;
   }
@@ -80,8 +80,8 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
     return RunInternal();
   });
 
-  GE_CHK_BOOL_RET_STATUS(future_.valid(), INTERNAL_ERROR, 
-      "[Check][RunState] Failed to start, model_id:%u.", model_id_);
+  GE_CHK_BOOL_RET_STATUS(future_.valid(), INTERNAL_ERROR,
+                         "[Check][RunState] Failed to start, model_id:%u.", model_id_);
   GELOGD("HybridModelExecutor::Start successfully");
   return SUCCESS;
 }
@@ -115,8 +115,8 @@ Status HybridModelAsyncExecutor::Init() {
 
   executor_ = std::unique_ptr<HybridModelExecutor>(new(std::nothrow) HybridModelExecutor(model_, device_id_, stream_));
   GE_CHECK_NOTNULL(executor_);
-  GE_CHK_STATUS_RET(executor_->Init(), 
-      "[Init][HybridModelExecutor] failed, model_id:%u.", model_id_);
+  GE_CHK_STATUS_RET(executor_->Init(),
+                    "[Init][HybridModelExecutor] failed, model_id:%u.", model_id_);
   GE_CHK_STATUS_RET(DumpOpDebug(), "[Dump][OpDebug] failed, model_id:%u.", model_id_);
 
   GELOGI("HybridModel stage nums:%zu", model_->GetRootGraphItem()->NumGroups());
@@ -124,8 +124,8 @@ Status HybridModelAsyncExecutor::Init() {
     pipe_executor_ =
         std::unique_ptr<HybridModelPipelineExecutor>(new(std::nothrow) HybridModelPipelineExecutor(model_, device_id_));
     GE_CHECK_NOTNULL(pipe_executor_);
-    GE_CHK_STATUS_RET(pipe_executor_->Init(), 
-        "[Init][HybridModelPipelineExecutor] failed, model_id:%u.", model_id_);
+    GE_CHK_STATUS_RET(pipe_executor_->Init(),
+                      "[Init][HybridModelPipelineExecutor] failed, model_id:%u.", model_id_);
   }
 
   GE_CHK_STATUS_RET(InitInputDesc(), "[Init][InputDesc] failed, model_id:%u.", model_id_);
@@ -136,8 +136,8 @@ Status HybridModelAsyncExecutor::Init() {
 Status HybridModelAsyncExecutor::PreRun(InputData &current_data, HybridModelExecutor::ExecuteArgs &args) {
   GE_CHK_STATUS_RET(SyncVarData(), "[Invoke][SyncVarData] failed, model_id:%u.", model_id_);
   RECORD_MODEL_EXECUTION_EVENT(executor_->GetContext(), "[SyncVarData] End");
-  GE_CHK_STATUS_RET(PrepareInputs(current_data, args), 
-      "[Invoke][PrepareInputs] failed to copy input data to model, model_id:%u.", model_id_);
+  GE_CHK_STATUS_RET(PrepareInputs(current_data, args),
+                    "[Invoke][PrepareInputs] failed to copy input data to model, model_id:%u.", model_id_);
   RECORD_MODEL_EXECUTION_EVENT(executor_->GetContext(), "[CopyInputData] End");
   return SUCCESS;
 }
@@ -213,7 +213,7 @@ Status HybridModelAsyncExecutor::HandleResult(Status exec_ret,
 
   if (exec_ret != SUCCESS) {
     GELOGE(exec_ret, "[Check][Param:Status] failed to execute graph. model_id = %u", model_id_);
-    REPORT_INNER_ERROR("E19999", 
+    REPORT_INNER_ERROR("E19999",
         "failed to execute graph when HybridModelAsyncExecutor %s. model_id = %u", __FUNCTION__, model_id_);
     return OnComputeDone(data_id, INTERNAL_ERROR, output_tensor_info_list);
   }
@@ -250,10 +250,10 @@ Status HybridModelAsyncExecutor::SyncVarData() {
 
 Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, HybridModelExecutor::ExecuteArgs &args) {
   if (current_data.blobs.size() < input_tensor_desc_.size()) {
-    GELOGE(PARAM_INVALID, 
+    GELOGE(PARAM_INVALID,
         "[Check][Size]Blob size mismatches, expect at least %zu, but got %zu, model_id = %u",
         input_tensor_desc_.size(), current_data.blobs.size(), model_id_);
-    REPORT_INNER_ERROR("E19999", 
+    REPORT_INNER_ERROR("E19999",
         "Blob size mismatches, expect at least %zu, but got %zu when HybridModelAsyncExecutor %s, model_id = %u.",
         input_tensor_desc_.size(), current_data.blobs.size(), __FUNCTION__, model_id_);
     return PARAM_INVALID;
@@ -267,12 +267,12 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
     auto tensor_size = input_sizes_[input_index];
     if (is_input_dynamic_[input_index]) {
       if (input_index >= current_data.shapes.size()) {
-        GELOGE(PARAM_INVALID, 
+        GELOGE(PARAM_INVALID,
             "[Check][Range]Shape index out of range, index = %zu, shape size = %zu model_id = %u.",
             input_index, current_data.shapes.size(), model_id_);
-        REPORT_INNER_ERROR("E19999", 
+        REPORT_INNER_ERROR("E19999",
             "Shape index out of range, index = %zu, shape size = %zu when HybridModelAsyncExecutor %s, model_id = %u.",
-            input_index, current_data.shapes.size(), __FUNCTION__, model_id_);    
+            input_index, current_data.shapes.size(), __FUNCTION__, model_id_);
         return PARAM_INVALID;
       }
       auto &tensor_desc = input_tensor_desc_[input_index];
@@ -287,12 +287,12 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         }
         // range[k].second can be -1
         if (shape.GetDim(k) < range[k].first || (range[k].second >= 0 && shape.GetDim(k) > range[k].second)) {
-          GELOGE(PARAM_INVALID, 
+          GELOGE(PARAM_INVALID,
               "[Check][Range]Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld], model_id = %u.",
               input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);
-          REPORT_INNER_ERROR("E19999", 
+          REPORT_INNER_ERROR("E19999",
               "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld], model_id = %u.",
-              input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);    
+              input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);
           return PARAM_INVALID;
         }
       }
@@ -318,14 +318,14 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
     const DataBuffer &data_buf = blobs[input_index];
     auto mem_size = static_cast<uint64_t>(tensor_size);
 
-    if(mem_size < data_buf.length){
-      REPORT_INNER_ERROR("E19999", 
+    if (mem_size < data_buf.length) {
+      REPORT_INNER_ERROR("E19999",
           "input data size(%lu) does not match model required size(%lu) when %s, ret failed, model_id = %u.",
           data_buf.length, mem_size, __FUNCTION__, model_id_);
       GELOGE(PARAM_INVALID,
           "[Check][Size]input data size(%lu) does not match model required size(%lu), ret failed, model_id = %u.",
           data_buf.length, mem_size, model_id_);
-      return PARAM_INVALID; 
+      return PARAM_INVALID;
     }
     if (data_buf.length > 0) {
       GELOGI("[IMAS]CopyPlainData memcpy graph_%u type[F] output[%zu] memaddr[%p] mem_size[%zu] datasize[%lu]",
@@ -433,7 +433,7 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
       GELOGE(INTERNAL_ERROR,
           "[Check][Size]output[%zu] tensor size(%zu) is not enough for output shape [%s], model_id = %u.",
           i, output_tensor.GetSize(), tensor_desc->GetShape().ToString().c_str(), model_id_);
-      REPORT_INNER_ERROR("E19999", 
+      REPORT_INNER_ERROR("E19999",
           "output[%zu] tensor size(%zu) is not enough for output shape [%s] model_id = %u,"
           " when HybridModelAsyncExecutor %s.",
           i, output_tensor.GetSize(), tensor_desc->GetShape().ToString().c_str(), model_id_, __FUNCTION__);
@@ -513,14 +513,14 @@ Status HybridModelAsyncExecutor::Execute(const vector<GeTensor> &inputs, vector<
   }
 
   HybridModelExecutor::ExecuteArgs args;
-  GE_CHK_STATUS_RET(PrepareInputs(input_data, args), 
+  GE_CHK_STATUS_RET(PrepareInputs(input_data, args),
       "[Invoke][PrepareInputs]Failed to copy input data to model, model_id = %u", model_id_);
   GELOGD("Done copying input data successfully.");
   GE_CHK_STATUS_RET(executor_->Execute(args), "[Invoke][Execute] Failed, model_id = %u.", model_id_);
 
   std::vector<ge::OutputTensorInfo> output_tensor_info_list;
   OutputData output_data;
-  GE_CHK_STATUS_RET(CopyOutputs(args, &output_data, output_tensor_info_list), 
+  GE_CHK_STATUS_RET(CopyOutputs(args, &output_data, output_tensor_info_list),
       "[Invoke][CopyOutputs]Failed to copy outputs, model_id = %u.", model_id_);
   GELOGD("Done copying output data successfully. output count = %zu", output_tensor_info_list.size());
 
@@ -572,7 +572,7 @@ Status HybridModelAsyncExecutor::DumpOpDebug() {
       loop_cond = const_cast<void *>(varible_loop_cond->GetData());
     }
     data_dumper_.SetLoopAddr(global_step, loop_per_iter, loop_cond);
-    GE_CHK_STATUS_RET(data_dumper_.LoadDumpInfo(), 
+    GE_CHK_STATUS_RET(data_dumper_.LoadDumpInfo(),
         "[Invoke][LoadDumpInfo] failed in hybrid engine, model_id = %u.", model_id_);
     GELOGD("Dump op debug SUCCESS in hybrid engine");
   }

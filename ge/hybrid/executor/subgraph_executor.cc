@@ -44,7 +44,7 @@ Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                               const std::vector<ConstGeTensorDescPtr> &input_desc) {
   subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_, context_));
   GE_CHECK_NOTNULL(subgraph_context_);
-  GE_CHK_STATUS_RET(subgraph_context_->Init(), 
+  GE_CHK_STATUS_RET(subgraph_context_->Init(),
       "[Init][SubgraphContext][%s] Failed to init subgraph context.", graph_item_->GetName().c_str());
 
   shape_inference_engine_.reset(new(std::nothrow) ShapeInferenceEngine(context_, subgraph_context_.get()));
@@ -68,11 +68,12 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
   // Number of inputs of parent node should be greater or equal than that of subgraph
   auto input_nodes = graph_item_->GetInputNodes();
   if (inputs.size() < input_nodes.size()) {
-    GELOGE(INTERNAL_ERROR, 
+    GELOGE(INTERNAL_ERROR,
         "[Check][Size][%s] Number of inputs [%zu] is not sufficient for subgraph which needs [%zu] inputs.",
         graph_item_->GetName().c_str(), inputs.size(), input_nodes.size());
-    REPORT_INNER_ERROR("E19999", 
-        "Number of inputs [%zu] is not sufficient for subgraph which needs [%zu] inputs when SubgraphExecutor %s.",
+    REPORT_INNER_ERROR("E19999",
+        "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs [%zu] inputs,"
+        "check invalid when SubgraphExecutor %s.",
         graph_item_->GetName().c_str(), inputs.size(), input_nodes.size(), __FUNCTION__);
     return INTERNAL_ERROR;
   }
@@ -117,8 +118,9 @@ Status SubgraphExecutor::InitInputsForKnownShape(const std::vector<TensorValue> 
       GELOGE(INTERNAL_ERROR,
           "[Check][Size][%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs",
           graph_item_->GetName().c_str(), inputs.size(), parent_input_index + 1);
-      REPORT_INNER_ERROR("E19999", 
-          "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs when %s.",
+      REPORT_INNER_ERROR("E19999",
+          "[%s] Number of inputs [%zu] is not sufficient for subgraph which needs at lease [%d] inputs,"
+          "check invalid when %s.",
           graph_item_->GetName().c_str(), inputs.size(), parent_input_index + 1, __FUNCTION__);
       return INTERNAL_ERROR;
     }
@@ -387,9 +389,10 @@ Status SubgraphExecutor::GetOutputs(vector<TensorValue> &outputs, std::vector<Co
       "[Invoke][GetOutputDescList][%s] Failed to get output tensor desc.", graph_item_->GetName().c_str());
   if (outputs.size() != output_desc.size()) {
     GELOGE(INTERNAL_ERROR,
-        "[Check][Size]Number of output tensors(%zu) mismatch number of output tensor desc(%zu).",
+        "[Check][Size]Number of outputs(%zu) mismatch number of output_desc(%zu).",
         outputs.size(), output_desc.size());
-    REPORT_INNER_ERROR("E19999", "Number of output tensors(%zu) mismatch number of output tensor desc(%zu) when %s.",
+    REPORT_INNER_ERROR("E19999", "Number of outputs(%zu) mismatch number of output_desc(%zu),"
+        "check invlid when SubgraphExecutor %s.",
         outputs.size(), output_desc.size(), __FUNCTION__);
     return INTERNAL_ERROR;
   }
@@ -413,9 +416,11 @@ Status SubgraphExecutor::SetOutputsToParentNode(TaskContext &task_context) {
       "[Invoke][GetOutputDescList][%s] Failed to get output tensor desc.", graph_item_->GetName().c_str());
 
   if (outputs.size() != output_desc_list.size()) {
-    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] num output tensors = %zu, num output tensor desc = %zu",
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] num of output tensors = %zu, num of output tensor desc = %zu not equal",
         graph_item_->GetName().c_str(), outputs.size(), output_desc_list.size());
-    REPORT_INNER_ERROR("E19999", "[%s] num output tensors = %zu, num output tensor desc = %zu when %s",
+    REPORT_INNER_ERROR("E19999",
+        "%s num of output tensors = %zu, num of output tensor desc = %zu not equal,"
+        "check invalid when SubgraphExecutor %s",
         graph_item_->GetName().c_str(), outputs.size(), output_desc_list.size(), __FUNCTION__);
     return INTERNAL_ERROR;
   }

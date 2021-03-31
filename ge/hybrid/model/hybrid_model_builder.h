@@ -47,8 +47,8 @@ class HybridModelBuilder {
   static Status HandleDtString(const GeTensor &tensor, void *var_addr);
   static Status MergeInputNodes(ComputeGraph &compute_graph);
   static Status MergeNetOutputNode(ComputeGraph &compute_graph);
-  static Status UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGraphPtr &merged_graph);
-  static Status UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph &parent_graph, ComputeGraph &sub_graph);
+  static Status UnfoldSubgraphs(ComputeGraphPtr &root_graph, ComputeGraphPtr &merged_graph);
+  static Status UnfoldSubgraph(ComputeGraphPtr &root_graph, ComputeGraphPtr &parent_graph, ComputeGraph &sub_graph);
   static Status BuildInputMapping(GraphItem &graph_item,
                                   std::vector<NodeItem *> &data_nodes,
                                   bool is_root_graph);
@@ -100,7 +100,6 @@ class HybridModelBuilder {
   NodeItem *MutableNodeItem(const NodePtr &node);
 
   GeRootModelPtr ge_root_model_;
-  ComputeGraphPtr root_graph_;
   std::map<std::string, GeModelPtr> subgraph_models_;
   std::map<std::string, NodePtr> constant_op_nodes_;
   std::map<std::string, std::set<NodeItem *>> parallel_group_to_nodes_;

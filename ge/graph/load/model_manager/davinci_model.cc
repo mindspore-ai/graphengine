@@ -3068,6 +3068,14 @@ Status DavinciModel::InitTaskInfo(domi::ModelTaskDef &model_task_def) {
   return SUCCESS;
 }
 
+Status DavinciModel::CheckCapability(rtFeatureType_t featureType, int32_t featureInfo, bool &is_support) const {
+  int64_t value = RT_CAPABILITY_SUPPORT;
+  auto rt_ret = rtGetRtCapability(featureType, featureInfo, &value);
+  GE_CHK_BOOL_RET_STATUS(rt_ret == RT_ERROR_NONE, FAILED, "call rtGetRtCapability failed!");
+  is_support = (value == RT_CAPABILITY_SUPPORT) ? true : false;
+  return SUCCESS;
+}
+
 Status DavinciModel::MallocKnownArgs() {
   GELOGI("DavinciModel::MallocKnownArgs in");
   const auto &model_task_def = ge_model_->GetModelTaskDefPtr();
@@ -3087,9 +3095,12 @@ Status DavinciModel::MallocKnownArgs() {
     }
   }
   rtError_t rt_ret;
+  bool is_support = false;
+  GE_CHK_STATUS_RET_NOLOG(CheckCapability(FEATURE_TYPE_MEMORY, MEMORY_INFO_TS_4G_LIMITED, is_support));
+  auto mem_type = is_support ? RT_MEMORY_TS_4G : RT_MEMORY_HBM;
   // malloc args memory
   if (total_args_size_ != 0) {
-    rt_ret = rtMalloc(&args_, total_args_size_, RT_MEMORY_HBM);
+    rt_ret = rtMalloc(&args_, total_args_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
                         total_args_size_, rt_ret, __FUNCTION__);
@@ -3099,7 +3110,7 @@ Status DavinciModel::MallocKnownArgs() {
   }
   // malloc dynamic and static hybrid memory
   if (total_hybrid_args_size_ != 0) {
-    rt_ret = rtMalloc(&hybrid_addrs_, total_hybrid_args_size_, RT_MEMORY_HBM);
+    rt_ret = rtMalloc(&hybrid_addrs_, total_hybrid_args_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
                         total_hybrid_args_size_, rt_ret, __FUNCTION__);
@@ -3110,7 +3121,7 @@ Status DavinciModel::MallocKnownArgs() {
   // malloc fixed addr memory, eg: rts op
   if (total_fixed_addr_size_ != 0) {
     GELOGI("Begin to allocate fixed addr.");
-    rt_ret = rtMalloc(&fixed_addrs_, total_fixed_addr_size_, RT_MEMORY_HBM);
+    rt_ret = rtMalloc(&fixed_addrs_, total_fixed_addr_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
                         total_hybrid_args_size_, rt_ret, __FUNCTION__);

@@ -119,7 +119,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
 }
 
 Status KnownNodeTask::InitDavinciModel(const HybridModel &model) {
-  GELOGD("[Init][Model] start");
+  GELOGD("[Init][DavinciModel] start");
   davinci_model_->InitRuntimeParams();
   GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed");
   int32_t device_id = 0;

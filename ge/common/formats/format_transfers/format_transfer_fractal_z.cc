@@ -193,10 +193,10 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld "
              "when trans format from %s to %s",
              dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	     TypeUtils::FormatToSerialString(args.dst_format).c_str());
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
       REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-	                dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-			TypeUtils::FormatToSerialString(args.dst_format).c_str());    
+                        dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
 
   for (int64_t vfi = 0; vfi < vf_cnt; vfi++) {
@@ -241,7 +241,7 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
           }
           if (ret != EOK) {
             GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,"[Operate][DSTMemory]Failed at offset %ld, error-code %d pad mode %d",
-		   offset, ret, need_pad_zero);
+                   offset, ret, need_pad_zero);
             REPORT_CALL_ERROR("E19999","Failed to operate dst memory at offset %ld, error-code %d pad mode %d",
                               offset, ret, need_pad_zero);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
@@ -265,10 +265,9 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   int64_t cout_ori = n_dim / groups;
   if (cin_ori == 0 || cout_ori == 0) {
     GELOGE(GRAPH_FAILED, "[Check][Param]Failed, cin_ori, cout_ori must not be equal 0, and current cin_ori, "
-           "cout_ori, groups are %ld %ld %ld",
-           cin_ori, cout_ori, groups);
+           "cout_ori, groups are %ld %ld %ld", cin_ori, cout_ori, groups);
     REPORT_CALL_ERROR("E19999", "Check graph param failed, cin_ori, cout_ori must not be equal 0,"
-		       "and current cin_ori, cout_ori, groups are %ld %ld %ld", cin_ori, cout_ori, groups);
+                      "and current cin_ori, cout_ori, groups are %ld %ld %ld", cin_ori, cout_ori, groups);
     return GRAPH_FAILED;
   }
   const int64_t cube_k = GetCubeSizeByDataType(args.src_data_type);
@@ -291,11 +290,11 @@ Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result,
   if (dst == nullptr) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld "
              "when trans format from %s to %s",
-	     size_output_data, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	     TypeUtils::FormatToSerialString(args.dst_format).c_str());
+             size_output_data, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
       REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-		        size_output_data, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-			TypeUtils::FormatToSerialString(args.dst_format).c_str());    
+                        size_output_data, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   ret = memset_s(dst.get(), static_cast<size_t>(size_output_data), 0, static_cast<size_t>(size_output_data));
@@ -367,10 +366,10 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld "
              "when trans format from %s to %s",
              dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	     TypeUtils::FormatToSerialString(args.dst_format).c_str());
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
       REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-	                dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-			TypeUtils::FormatToSerialString(args.dst_format).c_str());
+                        dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
@@ -448,10 +447,10 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld "
              "when trans format from %s to %s",
              dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	     TypeUtils::FormatToSerialString(args.dst_format).c_str());
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
       REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-	                dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-			TypeUtils::FormatToSerialString(args.dst_format).c_str());    
+                        dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {

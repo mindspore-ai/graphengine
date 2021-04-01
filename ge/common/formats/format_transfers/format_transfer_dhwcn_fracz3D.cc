@@ -1,4 +1,4 @@
-/**`
+/**
  * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -97,10 +97,10 @@ Status TransFormatDhwckToFz3D(const TransArgs &args, TransResult &result) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld "
            "when trans format from %s to %s",
            dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-	   TypeUtils::FormatToSerialString(args.dst_format).c_str());
+           TypeUtils::FormatToSerialString(args.dst_format).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-		      dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
-		      TypeUtils::FormatToSerialString(args.dst_format).c_str());    
+                      dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -127,9 +127,9 @@ Status TransFormatDhwckToFz3D(const TransArgs &args, TransResult &result) {
               }
               if (ret != EOK) {
                 GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed at offset %ld, "
-		       "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
-		REPORT_CALL_ERROR("E19999", "Failed to operate dst memory at offset %ld, "
-				  "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+                       "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+                REPORT_CALL_ERROR("E19999", "Failed to operate dst memory at offset %ld, "
+                                  "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
                 return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
               }
             }

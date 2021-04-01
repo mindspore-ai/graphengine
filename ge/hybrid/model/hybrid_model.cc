@@ -357,5 +357,12 @@ TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
 
   return GetVariable(node->GetName());
 }
+
+void *HybridModel::GetGlobalStep() const {
+  if (global_step_ == nullptr) {
+    return nullptr;
+  }
+  return global_step_->GetData();
+}
 }  // namespace hybrid
 }  // namespace ge

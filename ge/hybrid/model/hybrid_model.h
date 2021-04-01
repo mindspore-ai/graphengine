@@ -45,6 +45,8 @@ class HybridModel {
     return root_runtime_param_.session_id;
   }
 
+  void *GetGlobalStep() const;
+
   GeModelPtr GetGeModel(const NodePtr &node) const;
 
   NodeItem *MutableNodeItem(const NodePtr &node);
@@ -158,6 +160,7 @@ class HybridModel {
   std::map<string, std::unique_ptr<TensorBuffer>> weight_buffer_map_;
   RuntimeParam root_runtime_param_;
   string om_name_;
+  std::unique_ptr<TensorBuffer> global_step_;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -22,6 +22,7 @@
 #define protected public
 #define private public
 #include "hybrid/node_executor/compiledsubgraph/known_node_executor.h"
+#include "common/dump/dump_manager.h"
 #undef private
 #undef protected
 #include "graph/manager/graph_mem_allocator.h"
@@ -56,7 +57,11 @@ TEST_F(UnknownNodeExecutorTest, test_init_davinci_model) {
   AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 1024);
   davinci_model->Assign(ge_model);
 
+  HybridModel model(nullptr);
   KnownNodeTaskMock mock(davinci_model);
+  DumpProperties dump_properties;
+  dump_properties.enable_dump_ = "1";
+  DumpManager::GetInstance().AddDumpProperties(model.GetSessionId(), dump_properties);
   EXPECT_CALL(mock, DoInitDavinciModel).WillOnce(::testing::Return(SUCCESS));
-  ASSERT_EQ(mock.InitDavinciModel(), SUCCESS);
+  ASSERT_EQ(mock.InitDavinciModel(model), SUCCESS);
 }

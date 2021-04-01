@@ -109,7 +109,15 @@ Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph, std::vecto
     if (op_desc->HasAttr(ATTR_ATC_USER_DEFINE_OUTPUT_NODES)) {
       is_user_define_ouput_nodes = true;
     }
-    output_nodes_info.push_back({ele.first, ele.second, -1});
+    int parent_index = -1;
+    auto output_desc = op_desc->MutableOutputDesc(ele.second);
+    if (output_desc == nullptr) {
+      GELOGE(FAILED, "[Get][OutputDesc]Can not find output tensor desc from node:%s, index %d",
+             op_desc->GetName().c_str(), ele.second);
+      return FAILED;
+    }
+    (void)ge::AttrUtils::GetInt(output_desc, ge::ATTR_NAME_PARENT_NODE_INDEX, parent_index);
+    output_nodes_info.push_back({ele.first, ele.second, parent_index});
   }
   GELOGI("Output node set by user or leaf node, size:%zu.", output_nodes_info.size());
   for (auto &ele : out_nodes_tmp) {

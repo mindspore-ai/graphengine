@@ -95,10 +95,14 @@ Status TransFormatDhwncToFz3DTranspose(const TransArgs &args, TransResult &resul
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-           dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld "
+	   "when trans format from %s to %s",
+           dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+	   TypeUtils::FormatToSerialString(args.dst_format).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld when trans format from %s to %s",
-		      dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),TypeUtils::FormatToSerialString(args.dst_format).c_str());    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+		      dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+		      TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
   for (int64_t di = 0; di < d; di++) {
@@ -123,9 +127,10 @@ Status TransFormatDhwncToFz3DTranspose(const TransArgs &args, TransResult &resul
                                args.data + src_idx * data_size, static_cast<size_t>(data_size));
               }
               if (ret != EOK) {
-                GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed at offset %ld, error-code %d, pad mode %d",
-                       dst_offset, ret, pad_zero);
-		REPORT_CALL_ERROR("E19999", "Failed to operate dst memory at offset %ld, error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+                GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed at offset %ld, "
+		       "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+		REPORT_CALL_ERROR("E19999", "Failed to operate dst memory at offset %ld, "
+				  "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
                 return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
               }
             }

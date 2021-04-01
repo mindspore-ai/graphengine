@@ -156,7 +156,8 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
   if (dst == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
            "[Allocate][DSTMemory]Failed, memory for dst buf %zu, data size %zu", total_size, args.src_data_size);
-    REPORT_CALL_ERROR("E19999", "Failed to allocate memory for dst buf %zu, data size %zu", total_size, args.src_data_size);
+    REPORT_CALL_ERROR("E19999", "Failed to allocate memory for dst buf %zu, data size %zu",
+		      total_size, args.src_data_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 

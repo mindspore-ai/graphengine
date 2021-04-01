@@ -78,10 +78,12 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
            "[Allocate][DSTMemory]Failed to allcoate memory for dst buf %ld, shape %s when trans format from %s to %s",
            total_size, ShapeToString(args.dst_shape).c_str(),
-	   TypeUtils::FormatToSerialString(args.src_format).c_str(),TypeUtils::FormatToSerialString(args.dst_format).c_str());
+	   TypeUtils::FormatToSerialString(args.src_format).c_str(),
+	   TypeUtils::FormatToSerialString(args.dst_format).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld, shape %s when trans format from %s to %s",
                       total_size, ShapeToString(args.dst_shape).c_str(),
-                      TypeUtils::FormatToSerialString(args.src_format).c_str(),TypeUtils::FormatToSerialString(args.dst_format).c_str());
+		      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+		      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -126,7 +128,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
                    c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
 	    REPORT_CALL_ERROR("E19999", "Failed to copy data from C1HWNCoC0[%ld, %ld, %ld, %ld, %ld, %ld] offset %ld to "
 			       "HWCN[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
-			       c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
+			       c1_idx, h_idx, w_idx, n_idx, co_idx, c0_idx, src_offset,
+			       h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -163,10 +166,12 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
          ShapeToString(args.dst_shape).c_str(), total_size);
   ret = GetDstDataAfterTrans(args, result, size, total_size);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Get][Data]Failed when after trans, src shape %s, data type %s, dst shape %s, memory size %ld, error_code %u",
+    GELOGE(ret, "[Get][Data]Failed when after trans, src shape %s, data type %s, dst shape %s, "
+           "memory size %ld, error_code %u",
            ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
            ShapeToString(args.dst_shape).c_str(), total_size, ret);
-    REPORT_CALL_ERROR("E19999", "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld, error_code %u",
+    REPORT_CALL_ERROR("E19999", "Failed to get data after trans, src shape %s, data type %s, "
+		      "dst shape %s, memory size %ld, error_code %u",
 	              ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
 	              ShapeToString(args.dst_shape).c_str(), total_size, ret);
     return ret;

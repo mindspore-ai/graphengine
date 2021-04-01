@@ -674,7 +674,8 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     GE_IF_BOOL_EXEC(cust_aicpu_kernel == nullptr, continue);
     if (aicpu_name_set.count(cust_aicpu_kernel->GetName()) > 0) {
       REPORT_INNER_ERROR("E19999", "aicpu_kernel name %s can't be the same, judge for op:%s(%s), when %s",
-                         cust_aicpu_kernel->GetName().c_str(), n->GetName().c_str(), n->GetType().c_str(), __FUNCTION__);
+                         cust_aicpu_kernel->GetName().c_str(), n->GetName().c_str(), n->GetType().c_str(),
+                         __FUNCTION__);
       GELOGE(FAILED, "aicpu_kernel name %s can't be the same", cust_aicpu_kernel->GetName().c_str());
       return FAILED;
     }

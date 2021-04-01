@@ -1482,7 +1482,8 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   rtLabel_t rt_label = nullptr;
   rtError_t rt_error = rtLabelCreateExV2(&rt_label, rt_model_handle_, stream);
   if (rt_error != RT_ERROR_NONE || rt_label == nullptr) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelCreateExV2 failed, ret: 0x%X when DavinciModel %s", rt_error, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelCreateExV2 failed, ret: 0x%X when DavinciModel %s",
+                      rt_error, __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "InitLabelSet: %s create label failed, error=0x%x.", op_desc->GetName().c_str(), rt_error);
     return INTERNAL_ERROR;
   }

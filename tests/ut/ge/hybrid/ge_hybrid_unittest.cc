@@ -425,3 +425,44 @@ TEST_F(UtestGeHybrid, TestTaskContext) {
   ASSERT_EQ(task_context->GetInputDesc(1, new_desc), SUCCESS);
   ASSERT_EQ(new_desc.GetShape().GetDims(), new_shape.GetDims());
 }
+
+TEST_F(UtestGeHybrid, hybrid_model_executor_check_shape) {
+  HybridModelExecutor::ExecuteArgs args;
+  GeTensorDescPtr ge_tensor = make_shared<GeTensorDesc>(GeTensorDesc());
+  vector<int64_t> dim = {2 , 3};
+  ge_tensor->SetShape(GeShape(dim));
+  args.input_desc.push_back(ge_tensor);
+
+  // create node
+  ge::ComputeGraphPtr graph = std::make_shared<ComputeGraph>("God");
+  OpDescPtr op_desc = std::make_shared<OpDesc>("data", DATA);
+  GeTensorDesc tensor_desc(GeShape({2, 3}));
+  std::vector<std::pair<int64_t, int64_t>> shape_range({std::pair<int64_t, int64_t>(1, 3),
+                                                       std::pair<int64_t, int64_t>(2, 4)});
+  tensor_desc.SetShapeRange(shape_range);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
+
+  NodePtr node = graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> new_node;
+  NodeItem::Create(node, new_node);
+
+  GraphItem graph_item;
+  graph_item.input_nodes_.emplace_back(new_node.get());
+
+  Status ret = HybridModelExecutor::CheckInputShapeByShapeRange(&graph_item, args);
+  ASSERT_EQ(ret, ge::SUCCESS);
+
+  HybridModelExecutor::ExecuteArgs args1;
+  ret = HybridModelExecutor::CheckInputShapeByShapeRange(&graph_item, args1);
+  ASSERT_EQ(ret, ge::INTERNAL_ERROR);
+
+  HybridModelExecutor::ExecuteArgs args2;
+  GeTensorDescPtr ge_tensor2 = make_shared<GeTensorDesc>(GeTensorDesc());
+  vector<int64_t> dim2 = {-1 , 3};
+  ge_tensor2->SetShape(GeShape(dim2));
+  args2.input_desc.push_back(ge_tensor2);
+
+  ret = HybridModelExecutor::CheckInputShapeByShapeRange(&graph_item, args1);
+  ASSERT_EQ(ret, ge::INTERNAL_ERROR);
+}

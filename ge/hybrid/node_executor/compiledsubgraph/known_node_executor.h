@@ -42,7 +42,6 @@ class KnownNodeTask : public NodeTask {
   virtual Status DoInitDavinciModel();
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
-  bool load_flag_ = false;
 };
 
 class KnownNodeExecutor : public NodeExecutor {

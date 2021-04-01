@@ -36,13 +36,12 @@ class KnownNodeTask : public NodeTask {
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
   Status Init(TaskContext &context) override;
-  Status InitDavinciModel();
+  Status InitDavinciModel(const HybridModel &model, TensorBuffer *weight_buffer);
 
  protected:
-  virtual Status DoInitDavinciModel();
+  virtual Status DoInitDavinciModel(void *weight, size_t weight_size);
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
-  bool load_flag_ = false;
 };
 
 class KnownNodeExecutor : public NodeExecutor {

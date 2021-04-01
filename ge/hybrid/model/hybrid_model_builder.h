@@ -91,6 +91,8 @@ class HybridModelBuilder {
   Status GenerateBpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateEndProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateArProfilingTask(const OpDescPtr &op_desc, int64_t log_id, vector<domi::TaskDef> &task_def_list);
+  Status OptimizeDependenciesForConstantInputs();
+  Status Convert2HostTensor(const NodePtr &node, int node_id, uint32_t output_idx);
 
   const char* GetGraphName() const {
     return hybrid_model_.model_name_.c_str();
@@ -111,6 +113,12 @@ class HybridModelBuilder {
 
   RuntimeParam &runtime_param_;
   VarManager *var_manager_ = nullptr;
+
+  // map<known_node_item, map<output_idx, constant_node>>
+  std::map<NodeItem *, std::map<uint32_t, NodePtr>> known_subgraph_constant_output_refs_;
+
+  // map<dst_node_item, vector<output_idx, src_node_item>>
+  std::map<NodeItem *, std::vector<std::pair<uint32_t, NodeItem *>>> host_input_value_dependencies_;
 };
 }  // namespace hybrid
 }  // namespace ge

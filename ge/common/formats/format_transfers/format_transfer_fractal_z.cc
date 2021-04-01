@@ -494,8 +494,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
               }
             }
             if (ret != EOK) {
-              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed at offset %ld, "
-                     "error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed at offset %ld,"
+                     " error-code %d, pad mode %d", dst_offset, ret, pad_zero);
               REPORT_CALL_ERROR("E19999", "Failed to operate dst memory at offset %ld, "
                                 "error-code %d, pad mode %d",
                                 dst_offset, ret, pad_zero);

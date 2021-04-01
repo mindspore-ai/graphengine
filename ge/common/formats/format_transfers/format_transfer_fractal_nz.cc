@@ -315,7 +315,7 @@ Status FormatTransferFractalNz::TransFormat(const TransArgs &args, TransResult &
            ShapeToString(args.dst_shape).c_str(),
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     REPORT_INNER_ERROR("E19999", "Check datatype failed, trans format from %s to %s, src shape %s, "
-                       "dst shape %s, data type %s is not supported", 
+                       "dst shape %s, data type %s is not supported",
                        TypeUtils::FormatToSerialString(args.src_format).c_str(),
                        TypeUtils::FormatToSerialString(args.dst_format).c_str(),
                        ShapeToString(args.src_shape).c_str(),

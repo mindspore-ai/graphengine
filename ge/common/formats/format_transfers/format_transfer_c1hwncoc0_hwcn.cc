@@ -164,7 +164,8 @@ Status FormatTransferC1hwncoc0Hwcn::TransFormat(const TransArgs &args, TransResu
     }
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Get][Shape]Failed, total size %ld from dst shape %s, "
            "src shape %s.",
-           total_size, ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+           total_size, ShapeToString(args.dst_shape).c_str(),
+           ShapeToString(args.src_shape).c_str());
     REPORT_CALL_ERROR("E19999", "Get shape faield, total size %ld from dst shape %s, src shape %s.",
                       total_size, ShapeToString(args.dst_shape).c_str(),
                       ShapeToString(args.src_shape).c_str());

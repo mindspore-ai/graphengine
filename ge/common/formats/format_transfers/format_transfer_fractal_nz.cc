@@ -147,14 +147,14 @@ Status TransFormatFromNdToFracNz(const TransArgs &args, TransResult &result, con
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size](), std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to trans format "
-           "from %s to %s, memory for dst buf %ld",
-           TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
-    REPORT_CALL_ERROR("E19999", "Failed to trans format from %s to %s and "
-                      "allocate memory for dst buf %ld",
-                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                      TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allocate memory "
+           "for dst buf %ld when trans format from %s to %s",
+           dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to allocate memory for dst buf %ld "
+                      "trans format from %s to %s",
+                      dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -332,7 +332,7 @@ Status FormatTransferFractalNz::TransFormat(const TransArgs &args, TransResult &
            ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(),
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
-    REPORT_INNER_ERROR("E19999",  "Check shape failed, trans format from %s to %s, "
+    REPORT_INNER_ERROR("E19999", "Check shape failed, trans format from %s to %s, "
                        "src shape %s, dst shape %s, data type %s is not supported",
                        TypeUtils::FormatToSerialString(args.src_format).c_str(),
                        TypeUtils::FormatToSerialString(args.dst_format).c_str(),
@@ -383,7 +383,7 @@ Status FormatTransferFractalNz::TransShape(Format src_format, const ShapeVector 
            TypeUtils::FormatToSerialString(dst_format).c_str(),
            ShapeToString(src_shape).c_str(),
            TypeUtils::DataTypeToSerialString(data_type).c_str());
-    REPORT_INNER_ERROR("E19999",  "Check shape failed, trans format from %s to %s, src shape %s, "
+    REPORT_INNER_ERROR("E19999", "Check shape failed, trans format from %s to %s, src shape %s, "
                        "data type %s is not supported",
                        TypeUtils::FormatToSerialString(src_format).c_str(),
                        TypeUtils::FormatToSerialString(dst_format).c_str(),
@@ -424,7 +424,7 @@ Status FormatTransferFractalNzND::TransFormat(const TransArgs &args, TransResult
            ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(),
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
-    REPORT_INNER_ERROR("E19999",  "Check shape failed, trans format from %s to %s, src shape %s, "
+    REPORT_INNER_ERROR("E19999", "Check shape failed, trans format from %s to %s, src shape %s, "
                        "dst shape %s, data type %s is not supported",
                        TypeUtils::FormatToSerialString(args.src_format).c_str(),
                        TypeUtils::FormatToSerialString(args.dst_format).c_str(),

@@ -1568,6 +1568,10 @@ Status HybridModelBuilder::InitModelMem() {
   }
 
   runtime_param_.var_base = hybrid_model_.var_mem_base_;
+  auto allocator = NpuMemoryAllocator::GetAllocator();
+  GE_CHECK_NOTNULL(allocator);
+  hybrid_model_.global_step_ = TensorBuffer::Create(allocator, sizeof(int64_t));
+  GE_CHECK_NOTNULL(hybrid_model_.global_step_);
   return SUCCESS;
 }
 

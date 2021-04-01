@@ -18,6 +18,7 @@
 #include "cce/aicpu_engine_struct.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
+#include "common/dump/dump_manager.h"
 #include "common/ge/ge_util.h"
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
@@ -110,15 +111,6 @@ Status KnownNodeTask::Init(TaskContext &context) {
     GELOGI("KnownNodeTask::Init mem base is %p, size %lu.",
            davinci_model_->GetRuntimeParam().mem_base, davinci_model_->GetRuntimeParam().mem_size);
   }
-  if (!load_flag_) {
-    auto dump_properties = context.GetDumpProperties();
-    if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
-      davinci_model_->SetDumpProperties(dump_properties);
-      void *global_step = context.GetExecutionContext()->global_step;
-      davinci_model_->SetKnownShapeGlobalStep(global_step);
-    }
-    load_flag_ = true;
-  }
   GE_CHK_STATUS_RET(ModelManager::GetInstance()->DestroyAicpuKernel(davinci_model_->GetSessionId(),
                                                                     davinci_model_->Id(), davinci_model_->SubModelId()),
                     "KnownNodeTask::Init destroy aicpu kernel failed.");
@@ -126,13 +118,21 @@ Status KnownNodeTask::Init(TaskContext &context) {
   return SUCCESS;
 }
 
-Status KnownNodeTask::InitDavinciModel() {
+Status KnownNodeTask::InitDavinciModel(const HybridModel &model) {
   GELOGD("[Init][Model] start");
   davinci_model_->InitRuntimeParams();
   GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed");
   int32_t device_id = 0;
   GE_CHK_RT_RET(rtGetDevice(&device_id));
   davinci_model_->SetDeviceId(static_cast<uint32_t>(device_id));
+
+  auto dump_properties = DumpManager::GetInstance().GetDumpProperties(model.GetSessionId());
+  if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
+    davinci_model_->SetDumpProperties(dump_properties);
+    void *global_step = model.GetGlobalStep();
+    davinci_model_->SetKnownShapeGlobalStep(global_step);
+  }
+
   GE_CHK_STATUS_RET(DoInitDavinciModel(), "[Init][Model] Failed to init davinci model.");
   GELOGD("[Init][Model] success");
   return SUCCESS;
@@ -180,7 +180,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
 
   auto known_node_task = MakeShared<KnownNodeTask>(davinci_model);
   GE_CHECK_NOTNULL(known_node_task);
-  GE_CHK_STATUS_RET_NOLOG(known_node_task->InitDavinciModel());
+  GE_CHK_STATUS_RET_NOLOG(known_node_task->InitDavinciModel(model));
   GELOGI("[%s] KnownNodeExecutor::LoadTask success.", node->GetName().c_str());
   task = std::move(known_node_task);
   return SUCCESS;

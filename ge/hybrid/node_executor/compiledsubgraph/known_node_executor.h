@@ -36,7 +36,7 @@ class KnownNodeTask : public NodeTask {
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
   Status Init(TaskContext &context) override;
-  Status InitDavinciModel();
+  Status InitDavinciModel(const HybridModel &model);
 
  protected:
   virtual Status DoInitDavinciModel();

@@ -1662,7 +1662,8 @@ Status BlockMemAssigner::AssignOutputMemoryWithReuse(const NodePtr &node, vector
                   for (auto iter = stream_workspace_blocks_.begin(); iter != stream_workspace_blocks_.end();
                        ++iter) { ReleaseMemorys(iter->second[stream_id], reusable_blocks_[iter->first][stream_id]);
                                  iter->second[stream_id].clear();});
-  if (IsContinuousOutput(node)) {
+  bool need_apply_continuous_memory = IsContinuousOutput(node) && (!is_buffer_pool_mem_supported);
+  if (need_apply_continuous_memory) {
     return ApplyContinuousMemory(node, ranges, is_op_reuse_mem_);
   }
   for (uint32_t i = 0; i < static_cast<uint32_t>(op_desc->GetOutputsSize()); i++) {

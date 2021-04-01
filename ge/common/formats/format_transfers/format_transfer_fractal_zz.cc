@@ -197,7 +197,8 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
-            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
+                   "Failed to operate the dst memory at offset %ld, error-code %d", dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }

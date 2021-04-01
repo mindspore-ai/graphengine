@@ -166,8 +166,8 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
           string node_full_name = peer_node->GetName();
           size_t pos = node_full_name.find(kMbatchNodeNameMark);
           if (pos == string::npos) {
-            GELOGE(FAILED, "find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
-            return FAILED;
+            GELOGI("Can not find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
+            continue;
           }
 
           string fixed_name = node_full_name.substr(0, pos);

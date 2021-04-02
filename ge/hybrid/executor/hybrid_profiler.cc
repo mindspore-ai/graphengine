@@ -40,7 +40,8 @@ void HybridProfiler::RecordEvent(EventType event_type, const char *fmt, ...) {
 
   char buf[kEventDescMax];
   if (vsnprintf_s(buf, kEventDescMax, kEventDescMax - 1, fmt, args) == -1) {
-    GELOGE(FAILED, "Format %s failed.", fmt);
+    GELOGE(FAILED, "[Parse][Param:fmt]Format %s failed.", fmt);
+    REPORT_CALL_ERROR("E19999", "Parse Format %s failed when HybridProfiler %s.", fmt, __FUNCTION__);
     va_end(args);
     return;
   }
@@ -48,7 +49,10 @@ void HybridProfiler::RecordEvent(EventType event_type, const char *fmt, ...) {
   va_end(args);
   auto index = counter_++;
   if (index >= static_cast<int>(events_.size())) {
-    GELOGE(INTERNAL_ERROR, "index out of range. index = %d, max event size = %zu", index, events_.size());
+    GELOGE(INTERNAL_ERROR,
+        "[Check][Range]index out of range. index = %d, max event size = %zu", index, events_.size());
+    REPORT_INNER_ERROR("E19999", "index out of range when HybridProfiler %s. index = %d, max event size = %zu",
+        __FUNCTION__, index, events_.size());
     return;
   }
   auto &evt = events_[index];

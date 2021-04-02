@@ -72,7 +72,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   if (ret == END_OF_SEQUENCE) {
     args.is_eos = true;
   } else {
-    GE_CHK_STATUS_RET(ret, "Failed to execute model");
+    GE_CHK_STATUS_RET(ret, "[Invoke][ExecuteGraphInternal] Failed, ret:%d.", ret);
   }
   return SUCCESS;
 }

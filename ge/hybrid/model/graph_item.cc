@@ -95,7 +95,8 @@ Status GraphItem::GroupNodes() {
     int group = node->group;
     if (group != last_group) {
       if (seen_groups.find(group) != seen_groups.end()) {
-        GELOGE(INTERNAL_ERROR, "Unordered node group found. node = %s, group = %d", node->NodeName().c_str(), group);
+        GELOGE(INTERNAL_ERROR,
+            "[Find][Group]Unordered node group found. node = %s, group = %d", node->NodeName().c_str(), group);
         return INTERNAL_ERROR;
       } else {
         last_group = group;

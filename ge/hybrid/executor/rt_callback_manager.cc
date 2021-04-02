@@ -27,7 +27,8 @@ Status CallbackManager::RegisterCallback(rtStream_t stream, rtCallback_t callbac
   GE_CHK_RT_RET(rtEventCreate(&event));
   auto rt_ret = rtEventRecord(event, stream);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "Failed to invoke rtEventRecord, error code = %d", rt_ret);
+    GELOGE(RT_FAILED, "[Invoke][rtEventRecord] failed, error code = %d", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Invoke rtEventRecord failed when %s, error code = %d", __FUNCTION__, rt_ret);
     (void) rtEventDestroy(event);
     return RT_FAILED;
   }
@@ -50,7 +51,8 @@ Status CallbackManager::Init() {
     return CallbackProcess(context);
   }, ctx);
   if (!ret_future_.valid()) {
-    GELOGE(INTERNAL_ERROR, "Failed to init callback manager.");
+    GELOGE(INTERNAL_ERROR, "[Check][ShareState]Failed to init callback manager.");
+    REPORT_INNER_ERROR("E19999", "Failed to init callback manager.");
     return INTERNAL_ERROR;
   }
 
@@ -73,7 +75,9 @@ Status CallbackManager::CallbackProcess(rtContext_t context) {
 
     auto rt_err = rtEventSynchronize(event);
     if (rt_err != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtEventSynchronize failed. ret = %d", rt_err);
+      GELOGE(RT_FAILED, "[Invoke][rtEventSynchronize] failed. ret = %d", rt_err);
+      REPORT_CALL_ERROR("E19999",
+          "Invoke rtEventSynchronize failed when CallbackManager %s, ret = %d.", __FUNCTION__, rt_err);
       GE_CHK_RT(rtEventDestroy(event));
       return RT_FAILED;
     }

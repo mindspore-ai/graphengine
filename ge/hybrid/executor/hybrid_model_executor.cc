@@ -155,6 +155,16 @@ Status HybridModelExecutor::ResetExecutionContext(GraphExecutionContext &context
   string ctx_id = std::to_string(context.context_id);
   RuntimeInferenceContext::DestroyContext(ctx_id);
   GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::CreateContext(ctx_id), "Failed to Destroy RuntimeInferenceContext");
+  RuntimeInferenceContext *ctx = nullptr;
+  GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(ctx_id, &ctx), "Failed to get context");
+  for (auto &host_tensor : context.model->GetHostTensors()) {
+    auto node_id = host_tensor.first;
+    for (const auto &output_idx_and_tensor : host_tensor.second) {
+      auto output_idx = output_idx_and_tensor.first;
+      GELOGD("Preload const host tensor, node_id = %ld, output id = %d", node_id, output_idx);
+      ctx->SetTensor(node_id, output_idx, output_idx_and_tensor.second.Clone());
+    }
+  }
   return SUCCESS;
 }
 

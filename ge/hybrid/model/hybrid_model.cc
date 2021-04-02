@@ -358,6 +358,10 @@ TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
   return GetVariable(node->GetName());
 }
 
+const map<int64_t, std::vector<std::pair<int, Tensor>>> &HybridModel::GetHostTensors() const {
+  return host_tensors_;
+}
+
 void *HybridModel::GetGlobalStep() const {
   if (global_step_ == nullptr) {
     return nullptr;

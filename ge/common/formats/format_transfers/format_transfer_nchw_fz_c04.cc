@@ -183,7 +183,7 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
     if (ret != EOK) {
       GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Set][Memcpy]Failed, block %zu, stride %zu, "
              "protect_size %ld， error_code %d", block, stride, protectSize, ret);
-      REPROT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, stride %zu, "
+      REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, stride %zu, "
                         "protect_size %ld， error_code %d", block, stride, protectSize, ret);
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
@@ -247,7 +247,7 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
   auto t2 = n_o * c_o;
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(t1, t2),
                   GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Shape]Failed, "
-                  "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
+                         "int64 mul overflow.A[%ld], B[%ld]", t1, t2);
                   REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%ld]",
                                     t1, t2);
                   return ACL_ERROR_GE_INTERNAL_ERROR);
@@ -298,7 +298,7 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
       if (ret != EOK) {
         GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Set][Memcpy]Failed, block %zu, "
                "protect_size %ld， error_code %d", block, protectSize, ret);
-        REPROT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, protect_size %ld，"
+        REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, protect_size %ld，"
                           "error_code %d", block, protectSize, ret);
         return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
       }

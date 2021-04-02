@@ -45,9 +45,9 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
   auto src_shape_size = GetItemNumByShape(args.src_shape);
   if (args.data == nullptr && src_shape_size != 0) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Shape]Failed, input data is null, src_shape %s",
-           TypeUtilsToSerialString(args.src_shap).c_str());
-    REPROT_CALL-ERROR("E19999","Failed to chech shape, input data is null, src_shape %s",
-                      TypeUtilsToSerialString(args.src_shap).c_str());
+           TypeUtils::DataTypeToSerialString(args.src_shape).c_str());
+    REPORT_CALL_ERROR("E19999","Failed to chech shape, input data is null, src_shape %s",
+                      TypeUtils::DataTypeToSerialString(args.src_shape).c_str());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 

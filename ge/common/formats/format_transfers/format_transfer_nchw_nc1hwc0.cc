@@ -33,9 +33,9 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   int64_t c0 = GetCubeSizeByDataType(data_type);
   if (c0 <= 0) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][Cube]Failed, the data type %s is invalid",
-           TypsUtils::DataTypeToSerialString(data_type).c_str());
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to get cube size, the data type %s is invalid",
-                      TypsUtils::DataTypeToSerialString(data_type).c_str());
+                      TypeUtils::DataTypeToSerialString(data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {

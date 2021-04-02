@@ -144,7 +144,7 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
                   GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Shape]Failed, "
-                  "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
+                  "int64 mul overflow.A[%ld], B[%ld]", total_ele_cnt, size);
                   REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%ld]",
                   total_ele_cnt, size);
                   return ACL_ERROR_GE_INTERNAL_ERROR);
@@ -256,7 +256,7 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
   int size = GetSizeByDataType(args.src_data_type);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
                   GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Shape]Failed, "
-                         "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
+                         "int64 mul overflow.A[%ld], B[%ld]", total_ele_cnt, size);
                   REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%ld]",
                                     total_ele_cnt, size);
                   return ACL_ERROR_GE_INTERNAL_ERROR);

@@ -466,3 +466,77 @@ TEST_F(UtestGeHybrid, hybrid_model_executor_check_shape) {
   ret = HybridModelExecutor::CheckInputShapeByShapeRange(&graph_item, args1);
   ASSERT_EQ(ret, ge::INTERNAL_ERROR);
 }
+
+TEST_F(UtestGeHybrid, TestOptimizeDependenciesForConstInputs) {
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test");
+  GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
+  HybridModel model(root_model);
+  model.root_graph_ = compute_graph;
+  HybridModelBuilder builder(model);
+
+  GeShape shape({2, 16});
+  GeTensorDesc tensor_desc(shape);
+  std::unique_ptr<NodeItem> const_node_item;
+  {
+    OpDescPtr const_op_desc = CreateOpDesc("Constant", "Const");
+    const_op_desc->AddOutputDesc(tensor_desc);
+    auto const_node = compute_graph->AddNode(const_op_desc);
+    NodeItem::Create(const_node, const_node_item);
+  }
+
+  std::unique_ptr<NodeItem> non_const_node_item;
+  {
+    OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+    op_desc->AddOutputDesc(tensor_desc);
+    auto const_node = compute_graph->AddNode(op_desc);
+    NodeItem::Create(const_node, non_const_node_item);
+  }
+
+  std::unique_ptr<NodeItem> known_node_item;
+  {
+    OpDescPtr known_op_desc = CreateOpDesc("known", "PartitionedCall");
+    known_op_desc->AddOutputDesc(tensor_desc);
+    known_op_desc->AddOutputDesc(tensor_desc);
+    auto known_node = compute_graph->AddNode(known_op_desc);
+    NodeItem::Create(known_node, known_node_item);
+  }
+
+  std::unique_ptr<NodeItem> dst_node_item;
+  {
+    OpDescPtr known_op_desc = CreateOpDesc("SomeOp", "SomeOpType ");
+    known_op_desc->AddOutputDesc(tensor_desc);
+    known_op_desc->AddOutputDesc(tensor_desc);
+    auto known_node = compute_graph->AddNode(known_op_desc);
+    NodeItem::Create(known_node, dst_node_item);
+  }
+
+  float buffer[2 * 16];
+  unique_ptr<TensorValue> tensor_value(new TensorValue(buffer, sizeof(buffer)));
+  model.constant_tensors_[const_node_item->node] = std::move(tensor_value);
+
+  // Case 1. connect to Const
+  auto output_id = 1;
+  builder.host_input_value_dependencies_[dst_node_item.get()].emplace_back(output_id, const_node_item.get());
+  builder.host_input_value_dependencies_[dst_node_item.get()].emplace_back(0, non_const_node_item.get());
+  dst_node_item->dependents_for_shape_inference.emplace_back(const_node_item->node);
+  dst_node_item->dependents_for_shape_inference.emplace_back(non_const_node_item->node);
+
+  ASSERT_EQ(builder.OptimizeDependenciesForConstantInputs(), SUCCESS);
+  ASSERT_EQ(dst_node_item->dependents_for_shape_inference.size(), 1);
+  ASSERT_EQ(dst_node_item->dependents_for_shape_inference[0], non_const_node_item->node);
+
+  // Case 2. connect to known-subgraph, netoutput connect to Const
+  builder.host_input_value_dependencies_.clear();
+  dst_node_item->dependents_for_shape_inference.clear();
+
+  builder.known_subgraph_constant_output_refs_[known_node_item.get()].emplace(output_id, const_node_item->node);
+  builder.host_input_value_dependencies_[dst_node_item.get()].emplace_back(output_id, known_node_item.get());
+  builder.host_input_value_dependencies_[dst_node_item.get()].emplace_back(0, non_const_node_item.get());
+
+  dst_node_item->dependents_for_shape_inference.emplace_back(known_node_item->node);
+  dst_node_item->dependents_for_shape_inference.emplace_back(non_const_node_item->node);
+
+  ASSERT_EQ(builder.OptimizeDependenciesForConstantInputs(), SUCCESS);
+  ASSERT_EQ(dst_node_item->dependents_for_shape_inference.size(), 1);
+  ASSERT_EQ(dst_node_item->dependents_for_shape_inference[0], non_const_node_item->node);
+}

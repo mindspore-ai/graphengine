@@ -93,6 +93,8 @@ class HybridModel {
 
   TensorValue* GetTensor(const NodePtr &node) const;
 
+  const std::map<int64_t, std::vector<std::pair<int, Tensor>>> &GetHostTensors() const;
+
   const std::vector<domi::TaskDef>* GetTaskDefs(const NodePtr &node) const;
 
   const GraphItem *GetRootGraphItem() const;
@@ -148,6 +150,7 @@ class HybridModel {
   std::unique_ptr<GraphItem> root_graph_item_;
   std::map<std::string, std::unique_ptr<GraphItem>> subgraph_items_;
   std::map<NodePtr, std::unique_ptr<NodeItem>> node_items_;
+  std::map<int64_t, std::vector<std::pair<int, Tensor>>> host_tensors_;
 
   bool is_new_model_desc_ = false;    // support aipp
   bool is_single_op_ = false;

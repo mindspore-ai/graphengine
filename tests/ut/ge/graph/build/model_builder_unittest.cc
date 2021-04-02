@@ -144,3 +144,20 @@ TEST_F(UtestModelBuilderTest, SetInputIsConst) {
   ge::ModelBuilder builder(0, graph, subgraphs, stream_max_parallel_num, false);
   EXPECT_EQ(builder.PreBuildModel(), SUCCESS);
 }
+
+TEST_F(UtestModelBuilderTest, test_save_atomic_bin) {
+  Graph2SubGraphInfoList subgraphs;
+  std::map<std::string, int> stream_max_parallel_num;
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  ge::ModelBuilder builder(0, graph, subgraphs, stream_max_parallel_num, false);
+
+  auto atomic_op_desc = make_shared<OpDesc>("Atomic", "Atomic");
+  auto kernel_buffer = static_cast<GeAttrValue::BYTES>(Buffer(10));
+  AttrUtils::SetStr(atomic_op_desc, ATTR_NAME_TBE_KERNEL_NAME, "Atomic");
+  AttrUtils::SetBytes(atomic_op_desc, ATTR_NAME_TBE_KERNEL_BUFFER, kernel_buffer);
+
+  ge::NodePtr atomic_node = graph->AddNode(atomic_op_desc);
+  auto op_desc = make_shared<OpDesc>("Sum", "Sum");
+  op_desc->SetExtAttr("atomic_clean_node_ptr", atomic_node);
+  EXPECT_EQ(builder.SaveAtomicTBEKernel(op_desc), SUCCESS);
+}

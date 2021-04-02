@@ -61,7 +61,7 @@ void HybridDavinciModel::SetModelId(uint32_t model_id) {
 void HybridDavinciModel::SetDeviceId(uint32_t device_id) {
 }
 
-void HybridDavinciModel::SetModelName(const string &model_name) {
+void HybridDavinciModel::SetOmName(const string &om_name) {
 }
 
 uint64_t HybridDavinciModel::GetSessionId() {

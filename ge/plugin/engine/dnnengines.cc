@@ -52,7 +52,7 @@ Status VectorCoreDNNEngine::Initialize(const std::map<std::string, std::string> 
 Status VectorCoreDNNEngine::Finalize() { return SUCCESS; }
 
 void VectorCoreDNNEngine::GetAttributes(DNNEngineAttribute &attrs) const { attrs = engine_attribute_; }
-#ifndef ONLY_COMPILE_OPEN_SRC
+
 AICpuDNNEngine::AICpuDNNEngine(const std::string &engine_name) {
   engine_attribute_.engine_name = engine_name;
   engine_attribute_.compute_cost = COST_2;
@@ -60,15 +60,7 @@ AICpuDNNEngine::AICpuDNNEngine(const std::string &engine_name) {
   engine_attribute_.engine_input_format = FORMAT_RESERVED;
   engine_attribute_.engine_output_format = FORMAT_RESERVED;
 }
-#else
-AICpuDNNEngine::AICpuDNNEngine(const std::string &engine_name) {
-  engine_attribute_.engine_name = engine_name;
-  engine_attribute_.compute_cost = COST_3;
-  engine_attribute_.runtime_type = DEVICE;
-  engine_attribute_.engine_input_format = FORMAT_RESERVED;
-  engine_attribute_.engine_output_format = FORMAT_RESERVED;
-}
-#endif
+
 AICpuDNNEngine::AICpuDNNEngine(const DNNEngineAttribute &attrs) {  engine_attribute_ = attrs; }
 
 Status AICpuDNNEngine::Initialize(const std::map<std::string, std::string> &options) { return SUCCESS; }
@@ -76,7 +68,7 @@ Status AICpuDNNEngine::Initialize(const std::map<std::string, std::string> &opti
 Status AICpuDNNEngine::Finalize() { return SUCCESS; }
 
 void AICpuDNNEngine::GetAttributes(DNNEngineAttribute &attrs) const { attrs = engine_attribute_; }
-#ifndef ONLY_COMPILE_OPEN_SRC
+
 AICpuTFDNNEngine::AICpuTFDNNEngine(const std::string &engine_name) {
   engine_attribute_.engine_name = engine_name;
   engine_attribute_.compute_cost = COST_3;
@@ -84,15 +76,7 @@ AICpuTFDNNEngine::AICpuTFDNNEngine(const std::string &engine_name) {
   engine_attribute_.engine_input_format = FORMAT_RESERVED;
   engine_attribute_.engine_output_format = FORMAT_RESERVED;
 }
-#else
-AICpuTFDNNEngine::AICpuTFDNNEngine(const std::string &engine_name) {
-  engine_attribute_.engine_name = engine_name;
-  engine_attribute_.compute_cost = COST_2;
-  engine_attribute_.runtime_type = DEVICE;
-  engine_attribute_.engine_input_format = FORMAT_RESERVED;
-  engine_attribute_.engine_output_format = FORMAT_RESERVED;
-}
-#endif
+
 AICpuTFDNNEngine::AICpuTFDNNEngine(const DNNEngineAttribute &attrs) {  engine_attribute_ = attrs; }
 
 Status AICpuTFDNNEngine::Initialize(const std::map<std::string, std::string> &options) { return SUCCESS; }

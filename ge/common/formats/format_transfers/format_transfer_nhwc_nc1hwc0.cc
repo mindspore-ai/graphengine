@@ -35,9 +35,9 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   int64_t c0 = GetCubeSizeByDataType(data_type);
   if (c0 <= 0) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][Cube]Failed, the data type %s is invalid",
-           TypeUtilsToSerialString(data_type).c_str());
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to get cube size, the data type %s is invalid",
-                      TypeUtilsToSerialString(data_type).c_str());
+                      TypeUtils::DataTypeToSerialString(data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   dst_shape.clear();
@@ -161,7 +161,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                        "NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld err-code %d",
                        n_idx, h_idx, w_idx, c_idx, src_offset,
                        n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
-		REPROT_CALL_ERROR("E19999", "Failed to copy data from NHWC[%ld, %ld, %ld, %ld] offset %ld to "
+		REPORT_CALL_ERROR("E19999", "Failed to copy data from NHWC[%ld, %ld, %ld, %ld] offset %ld to "
                                   "NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld err-code %d",
                                   n_idx, h_idx, w_idx, c_idx, src_offset,
                                   n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
@@ -241,7 +241,7 @@ Status FormatTransferNhwcNc1hwc0::TransShape(Format src_format, const std::vecto
       GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, src shape %s",
              ShapeToString(src_shape).c_str());
       REPORT_CALL_ERROR("E19999", "Failed to check src shape %s",
-                        ShapeToString(args.src_shape).c_str());
+                        ShapeToString(src_shape).c_str());
       return ACL_ERROR_GE_SHAPE_INVALID;
     }
     return TransShapeNhwcToNc1hwc0(src_shape, data_type, dst_shape);

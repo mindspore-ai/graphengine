@@ -45,7 +45,7 @@ Status TransShapeHwcnToC1hwncoc0(const DataType &data_type, const std::vector<in
   if (!CheckShapeValid(dst_shape, kC1hwncoc0DimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
            ShapeToString(dst_shape).c_str());
-    REPROT_CALL_ERROR("E19999", "Failed to check dst shape %s",
+    REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s",
                       ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }

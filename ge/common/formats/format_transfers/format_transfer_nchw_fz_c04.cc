@@ -95,8 +95,12 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   std::vector<int64_t> expect_shape = {n, h, w, c};
   auto ret = ge::formats::Transpose(data, args.src_shape, args.src_data_type, perm_arg_1, trans_result_1);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Trans][Formats]Failed from NCHW to HWCN, error_code %zu", ret);
-    REPORT_CALL_ERROR("E19999", "Failede to trans formats from NCHW to HWCN, error_code %zu", ret);
+    GELOGE(ret, "[Trans][Formats]Failed from NCHW to HWCN, src_shape %s, src_data_type %s",
+           ShapeToString(args.src_shape).c_str(),
+           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+    REPORT_CALL_ERROR("E19999", "Failede to trans formats from NCHW to HWCN, src_shape %s, src_data_type %s",
+                      ShapeToString(args.src_shape).c_str(),
+                      TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ret;
   }
 

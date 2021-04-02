@@ -95,8 +95,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   std::vector<int64_t> expect_shape = {n, h, w, c};
   auto ret = ge::formats::Transpose(data, args.src_shape, args.src_data_type, perm_arg_1, trans_result_1);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Trans][Formats]Failed from NCHW to HWCN, error_code %u", ret);
-    REPORT_CALL_ERROR("E19999", "Failede to trans formats from NCHW to HWCN, error_code %u", ret);
+    GELOGE(ret, "[Trans][Formats]Failed from NCHW to HWCN, error_code %zu", ret);
+    REPORT_CALL_ERROR("E19999", "Failede to trans formats from NCHW to HWCN, error_code %zu", ret);
     return ret;
   }
 
@@ -144,8 +144,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   int64_t total_ele_cnt = n_o * c_o * h_o * w_o;
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
                   GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Shape]Failed, "
-                  "int64 mul overflow.A[%ld], B[%ld]", total_ele_cnt, size);
-                  REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%ld]",
+                  "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
+                  REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%d]",
                   total_ele_cnt, size);
                   return ACL_ERROR_GE_INTERNAL_ERROR);
   int64_t dst_size = total_ele_cnt * size;
@@ -168,8 +168,8 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   auto retMem = memset_s(dst.get(), dst_size, 0, dst_size);
   if (retMem != EOK) {
     GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Set][Memory]Failed, dst buf %ld, error_code %d",
-           dst_size, ret);
-    REPORT_CALL_ERROR("E19999", "Set memory failed, dst buf %ld, error_code %d", dst_size, ret);
+           dst_size, retMem);
+    REPORT_CALL_ERROR("E19999", "Set memory failed, dst buf %ld, error_code %d", dst_size, retMem);
     return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
   // copy data
@@ -256,8 +256,8 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
   int size = GetSizeByDataType(args.src_data_type);
   GE_IF_BOOL_EXEC(!CheckInt64MulOverflow(total_ele_cnt, size),
                   GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Shape]Failed, "
-                         "int64 mul overflow.A[%ld], B[%ld]", total_ele_cnt, size);
-                  REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%ld]",
+                         "int64 mul overflow.A[%ld], B[%d]", total_ele_cnt, size);
+                  REPORT_CALL_ERROR("E19999", "Check shape failed, int64 mul overflow.A[%ld], B[%d]",
                                     total_ele_cnt, size);
                   return ACL_ERROR_GE_INTERNAL_ERROR);
 

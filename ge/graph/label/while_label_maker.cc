@@ -143,7 +143,7 @@ Status WhileOpLabelMaker::Run(uint32_t &label_index) {
   if (GraphUtils::AddEdge(in_anchor->GetPeerOutAnchor(), switch_node->GetInDataAnchor(kCondOutputIndex)) != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add ctrl edge from %s to %s in graph:%s fail when %s",
                       in_anchor->GetPeerOutAnchor()->GetOwnerNode()->GetName().c_str(),
-                      switch_node->GetName().c_str(), cond_graph  ->GetName().c_str(), __FUNCTION__);
+                      switch_node->GetName().c_str(), cond_graph->GetName().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Node: %s Add pred data input failed.", switch_node->GetName().c_str());
     return FAILED;
   }

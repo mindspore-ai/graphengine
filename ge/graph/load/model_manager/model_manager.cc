@@ -159,7 +159,8 @@ Status ModelManager::KernelLaunchEx(aicpu::FWKAdapter::FWKOperateType op_type, u
   }
   rt_ret = rtStreamSynchronize(stream);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtStreamSynchronize failed, ret: 0x%X when ModelManager %s", rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtStreamSynchronize failed, ret: 0x%X when ModelManager %s",
+                      rt_ret, __FUNCTION__);
     GELOGE(RT_FAILED, "rtStreamSynchronize failed. ret: 0x%X", rt_ret);
     GE_IF_BOOL_EXEC(aicpu_kernel_addr != nullptr, GE_CHK_RT(rtFree(aicpu_kernel_addr)));
     GE_CHK_RT(rtFree(devicebase));
@@ -1325,7 +1326,8 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
   if (rt_error != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, ret = 0x%X, when ModelManager %s", rt_error, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, ret = 0x%X, when ModelManager %s",
+                      rt_error, __FUNCTION__);
     GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_error));
     return RT_FAILED;
   }
@@ -1361,7 +1363,8 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
   if (rt_error != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, ret = 0x%X, when ModelManager %s", rt_error, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, ret = 0x%X, when ModelManager %s",
+                      rt_error, __FUNCTION__);
     GELOGE(RT_FAILED, "get current context failed, runtime result is %d", static_cast<int>(rt_error));
     return RT_FAILED;
   }

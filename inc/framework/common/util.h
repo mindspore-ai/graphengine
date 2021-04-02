@@ -116,6 +116,8 @@
 #define GE_CHECK_NOTNULL(val)                                                     \
   do {                                                                            \
     if (val == nullptr) {                                                         \
+      REPORT_INNER_ERROR("E19999", "Param:%s is nullptr, check invalid when %s",  \
+                         #val, __FUNCTION__);                                     \
       DOMI_LOGE("[Check][Param:%s]null is invalid when %s.", #val, __FUNCTION__); \
       return ge::PARAM_INVALID;                                                   \
     }                                                                             \

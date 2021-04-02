@@ -30,10 +30,12 @@ namespace ge {
 Status AssertPass::Run(NodePtr &node) {
   GELOGD("AssertPass running");
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid when AssertPass %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "param [node] must not be null.");
     return PARAM_INVALID;
   }
   if (node->GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid when AssertPass %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "param [node] [opDesc] must not be null.");
     return PARAM_INVALID;
   }
@@ -93,6 +95,8 @@ Status AssertPass::RemoveUnusedNode(std::vector<NodePtr> &nodes_unused) {
     }
 
     if (IsolateAndDeleteNode(node, assert_io_map) != SUCCESS) {
+      REPORT_INNER_ERROR("E19999", "Isolate and delete node:%s(%s) faild when AssertPass %s",
+                         node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
       return FAILED;
     }
   }

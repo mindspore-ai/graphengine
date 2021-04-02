@@ -84,6 +84,7 @@ Status SubGraphInfo::FreeInOutBuffer() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(*iter);
       if (rt_ret != RT_ERROR_NONE) {
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail when SubGraphInfo %s", __FUNCTION__);
         GELOGE(rt_ret, "[GraphManager] subgraph free buffer failed, modelId = %u", model_id_info_.model_id);
         buffer_addr_.erase(buffer_addr_.begin(), iter);
         return GE_GRAPH_FREE_FAILED;
@@ -119,6 +120,7 @@ Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, ui
 
 uint32_t GraphModelListener::GetResultCode() const {
   if (!is_finished_) {
+    REPORT_CALL_ERROR("E19999", "Model not run finish, fail for %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "[GraphManager] model not run finish.");
     return INTERNAL_ERROR;
   }

@@ -75,6 +75,10 @@ Status CondPass::Run(NodePtr &node) {
       case DT_INT32:
         break;
       default:
+        REPORT_INNER_ERROR("E19999",
+                           "data_type:%d of index:%d input tensor in op:%s(%s) check invalid when CondPass %s",
+                           cond_tensor.GetDataType(), cond_in_anchor->GetIdx(),
+                           op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
         GELOGE(FAILED, "UpdateInputDesc for node %s failed.", op_desc->GetName().c_str());
         return FAILED;
     }
@@ -85,6 +89,8 @@ Status CondPass::Run(NodePtr &node) {
   cond_tensor.SetShape(GeShape());
   cond_tensor.SetOriginShape(GeShape());
   if (op_desc->UpdateInputDesc(cond_in_anchor->GetIdx(), cond_tensor) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update input desc of op:%s(%s) failed, index:%d, when CondPass %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), cond_in_anchor->GetIdx(), __FUNCTION__);
     GELOGE(FAILED, "UpdateInputDesc for node %s failed.", op_desc->GetName().c_str());
     return FAILED;
   }
@@ -158,6 +164,9 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
   std::map<std::string, uint32_t> subgraph_names_to_index = op_desc->GetSubgraphNameIndexes();
   auto iter = subgraph_names_to_index.find(ATTR_NAME_WHILE_COND);
   if (iter == subgraph_names_to_index.end()) {
+    REPORT_INNER_ERROR("E19999", "subgraph name:%s not exist in SubgraphNameIndexes map of op:%s(%s), "
+                       "check invalid when CondPass %s", ATTR_NAME_WHILE_COND.c_str(),
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Get cond_graph index failed, while_node:%s.", node->GetName().c_str());
     return FAILED;
   }
@@ -170,6 +179,8 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
   // cond_graph has and only has one output
   uint32_t output_num = net_output_node->GetAllInDataAnchorsSize();
   if (output_num != 1) {
+    REPORT_INNER_ERROR("E19999", "Input data anchor num:%u of op:%s(%s) not equal to 1, check invalid when CondPass %s",
+                       output_num, op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "output size of cond_graph is invalid, expect 1 but %u exactly, while_node:%s.",
            output_num, node->GetName().c_str());
     return FAILED;
@@ -233,6 +244,12 @@ Status CondPass::HandleScalarCond(const ComputeGraphPtr &graph, const OutDataAnc
   }
 
   if (GraphUtils::InsertNodeAfter(peer_out_anchor, { cond_in_anchor }, cast_node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Insert Cast node %s(%s) between %s(%s)->%s(%s) failed, when CondPass %s",
+                      cast_node->GetName().c_str(), cast_node->GetType().c_str(),
+                      peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                      peer_out_anchor->GetOwnerNode()->GetType().c_str(),
+                      cond_in_anchor->GetOwnerNode()->GetName().c_str(),
+                      cond_in_anchor->GetOwnerNode()->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Insert Cast node %s between %s->%s failed.",
            cast_node->GetName().c_str(), peer_out_anchor->GetOwnerNode()->GetName().c_str(),
            cond_in_anchor->GetOwnerNode()->GetName().c_str());
@@ -268,17 +285,27 @@ Status CondPass::InsertNode(const ComputeGraphPtr &graph, const OutDataAnchorPtr
   OpDescBuilder op_desc_builder(in_data_anchor->GetOwnerNode()->GetName() + "_" + type, type);
   OpDescPtr op_desc = op_desc_builder.AddInput("x", in_tensor).AddOutput("y", out_tensor).Build();
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Create op_desc:%s(%s) failed, when CondPass %s",
+                      (in_data_anchor->GetOwnerNode()->GetName() + "_" + type).c_str(), type.c_str(), __FUNCTION__);
     GELOGE(FAILED, "Create op_desc failed.");
     return FAILED;
   }
   NodePtr new_node = graph->AddNode(op_desc);
   if (new_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed when CondPass %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Create %s node failed.", type.c_str());
     return FAILED;
   }
   AddRePassNode(new_node);
 
   if (GraphUtils::InsertNodeAfter(peer_out_anchor, { in_data_anchor }, new_node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Insert node %s(%s) between %s(%s)->%s(%s) failed, when CondPass %s",
+                      new_node->GetName().c_str(), new_node->GetType().c_str(),
+                      peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                      peer_out_anchor->GetOwnerNode()->GetType().c_str(),
+                      in_data_anchor->GetOwnerNode()->GetName().c_str(),
+                      in_data_anchor->GetOwnerNode()->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Insert %s node %s between %s->%s failed.", type.c_str(),
            new_node->GetName().c_str(), peer_out_anchor->GetOwnerNode()->GetName().c_str(),
            in_data_anchor->GetOwnerNode()->GetName().c_str());
@@ -310,6 +337,8 @@ NodePtr CondPass::AddCastNode(const ComputeGraphPtr &graph, const std::string &n
   OpDescBuilder op_desc_builder(name, CAST);
   OpDescPtr cast_desc = op_desc_builder.AddInput("x", in_tensor).AddOutput("y", out_tensor).Build();
   if (cast_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Create op_desc:%s(%s) failed, when CondPass %s",
+                      name.c_str(), CAST, __FUNCTION__);
     GELOGE(FAILED, "Create cast op_desc failed, name: %s.", name.c_str());
     return nullptr;
   }
@@ -317,12 +346,19 @@ NodePtr CondPass::AddCastNode(const ComputeGraphPtr &graph, const std::string &n
         AttrUtils::SetInt(cast_desc, CAST_ATTR_DSTT, dst) &&
         AttrUtils::SetInt(cast_desc, CAST_ATTR_DST_TYPE, dst) &&
         AttrUtils::SetBool(cast_desc, CAST_ATTR_TRUNCATE, false))) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s,%s,%s,%s to node:%s(%s) not all success, when CondPass %s",
+                      CAST_ATTR_SRCT.c_str(), CAST_ATTR_DSTT.c_str(),
+                      CAST_ATTR_DST_TYPE.c_str(), CAST_ATTR_TRUNCATE.c_str(),
+                      cast_desc->GetName().c_str(), cast_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Set CAST_ATTR failed, node: %s.", name.c_str());
     return nullptr;
   }
 
   NodePtr cast_node = graph->AddNode(cast_desc);
   if (cast_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed when CondPass %s",
+                      cast_desc->GetName().c_str(), cast_desc->GetType().c_str(), graph->GetName().c_str(),
+                      __FUNCTION__);
     GELOGE(FAILED, "Add cast node failed, name: %s.", name.c_str());
     return nullptr;
   }

@@ -99,6 +99,7 @@ const int64_t kInvalidDynaimcDimsType = -1;
 OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
   GeTensorPtr tensor = MakeShared<GeTensor>();
   if (tensor == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New GeTensor failed when %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Create shared ptr for GeTensor failed");
     return nullptr;
   }
@@ -110,6 +111,7 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
     tensor->MutableTensorDesc().SetShape(GeShape());
     int32_t dst_shape = 1;
     if (tensor->SetData(reinterpret_cast<const uint8_t *>(&dst_shape), sizeof(int32_t)) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Set data to tensor failed when %s", __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "tensor set data failed");
       return nullptr;
     }
@@ -117,6 +119,7 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
     tensor->MutableTensorDesc().SetShape(GeShape(std::vector<int64_t>({dim_cnt})));
     unique_ptr<int32_t[]> dst_shape(new (std::nothrow) int32_t[dim_cnt]());
     if (dst_shape == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Malloc buffer failed, size:%zu, when %s", dim_cnt, __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "Create unique ptr failed");
       return nullptr;
     }
@@ -126,6 +129,7 @@ OpDescPtr CreateTensorShape(const GeTensorDesc &data_tensor) {
 
     GE_IF_BOOL_EXEC(
         tensor->SetData(reinterpret_cast<const uint8_t *>(dst_shape.get()), dim_cnt * sizeof(int32_t)) != GRAPH_SUCCESS,
+        REPORT_CALL_ERROR("E19999", "Set data to tensor failed when %s", __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "tensor set data failed");
         return nullptr;)
   }
@@ -172,11 +176,15 @@ void AddTransNodeAttr(const std::string &node_type, const GeTensorDesc &input, c
 NodePtr CreateTransNode(const std::string &name, const std::string &node_type, const GeTensorDesc &input,
                         const GeTensorDesc &output, NodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, trans_name:%s, trans_type:%s, check invalid when %s",
+                       name.c_str(), node_type.c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "node is null.");
     return nullptr;
   }
   auto graph = node->GetOwnerComputeGraph();
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Owner graph in node is nullptr, trans_name:%s, trans_type:%s, check invalid when %s",
+                       name.c_str(), node_type.c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Owner graph is null, node name:%s.", node->GetName().c_str());
     return nullptr;
   }
@@ -191,6 +199,8 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
   }
   OpDescPtr op_desc = MakeShared<OpDesc>(name, node_type);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed, trans_name:%s, trans_type:%s, when %s",
+                      name.c_str(), node_type.c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Create shared ptr for OpDesc failed");
     return nullptr;
   }
@@ -203,11 +213,15 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
   // Default single input and single output
   auto ret = op_desc->AddInputDesc(input);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc into op:%s(%s) failed when %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to add input desc when create node %s type %s", name.c_str(), node_type.c_str());
     return nullptr;
   }
   ret = op_desc->AddOutputDesc(output);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add output desc into op:%s(%s) failed when %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to add output desc when create node %s type %s", name.c_str(), node_type.c_str());
     return nullptr;
   }
@@ -224,12 +238,17 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
     }
     ret = op_desc->AddInputDesc(shape_desc->GetOutputDesc(0));
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add input desc into op:%s(%s) failed when %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "Failed to add the first input for reshape %s", name.c_str());
       return nullptr;
     }
 
     shape_node = graph->AddNode(shape_desc);
     if (shape_node == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed when %s",
+                        shape_desc->GetName().c_str(), shape_desc->GetType().c_str(),
+                        graph->GetName().c_str(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "Failed to add shape node for reshape %s, can not add the shape to graph", name.c_str());
       return nullptr;
     }
@@ -237,12 +256,18 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
 
   auto trans_node = graph->AddNode(op_desc);
   if (trans_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed when %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                      graph->GetName().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to add trans node %s to graph", name.c_str());
     return nullptr;
   }
 
   if (node_type == RESHAPE) {
     if (GraphUtils::AddEdge(shape_node->GetOutDataAnchor(0), trans_node->GetInDataAnchor(1)) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(out_index:0) and op:%s(%s)(in_index:0) failed "
+                        "when %s", shape_node->GetName().c_str(), shape_node->GetType().c_str(),
+                        trans_node->GetName().c_str(), trans_node->GetType().c_str(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "Failed to add shape node for reshape %s, can not add the edge", name.c_str());
       return nullptr;
     }
@@ -261,6 +286,9 @@ Status RecoverOneTransNodeForVar(const std::string &name, const TransNodeInfo &t
 
   auto ret = GraphUtils::ReplaceNodeDataAnchors(trans_node, node, {}, {0});
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Replace out anchors of node:%s(%s) by node:%s(%s) failed when %s",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to replace out anchors when recover trans node for %s type %s",
            node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
@@ -268,6 +296,9 @@ Status RecoverOneTransNodeForVar(const std::string &name, const TransNodeInfo &t
 
   ret = GraphUtils::AddEdge(node->GetOutDataAnchor(0), trans_node->GetInDataAnchor(0));
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(out_index:0) and op:%s(%s)(in_index:0) failed when %s",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to connect node %s to trans node %s", node->GetName().c_str(),
            trans_node->GetName().c_str());
     return INTERNAL_ERROR;
@@ -275,6 +306,9 @@ Status RecoverOneTransNodeForVar(const std::string &name, const TransNodeInfo &t
 
   ret = GraphUtils::MoveOutCtrlEdges(node, trans_node);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Move out control edges from node:%s(%s) to node:%s(%s) failed when %s",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to move out control edges from %s to %s when recover trans node.",
            node->GetName().c_str(), trans_node->GetName().c_str());
     return INTERNAL_ERROR;
@@ -293,6 +327,9 @@ Status RecoverOneTransNodeForVarRef(const std::string &name, const TransNodeInfo
 
   auto ret = GraphUtils::ReplaceNodeDataAnchors(trans_node, node, {0}, {});
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Replace out anchors of node:%s(%s) by node:%s(%s) failed when %s",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to replace int anchors when recover trans node for %s type %s",
            node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
@@ -300,6 +337,9 @@ Status RecoverOneTransNodeForVarRef(const std::string &name, const TransNodeInfo
 
   ret = GraphUtils::AddEdge(trans_node->GetOutDataAnchor(0), node->GetInDataAnchor(0));
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(out_index:0) and op:%s(%s)(in_index:0) failed when %s",
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(),
+                      node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to connect trans node %s to node %s", trans_node->GetName().c_str(),
            node->GetName().c_str());
     return INTERNAL_ERROR;
@@ -307,6 +347,9 @@ Status RecoverOneTransNodeForVarRef(const std::string &name, const TransNodeInfo
 
   ret = GraphUtils::MoveInCtrlEdges(node, trans_node);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Move out control edges from node:%s(%s) to node:%s(%s) failed when %s",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Failed to move int control edges from %s to %s when recover trans node.",
            node->GetName().c_str(), trans_node->GetName().c_str());
     return INTERNAL_ERROR;
@@ -327,6 +370,8 @@ Status UpdateVarFormats(const NodePtr &var, const GeTensorDesc &tensor_desc) {
     output_desc.SetOriginDataType(tensor_desc.GetOriginDataType());
     output_desc.SetOriginShape(tensor_desc.GetOriginShape());
     GE_IF_BOOL_EXEC(var->GetOpDesc()->UpdateOutputDesc(0, output_desc) != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Update output desc of node:%s(%s) failed, index:0, when %s",
+                                      var->GetName().c_str(), var->GetType().c_str(), __FUNCTION__);
                     GELOGE(INTERNAL_ERROR, "UpdateOutputDesc failed");
                     return INTERNAL_ERROR;);
   }
@@ -340,6 +385,8 @@ Status UpdateVarFormats(const NodePtr &var, const GeTensorDesc &tensor_desc) {
     desc.SetOriginDataType(tensor_desc.GetOriginDataType());
     desc.SetOriginShape(tensor_desc.GetOriginShape());
     GE_IF_BOOL_EXEC(var->GetOpDesc()->UpdateInputDesc(0, desc) != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Update input desc of node:%s(%s) failed, index:0, when %s",
+                                      var->GetName().c_str(), var->GetType().c_str(), __FUNCTION__);
                     GELOGE(INTERNAL_ERROR, "UpdateInputDesc failed");
                     return INTERNAL_ERROR;)
   }
@@ -369,6 +416,9 @@ Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
       GE_CHK_STATUS_RET(SetStreamLabel(last_node, stream_label), "set stream label failed");
     }
     GE_CHK_BOOL_EXEC((ge::AttrUtils::SetBool(last_node->GetOpDesc(), ge::ATTR_INSERTED_BY_GE, true)),
+                     REPORT_CALL_ERROR("E19999", "Set Attr:%s to node:%s(%s) failed when %s",
+                                       ge::ATTR_INSERTED_BY_GE.c_str(),
+                                       last_node->GetName().c_str(), last_node->GetType().c_str(), __FUNCTION__);
                      return INTERNAL_ERROR, "Set attr ATTR_INSERTED_BY_GE failed.");
     GELOGD("Recover trans node %s type %s success", trans_name.c_str(), iter->node_type.c_str());
   }
@@ -404,6 +454,9 @@ Status RecoverTransRoadForVarRef(const std::set<NodePtr> &nodes, const VarTransR
       }
 
       GE_CHK_BOOL_EXEC((ge::AttrUtils::SetBool(last_node->GetOpDesc(), ge::ATTR_INSERTED_BY_GE, true)),
+                       REPORT_CALL_ERROR("E19999", "Set Attr:%s of node:%s(%s) failed when %s",
+                                         ge::ATTR_INSERTED_BY_GE.c_str(),
+                                         last_node->GetName().c_str(), last_node->GetType().c_str(), __FUNCTION__);
                        return INTERNAL_ERROR, "Set attr ATTR_INSERTED_BY_GE failed.");
     }
     if (!(road.empty()) && (UpdateVarFormats(var, road.rbegin()->output) != SUCCESS)) {
@@ -419,6 +472,7 @@ VarNamesToRefs CollectVarNamesToRefs(const ComputeGraphPtr &graph) {
   VarNamesToRefs names_to_refs;
   std::string var_name;
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid when %s", __FUNCTION__);
     GELOGE(PARAM_INVALID, "graph is null.");
     return names_to_refs;
   }
@@ -462,6 +516,8 @@ Status ModifyInputFormatAndShape(NodePtr &node_ptr) {
   ge::DataType dt = input->GetDataType();
   std::vector<int64_t> dst_shape_dims;
   if (TransferShape2NC1HWC0(old_format, old_shape, dt, FORMAT_NC1HWC0, dst_shape_dims) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Transfer shape to NC1HWC0 failed, op:%s(%s), when %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Trans shape failed");
     return FAILED;
   }
@@ -477,6 +533,8 @@ Status ModifyInputFormatAndShape(NodePtr &node_ptr) {
   int64_t size = 0;
   graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(*output, size);
   if (graph_status != ge::GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get output tensor size failed, op:%s(%s), index:0 when %s",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(graph_status, "GetTensorSizeInBytes failed!");
     return FAILED;
   }
@@ -521,6 +579,8 @@ Status ModifyDataNetOutputFormatAndShape(OpDescPtr &op_desc, uint32_t index, For
     int64_t size = 0;
     graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(*output, size);
     if (graph_status != ge::GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Get output tensor size failed, op:%s(%s), index:%u when %s",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), index, __FUNCTION__);
       GELOGE(graph_status, "GetTensorSizeInBytes failed!");
       return FAILED;
     }
@@ -630,6 +690,8 @@ Status ProcessInputDtDynShape(NodePtr &node_ptr, bool &is_dynamic_batch, NodePtr
     ge::graphStatus input_graph_status = ge::TensorUtils::GetTensorSizeInBytes(*input, input_shape_size);
     ge::graphStatus output_graph_status = ge::TensorUtils::GetTensorMemorySizeInBytes(*input, output_shape_size);
     if (input_graph_status != ge::GRAPH_SUCCESS && output_graph_status != ge::GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Get input tensor size failed, op:%s(%s), index:0 when %s",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
       GELOGE(GRAPH_FAILED, "[Process][InputOp] Get tensor size of op [%s] failed!", node_ptr->GetName().c_str());
       return FAILED;
     }
@@ -680,6 +742,8 @@ Status ProcessInputNC1HWC0DynShape(NodePtr &node_ptr, bool &is_dynamic_batch, No
     GE_CHECK_NOTNULL(switchn_op_desc);
     const GeTensorDescPtr &switchn_input = switchn_op_desc->MutableInputDesc(0);
     if (ModifyFormatAndShapeForSingleTensor(switchn_input) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Modify format and shape of input:0 in op:%s(%s) failed when %s",
+                        switchn_op_desc->GetName().c_str(), switchn_op_desc->GetType().c_str(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "modify format and shape failed");
       return FAILED;
     }
@@ -689,6 +753,8 @@ Status ProcessInputNC1HWC0DynShape(NodePtr &node_ptr, bool &is_dynamic_batch, No
       old_format = switchn_output->GetFormat();
       old_shape = switchn_output->GetShape();
       if (ModifyFormatAndShapeForSingleTensor(switchn_output) != SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Modify format and shape of output:%u in op:%s(%s) failed when %s", i,
+                        switchn_op_desc->GetName().c_str(), switchn_op_desc->GetType().c_str(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "modify format and shape failed");
         return FAILED;
       }
@@ -789,6 +855,9 @@ Status ProcessNetoutputNodeFp16Nc1hwc0DynShape(GeTensorDesc &src_desc, GeTensorD
   std::vector<int64_t> dst_shape_dims;
   std::vector<int64_t> src_shape_dims = src_shape.GetDims();
   if (TransferShape2NC1HWC0(src_format, src_shape_dims, DT_FLOAT16, FORMAT_NC1HWC0, dst_shape_dims) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Transfer output:0 shape of op:%s(%s) to NC1HWC0 format failed, shape:%s, format:%s, "
+                      "when %s", src_op_desc->GetName().c_str(), src_op_desc->GetType().c_str(),
+                      src_shape.ToString().c_str(), TypeUtils::FormatToSerialString(src_format).c_str(), __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Trans shape failed");
     return FAILED;
   }
@@ -799,6 +868,8 @@ Status ProcessNetoutputNodeFp16Nc1hwc0DynShape(GeTensorDesc &src_desc, GeTensorD
     auto merge_out = src_op_desc->MutableOutputDesc(0);
     GE_CHECK_NOTNULL(merge_out);
     if (ModifyFormatAndShapeForSingleTensor(merge_out) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Modify format and shape of output:0 in op:%s(%s) failed when %s",
+                        src_op_desc->GetName().c_str(), src_op_desc->GetType().c_str(), __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "modify format and shape failed");
       return FAILED;
     }
@@ -806,6 +877,8 @@ Status ProcessNetoutputNodeFp16Nc1hwc0DynShape(GeTensorDesc &src_desc, GeTensorD
       auto merge_in = src_op_desc->MutableInputDesc(i);
       GE_CHECK_NOTNULL(merge_in);
       if (ModifyFormatAndShapeForSingleTensor(merge_in) != SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Modify format and shape of input:%u in op:%s(%s) failed when %s", i,
+                          src_op_desc->GetName().c_str(), src_op_desc->GetType().c_str(), __FUNCTION__);
         GELOGE(INTERNAL_ERROR, "modify format and shape failed");
         return FAILED;
       }
@@ -931,12 +1004,15 @@ long StringToLongNoThrow(const string &str) {
 Status ParseDynamicInputShapeRange(const std::string &shape_range,
                                    std::vector<std::vector<std::pair<int64_t, int64_t>>> &range) {
   if (shape_range.size() < 2) {
+    REPORT_INNER_ERROR("E19999", "shape_range.size:%zu < 2, check invalid when %s", shape_range.size(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Shape range %s is invalid.", shape_range.c_str());
     return PARAM_INVALID;
   }
   // different shape_range of single input are split by ']'
   vector<string> shape_range_set = ge::StringUtils::Split(shape_range, ']');
   if (shape_range_set.empty()) {
+    REPORT_INNER_ERROR("E19999", "Shape range %s is not valid. Correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
+                       shape_range.c_str());
     GELOGE(PARAM_INVALID, "Shape range %s is not valid. Correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
            shape_range.c_str());
     return PARAM_INVALID;
@@ -975,6 +1051,8 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
         auto range_left = StringToLongNoThrow(range_pair_set.at(0).c_str());
         auto range_right = StringToLongNoThrow(range_pair_set.at(1).c_str());
         if (range_left < 0 || range_right < 0) {
+          REPORT_INNER_ERROR("E19999", "Shape range of input is invalid. Given range pair [%ld,%ld], "
+                             "while correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"", range_left, range_right);
           GELOGE(PARAM_INVALID,
                  "Shape range of input is invalid. Given range pair [%ld,%ld], while correct example: "
                  "\"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
@@ -983,6 +1061,8 @@ Status ParseDynamicInputShapeRange(const std::string &shape_range,
         }
         range_pair = std::make_pair(range_left, range_right);
       } else {
+        REPORT_INNER_ERROR("E19999", "Shape range of input is invalid. Given %s, "
+                           "while correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"", shape_range.c_str());
         GELOGE(PARAM_INVALID,
                "Shape range of input is invalid. Given %s, while correct example: \"[1~20,3,3~6,-1],[1~20,3,3~6,-1]\"",
                shape_range.c_str());
@@ -1016,6 +1096,8 @@ Status GetDynamicInputShapeRange(const std::vector<GeTensor> &user_input, const 
   } else if (!enable_dynamic_execute_mode && !enable_input_shape_range) {
     return SUCCESS;
   } else {
+    REPORT_INNER_ERROR("E19999", "Graph option: %s and %s should be enabled at the same time, check invalid when %s",
+                       OPTION_EXEC_DYNAMIC_EXECUTE_MODE, OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE, __FUNCTION__);
     GELOGE(PARAM_INVALID, "Graph option: %s and %s should be enabled at the same time.",
            OPTION_EXEC_DYNAMIC_EXECUTE_MODE, OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
     return PARAM_INVALID;
@@ -1037,6 +1119,9 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
   auto origin_shape = desc.GetShape();
   auto current_shape_range_vec = range_vec.at(index);
   if (current_shape_range_vec.size() != origin_shape.GetDimNum()) {
+    REPORT_INNER_ERROR("E19999", "Given shape_range dim num is %zu, current dim:%s num is %zu, not match, "
+                       "check invalid when %s", current_shape_range_vec.size(), origin_shape.ToString().c_str(),
+                       origin_shape.GetDimNum(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Given shape_range dim num is %zu, current dim num is %zu, not match.Pleace Check.",
            current_shape_range_vec.size(), origin_shape.GetDimNum());
     return PARAM_INVALID;
@@ -1048,6 +1133,8 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
     if (left_range == right_range) {
       // given shape_range is known dim, check is same as origin or not
       if (curr_dim != left_range) {
+        REPORT_INNER_ERROR("E19999", "Given shape range is %ld, current dim shape is %ld, not match, dim_index:%zu, "
+                          "check invalid when %s", left_range, curr_dim, i, __FUNCTION__);
         GELOGE(PARAM_INVALID, "Given shape range is %ld, current dim shape is %ld, not match.Pleace Check.",
                left_range, curr_dim);
         return PARAM_INVALID;
@@ -1057,6 +1144,9 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
       // given shape_range is fix range, check input_shape is in this range or not
       if (right_range != UNKNOWN_DIM) {
         if ((curr_dim < left_range) || (curr_dim > right_range)) {
+          REPORT_INNER_ERROR("E19999", "Given shape range is [%ld~%ld], current dim shape is %ld, out of range, "
+                             "dim_index:%zu, check invalid when %s",
+                             left_range, right_range, curr_dim, i, __FUNCTION__);
           GELOGE(PARAM_INVALID, "Given shape range is [%ld~%ld], current dim shape is %ld, out of range.Pleace Check.",
                  left_range, right_range, curr_dim);
           return PARAM_INVALID;
@@ -1145,17 +1235,21 @@ Status GraphPrepare::Init(const ge::Graph &graph, uint64_t session_id) {
 
 Status GraphPrepare::CheckGraph() {
   if (compute_graph_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "compute_graph_ is nullptr, check invalid when GraphPrepare %s", __FUNCTION__);
     GELOGE(GE_GRAPH_INIT_FAILED, "Graph prepare init compute graph is NULLPTR");
     return GE_GRAPH_INIT_FAILED;
   }
   auto nodes = compute_graph_->GetAllNodes();
   if (nodes.empty()) {
+    REPORT_INNER_ERROR("E19999", "nodes in graph is empty, check invalid when GraphPrepare %s", __FUNCTION__);
     GELOGE(GE_GRAPH_INIT_FAILED, "Invalid graph, no nodes in this graph.");
     return GE_GRAPH_INIT_FAILED;
   }
   for (const NodePtr &node : compute_graph_->GetAllNodes()) {
     GE_CHECK_NOTNULL(node);
     if (node->GetOpDesc() == nullptr) {
+      REPORT_INNER_ERROR("E19999", "node without opdesc exist in graph, check invalid when GraphPrepare %s",
+                         __FUNCTION__);
       GELOGE(GE_GRAPH_INIT_FAILED, "Check Graph node opdesc is NULL");
       return GE_GRAPH_INIT_FAILED;
     }
@@ -1191,6 +1285,9 @@ Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &i
   auto input_type = input_op_desc->GetType();
   if (input_type == ge::FRAMEWORKOP) {
     if (!ge::AttrUtils::GetStr(input_op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, input_type)) {
+      REPORT_INNER_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed when GraphPrepare %s",
+                         ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE.c_str(),
+                         input_op_desc->GetName().c_str(), input_op_desc->GetType().c_str(), __FUNCTION__);
       GELOGE(PARAM_INVALID, "Get original type failed.");
       return PARAM_INVALID;
     }
@@ -1214,11 +1311,15 @@ Status GraphPrepare::CheckRefOp() {
   std::set<NodePtr> ref_nodes;
   for (const NodePtr &node : compute_graph_->GetDirectNode()) {
     if (node == nullptr) {
+      REPORT_INNER_ERROR("E19999", "nullptr node exist in graph, check invalid when GraphPrepare %s",
+                         __FUNCTION__);
       GELOGE(PARAM_INVALID, "param [node] must not be null.");
       return PARAM_INVALID;
     }
     auto op_desc = node->GetOpDesc();
     if (op_desc == nullptr) {
+      REPORT_INNER_ERROR("E19999", "node without opdesc exist in graph, check invalid when GraphPrepare %s",
+                         __FUNCTION__);
       GELOGE(PARAM_INVALID, "OpDesc of param [node] must not be null.");
       return PARAM_INVALID;
     }
@@ -1252,11 +1353,15 @@ Status GraphPrepare::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode) {
 
 Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid when GraphPrepare %s",
+                       __FUNCTION__);
     GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Input node is NULL");
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
   OpDescPtr op_desc_ptr = node->GetOpDesc();
   if (op_desc_ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node's op_desc is nullptr, check invalid when GraphPrepare %s",
+                       __FUNCTION__);
     GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Input node opdesc is NULL");
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
@@ -1278,6 +1383,8 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
   TensorUtils::SetSize(output, tensor_size);
   graphStatus graph_ret = op_desc_ptr->UpdateOutputDesc(0, output);
   if (graph_ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update output desc of op:%s(%s) failed, index:0, when GraphPrepare %s",
+                      op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str(), __FUNCTION__);
     GELOGE(graph_ret, "UpdateOutputDesc fail, graph_ret:%u", graph_ret);
     return graph_ret;
   }
@@ -1348,6 +1455,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
       GE_IF_BOOL_EXEC(shape_size == 0 && desc.GetShape().GetDimNum() == 0, shape_size = static_cast<int64_t>(length));
       int64_t size = 0;
       GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc, size) != GRAPH_SUCCESS,
+                      REPORT_CALL_ERROR("E19999", "Get size of user input tensor failed, index:%ld, "
+                                        "when GraphPrepare %s", index, __FUNCTION__);
                       GELOGE(INTERNAL_ERROR, "TensorUtils GetSize failed");
                       return FAILED);
       bool size_check = (size != 0 && shape_size != size);
@@ -1363,6 +1472,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
       if (!tune_flag) {
         graphStatus graph_ret = op->UpdateInputDesc(0, desc);
         if (graph_ret != GRAPH_SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Update input desc of op:%s(%s) failed, index:0, when GraphPrepare %s",
+                            op->GetName().c_str(), op->GetType().c_str(), __FUNCTION__);
           GELOGE(graph_ret, "UpdateInputDesc fail, graph_ret:%u", graph_ret);
           return graph_ret;
         }
@@ -1370,6 +1481,8 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
         ge::TensorUtils::SetSize(desc, 0);
         graph_ret = op->UpdateOutputDesc(0, desc);
         if (graph_ret != GRAPH_SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Update output desc of op:%s(%s) failed, index:0, when GraphPrepare %s",
+                            op->GetName().c_str(), op->GetType().c_str(), __FUNCTION__);
           GELOGE(graph_ret, "UpdateOutputDesc fail, graph_ret:%u", graph_ret);
           return graph_ret;
         }
@@ -1468,6 +1581,8 @@ Status GraphPrepare::ResourcePairProcess(const std::string &action) {
                                    new ResourcePairRemoveControlPass);
       }
     } catch (std::bad_alloc &e) {
+      REPORT_INNER_ERROR("E19999", "bad memory allocation occur when add ResourcePair Pass, when GraphPrepare %s",
+                         __FUNCTION__);
       GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occur, action:%s.", action.c_str());
       return INTERNAL_ERROR;
     }
@@ -1604,6 +1719,7 @@ Status GraphPrepare::PrepareRunningFormatRefiner() {
 
 Status GraphPrepare::SwitchOpOptimize(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid when GraphPrepare %s", __FUNCTION__);
     GELOGE(GE_GRAPH_NULL_INPUT, "Input Graph is NULL");
     return GE_GRAPH_NULL_INPUT;
   }
@@ -1619,6 +1735,7 @@ Status GraphPrepare::SwitchOpOptimize(ComputeGraphPtr &compute_graph) {
   }
   ret = compute_graph->TopologicalSorting();
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Topological sorting failed when GraphPrepare %s", __FUNCTION__);
     GELOGE(ret, "Graph topological sort failed, ret:%u.", ret);
     return ret;
   }
@@ -1629,6 +1746,7 @@ Status GraphPrepare::SwitchOpOptimize(ComputeGraphPtr &compute_graph) {
 
 Status GraphPrepare::GenerateInfershapeGraph(ConstGraphPtr graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid when GraphPrepare %s", __FUNCTION__);
     GELOGE(GE_GRAPH_NULL_INPUT, "Input Graph is NULL");
     return GE_GRAPH_NULL_INPUT;
   }
@@ -1643,6 +1761,7 @@ Status GraphPrepare::GenerateInfershapeGraph(ConstGraphPtr graph) {
   ret = compute_graph_->InferOriginFormat();
   GE_DUMP(compute_graph_, "after_inferformat");
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Infer OriginFormat failed when GraphPrepare %s", __FUNCTION__);
     GELOGE(ret, "Prepare Graph inferformat failed");
     return ret;
   }
@@ -1669,6 +1788,7 @@ Status GraphPrepare::CheckConstOp() {
     } else if (node_ptr->GetType() == FRAMEWORKOP) {
       auto op_desc = node_ptr->GetOpDesc();
       if (op_desc == nullptr) {
+        REPORT_INNER_ERROR("E19999", "op_desc is nullptr, check invalid when GraphPrepare %s", __FUNCTION__);
         GELOGE(PARAM_INVALID, "Get op desc failed");
         return PARAM_INVALID;
       }
@@ -1690,6 +1810,8 @@ Status GraphPrepare::VerifyConstOp(const NodePtr &node) {
   GE_CHECK_NOTNULL(op_desc);
   ConstGeTensorPtr ge_tensor_ptr;
   if (!(AttrUtils::GetTensor(op_desc, ATTR_NAME_WEIGHTS, ge_tensor_ptr))) {
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed when GraphPrepare %s", ATTR_NAME_WEIGHTS.c_str(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
     GELOGE(PARAM_INVALID, "Get value from const attr failed");
     return PARAM_INVALID;
   }
@@ -1764,6 +1886,8 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
       data_num++;
       GeAttrValue::INT index = 0;
       if (!(AttrUtils::GetInt(op, ATTR_NAME_INDEX, index))) {
+        REPORT_INNER_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed when GraphPrepare %s", ATTR_NAME_WEIGHTS.c_str(),
+                           op->GetName().c_str(), op->GetType().c_str(), __FUNCTION__);
         GELOGE(GE_GRAPH_INIT_FAILED, "Get index from attr failed");
         return GE_GRAPH_INIT_FAILED;
       }
@@ -1868,6 +1992,7 @@ Status GraphPrepare::PrepareOptimize() {
     (void)original_graph_passes.AddPass("PrepareOptimize::ReplaceTransShapePass", new ReplaceTransShapePass);
     (void)original_graph_passes.AddPass("PrepareOptimize::MarkAgnosticPass", new MarkAgnosticPass);
   } catch (std::bad_alloc &e) {
+    REPORT_INNER_ERROR("E19999", "bad memory allocation occur when add Pass, when GraphPrepare %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
     return INTERNAL_ERROR;
   }
@@ -1931,6 +2056,7 @@ Status GraphPrepare::PrepareOptimize() {
     // can't move to optimize1/2 directly, may cause more identity insert, cause CI fail
     (void)graph_pass.AddPass("PrepareOptimize::HcclMemcpyPass", new HcclMemcpyPass);
   } catch (std::bad_alloc &e) {
+    REPORT_INNER_ERROR("E19999", "bad memory allocation occur when add Pass, when GraphPrepare %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
     return INTERNAL_ERROR;
   }
@@ -1947,6 +2073,7 @@ Status GraphPrepare::PrepareOptimize() {
 
   ret = compute_graph_->TopologicalSorting();
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Topological sorting failed when GraphPrepare %s", __FUNCTION__);
     GELOGE(ret, "Graph topological sort failed, ret:%u.", ret);
     return ret;
   }
@@ -2017,6 +2144,7 @@ Status GraphPrepare::ProcessNetOutput() {
     graph_passes_before_infershape.AddPass("ProcessNetOutput::DataPass",
                                            new (std::nothrow) DataPass);  // Add NetOutput first.
   } catch (std::bad_alloc) {
+    REPORT_INNER_ERROR("E19999", "bad memory allocation occur when add Pass, when GraphPrepare %s", __FUNCTION__);
     GELOGE(INTERNAL_ERROR, "Add pass failed, bad memory allocation occurs.");
     return INTERNAL_ERROR;
   }
@@ -2056,6 +2184,7 @@ Status GraphPrepare::CheckAndUpdateInput(const std::vector<GeTensor> &user_input
   } else {
     ret = compute_graph_->TopologicalSorting();
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Topological sorting failed when GraphPrepare %s", __FUNCTION__);
       GELOGE(ret, "graph prepare error: compute_graph_->Topological Sorting");
       return FAILED;
     }

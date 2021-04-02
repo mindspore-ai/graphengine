@@ -57,12 +57,18 @@ Status AssignRemovePass::OptimizedAssignNode(NodePtr &assign_node) {
   const auto &ref_in_anchor = assign_node->GetInDataAnchor(kAssignRefInputIndex);
   const auto &value_in_anchor = assign_node->GetInDataAnchor(kAssignValueInputIndex);
   if ((ref_in_anchor == nullptr) || (value_in_anchor == nullptr)) {
+    REPORT_INNER_ERROR("E19999", "Index %d or %d input anchor of node:%s(%s) is nullptr, check invalid "
+                       "when AssignRemovePass %s", kAssignRefInputIndex, kAssignValueInputIndex,
+                       assign_node->GetName().c_str(), assign_node->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "In data anchor is null, node:%s", assign_node->GetName().c_str());
     return FAILED;
   }
   const auto &ref_peer_anchor = ref_in_anchor->GetPeerOutAnchor();
   const auto &value_peer_anchor = value_in_anchor->GetPeerOutAnchor();
   if ((ref_peer_anchor == nullptr) || (value_peer_anchor == nullptr)) {
+    REPORT_INNER_ERROR("E19999", "Index %d or %d input anchor of node:%s(%s), peer anchor is nullptr, check invalid "
+                       "when AssignRemovePass %s", kAssignRefInputIndex, kAssignValueInputIndex,
+                       assign_node->GetName().c_str(), assign_node->GetType().c_str(), __FUNCTION__);
     GELOGE(FAILED, "Peer data anchor is null, node:%s", assign_node->GetName().c_str());
     return FAILED;
   }
@@ -79,6 +85,8 @@ Status AssignRemovePass::OptimizedAssignNode(NodePtr &assign_node) {
     ///
     GELOGD("Optimization for assign_node %s start", assign_node->GetName().c_str());
     if (IsolateAndDeleteNode(assign_node, {kAssignRefInputIndex}) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed when AssignRemovePass %s",
+                        assign_node->GetName().c_str(), assign_node->GetType().c_str(), __FUNCTION__);
       GELOGE(FAILED, "Isolate and delete assign_node %s failed.", assign_node->GetName().c_str());
       return FAILED;
     }
@@ -86,16 +94,27 @@ Status AssignRemovePass::OptimizedAssignNode(NodePtr &assign_node) {
     const auto &ref_input = ref_peer_anchor->GetOwnerNode()->GetOpDesc();
     const auto &value_input = value_peer_anchor->GetOwnerNode()->GetOpDesc();
     if ((ref_input == nullptr) || (value_input == nullptr)) {
+      REPORT_INNER_ERROR("E19999", "Input index %d or %d of node:%s(%s), peer op is nullptr, check invalid "
+                         "when AssignRemovePass %s", kAssignRefInputIndex, kAssignValueInputIndex,
+                         assign_node->GetName().c_str(), assign_node->GetType().c_str(), __FUNCTION__);
       GELOGE(FAILED, "value input is null");
       return FAILED;
     }
 
     // variable has and only has one input
     if (ref_input->UpdateInputDesc(0, value_input->GetOutputDesc(value_peer_anchor->GetIdx())) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Input index %d of node:%s(%s), update it's peer op input:0 desc failed "
+                        "when AssignRemovePass %s", kAssignRefInputIndex,
+                        assign_node->GetName().c_str(), assign_node->GetType().c_str(), __FUNCTION__);
       GELOGE(FAILED, "Update input_desc for variable %s failed.", ref_input->GetName().c_str());
       return FAILED;
     }
     if (GraphUtils::AddEdge(value_peer_anchor, ref_peer_anchor->GetOwnerNode()->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(out_index:%d) and op:%s(%s)(in_index:0) failed "
+                        "when AssignRemovePass %s", value_peer_anchor->GetOwnerNode()->GetName().c_str(),
+                        value_peer_anchor->GetOwnerNode()->GetType().c_str(), value_peer_anchor->GetIdx(),
+                        ref_peer_anchor->GetOwnerNode()->GetName().c_str(),
+                        ref_peer_anchor->GetOwnerNode()->GetType().c_str(), __FUNCTION__);
       GELOGE(FAILED, "Add data edge %s->%s failed", value_input->GetName().c_str(), ref_input->GetName().c_str());
       return FAILED;
     }
@@ -104,6 +123,9 @@ Status AssignRemovePass::OptimizedAssignNode(NodePtr &assign_node) {
            value_input->GetName().c_str(), ref_input->GetName().c_str());
     if (!AttrUtils::SetStr(value_input->MutableOutputDesc(value_peer_anchor->GetIdx()), ASSIGN_VAR_NAME,
                            ref_input->GetName())) {
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to output:%d desc of node:%s(%s) failed when %s",
+                        ASSIGN_VAR_NAME.c_str(), value_peer_anchor->GetIdx(),
+                        value_input->GetName().c_str(), value_input->GetType().c_str(), __FUNCTION__);
       GELOGE(FAILED, "Set attr ASSIGN_VAR_NAME failed.");
       return FAILED;
     }
@@ -136,6 +158,9 @@ Status AssignRemovePass::TransformAttr(NodePtr &node) {
       GELOGD("add attr ASSIGN_VAR_NAME on node %s, var_name=%s", in_node->GetName().c_str(), assign_var_name.c_str());
       if (!AttrUtils::SetStr(in_node->GetOpDesc()->MutableOutputDesc(peer_data_anchor->GetIdx()),
                              ASSIGN_VAR_NAME, assign_var_name)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to output:%d desc of node:%s(%s) failed when %s",
+                          ASSIGN_VAR_NAME.c_str(), peer_data_anchor->GetIdx(),
+                          in_node->GetName().c_str(), in_node->GetType().c_str(), __FUNCTION__);
         GELOGE(FAILED, "Set attr ASSIGN_VAR_NAME failed.");
         return FAILED;
       }

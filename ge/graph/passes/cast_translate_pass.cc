@@ -223,6 +223,8 @@ Status CastTranslatePass::Run(NodePtr &node) {
           continue;
         }
         if (IsolateAndDeleteNode(out_data_node, {0}) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed when CastTranslatePass %s",
+                            out_data_node->GetName().c_str(), out_data_node->GetType().c_str(), __FUNCTION__);
           return FAILED;
         }
       }
@@ -262,6 +264,9 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
     ComputeGraphPtr graph = out_data_node->GetOwnerComputeGraph();
     GE_CHECK_NOTNULL(graph);
     if (GraphUtils::RemoveNodeWithoutRelink(graph, out_data_node) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed when CastTranslatePass %s",
+                        out_data_node->GetName().c_str(), out_data_node->GetType().c_str(), graph->GetName().c_str(),
+                        __FUNCTION__);
       GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", out_data_node->GetName().c_str());
       return FAILED;
     }

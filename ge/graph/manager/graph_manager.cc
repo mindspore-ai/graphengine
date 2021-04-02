@@ -803,8 +803,8 @@ Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint
   }
   rt_ret = rtCtxSetCurrent(rt_context);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCtxSetCurrent failed, session_id:%lu, graph_id:%u, mode:%d, when GraphManager %s",
-                      session_id, graph_id, mode, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtCtxSetCurrent failed, session_id:%lu, graph_id:%u, mode:%d, "
+                      "when GraphManager %s", session_id, graph_id, mode, __FUNCTION__);
     GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return FAILED;
   }

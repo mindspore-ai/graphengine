@@ -57,7 +57,7 @@ class HybridDavinciModel {
 
   void SetDeviceId(uint32_t device_id);
 
-  void SetModelName(const string &model_name);
+  void SetOmName(const string &om_name);
 
   uint64_t GetSessionId();
 

@@ -71,8 +71,8 @@ class HybridModel {
     model_id_ = model_id;
   }
 
-  void SetModelName(const string &model_name) {
-    om_name_ = model_name;
+  void SetOmName(const string &om_name) {
+    om_name_ = om_name;
   }
 
   const std::string &GetOmName() const {

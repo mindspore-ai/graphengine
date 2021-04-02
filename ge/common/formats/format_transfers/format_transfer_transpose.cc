@@ -51,7 +51,7 @@ bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<in
   if (src_shape.empty()) {
     std::string error = "Failed to transpose, empty src shape";
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_SHAPE_INVALID, error.c_str());
-    GELOGE((ACL_ERROR_GE_SHAPE_INVALID, "[Trans][Shape]Failed, empty src shape");
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Trans][Shape]Failed, empty src shape");
     return false;
   }
   for (auto dim : src_shape) {

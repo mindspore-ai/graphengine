@@ -110,7 +110,7 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
   // check size it should be same with original
   size_t expect_size = n * c * h * w * size;  // before has do check about mul
   if (trans_result_1.length != expect_size) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Shape]size %zu is not match expect size %u after transpose",
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Shape]size %zu is not match expect size %zu after transpose",
            trans_result_1.length, expect_size);
     return ACL_ERROR_GE_PARAM_INVALID;
   }

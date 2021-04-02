@@ -141,6 +141,12 @@ TEST_F(UtestDavinciModel, init_success) {
   ProfilingManager::Instance().is_load_profiling_ = false;
 }
 
+TEST_F(UtestDavinciModel, CheckCapability) {
+  DavinciModel model(0, nullptr);
+  bool is_support = false;
+  (void)model.CheckCapability(FEATURE_TYPE_MEMORY, MEMORY_INFO_TS_4G_LIMITED, is_support);
+}
+
 TEST_F(UtestDavinciModel, init_data_op) {
   DavinciModel model(0, nullptr);
   model.ge_model_ = make_shared<GeModel>();

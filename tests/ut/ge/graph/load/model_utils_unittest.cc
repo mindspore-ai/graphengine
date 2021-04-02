@@ -67,4 +67,22 @@ TEST_F(UtestModelUtils, get_var_addr_rdma_hbm) {
   EXPECT_EQ(reinterpret_cast<uint8_t *>(offset), var_addr);
   VarManager::Instance(runtime_param.session_id)->Destory();
 }
+
+TEST_F(UtestModelUtils, get_var_addr_rdma_hbm_negative_offset) {
+  uint8_t test = 2;
+  uint8_t *pf = &test;
+  RuntimeParam runtime_param;
+  runtime_param.session_id = 0;
+  runtime_param.logic_var_base = 0;
+  runtime_param.var_base = pf;
+
+  int64_t offset = -1;
+  EXPECT_EQ(VarManager::Instance(runtime_param.session_id)->Init(0, 0, 0, 0), SUCCESS);
+  EXPECT_NE(VarManager::Instance(runtime_param.session_id)->var_resource_, nullptr);
+  VarManager::Instance(runtime_param.session_id)->var_resource_->var_offset_map_[offset] = RT_MEMORY_RDMA_HBM;
+  std::shared_ptr<OpDesc> op_desc = std::make_shared<OpDesc>("test", "test");
+  uint8_t *var_addr = nullptr;
+  EXPECT_NE(ModelUtils::GetVarAddr(runtime_param, op_desc, offset, var_addr), SUCCESS);
+  VarManager::Instance(runtime_param.session_id)->Destory();
+}
 }  // namespace ge

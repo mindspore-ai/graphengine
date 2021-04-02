@@ -530,11 +530,11 @@ class DavinciModel {
   }
   void SetKnownNode(bool known_node) { known_node_ = known_node; }
   bool IsKnownNode() { return known_node_; }
+  Status CheckCapability(rtFeatureType_t featureType, int32_t featureInfo, bool &is_support) const;
   Status MallocKnownArgs();
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
   Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, bool update_args = true);
-  void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) const;
   Status GetAllAippInputOutputDims(uint32_t index, vector<InputOutputDims> &input_dims,
@@ -1007,8 +1007,6 @@ class DavinciModel {
   map<const void *, void *> known_input_data_info_;
   map<const void *, void *> known_output_data_info_;
   vector<void *> total_io_addrs_;
-  vector<void *> orig_total_io_addrs_;
-  bool base_addr_not_changed_ = false;
 
   vector<vector<int64_t>> batch_info_;
   vector<vector<int64_t>> combined_batch_info_;

@@ -496,7 +496,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     REPORT_INNER_ERROR("E19999", "find memory offset fail for mem_type:%ld, "
                        "when assign continuous input memory for node:%s, ", memory_type, node->GetName().c_str());
     GELOGE(FAILED, "[Find][MemOffset]fail for mem_type:%ld, when AssignContinuousInputMemory for node:%s",
-                    memory_type, node->GetName().c_str());
+           memory_type, node->GetName().c_str());
     return FAILED;
   }
   // The head and tail of hcom continuous input should be added 512
@@ -929,8 +929,8 @@ Status GraphMemoryAssigner::AssignReferenceMemory() {
 
     if (out_op_desc->GetOutputsSize() > output_list.size()) {
       REPORT_INNER_ERROR("E19999", "Output size:%zu more than output offset size:%zu, judge invalid in node:%s "
-                       "when AssignReferenceMemory",
-                       out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
+                         "when AssignReferenceMemory",
+                         out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
       GELOGE(ge::FAILED, "[Check][InnerData]Output size:%zu more than output offset size:%zu, invalid in node:%s",
              out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
       return ge::FAILED;

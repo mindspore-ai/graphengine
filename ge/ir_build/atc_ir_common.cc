@@ -34,6 +34,8 @@ const int64_t kDynamicImageSizeNum = 2;
 const size_t kMaxDynamicDimNum = 100;
 const size_t kMaxNDDimNum = 4;
 const size_t kMinNDDimNum = 1;
+const size_t kSquareBracketsSize = 2;
+const size_t kRangePairSize = 2;
 // datatype/formats from user to GE, Unified to util interface file later
 const std::map<std::string, ge::DataType> kOutputTypeSupportDatatype = {
     {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
@@ -292,7 +294,8 @@ bool ParseSingleShapeRange(std::string &shape_range, vector<pair<int64_t, int64_
     }
   }
 
-  bool is_square_brackets = (square_brackets[0] == '[') && (square_brackets[1] == ']') && (square_brackets.size() == 2);
+  bool is_square_brackets = (square_brackets[0] == '[') && (square_brackets[1] == ']') &&
+                            (square_brackets.size() == kSquareBracketsSize);
   if (!is_square_brackets) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
                                                     {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample2});
@@ -320,7 +323,7 @@ bool ParseSingleShapeRange(std::string &shape_range, vector<pair<int64_t, int64_
       } else {
         range_pair = std::make_pair(range_value, range_value);
       }
-    } else if (range_pair_set.size() == 2) {
+    } else if (range_pair_set.size() == kRangePairSize) {
       // unknown dim, should get range.
       long range_left = 0;
       if (!StringToLongNoThrow(range_pair_set.at(0), range_left)) {
@@ -332,9 +335,10 @@ bool ParseSingleShapeRange(std::string &shape_range, vector<pair<int64_t, int64_
       }
       if (range_left < 0 || (range_right < 0)) {
         ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
-                                                        {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample3});
+            {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample3});
         GELOGE(PARAM_INVALID,
-               "Parse input parameter [--input_shape_range]'s shape range[%s] failed, reason: %s, correct sample is %s.",
+               "Parse input parameter [--input_shape_range]'s shape range[%s] failed,"
+               "reason: %s, correct sample is %s.",
                shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample3);
         return false;
       }
@@ -383,7 +387,7 @@ bool ParseInputShapeRange(const std::string &shape_range,
     }
     shape_range_map.emplace(make_pair(StringUtils::Trim(shape_range_pair_vec[0]), shape_range_val));
   }
-  
+
   return true;
 }
 
@@ -402,7 +406,7 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
   if (param_size == 0) {
     if (!input_shape_range.empty()) {
       std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
-      if(!ParseInputShapeRange(input_shape_range, shape_range_map)) {
+      if (!ParseInputShapeRange(input_shape_range, shape_range_map)) {
         GELOGE(ge::PARAM_INVALID, "Failed to parse input shape range: %s", input_shape_range.c_str());
         return ge::PARAM_INVALID;
       }

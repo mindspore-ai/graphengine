@@ -124,7 +124,8 @@ Status KernelTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci
       return FAILED;
     }
 
-    ret = InitTVMTask(args_offset_tmp[0], kernel_def);
+    io_addr_offset_ = args_offset_tmp[0];
+    ret = InitTVMTask(io_addr_offset_, kernel_def);
   } else if (kernel_type_ == ccKernelType::CUSTOMIZED) {
     ret = InitAICPUCustomTask(context.op_index(), kernel_def);
   } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
@@ -380,7 +381,8 @@ Status KernelTaskInfo::Distribute() {
   GELOGD("KernelTaskInfo Distribute Start.");
   if (davinci_model_->IsKnownNode()) {
     if (kernel_type_ == ccKernelType::TE) {
-      args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
+      args_ = l2_buffer_on_ ? davinci_model_->GetCurrentHybridArgsAddr(hybrid_args_offset_)
+                            : davinci_model_->GetCurrentArgsAddr(args_offset_);
     } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
       args_ = davinci_model_->GetCurrentHybridArgsAddr(hybrid_args_offset_);
     }
@@ -449,29 +451,41 @@ void KernelTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
   }
 }
 
-Status KernelTaskInfo::UpdateArgs() {
-  GELOGI("KernelTaskInfo::UpdateArgs in.");
-  if (kernel_type_ == ccKernelType::TE) {
-    davinci_model_->SetTotalIOAddrs(io_addrs_);
-  } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
-    vector<void *> io_addrs = io_addrs_;
-    davinci_model_->UpdateKnownZeroCopyAddr(io_addrs);
-    uintptr_t io_addr = reinterpret_cast<uintptr_t>(args_addr.get()) + sizeof(aicpu::AicpuParamHead);
-    auto addrs_size = sizeof(uint64_t) * io_addrs.size();
-    errno_t sec_ret = memcpy_s(reinterpret_cast<void *>(io_addr), addrs_size, io_addrs.data(), addrs_size);
-    if (sec_ret != EOK) {
-      GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
-      return FAILED;
-    }
-    // copy args to device
-    rtError_t rt_ret = rtMemcpy(args_, args_size_, args_addr.get(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
-    }
+Status KernelTaskInfo::CopyNoncontinuousArgs(uint16_t offset) {
+  GE_CHECK_NOTNULL(davinci_model_);
+  // copy new io addrs
+  vector<void *> io_addrs = io_addrs_;
+  davinci_model_->UpdateKnownZeroCopyAddr(io_addrs);
+  auto addr_size = kAddrLen * io_addrs.size();
+
+  // copy io addr
+  errno_t sec_ret = memcpy_s(args_addr.get() + offset, addr_size, io_addrs.data(), addr_size);
+  if (sec_ret != EOK) {
+    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
+    return FAILED;
   }
 
-  GELOGI("KernelTaskInfo::UpdateArgs success.");
+  // copy args to device
+  rtError_t rt_ret = rtMemcpy(args_, args_size_, args_addr.get(), args_size_, RT_MEMCPY_HOST_TO_DEVICE);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api(rtMemcpy) failed, ret: 0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  GELOGD("Copy noncontinuous args success, kernel type %d.", kernel_type_);
+  return SUCCESS;
+}
+
+Status KernelTaskInfo::UpdateArgs() {
+  GELOGI("KernelTaskInfo::UpdateArgs in.");
+  GE_CHECK_NOTNULL(davinci_model_);
+  if (kernel_type_ == ccKernelType::TE) {
+    if (l2_buffer_on_) {
+      return CopyNoncontinuousArgs(io_addr_offset_);
+    }
+    davinci_model_->SetTotalIOAddrs(io_addrs_);
+  } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
+    return CopyNoncontinuousArgs(sizeof(aicpu::AicpuParamHead));
+  }
   return SUCCESS;
 }
 
@@ -516,8 +530,8 @@ Status KernelTaskInfo::UpdateL2Data(const domi::KernelDef &kernel_def) {
     return SUCCESS;
   }
 
-  char *sm_contrl = const_cast<char *>(sm_desc.data());
-  rtL2Ctrl_t *l2_ctrl_info = reinterpret_cast<rtL2Ctrl_t *>(sm_contrl);
+  char *sm_control = const_cast<char *>(sm_desc.data());
+  rtL2Ctrl_t *l2_ctrl_info = reinterpret_cast<rtL2Ctrl_t *>(sm_control);
   uint64_t gen_base_addr = davinci_model_->GetRtBaseAddr();
 
   // There is no weight for te op now. Update L2_mirror_addr by data memory base.
@@ -545,19 +559,31 @@ Status KernelTaskInfo::UpdateL2Data(const domi::KernelDef &kernel_def) {
   return SUCCESS;
 }
 
+void KernelTaskInfo::SetContinuousArgs(uint32_t args_size, DavinciModel *davinci_model) {
+  args_offset_ = davinci_model->GetTotalArgsSize();
+  davinci_model->SetTotalArgsSize(args_size);
+}
+
+void KernelTaskInfo::SetNoncontinuousArgs(uint32_t args_size, DavinciModel *davinci_model) {
+  hybrid_args_offset_ = davinci_model->GetHybridArgsSize();
+  davinci_model->SetHybridArgsSize(args_size);
+}
+
 Status KernelTaskInfo::CalculateArgs(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
+  GE_CHECK_NOTNULL(davinci_model);
   const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
   kernel_type_ = static_cast<ccKernelType>(context.kernel_type());
+  uint32_t args_size = kernel_def.args_size();
   if (kernel_type_ == ccKernelType::TE) {
-    uint32_t args_size = kernel_def.args_size();
-    args_offset_ = davinci_model->GetTotalArgsSize();
-    davinci_model->SetTotalArgsSize(args_size);
-    GELOGI("kernel task name , args_size %u, args_offset %u", args_size, args_offset_);
+    if (kernel_def.sm_desc().empty()) {
+      SetContinuousArgs(args_size, davinci_model);
+      return SUCCESS;
+    }
+    l2_buffer_on_ = true;
+    SetNoncontinuousArgs(args_size, davinci_model);
   } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
-    hybrid_args_offset_ = davinci_model->GetHybridArgsSize();
-    davinci_model->SetHybridArgsSize(kernel_def.args_size());
-    GELOGI("aicpu kernel task name , args_size %u, args_offset %u", kernel_def.args_size(), hybrid_args_offset_);
+    SetNoncontinuousArgs(args_size, davinci_model);
   }
   return SUCCESS;
 }
@@ -568,8 +594,23 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   // get tvm op desc
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(ctx_.opIndex);
   GE_CHECK_NOTNULL(op_desc);
+
+  args_addr = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[args_size_]);
+  errno_t sec_ret = memcpy_s(args_addr.get(), args_size_, kernel_def.args().data(), args_size_);
+  if (sec_ret != EOK) {
+    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
+    return FAILED;
+  }
+
+  Status ge_ret = UpdateL2Data(kernel_def);
+  // update origin l2 data
+  if (ge_ret != SUCCESS) {
+    return ge_ret;
+  }
+
   if (davinci_model_->IsKnownNode()) {
-    args_ = davinci_model_->GetCurrentArgsAddr(args_offset_);
+    args_ = l2_buffer_on_ ? davinci_model_->GetCurrentHybridArgsAddr(hybrid_args_offset_)
+                          : davinci_model_->GetCurrentArgsAddr(args_offset_);
     InitDumpTask(offset);
     return SUCCESS;
   }
@@ -609,12 +650,6 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-  vector<uint8_t> args_info(args_size_);
-  errno_t sec_ret = memcpy_s(args_info.data(), args_size_, kernel_def.args().data(), args_size_);
-  if (sec_ret != EOK) {
-    GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
-    return FAILED;
-  }
 
   if ((args_size_ <= offset) || (args_size_ - offset < kAddrLen * tensor_device_addrs.size())) {
     GELOGE(FAILED, "offset >= kernelInfo.argsSize or copy content beyond applied memory.");
@@ -628,7 +663,7 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
-  sec_ret = memcpy_s(args_info.data() + offset, args_size_ - offset, tensor_device_addrs.data(),
+  sec_ret = memcpy_s(args_addr.get() + offset, args_size_ - offset, tensor_device_addrs.data(),
                      kAddrLen * tensor_device_addrs.size());
   if (sec_ret != EOK) {
     GELOGE(FAILED, "memcpy failed, ret: %d", sec_ret);
@@ -640,19 +675,13 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   GE_CHK_BOOL_TRUE_EXEC_INFO(davinci_model_->GetOpDugReg(), dump_args_ = static_cast<char *>(args_) + offset,
                              "Op debug is open in TVM task info");
 
-  Status ge_ret = UpdateL2Data(kernel_def);
-  // update origin l2 data
-  if (ge_ret != SUCCESS) {
-    return ge_ret;
-  }
-
   vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
   virtual_io_addrs.insert(virtual_io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
   virtual_io_addrs.insert(virtual_io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
   if (op_desc->GetType() == ATOMICADDRCLEAN) {
     virtual_io_addrs.insert(virtual_io_addrs.end(), workspace_data_addrs.begin(), workspace_data_addrs.end());
   }
-  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_info.data(), args_, args_size_, offset);
+  davinci_model_->SetZeroCopyAddr(op_desc, virtual_io_addrs, args_addr.get(), args_, args_size_, offset);
 
   GELOGD("Do InitTVMTask end");
   return SUCCESS;

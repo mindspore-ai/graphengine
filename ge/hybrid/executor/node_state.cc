@@ -35,12 +35,14 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
          node_item.NodeName().c_str(),
          this->num_pending_shapes_);
 
-  for (int i = 0; i < node_item.num_inputs; ++i){
-    input_tensor_desc.emplace_back(*node_item.MutableInputDesc(i));
+  input_tensor_desc.resize(node_item.num_inputs);
+  for (int i = 0; i < node_item.num_inputs; ++i) {
+    node_item.GetInputDesc(i, input_tensor_desc[i]);
   }
 
-  for (int i = 0; i < node_item.num_outputs; ++i){
-    output_tensor_desc.emplace_back(*node_item.MutableOutputDesc(i));
+  output_tensor_desc.resize(node_item.num_outputs);
+  for (int i = 0; i < node_item.num_outputs; ++i) {
+    node_item.GetOutputDesc(i, output_tensor_desc[i]);
   }
 }
 

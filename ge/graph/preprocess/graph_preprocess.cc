@@ -1772,8 +1772,8 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
         if (dim < UNKNOWN_DIM_NUM) {
           std::string situation = "data dim[" + std::to_string(i) + "][" + std::to_string(dim) + "]" ;
           std::string reason = "it need >= -2";
-          REPORT_INPUT_ERROR(
-            "E19025", std::vector<std::string>({"situation", "reason"}),std::vector<std::string>({situation, reason}));
+          REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"situation", "reason"}),
+                             std::vector<std::string>({situation, reason}));
           GELOGE(GE_GRAPH_INIT_FAILED, "[Check][InputDim]data dim %zu is not supported, need >= -2, real:%ld.", i, dim);
           return GE_GRAPH_INIT_FAILED;
         }

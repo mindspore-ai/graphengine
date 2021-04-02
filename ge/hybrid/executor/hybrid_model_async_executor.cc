@@ -67,6 +67,7 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
   future_ = std::async(std::launch::async, [&]() -> Status {
     GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     GetContext().SetSessionId(executor_->GetContext()->session_id);
+    GetContext().SetContextId(executor_->GetContext()->context_id);
     return RunInternal();
   });
 
@@ -105,7 +106,7 @@ Status HybridModelAsyncExecutor::Init() {
   executor_ = std::unique_ptr<HybridModelExecutor>(new(std::nothrow) HybridModelExecutor(model_, device_id_, stream_));
   GE_CHECK_NOTNULL(executor_);
   GE_CHK_STATUS_RET(executor_->Init(), "Failed to init hybrid engine");
-  GE_CHK_STATUS_RET(DumpOpDebug(),"Dump op debug failed in hybrid engine");
+  GE_CHK_STATUS_RET(DumpOpDebug(), "Dump op debug failed in hybrid engine");
 
   GELOGI("HybridModel stage nums:%zu", model_->GetRootGraphItem()->NumGroups());
   if (model_->GetRootGraphItem()->NumGroups() >= kMinimumPiplineStages) {
@@ -166,6 +167,7 @@ Status HybridModelAsyncExecutor::RunInternal() {
     } else {
       GELOGI("HybridModel will execute in singleline mode");
       ge::GetContext().SetSessionId(executor_->GetContext()->session_id);
+      ge::GetContext().SetContextId(executor_->GetContext()->context_id);
       ret = executor_->Execute(args);
     }
     ret = HandleResult(ret, current_data.index, args, data_wrapper->GetOutput());

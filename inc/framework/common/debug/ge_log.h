@@ -42,9 +42,9 @@ class GE_FUNC_VISIBILITY GeLog {
  public:
   static uint64_t GetTid() {
 #ifdef __GNUC__
-    thread_local static uint64_t tid = static_cast<uint64_t>(syscall(__NR_gettid));
+    uint64_t tid = static_cast<uint64_t>(syscall(__NR_gettid));
 #else
-    thread_local static uint64_t tid = static_cast<uint64_t>(GetCurrentThreadId());
+    uint64_t tid = static_cast<uint64_t>(GetCurrentThreadId());
 #endif
     return tid;
   }

@@ -53,6 +53,8 @@ class BaseNodePass {
 
   std::unordered_set<NodePtr> GetNodesNeedRePass() { return nodes_need_re_pass_; }
 
+  std::unordered_set<NodePtr> GetNodesNeedRePassImmediately() { return nodes_need_re_pass_immediately_; }
+
   std::unordered_set<NodePtr> GetNodesDeleted() { return nodes_deleted_; }
 
   void SetOption(NodePassOption option, const std::string &value) { options_[option] = value; }
@@ -62,6 +64,7 @@ class BaseNodePass {
   void init() {
     nodes_need_re_pass_.clear();
     nodes_deleted_.clear();
+    nodes_need_re_pass_immediately_.clear();
   }
 
  protected:
@@ -78,6 +81,14 @@ class BaseNodePass {
   /// @param node
   ///
   void AddRePassNode(NodePtr &node) { nodes_need_re_pass_.insert(node); }
+
+  ///
+  /// Add a node to be optimized immediately again. If you add a new node to the graph, or
+  /// change a node connections, and you want to make sure the node will be
+  /// optimized by other passes, call this function.
+  /// @param node
+  ///
+  void AddImmediateRePassNode(NodePtr &node) { nodes_need_re_pass_immediately_.insert(node); }
 
   ///
   /// Add a node and it's input/output data nodes to be optimized again.
@@ -109,6 +120,7 @@ class BaseNodePass {
 
  private:
   std::unordered_set<NodePtr> nodes_need_re_pass_;
+  std::unordered_set<NodePtr> nodes_need_re_pass_immediately_;
   std::unordered_set<NodePtr> nodes_deleted_;
   std::map<NodePassOption, std::string> options_;
 };

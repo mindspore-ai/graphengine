@@ -59,9 +59,10 @@ Status CheckArgsForFracZToNhwc(const TransArgs &args) {
   }
   int64_t c1 = Ceil(dst_shape.at(kNhwcC), c0);
   int64_t n0 = Ceil(dst_shape.at(kNhwcN), static_cast<int64_t>(kNiSize));
-  if (src_shape.at(kFracZHWC1) != dst_shape.at(kNhwcH) * dst_shape.at(kNhwcW) * c1 || src_shape.at(kFracZC0) != c0 ||
-      src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
-    GELOGE(PARAM_INVALID, "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
+  if (src_shape.at(kFracZHWC1) != dst_shape.at(kNhwcH) * dst_shape.at(kNhwcW) * c1 ||
+      src_shape.at(kFracZC0) != c0 || src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
+    GELOGE(PARAM_INVALID,
+           "Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     return PARAM_INVALID;
   }
@@ -72,7 +73,8 @@ Status CheckArgsForFracZToNhwc(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size, int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(OUT_OF_MEMORY,
+           "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
     return OUT_OF_MEMORY;
@@ -140,7 +142,7 @@ Status FormatTransferFracZNhwc::TransFormat(const TransArgs &args, TransResult &
     }
 
     GELOGE(INTERNAL_ERROR, "Get %ld total size from dst shape %s, src shape %s", total_size,
-        ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return PARAM_INVALID;
   }
   GELOGD("Begin to trans format from FracZ to NHWC, src shape %s, data type %s, dst shape %s, memory size %ld",

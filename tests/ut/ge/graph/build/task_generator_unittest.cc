@@ -51,6 +51,18 @@ class UtestTaskGeneratorTest : public testing::Test {
     builder.AddDataEdge(addn1, 0, netoutput, 0);
     return builder.GetGraph();
   }
+  ge::ComputeGraphPtr BuildGraphBpProfiling() {
+    ge::ut::GraphBuilder builder("graph");
+    auto data = builder.AddNode("data", "phony", 1, 1);
+    auto addn1 = builder.AddNode("addn1", "AddN", 1, 1);
+    auto netoutput = builder.AddNode("netoutput", "NetOutput", 2, 0);
+    auto op_desc = data->GetOpDesc();
+    (void)AttrUtils::SetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, "IteratorV2");
+    op_desc->SetOpKernelLibName("GE");
+    builder.AddDataEdge(data, 0, addn1, 0);
+    builder.AddControlEdge(addn1, netoutput);
+    return builder.GetGraph();
+  }
 
  protected:
   void SetUp() {}
@@ -65,4 +77,12 @@ TEST_F(UtestTaskGeneratorTest, AutoFindFpOpIndex) {
   EXPECT_EQ(task_generator.AutoFindFpOpIndex(graph, profiling_point), SUCCESS);
   // addn1 is fp
   EXPECT_EQ(profiling_point.fp_index, 2);
+}
+
+TEST_F(UtestTaskGeneratorTest, FindLastBpFromBpNode) {
+  auto graph = BuildGraphBpProfiling();
+  TaskGenerator task_generator(nullptr, 0);
+  auto net_output = graph->FindNode("netoutput");
+  // netoutput has no data input, return default value 0
+  EXPECT_EQ(task_generator.FindLastBpFromBpNode(graph, net_output), 0);
 }

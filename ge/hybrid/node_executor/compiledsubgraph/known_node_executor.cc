@@ -118,7 +118,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
   return SUCCESS;
 }
 
-Status KnownNodeTask::InitDavinciModel(const HybridModel &model) {
+Status KnownNodeTask::InitDavinciModel(const HybridModel &model, TensorBuffer *weight_buffer) {
   GELOGD("[Init][DavinciModel] start");
   davinci_model_->InitRuntimeParams();
   GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "init variable mem failed");
@@ -133,13 +133,20 @@ Status KnownNodeTask::InitDavinciModel(const HybridModel &model) {
     davinci_model_->SetKnownShapeGlobalStep(global_step);
   }
 
-  GE_CHK_STATUS_RET(DoInitDavinciModel(), "[Init][Model] Failed to init davinci model.");
+  void *weight = nullptr;
+  size_t weight_size = 0;
+  if (weight_buffer != nullptr) {
+    weight = weight_buffer->GetData();
+    weight_size = weight_buffer->GetSize();
+  }
+  GELOGD("Start to init davinci model, weight size = %zu", weight_size);
+  GE_CHK_STATUS_RET(DoInitDavinciModel(weight, weight_size), "[Init][Model] Failed to init davinci model.");
   GELOGD("[Init][Model] success");
   return SUCCESS;
 }
 
-Status KnownNodeTask::DoInitDavinciModel() {
-  return davinci_model_->Init();
+Status KnownNodeTask::DoInitDavinciModel(void *weight, size_t weight_size) {
+  return davinci_model_->Init(nullptr, 0, weight, weight_size);
 }
 
 Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
@@ -165,6 +172,10 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   const GeModelPtr ge_model = model.GetGeModel(node);
   GE_CHECK_NOTNULL(ge_model);
 
+  AscendString graph_name;
+  GE_CHK_GRAPH_STATUS_RET(ge_model->GetGraph().GetName(graph_name), "Failed to get graph name");
+  auto weight_buffer = model.GetModelWeight(graph_name.GetString());
+
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
   GE_CHECK_NOTNULL(davinci_model);
 
@@ -181,7 +192,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
 
   auto known_node_task = MakeShared<KnownNodeTask>(davinci_model);
   GE_CHECK_NOTNULL(known_node_task);
-  GE_CHK_STATUS_RET_NOLOG(known_node_task->InitDavinciModel(model));
+  GE_CHK_STATUS_RET_NOLOG(known_node_task->InitDavinciModel(model, weight_buffer));
   GELOGI("[%s] KnownNodeExecutor::LoadTask success.", node->GetName().c_str());
   task = std::move(known_node_task);
   return SUCCESS;

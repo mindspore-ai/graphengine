@@ -795,7 +795,9 @@ uint32_t TaskGenerator::FindLastBpFromBpNode(const ComputeGraphPtr &graph, const
     GELOGI("bp_op_desc is %s, id is %ld", bp_op_desc->GetName().c_str(), bp_op_desc->GetId());
   }
 
-  GE_CHECK_NOTNULL(bp_op_desc);
+  if (bp_op_desc == nullptr) {
+    return last_bp;
+  }
   uint32_t current_idx = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();

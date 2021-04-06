@@ -35,5 +35,6 @@ REGISTER_OP_CREATOR(Mul, HostOp);
 REGISTER_OP_CREATOR(ConcatV2, HostOp);
 REGISTER_OP_CREATOR(Data, HostOp);
 REGISTER_OP_CREATOR(Fill, HostOp);
+REGISTER_OP_CREATOR(NetOutput, HostOp);
 }  // namespace host_cpu
 }  // namespace ge

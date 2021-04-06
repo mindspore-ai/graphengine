@@ -28,6 +28,7 @@ Status NoOpKernel::Compute(TaskContext& context) {
 }
 
 REGISTER_KERNEL_CREATOR(NoOp, NoOpKernel);
+REGISTER_KERNEL_CREATOR(NetOutput, NoOpKernel);
 }  // namespace host_cpu
 }  // namespace hybrid
 }  // namespace ge

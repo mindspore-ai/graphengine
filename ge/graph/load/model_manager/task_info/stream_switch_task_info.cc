@@ -148,7 +148,7 @@ Status StreamSwitchTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davinc
     return FAILED;
   }
   for (uint32_t i = 0; i < STREAM_SWITCH_INPUT_NUM; ++i) {
-    string input_tensor_name = op_desc->GetInputNameByIndex(i);
+    string input_tensor_name = op_desc->GetName() + std::to_string(i);
     int64_t fixed_addr_offset = davinci_model->GetFixedAddrsSize(input_tensor_name);
     fixed_addr_offset_.emplace_back(fixed_addr_offset);
     auto tensor_desc = op_desc->GetInputDesc(i);

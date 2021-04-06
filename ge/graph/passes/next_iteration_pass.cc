@@ -101,7 +101,8 @@ Status NextIterationPass::FindWhileGroups() {
     const std::string &frame_name = loop_group_iter.first;
     for (const auto &enter_node : loop_group_iter.second->enter_nodes) {
       for (const auto &out_node : enter_node->GetOutAllNodes()) {
-        const string &type = out_node->GetType();
+        std::string type;
+        GE_CHK_STATUS_RET(GetOriginalType(out_node, type), "Get node type failed.");
         if ((type != MERGE) && (type != REFMERGE)) {
           continue;
         }
@@ -310,7 +311,8 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
   }
 
   for (const auto &tmp_node : nodes) {
-    const std::string type = tmp_node->GetType();
+    std::string type;
+    GE_CHK_STATUS_RET(GetOriginalType(tmp_node, type), "Get node type failed.");
     if ((target_type == LOOPCOND) && (type == target_type)) {
       target_node = tmp_node;
       break;

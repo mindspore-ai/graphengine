@@ -34,7 +34,8 @@ Status AiCoreTaskCompiler::Initialize() {
   auto ge_lib = GELib::GetInstance();
   GE_CHECK_NOTNULL(ge_lib);
   if (!ge_lib->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Ge_lib is uninitialized, failed.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][State] failed, because Ge_lib is uninitialized.");
+    REPORT_INNER_ERROR("E19999", "Initialize failed, because Ge_lib is uninitialized.");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
   auto &kernel_manager = ge_lib->OpsKernelManagerObj();
@@ -49,11 +50,9 @@ Status AiCoreTaskCompiler::DoCompileOp(const NodePtr &node) const {
   vector<NodePtr> node_vec;
   node_vec.emplace_back(node);
   GE_CHK_STATUS_RET(aic_kernel_store_->CompileOpRun(node_vec),
-                    "Failed to execute CompileOp, node = %s",
-                    node->GetName().c_str());
+                    "[Invoke][CompileOpRun] Failed, node = %s", node->GetName().c_str());
   GE_CHK_STATUS_RET(OpsKernelBuilderManager::Instance().CalcOpRunningParam(*node),
-                    "Failed to execute CalcOpRunningParam, node = %s",
-                    node->GetName().c_str());
+                    "[Invoke][CalcOpRunningParam] Failed, node = %s", node->GetName().c_str());
   return SUCCESS;
 }
 
@@ -102,7 +101,7 @@ Status AiCoreTaskCompiler::DoGenerateTask(const Node &node,
     ret = OpsKernelBuilderManager::Instance().GenerateTask(node, context, tasks);
   }
 
-  GE_CHK_STATUS(ret, "Failed to execute GenerateTask, node = %s", node.GetName().c_str());
+  GE_CHK_STATUS(ret, "[Invoke][GenerateTask] Failed, node = %s", node.GetName().c_str());
   GE_CHK_RT(rtModelUnbindStream(rt_model_, stream));
   GE_CHK_RT(rtModelDestroy(rt_model_));
   return ret;

@@ -48,8 +48,7 @@ void HybridModelAsyncExecutor::SetModelId(uint32_t model_id) {
 
 Status HybridModelAsyncExecutor::EnqueueData(const shared_ptr<InputDataWrapper> &data) {
   if (data_inputer_->Push(data) != SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Data queue is full, please call again later when %s, model_id %u.",
-        __FUNCTION__, model_id_);
+    REPORT_CALL_ERROR("E19999", "Data queue is full, please call again later, model_id %u.", model_id_);
     GELOGE(domi::DATA_QUEUE_ISFULL,
         "[Push][Data] Data queue is full, please call again later, model_id %u ", model_id_);
     return domi::DATA_QUEUE_ISFULL;
@@ -62,8 +61,7 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
   GELOGD("HybridModelExecutor::Start IN, has listener = %d", listener != nullptr);
   std::lock_guard<std::mutex> lk(mu_);
   if (run_flag_) {
-    REPORT_INNER_ERROR("E19999",
-        "Model already started when HybridModelAsyncExecutor %s, model_id:%u.", __FUNCTION__, model_id_);
+    REPORT_INNER_ERROR("E19999", "Model already started, model_id:%u.", model_id_);
     GELOGE(INTERNAL_ERROR, "[Check][RunState] Model already started, model_id:%u.", model_id_);
     return INTERNAL_ERROR;
   }
@@ -209,8 +207,7 @@ Status HybridModelAsyncExecutor::HandleResult(Status exec_ret,
 
   if (exec_ret != SUCCESS) {
     GELOGE(exec_ret, "[Check][Param:Status] failed to execute graph. model_id = %u", model_id_);
-    REPORT_INNER_ERROR("E19999",
-        "failed to execute graph when HybridModelAsyncExecutor %s. model_id = %u", __FUNCTION__, model_id_);
+    REPORT_INNER_ERROR("E19999", "failed to execute graph. model_id = %u", model_id_);
     return OnComputeDone(data_id, INTERNAL_ERROR, output_tensor_info_list);
   }
 
@@ -247,11 +244,10 @@ Status HybridModelAsyncExecutor::SyncVarData() {
 Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, HybridModelExecutor::ExecuteArgs &args) {
   if (current_data.blobs.size() < input_tensor_desc_.size()) {
     GELOGE(PARAM_INVALID,
-        "[Check][Size]Blob size mismatches, expect at least %zu, but got %zu, model_id = %u",
-        input_tensor_desc_.size(), current_data.blobs.size(), model_id_);
-    REPORT_INNER_ERROR("E19999",
-        "Blob size mismatches, expect at least %zu, but got %zu when HybridModelAsyncExecutor %s, model_id = %u.",
-        input_tensor_desc_.size(), current_data.blobs.size(), __FUNCTION__, model_id_);
+           "[Check][Size]Blob size mismatches, expect at least %zu, but got %zu, model_id = %u",
+           input_tensor_desc_.size(), current_data.blobs.size(), model_id_);
+    REPORT_INNER_ERROR("E19999", "Blob size mismatches, expect at least %zu, but got %zu, model_id = %u.",
+                       input_tensor_desc_.size(), current_data.blobs.size(), model_id_);
     return PARAM_INVALID;
   }
 
@@ -264,11 +260,10 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
     if (is_input_dynamic_[input_index]) {
       if (input_index >= current_data.shapes.size()) {
         GELOGE(PARAM_INVALID,
-            "[Check][Range]Shape index out of range, index = %zu, shape size = %zu model_id = %u.",
-            input_index, current_data.shapes.size(), model_id_);
-        REPORT_INNER_ERROR("E19999",
-            "Shape index out of range, index = %zu, shape size = %zu when HybridModelAsyncExecutor %s, model_id = %u.",
-            input_index, current_data.shapes.size(), __FUNCTION__, model_id_);
+               "[Check][Range]Shape index out of range, index = %zu, shape size = %zu model_id = %u.",
+               input_index, current_data.shapes.size(), model_id_);
+        REPORT_INNER_ERROR("E19999", "Shape index out of range, index = %zu, shape size = %zu, model_id = %u.",
+                           input_index, current_data.shapes.size(), model_id_);
         return PARAM_INVALID;
       }
       auto &tensor_desc = input_tensor_desc_[input_index];
@@ -283,12 +278,12 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         }
         // range[k].second can be -1
         if (shape.GetDim(k) < range[k].first || (range[k].second >= 0 && shape.GetDim(k) > range[k].second)) {
-          GELOGE(PARAM_INVALID,
-              "[Check][Range]Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld], model_id = %u.",
-              input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);
-          REPORT_INNER_ERROR("E19999",
-              "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld, range = [%ld, %ld], model_id = %u.",
-              input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);
+          GELOGE(PARAM_INVALID, "[Check][Range]Dim out of range, shape idx = %zu, dim idx = %zu,"
+                 "dim = %ld, range = [%ld, %ld], model_id = %u.",
+                 input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);
+          REPORT_INNER_ERROR("E19999", "Dim out of range, shape idx = %zu, dim idx = %zu, dim = %ld,"
+                             "range = [%ld, %ld], model_id = %u.",
+                             input_index, k, shape.GetDim(k), range[k].first, range[k].second, model_id_);
           return PARAM_INVALID;
         }
       }
@@ -296,8 +291,9 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
       args.input_desc[input_index] = tensor_desc;
       GELOGD("Update shape of input[%zu] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
       GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, tensor_size),
-          "[Invoke][GetTensorMemorySizeInBytes]Failed to calc tensor size, index = %zu, shape = [%s], model_id = %u.",
-          input_index, tensor_desc->GetShape().ToString().c_str(), model_id_);
+                              "[Invoke][GetTensorMemorySizeInBytes]Failed to calc tensor size,"
+                              "index = %zu, shape = [%s], model_id = %u.",
+                              input_index, tensor_desc->GetShape().ToString().c_str(), model_id_);
       GELOGD("Input tensor[%zu] size = %zu", input_index, tensor_size);
     }
 
@@ -316,11 +312,11 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
 
     if (mem_size < data_buf.length) {
       REPORT_INNER_ERROR("E19999",
-          "input data size(%lu) does not match model required size(%lu) when %s, ret failed, model_id = %u.",
-          data_buf.length, mem_size, __FUNCTION__, model_id_);
+                         "input data size(%lu) does not match model required size(%lu), ret failed, model_id = %u.",
+                         data_buf.length, mem_size, model_id_);
       GELOGE(PARAM_INVALID,
-          "[Check][Size]input data size(%lu) does not match model required size(%lu), ret failed, model_id = %u.",
-          data_buf.length, mem_size, model_id_);
+             "[Check][Size]input data size(%lu) does not match model required size(%lu), ret failed, model_id = %u.",
+             data_buf.length, mem_size, model_id_);
       return PARAM_INVALID;
     }
     if (data_buf.length > 0) {
@@ -391,11 +387,11 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
   std::vector<TensorValue> &output_tensors = args.outputs;
   if (output_tensor_desc_list.size() != output_tensors.size()) {
     GELOGE(INTERNAL_ERROR,
-        "[Check][Size]Output sizes mismatch. From op_desc = %zu, and from output tensors = %zu, model_id = %u.",
-        output_tensor_desc_list.size(), output_tensors.size(), model_id_);
-    REPORT_INNER_ERROR("E19999", "Output sizes mismatch. From op_desc = %zu, and from output tensors = %zu, "
-        "when HybridModelAsyncExecutor %s, model_id = %u.",
-        output_tensor_desc_list.size(), output_tensors.size(), __FUNCTION__, model_id_);
+           "[Check][Size]Output sizes mismatch. From op_desc = %zu, and from output tensors = %zu, model_id = %u.",
+           output_tensor_desc_list.size(), output_tensors.size(), model_id_);
+    REPORT_INNER_ERROR("E19999",
+                       "Output sizes mismatch. From op_desc = %zu, and from output tensors = %zu, model_id = %u.",
+                       output_tensor_desc_list.size(), output_tensors.size(), model_id_);
     return INTERNAL_ERROR;
   }
 
@@ -410,7 +406,7 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
                                                            tensor_desc->GetFormat(),
                                                            tensor_desc->GetDataType(),
                                                            output_size),
-                            "Failed to calc tensor size for output[%zu]. shape = [%s], type = %s, format = %s",
+                            "[Calc][TensorMemSize]Failed for output[%zu]. shape = [%s], type = %s, format = %s",
                             i,
                             tensor_desc->GetShape().ToString().c_str(),
                             TypeUtils::DataTypeToSerialString(tensor_desc->GetDataType()).c_str(),
@@ -427,12 +423,10 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
     GE_CHECK_LE(output_size, UINT32_MAX);
     if (output_tensor.GetSize() < static_cast<size_t>(output_size)) {
       GELOGE(INTERNAL_ERROR,
-          "[Check][Size]output[%zu] tensor size(%zu) is not enough for output shape [%s], model_id = %u.",
-          i, output_tensor.GetSize(), tensor_desc->GetShape().ToString().c_str(), model_id_);
-      REPORT_INNER_ERROR("E19999",
-          "output[%zu] tensor size(%zu) is not enough for output shape [%s] model_id = %u,"
-          " when HybridModelAsyncExecutor %s.",
-          i, output_tensor.GetSize(), tensor_desc->GetShape().ToString().c_str(), model_id_, __FUNCTION__);
+             "[Check][Size]output[%zu] tensor size(%zu) is not enough for output shape [%s], model_id = %u.",
+             i, output_tensor.GetSize(), tensor_desc->GetShape().ToString().c_str(), model_id_);
+      REPORT_INNER_ERROR("E19999", "output[%zu] tensor size(%zu) is not enough for output shape [%s] model_id = %u",
+                         i, output_tensor.GetSize(), tensor_desc->GetShape().ToString().c_str(), model_id_);
       return INTERNAL_ERROR;
     }
 
@@ -569,7 +563,7 @@ Status HybridModelAsyncExecutor::DumpOpDebug() {
     }
     data_dumper_.SetLoopAddr(global_step, loop_per_iter, loop_cond);
     GE_CHK_STATUS_RET(data_dumper_.LoadDumpInfo(),
-        "[Invoke][LoadDumpInfo] failed in hybrid engine, model_id = %u.", model_id_);
+                      "[Invoke][LoadDumpInfo] failed in hybrid engine, model_id = %u.", model_id_);
     GELOGD("Dump op debug SUCCESS in hybrid engine");
   }
   return SUCCESS;

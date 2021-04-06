@@ -41,8 +41,7 @@ NpuMemoryAllocator *NpuMemoryAllocator::GetAllocator() {
   auto rt_result = rtGetDevice(&device_id);
   if (rt_result != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[Get][Device] Failed, result:%d.", rt_result);
-    REPORT_INNER_ERROR("E19999", "rtGetDevice failed when NpuMemoryAllocator %s, result:%d.",
-        __FUNCTION__, rt_result);
+    REPORT_INNER_ERROR("E19999", "rtGetDevice failed, result:%d.", rt_result);
     return nullptr;
   }
 
@@ -62,8 +61,7 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   if (allocate_size == 0) {
     GELOGE(MEMALLOC_FAILED, "[Check][Param:size_t]Memory size is 0, device_id = %u, size = %zu.",
         device_id_, allocate_size);
-    REPORT_INNER_ERROR("E19999", "Memory size is 0, device_id = %u, size = %zu when %s.",
-        device_id_, allocate_size, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Memory size is 0, device_id = %u, size = %zu.", device_id_, allocate_size);
     return nullptr;
   }
 
@@ -75,9 +73,9 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
   } else {
     if (allocate_size > kMaxHbmMemorySize) {
       GELOGE(PARAM_INVALID, "[Check][Param:size_t]Invalid HBM memory size: %zu bigger than limit:%lu, check invalid.",
-          allocate_size, kMaxHbmMemorySize);
-      REPORT_CALL_ERROR("E19999", "Invalid HBM memory size: %zu bigger than limit:%lu, check invalid when %s.",
-          allocate_size, kMaxHbmMemorySize, __FUNCTION__);
+             allocate_size, kMaxHbmMemorySize);
+      REPORT_CALL_ERROR("E19999", "Invalid HBM memory size: %zu bigger than limit:%lu, check invalid.",
+                        allocate_size, kMaxHbmMemorySize);
       return nullptr;
     }
     void *try_reuse_addr = nullptr;
@@ -96,10 +94,10 @@ void *NpuMemoryAllocator::Allocate(std::size_t size, AllocationAttr *attr) {
                  .Malloc(allocate_size, reinterpret_cast<uint8_t *>(try_reuse_addr), device_id_);
   }
   if (buffer == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "[Malloc][Memory] Failed, device_id = %u, size = %zu.",
-        device_id_, allocate_size);
-    REPORT_CALL_ERROR("E19999", "malloc memory failed, device_id = %u, size = %zu when %s.",
-        device_id_, allocate_size, __FUNCTION__);
+    GELOGE(MEMALLOC_FAILED, "[Malloc][Memory] Failed, device_id = %u, size = %zu",
+           device_id_, allocate_size);
+    REPORT_CALL_ERROR("E19999", "malloc memory failed, device_id = %u, size = %zu",
+                      device_id_, allocate_size);
     return nullptr;
   }
 

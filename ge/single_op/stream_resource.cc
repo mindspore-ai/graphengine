@@ -96,7 +96,7 @@ uint8_t *StreamResource::DoMallocMemory(const std::string &purpose,
   auto ret = rtMalloc(reinterpret_cast<void **>(&buffer), size, RT_MEMORY_HBM);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[RtMalloc][Memory] failed, size = %zu, ret = %d", size, ret);
-    REPORT_INNER_ERROR("E19999", "rtMalloc failed, size = %zu, ret = %d, when %s.", size, ret, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "rtMalloc failed, size = %zu, ret = %d.", size, ret);
     return nullptr;
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, purpose.c_str(), size)
@@ -104,7 +104,7 @@ uint8_t *StreamResource::DoMallocMemory(const std::string &purpose,
   ret = rtMemset(buffer, size, 0U, size);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[RtMemset][Memory] failed, ret = %d", ret);
-    REPORT_INNER_ERROR("E19999", "rtMemset failed, ret = %d, when %s.", ret, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "rtMemset failed, ret = %d.", ret);
     auto rt_ret = rtFree(buffer);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[RtFree][Memory] failed"));
     return nullptr;
@@ -132,8 +132,7 @@ uint8_t *StreamResource::MallocWeight(const std::string &purpose, size_t size) {
   auto ret = rtMalloc(reinterpret_cast<void **>(&buffer), size, RT_MEMORY_HBM);
   if (ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[RtMalloc][Memory] failed, size = %zu, ret = %d", size, ret);
-    REPORT_INNER_ERROR("E19999", "rtMalloc failed, size = %zu, ret = %d when %s.", 
-        size, ret, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "rtMalloc failed, size = %zu, ret = %d.", size, ret);
     return nullptr;
   }
 
@@ -192,7 +191,7 @@ Status StreamResource::BuildOperator(const ModelData &model_data, SingleOp **sin
   auto new_op = std::unique_ptr<SingleOp>(new(std::nothrow) SingleOp(this, &stream_mu_, stream_));
   if (new_op == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[New][SingleOp] failed.");
-    REPORT_INNER_ERROR("E19999", "new SingleOp failed when %s.", __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "new SingleOp failed.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 

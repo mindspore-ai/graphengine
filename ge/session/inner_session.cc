@@ -179,9 +179,9 @@ Status InnerSession::AddGraph(uint32_t graph_id, const Graph &graph,
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
     GELOGE(GE_SESS_INIT_FAILED, "[Add][Graph] failed because GraphManager not init, InnerSession:%lu, graph_id:%u.",
-        session_id_, graph_id);
+           session_id_, graph_id);
     REPORT_INNER_ERROR("E19999", "AddGraph failed because GraphManager not init, InnerSession:%lu, graph_id:%u.",
-     session_id_, graph_id);
+                       session_id_, graph_id);
     return GE_SESS_INIT_FAILED;
   }
   UpdateThreadContext(options);
@@ -225,10 +225,10 @@ Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inpu
   if (mutex_.try_lock()) {
     std::lock_guard<std::mutex> lock(mutex_, std::adopt_lock);
     if (!init_flag_) {
-      GELOGE(GE_SESS_INIT_FAILED, "[Run][Graph]failed because GraphManager not Init, InnerSession:%lu, graph_id:%u.", 
-          session_id_, graph_id);
-      REPORT_INNER_ERROR("E19999", "RunGraph failed because GraphManager not Init, InnerSession:%lu, graph_id:%u.", 
-        session_id_, graph_id);
+      GELOGE(GE_SESS_INIT_FAILED, "[Run][Graph]failed because GraphManager not Init, InnerSession:%lu, graph_id:%u.",
+             session_id_, graph_id);
+      REPORT_INNER_ERROR("E19999", "RunGraph failed because GraphManager not Init, InnerSession:%lu, graph_id:%u.",
+                         session_id_, graph_id);
       return GE_SESS_INIT_FAILED;
     }
     UpdateThreadContext(graph_id);
@@ -255,8 +255,9 @@ Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inpu
     return SUCCESS;
   } else {
     GELOGE(GE_SESS_ALREADY_RUNNING, "[Run][Graph]failed, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
-    REPORT_INNER_ERROR("E19999", 
-        "RunGraph failed because mutex try_lock false, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
+    REPORT_INNER_ERROR("E19999",
+                       "RunGraph failed because mutex try_lock false, InnerSession:%lu, graph_id=%u.",
+                       session_id_, graph_id);
     return GE_SESS_ALREADY_RUNNING;
   }
 }
@@ -264,18 +265,20 @@ Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inpu
 Status InnerSession::RemoveGraph(uint32_t graph_id) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
-    GELOGE(GE_SESS_INIT_FAILED, 
-        "[Remove][Graph] failed because GraphManager not init, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
-    REPORT_INNER_ERROR("E19999", 
-        "RemoveGraph failed, because GraphManager not init, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
+    GELOGE(GE_SESS_INIT_FAILED,
+           "[Remove][Graph] failed because GraphManager not init, InnerSession:%lu, graph_id=%u.",
+           session_id_, graph_id);
+    REPORT_INNER_ERROR("E19999",
+                       "RemoveGraph failed, because GraphManager not init, InnerSession:%lu, graph_id=%u.",
+                       session_id_, graph_id);
     return GE_SESS_INIT_FAILED;
   }
   UpdateThreadContext(graph_id);
   Status ret = graph_manager_.RemoveGraph(graph_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Remove][Graph] failed, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
-    REPORT_CALL_ERROR("E19999", 
-        "GraphManager RemoveGraph failed, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager RemoveGraph failed, InnerSession:%lu, graph_id=%u.", session_id_, graph_id);
     return ret;
   }
 
@@ -288,18 +291,19 @@ Status InnerSession::RegisterCallBackFunc(
     const std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)> &callback) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
-    GELOGE(GE_SESS_INIT_FAILED, 
-        "[Register][CallBackFunc] failed because GraphManager not initialize, InnerSession:%lu.", session_id_);
-    REPORT_INNER_ERROR("E19999", 
-        "RegisterCallBackFunc failed because GraphManager not init, InnerSession:%lu.", session_id_);
+    GELOGE(GE_SESS_INIT_FAILED,
+           "[Register][CallBackFunc] failed because GraphManager not initialize, InnerSession:%lu.", session_id_);
+    REPORT_INNER_ERROR("E19999",
+                       "RegisterCallBackFunc failed because GraphManager not init, InnerSession:%lu.", session_id_);
     return GE_SESS_INIT_FAILED;
   }
   UpdateThreadContext(std::map<std::string, std::string>{});
   Status ret = graph_manager_.RegisterCallBackFunc(key, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Register][CallBackFunc] failed, InnerSession:%lu register %s.", session_id_, key.c_str());
-    REPORT_CALL_ERROR("E19999", 
-        "GraphManager RegisterCallBackFunc failed, InnerSession:%lu register %s.", session_id_, key.c_str());
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager RegisterCallBackFunc failed, InnerSession:%lu register %s.",
+                      session_id_, key.c_str());
     return ret;
   }
 
@@ -312,18 +316,20 @@ Status InnerSession::RegisterCallBackFunc(
   const std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)> &callback) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
-    GELOGE(GE_SESS_INIT_FAILED, 
-        "[Register][CallBackFunc]failed because GraphManager not initialize, InnerSession:%lu.", session_id_);
-    REPORT_INNER_ERROR("E19999", 
-        "RegisterCallBackFunc failed because GraphManager not initialize, InnerSession:%lu.", session_id_);
+    GELOGE(GE_SESS_INIT_FAILED,
+           "[Register][CallBackFunc]failed because GraphManager not initialize, InnerSession:%lu.", session_id_);
+    REPORT_INNER_ERROR("E19999",
+                       "RegisterCallBackFunc failed because GraphManager not initialize, InnerSession:%lu.",
+                       session_id_);
     return GE_SESS_INIT_FAILED;
   }
   UpdateThreadContext(std::map<std::string, std::string>{});
   Status ret = graph_manager_.RegisterCallBackFunc(key, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Register][CallBackFunc] failed, InnerSession:%lu register %s.", session_id_, key.c_str());
-    REPORT_CALL_ERROR("E19999", 
-        "GraphManager RegisterCallBackFunc failed, InnerSession:%lu register %s.", session_id_, key.c_str());
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager RegisterCallBackFunc failed, InnerSession:%lu register %s.",
+                      session_id_, key.c_str());
     return ret;
   }
 
@@ -349,8 +355,8 @@ Status InnerSession::BuildGraph(uint32_t graph_id, const std::vector<InputTensor
   Status ret = graph_manager_.BuildGraph(graph_id, ge_inputs, ge_root_model, session_id_, true);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Build][Graph] failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
-    REPORT_CALL_ERROR("E19999", 
-        "GraphManager BuildGraph failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager BuildGraph failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
     return ret;
   }
   GELOGI("[InnerSession:%lu] build graph success, graph_id=%u.", session_id_, graph_id);
@@ -364,8 +370,8 @@ Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<InputTen
   Status ret = graph_manager_.RunGraphAsync(graph_id, inputs, session_id_, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Run][GraphAsync]failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
-    REPORT_CALL_ERROR("E19999", 
-        "GraphManager RunGraphAsync failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager RunGraphAsync failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
     return ret;
   }
   GELOGI("[InnerSession:%lu] run graph success, graph_id=%u.", session_id_, graph_id);
@@ -427,11 +433,10 @@ Status InnerSession::AddDumpProperties(const DumpProperties &dump_properties) {
 Status InnerSession::RemoveDumpProperties() {
   DumpManager::GetInstance().RemoveDumpProperties(session_id_);
   if (is_dump_server_inited_ && DumpManager::GetInstance().GetDumpPropertiesMap().empty()) {
-    GE_IF_BOOL_EXEC(AdxDataDumpServerUnInit() != kDumpStatus, 
+    GE_IF_BOOL_EXEC(AdxDataDumpServerUnInit() != kDumpStatus,
                     GELOGE(PARAM_INVALID, "[UnInit][AdxDataDumpServer] failed, session_id:%lu.", session_id_);
-                    REPORT_INNER_ERROR("E19999", 
-                        "RemoveDumpProperties failed because AdxDataDumpServerUnInit failed, session_id:%lu.",
-                        session_id_);
+                    REPORT_INNER_ERROR("E19999", "RemoveDumpProperties failed because AdxDataDumpServerUnInit failed,"
+                                       "session_id:%lu", session_id_);
                     return PARAM_INVALID)
     GELOGI("UnInit adx data dump server success");
     is_dump_server_inited_ = false;

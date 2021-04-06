@@ -95,7 +95,12 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
       } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
       } else {
-        GELOGE(PARAM_INVALID, "TBE: Invalid parameter magic number! json: %s", json_string.c_str());
+        GELOGE(PARAM_INVALID, "[Check][JsonStr]Attr:%s in op:%s(%s), value:%s check invalid",
+               TVM_ATTR_NAME_MAGIC.c_str(), op_desc_ptr->GetName().c_str(),
+               op_desc_ptr->GetType().c_str(), json_string.c_str());
+        REPORT_INNER_ERROR("E19999", "Attr:%s in op:%s(%s), value:%s check invalid",
+                           TVM_ATTR_NAME_MAGIC.c_str(), op_desc_ptr->GetName().c_str(),
+                           op_desc_ptr->GetType().c_str(), json_string.c_str());
         return PARAM_INVALID;
       }
       binary.version = 0;
@@ -107,7 +112,8 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
       GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForTvmMetaData(), meta_data),
                       GELOGI("Get original type of json_string"));
       GELOGI("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
-      GE_IF_BOOL_EXEC(!meta_data.empty(), GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
+      GE_IF_BOOL_EXEC(!meta_data.empty(),
+                      GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
       kernel_store.StoreTBEHandle(stub_name_.c_str(), bin_handle, tbe_kernel);
     } else {
       GELOGI("TBE: find the binfile_key[%s] in HandleMap", stub_name_.c_str());
@@ -117,7 +123,8 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
     GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForKernelName(op_desc), kernel_name),
                     GELOGI("Get original type of kernel_name"));
     GELOGI("TBE: binfile_key=%s, kernel_name=%s", stub_name_.c_str(), kernel_name.c_str());
-    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_name_.c_str(), stub_name_.c_str(), kernel_name.c_str(), 0));
+    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_name_.c_str(),
+                                     stub_name_.c_str(), kernel_name.c_str(), 0));
   }
   return SUCCESS;
 }
@@ -126,7 +133,9 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
   TbeHandleRegistry &registry = TbeHandleRegistry::GetInstance();
   auto tbe_kernel = op_desc.TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
   if (tbe_kernel == nullptr) {
-    GELOGE(INTERNAL_ERROR, "TBE: %s can't find tvm bin file!", op_desc.GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Invoke][TryGetExtAttr]TBE: %s can't find tvm bin file!",
+           op_desc.GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "TBE: %s can't find tvm bin file.", op_desc.GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -143,7 +152,12 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
   } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
     binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
   } else {
-    GELOGE(PARAM_INVALID, "TBE: Invalid parameter magic number! json: %s", json_string.c_str());
+    GELOGE(PARAM_INVALID, "[Check][JsonStr]Attr:%s in op:%s(%s), value:%s check invalid",
+           TVM_ATTR_NAME_MAGIC.c_str(), op_desc.GetName().c_str(),
+           op_desc.GetType().c_str(), json_string.c_str());
+    REPORT_INNER_ERROR("E19999", "Attr:%s in op:%s(%s), value:%s check invalid",
+                       TVM_ATTR_NAME_MAGIC.c_str(), op_desc.GetName().c_str(),
+                       op_desc.GetType().c_str(), json_string.c_str());
     return PARAM_INVALID;
   }
   binary.version = 0;
@@ -154,11 +168,15 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
   handle_ = bin_handle;
   auto holder = std::unique_ptr<TbeHandleHolder>(new (std::nothrow) TbeHandleHolder(handle_));
   if (holder == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "create HandleHodler failed.");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "[Create][TbeHandleHolder] failed, node name = %s", op_desc.GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "create TbeHandleHolder failed, node name = %s.",
+                      op_desc.GetName().c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   if (!registry.AddHandle(std::move(holder))) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Add handle failed. node name = %s", op_desc.GetName().c_str());
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Add][Handle] failed. node name = %s", op_desc.GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "AddHandle failed, node name = %s.", op_desc.GetName().c_str());
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   return SUCCESS;
@@ -176,39 +194,48 @@ Status AiCoreOpTask::InitWithKernelDef(const OpDesc &op_desc, const domi::TaskDe
   args_.reset(new(std::nothrow) uint8_t[args_size_]);
   GE_CHECK_NOTNULL(args_);
   if (kernel_def.args().size() < args_size_) {
-    GELOGE(INTERNAL_ERROR, "args size of kernel_def is smaller than args_size_");
+    GELOGE(INTERNAL_ERROR, "[Check][Size]args size:%zu of kernel_def is smaller than args_size_:%u, op:%s op_type:%s",
+           kernel_def.args().size(), args_size_, op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "args size:%zu of kernel_def is smaller than args_size_:%u op:%s op_type:%s.",
+                       kernel_def.args().size(), args_size_, op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
   errno_t err = memcpy_s(args_.get(), args_size_, kernel_def.args().data(), args_size_);
   if (err != EOK) {
-    GELOGE(INTERNAL_ERROR, "AiCoreTask memcpy args failed.");
+    GELOGE(INTERNAL_ERROR, "[Update][Date]AiCoreTask memcpy args failed, op:%s op_type:%s.",
+           op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "AiCoreTask memcpy args failed, op:%s op_type:%s.",
+                       op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
   if (context.args_offset().size() < sizeof(uint16_t)) {
-    GELOGE(INTERNAL_ERROR, "Invalid args_offset, size = %zu.", context.args_offset().size());
+    GELOGE(INTERNAL_ERROR, "[Check][Size]Invalid args_offset,"
+           "size:%zu is smaller than size of uint16_t, op:%s op_type:%s",
+           context.args_offset().size(), op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "Invalid args_offset, size:%zu is smaller than size of uint16_t, op:%s op_type:%s",
+                       context.args_offset().size(), op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
   const auto *args_offset_buffer = reinterpret_cast<const uint16_t *>(context.args_offset().data());
   uint32_t offset = *args_offset_buffer;
   if (offset > args_size_) {
-    GELOGE(INTERNAL_ERROR,
-           "[%s] Arg offset out of range. offset = %u, arg size = %u",
-           GetName().c_str(),
-           offset,
-           args_size_);
+    GELOGE(INTERNAL_ERROR, "[Check][Offset][%s] Arg offset out of range. offset = %u,"
+           "arg size = %u , op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+           op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] Arg offset out of range. offset = %u, arg size = %u"
+                       "op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+                       op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
   arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset);
   max_arg_count_ = (args_size_ - offset) / sizeof(void *);
-  GELOGD("[%s] Done setting kernel args successfully. stub_func = %s, block_dim = %d, arg base = %p, arg size = %u",
-         op_desc.GetName().c_str(),
-         stub_name_.c_str(),
-         block_dim_,
-         arg_base_,
-         args_size_);
+  GELOGD("[%s] Done setting kernel args successfully. stub_func = %s, block_dim = %d,"
+         "arg base = %p, arg size = %u",
+         op_desc.GetName().c_str(),  stub_name_.c_str(),
+         block_dim_, arg_base_, args_size_);
   return SUCCESS;
 }
 
@@ -225,29 +252,42 @@ Status AiCoreOpTask::InitWithKernelDefWithHandle(const OpDesc &op_desc, const do
   args_.reset(new(std::nothrow) uint8_t[args_size_]);
   GE_CHECK_NOTNULL(args_);
   if (kernel_with_handle.args().size() < args_size_) {
-    GELOGE(INTERNAL_ERROR, "args size of kernel_def is smaller than args_size_");
+    GELOGE(INTERNAL_ERROR, "[Check][Size]args size:%zu of kernel_def is smaller than args_size_:%u. op:%s op_type:%s",
+           kernel_with_handle.args().size(), args_size_, op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "args size:%zu of kernel_def is smaller than args_size_:%u. op:%s op_type:%s",
+                       kernel_with_handle.args().size(), args_size_,
+                       op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
   errno_t err = memcpy_s(args_.get(), args_size_, kernel_with_handle.args().data(), args_size_);
 
   if (err != EOK) {
-    GELOGE(INTERNAL_ERROR, "AiCoreTask memcpy args failed.");
+    GELOGE(INTERNAL_ERROR, "[Update][Date]AiCoreTask memcpy args failed. op:%s op_type:%s",
+           op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_CALL_ERROR("E19999", "AiCoreTask memcpy args failed. op:%s op_type:%s",
+                      op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
   if (context.args_offset().size() < sizeof(uint16_t)) {
-    GELOGE(INTERNAL_ERROR, "Invalid args_offset, size = %zu.", context.args_offset().size());
+    GELOGE(INTERNAL_ERROR, "[Check][Size]Invalid args_offset, size:%zu is smaller"
+           "than size of uint16_t. op:%s op_type:%s", context.args_offset().size(),
+           op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "Invalid args_offset, size:%zu is smaller"
+                       "than size of uint16_t. op:%s op_type:%s", context.args_offset().size(),
+                       op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
   const auto *args_offset_buffer = reinterpret_cast<const uint16_t *>(context.args_offset().data());
   uint32_t offset = *args_offset_buffer;
   if (offset > args_size_) {
-    GELOGE(INTERNAL_ERROR,
-           "[%s] Arg offset out of range. offset = %u, arg size = %u",
-           GetName().c_str(),
-           offset,
-           args_size_);
+    GELOGE(INTERNAL_ERROR, "[Check][Offset][%s] Arg offset out of range. offset = %u, arg size = %u"
+           "op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+           op_desc.GetName().c_str(), op_desc.GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] Arg offset out of range. offset = %u, arg size = %u"
+                       "op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+                       op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -257,11 +297,16 @@ Status AiCoreOpTask::InitWithKernelDefWithHandle(const OpDesc &op_desc, const do
 }
 
 Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
-  GE_CHK_STATUS_RET(ValidateTaskDef(task_def),
-                    "[%s] Failed to validate task def: [%s]",
-                    op_desc.GetName().c_str(),
-                    task_def.DebugString().c_str());
-
+  
+  auto rt_ret = ValidateTaskDef(task_def);
+  if (rt_ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "op:%s(op_type:%s) failed to validate task def:%s",
+           op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
+    GELOGE(rt_ret, "[Invoke][ValidateTaskDef]failed for op:%s(op_type:%s) to validate task def:%s",
+           op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
+    return rt_ret;
+  }
+ 
   if (task_def.type() != RT_MODEL_TASK_ALL_KERNEL) {
     GE_CHK_STATUS_RET(InitWithKernelDef(op_desc, task_def));
   } else {
@@ -273,14 +318,18 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
 Status AiCoreOpTask::ValidateTaskDef(const domi::TaskDef &task_def) {
   auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
   if (task_type != RT_MODEL_TASK_KERNEL && task_type != RT_MODEL_TASK_ALL_KERNEL) {
-    GELOGE(INTERNAL_ERROR, "Invalid task type (%d) in AiCore CreateTask.", static_cast<int>(task_type));
+    GELOGE(INTERNAL_ERROR,
+           "[Check][TaskType]Invalid task type (%d) in AiCore CreateTask.", static_cast<int>(task_type));
     return INTERNAL_ERROR;
   }
   const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
                                                             task_def.kernel_with_handle().context();
   auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
   if (kernel_type != ccKernelType::TE) {
-    GELOGE(INTERNAL_ERROR, "Invalid kernel type(%d) in AiCore TaskDef.", static_cast<int>(kernel_type));
+    GELOGE(INTERNAL_ERROR,
+           "[Check][TaskType]Invalid kernel type(%d) in AiCore TaskDef.", static_cast<int>(kernel_type));
+    REPORT_INNER_ERROR("E19999", "Invalid kernel type(%d) in AiCore TaskDef.",
+                       static_cast<int>(kernel_type));
     return INTERNAL_ERROR;
   }
 
@@ -324,13 +373,22 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
     return SUCCESS;
   }
   if (tiling_buffer_ == nullptr) {
-    GELOGE(INTERNAL_ERROR, "tiling_buffer is nullptr while tiling_data is not empty!");
+    GELOGE(INTERNAL_ERROR, "[Check][Buffer] %s tiling_buffer is nullptr while tiling_data is not empty!",
+           op_desc->GetName().c_str());
+    REPORT_INNER_ERROR("E19999",  "%s tiling_buffer is nullptr while tiling_data is not empty.",
+                       op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   if (tiling_data_.size() > tiling_buffer_->GetSize()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Tiling data size now (%zu) shouldn't larger than we alloc before (%zu).",
-           stub_name_.c_str(), tiling_data_.size(), tiling_buffer_->GetSize());
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] Tiling data size now (%zu)"
+           "shouldn't larger than we alloc before (%zu). op:%s op_type:%s",
+           stub_name_.c_str(), tiling_data_.size(), tiling_buffer_->GetSize(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] Tiling data size now (%zu)"
+                       "shouldn't larger than we alloc before (%zu). op:%s op_type:%s",
+                       stub_name_.c_str(), tiling_data_.size(), tiling_buffer_->GetSize(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -347,24 +405,27 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpParaCalculate.", node->GetName().c_str());
   GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
-                    "Failed calc tiling data of node %s.",
+                    "[Invoke][OpParaCalculate]Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
   return SUCCESS;
 }
 
 Status AiCoreOpTask::UpdateArgs(TaskContext &task_context) {
-  size_t expected_arg_count = task_context.NumInputs() + task_context.NumOutputs() + task_context.NumWorkspaces()
+  size_t expected_arg_count = task_context.NumInputs() + task_context.NumOutputs() +
+                              task_context.NumWorkspaces()
                               - output_indices_to_skip_.size();
   if (tiling_buffer_ != nullptr) {
     ++expected_arg_count;
   }
   if (expected_arg_count > max_arg_count_) {
     GELOGE(INTERNAL_ERROR,
-           "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
+           "[Check][arg_count][%s] Invalid arg memory, max arg count = %u, but expect = %zu",
            GetName().c_str(),
            max_arg_count_,
            expected_arg_count);
+    REPORT_INNER_ERROR("E19999", "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
+                       GetName().c_str(), max_arg_count_, expected_arg_count);
     return INTERNAL_ERROR;
   }
 
@@ -378,7 +439,8 @@ Status AiCoreOpTask::UpdateArgs(TaskContext &task_context) {
   for (int i = 0; i < task_context.NumOutputs(); ++i) {
     const auto output = task_context.GetOutput(i);
     GE_CHECK_NOTNULL(output);
-    if (find(output_indices_to_skip_.begin(), output_indices_to_skip_.end(), i) != output_indices_to_skip_.end()) {
+    if (find(output_indices_to_skip_.begin(), output_indices_to_skip_.end(), i) !=
+        output_indices_to_skip_.end()) {
       GELOGD("Node:%s output[%d] is an optional, the address don't need to be saved.",
              task_context.GetNodeName(), i);
       continue;
@@ -410,12 +472,12 @@ Status AiCoreOpTask::LaunchKernel(rtStream_t stream) {
   if (handle_ != nullptr) {
     std::string dev_func = original_kernel_key_ + std::to_string(tiling_key_);
     std::string kernel_info = node_info_ + std::to_string(tiling_key_);
-    GELOGD("AiCoreOpTask rtKernelLaunchWithHandle Start (dev_func = %s, block_dim = %u).", dev_func.c_str(),
-           block_dim_);
-    GE_CHK_RT_RET(rtKernelLaunchWithHandle(handle_, dev_func.c_str(), block_dim_, args_.get(), args_size_, nullptr,
-                                           stream, kernel_info.c_str()));
-    GELOGD("AiCoreOpTask rtKernelLaunchWithHandle End (dev_func = %s, block_dim = %u).", dev_func.c_str(),
-           block_dim_);
+    GELOGD("AiCoreOpTask rtKernelLaunchWithHandle Start (dev_func = %s, block_dim = %u).",
+           dev_func.c_str(), block_dim_);
+    GE_CHK_RT_RET(rtKernelLaunchWithHandle(handle_, dev_func.c_str(), block_dim_, args_.get(),
+                                           args_size_, nullptr, stream, kernel_info.c_str()));
+    GELOGD("AiCoreOpTask rtKernelLaunchWithHandle End (dev_func = %s, block_dim = %u).",
+           dev_func.c_str(), block_dim_);
   } else {
     GELOGD("AiCoreOpTask LaunchKernel Start (task = %s, block_dim = %u).", stub_name_.c_str(), block_dim_);
     GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), args_size_, nullptr, stream));
@@ -436,7 +498,8 @@ Status AiCoreOpTask::InitTilingInfo(const OpDesc &op_desc) {
   (void) AttrUtils::GetInt(op_desc, GetKeyForOpParamSize(), max_size);
   GELOGD("Got op param size by key: %s, ret = %ld", GetKeyForOpParamSize().c_str(), max_size);
   if (max_size < 0) {
-    GELOGE(PARAM_INVALID, "[%s] Invalid op_param_size: %ld.", op_desc.GetName().c_str(), max_size);
+    GELOGE(PARAM_INVALID, "[Check][Size][%s] Invalid op_param_size: %ld.", op_desc.GetName().c_str(), max_size);
+    REPORT_INNER_ERROR("E19999", "[%s] Invalid op_param_size: %ld.", op_desc.GetName().c_str(), max_size);
     return PARAM_INVALID;
   }
 
@@ -494,8 +557,10 @@ Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices(const OpDesc &op_desc) 
   workspace_info = op_desc.TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, workspace_info);
   if (atomic_output_indices.empty() && workspace_info.empty()) {
     GELOGE(INTERNAL_ERROR,
-           "[%s] Neither ATOMIC_ATTR_OUTPUT_INDEX nor EXT_ATTR_ATOMIC_WORKSPACE_INFO is empty.",
+           "[Check][Size][%s] ATOMIC_ATTR_OUTPUT_INDEX and EXT_ATTR_ATOMIC_WORKSPACE_INFO is empty. check invalid",
            op_desc.GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] ATOMIC_ATTR_OUTPUT_INDEX and EXT_ATTR_ATOMIC_WORKSPACE_INFO"
+                       "is empty. check invalid", op_desc.GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -522,11 +587,10 @@ Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices(const OpDesc &op_desc) 
   }
 
   if (arg_count > max_arg_count_) {
-    GELOGE(INTERNAL_ERROR,
-           "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
-           GetName().c_str(),
-           max_arg_count_,
-           arg_count);
+    GELOGE(INTERNAL_ERROR, "[Check][arg_count][%s] Invalid arg memory, max arg count = %u,"
+           "but expect = %zu", GetName().c_str(), max_arg_count_, arg_count);
+    REPORT_INNER_ERROR("E19999", "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
+                       GetName().c_str(), max_arg_count_, arg_count);
     return INTERNAL_ERROR;
   }
 
@@ -556,7 +620,7 @@ std::string AtomicAddrCleanOpTask::GetKeyForKernelName(const OpDesc &op_desc) co
 Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpAtomicCalculate.", node->GetName().c_str());
   GE_CHK_STATUS_RET(OpAtomicCalculate(*node, tiling_info),
-                    "Failed calc tiling data of node %s.",
+                    "[Invoke][OpAtomicCalculate]Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpAtomicCalculate successfully.", node->GetName().c_str());
   return SUCCESS;

@@ -42,7 +42,7 @@ AiCoreNodeTask::AiCoreNodeTask(std::vector<std::unique_ptr<AiCoreOpTask>> &&task
 Status AiCoreNodeExecutor::Initialize() {
   compiler_ = TaskCompilerFactory::GetInstance().GetTaskCompiler();
   if (compiler_ != nullptr) {
-    GE_CHK_STATUS_RET(compiler_->Initialize(), "Failed to init aicore task compiler.");
+    GE_CHK_STATUS_RET(compiler_->Initialize(), "[Init][TaskCompiler] failed.");
   }
   return SUCCESS;
 }
@@ -60,8 +60,12 @@ Status AiCoreNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &nod
              node->GetName().c_str());
       return SUCCESS;
     } else {
-      GELOGE(FAILED, "Task_defs is empty for node (%s) which 'support_dynamicshape' is true, failed.",
+      GELOGE(FAILED, "[Invoke][GetBool]Task_defs is empty for node (%s)"
+             "which 'support_dynamicshape' is true, check invalid",
              node->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "Task_defs is empty for node (%s)"
+                        "which 'support_dynamicshape' is true, check invalid",
+                        node->GetName().c_str());
       return FAILED;
     }
   }
@@ -69,7 +73,7 @@ Status AiCoreNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &nod
   AiCoreTaskBuilder builder(node->GetOpDesc(), *task_defs);
   std::unique_ptr<AiCoreNodeTask> node_task;
   GE_CHK_STATUS_RET(builder.BuildTask(node_task, true, is_single_op),
-                    "[%s] Failed to build op tasks.", node->GetName().c_str());
+                    "[Invoke][BuildTask][%s] Failed to build op tasks.", node->GetName().c_str());
   task = std::move(node_task);
   GELOGI("AiCoreNodeExecutor(%s) LoadTask End.", node->GetName().c_str());
   return SUCCESS;
@@ -105,7 +109,8 @@ bool AiCoreNodeTaskRegistry::AddTask(const std::string &node_key, const std::sha
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = reg_node_tasks_.find(node_key);
   if (iter != reg_node_tasks_.end()) {
-    GELOGE(FAILED, "AiCoreNodeTaskRegistry(%s) AddTask failed, key already exist.", node_key.c_str());
+    GELOGE(FAILED, "[Add][Task] failed, key:%s already exist.", node_key.c_str());
+    REPORT_INNER_ERROR("E19999", "AddTask failed, key:%s already exist.", node_key.c_str());
     return false;
   }
   auto ret = reg_node_tasks_.emplace(node_key, task);
@@ -131,13 +136,14 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
 
   auto ori_node_name = node->GetName();
   if (compiler_ == nullptr) {
-    GELOGE(FAILED, "[%s] Can not find any valid aicore task compiler.", ori_node_name.c_str());
+    GELOGE(FAILED, "[Find][Compiler][%s] Can not find any valid aicore task compiler.", ori_node_name.c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] Can not find any valid aicore task compiler.", ori_node_name.c_str());
     return FAILED;
   }
 
   AiCoreNodeTaskRegistry &registry = AiCoreNodeTaskRegistry::GetInstance();
   std::string shape_key;
-  GE_CHK_STATUS_RET(GenNodeKey(node, shape_key), "GenNodeKey failed, op name = %s.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(GenNodeKey(node, shape_key), "[Generate][NodeKey] failed, op name = %s.", node->GetName().c_str());
 
   auto node_key = std::to_string(model.GetModelId()) + "/" + shape_key;
   GELOGD("NodeKey for %s = %s", node->GetName().c_str(), node_key.c_str());
@@ -152,19 +158,21 @@ Status AiCoreNodeExecutor::CompileTask(const HybridModel &model,
 
   std::vector<domi::TaskDef> task_defs;
   op_desc->SetName(ori_node_name + "_" + shape_key);
-  GE_CHK_STATUS_RET(compiler_->CompileOp(node, task_defs), "Compile op(%s) failed.", ori_node_name.c_str());
+  GE_CHK_STATUS_RET(compiler_->CompileOp(node, task_defs), "[Compile][Op:%s] failed.", ori_node_name.c_str());
   op_desc->SetName(ori_node_name);
   GELOGD("successfully generated task_defs: %s", node->GetName().c_str());
 
   AiCoreTaskBuilder builder(node->GetOpDesc(), task_defs);
   std::unique_ptr<AiCoreNodeTask> node_task;
-  GE_CHK_STATUS_RET(builder.BuildTask(node_task, false), "[%s] Failed to build op tasks.", node->GetName().c_str());
+  GE_CHK_STATUS_RET(builder.BuildTask(node_task, false),
+                    "[Invoke][BuildTask][%s] Failed to build op tasks.", node->GetName().c_str());
   node_task->SetWorkspaceSizes(op_desc->GetWorkspaceBytes());
   aicore_task = std::move(node_task);
   GELOGD("successfully created node task: %s", node->GetName().c_str());
 
   if (!registry.AddTask(node_key, aicore_task)) {
-    GELOGE(INTERNAL_ERROR, "Add NodeTask failed, op name = %s.", node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][NodeTask] failed, op name = %s.", node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "add task failed, op name = %s.", node->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -196,7 +204,8 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     uint32_t stream_id = 0;
     rtError_t rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id); // must be called after Launch kernel
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Get task_id and stream_id failed, ret: 0x%X.", rt_ret);
+      GELOGE(RT_FAILED, "[Invoke][rtGetTaskIdAndStreamID] failed, ret: 0x%X.", rt_ret);
+      REPORT_CALL_ERROR("E19999", "rtGetTaskIdAndStreamID failed, ret: 0x%X.", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     GELOGD("Aicore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
@@ -271,7 +280,8 @@ Status AiCoreNodeTask::CheckOverflow(TaskContext &context) {
       GELOGW("Dynamic shape op %s is over flow", context.GetNodeName());
       return SUCCESS;
     } else if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "rtstreamsynchronize failed");
+      GELOGE(rt_ret, "[Invoke][rtstreamsynchronize] failed, ret:%d.", rt_ret);
+      REPORT_CALL_ERROR("E19999", "rtstreamsynchronize failed, ret:%d.", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     return SUCCESS;

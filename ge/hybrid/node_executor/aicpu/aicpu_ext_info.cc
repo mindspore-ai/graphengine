@@ -29,8 +29,9 @@ constexpr int64_t kDimEndFlag = INT64_MIN;
 Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
   GELOGI("Node[%s] parse ext info start.", node_name_.c_str());
   if (ext_info.empty()) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Node[%s] parse ext info failed as ext info is empty.",
-           node_name_.c_str());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "[Check][Param:ext_info]Node[%s] parse ext info failed as ext info is empty.", node_name_.c_str());
+    REPORT_INNER_ERROR("E19999", "Node[%s] parse ext info failed as ext info is empty.", node_name_.c_str());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -39,7 +40,8 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
   GE_CHECK_NOTNULL(ext_info_);
 
   if (memcpy_s(ext_info_.get(), ext_info_len_, ext_info.c_str(), ext_info.size()) != EOK) {
-    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[%s] Failed to coy ext info", node_name_.c_str());
+    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][ext_info_][%s] Failed to copy ext info", node_name_.c_str());
+    REPORT_CALL_ERROR("E19999", "[%s] Failed to copy ext info.", node_name_.c_str());
     return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
   }
 
@@ -53,22 +55,22 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
     GELOGD("Ext infoType=%d, infoLen=%u.", aicpu_ext_info->infoType, aicpu_ext_info->infoLen);
     switch (aicpu_ext_info->infoType) {
       case aicpu::FWKAdapter::FWK_ADPT_EXT_SHAPE_TYPE:
-        GE_CHK_STATUS_RET(ParseExtShapeType(aicpu_ext_info), "Parse ext shape type failed.");
+        GE_CHK_STATUS_RET(ParseExtShapeType(aicpu_ext_info), "[Parse][ExtShapeType] failed.");
         break;
       case aicpu::FWKAdapter::FWK_ADPT_EXT_INPUT_SHAPE:
-        GE_CHK_STATUS_RET(ParseExtInputShape(aicpu_ext_info), "Parse ext input shape failed.");
+        GE_CHK_STATUS_RET(ParseExtInputShape(aicpu_ext_info), "[Parse][ExtInputShape] failed.");
         break;
       case aicpu::FWKAdapter::FWK_ADPT_EXT_OUTPUT_SHAPE:
-        GE_CHK_STATUS_RET(ParseExtOutputShape(aicpu_ext_info), "Parse ext output shape failed.");
+        GE_CHK_STATUS_RET(ParseExtOutputShape(aicpu_ext_info), "[Parse][ExtOutputShape] failed.");
         break;
       case aicpu::FWKAdapter::FWK_ADPT_EXT_SESSION_INFO:
-        GE_CHK_STATUS_RET(ParseExtSessionInfo(aicpu_ext_info), "Parse ext session info failed.");
+        GE_CHK_STATUS_RET(ParseExtSessionInfo(aicpu_ext_info), "[Parse][ExtSessionInfo] failed.");
         break;
       case aicpu::FWKAdapter::FWK_ADPT_EXT_BITMAP:
-        GE_CHK_STATUS_RET(ParseExtBitMap(aicpu_ext_info), "Parse ext bit map failed.");
+        GE_CHK_STATUS_RET(ParseExtBitMap(aicpu_ext_info), "[Parse][ExtBitMap] failed.");
         break;
       case aicpu::FWKAdapter::FWK_ADPT_EXT_UPDATE_ADDR:
-        GE_CHK_STATUS_RET(ParseExtUpdateAddr(aicpu_ext_info), "Parse ext update_addr failed.");
+        GE_CHK_STATUS_RET(ParseExtUpdateAddr(aicpu_ext_info), "[Parse][ExtUpdateAddr] failed.");
         break;
       default:
         GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.",
@@ -79,33 +81,51 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
     offset += aicpu_ext_info->infoLen;
   }
 
-  GE_CHK_BOOL_RET_STATUS(offset == ext_info_len_, ACL_ERROR_GE_PARAM_INVALID,
-                         "Node[%s] ext_info format error, parse not reach end, offset=%zu, ext_info_len=%zu.",
+  GE_IF_BOOL_EXEC(offset != ext_info_len_,
+                  REPORT_INNER_ERROR("E19999", "Node[%s] ext_info format error, parse not reach end,"
+                                     "offset=%zu, ext_info_len=%zu.", node_name_.c_str(), offset, ext_info_len_);
+                  GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]Node[%s] ext_info format error,"
+                         "parse not reach end, offset=%zu, ext_info_len=%zu.",
                          node_name_.c_str(), offset, ext_info_len_);
+                  return ACL_ERROR_GE_PARAM_INVALID;);
   GELOGI("Node[%s] parse ext info end.", node_name_.c_str());
   return SUCCESS;
 }
 
 Status AicpuExtInfoHandler::ParseExtShapeType(AicpuExtInfo *aicpu_ext_info) {
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(int32_t), ACL_ERROR_GE_PARAM_INVALID,
-                         "Node[%s] parse ext shape type failed as infoLen must be %zu but %u.",
+  GE_IF_BOOL_EXEC(aicpu_ext_info->infoLen != sizeof(int32_t),
+                  REPORT_INNER_ERROR("E19999", "Node[%s] parse ext shape type failed as infoLen must be %zu but %u.",
+                                     node_name_.c_str(), sizeof(int32_t), aicpu_ext_info->infoLen);
+                  GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                         "[Check][Size]Node[%s] parse ext shape type failed as infoLen must be %zu but %u.",
                          node_name_.c_str(), sizeof(int32_t), aicpu_ext_info->infoLen);
+                  return ACL_ERROR_GE_PARAM_INVALID;);
 
   auto type = reinterpret_cast<const int32_t *>(aicpu_ext_info->infoMsg);
 
-  GE_CHK_BOOL_RET_STATUS(*type == unknown_type_, ACL_ERROR_GE_PARAM_INVALID,
-                         "Node[%s] parse ext shape type failed as need %d but %d.",
+  GE_IF_BOOL_EXEC(*type != unknown_type_,
+                  REPORT_INNER_ERROR("E19999", "Node[%s] parse ext shape type failed as need %d but %d.",
+                                     node_name_.c_str(), unknown_type_, *type);
+                  GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                         "[Check][Type]Node[%s] parse ext shape type failed as need %d but %d.",
                          node_name_.c_str(), unknown_type_, *type);
+                  return ACL_ERROR_GE_PARAM_INVALID;);
   GELOGI("Node[%s] parse ext shape type success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
   return SUCCESS;
 }
 
 Status AicpuExtInfoHandler::ParseExtInputShape(AicpuExtInfo *aicpu_ext_info) {
   auto need_len = input_num_ * sizeof(AicpuShapeAndType);
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == need_len, ACL_ERROR_GE_PARAM_INVALID,
-                         "Node[%s] parse ext input shape failed as infoLen must be "
+  GE_IF_BOOL_EXEC(aicpu_ext_info->infoLen != need_len,
+                  REPORT_INNER_ERROR("E19999", "Node[%s] parse ext input shape failed as infoLen must be "
+                                     "input_num[%u]*sizeof(ShapeAndType)[%zu] but %u.",
+                                     node_name_.c_str(), input_num_, sizeof(AicpuShapeAndType),
+                                     aicpu_ext_info->infoLen);
+                  GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                         "[Check][DataLen]Node[%s] parse ext input shape failed as infoLen must be "
                          "input_num[%u]*sizeof(ShapeAndType)[%zu] but %u.",
                          node_name_.c_str(), input_num_, sizeof(AicpuShapeAndType), aicpu_ext_info->infoLen);
+                  return ACL_ERROR_GE_PARAM_INVALID;);
 
   auto input = reinterpret_cast<AicpuShapeAndType *>(aicpu_ext_info->infoMsg);
 
@@ -123,10 +143,16 @@ Status AicpuExtInfoHandler::ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info) {
     return SUCCESS;
   }
   auto need_len = output_num_ * sizeof(AicpuShapeAndType);
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == need_len, ACL_ERROR_GE_PARAM_INVALID,
-                         "Node[%s] parse ext output shape failed as infoLen must be "
+  GE_IF_BOOL_EXEC(aicpu_ext_info->infoLen != need_len,
+                  REPORT_INNER_ERROR("E19999", "Node[%s] parse ext output shape failed as infoLen must be "
+                                     "output_num[%u]*sizeof(ShapeAndType)[%zu] but %u.",
+                                     node_name_.c_str(), output_num_, sizeof(AicpuShapeAndType),
+                                     aicpu_ext_info->infoLen);
+                  GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                         "[Check][DataLen]Node[%s] parse ext output shape failed as infoLen must be "
                          "output_num[%u]*sizeof(ShapeAndType)[%zu] but %u.",
                          node_name_.c_str(), output_num_, sizeof(AicpuShapeAndType), aicpu_ext_info->infoLen);
+                  return ACL_ERROR_GE_PARAM_INVALID;);
 
   auto output = reinterpret_cast<AicpuShapeAndType *>(aicpu_ext_info->infoMsg);
   for (uint32_t index = 0; index < output_num_; ++index) {
@@ -137,9 +163,14 @@ Status AicpuExtInfoHandler::ParseExtOutputShape(AicpuExtInfo *aicpu_ext_info) {
 }
 
 Status AicpuExtInfoHandler::ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info) {
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(AicpuSessionInfo), ACL_ERROR_GE_PARAM_INVALID,
-                         "Node[%s] parse ext session info failed as infoLen must be %zu but %u.",
+  GE_IF_BOOL_EXEC(aicpu_ext_info->infoLen != sizeof(AicpuSessionInfo),
+                  REPORT_INNER_ERROR("E19999",
+                                     "Node[%s] parse ext session info failed as infoLen must be %zu but %u.",
+                                     node_name_.c_str(), sizeof(SessionInfo), aicpu_ext_info->infoLen);
+                  GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+                         "[Check][DataLen]Node[%s] parse ext session info failed as infoLen must be %zu but %u.",
                          node_name_.c_str(), sizeof(SessionInfo), aicpu_ext_info->infoLen);
+                  return ACL_ERROR_GE_PARAM_INVALID;);
 
   session_info_ = reinterpret_cast<AicpuSessionInfo *>(aicpu_ext_info->infoMsg);
   GELOGI("Node[%s] parse session info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
@@ -147,9 +178,14 @@ Status AicpuExtInfoHandler::ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info) {
 }
 
 Status AicpuExtInfoHandler::ParseExtBitMap(AicpuExtInfo *aicpu_ext_info) {
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(uint64_t), PARAM_INVALID,
-                         "Node[%s] parse bit_map info failed as infoLen must be %zu but %u.",
+  GE_IF_BOOL_EXEC(aicpu_ext_info->infoLen != sizeof(uint64_t),
+                  REPORT_INNER_ERROR("E19999",
+                                     "Node[%s] parse bit_map info failed as infoLen must be %zu but %u.",
+                                     node_name_.c_str(), sizeof(uint64_t), aicpu_ext_info->infoLen);
+                  GELOGE(PARAM_INVALID,
+                         "[Check][DataLen]Node[%s] parse bit_map info failed as infoLen must be %zu but %u.",
                          node_name_.c_str(), sizeof(uint64_t), aicpu_ext_info->infoLen);
+                  return PARAM_INVALID;);
 
   bit_map_ = reinterpret_cast<uint64_t *>(aicpu_ext_info->infoMsg);
   GELOGI("Node[%s] bit_map info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
@@ -157,9 +193,14 @@ Status AicpuExtInfoHandler::ParseExtBitMap(AicpuExtInfo *aicpu_ext_info) {
 }
 
 Status AicpuExtInfoHandler::ParseExtUpdateAddr(AicpuExtInfo *aicpu_ext_info) {
-  GE_CHK_BOOL_RET_STATUS(aicpu_ext_info->infoLen == sizeof(uint32_t), PARAM_INVALID,
-                         "Node[%s] parse update_addr info failed as infoLen must be %zu but %u.",
+  GE_IF_BOOL_EXEC(aicpu_ext_info->infoLen != sizeof(uint32_t),
+                  REPORT_INNER_ERROR("E19999",
+                                     "Node[%s] parse update_addr info failed as infoLen must be %zu but %u.",
+                                     node_name_.c_str(), sizeof(uint32_t), aicpu_ext_info->infoLen);
+                  GELOGE(PARAM_INVALID,
+                         "[Check][DataLen]Node[%s] parse update_addr info failed as infoLen must be %zu but %u.",
                          node_name_.c_str(), sizeof(uint32_t), aicpu_ext_info->infoLen);
+                  return PARAM_INVALID;);
 
   update_addr_ = reinterpret_cast<uint32_t *>(aicpu_ext_info->infoMsg);
   GELOGI("Node[%s] update_addr info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
@@ -207,15 +248,19 @@ Status AicpuExtInfoHandler::UpdateInputShapeAndType(uint32_t input_index, const 
   const auto &shape = input_desc.GetShape();
 
   GE_CHK_STATUS_RET(UpdateShapeAndType(shape, input_desc.GetDataType(), input_shape_and_type_[input_index]),
-                    "Node[%s] input[%u] update input shape and type failed.",
+                    "[Update][ShapeAndType] failed, Node[%s] input[%u] .",
                     node_name_.c_str(), input_index);
   return SUCCESS;
 }
 
 Status AicpuExtInfoHandler::UpdateOutputShapeAndType(uint32_t output_index, const GeTensorDesc &output_desc) {
-  GE_CHK_BOOL_RET_STATUS((unknown_type_ != DEPEND_COMPUTE), ACL_ERROR_GE_INTERNAL_ERROR,
-                         "Node[%s] is depend compute is no need update output shape and type by ext.",
+  GE_IF_BOOL_EXEC((unknown_type_ == DEPEND_COMPUTE),
+                  REPORT_INNER_ERROR("E19999", "Node[%s] is depend compute is no need update output shape"
+                                     "and type by ext.", node_name_.c_str());
+                  GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
+                         "[Check][Type]Node[%s] is depend compute is no need update output shape and type by ext.",
                          node_name_.c_str());
+                  return ACL_ERROR_GE_INTERNAL_ERROR;);
   GE_CHECK_LE(output_index, output_num_);
   auto shape = output_desc.GetShape();
 
@@ -223,9 +268,13 @@ Status AicpuExtInfoHandler::UpdateOutputShapeAndType(uint32_t output_index, cons
   if (unknown_type_ == DEPEND_SHAPE_RANGE) {
     std::vector<std::pair<int64_t, int64_t>> range;
     auto range_ret = output_desc.GetShapeRange(range);
-    GE_CHK_BOOL_RET_STATUS(range_ret == GRAPH_SUCCESS, ACL_ERROR_GE_INTERNAL_ERROR,
-                           "Node[%s] is shape range type but get GetShapeRange failed, ret=%u.",
+    GE_IF_BOOL_EXEC(range_ret != GRAPH_SUCCESS,
+                    REPORT_INNER_ERROR("E19999", "Node[%s] is shape range type but get GetShapeRange failed, ret=%u",
+                                       node_name_.c_str(), range_ret);
+                    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
+                           "[Invoke][GetShapeRange]Node[%s] is shape range type but get GetShapeRange failed, ret=%u",
                            node_name_.c_str(), range_ret);
+                    return ACL_ERROR_GE_INTERNAL_ERROR;);
     for (size_t k = 0; k < range.size(); ++k) {
       if (shape.GetDim(k) < 0 && k < range.size()) {
         GELOGD("Node[%s] output[%u] update dim[%zu] from %ld to range max %ld.",
@@ -239,9 +288,14 @@ Status AicpuExtInfoHandler::UpdateOutputShapeAndType(uint32_t output_index, cons
 }
 
 Status AicpuExtInfoHandler::GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type) {
-  GE_CHK_BOOL_RET_STATUS((unknown_type_ != DEPEND_COMPUTE), INTERNAL_ERROR,
-                         "Node[%s] is depend compute type can not get output shape and type by ext.",
+  GE_IF_BOOL_EXEC((unknown_type_ == DEPEND_COMPUTE),
+                  REPORT_INNER_ERROR("E19999",
+                                     "Node[%s] is depend compute type can not get output shape and type by ext.",
+                                     node_name_.c_str());
+                  GELOGE(INTERNAL_ERROR,
+                         "[Check][Type]Node[%s] is depend compute type can not get output shape and type by ext.",
                          node_name_.c_str());
+                  return INTERNAL_ERROR;);
   GetShapeAndType(output_shape_and_type_[output_index], shape, data_type);
   return SUCCESS;
 }
@@ -254,8 +308,11 @@ Status AicpuExtInfoHandler::UpdateShapeAndType(const GeShape &shape, DataType da
                                                AicpuShapeAndType *shape_and_type) {
   auto dim_num = shape.GetDimNum();
   if (dim_num > aicpu::FWKAdapter::kMaxShapeDims) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Update shape and type failed, as dim_num %zu is over max shape dims %u.",
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "[Check][DimNum]Update shape and type failed, as dim_num %zu is over max shape dims %u.",
            dim_num, aicpu::FWKAdapter::kMaxShapeDims);
+    REPORT_INNER_ERROR("E19999", "Update shape and type failed, as dim_num %zu is over max shape dims %u.",
+                       dim_num, aicpu::FWKAdapter::kMaxShapeDims);
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   size_t index = 0;

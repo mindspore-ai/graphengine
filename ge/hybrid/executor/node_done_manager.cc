@@ -29,7 +29,7 @@ bool NodeDoneManager::Cond::Await() {
                     std::chrono::seconds(kDefaultWaitTimeoutInSec),
                     [&]() { return is_released_ || is_cancelled_; })) {
     GELOGE(INTERNAL_ERROR, "[Invoke][wait_for]Wait timed out.");
-    REPORT_INNER_ERROR("E19999", "wait timed out[%d] when %s.", kDefaultWaitTimeoutInSec, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "wait timed out[%d].", kDefaultWaitTimeoutInSec);
     return false;
   }
 

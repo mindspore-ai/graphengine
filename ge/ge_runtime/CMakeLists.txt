@@ -16,6 +16,7 @@ set(GE_SRC_LIST
     "task/label_goto_task.cc"
     "task/label_set_task.cc"
     "task/label_switch_task.cc"
+    "task/label_manager.cc"
 )
 
 add_library(ge_runtime SHARED ${GE_SRC_LIST})

@@ -81,11 +81,12 @@ Status CheckArgsForNchwToNc1hwc0(const TransArgs &args) {
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
            ShapeToString(args.src_shape).c_str(),
            ShapeToString(args.dst_shape).c_str(), ShapeToString(expect_5d_shape).c_str());
-    REPORT_INNER_ERROR("E19999", "Failed to trans formats, the src and dst shape are not compatible. "
-		       "data type %s, src shape %s, dst shape %s, expect dst shape %s",
+    REPORT_INNER_ERROR("E19999", "Failed to trans formats, the src and dst shape are not "
+                       "compatible. data type %s, src shape %s, dst shape %s, expect dst shape %s",
                        TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
                        ShapeToString(args.src_shape).c_str(),
-                       ShapeToString(args.dst_shape).c_str(), ShapeToString(expect_5d_shape).c_str());
+                       ShapeToString(args.dst_shape).c_str(),
+                       ShapeToString(expect_5d_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
@@ -101,11 +102,11 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
            total_size, ShapeToString(args.dst_shape).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str());
-    REPORT_INNER_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, "
-                       "shape %s when trans format from %s to %s",
-                       total_size, ShapeToString(args.dst_shape).c_str(),
-                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                       TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, "
+                      "shape %s when trans format from %s to %s",
+                      total_size, ShapeToString(args.dst_shape).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -157,7 +158,8 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                        srcIdx, src_offset, n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
                 REPORT_CALL_ERROR("E19999", "Failed to copy data from NCHW[%ld] offset %ld "
                                   "to NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld, err-code %d",
-                                  srcIdx, src_offset, n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
+                                  srcIdx, src_offset, n_idx, c1_idx, h_idx, w_idx, c0_idx,
+                                  dst_offset, ret);
                 return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
               }
             } else {
@@ -223,9 +225,9 @@ Status FormatTransferNchwNc1hwc0::TransFormat(const TransArgs &args, TransResult
            ShapeToString(args.dst_shape).c_str(), total_size, ret);
     REPORT_CALL_ERROR("E19999", "Failed to get data after trans, src shape %s, data type %s, "
                       "dst shape %s, memory size %ld, error_code %u",
-		      ShapeToString(args.src_shape).c_str(),
+                      ShapeToString(args.src_shape).c_str(),
                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-	              ShapeToString(args.dst_shape).c_str(), total_size, ret);
+                      ShapeToString(args.dst_shape).c_str(), total_size, ret);
     return ret;
   }
   return SUCCESS;

@@ -41,7 +41,7 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Trans][Shape]Failed, "
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Check][DataType]Failed, "
            "shape from FORMAT_FRACTAL_Z to NCHW, invalid data type %s",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     REPORT_INNER_ERROR("E19999", "Failed to trans shape from FORMAT_FRACTAL_Z to NCHW, "
@@ -52,14 +52,14 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
   if (!CheckShapeValid(src_shape, kFracZDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, src shape %s",
            ShapeToString(src_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to check src shape %s",
+    REPORT_CALL_ERROR("E19999", "Src shape %s check failed",
                       ShapeToString(src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kNchwDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
            ShapeToString(dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s",
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check failed",
                       ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
@@ -88,16 +88,16 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
-       	   "[Allocate][DSTMemory]Failed, memory for dst buf %ld, shape %s "
+           "[Allocate][DSTMemory]Failed, memory for dst buf %ld, shape %s "
            "when trans format from %s to %s",
            total_size, ShapeToString(args.dst_shape).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str());
-    REPORT_INNER_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, shape %s "
-                       "when trans format from %s to %s",
-       	               total_size, ShapeToString(args.dst_shape).c_str(),
-                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                       TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, shape %s "
+                      "when trans format from %s to %s",
+                      total_size, ShapeToString(args.dst_shape).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -138,7 +138,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                    "[Operate][Memory]Failed to copy data from FracZ offset %ld to "
                    "NCHW[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                    src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret);
-	    REPORT_CALL_ERROR("E19999","Failed to copy data from FracZ offset %ld to "
+            REPORT_CALL_ERROR("E19999","Failed to copy data from FracZ offset %ld to "
                               "NCHW[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                               src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret );
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
@@ -167,7 +167,7 @@ Status FormatTransferFracZNchw::TransFormat(const TransArgs &args, TransResult &
       return SUCCESS;
     }
 
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Get][Shape]Failed, total size %ld from dst shape %s, "
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Get][ShapeSize]Failed, total size %ld from dst shape %s, "
            "src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to get total size %ld from dst shape %s, src shape %s",
@@ -190,7 +190,7 @@ Status FormatTransferFracZNchw::TransFormat(const TransArgs &args, TransResult &
                       "data type %s, dst shape %s, memory size %ld",
                       ShapeToString(args.src_shape).c_str(),
                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-	              ShapeToString(args.dst_shape).c_str(), total_size);
+                      ShapeToString(args.dst_shape).c_str(), total_size);
     return ret;
   }
   return SUCCESS;

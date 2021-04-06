@@ -41,24 +41,24 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Trans][Shape]Failed, shape from NC1HWC0 to NHWC, "
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Check][DataType]Failed, shape from NC1HWC0 to NHWC, "
            "invalid data type %s",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     REPORT_INNER_ERROR("E19999", "Failed to trans shape from NC1HWC0 to NHWC, invalid data type %s",
-		       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(args.src_shape, kNc1hwc0DimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, src shape %s",
            ShapeToString(args.src_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to check src shape %s",
+    REPORT_CALL_ERROR("E19999", "Src shape %s check failed",
                       ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(args.dst_shape, kNhwcDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
            ShapeToString(args.dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s",
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check failed",
                       ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
@@ -76,7 +76,8 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed to check relationship between "
            "src shape %s and dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
-    REPORT_INNER_ERROR("E19999", "Failed to check relationship between src shape %s and dst shape %s",
+    REPORT_INNER_ERROR("E19999", "Failed to check relationship between src shape %s "
+                       "and dst shape %s",
                        ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
@@ -92,11 +93,11 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
            total_size, ShapeToString(args.dst_shape).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str());
-    REPORT_INNER_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, "
-                       "shape %s when trans format from %s to %s",
-                       total_size, ShapeToString(args.dst_shape).c_str(),
-                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                       TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, "
+                      "shape %s when trans format from %s to %s",
+                      total_size, ShapeToString(args.dst_shape).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -136,9 +137,9 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                    "offset %ld to NHWC[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                    n_idx, c1_idx, h_idx, w_idx, c0_idx, src_offset, n_idx, c_idx,
                    h_idx, w_idx, dst_offset, ret);
-	    REPORT_CALL_ERROR("E19999", "Failed to copy data from NC1HWC0[%ld, %ld, %ld, %ld, %ld] "
+            REPORT_CALL_ERROR("E19999", "Failed to copy data from NC1HWC0[%ld, %ld, %ld, %ld, %ld] "
                               "offset %ld to NHWC[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
-		              n_idx, c1_idx, h_idx, w_idx, c0_idx, src_offset, n_idx, c_idx,
+                              n_idx, c1_idx, h_idx, w_idx, c0_idx, src_offset, n_idx, c_idx,
                               h_idx, w_idx, dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
@@ -166,7 +167,7 @@ Status FormatTransferNc1hwc0Nhwc::TransFormat(const TransArgs &args, TransResult
       return SUCCESS;
     }
 
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Get][Shape]Failed, total size %ld from dst shape %s, "
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Get][ShapeSize]Failed, total size %ld from dst shape %s, "
            "src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     REPORT_CALL_ERROR("E19999", "Failed to get total size %ld from dst shape %s, src shape %s",

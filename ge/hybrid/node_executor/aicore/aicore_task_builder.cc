@@ -70,6 +70,7 @@ Status AiCoreTaskBuilder::BuildTask(std::unique_ptr<AiCoreNodeTask> &node_task,
     auto atomic_task =
         std::unique_ptr<AtomicAddrCleanOpTask>(new(std::nothrow)AtomicAddrCleanOpTask());
     GE_CHECK_NOTNULL(atomic_task);
+    atomic_task->SetSingleOp(is_single_op);
     GE_CHK_STATUS_RET(atomic_task->Init(*op_desc_, task_defs_.front()),
                       "[%s] Failed to init task for AtomicAddrClean",
                       op_desc_->GetName().c_str());

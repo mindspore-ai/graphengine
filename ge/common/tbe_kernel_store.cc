@@ -15,6 +15,8 @@
  */
 
 #include "common/tbe_kernel_store.h"
+#include "graph/utils/attr_utils.h"
+#include "graph/debug/ge_attr_define.h"
 
 namespace ge {
 
@@ -31,6 +33,15 @@ void TBEKernelStore::LoadTBEKernelBinToOpDesc(const std::shared_ptr<ge::OpDesc> 
       GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, kernel_bin),
                       GELOGW("LoadKernelTBEBinToOpDesc: SetExtAttr for kernel_bin failed");)
       GELOGI("Load tbe kernel:%s, %zu", kernel_bin->GetName().c_str(), kernel_bin->GetBinDataSize());
+
+      std::string atomic_kernel_name;
+      (void) AttrUtils::GetStr(op_desc, ATOMIC_ATTR_TBE_KERNEL_NAME, atomic_kernel_name);
+      if (!atomic_kernel_name.empty()) {
+        GELOGI("Get atomic kernel name is %s.", atomic_kernel_name.c_str());
+        auto atomic_kernel_bin = FindKernel(atomic_kernel_name);
+        GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(EXT_ATTR_ATOMIC_TBE_KERNEL, atomic_kernel_bin),
+                        GELOGW("LoadKernelTBEBinToOpDesc: SetExtAttr for atomic kernel_bin failed");)
+      }
     }
   }
 }

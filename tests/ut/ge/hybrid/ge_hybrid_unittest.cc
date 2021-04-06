@@ -540,3 +540,18 @@ TEST_F(UtestGeHybrid, TestOptimizeDependenciesForConstInputs) {
   ASSERT_EQ(dst_node_item->dependents_for_shape_inference.size(), 1);
   ASSERT_EQ(dst_node_item->dependents_for_shape_inference[0], non_const_node_item->node);
 }
+
+TEST_F(UtestGeHybrid, test_key_for_kernel_bin) {
+  auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
+  OpDesc op_desc("Sum", "Sum");
+  EXPECT_EQ(aicore_task->GetKeyForTbeKernel(), OP_EXTATTR_NAME_TBE_KERNEL);
+  EXPECT_EQ(aicore_task->GetKeyForTvmMagic(), TVM_ATTR_NAME_MAGIC);
+  EXPECT_EQ(aicore_task->GetKeyForTvmMetaData(), TVM_ATTR_NAME_METADATA);
+  EXPECT_EQ(aicore_task->GetKeyForKernelName(op_desc), "Sum_kernelname");
+
+  auto atomic_task = std::unique_ptr<hybrid::AtomicAddrCleanOpTask>(new(std::nothrow)hybrid::AtomicAddrCleanOpTask());
+  EXPECT_EQ(atomic_task->GetKeyForTbeKernel(), EXT_ATTR_ATOMIC_TBE_KERNEL);
+  EXPECT_EQ(atomic_task->GetKeyForTvmMagic(), ATOMIC_ATTR_TVM_MAGIC);
+  EXPECT_EQ(atomic_task->GetKeyForTvmMetaData(), ATOMIC_ATTR_TVM_METADATA);
+  EXPECT_EQ(atomic_task->GetKeyForKernelName(op_desc), "Sum_atomic_kernelname");
+}

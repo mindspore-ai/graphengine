@@ -171,6 +171,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   // set known node flag as true
   davinci_model->SetKnownNode(true);
   davinci_model->SetId(model.GetModelId());
+  davinci_model->SetDumpModelName(model.GetModelName());
   davinci_model->SetOmName(model.GetOmName());
   // set model id as root node's node id
   davinci_model->SetSubModelId(node->GetOpDesc()->GetId());

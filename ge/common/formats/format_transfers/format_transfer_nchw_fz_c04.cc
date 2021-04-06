@@ -59,9 +59,9 @@ Status TransShape(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type
   dst_shape.push_back(c0);
 
   if (!IsShapeValid(dst_shape)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
            ShapeToString(dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Dst shape %s check failed", ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   return SUCCESS;

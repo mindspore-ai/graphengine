@@ -44,9 +44,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
 
   auto src_shape_size = GetItemNumByShape(args.src_shape);
   if (args.data == nullptr && src_shape_size != 0) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Shape]Failed, input data is null, src_shape %s",
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Shape]Failed, input data is null "
+           "or shape size not euqal to 0, src_shape %s",
            ShapeToString(args.src_shape).c_str());
-    REPORT_CALL_ERROR("E19999","Failed to chech shape, input data is null, src_shape %s",
+    REPORT_CALL_ERROR("E19999","Failed to check shape, input data is null "
+                      "or shape size not equal to 0, src_shape %s",
                       ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
@@ -85,8 +87,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransDataType(const CastAr
   }
 
   if (args.data == nullptr && args.src_data_size != 0) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param]Failed, input data is null, "
-           "src_data_size %ld", args.src_data_size);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param]Failed, input data is null "
+           "or data size not equal to 0, src_data_size %ld", args.src_data_size);
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 

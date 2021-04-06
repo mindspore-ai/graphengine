@@ -39,9 +39,9 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kNchwDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, src shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
            ShapeToString(src_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to check src shape %s",
+    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
                       ShapeToString(src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
@@ -52,9 +52,9 @@ Status TransShapeNchwToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   dst_shape.push_back(src_shape.at(kNchwW));
   dst_shape.push_back(c0);
   if (!CheckShapeValid(dst_shape, kNc1hwc0DimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
            ShapeToString(dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s",
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid",
                       ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }

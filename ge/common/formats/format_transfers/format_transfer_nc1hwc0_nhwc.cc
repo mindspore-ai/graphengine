@@ -49,16 +49,16 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(args.src_shape, kNc1hwc0DimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, src shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
            ShapeToString(args.src_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Src shape %s check failed",
+    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
                       ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(args.dst_shape, kNhwcDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
            ShapeToString(args.dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Dst shape %s check failed",
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid",
                       ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }

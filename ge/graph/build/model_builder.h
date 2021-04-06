@@ -89,6 +89,8 @@ class ModelBuilder {
   void SetModelCheckAicpuAttr(ge::Model &model, std::set<std::string> &aicpu_op_types,
                                 std::set<std::string> &aicpu_tf_op_types);
 
+  Status SaveAtomicTBEKernel(const OpDescPtr &op_desc);
+
   uint64_t session_id_;
 
   map<int64_t, size_t> mem_type_to_mem_offset_;

@@ -81,8 +81,13 @@ StreamResource *SingleOpManager::GetResource(uintptr_t resource_id, rtStream_t s
   auto it = stream_resources_.find(resource_id);
   StreamResource *res = nullptr;
   if (it == stream_resources_.end()) {
-    res = new (std::nothrow) StreamResource(resource_id);
+    res = new(std::nothrow) StreamResource(resource_id);
     if (res != nullptr) {
+      if (res->Init() != SUCCESS) {
+        GELOGE(FAILED, "[Malloc][Memory]Failed to malloc device buffer.");
+        delete res;
+        return nullptr;
+      }
       res->SetStream(stream);
       stream_resources_.emplace(resource_id, res);
     }

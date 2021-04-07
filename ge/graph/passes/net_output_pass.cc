@@ -48,10 +48,14 @@ Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
   GE_CHECK_NOTNULL(node->GetOpDesc());
   int64_t output_index = 0;
   if (!AttrUtils::GetInt(node->GetOpDesc(), RETVAL_ATTR_NAME_INDEX, output_index)) {
+    REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", RETVAL_ATTR_NAME_INDEX.c_str(),
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(PARAM_INVALID, "Get output index failed.");
     return PARAM_INVALID;
   }
   if (retval_node_index_map.count(output_index) > 0) {
+    REPORT_INNER_ERROR("E19999", "Attr:%s from op:%s(%s), value:%ld duplicate with other node, check invalid",
+                       RETVAL_ATTR_NAME_INDEX.c_str(), node->GetName().c_str(), node->GetType().c_str(), output_index);
     GELOGE(PARAM_INVALID, "Retval has duplicate index.");
     return PARAM_INVALID;
   }
@@ -130,10 +134,13 @@ Status NetOutputPass::CheckOutputNodeInfo(const ComputeGraphPtr &graph, const st
   for (auto &item : outputs) {
     NodePtr node = item.output_node;
     if (node == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Param outputs has item which output_node is nullptr, check invalid");
       GELOGE(PARAM_INVALID, "Node in outputs is null.");
       return PARAM_INVALID;
     } else {
       if (graph->FindNode(node->GetName()) == nullptr) {
+        REPORT_INNER_ERROR("E19999", "Find node:%s from graph:%s failed",
+                           node->GetName().c_str(), graph->GetName().c_str());
         GELOGE(INTERNAL_ERROR, "Out node (%s) is not in graph.", node->GetName().c_str());
         return INTERNAL_ERROR;
       }
@@ -141,6 +148,8 @@ Status NetOutputPass::CheckOutputNodeInfo(const ComputeGraphPtr &graph, const st
       int32_t out_size = node->GetOpDesc()->GetOutputsSize();
       int32_t index = item.node_output_index;
       if (index < 0 || index >= out_size) {
+        REPORT_INNER_ERROR("E19999", "Index:%d in param outputs item, < 0 or > output size:%d of node:%s(%s)",
+                           index, out_size, node->GetName().c_str(), node->GetType().c_str());
         GELOGE(PARAM_INVALID,
                "User declared out node (%s) output index:%d must be smaller "
                "than node ouput size:%d and cann't be negative!",
@@ -170,6 +179,8 @@ Status NetOutputPass::RemoveUnusedNode(const ge::ComputeGraphPtr &graph) {
       continue;
     }
     if (graph->RemoveNode(node) != GRAPH_SUCCESS) {
+      REPORT_INNER_ERROR("E19999", "Remove node:%s(%s) from graph:%s failed",
+                         node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
       GELOGE(INTERNAL_ERROR, "Remove node failed, node name:%s.", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -180,10 +191,13 @@ Status NetOutputPass::RemoveUnusedNode(const ge::ComputeGraphPtr &graph) {
 Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
   OpDescPtr net_output_desc = net_output->GetOpDesc();
   if (net_output_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "OpDesc in Param net_output is nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "Opdesc of net output node is nullptr.");
     return INTERNAL_ERROR;
   }
   if (net_output_desc->GetInputsSize() == 0) {
+    REPORT_INNER_ERROR("E19999", "Input desc num of node:%s(%s) is 0, check invalid",
+                       net_output_desc->GetName().c_str(), net_output_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Net output node input is empty.");
     return INTERNAL_ERROR;
   }
@@ -193,6 +207,9 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
     GE_CHECK_NOTNULL(in_anchor);
     uint32_t index = static_cast<uint32_t>(in_anchor->GetIdx());
     if (index >= net_output_desc->GetAllInputsDesc().size()) {
+      REPORT_INNER_ERROR("E19999", "Node:%s(%s) has in_anchor index:%u >= its input desc num:%zu, check invalid",
+                         net_output_desc->GetName().c_str(), net_output_desc->GetType().c_str(), index,
+                         net_output_desc->GetAllInputsDesc().size());
       GELOGE(INTERNAL_ERROR, "Index is invalid, index:%u, size:%zu.", index,
              net_output_desc->GetAllInputsDesc().size());
       return INTERNAL_ERROR;
@@ -204,6 +221,8 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
     uint32_t peer_index = static_cast<uint32_t>(in_anchor->GetPeerOutAnchor()->GetIdx());
     ge::GeTensorDesc output_in_desc = src_op_desc->GetOutputDesc(peer_index);
     if (net_output_desc->UpdateInputDesc(index, output_in_desc) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update input desc of op:%s(%s) failed, index:%u",
+                        net_output_desc->GetName().c_str(), net_output_desc->GetType().c_str(), index);
       GELOGE(INTERNAL_ERROR, "Update input desc failed, index:%u.", index);
       return INTERNAL_ERROR;
     }
@@ -217,6 +236,7 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
 
 Status NetOutputPass::AddCtrlEdgeForTargets(const ge::NodePtr &net_out_node) {
   if (net_out_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param net_out_node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "net out node is null.");
     return PARAM_INVALID;
   }
@@ -228,6 +248,9 @@ Status NetOutputPass::AddCtrlEdgeForTargets(const ge::NodePtr &net_out_node) {
     // no need to check null because have handled it in run SaveAndRemoveTargets function
     graphStatus status = GraphUtils::AddEdge(node->GetOutControlAnchor(), net_out_node->GetInControlAnchor());
     if (status != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str(),
+                        net_out_node->GetName().c_str(), net_out_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Add ctrl edge to netoutput node[%s] for target node [%s] failed!",
              net_out_node->GetName().c_str(), node->GetName().c_str());
       return INTERNAL_ERROR;
@@ -259,6 +282,9 @@ Status NetOutputPass::AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, con
     graphStatus status = GraphUtils::AddEdge(src_node->GetOutDataAnchor(item.node_output_index),
                                              net_out_node->GetInDataAnchor(net_input_index));
     if (status != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%u) and op:%s(%s)(index:%d) failed",
+                        src_node->GetName().c_str(), src_node->GetType().c_str(), item.node_output_index,
+                        net_out_node->GetName().c_str(), net_out_node->GetType().c_str(), net_input_index);
       GELOGE(INTERNAL_ERROR, "AddEdge failed, src name:%s, src index:%d, dst index:%d.", src_node->GetName().c_str(),
              item.node_output_index, net_input_index);
       return INTERNAL_ERROR;
@@ -270,10 +296,15 @@ Status NetOutputPass::AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, con
              graph->GetName().c_str());
       auto input_desc = net_out_node->GetOpDesc()->MutableInputDesc(net_input_index);
       if (input_desc == nullptr) {
+        REPORT_CALL_ERROR("E19999", "Node:%s(%s) has no input desc index is %d, check invalid",
+                          net_out_node->GetName().c_str(), net_out_node->GetType().c_str(), net_input_index);
         GELOGE(INTERNAL_ERROR, "Can not find intput tensor desc from NetOutput, index %d", net_input_index);
         return INTERNAL_ERROR;
       }
       if (!AttrUtils::SetInt(input_desc, ATTR_NAME_PARENT_NODE_INDEX, item.parent_node_index)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to input:%d tensor of op:%s(%s) failed",
+                          ATTR_NAME_PARENT_NODE_INDEX.c_str(), net_input_index,
+                          net_out_node->GetName().c_str(), net_out_node->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Failed to add parent index to  NetOutput, index %d", net_input_index);
         return INTERNAL_ERROR;
       }
@@ -290,6 +321,8 @@ Status NetOutputPass::AddEdgesForNetOutput(const ge::ComputeGraphPtr &graph, con
   }
   // Add true stream, netoutput is 0
   GE_IF_BOOL_EXEC(!ge::AttrUtils::SetInt(net_out_node->GetOpDesc(), ATTR_NAME_TRUE_BRANCH_STREAM, 0),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_TRUE_BRANCH_STREAM.c_str(),
+                                    net_out_node->GetName().c_str(), net_out_node->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "set ATTR_NAME_TRUE_BRANCH_STREAM failed");
                   return INTERNAL_ERROR);
   return SUCCESS;
@@ -306,6 +339,7 @@ bool NetOutputPass::CheckNodeIsInOutputNodes(const ge::ComputeGraphPtr &graph, c
 }
 Status NetOutputPass::UnLinkDataAnchorOfNetoutput(const ge::ComputeGraphPtr &graph, const ge::NodePtr &net_out_node) {
   if (net_out_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param net_out_node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "net out node is null.");
     return PARAM_INVALID;
   }
@@ -327,6 +361,10 @@ Status NetOutputPass::UnLinkDataAnchorOfNetoutput(const ge::ComputeGraphPtr &gra
       if (!CheckNodeIsInOutputNodes(graph, node)) {
         ret = in_data_anchor->Unlink(peer_out_anchor);
         if (ret != SUCCESS) {
+          REPORT_CALL_ERROR("E19999",
+                        "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
+                        net_out_node->GetName().c_str(), net_out_node->GetType().c_str(), in_data_anchor->GetIdx(),
+                        node->GetName().c_str(), node->GetType().c_str(), peer_out_anchor->GetIdx());
           GELOGE(INTERNAL_ERROR, "Unlink peer_out_anchor fail!");
           return ret;
         }
@@ -341,12 +379,14 @@ Status NetOutputPass::UnLinkDataAnchorOfNetoutput(const ge::ComputeGraphPtr &gra
 Status NetOutputPass::UnLinkControlAnchorOfNetoutput(const ge::ComputeGraphPtr &graph,
                                                      const ge::NodePtr &net_out_node) {
   if (net_out_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param net_out_node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "net out node is null.");
     return PARAM_INVALID;
   }
   Status ret = SUCCESS;
   auto in_control_anchor = net_out_node->GetInControlAnchor();
   if (in_control_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param net_out_node's in control anchor is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "in control anchor is null.");
     return PARAM_INVALID;
   }
@@ -361,6 +401,9 @@ Status NetOutputPass::UnLinkControlAnchorOfNetoutput(const ge::ComputeGraphPtr &
         if (CheckNodeIsInOutputNodes(graph, node) == false) {
           ret = in_control_anchor->Unlink(peer_out_data_anchor);
           if (ret != SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Op:%s(%s) unlink control edge from op:%s(%s) failed",
+                              net_out_node->GetName().c_str(), net_out_node->GetType().c_str(),
+                              node->GetName().c_str(), node->GetType().c_str());
             GELOGE(INTERNAL_ERROR, "Unlink peer_out_anchor fail!");
             return ret;
           }
@@ -433,8 +476,8 @@ Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraph
     if ((node->GetInControlNodes().size() != 0 || node->GetInDataNodes().size() != 0 ||
          graph_has_only_one_node_except_netoutput) &&
         node->GetOutDataNodesSize() == 0 && node->GetOutControlNodes().size() == 0) {
-      GE_CHK_STATUS_RET(GraphUtils::AddEdge(node->GetOutControlAnchor(), net_out_node->GetInControlAnchor()),
-                        "add edge failed");
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(node->GetOutControlAnchor(), net_out_node->GetInControlAnchor()),
+                              "add edge failed");
       GELOGD("Add ctrl edge success. src name :%s, dst name :%s", node->GetName().c_str(),
              net_out_node->GetName().c_str());
     }
@@ -448,6 +491,7 @@ Status NetOutputPass::CreateNetOutputNode(OpDescPtr &net_output_desc, const ge::
       (graph->GetParentGraph() != nullptr) ? (graph->GetName() + "_" + NODE_NAME_NET_OUTPUT) : NODE_NAME_NET_OUTPUT;
   net_output_desc = MakeShared<OpDesc>(node_name, NETOUTPUT);
   if (net_output_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(MEMALLOC_FAILED, "Make shared net output op failed.");
     return MEMALLOC_FAILED;
   }
@@ -458,6 +502,7 @@ Status NetOutputPass::CreateNetOutputNode(OpDescPtr &net_output_desc, const ge::
 
 Status NetOutputPass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Compute graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
@@ -510,12 +555,17 @@ Status NetOutputPass::AddNetOutputNodeToGraph(const ge::ComputeGraphPtr &graph, 
     // because retval node is contained by output_nodes_info, here means targets is non-empty
     output_node = graph->AddNode(net_output_desc);
     if (output_node == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                        net_output_desc->GetName().c_str(), net_output_desc->GetType().c_str(),
+                        graph->GetName().c_str());
       GELOGE(INTERNAL_ERROR, "Add output node failed.");
       return INTERNAL_ERROR;
     }
     GE_CHK_STATUS_RET(AddCtrlEdgeForTargets(output_node), "add ctrl edge for targets failed");
     // Add true stream, netoutput is 0
     GE_IF_BOOL_EXEC(!ge::AttrUtils::SetInt(output_node->GetOpDesc(), ATTR_NAME_TRUE_BRANCH_STREAM, 0),
+                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_TRUE_BRANCH_STREAM.c_str(),
+                                      output_node->GetName().c_str(), output_node->GetType().c_str());
                     GELOGE(INTERNAL_ERROR, "set ATTR_NAME_TRUE_BRANCH_STREAM failed");
                     return INTERNAL_ERROR);
     return SUCCESS;
@@ -524,6 +574,9 @@ Status NetOutputPass::AddNetOutputNodeToGraph(const ge::ComputeGraphPtr &graph, 
   AddInOutForNetOutputOp(graph, net_output_desc, output_nodes_info);
   output_node = graph->AddNode(net_output_desc);
   if (output_node == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                        net_output_desc->GetName().c_str(), net_output_desc->GetType().c_str(),
+                        graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Add output node failed.");
     return INTERNAL_ERROR;
   }
@@ -557,6 +610,8 @@ void NetOutputPass::AddInOutForNetOutputOp(const ComputeGraphPtr &graph, OpDescP
     /// Get the output attribute of src_node,
     /// and set to the input/output of net_out_node.
     if (src_node == nullptr || src_node->GetOpDesc() == nullptr || net_output_desc == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Param output_nodes_info has RetvalInfo item, which src_node is invalid; "
+                         "or Param net_output_desc is nullptr, check invalid");
       GELOGE(INTERNAL_ERROR, "src node or net output desc is null.");
       return;
     }
@@ -656,10 +711,14 @@ Status NetOutputPass::SetUserDefDTypeAndFormatFromAtcParams(const NodePtr &outpu
     }
   }
   if (!userdef_dtypes.empty() && !ge::AttrUtils::SetListStr(op_desc, ATTR_ATC_USER_DEFINE_DATATYPE, userdef_dtypes)) {
+    REPORT_INNER_ERROR("E19999", "User define datatype is empty or Set Attr:%s to op:%s(%s) failed",
+                       ATTR_ATC_USER_DEFINE_DATATYPE.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Set user_define_dtype attr list for netoutput failed.");
     return INTERNAL_ERROR;
   }
   if (!userdef_formats.empty() && !ge::AttrUtils::SetListStr(op_desc, ATTR_ATC_USER_DEFINE_FORMAT, userdef_formats)) {
+    REPORT_INNER_ERROR("E19999", "User define format is empty or Set Attr:%s to op:%s(%s) failed",
+                       ATTR_ATC_USER_DEFINE_FORMAT.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Set user_define_format attr list for netoutput failed.");
     return INTERNAL_ERROR;
   }

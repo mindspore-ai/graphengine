@@ -99,6 +99,8 @@ Status IdentityPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get original type for node:%s failed",
+                      node->GetName().c_str());
     GELOGE(status_ret, "Identity pass get original type fail.");
     return status_ret;
   }
@@ -118,6 +120,9 @@ Status IdentityPass::Run(NodePtr &node) {
   }
   size_t n = node->GetOpDesc()->GetOutputsSize();
   if (node->GetOpDesc()->GetInputsSize() != n) {
+    REPORT_CALL_ERROR("E19999", "Num:%zu of input desc node:%s(%s) not equal to it's output desc num:%zu, "
+                      "check invalid", node->GetOpDesc()->GetInputsSize(),
+                      node->GetName().c_str(), node->GetType().c_str(), n);
     GELOGE(PARAM_INVALID, "Identity input / output size must be equal. in size:%lu, out size:%lu",
            node->GetOpDesc()->GetInputsSize(), n);
     return PARAM_INVALID;

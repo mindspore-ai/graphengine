@@ -83,6 +83,9 @@ Status ResourcePairAddControlPass::Run(ComputeGraphPtr graph) {
         GE_CHECK_NOTNULL(to_anchor);
         graphStatus ret = from_anchor->LinkTo(to_anchor);
         if (ret != GRAPH_SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Op:%s(%s) link control edge to op:%s(%s) failed",
+                            from_node->GetName().c_str(), from_node->GetType().c_str(),
+                            to_node->GetName().c_str(), to_node->GetType().c_str());
           GELOGE(PARAM_INVALID, "link fail, from_node:%s, to_node:%s, from_type:%s, to_type:%s",
                  from_node->GetName().c_str(), to_node->GetName().c_str(), resource_type_pair.first.c_str(),
                  resource_type_pair.second.c_str());

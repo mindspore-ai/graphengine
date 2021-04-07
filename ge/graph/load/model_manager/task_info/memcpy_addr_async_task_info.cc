@@ -36,8 +36,8 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
   const auto &memcpy_async = task_def.memcpy_async();
   OpDescPtr op_desc = davinci_model->GetOpByIndex(memcpy_async.op_index());
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u when MemcpyAddrAsyncTaskInfo %s",
-                       memcpy_async.op_index(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u",
+                       memcpy_async.op_index());
     GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
     return INTERNAL_ERROR;
   }
@@ -63,9 +63,9 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
   GELOGI("memory_type: %u", memory_type);
   rtError_t rt_ret = rtMalloc(&args_, args_size + kAlignBytes, memory_type);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed for op:%s(%s), size:%lu, ret:0x%X, "
-                      "when MemcpyAddrAsyncTaskInfo %s", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                      args_size + kAlignBytes, rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed for op:%s(%s), size:%lu, ret:0x%X",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                      args_size + kAlignBytes, rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -76,9 +76,8 @@ Status MemcpyAddrAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel
          static_cast<uint8_t *>(args_align_) + args_size, dst_, io_addrs.size());
   rt_ret = rtMemcpy(args_align_, args_size, io_addrs.data(), args_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed for op:%s(%s), size:%zu, ret:0x%X, "
-                      "when MemcpyAddrAsyncTaskInfo %s", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                      args_size, rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed for op:%s(%s), size:%zu, ret:0x%X",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), args_size, rt_ret);
     GELOGE(RT_FAILED, "Call rt api for src failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -99,8 +98,8 @@ Status MemcpyAddrAsyncTaskInfo::Distribute() {
   rtError_t rt_ret = rtMemcpyAsync(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(args_align_) + sizeof(void *)),
                                    dst_max_, args_align_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpyAsync failed, size:%lu, ret:0x%X, when MemcpyAddrAsyncTaskInfo %s",
-                      dst_max_, rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpyAsync failed, size:%lu, ret:0x%X",
+                      dst_max_, rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

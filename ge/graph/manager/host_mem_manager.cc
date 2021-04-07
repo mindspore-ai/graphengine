@@ -39,8 +39,8 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
   rtMallocHostSharedMemoryOut output_para;
   rtError_t rt_ret = rtMallocHostSharedMemory(&input_para, &output_para);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMallocHostSharedMemory fail, ret:0x%X, when SharedMemAllocator %s",
-                      rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMallocHostSharedMemory fail, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rt api(rtMallocHostSharedMemory) failed, devid:[%u].", device_id);
     return GE_GRAPH_MEMORY_ALLOC_FAILED;
   }
@@ -61,8 +61,8 @@ Status SharedMemAllocator::DeAllocate(SharedMemInfo &mem_info) {
                                         mem_info.host_aligned_ptr->MutableGet(), mem_info.device_address};
   rtError_t rt_ret = rtFreeHostSharedMemory(&free_para);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtFreeHostSharedMemory fail, ret:0x%X, when SharedMemAllocator %s",
-                      rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtFreeHostSharedMemory fail, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rt api(rtFreeHostSharedMemory) failed, ret: 0x%X.", rt_ret);
     return RT_FAILED;
   }
@@ -78,7 +78,7 @@ Status HostMemManager::Initialize() {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   allocator_ = std::unique_ptr<SharedMemAllocator>(new (std::nothrow) SharedMemAllocator());
   if (allocator_ == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New SharedMemAllocator fail when SharedMemAllocator %s", __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New SharedMemAllocator fail");
     GELOGE(GE_GRAPH_MALLOC_FAILED, "Shared memory allocator init failed!");
     return GE_GRAPH_MALLOC_FAILED;
   }
@@ -99,8 +99,8 @@ Status HostMemManager::MallocSharedMemory(SharedMemInfo &mem_info) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto iter = var_memory_base_map_.find(mem_info.op_name);
   if (iter != var_memory_base_map_.end()) {
-    REPORT_INNER_ERROR("E19999", "MemInfo.op_name:%s can't find in var_memory_base_map_ when HostMemManager %s",
-                       mem_info.op_name.c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "MemInfo.op_name:%s can't find in var_memory_base_map_",
+                       mem_info.op_name.c_str());
     GELOGE(FAILED, "Host shared memory for op %s has been malloced", mem_info.op_name.c_str());
     return FAILED;
   }
@@ -114,8 +114,8 @@ Status HostMemManager::MallocSharedMemory(SharedMemInfo &mem_info) {
 Status HostMemManager::QueryVarMemInfo(const string &op_name, uint64_t &base_addr, uint64_t &data_size) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (var_memory_base_map_.find(op_name) == var_memory_base_map_.end()) {
-    REPORT_INNER_ERROR("E19999", "MemInfo.op_name:%s can't find in var_memory_base_map_ when HostMemManager %s",
-                       op_name.c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "MemInfo.op_name:%s can't find in var_memory_base_map_",
+                       op_name.c_str());
     GELOGE(INTERNAL_ERROR, "Find host base base_addr failed,node name:%s!", op_name.c_str());
     return INTERNAL_ERROR;
   }

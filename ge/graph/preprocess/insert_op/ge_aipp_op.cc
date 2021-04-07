@@ -162,7 +162,7 @@ Format GetAndCheckFormat() {
 Status AippOp::Init(domi::AippOpParams *aipp_params) {
   aipp_params_ = new (std::nothrow) domi::AippOpParams();
   if (aipp_params_ == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New AippOpParams failed when AippOp %s", __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New AippOpParams failed");
     return FAILED;
   }
   aipp_params_->CopyFrom(*aipp_params);
@@ -197,13 +197,12 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
 
       auto ret = GraphUtils::InsertNodeBetweenDataAnchors(out_in_anchors.first, out_in_anchors.second, aipp);
       if (ret != GRAPH_SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "Insert aipp:%s(%s) node between op:%s(%s) and op:%s:%s failed when AippOp %s",
+        REPORT_CALL_ERROR("E19999", "Insert aipp:%s(%s) node between op:%s(%s) and op:%s:%s failed",
                           aipp->GetName().c_str(), aipp->GetType().c_str(),
                           out_in_anchors.first->GetOwnerNode()->GetName().c_str(),
                           out_in_anchors.first->GetOwnerNode()->GetType().c_str(),
                           out_in_anchors.second->GetOwnerNode()->GetName().c_str(),
-                          out_in_anchors.second->GetOwnerNode()->GetType().c_str(),
-                          __FUNCTION__);
+                          out_in_anchors.second->GetOwnerNode()->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Failed to link edges for aipp node %s", aipp->GetName().c_str());
         return INTERNAL_ERROR;
       }
@@ -223,11 +222,10 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
       auto &aipp = iter->second;
       auto ret = out_in_anchors.second->LinkFrom(aipp->GetOutDataAnchor(0));
       if (ret != GRAPH_SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "link aipp:%s(%s) to peer op:%s(%s) failed when AippOp %s",
+        REPORT_CALL_ERROR("E19999", "link aipp:%s(%s) to peer op:%s(%s) failed",
                           aipp->GetName().c_str(), aipp->GetType().c_str(),
                           out_in_anchors.second->GetOwnerNode()->GetName().c_str(),
-                          out_in_anchors.second->GetOwnerNode()->GetType().c_str(),
-                          __FUNCTION__);
+                          out_in_anchors.second->GetOwnerNode()->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Failed to link aipp %s to the peer node %s", aipp->GetName().c_str(),
                out_in_anchors.second->GetOwnerNode()->GetName().c_str());
         return INTERNAL_ERROR;
@@ -243,7 +241,7 @@ NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor,
   std::string current_name = node->GetName() + "_" + std::to_string(out_anchor->GetIdx()) + "_huawei_aipp";
   auto aipp_opdesc_ptr = MakeShared<OpDesc>(current_name, AIPP);
   if (aipp_opdesc_ptr == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New OpDesc failed when AippOp %s", __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(OUT_OF_MEMORY, "Failed to alloc aipp desc, name %s", current_name.c_str());
     return nullptr;
   }
@@ -270,9 +268,9 @@ NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor,
   // but the InferFormat process before InferShape can not infer the format
   // if the tensor on the Aipp has an unknown shape
   if (aipp_opdesc_ptr->UpdateInputDesc(kAippImageInputIndex, opdesc_src_data) != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Update the output desc from node:%s(%s) to aipp:%s(%s) failed when AippOp %s",
+    REPORT_CALL_ERROR("E19999", "Update the output desc from node:%s(%s) to aipp:%s(%s) failed",
                       node_desc->GetName().c_str(), node_desc->GetType().c_str(),
-                      aipp_opdesc_ptr->GetName().c_str(), aipp_opdesc_ptr->GetType().c_str(), __FUNCTION__);
+                      aipp_opdesc_ptr->GetName().c_str(), aipp_opdesc_ptr->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Failed to update the output desc from node %s to aipp %s", node_desc->GetName().c_str(),
            aipp_opdesc_ptr->GetName().c_str());
     return nullptr;
@@ -364,8 +362,8 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   GeAttrValue::NAMED_ATTRS aipp_attr;
   ConvertParamToAttr(aipp_attr);
   if (!AttrUtils::SetNamedAttrs(data_opdesc, ATTR_NAME_AIPP, aipp_attr)) {
-    REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed when AippOp %s", ATTR_NAME_AIPP.c_str(),
-                       data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed", ATTR_NAME_AIPP.c_str(),
+                       data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Set name attrs for Data node failed. id: %d", rank);
     return INTERNAL_ERROR;
   }
@@ -397,8 +395,8 @@ Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_n
   if (AttrUtils::GetStr(data_node->GetOpDesc(), kMbatchSwitchnName, related_node_name)) {
     if (related_node_name.empty()) {
       REPORT_INNER_ERROR("E19999", "The data node %s has switchn node flag, but the value of attr:%s is empty, "
-                         "check invalid when AippOp %s", data_node->GetName().c_str(),
-                         kMbatchSwitchnName, __FUNCTION__);
+                         "check invalid", data_node->GetName().c_str(),
+                         kMbatchSwitchnName);
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node flag, but the value is empty",
              data_node->GetName().c_str());
       return INTERNAL_ERROR;
@@ -406,8 +404,7 @@ Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_n
     auto switchn = graph->FindNode(related_node_name);
     if (switchn == nullptr) {
       REPORT_INNER_ERROR("E19999", "The data node %s has switchn node %s, but can not find it on the graph, "
-                         "check invalid when AippOp %s", data_node->GetName().c_str(), related_node_name.c_str(),
-                         __FUNCTION__);
+                         "check invalid", data_node->GetName().c_str(), related_node_name.c_str());
       GELOGE(INTERNAL_ERROR, "The data node %s has switchn node %s, but can not find it on the graph",
              data_node->GetName().c_str(), related_node_name.c_str());
       return INTERNAL_ERROR;
@@ -497,9 +494,9 @@ Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
     for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
       const auto &subgraph = graph->GetSubgraph(name);
       if (subgraph == nullptr) {
-        REPORT_INNER_ERROR("E19999", "Subgraph:%s of op:%s(%s) not find in graph:%s, check invalid when AippOp %s",
+        REPORT_INNER_ERROR("E19999", "Subgraph:%s of op:%s(%s) not find in graph:%s, check invalid",
                            name.c_str(), func_desc->GetName().c_str(), func_desc->GetType().c_str(),
-                           graph->GetName().c_str(), __FUNCTION__);
+                           graph->GetName().c_str());
         GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
         return GE_GRAPH_EMPTY_SUBGRAPH;
       }
@@ -700,15 +697,15 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
   // Add two InputDesc, add the second after the first one is added successfully.
   if ((op_desc->AddInputDesc(GeTensorDesc()) != GRAPH_SUCCESS) ||
       (op_desc->AddInputDesc(GeTensorDesc()) != GRAPH_SUCCESS)) {
-    REPORT_CALL_ERROR("E19999", "Add input desc into op:%s(%s) failed when AippOp %s",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Add input desc into op:%s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(FAILED, "failed to add input desc");
     return FAILED;
   }
 
   if (op_desc->AddOutputDesc(GeTensorDesc()) != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Add output desc into op:%s(%s) failed when AippOp %s",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Add output desc into op:%s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(FAILED, "add output desc failed.");
     return FAILED;
   }
@@ -716,8 +713,8 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
   ConvertParamToAttr(aipp_attrs);
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attrs),
-                  REPORT_INNER_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed when AippOp %s", ATTR_NAME_AIPP.c_str(),
-                                     op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                  REPORT_INNER_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_AIPP.c_str(),
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
                   GELOGE(FAILED, "failed to set ATTR_NAME_AIPP");
                   return FAILED);
 
@@ -898,18 +895,18 @@ Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp
   // add node desc for aipp node
   auto stat3 = aipp_node->GetOpDesc()->UpdateInputDesc(kAippParamsInputIndex, output_tensor);
   if (stat1 != GRAPH_SUCCESS || stat2 != GRAPH_SUCCESS || stat3 != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Add and Update InputDesc to op:%s(%s) failed, index:%d, when AippOp %s",
-                      aipp_node->GetName().c_str(), aipp_node->GetType().c_str(), kAippParamsInputIndex, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Add and Update InputDesc to op:%s(%s) failed, index:%d",
+                      aipp_node->GetName().c_str(), aipp_node->GetType().c_str(), kAippParamsInputIndex);
     GELOGE(INTERNAL_ERROR, "node process desc failed!");
     return INTERNAL_ERROR;
   }
   // aipp_node should have two input data but now tbe only one input
   if (GraphUtils::AddEdge(aipp_data_node_ptr->GetOutDataAnchor(kAippDataOutputIndex),
                           aipp_node->GetInDataAnchor(kAippParamsInputIndex)) != GRAPH_SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Add edge between op:%s(%s)(out_index:%u) and op:%s(%s)(in_index:%u) failed "
-                       "when AippOp %s", aipp_data_node_ptr->GetName().c_str(), aipp_data_node_ptr->GetType().c_str(),
+    REPORT_INNER_ERROR("E19999", "Add edge between op:%s(%s)(out_index:%u) and op:%s(%s)(in_index:%u) failed",
+                       aipp_data_node_ptr->GetName().c_str(), aipp_data_node_ptr->GetType().c_str(),
                        kAippDataOutputIndex, aipp_node->GetName().c_str(), aipp_node->GetType().c_str(),
-                       kAippParamsInputIndex, __FUNCTION__);
+                       kAippParamsInputIndex);
     GELOGE(INTERNAL_ERROR, "Add Anchor anchor between aipp data node and aipp failed!");
     return INTERNAL_ERROR;
   }

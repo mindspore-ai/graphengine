@@ -339,8 +339,8 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
     const string &engine_name = subgraph->engine_conf.id;
 
     if (!IsEngineSkip(*subgraph) && !HasAssignedStream(*subgraph)) {
-      REPORT_INNER_ERROR("E19999", "Subgraph %s has not yet been assigned a stream (engine: %s) "
-                         " when run NodeStreamUpdatePass", subgraph->name.c_str(), engine_name.c_str());
+      REPORT_INNER_ERROR("E19999", "Subgraph %s has not yet been assigned a stream (engine: %s)",
+                         subgraph->name.c_str(), engine_name.c_str());
       GELOGE(INTERNAL_ERROR, "Subgraph %s has not yet been assigned a stream (engine: %s).", subgraph->name.c_str(),
              engine_name.c_str());
       return INTERNAL_ERROR;
@@ -681,7 +681,7 @@ Status LogicalStreamAllocator::ConvertSubgraphs(const vector<SubGraphInfoPtr> &s
     const string &engine_name = subgraph_info->GetEngineName();
     auto engine_conf_iter = engine_confs.find(engine_name);
     if ((engine_conf_iter == engine_confs.end()) || (engine_conf_iter->second == nullptr)) {
-      REPORT_INNER_ERROR("E19999", "Engine conf of subgraph %s not found (engine name: %s) when ConvertSubgraphs",
+      REPORT_INNER_ERROR("E19999", "Engine conf of subgraph %s not found (engine name: %s)",
                          subgraph_name.c_str(), engine_name.c_str());
       GELOGE(INTERNAL_ERROR, "Engine conf of subgraph %s not found (engine name: %s).", subgraph_name.c_str(),
              engine_name.c_str());

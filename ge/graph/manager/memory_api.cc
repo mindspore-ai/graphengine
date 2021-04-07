@@ -50,8 +50,8 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
   path.append(file_name);
   string canonical_path = RealPath(path.c_str());
   if (canonical_path.empty()) {
-    REPORT_INNER_ERROR("E19999", "canonical_path:%s is empty, check invalid when %s",
-                       canonical_path.c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "canonical_path:%s is empty, check invalid",
+                       canonical_path.c_str());
     GELOGE(FAILED, "Failed to get realpath of %s", path.c_str());
     return FAILED;
   }
@@ -67,16 +67,16 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
   auto hcom_remote_mem_register =
       (HcclResult(*)(const MemRegisterAddr *, uint32_t))dlsym(handle, "HcomRegRemoteAccessMem");
   if (hcom_remote_mem_register == nullptr) {
-    REPORT_CALL_ERROR("E19999", "Symbol HcomRegRemoteAccessMem can't find in %s, check invalid when %s",
-                      canonical_path.c_str(), __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Symbol HcomRegRemoteAccessMem can't find in %s, check invalid",
+                      canonical_path.c_str());
     GELOGE(FAILED, "Failed to invoke hcom_remote_mem_register function.");
     return FAILED;
   }
 
   HcclResult hccl_ret = hcom_remote_mem_register(reg_addrs.get(), table_len);
   if (hccl_ret != HCCL_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Call hcom_remote_mem_register failed, ret:%d, when %s",
-                      hccl_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call hcom_remote_mem_register failed, ret:%d,",
+                      hccl_ret);
     GELOGE(HCCL_E_INTERNAL, "Rdma mem register failed, ret: 0x%X", hccl_ret);
     return HCCL_E_INTERNAL;
   }

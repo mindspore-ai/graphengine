@@ -70,6 +70,12 @@ Status ControlTriggerPass::HandleDynamicCtrlEdges(ComputeGraphPtr &graph, NodePt
       NodePtr constant = (branch_flag ? iter2->second.second : iter2->second.first);
       if ((GraphUtils::RemoveEdge(in_ctrl_node->GetOutControlAnchor(), node->GetInControlAnchor()) != GRAPH_SUCCESS) ||
           (GraphUtils::AddEdge(in_ctrl_node->GetOutControlAnchor(), constant->GetInControlAnchor()) != GRAPH_SUCCESS)) {
+        REPORT_CALL_ERROR("E19999", "Remove control edge between op:%s(%s) and op:%s(%s), then "
+                          "add control edge between op:%s(%s) and op:%s(%s) failed",
+                          in_ctrl_node->GetName().c_str(), in_ctrl_node->GetType().c_str(),
+                          node->GetName().c_str(), node->GetType().c_str(),
+                          in_ctrl_node->GetName().c_str(), in_ctrl_node->GetType().c_str(),
+                          constant->GetName().c_str(), constant->GetType().c_str());
         GELOGE(FAILED, "Replace ctrl edge fail, %s->%s, %s->%s.", in_ctrl_node->GetName().c_str(),
                node->GetName().c_str(), in_ctrl_node->GetName().c_str(), constant->GetName().c_str());
         return FAILED;
@@ -185,6 +191,7 @@ ControlNodeType ControlTriggerPass::TransferNodeType(const NodePtr &node, uint32
   } else if ((type == MERGE) || (type == REFMERGE)) {
     OpDescPtr merge_desc = node->GetOpDesc();
     if (merge_desc == nullptr) {
+      REPORT_INNER_ERROR("E19999", "op_desc in merge node is nullptr, check invalid");
       GELOGE(INTERNAL_ERROR, "FindPredInput fail, merge_desc is null, merge_node: %s.", node->GetName().c_str());
       return kInvalidType;
     }
@@ -264,14 +271,23 @@ Status ControlTriggerPass::InsertOppositeBranch(ComputeGraphPtr &graph, NodePtr 
   }
 
   if (GraphUtils::AddEdge(in_ctrl_node->GetOutControlAnchor(), orig_const->GetInControlAnchor()) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                      in_ctrl_node->GetName().c_str(), in_ctrl_node->GetType().c_str(),
+                      orig_const->GetName().c_str(), orig_const->GetType().c_str());
     GELOGE(FAILED, "Add in ctrl edge fail, %s->%s.", in_ctrl_node->GetName().c_str(), orig_const->GetName().c_str());
     return FAILED;
   }
   if (GraphUtils::AddEdge(switch_node->GetOutDataAnchor(new_idx), identity_node->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%u) and op:%s(%s)(index:0) failed",
+                      switch_node->GetName().c_str(), switch_node->GetType().c_str(), new_idx,
+                      identity_node->GetName().c_str(), identity_node->GetType().c_str());
     GELOGE(FAILED, "Add in data edge fail, %s->%s.", switch_desc->GetName().c_str(), identity_node->GetName().c_str());
     return FAILED;
   }
   if (GraphUtils::AddEdge(identity_node->GetOutControlAnchor(), new_const->GetInControlAnchor()) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                      identity_node->GetName().c_str(), identity_node->GetType().c_str(),
+                      new_const->GetName().c_str(), new_const->GetType().c_str());
     GELOGE(FAILED, "Add in ctrl edge fail, %s->%s.", identity_node->GetName().c_str(), new_const->GetName().c_str());
     return FAILED;
   }
@@ -282,6 +298,7 @@ Status ControlTriggerPass::InsertOppositeBranch(ComputeGraphPtr &graph, NodePtr 
     control_trigger_map_[node] = {pred_const};
   } else {
     if (!iter->second.insert(pred_const).second) {
+      REPORT_INNER_ERROR("E19999", "Insert to control_trigger_map_ failed");
       GELOGE(FAILED, "control_trigger_map_ insert failed.");
       return FAILED;
     }
@@ -303,12 +320,15 @@ NodePtr ControlTriggerPass::InsertMergeNode(ComputeGraphPtr &graph, NodePtr &nod
   const std::string name = node->GetName() + "_" + MERGE;
   OpDescPtr op_desc = MakeShared<OpDesc>(name, MERGE);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(FAILED, "Create Merge op %s: create op_desc fail.", name.c_str());
     return nullptr;
   }
 
   if ((op_desc->AddInputDesc(data_desc) != GRAPH_SUCCESS) || (op_desc->AddInputDesc(data_desc) != GRAPH_SUCCESS) ||
       (op_desc->AddOutputDesc(data_desc) != GRAPH_SUCCESS) || (op_desc->AddOutputDesc(data_desc) != GRAPH_SUCCESS)) {
+    REPORT_CALL_ERROR("E19999", "Add input or ouput desc to op:%s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Create Merge op %s: add input/output desc fail.", name.c_str());
     return nullptr;
   }
@@ -316,12 +336,20 @@ NodePtr ControlTriggerPass::InsertMergeNode(ComputeGraphPtr &graph, NodePtr &nod
   GELOGI("Create Merge op:%s.", name.c_str());
   NodePtr merge_node = graph->AddNode(op_desc);
   if (merge_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Create Merge op %s fail.", name.c_str());
     return nullptr;
   }
 
   if ((GraphUtils::RemoveEdge(in_ctrl_node->GetOutControlAnchor(), node->GetInControlAnchor()) != GRAPH_SUCCESS) ||
       (GraphUtils::AddEdge(merge_node->GetOutControlAnchor(), node->GetInControlAnchor()) != GRAPH_SUCCESS)) {
+    REPORT_CALL_ERROR("E19999", "Remove control edge between op:%s(%s) and op:%s(%s), then "
+                      "add control edge between op:%s(%s) and op:%s(%s) failed",
+                      in_ctrl_node->GetName().c_str(), in_ctrl_node->GetType().c_str(),
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      merge_node->GetName().c_str(), merge_node->GetType().c_str(),
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "Replace ctrl edge fail, %s->%s, %s->%s", in_ctrl_node->GetName().c_str(), node->GetName().c_str(),
            merge_node->GetName().c_str(), node->GetName().c_str());
     return nullptr;
@@ -343,6 +371,7 @@ NodePtr ControlTriggerPass::InsertConstNode(ComputeGraphPtr &graph, NodePtr &mer
   const std::string name = merge_node->GetName() + "_" + CONSTANT + (flag ? "_t" : "_f");
   OpDescPtr op_desc = MakeShared<OpDesc>(name, CONSTANT);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(FAILED, "Create Const op %s: create op_desc fail.", name.c_str());
     return nullptr;
   }
@@ -350,15 +379,20 @@ NodePtr ControlTriggerPass::InsertConstNode(ComputeGraphPtr &graph, NodePtr &mer
   int32_t value = 0;
   GeTensorPtr const_value = MakeShared<GeTensor>(data_desc, reinterpret_cast<uint8_t *>(&value), sizeof(int32_t));
   if (const_value == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New GeTensor failed");
     GELOGE(FAILED, "Create tensor fail.");
     return nullptr;
   }
   if (!AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, const_value)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_WEIGHTS.c_str(),
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Create Const op %s: set attr ATTR_NAME_WEIGHTS fail.", name.c_str());
     return nullptr;
   }
 
   if (op_desc->AddOutputDesc(data_desc) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add ouput desc to op:%s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Create Const op %s: add output desc fail.", name.c_str());
     return nullptr;
   }
@@ -366,12 +400,17 @@ NodePtr ControlTriggerPass::InsertConstNode(ComputeGraphPtr &graph, NodePtr &mer
   GELOGI("Create Const op: %s", name.c_str());
   NodePtr const_node = graph->AddNode(op_desc);
   if (const_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Create Const op %s fail.", name.c_str());
     return nullptr;
   }
 
   uint32_t out_idx = (flag ? SWITCH_TRUE_OUTPUT : SWITCH_FALSE_OUTPUT);
   if (GraphUtils::AddEdge(const_node->GetOutDataAnchor(0), merge_node->GetInDataAnchor(out_idx)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%u) failed",
+                      const_node->GetName().c_str(), const_node->GetType().c_str(),
+                      merge_node->GetName().c_str(), merge_node->GetType().c_str(), out_idx);
     GELOGE(FAILED, "Add in data edge fail, %s->%s", const_node->GetName().c_str(), merge_node->GetName().c_str());
     return nullptr;
   }
@@ -390,11 +429,14 @@ NodePtr ControlTriggerPass::InsertIdentityNode(ComputeGraphPtr &graph, const std
                                                const GeTensorDesc &data_desc) {
   OpDescPtr op_desc = MakeShared<OpDesc>(name, IDENTITY);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(FAILED, "Create Identity op %s: create op_desc fail.", name.c_str());
     return nullptr;
   }
 
   if ((op_desc->AddInputDesc(data_desc) != GRAPH_SUCCESS) || (op_desc->AddOutputDesc(data_desc) != GRAPH_SUCCESS)) {
+    REPORT_CALL_ERROR("E19999", "Add input or output desc to op:%s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Create Identity op %s: add input/output desc fail.", name.c_str());
     return nullptr;
   }
@@ -402,6 +444,8 @@ NodePtr ControlTriggerPass::InsertIdentityNode(ComputeGraphPtr &graph, const std
   GELOGI("Create Identity op:%s.", name.c_str());
   NodePtr identity_node = graph->AddNode(op_desc);
   if (identity_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Create Identity op %s fail.", name.c_str());
     return nullptr;
   }
@@ -418,17 +462,24 @@ NodePtr ControlTriggerPass::InsertIdentityNode(ComputeGraphPtr &graph, const std
 ///
 Status ControlTriggerPass::FindPredInput(const NodePtr &switch_node) {
   if (switch_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param switch_node is nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "switch_node is null");
     return INTERNAL_ERROR;
   }
 
   InDataAnchorPtr in_cond_anchor = switch_node->GetInDataAnchor(SWITCH_PRED_INPUT);
   if (in_cond_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Index:%d in anchor of switch_node:%s(%s) is nullptr, check invalid",
+                       SWITCH_PRED_INPUT,
+                       switch_node->GetName().c_str(), switch_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "in_cond_anchor is nullptr, node: %s.", switch_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
   OutDataAnchorPtr pred_cond_anchor = in_cond_anchor->GetPeerOutAnchor();
   if (pred_cond_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Index:%d in anchor of switch_node:%s(%s), it's peer anchor is nullptr, "
+                       "check invalid", SWITCH_PRED_INPUT,
+                       switch_node->GetName().c_str(), switch_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "pred_cond_anchor is nullptr, node: %s.", switch_node->GetName().c_str());
     return INTERNAL_ERROR;
   }

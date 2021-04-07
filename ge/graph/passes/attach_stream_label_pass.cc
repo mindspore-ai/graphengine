@@ -119,8 +119,8 @@ Status AttachStreamLabelPass::UpdateCondBranch(const NodePtr &node) {
     GELOGD("Attach label %s to node: %s.", stream_label.c_str(), tmp_node->GetName().c_str());
     auto status = SetStreamLabel(tmp_node, stream_label);
     if (status != ge::SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed when AttachStreamLabelPass %s",
-                        stream_label.c_str(), tmp_node->GetName().c_str(), tmp_node->GetType().c_str(), __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed",
+                        stream_label.c_str(), tmp_node->GetName().c_str(), tmp_node->GetType().c_str());
       GELOGE(status, "Set stream label failed.");
       return status;
     }
@@ -139,8 +139,8 @@ Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &strea
   const std::string &type = node->GetType();
   if (type == STREAMSWITCH) {
     if (node->GetInDataNodes().empty()) {
-      REPORT_INNER_ERROR("E19999", "In data nodes is empty of op:%s(%s), check invalid when AttachStreamLabelPass %s",
-                         node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "In data nodes is empty of op:%s(%s), check invalid",
+                         node->GetName().c_str(), node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "node %s has no input_data_node.", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -149,16 +149,16 @@ Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &strea
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     GE_CHK_BOOL_EXEC(AttrUtils::GetBool(op_desc, ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG, value),
-                     REPORT_CALL_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed when AttachStreamLabelPass %s",
+                     REPORT_CALL_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed",
                                        ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG.c_str(),
-                                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
                      return FAILED,
                      "StreamSwitch get attr TRUE_BRANCH_STREAM failed.");
     stream_label += (value ? "_t" : "_f");
     auto status = SetActiveLabelList(node, {stream_label});
     if (status != ge::SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Set active label list:%s to op:%s(%s) failed when AttachStreamLabelPass %s",
-                        stream_label.c_str(), node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Set active label list:%s to op:%s(%s) failed",
+                        stream_label.c_str(), node->GetName().c_str(), node->GetType().c_str());
       GELOGE(status, "set active_label_list failed.");
       return status;
     }
@@ -166,8 +166,8 @@ Status AttachStreamLabelPass::AttachFlag(const NodePtr &node, std::string &strea
     stream_label = node->GetName();
     auto status = SetStreamLabel(node, stream_label);
     if (status != ge::SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed when AttachStreamLabelPass %s",
-                        stream_label.c_str(), node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed",
+                        stream_label.c_str(), node->GetName().c_str(), node->GetType().c_str());
       GELOGE(status, "Set stream label failed.");
       return status;
     }
@@ -207,9 +207,9 @@ Status AttachStreamLabelPass::UpdateEnterNode() {
     bool get_attr = AttrUtils::GetListStr(active_node->GetOpDesc(), ATTR_NAME_ACTIVE_LABEL_LIST, active_label_list) &&
                     (active_label_list.size() == 1) && !active_label_list[0].empty();
     if (!get_attr) {
-      REPORT_CALL_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed when AttachStreamLabelPass %s",
+      REPORT_CALL_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed",
                         ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
-                        active_node->GetName().c_str(), active_node->GetType().c_str(), __FUNCTION__);
+                        active_node->GetName().c_str(), active_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Get attr ATTR_NAME_ACTIVE_LABEL_LIST failed, node: %s.", active_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -245,9 +245,8 @@ Status AttachStreamLabelPass::SetEnterLabel(const std::vector<NodePtr> &enter_no
   for (const auto &enter_node : enter_nodes) {
     auto status = SetStreamLabel(enter_node, stream_label);
     if (status != ge::SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed when AttachStreamLabelPass %s",
-                        stream_label.c_str(), enter_node->GetName().c_str(), enter_node->GetType().c_str(),
-                        __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed",
+                        stream_label.c_str(), enter_node->GetName().c_str(), enter_node->GetType().c_str());
       GELOGE(status, "Set stream label failed.");
       return status;
     }
@@ -281,9 +280,8 @@ Status AttachStreamLabelPass::UpdateLoopBranch(const std::stack<NodePtr> &enter_
       GELOGD("Attach label %s to node: %s.", stream_label.c_str(), out_node->GetName().c_str());
       auto status = SetStreamLabel(out_node, stream_label);
       if (status != ge::SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed when AttachStreamLabelPass %s",
-                          stream_label.c_str(), out_node->GetName().c_str(), out_node->GetType().c_str(),
-                          __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed",
+                          stream_label.c_str(), out_node->GetName().c_str(), out_node->GetType().c_str());
         GELOGE(status, "Set stream label failed.");
         return status;
       }

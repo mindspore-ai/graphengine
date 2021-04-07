@@ -41,7 +41,7 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
   }
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
   if (instance == nullptr || !instance->InitFlag()) {
-    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid when CompileNodesPass %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid");
     GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "Run CompileNodesPass failed.");
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -100,8 +100,8 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
     (void)instance->DNNEngineManagerObj().GetDNNEngineName(node);
     kernel_lib_name = op_desc->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
-      REPORT_INNER_ERROR("E19999", "kernel_lib_name in op:%s(%s) is empty, check invalid when CompileNodesPass %s",
-                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "kernel_lib_name in op:%s(%s) is empty, check invalid",
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(GRAPH_FAILED, "Get node:%s, type:%s kernel lib failed.", node->GetName().c_str(),
              op_desc->GetType().c_str());
       return GRAPH_FAILED;
@@ -109,8 +109,8 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   }
   OpsKernelInfoStorePtr kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
   if (kernel_info == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed for op:%s(%s), when CompileNodesPass %s",
-                       kernel_lib_name.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed for op:%s(%s)",
+                       kernel_lib_name.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node->GetName().c_str());
     return ge::GE_GRAPH_PARAM_NULLPTR;
   }
@@ -173,8 +173,8 @@ graphStatus CompileNodesPass::CompileNodes(const std::shared_ptr<GELib> instance
   for (auto &kernel_nodes : kernel_to_compile_nodes) {
     kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_nodes.first);
     if (kernel_info == nullptr) {
-      REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed, when CompileNodesPass %s",
-                         kernel_nodes.first.c_str(), __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
+                         kernel_nodes.first.c_str());
       GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", kernel_nodes.first.c_str());
       return ge::GE_GRAPH_PARAM_NULLPTR;
     }
@@ -190,8 +190,8 @@ graphStatus CompileNodesPass::CompileNodes(const std::shared_ptr<GELib> instance
     }
     auto ret = kernel_info->CompileOp(kernel_nodes.second);
     if (ret != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Call CompileOp failed, kernel_lib_name:%s, ret:%d, when CompileNodesPass %s",
-                        kernel_nodes.first.c_str(), ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call CompileOp failed, kernel_lib_name:%s, ret:%d",
+                        kernel_nodes.first.c_str(), ret);
       GELOGE(ret, "Compile op failed, kernel name is %s", kernel_nodes.first.c_str());
       return GRAPH_FAILED;
     }

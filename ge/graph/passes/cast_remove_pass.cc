@@ -25,14 +25,13 @@
 namespace ge {
 Status CastRemovePass::Run(NodePtr &node) {
   if (node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid when CastRemovePass %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "Param [node] must not be null.");
     return PARAM_INVALID;
   }
   OpDescPtr op_desc = node->GetOpDesc();
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid when CastRemovePass %s",
-                       __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "OpDesc of param [node] must not be null.");
     return PARAM_INVALID;
   }
@@ -49,7 +48,7 @@ Status CastRemovePass::Run(NodePtr &node) {
   }
   OpDescPtr end_op_desc = end_node->GetOpDesc();
   if (end_op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "op_desc of end_node is nullptr, check invalid when CastRemovePass %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "op_desc of end_node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "OpDesc of end node must not be null.");
     return PARAM_INVALID;
   }
@@ -103,8 +102,8 @@ Status CastRemovePass::RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to
       GELOGI("CastRemovePass, remove Cast %s.", node->GetName().c_str());
       cast_name = node->GetName();
       if (IsolateAndDeleteNode(node, {0}) != SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed when CastRemovePass %s",
-                          node->GetName().c_str(), node->GetType().c_str(), __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
+                          node->GetName().c_str(), node->GetType().c_str());
         GELOGE(FAILED, "IsolateAndDeleteNode %s failed.", node->GetName().c_str());
         return FAILED;
       }
@@ -120,8 +119,7 @@ Status CastRemovePass::RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to
     }
     OpDescPtr op_desc = node->GetOpDesc();
     if (op_desc == nullptr) {
-      REPORT_INNER_ERROR("E19999", "Find nullptr op_desc in node, check invalid when CastRemovePass %s",
-                         __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Find nullptr op_desc in node, check invalid");
       GELOGE(FAILED, "OpDesc must not be null.");
       return FAILED;
     }
@@ -131,9 +129,9 @@ Status CastRemovePass::RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to
     op_desc->SetName(new_node_name);
     // add attr to changed TransData, then will be rebuild
     if (!AttrUtils::SetBool(op_desc, ATTR_NEED_COMPILE, true)) {
-      REPORT_CALL_ERROR("E19999", "Set Attr:%s of op:%s(%s) failed when CastRemovePass %s",
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s of op:%s(%s) failed",
                         ATTR_NEED_COMPILE.c_str(),
-                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Set ATTR_NEED_COMPILE Attr fail.");
       return FAILED;
     }

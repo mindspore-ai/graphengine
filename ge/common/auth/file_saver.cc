@@ -111,8 +111,8 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   } while (0);
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
-    GELOGE(FAILED, "[Close][File]Failed, error_code:%u.", ret);
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u.", ret);
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
     ret = FAILED;
   }
   return ret;
@@ -148,7 +148,11 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
     }
   } while (0);
   // Close file
-  GE_CHK_BOOL_RET_STATUS(mmClose(fd) == EN_OK, FAILED, "Close file failed.");
+  if (mmClose(fd) != EN_OK) {
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    ret = FAILED;
+  }
   return ret;
 }
 
@@ -346,7 +350,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
       // Write partition data
       auto &cur_partition_datas = all_partition_datas[index];
       for (const auto &partition_data : cur_partition_datas) {
-        GELOGI("GC:size[%u]", partition_data.size);
+        GELOGI("part_size[%u]", partition_data.size);
         GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
             WriteData(static_cast<const void *>(partition_data.data), partition_data.size, fd) != SUCCESS, ret = FAILED;
             break);
@@ -354,7 +358,11 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
     }
   } while (0);
   // Close file
-  GE_CHK_BOOL_RET_STATUS(mmClose(fd) == EN_OK, FAILED, "Close file failed.");
+  if (mmClose(fd) != 0) {  // mmClose 0: success
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    ret = FAILED;
+  }
   return ret;
 }
 
@@ -377,8 +385,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(co
 
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
-    GELOGE(FAILED, "[Close][File]Failed, error_code:%u.", ret);
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u.", ret);
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
     ret = FAILED;
   }
   return ret;

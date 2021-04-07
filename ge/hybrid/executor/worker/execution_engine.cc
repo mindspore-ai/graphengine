@@ -233,11 +233,13 @@ Status NodeDoneCallback::DumpDynamicNode() {
     uintptr_t output_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
     output_addrs.emplace_back(output_addr);
   }
-    void *loop_per_iter = nullptr;
-    TensorValue *varible_loop_per_iter = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);
-    if (varible_loop_per_iter != nullptr) {
-      loop_per_iter = const_cast<void *>(varible_loop_per_iter->GetData());
-    }
+  dump_op_.SetDumpInfo(context_->GetDumpProperties(), op_desc, input_addrs, output_addrs, stream);
+
+  void *loop_per_iter = nullptr;
+  TensorValue *varible_loop_per_iter = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);
+  if (varible_loop_per_iter != nullptr) {
+    loop_per_iter = const_cast<void *>(varible_loop_per_iter->GetData());
+  }
 
   void *loop_cond = nullptr;
   TensorValue *varible_loop_cond = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_COND);

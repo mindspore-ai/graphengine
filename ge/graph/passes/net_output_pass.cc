@@ -40,6 +40,7 @@ static std::map<std::string, ge::DataType> output_type_str_to_datatype = {
 
 // the size of user defined output datatype or format string after split by ":".
 const size_t kUserDefinedElementCount = 2;
+const size_t kNodesCount = 2;
 
 Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
                                           std::map<int32_t, RetvalInfo> &retval_node_index_map) {
@@ -424,11 +425,13 @@ Status NetOutputPass::AddCtrlEdgesBetweenLeafAndNetOutput(const ge::ComputeGraph
     GELOGI("No need to add ctrl edge to netoutput because user out nodes have been set.");
     return SUCCESS;
   }
+  bool graph_has_only_one_node_except_netoutput = (graph->GetDirectNodesSize() == kNodesCount);
   for (const auto &node : graph->GetDirectNode()) {
     if (node == nullptr || node->GetOpDesc() == nullptr || node->GetOpDesc()->GetType() == NETOUTPUT) {
       continue;
     }
-    if ((node->GetInControlNodes().size() != 0 || node->GetInDataNodes().size() != 0) &&
+    if ((node->GetInControlNodes().size() != 0 || node->GetInDataNodes().size() != 0 ||
+         graph_has_only_one_node_except_netoutput) &&
         node->GetOutDataNodesSize() == 0 && node->GetOutControlNodes().size() == 0) {
       GE_CHK_STATUS_RET(GraphUtils::AddEdge(node->GetOutControlAnchor(), net_out_node->GetInControlAnchor()),
                         "add edge failed");
@@ -493,10 +496,13 @@ Status NetOutputPass::AddNetOutputNodeToGraph(const ge::ComputeGraphPtr &graph, 
   }
   GELOGI("[NETOUTPUT PASS] OutNodesInfo size:%zu, Targets Size:%zu, is_include_special_node_:%d",
          graph->GetGraphOutNodesInfo().size(), graph->GetGraphTargetNodesInfo().size(), is_include_special_node_);
-  // If user does not set out nodes and targets and no retval node, return false
+  // If user does not set out nodes and targets and no retval node, also add netoutput node
   if ((graph->GetGraphOutNodesInfo().empty()) && (graph->GetGraphTargetNodesInfo().empty()) &&
       !is_include_special_node_) {
-    GELOGI("[NETOUTPUT PASS] output_nodes and target_nodes and special nodes is empty!It means no need netoutput!");
+    GELOGI("[NETOUTPUT PASS] output_nodes and target_nodes and special nodes is empty!Add netoutput!");
+    output_node = graph->AddNode(net_output_desc);
+    GE_CHK_STATUS_RET(AddCtrlEdgesBetweenLeafAndNetOutput(graph, output_node),
+                      "add ctrl edge between leaf and netoutput failed");
     return SUCCESS;
   }
   GELOGI("[NETOUTPUT PASS] Output node size:%lu.", output_nodes_info.size());

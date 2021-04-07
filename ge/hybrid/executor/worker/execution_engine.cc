@@ -212,7 +212,7 @@ Status NodeDoneCallback::DumpDynamicNode() {
   std::string dynamic_model_name = model->GetModelName();
   std::string dynamic_om_name = model->GetOmName();
   uint32_t model_id = model->GetModelId();
-  if(!context_->GetDumpProperties().IsLayerNeedDump(dynamic_model_name, dynamic_om_name, op_desc->GetName())) {
+  if (!context_->GetDumpProperties().IsLayerNeedDump(dynamic_model_name, dynamic_om_name, op_desc->GetName())) {
     GELOGI("[%s] is not in dump list, no need dump", op_desc->GetName().c_str());
     return SUCCESS;
   }

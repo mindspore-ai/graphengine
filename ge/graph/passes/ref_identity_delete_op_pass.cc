@@ -29,6 +29,8 @@ Status RefIdentityDeleteOpPass::Run(ComputeGraphPtr graph) {
     int input_index = 0;
     NodePtr ref_node = GetRefNode(node, input_index);
     CHECK_FALSE_EXEC(GetRefNode(node, input_index) != nullptr,
+                     REPORT_CALL_ERROR("E19999", "Get Ref node of node:%s(%s) failed",
+                                       node->GetName().c_str(), node->GetType().c_str());
                      GELOGE(FAILED, "Ref node of RefIdentity[%s] not found", node->GetName().c_str());
                      return FAILED);
     CHECK_FALSE_EXEC(DealNoOutputRef(ref_node, node, input_index, graph) == SUCCESS,
@@ -61,6 +63,8 @@ Status RefIdentityDeleteOpPass::DealNoOutputRef(const NodePtr &node, const NodeP
   NodePtr first_node = nullptr;
   NodePtr variable_ref = GetVariableRef(node, ref_identity, first_node);
   if (variable_ref == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Get variable ref of node:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[RefIdentityDeleteOpPass]Can not find variable ref for %s:%d", node->GetName().c_str(),
            input_index);
     return FAILED;
@@ -83,11 +87,17 @@ Status RefIdentityDeleteOpPass::DealNoOutputRef(const NodePtr &node, const NodeP
     // +-----------+                       +-----------+
     auto ret = ge::GraphUtils::AddEdge(node->GetOutControlAnchor(), first_node->GetInControlAnchor());
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str(),
+                        first_node->GetName().c_str(), first_node->GetType().c_str());
       GELOGE(FAILED, "Add control edge between ref node and trans node failed");
       return FAILED;
     }
     ret = ge::GraphUtils::RemoveEdge(node->GetOutControlAnchor(), variable_ref->GetInControlAnchor());
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove control edge between op:%s(%s) and op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str(),
+                        first_node->GetName().c_str(), first_node->GetType().c_str());
       GELOGE(FAILED, "Remove control edge between ref node and its peer node failed");
       return FAILED;
     }
@@ -113,11 +123,15 @@ Status RefIdentityDeleteOpPass::DealNoOutputRef(const NodePtr &node, const NodeP
   }
   // remove ref identity
   if (GraphUtils::IsolateNode(ref_identity, {0}) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Isolate op:%s(%s) failed",
+                      ref_identity->GetName().c_str(), ref_identity->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", ref_identity->GetName().c_str(),
            variable_ref->GetType().c_str());
     return FAILED;
   }
   if (GraphUtils::RemoveNodeWithoutRelink(graph, ref_identity) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                      ref_identity->GetName().c_str(), ref_identity->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Remove node: %s, type: %s without relink failed", ref_identity->GetName().c_str(),
            ref_identity->GetType().c_str());
     return FAILED;
@@ -214,6 +228,9 @@ Status RefIdentityDeleteOpPass::RemoveUselessControlEdge(const NodePtr &ref, con
     if (out_nodes_map.find(peer_node->GetName()) != out_nodes_map.end()) {
       auto ret = ge::GraphUtils::RemoveEdge(out_control_anchor, peer_in_control_anchor);
       if (ret != SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Remove control edge between op:%s(%s) and op:%s(%s) failed",
+                          variable_ref->GetName().c_str(), variable_ref->GetType().c_str(),
+                          peer_node->GetName().c_str(), peer_node->GetType().c_str());
         GELOGE(FAILED, "Remove control edge between variable ref node[%s] and ref node's peer node[%s] failed",
                variable_ref->GetName().c_str(), peer_node->GetName().c_str());
         return FAILED;

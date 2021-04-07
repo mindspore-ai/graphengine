@@ -28,7 +28,7 @@ LabelAllocator::LabelAllocator(const ComputeGraphPtr &graph) : compute_graph_(gr
 
 Status LabelAllocator::AssignFunctionalLabels() {
   if (compute_graph_ == nullptr) {
-    REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr when AssignFunctionalLabels");
+    REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr");
     GELOGE(INTERNAL_ERROR, "ComputeGraph not set, Assign labels failed.");
     return INTERNAL_ERROR;
   }
@@ -47,14 +47,14 @@ Status LabelAllocator::AssignFunctionalLabels() {
   for (auto node : functional_nodes) {
     LabelMakerPtr maker = LabelMakerFactory::Instance().Create(node->GetType(), compute_graph_, node);
     if (maker == nullptr) {
-      REPORT_CALL_ERROR("E19999", "Check Node:%s(%s) label maker not registed when AssignFunctionalLabels",
+      REPORT_CALL_ERROR("E19999", "Check Node:%s(%s) label maker not registed",
                         node->GetName().c_str(), node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Node: %s label maker not registed.", node->GetType().c_str());
       return INTERNAL_ERROR;
     }
 
     if (maker->Run(label_index) != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Node:%s(%s) run label maker failed when AssignFunctionalLabels",
+      REPORT_CALL_ERROR("E19999", "Node:%s(%s) run label maker failed",
                         node->GetName().c_str(), node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Node: %s run label maker failed.", node->GetType().c_str());
       return INTERNAL_ERROR;
@@ -68,7 +68,7 @@ Status LabelAllocator::AssignFunctionalLabels() {
 
 bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<NodePtr> &functional_nodes) {
   if (graph == nullptr) {
-    REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr when CollectFunctionalNode");
+    REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr");
     GELOGE(INTERNAL_ERROR, "Sub ComputeGraph is null.");
     return false;
   }

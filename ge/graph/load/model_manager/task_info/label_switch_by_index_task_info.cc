@@ -39,8 +39,8 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
   const domi::LabelSwitchByIndexDef &label_switch = task_def.label_switch_by_index();
   OpDescPtr op_desc = davinci_model->GetOpByIndex(label_switch.op_index());
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u when LabelSwitchByIndexTaskInfo %s",
-                       label_switch.op_index(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u",
+                       label_switch.op_index());
     GELOGE(INTERNAL_ERROR, "Task op index:%u out of range!", label_switch.op_index());
     return INTERNAL_ERROR;
   }
@@ -50,8 +50,8 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
   auto input_data_addr = ModelUtils::GetInputDataAddrs(davinci_model->GetRuntimeParam(), op_desc);
   if (input_data_addr.size() != kLabelSwitchIndexNum) {
     REPORT_INNER_ERROR("E19999", "input_data_addr size:%zu != kLabelSwitchIndexNum:%u, op:%s(%s), "
-                       "check invalid when LabelSwitchByIndexTaskInfo %s", input_data_addr.size(), kLabelSwitchIndexNum,
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                       "check invalid", input_data_addr.size(), kLabelSwitchIndexNum,
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "LabelSwitchByIndexTaskInfo: %s invalid addr size: %zu, num: %u!",
            op_desc->GetName().c_str(), input_data_addr.size(), kLabelSwitchIndexNum);
     return INTERNAL_ERROR;
@@ -67,9 +67,9 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
 
   vector<uint32_t> label_idx_list;
   if (!AttrUtils::GetListInt(op_desc, ATTR_NAME_LABEL_SWITCH_LIST, label_idx_list)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail when LabelSwitchByIndexTaskInfo %s",
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail",
                        ATTR_NAME_LABEL_SWITCH_LIST.c_str(),
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "LabelSwitchByIndexTaskInfo: %s Get attr %s failed.", op_desc->GetName().c_str(),
            ATTR_NAME_LABEL_SWITCH_LIST.c_str());
     return INTERNAL_ERROR;
@@ -77,9 +77,9 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
 
   if (label_idx_list.empty() || label_idx_list.size() != branch_max_) {
     REPORT_INNER_ERROR("E19999", "label_idx_list in op:%s(%s) is empty, or size:%zu != branch_max_:%u"
-                       "check invalid when LabelSwitchByIndexTaskInfo %s",
+                       "check invalid",
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                       label_idx_list.size(), branch_max_, __FUNCTION__);
+                       label_idx_list.size(), branch_max_);
     GELOGE(INTERNAL_ERROR, "LabelSwitchByIndexTaskInfo: %s label index size: %zu, task branch max: %u.",
            op_desc->GetName().c_str(), label_idx_list.size(), branch_max_);
     return INTERNAL_ERROR;
@@ -91,8 +91,8 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
     uint32_t label_id = label_idx_list[idx];
     if (label_id >= label_list.size()) {
       REPORT_INNER_ERROR("E19999", "label_id:%u in op:%s(%s) >= label_list.size():%zu in model"
-                         "check invalid when LabelSwitchByIndexTaskInfo %s", label_id,
-                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), label_list.size(), __FUNCTION__);
+                         "check invalid", label_id,
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), label_list.size());
       GELOGE(INTERNAL_ERROR, "LabelSwitchByIndexTaskInfo: %s index: %zu, label index: %u, model label size: %zu.",
              op_desc->GetName().c_str(), idx, label_id, label_list.size());
       return INTERNAL_ERROR;
@@ -106,17 +106,16 @@ Status LabelSwitchByIndexTaskInfo::Init(const domi::TaskDef &task_def, DavinciMo
   args_size_ = branch_max_ * sizeof(rtLabelDevInfo);
   rtError_t rt_ret = rtMalloc(&args_, args_size_, memory_type);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed for op:%s(%s), size:%u, ret:0x%X, "
-                      "when LabelSwitchByIndexTaskInfo %s",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), args_size_, rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed for op:%s(%s), size:%u, ret:0x%X",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), args_size_, rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtLabelListCpy(label_used.data(), label_used.size(), args_, args_size_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelListCpy failed, ret:0x%X, when LabelSwitchByIndexTaskInfo %s",
-                      rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelListCpy failed, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -131,15 +130,15 @@ Status LabelSwitchByIndexTaskInfo::Distribute() {
   GE_CHECK_NOTNULL(index_value_);
   if (branch_max_ == 0 || args_size_ == 0) {
     REPORT_INNER_ERROR("E19999", "branch_max_:%u or args_size_:%u is 0"
-                       "check invalid when LabelSwitchByIndexTaskInfo %s", branch_max_, args_size_, __FUNCTION__);
+                       "check invalid", branch_max_, args_size_);
     GELOGE(PARAM_INVALID, "branch max: %u, args size: %u invalid.", branch_max_, args_size_);
     return PARAM_INVALID;
   }
 
   rtError_t rt_ret = rtLabelSwitchByIndex(index_value_, branch_max_, args_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelSwitchByIndex failed, ret:0x%X, when LabelSwitchByIndexTaskInfo %s",
-                      rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelSwitchByIndex failed, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -158,8 +157,8 @@ Status LabelSwitchByIndexTaskInfo::CalculateArgs(const domi::TaskDef &task_def, 
   GELOGI("Calc opType[%s] args size. Node name is [%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
   if (op_desc->GetInputsSize() != kLabelSwitchIndexNum) {
     REPORT_INNER_ERROR("E19999", "input size:%zu in op:%s(%s) != kLabelSwitchIndexNum"
-                       "check invalid when LabelSwitchByIndexTaskInfo %s", op_desc->GetInputsSize(),
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), __FUNCTION__);
+                       "check invalid", op_desc->GetInputsSize(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(FAILED, "Label switch op only have one data input. Now input size is %zu", op_desc->GetInputsSize());
     return FAILED;
   }

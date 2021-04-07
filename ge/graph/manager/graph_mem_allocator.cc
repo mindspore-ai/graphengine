@@ -49,8 +49,8 @@ uint8_t *MemoryAllocator::MallocMemory(const string &purpose, size_t memory_size
   uint8_t *memory_addr = nullptr;
 
   if (rtMalloc(reinterpret_cast<void **>(&memory_addr), memory_size, memory_type_) != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, purpose:%s, size:%zu, device_id:%u, when MemoryAllocator %s",
-                      purpose.c_str(), memory_size, device_id, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, purpose:%s, size:%zu, device_id:%u",
+                      purpose.c_str(), memory_size, device_id);
     GELOGE(ge::INTERNAL_ERROR,
            "MemoryAllocator::MallocMemory device_id = %u,"
            " size= %lu",
@@ -68,7 +68,7 @@ Status MemoryAllocator::FreeMemory(uint8_t *memory_addr, uint32_t device_id) con
   GELOGI("MemoryAllocator::FreeMemory device_id = %u", device_id);
   auto rtRet = rtFree(memory_addr);
   if (rtRet != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtFree fail, device_id:%u, when MemoryAllocator %s", device_id, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtFree fail, device_id:%u", device_id);
     GELOGE(rtRet, "MemoryAllocator::MallocMemory device_id = %u", device_id);
     return RT_ERROR_TO_GE_STATUS(rtRet);
   }
@@ -87,9 +87,8 @@ uint8_t *MemoryAllocator::MallocMemory(const string &purpose, const string &memo
   uint8_t *memory_addr = MallocMemory(purpose, memory_size, device_id);
 
   if (memory_addr == nullptr) {
-    REPORT_CALL_ERROR("E19999", "Malloc Memory fail, purpose:%s, memory_key:%s, memory_size:%zu, device_id:%u, "
-                      "when MemoryAllocator %s", purpose.c_str(), memory_key.c_str(),
-                      memory_size, device_id, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Malloc Memory fail, purpose:%s, memory_key:%s, memory_size:%zu, device_id:%u",
+                      purpose.c_str(), memory_key.c_str(), memory_size, device_id);
     GELOGE(ge::INTERNAL_ERROR,
            "MemoryAllocator::MallocMemory failed,"
            " memory_key[%s], size = %lu.",
@@ -126,8 +125,8 @@ Status MemoryAllocator::FreeMemory(const string &memory_key, uint32_t device_id)
   }
 
   if (FreeMemory(it->second.memory_addr_, device_id) != ge::SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Free Memory fail, memory_key:%s, device_id:%u, when MemoryAllocator %s",
-                      memory_key.c_str(), device_id, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Free Memory fail, memory_key:%s, device_id:%u",
+                      memory_key.c_str(), device_id);
     GELOGE(ge::INTERNAL_ERROR,
            "MemoryAllocator::FreeMemory rtFree failed,"
            " memory_key[%s]",
@@ -177,7 +176,7 @@ Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
         memory_allocator_map_[index] = memory_allocator;
         GELOGI("Create MemoryAllocator memory type[%u] success.", index);
       } else {
-        REPORT_CALL_ERROR("E19999", "New MemoryAllocator fail, index:%u, when MemoryAllocator %s", index, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "New MemoryAllocator fail, index:%u", index);
         GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc MemoryAllocator failed.");
       }
     } else {

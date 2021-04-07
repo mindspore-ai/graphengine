@@ -57,7 +57,8 @@ Status MergeInputMemcpyPass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, c
     const std::string &memcpy_name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx());
     NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, memcpy_name, peer_out_anchor, multi_batch_flag);
     GE_CHK_BOOL_EXEC(memcpy_node != nullptr, return FAILED, "Create MemcpyAsync node failed.");
-    GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor), "MemcpyAsync node remove edge failed.");
+    GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor),
+                  "MemcpyAsync node remove edge failed.");
     GE_CHK_STATUS(GraphUtils::AddEdge(peer_out_anchor, memcpy_node->GetInDataAnchor(0)),
                   "MemcpyAsync node add edge failed.");
     GE_CHK_STATUS(GraphUtils::AddEdge(memcpy_node->GetOutDataAnchor(0), in_data_anchor),
@@ -90,8 +91,12 @@ NodePtr MergeInputMemcpyPass::CreateMemcpyAsyncNode(const ComputeGraphPtr &graph
   }
 
   GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) == GRAPH_SUCCESS,
+                   REPORT_CALL_ERROR("E19999", "Add input to op:%s(%s) failed",
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
                    return nullptr, "Create MemcpyAsync op: add input desc failed.");
   GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) == GRAPH_SUCCESS,
+                   REPORT_CALL_ERROR("E19999", "Add output to op:%s(%s) failed",
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
                    return nullptr, "Create MemcpyAsync op: add output desc failed.");
 
   return graph->AddNode(op_desc);

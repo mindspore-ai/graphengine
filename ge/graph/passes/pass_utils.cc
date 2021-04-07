@@ -36,6 +36,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "utils/node_utils.h"
+#include "common/formats/utils/formats_trans_utils.h"
 
 namespace ge {
 Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std::vector<int64_t> &data,
@@ -46,11 +47,13 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std:
   if (data_type == DT_INT32) {
     unique_ptr<int32_t[]> buf(new (std::nothrow) int32_t[dim_size]());
     if (buf == nullptr) {
+      REPORT_CALL_ERROR("E19999", "New buffer failed, size:%u", dim_size);
       GELOGE(MEMALLOC_FAILED, "new failed");
       return MEMALLOC_FAILED;
     }
     for (uint32_t i = 0; i < dim_size; i++) {
       if (data[i] >= INT_MAX) {
+        REPORT_CALL_ERROR("E19999", "Param data:%s will overflow after multi", formats::JoinToString(data).c_str());
         GELOGE(PARAM_INVALID, "int32 overflow, data[%u]:%ld", i, data[i]);
         return PARAM_INVALID;
       }
@@ -60,6 +63,7 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std:
   } else if (data_type == DT_INT64) {
     unique_ptr<int64_t[]> buf(new (std::nothrow) int64_t[dim_size]());
     if (buf == nullptr) {
+      REPORT_CALL_ERROR("E19999", "New buffer failed, size:%u", dim_size);
       GELOGE(MEMALLOC_FAILED, "new failed");
       return MEMALLOC_FAILED;
     }
@@ -68,6 +72,8 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, std:
     }
     ret = ConstructTensorDescWithData(out_desc, buf.get(), dim_size, v_output, scalar_output);
   } else {
+    REPORT_CALL_ERROR("E19999", "Only support DT_INT32 and DT_INT64. Input data_type:%s not support",
+                      formats::JoinToString(data).c_str());
     GELOGE(PARAM_INVALID, "Only support DT_INT32 and DT_INT64. data_type:%s",
            TypeUtils::DataTypeToSerialString(data_type).c_str());
     return PARAM_INVALID;
@@ -92,6 +98,7 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, T *b
   GeTensorPtr output_tensor_ptr = MakeShared<GeTensor>(
       output_tensor_desc, reinterpret_cast<uint8_t *>(buf), sizeof(T) * len);
   if (output_tensor_ptr == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New GeTensor failed");
     GELOGE(MEMALLOC_FAILED, "Make shared failed");
     return MEMALLOC_FAILED;
   }
@@ -102,6 +109,7 @@ Status PassUtils::ConstructTensorDescWithData(const GeTensorDesc &out_desc, T *b
 
 bool PassUtils::IsConstant(const ConstNodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "node is null");
     return false;
   }
@@ -112,19 +120,25 @@ bool PassUtils::IsConstant(const ConstNodePtr &node) {
 }
 
 Status PassUtils::SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, const NodePtr &src_node) {
-  GE_IF_BOOL_EXEC(src_node == nullptr, GELOGE(PARAM_INVALID, "src_node is null"); return PARAM_INVALID);
+  GE_IF_BOOL_EXEC(src_node == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param src_node is nullptr, check invalid");
+                  GELOGE(PARAM_INVALID, "src_node is null"); return PARAM_INVALID);
   if (!IsConstant(src_node)) {
     return SUCCESS;
   }
 
   auto weights = OpDescUtils::MutableWeights(src_node);
   if (weights.empty()) {
+    REPORT_INNER_ERROR("E19999", "Weight of node:%s(%s) is empty, check invalid",
+                       src_node->GetName().c_str(), src_node->GetType().c_str());
     return PARAM_INVALID;
   }
 
   auto weight = weights.at(0);
   auto src_in_ctrl = src_node->GetInControlAnchor();
   if ((src_in_ctrl == nullptr) || (out_data_anchor == nullptr)) {
+    REPORT_INNER_ERROR("E19999", "Param out_data_anchor or in control anchor in Param src_node:%s(%s) is nullptr, "
+                       "check invalid", src_node->GetName().c_str(), src_node->GetType().c_str());
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
@@ -143,7 +157,7 @@ Status PassUtils::SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, cons
       dst_op_desc->SetIsInputConst(is_input_const);
     }
 
-    GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(out_data_anchor, dst_in_data), "remove edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_data_anchor, dst_in_data), "remove edge failed");
     graphStatus ret = OpDescUtils::AddConstOpToAnchor(dst_in_data, weight);
     if (ret != SUCCESS) {
       return ret;
@@ -155,7 +169,7 @@ Status PassUtils::SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, cons
 
     // restore control inputs to dynamically added constant ops, if any
     for (const auto &src_out_control_anchor : src_out_control_anchors) {
-      GE_CHK_STATUS_RET(GraphUtils::AddEdge(src_out_control_anchor, dynamic_const_node->GetInControlAnchor()),
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(src_out_control_anchor, dynamic_const_node->GetInControlAnchor()),
                         "add edge failed");
     }
   }
@@ -166,7 +180,7 @@ Status PassUtils::SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, cons
   /// Op1 - - - > Op2
   for (const auto &dst_in_ctrl : out_data_anchor->GetPeerInControlAnchors()) {
     for (const auto &src_out_control_anchor : src_out_control_anchors) {
-      GE_CHK_STATUS_RET(GraphUtils::AddEdge(src_out_control_anchor, dst_in_ctrl), "add edge failed");
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(src_out_control_anchor, dst_in_ctrl), "add edge failed");
     }
   }
 
@@ -176,6 +190,7 @@ Status PassUtils::SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, cons
 Status PassUtils::RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete_nodes,
                                std::vector<NodePtr> &end_nodes) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
@@ -201,6 +216,8 @@ Status PassUtils::RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete
         GE_CHK_STATUS_RET(GetOriginalType(dst_node, node_type), "get original type failed");
         if (node_type == NETOUTPUT) {
           if (dst_in_anchor->IsTypeOf<InDataAnchor>()) {
+            REPORT_INNER_ERROR("E19999", "Node:%s(%s) nactive branch connected to NetOutput with data anchor, "
+                               "check invalid", node->GetName().c_str(), node->GetType().c_str());
             GELOGE(INTERNAL_ERROR,
                    "[%s] Inactive branch connected to "
                    "NetOutput with data anchor.",
@@ -208,13 +225,13 @@ Status PassUtils::RemoveBranch(const NodePtr &node, std::vector<NodePtr> &delete
             return INTERNAL_ERROR;
           } else {
             // safe to unlink control edges
-            GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(src_out_anchor, dst_in_anchor), "remove edge failed");
+            GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(src_out_anchor, dst_in_anchor), "remove edge failed");
             end_nodes.push_back(dst_node);
           }
         } else if (node_type == MERGE) {
           /// Unlink connection between the inactive branch and Merge/NetOutput.
           /// The removal of inactive nodes will be handled in PrunePass
-          GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(src_out_anchor, dst_in_anchor), "remove edge failed");
+          GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(src_out_anchor, dst_in_anchor), "remove edge failed");
           end_nodes.push_back(dst_node);
           GELOGD("Reach the end merge node %s, the branch removing stop", dst_node->GetName().c_str());
         } else {
@@ -273,6 +290,7 @@ bool PassUtils::IsNeedTrainIteFlowCtrl(const ComputeGraphPtr &compute_graph) {
 int PassUtils::GetUniqueInDataAnchorIndex(const NodePtr &node_ptr) {
   const int invalid_index = -1;
   if (node_ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node_ptr is nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "GetUniqueInDataAnchorIndex: node is null");
     return invalid_index;
   }
@@ -282,6 +300,9 @@ int PassUtils::GetUniqueInDataAnchorIndex(const NodePtr &node_ptr) {
       return (in_anchor->GetIdx());
     }
   }
+
+  REPORT_INNER_ERROR("E19999", "Failed to find in data anchor of node:%s(%s) with a valid peer out node",
+                     node_ptr->GetName().c_str(), node_ptr->GetType().c_str());
   GELOGE(INTERNAL_ERROR,
          "GetUniqueInDataAnchorIndex: [%s] failed to find "
          "in data anchor with a valid peer out node",
@@ -291,6 +312,7 @@ int PassUtils::GetUniqueInDataAnchorIndex(const NodePtr &node_ptr) {
 
 Status PassUtils::UnlinkNodeWithControlCopy(NodePtr &node, int index) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "node is null.");
     return PARAM_INVALID;
   }
@@ -301,6 +323,8 @@ Status PassUtils::UnlinkNodeWithControlCopy(NodePtr &node, int index) {
   }
   auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
   if (out_data_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Index:%d in data anchor of node:%s(%s), its peer anchor is nullptr, check invalid",
+                       index, node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[%s] peer out_data_anchor is null with index [%d].", node->GetName().c_str(), index);
     return FAILED;
   }
@@ -318,6 +342,7 @@ Status PassUtils::UnlinkNodeWithControlCopy(NodePtr &node, int index) {
 Status PassUtils::RemoveInactiveBranchToMerge(const OutDataAnchorPtr &inactive_output_anchor,
                                               std::vector<NodePtr> &delete_nodes, std::vector<NodePtr> &end_nodes) {
   if (inactive_output_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param inactive_output_anchor is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
@@ -331,7 +356,7 @@ Status PassUtils::RemoveInactiveBranchToMerge(const OutDataAnchorPtr &inactive_o
       GE_CHK_STATUS_RET(GetOriginalType(dst_node, dst_node_type), "get original type failed");
       if (dst_node_type == MERGE) {
         GELOGD("[%s] Switch connected directly to Merge", inactive_output_anchor->GetOwnerNode()->GetName().c_str());
-        GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(inactive_output_anchor, dst_anchor), "remove edge failed");
+        GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(inactive_output_anchor, dst_anchor), "remove edge failed");
         continue;
       }
 

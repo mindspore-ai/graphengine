@@ -42,11 +42,14 @@ inline bool IsDataOp(const std::string &node_type) {
 
 Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "Input param graph is null, skip identification of nodes that connect to input and output.");
     return PARAM_INVALID;
   }
 
   if (graph->GetParentGraph() != nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph's parent graph is nullptr, "
+                       "check invalid");
     GELOGD("Current graph %s is a subgraph, skip identification of nodes that connect to input and output.",
            graph->GetName().c_str());
     return SUCCESS;
@@ -54,11 +57,15 @@ Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
 
   GELOGD("Start to identify nodes that connect to input and output.");
   if (graph->TopologicalSorting() != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Topological Sorting graph:%s failed",
+                      graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Graph topological sort failed.");
     return INTERNAL_ERROR;
   }
 
   if (GraphUtils::GetRefMapping(graph, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get ref mapping from graph:%s failed",
+                      graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Get ref-mapping for graph %s failed.", graph->GetName().c_str());
     return INTERNAL_ERROR;
   }
@@ -125,6 +132,8 @@ Status InputOutputConnectionIdentifyPass::UpdateNodeIdxMap(const string &symbol_
                                                            map<NodePtr, vector<uint32_t>> &connect_output_node_idx) {
   auto symbol_iter = symbol_to_anchors_.find(symbol_string);
   if (symbol_iter == symbol_to_anchors_.end()) {
+    REPORT_CALL_ERROR("E19999", "Can't find symbol:%s in symbol_to_anchors map, check invalid",
+                      symbol_string.c_str());
     GELOGE(PARAM_INVALID, "Input param symbol string: %s is invalid.", symbol_string.c_str());
     return PARAM_INVALID;
   }
@@ -171,6 +180,9 @@ Status InputOutputConnectionIdentifyPass::SetNodeAttrOfConnectingInputOutput(
     GE_CHECK_NOTNULL(iter.first);
     if (iter.first->GetOpDesc() != nullptr) {
       if (!AttrUtils::SetListInt(iter.first->GetOpDesc(), ATTR_NAME_NODE_CONNECT_INPUT, iter.second)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                          ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+                          iter.first->GetName().c_str(), iter.first->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Failed to set attr %s for node %s.", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
                iter.first->GetName().c_str());
         return INTERNAL_ERROR;
@@ -182,6 +194,9 @@ Status InputOutputConnectionIdentifyPass::SetNodeAttrOfConnectingInputOutput(
     GE_CHECK_NOTNULL(iter.first);
     if (iter.first->GetOpDesc() != nullptr) {
       if (!AttrUtils::SetListInt(iter.first->GetOpDesc(), ATTR_NAME_NODE_CONNECT_OUTPUT, iter.second)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                          ATTR_NAME_NODE_CONNECT_OUTPUT.c_str(),
+                          iter.first->GetName().c_str(), iter.first->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Failed to set attr %s for node %s.", ATTR_NAME_NODE_CONNECT_OUTPUT.c_str(),
                iter.first->GetName().c_str());
         return INTERNAL_ERROR;

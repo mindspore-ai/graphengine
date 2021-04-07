@@ -77,7 +77,7 @@ Status HandleSubgraphNode(NodePtr &src_node, OutDataAnchorPtr &src_out_anchor) {
 Status HandleSubgraphDataNode(NodePtr &src_node, OutDataAnchorPtr &src_out_anchor) {
   uint32_t index = 0;
   if (!AttrUtils::GetInt(src_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, index)) {
-    REPORT_INNER_ERROR("E19999", "get attr:%s failed from node:%s when HandleSubgraphDataNode",
+    REPORT_INNER_ERROR("E19999", "get attr:%s failed from node:%s",
                        ATTR_NAME_PARENT_NODE_INDEX.c_str(), src_node->GetName().c_str());
     GELOGE(FAILED, "Get attr ATTR_NAME_PARENT_NODE_INDEX failed, node:%s.", src_node->GetName().c_str());
     return FAILED;
@@ -111,7 +111,7 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
   GE_CHECK_NOTNULL(graph);
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    REPORT_INNER_ERROR("E19999", "check gelib instance null when CalcOpParam for graph:%s",
+    REPORT_INNER_ERROR("E19999", "check gelib instance null, graph:%s",
                        graph->GetName().c_str());
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GraphBuilder: GE is not initialized");
     return GE_CLI_GE_NOT_INITIALIZED;
@@ -125,7 +125,7 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
       (void)instance_ptr->DNNEngineManagerObj().GetDNNEngineName(node_ptr);
       kernel_lib_name = node_ptr->GetOpDesc()->GetOpKernelLibName();
       if (kernel_lib_name.empty()) {
-        REPORT_INNER_ERROR("E19999", "op kernel lib is empty in node:%s(%s) when CalcOpParam",
+        REPORT_INNER_ERROR("E19999", "op kernel lib is empty in node:%s(%s)",
                            node_ptr->GetName().c_str(), node_ptr->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Get node:%s(%s) kernel lib failed.", node_ptr->GetName().c_str(),
                node_ptr->GetType().c_str());
@@ -135,7 +135,7 @@ Status GraphBuilder::CalcOpParam(const ge::ComputeGraphPtr &graph) {
 
     auto ret = SetInputSize(node_ptr);
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Set node:%s(%s) inputDesc size failed when CalcOpParam",
+      REPORT_CALL_ERROR("E19999", "Set node:%s(%s) inputDesc size failed",
                         node_ptr->GetName().c_str(), node_ptr->GetType().c_str());
       GELOGE(ret, "Set node inputDesc size failed, node name is %s", node_ptr->GetName().c_str());
       return ret;
@@ -201,7 +201,7 @@ Status GraphBuilder::UpdateParentNodeOutputSize(const ge::ComputeGraphPtr &graph
 
 Status GraphBuilder::Build(ComputeGraphPtr &comp_graph, GeRootModelPtr &ge_root_model_ptr, uint64_t session_id) {
   if (comp_graph == nullptr) {
-    REPORT_INNER_ERROR("E19999", "check compute_graph nullptr when BuildGraph, session_id:%lu", session_id);
+    REPORT_INNER_ERROR("E19999", "check compute_graph nullptr, session_id:%lu", session_id);
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Graph build comp_graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
@@ -313,7 +313,7 @@ Status GraphBuilder::SetConstantInputOffset(ComputeGraphPtr &comp_graph) {
 
       std::vector<GeTensorPtr> weights = OpDescUtils::MutableWeights(peer_node);
       if (weights.empty()) {
-        REPORT_INNER_ERROR("E19999", "check weights size of node %s(%s) is empty when SetConstantInputOffset",
+        REPORT_INNER_ERROR("E19999", "check weights size of node %s(%s) is empty",
                            node->GetName().c_str(), node->GetType().c_str());
         GELOGE(FAILED, "weights size of node %s is empty", node->GetName().c_str());
         return FAILED;
@@ -649,7 +649,7 @@ Status GraphBuilder::SetInputSize(const ge::NodePtr &node_ptr) {
 Status GraphBuilder::UpdateDataInputSize(const ge::NodePtr &node_ptr) {
   const auto &op_desc = node_ptr->GetOpDesc();
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "check op_desc is nullptr when UpdateDataInputSize");
+    REPORT_INNER_ERROR("E19999", "check op_desc is nullptr");
     GELOGE(FAILED, "Op desc is nullptr.");
     return FAILED;
   }
@@ -667,7 +667,7 @@ Status GraphBuilder::UpdateDataInputSize(const ge::NodePtr &node_ptr) {
     int64_t real_dim_size = 0;
     ge::graphStatus graph_status = TensorUtils::GetTensorSizeInBytes(output_desc, real_dim_size);
     if (graph_status != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed for op:%s(%s) index:0 when UpdateDataInputSize",
+      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed for op:%s(%s) index:0",
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Get tensor size in bytes failed.");
       return FAILED;
@@ -676,7 +676,7 @@ Status GraphBuilder::UpdateDataInputSize(const ge::NodePtr &node_ptr) {
     ge::GeTensorDesc input_desc = op_desc->GetInputDesc(0);
     ge::TensorUtils::SetSize(input_desc, real_dim_size);
     if (op_desc->UpdateInputDesc(0, input_desc) != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Update input desc size failed for op:%s(%s) index:0 when UpdateDataInputSize",
+      REPORT_CALL_ERROR("E19999", "Update input desc size failed for op:%s(%s) index:0",
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Update input desc size failed.");
       return FAILED;
@@ -706,8 +706,7 @@ Status GraphBuilder::CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc)
     int64_t real_dim_size = 0;
     ge::graphStatus graph_status = TensorUtils::GetTensorSizeInBytes(output_desc, real_dim_size);
     if (graph_status != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed for op:%s(%s) index:0 "
-                        "when CalcDynShapeRootGraphDataSize",
+      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed for op:%s(%s) index:0 ",
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Get tensor size in bytes failed.");
       return FAILED;
@@ -716,8 +715,7 @@ Status GraphBuilder::CalcDynShapeRootGraphDataSize(const ge::OpDescPtr &op_desc)
     ge::TensorUtils::SetSize(output_desc, real_dim_size);
     GELOGI("Update dynamic shape graph data output size to [%ld].", real_dim_size);
     if (op_desc->UpdateOutputDesc(0, output_desc) != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Update output desc size failed for op:%s(%s) index:0 "
-                        "when CalcDynShapeRootGraphDataSize",
+      REPORT_CALL_ERROR("E19999", "Update output desc size failed for op:%s(%s) index:0 ",
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Update dynamic shape graph data output desc size failed.");
       return FAILED;
@@ -736,7 +734,7 @@ Status GraphBuilder::SecondPartition(ge::ComputeGraphPtr &comp_graph) {
   GE_CHK_STATUS_RET(ret, "Graph partition Failed.");
   const auto &graph_2_subgraphlist = graph_partitioner_.GetSubGraphMap();
   if (graph_2_subgraphlist.find(comp_graph) == graph_2_subgraphlist.end()) {
-    REPORT_INNER_ERROR("E19999", "find subgraphlis in graph:%s failed when SecondPartition",
+    REPORT_INNER_ERROR("E19999", "find subgraphlis in graph:%s failed",
                        comp_graph->GetName().c_str());
     GELOGE(FAILED, "Find subgraph failed.");
     return FAILED;
@@ -766,7 +764,7 @@ Status GraphBuilder::AddOutputMemTypeForNode(const NodePtr &node) {
              mem_type);
       if (!AttrUtils::SetInt(src_desc->MutableOutputDesc(src_out_anchor->GetIdx()), ATTR_OUTPUT_MEMORY_TYPE,
                              mem_type)) {
-        REPORT_INNER_ERROR("E19999", "Set Attr:%s for node:%s(%s) out_index:%u failed when AddOutputMemTypeForNode",
+        REPORT_INNER_ERROR("E19999", "Set Attr:%s for node:%s(%s) out_index:%u failed",
                            ATTR_OUTPUT_MEMORY_TYPE.c_str(), src_desc->GetName().c_str(), src_desc->GetType().c_str(),
                            src_out_anchor->GetIdx());
         GELOGE(INTERNAL_ERROR, "Set out_memory_type attr for [%s:%d] failed.", src_desc->GetName().c_str(),

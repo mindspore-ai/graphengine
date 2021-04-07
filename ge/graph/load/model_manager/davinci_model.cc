@@ -68,8 +68,8 @@
     try {                                                                                         \
       thread_id = std::thread(func, args);                                                        \
     } catch (const std::system_error &e) {                                                        \
-      REPORT_CALL_ERROR("E19999", "Create thread fail, ecode:%d, emsg:%s, when DavinciModel %s",  \
-                        e.code().value(), e.what(), __FUNCTION__);                                \
+      REPORT_CALL_ERROR("E19999", "Create thread fail, ecode:%d, emsg:%s",                        \
+                        e.code().value(), e.what());                                              \
       GELOGE(FAILED, "Caught system_error with code:%d, meaning:%s", e.code().value(), e.what()); \
       GELOGE(FAILED, "Thread creat FAIL, Please check the left resource!");                       \
       return FAILED;                                                                              \
@@ -332,8 +332,8 @@ void DavinciModel::Shrink() {
 
 Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weight_size) {
   if (is_weight_mem_has_inited_) {
-    REPORT_INNER_ERROR("E19999", "Call InitWeightMem more than once, model_id:%u, check invalid when %s",
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Call InitWeightMem more than once, model_id:%u, check invalid",
+                       model_id_);
     GELOGE(FAILED, "call InitWeightMem more than once.");
     return FAILED;
   }
@@ -345,7 +345,7 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
   if ((weight_ptr != nullptr) && (weight_size < weights_size)) {
     REPORT_INNER_ERROR("E19999", "Param weight_ptr is nullptr or ge_model.weight.size:%zu < param weights_size:%zu, "
-                       "model_id:%u, check invalid when %s", weight_size, weights_size, model_id_, __FUNCTION__);
+                       "model_id:%u, check invalid", weight_size, weights_size, model_id_);
     GELOGE(FAILED, "Invalid mem param: weight_size=%zu totalsize=%zu.", weight_size, weights_size);
     return FAILED;
   }
@@ -359,8 +359,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
     if (weight_ptr == nullptr) {
       weights_mem_base_ = MallocWeightsMem(weights_size);
       if (weights_mem_base_ == nullptr) {
-        REPORT_CALL_ERROR("E19999", "MallocWeightsMem fail, weights_size:%zu, model_id:%u, check invalid when %s",
-                          weights_size, model_id_, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "MallocWeightsMem fail, weights_size:%zu, model_id:%u, check invalid",
+                          weights_size, model_id_);
         GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc weight memory failed. size: %zu", weights_size);
         return ACL_ERROR_GE_MEMORY_ALLOCATION;
       }
@@ -379,8 +379,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    REPORT_INNER_ERROR("E19999", "Call InitFeatureMapMem more than once, model_id:%u, check invalid when %s",
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Call InitFeatureMapMem more than once, model_id:%u, check invalid",
+                       model_id_);
     GELOGE(PARAM_INVALID, "call InitFeatureMapMem more than once");
     return PARAM_INVALID;
   }
@@ -391,7 +391,7 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
 
   if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
     REPORT_INNER_ERROR("E19999", "Param dev_ptr is nullptr or mem_size:%zu < ge_model.mem_size:%zu, "
-                       "model_id:%u, check invalid when %s", mem_size, TotalMemSize(), model_id_, __FUNCTION__);
+                       "model_id:%u, check invalid", mem_size, TotalMemSize(), model_id_);
     GELOGE(PARAM_INVALID, "Invalid mem param: mem_size=%zu totalsize=%zu.", mem_size, TotalMemSize());
     return PARAM_INVALID;
   }
@@ -403,8 +403,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (TotalMemSize() && mem_base_ == nullptr) {
     mem_base_ = MallocFeatureMapMem(data_size);
     if (mem_base_ == nullptr) {
-      REPORT_CALL_ERROR("E19999", "MallocFeatureMapMem fail, data_size:%zu, model_id:%u, check invalid when %s",
-                        data_size, model_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "MallocFeatureMapMem fail, data_size:%zu, model_id:%u, check invalid",
+                        data_size, model_id_);
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc feature map memory failed. size: %zu", data_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
@@ -421,8 +421,8 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (p2p_data_size != 0) {
     p2p_mem_base_ = MallocP2PMem(p2p_data_size);
     if (p2p_mem_base_ == nullptr) {
-      REPORT_CALL_ERROR("E19999", "MallocFeatureMapMem fail, p2p_data_size:%zu, model_id:%u, check invalid when %s",
-                        p2p_data_size, model_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "MallocFeatureMapMem fail, p2p_data_size:%zu, model_id:%u, check invalid",
+                        p2p_data_size, model_id_);
       GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc p2p memory failed,size: %zu", p2p_data_size);
       return ACL_ERROR_GE_MEMORY_ALLOCATION;
     }
@@ -444,8 +444,8 @@ Status DavinciModel::InitVariableMem() {
   if (TotalVarMemSize() && (var_mem_base_ == nullptr)) {
     Status ret = VarManager::Instance(session_id_)->MallocVarMemory(TotalVarMemSize());
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "MallocVarMemory fail, var_size:%zu, model_id:%u, check invalid when %s",
-                        TotalVarMemSize(), model_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "MallocVarMemory fail, var_size:%zu, model_id:%u, check invalid",
+                        TotalVarMemSize(), model_id_);
       GELOGE(ret, "Malloc variable memory failed.");
       return ret;
     }
@@ -586,8 +586,8 @@ Status DavinciModel::SetTSDevice() {
   GELOGD("SetTSDevice: %u.", core_type);
   rtError_t rt_ret = rtSetTSDevice(core_type);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtSetTSDevice failed, core_type:%u, model_id:%u, when DavinciModel %s",
-                      core_type, model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtSetTSDevice failed, core_type:%u, model_id:%u",
+                      core_type, model_id_);
     GELOGE(RT_FAILED, "SetTSDevice failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -910,8 +910,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
       rtError_t rt_ret = rtMemcpy(addr, size, tensor_device_addrs.data(), size, RT_MEMCPY_HOST_TO_DEVICE);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret: 0x%X when DavinciModel %s",
-                          size, rt_ret, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret: 0x%X",
+                          size, rt_ret);
         GELOGE(RT_FAILED, "rtMemcpy error, ret: 0x%X", rt_ret);
         GE_CHK_RT(rtFree(addr));
         return RT_ERROR_TO_GE_STATUS(rt_ret);
@@ -989,9 +989,9 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
       (output_offset_list.size() != virtual_addr_list.size())) {
     REPORT_INNER_ERROR(
         "E19999", "Check data fail in op:%s(%s), output_desc size:%zu output addr size:%zu output offset size:%zu "
-        "not equal or has empty, model_id:%u, when DavinciModel %s",
+        "not equal or has empty, model_id:%u",
         op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-        output_size_list.size(), virtual_addr_list.size(), output_offset_list.size(), model_id_, __FUNCTION__);
+        output_size_list.size(), virtual_addr_list.size(), output_offset_list.size(), model_id_);
     GELOGE(PARAM_INVALID, "Data[%s] init failed: output size is %zu, virtual_addr size is %zu, offset size is %zu.",
            op_desc->GetName().c_str(), output_size_list.size(), virtual_addr_list.size(), output_offset_list.size());
     return PARAM_INVALID;
@@ -1111,9 +1111,9 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
   GE_IF_BOOL_EXEC(input_offset_list.size() != virtual_addr_list.size(),
                   REPORT_INNER_ERROR(
                       "E19999", "Check data fail in op:%s(%s), input addr size:%zu input offset size:%zu "
-                      "not equal, model_id:%u, when DavinciModel %s",
+                      "not equal, model_id:%u",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                      virtual_addr_list.size(), input_offset_list.size(), model_id_, __FUNCTION__);
+                      virtual_addr_list.size(), input_offset_list.size(), model_id_);
                   GELOGE(PARAM_INVALID, "virtual_addr size should be equal to offset size.");
                   return PARAM_INVALID;);
   if (input_size_list.empty() && virtual_addr_list.empty()) {
@@ -1123,8 +1123,8 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
   if (input_size_list.empty() || input_size_list.size() != virtual_addr_list.size()) {
     REPORT_INNER_ERROR(
         "E19999", "Check data fail in op:%s(%s), input_desc size:%zu input addr size:%zu not equal or has empty, "
-        "model_id:%u, when DavinciModel %s", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-        input_size_list.size(), virtual_addr_list.size(), model_id_, __FUNCTION__);
+        "model_id:%u", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+        input_size_list.size(), virtual_addr_list.size(), model_id_);
     GELOGE(PARAM_INVALID, "NetOutput[%s] init failed: Input size is %zu, Input addr is %zu", op_desc->GetName().c_str(),
            input_size_list.size(), virtual_addr_list.size());
     return PARAM_INVALID;
@@ -1222,9 +1222,9 @@ Status DavinciModel::GetGetDynamicDimsNodeInfo(const NodePtr &node) {
   auto in_anchor = node->GetAllInDataAnchors().at(get_dynamic_dims_index);
   auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
   if (peer_out_anchor == nullptr) {
-    REPORT_INNER_ERROR("E19999", "In anchor index:%zu in op:%s(%s) peer anchor is nullptr, model_id:%u, check invalid "
-                       "when DavinciModel %s", get_dynamic_dims_index,
-                       node->GetName().c_str(), node->GetType().c_str(), model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "In anchor index:%zu in op:%s(%s) peer anchor is nullptr, model_id:%u, check invalid",
+                       get_dynamic_dims_index,
+                       node->GetName().c_str(), node->GetType().c_str(), model_id_);
     GELOGE(PARAM_INVALID, "Out anchor of getdynmaicdims node should not be nullptr.");
     return PARAM_INVALID;
   }
@@ -1237,17 +1237,17 @@ Status DavinciModel::GetGetDynamicDimsNodeInfo(const NodePtr &node) {
     auto input_size = ModelUtils::GetInputSize(node->GetOpDesc());
     if (input_addr.empty() || input_size.empty()) {
       REPORT_INNER_ERROR("E19999", "input_addr size:%zu or input_length size:%zu in op:%s(%s) has empty, model_id:%u "
-                         "check invalid when DavinciModel %s", input_addr.size(), input_size.size(),
-                         node->GetName().c_str(), node->GetType().c_str(), model_id_, __FUNCTION__);
+                         "check invalid", input_addr.size(), input_size.size(),
+                         node->GetName().c_str(), node->GetType().c_str(), model_id_);
       GELOGE(PARAM_INVALID, "Not set output of %s", op_desc->GetName().c_str());
       return PARAM_INVALID;
     }
     auto input_desc = node->GetOpDesc()->GetInputDescPtr(get_dynamic_dims_index);
     GE_CHECK_NOTNULL(input_desc);
     if (input_desc->GetShape().GetDims().empty()) {
-      REPORT_INNER_ERROR("E19999", "input_desc_index:%zu in op:%s(%s) shape dim is empty, model_id:%u, check invalid "
-                         "when DavinciModel %s", get_dynamic_dims_index,
-                         node->GetName().c_str(), node->GetType().c_str(), model_id_, __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "input_desc_index:%zu in op:%s(%s) shape dim is empty, model_id:%u, check invalid",
+                         get_dynamic_dims_index,
+                         node->GetName().c_str(), node->GetType().c_str(), model_id_);
       GELOGE(PARAM_INVALID, "Not set output desc shape of %s.", op_desc->GetName().c_str());
       return PARAM_INVALID;
     }
@@ -1292,8 +1292,8 @@ Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_
   for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
     const auto &subgraph = graph->GetSubgraph(name);
     if (subgraph == nullptr) {
-      REPORT_INNER_ERROR("E19999", "Get name:%s subgraph in graph:%s fail, model_id:%u, check invalid "
-                         "when DavinciModel %s", name.c_str(), graph->GetName().c_str(), model_id_, __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Get name:%s subgraph in graph:%s fail, model_id:%u, check invalid",
+                         name.c_str(), graph->GetName().c_str(), model_id_);
       GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s.", name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
@@ -1307,9 +1307,9 @@ Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_
           GELOGD("Batch index of %s is %zu.", op_desc->GetName().c_str(), batch_index);
           if (batch_index > all_gears_info_.size()) {
             REPORT_INNER_ERROR("E19999", "Batch_index:%zu in op:%s(%s) > all_gears_info.size:%zu, model_id:%u, "
-                               "check invalid when DavinciModel %s", batch_index,
+                               "check invalid", batch_index,
                                op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                               all_gears_info_.size(), model_id_, __FUNCTION__);
+                               all_gears_info_.size(), model_id_);
             GELOGE(PARAM_INVALID, "The value of ATTR_NAME_BATCH_LABEL is invalid.");
             return PARAM_INVALID;
           }
@@ -1319,9 +1319,9 @@ Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_
           GE_CHECK_NOTNULL(tensor_desc);
           int64_t data_size = 0;
           if (TensorUtils::GetTensorSizeInBytes(*tensor_desc, data_size) != GRAPH_SUCCESS) {
-            REPORT_INNER_ERROR("E19999", "Get input TensorSize in op:%s(%s) failed, input_index:%zu, model_id:%u"
-                               "when DavinciModel %s", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                               input_index, model_id_, __FUNCTION__);
+            REPORT_INNER_ERROR("E19999", "Get input TensorSize in op:%s(%s) failed, input_index:%zu, model_id:%u",
+                               op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                               input_index, model_id_);
             GELOGE(FAILED, "Get tensor size in bytes failed.");
             return FAILED;
           }
@@ -1363,9 +1363,9 @@ Status DavinciModel::GetGearAndRealOutShapeInfo(const ComputeGraphPtr &graph, co
       for (auto &it : dynamic_output_shape) {
         auto gear_index = static_cast<size_t>(it[0]);
         if (gear_index > all_gears_info_.size()) {
-          REPORT_INNER_ERROR("E19999", "gear index:%zu in op:%s(%s) > all_gears_info.size:%zu in model:%u check invalid"
-                             "when DavinciModel %s", gear_index, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                             all_gears_info_.size(), model_id_, __FUNCTION__);
+          REPORT_INNER_ERROR("E19999", "gear index:%zu in op:%s(%s) > all_gears_info.size:%zu in model:%u "
+                             "check invalid", gear_index, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                             all_gears_info_.size(), model_id_);
           GELOGE(PARAM_INVALID, "The value of cur index: %zu is invalid.", static_cast<size_t>(it[0]));
           return PARAM_INVALID;
         }
@@ -1414,8 +1414,8 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   }
 
   if (label_index >= label_list_.size()) {
-    REPORT_INNER_ERROR("E19999", "Param label index:%u >= label_list_.size:%zu in model:%u, check invalid"
-                       "when DavinciModel %s", label_index, label_list_.size(), model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Param label index:%u >= label_list_.size:%zu in model:%u, check invalid",
+                       label_index, label_list_.size(), model_id_);
     GELOGE(INTERNAL_ERROR, "Invalid label id:%u, label size:%zu", label_index, label_list_.size());
     return INTERNAL_ERROR;
   }
@@ -1425,8 +1425,8 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   arg_size = label_used.size() * sizeof(rtLabelDevInfo);
   rtError_t rt_ret = rtMalloc(&arg_addr, arg_size, mem_type);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
-                      arg_size, rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X",
+                      arg_size, rt_ret);
     GELOGE(RT_FAILED, "Call rtMalloc failed, error: %#x", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -1434,7 +1434,7 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   label_goto_args_[label_index] = { arg_addr, arg_size };
   rt_ret = rtLabelListCpy(label_used.data(), label_used.size(), arg_addr, arg_size);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelListCpy failed, ret: 0x%X when DavinciModel %s", rt_ret, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelListCpy failed, ret: 0x%X", rt_ret);
     GELOGE(RT_FAILED, "Call rtLabelListCpy failed, error: %#x", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -1449,24 +1449,24 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
 Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   uint32_t label_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_LABEL_SWITCH_INDEX, label_index)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail, model_id:%u, check invalid"
-                       "when DavinciModel %s", ATTR_NAME_LABEL_SWITCH_INDEX.c_str(),
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail, model_id:%u, check invalid",
+                       ATTR_NAME_LABEL_SWITCH_INDEX.c_str(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
     GELOGE(INTERNAL_ERROR, "InitLabelSet: %s attr [%s] not exist.", op_desc->GetName().c_str(),
            ATTR_NAME_LABEL_SWITCH_INDEX.c_str());
     return INTERNAL_ERROR;
   }
   if (label_index >= LabelNum()) {
-    REPORT_INNER_ERROR("E19999", "label_switch_index:%u in op:%s(%s) >= label_num:%u in model:%u, check invalid"
-                       "when DavinciModel %s", label_index, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                       LabelNum(), model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "label_switch_index:%u in op:%s(%s) >= label_num:%u in model:%u, check invalid",
+                       label_index, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                       LabelNum(), model_id_);
     GELOGE(INTERNAL_ERROR, "InitLabelSet: label index: %u >= label size: %u.", label_index, LabelNum());
     return INTERNAL_ERROR;
   }
   if (label_id_indication_.count(label_index) > 0) {
-    REPORT_INNER_ERROR("E19999", "label_switch_index:%u in op:%s(%s) is already used  in model:%u, check invalid"
-                       "when DavinciModel %s", label_index, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "label_switch_index:%u in op:%s(%s) is already used  in model:%u, check invalid",
+                       label_index, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                       model_id_);
     GELOGE(INTERNAL_ERROR, "InitLabelSet: %s label index: %u already used.", op_desc->GetName().c_str(), label_index);
     return INTERNAL_ERROR;
   }
@@ -1478,9 +1478,9 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   } else if (stream_list_.size() > stream_id) {
     stream = stream_list_[stream_id];
   } else {
-    REPORT_INNER_ERROR("E19999", "stream_id:%u in op:%s(%s) >= stream size:%zu in model:%u, check invalid"
-                       "when DavinciModel %s", stream_id, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                       stream_list_.size(), model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "stream_id:%u in op:%s(%s) >= stream size:%zu in model:%u, check invalid",
+                       stream_id, op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                       stream_list_.size(), model_id_);
     GELOGE(INTERNAL_ERROR, "InitLabelSet: stream index: %u >= stream size: %zu.", stream_id, stream_list_.size());
     return INTERNAL_ERROR;
   }
@@ -1488,8 +1488,8 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
   rtLabel_t rt_label = nullptr;
   rtError_t rt_error = rtLabelCreateExV2(&rt_label, rt_model_handle_, stream);
   if (rt_error != RT_ERROR_NONE || rt_label == nullptr) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelCreateExV2 failed, ret: 0x%X when DavinciModel %s",
-                      rt_error, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelCreateExV2 failed, ret: 0x%X",
+                      rt_error);
     GELOGE(INTERNAL_ERROR, "InitLabelSet: %s create label failed, error=0x%x.", op_desc->GetName().c_str(), rt_error);
     return INTERNAL_ERROR;
   }
@@ -1529,8 +1529,8 @@ Status DavinciModel::SetQueIds(const std::vector<uint32_t> &input_queue_ids,
                                const std::vector<uint32_t> &output_queue_ids) {
   if (input_queue_ids.empty() && output_queue_ids.empty()) {
     REPORT_INNER_ERROR("E19999", "Param input_queue_ids.size:%zu or output_queue_ids.size:%zu is empty, model_id:%u,"
-                       "check invalid when DavinciModel %s", input_queue_ids.size(), output_queue_ids.size(),
-                       model_id_, __FUNCTION__);
+                       "check invalid", input_queue_ids.size(), output_queue_ids.size(),
+                       model_id_);
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Param is empty");
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
   }
@@ -1554,8 +1554,8 @@ Status DavinciModel::LoadWithQueue() {
 
   if (input_queue_ids_.size() != input_data_info_.size()) {
     REPORT_INNER_ERROR("E19999", "Param input_queue_ids_.size:%zu != input_data_info_.size:%zu, model_id:%u,"
-                       "check invalid when DavinciModel %s", input_queue_ids_.size(), input_data_info_.size(),
-                       model_id_, __FUNCTION__);
+                       "check invalid", input_queue_ids_.size(), input_data_info_.size(),
+                       model_id_);
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID, "Input queue ids not match model: input_queue=%zu input_data=%zu",
            input_queue_ids_.size(), input_data_info_.size());
     return ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID;
@@ -1563,8 +1563,8 @@ Status DavinciModel::LoadWithQueue() {
 
   if (output_queue_ids_.size() != output_data_info_.size()) {
     REPORT_INNER_ERROR("E19999", "Param output_queue_ids_.size:%zu != output_data_info_.size:%zu, model_id:%u,"
-                       "check invalid when DavinciModel %s", output_queue_ids_.size(), output_data_info_.size(),
-                       model_id_, __FUNCTION__);
+                       "check invalid", output_queue_ids_.size(), output_data_info_.size(),
+                       model_id_);
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_QUEUE_ID_INVALID,
            "Output queue ids not match model: output_queue=%zu output_data=%zu",
            output_queue_ids_.size(), output_data_info_.size());
@@ -1613,7 +1613,7 @@ Status DavinciModel::BindInputQueue() {
 
     rtError_t rt_ret = rtModelBindQueue(rt_model_handle_, queue_id, RT_MODEL_INPUT_QUEUE);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtModelBindQueue failed, ret: 0x%X when DavinciModel %s", rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtModelBindQueue failed, ret: 0x%X", rt_ret);
       GELOGE(RT_FAILED, "Call rtModelBindQueue failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -1634,8 +1634,8 @@ Status DavinciModel::CpuModelDequeue(uint32_t queue_id) {
   GELOGI("Set CpuKernel model dequeue task enter.");
   std::shared_ptr<CpuTaskModelDequeue> dequeue_task = MakeShared<CpuTaskModelDequeue>(rt_entry_stream_);
   if (dequeue_task == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskModelDequeue failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskModelDequeue failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskModelDequeue task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1658,8 +1658,8 @@ Status DavinciModel::CpuTaskModelZeroCopy(std::vector<uintptr_t> &mbuf_list,
   GELOGI("Set CpuKernel model zero_copy task enter.");
   std::shared_ptr<CpuTaskZeroCopy> zero_copy = MakeShared<CpuTaskZeroCopy>(rt_entry_stream_);
   if (zero_copy == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskZeroCopy failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskZeroCopy failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskZeroCopy task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1682,16 +1682,16 @@ Status DavinciModel::BindOutputQueue() {
   for (size_t i = 0; i < output_queue_ids_.size(); ++i) {
     auto it = output_data_info_.find(i);
     if (it == output_data_info_.end()) {
-      REPORT_INNER_ERROR("E19999", "Index:%zu can't find in output_data_info_ size:%zu in model_id:%u, check invalid "
-                         "when DavinciModel %s", i, output_data_info_.size(), model_id_, __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Index:%zu can't find in output_data_info_ size:%zu in model_id:%u, check invalid",
+                         i, output_data_info_.size(), model_id_);
       GELOGE(FAILED, "Output not match: tensor num=%zu, Queue id index=%zu", output_data_info_.size(), i);
       return FAILED;
     }
 
     uint32_t queue_id = output_queue_ids_[i];
     if (it->second.GetDataInfo().empty()) {
-      REPORT_INNER_ERROR("E19999", "Index:%zu out_data_info in model:%u is empty, check invalid "
-                         "when DavinciModel %s", i, model_id_, __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Index:%zu out_data_info in model:%u is empty, check invalid",
+                         i, model_id_);
       GELOGE(INTERNAL_ERROR, "the %zu output_queue not set data_info.", i);
       return INTERNAL_ERROR;
     }
@@ -1702,8 +1702,8 @@ Status DavinciModel::BindOutputQueue() {
 
     rtError_t rt_ret = rtModelBindQueue(rt_model_handle_, queue_id, RT_MODEL_OUTPUT_QUEUE);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtModelBindQueue failed, queue_id:%u, ret: 0x%X when DavinciModel %s",
-                        queue_id, rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtModelBindQueue failed, queue_id:%u, ret: 0x%X",
+                        queue_id, rt_ret);
       GELOGE(RT_FAILED, "Call rtModelBindQueue failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -1725,16 +1725,16 @@ Status DavinciModel::BindOutputQueue() {
 Status DavinciModel::CpuModelPrepareOutput(uintptr_t addr, uint32_t size) {
   GELOGI("Set CpuKernel model enqueue task enter.");
   if (input_mbuf_list_.empty()) {
-    REPORT_INNER_ERROR("E19999", "input_mbuf_list_ is empty, model_id:%u, check invalid when %s",
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "input_mbuf_list_ is empty, model_id:%u, check invalid",
+                       model_id_);
     GELOGE(FAILED, "Need input mbuf for fill output mbuf head info.");
     return FAILED;
   }
 
   std::shared_ptr<CpuTaskPrepareOutput> prepare_output = MakeShared<CpuTaskPrepareOutput>(rt_entry_stream_);
   if (prepare_output == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskPrepareOutput failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskPrepareOutput failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskPrepareOutput task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1759,8 +1759,8 @@ Status DavinciModel::CpuActiveStream() {
   GELOGI("Set CpuKernel active stream task enter.");
   std::shared_ptr<CpuTaskActiveEntry> active_entry = MakeShared<CpuTaskActiveEntry>(rt_entry_stream_);
   if (active_entry == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskActiveEntry task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1782,8 +1782,8 @@ Status DavinciModel::CpuWaitEndGraph() {
   GELOGI("Set CpuKernel wait end graph task enter.");
   std::shared_ptr<CpuTaskWaitEndGraph> wait_endgraph = MakeShared<CpuTaskWaitEndGraph>(rt_entry_stream_);
   if (wait_endgraph == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskWaitEndGraph failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskWaitEndGraph failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskWaitEndGraph task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1802,8 +1802,8 @@ Status DavinciModel::BindEnqueue() {
   for (size_t i = 0; i < output_queue_ids_.size(); ++i) {
     auto it = output_data_info_.find(i);
     if (it == output_data_info_.end()) {
-      REPORT_INNER_ERROR("E19999", "Index:%zu can't find in output_data_info_ size:%zu in model_id:%u, check invalid "
-                         "when DavinciModel %s", i, output_data_info_.size(), model_id_, __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Index:%zu can't find in output_data_info_ size:%zu in model_id:%u, check invalid",
+                         i, output_data_info_.size(), model_id_);
       GELOGE(FAILED, "Output not match: tensor num=%zu, Queue id index=%zu", output_data_info_.size(), i);
       return FAILED;
     }
@@ -1820,8 +1820,8 @@ Status DavinciModel::CpuModelEnqueue(uint32_t queue_id, uintptr_t out_mbuf) {
   GELOGI("Set CpuKernel model enqueue task enter.");
   std::shared_ptr<CpuTaskModelEnqueue> model_enqueue = MakeShared<CpuTaskModelEnqueue>(rt_entry_stream_);
   if (model_enqueue == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskModelEnqueue failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskModelEnqueue failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskModelEnqueue task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1842,8 +1842,8 @@ Status DavinciModel::CpuModelRepeat() {
   GELOGI("Set CpuKernel repeat task enter.");
   std::shared_ptr<CpuTaskModelRepeat> model_repeat = MakeShared<CpuTaskModelRepeat>(rt_entry_stream_);
   if (model_repeat == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New CpuTaskModelRepeat failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "New CpuTaskModelRepeat failed, model_id:%u",
+                      model_id_);
     GELOGE(MEMALLOC_FAILED, "Make CpuTaskModelRepeat task failed.");
     return MEMALLOC_FAILED;
   }
@@ -1878,7 +1878,7 @@ Status DavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_d
                                             vector<uint32_t> &output_formats, bool by_dims) {
   if (input_addrs_list_.empty() || input_addrs_list_[0].size() != 1) {
     REPORT_INNER_ERROR("E19999", "input_addrs_list_ is empty or first member size != 1, model_id:%u, "
-                       "check invalid when DavinciModel %s", model_id_, __FUNCTION__);
+                       "check invalid", model_id_);
     GELOGE(FAILED, "OP List Pointer is null or input_desc size is not 1!");
     return FAILED;
   }
@@ -1989,9 +1989,9 @@ Status DavinciModel::InitAippType(uint32_t index, const OpDescPtr &op_desc, cons
   } else if (data_mode == "dynamic_aipp_conf") {
     aipp_type = DYNAMIC_AIPP_NODE;
   } else {
-    REPORT_INNER_ERROR("E19999", "Attr:%s data_mode:%s in op:%s(%s), model_id:%u, check invalid when DavinciModel %s",
+    REPORT_INNER_ERROR("E19999", "Attr:%s data_mode:%s in op:%s(%s), model_id:%u, check invalid",
                        ATTR_DATA_RELATED_AIPP_MODE.c_str(), data_mode.c_str(),
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_, __FUNCTION__);
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
     GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID,
            "The info of aipp releated info %s is invalid with index %u.", data_mode.c_str(), index);
     return ACL_ERROR_GE_AIPP_MODE_INVALID;
@@ -2143,8 +2143,8 @@ void DavinciModel::CreateOutput(uint32_t index, const OpDescPtr &op_desc, InputO
   /// netoutput input tensor desc
   GE_IF_BOOL_EXEC(op_desc->GetInputDescPtr(index) == nullptr,
                   REPORT_INNER_ERROR("E19999", "input_desc index:%u in op:%s(%s) not exist, model_id:%u, "
-                                     "check invalid when DavinciModel %s", index,
-                                     op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_, __FUNCTION__);
+                                     "check invalid", index,
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
                   GELOGE(FAILED, "OpDesc GetInputDescPtr is nullptr");
                   return);
   Format format = op_desc->GetInputDescPtr(index)->GetFormat();
@@ -2236,7 +2236,7 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
   for (const auto &data : input_data_info_) {
     if (data.first >= blobs.size()) {
       REPORT_INNER_ERROR("E19999", "index:%u in input_data_info_ >= input_data.blobs.size:%zu, model_id:%u, "
-                         "check invalid when DavinciModel %s", data.first, blobs.size(), model_id_, __FUNCTION__);
+                         "check invalid", data.first, blobs.size(), model_id_);
       GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld, op_name(%s)", blobs.size(),
              input_data_info_.size(), data.first, data.second.GetDataInfo().at(0).first,
              data.second.GetOpName().c_str());
@@ -2386,12 +2386,12 @@ Status DavinciModel::SinkModelProfile() {
   try {
     reported_data = model_load_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
   } catch (std::exception &e) {
-    REPORT_INNER_ERROR("E19999", "Convert model_load_info JSON to string failed, model_id:%u, reason:%s, "
-                       "when DavinciModel %s", model_id_, e.what(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Convert model_load_info JSON to string failed, model_id:%u, reason:%s",
+                       model_id_, e.what());
     GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
   } catch (...) {
-    REPORT_INNER_ERROR("E19999", "Convert model_load_info JSON to string failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Convert model_load_info JSON to string failed, model_id:%u",
+                       model_id_);
     GELOGE(FAILED, "Failed to convert JSON to string.");
   }
   reported_data.append(",")
@@ -2426,12 +2426,12 @@ Status DavinciModel::SinkTimeProfile(const InputData &current_data) {
   try {
     reported_data = model_time_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
   } catch (std::exception &e) {
-    REPORT_INNER_ERROR("E19999", "Convert model_time_info JSON to string failed, model_id:%u, reason:%s, "
-                       "when DavinciModel %s", model_id_, e.what(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Convert model_time_info JSON to string failed, model_id:%u, reason:%s",
+                       model_id_, e.what());
     GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
   } catch (...) {
-    REPORT_INNER_ERROR("E19999", "Convert model_time_info JSON to string failed, model_id:%u, when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Convert model_time_info JSON to string failed, model_id:%u",
+                       model_id_);
     GELOGE(FAILED, "Failed to convert JSON to string.");
   }
   reported_data.append(",")
@@ -2499,8 +2499,8 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
   output_data.model_id = model_id_;
   if (output_data.blobs.size() != output_data_info_.size()) {
     REPORT_INNER_ERROR("E19999", "output_data.blobs.size:%zu != output_data_info.size:%zu, model_id:%u, "
-                       "check invalid when DavinciModel %s",
-                       output_data.blobs.size(), output_data_info_.size(), model_id_, __FUNCTION__);
+                       "check invalid",
+                       output_data.blobs.size(), output_data_info_.size(), model_id_);
     GELOGE(FAILED, "Output data buffer num=%zu not equal model data num=%zu", output_data.blobs.size(),
            output_data_info_.size());
     return FAILED;
@@ -2511,7 +2511,7 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
   for (const auto &output : output_data_info_) {
     if (output.first >= blobs.size()) {
       REPORT_INNER_ERROR("E19999", "index:%u in output_data_info_ >= output_data.blobs.size:%zu, model_id:%u, "
-                         "check invalid when DavinciModel %s", output.first, blobs.size(), model_id_, __FUNCTION__);
+                         "check invalid", output.first, blobs.size(), model_id_);
       GELOGE(FAILED, "Blobs not match: blobs=%zu, tensor=%zu, index=%u, size=%ld", blobs.size(),
              input_data_info_.size(), output.first, output.second.GetDataInfo().at(0).first);
       return FAILED;
@@ -2531,8 +2531,8 @@ Status DavinciModel::CopyOutputData(uint32_t data_id, OutputData &output_data, r
       GELOGI("No need to check output data size.");
     } else if (buffer.length < mem_size) {
       REPORT_INNER_ERROR("E19999", "Buffer.length:%lu in output blob < mem_size:%lu in output_data_info, index:%u, "
-                         "model_id:%u, check invalid when DavinciModel %s", buffer.length, mem_size, output.first,
-                         model_id_, __FUNCTION__);
+                         "model_id:%u, check invalid", buffer.length, mem_size, output.first,
+                         model_id_);
       GELOGE(FAILED, "Tensor data size=%lu, buffer size=%lu", mem_size, buffer.length);
       return FAILED;
     } else if (buffer.length > mem_size) {
@@ -2570,9 +2570,9 @@ Status DavinciModel::InitOutputTensorInfo(const OpDescPtr &op_desc) {
     auto ret = TensorUtils::GetTensorSizeInBytes(*input_desc, size);
     GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
                     REPORT_INNER_ERROR("E19999", "Get input TensorSize in op:%s(%s) failed, input_index:%zu, "
-                                       "model_id:%u when DavinciModel %s",
+                                       "model_id:%u",
                                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), i,
-                                       model_id_, __FUNCTION__);
+                                       model_id_);
                     GELOGE(ret, "Get size from TensorDesc failed, op:%s, input id:%zu", op_desc->GetName().c_str(), i);
                     return ret);
     const GeShape &shape = input_desc->GetShape();
@@ -2615,8 +2615,8 @@ Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputT
   for (size_t i = 0; i < output_buffer_size.size(); ++i) {
     std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[output_buffer_size[i]]);
     if (data_buf == nullptr) {
-      REPORT_CALL_ERROR("E19999", "New buffer failed, size:%ld, model_id:%u when DavinciModel %s",
-                        output_buffer_size[i], model_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "New buffer failed, size:%ld, model_id:%u",
+                        output_buffer_size[i], model_id_);
       GELOGE(GE_GRAPH_MALLOC_FAILED, "Malloc buffer failed.");
       return GE_GRAPH_MALLOC_FAILED;
     }
@@ -3109,8 +3109,8 @@ Status DavinciModel::MallocKnownArgs() {
   if (total_args_size_ != 0) {
     rt_ret = rtMalloc(&args_, total_args_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
-                        total_args_size_, rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X",
+                        total_args_size_, rt_ret);
       GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -3119,8 +3119,8 @@ Status DavinciModel::MallocKnownArgs() {
   if (total_hybrid_args_size_ != 0) {
     rt_ret = rtMalloc(&hybrid_addrs_, total_hybrid_args_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
-                        total_hybrid_args_size_, rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X",
+                        total_hybrid_args_size_, rt_ret);
       GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -3130,8 +3130,8 @@ Status DavinciModel::MallocKnownArgs() {
     GELOGI("Begin to allocate fixed addr.");
     rt_ret = rtMalloc(&fixed_addrs_, total_fixed_addr_size_, mem_type);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X when DavinciModel %s",
-                        total_hybrid_args_size_, rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret: 0x%X",
+                        total_hybrid_args_size_, rt_ret);
       GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -3380,8 +3380,8 @@ bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64
   // The input and model input size can not be exactly equal because user input is not definite.
   if ((input_size + kDataMemAlignSizeCompare) < op_size) {
     REPORT_INNER_ERROR("E19999", "input size:%ld from user add align:%u > input_op_size:%ld in model, model_id:%u, "
-                       "check invalid when DavinciModel %s",
-                       input_size, kDataMemAlignSizeCompare, op_size, model_id_, __FUNCTION__);
+                       "check invalid",
+                       input_size, kDataMemAlignSizeCompare, op_size, model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
            "Input size [%ld] can not be smaller than op size [%ld] after 64-byte alignment", input_size, op_size);
     return false;
@@ -3432,8 +3432,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
                                       const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label) {
   if (blobs.size() != data_info.size()) {
     REPORT_INNER_ERROR("E19999", "is_input:%d blob size:%ld from user != op_size:%ld in model, mode_id:%u"
-                       "check invalid when DavinciModel %s", is_input,
-                       blobs.size(), data_info.size(), model_id_, __FUNCTION__);
+                       "check invalid", is_input,
+                       blobs.size(), data_info.size(), model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Verify %s data num failed: model requires %zu, but user actually feeds %zu",
            is_input ? "input" : "output", data_info.size(), blobs.size());
     return ACL_ERROR_GE_PARAM_INVALID;
@@ -3442,8 +3442,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
   for (const auto &data : data_info) {
     if (data.first >= blobs.size()) {  // check data index.
       REPORT_INNER_ERROR("E19999", "is_input:%d, data index:%u from model >= blobs.size:%zu from user, mode_id:%u"
-                         "check invalid when DavinciModel %s", is_input,
-                         data.first, blobs.size(), model_id_, __FUNCTION__);
+                         "check invalid", is_input,
+                         data.first, blobs.size(), model_id_);
       GELOGE(ACL_ERROR_GE_PARAM_INVALID,
              "Verify %s data num failed: can not find No.%u data, because user only feeds %zu",
              is_input ? "input" : "output", data.first, blobs.size());
@@ -3453,8 +3453,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
     const DataBuffer &buffer = blobs[data.first];  // index of data.
     if (buffer.data == nullptr) {
       REPORT_INNER_ERROR("E19999", "is_input:%d buffer from user is nullptr, index:%u, mode_id:%u"
-                         "check invalid when DavinciModel %s", is_input,
-                         data.first, model_id_, __FUNCTION__);
+                         "check invalid", is_input,
+                         data.first, model_id_);
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "data_buf.data is nullptr, index=%u", data.first);
       return ACL_ERROR_GE_PARAM_INVALID;
     }
@@ -3472,8 +3472,8 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
         GELOGI("[IMAS] Find addr %p need direct copy from user malloc input %p", basic_addr, buffer.data);
         rtError_t rt_ret = rtMemcpy(basic_addr, data_size, buffer.data, buffer.length, RT_MEMCPY_DEVICE_TO_DEVICE);
         if (rt_ret != RT_ERROR_NONE) {
-          REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%lu, model_id:%u, when DavinciModel %s",
-                            data_size, model_id_, __FUNCTION__);
+          REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%lu, model_id:%u",
+                            data_size, model_id_);
           GELOGE(rt_ret, "Non-zero copy data node copy failed");
           return RT_ERROR_TO_GE_STATUS(rt_ret);
         }
@@ -3556,17 +3556,17 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
   auto v_output_addr = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
   GE_IF_BOOL_EXEC(v_weights.empty() || v_output_size.empty() || v_output_addr.empty(),
                   REPORT_INNER_ERROR("E19999", "weight.size:%zu output_length.size:%zu output_addr.size:%zu in "
-                                     "op:%s(%s) has empty, model_id:%u, check invalid when DavinciModel %s",
+                                     "op:%s(%s) has empty, model_id:%u, check invalid",
                                      v_weights.size(),v_output_size.size(), v_output_addr.size(),
-                                     op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_, __FUNCTION__);
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_);
                   GELOGE(PARAM_INVALID, "const op:%s not set output", op_desc->GetName().c_str());
                   return PARAM_INVALID;);
 
   GeTensor *tensor = const_cast<GeTensor *>(v_weights[0].get());
   GE_IF_BOOL_EXEC(static_cast<size_t>(v_output_size[0]) < tensor->GetData().size(),
                   REPORT_INNER_ERROR("E19999", "Output size:%zu < weight size:%zu in op:%s(%s) model_id:%u, "
-                                     "check invalid when DavinciModel %s", v_output_size[0], tensor->GetData().size(),
-                                     op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_, __FUNCTION__);
+                                     "check invalid", v_output_size[0], tensor->GetData().size(),
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_);
                   GELOGE(PARAM_INVALID, "output size:%ld less than weight data size:%zu", v_output_size[0],
                          tensor->GetData().size());
                   return PARAM_INVALID;);
@@ -3616,8 +3616,8 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
   auto kernel = ge_model_->GetTBEKernelStore().FindKernel(op_desc->GetName());
   auto tbe_kernel = (kernel != nullptr) ? kernel : op_desc->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
   if (tbe_kernel == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Get tbe_kernel for op:%s(%s) fail, model_id:%u, when DavinciModel %s",
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Get tbe_kernel for op:%s(%s) fail, model_id:%u",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_);
     GELOGE(INTERNAL_ERROR, "TBE: %s can't find tvm bin file!", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
@@ -3644,9 +3644,9 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
       } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
       } else {
-        REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid when DavinciModel %s",
+        REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
                            TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
-                           op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_, __FUNCTION__);
+                           op_desc->GetName().c_str(), op_desc->GetType().c_str() ,model_id_);
         GELOGE(PARAM_INVALID, "TBE: Invalid parameter magic number! json: %s", json_string.c_str());
         return PARAM_INVALID;
       }
@@ -3737,10 +3737,10 @@ Status DavinciModel::InitStreamSwitch(const OpDescPtr &op_desc) {
              "GetInt ACTIVE_STREAM_LIST failed.");
   if (active_stream_list.size() != kTrueBranchStreamNum) {
     REPORT_INNER_ERROR("E19999", "Attr:%s active_stream_list.size:%zu in op:%s(%s) != kTrueBranchStreamNum:%u, "
-                       "model_id:%u, check invalid when DavinciModel %s",
+                       "model_id:%u, check invalid",
                        ATTR_NAME_ACTIVE_STREAM_LIST.c_str(), active_stream_list.size(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                       kTrueBranchStreamNum, model_id_, __FUNCTION__);
+                       kTrueBranchStreamNum, model_id_);
     GELOGE(INTERNAL_ERROR, "Stream num of switch true branch must be %u.", kTrueBranchStreamNum);
     return INTERNAL_ERROR;
   }
@@ -3755,9 +3755,9 @@ Status DavinciModel::InitStreamSwitch(const OpDescPtr &op_desc) {
 Status DavinciModel::InitStreamSwitchN(const OpDescPtr &op_desc) {
   std::vector<uint32_t> active_stream_list;
   if (!AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_list)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail, model_id:%u, when DavinciModel %s",
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail, model_id:%u",
                        ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_, __FUNCTION__);
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
     GELOGE(INTERNAL_ERROR, "StreamSwitchNOp get attr ACTIVE_STREAM failed.");
     return INTERNAL_ERROR;
   }
@@ -3769,9 +3769,9 @@ Status DavinciModel::InitStreamSwitchN(const OpDescPtr &op_desc) {
 
   uint32_t batch_num = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_BATCH_NUM, batch_num)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail, model_id:%u, when DavinciModel %s",
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail, model_id:%u",
                        ATTR_NAME_BATCH_NUM.c_str(),
-                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_, __FUNCTION__);
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
     GELOGE(FAILED, "Failed to get attr ATTR_NAME_BATCH_NUM, StreamSwitchN: %s.", op_desc->GetName().c_str());
     return FAILED;
   }
@@ -3789,9 +3789,9 @@ Status DavinciModel::SetDynamicBatchInfo(const OpDescPtr &op_desc, uint32_t batc
     std::vector<int64_t> batch_shape;
     const std::string attr_name = ATTR_NAME_PRED_VALUE + "_" + std::to_string(i);
     if (!AttrUtils::GetListInt(op_desc, attr_name, batch_shape)) {
-      REPORT_INNER_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail, model_id:%u, when DavinciModel %s",
+      REPORT_INNER_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail, model_id:%u",
                          attr_name.c_str(),
-                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_, __FUNCTION__);
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
       GELOGE(FAILED, "Get attr ATTR_NAME_PRED_VALUE failed, Node: %s", op_desc->GetName().c_str());
       batch_info_.clear();
       return FAILED;
@@ -3936,8 +3936,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
 // Add active entry stream for special env.
 Status DavinciModel::AddHeadStream() {
   if (active_stream_list_.empty()) {
-    REPORT_INNER_ERROR("E19999", "active_stream_list is empty in model:%u, check invalid when DavinciModel %s",
-                       model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "active_stream_list is empty in model:%u, check invalid",
+                       model_id_);
     GELOGE(INTERNAL_ERROR, "Active stream is empty, stream list size: %zu, stream indication size: %zu.",
            stream_list_.size(), active_stream_indication_.size());
     return INTERNAL_ERROR;
@@ -3957,8 +3957,8 @@ Status DavinciModel::AddHeadStream() {
     for (auto s : active_stream_list_) {
       std::shared_ptr<CpuTaskActiveEntry> active_entry = MakeShared<CpuTaskActiveEntry>(rt_head_stream_);
       if (active_entry == nullptr) {
-        REPORT_CALL_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u, when DavinciModel %s",
-                          model_id_, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "New CpuTaskActiveEntry failed, model_id:%u",
+                          model_id_);
         GELOGE(MEMALLOC_FAILED, "Make CpuTaskActiveEntry task failed.");
         return MEMALLOC_FAILED;
       }
@@ -4090,8 +4090,8 @@ Status DavinciModel::TransAllVarData(ComputeGraphPtr &graph, uint32_t graph_id) 
   rtContext_t ctx = nullptr;
   rtError_t rt_ret = rtCtxGetCurrent(&ctx);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, model_id:%u, when DavinciModel %s",
-                      model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, model_id:%u",
+                      model_id_);
     GELOGE(RT_FAILED, "Failed to get current context, error_code is: 0x%X.", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
@@ -4125,7 +4125,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
   if (rt_ret != RT_ERROR_NONE || device_id < 0) {
-    REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, model_id:%u, when DavinciModel %s", model_id_, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, model_id:%u", model_id_);
     GELOGE(RT_FAILED, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
     return;
   }
@@ -4189,9 +4189,9 @@ Status DavinciModel::InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc)
     std::vector<std::string> infos = ge::StringUtils::Split(input, ':');
     if (infos.size() != kAippInfoNum) {
       REPORT_INNER_ERROR("E19999", "Attr:%s in op:%s(%s), aipp input size:%zu != kAippInfoNum:%u, model_id:%u, "
-                         "check invalid when DavinciModel %s", ATTR_NAME_AIPP_INPUTS.c_str(),
+                         "check invalid", ATTR_NAME_AIPP_INPUTS.c_str(),
                          op_desc->GetName().c_str(), op_desc->GetType().c_str(), infos.size(), kAippInfoNum,
-                         model_id_, __FUNCTION__);
+                         model_id_);
       GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID, "origin input str is invalid[%zu, %u].", infos.size(), kAippInfoNum);
       return ACL_ERROR_GE_AIPP_MODE_INVALID;
     }
@@ -4212,8 +4212,8 @@ Status DavinciModel::InitOrigInputInfo(uint32_t index, const OpDescPtr &op_desc)
 Status DavinciModel::GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) const {
   const auto it = orig_input_info_.find(index);
   if (it == orig_input_info_.end()) {
-    REPORT_INNER_ERROR("E19999", "Get index:%u from orig_input_info_ fail, model_id:%u, when DavinciModel %s",
-                       index, model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Get index:%u from orig_input_info_ fail, model_id:%u",
+                       index, model_id_);
     GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
@@ -4231,8 +4231,8 @@ void DavinciModel::ParseAIPPInfo(std::string in_out_info, InputOutputDims &dims_
   std::vector<std::string> infos = ge::StringUtils::Split(in_out_info, ':');
   if (infos.size() != kAippInfoNum) {
     REPORT_INNER_ERROR("E19999", "in_out_info:%s size:%zu != kAippInfoNum:%u, model_id:%u, "
-                       "check invalid when DavinciModel %s", in_out_info.c_str(), infos.size(), kAippInfoNum,
-                       model_id_, __FUNCTION__);
+                       "check invalid", in_out_info.c_str(), infos.size(), kAippInfoNum,
+                       model_id_);
     GELOGE(ACL_ERROR_GE_AIPP_MODE_INVALID, "origin input str is invalid[%zu, %u].", infos.size(), kAippInfoNum);
     return;
   }
@@ -4295,8 +4295,8 @@ Status DavinciModel::GetAllAippInputOutputDims(uint32_t index, vector<InputOutpu
                                                vector<InputOutputDims> &output_dims) const {
   const auto it = aipp_dims_info_.find(index);
   if (it == aipp_dims_info_.end()) {
-    REPORT_INNER_ERROR("E19999", "Get index:%u from aipp_dims_info_ fail, model_id:%u, when DavinciModel %s",
-                       index, model_id_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Get index:%u from aipp_dims_info_ fail, model_id:%u",
+                       index, model_id_);
     GELOGE(ACL_ERROR_GE_AIPP_NOT_EXIST, "there is not AIPP related with index %u.", index);
     return ACL_ERROR_GE_AIPP_NOT_EXIST;
   }
@@ -4328,8 +4328,8 @@ Status DavinciModel::InitL1DataDumperArgs() {
     if (rtDumpAddrSet(rt_model_handle_, l1_fusion_addr_, kDumpL1FusionOpMByteSize, kDumpFlagOfL1Fusion) !=
         RT_ERROR_NONE) {
       // l1_fusion_addr_ will be free when DavinciModel destruct
-      REPORT_CALL_ERROR("E19999", "Call rtDumpAddrSet failed, model_id:%u, when DavinciModel %s",
-                        model_id_, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtDumpAddrSet failed, model_id:%u",
+                        model_id_);
       GELOGE(FAILED, "Call rtDumpAddrSet failed");
       return FAILED;
     }

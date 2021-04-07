@@ -23,18 +23,25 @@ NodePtr CreateReshape(const ConstGeTensorDescPtr &src, const ConstGeTensorDescPt
   auto next_num = reshape_num.fetch_add(1);
   auto reshape = MakeShared<OpDesc>("Reshape_ReshapeRecoveryPass_" + std::to_string(next_num), RESHAPE);
   if (reshape == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     return nullptr;
   }
   auto ret = reshape->AddInputDesc("x", *src);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:x",
+                      reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
   ret = reshape->AddInputDesc("shape", GeTensorDesc(GeShape(), Format(), DT_INT32));
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:shape",
+                      reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
   ret = reshape->AddOutputDesc("y", *dst);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:y",
+                      reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
 
@@ -71,6 +78,11 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
         GE_CHECK_NOTNULL(reshape);
         auto ret = GraphUtils::InsertNodeBetweenDataAnchors(src_anchor, dst_anchor, reshape);
         if (ret != GRAPH_SUCCESS) {
+          REPORT_CALL_ERROR("E19999",
+                            "Insert node:%s(%s) between node:%s(%s)(out_index:%d) and node:%s(%s)(out_index:%d) failed",
+                            reshape->GetName().c_str(), reshape->GetType().c_str(),
+                            node->GetName().c_str(), node->GetType().c_str(), src_anchor->GetIdx(),
+                            dst_node->GetName().c_str(), dst_node->GetType().c_str(), dst_anchor->GetIdx());
           GELOGE(INTERNAL_ERROR, "Failed to insert reshape between node %s and %s",
                  node->GetName().c_str(), dst_node->GetName().c_str());
           return INTERNAL_ERROR;

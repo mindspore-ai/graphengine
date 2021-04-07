@@ -21,6 +21,7 @@ namespace ge {
 Status PrintOpPass::Run(ge::NodePtr &node) {
   GELOGD("PrintOpPass running");
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "param [node] must not be null.");
     return PARAM_INVALID;
   }

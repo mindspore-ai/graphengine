@@ -106,9 +106,9 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
 
     ret = GraphUtils::ReplaceNodeAnchors(iter->second, node, {}, output_map);
     if (ret != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Replace node:%s(%s) by node:%s(%s) failed "
-                        "when CommonSubexpressionEliminationPass %s", node->GetName().c_str(), node->GetType().c_str(),
-                        iter->second->GetName().c_str(), iter->second->GetType().c_str(), __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Replace node:%s(%s)'s anchor by node:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str(),
+                        iter->second->GetName().c_str(), iter->second->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to replace node %s by node %s error node %u",
           node->GetName().c_str(), iter->second->GetName().c_str(), ret);
       return INTERNAL_ERROR;
@@ -118,9 +118,8 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
 
     ret = GraphUtils::RemoveNodeWithoutRelink(graph, node);
     if (ret != GRAPH_SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed "
-                        "when CommonSubexpressionEliminationPass %s",
-                        node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str(), __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                        node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to remove node %s from graph", node->GetName().c_str());
       return INTERNAL_ERROR;
     }

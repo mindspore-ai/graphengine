@@ -35,6 +35,7 @@ const size_t kCaseOneInput = 1;
 Status MergePass::Run(NodePtr &node) {
   GELOGD("MergePass running");
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "param [node] must not be null.");
     return PARAM_INVALID;
   }
@@ -46,6 +47,8 @@ Status MergePass::Run(NodePtr &node) {
   }
 
   if (node->GetAllOutDataAnchors().empty()) {
+    REPORT_INNER_ERROR("E19999", "Param node:%s(%s) all data anchor size is 0, check invalid",
+                       node->GetName().c_str(), node->GetType().c_str());
     GELOGE(PARAM_INVALID, "[%s] Merge node output anchor is empty", node->GetName().c_str());
     return PARAM_INVALID;
   }
@@ -79,6 +82,8 @@ Status MergePass::Run(NodePtr &node) {
       auto in_node = in_data_nodes.at(0);
       if (IsMergeInputNeedOptimized(in_node)) {
         if (IsolateAndDeleteNode(in_node, {0}) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
+                            in_node->GetName().c_str(), in_node->GetType().c_str());
           GELOGE(FAILED, "Isolate and delete node %s failed.", in_node->GetName().c_str());
           return FAILED;
         }
@@ -115,6 +120,8 @@ Status MergePass::ChangeIndexToConstant(NodePtr &node, int &value_index) {
   GE_CHECK_NOTNULL(node);
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Owner graph of node:%s(%s) is nullptr, check invalid",
+                       node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[%s] The owner graph must not be null.", node->GetName().c_str());
     return FAILED;
   }
@@ -125,11 +132,17 @@ Status MergePass::ChangeIndexToConstant(NodePtr &node, int &value_index) {
   }
   NodePtr const_node = graph->AddNode(constant_op_desc);
   if (const_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      constant_op_desc->GetName().c_str(), constant_op_desc->GetType().c_str(),
+                      graph->GetName().c_str());
     return FAILED;
   }
 
   // Change peer in anchors from value_index to new Constant node
   if (GraphUtils::ReplaceNodeAnchors(const_node, node, {}, {1}) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Replace node:%s(%s) by node:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      const_node->GetName().c_str(), const_node->GetType().c_str());
     GELOGE(FAILED, "[%s] ReplaceNodeAnchors failed.", node->GetName().c_str());
     return FAILED;
   }
@@ -137,6 +150,9 @@ Status MergePass::ChangeIndexToConstant(NodePtr &node, int &value_index) {
   GE_CHECK_NOTNULL(out_control_anchor);
   // Add control anchor between Merge and Constant
   if (out_control_anchor->LinkTo(const_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Op:%s(%s) link control to op:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      const_node->GetName().c_str(), const_node->GetType().c_str());
     return FAILED;
   }
 
@@ -148,6 +164,7 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
   // 1. create Constant OpDesc
   op_desc = MakeShared<OpDesc>(constant_name, CONSTANT);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(FAILED, "[%s] Make shared of Constant op desc failed.", constant_name.c_str());
     return FAILED;
   }
@@ -155,6 +172,7 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
   // 2. get OpDesc of output number one of Merge(value_index)
   OpDescPtr original_op_desc = node->GetOpDesc();
   if (original_op_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
     GELOGE(FAILED, "[%s] Op desc must not be null.", constant_name.c_str());
     return FAILED;
   }
@@ -165,15 +183,19 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
   GeTensorPtr const_tensor_ptr =
       MakeShared<GeTensor>(original_out_tensor_desc, reinterpret_cast<uint8_t *>(&value_index), sizeof(int));
   if (const_tensor_ptr == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New GeTensor failed");
     GELOGE(FAILED, "[%s] Make shared of Constant tensor failed.", constant_name.c_str());
     return FAILED;
   }
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, const_tensor_ptr),
-                    GELOGE(FAILED, "get ATTR_NAME_WEIGHTS failed"); return FAILED);
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                    ATTR_NAME_WEIGHTS.c_str(),
+                                    op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                  GELOGE(FAILED, "get ATTR_NAME_WEIGHTS failed"); return FAILED);
 
   // 4. set Constant output desc
-  GE_CHK_STATUS_RET(op_desc->AddOutputDesc(original_out_tensor_desc), "add out put desc failed");
+  GE_CHK_GRAPH_STATUS_RET(op_desc->AddOutputDesc(original_out_tensor_desc), "add out put desc failed");
   return SUCCESS;
 }
 

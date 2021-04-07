@@ -37,6 +37,7 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   OpDescPtr op_desc_ptr = node->GetOpDesc();
   if (op_desc_ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node's op_desc is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "NoUseReshapeRemovePass enter. OpDesc is null.");
     return PARAM_INVALID;
   }
@@ -48,6 +49,8 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   bool to_be_deleted = true;
   // compare input and output dims
   if (op_desc_ptr->GetAllInputsDesc().empty() || op_desc_ptr->GetAllOutputsDesc().empty()) {
+    REPORT_INNER_ERROR("E19999", "Input or Output desc num is zero in node:%s(%s), check invalid",
+                       op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Input or output num is zero. node name:%s, input size:%zu, output size:%zu",
            op_desc_ptr->GetName().c_str(), op_desc_ptr->GetAllInputsDesc().size(),
            op_desc_ptr->GetAllOutputsDesc().size());
@@ -107,6 +110,8 @@ Status NoUseReshapeRemovePass::TryRemoveConstShapeInput(ge::NodePtr &reshape_nod
   // const input can unlink but should copy control_dependency
   auto ret = PassUtils::UnlinkNodeWithControlCopy(reshape_node, kReshapeShapeIndex);
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Unlink op:%s(%s) data input:%u with control edge copy failed",
+                      reshape_node->GetName().c_str(), reshape_node->GetType().c_str(), kReshapeShapeIndex);
     GELOGE(ret, "Unlink node %s with control copy failed.", shape_input->GetName().c_str());
     return ret;
   }

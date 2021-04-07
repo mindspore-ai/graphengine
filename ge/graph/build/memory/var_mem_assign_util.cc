@@ -53,7 +53,7 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
     GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(n->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name), continue);
     string node_name = n->GetName();
     GE_IF_BOOL_EXEC(n->GetOpDesc()->GetAllOutputsDesc().empty(),
-                    REPORT_INNER_ERROR("E19999", "check node:%s has no OutputDesc when AssignStaticMemory2Node",
+                    REPORT_INNER_ERROR("E19999", "check node:%s has no OutputDesc",
                                        n->GetName().c_str());
                     GELOGE(FAILED, "node:%s has no OutputDesc.", n->GetName().c_str());
                     return FAILED);
@@ -118,7 +118,7 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
   GE_CHECK_NOTNULL(node->GetOpDesc());
   output_list = node->GetOpDesc()->GetOutputOffset();
   if (output_list.empty()) {
-    REPORT_INNER_ERROR("E19999", "check node:%s output_offset_list is empty when SetOutVariableAttr",
+    REPORT_INNER_ERROR("E19999", "check node:%s output_offset_list is empty",
                        node->GetName().c_str());
     GELOGE(PARAM_INVALID, "Output_list is empty");
     return PARAM_INVALID;
@@ -131,8 +131,8 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
 
   int out_list_size = static_cast<int>(output_list.size());
   if (index >= out_list_size) {
-    REPORT_INNER_ERROR("E19999", "param index:%d >= output_list.size() %d in node %s, "
-                       "check invalid when SetOutVariableAttr", index, out_list_size, node->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "param index:%d >= output_list.size() %d in node %s, check invalid",
+                       index, out_list_size, node->GetName().c_str());
     GELOGE(FAILED, "index %d >= output_list.size() %d", index, out_list_size);
     return FAILED;
   }

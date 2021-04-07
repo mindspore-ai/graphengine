@@ -37,6 +37,7 @@ Status EnterPass::Run(NodePtr &node) {
 
   // enter node has only one input
   if (node->GetInDataNodes().empty()) {
+    REPORT_INNER_ERROR("E19999", "Param node in data nodes is empty, check invalid");
     GELOGE(PARAM_INVALID, "enter_node %s has no input", node->GetName().c_str());
     return PARAM_INVALID;
   }
@@ -58,6 +59,9 @@ Status EnterPass::Run(NodePtr &node) {
       }
       GELOGI("Remove control edge from %s to %s.", node->GetName().c_str(), out_ctrl_node->GetName().c_str());
       if (GraphUtils::RemoveEdge(node->GetOutControlAnchor(), out_ctrl_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Remove control edge between op:%s(%s) and op:%s(%s) failed",
+                          node->GetName().c_str(), node->GetType().c_str(),
+                          out_ctrl_node->GetName().c_str(), out_ctrl_node->GetType().c_str());
         GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s", node->GetName().c_str(),
                out_ctrl_node->GetName().c_str());
         return FAILED;
@@ -89,14 +93,14 @@ Status EnterPass::OptimizeEnterWithOnlyDataOut(NodePtr &node, NodePtr &in_node) 
   }
 
   GE_CHECK_NOTNULL(in_node->GetOutDataAnchor(0));
-  GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->Unlink(node->GetInDataAnchor(0)))
+  GE_CHK_GRAPH_STATUS_RET(in_node->GetOutDataAnchor(0)->Unlink(node->GetInDataAnchor(0)))
   const auto &out_data_anchor = node->GetOutDataAnchor(0);
   GE_CHECK_NOTNULL(out_data_anchor);
   for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-    GE_CHK_STATUS_RET(out_data_anchor->Unlink(peer_in_data_anchor))
-    GE_CHK_STATUS_RET(in_node->GetOutDataAnchor(0)->LinkTo(peer_in_data_anchor))
+    GE_CHK_GRAPH_STATUS_RET(out_data_anchor->Unlink(peer_in_data_anchor))
+    GE_CHK_GRAPH_STATUS_RET(in_node->GetOutDataAnchor(0)->LinkTo(peer_in_data_anchor))
   }
-  GE_CHK_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node))
+  GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node))
   AddNodeDeleted(node);
   AddRePassNodesWithInOut(in_node);
 
@@ -136,11 +140,11 @@ Status EnterPass::UnlinkCtrlEdgeBeforeConst(NodePtr &node) {
     }
 
     GELOGI("Unlink control edge from %s to %s.", node->GetName().c_str(), out_ctrl_node->GetName().c_str());
-    GE_CHK_STATUS_RET(out_ctrl_anchor->Unlink(out_ctrl_node->GetInControlAnchor()))
+    GE_CHK_GRAPH_STATUS_RET(out_ctrl_anchor->Unlink(out_ctrl_node->GetInControlAnchor()))
     for (auto &out_node_of_const : out_nodes_of_const) {
       if (!out_ctrl_anchor->IsLinkedWith(out_node_of_const->GetInControlAnchor())) {
         GELOGI("Link control edge from %s to %s.", node->GetName().c_str(), out_node_of_const->GetName().c_str());
-        GE_CHK_STATUS_RET(out_ctrl_anchor->LinkTo(out_node_of_const->GetInControlAnchor()))
+        GE_CHK_GRAPH_STATUS_RET(out_ctrl_anchor->LinkTo(out_node_of_const->GetInControlAnchor()))
       }
     }
   }

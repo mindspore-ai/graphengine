@@ -34,6 +34,7 @@ using std::string;
 namespace ge {
 Status FuseDataNodesWithCommonInputPass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "Compute graph is null.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
@@ -101,12 +102,20 @@ Status FuseDataNodesWithCommonInputPass::FuseDataNodes(
                  first_node->GetName().c_str(), subgraph->GetName().c_str());
           // the data node which can be fused has none input(both data and control in)
           if (GraphUtils::MoveOutCtrlEdges(node, first_node) != SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Move out control edge from node:%s(%s) to node:%s(%s) failed",
+                              node->GetName().c_str(), node->GetType().c_str(),
+                              first_node->GetName().c_str(), first_node->GetType().c_str());
             return FAILED;
           }
           if (GraphUtils::ReplaceNodeDataAnchors(first_node, node, {}, {0}) != SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Replace data edge from node:%s(%s) to node:%s(%s) failed",
+                              node->GetName().c_str(), node->GetType().c_str(),
+                              first_node->GetName().c_str(), first_node->GetType().c_str());
             return FAILED;
           }
           if (GraphUtils::RemoveNodeWithoutRelink(subgraph, node) != SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                              node->GetName().c_str(), node->GetType().c_str(), subgraph->GetName().c_str());
             GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
             return FAILED;
           }

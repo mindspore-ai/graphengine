@@ -24,6 +24,7 @@
 #include "graph/common/omg_util.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/type_utils.h"
 
 namespace ge {
 namespace {
@@ -35,6 +36,8 @@ Status GuaranteeConstPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get original type for node:%s failed",
+                      node->GetName().c_str());
     GELOGE(status_ret, "GuaranteeConstPass get original type fail.");
     return status_ret;
   }
@@ -42,6 +45,9 @@ Status GuaranteeConstPass::Run(NodePtr &node) {
     return SUCCESS;
   }
   if (node->GetOpDesc()->GetAllInputsDesc().size() != kGuaranteeConstInputsSize) {
+    REPORT_CALL_ERROR("E19999", "Num:%zu of input desc node:%s(%s) not equal to %u, "
+                      "check invalid", node->GetOpDesc()->GetAllInputsDesc().size(),
+                      node->GetName().c_str(), node->GetType().c_str(), kGuaranteeConstInputsSize);
     GELOGE(PARAM_INVALID, "input size error. Input size:%zu", node->GetOpDesc()->GetAllInputsDesc().size());
     return PARAM_INVALID;
   }
@@ -51,6 +57,11 @@ Status GuaranteeConstPass::Run(NodePtr &node) {
   // Input tensor cannot be a resource variable handle.
   const DataType &input_dtype = in_desc->GetDataType();
   if (input_dtype == DT_RESOURCE) {
+    REPORT_CALL_ERROR("E19999",
+                      "Data type:%s of op:%s(%s) input0 tensor not equal to %s, check invalid",
+                      TypeUtils::DataTypeToSerialString(input_dtype).c_str(),
+                      node->GetName().c_str(), node->GetType().c_str(),
+                      TypeUtils::DataTypeToSerialString(DT_RESOURCE).c_str());
     GELOGE(FAILED, "Input tensor cannot be a resource variable handle in [%s].", node->GetName().c_str());
     return FAILED;
   }

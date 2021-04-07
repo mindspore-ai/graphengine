@@ -28,7 +28,7 @@ Status MarkGraphUnknownStatusPass::Run(ComputeGraphPtr graph) {
   bool is_unknown_shape = false;
   bool forced_unknown = false;
   for (const auto &node : graph->GetDirectNode()) {
-    GE_CHK_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
+    GE_CHK_GRAPH_STATUS_RET(ge::NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
                       "Get node[%s] shape status failed!", node->GetName().c_str());
     if (is_unknown_shape) {
       break;

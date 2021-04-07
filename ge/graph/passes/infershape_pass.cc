@@ -22,8 +22,58 @@
 #include "framework/common/util.h"
 #include "graph/shape_refiner.h"
 #include "graph/utils/graph_utils.h"
+#include "utils/tensor_utils.h"
+#include "utils/type_utils.h"
 
 namespace ge {
+
+void SerialShapeRange(const GeTensorDescPtr &desc, std::string &desc_str) {
+  desc_str += "[";
+  std::vector<std::pair<int64_t, int64_t>> shape_range;
+  (void)desc->GetShapeRange(shape_range);
+  for (const auto &pair : shape_range) {
+    desc_str += "{";
+    desc_str += std::to_string(pair.first) + "," + std::to_string(pair.second);
+    desc_str += "},";
+  }
+  desc_str += "]";
+  shape_range.clear();
+  (void)desc->GetOriginShapeRange(shape_range);
+  for (const auto &pair : shape_range) {
+    desc_str += ",{";
+    desc_str += std::to_string(pair.first) + "," + std::to_string(pair.second);
+    desc_str += "},";
+  }
+}
+
+std::string GetInTensorInfoWithString(const ge::NodePtr &node) {
+  ge::OpDescPtr op_desc = node->GetOpDesc();
+  std::stringstream ss;
+  ss << "{";
+  int32_t in_idx = 0;
+  for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
+    if (input_desc == nullptr) {
+      in_idx++;
+      continue;
+    }
+    if (in_idx > 0) {
+      ss << "    ";
+    }
+    ss << "input_" << in_idx << " " << "tensor: [";
+    ss << "(shape:[" << input_desc->MutableShape().ToString() << "]),";
+    ss << "(format:" << TypeUtils::FormatToSerialString(input_desc->GetFormat()) << "),";
+    ss << "(dtype:" << TypeUtils::DataTypeToSerialString(input_desc->GetDataType()) << "),";
+    ss << "(origin_shape:" << input_desc->GetOriginShape().ToString() << "),";
+    ss << "(origin_format:" << TypeUtils::FormatToSerialString(input_desc->GetOriginFormat()) << "),";
+    ss << "(origin_dtype:" << TypeUtils::DataTypeToSerialString(input_desc->GetOriginDataType()) << "),";
+    string range_str;
+    SerialShapeRange(input_desc, range_str);
+    ss << "(shape_range:" << range_str << ")]";
+    in_idx++;
+  }
+  return ss.str();
+}
+
 Status InferShapePass::Run(NodePtr &node) {
   // kOptimizeAfterSubGraph exist means after subgraph
   auto ret = ShapeRefiner::InferShapeAndType(node, !OptionExists(kOptimizeAfterSubGraph));
@@ -39,6 +89,8 @@ Status InferShapePass::Run(NodePtr &node) {
     (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(),
                                                           root_graph->GetGraphID());
 
+    REPORT_CALL_ERROR("E19999", "Call InferShapeAndType for node:%s(%s) failed, input_tensor:%s",
+                      node->GetName().c_str(), node->GetType().c_str(), GetInTensorInfoWithString(node).c_str());
     GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }

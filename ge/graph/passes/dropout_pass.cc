@@ -31,10 +31,12 @@ namespace ge {
 Status DropOutPass::Run(NodePtr &node) {
   GELOGD("DropOutPass running");
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
   if (node->GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "param [opDesc] must not be null.");
     return PARAM_INVALID;
   }

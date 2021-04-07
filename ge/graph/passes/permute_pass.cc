@@ -108,6 +108,8 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
         OpDescPtr op_desc_ptr = outNode->GetOpDesc();
         GE_CHECK_NOTNULL(op_desc_ptr);
         if (!AttrUtils::SetBool(op_desc_ptr, ATTR_NAME_PRED_PERMUTE_DELETED, true)) {
+          REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PRED_PERMUTE_DELETED.c_str(),
+                            op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str());
           GELOGE(INTERNAL_ERROR, "set ATTR_NAME_PRED_PERMUTE_DELETED failed");
           return INTERNAL_ERROR;
         }

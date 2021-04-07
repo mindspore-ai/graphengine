@@ -23,7 +23,7 @@
 namespace ge {
 void TbeHandleInfo::used_inc(uint32_t num) {
   if (used_ > std::numeric_limits<uint32_t>::max() - num) {
-    REPORT_INNER_ERROR("E19999", "Used:%u reach numeric max when TbeHandleInfo %s", used_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Used:%u reach numeric max", used_);
     GELOGE(INTERNAL_ERROR, "Used[%u] reach numeric max.", used_);
     return;
   }
@@ -33,7 +33,7 @@ void TbeHandleInfo::used_inc(uint32_t num) {
 
 void TbeHandleInfo::used_dec(uint32_t num) {
   if (used_ < std::numeric_limits<uint32_t>::min() + num) {
-    REPORT_INNER_ERROR("E19999", "Used:%u reach numeric min when TbeHandleInfo %s", used_, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Used:%u reach numeric min", used_);
     GELOGE(INTERNAL_ERROR, "Used[%u] reach numeric min.", used_);
     return;
   }
@@ -107,8 +107,8 @@ void TBEHandleStore::ReferTBEHandle(const std::string &name) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = kernels_.find(name);
   if (it == kernels_.end()) {
-    REPORT_INNER_ERROR("E19999", "Kernel:%s not found in stored check invalid when TbeHandleInfo %s",
-                       name.c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Kernel:%s not found in stored check invalid",
+                       name.c_str());
     GELOGE(INTERNAL_ERROR, "Kernel[%s] not found in stored.", name.c_str());
     return;
   }
@@ -128,8 +128,8 @@ void TBEHandleStore::EraseTBEHandle(const std::map<std::string, uint32_t> &names
   for (auto &item : names) {
     auto it = kernels_.find(item.first);
     if (it == kernels_.end()) {
-      REPORT_INNER_ERROR("E19999", "Kernel:%s not found in stored check invalid when TbeHandleInfo %s",
-                         item.first.c_str(), __FUNCTION__);
+      REPORT_INNER_ERROR("E19999", "Kernel:%s not found in stored check invalid",
+                         item.first.c_str());
       GELOGE(INTERNAL_ERROR, "Kernel[%s] not found in stored.", item.first.c_str());
       continue;
     }
@@ -140,8 +140,8 @@ void TBEHandleStore::EraseTBEHandle(const std::map<std::string, uint32_t> &names
     } else {
       rtError_t rt_ret = rtDevBinaryUnRegister(info.handle());
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_INNER_ERROR("E19999", "Call rtDevBinaryUnRegister failed for Kernel:%s fail, ret:0x%X, "
-                           "when TbeHandleInfo %s", item.first.c_str(), rt_ret, __FUNCTION__);
+        REPORT_INNER_ERROR("E19999", "Call rtDevBinaryUnRegister failed for Kernel:%s fail, ret:0x%X",
+                           item.first.c_str(), rt_ret);
         GELOGE(INTERNAL_ERROR, "Kernel[%s] UnRegister handle fail:%u.", item.first.c_str(), rt_ret);
       }
       kernels_.erase(it);

@@ -40,7 +40,7 @@ GraphExecutor::~GraphExecutor() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(buffer_addr);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X when %s", rt_ret, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X", rt_ret);
         GELOGE(RT_FAILED, "[GraphManager] subgraph free buffer failed, ret: 0x%X", rt_ret);
       }
     }
@@ -52,17 +52,17 @@ GraphExecutor::~GraphExecutor() {
 Status GraphExecutor::SetCondition(std::mutex *mutex, std::condition_variable *cond,
                                    std::shared_ptr<GraphModelListener> listener) {
   if (mutex == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check param mutex nullptr when %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Check param mutex nullptr");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[SetCondition] input param mutex is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
   if (cond == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check param cond nullptr when %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Check param cond nullptr");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[SetCondition] input param cond is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
   if (listener == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check param listener nullptr when %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Check param listener nullptr");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[SetCondition] input param listener is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
@@ -79,7 +79,7 @@ Status GraphExecutor::SetCondition(std::mutex *mutex, std::condition_variable *c
 
 Status GraphExecutor::SetGraphContext(GraphContextPtr graph_context_ptr) {
   if (graph_context_ptr == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check param graph_context_ptr nullptr when %s", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Check param graph_context_ptr nullptr");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[SetGraphContext] input param graph_context_ptr is nullptr");
     return GE_GRAPH_PARAM_NULLPTR;
   }
@@ -106,7 +106,7 @@ Status GraphExecutor::FreeInOutBuffer() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(*iter);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X when %s", rt_ret, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X", rt_ret);
         GELOGE(RT_FAILED, "[GraphManager] subgraph free buffer failed, ret: 0x%X", rt_ret);
         (void)buffer_addr_.erase(buffer_addr_.begin(), iter);
         return GE_GRAPH_FREE_FAILED;
@@ -152,8 +152,8 @@ Status GraphExecutor::MallocInOutBuffer(const std::vector<uint64_t> &buffer_size
     void *tmp_buf = nullptr;
     rt_ret = rtMallocHost(&tmp_buf, buffer_size[i]);
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, size:%lu, ret:0x%X when %s",
-                        buffer_size[i], rt_ret, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, size:%lu, ret:0x%X",
+                        buffer_size[i], rt_ret);
       GELOGE(RT_FAILED, "[GraphManager] subgraph malloc buffer failed, ret: 0x%X", rt_ret);
       return GE_GRAPH_MALLOC_FAILED;
     }
@@ -199,8 +199,8 @@ Status GraphExecutor::PrepareInputData(const std::vector<GeTensor> &input_tensor
       rtError_t rt_ret = rtMemcpy(addrVec[i], bufferSizeVec[i], in_tensor->GetData().data(),
                                   in_tensor->GetData().size(), RT_MEMCPY_HOST_TO_HOST);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, dst_size:%lu, src_size:%zu, ret:0x%X when %s",
-                          bufferSizeVec[i], in_tensor->GetData().size(), rt_ret, __FUNCTION__);
+        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, dst_size:%lu, src_size:%zu, ret:0x%X",
+                          bufferSizeVec[i], in_tensor->GetData().size(), rt_ret);
         GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
         return RT_FAILED;
       }
@@ -260,8 +260,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
   }
 
   if (graph_run_listener_->ResetResult() != SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Call graph_run_listener_.ResetResult fail, model_id:%u, when %s",
-                      model_id, __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "Call graph_run_listener_.ResetResult fail, model_id:%u",
+                      model_id);
     GELOGE(GE_GRAPH_EXECUTE_FAILED, "Reset result failed");
     return GE_GRAPH_EXECUTE_FAILED;
   }
@@ -285,8 +285,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
     // Run graph return
     uint32_t result_code = graph_run_listener_->GetResultCode();
     if (result_code != SUCCESS && result_code != END_OF_SEQUENCE) {
-      REPORT_CALL_ERROR("E19999", "Graph_run_listener_ run fail, result:%u, model_id:%u, when %s",
-                        result_code, model_id, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "Graph_run_listener_ run fail, result:%u, model_id:%u",
+                        result_code, model_id);
       GELOGE(GE_GRAPH_EXECUTE_FAILED, "[GraphExecutor] execute model failed, ret=%u, modelId=%u.", result_code,
              model_id);
       return GE_GRAPH_EXECUTE_FAILED;
@@ -295,14 +295,14 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
   for (size_t i = 0; i < output_data.blobs.size(); ++i) {
     DataBuffer outputDataTmp = output_data.blobs[i];
     CHECK_FALSE_EXEC(outputDataTmp.length != 0,
-                     REPORT_INNER_ERROR("E19999", "Param output_data.length is 0 in model:%u, check invalid, when %s",
-                                        model_id, __FUNCTION__);
+                     REPORT_INNER_ERROR("E19999", "Param output_data.length is 0 in model:%u, check invalid",
+                                        model_id);
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Failed to allocate memory, length is 0.");
                      return GE_GRAPH_EXECUTE_FAILED);
     std::unique_ptr<uint8_t> outBufTmp(new (std::nothrow) uint8_t[outputDataTmp.length]);
     if (outBufTmp == nullptr) {
-      REPORT_CALL_ERROR("E19999", "New output buffer fail, length:%lu, model:%u, when %s",
-                        outputDataTmp.length, model_id, __FUNCTION__);
+      REPORT_CALL_ERROR("E19999", "New output buffer fail, length:%lu, model:%u",
+                        outputDataTmp.length, model_id);
       GELOGE(FAILED, "Failed to allocate memory.");
       return FAILED;
     }
@@ -310,8 +310,8 @@ Status GraphExecutor::SyncExecuteModel(uint32_t model_id, const std::vector<GeTe
     rtError_t ret_value = rtMemcpy(outBufTmp.get(), outputDataTmp.length, outputDataTmp.data, outputDataTmp.length,
                                    RT_MEMCPY_HOST_TO_HOST);
     CHECK_FALSE_EXEC(ret_value == RT_ERROR_NONE,
-                     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, dst_size:%lu, src_size:%zu, ret:0x%X when %s",
-                                       outputDataTmp.length, outputDataTmp.length, ret_value, __FUNCTION__);
+                     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, dst_size:%lu, src_size:%zu, ret:0x%X",
+                                       outputDataTmp.length, outputDataTmp.length, ret_value);
                      GELOGE(GE_GRAPH_EXECUTE_FAILED, "Call rt api rtMemcpy failed, ret: 0x%X", ret);
                      return GE_GRAPH_EXECUTE_FAILED);
     GeTensor outTensor;
@@ -364,8 +364,8 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeRootModelPtr &ge_ro
   last_graph_id_ = graph_id;
 
   if (!init_flag_) {
-    REPORT_INNER_ERROR("E19999", "No SetCondition called before, graph:%u, check invalid when %s",
-                       graph_id, __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "No SetCondition called before, graph:%u, check invalid",
+                       graph_id);
     GELOGE(GE_GRAPH_EXECUTE_NOT_INIT, "[GraphExecutor] AI Core Engine without calling SetCondition!");
     return GE_GRAPH_EXECUTE_NOT_INIT;
   }
@@ -414,12 +414,12 @@ Status GraphExecutor::AsyncExecuteModel(uint32_t model_id, const std::vector<Inp
 
     GELOGI("RunAsync success.");
   } catch (std::bad_alloc &) {
-    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "RunAsync failed, bad memory allocation occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
-    REPORT_INNER_ERROR("E19999", "Some exceptions occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "RunAsync failed, some exceptions occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
@@ -439,12 +439,12 @@ Status GraphExecutor::DataInput(const InputData &input_data, OutputData &output_
       return ret;
     }
   } catch (std::bad_alloc &) {
-    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "DataInput failed, bad memory allocation occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
-    REPORT_INNER_ERROR("E19999", "Some exceptions occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "DataInput failed, some exceptions occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
@@ -465,12 +465,12 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
       return ret;
     }
   } catch (std::bad_alloc &) {
-    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "GetInputOutputDescInfo failed, bad memory allocation occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
-    REPORT_INNER_ERROR("E19999", "Some exceptions occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "GetInputOutputDescInfo failed, some exceptions occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
@@ -494,12 +494,12 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
       return ret;
     }
   } catch (std::bad_alloc &) {
-    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "GetInputOutputDescInfo failed, bad memory allocation occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
-    REPORT_INNER_ERROR("E19999", "Some exceptions occur when %s failed", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "GetInputOutputDescInfo failed, some exceptions occur !");
     CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;

@@ -52,7 +52,9 @@ inline bool IsGetNextType(const NodePtr &node) {
 }
 
 Status MultiBatchClonePass::Run(ComputeGraphPtr graph) {
-  GE_IF_BOOL_EXEC(graph == nullptr, GELOGE(FAILED, "Original graph is nullptr"); return FAILED);
+  GE_IF_BOOL_EXEC(graph == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
+                  GELOGE(FAILED, "Original graph is nullptr"); return FAILED);
   if (graph->GetParentGraph() != nullptr) {
     GELOGD("Subgraph %s skip the MultiBatchClonePass", graph->GetName().c_str());
     return SUCCESS;
@@ -99,7 +101,9 @@ Status MultiBatchClonePass::Run(ComputeGraphPtr graph) {
 
   (void)AttrUtils::GetStr(graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id_);
   ComputeGraphPtr branch = MakeShared<ComputeGraph>(graph->GetName());
-  GE_IF_BOOL_EXEC(branch == nullptr, GELOGE(OUT_OF_MEMORY, "Create multi batch graph failed"); return OUT_OF_MEMORY);
+  GE_IF_BOOL_EXEC(branch == nullptr,
+                  REPORT_CALL_ERROR("E19999", "New OpDesc failed");
+                  GELOGE(OUT_OF_MEMORY, "Create multi batch graph failed"); return OUT_OF_MEMORY);
   (void)AttrUtils::SetStr(branch, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id_);
 
   graph->InValid();  // Will modify, need topological again.
@@ -140,6 +144,8 @@ Status MultiBatchClonePass::CollectIoNodes(const ComputeGraphPtr &graph) {
   }
 
   if (all_data_nodes_.empty() || all_output_nodes_.size() != 1) {
+    REPORT_INNER_ERROR("E19999", "Data node num is 0 or output node num != 1, graph:%s, check invalid",
+                       graph->GetName().c_str());
     GELOGE(FAILED, "data nodes: %zu, output nodes: %zu", all_data_nodes_.size(), all_output_nodes_.size());
     return FAILED;
   }
@@ -280,6 +286,7 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
   op_builder.AddInput("branch_index").AddDynamicInput("input", input_num).AddDynamicOutput("output", output_num);
   const OpDescPtr op_desc = op_builder.Build();
   if (op_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Build op:%s(%s) failed", kMultiBatchCaseNode.c_str(), CASE);
     GELOGE(OUT_OF_MEMORY, "Create multi-batch case desc failed");
     return OUT_OF_MEMORY;
   }
@@ -287,12 +294,16 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
   op_desc->RegisterSubgraphIrName("branches", kDynamic);
   case_node_ = graph->AddNode(op_desc);
   if (case_node_ == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(OUT_OF_MEMORY, "Create multi-batch case node failed");
     return OUT_OF_MEMORY;
   }
 
   uint32_t batch_num = static_cast<uint32_t>(batch_shapes_.size());
   if (!AttrUtils::SetInt(op_desc, ATTR_NAME_BATCH_NUM, batch_num)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_BATCH_NUM.c_str(),
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(FAILED, "Set attr ATTR_NAME_BATCH_NUM failed, Case: %s.", op_desc->GetName().c_str());
     return FAILED;
   }
@@ -300,6 +311,8 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
   for (uint32_t i = 0; i < batch_num; i++) {
     const std::string &attr_name = ATTR_NAME_PRED_VALUE + "_" + std::to_string(i);
     if (!AttrUtils::SetListInt(op_desc, attr_name, batch_shapes_[i])) {
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", attr_name.c_str(),
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Set attr ATTR_NAME_PRED_VALUE failed, Case: %s.", op_desc->GetName().c_str());
       return FAILED;
     }
@@ -310,11 +323,15 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
     data_name_order.push_back(item.first);
   }
   if (!AttrUtils::SetListStr(op_desc, ATTR_USER_DESIGNEATE_SHAPE_ORDER, data_name_order)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_USER_DESIGNEATE_SHAPE_ORDER.c_str(),
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(FAILED, "Failed to add user designate shape order attr on case node %s",
            op_desc->GetName().c_str());
     return FAILED;
   }
   if (!AttrUtils::SetBool(op_desc, ATTR_INSERT_BY_MBATCH, true)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_INSERT_BY_MBATCH.c_str(),
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Failed to add insert attr on case node %s", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
@@ -338,16 +355,21 @@ Status MultiBatchClonePass::CreateRootGraph(const ComputeGraphPtr &graph) {
 Status MultiBatchClonePass::CreateIndexDataNode(const ComputeGraphPtr &graph, NodePtr &shape_node) {
   const OpDescPtr data_desc = MakeShared<OpDesc>(kMultiBatchDataNode, DATA);
   if (data_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(OUT_OF_MEMORY, "Create multi-batch data node failed");
     return FAILED;
   }
 
   GeTensorDesc data_tensor(GeShape({static_cast<int64_t>(batch_shapes_[0].size())}), FORMAT_ND, DT_INT32);
   if (data_desc->AddInputDesc(data_tensor) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                      data_desc->GetName().c_str(), data_desc->GetType().c_str());
     GELOGE(FAILED, "Add input desc failed");
     return FAILED;
   }
   if (data_desc->AddOutputDesc(data_tensor) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add ouput desc to op:%s(%s) failed",
+                      data_desc->GetName().c_str(), data_desc->GetType().c_str());
     GELOGE(FAILED, "Add output desc failed");
     return FAILED;
   }
@@ -359,6 +381,8 @@ Status MultiBatchClonePass::CreateIndexDataNode(const ComputeGraphPtr &graph, No
 
   shape_node = graph->AddNode(data_desc);
   if (shape_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      data_desc->GetName().c_str(), data_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(OUT_OF_MEMORY, "Create multi-batch data node failed");
     return OUT_OF_MEMORY;
   }
@@ -376,6 +400,7 @@ Status MultiBatchClonePass::CreateIndexDataNode(const ComputeGraphPtr &graph, No
 Status MultiBatchClonePass::CreateIndexConstNode(const ComputeGraphPtr &graph, NodePtr &node) {
   const OpDescPtr const_desc = MakeShared<OpDesc>(kMultiBatchConstNode, CONSTANT);
   if (const_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(OUT_OF_MEMORY, "Create multi-batch const node failed");
     return FAILED;
   }
@@ -395,17 +420,23 @@ Status MultiBatchClonePass::CreateIndexConstNode(const ComputeGraphPtr &graph, N
   GeTensor tensor(const_tensor);
   (void)tensor.SetData(reinterpret_cast<uint8_t *>(addr.get()), count * sizeof(int32_t));
   if (!AttrUtils::SetTensor(const_desc, ATTR_NAME_WEIGHTS, tensor)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_WEIGHTS.c_str(),
+                      const_desc->GetName().c_str(), const_desc->GetType().c_str());
     GELOGE(OUT_OF_MEMORY, "Failed to init tensor value for const %s", const_desc->GetName().c_str());
     return FAILED;
   }
 
   if (const_desc->AddOutputDesc(const_tensor) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add ouput desc to op:%s(%s) failed",
+                      const_desc->GetName().c_str(), const_desc->GetType().c_str());
     GELOGE(OUT_OF_MEMORY, "Failed to add output desc for const node %s", const_desc->GetName().c_str());
     return FAILED;
   }
 
   node = graph->AddNode(const_desc);
   if (node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      const_desc->GetName().c_str(), const_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(OUT_OF_MEMORY, "Create multi-batch const node failed");
     return OUT_OF_MEMORY;
   }
@@ -438,11 +469,14 @@ Status MultiBatchClonePass::CreateIndexNode(const ComputeGraphPtr &graph) {
 
   const OpDescPtr op_desc = op_builder.Build();
   if (op_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Build op:%s(%s) failed", kMultiBatchMapIndexNode.c_str(), "MapIndex");
     GELOGE(OUT_OF_MEMORY, "Create multi-batch index desc failed");
     return FAILED;
   }
   NodePtr index_node = graph->AddNode(op_desc);
   if (index_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(OUT_OF_MEMORY, "Create multi-batch index node failed");
     return OUT_OF_MEMORY;
   }
@@ -450,16 +484,25 @@ Status MultiBatchClonePass::CreateIndexNode(const ComputeGraphPtr &graph) {
   GE_CHK_STATUS_RET(AddAttrForGetDynamicDims(shape_node_), "Failed to add attr for %s.",
                     shape_node_->GetName().c_str());
   if (GraphUtils::AddEdge(shape_node_->GetOutDataAnchor(0), index_node->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:0) failed",
+                      shape_node_->GetName().c_str(), shape_node_->GetType().c_str(),
+                      index_node->GetName().c_str(), index_node->GetType().c_str());
     GELOGE(FAILED, "Failed to add edge between node:%s to MapIndex:%s", shape_node_->GetName().c_str(),
            index_node->GetName().c_str());
     return FAILED;
   }
   if (GraphUtils::AddEdge(const_node->GetOutDataAnchor(0), index_node->GetInDataAnchor(1)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:1) failed",
+                      const_node->GetName().c_str(), const_node->GetType().c_str(),
+                      index_node->GetName().c_str(), index_node->GetType().c_str());
     GELOGE(FAILED, "Failed to add edge between node:%s to MapIndex:%s", const_node->GetName().c_str(),
            index_node->GetName().c_str());
     return FAILED;
   }
   if (GraphUtils::AddEdge(index_node->GetOutDataAnchor(0), case_node_->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:0) failed",
+                      index_node->GetName().c_str(), index_node->GetType().c_str(),
+                      case_node_->GetName().c_str(), case_node_->GetType().c_str());
     GELOGE(FAILED, "Failed to add edge between MapIndex:%s to Case:%s", index_node->GetName().c_str(),
            case_node_->GetName().c_str());
     return FAILED;
@@ -471,6 +514,7 @@ Status MultiBatchClonePass::CreateIndexNode(const ComputeGraphPtr &graph) {
 Status MultiBatchClonePass::CreateGetDynamicDimsNode(const ComputeGraphPtr &graph, NodePtr &shape_node) {
   const OpDescPtr data_desc = MakeShared<OpDesc>(kMultiBatchGetDynamicDimsNode, GETDYNAMICDIMS);
   if (data_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(OUT_OF_MEMORY, "Create multi-batch get dynamic dims node failed");
     return OUT_OF_MEMORY;
   }
@@ -484,24 +528,35 @@ Status MultiBatchClonePass::CreateGetDynamicDimsNode(const ComputeGraphPtr &grap
       tensor_desc.SetFormat(FORMAT_ND);
       tensor_desc.SetDataType(DT_INT32);
       auto ret = data_desc->AddInputDesc(tensor_desc);
-      GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
-          return FAILED);
+      GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                      REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                                        data_desc->GetName().c_str(), data_desc->GetType().c_str());
+                      GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
+                      return FAILED);
       continue;
     }
     GeTensorDesc tensor_desc(GeShape({static_cast<int32_t>(input_shape_dims)}), FORMAT_ND, DT_INT32);
     auto ret = data_desc->AddInputDesc(tensor_desc);
-    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
-        return FAILED);
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                                      data_desc->GetName().c_str(), data_desc->GetType().c_str());
+                    GELOGE(INTERNAL_ERROR, "Failed to add input desc for created data");
+                    return FAILED);
   }
   GeTensorDesc tensor_desc(GeShape({static_cast<int32_t>(batch_shapes_.at(0).size())}), FORMAT_ND, DT_INT32);
   auto ret = data_desc->AddOutputDesc(tensor_desc);
-  GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to add output desc for created data");
-      return FAILED);
+  GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                  REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
+                                    data_desc->GetName().c_str(), data_desc->GetType().c_str());
+                  GELOGE(INTERNAL_ERROR, "Failed to add output desc for created data");
+                  return FAILED);
 
   (void)AttrUtils::SetBool(data_desc, ATTR_INSERT_BY_MBATCH, true);
 
   shape_node = graph->AddNode(data_desc);
   if (shape_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      data_desc->GetName().c_str(), data_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(OUT_OF_MEMORY, "Create multi-batch dynamic dims node failed");
     return OUT_OF_MEMORY;
   }
@@ -515,6 +570,8 @@ Status MultiBatchClonePass::AddAttrForGetDynamicDims(const NodePtr &shape_node) 
   }
   GELOGD("Add attr for :%s, type is %s:", shape_node->GetName().c_str(), shape_node->GetType().c_str());
   if (!AttrUtils::SetInt(shape_node->GetOpDesc(), ATTR_GETNEXT_SINK_DATA_COUNT, data_count_from_getnext_)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_GETNEXT_SINK_DATA_COUNT.c_str(),
+                      shape_node->GetName().c_str(), shape_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "set ATTR_GETNEXT_SINK_DATA_COUNT failed");
     return INTERNAL_ERROR;
   }
@@ -531,6 +588,8 @@ Status MultiBatchClonePass::AddAttrForGetDynamicDims(const NodePtr &shape_node) 
     }
   }
   if (!AttrUtils::SetListInt(shape_node->GetOpDesc(), ATTR_GETNEXT_SINK_SHAPE_INFO, shape_info)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_GETNEXT_SINK_SHAPE_INFO.c_str(),
+                      shape_node->GetName().c_str(), shape_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "set ATTR_GETNEXT_SINK_SHAPE_INFO failed");
     return INTERNAL_ERROR;
   }
@@ -547,9 +606,13 @@ Status MultiBatchClonePass::LinkGetNextToGetDynamicDims(const NodePtr &getnext_n
            shape_node->GetName().c_str(), input_index);
     auto out_data_anchor =  getnext_node->GetOutDataAnchor(out_index);
     auto ret = GraphUtils::AddEdge(out_data_anchor, shape_node->GetInDataAnchor(input_index));
-    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link getnext %s to getdynamicdims %s",
-                                                 getnext_node->GetName().c_str(), shape_node->GetName().c_str());
-        return INTERNAL_ERROR);
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%zu) and op:%s(%s)(index:%zu) failed",
+                                      getnext_node->GetName().c_str(), getnext_node->GetType().c_str(), out_index,
+                                      shape_node->GetName().c_str(), shape_node->GetType().c_str(), input_index);
+                    GELOGE(INTERNAL_ERROR, "Failed to link getnext %s to getdynamicdims %s",
+                           getnext_node->GetName().c_str(), shape_node->GetName().c_str());
+                    return INTERNAL_ERROR);
   }
   return SUCCESS;
 }
@@ -557,6 +620,8 @@ Status MultiBatchClonePass::LinkGetNextToGetDynamicDims(const NodePtr &getnext_n
 Status MultiBatchClonePass::LinkGetDynamicDimsToNetOutput(const NodePtr &output_node) {
   if (!GetLocalOmgContext().dynamic_node_type.empty()) {
     if (!AttrUtils::SetStr(output_node->GetOpDesc(), ATTR_ALL_GEARS_INFO, GetLocalOmgContext().dynamic_dims)) {
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ALL_GEARS_INFO.c_str(),
+                        output_node->GetName().c_str(), output_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to set all gears info attr on netoutput %s.", output_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -565,15 +630,23 @@ Status MultiBatchClonePass::LinkGetDynamicDimsToNetOutput(const NodePtr &output_
     GELOGD("Start link %s to %s.", shape_node_->GetName().c_str(), output_node->GetName().c_str());
     size_t input_index = output_node->GetAllInDataAnchors().size();
     if (NodeUtils::AppendInputAnchor(output_node, input_index + 1) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Append input anchor to op:%s(%s) failed, size:%zu",
+                        output_node->GetName().c_str(), output_node->GetType().c_str(), input_index + 1);
       GELOGE(INTERNAL_ERROR, "Append input anchor of %s of %zu failed.", output_node->GetName().c_str(), input_index);
       return INTERNAL_ERROR;
     }
     auto ret = GraphUtils::AddEdge(shape_node_->GetOutDataAnchor(kDataOutIndex),
                                    output_node->GetInDataAnchor(input_index));
-    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS, GELOGE(INTERNAL_ERROR, "Failed to link netoutput %s to getdynamicdims %s",
-                                                 output_node->GetName().c_str(), shape_node_->GetName().c_str());
-        return INTERNAL_ERROR);
+    GE_IF_BOOL_EXEC(ret != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%zu) failed",
+                                      shape_node_->GetName().c_str(), shape_node_->GetType().c_str(), kDataOutIndex,
+                                      output_node->GetName().c_str(), output_node->GetType().c_str(), input_index);
+                    GELOGE(INTERNAL_ERROR, "Failed to link netoutput %s to getdynamicdims %s",
+                           output_node->GetName().c_str(), shape_node_->GetName().c_str());
+                    return INTERNAL_ERROR);
     if (!AttrUtils::SetBool(output_node->GetOpDesc(), ATTR_GETNEXT_SINK_DYNMAIC, true)) {
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_GETNEXT_SINK_DYNMAIC.c_str(),
+                        output_node->GetName().c_str(), output_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to set getnext sink dynamic attr on netoutput %s.",
              output_node->GetName().c_str());
       return INTERNAL_ERROR;
@@ -598,17 +671,25 @@ Status MultiBatchClonePass::CreateInputNode(const ComputeGraphPtr &graph) {
     const auto &node = all_data_nodes_[i];
     const OpDescPtr op_desc = AttrUtils::CopyOpDesc(node->GetOpDesc());
     if (op_desc == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Copy op_desc from op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str());
       GELOGE(OUT_OF_MEMORY, "Create multi-batch Data node failed, name: %s", node->GetName().c_str());
       return FAILED;
     }
 
     if (GraphUtils::CopyTensorAttrs(op_desc, node) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Copy tensor attr from op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str());
       return FAILED;
     }
 
     op_desc->SetName(node->GetName());
     const NodePtr &data = graph->AddNode(op_desc);
-    GE_CHK_BOOL_EXEC(data != nullptr, return FAILED, "Add node[%s] to graph failed", op_desc->GetName().c_str());
+    GE_CHK_BOOL_EXEC(data != nullptr,
+                     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                                       op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                                       graph->GetName().c_str());
+                     return FAILED, "Add node[%s] to graph failed", op_desc->GetName().c_str());
     if (IsGetNextType(node)) {
       getnext_node = data;
       input_index_of_getnext = case_input_index;
@@ -617,6 +698,9 @@ Status MultiBatchClonePass::CreateInputNode(const ComputeGraphPtr &graph) {
     } else {
       if (GraphUtils::AddEdge(data->GetOutDataAnchor(0), case_node_->GetInDataAnchor(case_input_index)) !=
           GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%zu) failed",
+                          data->GetName().c_str(), data->GetType().c_str(),
+                          case_node_->GetName().c_str(), case_node_->GetType().c_str(), case_input_index);
         GELOGE(FAILED, "Failed to add edge between Data:%s to Case:%s", data->GetName().c_str(),
                case_node_->GetName().c_str());
         return FAILED;
@@ -651,6 +735,9 @@ Status MultiBatchClonePass::LinkEdgeForGetNext(const NodePtr &getnext_node, size
   for (size_t out_index = 0; out_index < data_count_from_getnext_; ++out_index, ++case_input_index) {
     if (GraphUtils::AddEdge(getnext_node->GetOutDataAnchor(out_index),
                             case_node_->GetInDataAnchor(case_input_index)) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%zu) and op:%s(%s)(index:%zu) failed",
+                        getnext_node->GetName().c_str(), getnext_node->GetType().c_str(), out_index,
+                        case_node_->GetName().c_str(), case_node_->GetType().c_str(), case_input_index);
       GELOGE(FAILED, "Failed to add data edge between %zu Data:%s to %zu Case:%s", out_index,
              getnext_node->GetName().c_str(), case_input_index, case_node_->GetName().c_str());
       return FAILED;
@@ -681,18 +768,29 @@ Status MultiBatchClonePass::CreateConstNode(const ComputeGraphPtr &graph) {
     const auto &node = all_const_nodes_[i];
     const OpDescPtr op_desc = AttrUtils::CopyOpDesc(node->GetOpDesc());
     if (op_desc == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Copy op_desc from op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str());
       GELOGE(OUT_OF_MEMORY, "Create multi-batch Const node failed, name: %s", node->GetName().c_str());
       return FAILED;
     }
 
     op_desc->SetName(node->GetName());
     if (GraphUtils::CopyTensorAttrs(op_desc, node) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Copy tensor attr from op:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str());
       return FAILED;
     }
 
     const NodePtr &data = graph->AddNode(op_desc);
-    GE_CHK_BOOL_EXEC(data != nullptr, return FAILED, "Add node[%s] to graph failed", op_desc->GetName().c_str());
+    GE_CHK_BOOL_EXEC(data != nullptr,
+                     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                                       op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                                       graph->GetName().c_str());
+                     return FAILED, "Add node[%s] to graph failed", op_desc->GetName().c_str());
     if (GraphUtils::AddEdge(data->GetOutDataAnchor(0), case_node_->GetInDataAnchor(arg_index + i)) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%zu) failed",
+                        data->GetName().c_str(), data->GetType().c_str(),
+                        case_node_->GetName().c_str(), case_node_->GetType().c_str(), arg_index + i);
       GELOGE(FAILED, "Failed to add edge between Const:%s to Case:%s", data->GetName().c_str(),
              case_node_->GetName().c_str());
       return FAILED;
@@ -741,22 +839,33 @@ Status MultiBatchClonePass::CreateOutputNode(const ComputeGraphPtr &graph) {
   const auto &output = all_output_nodes_[0];
   const OpDescPtr op_desc = AttrUtils::CopyOpDesc(output->GetOpDesc());
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Copy op_desc from op:%s(%s) failed",
+                      output->GetName().c_str(), output->GetType().c_str());
     GELOGE(OUT_OF_MEMORY, "Create multi-batch output node failed");
     return FAILED;
   }
 
   if (GraphUtils::CopyTensorAttrs(op_desc, output) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Copy tensor attr from op:%s(%s) failed",
+                      output->GetName().c_str(), output->GetType().c_str());
     return FAILED;
   }
 
   op_desc->SetName(output->GetName());
   const NodePtr &node = graph->AddNode(op_desc);
-  GE_CHK_BOOL_EXEC(node != nullptr, return FAILED, "Add node[%s] to graph failed", op_desc->GetName().c_str());
+  GE_CHK_BOOL_EXEC(node != nullptr,
+                   REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                                     graph->GetName().c_str());
+                   return FAILED, "Add node[%s] to graph failed", op_desc->GetName().c_str());
 
   for (size_t i = 0; i < case_node_->GetAllOutDataAnchorsSize(); ++i) {
     const auto it = direct_output_.find(i);
     if (it == direct_output_.end()) {
       if (GraphUtils::AddEdge(case_node_->GetOutDataAnchor(i), node->GetInDataAnchor(i)) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%zu) and op:%s(%s)(index:%zu) failed",
+                          case_node_->GetName().c_str(), case_node_->GetType().c_str(), i,
+                          node->GetName().c_str(), node->GetType().c_str(), i);
         GELOGE(FAILED, "Failed to add edge between Case:%s to NetOutput:%s",
                case_node_->GetName().c_str(), node->GetName().c_str());
         return FAILED;
@@ -764,10 +873,14 @@ Status MultiBatchClonePass::CreateOutputNode(const ComputeGraphPtr &graph) {
     } else {
       const auto data_node = graph->FindNode(it->second);
       if (data_node == nullptr) {
+        REPORT_CALL_ERROR("E19999", "Find node:%s from graph:%s failed", it->second.c_str(), graph->GetName().c_str());
         GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Data node:%s not found", it->second.c_str());
         return GE_GRAPH_GRAPH_NODE_NULL;
       }
       if (GraphUtils::AddEdge(data_node->GetOutDataAnchor(kDataOutIndex), node->GetInDataAnchor(i)) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%zu) failed",
+                          data_node->GetName().c_str(), data_node->GetType().c_str(), kDataOutIndex,
+                          node->GetName().c_str(), node->GetType().c_str(), i);
         GELOGE(FAILED, "Failed to add edge between Data:%s to NetOutput:%s",
                data_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
@@ -857,6 +970,8 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &node, size_t out_an
     int64_t size = 1;
     for (auto dim : data_to_dynamic_info_.at(data_name).at(i)) {
       if (INT64_MAX / dim < size) {
+        REPORT_INNER_ERROR("E19999", "The shape %s size will overflow after multi",
+                           formats::ShapeToString(data_to_dynamic_info_.at(data_name).at(i)).c_str());
         GELOGE(PARAM_INVALID, "The shape %s size overflow",
                formats::ShapeToString(data_to_dynamic_info_.at(data_name).at(i)).c_str());
         return PARAM_INVALID;
@@ -890,11 +1005,15 @@ Status MultiBatchClonePass::SetShapeToData(const std::vector<int64_t> &shapes, c
   }
 
   if (NodeUtils::UpdateOutputShape(*data, out_anchor_index, data_shape) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update ouput desc shape to op:%s(%s) failed, index:%zu",
+                      data->GetName().c_str(), data->GetType().c_str(), out_anchor_index);
     GELOGE(INTERNAL_ERROR, "Failed to update output shape for data %s", data->GetName().c_str());
     return INTERNAL_ERROR;
   }
   if (!IsGetNextType(data)) {
     if (NodeUtils::UpdateInputShape(*data, kDataInIndex, data_shape) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update input desc shape to op:%s(%s) failed, index:%u",
+                      data->GetName().c_str(), data->GetType().c_str(), kDataInIndex);
       GELOGE(INTERNAL_ERROR, "Failed to update input shape for data %s", data->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -920,6 +1039,8 @@ Status MultiBatchClonePass::UpdateShapeOfShapeNode(const NodePtr &node, size_t o
   GeShape output_shape(output_dims);
   output_desc.SetShape(output_shape);
   if (node->GetOpDesc()->UpdateOutputDesc(shape_index, output_desc) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update ouput desc to op:%s(%s) failed, index:%zu",
+                      node->GetName().c_str(), node->GetType().c_str(), shape_index);
     GELOGE(FAILED, "Update output desc fail.");
     return FAILED;
   }
@@ -936,12 +1057,16 @@ Status MultiBatchClonePass::UpdateShapeOfShapeNode(const NodePtr &node, size_t o
 Status MultiBatchClonePass::UpdateSubgraphData(const NodePtr &data, size_t batch_index) {
   int node_index = -1;
   if (!AttrUtils::GetInt(data->GetOpDesc(), ATTR_NAME_INDEX, node_index)) {
+    REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_INDEX.c_str(),
+                      data->GetName().c_str(), data->GetType().c_str());
     GELOGE(FAILED, "Failed to get index from data[%s]", data->GetName().c_str());
     return FAILED;
   }
 
   int parent_index = node_index + 1;
   if (!AttrUtils::SetInt(data->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                      data->GetName().c_str(), data->GetType().c_str());
     GELOGE(FAILED, "Failed to set parent index for node %s", data->GetName().c_str());
     return FAILED;
   }
@@ -958,6 +1083,8 @@ Status MultiBatchClonePass::UpdateSubgraphData(const NodePtr &data, size_t batch
   auto data_name = data->GetName();
   size_t pos = data_name.find(kMultiBatchNodePostfix);
   if (pos == string::npos) {
+    REPORT_INNER_ERROR("E19999", "Cannot find key string [%s] of multi-batch in name of virtual input node:%s(%s)",
+                       kMultiBatchNodePostfix.c_str(), data->GetName().c_str(), data->GetType().c_str());
     GELOGE(FAILED, "Cannot find key string [%s] of multi-batch in name of virtual input node, node name: %s.",
            kMultiBatchNodePostfix.c_str(), data_name.c_str());
     return FAILED;
@@ -980,18 +1107,26 @@ Status MultiBatchClonePass::CreateOriGraph(const ComputeGraphPtr &graph) {
         auto out_data_anchor =  node->GetOutDataAnchor(out_index);
         GE_IF_BOOL_EXEC(out_data_anchor == nullptr, continue);
         NodePtr data_node = CreateDataNode(graph, out_data_anchor, data_index);
-        GE_IF_BOOL_EXEC(data_node == nullptr, GELOGE(INTERNAL_ERROR, "Create %d data node failed.",
-                                                     out_data_anchor->GetIdx()); return INTERNAL_ERROR);
+        GE_IF_BOOL_EXEC(data_node == nullptr,
+                        REPORT_CALL_ERROR("E19999", "Create data node in graph:%s failed", graph->GetName().c_str());
+                        GELOGE(INTERNAL_ERROR, "Create %d data node failed.", out_data_anchor->GetIdx());
+                        return INTERNAL_ERROR);
         for (auto &in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
           GE_IF_BOOL_EXEC(in_anchor == nullptr, continue);
           NodePtr dst_node = in_anchor->GetOwnerNode();
           if (GraphUtils::RemoveEdge(out_data_anchor, in_anchor) != GRAPH_SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:%zu) and op:%s(%s)(index:%d) failed",
+                              node->GetName().c_str(), node->GetType().c_str(), out_index,
+                              dst_node->GetName().c_str(), dst_node->GetType().c_str(), in_anchor->GetIdx());
             GELOGE(INTERNAL_ERROR, "Failed to remove edge between %s to %s", node->GetName().c_str(),
                    dst_node->GetName().c_str());
             return INTERNAL_ERROR;
           }
           if (GraphUtils::AddEdge(data_node->GetOutDataAnchor(0), dst_node->GetInDataAnchor(in_anchor->GetIdx())) !=
               GRAPH_SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%d) failed",
+                              data_node->GetName().c_str(), data_node->GetType().c_str(),
+                              dst_node->GetName().c_str(), dst_node->GetType().c_str(), in_anchor->GetIdx());
             GELOGE(INTERNAL_ERROR, "Failed to add edge between %s to %s", data_node->GetName().c_str(),
                    dst_node->GetName().c_str());
             return INTERNAL_ERROR;
@@ -999,6 +1134,8 @@ Status MultiBatchClonePass::CreateOriGraph(const ComputeGraphPtr &graph) {
         }
       }
       if (graph->RemoveNode(node) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) from graph:%s failed",
+                          node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
         GELOGE(GRAPH_FAILED, "Remove node %s failed!", node->GetName().c_str());
         return GRAPH_FAILED;
       }
@@ -1014,6 +1151,7 @@ NodePtr MultiBatchClonePass::CreateDataNode(const ComputeGraphPtr &graph, const 
   std::string node_name = out_data_anchor->GetOwnerNode()->GetName() + "_" +  std::to_string(out_anchor_index);
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name, DATA);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(OUT_OF_MEMORY, "Create data node failed.");
     return nullptr;
   }
@@ -1021,14 +1159,19 @@ NodePtr MultiBatchClonePass::CreateDataNode(const ComputeGraphPtr &graph, const 
 
   OpDescPtr getnext_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   if (getnext_op_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param out_data_anchor's owner node is nullptr, check invalid");
     GELOGE(OUT_OF_MEMORY, "Op desc of %s is nullptr.", out_data_anchor->GetOwnerNode()->GetName().c_str());
     return nullptr;
   }
   if (op_desc->AddInputDesc(getnext_op_desc->GetOutputDesc(out_anchor_index)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Add %s input desc failed.", op_desc->GetName().c_str());
     return nullptr;
   }
   if (op_desc->AddOutputDesc(getnext_op_desc->GetOutputDesc(out_anchor_index)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
+                      getnext_op_desc->GetName().c_str(), getnext_op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Add %s output desc failed.", op_desc->GetName().c_str());
     return nullptr;
   }
@@ -1052,7 +1195,9 @@ Status MultiBatchClonePass::CreateSubgraphs(const ComputeGraphPtr &graph, const 
     std::vector<NodePtr> output_nodes;
     const std::string postfix = kMultiBatchNodePostfix + std::to_string(i);
     ComputeGraphPtr subgraph = (i == 0) ? branch : GraphUtils::CloneGraph(branch, postfix, input_nodes, output_nodes);
-    GE_IF_BOOL_EXEC(subgraph == nullptr, GELOGE(FAILED, "Create multi-batch case node failed"); return FAILED);
+    GE_IF_BOOL_EXEC(subgraph == nullptr,
+                    REPORT_CALL_ERROR("E19999", "Clone graph from graph:%s failed", branch->GetName().c_str());
+                    GELOGE(FAILED, "Create multi-batch case node failed"); return FAILED);
     subgraph->SetName("Batch_" + std::to_string(i));
     subgraph->SetParentNode(case_node_);
     subgraph->SetParentGraph(graph);
@@ -1095,6 +1240,9 @@ Status MultiBatchClonePass::UpdateSubgraphOutput() {
       GeTensorDescPtr tensor = op_desc->MutableInputDesc(index);
       GE_CHECK_NOTNULL(tensor);
       if (!AttrUtils::SetInt(tensor, ATTR_NAME_PARENT_NODE_INDEX, index)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to input:%zu tensor of op:%s(%s) failed",
+                          ATTR_NAME_PARENT_NODE_INDEX.c_str(), index,
+                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
         GELOGE(FAILED, "Failed to set parent index for node %s", output_node->GetName().c_str());
         return FAILED;
       }
@@ -1138,9 +1286,9 @@ Status MultiBatchClonePass::PruneDirectOutput(const ComputeGraphPtr &graph) {
     return SUCCESS;
   }
 
-  GE_CHK_STATUS_RET(NodeUtils::RemoveOutputAnchor(case_node_, output_num - unused_num), "Remove output failed");
+  GE_CHK_GRAPH_STATUS_RET(NodeUtils::RemoveOutputAnchor(case_node_, output_num - unused_num), "Remove output failed");
   for (const auto &item : all_branch_output_) {
-    GE_CHK_STATUS_RET(NodeUtils::RemoveInputAnchor(item.second, output_num - unused_num), "Remove input failed");
+    GE_CHK_GRAPH_STATUS_RET(NodeUtils::RemoveInputAnchor(item.second, output_num - unused_num), "Remove input failed");
   }
 
   return SUCCESS;

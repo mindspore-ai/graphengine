@@ -51,7 +51,7 @@ bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<in
   if (src_shape.empty()) {
     std::string error = "Failed to transpose, empty src shape";
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_SHAPE_INVALID, error.c_str());
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to transpose, empty src shape");
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Trans][Shape]Failed, empty src shape");
     return false;
   }
   for (auto dim : src_shape) {
@@ -82,12 +82,14 @@ bool IsShapeArgValid(const std::vector<int64_t> &src_shape, const std::vector<in
 bool IsTransposeArgValid(const uint8_t *src, const std::vector<int64_t> &src_shape, DataType src_data_type,
                          const std::vector<int64_t> &perm_arg) {
   if (src == nullptr) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Failed to transpose, the src is null");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Trans][Param]Failed, the src is null");
     return false;
   }
   if (GetSizeByDataType(src_data_type) < 0) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Failed to transpose, the data type %s is not support",
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Trans][Param]Failed, the data type %s is not support",
            TypeUtils::DataTypeToSerialString(src_data_type).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to transpose, the data type %s is not support",
+                      TypeUtils::DataTypeToSerialString(src_data_type).c_str());
     return false;
   }
   return IsShapeArgValid(src_shape, perm_arg);
@@ -173,10 +175,15 @@ Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, Data
                         static_cast<size_t>(data_size));
     if (ret != EOK) {
       GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
-             "Failed to transpose, src shape %s, perm arg %s, dst shape %s, "
+             "[Operate][Memory]Failed to transpose, src shape %s, perm arg %s, dst shape %s, "
              "failed to write to dst offset %ld, current dim offset %s",
              ShapeToString(src_shape).c_str(), ShapeToString(perm_arg).c_str(), ShapeToString(dst_shape).c_str(),
              dst_offset_bytes, ShapeToString(dst_indexes).c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to transpose, src shape %s, perm arg %s, dst shape %s, "
+                        "failed to write to dst offset %ld, current dim offset %s",
+                        ShapeToString(src_shape).c_str(), ShapeToString(perm_arg).c_str(),
+                        ShapeToString(dst_shape).c_str(),
+                        dst_offset_bytes, ShapeToString(dst_indexes).c_str());
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
     AddOne(dst_shape, dst_indexes);

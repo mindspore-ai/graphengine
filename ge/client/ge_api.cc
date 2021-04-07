@@ -71,8 +71,9 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
     if (job_id_iter->second.length() > kMaxStrLen) {
       GELOGE(PARAM_INVALID,"[Check][JobId]Failed,"
              "the job_id [%s] string length: %zu > max string length: %d",
-	     job_id_iter->second.c_str(), job_id_iter->second.length(), kMaxStrLen);
-      REPORT_INPUT_ERROR("E10051", std::vector<std::string>({"id","length"}), std::vector<std::string>({job_id_iter->second, std::to_string(kMaxStrLen)}));
+             job_id_iter->second.c_str(), job_id_iter->second.length(), kMaxStrLen);
+      REPORT_INPUT_ERROR("E10051", std::vector<std::string>({"id","length"}),
+                         std::vector<std::string>({job_id_iter->second, std::to_string(kMaxStrLen)}));
       return FAILED;
     }
   }

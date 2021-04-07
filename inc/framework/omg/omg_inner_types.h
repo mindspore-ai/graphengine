@@ -123,6 +123,7 @@ struct OmgContext {
   bool need_multi_batch = false;
   std::vector<NodePtr> data_nodes;
   std::vector<NodePtr> getnext_nosink_nodes;
+  bool fuzz_compile_flag = false;
 };
 }  // namespace ge
 

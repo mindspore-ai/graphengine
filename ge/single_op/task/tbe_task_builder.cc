@@ -308,92 +308,65 @@ Status TbeTaskBuilder::GetSmDesc(void **sm_desc, const SingleOpModelParam &param
 }
 
 Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc) {
-  size_t arg_size = kernel_def_.args_size();
-  auto args = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[arg_size]);
-  GE_CHECK_NOTNULL(args);
-
-  auto rt_ret = rtMemcpy(args.get(), arg_size, kernel_def_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "[Update][Kernel_def:args] rtMemcpy failed, size = %zu, ret = %d", 
-        arg_size, static_cast<int>(rt_ret));
-    REPORT_INNER_ERROR("E19999", "rtMemcpy failed, size = %zu, ret = %d", arg_size, static_cast<int>(rt_ret));
-    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  auto task_type = static_cast<rtModelTaskType_t>(task_def_.type());
+  bool is_task_all_kernel = (task_type == RT_MODEL_TASK_ALL_KERNEL);
+  size_t arg_size = 0;
+  std::unique_ptr<uint8_t[]> args = nullptr;
+  if (is_task_all_kernel) {
+    GELOGD("SetKernelArgs of %s in branch of RT_MODEL_TASK_ALL_KERNEL.", op_desc->GetName().c_str());
+    arg_size = kernel_def_with_handle_.args_size();
+    args = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[arg_size]);
+    GE_CHECK_NOTNULL(args);
+    GE_CHK_RT_RET(rtMemcpy(args.get(), arg_size, kernel_def_with_handle_.args().data(), arg_size,
+                           RT_MEMCPY_HOST_TO_HOST))
+  } else {
+    GELOGD("SetKernelArgs of %s in branch of RT_MODEL_TASK_KERNEL.", op_desc->GetName().c_str());
+    arg_size = kernel_def_.args_size();
+    args = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[arg_size]);
+    GE_CHECK_NOTNULL(args);
+    GE_CHK_RT_RET(rtMemcpy(args.get(), arg_size, kernel_def_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST))
   }
 
-  const domi::KernelContext &context = kernel_def_.context();
+  const domi::KernelContext &context = task_type == RT_MODEL_TASK_ALL_KERNEL ?
+                                       kernel_def_with_handle_.context() : kernel_def_.context();
   const auto *args_offset_tmp = reinterpret_cast<const uint16_t *>(context.args_offset().data());
   uint16_t offset = *args_offset_tmp;
+
+  // copy args
+  std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
+  void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
+  uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
+  GE_CHK_RT_RET(rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST));
+
+  if (is_task_all_kernel) {
+    task.SetKernelWithHandleArgs(std::move(args), arg_size, kernel_def_with_handle_.block_dim(), op_desc,
+                                 kernel_def_with_handle_);
+  } else {
+    task.SetKernelArgs(std::move(args), arg_size, kernel_def_.block_dim(), op_desc);
+  }
 
   bool is_dynamic = false;
   (void)AttrUtils::GetBool(op_desc_, kAttrSupportDynamicShape, is_dynamic);
   if (is_dynamic) {
     GE_CHK_STATUS_RET_NOLOG(InitTilingInfo(task));
-  } else {
-    // copy args
-    std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
-    void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
-    uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
-    rt_ret = rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "[Update][Kernel_def:args] rtMemcpy addresses failed, ret = %d", static_cast<int>(rt_ret));
-      REPORT_INNER_ERROR("E19999", "rtMemcpy failed, ret = %d", static_cast<int>(rt_ret));
-      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    if (!param.graph_is_dynamic && task.tiling_buffer_ != nullptr) {
+      GELOGD("Need to update run info when graph is static with dynamic node: %s.", op_desc->GetName().c_str());
+      task.UpdateRunInfo();
+      GE_CHK_RT_RET(rtMemcpy(task.tiling_buffer_, task.max_tiling_size_, task.tiling_data_.data(),
+                             task.tiling_data_.size(), RT_MEMCPY_HOST_TO_DEVICE));
     }
   }
-  task.SetKernelArgs(std::move(args), arg_size, kernel_def_.block_dim(), op_desc);
-
-  return SUCCESS;
-}
-
-Status TbeTaskBuilder::SetKernelWithHandleArgs(TbeOpTask &task, const SingleOpModelParam &param,
-                                               const OpDescPtr &op_desc) {
-  size_t arg_size = kernel_def_with_handle_.args_size();
-  auto args = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[arg_size]);
-  GE_CHECK_NOTNULL(args);
-
-  auto rt_ret = rtMemcpy(args.get(), arg_size, kernel_def_with_handle_.args().data(), arg_size, RT_MEMCPY_HOST_TO_HOST);
-  if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "[Update][Kernel_def:args]rtMemcpy failed, size = %zu, ret = %d", 
-        arg_size, static_cast<int>(rt_ret));
-    REPORT_INNER_ERROR("E19999", "rtMemcpy failed, size = %zu, ret = %d", arg_size, static_cast<int>(rt_ret));
-    return rt_ret;
-  }
-
-  const domi::KernelContext &context = kernel_def_with_handle_.context();
-  const auto *args_offset_tmp = reinterpret_cast<const uint16_t *>(context.args_offset().data());
-  uint16_t offset = *args_offset_tmp;
-
-  bool is_dynamic = false;
-  (void)AttrUtils::GetBool(op_desc_, kAttrSupportDynamicShape, is_dynamic);
-  if (is_dynamic) {
-    GE_CHK_STATUS_RET_NOLOG(InitTilingInfo(task));
-  } else {
-    // copy args
-    std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
-    void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
-    uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
-    rt_ret = rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(rt_ret, "[Update][Kernel_def:args] rtMemcpy addresses failed, ret = %d", static_cast<int>(rt_ret));
-      REPORT_INNER_ERROR("E19999", "rtMemcpy failed, ret = %d", static_cast<int>(rt_ret));
-      return rt_ret;
-    }
-  }
-  task.SetKernelWithHandleArgs(std::move(args), arg_size, kernel_def_with_handle_.block_dim(), op_desc,
-                               kernel_def_with_handle_);
-
   return SUCCESS;
 }
 
 Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &param) {
   GELOGD("Build tbe task begin");
-  auto task_type = static_cast<rtModelTaskType_t>(task_def_.type());
-  auto ret = task_type == RT_MODEL_TASK_ALL_KERNEL ? SetKernelWithHandleArgs(task, param, op_desc_) :
-                                                     SetKernelArgs(task, param, op_desc_);
+  auto ret = SetKernelArgs(task, param, op_desc_);
   if (ret != SUCCESS) {
     return ret;
   }
 
+  auto task_type = static_cast<rtModelTaskType_t>(task_def_.type());
   ret = task_type == RT_MODEL_TASK_ALL_KERNEL ? RegisterKernelWithHandle(task, param) :
                                                 RegisterKernel(task, param);
   task.SetHandle(handle_);
@@ -437,7 +410,7 @@ Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
     GELOGD("[%s] Done allocating tiling buffer, size=%ld.", op_desc_->GetName().c_str(), max_size);
   }
 
-  task.EnableDynamicSupport(node_, tiling_buffer, static_cast<size_t>(max_size));
+  task.EnableDynamicSupport(node_, tiling_buffer, static_cast<uint32_t>(max_size));
   return SUCCESS;
 }
 }  // namespace ge

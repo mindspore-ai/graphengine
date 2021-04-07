@@ -53,6 +53,7 @@ constexpr char const *kKeyOriginFormat = "origin_format";
 constexpr char const *kFileSuffix = ".om";
 constexpr char const *kKeyDynamicInput = "dynamic_input";
 constexpr char const *kKeyDynamicOutput = "dynamic_output";
+constexpr char const *kKeyCompileFlag = "compile_flag";
 constexpr int kDumpJsonIndent = 2;
 constexpr int kShapeRangePairSize = 2;
 constexpr int kShapeRangeLow = 0;
@@ -265,7 +266,10 @@ void from_json(const Json &j, SingleOpAttr &attr) {
 }
 
 void from_json(const Json &j, SingleOpDesc &desc) {
-  desc.op = j.at(kKeyOp).get<string>();
+  auto op = j.find(kKeyOp);
+  if (op != j.end()) {
+    desc.op = j.at(kKeyOp).get<string>();
+  }
 
   auto input_desc = j.find(kKeyInputDesc);
   if (input_desc != j.end()) {
@@ -280,6 +284,11 @@ void from_json(const Json &j, SingleOpDesc &desc) {
   auto attr_field = j.find(kKeyAttr);
   if (attr_field != j.end()) {
     desc.attrs = attr_field->get<vector<SingleOpAttr>>();
+  }
+
+  auto compile_flag = j.find(kKeyCompileFlag);
+  if (compile_flag != j.end()) {
+    desc.compile_flag = compile_flag->get<int32_t>();
   }
 }
 
@@ -583,10 +592,16 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
       return ret;
     }
 
+    int32_t compile_flag = 0;
     for (const Json &single_op_json : single_op_list_json) {
       SingleOpDesc single_op_desc;
       GELOGI("Parsing op[%d], jsonStr = %s", index, single_op_json.dump(kDumpJsonIndent).c_str());
       single_op_desc = single_op_json;
+      GELOGD("Compile flag is %d.", single_op_desc.compile_flag);
+      if (single_op_desc.compile_flag == 1) {
+        compile_flag = single_op_desc.compile_flag;
+        continue;
+      }
       if (UpdateDynamicTensorName(single_op_desc.input_desc) != SUCCESS) {
         GELOGE(FAILED, "[Update][DynamicTensorName] failed for invalid input param!");
         REPORT_CALL_ERROR("E19999", "UpdateDynamicTensorName failed for invalid input param.");
@@ -604,6 +619,7 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
       if (ret != SUCCESS) {
         return ret;
       }
+      param.compile_flag = compile_flag;
 
       op_list.emplace_back(param);
       GELOGI("Parse the index[%d] of op success", index);

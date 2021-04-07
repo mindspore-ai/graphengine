@@ -30,6 +30,7 @@
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
 #include "init/gelib.h"
+#include "register/op_tiling.h"
 
 namespace ge {
 class StreamResource;
@@ -39,8 +40,7 @@ class OpTask {
   OpTask() = default;
   virtual ~OpTask() = default;
   virtual Status LaunchKernel(rtStream_t stream) = 0;
-  virtual Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc,
-                               const vector<GeTensorDesc> &output_desc);
+  virtual Status UpdateRunInfo();
   virtual Status UpdateArgTable(const SingleOpModelParam &param);
   void SetModelArgs(std::string model_name, uint32_t model_id);
   Status GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id);
@@ -81,22 +81,23 @@ class TbeOpTask : public OpTask {
   void SetKernelWithHandleArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
                                const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
 
-  Status UpdateRunInfo(const vector<GeTensorDesc> &input_desc,
-                       const vector<GeTensorDesc> &output_desc) override;
+  Status UpdateRunInfo() override;
 
   const void *GetArgs() const;
   size_t GetArgSize() const;
   const std::string &GetStubName() const;
-  void EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, size_t max_tiling_size);
+  Status EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size);
   const std::string &GetTaskType() const override;
   void SetHandle(void *handle);
 
  private:
   friend class SingleOpModel;
+  friend class TbeTaskBuilder;
   static Status UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc &dst_tensor);
   Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
                            const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
+  Status DoLaunchKernel(rtStream_t stream);
 
   const void *stub_func_ = nullptr;
   std::unique_ptr<uint8_t[]> args_;
@@ -108,6 +109,7 @@ class TbeOpTask : public OpTask {
   void *tiling_buffer_ = nullptr;
   uint32_t max_tiling_size_ = 0;
   std::string tiling_data_;
+  std::vector<int64_t> run_info_workspaces_;
   std::vector<void *> workspaces_;
   NodePtr node_;
 

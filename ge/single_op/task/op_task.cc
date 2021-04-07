@@ -137,7 +137,7 @@ Status OpTask::GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id
   return SUCCESS;
 }
 
-Status OpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
+Status OpTask::UpdateRunInfo() {
   return UNSUPPORTED;
 }
 
@@ -200,14 +200,14 @@ void TbeOpTask::SetHandle(void *handle) {
 
 Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   GELOGD("To invoke rtKernelLaunch. task = %s, block_dim = %u", this->stub_name_.c_str(), block_dim_);
-  auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
-  auto ret = rtKernelLaunch(stub_func_, block_dim_, args_.get(), static_cast<uint32_t>(arg_size_), sm_desc, stream);
+  auto ret = DoLaunchKernel(stream);
+
   int retry_times = 0;
   while (ret != RT_ERROR_NONE && retry_times < kLaunchRetryTimes) {
     retry_times++;
     GELOGW("Retry after %d ms, retry_times: %d", kSleepTime, retry_times);
     std::this_thread::sleep_for(std::chrono::milliseconds(kSleepTime));
-    ret = rtKernelLaunch(stub_func_, block_dim_, args_.get(), arg_size_, sm_desc, stream);
+    ret = DoLaunchKernel(stream);
   }
 
   if (ret != RT_ERROR_NONE) {
@@ -220,8 +220,7 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   return SUCCESS;
 }
 
-Status TbeOpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const vector<GeTensorDesc> &output_desc) {
-  GE_CHK_STATUS_RET_NOLOG(UpdateNodeByShape(input_desc, output_desc));
+Status TbeOpTask::UpdateRunInfo() {
   // invoke OpParaCalculate
   GELOGD("Start to invoke OpParaCalculate.");
   optiling::OpRunInfo run_info;
@@ -235,10 +234,9 @@ Status TbeOpTask::UpdateRunInfo(const vector<GeTensorDesc> &input_desc, const ve
   block_dim_ = run_info.block_dim;
   tiling_data_ = run_info.tiling_data.str();
   tiling_key_ = run_info.tiling_key;
+  run_info_workspaces_ = run_info.workspaces;
   GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu, tiling_key = %u", block_dim_,
          tiling_data_.size(), tiling_key_);
-
-  GE_CHK_STATUS_RET(AllocateWorkspaces(run_info.workspaces), "[Allocate][Workspaces] failed.");
   return SUCCESS;
 }
 
@@ -288,14 +286,33 @@ Status TbeOpTask::UpdateNodeByShape(const vector<GeTensorDesc> &input_desc, cons
   return SUCCESS;
 }
 
-void TbeOpTask::EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, size_t max_tiling_size) {
+Status TbeOpTask::EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size) {
+  if (tiling_buffer != nullptr) {
+    uintptr_t *arg_base = nullptr;
+    size_t arg_num = 0;
+    GetIoAddr(arg_base, arg_num);
+    GE_CHECK_NOTNULL(node);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    uint32_t inputs_num = node->GetOpDesc()->GetInputsSize();
+    uint32_t outputs_num = node->GetOpDesc()->GetOutputsSize();
+    uint32_t workspace_nums = node->GetOpDesc()->GetWorkspace().size();
+    uint32_t tiling_index = inputs_num + outputs_num + workspace_nums;
+    if (arg_num == 0 || arg_num < tiling_index) {
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Size]Tiling index %u, arg number %zu is invalid.",
+             tiling_index, arg_num);
+      return ACL_ERROR_GE_INTERNAL_ERROR;
+    }
+    arg_base[tiling_index] = reinterpret_cast<uintptr_t>(tiling_buffer);
+  }
   node_ = node;
   tiling_buffer_ = tiling_buffer;
   max_tiling_size_ = max_tiling_size;
+  return SUCCESS;
 }
 
 Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
   static const std::string kPurpose("malloc workspace memory for dynamic op.");
+  workspaces_.clear();
   if (workspace_sizes.empty()) {
     GELOGD("No need to allocate workspace.");
     return SUCCESS;
@@ -333,8 +350,10 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
                                vector<GeTensorDesc> &output_desc,
                                vector<DataBuffer> &output_buffers,
                                rtStream_t stream) {
-  GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo(input_desc, output_desc));
   GELOGD("[%s] Start to launch kernel", node_->GetName().c_str());
+  GE_CHK_STATUS_RET_NOLOG(UpdateNodeByShape(input_desc, output_desc));
+  GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo());
+  GE_CHK_STATUS_RET(AllocateWorkspaces(run_info_workspaces_), "[Allocate][Workspaces] failed.");
   std::vector<void *> args;
   for (auto &buffer : input_buffers) {
     args.emplace_back(buffer.data);
@@ -354,6 +373,15 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
     args.emplace_back(tiling_buffer_);
   }
 
+  GELOGD("Dst size is %zu, src size is %zu.", arg_size_, args.size() * sizeof(void *));
+  // node with workspace: build can not get size of workspace, need to update arg_size_ when execute
+  if (arg_size_ < (args.size() * sizeof(void *))) {
+    size_t temp_size = args.size() * sizeof(void *);
+    GELOGD("Need to reset size of args_ from %zu to %zu.", arg_size_, temp_size);
+    args_.reset(new(std::nothrow) uint8_t[temp_size]());
+    GE_CHECK_NOTNULL(args_);
+    arg_size_ = temp_size;
+  }
   if (memcpy_s(args_.get(), arg_size_, args.data(), args.size() * sizeof(void *)) != EOK) {
     GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][KernelArgs] failed for [%s].", node_->GetName().c_str());
     REPORT_INNER_ERROR("E19999", "update kernel args failed for %s.", node_->GetName().c_str());
@@ -361,17 +389,22 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   }
 
   GELOGD("[%s] Start to invoke rtKernelLaunch", node_->GetName().c_str());
+  GE_CHK_STATUS_RET(DoLaunchKernel(stream), "Failed to do launch kernel.");
+
+  return SUCCESS;
+}
+
+Status TbeOpTask::DoLaunchKernel(rtStream_t stream) {
+  auto *sm_desc = reinterpret_cast<rtSmDesc_t *>(sm_desc_);
   if (handle_ == nullptr) {
-    GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), arg_size_, nullptr, stream));
-    GELOGD("[%s] Done invoking rtKernelLaunch successfully", node_->GetName().c_str());
+    GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), static_cast<uint32_t>(arg_size_),
+                                 sm_desc, stream));
   } else {
     std::string dev_func = original_kernel_key_ + "_" + std::to_string(tiling_key_);
     std::string kernel_info = node_info_ + "/" + std::to_string(tiling_key_);
-    GE_CHK_RT_RET(rtKernelLaunchWithHandle(handle_, dev_func.c_str(), block_dim_, args_.get(), arg_size_, nullptr,
-                                           stream, kernel_info.c_str()));
-    GELOGD("[%s] Done invoking rtKernelLaunchWithHandle successfully", node_->GetName().c_str());
+    GE_CHK_RT_RET(rtKernelLaunchWithHandle(handle_, dev_func.c_str(), block_dim_, args_.get(),
+                                           static_cast<uint32_t>(arg_size_), sm_desc, stream, kernel_info.c_str()));
   }
-
   return SUCCESS;
 }
 

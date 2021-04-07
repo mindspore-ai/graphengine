@@ -54,6 +54,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
                       "[%s] check input node shape by shape range failed.",
                       root_graph_item->GetName().c_str());
   }
+
   if (context_.global_step != nullptr) {
     GE_CHK_RT_RET(rtMemcpyAsync(context_.global_step, sizeof(uint64_t), &context_.iteration,
                                 sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE_EX, context_.stream));
@@ -100,8 +101,10 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 1, stream_, device_id));
   }
 
-  HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
-  RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
+  if (!model_->IsSingleOp()) {
+    HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
+  }
 
   args.outputs.clear();
   HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");

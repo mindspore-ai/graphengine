@@ -55,9 +55,17 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
       GE_CHECK_NOTNULL(dst_node->GetOpDesc());
       auto dst_tensor = dst_node->GetOpDesc()->GetInputDescPtr(dst_anchor->GetIdx());
       GE_CHECK_NOTNULL(dst_tensor);
-      bool is_need_insert_reshape = src_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
-                                    dst_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
-                                    src_tensor->GetShape().GetDims() != dst_tensor->GetShape().GetDims();
+      bool is_dynamic = false;
+      const auto &src_tensor_dims = src_tensor->GetShape().GetDims();
+      const auto &dst_tensor_dims = dst_tensor->GetShape().GetDims();
+      if ((std::any_of(src_tensor_dims.begin(), src_tensor_dims.end(), [](int64_t val) { return val < 0 ; }))
+          || (std::any_of(dst_tensor_dims.begin(), dst_tensor_dims.end(), [](int64_t val) { return val < 0; }))) {
+        GELOGD("No need to insert reshape node between %s nad %s.", node->GetName().c_str(),
+               dst_node->GetName().c_str());
+        is_dynamic = true;
+      }
+      bool is_need_insert_reshape = src_tensor_dims != dst_tensor_dims &&
+                                    !is_dynamic;
       if (is_need_insert_reshape) {
         auto reshape = CreateReshape(src_tensor, dst_tensor, node->GetOwnerComputeGraph());
         GE_CHECK_NOTNULL(reshape);

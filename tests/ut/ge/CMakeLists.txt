@@ -278,6 +278,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/buffer_pool_memory_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/mark_node_unknown_shape_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_utils.cc"
@@ -706,6 +707,8 @@ set(PASS_TEST_FILES
     "graph/passes/transpose_transdata_pass_unittest.cc"
     "graph/passes/parallel_group_pass_unittest.cc"
     "graph/passes/buffer_pool_memory_pass_unittest.cc"
+	"graph/passes/mark_node_unknown_shape_pass_unittest.cc"
+	"graph/passes/reshape_recovery_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -797,6 +800,7 @@ set(SINGLE_OP_TEST_FILES
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
     "single_op/single_op_task_unittest.cc"
+	"single_op/single_op_unittest.cc"
 )
 
 set(PROFILING_MNG_TEST_FILES

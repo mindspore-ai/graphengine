@@ -216,6 +216,10 @@ DEFINE_string(op_bank_path, "", "Optional; op bank path");
 
 DEFINE_string(display_model_info, "0", "Optional; display model info");
 
+DEFINE_string(performance_mode, "", "Optional; express high compile performance or high execute performance."
+                                     "normal: no need to compile, used saved .o files directly;"
+                                     "high: need to recompile, high execute performance mode.");
+
 class GFlagUtils {
  public:
   /**
@@ -330,7 +334,8 @@ class GFlagUtils {
         "Default value: $HOME/atc_data\n"
         "  --op_compiler_cache_mode   Set the operator compilation cache mode."
         "Options are disable(default), enable and force(force to refresh the cache)\n"
-        "  --display_model_info     enable for display model info; 0(default): close display, 1: open display");
+        "  --display_model_info     enable for display model info; 0(default): close display, 1: open display.\n"
+        "  --performance_mode       Set high performance mode of compile or execute.");
 
     gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
     // Using gflags to analyze input parameters
@@ -1078,6 +1083,7 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::OP_COMPILER_CACHE_MODE, FLAGS_op_compiler_cache_mode);
   options.emplace(ge::MDL_BANK_PATH_FLAG, FLAGS_mdl_bank_path);
   options.emplace(ge::OP_BANK_PATH_FLAG, FLAGS_op_bank_path);
+  options.emplace(ge::PERFORMANCE_MODE, FLAGS_performance_mode);
 }
 
 domi::Status GenerateSingleOp(const std::string& json_file_path) {
@@ -1124,7 +1130,7 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
       output_path = FLAGS_output + "/";
     }
     output_path += param.file_name;
-    ret = generator.BuildSingleOpModel(param.op_desc, param.inputs, param.outputs, output_path);
+    ret = generator.BuildSingleOpModel(param.op_desc, param.inputs, param.outputs, output_path, param.compile_flag);
     if (ret != SUCCESS) {
       DOMI_LOGE("Compile op failed. ge ret = %u, op index = %d", ret, index);
       ret = domi::FAILED;
@@ -1229,6 +1235,8 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::OP_BANK_PATH_FLAG), FLAGS_op_bank_path));
 
   options.insert(std::pair<string, string>(string(ge::DISPLAY_MODEL_INFO), FLAGS_display_model_info));
+
+  options.insert(std::pair<string, string>(string(ge::PERFORMANCE_MODE), FLAGS_performance_mode));
   // set enable scope fusion passes
   SetEnableScopeFusionPasses(FLAGS_enable_scope_fusion_passes);
   // print atc option map

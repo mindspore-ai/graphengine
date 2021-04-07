@@ -114,6 +114,8 @@ class AiCoreOpTask {
   uint32_t tiling_key_ = 0;
   void *handle_ = nullptr;
   bool is_dynamic_ = false;
+  uint64_t log_id_ = 0;
+  std::string log_name_;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {

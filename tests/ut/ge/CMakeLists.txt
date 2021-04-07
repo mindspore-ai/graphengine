@@ -606,6 +606,7 @@ set(PASS_TEST_FILES
     "graph/passes/variable_prepare_pass_unittest.cc"
     "graph/passes/variable_ref_delete_pass_unittest.cc"
     "graph/passes/dimension_adjust_pass_unittest.cc"
+    "graph/passes/atomic_addr_clean_pass_unittest.cc"
     "graph/passes/pass_utils_unittest.cc"
     "graph/passes/net_output_pass_unittest.cc"
     "graph/passes/no_use_reshape_remove_pass_unittest.cc"

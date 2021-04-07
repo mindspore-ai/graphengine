@@ -180,35 +180,35 @@ Status OpsKernelManager::ParsePluginOptions(const map<string, string> &options, 
       } else if (flag == 1) {
         enable_flag = true;
       } else {
-        GELOGE(GE_GRAPH_OPTIONS_INVALID, 
-            "[Parse][PluginOptions]option_key:%s, its value %s is invalid, it must be 0 or 1.",
-            plugin_name.c_str(), iter->second.c_str());
+        GELOGE(GE_GRAPH_OPTIONS_INVALID,
+               "[Parse][PluginOptions]option_key:%s, its value %s is invalid, it must be 0 or 1.",
+               plugin_name.c_str(), iter->second.c_str());
         REPORT_INNER_ERROR("E19999", "ParsePluginOptions failed, option_key:%s, "
-            "its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(), iter->second.c_str());
+                           "its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(), iter->second.c_str());
         return GE_GRAPH_OPTIONS_INVALID;
       }
     } catch (std::invalid_argument &) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, 
-      	  "[Parse][PluginOptions] failed, option_key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
-          iter->second.c_str());
-      REPORT_INNER_ERROR("E19999", 
-      	  "ParsePluginOptions failed, option_key:ge.feFlag, its value %s is invalid_argument, it must be 0 or 1.",
-          iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][PluginOptions] failed, option_key:ge.feFlag,"
+             "its value %s is invalid_argument, it must be 0 or 1.",
+             iter->second.c_str());
+      REPORT_INNER_ERROR("E19999", "ParsePluginOptions failed, option_key:ge.feFlag,"
+                         "its value %s is invalid_argument, it must be 0 or 1.",
+                         iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     } catch (std::out_of_range &) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, 
-      	  "[Parse][PluginOptions]failed, option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
-          iter->second.c_str());
-      REPORT_INNER_ERROR("E19999", 
-      	  "ParsePluginOptions failed, option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
-          iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID,
+             "[Parse][PluginOptions]failed, option_key:ge.feFlag, its value %s is out of range, it must be 0 or 1.",
+             iter->second.c_str());
+      REPORT_INNER_ERROR("E19999", "ParsePluginOptions failed, option_key:ge.feFlag,"
+                         "its value %s is out of range, it must be 0 or 1.",
+                         iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     } catch (...) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, 
-          "[Parse][PluginOptions]option_key:%s, its value %s is invalid, it must be 0 or 1.",
-          plugin_name.c_str(), iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID,
+             "[Parse][PluginOptions]option_key:%s, its value %s is invalid, it must be 0 or 1.",
+             plugin_name.c_str(), iter->second.c_str());
       REPORT_INNER_ERROR("E19999", "ParsePluginOptions failed, option_key:%s, "
-          "its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(), iter->second.c_str());
+                         "its value %s is invalid, it must be 0 or 1.", plugin_name.c_str(), iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
   } else {
@@ -243,8 +243,8 @@ Status OpsKernelManager::InitOpKernelInfoStores(const map<string, string> &optio
     GELOGI("OpKernelInfoStore name: %s.", (it.first).c_str());
     Status ret = it.second->Initialize(options);
     if (ret != SUCCESS) {
-      GELOGE(GE_OPS_KERNEL_STORE_INIT_FAILED, 
-          "[Init][OpKernelLib]OpKernelInfoStore: %s initialize failed.", (it.first).c_str());
+      GELOGE(GE_OPS_KERNEL_STORE_INIT_FAILED,
+             "[Init][OpKernelLib]OpKernelInfoStore: %s initialize failed.", (it.first).c_str());
       REPORT_CALL_ERROR("E19999", "OpKernelInfoStore: %s initialize failed.", (it.first).c_str());
       return GE_OPS_KERNEL_STORE_INIT_FAILED;
     }

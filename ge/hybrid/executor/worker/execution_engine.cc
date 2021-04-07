@@ -106,9 +106,9 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
           node_item.NodeName().c_str(), output_idx, tensor_size,
           output_tensor->DebugString().c_str());
       REPORT_INNER_ERROR("E19999",
-          "[%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s when %s.",
-          node_item.NodeName().c_str(), output_idx, tensor_size,
-          output_tensor->DebugString().c_str(), __FUNCTION__);
+                         "[%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s.",
+                         node_item.NodeName().c_str(), output_idx, tensor_size,
+                         output_tensor->DebugString().c_str());
       return INTERNAL_ERROR;
     }
 
@@ -176,7 +176,7 @@ Status NodeDoneCallback::ProfilingReport() {
   auto node = context_->GetNodeItem().node;
   if (node == nullptr) {
     GELOGE(PARAM_INVALID, "[Get][Node] value is nullptr.");
-    REPORT_INNER_ERROR("E19999", "Get node failed, when %s.", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "TaskContext GetNodeItem value is nullptr.");
     return PARAM_INVALID;
   }
 
@@ -194,7 +194,7 @@ Status NodeDoneCallback::ProfilingReport() {
   auto profiling_ret = GetTaskDescInfo(node, model, task_desc_info);
   if (profiling_ret != RT_ERROR_NONE) {
     GELOGE(profiling_ret, "[Get][TaskDescInfo] of node:%s failed.", node->GetName().c_str());
-    REPORT_CALL_ERROR("E19999", "GetTaskDescInfo of node:%s failed, when %s.", node->GetName().c_str(), __FUNCTION__);
+    REPORT_CALL_ERROR("E19999", "GetTaskDescInfo of node:%s failed.", node->GetName().c_str());
     return profiling_ret;
   }
 
@@ -207,7 +207,7 @@ Status NodeDoneCallback::DumpDynamicNode() {
   auto node = context_->GetNodeItem().node;
   if (node == nullptr) {
     GELOGE(PARAM_INVALID, "[Get][Node] value is nullptr.");
-    REPORT_INNER_ERROR("E19999", "get node is nullptr when %s.", __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "get node value is nullptr.");
     return PARAM_INVALID;
   }
   auto op_desc = node->GetOpDesc();
@@ -217,7 +217,7 @@ Status NodeDoneCallback::DumpDynamicNode() {
   std::string dynamic_model_name = model->GetModelName();
   std::string dynamic_om_name = model->GetOmName();
   uint32_t model_id = model->GetModelId();
-  if(!context_->GetDumpProperties().IsLayerNeedDump(dynamic_model_name, dynamic_om_name, op_desc->GetName())) {
+  if (!context_->GetDumpProperties().IsLayerNeedDump(dynamic_model_name, dynamic_om_name, op_desc->GetName())) {
     GELOGI("[%s] is not in dump list, no need dump", op_desc->GetName().c_str());
     return SUCCESS;
   }
@@ -260,7 +260,7 @@ Status NodeDoneCallback::DumpDynamicNode() {
   auto rt_ret = rtStreamSynchronize(stream);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "[Call][rtStreamSynchronize] failed, ret = %d.", rt_ret);
-    REPORT_CALL_ERROR("E19999", "call rtStreamSynchronize failed when %s, ret = %d.", __FUNCTION__, rt_ret);
+    REPORT_CALL_ERROR("E19999", "call rtStreamSynchronize failed, ret = %d.", rt_ret);
     return rt_ret;
   }
   return SUCCESS;
@@ -279,8 +279,7 @@ Status NodeDoneCallback::OnNodeDone() {
   }
 
   if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
-    GE_CHK_STATUS_RET(ProfilingReport(), "[Report][Profiling] of node[%s] failed.",
-        node_item.NodeName().c_str());
+    GE_CHK_STATUS_RET(ProfilingReport(), "[Report][Profiling] of node[%s] failed.", node_item.NodeName().c_str());
   }
 
   // release workspace
@@ -302,8 +301,8 @@ Status NodeDoneCallback::OnNodeDone() {
       (void) LogOutputs(node_item, *context_);
     }
 
-    GE_CHK_STATUS_RET(context_->PropagateOutputs(),
-        "[Propagate][Outputs] of [%s] failed.", node_item.NodeName().c_str());
+    GE_CHK_STATUS_RET(context_->PropagateOutputs(), "[Propagate][Outputs] of [%s] failed.",
+                      node_item.NodeName().c_str());
 
     RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[PropagateOutputs] End");
   }
@@ -344,7 +343,7 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
     GELOGE(INTERNAL_ERROR, "[Get][KernelTask] of [%s] is null.", node_state.GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "GetKernelTask of %s is null when %s.", node_state.GetName().c_str(), __FUNCTION__);
+    REPORT_INNER_ERROR("E19999", "GetKernelTask of %s is null.", node_state.GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -358,8 +357,8 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
   auto executor = node_item.node_executor;
   GE_CHECK_NOTNULL(executor);
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PrepareTask] Start");
-  GE_CHK_STATUS_RET(executor->PrepareTask(*task, task_context),
-      "[Prepare][Task] for [%s] failed.", node_state.GetName().c_str());
+  GE_CHK_STATUS_RET(executor->PrepareTask(*task, task_context), "[Prepare][Task] for [%s] failed.",
+                    node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PrepareTask] End");
   GELOGD("[%s] Done task preparation successfully.", node_state.GetName().c_str());
 
@@ -371,7 +370,7 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
   }
 
   GE_CHK_STATUS_RET(ValidateInputTensors(node_state, task_context), "[Validate][InputTensors] for %s failed.",
-      node_state.GetName().c_str());
+                    node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ValidateInputTensors] End");
 
   if (context.profiling_level > 0) {
@@ -425,10 +424,10 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
                input_tensor->GetSize());
       } else {
         GELOGE(INTERNAL_ERROR,
-            "[Check][Size] for [%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu.",
-            task_context.GetNodeName(), i, expected_size, input_tensor->GetSize());
-        REPORT_INNER_ERROR("E19999", "[%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu when %s.",
-            task_context.GetNodeName(), i, expected_size, input_tensor->GetSize(), __FUNCTION__);
+               "[Check][Size] for [%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu.",
+               task_context.GetNodeName(), i, expected_size, input_tensor->GetSize());
+        REPORT_INNER_ERROR("E19999", "[%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu.",
+                           task_context.GetNodeName(), i, expected_size, input_tensor->GetSize());
         return INTERNAL_ERROR;
       }
     }
@@ -441,8 +440,8 @@ Status ExecutionEngine::PropagateOutputs(const NodeItem &node_item,
                                          TaskContext &task_context,
                                          GraphExecutionContext &context) {
   if (node_item.shape_inference_type != DEPEND_COMPUTE) {
-    GE_CHK_STATUS_RET(task_context.PropagateOutputs(),
-        "[Propagate][Outputs] for [%s] failed.", node_item.NodeName().c_str());
+    GE_CHK_STATUS_RET(task_context.PropagateOutputs(), "[Propagate][Outputs] for [%s] failed.",
+                      node_item.NodeName().c_str());
     RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PropagateOutputs] End");
     GELOGD("[%s] Done propagating outputs successfully.", node_item.NodeName().c_str());
   }

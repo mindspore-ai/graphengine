@@ -173,11 +173,11 @@ Status SingleOpModel::ParseInputNode(const OpDescPtr &op_desc) {
   vector<int64_t> offsets = op_desc->GetOutputOffset();
   if (offsets.size() != kDataOutputNum) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-        "[Parse][InputNode]Data op should have only one output, but got %zu, op_name:%s, op_type:%s.",
-         op_desc->GetOutputOffset().size(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    REPORT_INNER_ERROR("E19999", 
-        "ParseInputNode fail for Data op should have only one output, but got %zu, op_name:%s, op_type:%s.", 
-        op_desc->GetOutputOffset().size(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
+           "[Parse][InputNode]Data op should have only one output, but got %zu, op_name:%s, op_type:%s.",
+           op_desc->GetOutputOffset().size(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
+    REPORT_INNER_ERROR("E19999", "ParseInputNode fail for Data op should have only one output, but got %zu,"
+                       "op_name:%s, op_type:%s.", op_desc->GetOutputOffset().size(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 

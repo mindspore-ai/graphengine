@@ -108,10 +108,10 @@ Status CsaInteract::WriteJobState(JobState job_state, JobSubState job_sub_state,
 
     content = content_json.dump();
   } catch (const nlohmann::json::exception &e) {
-    GELOGE(INTERNAL_ERROR, "[Create][JsonObject] exception:%s job_state:%u job_sub_state:%u.", 
-        e.what(), job_state,job_sub_state);
+    GELOGE(INTERNAL_ERROR, "[Create][JsonObject] exception:%s job_state:%u job_sub_state:%u.",
+           e.what(), job_state, job_sub_state);
     REPORT_INNER_ERROR("E19999", "Create json object failed. exception:%s job_state:%u job_sub_state:%u.",
-        e.what(), job_state,job_sub_state);
+                       e.what(), job_state, job_sub_state);
     return INTERNAL_ERROR;
   }
 

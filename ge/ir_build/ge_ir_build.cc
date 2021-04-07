@@ -562,7 +562,8 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
     if (iter != ge::input_format_str_to_geformat.end()) {
       omg_context_.format = iter->second;
     } else {
-      GELOGE(GRAPH_PARAM_INVALID, "[Check][Param:InputForamt] %s not support , expect ND/NCHW/NHWC/CHWN/NC1HWC0/NHWC1C0.",
+      GELOGE(GRAPH_PARAM_INVALID,
+             "[Check][Param:InputForamt] %s not support , expect ND/NCHW/NHWC/CHWN/NC1HWC0/NHWC1C0.",
              input_format.c_str());
       return GRAPH_PARAM_INVALID;
     }
@@ -573,7 +574,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
   }
 
   if (!ParseInputShape(input_shape, omg_context_.input_dims, omg_context_.user_input_dims, is_dynamic_input)) {
-    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:ImputShape] Failed, shape: %s", input_shape.c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:input_shape] Failed, shape: %s", input_shape.c_str());
     return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;

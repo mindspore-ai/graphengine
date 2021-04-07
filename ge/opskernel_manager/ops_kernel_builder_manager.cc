@@ -101,7 +101,7 @@ OpsKernelBuilderPtr OpsKernelBuilderManager::GetOpsKernelBuilder(const string &n
 }
 
 Status OpsKernelBuilderManager::GetLibPaths(const std::map<std::string,
-      std::string> &options, std::string &lib_paths) {
+                                            std::string> &options, std::string &lib_paths) {
   GELOGD("Start to execute GetLibPaths");
   std::string path_base = PluginManager::GetPath();
   std::string so_path = "plugin/opskernel/";
@@ -129,11 +129,11 @@ Status OpsKernelBuilderManager::CalcOpRunningParam(Node &node) const {
   const std::string &lib_name = op_desc->GetOpKernelLibName();
   auto it = ops_kernel_builders_.find(lib_name);
   if (it == ops_kernel_builders_.end()) {
-    GELOGE(INTERNAL_ERROR,"[Find][LibName] fail for libName = %s, node = %s.", 
-        lib_name.c_str(), op_desc->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", 
-        "find LibName for CalcOpRunningParam failed, libName = %s, node = %s not exist.",
-        lib_name.c_str(), op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR,"[Find][LibName] fail for libName = %s, node = %s.",
+           lib_name.c_str(), op_desc->GetName().c_str());
+    REPORT_INNER_ERROR("E19999",
+                       "find LibName for CalcOpRunningParam failed, libName = %s, node = %s not exist.",
+                       lib_name.c_str(), op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -152,9 +152,10 @@ Status OpsKernelBuilderManager::GenerateTask(const Node &node,
   const std::string &lib_name = op_desc->GetOpKernelLibName();
   auto it = ops_kernel_builders_.find(lib_name);
   if (it == ops_kernel_builders_.end()) {
-    GELOGE(INTERNAL_ERROR, "[Find][LibName]fail for libName = %s, node:%s", lib_name.c_str(), op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Find][LibName]fail for libName = %s, node:%s", lib_name.c_str(),
+           op_desc->GetName().c_str());
     REPORT_INNER_ERROR("E19999", "find LibName for GenerateTask failed, libName = %s, node = %s not exist",
-        lib_name.c_str(), op_desc->GetName().c_str());
+                       lib_name.c_str(), op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 

@@ -67,10 +67,8 @@ Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target
     Format format = input_desc.GetFormat();
     DataType data_type = input_desc.GetDataType();
     if (TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "[Invoke][CalcTensorMemSize] failed for [%s].",
-          node_item.NodeName().c_str());
-      REPORT_CALL_ERROR("E19999", "CalcTensorMemSize failed for [%s] when ShapeInferenceState %s.",
-          node_item.NodeName().c_str(), __FUNCTION__);
+      GELOGE(FAILED, "[Invoke][CalcTensorMemSize] failed for [%s].", node_item.NodeName().c_str());
+      REPORT_CALL_ERROR("E19999", "CalcTensorMemSize failed for [%s].", node_item.NodeName().c_str());
       return FAILED;
     }
   }
@@ -124,19 +122,15 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
       }
 
       if (context.GetStatus() != SUCCESS) {
-        GELOGE(FAILED, "[Check][Status][%s] Await pending shape cancelled.",
-            node_item.NodeName().c_str());
-        REPORT_CALL_ERROR("E19999", "[%s] Await pending shape cancelled when %s.",
-            node_item.NodeName().c_str(), __FUNCTION__);
+        GELOGE(FAILED, "[Check][Status][%s] Await pending shape cancelled.", node_item.NodeName().c_str());
+        REPORT_CALL_ERROR("E19999", "[%s] Await pending shape cancelled.", node_item.NodeName().c_str());
         break;
       }
     }
 
     if (!wait_success) {
-      GELOGE(FAILED, "[Check][Status][%s] Wait for shape timeout:%d.",
-          node_item.NodeName().c_str(), kWaitInternal);
-      REPORT_CALL_ERROR("E19999", "[%s] Wait for shape timeout:%d when %s.",
-          node_item.NodeName().c_str(), kWaitInternal, __FUNCTION__);
+      GELOGE(FAILED, "[Check][Status][%s] Wait for shape timeout:%d.", node_item.NodeName().c_str(), kWaitInternal);
+      REPORT_CALL_ERROR("E19999", "[%s] Wait for shape timeout:%d.", node_item.NodeName().c_str(), kWaitInternal);
       return FAILED;
     }
   }
@@ -240,8 +234,7 @@ Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
 Status NodeState::WaitForPrepareDone() {
   if (prepare_future_.valid()) {
     GELOGD("[%s] Start to wait for prepare future.", GetName().c_str());
-    GE_CHK_STATUS_RET(prepare_future_.get(),
-        "[Check][Status][%s] PreRun failed.", GetName().c_str());
+    GE_CHK_STATUS_RET(prepare_future_.get(), "[Check][Status][%s] PreRun failed.", GetName().c_str());
   }
 
   return SUCCESS;

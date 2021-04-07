@@ -150,7 +150,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   // Close file
   if (mmClose(fd) != EN_OK) {
     GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
     ret = FAILED;
   }
   return ret;
@@ -360,7 +360,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
     GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
     ret = FAILED;
   }
   return ret;
@@ -386,7 +386,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(co
   // Close file
   if (mmClose(fd) != 0) {  // mmClose 0: success
     GELOGE(FAILED, "[Close][File]Failed, error_code:%u errmsg:%s", ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Close file failed, error_code:%u errmsg:%s", ret, strerror(errno));
     ret = FAILED;
   }
   return ret;

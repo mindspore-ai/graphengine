@@ -93,6 +93,8 @@ class HybridModel {
 
   TensorValue* GetTensor(const NodePtr &node) const;
 
+  TensorBuffer* GetModelWeight(const std::string &subgraph_name) const;
+
   const std::map<int64_t, std::vector<std::pair<int, Tensor>>> &GetHostTensors() const;
 
   const std::vector<domi::TaskDef>* GetTaskDefs(const NodePtr &node) const;
@@ -159,7 +161,6 @@ class HybridModel {
   uint32_t device_id_ = 0;
   uint32_t model_id_ = 0;
   uint8_t *var_mem_base_ = nullptr;
-  std::unique_ptr<TensorBuffer> weight_buffer_;
   std::map<string, std::unique_ptr<TensorBuffer>> weight_buffer_map_;
   RuntimeParam root_runtime_param_;
   string om_name_;

@@ -43,7 +43,7 @@ class KnownNodeTaskMock : public KnownNodeTask {
  public:
   KnownNodeTaskMock(std::shared_ptr<DavinciModel> davinci_model): KnownNodeTask(davinci_model) {};
   ~KnownNodeTaskMock() override = default;
-  MOCK_METHOD0(DoInitDavinciModel, Status());
+  MOCK_METHOD2(DoInitDavinciModel, Status(void *, size_t));
 };
 }
 
@@ -62,6 +62,10 @@ TEST_F(UnknownNodeExecutorTest, test_init_davinci_model) {
   DumpProperties dump_properties;
   dump_properties.enable_dump_ = "1";
   DumpManager::GetInstance().AddDumpProperties(model.GetSessionId(), dump_properties);
-  EXPECT_CALL(mock, DoInitDavinciModel).WillOnce(::testing::Return(SUCCESS));
-  ASSERT_EQ(mock.InitDavinciModel(model), SUCCESS);
+  EXPECT_CALL(mock, DoInitDavinciModel).WillRepeatedly(::testing::Return(SUCCESS));
+  ASSERT_EQ(mock.InitDavinciModel(model, model.GetModelWeight("subgraph")), SUCCESS);
+
+  int32_t buffer[8];
+  model.weight_buffer_map_.emplace("subgraph", TensorBuffer::Create(buffer, sizeof(buffer)));
+  ASSERT_EQ(mock.InitDavinciModel(model, model.GetModelWeight("subgraph")), SUCCESS);
 }

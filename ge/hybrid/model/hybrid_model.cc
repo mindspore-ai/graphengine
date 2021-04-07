@@ -368,5 +368,14 @@ void *HybridModel::GetGlobalStep() const {
   }
   return global_step_->GetData();
 }
+
+TensorBuffer *HybridModel::GetModelWeight(const string &subgraph_name) const {
+  auto it = weight_buffer_map_.find(subgraph_name);
+  if (it == weight_buffer_map_.end()) {
+    GELOGD("Model weight not found, subgraph name = %s", subgraph_name.c_str());
+    return nullptr;
+  }
+  return it->second.get();
+}
 }  // namespace hybrid
 }  // namespace ge

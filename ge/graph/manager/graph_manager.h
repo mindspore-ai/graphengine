@@ -358,6 +358,7 @@ class GraphManager {
                                      ComputeGraphPtr &compute_graph,
                                      GeRootModelPtr &ge_root_model,
                                      uint64_t session_id);
+  Status SetFuzzCompileFlag(ComputeGraphPtr &compute_graph);
 
   Status CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_graph,
                                    Graph2SubGraphInfoList &sub_graph_map,

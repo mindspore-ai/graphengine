@@ -53,6 +53,7 @@ constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 const int64_t kDynamicDimValue = -2;
 const int kDefaultDeviceId = 0;
 const int kDefaultJobId = 0;
+const int32_t kFuzzBuildPattern = 1;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
     {ge::ENGINE_SYS, kEngineNameDefault},
@@ -296,13 +297,44 @@ static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTenso
   return SUCCESS;
 }
 
+static Status GetFuzzBuildAttrs(const OpDescPtr &op_desc, const GeRootModelPtr &ge_root_model,
+                                GeAttrValue::LIST_NAMED_ATTRS &fuzz_build_attrs) {
+  GELOGD("Start get fuzz build attrs of %s.", op_desc->GetName().c_str());
+  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  for (const auto &node : ge_root_model->GetRootGraph()->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    GELOGD("Delete fuzz build attr of %s after build.", node->GetName().c_str());
+    node->GetOpDesc()->DelAttr(ATTR_NAME_FUZZ_BUILD);
+  }
+  (void)AttrUtils::GetListNamedAttrs(op_desc, ATTR_NAME_FUZZ_BUILD_RES_ATTRS, fuzz_build_attrs);
+  if (!fuzz_build_attrs.empty()) {
+    GELOGD("%s has split, get ATTR_NAME_FUZZ_BUILD_RES_ATTRS directly.", op_desc->GetName().c_str());
+    return SUCCESS;
+  } else {
+    GELOGW("%s build with fuzz build pattern, but not set ATTR_NAME_FUZZ_BUILD_RES_ATTRS.", op_desc->GetName().c_str());
+  }
+  return SUCCESS;
+}
+
+static bool HasShapeRange(const vector<GeTensor> &inputs) {
+  for (const auto &input : inputs) {
+    vector<pair<int64_t, int64_t>> shape_range;
+    (void)input.GetTensorDesc().GetShapeRange(shape_range);
+    if (!shape_range.empty()) {
+      GELOGD("Has set shape range.");
+      return true;
+    }
+  }
+  return false;
+}
+
 class GeGenerator::Impl {
  public:
   Impl(OmgContext &omg_context) : omg_context_(omg_context) {}
   ~Impl() = default;
 
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GeRootModelPtr &ge_models);
-
   Status SaveModel(const string &file_name_prefix, GeModelPtr &models, ModelBufferData &model);
 
   Status SaveRootModel(const string &file_name_prefix, GeRootModelPtr &model, ModelBufferData &model_buff);
@@ -742,7 +774,8 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                                  bool is_offline) {
+                                  bool is_offline, int32_t compile_flag) {
+  GELOGD("Inputs size is %zu, outputs size is %zu.", inputs.size(), outputs.size());
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   impl_->is_offline_ = is_offline;
   if (!is_offline) {
@@ -763,6 +796,16 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   // 0. Save original attributes.
   OpDescPtr op_desc_tmp = AttrUtils::CloneOpDesc(op_desc);
   GE_CHECK_NOTNULL(op_desc_tmp);
+
+  bool fuzz_compile_flag = false;
+  if (!HasShapeRange(inputs) && compile_flag == kFuzzBuildPattern) {
+    fuzz_compile_flag = true;
+  }
+  if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, fuzz_compile_flag)) {
+    GELOGE(FAILED, "[Set][ATTR_NAME_FUZZ_BUILD] Failed to set attr for %s.", op_desc->GetName().c_str());
+    return FAILED;
+  }
+  impl_->omg_context_.fuzz_compile_flag = fuzz_compile_flag;
 
   // 1. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
@@ -810,6 +853,19 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(outputs, outputs_dynamic));
     GE_CHK_STATUS_RET_NOLOG(
       impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
+  } else if (fuzz_compile_flag) {
+    GELOGD("Get fuzz build result of %s.", op_desc->GetName().c_str());
+    (void)AttrUtils::SetInt(ge_model, ATTR_NAME_BUILD_MODE, fuzz_compile_flag);
+    GeAttrValue::LIST_NAMED_ATTRS fuzz_build_attrs;
+    if (GetFuzzBuildAttrs(op_desc, ge_root_model, fuzz_build_attrs) != SUCCESS) {
+      GELOGE(FAILED, "[Get][FuzzRet]Failed to get fuzz build result of %s.", op_desc->GetName().c_str());
+      return FAILED;
+    }
+    if (!fuzz_build_attrs.empty()) {
+      GE_CHK_BOOL_EXEC(AttrUtils::SetListNamedAttrs(ge_model, ATTR_NAME_FUZZ_BUILD_RES_ATTRS, fuzz_build_attrs),
+                       return FAILED, "Set ATTR_NAME_FUZZ_BUILD_RES_ATTRS failed.");
+    }
+    GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   } else {
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   }
@@ -825,15 +881,17 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
  * @param [in] vector<GeTensor> &inputs: Operator input data description information.
  * @param [in] vector<GeTensor> &outputs: Operator output data description information.
  * @param [in] const string &model_file_name: Offline model filename.
+ * @param [in] compile_flag: op build flag from atc
  * @return SUCCESS handle successfully / others handle failed
  */
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
-                                       const vector<GeTensor> &outputs, const string &model_file_name) {
+                                       const vector<GeTensor> &outputs, const string &model_file_name,
+                                       int32_t compile_flag) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGI("Start to build single op offline model, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   ModelBufferData model_buff;
   OpEngineType engine_type = ENGINE_SYS;
-  Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
+  Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true, compile_flag);
   GELOGI("Finish build single offline model, status: %u", status);
   return status;
 }
@@ -850,7 +908,6 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
  * @return SUCCESS handle successfully / others handle failed
  */
 
-// old process will be deleted
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
@@ -864,7 +921,12 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
                                        ModelBufferData &model_buff) {
-  return SUCCESS;
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
+  Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false,
+                                compile_flag);
+  GELOGI("Finish build single online model, status: %u", status);
+  return status;
 }
 
 Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs,

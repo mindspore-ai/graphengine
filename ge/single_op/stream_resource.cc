@@ -22,6 +22,11 @@
 #include "single_op/single_op_model.h"
 
 namespace ge {
+namespace {
+// limit available device mem size  1M
+const uint32_t kFuzzDeviceBufferSize = 1 * 1024 * 1024;
+}
+
 StreamResource::StreamResource(uintptr_t resource_id) : resource_id_(resource_id) {
 }
 
@@ -39,6 +44,17 @@ StreamResource::~StreamResource() {
       GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[Free][Rt] failed."));
     }
   }
+
+  if (device_buffer_ != nullptr) {
+    auto rt_ret = rtFree(device_buffer_);
+    GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[Free][Rt] failed."));
+  }
+}
+
+Status StreamResource::Init() {
+  auto rt_ret = rtMalloc(&device_buffer_, kFuzzDeviceBufferSize, RT_MEMORY_HBM);
+  GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, GELOGE(RT_FAILED, "[Malloc][Rt] failed."));
+  return SUCCESS;
 }
 
 SingleOp *StreamResource::GetOperator(const uint64_t key) {

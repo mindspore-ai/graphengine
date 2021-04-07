@@ -61,6 +61,7 @@
 #include "graph/passes/iterator_op_pass.h"
 #include "graph/passes/link_gen_mask_nodes_pass.h"
 #include "graph/passes/mark_graph_unknown_status_pass.h"
+#include "graph/passes/mark_node_unknown_shape_pass.h"
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/merge_input_memcpy_pass.h"
 #include "graph/passes/merge_to_stream_merge_pass.h"
@@ -864,6 +865,8 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   }
 
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kPrepareOptimize);
+  // set fuzz compile flag after origin graph optimize
+  GE_CHK_STATUS_RET(SetFuzzCompileFlag(compute_graph), "Set fuzz compile flag failed.");
   ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "Run PreRunOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
@@ -878,7 +881,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
                                          options_.build_step == BUILD_STEP_AFTER_BUILDER ||
                                          options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB));
   if (run_after_optimize_subgraph) {
-    Status ret = PreRunAfterOptimizeSubGraph(graph_node, compute_graph, ge_root_model, session_id);
+    ret = PreRunAfterOptimizeSubGraph(graph_node, compute_graph, ge_root_model, session_id);
     if (ret != SUCCESS) {
       GELOGE(ret, "Run PreRunAfterOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
       return ret;
@@ -893,6 +896,22 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     GELOGW("Fail to save cache.");
   }
   GEEVENT("[GEPERFTRACE] GE PreRun End");
+  return SUCCESS;
+}
+
+Status GraphManager::SetFuzzCompileFlag(ComputeGraphPtr &compute_graph) {
+  if (!GetLocalOmgContext().fuzz_compile_flag) {
+    return SUCCESS;
+  }
+  for (const auto &node : compute_graph->GetAllNodes()) {
+    OpDescPtr op_desc = node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    GELOGD("Fuzz compile flag is %d.", GetLocalOmgContext().fuzz_compile_flag);
+    if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, GetLocalOmgContext().fuzz_compile_flag)) {
+      GELOGE(FAILED, "[Set][ATTR_NAME_FUZZ_BUILD]Failed to set fuzz build attr to %s.", op_desc->GetName().c_str());
+      return FAILED;
+    }
+  }
   return SUCCESS;
 }
 
@@ -2487,6 +2506,8 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
                                                            new (std::nothrow) VariableRefDeleteOpPass))
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass("OptimizeStage2::ControlAttrOptimize::CompileNodesPass",
                                                            new (std::nothrow) CompileNodesPass))
+  GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass(
+      "OptimizeStage2::AfterMergePasses::MarkNodeUnknownShapePass", new(std::nothrow) MarkNodeUnknownShapePass))
   GE_CHK_STATUS_RET(pass_for_control_attr_optimize.AddPass(
       "OptimizeStage2::AfterMergePasses::MarkGraphUnknownStatusPass", new(std::nothrow) MarkGraphUnknownStatusPass))
   GE_CHK_STATUS_RET(

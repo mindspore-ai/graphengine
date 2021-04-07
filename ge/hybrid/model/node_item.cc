@@ -168,7 +168,7 @@ Status NodeItem::InitInputsAndOutputs() {
 
 Status NodeItem::ResolveDynamicState() {
   (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
-  GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
+  GELOGD("Node name is %s, dynamic state is %d.", this->node_name.c_str(), is_dynamic);
   if (!is_dynamic) {
     GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic),
                       "[%s] Failed to get shape status.",

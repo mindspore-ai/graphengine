@@ -22,6 +22,7 @@
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/types.h"
+#include "single_op/task/build_task_utils.h"
 
 using optiling::OpRunInfo;
 
@@ -31,6 +32,7 @@ namespace {
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 constexpr char const *kAttrOpParamSize = "op_para_size";
 constexpr char const *kAttrAtomicOpParamSize = "atomic_op_para_size";
+std::atomic<std::uint64_t> log_id(0);
 }  // namespace
 
 TbeHandleHolder::TbeHandleHolder(void *bin_handle)
@@ -48,6 +50,12 @@ bool TbeHandleRegistry::AddHandle(std::unique_ptr<TbeHandleHolder> &&holder) {
 }
 
 Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) {
+  log_name_ = op_desc.GetName() + "_tvmbin";
+  log_id_ = log_id++;
+  auto op_desc_ptr = MakeShared<OpDesc>(op_desc);
+  GE_CHECK_NOTNULL(op_desc_ptr);
+  auto task_info = BuildTaskUtils::GetTaskInfo(op_desc_ptr);
+  GELOGI("[TASK_INFO] %lu/%s %s.", log_id_, log_name_.c_str(), task_info.c_str());
   GE_CHK_STATUS_RET_NOLOG(InitWithTaskDef(op_desc, task_def));
   GE_CHK_STATUS_RET_NOLOG(InitTilingInfo(op_desc));
 
@@ -67,6 +75,7 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
       output_indices_to_skip_.push_back(i);
     }
   }
+  GELOGI("[TASK_INFO] %lu/%s.", log_id_, log_name_.c_str());
   return SUCCESS;
 }
 

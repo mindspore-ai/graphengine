@@ -55,6 +55,7 @@ struct SingleOpDesc {
   std::vector<SingleOpTensorDesc> input_desc;
   std::vector<SingleOpTensorDesc> output_desc;
   std::vector<SingleOpAttr> attrs;
+  int32_t compile_flag = 0;
 };
 
 struct SingleOpBuildParam {
@@ -62,6 +63,7 @@ struct SingleOpBuildParam {
   std::vector<ge::GeTensor> inputs;
   std::vector<ge::GeTensor> outputs;
   std::string file_name;
+  int32_t compile_flag = 0;
 };
 
 void from_json(const nlohmann::json &json, SingleOpTensorDesc &desc);

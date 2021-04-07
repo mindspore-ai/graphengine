@@ -69,6 +69,10 @@ bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
   }
   return false;
 }
+// if optional in/out, format is format_reserved and dtype is dt_undefined
+bool IsOptional(const ge::GeTensorDesc &tensor_desc) {
+  return tensor_desc.GetFormat() == ge::FORMAT_RESERVED && tensor_desc.GetDataType() == ge::DT_UNDEFINED;
+}
 }  // namespace
 
 namespace ge {
@@ -746,7 +750,8 @@ void GeGenerator::RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &
     GeTensorDesc input_desc = input.GetTensorDesc();
     bool is_const = false;
     (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
-    if (!is_const) {
+    bool is_optional = IsOptional(input_desc);
+    if (!is_optional && !is_const) {
       outputs.emplace_back(input);
     }
   }

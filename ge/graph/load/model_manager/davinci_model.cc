@@ -883,6 +883,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
       continue;
     }
 
+    // for dynamic shape with control flow
+    SetLabelForDynamic(node);
     auto it = op_desc_handle.find(op_desc->GetType());
     if (it != op_desc_handle.end()) {
       if ((this->*it->second)(op_desc) != SUCCESS) {
@@ -891,8 +893,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
       }
       continue;
     }
-    // for dynamic shape with control flow
-    SetLabelForDynamic(node);
+
     if (IsNoTaskAndDumpNeeded(op_desc)) {
       GELOGD("node[%s] without task, and save op_desc and addr for dump", op_desc->GetName().c_str());
       const RuntimeParam &rts_param = GetRuntimeParam();
@@ -936,11 +937,12 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 }
 
 void DavinciModel::SetLabelForDynamic(const NodePtr &node) {
-  if (known_node_ && node->GetOpDesc()->GetType() == LABELSWITCHBYINDEX) {
+  if (known_node_ && (node->GetType() == LABELSWITCHBYINDEX || node->GetType() == STREAMSWITCH)) {
     for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
       auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
       if (peer_out_data_anchor != nullptr) {
-        string tensor_name = node->GetName();
+        // name+index as the label of switch input
+        string tensor_name = node->GetName() + std::to_string(in_data_anchor->GetIdx());
         auto peer_node = peer_out_data_anchor->GetOwnerNode();
         (void)AttrUtils::SetStr(peer_node->GetOpDesc(), ATTR_DYNAMIC_SHAPE_FIXED_ADDR, tensor_name);
         (void)AttrUtils::SetInt(peer_node->GetOpDesc(), ATTR_DYNAMIC_SHAPE_FIXED_ADDR_INDEX, 0);

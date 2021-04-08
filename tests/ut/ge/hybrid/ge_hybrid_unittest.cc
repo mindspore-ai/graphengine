@@ -426,6 +426,40 @@ TEST_F(UtestGeHybrid, TestTaskContext) {
   ASSERT_EQ(new_desc.GetShape().GetDims(), new_shape.GetDims());
 }
 
+TEST_F(UtestGeHybrid, hybrid_model_executor_update_args) {
+  auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
+
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  GeShape shape({2, 16});
+  GeTensorDesc tensor_desc(shape);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
+  auto node = graph->AddNode(op_desc);
+
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphExecutionContext execution_context;
+  SubgraphContext subgraph_context(nullptr, &execution_context);
+  subgraph_context.all_inputs_.resize(2);
+  subgraph_context.all_outputs_.resize(1);
+
+  NodeState node_state(*node_item, &subgraph_context);
+  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+
+  int32_t buffer[1];
+  aicore_task->tiling_buffer_ = TensorBuffer::Create(buffer, sizeof(buffer));
+  EXPECT_NE(aicore_task->tiling_buffer_, nullptr);
+  aicore_task->max_arg_count_ = 0;
+  EXPECT_EQ(aicore_task->UpdateArgs(*task_context), ACL_ERROR_GE_MEMORY_OPERATE_FAILED);
+  aicore_task->args_ = std::unique_ptr<uint8_t[]>(new uint8_t[sizeof(uintptr_t) * 2]);
+  EXPECT_EQ(aicore_task->UpdateArgs(*task_context), SUCCESS);
+}
+
 TEST_F(UtestGeHybrid, hybrid_model_executor_check_shape) {
   HybridModelExecutor::ExecuteArgs args;
   GeTensorDescPtr ge_tensor = make_shared<GeTensorDesc>(GeTensorDesc());

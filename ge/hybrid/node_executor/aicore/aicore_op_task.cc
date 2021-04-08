@@ -75,7 +75,6 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
       output_indices_to_skip_.push_back(i);
     }
   }
-  GELOGI("[TASK_INFO] %lu/%s.", log_id_, log_name_.c_str());
   return SUCCESS;
 }
 
@@ -228,19 +227,19 @@ Status AiCoreOpTask::InitWithKernelDef(const OpDesc &op_desc, const domi::TaskDe
   }
 
   const auto *args_offset_buffer = reinterpret_cast<const uint16_t *>(context.args_offset().data());
-  uint32_t offset = *args_offset_buffer;
-  if (offset > args_size_) {
+  offset_ = *args_offset_buffer;
+  if (offset_ > args_size_) {
     GELOGE(INTERNAL_ERROR, "[Check][Offset][%s] Arg offset out of range. offset = %u,"
-           "arg size = %u , op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+           "arg size = %u , op:%s op_type:%s", GetName().c_str(), offset_, args_size_,
            op_desc.GetName().c_str(), op_desc.GetType().c_str());
     REPORT_INNER_ERROR("E19999", "[%s] Arg offset out of range. offset = %u, arg size = %u"
-                       "op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+                       "op:%s op_type:%s", GetName().c_str(), offset_, args_size_,
                        op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
-  arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset);
-  max_arg_count_ = (args_size_ - offset) / sizeof(void *);
+  arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset_);
+  max_arg_count_ = (args_size_ - offset_) / sizeof(void *);
   GELOGD("[%s] Done setting kernel args successfully. stub_func = %s, block_dim = %d,"
          "arg base = %p, arg size = %u",
          op_desc.GetName().c_str(),  stub_name_.c_str(),
@@ -289,19 +288,19 @@ Status AiCoreOpTask::InitWithKernelDefWithHandle(const OpDesc &op_desc, const do
   }
 
   const auto *args_offset_buffer = reinterpret_cast<const uint16_t *>(context.args_offset().data());
-  uint32_t offset = *args_offset_buffer;
-  if (offset > args_size_) {
+  offset_ = *args_offset_buffer;
+  if (offset_ > args_size_) {
     GELOGE(INTERNAL_ERROR, "[Check][Offset][%s] Arg offset out of range. offset = %u, arg size = %u"
-           "op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+           "op:%s op_type:%s", GetName().c_str(), offset_, args_size_,
            op_desc.GetName().c_str(), op_desc.GetType().c_str());
     REPORT_INNER_ERROR("E19999", "[%s] Arg offset out of range. offset = %u, arg size = %u"
-                       "op:%s op_type:%s", GetName().c_str(), offset, args_size_,
+                       "op:%s op_type:%s", GetName().c_str(), offset_, args_size_,
                        op_desc.GetName().c_str(), op_desc.GetType().c_str());
     return INTERNAL_ERROR;
   }
 
-  arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset);
-  max_arg_count_ = (args_size_ - offset) / sizeof(void *);
+  arg_base_ = reinterpret_cast<uintptr_t *>(args_.get() + offset_);
+  max_arg_count_ = (args_size_ - offset_) / sizeof(void *);
   return SUCCESS;
 }
 
@@ -428,14 +427,20 @@ Status AiCoreOpTask::UpdateArgs(TaskContext &task_context) {
     ++expected_arg_count;
   }
   if (expected_arg_count > max_arg_count_) {
-    GELOGE(INTERNAL_ERROR,
-           "[Check][arg_count][%s] Invalid arg memory, max arg count = %u, but expect = %zu",
-           GetName().c_str(),
-           max_arg_count_,
-           expected_arg_count);
-    REPORT_INNER_ERROR("E19999", "[%s] Invalid arg memory, max arg count = %u, but expect = %zu",
-                       GetName().c_str(), max_arg_count_, expected_arg_count);
-    return INTERNAL_ERROR;
+    GELOGD("Need to reset size of args_ from %u to %zu.", max_arg_count_, expected_arg_count);
+    auto length = expected_arg_count * sizeof(uintptr_t) + offset_;
+    std::unique_ptr<uint8_t[]> new_args(new(std::nothrow) uint8_t[length]);
+    GE_CHECK_NOTNULL(new_args);
+    if (memcpy_s(new_args.get(), length, args_.get(), offset_) != EOK) {
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][new_args]failed, dst length is %zu, src length is %u.",
+             length, offset_);
+      REPORT_INNER_ERROR("E19999", "update kernel args failed of %s.", task_context.GetNodeName());
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
+    }
+    args_ = std::move(new_args);
+    max_arg_count_ = static_cast<uint32_t>(expected_arg_count);
+    args_size_ = static_cast<uint32_t>(length);
+    arg_base_  = reinterpret_cast<uintptr_t *>(args_.get() + offset_);
   }
 
   int index = 0;
@@ -492,6 +497,7 @@ Status AiCoreOpTask::LaunchKernel(rtStream_t stream) {
     GE_CHK_RT_RET(rtKernelLaunch(stub_func_, block_dim_, args_.get(), args_size_, nullptr, stream));
     GELOGD("AiCoreOpTask LaunchKernel End (task = %s, block_dim = %u).", stub_name_.c_str(), block_dim_);
   }
+  GELOGI("[TASK_INFO] %lu/%s", log_id_, log_name_.c_str());
   return SUCCESS;
 }
 

@@ -116,6 +116,7 @@ class AiCoreOpTask {
   bool is_dynamic_ = false;
   uint64_t log_id_ = 0;
   std::string log_name_;
+  uint32_t offset_ = 0;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {

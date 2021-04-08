@@ -60,7 +60,6 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_ptr is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
-  model_id = ge_root_model_ptr->GetModelId();
 
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);

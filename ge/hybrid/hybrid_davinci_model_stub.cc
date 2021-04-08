@@ -68,6 +68,10 @@ uint64_t HybridDavinciModel::GetSessionId() {
   return 0;
 }
 
+uint32_t HybridDavinciModel::GetDataInputerSize() {
+  return 0;
+}
+
 Status HybridDavinciModel::GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
   return UNSUPPORTED;
 }
@@ -86,6 +90,14 @@ Status HybridDavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &i
 }
 
 void HybridDavinciModel::SetModelDescVersion(bool is_new_model_desc) {
+}
+
+bool HybridDavinciModel::GetRunningFlag() const {
+  return false;
+}
+
+Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+  return UNSUPPORTED;
 }
 }  // namespace hybrid
 }  // namespace ge

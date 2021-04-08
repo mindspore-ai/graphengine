@@ -85,4 +85,14 @@ ProtoAttrMapHelper GeModel::MutableAttrMap() { return attrs_; }
 ConstProtoAttrMapHelper GeModel::GetAttrMap() const {
   return ConstProtoAttrMapHelper(attrs_.GetProtoOwner(), attrs_.GetProtoMsg());
 }
+
+Status GeModel::GetSessionId(uint32_t model_id, uint64_t &session_id) const {
+  auto it = model_id_to_session_id_map_.find(model_id);
+  if (it != model_id_to_session_id_map_.end()) {
+    session_id = it->second;
+    return SUCCESS;
+  }
+  GELOGW("No session id were found with model id [%u].", model_id);
+  return INTERNAL_ERROR;
+}
 }  // namespace ge

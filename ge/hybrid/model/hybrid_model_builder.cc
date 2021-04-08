@@ -1539,14 +1539,20 @@ Status HybridModelBuilder::IdentifyVariableOutputs(NodeItem &node_item) {
            in_data_anchor->GetIdx(),
            src_node->GetName().c_str(),
            src_op_type.c_str());
+    uint32_t parent_index = 0;
+    GE_CHK_STATUS_RET_NOLOG(GetParentNodeOutputIndex(*net_output_desc, in_data_anchor->GetIdx(), parent_index));
+    GELOGD("Got parent output index = %u", parent_index);
+    if (src_op_type == DATA) {
+      int ref_i = 0;
+      (void)AttrUtils::GetInt(src_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, ref_i);
+      node_item.reuse_inputs.emplace(static_cast<int>(parent_index), ref_i);
+      GELOGD("[%s] output[%u] resues input[%d]", node_item.NodeName().c_str(), parent_index, ref_i);
+    }
 
     if (src_op_type != CONSTANTOP && src_op_type != CONSTANT && src_op_type != VARIABLE) {
       continue;
     }
 
-    uint32_t parent_index = 0;
-    GE_CHK_STATUS_RET_NOLOG(GetParentNodeOutputIndex(*net_output_desc, in_data_anchor->GetIdx(), parent_index));
-    GELOGD("Got parent output index = %u", parent_index);
     GE_CHECK_LE(parent_index, INT32_MAX);
     node_item.ref_outputs.emplace(static_cast<int>(parent_index), src_node);
     if (src_op_type == CONSTANTOP || src_op_type == CONSTANT) {

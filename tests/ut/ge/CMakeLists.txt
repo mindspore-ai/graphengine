@@ -593,6 +593,7 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_model_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_model_async_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_execution_context.cc"
+    "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_model_pipeline_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/subgraph_context.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/subgraph_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/worker/task_compile_engine.cc"
@@ -780,10 +781,12 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/mem_assigner_unittest.cc"
     "graph/build/task_generator_unittest.cc"
     "graph/build/buffer_pool_mem_assigner_unittest.cc"
+    "graph/execute/graph_execute_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
     "graph/partition/dynamic_shape_partition_unittest.cc"
+    "graph/manager/graph_manager_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 

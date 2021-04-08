@@ -2737,6 +2737,8 @@ void *DavinciModel::Run(DavinciModel *model) {
 
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
   while (model->RunFlag()) {
+    // Model hasn't truly started runing before received data
+    model->SetRunningFlag(false);
     bool rslt_flg = true;
     if (model->GetDataInputer() == nullptr) {
       GELOGW("Data inputer is nullptr.");
@@ -2746,6 +2748,8 @@ void *DavinciModel::Run(DavinciModel *model) {
 
     std::shared_ptr<InputDataWrapper> data_wrapper;
     Status ret = model->GetDataInputer()->Pop(data_wrapper);
+    // Model run indeedly start after received data.
+    model->SetRunningFlag(true);
     if (data_wrapper == nullptr || ret != SUCCESS) {
       GELOGI("data_wrapper is null!");
       continue;
@@ -2832,7 +2836,9 @@ void *DavinciModel::Run(DavinciModel *model) {
 
     model->iterator_count_++;
     model->is_first_execute_ = false;
-    GELOGI("run iterator count is %lu", model->iterator_count_);
+    // model run finished
+    model->SetRunningFlag(false);
+    GELOGI("run iterator count is %lu, model_id:%u", model->iterator_count_, model->model_id_);
   }
 
   CsaInteract::GetInstance().WriteInternalErrorCode();
@@ -2890,7 +2896,7 @@ Status DavinciModel::ModelRunStart() {
 
   error_context_ = ErrorManager::GetInstance().GetErrorContext();
   CREATE_STD_THREAD(thread_id_, DavinciModel::Run, this);
-  GELOGI("model tread create success, model id:%u.", model_id_);
+  GELOGI("model thread create success, model id:%u.", model_id_);
   return SUCCESS;
 }
 
@@ -4340,4 +4346,10 @@ Status DavinciModel::InitL1DataDumperArgs() {
   return SUCCESS;
 }
 
+Status DavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+  auto listener = dynamic_cast<RunAsyncListener *>(listener_.get());
+  GE_CHECK_NOTNULL(listener);
+  listener->SetCallback(callback);
+  return SUCCESS;
+}
 }  // namespace ge

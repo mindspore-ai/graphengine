@@ -20,9 +20,12 @@
 #include <string>
 
 #include "graph/load/model_manager/model_manager.h"
+#include "graph/load/model_manager/davinci_model.h"
 #include "omm/csa_interact.h"
 
 namespace ge {
+using Uint32Pair = pair<uint32_t, uint32_t>;
+const uint32_t kInvalidModelId = UINT32_MAX;
 GraphExecutor::GraphExecutor()
     : init_flag_(false),
       train_graph_flag_(false),
@@ -380,7 +383,8 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeRootModelPtr &ge_ro
 }
 
 Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
-                                        const std::vector<InputTensorInfo> &input_tensor) {
+                                        const std::vector<InputTensorInfo> &input_tensor,
+                                        const RunAsyncCallback& callback) {
   GELOGI("[GraphExecutor] Start to async execute graph, graph_id=%u", graph_id);
   if (graph_id != last_graph_id_) {
     auto ret = FreeExecuteMemory();
@@ -390,7 +394,7 @@ Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &
   }
   last_graph_id_ = graph_id;
   GE_CHECK_NOTNULL_EXEC(ge_root_model, return FAILED);
-  Status ret = AsyncExecuteModel(ge_root_model->GetModelId(), input_tensor);
+  Status ret = AsyncExecuteModel(ge_root_model, input_tensor, callback);
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_SYNC_MODEL_FAILED, "[GraphExecutor] AsyncExecuteModel Error!");
     return GE_GRAPH_SYNC_MODEL_FAILED;
@@ -400,11 +404,81 @@ Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &
   return SUCCESS;
 }
 
-Status GraphExecutor::AsyncExecuteModel(uint32_t model_id, const std::vector<InputTensorInfo> &inputs) {
+bool CompareByLoad(const Uint32Pair &lhs, const Uint32Pair &rhs) {
+  return lhs.second < rhs.second;
+}
+
+uint32_t GraphExecutor::GetExecuteModelId(const GeRootModelPtr &ge_root_model) {
+  std::vector<uint32_t> model_ids = ge_root_model->GetAllModelId();
+  if (model_ids.empty()) {
+    return kInvalidModelId;
+  }
+  if (model_ids.size() == 1) {
+    return ge_root_model->GetModelId();
+  }
+  std::vector<Uint32Pair> model_id_to_loads;
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  for (auto model_id : model_ids) {
+    auto davinci_model = model_manager->GetModel(model_id);
+    auto hybrid_model = model_manager->GetHybridModel(model_id);
+    if (hybrid_model == nullptr) {
+      GE_CHECK_NOTNULL(davinci_model);
+    }
+    uint32_t input_load = hybrid_model != nullptr ? hybrid_model->GetDataInputerSize() :
+                                                    davinci_model->GetDataInputerSize();
+    uint32_t running_load = hybrid_model != nullptr ? static_cast<uint32_t>(hybrid_model->GetRunningFlag()) :
+                                                      static_cast<uint32_t>(davinci_model->GetRunningFlag());
+    uint32_t load = input_load + running_load;
+    if (load == 0) {
+      return model_id;
+    }
+    model_id_to_loads.emplace_back(model_id, load);
+  }
+  sort(model_id_to_loads.begin(), model_id_to_loads.end(), CompareByLoad);
+  if (model_id_to_loads.empty()) {
+    return kInvalidModelId;
+  }
+  return model_id_to_loads.begin()->first;
+}
+
+Status GraphExecutor::SetCallback(uint32_t model_id, const GeRootModelPtr &ge_root_model,
+                                  const RunAsyncCallback &callback) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  if (model_manager->IsNeedHybridLoad(*ge_root_model)) {
+    auto model = model_manager->GetHybridModel(model_id);
+    GE_CHECK_NOTNULL(model);
+    if (model->SetRunAsyncListenerCallback(callback) != SUCCESS) {
+      GELOGE(FAILED, "SetRunAsyncListenerCallback failed.");
+      return FAILED;
+    }
+  } else {
+    auto model = model_manager->GetModel(model_id);
+    GE_CHECK_NOTNULL(model);
+    if (model->SetRunAsyncListenerCallback(callback) != SUCCESS) {
+      GELOGE(FAILED, "SetRunAsyncListenerCallback failed.");
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+Status GraphExecutor::AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<InputTensorInfo> &inputs,
+                                        const RunAsyncCallback &callback) {
+  uint32_t model_id = GetExecuteModelId(ge_root_model);
+  if (model_id == kInvalidModelId) {
+    GELOGE(INTERNAL_ERROR, "No valid model id.");
+    return INTERNAL_ERROR;
+  }
   try {
     auto model_manager = ge::ModelManager::GetInstance();
     GE_CHECK_NOTNULL(model_manager);
     GELOGI("RunAsync begin.model_id %u", model_id);
+    if (SetCallback(model_id, ge_root_model, callback) != SUCCESS) {
+      GELOGE(FAILED, "RunAsync: SetCallBack for model fail");
+      return FAILED;
+    }
 
     Status ret = model_manager->DataInputTensor(model_id, inputs);
     if (ret != SUCCESS) {

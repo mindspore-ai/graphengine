@@ -55,6 +55,12 @@ class HybridModelAsyncExecutor {
 
   Status EnqueueData(const std::shared_ptr<InputDataWrapper> &data);
 
+  uint32_t GetDataInputerSize() { return data_inputer_->Size(); }
+
+  bool GetRunningFlag() const { return running_flag_; }
+
+  void SetRunningFlag(bool flag) { running_flag_ = flag; }
+
  private:
   Status InitInputDesc();
 
@@ -84,6 +90,8 @@ class HybridModelAsyncExecutor {
   uint32_t device_id_ = 0U;
   uint32_t model_id_ = 0U;
   std::atomic_bool run_flag_;
+  // check whether model is running with data
+  bool running_flag_ = false;
   std::unique_ptr<DataInputer> data_inputer_;
   std::unique_ptr<HybridModelExecutor> executor_;
   std::unique_ptr<HybridModelPipelineExecutor> pipe_executor_;

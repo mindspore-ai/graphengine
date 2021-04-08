@@ -144,8 +144,12 @@ Status HybridModelAsyncExecutor::RunInternal() {
   GE_MAKE_GUARD(not_used_var, [&] { GE_CHK_RT(rtDeviceReset(device_id)); });
 
   while (run_flag_) {
+    // Model has not indeedly started running before received data
+    SetRunningFlag(false);
     std::shared_ptr<InputDataWrapper> data_wrapper;
     Status ret = data_inputer_->Pop(data_wrapper);
+    // Model indeedly start running
+    SetRunningFlag(true);
     if (data_wrapper == nullptr || ret != SUCCESS) {
       GELOGI("data_wrapper is null!, ret = %u", ret);
       continue;
@@ -185,7 +189,8 @@ Status HybridModelAsyncExecutor::RunInternal() {
 
     RECORD_MODEL_EXECUTION_EVENT(executor_->GetContext(), "[RunInternal] [iteration = %d] End", iterator_count_);
     iterator_count_++;
-    GELOGI("run iterator count is %lu", iterator_count_);
+    SetRunningFlag(false);
+    GELOGI("run iterator count is %lu,  model_id:%u", iterator_count_, model_id_);
   }
 
   CsaInteract::GetInstance().WriteInternalErrorCode();

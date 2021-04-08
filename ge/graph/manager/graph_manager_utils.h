@@ -55,6 +55,7 @@ using ConstGraphPtr = std::shared_ptr<const ge::Graph>;
 using GraphPtr = std::shared_ptr<ge::Graph>;
 
 const uint64_t INVALID_SESSION_ID = 0xffffffffffffffffULL;
+const uint32_t kMaxLoadNum = 8;
 
 struct ModelIdInfo {
   uint32_t model_id{INVALID_MODEL_ID};
@@ -162,6 +163,8 @@ class GraphNode {
   bool GetBuildFlag() const { return build_flag_; }
   void SetBuildFlag(bool buildFlag) { build_flag_ = buildFlag; }
   bool GetLoadFlag() const { return load_flag_; }
+  // allow repeatively load graph owns same graph id
+  void UpdateLoadFlag() { load_flag_ = load_count_ == 0 || load_record_ >= kMaxLoadNum; }
   void SetLoadFlag(bool load_flag) { load_flag_ = load_flag; }
   void SetGeModel(const GeModelPtr &ge_model) { ge_model_ = ge_model; }
   GeModelPtr GetGeModel() const { return ge_model_; }
@@ -171,6 +174,13 @@ class GraphNode {
   void SetOptions(const std::map<std::string, std::string> &options) { options_ = options; }
   void Lock();
   void Unlock();
+
+  void SetSemSize(uint32_t size) { sem_.SetMaxSize(size); }
+
+  uint32_t GetLoadCount() const { return load_count_; }
+  void IncreaseLoadCount();
+  void DecreaseLoadCount() { --load_count_; }
+  void IncreaseLoadRecord() { ++load_record_; }
 
   // run graph asynchronous listener
   std::shared_ptr<RunAsyncListener> graph_run_async_listener_;
@@ -184,11 +194,17 @@ class GraphNode {
   GraphPtr graph_;
   ComputeGraphPtr compute_graph_;
   bool build_flag_;
+  // load_flag_ is true if more than 1 model were loaded
   bool load_flag_;
   bool async_;
   GeModelPtr ge_model_;
   GeRootModelPtr ge_root_model_;
   BlockingQueue<uint8_t> sem_;
+  // consist with graph_count of same graph_id in graph_manager
+  uint32_t load_count_ = 0;
+  // total times of loading a graph with same graph_id.
+  uint32_t load_record_ = 0;
+  std::mutex load_count_mu_;
 };
 
 using GraphNodePtr = std::shared_ptr<GraphNode>;

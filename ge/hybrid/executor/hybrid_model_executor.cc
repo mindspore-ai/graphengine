@@ -175,17 +175,14 @@ Status HybridModelExecutor::CheckInputShapeByShapeRange(const GraphItem *graph_i
                                                         HybridModelExecutor::ExecuteArgs &args) {
   GE_CHECK_NOTNULL(graph_item);
   auto input_nodes = graph_item->GetInputNodes();
-  if (args.input_desc.size() < input_nodes.size()) {
-    REPORT_INNER_ERROR("E19999", "[%s] Number of inputs [%zu] is not sufficient for graph which needs [%zu] inputs.",
-                       graph_item->GetName().c_str(), args.input_desc.size(), input_nodes.size());
-    GELOGE(INTERNAL_ERROR, "[%s] Number of inputs [%zu] is not sufficient for graph which needs [%zu] inputs.",
-           graph_item->GetName().c_str(), args.input_desc.size(), input_nodes.size());
-    return INTERNAL_ERROR;
-  }
   for (size_t i = 0; i < input_nodes.size(); ++i) {
     auto &input_node = input_nodes[i];
     if (input_node == nullptr) {
       GELOGD("[%s] Input[%zu] is not needed by graph, skip it.", graph_item->GetName().c_str(), i);
+      continue;
+    }
+    if (!input_node->is_dynamic) {
+      GELOGD("[%s] Input[%zu] is not dynamic, skip it.", graph_item->GetName().c_str(), i);
       continue;
     }
     GeTensorDescPtr model_input_desc = input_node->MutableInputDesc(0);
@@ -199,6 +196,13 @@ Status HybridModelExecutor::CheckInputShapeByShapeRange(const GraphItem *graph_i
     if (shape_range.empty()) {
       GELOGD("[%s] Input[%zu] shape is not needed to check by shape range, skip it.", graph_item->GetName().c_str(), i);
       continue;
+    }
+    if (i >= args.input_desc.size()) {
+      REPORT_INNER_ERROR("E19999", "[%s] Inputs[%zu] is greater than or equal to input desc size[%zu].",
+                         graph_item->GetName().c_str(), i, args.input_desc.size());
+      GELOGE(INTERNAL_ERROR, "[%s] inputs[%zu] is greater than or equal to input desc size[%zu].",
+             graph_item->GetName().c_str(), i, args.input_desc.size());
+      return INTERNAL_ERROR;
     }
     ConstGeTensorDescPtr args_tensor_desc = args.input_desc[i];
     GE_CHECK_NOTNULL(args_tensor_desc);

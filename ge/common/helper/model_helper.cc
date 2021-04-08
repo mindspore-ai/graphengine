@@ -37,7 +37,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelHelper::~ModelHelper() { (
 Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, ModelPartitionType type,
                                        const uint8_t *data, size_t size, size_t model_index) {
   if (size < 1 || size > UINT32_MAX) {
-    GELOGE(PARAM_INVALID, "Add model partition failed, partition size %zu invalid", size);
+    GELOGE(PARAM_INVALID, "[Add][ModelPartition]Failed, partition size %zu invalid", size);
+    REPROT_INNER_ERROR("E19999", "Add model partition failed, partition size %zu "
+                       "invalid", size);
     if (size > UINT32_MAX) {
       string item = "item";
       if (type == MODEL_DEF) {
@@ -57,7 +59,8 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
     return PARAM_INVALID;
   }
   if (data == nullptr) {
-    GELOGE(PARAM_INVALID, "Add model partition failed, data is null");
+    GELOGE(PARAM_INVALID, "[Add][ModelPartition]Failed, data is null");
+    REPORT_INNER_ERROR("E19999", "Add model partition failed, data is null");
     return PARAM_INVALID;
   }
   ModelPartition partition_model;
@@ -65,7 +68,8 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
   partition_model.size = static_cast<uint32_t>(size);
   partition_model.type = type;
   if (om_file_save_helper->AddPartition(partition_model, model_index) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Add model partition failed, partition size %zu", size);
+    GELOGE(PARAM_INVALID, "[Add][ModelPartition]Failed, partition size %zu", size);
+    REPORT_CALL_ERROR("E19999", "Add model partition failed, partition size %zu", size);
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -106,7 +110,8 @@ Status ModelHelper::SaveModelDef(std::shared_ptr<OmFileSaveHelper> &om_file_save
                                  const GeModelPtr &ge_model, ge::Buffer &model_buffer, size_t model_index) {
   ModelPtr model_tmp = ge::MakeShared<ge::Model>(ge_model->GetName(), ge_model->GetPlatformVersion());
   if (model_tmp == nullptr) {
-    GELOGE(FAILED, "Create Model %s Ptr failed", ge_model->GetName().c_str());
+    GELOGE(FAILED, "[Creat][Model]Failed, Model %s Ptr", ge_model->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Create Model %s Ptr failed", ge_model->GetName().c_str());
     return FAILED;
   }
   model_tmp->SetGraph(ge_model->GetGraph());
@@ -114,7 +119,8 @@ Status ModelHelper::SaveModelDef(std::shared_ptr<OmFileSaveHelper> &om_file_save
   model_tmp->SetAttr(ge_model->MutableAttrMap());
   Status ret = SaveSizeToModelDef(ge_model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SaveSizeToModelDef failed");
+    GELOGE(ret, "[Save][SizeToModelDef]Failed, error_code %u", ret);
+    REPORT_CALL_ERROR("E19999", "Save SizeToModelDef failed, error_code %u", ret);
     return ret;
   }
 
@@ -123,7 +129,10 @@ Status ModelHelper::SaveModelDef(std::shared_ptr<OmFileSaveHelper> &om_file_save
   if (model_buffer.GetSize() > 0) {
     if (SaveModelPartition(om_file_save_helper, ModelPartitionType::MODEL_DEF, model_buffer.GetData(),
                            model_buffer.GetSize(), model_index) != SUCCESS) {
-      GELOGE(PARAM_INVALID, "Add model graph partition failed");
+      GELOGE(PARAM_INVALID, "[Add][ModelPartition]Failed, model_def size %zu, model_index %zu",
+             model_buffer.GetSize(), model_index);
+      REPORT_CALL_ERROR("E19999", "Add model graph partititon failed, model_def %zu, "
+                        "model_index %zu", model_buffer.GetSize(), model_index);
       return PARAM_INVALID;
     }
   }
@@ -178,17 +187,24 @@ Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_
                                      const GeModelPtr &ge_model, ge::Buffer &task_buffer, size_t model_index) {
   std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
   if (model_task_def == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create model task def ptr failed");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Creat][ModelTaskDef]Failed, it is nullptr");
+    REPORT_CALL_ERROR("E19999", "Creat model task def failed, it is nullptr");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   size_t partition_task_size = model_task_def->ByteSizeLong();
   GE_IF_BOOL_EXEC(partition_task_size == 0 || partition_task_size > INT_MAX,
-                  GELOGE(FAILED, "Model_def's byte size (%zu) is invalid!", partition_task_size);
+                  GELOGE(FAILED, "[Check][ModelDefSize]Invalid, size %zu!",
+                         partition_task_size);
+		  REPORT_CALL_ERROR("E19999", "Model def size %zu check invalid,"
+			            partition_task_size);
                       return FAILED);
 
   task_buffer = ge::Buffer(partition_task_size);
   if (task_buffer.GetSize() == 0) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc model task def buffer failed");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][ModelTaskDefBuffer]Failed, "
+           "model def size %zu", partition_task_size);
+    REPORT_CALL_ERROR("E19999", "Allocate model task def buffer failed, model def size %zu",
+                      partition_task_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   (void)model_task_def->SerializePartialToArray(task_buffer.GetData(), static_cast<int>(partition_task_size));
@@ -198,7 +214,10 @@ Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_
 
   if (SaveModelPartition(om_file_save_helper, ModelPartitionType::TASK_INFO, task_buffer.GetData(),
                          partition_task_size, model_index) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "Add model task def partition failed");
+    GELOGE(PARAM_INVALID, "[Add][ModelTaskDefPartition]Failed, model def size %zu, "
+           "model_index %zu", partition_task_size, model_index);
+    REPORT_CALL_ERROR("E19999", "Add model task def partition failed, model def size %zu "
+                      "model_index %zu", partition_task_size, model_index);
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -218,7 +237,11 @@ Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_s
                  platform_version.size() + 1);
   if (err != EOK) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
-           "ModelHelper SaveModel failed while allocating memory for platform_version.");
+           "[Save][Model]Failed while allocating memory for platform_version %s, errno %d",
+            platform_version.c_str(), err);
+    REPORT_CALL_ERROR("E19999", "ModelHelper save model failed while "
+                      "allocating memory for platform_version %s, errno %d",
+                      platform_version.c_str(), err);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   string version = reinterpret_cast<char *>(model_header.platform_version);
@@ -228,7 +251,11 @@ Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_s
   name_size = name_size > (MODEL_NAME_LENGTH - 1) ? (MODEL_NAME_LENGTH - 1) : name_size;
   err = memcpy_s(model_header.name, MODEL_NAME_LENGTH, ge_model->GetName().c_str(), name_size);
   if (err != EOK) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "ModelHelper SaveModel failed while allocating memory for name");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "[Save][Model]Failed while allocating memory for name %s, errno %d",
+           ge_model->GetName().c_str(), err);
+    REPORT_CALL_ERROR("E19999", "ModelHelper save model failed while allocating memory "
+                      "for name %s,errno %d", ge_model->GetName().c_str(), err);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   string model_name = reinterpret_cast<char *>(model_header.name);
@@ -240,28 +267,38 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
                                          const GeModelPtr &ge_model, ge::Buffer &model_buffer,
                                          ge::Buffer &task_buffer, size_t model_index) {
   if (SaveModelDef(om_file_save_helper, ge_model, model_buffer, model_index) != SUCCESS) {
-    GELOGE(FAILED, "save model def failed");
+    GELOGE(FAILED, "[Save][ModelDef]Failed, model index %zu", model_index);
+    REPORT_INNER_ERROR("E19999", "ModelHelper save model def failed, model index %zu",
+                       model_index);
     return FAILED;
   }
 
   if (SaveModelWeights(om_file_save_helper, ge_model, model_index) != SUCCESS) {
-    GELOGE(FAILED, "save model weights failed");
+    GELOGE(FAILED, "[Save][ModelWeights]Failed, model index %zu", model_index);
+    REPORT_INNER_ERROR("E19999","ModelHelper save mode weights failed, mode index %zu",
+                       model_index);
     return FAILED;
   }
 
   if (SaveModelTbeKernel(om_file_save_helper, ge_model, model_index) != SUCCESS) {
-    GELOGE(FAILED, "save model tbe kernel failed");
+     GELOGE(FAILED, "[Save][ModelTbeKernel]Failed, model index %zu", model_index);
+     REPORT_INNER_ERROR("E19999", "ModelHelper save model tbe kernel failed, model index %zu",
+                        model_index);
     return FAILED;
   }
 
   if (SaveModelCustAICPU(om_file_save_helper, ge_model, model_index) != SUCCESS) {
-    GELOGE(FAILED, "save model cust ai cpu failed");
+    GELOGE(FAILED, "[Save][ModelCustAICPU]Failed, model index %zu", model_index);
+    REPORT_INNER_ERROR("E19999", "ModelHelper save model cust aicpu failed, "
+                       "model index %zu", model_index);
     return FAILED;
   }
 
 
   if (SaveModelTaskDef(om_file_save_helper, ge_model, task_buffer, model_index) != SUCCESS) {
-    GELOGE(FAILED, "save task def failed");
+    GELOGE(FAILED, "[Save][TaskDef]Failed, model index %zu", model_index);
+    REPORT_INNER_ERROR("E19999", "ModelHelper save task def failed, model index %zu",
+                       model_index);
     return FAILED;
   }
   return SUCCESS;
@@ -272,7 +309,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
                                                                                    const std::string &output_file,
                                                                                    ModelBufferData& model) {
   if (output_file.empty()) {
-    GELOGE(FAILED, "GraphBuilder SaveModel received invalid file name prefix");
+    GELOGE(FAILED, "[Save][Model]GraphBuilder SaveModel received invalid file name prefix");
+    REPORT_INNER_ERROR("E19999", "GraphBuilder SaveModel received invalid file name prefix");
     return FAILED;
   }
 
@@ -284,19 +322,25 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
 
   auto ret = SaveAllModelPartiton(om_file_save_helper, ge_model, model_buffer, task_buffer);
   if (ret != SUCCESS) {
-    GELOGE(ret, "save all model partition failed");
+    GELOGE(ret, "[Save][AllModelPartition]Failed, error_code %u", ret);
+    REPORT_INNER_ERROR("E19999", "OmFileSaveHelper save all model partition failed, "
+                       "error_code %u", ret);
     return ret;
   }
 
   ret = SaveModelHeader(om_file_save_helper, ge_model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "save model header failed");
+    GELOGE(ret, "[Save][ModelHeader]Failed, error_code %u", ret);
+    REPORT_INNER_ERROR("E19999", "OmFileSaveHelper save model header failed, "
+                       "error_code %u", ret);
     return ret;
   }
 
   ret = om_file_save_helper->SaveModel(save_param, output_file.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "OmFileSaveHelper SaveModel return fail.");
+    GELOGE(FAILED, "[Save][Model]Failed, output file %s", output_file.c_str());
+    REPORT_INNER_ERROR("E19999", "OmFileSaveHelper save model failed, output file %s",
+                       output_file.c_str());
     return ret;
   }
   return SUCCESS;
@@ -310,12 +354,19 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
     bool is_unknown_shape) {
 
   GE_CHECK_NOTNULL(ge_root_model);
-  GE_IF_BOOL_EXEC(ge_root_model == nullptr, GELOGE(FAILED, "Ge_root_model is nullptr"); return FAILED);
+  GE_IF_BOOL_EXEC(ge_root_model == nullptr,
+                  GELOGE(FAILED, "[Check][GERootModel]Ge_root_model is nullptr");
+                  REPORT_INNER_ERROR("E19999", "Ge_root_model check failed, it is nullptr");
+                  return FAILED);
 
   auto &name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
-  GE_IF_BOOL_EXEC(name_to_ge_model.empty(), GELOGE(FAILED, "Ge_root_model has no sub model"); return FAILED);
+  GE_IF_BOOL_EXEC(name_to_ge_model.empty(),
+                  GELOGE(FAILED, "[Get][SubModel]Ge_root_model has no sub model");
+                  REPORT_INNER_ERROR("E19999", "Ge_root_model has no sub model");
+                  return FAILED);
   GE_IF_BOOL_EXEC(output_file.empty(),
-                  GELOGE(FAILED, "GraphBuilder SaveModel received invalid file name prefix");
+                  GELOGE(FAILED, "[Save][Model]GraphBuilder SaveModel received invalid file name prefix");
+                  REPORT_INNER_ERROR("E19999", "GraphBuilder SaveModel received invalid file name prefix");
                   return FAILED);
 
   if (!is_unknown_shape) {
@@ -344,7 +395,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
   if (model_names.size() > 1) {
     GELOGD("only save first model MODEL_DEF");
     if (SaveModelDef(om_file_save_helper, first_ge_model, model_buffers[cur_index], cur_index) != SUCCESS) {
-      GELOGE(FAILED, "save model def failed");
+      GELOGE(FAILED, "[Save][ModelDef]Failed, model name %s, cur_index %zu",
+             model_name.c_str(), cur_index);
+      REPORT_INNER_ERROR("E19999", "Save model %s def failed, cur_index %zu",
+                         model_name.c_str(), cur_index);
       return FAILED;
     }
     ++cur_index;
@@ -357,20 +411,27 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
     auto ret = SaveAllModelPartiton(om_file_save_helper, ge_model, model_buffers[cur_index],
                                     task_buffers[cur_index], cur_index);
     if (ret != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Save model %s failed", model_name.c_str());
+      GELOGE(INTERNAL_ERROR, "[Save][AllModelPartition]Failed, model name %s, cur_index %zu",
+             model_name.c_str(), cur_index);
+      REPORT_INNER_ERROR("E19999", "Save all model %s partition failed, cur_index %zu",
+                         model_name.c_str(), cur_index);
       return INTERNAL_ERROR;
     }
   }
 
   auto ret = SaveModelHeader(om_file_save_helper, first_ge_model, model_names.size());
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Save model %s header failed", first_ge_model->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Save][ModelHeader]Failed, model name %s", first_ge_model->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Save model %s header failed", first_ge_model->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   ret = om_file_save_helper->SaveRootModel(save_param, output_file.c_str(), model, is_offline_);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "OmFileSaveHelper SaveModel return fail.");
+    GELOGE(FAILED, "[Save][Model]OmFileSaveHelper save model return fail, output_file %s",
+           output_file.c_str());
+    REPORT_INNER_ERROR("E19999", "OmFileSaveHelper save model return fail, output_file %s",
+                       output_file.c_str());
     return FAILED;
   }
   return SUCCESS;
@@ -379,13 +440,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) {
   if (output_file.empty()) {
-    GELOGE(FAILED, "SaveModel received invalid file name prefix");
+    GELOGE(FAILED, "[Save][Model]Received invalid file name prefix, output_file %s",
+           output_file.c_str());
+    REPORT_CALL_ERROR("E19999", "Save model received invalid file name prefix, output_file %s",
+                      output_file.c_str());
     return FAILED;
   }
   // Get computegraph from graph
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   if (compute_graph == nullptr) {
-    GELOGE(FAILED, "SaveModel fail for compute_graph null");
+    GELOGE(FAILED, "[Save][Model]Failed for compute_graph null");
+    REPORT_CALL_ERROR("E19999", "Save model failed for compute_graph null");
     return FAILED;
   }
   GE_DUMP(compute_graph, "OriginalGraph");
@@ -407,7 +472,8 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
   ge::Buffer model_buffer;
   ge::graphStatus status = model_ptr->Save(model_buffer);
   if (status != ge::GRAPH_SUCCESS) {
-    GELOGE(FAILED, "SaveModel fail for save buffer fail");
+    GELOGE(FAILED, "[Save][Model]Failed for save buffer fail");
+    REPORT_INNER_ERROR("E19999", "Save model failed for save buffer fail");
     return FAILED;
   }
   std::shared_ptr<OmFileSaveHelper> om_file_save_helper = ge::MakeShared<OmFileSaveHelper>();
@@ -429,14 +495,20 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
   errno_t err = memcpy_s(model_header.platform_version, PLATFORM_VERSION_LEN, platform_version.c_str(),
                          platform_version.size() + 1);
   if (err != EOK) {
-    GELOGE(FAILED, "ModelHelper SaveModel failed for platform_version");
+    GELOGE(FAILED, "[Save][Model]Failed for platform_version %s, errno %d",
+           platform_version.c_str(), err);
+    REPORT_CALL_ERROR("E19999", "Save model failed for platform_version %s, errno %d",
+                      platform_version.c_str(), err);
     return FAILED;
   }
   size_t name_size = model_ptr->GetName().size();
   name_size = name_size > (MODEL_NAME_LENGTH - 1) ? (MODEL_NAME_LENGTH - 1) : name_size;
   err = memcpy_s(model_header.name, MODEL_NAME_LENGTH, model_ptr->GetName().c_str(), name_size);
   if (err != EOK) {
-    GELOGE(FAILED, "ModelHelper SaveModel memory copy failed");
+    GELOGE(FAILED, "[Save][Model]Failed for memory copy %s failed, errno %d",
+           model_ptr->GetName().c_str(), err);
+    REPORT_CALL_ERROR("E19999", "Save model failed for memory copy %s failed, errno %d",
+                      model_ptr->GetName().c_str(), err);
     return FAILED;
   }
   ModelBufferData model;

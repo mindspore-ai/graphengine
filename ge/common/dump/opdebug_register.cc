@@ -27,7 +27,9 @@ Status OpdebugRegister::RegisterDebugForModel(rtModel_t model_handle, uint32_t o
   GELOGD("Start to register debug for model in overflow");
   auto ret = MallocMemForOpdebug();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Malloc memory for opdebug in model overflow failed ,ret:0x%X", ret);
+    GELOGE(ret, "[Malloc][MemForOpdebug]Failed in model overflow, ret:0x%X", ret);
+    REPORT_CALL_ERROR("E19999",  "Malloc memory for opdebug failed in model overflow, "
+                      "ret 0x%X", ret);
     return ret;
   }
   uint32_t debug_stream_id = 0;
@@ -74,15 +76,18 @@ Status OpdebugRegister::RegisterDebugForStream(rtStream_t stream, uint32_t op_de
   GELOGD("Start to register debug for stream in stream overflow");
   auto ret = MallocMemForOpdebug();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Malloc memory for opdebug in stream overflow ,ret:0x%X", ret);
-    return ret;
+    GELOGE(ret, "[Malloc][MemForOpdebug]Failed in stream overflow, ret:0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Malloc memory for opdebug failed in model overflow, "
+                      "ret:0x%X", ret);
+    return ret
   }
 
   uint32_t debug_stream_id = 0;
   uint32_t debug_task_id = 0;
   auto rt_ret = rtDebugRegisterForStream(stream, op_debug_mode, op_debug_addr_, &debug_stream_id, &debug_task_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtDebugRegisterForStream error, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtDebugRegisterForStream]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtDebugRegisterForStream failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGD("debug_task_id:%u, debug_stream_id:%u in stream overflow.", debug_task_id, debug_stream_id);
@@ -121,7 +126,8 @@ void OpdebugRegister::UnregisterDebugForStream(rtStream_t stream) {
 Status OpdebugRegister::MallocMemForOpdebug() {
   rtError_t rt_ret = rtMalloc(&op_debug_addr_, kOpDebugMemorySize, RT_MEMORY_DDR);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtMalloc]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
@@ -129,12 +135,14 @@ Status OpdebugRegister::MallocMemForOpdebug() {
   // For data dump, aicpu needs the pointer to pointer that save the real debug address.
   rt_ret = rtMalloc(&p2p_debug_addr_, kDebugP2pSize, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMalloc error, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtMalloc]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtMemcpy(p2p_debug_addr_, sizeof(uint64_t), &debug_addrs_tmp, sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "rtMemcpy to p2p_addr error: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtMemcpy]To p2p_addr error 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy to p2p_addr error 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 

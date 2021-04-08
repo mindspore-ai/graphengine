@@ -692,6 +692,22 @@ namespace {
     }
     return SUCCESS;
   }
+
+  bool CheckNoAicore(const ComputeGraphPtr &graph) {
+    for (const auto &node : graph->GetDirectNode()) {
+      if (node == nullptr) {
+        continue;
+      }
+      auto op_desc = node->GetOpDesc();
+      if (op_desc == nullptr) {
+        continue;
+      }
+      if (op_desc->GetOpEngineName() == kAIcoreEngine) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 void GeGenerator::RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
@@ -787,7 +803,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
-  if (all_shape) {
+  if (all_shape && CheckNoAicore(root_graph)) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;

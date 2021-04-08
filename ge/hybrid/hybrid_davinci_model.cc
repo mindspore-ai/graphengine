@@ -32,9 +32,10 @@ class HybridDavinciModel::Impl {
   }
 
   Status Init() {
-    GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().EnsureInitialized(), "Failed to initialize executors");
-    GE_CHK_STATUS_RET(model_.Init(), "Failed to init model.")
-    GE_CHK_STATUS_RET(executor_.Init(), "Failed to init model executor.")
+    GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().EnsureInitialized(),
+                      "[Initialize][NodeExecutorManager] failed");
+    GE_CHK_STATUS_RET(model_.Init(), "[Init][HybridModel] failed.")
+    GE_CHK_STATUS_RET(executor_.Init(), "[Init][HybridModelAsyncExecutor] failed.")
     return SUCCESS;
   }
 

@@ -30,7 +30,8 @@ namespace host_cpu {
 Status DataKernel::Compute(TaskContext& context) {
   auto input = context.MutableInput(kDataInputIndex);
   GE_CHECK_NOTNULL(input);
-  GE_CHK_STATUS_RET(context.SetOutput(kDataOutputIndex, *input), "[%s] Failed to set output.", context.GetNodeName())
+  GE_CHK_STATUS_RET(context.SetOutput(kDataOutputIndex, *input),
+                    "[Set][Output] failed for [%s].", context.GetNodeName())
   GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;
 }

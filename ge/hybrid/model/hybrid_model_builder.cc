@@ -325,8 +325,7 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
 
   for (const auto &src_node : ge_node->GetInControlNodes()) {
     auto src_node_item = MutableNodeItem(src_node);
-    GE_CHECK_NOTNULL(src_node_item);
-    if (is_hccl_op || src_node_item->IsHcclOp()) {
+    if ((src_node_item != nullptr) && (is_hccl_op || src_node_item->IsHcclOp())) {
       GELOGD("[%s](%s) Add input control dependent node [%s](%s)",
              ge_node->GetName().c_str(),
              ge_node->GetType().c_str(),

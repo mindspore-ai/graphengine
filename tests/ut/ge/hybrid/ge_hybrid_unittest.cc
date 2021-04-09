@@ -174,9 +174,11 @@ TEST_F(UtestGeHybrid, parse_force_infershape_nodes) {
   ASSERT_EQ(hybrid_model_builder.ParseForceInfershapeNodes(node, *new_node), SUCCESS);
 }
 static ComputeGraphPtr BuildDataDirectConnectGraph() {
+  const char *kRefIndex = "_parent_node_index";
   ge::ut::GraphBuilder builder("subgraph");
   auto data = builder.AddNode("Data", "Data", 1, 1);
-  auto netoutput = builder.AddNode("Netoutput", "Netoutput", 1, 1);
+  auto netoutput = builder.AddNode("NetOutput", "NetOutput", 1, 1);
+  (void)AttrUtils::SetInt(netoutput->GetOpDesc()->MutableInputDesc(0), kRefIndex, 0);
 
   builder.AddDataEdge(data, 0, netoutput, 0);
   return builder.GetGraph();
@@ -186,6 +188,7 @@ TEST_F(UtestGeHybrid, data_direct_connect) {
   auto root_graph = make_shared<ComputeGraph>("root_graph");
   OpDescPtr op_desc = CreateOpDesc("PartitionedCall", "PartitionedCall");
   auto node = root_graph->AddNode(op_desc);
+  node->SetOwnerComputeGraph(root_graph);
   auto sub_graph = BuildDataDirectConnectGraph();
   sub_graph->SetParentGraph(root_graph);
   sub_graph->SetParentNode(node);

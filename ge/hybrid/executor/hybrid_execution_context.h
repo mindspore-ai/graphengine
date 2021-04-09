@@ -68,7 +68,7 @@ struct GraphExecutionContext {
   DumpProperties dump_properties;
   bool trace_enabled = false;
   bool dump_enabled = false;
-  std::atomic_bool is_eos_;
+  std::atomic_bool is_eos_{false};
   long profiling_level = 0;
   long iteration = 0;
   void *global_step = nullptr;

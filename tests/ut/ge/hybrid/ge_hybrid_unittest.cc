@@ -589,3 +589,35 @@ TEST_F(UtestGeHybrid, test_key_for_kernel_bin) {
   EXPECT_EQ(atomic_task->GetKeyForTvmMetaData(), ATOMIC_ATTR_TVM_METADATA);
   EXPECT_EQ(atomic_task->GetKeyForKernelName(op_desc), "Sum_atomic_kernelname");
 }
+
+TEST_F(UtestGeHybrid, TestParseDependentInputNodesForHccl) {
+  NodeExecutorManager::GetInstance().engine_mapping_.emplace("ops_kernel_info_hccl",
+                                                             NodeExecutorManager::ExecutorType::HCCL);
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test");
+
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  auto node = compute_graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->node_id = 0;
+
+  OpDescPtr op_desc_1 = CreateOpDesc("AllReduce", "AllReduce");
+  op_desc_1->SetOpKernelLibName("ops_kernel_info_hccl");
+  auto node_1 = compute_graph->AddNode(op_desc_1);
+  std::unique_ptr<NodeItem> node_item_1;
+  NodeItem::Create(node_1, node_item_1);
+  node_item_1->node_id = 1;
+
+  node->GetOutControlAnchor()->LinkTo(node_1->GetInControlAnchor());
+
+  GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
+  HybridModel model(root_model);
+  model.root_graph_ = compute_graph;
+  model.node_items_.emplace(node, std::move(node_item));
+
+  HybridModelBuilder builder(model);
+  std::vector<std::string> deps;
+  ASSERT_EQ(builder.ParseDependentInputNodes(*node_item_1, deps), SUCCESS);
+  ASSERT_TRUE(model.GetNodeItem(node)->has_observer);
+  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
+}

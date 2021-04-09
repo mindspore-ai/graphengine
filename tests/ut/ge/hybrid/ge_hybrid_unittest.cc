@@ -480,6 +480,7 @@ TEST_F(UtestGeHybrid, hybrid_model_executor_check_shape) {
   NodePtr node = graph->AddNode(op_desc);
   std::unique_ptr<NodeItem> new_node;
   NodeItem::Create(node, new_node);
+  new_node->is_dynamic = true;
 
   GraphItem graph_item;
   graph_item.input_nodes_.emplace_back(new_node.get());
@@ -498,6 +499,10 @@ TEST_F(UtestGeHybrid, hybrid_model_executor_check_shape) {
   args2.input_desc.push_back(ge_tensor2);
 
   ret = HybridModelExecutor::CheckInputShapeByShapeRange(&graph_item, args1);
+  ASSERT_EQ(ret, ge::INTERNAL_ERROR);
+
+  HybridModelExecutor::ExecuteArgs args3;
+  ret = HybridModelExecutor::CheckInputShapeByShapeRange(&graph_item, args3);
   ASSERT_EQ(ret, ge::INTERNAL_ERROR);
 }
 

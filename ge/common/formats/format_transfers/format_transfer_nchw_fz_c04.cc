@@ -189,9 +189,9 @@ Status TransFormatFromNchwToFzC04(const TransArgs &args, TransResult &result) {
     ret = memcpy_s(p_d + k * stride, protectSize, p_s + k * block, block);
     if (ret != EOK) {
       GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Set][Memcpy]Failed, block %zu, stride %zu, "
-             "protect_size %ld， error_code %d", block, stride, protectSize, ret);
+             "protect_size %ld, error_code %d", block, stride, protectSize, ret);
       REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, stride %zu, "
-                        "protect_size %ld， error_code %d", block, stride, protectSize, ret);
+                        "protect_size %ld, error_code %d", block, stride, protectSize, ret);
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
     protectSize = protectSize - block;
@@ -304,8 +304,8 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
                      p_s + (i * c * h * w + j * h * w) * size, block);
       if (ret != EOK) {
         GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Set][Memcpy]Failed, block %zu, "
-               "protect_size %ld， error_code %d", block, protectSize, ret);
-        REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, protect_size %ld，"
+               "protect_size %ld, error_code %d", block, protectSize, ret);
+        REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, protect_size %ld, "
                           "error_code %d", block, protectSize, ret);
         return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
       }

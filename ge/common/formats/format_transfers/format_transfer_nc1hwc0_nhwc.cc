@@ -66,7 +66,7 @@ Status CheckArgsForNc1hwc0ToNhwc(const TransArgs &args) {
   if (c0 <= 0) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][Cube]Failed, the data type %s is invalid",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to get cube size， the data type %s is invalid",
+    REPORT_CALL_ERROR("E19999", "Failed to get cube size, the data type %s is invalid",
                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
@@ -175,7 +175,8 @@ Status FormatTransferNc1hwc0Nhwc::TransFormat(const TransArgs &args, TransResult
                       ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  GELOGD("Begin to trans format from NC1HWC0 to NCHW, src shape %s, data type %s, dst shape %s, memory size %ld",
+  GELOGD("[Trans][Format]Begin to trans format from NC1HWC0 to NCHW, "
+         "src shape %s, data type %s, dst shape %s, memory size %ld",
          ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
          ShapeToString(args.dst_shape).c_str(), total_size);
 

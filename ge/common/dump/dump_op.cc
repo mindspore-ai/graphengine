@@ -204,6 +204,10 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
 }
 
 Status DumpOp::SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info) {
+  if (dynamic_model_name_.empty() && dynamic_om_name_.empty()) {
+    GELOGI("Single op dump, no need set model name");
+    return SUCCESS;
+  }
   std::set<std::string> model_list = dump_properties_.GetAllDumpModel();
   bool not_find_by_omname = model_list.find(dynamic_om_name_) == model_list.end();
   bool not_find_by_modelname = model_list.find(dynamic_model_name_) == model_list.end();
@@ -219,7 +223,7 @@ Status DumpOp::SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info) {
     }
   }
   if (!dump_model_name.empty() && dump_properties_.IsDumpOpen()) {
-    GELOGD("Dump model name is %s", dump_model_name.c_str());
+    GELOGI("Dump model name is %s", dump_model_name.c_str());
     op_mapping_info.set_model_name(dump_model_name);
   }
   return SUCCESS;

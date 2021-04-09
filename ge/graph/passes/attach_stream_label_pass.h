@@ -25,26 +25,25 @@ class AttachStreamLabelPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
 
-  ///
-  /// @brief Clear Status, used for subgraph pass
-  /// @return
-  ///
-  Status ClearStatus() override;
-
  private:
   ///
   /// @brief Find StreamSwitch / StreamMerge / Enter node
   /// @param [in] graph
+  /// @param [out] need_label_nodes
+  /// @param [out] enter_nodes
+  /// @param [out] branch_head_nodes
   /// @return void
   ///
-  void FindNodes(const ComputeGraphPtr &graph);
+  void FindNodes(const ComputeGraphPtr &graph, std::vector<NodePtr> &need_label_nodes,
+                 std::vector<NodePtr> &enter_nodes, std::map<NodePtr, NodePtr> &branch_head_nodes);
 
   ///
   /// @brief update cond branch
   /// @param [in] node
+  /// @param [in] branch_head_nodes
   /// @return Status
   ///
-  Status UpdateCondBranch(const NodePtr &node);
+  Status UpdateCondBranch(const NodePtr &node, const std::map<NodePtr, NodePtr> &branch_head_nodes);
 
   ///
   /// @brief attach flag
@@ -64,9 +63,10 @@ class AttachStreamLabelPass : public GraphPass {
 
   ///
   /// @brief Update stream_label start with enter nodes
+  /// @param [in] enter_nodes
   /// @return Status
   ///
-  Status UpdateEnterNode();
+  Status UpdateEnterNode(const std::vector<NodePtr> &enter_nodes);
 
   ///
   /// @brief Set stream_label for enter_nodes
@@ -75,11 +75,6 @@ class AttachStreamLabelPass : public GraphPass {
   /// @return Status
   ///
   static Status SetEnterLabel(const std::vector<NodePtr> &enter_nodes, const NodePtr &active_node);
-
-  std::vector<NodePtr> stream_switch_nodes_;
-  std::vector<NodePtr> need_label_nodes_;
-  std::vector<NodePtr> enter_nodes_;
-  std::unordered_map<NodePtr, NodePtr> branch_head_nodes_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_ATTACH_STREAM_LABEL_PASS_H_

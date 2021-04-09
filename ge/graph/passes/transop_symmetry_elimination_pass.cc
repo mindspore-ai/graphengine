@@ -172,6 +172,12 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
   // 1.Unlink T1->T2
   auto ret = src_out_anchor->Unlink(dst_in_anchor);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999",
+                      "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
+                      src_out_anchor->GetOwnerNode()->GetName().c_str(),
+                      src_out_anchor->GetOwnerNode()->GetType().c_str(), src_out_anchor->GetIdx(),
+                      dst_in_anchor->GetOwnerNode()->GetName().c_str(),
+                      dst_in_anchor->GetOwnerNode()->GetType().c_str(), dst_in_anchor->GetIdx());
     GELOGE(FAILED, "Unlink data anchor from %s to %s.", src_node->GetName().c_str(), dst_node->GetName().c_str());
     return ret;
   }
@@ -183,6 +189,11 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
   auto pre_normal_node = in_anchor->GetPeerOutAnchor()->GetOwnerNode();
   ret = GraphUtils::AddEdge(in_anchor->GetPeerOutAnchor(), dst_in_anchor);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                      pre_normal_node->GetName().c_str(), pre_normal_node->GetType().c_str(),
+                      in_anchor->GetPeerOutAnchor()->GetIdx(),
+                      dst_in_anchor->GetOwnerNode()->GetName().c_str(),
+                      dst_in_anchor->GetOwnerNode()->GetType().c_str(), dst_in_anchor->GetIdx());
     GELOGE(FAILED, "Add data edge from %s to %s failed.", pre_normal_node->GetName().c_str(),
            dst_node->GetName().c_str());
     return ret;
@@ -190,6 +201,9 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
   // 3.Copy in-control/data-in-control from T1->T2
   ret = GraphUtils::CopyInCtrlEdges(src_node, dst_node);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Copy in control edge from node:%s(%s) to node:%s(%s) failed",
+                      src_node->GetName().c_str(), src_node->GetType().c_str(),
+                      dst_node->GetName().c_str(), dst_node->GetType().c_str());
     GELOGE(FAILED, "Copy control edge from %s to %s failed.", src_node->GetName().c_str(), dst_node->GetName().c_str());
     return ret;
   }
@@ -198,6 +212,9 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
     if (in_node->GetName() == pre_normal_node->GetName()) { continue; }
     ret = GraphUtils::AddEdge(in_node->GetOutControlAnchor(), dst_node->GetInControlAnchor());
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        in_node->GetName().c_str(), in_node->GetType().c_str(),
+                        dst_node->GetName().c_str(), dst_node->GetType().c_str());
       GELOGE(FAILED, "Add control edge from %s to %s failed.", in_node->GetName().c_str(), dst_node->GetName().c_str());
       return ret;
     }
@@ -205,6 +222,8 @@ Status TransOpSymmetryEliminationPass::EliminateTransOp(NodePtr &src_node, const
   // 5.IsolateAndDelete T2, A will link to B automatically, and all control edge will also relink.
   ret = IsolateAndDeleteNode(dst_node, {0});
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
+                      dst_node->GetName().c_str(), dst_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", dst_node->GetName().c_str(),
            dst_node->GetType().c_str());
     return ret;
@@ -223,6 +242,9 @@ Status TransOpSymmetryEliminationPass::RemoveTransOpWithoutOutput(NodePtr &pre_n
     // 6.1 Copy out control to pre normal node
     Status ret = GraphUtils::CopyOutCtrlEdges(trans_node, pre_node);
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Copy out control edge from node:%s(%s) to node:%s(%s) failed",
+                        trans_node->GetName().c_str(), trans_node->GetType().c_str(),
+                        pre_node->GetName().c_str(), pre_node->GetType().c_str());
       GELOGE(FAILED, "Copy control edge from %s to %s failed.", trans_node->GetName().c_str(),
              pre_node->GetName().c_str());
       return ret;
@@ -230,6 +252,8 @@ Status TransOpSymmetryEliminationPass::RemoveTransOpWithoutOutput(NodePtr &pre_n
     // 6.2 Isolate and delete T1
     ret = IsolateAndDeleteNode(trans_node, {});
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
+                        trans_node->GetName().c_str(), trans_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", trans_node->GetName().c_str(),
              trans_node->GetType().c_str());
       return ret;

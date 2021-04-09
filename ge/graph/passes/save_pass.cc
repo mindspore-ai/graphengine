@@ -47,7 +47,9 @@ Status SavePass::Run(ge::ComputeGraphPtr graph) {
             out_index.emplace_back(out_anchor->GetIdx());
             ge::OpDescPtr op_desc = peer_node->GetOpDesc();
             GE_IF_BOOL_EXEC(!ge::AttrUtils::SetStr(op_desc, kVarAttrVarIsSave, kVarIsSave),
-                              GELOGE(INTERNAL_ERROR, "get kVarAttrVarIsSave failed"); return INTERNAL_ERROR);
+                            REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", kVarAttrVarIsSave,
+                                              op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                            GELOGE(INTERNAL_ERROR, "get kVarAttrVarIsSave failed"); return INTERNAL_ERROR);
           }
         }
       }
@@ -65,6 +67,8 @@ Status SavePass::Run(ge::ComputeGraphPtr graph) {
   for (auto &node_ptr : del_nodes) {
     auto ret = graph->RemoveNode(node_ptr);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) from graph:%s failed",
+                        node_ptr->GetName().c_str(), node_ptr->GetType().c_str(), graph->GetName().c_str());
       GELOGE(ret, "GraphUtils::RemoveNodeWithoutRelink failed.");
       return ret;
     }

@@ -175,7 +175,8 @@ Status FormatTransferNc1hwc0Nhwc::TransFormat(const TransArgs &args, TransResult
                       ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
-  GELOGD("Begin to trans format from NC1HWC0 to NCHW, src shape %s, data type %s, dst shape %s, memory size %ld",
+  GELOGD("[Trans][Format]Begin to trans format from NC1HWC0 to NCHW, "
+         "src shape %s, data type %s, dst shape %s, memory size %ld",
          ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
          ShapeToString(args.dst_shape).c_str(), total_size);
 

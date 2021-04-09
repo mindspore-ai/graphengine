@@ -305,7 +305,7 @@ Status PaddingNC(const TransArgs &args, TransArgs &args_tmp, std::shared_ptr<uin
       if (ret != EOK) {
         GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Set][Memcpy]Failed, block %zu, "
                "protect_size %ld， error_code %d", block, protectSize, ret);
-        REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, protect_size %ld，"
+        REPORT_CALL_ERROR("E19999", "[Set][Memcpy]Failed, block %zu, protect_size %ld, "
                           "error_code %d", block, protectSize, ret);
         return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
       }

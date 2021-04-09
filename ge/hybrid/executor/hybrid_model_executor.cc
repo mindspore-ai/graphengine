@@ -18,6 +18,7 @@
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "common/dump/dump_manager.h"
 #include "common/profiling/profiling_manager.h"
 
@@ -102,7 +103,17 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   }
 
   if (!model_->IsSingleOp()) {
-    HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
+    Status ret = executor.Synchronize();
+    if (ret != ge::SUCCESS) {
+      auto model_manager = ModelManager::GetInstance();
+      GE_CHECK_NOTNULL(model_manager);
+      auto exception_infos = model_manager->GetExceptionInfos();
+      if (!exception_infos.empty()) {
+        HYBRID_CHK_STATUS_RET(context_.DumpExceptionInfo(exception_infos),
+                              "[Execute][GraphInternal] Dump exception info failed.");
+      }
+      GELOGE(ret, "[Execute][GraphInternal] Synchronize failed.");
+    }
     RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
   }
 

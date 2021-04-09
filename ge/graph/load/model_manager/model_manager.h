@@ -313,6 +313,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
     instance->AddExceptionInfo(*rt_exception_info);
   }
 
+  bool IsDumpExceptionOpen() { return dump_exception_flag_; }
  private:
   ///
   /// @ingroup domi_ome
@@ -356,6 +357,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   std::map<uintptr_t, std::map<std::string, CustAICPUKernelPtr>> cust_aicpu_so_;
 
   static DumpProperties dump_properties_;
+  bool dump_exception_flag_ = false;
 };
 }  // namespace ge
 

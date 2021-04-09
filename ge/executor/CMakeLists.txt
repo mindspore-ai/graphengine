@@ -16,6 +16,7 @@ set(SRC_LIST
     "../common/ge/plugin_manager.cc"
     "../common/ge/op_tiling_manager.cc"
     "../common/dump/dump_properties.cc"
+    "../common/dump/exception_dumper.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
     "../common/dump/opdebug_register.cc"

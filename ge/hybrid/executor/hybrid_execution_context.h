@@ -23,6 +23,7 @@
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_local_context.h"
+#include "graph/load/model_manager/davinci_model.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/executor/hybrid_profiler.h"
@@ -54,6 +55,7 @@ struct GraphExecutionContext {
   void SetErrorCode(Status error_code);
   Status GetStatus() const;
   Status Synchronize(rtStream_t rt_stream);
+  Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos);
 
   uint64_t session_id = 0;
   uint64_t context_id = 0;
@@ -68,6 +70,8 @@ struct GraphExecutionContext {
   DumpProperties dump_properties;
   bool trace_enabled = false;
   bool dump_enabled = false;
+  ExceptionDumper exception_dumper;
+  std::vector<std::shared_ptr<ge::DavinciModel>> davinci_model;
   std::atomic_bool is_eos_{false};
   long profiling_level = 0;
   long iteration = 0;

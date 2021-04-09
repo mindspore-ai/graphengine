@@ -70,8 +70,6 @@ class DataDumper {
 
   void SaveDumpInput(const std::shared_ptr<Node> &node);
 
-  void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id);
-
   // args is device memory stored first output addr
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args);
   void SaveEndGraphId(uint32_t task_id, uint32_t stream_id);
@@ -87,13 +85,7 @@ class DataDumper {
 
   void SetDumpProperties(const DumpProperties &dump_properties) { dump_properties_ = dump_properties; }
   const DumpProperties &GetDumpProperties() const { return dump_properties_; }
-  bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
   const std::vector<OpDescInfo> &GetAllOpDescInfo() const { return op_desc_info_; }
-
-  // Dump exception info
-  Status DumpExceptionInput(const OpDescInfo &op_desc_info, const string &dump_file);
-  Status DumpExceptionOutput(const OpDescInfo &op_desc_info, const string &dump_file);
-  Status DumpExceptionInfo(const std::vector<rtExceptionInfo> exception_infos);
 
  private:
   void ReleaseDevMem(void **ptr) noexcept;

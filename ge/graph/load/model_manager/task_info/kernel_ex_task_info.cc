@@ -357,6 +357,7 @@ void KernelExTaskInfo::SetIoAddrs(const OpDescPtr &op_desc) {
 Status KernelExTaskInfo::UpdateArgs() {
   GELOGI("KernelExTaskInfo::UpdateArgs in.");
   davinci_model_->SetTotalIOAddrs(io_addrs_);
+  davinci_model_->UpdateOpIOAddrs(task_id_, stream_id_, io_addrs_);
   GELOGI("KernelExTaskInfo::UpdateArgs success.");
   return SUCCESS;
 }

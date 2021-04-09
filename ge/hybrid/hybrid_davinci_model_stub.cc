@@ -72,6 +72,10 @@ uint32_t HybridDavinciModel::GetDataInputerSize() {
   return 0;
 }
 
+uint32_t HybridDavinciModel::GetDeviceId() const {
+  return 0;
+}
+
 Status HybridDavinciModel::GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
   return UNSUPPORTED;
 }
@@ -98,6 +102,10 @@ bool HybridDavinciModel::GetRunningFlag() const {
 
 Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
   return UNSUPPORTED;
+}
+
+bool HybridDavinciModel::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
+  return true;
 }
 }  // namespace hybrid
 }  // namespace ge

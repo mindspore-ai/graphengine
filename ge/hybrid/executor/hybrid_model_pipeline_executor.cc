@@ -4,6 +4,7 @@
 #include "common/dump/dump_manager.h"
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
+#include "graph/load/model_manager/model_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -266,6 +267,13 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
     ret = stage_executors_[i]->Synchronize();
 
     if (ret != SUCCESS) {
+      auto model_manager = ModelManager::GetInstance();
+      GE_CHECK_NOTNULL(model_manager);
+      auto exception_infos = model_manager->GetExceptionInfos();
+      if (!exception_infos.empty()) {
+        HYBRID_CHK_STATUS_RET(context_.DumpExceptionInfo(exception_infos),
+                              "[Execute][GraphInternal] Dump exception info failed.");
+      }
       GELOGE(ret, "[Invoke][Synchronize] failed for [Executor: %zu].", i);
       REPORT_CALL_ERROR("E19999", "[Executor: %zu] failed to Synchronize result.", i);
       has_error = true;

@@ -323,6 +323,19 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     }
   }
 
+  for (const auto &src_node : ge_node->GetInControlNodes()) {
+    auto src_node_item = MutableNodeItem(src_node);
+    GE_CHECK_NOTNULL(src_node_item);
+    if (is_hccl_op || src_node_item->IsHcclOp()) {
+      GELOGD("[%s](%s) Add input control dependent node [%s](%s)",
+             ge_node->GetName().c_str(),
+             ge_node->GetType().c_str(),
+             src_node->GetName().c_str(),
+             src_node->GetType().c_str());
+      dependent_for_execution.emplace(src_node);
+    }
+  }
+
   // cond or branch need to be prepared before the execution of IF or CASE
   if (node_item.node_type == IF || node_item.node_type == STATELESSIF || node_item.node_type == CASE) {
     auto src_node = NodeUtils::GetInDataNodeByIndex(*ge_node, 0); // cond input

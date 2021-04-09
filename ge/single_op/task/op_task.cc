@@ -459,13 +459,13 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
       continue;
     }
     GE_CHK_BOOL_RET_STATUS(non_const_index < input_desc.size(), ACL_ERROR_GE_PARAM_INVALID,
-                           "Input_desc size is %zu, but get non_const_index is %zu",
-                           input_desc.size(), non_const_index);
+                           "Input_desc size is %zu, but get non_const_index is %zu", input_desc.size(),
+                           non_const_index);
     GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateInputShapeAndType(input_index, input_desc[non_const_index]),
                       "Input[%zu] update input shape failed.", input_index);
     if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
-      GE_CHK_STATUS_RET(op_desc_->UpdateInputDesc(input_index,input_desc[non_const_index]),
-                        "AicpuTask Update [%zu]th input desc failed",input_index);
+      GE_CHK_STATUS_RET(op_desc_->UpdateInputDesc(input_index, input_desc[non_const_index]),
+                        "AicpuTask Update [%zu]th input desc failed", input_index);
     }
     non_const_index++;
   }
@@ -475,8 +475,8 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
       GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]),
                         "Output[%zu] UpdateOutputShapeAndType failed.", j);
       if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
-        GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(j,output_desc[j]),
-                          "AicpuTask Update [%zu]th output desc failed",j);
+        GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(j, output_desc[j]), "AicpuTask Update [%zu]th output desc failed",
+                          j);
       }
     }
   }

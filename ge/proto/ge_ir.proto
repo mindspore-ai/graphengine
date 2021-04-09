@@ -31,6 +31,8 @@ enum DataType
     DT_STRING_REF = 24;        // string_ref type
     DT_DUAL      = 25;              /**< dual output type */
     DT_VARIANT = 26;           // variant type
+    DT_BF16 = 27;              // bf16 type
+    DT_INT4 = 28;              // int4 type
 }
 
 message AttrDef

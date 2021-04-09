@@ -38,7 +38,7 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
                                        const uint8_t *data, size_t size, size_t model_index) {
   if (size < 1 || size > UINT32_MAX) {
     GELOGE(PARAM_INVALID, "[Add][ModelPartition]Failed, partition size %zu invalid", size);
-    REPROT_INNER_ERROR("E19999", "Add model partition failed, partition size %zu "
+    REPORT_INNER_ERROR("E19999", "Add model partition failed, partition size %zu "
                        "invalid", size);
     if (size > UINT32_MAX) {
       string item = "item";
@@ -195,7 +195,7 @@ Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_
   GE_IF_BOOL_EXEC(partition_task_size == 0 || partition_task_size > INT_MAX,
                   GELOGE(FAILED, "[Check][ModelDefSize]Invalid, size %zu!",
                          partition_task_size);
-		  REPORT_CALL_ERROR("E19999", "Model def size %zu check invalid,"
+		  REPORT_CALL_ERROR("E19999", "Model def size %zu check invalid,",
 			            partition_task_size);
                       return FAILED);
 
@@ -396,9 +396,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
     GELOGD("only save first model MODEL_DEF");
     if (SaveModelDef(om_file_save_helper, first_ge_model, model_buffers[cur_index], cur_index) != SUCCESS) {
       GELOGE(FAILED, "[Save][ModelDef]Failed, model name %s, cur_index %zu",
-             model_name.c_str(), cur_index);
+             model_names.c_str(), cur_index);
       REPORT_INNER_ERROR("E19999", "Save model %s def failed, cur_index %zu",
-                         model_name.c_str(), cur_index);
+                         model_names.c_str(), cur_index);
       return FAILED;
     }
     ++cur_index;

@@ -47,7 +47,9 @@ Status RefInputTask::UpdateArgs(TaskContext &) {
 Status RefInputTask::Execute(TaskContext &context) {
   auto iter = out_ref_input_index_.find(node_type_);
   if (iter == out_ref_input_index_.end()) {
-    GELOGE(UNSUPPORTED, "node %s type %s can not use RefInputTask.",
+    REPORT_INNER_ERROR("E19999", "node %s type %s can not use RefInputTask.",
+                       node_name_.c_str(), node_type_.c_str());
+    GELOGE(UNSUPPORTED, "[Find][Node]node %s type %s can not use RefInputTask.",
            node_name_.c_str(), node_type_.c_str());
     return UNSUPPORTED;
   }
@@ -65,7 +67,9 @@ Status RefInputTask::RefOneByOne(TaskContext &context) {
   int input_num = context.NumInputs();
   int output_num = context.NumOutputs();
   if (output_num > input_num) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %d outputs but only %d inputs, can't ref one by one.",
+    REPORT_INNER_ERROR("E19999", "node %s type %s has %d outputs but only %d inputs, can't ref one by one.",
+                       node_name_.c_str(), node_type_.c_str(), output_num, input_num);
+    GELOGE(INTERNAL_ERROR, "[Check][Size]node %s type %s has %d outputs but only %d inputs, can't ref one by one.",
            node_name_.c_str(), node_type_.c_str(), output_num, input_num);
     return INTERNAL_ERROR;
   }
@@ -84,7 +88,9 @@ Status RefInputTask::RefByOrder(const std::vector<uint32_t> &ref_order, TaskCont
   GELOGI("node %s type %s ref input by order begin.", node_name_.c_str(), node_type_.c_str());
   int32_t output_num = context.NumOutputs();
   if (ref_order.size() != static_cast<size_t>(output_num)) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %d outputs but only has %zu out ref index.",
+    REPORT_INNER_ERROR("E19999", "node %s type %s has %d outputs but only has %zu out ref index.",
+                       node_name_.c_str(), node_type_.c_str(), output_num, ref_order.size());
+    GELOGE(INTERNAL_ERROR, "[Check][Size]node %s type %s has %d outputs but only has %zu out ref index.",
            node_name_.c_str(), node_type_.c_str(), output_num, ref_order.size());
     return INTERNAL_ERROR;
   }
@@ -102,7 +108,7 @@ Status RefInputTask::RefByOrder(const std::vector<uint32_t> &ref_order, TaskCont
 
 Status RefInputTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[RefInputTaskExecuteAsync] Start");
-  GE_CHK_STATUS_RET(Execute(context), "node:%s type:%s ref input task execute failed",
+  GE_CHK_STATUS_RET(Execute(context), "[Invoke][Execute]node:%s type:%s ref input task execute failed",
                     node_name_.c_str(), node_type_.c_str());
   if (done_callback != nullptr) {
     // host cpu no need register callback, call it directly.
@@ -126,20 +132,26 @@ Status DependInputShapeTask::Execute(TaskContext &context) {
   std::string node_type = node_->GetType();
   auto kernel = factory.Create(node_type);
   if (kernel == nullptr) {
-    GELOGE(UNSUPPORTED, "node %s type %s is not supported by host kernel.",
+    REPORT_CALL_ERROR("E19999", "create failed for node %s type %s is not supported by host kernel.",
+                      node_->GetName().c_str(), node_type.c_str());
+    GELOGE(UNSUPPORTED, "[Invoke][Create]node %s type %s is not supported by host kernel.",
            node_->GetName().c_str(), node_type.c_str());
     return UNSUPPORTED;
   }
   std::vector<GeTensorPtr> outputs;
   Status compute_ret = kernel->Compute(node_, outputs);
   if (compute_ret != SUCCESS) {
-    GELOGE(compute_ret, "node %s type %s compute failed or not imply.",
+    REPORT_CALL_ERROR("E19999", "node %s type %s compute failed.", node_->GetName().c_str(), node_type.c_str());
+    GELOGE(compute_ret, "[Invoke][Compute]node %s type %s compute failed or not imply.",
            node_->GetName().c_str(), node_type.c_str());
     return compute_ret;
   }
   int32_t output_num = context.NumOutputs();
   if (static_cast<size_t>(output_num) != outputs.size()) {
-    GELOGE(INTERNAL_ERROR, "node %s type %s has %d output, but kernel compute only has %zu output.",
+    REPORT_INNER_ERROR("E19999", "node %s type %s has %d output,"
+                       "but kernel compute only has %zu output. check invalid",
+                       node_->GetName().c_str(), node_type.c_str(), output_num, outputs.size());
+    GELOGE(INTERNAL_ERROR, "[Check][Size]node %s type %s has %d output, but kernel compute only has %zu output.",
            node_->GetName().c_str(), node_type.c_str(), output_num, outputs.size());
     return INTERNAL_ERROR;
   }
@@ -155,7 +167,11 @@ Status DependInputShapeTask::Execute(TaskContext &context) {
     auto tensor_value = context.MutableOutput(i);
     GE_CHECK_NOTNULL(tensor_value);
     if (tensor_data.GetSize() > tensor_value->GetSize()) {
-      GELOGE(INTERNAL_ERROR, "node:%s type:%s [%d]th compute data size=%zu, but context data size=%zu.",
+      REPORT_INNER_ERROR("E19999", "node:%s type:%s [%d]th compute data size=%zu, but context data size=%zu."
+                         "check invalid",
+                         node_->GetName().c_str(), node_type.c_str(), i,
+                         tensor_data.GetSize(), tensor_value->GetSize());
+      GELOGE(INTERNAL_ERROR, "[Check][Size]node:%s type:%s [%d]th compute data size=%zu, but context data size=%zu.",
              node_->GetName().c_str(), node_type.c_str(), i, tensor_data.GetSize(), tensor_value->GetSize());
       return INTERNAL_ERROR;
     }
@@ -180,7 +196,7 @@ Status DependInputShapeTask::Execute(TaskContext &context) {
 Status DependInputShapeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(),
                          "[DependInputShapeTaskExecuteAsync] Start");
-  GE_CHK_STATUS_RET(Execute(context), "node:%s type:%s depend input shape task execute failed",
+  GE_CHK_STATUS_RET(Execute(context), "[Invoke][Execute]node:%s type:%s depend input shape task execute failed",
                     node_->GetName().c_str(), node_->GetType().c_str());
   if (done_callback != nullptr) {
     // host cpu no need register callback, call it directly.
@@ -213,7 +229,8 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
            node->GetName().c_str(), node_type.c_str());
     task = MakeShared<RefInputTask>(node);
     if (task == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "create RefInputTask for node %s failed.", node->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "Create RefInputTask failed for node %s.", node->GetName().c_str());
+      GELOGE(MEMALLOC_FAILED, "[Create][RefInputTask] failed for node %s.", node->GetName().c_str());
       return MEMALLOC_FAILED;
     }
   } else if (DependInputShapeTask::IsBelong(node_type)) {
@@ -221,7 +238,9 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
            node->GetName().c_str(), node_type.c_str());
     task = MakeShared<DependInputShapeTask>(node);
     if (task == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "create DependInputShapeTask for node %s type %s failed.",
+      REPORT_CALL_ERROR("E19999", "Create DependInputShapeTask failed for node %s type %s.",
+                        node->GetName().c_str(), node_type.c_str());
+      GELOGE(MEMALLOC_FAILED, "[Create][DependInputShapeTask]failed for node %s type %s.",
              node->GetName().c_str(), node_type.c_str());
       return MEMALLOC_FAILED;
     }
@@ -229,7 +248,8 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
     GELOGI("node %s type %s, use ConstantNodeTask.", node->GetName().c_str(), node_type.c_str());
     auto tensor = model.GetTensor(node);
     if (tensor == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to get tensor by name: %s", node->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "GetTensor failed for name: %s", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Get][Tensor] failed for name: %s", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
 
@@ -251,7 +271,7 @@ Status ConstantNodeTask::UpdateArgs(TaskContext &context) {
 
 Status ConstantNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Start execute.", context.GetNodeName());
-  GE_CHK_STATUS_RET(context.SetOutput(0, *tensor_), "[%s] Failed to set output.", context.GetNodeName());
+  GE_CHK_STATUS_RET(context.SetOutput(0, *tensor_), "[Set][Output] failed for [%s].", context.GetNodeName());
   if (done_callback) {
     GELOGD("[%s] Start invoke callback.", context.GetNodeName());
     done_callback();

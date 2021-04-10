@@ -45,8 +45,7 @@ Status NodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
 
 Status NodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const {
   HYBRID_CHK_STATUS_RET(task.ExecuteAsync(context, callback),
-                        "Failed to execute task. node = %s",
-                        context.GetNodeItem().NodeName().c_str());
+                        "[Execute][Task] failed. node = %s", context.GetNodeItem().NodeName().c_str());
   return SUCCESS;
 }
 
@@ -106,7 +105,10 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
   const auto &lib_name = op_desc->GetOpKernelLibName();
   auto it = engine_mapping_.find(lib_name);
   if (it == engine_mapping_.end()) {
-    GELOGE(UNSUPPORTED, "KernelLib not supported. node = %s, lib_name = %s", node.GetName().c_str(), lib_name.c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to get ExecutorType by lib_name:%s, node:%s",
+                       lib_name.c_str(), node.GetName().c_str());
+    GELOGE(UNSUPPORTED, "[Find][ExecutorType]Failed to get ExecutorType by lib_name:%s, node:%s",
+           lib_name.c_str(), node.GetName().c_str());
     return ExecutorType::RESERVED;
   }
 
@@ -117,7 +119,10 @@ Status NodeExecutorManager::GetExecutor(Node &node, const NodeExecutor **executo
   auto executor_type = ResolveExecutorType(node);
   const auto it = executors_.find(executor_type);
   if (it == executors_.end()) {
-    GELOGE(INTERNAL_ERROR, "Failed to get executor by type: %d.", static_cast<int>(executor_type));
+    REPORT_INNER_ERROR("E19999", "Failed to get executor by type: %d.",
+           static_cast<int>(executor_type));
+    GELOGE(INTERNAL_ERROR, "[Check][ExecutorType]Failed to get executor by type: %d.",
+           static_cast<int>(executor_type));
     return INTERNAL_ERROR;
   }
 
@@ -155,16 +160,16 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
       GeShape output_shape = output_tensor.GetShape();
       int64_t output_mem_size = 0;
       GE_CHK_STATUS_RET(TensorUtils::CalcTensorMemSize(output_shape, format, data_type, output_mem_size),
-                        "hccl calc tensor mem size failed.");
+                        "[Calc][TensorMemSize] failed, node:%s.", node.GetName().c_str());
       GE_CHK_STATUS_RET(CheckInt64AddOverflow(output_mem_size, MEMORY_ALIGN_RATIO * MEMORY_ALIGN_SIZE - 1),
-                        "[%s] Invalid output mem size: %ld",
+                        "[Check][Overflow][%s] Invalid output mem size: %ld",
                         node.GetName().c_str(),
                         output_mem_size);
       output_mem_size = ((output_mem_size +
                           MEMORY_ALIGN_RATIO * MEMORY_ALIGN_SIZE - 1) / MEMORY_ALIGN_SIZE) * MEMORY_ALIGN_SIZE;
       TensorUtils::SetSize(output_tensor, output_mem_size);
       GE_CHK_STATUS_RET(op_desc->UpdateOutputDesc(static_cast<uint32_t>(i), output_tensor),
-                        "hccl update output size failed.");
+                        "[Update][OutputDesc] failed, node:%s.", node.GetName().c_str());
       GELOGD("%s output desc[%zu], dim_size: %zu, mem_size: %ld.", node.GetName().c_str(), i,
              output_tensor.GetShape().GetDimNum(), output_mem_size);
     }
@@ -189,14 +194,17 @@ Status NodeExecutorManager::InitializeExecutors() {
     GE_CHECK_NOTNULL(build_fn);
     auto executor = std::unique_ptr<NodeExecutor>(build_fn());
     if (executor == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to create executor for engine type = %d", static_cast<int>(engine_type));
+      REPORT_CALL_ERROR("E19999", "Create NodeExecutor failed for engine type = %d",
+                        static_cast<int>(engine_type));
+      GELOGE(INTERNAL_ERROR, "[Create][NodeExecutor] failed for engine type = %d", static_cast<int>(engine_type));
       return INTERNAL_ERROR;
     }
 
     GELOGD("Executor of engine type = %d was created successfully", static_cast<int>(engine_type));
     auto ret = executor->Initialize();
     if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to initialize NodeExecutor of type = %d, clear executors", static_cast<int>(engine_type));
+      REPORT_CALL_ERROR("E19999", "Initialize NodeExecutor failed for type = %d", static_cast<int>(engine_type));
+      GELOGE(ret, "[Initialize][NodeExecutor] failed for type = %d", static_cast<int>(engine_type));
       for (auto &executor_it : executors_) {
         executor_it.second->Finalize();
       }

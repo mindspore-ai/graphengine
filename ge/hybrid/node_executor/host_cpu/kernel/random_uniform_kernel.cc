@@ -36,31 +36,41 @@ Status RandomUniformKernel::Compute(TaskContext& context) {
   (void)AttrUtils::GetInt(node_->GetOpDesc(), "seed2", seed2);
   DataType data_type = DT_FLOAT;
   if (!AttrUtils::GetDataType(node_->GetOpDesc(), kAttrDtype, data_type)) {
-    GELOGE(PARAM_INVALID, "[%s] get attr dtype failed.", node_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "GetDataType failed for [%s].", node_->GetName().c_str());
+    GELOGE(PARAM_INVALID, "[Get][DataType] failed for [%s].", node_->GetName().c_str());
     return PARAM_INVALID;
   }
   switch (data_type) {
     case DT_FLOAT16:
       if (GenerateFP16(node_->GetOpDesc(), seed, seed2, context) != SUCCESS) {
-        GELOGE(FAILED, "Generate random_distribution failed, data_type=DT_FLOAT");
+        GELOGE(FAILED, "[Invoke][GenerateFP16]Generate random_distribution failed for %s, data_type=DT_FLOAT16",
+               node_->GetName().c_str());
         return FAILED;
       }
       break;
     case DT_FLOAT:
       if (Generate<float>(node_->GetOpDesc(), seed, seed2, context) != SUCCESS) {
-        GELOGE(FAILED, "Generate random_distribution failed, data_type=DT_FLOAT");
+        GELOGE(FAILED, "[Invoke][Generate]Generate random_distribution failed for %s, data_type=DT_FLOAT",
+               node_->GetName().c_str());
         return FAILED;
       }
       break;
     case DT_DOUBLE:
       if (Generate<double>(node_->GetOpDesc(), seed, seed2, context) != SUCCESS) {
-        GELOGE(FAILED, "Generate random_distribution failed, data_type=DT_DOUBLE");
+        GELOGE(FAILED, "[Invoke][Generate]Generate random_distribution failed for %s, data_type=DT_DOUBLE",
+               node_->GetName().c_str());
         return FAILED;
       }
       break;
     default:
-      GELOGE(UNSUPPORTED, "Supported DataType is DT_FLOAT16 / DT_FLOAT / DT_DOUBLE, but data_type=%s",
-             TypeUtils::DataTypeToSerialString(data_type).c_str());
+      REPORT_INNER_ERROR("E19999", "[Check][DataType]Supported DataType is DT_FLOAT16 / DT_FLOAT / DT_DOUBLE,"
+                         "but data_type=%s, node:%s",
+                         TypeUtils::DataTypeToSerialString(data_type).c_str(),
+                         node_->GetName().c_str());
+      GELOGE(UNSUPPORTED, "[Check][DataType]Supported DataType is DT_FLOAT16 / DT_FLOAT / DT_DOUBLE,"
+             "but data_type=%s, node:%s",
+             TypeUtils::DataTypeToSerialString(data_type).c_str(),
+             node_->GetName().c_str());
       return UNSUPPORTED;
   }
 
@@ -79,7 +89,7 @@ Status RandomUniformKernel::Generate(const ge::OpDescPtr &op_desc_ptr, int64_t s
   auto tensor_size = data_num * sizeof(T);
   TensorValue tensor;
   GE_CHK_STATUS_RET(context.AllocateTensor(tensor_size, tensor, &attr),
-                    "[%s] Failed to allocate output of size %zu",
+                    "[Invoke][AllocateTensor][%s] Failed to allocate output of size %zu",
                     context.GetNodeName(),
                     tensor_size);
 
@@ -101,7 +111,7 @@ Status RandomUniformKernel::Generate(const ge::OpDescPtr &op_desc_ptr, int64_t s
     *(buf + i) = distribution(gen);
   }
 
-  GE_CHK_STATUS_RET(context.SetOutput(0, tensor), "[%s] Failed to set output.", context.GetNodeName());
+  GE_CHK_STATUS_RET(context.SetOutput(0, tensor), "[Set][Output] failed for [%s].", context.GetNodeName());
   return SUCCESS;
 }
 
@@ -115,7 +125,7 @@ Status RandomUniformKernel::GenerateFP16(const ge::OpDescPtr &op_desc_ptr, int64
   auto tensor_size = data_num * sizeof(fp16_t);
   TensorValue tensor;
   GE_CHK_STATUS_RET(context.AllocateTensor(tensor_size, tensor, &attr),
-                    "[%s] Failed to allocate output of size %zu",
+                    "[Invoke][AllocateTensor][%s] Failed to allocate output of size %zu",
                     context.GetNodeName(),
                     tensor_size);
 
@@ -137,7 +147,7 @@ Status RandomUniformKernel::GenerateFP16(const ge::OpDescPtr &op_desc_ptr, int64
     *(buf + i) = static_cast<fp16_t>(distribution(gen));
   }
 
-  GE_CHK_STATUS_RET(context.SetOutput(0, tensor), "[%s] Failed to set output.", context.GetNodeName());
+  GE_CHK_STATUS_RET(context.SetOutput(0, tensor), "[Set][Output]failed for [%s].", context.GetNodeName());
   return SUCCESS;
 }
 

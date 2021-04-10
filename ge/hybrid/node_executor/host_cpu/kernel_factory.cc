@@ -34,7 +34,10 @@ std::shared_ptr<Kernel> KernelFactory::CreateKernel(const NodePtr &node) {
   if (iter != kernel_creator_map_.end()) {
     return iter->second(node);
   }
-  GELOGE(FAILED, "Not supported, type = %s, name = %s", node->GetType().c_str(), node->GetName().c_str());
+  REPORT_INNER_ERROR("E19999", "Not supported because kernel_creator_map_ not contain type:%s, name = %s",
+                     node->GetType().c_str(), node->GetName().c_str());
+  GELOGE(FAILED, "[Find][NodeType]Not supported because kernel_creator_map_ not contain type = %s, name = %s",
+         node->GetType().c_str(), node->GetName().c_str());
   return nullptr;
 }
 

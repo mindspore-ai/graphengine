@@ -25,11 +25,12 @@ namespace host_cpu {
 Status VariableKernel::Compute(TaskContext& context) {
   auto tensor = context.GetVariable(node_->GetName());
   if (tensor == nullptr) {
-    GELOGE(PARAM_INVALID, "tensor is NULL.");
+    REPORT_INNER_ERROR("E19999", "Get Variable from task context for node:%s failed.", context.GetNodeName());
+    GELOGE(PARAM_INVALID, "[Check][Param]Get Variable from task context for node:%s failed.", context.GetNodeName());
     return PARAM_INVALID;
   }
   // Constant & Variable Op has and only has one output
-  GE_CHK_STATUS_RET(context.SetOutput(0, *tensor), "[%s] Failed to set output.", context.GetNodeName());
+  GE_CHK_STATUS_RET(context.SetOutput(0, *tensor), "[Set][Output] failed for [%s].", context.GetNodeName());
   GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;
 }

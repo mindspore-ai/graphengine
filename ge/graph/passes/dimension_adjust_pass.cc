@@ -78,13 +78,25 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     GELOGE(ret, "DimensionAdjustPass compute failed");
     return ret;
   }
+  // Need to handle axis_input of node like ExpandDims
   if (node->GetAllInDataAnchors().size() > static_cast<size_t>(kRemoveInputIndex)) {
+    auto axis_node_out_anchor = node->GetInDataAnchor(kRemoveInputIndex)->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(axis_node_out_anchor);
+    auto axis_node = axis_node_out_anchor->GetOwnerNode();
+    // 1.Copy control dependency of axis node
     ret = PassUtils::UnlinkNodeWithControlCopy(node, kRemoveInputIndex);
     if (ret != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Unlink op:%s(%s) data input:%u with control edge copy failed",
                         node->GetName().c_str(), node->GetType().c_str(), kRemoveInputIndex);
       GELOGE(ret, "DimensionAdjustPass unlink node with control copy fail.");
       return ret;
+    }
+    // 2.Remove const axis node without any output
+    if ((axis_node->GetType() == CONSTANT || axis_node->GetType() == CONSTANTOP) &&
+        axis_node->GetOutDataNodesSize() == 0) {
+      ret = IsolateAndDeleteNode(axis_node, {});
+      GE_CHK_GRAPH_STATUS_RET(ret, "Fail to remove node %s.", axis_node->GetName().c_str());
+      GELOGI("Remove useless axis input const %s", axis_node->GetName().c_str());
     }
   }
 

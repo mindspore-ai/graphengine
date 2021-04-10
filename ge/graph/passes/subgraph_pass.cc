@@ -94,6 +94,8 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
 
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+    REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "Get attr PARENT_NODE_INDEX failed, node:%s.", node->GetName().c_str());
     return FAILED;
   }
@@ -208,6 +210,8 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
   // index of body_subgraph is 1
   ComputeGraphPtr while_body = NodeUtils::GetSubgraph(*node, 1);
   if (while_body == nullptr) {
+    REPORT_INNER_ERROR("E19999", "While_body of node:%s(%s) is nullptr, check invalid",
+                       node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "while_body of %s is NULL.", node->GetName().c_str());
     return FAILED;
   }
@@ -242,12 +246,16 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
       if (output_node == nullptr) {
         output_node = n;
       } else {
+        REPORT_INNER_ERROR("E19999", "While_body graph:%s exists multi NetOutput nodes, check invalid",
+                           while_body->GetName().c_str());
         GELOGE(FAILED, "while_body %s exists multi NetOutput nodes.", while_body->GetName().c_str());
         return FAILED;
       }
     }
   }
   if (output_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "While_body graph:%s has no output, check invalid",
+                       while_body->GetName().c_str());
     GELOGE(FAILED, "while_body %s has no output.", while_body->GetName().c_str());
     return FAILED;
   }
@@ -462,6 +470,10 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
   (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
   (void)AttrUtils::SetBool(op_desc, ATTR_NAME_CANNOT_BE_DELETED, true);
   if (GraphUtils::InsertNodeAfter(out_anchor, in_anchors, graph->AddNode(op_desc)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Insert Cast node %s(%s) after %s(%s) failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+                      out_anchor->GetOwnerNode()->GetName().c_str(),
+                      out_anchor->GetOwnerNode()->GetType().c_str());
     GELOGE(FAILED, "Insert IDENTITY node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
     return FAILED;
   }
@@ -481,6 +493,9 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
 Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::vector<InDataAnchorPtr> &dsts,
                                        const NodePtr &insert_node, uint32_t input_index, uint32_t output_index) {
   if (GraphUtils::AddEdge(src, insert_node->GetInDataAnchor(input_index)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%u) failed",
+                      src->GetOwnerNode()->GetName().c_str(), src->GetOwnerNode()->GetType().c_str(), src->GetIdx(),
+                      insert_node->GetName().c_str(), insert_node->GetType().c_str(), input_index);
     GELOGE(FAILED, "Add data_edge %s:%d->%s:%u failed.",
            src->GetOwnerNode()->GetName().c_str(), src->GetIdx(), insert_node->GetName().c_str(), input_index);
     return FAILED;
@@ -490,6 +505,12 @@ Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::v
            dst->GetOwnerNode()->GetName().c_str());
     if ((GraphUtils::RemoveEdge(src, dst) != GRAPH_SUCCESS) ||
         (GraphUtils::AddEdge(insert_node->GetOutDataAnchor(output_index), dst) != GRAPH_SUCCESS)) {
+      REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%u) or "
+                        "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%u) failed",
+                        src->GetOwnerNode()->GetName().c_str(), src->GetOwnerNode()->GetType().c_str(), src->GetIdx(),
+                        dst->GetOwnerNode()->GetName().c_str(), dst->GetOwnerNode()->GetType().c_str(), dst->GetIdx(),
+                        insert_node->GetName().c_str(), insert_node->GetType().c_str(), output_index,
+                        dst->GetOwnerNode()->GetName().c_str(), dst->GetOwnerNode()->GetType().c_str(), dst->GetIdx());
       GELOGE(FAILED, "Replace data_edge %s:%d->%s:%d by %s:%u->%s:%d failed.",
              src->GetOwnerNode()->GetName().c_str(), src->GetIdx(),
              dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx(),

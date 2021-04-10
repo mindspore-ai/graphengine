@@ -34,11 +34,13 @@ const char *const kAttrNameSrcFormat = "src_format";
 namespace ge {
 Status TransposeTransDataPass::Run(NodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "param [node] must not be null.");
     return PARAM_INVALID;
   }
   auto op_desc = node->GetOpDesc();
   if (op_desc == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node's op_desc is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "OpDesc of param [node] must not be null.");
     return PARAM_INVALID;
   }
@@ -77,6 +79,7 @@ Status TransposeTransDataPass::Run(NodePtr &node) {
     GE_CHECK_NOTNULL(out_node);
     OpDescPtr out_op_desc = out_node->GetOpDesc();
     if (out_op_desc == nullptr) {
+      REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
       GELOGE(FAILED, "OpDesc of out data node of [%s] must not be null.", node->GetName().c_str());
       return FAILED;
     }
@@ -111,6 +114,10 @@ Status TransposeTransDataPass::CheckOneInAndOneOutDataAnchor(NodePtr &node) cons
   // Trans op has one input data node, maybe has N output data nodes
   uint32_t in_data_node_nums = node->GetInDataNodes().size();
   if (in_data_anchor_nums != 1 || out_data_anchor_nums != 1 || in_data_node_nums != 1) {
+    REPORT_INNER_ERROR("E19999", "In data anchor num:%u, out data anchor num:%u, in data node num:%u of node:%s(%s) "
+                       "must be all equal to 1, check invalid",
+                       in_data_anchor_nums, out_data_anchor_nums, in_data_node_nums,
+                       node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[%s] %s has %u in %u out data anchor, has %u in data node.", node->GetType().c_str(),
            node->GetName().c_str(), in_data_anchor_nums, out_data_anchor_nums, in_data_node_nums);
     return FAILED;
@@ -122,6 +129,8 @@ Status TransposeTransDataPass::RemoveTranspose(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Owner graph of node:%s(%s) is nullptr, check invalid",
+                       node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[%s] The owner graph must not be null.", node->GetName().c_str());
     return FAILED;
   }
@@ -146,6 +155,8 @@ Status TransposeTransDataPass::RemoveTranspose(NodePtr &node) {
   }
   AddNodeDeleted(node);
   if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                      node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
     GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
     return FAILED;
   }

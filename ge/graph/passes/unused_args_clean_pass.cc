@@ -101,6 +101,8 @@ Status UnusedArgsCleanPass::ClassifyDataNodes(const ComputeGraphPtr &graph, cons
   for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
     const auto &subgraph = graph->GetSubgraph(name);
     if (subgraph == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Get subgraph from graph:%s by name:%s failed",
+                        graph->GetName().c_str(), name.c_str());
       GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
@@ -113,6 +115,8 @@ Status UnusedArgsCleanPass::ClassifyDataNodes(const ComputeGraphPtr &graph, cons
 
       uint32_t parent_index = 0;
       if (!AttrUtils::GetInt(data->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+        REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                          data->GetName().c_str(), data->GetType().c_str());
         GELOGE(FAILED, "Parent index not found, name: %s", data->GetName().c_str());
         return FAILED;
       }
@@ -150,6 +154,8 @@ Status UnusedArgsCleanPass::UpdateInputTensor(const map<ComputeGraphPtr, map<uin
     const auto data = it->second;
 
     if (!AttrUtils::SetInt(data->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, update_index)) {
+      REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                        data->GetName().c_str(), data->GetType().c_str());
       GELOGE(FAILED, "Set parent index failed, name: %s", data->GetName().c_str());
       return FAILED;
     }

@@ -27,10 +27,12 @@ namespace ge {
 ///
 Status UnusedConstPass::Run(NodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
   if (node->GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node's op_desc is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "param [opDesc] must not be null.");
     return PARAM_INVALID;
   }

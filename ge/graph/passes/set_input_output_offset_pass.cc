@@ -54,6 +54,8 @@ Status SetInputOutputOffsetPass::SetInputOffsetForFusion(const std::vector<int64
       std::vector<int64_t> input_offset_of_node;
       input_offset_of_node = op_desc->GetInputOffset();
       if (input_offset_of_node.size() < i) {
+        REPORT_INNER_ERROR("E19999", "Input offsets size:%zu of node:%s(%s) < index:%zu, check invalid",
+                           input_offset_of_node.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), i);
         GELOGE(PARAM_INVALID, "not get input_offset of %zu", i);
         return PARAM_INVALID;
       }
@@ -77,10 +79,15 @@ Status SetInputOutputOffsetPass::SetInputOffsetForFusion(const std::vector<int64
       int64_t relative_offset = input_offset - out_offset;
       zero_copy_relative_offset.emplace_back(relative_offset);
       GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(data_op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset),
+                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                         ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                                         data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
                        GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
                        return FAILED);
       GE_CHK_BOOL_EXEC(
           ge::AttrUtils::SetListInt(data_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+          REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                            data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
           GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
           return FAILED);
     }
@@ -115,10 +122,15 @@ Status SetInputOutputOffsetPass::SetInputOffsetForHcom(const ge::NodePtr &node, 
         zero_copy_basic_offset.emplace_back(output_offset);
         zero_copy_relative_offset.emplace_back(relative_offset);
         GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(in_op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset),
+                         REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                           ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                                           in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
                          GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
                          return FAILED);
         GE_CHK_BOOL_EXEC(
             ge::AttrUtils::SetListInt(in_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+            REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                              in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
             GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
             return FAILED);
       }
@@ -159,6 +171,9 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForConcat(const NodePtr &node) {
   output_offset_of_concat = op_desc->GetOutputOffset();
   // phony_concat has one output
   GE_IF_BOOL_EXEC(output_offset_of_concat.size() != 1,
+                  REPORT_INNER_ERROR("E19999", "Output offsets size:%zu of node:%s(%s) not equal to 1, check invalid",
+                                     output_offset_of_concat.size(),
+                                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
                   GELOGE(PARAM_INVALID, "%s should has one output.", node->GetName().c_str());
                   return PARAM_INVALID);
   NodePtr net_output = node->GetOutDataNodes().at(0);
@@ -186,9 +201,14 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForConcat(const NodePtr &node) {
     zero_copy_relative_offset.emplace_back(relative_offset);
   }
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset),
+                   REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                                     out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+                   REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                     ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                                     out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
                    return FAILED);
   return SUCCESS;
@@ -232,9 +252,14 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForHcom(const NodePtr &node, con
   }
 
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset),
+                   REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                                     out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+                   REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                     ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                                     out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
                    return FAILED);
   return SUCCESS;

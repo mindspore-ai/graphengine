@@ -82,6 +82,7 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
 
   if (dst_in_anchor == nullptr || dst_in_anchor->GetOwnerNode() == nullptr ||
       dst_in_anchor->GetOwnerNode()->GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param dst_in_anchor related node info has nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return GRAPH_FAILED;
   }
@@ -257,11 +258,13 @@ graphStatus TransOpDepthFusionPass::RelinkEdges(const OutDataAnchorPtr &new_out_
                                                 const OutDataAnchorPtr &old_out_anchor,
                                                 const InDataAnchorPtr &in_data_anchor) {
   if (new_out_anchor == nullptr || old_out_anchor == nullptr || in_data_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param anchor info has nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "new_out_anchor or old_out_anchor or in_data_anchor is nullptr");
     return GRAPH_FAILED;
   }
   if (new_out_anchor->GetOwnerNode() == nullptr || old_out_anchor->GetOwnerNode() == nullptr ||
       in_data_anchor->GetOwnerNode() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param anchor info owner node has nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "anchor's owner node is nullptr");
     return GRAPH_FAILED;
   }
@@ -305,11 +308,14 @@ graphStatus TransOpDepthFusionPass::RemoveNode(const NodePtr &node, const ge::Co
     return GRAPH_FAILED;
   }
   if (GraphUtils::IsolateNode(node, {0}) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Isolate node:%s(%s) failed", node->GetName().c_str(), node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", node->GetName().c_str(),
            node->GetType().c_str());
     return GRAPH_FAILED;
   }
   if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                      node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Remove node: %s, type: %s without relink failed", node->GetName().c_str(),
            node->GetType().c_str());
     return GRAPH_FAILED;

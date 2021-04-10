@@ -864,7 +864,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kPrepareOptimize);
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kSubGraphOptimize);
   // set fuzz compile flag after origin graph optimize
   GE_CHK_STATUS_RET(SetFuzzCompileFlag(compute_graph), "Set fuzz compile flag failed.");
   ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);

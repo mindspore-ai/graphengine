@@ -334,6 +334,9 @@ Status PassUtils::UnlinkNodeWithControlCopy(NodePtr &node, int index) {
   auto father_node = out_data_anchor->GetOwnerNode();
   // link father_node's in control nodes to node
   if (GraphUtils::CopyInCtrlEdges(father_node, node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Copy in control edge from node:%s(%s) to node:%s(%s) failed",
+                      father_node->GetName().c_str(), father_node->GetType().c_str(),
+                      node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
   return SUCCESS;

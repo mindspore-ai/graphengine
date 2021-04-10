@@ -318,16 +318,14 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     }
   }
 
-  if (is_hccl_op) {
-    for (const auto &src_node : ge_node->GetInControlNodes()) {
-      auto src_node_item = MutableNodeItem(src_node);
-      GE_CHECK_NOTNULL(src_node_item);
+  for (const auto &src_node : ge_node->GetInControlNodes()) {
+    auto src_node_item = MutableNodeItem(src_node);
+    if ((src_node_item != nullptr) && (is_hccl_op || src_node_item->IsHcclOp())) {
       GELOGD("[%s](%s) Add input control dependent node [%s](%s)",
              ge_node->GetName().c_str(),
              ge_node->GetType().c_str(),
              src_node->GetName().c_str(),
              src_node->GetType().c_str());
-      src_node_item->has_observer = true;
       dependent_for_execution.emplace(src_node);
     }
   }

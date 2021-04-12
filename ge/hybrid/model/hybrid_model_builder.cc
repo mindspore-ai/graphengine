@@ -130,7 +130,7 @@ HybridModelBuilder::HybridModelBuilder(HybridModel &hybrid_model)
 
 Status HybridModelBuilder::Build() {
   GE_CHK_STATUS_RET(ValidateParams(), "Failed to validate GeRootModel");
-  hybrid_model_.model_name_ = ge_root_model_->GetName();
+  hybrid_model_.model_name_ = ge_root_model_->GetModelName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   GE_CHK_STATUS_RET(InitRuntimeParams(), "[%s] Failed to InitRuntimeParams", GetGraphName());
   GE_CHK_STATUS_RET(RecoverGraphUnknownFlag(), "[%s] Failed to RecoverGraphUnknownFlag", GetGraphName());
@@ -154,7 +154,7 @@ Status HybridModelBuilder::Build() {
 
 Status HybridModelBuilder::BuildForSingleOp() {
   GE_CHK_STATUS_RET(ValidateParams(), "Failed to validate GeRootModel");
-  hybrid_model_.model_name_ = ge_root_model_->GetName();
+  hybrid_model_.model_name_ = ge_root_model_->GetModelName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   auto ret = ge_root_model_->GetSubgraphInstanceNameToModel();
   const GeModelPtr ge_model = ret[ge_root_model_->GetRootGraph()->GetName()];

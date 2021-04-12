@@ -280,6 +280,7 @@ ModelManager::~ModelManager() {
   model_map_.clear();
   model_aicpu_kernel_.clear();
   cust_aicpu_so_.clear();
+  dump_exception_flag_ = false;
 
   GE_IF_BOOL_EXEC(device_count > 0, GE_CHK_RT(rtDeviceReset(0)));
 }
@@ -1587,9 +1588,21 @@ Status ModelManager::GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint3
   for (const auto &model : model_map_) {
     auto davinci_model = model.second;
     if (davinci_model->GetDeviceId() == device_id) {
-      GELOGI("Start to GetOpDescInfo of device_id: %u.", device_id);
+      GELOGI("[Get][OpDescInfo] Start to GetOpDescInfo of device_id: %u in davinci model.", device_id);
       if (davinci_model->GetOpDescInfo(stream_id, task_id, op_desc_info)) {
-        GELOGI("Find specific node of stream_id: %u, task_id: %u.", stream_id, task_id);
+        GELOGI("[Get][OpDescInfo] Find specific node of stream_id: %u, task_id: %u in davinci model.",
+               stream_id, task_id);
+        return SUCCESS;
+      }
+    }
+  }
+  for (const auto &model : hybrid_model_map_) {
+    auto hybrid_model = model.second;
+    if (hybrid_model->GetDeviceId() == device_id) {
+      GELOGI("[Get][OpDescInfo] Start to GetOpDescInfo of device_id: %u in hybrid model.", device_id);
+      if (hybrid_model->GetOpDescInfo(stream_id, task_id, op_desc_info)) {
+        GELOGI("[Get][OpDescInfo] Find specific node of stream_id: %u, task_id: %u in hybrid model.",
+               stream_id, task_id);
         return SUCCESS;
       }
     }
@@ -1602,6 +1615,7 @@ Status ModelManager::EnableExceptionDump(const std::map<string, string> &options
   if (iter != options.end()) {
     GELOGI("Find option enable_exeception_dump is %s", iter->second.c_str());
     if (iter->second == "1") {
+      dump_exception_flag_ = true;
       rtError_t rt_ret = rtSetTaskFailCallback(reinterpret_cast<rtTaskFailCallback>(ExceptionCallback));
       if (rt_ret != RT_ERROR_NONE) {
         REPORT_CALL_ERROR("E19999", "Call rtSetTaskFailCallback fail, ret = 0x%X",

@@ -523,6 +523,7 @@ Status KernelTaskInfo::UpdateArgs() {
       return CopyNoncontinuousArgs(io_addr_offset_);
     }
     davinci_model_->SetTotalIOAddrs(io_addrs_);
+    davinci_model_->UpdateOpIOAddrs(task_id_, stream_id_, io_addrs_);
   } else if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
     return CopyNoncontinuousArgs(sizeof(aicpu::AicpuParamHead));
   }

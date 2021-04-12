@@ -118,6 +118,14 @@ Status KnownNodeTask::Init(TaskContext &context) {
                                                                     davinci_model_->SubModelId()),
                     "[Destroy][AicpuKernel] failed, session_id:%lu, model_id:%u, sub_model_id:%u",
                     davinci_model_->GetSessionId(), davinci_model_->Id(), davinci_model_->SubModelId());
+  if (!load_flag_) {
+    auto execution_context = const_cast<GraphExecutionContext *>(context.GetExecutionContext());
+    GE_CHECK_NOTNULL(execution_context);
+    auto &davinci_model = execution_context->davinci_model;
+    davinci_model.emplace_back(davinci_model_);
+    load_flag_ = true;
+  }
+
   GELOGI("[%s] KnownNodeExecutor::Init success.", context.GetNodeName());
   return SUCCESS;
 }

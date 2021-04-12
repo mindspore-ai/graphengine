@@ -29,6 +29,7 @@
 #include "common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/properties_manager.h"
+#include "common/dump/exception_dumper.h"
 #include "common/dump/opdebug_register.h"
 #include "common/types.h"
 #include "framework/common/util.h"
@@ -476,11 +477,15 @@ class DavinciModel {
   Status ReportProfilingData();
 
   void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
-    data_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);
+    exception_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);
   }
 
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const shared_ptr<OpDesc> &op_desc, uintptr_t args) {
     data_dumper_.SaveDumpTask(task_id, stream_id, op_desc, args);
+  }
+
+  Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos) const {
+    return exception_dumper_.DumpExceptionInfo(exception_infos);
   }
 
   void SetKnownShapeGlobalStep(void *global_step) {
@@ -562,8 +567,9 @@ class DavinciModel {
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
 
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
-    return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
+    return exception_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
   }
+  void UpdateOpIOAddrs(uint32_t task_id, uint32_t stream_id, const std::vector<void *> &io_addrs);
 
   bool GetRunningFlag() const { return running_flg_; }
   void SetRunningFlag(bool flag) { running_flg_ = flag; }
@@ -1012,6 +1018,7 @@ class DavinciModel {
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
+  ExceptionDumper exception_dumper_;
   OpdebugRegister opdebug_register_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;

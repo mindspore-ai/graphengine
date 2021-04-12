@@ -1034,4 +1034,16 @@ TEST_F(UtestDavinciModel, NnExecute) {
   model.task_list_.resize(1);
   EXPECT_EQ(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
 }
+TEST_F(UtestDavinciModel, update_io_addr_success) {
+  DavinciModel model(0, nullptr);
+  uint32_t task_id = 1;
+  uint32_t stream_id = 2;
+  model.fixed_mem_base_ = 0x22;
+  model.mem_base_ = reinterpret_cast<uint8_t *>(&task_id);
+  OpDescInfo op_desc_info = {"Save", "Save", 1, 2, {FORMAT_NCHW}, {{1}}, {DT_FLOAT}, {nullptr}, {2},
+                             {FORMAT_NCHW}, {{1}}, {DT_FLOAT}, {nullptr}, {2}};
+  model.exception_dumper_.op_desc_info_ = { op_desc_info };
+  vector<void *> io_addr = {nullptr, nullptr};
+  model.UpdateOpIOAddrs(task_id, stream_id, io_addr);
+}
 }  // namespace ge

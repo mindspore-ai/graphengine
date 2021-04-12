@@ -61,6 +61,8 @@ class HybridDavinciModel {
 
   uint64_t GetSessionId();
 
+  uint32_t GetDeviceId() const;
+
   Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type);
 
   void GetUserDesignateShapeOrder(std::vector<std::string> &user_input_shape_order);
@@ -79,6 +81,8 @@ class HybridDavinciModel {
   bool GetRunningFlag() const;
 
   Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
+
+  bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
 
  private:
   HybridDavinciModel() = default;

@@ -19,6 +19,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/tensor_adapter.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "hybrid/executor//worker//shape_inference_engine.h"
 #include "common/dump/dump_op.h"
@@ -70,6 +71,7 @@ class NodeDoneCallback {
   Status PrepareConstInputs(const NodeItem &node_item);
   Status DumpDynamicNode();
   Status ProfilingReport();
+  Status SaveDumpOpInfo();
   Status GetTaskDescInfo(const NodePtr node, const HybridModel *model,
                          std::vector<TaskDescInfo> &task_desc_info);
   GraphExecutionContext *graph_context_;
@@ -266,6 +268,40 @@ Status NodeDoneCallback::DumpDynamicNode() {
   return SUCCESS;
 }
 
+Status NodeDoneCallback::SaveDumpOpInfo() {
+  GE_CHECK_NOTNULL(graph_context_);
+  GE_CHECK_NOTNULL(graph_context_->model);
+
+  auto node = context_->GetNodeItem().node;
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "[Save][DumpOpInfo] Get node is nullptr.");
+    return PARAM_INVALID;
+  }
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+
+  vector<void *> input_addrs;
+  vector<void *> output_addrs;
+  for (int i = 0; i < context_->NumInputs(); i++) {
+    auto tensor_value = context_->GetInput(i);
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "[Save][DumpOpInfo] Tensor value is nullptr.");
+    void *input_addr = const_cast<void *>(tensor_value->GetData());
+    input_addrs.emplace_back(input_addr);
+  }
+  for (int j = 0; j < context_->NumOutputs(); j++) {
+    auto tensor_value = context_->GetOutput(j);
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "[Save][DumpOpInfo] Tensor value is nullptr.");
+    void *output_addr = const_cast<void *>(tensor_value->GetData());
+    output_addrs.emplace_back(output_addr);
+  }
+
+  uint32_t stream_id = context_->GetStreamId();
+  uint32_t task_id = context_->GetTaskId();
+  graph_context_->exception_dumper.SaveDumpOpInfo(op_desc, task_id, stream_id, input_addrs, output_addrs);
+
+  return SUCCESS;
+}
+
 Status NodeDoneCallback::OnNodeDone() {
   auto &node_item = context_->GetNodeItem();
   GELOGI("[%s] Start callback process.", node_item.NodeName().c_str());
@@ -276,6 +312,12 @@ Status NodeDoneCallback::OnNodeDone() {
   if (dump_properties.IsDumpOpen() || context_->IsOverFlow()) {
     GELOGI("Start to dump dynamic shape op");
     GE_CHK_STATUS_RET(DumpDynamicNode(), "[Call][DumpDynamicNode] Failed.");
+  }
+
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  if (model_manager->IsDumpExceptionOpen()) {
+    GE_CHK_STATUS_RET(SaveDumpOpInfo(), "[Save][DumpOpInfo] Failed to dump op info.");
   }
 
   if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {

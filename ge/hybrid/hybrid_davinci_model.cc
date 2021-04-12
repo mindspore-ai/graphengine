@@ -82,6 +82,12 @@ class HybridDavinciModel::Impl {
     model_.SetOmName(model_name);
   }
 
+  uint32_t GetDeviceId() {
+    return model_.GetDeviceId();
+  }
+
+  const GraphExecutionContext * GeContext() { return executor_.GeContext(); }
+
   uint64_t GetSessionId() {
     return model_.GetSessionId();
   }
@@ -199,6 +205,11 @@ void HybridDavinciModel::SetOmName(const string &om_name) {
   }
 }
 
+uint32_t HybridDavinciModel::GetDeviceId() const {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetDeviceId();
+}
+
 Status HybridDavinciModel::GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
   GE_CHECK_NOTNULL(impl_);
   return impl_->GetDynamicBatchInfo(batch_info, dynamic_type);
@@ -244,6 +255,23 @@ bool HybridDavinciModel::GetRunningFlag() const { return impl_->GetRunningFlag()
 
 Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
   return impl_->SetRunAsyncListenerCallback(callback);
+}
+
+bool HybridDavinciModel::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
+  if (impl_ == nullptr) {
+    return false;
+  }
+  auto context = impl_->GeContext();
+  GE_CHECK_NOTNULL(context);
+  bool ret = context->exception_dumper.GetOpDescInfo(stream_id, task_id, op_desc_info);
+  if (!ret) {
+    for (const auto &iter : context->davinci_model) {
+      if (iter->GetOpDescInfo(stream_id, task_id, op_desc_info)) {
+        return true;
+      }
+    }
+  }
+  return ret;
 }
 }  // namespace hybrid
 }  // namespace ge

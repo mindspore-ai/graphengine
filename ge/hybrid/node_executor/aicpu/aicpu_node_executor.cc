@@ -208,6 +208,8 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
     REPORT_CALL_ERROR("E19999", "rtGetTaskIdAndStreamID failed, ret: 0x%X.", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
+  context.SetTaskId(task_id);
+  context.SetStreamId(stream_id);
   GELOGD("Aicpu node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
   (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicpu, 0);
   auto callback = [=, &context]() {

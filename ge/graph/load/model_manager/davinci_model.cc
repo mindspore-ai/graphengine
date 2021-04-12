@@ -2656,9 +2656,9 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
     GE_CHECK_NOTNULL(model_manager);
     auto exception_infos = model_manager->GetExceptionInfos();
     if (exception_infos.size() > 0) {
-      GE_CHK_STATUS_RET(data_dumper_.DumpExceptionInfo(exception_infos), "Dump exception info failed");
+      GE_CHK_STATUS_RET(DumpExceptionInfo(exception_infos), "[Dump][Exception] Dump exception info failed.");
     } else {
-      GELOGI("Exception info is null");
+      GELOGI("[Dump][Exception] Exception info is null.");
     }
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, INTERNAL_ERROR, outputs), "OnComputeDone failed.");
     return INTERNAL_ERROR;
@@ -4351,5 +4351,38 @@ Status DavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callbac
   GE_CHECK_NOTNULL(listener);
   listener->SetCallback(callback);
   return SUCCESS;
+}
+
+void DavinciModel::UpdateOpIOAddrs(uint32_t task_id, uint32_t stream_id, const std::vector<void *> &io_addrs) {
+  if (fixed_mem_base_ == reinterpret_cast<uintptr_t>(mem_base_)) {
+    GELOGD("[Update][OpIOAddrs] No need to update op input output addr.");
+    return;
+  }
+
+  OpDescInfo *op_desc_info = exception_dumper_.MutableOpDescInfo(task_id, stream_id);
+  if (op_desc_info == nullptr) {
+    GELOGW("[Update][OpIOAddrs] Find op desc failed, task_id: %u, stream_id: %u.", task_id, stream_id);
+    return;
+  }
+  size_t input_size = op_desc_info->input_addrs.size();
+  size_t output_size = op_desc_info->output_addrs.size();
+  if (input_size + output_size != io_addrs.size()) {
+    GELOGW("[Update][OpIOAddrs] Op[%s] input size[%zu] and output size[%zu] is not equal to io addr size[%zu]",
+           op_desc_info->op_name.c_str(), input_size, output_size, io_addrs.size());
+    return;
+  }
+
+  vector<void *> input_addrs;
+  vector<void *> output_addrs;
+  for (size_t i = 0; i < io_addrs.size(); i++) {
+    if (i < input_size) {
+      input_addrs.emplace_back(GetRunAddress(io_addrs[i]));
+    } else {
+      output_addrs.emplace_back(GetRunAddress(io_addrs[i]));
+    }
+  }
+  op_desc_info->input_addrs = input_addrs;
+  op_desc_info->output_addrs = output_addrs;
+  GELOGD("[Update][OpIOAddrs] Op [%s] update input output addr success.", op_desc_info->op_name.c_str());
 }
 }  // namespace ge

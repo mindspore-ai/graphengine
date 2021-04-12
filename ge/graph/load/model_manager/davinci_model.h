@@ -221,6 +221,11 @@ class DavinciModel {
   ///
   DataInputer *const GetDataInputer() const { return data_inputer_; }
 
+  uint32_t GetDataInputerSize() {
+    GE_CHECK_NOTNULL(data_inputer_);
+    return data_inputer_->Size();
+  }
+
   // get Stream number
   uint32_t StreamNum() const { return runtime_param_.stream_num; }
 
@@ -559,6 +564,10 @@ class DavinciModel {
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
     return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
   }
+
+  bool GetRunningFlag() const { return running_flg_; }
+  void SetRunningFlag(bool flag) { running_flg_ = flag; }
+  Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
 
  private:
   // memory address of weights
@@ -924,6 +933,8 @@ class DavinciModel {
   shared_ptr<ModelListener> listener_;
 
   bool run_flg_;
+  // check whether model is running with data
+  bool running_flg_ = false;
 
   mutex mux_run_flg_;
 

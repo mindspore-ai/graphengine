@@ -60,6 +60,15 @@ void GraphNode::Unlock() {
   sem_.Pop(unused);
 }
 
+void GraphNode::IncreaseLoadCount() {
+  std::unique_lock<std::mutex> lock(load_count_mu_);
+  if (load_record_ == kMaxLoadNum) {
+    GELOGW("Reach the maximum of load_count:%u", kMaxLoadNum);
+    return;
+  }
+  ++load_count_;
+}
+
 SubGraphInfo::SubGraphInfo() : subgraph_ptr_(nullptr), ge_model_ptr_(nullptr), malloc_flag_(false) {}
 
 SubGraphInfo::~SubGraphInfo() {

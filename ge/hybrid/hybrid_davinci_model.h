@@ -74,6 +74,12 @@ class HybridDavinciModel {
 
   void SetModelDescVersion(bool is_new_model_desc);
 
+  uint32_t GetDataInputerSize();
+
+  bool GetRunningFlag() const;
+
+  Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
+
  private:
   HybridDavinciModel() = default;
   class Impl;

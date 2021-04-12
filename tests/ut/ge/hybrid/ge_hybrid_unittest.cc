@@ -154,9 +154,10 @@ TEST_F(UtestGeHybrid, index_taskdefs_failed) {
 
   ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
   GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  ge_root_model->SetModelName("test_name");
   HybridModel hybrid_model(ge_root_model);
   HybridModelBuilder hybrid_model_builder(hybrid_model);
-
+  ASSERT_EQ(hybrid_model_builder.Build(), INTERNAL_ERROR);
   ASSERT_EQ(hybrid_model_builder.IndexTaskDefs(graph, ge_model), INTERNAL_ERROR);
 }
 
@@ -240,8 +241,6 @@ TEST_F(UtestGeHybrid, index_taskdefs_success) {
   GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
   HybridModel hybrid_model(ge_root_model);
   HybridModelBuilder hybrid_model_builder(hybrid_model);
-  hybrid_model_builder.Build();
-  hybrid_model_builder.BuildForSingleOp();
   ASSERT_EQ(hybrid_model_builder.IndexTaskDefs(graph, ge_model), SUCCESS);
 }
 

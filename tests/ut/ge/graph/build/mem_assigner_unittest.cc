@@ -191,6 +191,30 @@ class UtestMemoryAssignerTest : public testing::Test {
     return builder.GetGraph();
   }
 
+  ComputeGraphPtr MakeRefNodeGraph() {
+    ge::ut::GraphBuilder builder("graph");
+    auto var_input = builder.AddNode("var", "Variable", 1, 1);
+    auto const_input = builder.AddNode("const", "Const", 1, 1);
+    auto assign = builder.AddNode("assgin", "Assign", 2, 1);
+     // add link
+    builder.AddDataEdge(var_input, 0, assign, 0);
+    builder.AddDataEdge(const_input, 0, assign, 1);
+    // set offset
+    assign->GetOpDesc()->SetInputOffset({100, 0});
+    assign->GetOpDesc()->SetOutputOffset({10000});
+    var_input->GetOpDesc()->SetOutputOffset({10000});
+    const_input->GetOpDesc()->SetOutputOffset({1000});
+    // set mem type
+    ge::AttrUtils::SetListInt(assign->GetOpDesc(), ATTR_NAME_INPUT_MEM_TYPE_LIST, {RT_MEMORY_HBM, RT_MEMORY_L1});
+    // set ref
+    auto output_tensordesc = assign->GetOpDesc()->MutableOutputDesc(0);
+    ge::TensorUtils::SetReuseInput(*output_tensordesc, true);
+    uint32_t reuse_input_index = 0;
+    ge::TensorUtils::SetReuseInputIndex(*output_tensordesc, reuse_input_index);
+
+    return builder.GetGraph();
+  }
+
  protected:
   void SetUp() {}
 
@@ -298,4 +322,20 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_ref_var_not_found) {
   size_t zero_memory_size = 0;
   VarManager::Instance(0)->Init(0, 0, 0, 0);
   EXPECT_NE(memory_assigner.AssignMemory(false, mem_offset, zero_memory_size), GRAPH_SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_set_input_offset) {
+  ge::ComputeGraphPtr graph = MakeRefNodeGraph();
+  auto assgin = graph->FindNode("assgin");
+  EXPECT_EQ(assgin->GetOpDesc()->GetOutputOffset()[0], 10000);
+  EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[0], 100);
+  EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[1], 0);
+  GraphMemoryAssigner memoryAssigner(graph);
+  MemoryOffset memory_offset(RT_MEMORY_HBM, 0);
+  memoryAssigner.memory_offset_.emplace(RT_MEMORY_HBM, memory_offset);
+  EXPECT_EQ(memoryAssigner.SetInputOffset(), GRAPH_SUCCESS);
+  EXPECT_EQ(assgin->GetOpDesc()->GetOutputOffset()[0], 10100);
+  EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[0], 10100);
+  EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[1], 0);
+  EXPECT_EQ(memoryAssigner.CheckOffset(), GRAPH_SUCCESS);
 }

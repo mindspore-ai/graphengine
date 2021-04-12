@@ -44,7 +44,7 @@ class GeRootModel {
 
   void SetModelName(const std::string &model_name) { model_name_ = model_name; }
   
-  const std::string &GetModelName() const { return model_name_; };
+  const std::string &GetModelName() const { return model_name_; }
   
   Status CheckIsUnknownShape(bool &is_dynamic_shape);
 

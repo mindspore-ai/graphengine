@@ -130,7 +130,7 @@ HybridModelBuilder::HybridModelBuilder(HybridModel &hybrid_model)
 
 Status HybridModelBuilder::Build() {
   GE_CHK_STATUS_RET(ValidateParams(), "Failed to validate GeRootModel");
-  hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
+  hybrid_model_.model_name_ = ge_root_model_->GetName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   GE_CHK_STATUS_RET(InitRuntimeParams(), "[%s] Failed to InitRuntimeParams", GetGraphName());
   GE_CHK_STATUS_RET(RecoverGraphUnknownFlag(), "[%s] Failed to RecoverGraphUnknownFlag", GetGraphName());
@@ -154,7 +154,7 @@ Status HybridModelBuilder::Build() {
 
 Status HybridModelBuilder::BuildForSingleOp() {
   GE_CHK_STATUS_RET(ValidateParams(), "Failed to validate GeRootModel");
-  hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
+  hybrid_model_.model_name_ = ge_root_model_->GetName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   auto ret = ge_root_model_->GetSubgraphInstanceNameToModel();
   const GeModelPtr ge_model = ret[ge_root_model_->GetRootGraph()->GetName()];
@@ -272,7 +272,7 @@ Status HybridModelBuilder::ParseForceInfershapeNodes(const NodePtr &node, NodeIt
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
   // not care result, if no this attr, stand for the op does not need force infershape
-  (void)AttrUtils::GetBool(op_desc, kForceInfershape, node_item.is_need_force_infershape);
+  (void) AttrUtils::GetBool(op_desc, kForceInfershape, node_item.is_need_force_infershape);
   GELOGD("node [%s] is need do infershape , flag is %d",
          op_desc->GetName().c_str(),
          node_item.is_need_force_infershape);

@@ -50,7 +50,7 @@ class GraphExecutor {
                       std::vector<GeTensor> &output_tensor);
 
   ge::Status ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
-                               const std::vector<InputTensorInfo> &input_tensor);
+                               const std::vector<InputTensorInfo> &input_tensor, const RunAsyncCallback &callback);
 
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
 
@@ -116,6 +116,8 @@ class GraphExecutor {
 
   static Status GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info);
 
+  uint32_t GetExecuteModelId(const GeRootModelPtr &ge_root_model);
+
  private:
   Status PrepareInputData(const std::vector<GeTensor> &input_tensor, InputData &graph_input_data,
                           OutputData &graph_output_data, std::vector<InputOutputDescInfo> &output_desc);
@@ -123,7 +125,8 @@ class GraphExecutor {
   Status SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                           std::vector<GeTensor> &output_tensor);
 
-  Status AsyncExecuteModel(uint32_t model_id, const std::vector<InputTensorInfo> &input_tensor);
+  Status AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<InputTensorInfo> &input_tensor,
+                           const RunAsyncCallback &callback);
 
   void InitModelIdInfo(std::vector<uint32_t> &out_model_id_info, std::vector<SubGraphInfoPtr> &sub_graph_vec,
                        uint32_t output_size);
@@ -131,6 +134,9 @@ class GraphExecutor {
   Status FreeInOutBuffer();
 
   Status MallocInOutBuffer(const std::vector<uint64_t> &buffer_size, std::vector<void *> &data_addr);
+
+  static Status SetCallback(uint32_t model_id, const GeRootModelPtr &ge_root_model,
+                            const RunAsyncCallback &callback);
 
   bool init_flag_;
 

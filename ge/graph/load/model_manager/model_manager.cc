@@ -307,6 +307,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   GE_CHK_BOOL_RET_STATUS(listener.get() != nullptr, PARAM_INVALID, "Param incorrect, listener is null");
   if (model_id == INVALID_MODEL_ID) {
     GenModelId(&model_id);
+    GELOGD("Generate new model_id:%u", model_id);
   }
   auto name_to_model = ge_root_model->GetSubgraphInstanceNameToModel();
   string om_name;
@@ -339,7 +340,18 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     GE_IF_BOOL_EXEC(SUCCESS != (ret = davinci_model->Assign(ge_model)), GELOGW("assign model to modeldef failed.");
                     break;);
     GE_TIMESTAMP_END(Assign, "GraphLoader::ModelAssign");
-
+    /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
+    /// These session_ids come from the same model, so the values of session_id are the same.
+    /// Update session_id for infer in load model to avoid the same session_id.
+    if (!ge_root_model->GetTrainFlag()) {
+      uint64_t new_session_id;
+      ret = GenSessionId(new_session_id);
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
+      ret = davinci_model->UpdateSessionId(new_session_id);
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
+      ge_model->InsertSessionMap(model_id, new_session_id);
+      GELOGD("Update new session id: %lu.", new_session_id);
+    }
     GE_TIMESTAMP_START(Init);
     GE_IF_BOOL_EXEC(SUCCESS != (ret = davinci_model->Init()), GELOGW("DavinciInit failed."); break;);
     GE_TIMESTAMP_END(Init, "GraphLoader::ModelInit");
@@ -352,16 +364,16 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   return ret;
 }
 
-void ModelManager::InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davinci_model) {
-  GE_CHK_BOOL_EXEC(davinci_model != nullptr, return, "davinci_model ptr is null, id: %u", id);
+void ModelManager::InsertModel(uint32_t model_id, std::shared_ptr<DavinciModel> &davinci_model) {
+  GE_CHK_BOOL_EXEC(davinci_model != nullptr, return, "davinci_model ptr is null, id: %u", model_id);
   std::lock_guard<std::recursive_mutex> lock(map_mutex_);
-  model_map_[id] = davinci_model;
+  model_map_[model_id] = davinci_model;
 }
 
-void ModelManager::InsertModel(uint32_t id, shared_ptr<hybrid::HybridDavinciModel> &hybrid_model) {
-  GE_CHK_BOOL_EXEC(hybrid_model != nullptr, return, "hybrid_model ptr is null, id: %u", id);
+void ModelManager::InsertModel(uint32_t model_id, shared_ptr<hybrid::HybridDavinciModel> &hybrid_model) {
+  GE_CHK_BOOL_EXEC(hybrid_model != nullptr, return, "hybrid_model ptr is null, id: %u", model_id);
   std::lock_guard<std::recursive_mutex> lock(map_mutex_);
-  hybrid_model_map_[id] = hybrid_model;
+  hybrid_model_map_[model_id] = hybrid_model;
 }
 
 Status ModelManager::DeleteModel(uint32_t id) {

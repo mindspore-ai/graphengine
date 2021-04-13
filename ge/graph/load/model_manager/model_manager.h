@@ -330,8 +330,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   /// @ingroup domi_ome
   /// @brief insert new model into model manager set
   ///
-  void InsertModel(uint32_t id, std::shared_ptr<DavinciModel> &davinci_model);
-  void InsertModel(uint32_t id, std::shared_ptr<hybrid::HybridDavinciModel> &hybrid_model);
+  void InsertModel(uint32_t model_id, std::shared_ptr<DavinciModel> &davinci_model);
+  void InsertModel(uint32_t model_id, std::shared_ptr<hybrid::HybridDavinciModel> &hybrid_model);
 
   ///
   /// @ingroup domi_ome

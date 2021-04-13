@@ -134,6 +134,8 @@ class DataInputer {
   ///
   void Stop() { queue_.Stop(); }
 
+  uint32_t Size() { return queue_.Size(); }
+
  private:
   ///
   /// @ingroup domi_ome

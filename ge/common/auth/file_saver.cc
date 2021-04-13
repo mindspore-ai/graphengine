@@ -69,8 +69,8 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
       if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
         GELOGE(FAILED, "[Write][Data]Failed, mmpa_errorno = %ld, error:%s",
                write_count, strerror(errno));
-	REPORT_INNER_ERROR("E19999", "Write data failed, mmpa_errorno = %ld, error:%s.",
-			   write_count, strerror(errno));
+        REPORT_INNER_ERROR("E19999", "Write data failed, mmpa_errorno = %ld, error:%s.",
+                           write_count, strerror(errno));
         return FAILED;
       }
       size -= size_1g;

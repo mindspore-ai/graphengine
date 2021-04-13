@@ -195,8 +195,8 @@ Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_
   GE_IF_BOOL_EXEC(partition_task_size == 0 || partition_task_size > INT_MAX,
                   GELOGE(FAILED, "[Check][ModelDefSize]Invalid, size %zu!",
                          partition_task_size);
-		  REPORT_CALL_ERROR("E19999", "Model def size %zu check invalid,",
-			            partition_task_size);
+                  REPORT_CALL_ERROR("E19999", "Model def size %zu check invalid,",
+                                    partition_task_size);
                       return FAILED);
 
   task_buffer = ge::Buffer(partition_task_size);
@@ -365,8 +365,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
                   REPORT_INNER_ERROR("E19999", "Ge_root_model has no sub model");
                   return FAILED);
   GE_IF_BOOL_EXEC(output_file.empty(),
-                  GELOGE(FAILED, "[Save][Model]GraphBuilder SaveModel received invalid file name prefix");
-                  REPORT_INNER_ERROR("E19999", "GraphBuilder SaveModel received invalid file name prefix");
+                  GELOGE(FAILED, "[Save][Model]GraphBuilder SaveModel received invalid "
+                         "file name prefix");
+                  REPORT_INNER_ERROR("E19999", "GraphBuilder SaveModel received invalid "
+                                     "file name prefix");
                   return FAILED);
 
   if (!is_unknown_shape) {
@@ -516,9 +518,10 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, 
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
            "[Load][Model]Model_data is nullptr or model_data_size is 0");
-    REPORT_INNER_ERROR("E19999", "Load model failed, Model_data is nullptr or model_data_size is 0");
+    REPORT_INNER_ERROR("E19999", "Load model failed, "
+                       "Model_data is nullptr or model_data_size is 0");
     return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
 

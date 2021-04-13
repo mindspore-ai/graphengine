@@ -498,7 +498,7 @@ Status Session::RemoveGraph(uint32_t graph_id) {
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Remove][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
-	   ret, sessionId_, graph_id);
+           ret, sessionId_, graph_id);
     REPORT_CALL_ERROR("E19999", "Remove graph failed, error code:%u, "
                       "session_id:%lu, graph_id:%u", ret, sessionId_, graph_id);
     return FAILED;
@@ -568,7 +568,7 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Run][Graph]Failed, GELib instance is nullptr or is not InitFlag.");
     REPORT_INNER_ERROR("E19999",
-	               "RunGraph Failed, GELib instance is nullptr or is not InitFlag.");
+                       "RunGraph Failed, GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Running Graph");
@@ -577,7 +577,7 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Run][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
-	   ret, sessionId_, graph_id);
+           ret, sessionId_, graph_id);
     REPORT_CALL_ERROR("E19999", "Remove graph failed, error code:%u, "
                       "session_id:%lu, graph_id:%u", ret, sessionId_, graph_id);
     return FAILED;
@@ -617,7 +617,7 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
            "[Build][Graph]Failed, the GELib instance is nullptr or is not InitFlag.");
     REPORT_INNER_ERROR("E19999",
-		       "Build graph failed, the GELib instance is nullptr or is not InitFlag.");
+                       "Build graph failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Building Graph");
@@ -625,7 +625,7 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Build][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
-	   ret, sessionId_, graph_id);
+           ret, sessionId_, graph_id);
     REPORT_CALL_ERROR("E19999", "Build graph failed , error code:%u, "
                       "session_id:%lu, graph_id:%u", ret, sessionId_, graph_id);
     return FAILED;

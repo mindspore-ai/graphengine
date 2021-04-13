@@ -20,6 +20,7 @@
 #include "common/ge/datatype_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
+#include "framework/common/types.h"
 #include "graph/anchor.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
@@ -55,8 +56,10 @@ void DumpOp::SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_cond
   loop_cond_ = reinterpret_cast<uintptr_t>(loop_cond);
 }
 
-void DumpOp::SetDynamicModelInfo(const string &dynamic_model_name, uint32_t dynamic_model_id) {
+void DumpOp::SetDynamicModelInfo(const string &dynamic_model_name, const string &dynamic_om_name,
+                                 uint32_t dynamic_model_id) {
   dynamic_model_name_ = dynamic_model_name;
+  dynamic_om_name_ = dynamic_om_name;
   dynamic_model_id_ = dynamic_model_id;
 }
 
@@ -200,6 +203,32 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
   return SUCCESS;
 }
 
+Status DumpOp::SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info) {
+  if (dynamic_model_name_.empty() && dynamic_om_name_.empty()) {
+    GELOGI("Single op dump, no need set model name");
+    return SUCCESS;
+  }
+  std::set<std::string> model_list = dump_properties_.GetAllDumpModel();
+  bool not_find_by_omname = model_list.find(dynamic_om_name_) == model_list.end();
+  bool not_find_by_modelname = model_list.find(dynamic_model_name_) == model_list.end();
+  std::string dump_model_name = not_find_by_omname ? dynamic_model_name_ : dynamic_om_name_;
+  if (model_list.find(DUMP_ALL_MODEL) == model_list.end()) {
+    if (not_find_by_omname && not_find_by_modelname) {
+      std::string model_list_str;
+      for (auto &model : model_list) {
+        model_list_str += "[" + model + "].";
+      }
+      GELOGW("Model %s will not be set to dump, dump list: %s", dump_model_name.c_str(), model_list_str.c_str());
+      return FAILED;
+    }
+  }
+  if (!dump_model_name.empty() && dump_properties_.IsDumpOpen()) {
+    GELOGD("Dump model name is %s", dump_model_name.c_str());
+    op_mapping_info.set_model_name(dump_model_name);
+  }
+  return SUCCESS;
+}
+
 Status DumpOp::LaunchDumpOp() {
   GELOGI("Start to launch dump op %s", op_desc_->GetName().c_str());
   int32_t device_id = 0;
@@ -209,8 +238,7 @@ Status DumpOp::LaunchDumpOp() {
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   if (device_id < 0) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
-           "Check device_id failed, device_id = %d, which should be not less than 0.",
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Check device_id failed, device_id = %d, which should be not less than 0.",
            device_id);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
@@ -220,11 +248,12 @@ Status DumpOp::LaunchDumpOp() {
   op_mapping_info.set_flag(kAicpuLoadFlag);
   op_mapping_info.set_dump_step(dump_properties_.GetDumpStep());
   op_mapping_info.set_model_id(dynamic_model_id_);
-  if (!dynamic_model_name_.empty() && dump_properties_.IsDumpOpen()) {
-    op_mapping_info.set_model_name(dynamic_model_name_);
+
+  if (SetDumpModelName(op_mapping_info) != SUCCESS) {
+    return SUCCESS;
   }
   SetOpMappingLoopAddr(global_step_, loop_per_iter_, loop_cond_, op_mapping_info);
-  GELOGI("Dump step is %s ,dump path is %s ,in Launch dump op", dump_properties_.GetDumpStep().c_str(),
+  GELOGI("Dump step is %s ,dump path is %s in Launch dump op", dump_properties_.GetDumpStep().c_str(),
          dump_path.c_str());
   uint32_t task_id = 0;
   uint32_t stream_id = 0;
@@ -273,4 +302,4 @@ Status DumpOp::LaunchDumpOp() {
   }
   return SUCCESS;
 }
-}  // namesapce ge
+}  // namespace ge

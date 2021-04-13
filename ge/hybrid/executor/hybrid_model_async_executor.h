@@ -51,8 +51,6 @@ class HybridModelAsyncExecutor {
 
   void SetModelId(uint32_t model_id);
 
-  void SetModelName(const string &model_name);
-
   Status Stop();
 
   Status EnqueueData(const std::shared_ptr<InputDataWrapper> &data);
@@ -97,7 +95,6 @@ class HybridModelAsyncExecutor {
   std::map<uint32_t, GeTensorDescPtr> input_tensor_desc_;
   std::vector<bool> is_input_dynamic_;
   std::shared_ptr<ModelListener> listener_;
-  string om_name_;
   DataDumper data_dumper_;
   bool is_op_debug_reg_ = false;
   OpdebugRegister op_debug_register_;

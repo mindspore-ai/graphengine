@@ -248,7 +248,10 @@ class DavinciModel {
   string Name() const { return name_; }
 
   // om_name
-  string OmName() const { return om_name_; }
+  const string &OmName() const { return om_name_; }
+
+  // dump_model_name
+  const string &DumpModelName() const { return dump_model_name_; }
 
   // version
   uint32_t Version() const { return version_; }
@@ -483,6 +486,12 @@ class DavinciModel {
     data_dumper_.DumpShrink();
   }
 
+  bool OpNeedDump(const string &op_name) {
+    return GetDumpProperties().IsLayerNeedDump(dump_model_name_, om_name_, op_name);
+  }
+
+  bool ModelNeedDump();
+
   void SetEndGraphId(uint32_t task_id, uint32_t stream_id);
   DavinciModel &operator=(const DavinciModel &model) = delete;
 
@@ -542,6 +551,7 @@ class DavinciModel {
 
   // om file name
   void SetOmName(const string &om_name) { om_name_ = om_name; }
+  void SetDumpModelName(const string &dump_model_name) { dump_model_name_ = dump_model_name; }
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
@@ -888,6 +898,7 @@ class DavinciModel {
 
   // used for inference data dump
   string om_name_;
+  string dump_model_name_;
 
   uint32_t version_;
   GeModelPtr ge_model_;  // release after DavinciModel::Init

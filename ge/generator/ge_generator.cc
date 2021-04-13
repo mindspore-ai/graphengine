@@ -67,6 +67,9 @@ bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
   }
   return false;
 }
+bool IsOptional(const ge::GeTensorDesc &tensor_desc) {
+  return tensor_desc.GetFormat() == ge::FORMAT_RESERVED && tensor_desc.GetDataType() == ge::DT_UNDEFINED;
+}
 }  // namespace
 
 namespace ge {
@@ -154,7 +157,7 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
 }
 
 static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const GeTensorDesc &tensor, int32_t index,
-                        bool attr) {
+                        bool attr, int32_t &data_index) {
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
 
@@ -197,9 +200,10 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
                    "[Add][InputDesc]fail for node:%s", data_op->GetName().c_str());
   GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
                    "[Add][OutputDesc]fail for node:%s", data_op->GetName().c_str());
-  if (attr) {
-    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, index), return FAILED,
+  if (attr && !is_const) {
+    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, data_index), return FAILED,
                      "[Set][Attr:%s]fail for node:%s", ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
+    ++data_index;
   }
 
   ge::NodePtr arg_node = graph->AddNode(data_op);
@@ -691,6 +695,34 @@ namespace {
     }
     return SUCCESS;
   }
+
+  bool CheckNoAicore(const ComputeGraphPtr &graph) {
+    for (const auto &node : graph->GetDirectNode()) {
+      if (node == nullptr) {
+        continue;
+      }
+      auto op_desc = node->GetOpDesc();
+      if (op_desc == nullptr) {
+        continue;
+      }
+      if (op_desc->GetOpEngineName() == kAIcoreEngine) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+void GeGenerator::RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
+  for (auto &input : inputs) {
+    GeTensorDesc input_desc = input.GetTensorDesc();
+    bool is_const = false;
+    (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
+    bool is_optional = IsOptional(input_desc);
+    if (!is_optional && !is_const) {
+      outputs.emplace_back(input);
+    }
+  }
 }
 
 Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
@@ -757,7 +789,9 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
-  GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, ge_root_model));
+  vector<GeTensor> data_inputs;
+  RemoveConst(inputs, data_inputs);
+  GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, data_inputs, ge_root_model));
   map<string, GeAttrValue> op_attrs = op_desc_tmp->GetAllAttrs();
   GE_CHECK_NOTNULL(ge_root_model);
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
@@ -773,7 +807,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
-  if (all_shape) {
+  if (all_shape && CheckNoAicore(root_graph)) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;
@@ -840,18 +874,19 @@ Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor
 
   // 2. Create InputData node.
   int32_t arg_index = 0;
+  int32_t data_index = 0;
   if (inputs.empty()) {
     for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
       GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
       if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
         continue;
       }
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false, data_index));
       arg_index++;
     }
   } else {
     for (const auto &in_desc : inputs) {
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, in_desc.GetTensorDesc(), arg_index, true));
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, in_desc.GetTensorDesc(), arg_index, true, data_index));
       arg_index++;
     }
   }

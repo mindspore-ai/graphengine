@@ -127,7 +127,7 @@ void SingleOpModel::ParseOpModelParams(ModelHelper &model_helper, SingleOpModelP
   ret = ge::AttrUtils::GetInt(model, ATTR_MODEL_CORE_TYPE, value);
   param.core_type = ret ? value : 0;
 
-  GELOGI("ParseOpModelParams(), total_memory_size:%lu, zero_copy_size:%lu, weight_size:%lu. core_type = %lu",
+  GELOGI("ParseOpModelParams(), total_memory_size:%lu, zero_copy_size:%lu, weight_size:%lu, core_type = %lu",
          param.memory_size, param.zero_copy_mem_size, param.weight_size, param.core_type);
 }
 
@@ -454,7 +454,7 @@ Status SingleOpModel::BuildModelTaskKernel(const TaskDef &task_def, DynamicSingl
 
   auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
   if (kernel_type == ccKernelType::TE) {
-    GELOGD("Building TBE task");
+    GELOGD("Building TBE task.");
     TbeOpTask *tbe_task = nullptr;
     GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def, &tbe_task));
     tbe_task->SetModelArgs(model_name_, model_id_);
@@ -482,7 +482,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(DynamicSingleOp &single_op) {
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   for (int i = 0; i < tasks.size(); ++i) {
     const TaskDef &task_def = tasks[i];
-    GELOGI("[%s] Task[%d], type = %u, DebugString = %s", model_name_.c_str(), i, task_def.type(),
+    GELOGI("[%s] Task[%d], type = [%u], DebugString = [%s]", model_name_.c_str(), i, task_def.type(),
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
     if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {

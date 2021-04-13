@@ -68,6 +68,14 @@ class AtomicAddrCleanPass : public GraphPass {
   Status LinkToAtomicNode(const NodePtr &atomic_node, NodePtr &atomic_clean_node);
 
   /**
+   * Link atomic clean node to all potential precedence nodes which may execute before atomic clean node
+   * @param graph
+   * @param atomic_clean_node
+   * @return
+   */
+  Status LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph, NodePtr &atomic_clean_node);
+
+  /**
    * Check if this node is atomic op.
    * @param node
    * @return

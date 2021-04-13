@@ -574,6 +574,50 @@ Status ModelBuilder::MergeWeights() {
   return SUCCESS;
 }
 
+Status ModelBuilder::SaveAtomicTBEKernel(const OpDescPtr &op_desc) {
+  ge::NodePtr atomic_clean_node = nullptr;
+  atomic_clean_node = op_desc->TryGetExtAttr("atomic_clean_node_ptr", atomic_clean_node);
+  if (atomic_clean_node == nullptr) {
+    return SUCCESS;
+  }
+
+  ge::OpDescPtr atomic_op_desc = atomic_clean_node->GetOpDesc();
+  GE_CHECK_NOTNULL(atomic_op_desc);
+  TBEKernelPtr tbe_kernel = atomic_op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+  if (tbe_kernel == nullptr) {
+    std::string kernel_name;
+    GeAttrValue::BYTES kernel_buffer;
+    (void) AttrUtils::GetStr(atomic_op_desc, ATTR_NAME_TBE_KERNEL_NAME, kernel_name);
+    (void) AttrUtils::GetBytes(atomic_op_desc, ATTR_NAME_TBE_KERNEL_BUFFER, kernel_buffer);
+    if (!kernel_name.empty() && (kernel_buffer.GetSize() > 0)) {
+      GE_CHECK_NOTNULL(kernel_buffer.GetData());
+      std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
+      tbe_kernel = MakeShared<OpKernelBin>(kernel_name, std::move(data));
+      GE_CHECK_NOTNULL(tbe_kernel);
+    }
+  }
+  if (tbe_kernel == nullptr) {
+    GELOGD("Atomic_clean_node doesn't have tbe_kernel.");
+    return SUCCESS;
+  }
+  tbe_kernel_store_.AddTBEKernel(tbe_kernel);
+  GELOGD("Atomic_clean_node tbe_kernel_name %s!", tbe_kernel->GetName().c_str());
+  (void) AttrUtils::SetStr(op_desc, ATOMIC_ATTR_TBE_KERNEL_NAME, tbe_kernel->GetName());
+
+  std::string kernel_name;
+  (void) AttrUtils::GetStr(atomic_op_desc, atomic_op_desc->GetName() + "_kernelname", kernel_name);
+  (void) AttrUtils::SetStr(op_desc, op_desc->GetName() + "_atomic_kernelname", kernel_name);
+
+  std::string meta_data;
+  (void) AttrUtils::GetStr(atomic_op_desc, TVM_ATTR_NAME_METADATA, meta_data);
+  (void) AttrUtils::SetStr(op_desc, ATOMIC_ATTR_TVM_METADATA, meta_data);
+
+  std::string json_string;
+  (void) AttrUtils::GetStr(atomic_op_desc, TVM_ATTR_NAME_MAGIC, json_string);
+  (void) AttrUtils::SetStr(op_desc, ATOMIC_ATTR_TVM_MAGIC, json_string);
+  return SUCCESS;
+}
+
 Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
   // Add weight
   ge_model.SetWeight(weight_buffer_);
@@ -607,6 +651,8 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
     }
     tbe_name_set.insert(tbe_kernel->GetName());
     tbe_kernel_store_.AddTBEKernel(tbe_kernel);
+
+    GE_CHK_STATUS_RET(SaveAtomicTBEKernel(node_op_desc), "[Save][TBEKernel] save atomic tbekernel failed!");
   }
 
   SetModelCheckAicpuAttr(model, aicpu_op_types, aicpu_tf_op_types);

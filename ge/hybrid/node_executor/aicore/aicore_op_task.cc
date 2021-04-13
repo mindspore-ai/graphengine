@@ -71,22 +71,22 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
 }
 
 Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
-  auto op_desc_ptr = std::make_shared<OpDesc>(op_desc);
-  GE_CHECK_NOTNULL(op_desc_ptr);
-  auto tbe_kernel = op_desc_ptr->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
-  if (tbe_kernel == nullptr) {
-    GELOGE(INTERNAL_ERROR, "TBE: %s can't find tvm bin file!", op_desc_ptr->GetName().c_str());
-    return INTERNAL_ERROR;
-  }
-  TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
   rtError_t rt_ret = rtQueryFunctionRegistered(stub_name_.c_str());
   if (rt_ret != RT_ERROR_NONE || is_single_op_) {
+    auto op_desc_ptr = MakeShared<OpDesc>(op_desc);
+    GE_CHECK_NOTNULL(op_desc_ptr);
+    auto tbe_kernel = op_desc_ptr->TryGetExtAttr(GetKeyForTbeKernel(), TBEKernelPtr());
+    if (tbe_kernel == nullptr) {
+      GELOGE(INTERNAL_ERROR, "TBE: %s can't find tvm bin file!", op_desc_ptr->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
     void *bin_handle = nullptr;
     if (!kernel_store.FindTBEHandle(stub_name_.c_str(), bin_handle)) {
       GELOGI("TBE: can't find the binfile_key[%s] in HandleMap", stub_name_.c_str());
       rtDevBinary_t binary;
       std::string json_string;
-      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, TVM_ATTR_NAME_MAGIC, json_string),
+      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForTvmMagic(), json_string),
                       GELOGI("Get original type of session_graph_id."));
       if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICPU") {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICPU;
@@ -104,7 +104,7 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
       GELOGI("TBE: binary.length: %lu", binary.length);
       GE_CHK_RT_RET(rtDevBinaryRegister(&binary, &bin_handle));
       std::string meta_data;
-      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, TVM_ATTR_NAME_METADATA, meta_data),
+      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForTvmMetaData(), meta_data),
                       GELOGI("Get original type of json_string"));
       GELOGI("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
       GE_IF_BOOL_EXEC(!meta_data.empty(), GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
@@ -114,7 +114,7 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
       kernel_store.ReferTBEHandle(stub_name_.c_str());
     }
     std::string kernel_name;
-    GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, op_desc_ptr->GetName() + "_kernelname", kernel_name),
+    GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForKernelName(op_desc), kernel_name),
                     GELOGI("Get original type of kernel_name"));
     GELOGI("TBE: binfile_key=%s, kernel_name=%s", stub_name_.c_str(), kernel_name.c_str());
     GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_name_.c_str(), stub_name_.c_str(), kernel_name.c_str(), 0));
@@ -349,9 +349,6 @@ Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info)
   GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
                     "Failed calc tiling data of node %s.",
                     node->GetName().c_str());
-  if (is_single_op_) {
-    tiling_info.clear_atomic = false;
-  }
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
   return SUCCESS;
 }
@@ -468,6 +465,22 @@ std::string AiCoreOpTask::GetKeyForOpParamSize() const {
   return kAttrOpParamSize;
 }
 
+std::string AiCoreOpTask::GetKeyForTbeKernel() const {
+  return OP_EXTATTR_NAME_TBE_KERNEL;
+}
+
+std::string AiCoreOpTask::GetKeyForTvmMagic() const {
+  return TVM_ATTR_NAME_MAGIC;
+}
+
+std::string AiCoreOpTask::GetKeyForTvmMetaData() const {
+  return TVM_ATTR_NAME_METADATA;
+}
+
+std::string AiCoreOpTask::GetKeyForKernelName(const OpDesc &op_desc) const {
+  return op_desc.GetName() + "_kernelname";
+}
+
 Status AtomicAddrCleanOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   GE_CHK_STATUS_RET_NOLOG(AiCoreOpTask::Init(op_desc, task_def));
   return InitAtomicAddrCleanIndices(op_desc);
@@ -522,6 +535,22 @@ Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices(const OpDesc &op_desc) 
 
 std::string AtomicAddrCleanOpTask::GetKeyForOpParamSize() const {
   return kAttrAtomicOpParamSize;
+}
+
+std::string AtomicAddrCleanOpTask::GetKeyForTbeKernel() const {
+  return EXT_ATTR_ATOMIC_TBE_KERNEL;
+}
+
+std::string AtomicAddrCleanOpTask::GetKeyForTvmMagic() const {
+  return ATOMIC_ATTR_TVM_MAGIC;
+}
+
+std::string AtomicAddrCleanOpTask::GetKeyForTvmMetaData() const {
+  return ATOMIC_ATTR_TVM_METADATA;
+}
+
+std::string AtomicAddrCleanOpTask::GetKeyForKernelName(const OpDesc &op_desc) const {
+  return op_desc.GetName() + "_atomic_kernelname";
 }
 
 Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {

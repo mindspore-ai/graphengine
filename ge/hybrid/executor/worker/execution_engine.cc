@@ -206,30 +206,34 @@ Status NodeDoneCallback::DumpDynamicNode() {
     return PARAM_INVALID;
   }
   auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(graph_context_);
+  const HybridModel *model = graph_context_->model;
+  GE_CHECK_NOTNULL(model);
+  std::string dynamic_model_name = model->GetModelName();
+  std::string dynamic_om_name = model->GetOmName();
+  uint32_t model_id = model->GetModelId();
+  if (!context_->GetDumpProperties().IsLayerNeedDump(dynamic_model_name, dynamic_om_name, op_desc->GetName())) {
+    GELOGI("[%s] is not in dump list, no need dump", op_desc->GetName().c_str());
+    return SUCCESS;
+  }
+  dump_op_.SetDynamicModelInfo(dynamic_model_name, dynamic_om_name, model_id);
+
   auto stream = context_->GetStream();
   vector<uintptr_t> input_addrs;
   vector<uintptr_t> output_addrs;
   for (int i = 0; i < context_->NumInputs(); i++) {
     auto tensor_value = context_->GetInput(i);
     GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "Tensor value is nullptr");
-    uint64_t input_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
+    uintptr_t input_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
     input_addrs.emplace_back(input_addr);
   }
   for (int j = 0; j < context_->NumOutputs(); j++) {
     auto tensor_value = context_->GetOutput(j);
     GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "Tensor value is nullptr");
-    uint64_t output_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
+    uintptr_t output_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
     output_addrs.emplace_back(output_addr);
   }
-
   dump_op_.SetDumpInfo(context_->GetDumpProperties(), op_desc, input_addrs, output_addrs, stream);
-
-  GE_CHECK_NOTNULL(graph_context_);
-  const HybridModel *model = graph_context_->model;
-  GE_CHECK_NOTNULL(model);
-  std::string dynamic_model_name = model->GetModelName();
-  uint32_t model_id = model->GetModelId();
-  dump_op_.SetDynamicModelInfo(dynamic_model_name, model_id);
 
   void *loop_per_iter = nullptr;
   TensorValue *varible_loop_per_iter = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);

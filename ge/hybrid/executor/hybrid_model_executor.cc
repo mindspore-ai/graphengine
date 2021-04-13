@@ -33,9 +33,6 @@ HybridModelExecutor::~HybridModelExecutor() {
   if (context_.rt_gen_context != nullptr) {
     (void) rtCtxDestroy(context_.rt_gen_context);
   }
-  if (context_.global_step != nullptr) {
-    (void) rtFree(context_.global_step);
-  }
 }
 
 Status HybridModelExecutor::Init() {
@@ -49,9 +46,10 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   GELOGD("Start to execute model.");
   auto root_graph_item = model_->GetRootGraphItem();
   GE_CHECK_NOTNULL(root_graph_item);
-
-  GE_CHK_RT_RET(rtMemcpyAsync(context_.global_step, sizeof(uint64_t), &context_.iteration,
-                              sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE_EX, context_.stream));
+  if (context_.global_step != nullptr) {
+    GE_CHK_RT_RET(rtMemcpyAsync(context_.global_step, sizeof(uint64_t), &context_.iteration,
+                                sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE_EX, context_.stream));
+  }
   SubgraphExecutor executor(model_->GetRootGraphItem(), &context_);
   auto ret = ExecuteGraphInternal(executor, args);
   Cleanup();
@@ -102,8 +100,8 @@ Status HybridModelExecutor::InitExecutionContext() {
   GE_CHK_RT_RET(rtCtxGetCurrent(&context_.rt_context));
   GE_CHK_RT_RET(rtCtxCreate(&context_.rt_gen_context, RT_CTX_GEN_MODE, 0));
   GE_CHK_RT_RET(rtCtxSetCurrent(context_.rt_context));
-  GE_CHK_RT_RET(rtMalloc(&context_.global_step, sizeof(uint64_t), RT_MEMORY_HBM));
 
+  context_.global_step = model_->GetGlobalStep();
   context_.stream = stream_;
   context_.model = model_;
   context_.is_eos_ = false;
@@ -136,6 +134,16 @@ Status HybridModelExecutor::ResetExecutionContext(GraphExecutionContext &context
   string ctx_id = std::to_string(context.context_id);
   RuntimeInferenceContext::DestroyContext(ctx_id);
   GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::CreateContext(ctx_id), "Failed to Destroy RuntimeInferenceContext");
+  RuntimeInferenceContext *ctx = nullptr;
+  GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(ctx_id, &ctx), "Failed to get context");
+  for (auto &host_tensor : context.model->GetHostTensors()) {
+    auto node_id = host_tensor.first;
+    for (const auto &output_idx_and_tensor : host_tensor.second) {
+      auto output_idx = output_idx_and_tensor.first;
+      GELOGD("Preload const host tensor, node_id = %ld, output id = %d", node_id, output_idx);
+      ctx->SetTensor(node_id, output_idx, output_idx_and_tensor.second.Clone());
+    }
+  }
   return SUCCESS;
 }
 }  // namespace hybrid

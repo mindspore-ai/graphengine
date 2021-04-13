@@ -67,6 +67,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOpManager::Release
   std::lock_guard<std::mutex> lock(mutex_);
   auto it = stream_resources_.find(resource_id);
   if (it == stream_resources_.end()) {
+    MemManager::Instance().CachingInstance(RT_MEMORY_HBM).TryFreeBlocks();
     return SUCCESS;
   }
   delete it->second;

@@ -518,23 +518,28 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, 
+           "[Load][Model]Model_data is nullptr or model_data_size is 0");
+    REPORT_INNER_ERROR("E19999", "Load model failed, Model_data is nullptr or model_data_size is 0");
     return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
 
   if (is_assign_model_) {
-    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
+    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED, "[Load][Model]Model helper has already loaded!");
+    REPORT_INNER_ERROR("E19999", "Model helper has already loaded");
     return ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED;
   }
 
   if (ReleaseLocalModelData() != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA, "ReleaseLocalModelData failed.");
+    GELOGE(ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA, "[Release][ModelData]Failed.");
+    REPORT_INNER_ERROR("E19999", "Release local model data failed");
     return ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA;
   }
 
   Status status = ModelParserBase::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Parse model content failed!");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Parse][ModelContent]Failed!");
+    REPORT_INNER_ERROR("E19999", "Parse model content failed");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -542,14 +547,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   OmFileLoadHelper om_load_helper;
   status = om_load_helper.Init(model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
-    GELOGE(status, "Om_load_helper init failed");
+    GELOGE(status, "[Init][OmLoadHelper]Failed");
+    REPORT_INNER_ERROR("E19999", "Om_load_helper init failed");
     model_addr_tmp_ = nullptr;
     return status;
   }
   auto partition_table = reinterpret_cast<ModelPartitionTable *>(model_addr_tmp_);
   if (partition_table->num == kOriginalOmPartitionNum) {
     model_addr_tmp_ = nullptr;
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "om model is error,please use executable om model");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][OmModel]Error, please use executable om model");
+    REPORT_CALL_ERROR("E19999", "Om model is error, please use executable om model");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   // Encrypt model need to del temp model/no encrypt model don't need to del model
@@ -557,7 +564,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
 
   status = GenerateGeModel(om_load_helper);
   if (status != SUCCESS) {
-    GELOGE(status, "GenerateGeModel failed");
+    GELOGE(status, "[Generate][GEModel]Failed");
+    REPORT_INNER_ERROR("E19999", "Generate GE model failed");
     return status;
   }
   GELOGD("in ModelHelper::LoadModel, is_assign_model_ is setted to true!");
@@ -567,23 +575,29 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "Model_data is nullptr, or model_data_size is 0");
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "[Load][RootModel]"
+           "Model_data is nullptr or model_data_size is 0");
+    REPORT_INNER_ERROR("E19999", "Load root model failed, model_data is nullptr or its size is 0");
     return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
 
   if (is_assign_model_) {
-    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED, "Model helper has already loaded!");
+    GELOGE(ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED,
+           "[Load][RootModel]Model helper has already loaded!");
+    REPORT_INNER_ERROR("E19999", "Load root model failed, model helper has already loaded");
     return ACL_ERROR_GE_EXEC_LOAD_MODEL_REPEATED;
   }
 
   if (ReleaseLocalModelData() != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "ReleaseLocalModelData failed.");
+    GELOGE(INTERNAL_ERROR, "[Release][ModelData]Failed.");
+    REPORT_INNER_ERROR("E19999", "Release local root model data failed");
     return INTERNAL_ERROR;
   }
 
   Status status = ModelParserBase::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Parse model content failed!");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Parse][RootModelContent]Failed!");
+    REPORT_INNER_ERROR("E19999", "Parse model content failed");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -602,7 +616,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
     status = om_load_helper.Init(model_addr_tmp_, model_len_tmp_);
   }
   if (status != SUCCESS) {
-    GELOGE(status, "Om_load_helper init failed");
+    GELOGE(status, "[Init][OmLoadHelper]Failed");
+    REPORT_INNER_ERROR("E19999", "Om_load_helper init failed");
     model_addr_tmp_ = nullptr;
     return status;
   }
@@ -611,7 +626,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
 
   status = GenerateGeRootModel(om_load_helper);
   if (status != SUCCESS) {
-    GELOGE(status, "GenerateGeRootModel failed");
+    GELOGE(status, "[Generate][GERootModel]Failed");
+    REPORT_INNER_ERROR("E19999", "Generate GE root model failed");
     return status;
   }
   GELOGD("in ModelHelper::LoadRootModel, is_assign_model_ is setted to true!");
@@ -651,7 +667,8 @@ Status ModelHelper::GenerateGeRootModel(OmFileLoadHelper &om_load_helper) {
   GE_CHECK_NOTNULL(root_model_);
   if (!is_unknown_shape_model_) {
     if (GenerateGeModel(om_load_helper) != SUCCESS) {
-      GELOGE(FAILED, "GenerateGeModel failed");
+      GELOGE(FAILED, "[Generate][GERootModel]Failed");
+      REPORT_INNER_ERROR("E19999", "Generate GE root model failed");
       return FAILED;
     }
     GE_CHECK_NOTNULL(model_);
@@ -708,7 +725,10 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper) {
 
   ge::Model model;
   if (ge::Model::Load(partition_model_def.data, partition_model_def.size, model) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Load model failed.");
+    GELOGE(INTERNAL_ERROR, "[Load][Model]Failed, model_def partition addr:%p, size:%u",
+           partition_model_def.data, partition_model_def.size);
+    REPORT_CALL_ERROR("E19999", "Load model failed, model_def partition addr:%p, size:%u",
+                      partition_model_def.data, partition_model_def.size);
     return INTERNAL_ERROR;
   }
 
@@ -732,7 +752,10 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &
 
   ge::Model model;
   if (ge::Model::Load(partition_model_def.data, partition_model_def.size, model) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Load model failed.");
+    GELOGE(INTERNAL_ERROR, "[Load][Model]Failed, model_def partition addr:%p, size:%u",
+           partition_model_def.data, partition_model_def.size);
+    REPORT_CALL_ERROR("E19999", "Load model failed, model_def partition addr:%p, size:%u",
+                      partition_model_def.data, partition_model_def.size);
     return INTERNAL_ERROR;
   }
 
@@ -744,7 +767,9 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &
 Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper) {
   ModelPartition partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition) != SUCCESS) {
-    GELOGE(FAILED, "Get weight model partition failed.");
+    GELOGE(FAILED, "[Get][ModelWeightPartition]Failed, GetWeight size:%u", partition.size);
+    REPORT_INNER_ERROR("E19999", "[Get][ModelPartition]Failed, GetWeight size:%u",
+                       partition.size);
     return FAILED;
   }
   ge::Buffer weight = ge::Buffer::CopyFrom(partition.data, partition.size);
@@ -757,7 +782,9 @@ Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper) {
 Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index) {
   ModelPartition partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition, mode_index) != SUCCESS) {
-    GELOGE(FAILED, "Get weight model partition failed.");
+    GELOGE(FAILED, "[Get][ModelPartition]Failed, GetWeight size:%u", partition.size);
+    REPORT_INNER_ERROR("E19999", "[Get][ModelPartition]Failed, GetWeight size:%u",
+                       partition.size);
     return FAILED;
   }
   ge::Buffer weight = ge::Buffer::CopyFrom(partition.data, partition.size);
@@ -770,14 +797,19 @@ Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cu
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(OmFileLoadHelper &om_load_helper) {
   ModelPartition task_partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
-    GELOGE(FAILED, "Get task model partition failed.");
+    GELOGE(FAILED, "[Get][ModelTaskPartition]Failed, task_partition size:%u", task_partition.size);
+    REPORT_INNER_ERRO("E19999", "Get model task partition failed, task_partition size %u",
+                      task_partition.size);
     return FAILED;
   }
   std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
   GE_CHECK_NOTNULL(task);
   if (task_partition.size != 0) {
     if (!ReadProtoFromArray(task_partition.data, task_partition.size, task.get())) {
-      GELOGE(INTERNAL_ERROR, "ReadProtoFromArray failed.");
+      GELOGE(INTERNAL_ERROR, "[Read][ProtoFromArray]Failed, task_partition size %u",
+             task_partition.size);
+      REPORT_CALL_ERROR("E19999", "Read proto from array failed, task_partition size %u",
+                        task_partition.size);
       return INTERNAL_ERROR;
     }
     GELOGD("TASK_INFO op_size:%d, stream_num:%u", task->op().size(), task->stream_num());
@@ -792,13 +824,20 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
   ModelPartition task_partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition, mode_index) != SUCCESS) {
     GELOGE(FAILED, "Get task model partition failed.");
+    GELOGE(FAILED, "[Get][ModelTaskPartition]Failed, task_partition size %u, mode_index %zu",
+           task_partition.size, mode_index);
+    REPORT_INNER_ERROR("E19999", "Get model task partition failed, "
+                       "task_partition size %u, mode_index %zu", task_partition.size, mode_index);
     return FAILED;
   }
   std::shared_ptr<ModelTaskDef> task = ge::MakeShared<ModelTaskDef>();
   GE_CHECK_NOTNULL(task);
   if (task_partition.size != 0) {
     if (!ReadProtoFromArray(task_partition.data, task_partition.size, task.get())) {
-      GELOGE(INTERNAL_ERROR, "ReadProtoFromArray failed.");
+      GELOGE(INTERNAL_ERROR, "[Read][ProtoFromArray]Failed, task_partition size %u",
+             task_partition.size);
+      REPORT_CALL_ERROR("E19999", "Read proto from array failed, task_partition size %u",
+                        task_partition.size);
       return INTERNAL_ERROR;
     }
     GELOGD("TASK_INFO op_size:%d, stream_num:%u", task->op().size(), task->stream_num());
@@ -906,7 +945,8 @@ Status ModelHelper::ReleaseLocalModelData() noexcept {
   if (model_addr_tmp_ != nullptr) {
     errno_t ret = memset_s(static_cast<void *>(model_addr_tmp_), model_len_tmp_, 0, model_len_tmp_);
     if (ret != EOK) {
-      GELOGE(FAILED, "Failed to memset memory, error-code %d", ret);
+      GELOGE(FAILED, "[Memset][Memory]Failed, error-code %d", ret);
+      REPORT_CALL_ERROR("E19999", "Failed to memset memory, error-code %d", ret);
       result = FAILED;
     }
     delete[] model_addr_tmp_;
@@ -955,7 +995,9 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
 
   Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "LoadFromFile failed.");
+    GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file.c_str(), ret);
+    REPORT_CALL_ERROR("E19999", "Load model info failed from file %s, error_code %u",
+                      model_file.c_str(), ret);
     return ret;
   }
   std::function<void()> callback = [&]() {
@@ -973,7 +1015,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
     ErrorManager::GetInstance().ATCReportErrMessage("E10003",
       {"parameter", "value", "reason"}, {"om", model_file, "invalid om file"});
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "ParseModelContent failed because of invalid om file. Please check --om param.");
+           "[Parse][ModelContent]Failed because of invalid om file. Please check --om param.");
     return ret;
   }
 
@@ -981,7 +1023,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
   ret = om_load_helper.Init(model_data, model_len);
   if (ret != SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Om file init failed"});
-    GELOGE(ge::FAILED, "Om file init failed.");
+    GELOGE(ge::FAILED, "[Init][OmFile]Failed.");
     return ret;
   }
 
@@ -989,7 +1031,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
   ret = om_load_helper.GetModelPartition(MODEL_DEF, ir_part);
   if (ret != SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Get model part failed"});
-    GELOGE(ge::FAILED, "Get model part failed.");
+    GELOGE(ge::FAILED, "[Get][ModelPart]Failed.");
     return ret;
   }
 
@@ -997,7 +1039,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
   if (!flag) {
     ret = INTERNAL_ERROR;
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ReadProtoFromArray failed"});
-    GELOGE(ret, "ReadProtoFromArray failed.");
+    GELOGE(ret, "[Read][ProtoFromArray]Failed.");
     return ret;
   }
   modeldef_size = ir_part.size;
@@ -1018,7 +1060,9 @@ Status ModelTool::GetModelInfoFromPbtxt(const char *model_file, ge::proto::Model
   };
   if (ret != SUCCESS) {
     free_model_data(&model.model_data);
-    GELOGE(ret, "LoadFromFile failed.");
+    GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file.c_str(), ret);
+    REPORT_CALL_ERROR("E19999", "Load model info failed from file %s, error_code %u",
+                      model_file.c_str(), ret);
     return ret;
   }
 
@@ -1027,7 +1071,7 @@ Status ModelTool::GetModelInfoFromPbtxt(const char *model_file, ge::proto::Model
     if (!flag) {
       free_model_data(&model.model_data);
       ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ParseFromString failed"});
-      GELOGE(FAILED, "ParseFromString failed.");
+      GELOGE(FAILED, "[Parse][ModelInfo]Failed from string.");
       return FAILED;
     }
     free_model_data(&model.model_data);
@@ -1036,7 +1080,7 @@ Status ModelTool::GetModelInfoFromPbtxt(const char *model_file, ge::proto::Model
     free_model_data(&model.model_data);
     ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ParseFromString failed, exception message["
                                                     + std::string(e.what()) + "]"});
-    GELOGE(FAILED, "ParseFromString failed. exception message : %s", e.what());
+    GELOGE(FAILED, "[Parse][ModelInfo]Failed from string, exception message : %s", e.what());
     return FAILED;
   }
 }

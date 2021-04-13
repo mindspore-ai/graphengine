@@ -560,7 +560,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
     if (is_allocated_first_input) {
       std::map<int32_t, int32_t> out2ins;
-      GE_CHK_STATUS_RET(GetAllRef(node, out2ins), "[Get][AllRef]fail for node: %s", node->GetName().c_str());
+      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
       // output is beginning offset, set offset for input; only support this case now
       if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
         auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
@@ -1250,8 +1250,44 @@ Status GraphMemoryAssigner::CheckOffset() {
         return FAILED;
       }
     }
+    // check reuse input and output
+    GE_CHK_STATUS_RET(CheckRefNodeOffset(node), "[Check][Offset]fail for node: %s", node->GetName().c_str());
   }
+
   return SUCCESS;
+}
+
+ge::Status GraphMemoryAssigner::CheckRefNodeOffset(const NodePtr &node) {
+  std::map<int32_t, int32_t> out2ins;
+  GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
+  auto opdesc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(opdesc);
+  auto output_list = opdesc->GetOutputOffset();
+  auto input_list = opdesc->GetInputOffset();
+  for (const auto &out2in : out2ins) {
+    auto out_i = out2in.first;
+    if (static_cast<size_t>(out_i) >= output_list.size()) {
+      std::string error = "Node" + FmtToStr(opdesc->GetName()) + "output offset size" +
+                          FmtToStr(output_list.size()) + "should bigger than ref out index" + FmtToStr(out_i);
+      GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+      return ge::FAILED;
+    }
+    auto in_i = out2in.second;
+    if (static_cast<size_t>(in_i) >= input_list.size()) {
+      std::string error = "Node" + FmtToStr(opdesc->GetName()) + "input offset size" +
+                          FmtToStr(input_list.size()) + "should bigger than ref input index" + FmtToStr(in_i);
+      GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+      return ge::FAILED;
+    }
+    if (output_list[out_i] != input_list[in_i]) {
+      std::string error = "Node" + FmtToStr(opdesc->GetName()) + "input offset " + FmtToStr(input_list[in_i]) +
+                          "should equal to output offset" + FmtToStr(output_list[out_i]) + "with ref in" +
+                          FmtToStr(in_i) + "to output" + FmtToStr(out_i);
+      GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+      return ge::FAILED;
+    }
+  }
+  return ge::SUCCESS;
 }
 
 ge::Status GraphMemoryAssigner::SetInputOffset() {
@@ -1330,6 +1366,8 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
   origin_input_list = tmp_op_desc->GetInputOffset();
   int64_t valid_input_index = 0;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(tmp_op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, memory_type);
+  std::map<int32_t, int32_t> out2ins;
+  GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
   for (const auto &anchor : node->GetAllInDataAnchors()) {
     vector<int64_t> output_list;
     auto peer_out_anchor = anchor->GetPeerOutAnchor();
@@ -1350,17 +1388,25 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         auto ori_input_offset_list_size = origin_input_list.size();
         auto mem_type_size = memory_type.size();
         if ((input_size != mem_type_size) || (input_size != ori_input_offset_list_size)) {
-            std::string error = "fusion: node" + FmtToStr(tmp_op_desc->GetName()) +
+            std::string error = "Node" + FmtToStr(tmp_op_desc->GetName()) +
                 + " input_size" + FmtToStr(input_size) + " diff from memory_type_size" +
                 FmtToStr(mem_type_size) + " from ori_input_offset_list_size" +
                 FmtToStr(ori_input_offset_list_size);
             GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
           return ge::FAILED;
         }
-        // not hbm keep orignal inputoffest
-        // hbm inputoffset = original inputoffset + outputoffset
-        input_offset = (memory_type[valid_input_index] == RT_MEMORY_L1 ? origin_input_list[valid_input_index]
-                       : origin_input_list[valid_input_index] + output_list.at(out_index));
+        GELOGD("Node[%s] input[%d] has origin offset[%ld]", tmp_op_desc->GetName().c_str(), anchor->GetIdx(),
+               origin_input_list[valid_input_index]);
+        // L1 keep original input_offset
+        if (memory_type[valid_input_index] == RT_MEMORY_L1) {
+          input_offset = origin_input_list[valid_input_index];
+        } else {
+          // hbm input_offset = original input_offset + output_offset
+          input_offset = origin_input_list[valid_input_index] + output_list.at(out_index);
+          // update ref output_offset when input change
+          GE_CHK_STATUS_RET(UpdateRefOpOutputOffset(node, out2ins, anchor->GetIdx(), input_offset),
+                            "[Update][RefOffset]fail for node: %s", node->GetName().c_str());
+        }
       }
       const auto &in_node = GetKnownInputNode(peer_out_anchor->GetOwnerNode());
       if (in_node->GetType() == CONSTANT) {
@@ -1368,15 +1414,35 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         GE_CHK_STATUS(TensorUtils::GetDataOffset(tensor_desc, input_offset));
       }
 
-      GELOGD("%s node[%s] input[%ld] is set from node[%s] out index[%lu] offset[%ld]",
-             has_mem_type_attr ? "Fusion" : "",
-             tmp_op_desc->GetName().c_str(),
-             valid_input_index,
-             peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),
-             out_index,
+      GELOGD("Node[%s] input[%d] is set from node[%s] out index[%lu] offset[%ld]", tmp_op_desc->GetName().c_str(),
+             anchor->GetIdx(), peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), out_index,
              input_offset);
       input_list.emplace_back(input_offset);
       valid_input_index++;
+    }
+  }
+  return ge::SUCCESS;
+}
+
+ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, const std::map<int32_t, int32_t> &out2ins,
+                                                        const int ref_in, const int64_t input_offset) const {
+  auto opdesc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(opdesc);
+  for (const auto &out2in : out2ins) {
+    auto out_i = out2in.first;
+    auto in_i = out2in.second;
+    if (in_i == ref_in) {
+      auto origin_output_list = opdesc->GetOutputOffset();
+      if (static_cast<size_t>(out_i) >= origin_output_list.size()) {
+        std::string error = "Node" + FmtToStr(opdesc->GetName()) + "output offset size" +
+                            FmtToStr(origin_output_list.size()) + "should bigger than ref out index" + FmtToStr(out_i);
+        GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+        return ge::FAILED;
+      }
+      origin_output_list[out_i] = input_offset;
+      opdesc->SetOutputOffset(origin_output_list);
+      GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld]", opdesc->GetName().c_str(),
+             out_i, ref_in, input_offset);
     }
   }
   return ge::SUCCESS;
@@ -1626,7 +1692,7 @@ void GraphMemoryAssigner::PrintMemoryOffset() {
   }
 }
 
-ge::Status GraphMemoryAssigner::GetAllRef(const NodePtr &node, map<int32_t, int32_t> &out2ins) {
+ge::Status GraphMemoryAssigner::TryGetNodeRefIndexes(const NodePtr &node, map<int32_t, int32_t> &out2ins) const{
   for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     int32_t reuse_in_index = -1;
     bool reuse_input_flag = GraphUtils::IsRefFromInput(out_data_anchor, reuse_in_index);

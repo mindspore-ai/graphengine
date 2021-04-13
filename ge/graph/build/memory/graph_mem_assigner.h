@@ -110,8 +110,11 @@ class GraphMemoryAssigner {
   ge::Status SetInputOffset();
 
   ge::Status UpdateOpInputOffset(const NodePtr &node) const;
+  ge::Status UpdateRefOpOutputOffset(const NodePtr &node, const std::map<int32_t, int32_t> &out2ins, const int ref_in,
+                                     const int64_t input_offset) const;
 
   ge::Status CheckOffset();
+  ge::Status CheckRefNodeOffset(const NodePtr &node);
 
   ge::Status AssignReferenceMemory();
 
@@ -125,7 +128,7 @@ class GraphMemoryAssigner {
 
   ge::Status ReAssignAtomicMemory(bool is_loop_graph);
 
-  ge::Status GetAllRef(const NodePtr &node, std::map<int32_t, int32_t> &out2ins);
+  ge::Status TryGetNodeRefIndexes(const NodePtr &node, std::map<int32_t, int32_t> &out2ins) const;
 
   bool AssignContinuousInputMemoryWithAtomicProcessDirectly(const NodePtr &input_continuous_node,
                                                             std::map<NodePtr, uint32_t> &node_2_continuous_type);

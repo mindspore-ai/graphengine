@@ -21,6 +21,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "common/types.h"
 #include "common/util.h"
+#include "common/math/math_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/op/op_parser_util.h"
 #include "graph/types.h"

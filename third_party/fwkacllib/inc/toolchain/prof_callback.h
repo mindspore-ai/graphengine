@@ -74,6 +74,7 @@ enum MsprofReporterCallbackType {
     MSPROF_REPORTER_REPORT = 0,           // report data
     MSPROF_REPORTER_INIT,                 // init reporter
     MSPROF_REPORTER_UNINIT,               // uninit reporter
+    MSPROF_REPORTER_DATA_MAX_LEN,         // data max length for calling report callback
 };
 
 /**

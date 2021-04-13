@@ -63,6 +63,11 @@ typedef enum tagRtFeatureType {
     FEATURE_TYPE_RSV
 } rtFeatureType_t;
 
+typedef enum tagRtDeviceFeatureType {
+  FEATURE_TYPE_SCHE,
+  FEATURE_TYPE_END,
+} rtDeviceFeatureType_t;
+
 typedef enum tagMemcpyInfo {
     MEMCPY_INFO_SUPPORT_ZEROCOPY = 0,
     MEMCPY_INFO_RSV
@@ -72,6 +77,7 @@ typedef enum tagMemoryInfo {
     MEMORY_INFO_TS_4G_LIMITED = 0,
     MEMORY_INFO_RSV
 } rtMemoryInfo_t;
+
 /**
  * @ingroup dvrt_dev
  * @brief get total device number.

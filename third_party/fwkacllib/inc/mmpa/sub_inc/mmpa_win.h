@@ -557,6 +557,10 @@ MMPA_FUNC_VISIBILITY mmFileHandle mmShmOpen(const CHAR *name, INT32 oflag, mmMod
 MMPA_FUNC_VISIBILITY INT32 mmShmUnlink(const CHAR *name);
 MMPA_FUNC_VISIBILITY VOID *mmMmap(mmFd_t fd, mmSize_t size, mmOfft_t offset, mmFd_t *extra, INT32 prot, INT32 flags);
 MMPA_FUNC_VISIBILITY INT32 mmMunMap(VOID *data, mmSize_t size, mmFd_t *extra);
+
+MMPA_FUNC_VISIBILITY mmSize mmGetPageSize();
+MMPA_FUNC_VISIBILITY VOID *mmAlignMalloc(mmSize mallocSize, mmSize alignSize);
+MMPA_FUNC_VISIBILITY VOID mmAlignFree(VOID *addr);
 #ifdef __cplusplus
 #if __cplusplus
 }

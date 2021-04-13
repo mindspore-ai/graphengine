@@ -18,7 +18,11 @@
 #define GE_GE_RUNTIME_TASK_LABEL_GOTO_TASK_H_
 
 #include <memory>
+#include <vector>
+#include <map>
+#include <mutex>
 #include "ge_runtime/task/task.h"
+#include "ge_runtime/task/label_manager.h"
 
 namespace ge {
 namespace model_runner {
@@ -31,13 +35,13 @@ class LabelGotoTask : public TaskRepeater<LabelGotoTaskInfo> {
   bool Distribute() override;
 
  private:
-  bool CheckParamValid();
-
   std::shared_ptr<LabelGotoTaskInfo> task_info_;
-  void *stream_{nullptr};
-  void *label_{nullptr};
-  void *label_info_{nullptr};
-  void *index_value_{nullptr};
+  void *stream_;
+  std::shared_ptr<LabelGuard> label_info_;
+  void *index_value_;
+  uint32_t label_id_;
+  rtModel_t rt_model_handle_;
+  std::shared_ptr<LabelManager> label_manager_;
 };
 }  // namespace model_runner
 }  // namespace ge

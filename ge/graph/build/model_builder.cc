@@ -243,7 +243,7 @@ Status ModelBuilder::SetInputOutputDesc() {
     }
     // if user set input node format ND, the expected node for data and netoutput format is ND in
     // final graph.
-    if ((GetLocalOmgContext().format == domi::DOMI_TENSOR_ND) && (!node_op_desc->HasAttr("_is_single_op")) &&
+    if ((compute_graph_->GetParentGraph() == nullptr) && (GetLocalOmgContext().format == domi::DOMI_TENSOR_ND) && (!node_op_desc->HasAttr("_is_single_op")) &&
         ((node_op_desc->GetType() == DATA_TYPE) || (node_op_desc->GetType() == NETOUTPUT))) {
       auto inputDescsPtr = node_op_desc->GetAllInputsDescPtr();
       auto outputDescsPtr = node_op_desc->GetAllOutputsDescPtr();

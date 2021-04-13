@@ -319,7 +319,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     const GeTensorDescPtr tensor_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
     GE_IF_BOOL_EXEC(tensor_desc == nullptr, GELOGD("Op: %s, Index: %zu, has no input", op_desc->GetName().c_str(), i);
                     continue;)
-    if ((i < v_is_input_const.size()) && v_is_input_const[i] && (op_type != NETOUTPUT)) {
+    if ((i < v_is_input_const.size()) && v_is_input_const[i]) {
       // TBE: add weights address to input
       int64_t tensor_size = 0;
       GE_CHK_STATUS(TensorUtils::GetSize(*tensor_desc, tensor_size));

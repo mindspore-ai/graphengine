@@ -395,10 +395,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
   if (model_names.size() > 1) {
     GELOGD("only save first model MODEL_DEF");
     if (SaveModelDef(om_file_save_helper, first_ge_model, model_buffers[cur_index], cur_index) != SUCCESS) {
-      GELOGE(FAILED, "[Save][ModelDef]Failed, model name %s, cur_index %zu",
-             model_names.c_str(), cur_index);
-      REPORT_INNER_ERROR("E19999", "Save model %s def failed, cur_index %zu",
-                         model_names.c_str(), cur_index);
+      GELOGE(FAILED, "[Save][ModelDef]Failed, cur_index %zu", cur_index);
+      REPORT_INNER_ERROR("E19999", "Save model def failed, cur_index %zu", cur_index);
       return FAILED;
     }
     ++cur_index;
@@ -798,7 +796,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
   ModelPartition task_partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
     GELOGE(FAILED, "[Get][ModelTaskPartition]Failed, task_partition size:%u", task_partition.size);
-    REPORT_INNER_ERRO("E19999", "Get model task partition failed, task_partition size %u",
+    REPORT_INNER_ERROR("E19999", "Get model task partition failed, task_partition size %u",
                       task_partition.size);
     return FAILED;
   }
@@ -995,9 +993,9 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
 
   Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file.c_str(), ret);
+    GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file, ret);
     REPORT_CALL_ERROR("E19999", "Load model info failed from file %s, error_code %u",
-                      model_file.c_str(), ret);
+                      model_file, ret);
     return ret;
   }
   std::function<void()> callback = [&]() {
@@ -1060,9 +1058,9 @@ Status ModelTool::GetModelInfoFromPbtxt(const char *model_file, ge::proto::Model
   };
   if (ret != SUCCESS) {
     free_model_data(&model.model_data);
-    GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file.c_str(), ret);
+    GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file, ret);
     REPORT_CALL_ERROR("E19999", "Load model info failed from file %s, error_code %u",
-                      model_file.c_str(), ret);
+                      model_file, ret);
     return ret;
   }
 

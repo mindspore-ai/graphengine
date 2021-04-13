@@ -130,7 +130,7 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
     }
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, iutput_size %d", iutput_size);
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, input_size %d", input_size);
       REPORT_CALL_ERROR("E19999", "Get input size %d failed", input_size);
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
@@ -205,7 +205,7 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
                              stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(rt_ret, "Call rtCpuKernelLaunch failed, ret:0x%X", rt_ret);
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret: 0x%X", rt_ret)
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGI("Kernel launch dump op success");

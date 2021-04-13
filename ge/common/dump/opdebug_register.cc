@@ -79,7 +79,7 @@ Status OpdebugRegister::RegisterDebugForStream(rtStream_t stream, uint32_t op_de
     GELOGE(ret, "[Malloc][MemForOpdebug]Failed in stream overflow, ret:0x%X", ret);
     REPORT_CALL_ERROR("E19999", "Malloc memory for opdebug failed in model overflow, "
                       "ret:0x%X", ret);
-    return ret
+    return ret;
   }
 
   uint32_t debug_stream_id = 0;

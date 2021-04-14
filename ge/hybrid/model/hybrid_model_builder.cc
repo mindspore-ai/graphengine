@@ -1541,7 +1541,9 @@ Status HybridModelBuilder::IdentifyVariableOutputs(NodeItem &node_item) {
            src_node->GetName().c_str(),
            src_op_type.c_str());
     uint32_t parent_index = 0;
-    GE_CHK_STATUS_RET_NOLOG(GetParentNodeOutputIndex(*net_output_desc, in_data_anchor->GetIdx(), parent_index));
+    if (GetParentNodeOutputIndex(*net_output_desc, in_data_anchor->GetIdx(), parent_index) != SUCCESS) {
+      continue;
+    }
     GELOGD("Got parent output index = %u", parent_index);
     if (src_op_type == DATA) {
       int ref_i = 0;

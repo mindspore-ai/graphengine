@@ -113,7 +113,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   if (!is_proto_init) {
     GELOGE(GE_CLI_INIT_FAILED,
            "[Init][OpsProtoPath]Loading OpsProto lib plugin failed, OpsProtoPath:%s invalid.",
-	   opsproto_path.c_str());
+           opsproto_path.c_str());
     REPORT_CALL_ERROR("E19999", "Loading OpsProto lib plugin failed, OpsProtoPath:%s invalid",
                       opsproto_path.c_str());
     return FAILED;
@@ -488,7 +488,7 @@ Status Session::RemoveGraph(uint32_t graph_id) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Remove][Graph]Failed, GELib instance is nullptr or is not InitFlag ");
     REPORT_INNER_ERROR("E19999",
-		       "RemoveGraph Failed, GELib instance is nullptr or is not InitFlag.");
+                       "RemoveGraph Failed, GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
 
@@ -614,7 +614,7 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Build][Graph]Failed, the GELib instance is nullptr or is not InitFlag.");
     REPORT_INNER_ERROR("E19999",
                        "Build graph failed, the GELib instance is nullptr or is not InitFlag.");

@@ -421,7 +421,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
 
   auto ret = SaveModelHeader(om_file_save_helper, first_ge_model, model_names.size());
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "[Save][ModelHeader]Failed, model name %s", first_ge_model->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Save][ModelHeader]Failed, model name %s",
+           first_ge_model->GetName().c_str());
     REPORT_INNER_ERROR("E19999", "Save model %s header failed", first_ge_model->GetName().c_str());
     return INTERNAL_ERROR;
   }
@@ -576,7 +577,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "[Load][RootModel]"
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "[Load][RootModel] "
            "Model_data is nullptr or model_data_size is 0");
     REPORT_INNER_ERROR("E19999", "Load root model failed, model_data is nullptr or its size is 0");
     return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
@@ -1016,7 +1017,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
     ErrorManager::GetInstance().ATCReportErrMessage("E10003",
       {"parameter", "value", "reason"}, {"om", model_file, "invalid om file"});
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Parse][ModelContent]Failed because of invalid om file. Please check --om param.");
+           "[Parse][ModelContent]Failed because of invalid om file. Please check om param.");
     return ret;
   }
 

@@ -317,10 +317,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
   mmTimespec timespec = mmGetTickCount();
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, listener);
-  if (davinci_model == nullptr) {
-    GELOGE(FAILED, "davinci_model is nullptr");
-    return FAILED;
-  }
+  GE_CHECK_NOTNULL(davinci_model);
   davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                    timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
   davinci_model->SetId(model_id);
@@ -1726,7 +1723,7 @@ Status ModelManager::CheckAicpuOpList(GeModelPtr ge_model) {
   bool aicpu_need_check = ge::AttrUtils::GetListStr(ge_model, "needCheckCpu", aicpu_optype_list);
   bool tf_need_check = ge::AttrUtils::GetListStr(ge_model, "needCheckTf", aicpu_tf_optype_list);
   if (!aicpu_need_check && !tf_need_check) {
-    GELOGI("Graph:%s No need to check aicpu optype.", ge_model->GetGraph().GetName().c_str());
+    GELOGI("No need to check aicpu optype for graph.");
     return SUCCESS;
   }
   GE_CHK_STATUS_RET(LaunchKernelCheckAicpuOp(aicpu_optype_list, aicpu_tf_optype_list),

@@ -120,6 +120,10 @@ const GraphItem *HybridModel::GetRootGraphItem() const {
   return root_graph_item_.get();
 }
 
+const ComputeGraphPtr &HybridModel::GetRootGraph() const {
+  return root_graph_;
+}
+
 const GraphItem *HybridModel::GetSubgraphItem(const std::string &graph_name) const {
   GELOGD("To find subgraph item by name = %s", graph_name.c_str());
   auto it = subgraph_items_.find(graph_name);

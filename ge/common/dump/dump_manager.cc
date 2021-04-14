@@ -86,6 +86,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   dump_path = dump_config.dump_path;
   if (dump_path.empty()) {
     GELOGE(PARAM_INVALID, "[Check][DumpPath]It is empty");
+    REPORT_INNER_ERROR("E19999", "Dump path check is empty");
     return PARAM_INVALID;
   }
 

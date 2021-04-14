@@ -533,14 +533,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
 
   if (ReleaseLocalModelData() != SUCCESS) {
     GELOGE(ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA, "[Release][ModelData]Failed.");
-    REPORT_INNER_ERROR("E19999", "Release local model data failed");
+    REPORT_CALL_ERROR("E19999", "Release local model data failed");
     return ACL_ERROR_GE_EXEC_RELEASE_MODEL_DATA;
   }
 
   Status status = ModelParserBase::ParseModelContent(model_data, model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Parse][ModelContent]Failed!");
-    REPORT_INNER_ERROR("E19999", "Parse model content failed");
+    REPORT_CALL_ERROR("E19999", "Parse model content failed");
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
@@ -549,7 +549,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   status = om_load_helper.Init(model_addr_tmp_, model_len_tmp_);
   if (status != SUCCESS) {
     GELOGE(status, "[Init][OmLoadHelper]Failed");
-    REPORT_INNER_ERROR("E19999", "Om_load_helper init failed");
+    REPORT_CALL_ERROR("E19999", "Om_load_helper init failed");
     model_addr_tmp_ = nullptr;
     return status;
   }
@@ -566,7 +566,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   status = GenerateGeModel(om_load_helper);
   if (status != SUCCESS) {
     GELOGE(status, "[Generate][GEModel]Failed");
-    REPORT_INNER_ERROR("E19999", "Generate GE model failed");
+    REPORT_CALL_ERROR("E19999", "Generate GE model failed");
     return status;
   }
   GELOGD("in ModelHelper::LoadModel, is_assign_model_ is setted to true!");
@@ -591,7 +591,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
 
   if (ReleaseLocalModelData() != SUCCESS) {
     GELOGE(INTERNAL_ERROR, "[Release][ModelData]Failed.");
-    REPORT_INNER_ERROR("E19999", "Release local root model data failed");
+    REPORT_CALL_ERROR("E19999", "Release local root model data failed");
     return INTERNAL_ERROR;
   }
 
@@ -618,7 +618,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
   }
   if (status != SUCCESS) {
     GELOGE(status, "[Init][OmLoadHelper]Failed");
-    REPORT_INNER_ERROR("E19999", "Om_load_helper init failed");
+    REPORT_CALL_ERROR("E19999", "Om_load_helper init failed");
     model_addr_tmp_ = nullptr;
     return status;
   }
@@ -669,7 +669,7 @@ Status ModelHelper::GenerateGeRootModel(OmFileLoadHelper &om_load_helper) {
   if (!is_unknown_shape_model_) {
     if (GenerateGeModel(om_load_helper) != SUCCESS) {
       GELOGE(FAILED, "[Generate][GERootModel]Failed");
-      REPORT_INNER_ERROR("E19999", "Generate GE root model failed");
+      REPORT_CALL_ERROR("E19999", "Generate GE root model failed");
       return FAILED;
     }
     GE_CHECK_NOTNULL(model_);

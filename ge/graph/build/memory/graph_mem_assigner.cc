@@ -1258,6 +1258,11 @@ Status GraphMemoryAssigner::CheckOffset() {
 }
 
 ge::Status GraphMemoryAssigner::CheckRefNodeOffset(const NodePtr &node) {
+  GE_CHECK_NOTNULL(node);
+  // data and netoutput no need check because only data's output or netoutput's input is used
+  if (node->GetType() == DATA || node->GetType() == NETOUTPUT) {
+    return ge::SUCCESS;
+  }
   std::map<int32_t, int32_t> out2ins;
   GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
   auto opdesc = node->GetOpDesc();

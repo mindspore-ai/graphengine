@@ -1700,6 +1700,8 @@ void GraphMemoryAssigner::PrintMemoryOffset() {
 ge::Status GraphMemoryAssigner::TryGetNodeRefIndexes(const NodePtr &node, map<int32_t, int32_t> &out2ins) const{
   for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     int32_t reuse_in_index = -1;
+    // nopadding means output[0] reuse input[0], but as history reason,
+    // other output index also return true for mem assign in block_mem_assigner
     if (GraphUtils::IsNoPaddingRefFromInput(out_data_anchor, reuse_in_index)) {
       out2ins.emplace(out_data_anchor->GetIdx(), reuse_in_index);
       return ge::SUCCESS;

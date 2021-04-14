@@ -224,7 +224,7 @@ ge::Status Analyzer::SaveAnalyzerDataToFile(uint64_t session_id, uint64_t graph_
   if (!json_file_.is_open()) {
     GELOGE(FAILED, "[Check][AnalyzeFile]analyze file does not exist[%s]",
            json_file_name_.c_str());
-    REPORT_INNER_ERROR("E19999", "Analyze file %s dose not exist");
+    REPORT_INNER_ERROR("E19999", "Analyze file %s dose not exist", json_file_name_.c_str());
     return PARAM_INVALID;
   }
 

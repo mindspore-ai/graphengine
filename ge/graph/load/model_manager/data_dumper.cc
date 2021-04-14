@@ -309,14 +309,6 @@ Status DataDumper::DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_inf
 Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
   const auto &output_descs = inner_dump_info.op->GetAllOutputsDesc();
   const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
-  if (output_descs.size() != output_addrs.size()) {
-    REPORT_INNER_ERROR("E19999", "output_desc size:%zu != output addr size:%zu in op:%s(%s)",
-                       output_descs.size(), output_addrs.size(),
-                       inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str());
-    GELOGE(PARAM_INVALID, "Invalid output desc addrs size %zu, op %s has %zu output desc.", output_addrs.size(),
-           inner_dump_info.op->GetName().c_str(), output_descs.size());
-    return PARAM_INVALID;
-  }
   std::vector<int64_t> v_memory_type;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(inner_dump_info.op, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, v_memory_type);
   GE_RT_PARAM_INVALID_WITH_LOG_IF_TRUE(has_mem_type_attr && (v_memory_type.size() != output_descs.size()),
@@ -324,10 +316,33 @@ Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicp
                                        inner_dump_info.op->GetName().c_str(), output_descs.size(),
                                        v_memory_type.size());
 
+  size_t no_need_dump_output_num = 0;
   for (size_t i = 0; i < output_descs.size(); ++i) {
     aicpu::dump::Output output;
     std::string node_name_index;
     const auto &output_desc = output_descs.at(i);
+    int32_t calc_type = 0;
+    bool has_calc_type = ge::AttrUtils::GetInt(output_desc, ATTR_NAME_MEMORY_SIZE_CALC_TYPE, calc_type);
+    if (has_calc_type && (calc_type == static_cast<int32_t>(ge::MemorySizeCalcType::ALWAYS_EMPTY))) {
+      GELOGD("Node[%s] output[index:%zu] [name:%s] is an optional output, don't need to dump this output.",
+             inner_dump_info.op->GetName().c_str(), i, output_desc.GetName().c_str());
+      ++no_need_dump_output_num;
+      continue;
+    }
+
+    if (output_descs.size() - no_need_dump_output_num < output_addrs.size()) {
+      REPORT_INNER_ERROR("E19999", "The number of output does not match in op:%s(%s). The size[%zu] of output which is "
+                         "no need to dump should not greater than the size[%zu] of output descs minus the size[%zu] of "
+                         "output which is need to dump.", inner_dump_info.op->GetName().c_str(),
+                         inner_dump_info.op->GetType().c_str(), no_need_dump_output_num, output_descs.size(),
+                         output_addrs.size());
+      GELOGE(PARAM_INVALID, "The number of output does not match in op:%s(%s). The size[%zu] of output which is no need"
+             " to dump should not greater than the size[%zu] of output descs minus the size[%zu] of output which is "
+             "need to dump.", inner_dump_info.op->GetName().c_str(), inner_dump_info.op->GetType().c_str(),
+             no_need_dump_output_num, output_descs.size(), output_addrs.size());
+      return PARAM_INVALID;
+    }
+
     // check dump output tensor desc is redirected by attr ATTR_DATA_DUMP_REF
     if (AttrUtils::GetStr(&output_desc, ATTR_DATA_DUMP_REF, node_name_index)) {
       GE_CHK_STATUS_RET(DumpRefOutput(inner_dump_info, output, i, node_name_index), "DumpRefOutput failed");

@@ -4,11 +4,16 @@ set(PROTO_LIST
     "${METADEF_DIR}/proto/insert_op.proto"
     "${METADEF_DIR}/proto/task.proto"
     "${METADEF_DIR}/proto/op_mapping_info.proto"
+)
+
+set(DUMP_PROTO_LIST
     "${METADEF_DIR}/proto/dump_task.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
+protobuf_generate(ge DUMP_PROTO_SRCS DUMP_PROTO_HDRS ${DUMP_PROTO_LIST})
+protobuf_generate(ge_static DUMP_PROTO_STATIC_SRCS DUMP_PROTO_STATIC_HDRS ${DUMP_PROTO_LIST})
 
 set(SRC_LIST
     "ge_executor.cc"
@@ -164,7 +169,7 @@ set(SRC_LIST
 )
 
 ######## libge_executor.a ########
-add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
+add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS} ${DUMP_PROTO_STATIC_SRCS})
 
 target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
@@ -212,7 +217,7 @@ target_link_libraries(ge_executor PRIVATE
 )
 
 ######## libge_executor.so ########
-add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS} ${DUMP_PROTO_SRCS})
 
 target_compile_options(ge_executor_shared PRIVATE
     -fno-common

@@ -413,6 +413,8 @@ class GraphManager {
 
   void SetSessionGraphId(ComputeGraphPtr compute_graph, uint32_t graph_id);
 
+  static Status CheckGraphAdded(const GraphId &graph_id, const Graph &graph);
+
   std::atomic_bool thread_run_flag_;
   BlockingQueue<PreRunArgs> prerun_args_q_{};
   BlockingQueue<RunArgs> run_args_q_{};

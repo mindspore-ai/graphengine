@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ REG_OP(FillD)
 */
 REG_OP(BroadcastTo)
     .INPUT(x, TensorType::BasicType())
-    .INPUT(shape, TensorType({DT_INT32}))
+    .INPUT(shape, TensorType({DT_INT32,DT_INT64}))
     .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(BroadcastTo)
 
@@ -161,7 +161,7 @@ REG_OP(Pad)
 *@brief Pads a tensor . \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32 . \n
+*x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
 
 *@par Attributes:
 *paddings: An optional "vector<vector<int>>". Defaults to "{}".
@@ -180,8 +180,8 @@ REG_OP(Pad)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
 */
 REG_OP(PadD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(paddings, ListListInt)
     .OP_END_FACTORY_REG(PadD)
 
@@ -213,7 +213,7 @@ REG_OP(PadV2)
 *@brief Pads a tensor . \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32 . \n
+*x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
 *constant_values: A Tensor. Must have the same type as input.
 
 *@par Attributes:
@@ -227,10 +227,7 @@ REG_OP(PadV2)
 *y: A Tensor of the same type as "x" . \n
 
 *@par Third-party framework compatibility:
-* Compatible with TensorFlow operator Pad.
-*
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use Pad instead.
+* Compatible with TensorFlow operator PadV2.
 */
 REG_OP(PadV2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
@@ -403,5 +400,46 @@ REG_OP(EmbeddingRankId)
     .ATTR(mode, String, "mod")
     .OP_END_FACTORY_REG(EmbeddingRankId)
 
+/**
+* @brief Fill the value to a tensor has the specified shape.
+
+* @par Inputs:
+* One inputs, including:
+* @li dims: An Tensor, specify the shape that the value to fill.
+
+* @par Attributes:
+* @li value: An optional float value. Defaults to 0.0.
+
+* @par Outputs:
+* @li y: A Tensor. Has the shape specify by attr shape, and full of the value specify by attr value.
+
+* @par Third-party framework compatibility
+* Compatible with the ONNX operator ConstantOfShape.
+*/
+REG_OP(FillV2)
+    .INPUT(dims, TensorType({DT_INT16, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
+    .ATTR(value, Float, 0)
+    .OP_END_FACTORY_REG(FillV2)
+
+/**
+* @brief Fill the value to a tensor has the specified shape.
+
+* @par Attributes:
+* @li value: An optional float value. Defaults to 0.0.
+
+* @li dims: An required listInt to specify the shape that the value to fill.
+
+* @par Outputs:
+* @li y: A Tensor. Has the shape specify by attr shape, and full of the value specify by attr value.
+
+* @par Third-party framework compatibility
+* Compatible with the ONNX operator ConstantOfShape.
+*/
+REG_OP(FillV2D)
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64}))
+    .ATTR(value, Float, 0)
+    .REQUIRED_ATTR(dims, ListInt)
+    .OP_END_FACTORY_REG(FillV2D)
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_PAD_OPS_H_

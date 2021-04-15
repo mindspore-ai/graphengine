@@ -3,11 +3,11 @@ set(PROTO_LIST
     "${METADEF_DIR}/proto/ge_ir.proto"
     "${METADEF_DIR}/proto/insert_op.proto"
     "${METADEF_DIR}/proto/task.proto"
-    "${METADEF_DIR}/proto/op_mapping_info.proto"
 )
 
 set(DUMP_PROTO_LIST
     "${METADEF_DIR}/proto/dump_task.proto"
+    "${METADEF_DIR}/proto/op_mapping_info.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})

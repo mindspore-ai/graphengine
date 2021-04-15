@@ -599,6 +599,7 @@ Status ModelHelper::GenerateGeRootModel(OmFileLoadHelper &om_load_helper) {
       is_first_model = false;
       root_model_->SetRootGraph(GraphUtils::GetComputeGraph(cur_model->GetGraph()));
       root_model_->SetModelId(cur_model->GetModelId());
+      root_model_->SetModelName(cur_model->GetName());
       model_ = cur_model;
       continue;
     }

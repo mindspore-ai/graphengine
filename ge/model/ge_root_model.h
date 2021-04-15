@@ -32,15 +32,34 @@ class GeRootModel {
     return subgraph_instance_name_to_model_;
   };
 
-  const ComputeGraphPtr &GetRootGraph() const { return root_graph_; };
-  void SetModelId(uint32_t model_id) { model_id_ = model_id; }
+  const ComputeGraphPtr &GetRootGraph() const { return root_graph_; }
+  void SetModelId(uint32_t model_id) {
+    model_id_ = model_id;
+    // cached for removement
+    model_ids_.emplace_back(model_id);
+  }
   uint32_t GetModelId() const { return model_id_; }
+  void SetModelName(const std::string &model_name) { model_name_ = model_name; }
+  const std::string &GetModelName() const { return model_name_; }
+
+  std::vector<uint32_t> GetAllModelId() const { return model_ids_; }
+
   Status CheckIsUnknownShape(bool &is_dynamic_shape);
+
   void SetRootGraph(ComputeGraphPtr graph) { root_graph_ = graph; }
+
+  void SetTrainFlag(bool flag) { train_flag_ = flag; }
+
+  bool GetTrainFlag() const { return train_flag_; }
+
  private:
   ComputeGraphPtr root_graph_ = nullptr;
   std::map<std::string, GeModelPtr> subgraph_instance_name_to_model_;
   uint32_t model_id_ = 0;
+  std::string model_name_;
+  // In multithread online secenario, same graph can owns different davinci_model for for concurrency
+  std::vector<uint32_t> model_ids_;
+  bool train_flag_ = false;
 };
 }  // namespace ge
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;

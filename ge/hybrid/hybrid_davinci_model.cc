@@ -19,6 +19,7 @@
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/executor/hybrid_model_async_executor.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "graph/manager/graph_manager_utils.h"
 
 namespace ge {
 namespace hybrid {
@@ -105,6 +106,17 @@ class HybridDavinciModel::Impl {
 
   void SetModelDescVersion(bool is_new_model_desc) {
     model_.SetModelDescVersion(is_new_model_desc);
+  }
+
+  uint32_t GetDataInputerSize() { return executor_.GetDataInputerSize(); }
+
+  bool GetRunningFlag() const { return executor_.GetRunningFlag(); }
+
+  Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+    auto listener = dynamic_cast<RunAsyncListener *>(listener_.get());
+    GE_CHECK_NOTNULL(listener);
+    listener->SetCallback(callback);
+    return SUCCESS;
   }
 
  private:
@@ -220,6 +232,17 @@ void HybridDavinciModel::SetModelDescVersion(bool is_new_model_desc) {
 uint64_t HybridDavinciModel::GetSessionId() {
   GE_CHECK_NOTNULL(impl_);
   return impl_->GetSessionId();
+}
+
+uint32_t HybridDavinciModel::GetDataInputerSize() {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetDataInputerSize();
+}
+
+bool HybridDavinciModel::GetRunningFlag() const { return impl_->GetRunningFlag(); }
+
+Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+  return impl_->SetRunAsyncListenerCallback(callback);
 }
 }  // namespace hybrid
 }  // namespace ge

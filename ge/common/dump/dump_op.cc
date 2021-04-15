@@ -134,7 +134,8 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
       GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, tesor name %s, tensor type %s, "
-             "input_size %ld", op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), input_size);
+             "input_size %ld",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), input_size);
       REPORT_CALL_ERROR("E19999", "Get input size %ld failed, tensor name %s, tensor type %s",
                         input_size, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;

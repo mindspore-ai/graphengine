@@ -121,6 +121,7 @@ const uint32_t kInitGraphCount = 1;
 const uint32_t kNotAdded = 0;
 const uint32_t kStartAdd = 1;
 const uint32_t kDoneAdded = 2;
+const uint32_t kNeverLoaded = 0;
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;
@@ -2584,6 +2585,15 @@ void GraphManager::ReleaseMemory(const GeModelPtr &ge_model, GraphNodePtr &graph
     GELOGI("CheckAndReleaseMemory UnloadGraph[%u], model[%u] success.", graph_id, model_id);
   }
   graph_node->SetLoadFlag(false);
+  // Allow model to be loaded agagin without adding graph again
+  graph_node->SetLoadCount(graph_node->GetLoadRecord());
+  graph_node->SetLoadRecord(kNeverLoaded);
+  GeRootModelPtr ge_root_model = graph_node->GetGeRootModel();
+  if (ge_root_model == nullptr) {
+    GELOGW("ge_root_model is null, graph_id:%u", graph_id);
+    return;
+  }
+  ge_root_model->ClearAllModelId();
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, when GraphManager %s",

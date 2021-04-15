@@ -11,6 +11,7 @@ elseif (ENABLE_D)
 endif ()
 
 set(PROTO_LIST
+    "${METADEF_DIR}/proto/dump_task.proto"
     "${METADEF_DIR}/proto/fusion_model.proto"
     "${GE_CODE_DIR}/ge/proto/optimizer_priority.proto"
 )

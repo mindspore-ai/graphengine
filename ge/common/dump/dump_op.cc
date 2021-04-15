@@ -239,9 +239,8 @@ Status DumpOp::LaunchDumpOp() {
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "[Call][rtGetDevice]Failed, ret 0x%X, device_id %d.", rt_ret, device_id);
-    REPORT_CALL_ERROR("E19999", "[Call][rtGetDevice]Failed, ret 0x%X, device_id %d.",
-                      rt_ret, device_id);
+    GELOGE(rt_ret, "[Call][rtGetDevice]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "[Call][rtGetDevice]Failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   if (device_id < 0) {

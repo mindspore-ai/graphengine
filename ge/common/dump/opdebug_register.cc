@@ -27,9 +27,9 @@ Status OpdebugRegister::RegisterDebugForModel(rtModel_t model_handle, uint32_t o
   GELOGD("Start to register debug for model in overflow");
   auto ret = MallocMemForOpdebug();
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Malloc][MemForOpdebug]Failed in model overflow, ret:0x%X", ret);
-    REPORT_CALL_ERROR("E19999",  "Malloc memory for opdebug failed in model overflow, "
-                      "ret 0x%X", ret);
+    GELOGE(ret, "[Malloc][MemForOpdebug]Failed when debug for model overflow, ret:0x%X", ret);
+    REPORT_CALL_ERROR("E19999",  "Malloc memory for opdebug failed when debug "
+                      "for model in overflow, ret 0x%X", ret);
     return ret;
   }
   uint32_t debug_stream_id = 0;
@@ -76,9 +76,9 @@ Status OpdebugRegister::RegisterDebugForStream(rtStream_t stream, uint32_t op_de
   GELOGD("Start to register debug for stream in stream overflow");
   auto ret = MallocMemForOpdebug();
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Malloc][MemForOpdebug]Failed in stream overflow, ret:0x%X", ret);
-    REPORT_CALL_ERROR("E19999", "Malloc memory for opdebug failed in model overflow, "
-                      "ret:0x%X", ret);
+    GELOGE(ret, "[Malloc][MemForOpdebug]Failed when debug for stream in overflow, ret:0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Malloc memory for opdebug failed when debug "
+                      "for stream in overflow, ret:0x%X", ret);
     return ret;
   }
 

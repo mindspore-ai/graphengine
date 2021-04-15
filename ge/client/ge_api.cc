@@ -357,6 +357,7 @@ Session::~Session() {
   } catch (google::protobuf::FatalException &e) {
     GELOGE(GE_CLI_SESS_DESTROY_FAILED, "[Destruct][Session]Failed "
            "because get fatalException.");
+    REPORT_CALL_ERROR("E19999", "Destruct session failed, get fatal exception");
   }
 
   // check return status, return, update session id if success
@@ -486,9 +487,11 @@ Status Session::RemoveGraph(uint32_t graph_id) {
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (!instance_ptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-           "[Remove][Graph]Failed, GELib instance is nullptr or is not InitFlag ");
+           "[Remove][Graph]Failed, GELib instance is nullptr or is not InitFlag,
+           session_id %lu, graph_id %lu", sessionId_, graph_id);
     REPORT_INNER_ERROR("E19999",
-                       "RemoveGraph Failed, GELib instance is nullptr or is not InitFlag.");
+                       "RemoveGraph Failed, GELib instance is nullptr or is not InitFlag,
+                       session_id %lu, graph_id %lu", sessionId_, graph_id);
     return FAILED;
   }
 
@@ -566,9 +569,11 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-           "[Run][Graph]Failed, GELib instance is nullptr or is not InitFlag.");
+           "[Run][Graph]Failed, GELib instance is nullptr or is not InitFlag,
+           session_id %lu, graph_id %lu", sessionId_, graph_id);
     REPORT_INNER_ERROR("E19999",
-                       "RunGraph Failed, GELib instance is nullptr or is not InitFlag.");
+                       "RunGraph Failed, GELib instance is nullptr or is not InitFlag,
+                       session_id %lu, graph_id %lu", sessionId_, graph_id);
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Running Graph");
@@ -615,9 +620,11 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-           "[Build][Graph]Failed, the GELib instance is nullptr or is not InitFlag.");
+           "[Build][Graph]Failed, the GELib instance is nullptr or is not InitFlag,
+           session_id %lu, graph_id %lu", sessionId_, graph_id);
     REPORT_INNER_ERROR("E19999",
-                       "Build graph failed, the GELib instance is nullptr or is not InitFlag.");
+                       "Build graph failed, the GELib instance is nullptr or is not InitFlag,
+                       session_id %lu, graph_id %lu", sessionId_, graph_id);
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Building Graph");
@@ -641,9 +648,11 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-           "[Run][Graph]RunGraphAsyncFailed, the GELib instance is nullptr or is not InitFlag.");
+           "[Run][Graph]RunGraphAsyncFailed, the GELib instance is nullptr or is not InitFlag,
+           session_id %lu, graph_id %lu", sessionId_, graph_id);
     REPORT_INNER_ERROR("E19999",
-		       "RunGraphAsync Failed, the GELib instance is nullptr or is not InitFlag.");
+		       "RunGraphAsync Failed, the GELib instance is nullptr or is not InitFlag,
+                       session_id %lu, graph_id %lu", sessionId_, graph_id);
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Run Graph Asynchronously");

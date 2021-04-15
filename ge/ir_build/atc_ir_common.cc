@@ -55,6 +55,7 @@ const char *const kDigitError = "is not digit";
 const char *const kCompressWeightError = "it must be appointed when appoint parameter[--optypelist_for_implmode]";
 const char *const kSelectImplmodeError = "only support high_performance, high_precision";
 const char *const kDynamicBatchSizeError = "It can only contains digit, \",\", \" \"";
+const char *const kDynamicImageSizeError = "It can only contains digit, \",\", \" \" and \";\"";
 const char *const kKeepDtypeError = "file not found";
 const char *const kInputShapeRangeInvalid = "format of shape range is invalid";
 const char *const kShapeRangeValueConvertError = "transfer from string to int64 error";
@@ -170,6 +171,16 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
   }
 
   EraseEndSemicolon(dynamic_image_size);
+  for (char c : dynamic_image_size) {
+    bool is_char_valid = isdigit(c) || (c == ',') || (c == ' ') || (c == ';');
+    if (!is_char_valid) {
+      ErrorManager::GetInstance().ATCReportErrMessage(
+              "E10033", {"value", "reason"}, {dynamic_image_size, kDynamicImageSizeError});
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicImageSizeInputShape] --dynamic_image_size:%s is invalid. reason: %s",
+             dynamic_image_size.c_str(), kDynamicImageSizeError);
+      return false;
+    }
+  }
   // Different parameter sets are split string by ';'
   std::vector<std::string> split_set = StringUtils::Split(dynamic_image_size, ';');
   // Different dimensions are split by ','

@@ -102,8 +102,11 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
     }
     int64_t output_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, output_size %ld", output_size);
-      REPORT_CALL_ERROR("E19999", "Get output_size %ld failed", output_size);
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, tensor name %s, "
+             "tensor type %s, output_size %ld",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), output_size);
+      REPORT_CALL_ERROR("E19999", "Get output_size %ld failed, tensor name %s, tensor type %s",
+                        output_size, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get output size in lanch dump op is %ld", output_size);
@@ -130,8 +133,10 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
     }
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, input_size %ld", input_size);
-      REPORT_CALL_ERROR("E19999", "Get input size %ld failed", input_size);
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, tesor name %s, tensor type %s, "
+             "input_size %ld", op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), input_size);
+      REPORT_CALL_ERROR("E19999", "Get input size %ld failed, tensor name %s, tensor type %s",
+                        input_size, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get input size in lanch dump op is %ld", input_size);
@@ -275,8 +280,10 @@ Status DumpOp::LaunchDumpOp() {
   if (dump_properties_.GetDumpMode() == kDumpOutput) {
     auto ret = DumpOutput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Dump][Output]Failed, ret 0x%X", ret);
-      REPORT_CALL_ERROR("E19999", "Dump Output failed, ret 0x%X", ret);
+      GELOGE(ret, "[Dump][Output]Failed, tensor name %s, tensor type %s, ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Output failed, tensor name %s, tensor type %s, ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
@@ -284,8 +291,10 @@ Status DumpOp::LaunchDumpOp() {
   if (dump_properties_.GetDumpMode() == kDumpInput) {
     auto ret = DumpInput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Dump][Input]Failed, ret 0x%X", ret);
-      REPORT_CALL_ERROR("E19999", "Dump Input failed, ret 0x%X", ret);
+      GELOGE(ret, "[Dump][Input]Failed, tensor name %s, tensor type %s, ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Input failed, tensor name %s, tensor type %s, ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
@@ -293,14 +302,21 @@ Status DumpOp::LaunchDumpOp() {
   if (dump_properties_.GetDumpMode() == kDumpAll || dump_properties_.IsOpDebugOpen()) {
     auto ret = DumpOutput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Dump][Output]Failed when in dumping all, ret 0x%X", ret);
-      REPORT_CALL_ERROR("E19999", "Dump Output failed when in dumping all, ret 0x%X", ret);
+      GELOGE(ret, "[Dump][Output]Failed when in dumping all, tensor name %s, tensor type %s, "
+             "ret 0x%X", op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Output failed when in dumping all, tensor name %s, "
+                        "tensor type %s,ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     ret = DumpInput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Dump][Input]Failed when in dumping all, ret 0x%X", ret);
-      REPORT_CALL_ERROR("E19999", "Dump Input failed when in dumping all, ret 0x%X", ret);
+      GELOGE(ret, "[Dump][Input]Failed when in dumping all, tensor name %s, "
+             "tensor type %s, ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Input failed when in dumping all, tensor name %s, "
+                        "tensor type %s, ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));

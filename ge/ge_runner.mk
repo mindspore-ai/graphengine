@@ -316,7 +316,7 @@ LIBGE_LOCAL_SRC_FILES := \
     ir_build/attr_options/utils.cc \
     ir_build/attr_options/keep_dtype_option.cc \
     ir_build/attr_options/weight_compress_option.cc \
-    ir_build/atc_ir_common.cc \
+    ir_build/option_utils.cc \
 
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \

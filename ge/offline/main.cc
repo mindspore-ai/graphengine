@@ -36,7 +36,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "omg/omg.h"
 #include "omg/parser/parser_factory.h"
 #include "omg/parser/parser_inner_ctx.h"

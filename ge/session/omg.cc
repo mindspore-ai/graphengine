@@ -38,7 +38,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/optimize/common/params.h"
 #include "graph/utils/type_utils.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "omg/omg_inner_types.h"
 #include "omg/parser/model_parser.h"
 #include "omg/parser/parser_factory.h"

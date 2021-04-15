@@ -11,7 +11,7 @@ set(SRC_LIST
     "main.cc"
     "single_op_parser.cc"
     "../session/omg.cc"
-    "../ir_build/atc_ir_common.cc"
+    "../ir_build/option_utils.cc"
 )
 
 ############ atc_atc.bin ############

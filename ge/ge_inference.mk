@@ -73,7 +73,7 @@ BUILER_SRC_FILES := \
     ir_build/attr_options/utils.cc \
     ir_build/attr_options/keep_dtype_option.cc \
     ir_build/attr_options/weight_compress_option.cc \
-    ir_build/atc_ir_common.cc \
+    ir_build/option_utils.cc \
 
 ANALYZER_SRC_FILES:= \
     analyzer/analyzer.cc \

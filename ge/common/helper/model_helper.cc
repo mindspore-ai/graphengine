@@ -219,7 +219,8 @@ Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_
   if (SaveModelPartition(om_file_save_helper, ModelPartitionType::TASK_INFO, task_buffer.GetData(),
                          partition_task_size, model_index) != SUCCESS) {
     GELOGE(PARAM_INVALID, "[Add][ModelTaskDefPartition]Failed, model def size %zu, "
-           "model_index %zu, model %s", partition_task_size, model_index, ge_model->GetName().c_str());
+           "model_index %zu, model %s",
+           partition_task_size, model_index, ge_model->GetName().c_str());
     REPORT_CALL_ERROR("E19999", "Add model task def partition failed, model def size %zu "
                       "model_index %zu, model %s",
                       partition_task_size, model_index, ge_model->GetName().c_str());
@@ -242,8 +243,8 @@ Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_s
                  platform_version.size() + 1);
   if (err != EOK) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
-           "[Save][Model]Failed while allocating memory for platform_version %s, model %s, errno %d",
-            platform_version.c_str(), ge_model->GetName().c_str(), err);
+           "[Save][Model]Failed while allocating memory for platform_version %s, model %s, "
+           "errno %d", platform_version.c_str(), ge_model->GetName().c_str(), err);
     REPORT_CALL_ERROR("E19999", "ModelHelper save model %s failed while "
                       "allocating memory for platform_version %s, errno %d",
                       ge_model->GetName().c_str(), platform_version.c_str(), err);
@@ -275,7 +276,7 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
     GELOGE(FAILED, "[Save][ModelDef]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
     REPORT_CALL_ERROR("E19999", "ModelHelper save model def failed, model %s, model index %zu",
-                       ge_model->GetName().c_str(), model_index);
+                      ge_model->GetName().c_str(), model_index);
     return FAILED;
   }
 
@@ -283,15 +284,15 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
     GELOGE(FAILED, "[Save][ModelWeights]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
     REPORT_CALL_ERROR("E19999","ModelHelper save mode weights failed, model %s, model index %zu",
-                       ge_model->GetName().c_str(), model_index);
+                      ge_model->GetName().c_str(), model_index);
     return FAILED;
   }
 
   if (SaveModelTbeKernel(om_file_save_helper, ge_model, model_index) != SUCCESS) {
      GELOGE(FAILED, "[Save][ModelTbeKernel]Failed, model %s, model index %zu",
             ge_model->GetName().c_str(), model_index);
-     REPORT_CALL_ERROR("E19999", "ModelHelper save model tbe kernel failed, model %s, model index %zu",
-                        ge_model->GetName().c_str(), model_index);
+     REPORT_CALL_ERROR("E19999", "ModelHelper save model tbe kernel failed, model %s, "
+                       "model index %zu", ge_model->GetName().c_str(), model_index);
     return FAILED;
   }
 
@@ -299,7 +300,7 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
     GELOGE(FAILED, "[Save][ModelCustAICPU]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
     REPORT_CALL_ERROR("E19999", "ModelHelper save model cust aicpu failed, model %s "
-                       "model index %zu", ge_model->GetName().c_str(), model_index);
+                      "model index %zu", ge_model->GetName().c_str(), model_index);
     return FAILED;
   }
 
@@ -308,7 +309,7 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
     GELOGE(FAILED, "[Save][TaskDef]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
     REPORT_CALL_ERROR("E19999", "ModelHelper save task def failed, model %s, model index %zu",
-                       ge_model->GetName().c_str(), model_index);
+                      ge_model->GetName().c_str(), model_index);
     return FAILED;
   }
   return SUCCESS;

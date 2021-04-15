@@ -651,7 +651,7 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
            "[Run][Graph]RunGraphAsyncFailed, the GELib instance is nullptr or is not InitFlag,
            session_id %lu, graph_id %lu", sessionId_, graph_id);
     REPORT_INNER_ERROR("E19999",
-		       "RunGraphAsync Failed, the GELib instance is nullptr or is not InitFlag,
+                       "RunGraphAsync Failed, the GELib instance is nullptr or is not InitFlag,
                        session_id %lu, graph_id %lu", sessionId_, graph_id);
     return FAILED;
   }

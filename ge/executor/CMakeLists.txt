@@ -198,7 +198,7 @@ set(SRC_LIST
 )
 
 ######## libge_executor.a ########
-add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
+add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS} ${DUMP_PROTO_SRCS})
 
 target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
@@ -242,7 +242,6 @@ target_link_libraries(ge_executor PRIVATE
     json
     ascend_protobuf_static
     c_sec
-    ge_proto_dump
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
     -ldl
 )

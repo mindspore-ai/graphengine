@@ -86,7 +86,7 @@ class HybridDavinciModel::Impl {
     return model_.GetDeviceId();
   }
 
-  const GraphExecutionContext * GeContext() { return executor_.GeContext(); }
+  const GraphExecutionContext *GeContext() { return executor_.GeContext(); }
 
   uint64_t GetSessionId() {
     return model_.GetSessionId();

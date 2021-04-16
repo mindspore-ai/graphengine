@@ -43,7 +43,7 @@ namespace {
     }                                                                                                                  \
     auto tensor = TensorAdapter::AsTensor(*ge_tensor);                                                                 \
     auto tensor_name = op_desc->GetOutputNameByIndex(i);                                                               \
-    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "Failed to get output name. node = %s, index = %zu",               \
+    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "[Get][OutputName] failed. node = %s, index = %zu",                \
                                op_desc->GetName().c_str(), i);                                                         \
     named_outputs.emplace(tensor_name, tensor);                                                                        \
     break;                                                                                                             \
@@ -61,7 +61,8 @@ Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
   if (out_desc.GetShape().IsUnknownShape()) {
     std::vector<std::pair<int64_t, int64_t>> range;
     if (out_desc.GetShapeRange(range) != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Get shape range failed.");
+      REPORT_CALL_ERROR("E19999", "GetShapeRange failed.");
+      GELOGE(INTERNAL_ERROR, "[Get][ShapeRange] failed.");
       return INTERNAL_ERROR;
     }
     int64_t max_range_size = 1;
@@ -72,7 +73,8 @@ Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
     num_size = max_range_size;
   }
   if (num_size < 0) {
-    GELOGE(INTERNAL_ERROR, "Get negative size, num_size=%ld.", num_size);
+    REPORT_INNER_ERROR("E19999", "Get negative size, num_size=%ld.", num_size);
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Get negative size, num_size=%ld.", num_size);
     return INTERNAL_ERROR;
   }
   data_num = static_cast<uint64_t>(num_size);
@@ -137,10 +139,10 @@ Status HostCpuEngine::PrepareInputs(const ge::ConstOpDescPtr &op_desc,
                                     map<std::string, const Tensor> &named_inputs) {
   auto num_inputs = op_desc->GetInputsSize();
   if (num_inputs != inputs.size()) {
-    GELOGE(PARAM_INVALID,
-           "Mismatching input sizes. op_desc has %zu input(s), but given %zu",
-           num_inputs,
-           inputs.size());
+    REPORT_INNER_ERROR("E19999", "Mismatching input sizes. op_desc:%s(%s) has %zu input(s), but given %zu",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), num_inputs, inputs.size());
+    GELOGE(PARAM_INVALID, "[Check][Param] Mismatching input sizes. op_desc:%s(%s) has %zu input(s), but given %zu",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), num_inputs, inputs.size());
     return PARAM_INVALID;
   }
 
@@ -149,8 +151,8 @@ Status HostCpuEngine::PrepareInputs(const ge::ConstOpDescPtr &op_desc,
     GE_CHECK_NOTNULL(ge_tensor);
     auto tensor = TensorAdapter::AsTensor(*ge_tensor);
     auto tensor_name = op_desc->GetInputNameByIndex(i);
-    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(),
-                               "Failed to get input name. node = %s, index = %zu", op_desc->GetName().c_str(), i);
+    GE_RETURN_WITH_LOG_IF_TRUE(tensor_name.empty(), "[Get][InputName] failed. node = %s, index = %zu",
+                               op_desc->GetName().c_str(), i);
     GELOGD("Successfully inserted input tensor. node = %s, index = %zu, input name = %s",
            op_desc->GetName().c_str(), i, tensor_name.c_str());
     named_inputs.emplace(tensor_name, tensor);
@@ -173,7 +175,7 @@ Status HostCpuEngine::PrepareOutputs(const ge::ConstOpDescPtr &op_desc,
     uint64_t data_num = 0;
     if (need_create_flag) {
       if (GetDataNumber(out_desc, data_num) != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "node:%s, get size for output %zu failed", op_desc->GetName().c_str(), i);
+        GELOGE(INTERNAL_ERROR, "[Get][Number] node:%s get size for output %zu failed", op_desc->GetName().c_str(), i);
         return INTERNAL_ERROR;
       }
     }
@@ -234,12 +236,16 @@ Status HostCpuEngine::Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
   for (size_t i = 0; i < op_desc->GetOutputsSize(); i++) {
     auto tensor_name = op_desc->GetOutputNameByIndex(i);
     if (tensor_name.empty()) {
-      GELOGE(INTERNAL_ERROR, "Failed to get output name. node = %s, index = %zu", op_desc->GetName().c_str(), i);
+      REPORT_INNER_ERROR("E19999", "GetOutputNameByIndex failed, node = %s, index = %zu",
+                         op_desc->GetName().c_str(), i);
+      GELOGE(INTERNAL_ERROR, "[Get][OutputName] failed. node = %s, index = %zu", op_desc->GetName().c_str(), i);
       return INTERNAL_ERROR;
     }
     auto iter = named_outputs.find(tensor_name);
     if (iter == named_outputs.end()) {
-       GELOGE(INTERNAL_ERROR, "Failed to get output tensor. node = %s, index = %zu, tensor_name = %s",
+       REPORT_INNER_ERROR("E19999", "get output tensor failed, node = %s, index = %zu, tensor_name = %s",
+                          op_desc->GetName().c_str(), i, tensor_name.c_str());
+       GELOGE(INTERNAL_ERROR, "[Get][OutputTensor] failed. node = %s, index = %zu, tensor_name = %s",
               op_desc->GetName().c_str(), i, tensor_name.c_str());
       return INTERNAL_ERROR;
     }
@@ -328,7 +334,8 @@ Status HostCpuEngine::LoadLib(const std::string &lib_path) {
   if (handle == nullptr) {
     const char *error = mmDlerror();
     error = (error == nullptr) ? "" : error;
-    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), error);
+    REPORT_CALL_ERROR("E19999", "mmDlopen failed, path = %s, error = %s", lib_path.c_str(), error);
+    GELOGE(INTERNAL_ERROR, "[Invoke][DlOpen] failed. path = %s, error = %s", lib_path.c_str(), error);
     return INTERNAL_ERROR;
   }
 

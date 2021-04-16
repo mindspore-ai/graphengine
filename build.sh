@@ -250,6 +250,7 @@ generate_package()
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
+  ACL_LIB=("libgraph.so")
   ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "libhost_cpu_engine.so" "libhost_cpu_opskernel_builder.so" "optimizer_priority.pbtxt")
@@ -301,6 +302,11 @@ generate_package()
   for lib in "${FWK_LIB[@]}";
   do
     find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${FWK_PATH} \;
+  done
+
+  for lib in "${ACL_LIB[@]}";
+  do
+    find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "$lib" -exec cp -f {} ${OUTPUT_PATH}/${ACL_PATH} \;
   done
 
   for lib in "${ATC_LIB[@]}";

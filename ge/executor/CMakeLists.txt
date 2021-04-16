@@ -12,8 +12,66 @@ set(DUMP_PROTO_LIST
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
-protobuf_generate(ge DUMP_PROTO_SRCS DUMP_PROTO_HDRS ${DUMP_PROTO_LIST})
-protobuf_generate(ge_static DUMP_PROTO_STATIC_SRCS DUMP_PROTO_STATIC_HDRS ${DUMP_PROTO_LIST})
+protobuf_generate(ge_dump DUMP_PROTO_SRCS DUMP_PROTO_HDRS ${DUMP_PROTO_LIST})
+
+############ libge_proto_dump.a ############
+add_library(ge_proto_dump STATIC
+    ${DUMP_PROTO_SRCS}
+)
+
+target_compile_definitions(ge_proto_dump PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    google=ascend_private
+    $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
+    $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+)
+
+target_compile_options(ge_proto_dump PRIVATE
+    -O2
+    -fno-common
+    -fvisibility=hidden
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
+)
+
+target_link_libraries(ge_proto_dump PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    ascend_protobuf
+)
+
+target_link_options(ge_proto_dump PRIVATE
+    -Wl,-Bsymbolic
+)
+
+add_library(ge_proto_dump_static STATIC
+    ${DUMP_PROTO_SRCS}
+)
+
+target_compile_definitions(ge_proto_dump_static PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    google=ascend_private
+    $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
+    $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+)
+
+target_compile_options(ge_proto_dump_static PRIVATE
+    -O2
+    -fno-common
+    -fvisibility=hidden
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
+)
+
+target_link_libraries(ge_proto_dump_static PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    ascend_protobuf_static
+)
+
+target_link_options(ge_proto_dump_static PRIVATE
+    -Wl,-Bsymbolic
+)
+
+##################################################################
 
 set(SRC_LIST
     "ge_executor.cc"
@@ -169,7 +227,7 @@ set(SRC_LIST
 )
 
 ######## libge_executor.a ########
-add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS} ${DUMP_PROTO_STATIC_SRCS})
+add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
 
 target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
@@ -199,6 +257,7 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge_dump
     ${CMAKE_BINARY_DIR}/proto/ge_static
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
@@ -211,13 +270,14 @@ target_link_libraries(ge_executor PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     json
     ascend_protobuf_static
+    ge_proto_dump_static
     c_sec
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
     -ldl
 )
 
 ######## libge_executor.so ########
-add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS} ${DUMP_PROTO_SRCS})
+add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_executor_shared PRIVATE
     -fno-common
@@ -245,6 +305,7 @@ target_include_directories(ge_executor_shared PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/ge_dump
     ${CMAKE_BINARY_DIR}/proto/ge
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
@@ -255,12 +316,14 @@ target_include_directories(ge_executor_shared PRIVATE
 
 target_link_options(ge_executor_shared PRIVATE
     -Wl,-Bsymbolic
+    -Wl,--exclude-libs,ALL
 )
 
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     msprofiler
     static_mmpa
+    ge_proto_dump
     -Wl,--no-as-needed
     ge_common
     runtime

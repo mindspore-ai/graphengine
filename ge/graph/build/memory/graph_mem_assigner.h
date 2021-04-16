@@ -193,6 +193,10 @@ class GraphMemoryAssigner {
 
   Status AssignBufferPoolMemory();
 
+  bool IsRefFromInputOpCascade(const NodePtr &node);
+
+  Status UpdateRefOpOffsetReverse(const NodePtr &node);
+
   MemoryOffsetMap memory_offset_;
   ge::ComputeGraphPtr compute_graph_;
   HybridMemAssignerPtr mem_assigner_;

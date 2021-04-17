@@ -104,7 +104,7 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
     if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
       GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, output %zu, node %s(%s),",
              i, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
-      REPORT_CALL_ERROR("E19999", "Get output %zu tensor size pf node %s(%s) failed",
+      REPORT_CALL_ERROR("E19999", "Get output %zu tensor size of node %s(%s) failed",
                         i, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }

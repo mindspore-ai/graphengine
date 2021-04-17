@@ -1040,7 +1040,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
   ModelPartition ir_part;
   ret = om_load_helper.GetModelPartition(MODEL_DEF, ir_part);
   if (ret != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Get model partition failed ,model_file %s", model_file);
+    REPORT_INNER_ERROR("E19999", "Get model partition failed, model_file %s", model_file);
     GELOGE(ge::FAILED, "[Get][ModelPart]Failed, model_file %s", model_file);
     return ret;
   }

@@ -111,6 +111,8 @@ void LinkGenMaskNodesPass::GetAllGenMaskNodes(ComputeGraphPtr graph, vector<Node
         // node gen_mask is located at different place in the fused node
         if (in_data_node->GetName().find(DROPOUTGENMASK) != in_data_node->GetName().npos) {
           gen_mask = in_data_node;
+          GELOGD("The fused node type [%s], paired with input node name [%s].", node->GetType(), gen_mask->GetName());
+          break;
         }
       }
 

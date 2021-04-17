@@ -24,7 +24,6 @@
 #include "graph/ge_context.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
-#include "omm/csa_interact.h"
 
 namespace ge {
 Status GraphLoader::UnloadModel(uint32_t model_id) {
@@ -40,7 +39,6 @@ Status GraphLoader::UnloadModel(uint32_t model_id) {
   ret = model_manager->Unload(model_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "UnloadModel: Unload failed. model id:%u", model_id);
-    CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_UNLOAD);
     return ret;
   }
   GELOGI("UnLoad model success, model id:%u.", model_id);
@@ -55,7 +53,6 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
     REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
                       GetContext().DeviceId(), rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_LOAD);
     return RT_FAILED;
   }
   if (ge_root_model_ptr == nullptr) {
@@ -69,8 +66,6 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
   Status ret = model_manager->LoadModelOnline(model_id, ge_root_model_ptr, listener);
   if (ret != SUCCESS) {
     GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
-    CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_LOAD);
-
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
@@ -94,7 +89,6 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
     }
 
     GELOGE(ret, "LoadModel: Start failed.");
-    CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return ret;
   }
   rt_ret = rtDeviceReset(GetContext().DeviceId());
@@ -247,7 +241,6 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
     REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
                       GetContext().DeviceId(), rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
-    CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_LOAD);
     return RT_FAILED;
   }
   size_t total_mem = 0;

@@ -42,7 +42,6 @@
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
-#include "omm/csa_interact.h"
 #include "runtime/kernel.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
 #include "external/runtime/rt_error_codes.h"
@@ -376,10 +375,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   }
 
   GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
-  // Update CSA file
-  CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
-  Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
-  GE_LOGE_IF(ret != SUCCESS, "[Write][JobState] failed, ret:%u ", ret);
 
   // set device id
   GELOGI("set logical device id:%u", options.device_id);
@@ -407,10 +402,6 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
                   return SUCCESS);
 
   GE_CHK_RT(rtDeviceReset(options.device_id));
-
-  // Update CSA file
-  Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_SUCCEED);
-  GE_LOGE_IF(ret != SUCCESS, "[Write][JobState] failed, ret:%u ", ret);
 
   is_system_inited = false;
   is_shutdown = true;

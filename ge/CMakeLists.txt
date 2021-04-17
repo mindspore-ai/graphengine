@@ -341,7 +341,6 @@ set(TRAIN_SRC_LIST
     "init/gelib.cc"
     "model/ge_model.cc"
     "model/ge_root_model.cc"
-    "omm/csa_interact.cc"
     "opskernel_manager/ops_kernel_manager.cc"
     "opskernel_manager/ops_kernel_builder_manager.cc"
     "session/inner_session.cc"
@@ -416,7 +415,6 @@ set(TRAIN_SRC_LIST
 
 set(INFER_SRC_LIST
     "graph/manager/trans_var_data_utils.cc"
-    "omm/csa_interact.cc"
     "common/fp16_t.cc"
     "common/formats/utils/formats_trans_utils.cc"
     "common/formats/format_transfers/datatype_transfer.cc"

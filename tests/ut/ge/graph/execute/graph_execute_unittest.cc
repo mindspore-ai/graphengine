@@ -22,7 +22,6 @@
 #include "graph/execute/graph_execute.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "omm/csa_interact.h"
 #undef private
 #undef public
 

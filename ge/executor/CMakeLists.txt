@@ -86,7 +86,6 @@ set(SRC_LIST
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
-    "../omm/csa_interact.cc"
     "../graph/manager/graph_manager_utils.cc"
     "../graph/manager/graph_var_manager.cc"
     "../graph/manager/graph_mem_allocator.cc"

@@ -173,7 +173,7 @@ build_graphengine()
     TARGET="ge_runner fwk_atc.bin ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    TARGET="ge_compiler atc_atc.bin ${TARGET}"
+    TARGET="ge_compiler atc_atc.bin ge_executor ${TARGET}"
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
@@ -183,7 +183,7 @@ build_graphengine()
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
-    TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin ${TARGET}"
+    TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin ge_executor ${TARGET}"
   fi
 
   make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install

@@ -650,8 +650,7 @@ Status ModelBuilder::SaveAtomicTBEKernel(const OpDescPtr &op_desc) {
       GELOGI("Node [%s][%s] start recovery extra attr %s from %s", atomic_op_desc->GetName().c_str(),
              atomic_op_desc->GetType().c_str(), ge::OP_EXTATTR_NAME_TBE_KERNEL, ATTR_NAME_TBE_KERNEL_NAME.c_str());
       if (!(atomic_op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel))) {
-        std::string error = "Node" + FmtToStr(atomic_op_desc->GetName()) + "set extra attr" +
-                            FmtToStr(ge::OP_EXTATTR_NAME_TBE_KERNEL) + "failed";
+        std::string error = "Node" + FmtToStr(atomic_op_desc->GetName()) + "set extra tbeKernel attr failed";
         GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
         return ge::FAILED;
       }
@@ -707,8 +706,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
         GELOGI("Node [%s][%s] start recovery extra attr %s from %s", node_op_desc->GetName().c_str(),
                node_op_desc->GetType().c_str(), ge::OP_EXTATTR_NAME_TBE_KERNEL, ATTR_NAME_TBE_KERNEL_NAME.c_str());
         if (!(node_op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel))) {
-          std::string error = "Node" + FmtToStr(node_op_desc->GetName()) + "set extra attr" +
-                              FmtToStr(ge::OP_EXTATTR_NAME_TBE_KERNEL) + "failed";
+          std::string error = "Node" + FmtToStr(node_op_desc->GetName()) + "set extra tbeKernel attr failed";
           GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
           return ge::FAILED;
         }

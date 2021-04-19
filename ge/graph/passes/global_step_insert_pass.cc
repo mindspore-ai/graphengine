@@ -26,6 +26,8 @@
 #include "common/ge/ge_util.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/passes/pass_utils.h"
+#include "graph/ge_context.h"
+#include "graph/tuning_utils.h"
 
 namespace ge {
 NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
@@ -72,6 +74,12 @@ NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
 }
 
 Status GlobalStepInsertPass::Run(ComputeGraphPtr compute_graph) {
+  std::string build_mode;
+  if (ge::GetContext().GetOption(ge::BUILD_MODE, build_mode) == GRAPH_SUCCESS && build_mode == BUILD_MODE_TUNING) {
+    GELOGI("compute_graph [%u] [%s] skip insert global step", compute_graph->GetGraphID(),
+           compute_graph->GetName().c_str());
+    return SUCCESS;
+  }
   NodePtr output_node = compute_graph->FindFirstNodeMatchType(NETOUTPUT);
   if (output_node == nullptr) {
     GELOGD("Node type %s can't be found in graph %u", NETOUTPUT, compute_graph->GetGraphID());

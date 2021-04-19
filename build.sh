@@ -173,7 +173,7 @@ build_graphengine()
     TARGET="ge_runner fwk_atc.bin ${TARGET}"
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    TARGET="ge_compiler atc_atc.bin opensrc_ascendcl ${TARGET}"
+    TARGET="ge_compiler atc_atc.bin ${TARGET}"
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
@@ -183,7 +183,7 @@ build_graphengine()
   elif [ "x${PLATFORM}" = "xall" ]
   then
     # build all the target
-    TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin opensrc_ascendcl ${TARGET}"
+    TARGET="ge_runner ge_compiler fwk_atc.bin atc_atc.bin ${TARGET}"
   fi
 
   make ${VERBOSE} ${TARGET} -j${THREAD_NUM} && make install
@@ -250,7 +250,7 @@ generate_package()
   NNENGINE_PATH="plugin/nnengine/ge_config"
   OPSKERNEL_PATH="plugin/opskernel"
 
-  ACL_LIB=("libgraph.so")
+  ACL_LIB=("libge_common.so" "libgraph.so" "libregister.so" "liberror_manager.so" "libge_executor.so")
   ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "libhost_cpu_engine.so" "libhost_cpu_opskernel_builder.so" "optimizer_priority.pbtxt")
@@ -316,7 +316,6 @@ generate_package()
 
   find ./lib/atclib -name atc.bin -exec cp {} "${OUTPUT_PATH}/${ATC_BIN_PATH}" \;
   find ./lib/fwkacl -name atc.bin -exec cp {} "${OUTPUT_PATH}/${FWK_BIN_PATH}" \;
-  find ${OUTPUT_PATH}/${GRAPHENGINE_LIB_PATH} -maxdepth 1 -name "libascendcl.so" -exec cp -f {} ${OUTPUT_PATH}/${ACL_PATH} \;
 
   cp -r ${OUTPUT_PATH}/../metadef/inc/external/* ${ATC_INCLUDE_PATH}
   cp -r ${OUTPUT_PATH}/../parser/inc/external/* ${ATC_INCLUDE_PATH}

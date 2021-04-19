@@ -108,3 +108,13 @@ TEST(UtestIrCommon, update_dynamic_shape_range_failed) {
   ret = UpdateDynamicInputShapeRange(graph, input_shape_range);
   EXPECT_EQ(ret, ge::PARAM_INVALID);
 }
+
+TEST(UtestIrCommon, check_dynamic_image_size_fail) {
+  map<string, vector<int64_t>> shape_map;
+  shape_map["input1"] = {8, 3, -1, -1};
+  string input_format = "NCHW";
+  string dynamic_image_size = "@64,64;128,128;";
+
+  bool ret = CheckDynamicImagesizeInputShapeValid(shape_map, input_format, dynamic_image_size);
+  EXPECT_EQ(ret, false);
+}

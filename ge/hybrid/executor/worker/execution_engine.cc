@@ -364,17 +364,25 @@ Status ExecutionEngine::ExecuteAsync(NodeState &node_state,
                                      GraphExecutionContext &execution_context) {
   GELOGI("[%s] Node is ready for execution", task_context->GetNodeName());
   RECORD_EXECUTION_EVENT(&execution_context, task_context->GetNodeName(), "Start");
-  auto cb = std::shared_ptr<NodeDoneCallback>(new(std::nothrow) NodeDoneCallback(&execution_context, task_context));
-  GE_CHECK_NOTNULL(cb);
-  auto callback = [task_context, cb]() {
-    auto ret = cb->OnNodeDone();
-    if (ret != SUCCESS) {
-      task_context->OnError(ret);
-    }
-  };
-
+  std::function<void()> callback = nullptr;
+  GE_CHK_STATUS_RET_NOLOG(InitCallback(task_context, execution_context, callback));
   GE_CHK_STATUS_RET_NOLOG(DoExecuteAsync(node_state, *task_context, execution_context, callback));
   GE_CHK_STATUS_RET_NOLOG(PropagateOutputs(*node_state.GetNodeItem(), *task_context, execution_context));
+  return SUCCESS;
+}
+
+Status ExecutionEngine::InitCallback(const std::shared_ptr<TaskContext> &task_context,
+                                     GraphExecutionContext &execution_context, std::function<void()> &callback) {
+  if (task_context->NeedCallback()) {
+    auto cb = std::shared_ptr<NodeDoneCallback>(new(std::nothrow) NodeDoneCallback(&execution_context, task_context));
+    GE_CHECK_NOTNULL(cb);
+    callback = [task_context, cb]() {
+      auto ret = cb->OnNodeDone();
+      if (ret != SUCCESS) {
+        task_context->OnError(ret);
+      }
+    };
+  }
   return SUCCESS;
 }
 
@@ -385,7 +393,7 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
     GELOGE(INTERNAL_ERROR, "[Get][KernelTask] of [%s] is null.", node_state.GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "GetKernelTask of %s is null.", node_state.GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "GetKernelTask of %s failed.", node_state.GetName().c_str());
     return INTERNAL_ERROR;
   }
 

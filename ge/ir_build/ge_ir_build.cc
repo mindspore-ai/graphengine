@@ -574,7 +574,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
   }
 
   if (!ParseInputShape(input_shape, omg_context_.input_dims, omg_context_.user_input_dims, is_dynamic_input)) {
-    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:input_shape] Failed, shape: %s", input_shape.c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:InputShape] Failed, shape: %s", input_shape.c_str());
     return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;

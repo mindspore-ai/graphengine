@@ -150,10 +150,8 @@ Status HybridModelAsyncExecutor::RunInternal() {
     Status ret = data_inputer_->Pop(data_wrapper);
     // Model indeedly start running
     SetRunningFlag(true);
-    if (data_wrapper == nullptr || ret != SUCCESS) {
-      GELOGI("data_wrapper is null!, ret = %u", ret);
-      continue;
-    }
+    GE_IF_BOOL_EXEC(data_wrapper == nullptr || ret != SUCCESS, GELOGI("data_wrapper is null!, ret = %u", ret);
+                    continue);
 
     GELOGI("Getting the input data, model_id:%u", model_id_);
     GE_IF_BOOL_EXEC(!run_flag_, break);

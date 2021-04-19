@@ -178,9 +178,12 @@ class GraphNode {
   void SetSemSize(uint32_t size) { sem_.SetMaxSize(size); }
 
   uint32_t GetLoadCount() const { return load_count_; }
+  void SetLoadCount(uint32_t count) { load_count_ = count; }
+  uint32_t GetLoadRecord() const { return load_record_; }
+  void SetLoadRecord(uint32_t record) { load_record_ = record; }
+  void IncreaseLoadRecord() { ++load_record_; }
   void IncreaseLoadCount();
   void DecreaseLoadCount() { --load_count_; }
-  void IncreaseLoadRecord() { ++load_record_; }
 
   // run graph asynchronous listener
   std::shared_ptr<RunAsyncListener> graph_run_async_listener_;

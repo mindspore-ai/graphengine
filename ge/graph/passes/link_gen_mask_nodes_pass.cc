@@ -107,6 +107,16 @@ void LinkGenMaskNodesPass::GetAllGenMaskNodes(ComputeGraphPtr graph, vector<Node
     auto in_data_nodes = node->GetInDataNodes();
     if (in_data_nodes.size() > kGenMaskInputIndex) {
       NodePtr &gen_mask = in_data_nodes.at(kGenMaskInputIndex);
+      for (auto &in_data_node : in_data_nodes) {
+        // node gen_mask is located at different place in the fused node
+        if (in_data_node->GetName().find(DROPOUTGENMASK) != in_data_node->GetName().npos) {
+          gen_mask = in_data_node;
+          GELOGD("The fused node type [%s], paired with the input node name [%s].",
+                 node->GetType().c_str(), gen_mask->GetName().c_str());
+          break;
+        }
+      }
+
       if ((gen_mask->GetOpDesc() == nullptr) || (gen_mask->GetOpDesc()->HasAttr(ATTR_NAME_STREAM_LABEL))) {
         continue;
       }

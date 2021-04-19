@@ -40,12 +40,14 @@ class GeRootModel {
   }
   uint32_t GetModelId() const { return model_id_; }
 
+  void SetModelName(const std::string &model_name) { model_name_ = model_name; }
+
+  const std::string &GetModelName() const { return model_name_; }
+
   std::vector<uint32_t> GetAllModelId() const { return model_ids_; }
 
-  void SetModelName(const std::string &model_name) { model_name_ = model_name; }
-  
-  const std::string &GetModelName() const { return model_name_; }
-  
+  void ClearAllModelId() { model_ids_.clear(); }
+
   Status CheckIsUnknownShape(bool &is_dynamic_shape);
 
   void SetRootGraph(ComputeGraphPtr graph) { root_graph_ = graph; }

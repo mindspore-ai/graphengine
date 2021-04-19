@@ -783,9 +783,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GELOGD("Inputs size is %zu, outputs size is %zu.", inputs.size(), outputs.size());
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   impl_->is_offline_ = is_offline;
-  if (!is_offline) {
-    (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
-  }
+  (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
 
   if (CheckForSingleOp(op_desc, inputs, outputs) != SUCCESS) {
     GELOGE(PARAM_INVALID, "input param is invalid when build single op!");

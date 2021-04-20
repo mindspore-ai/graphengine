@@ -166,6 +166,8 @@ const std::string COMPRESS_FLAG = "ge.compressFlag";
 
 const std::string PRECISION_MODE = "ge.exec.precision_mode";
 
+const std::string TUNE_DEVICE_IDS = "ge.exec.tuneDeviceIds";
+
 // Configure single op flag for FE
 // its value should be "0" or "1", default value is "0"
 const std::string SINGLE_OP_FLAG = "ge.exec.single_op";
@@ -407,6 +409,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              DYNAMIC_DIMS,
                                                              INSERT_OP_FILE,
                                                              PRECISION_MODE,
+                                                             TUNE_DEVICE_IDS,
                                                              EXEC_DISABLE_REUSED_MEMORY,
                                                              AUTO_TUNE_MODE,
                                                              OUTPUT_TYPE,
@@ -434,6 +437,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               ENABLE_COMPRESS_WEIGHT,
                                               COMPRESS_WEIGHT_CONF,
                                               PRECISION_MODE,
+                                              TUNE_DEVICE_IDS,
                                               EXEC_DISABLE_REUSED_MEMORY,
                                               AUTO_TUNE_MODE,
                                               ENABLE_SINGLE_STREAM,

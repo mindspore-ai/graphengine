@@ -561,7 +561,8 @@ const DumpProperties &TaskContext::GetDumpProperties() const {
 }
 
 bool TaskContext::NeedCallback() {
-  return node_item_->has_observer || IsDumpEnabled() || execution_context_->profiling_level > 0;
+  return node_item_->has_observer || IsDumpEnabled() || execution_context_->profiling_level > 0 ||
+         !execution_context_->model->IsSingleOp();
 }
 
 Status TaskContext::Synchronize() {

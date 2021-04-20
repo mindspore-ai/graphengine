@@ -16,6 +16,7 @@ set(PROTO_LIST
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
 
 set(SRC_LIST
     "context/ctx.cc"
@@ -127,7 +128,7 @@ target_link_libraries(ge_common PRIVATE
 )
 
 ############ libge_common.a ############
-add_library(ge_common_static STATIC ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_common_static STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
 target_compile_definitions(ge_common_static PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     HOST_VISIBILITY
@@ -158,7 +159,7 @@ target_include_directories(ge_common_static PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_static
     #### yellow zone ####
     ${GE_DEPEND_DIR}/inc
     ${GE_DEPEND_DIR}/inc/cce

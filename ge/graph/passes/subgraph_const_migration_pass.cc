@@ -141,6 +141,8 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
   for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
     const auto &subgraph = graph->GetSubgraph(name);
     if (subgraph == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Get subgraph from graph:%s by name:%s failed",
+                         graph->GetName().c_str(), name.c_str());
       GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
@@ -152,6 +154,8 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
       if (node->GetType() == DATA) {
         uint32_t parent_index = kInvalidParent;
         if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+          REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                            node->GetName().c_str(), node->GetType().c_str());
           return FAILED;
         }
 
@@ -166,8 +170,8 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
           string node_full_name = peer_node->GetName();
           size_t pos = node_full_name.find(kMbatchNodeNameMark);
           if (pos == string::npos) {
-            GELOGE(FAILED, "find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
-            return FAILED;
+            GELOGI("Can not find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
+            continue;
           }
 
           string fixed_name = node_full_name.substr(0, pos);
@@ -326,17 +330,22 @@ Status SubgraphConstMigrationPass::AppendParallelNode(const NodePtr &func_node, 
     OpDescBuilder op_builder(data_name, DATA);
     const auto op_desc = op_builder.AddInput("x").AddOutput("y").Build();
     if (op_desc == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Build op:%s(%s) failed", data_name.c_str(), DATA);
       GELOGE(OUT_OF_MEMORY, "Create multi-batch subgraph data desc failed");
       return OUT_OF_MEMORY;
     }
 
     uint32_t data_index = parent_index - kCaseInputBase;
     if (!AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_INDEX.c_str(),
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
       return FAILED;
     }
 
     if (!AttrUtils::SetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
       return FAILED;
     }
@@ -460,6 +469,8 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
                                                     const map<ComputeGraphPtr, map<uint32_t, NodePtr>> &all_data_nodes,
                                                     const string &node_key, uint32_t parent_index) {
   if (node_key.empty() || parent_index == kInvalidParent) {
+    REPORT_INNER_ERROR("E19999", "Param node_key is empty or param parent_index is 0x%X, check invalid",
+                       kInvalidParent);
     GELOGE(FAILED, "Graph: %s, node key: %s, parent index: %u invalid",
            graph->GetName().c_str(), node_key.c_str(), parent_index);
     return FAILED;
@@ -470,6 +481,8 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
     const auto &subgraph = item.first;
     const auto it_const = item.second.find(node_key);
     if (it_const == item.second.end()) {
+      REPORT_INNER_ERROR("E19999", "Const node name:%s not found in graph:%s, check invalid",
+                         node_key.c_str(), subgraph->GetName().c_str());
       GELOGE(FAILED, "Graph: %s, Const: %s node not found", subgraph->GetName().c_str(), node_key.c_str());
       return FAILED;
     }
@@ -477,11 +490,15 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
 
     const auto it_nodes = all_data_nodes.find(subgraph);
     if (it_nodes == all_data_nodes.end()) {
+      REPORT_INNER_ERROR("E19999", "Const node name:%s not found in graph:%s, check invalid",
+                         node_key.c_str(), subgraph->GetName().c_str());
       GELOGE(FAILED, "Graph: %s, Const: %s node not found", subgraph->GetName().c_str(), node_key.c_str());
       return FAILED;
     }
     const auto it_data = it_nodes->second.find(parent_index);
     if (it_data == it_nodes->second.end()) {
+      REPORT_INNER_ERROR("E19999", "Const node name:%s not found in graph:%s, check invalid",
+                         node_key.c_str(), subgraph->GetName().c_str());
       GELOGE(FAILED, "Graph: %s, Const: %s node not found", subgraph->GetName().c_str(), node_key.c_str());
       return FAILED;
     }

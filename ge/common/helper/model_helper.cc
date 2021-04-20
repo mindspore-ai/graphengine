@@ -87,12 +87,13 @@ Status ModelHelper::SaveSizeToModelDef(const GeModelPtr &ge_model) {
 
   std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
   if (model_task_def == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create model task def ptr failed");
-    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    GELOGD("SaveSizeToModelDef task_info_size is 0.");
+    om_info.push_back(0);
+  } else {
+    size_t partition_task_size = model_task_def->ByteSizeLong();
+    GELOGD("SaveSizeToModelDef task_info_size is %zu", partition_task_size);
+    om_info.push_back(partition_task_size);
   }
-  size_t partition_task_size = model_task_def->ByteSizeLong();
-  GELOGD("SaveSizeToModelDef task_info_size is %zu", partition_task_size);
-  om_info.push_back(partition_task_size);
 
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(*(ge_model.get()), "om_info_list", om_info),
                    GELOGE(FAILED, "SetListInt of om_info_list failed.");
@@ -598,6 +599,7 @@ Status ModelHelper::GenerateGeRootModel(OmFileLoadHelper &om_load_helper) {
       is_first_model = false;
       root_model_->SetRootGraph(GraphUtils::GetComputeGraph(cur_model->GetGraph()));
       root_model_->SetModelId(cur_model->GetModelId());
+      root_model_->SetModelName(cur_model->GetName());
       model_ = cur_model;
       continue;
     }

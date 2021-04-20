@@ -25,6 +25,9 @@
 #define VALIDATE_MEM_RANGE(OP, SIZE, OFFSET)                                                                 \
   do {                                                                                                       \
     if (SIZE <= static_cast<uint64_t>(OFFSET)) {                                                             \
+      REPORT_INNER_ERROR("E19999",                                                                           \
+                         "Node:%s(%s) offset:%ld out of range size:%lu, check invalid",                      \
+                         OP->GetName().c_str(), OP->GetType().c_str(), OFFSET, SIZE);                        \
       GELOGE(OUT_OF_MEMORY, "Node: %s, memory out of range[%lu: %ld]", OP->GetName().c_str(), SIZE, OFFSET); \
       return {};                                                                                             \
     }                                                                                                        \
@@ -305,6 +308,9 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
   vector<int64_t> v_memory_type;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, v_memory_type);
   if (has_mem_type_attr && (v_memory_type.size() != inputs_size)) {
+    REPORT_INNER_ERROR("E19999", "Attr:%s, memory_type.size:%zu != input_desc.size:%zu, op:%s(%s), check invalid",
+                       ATTR_NAME_INPUT_MEM_TYPE_LIST.c_str(), v_memory_type.size(), inputs_size,
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(PARAM_INVALID, "Fusion: check input size failed, op: %s, input v_memory_type size: %zu input numbers: %zu",
            op_desc->GetName().c_str(), v_memory_type.size(), inputs_size);
     return v_input_data_addr;
@@ -384,7 +390,9 @@ Status ModelUtils::GetVarAddr(const RuntimeParam &model_param, const ConstOpDesc
   switch (mem_type) {
     case RT_MEMORY_RDMA_HBM:
       if (offset < 0) {
-        GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p", reinterpret_cast<uint8_t *>(offset));
+        REPORT_INNER_ERROR("E19999", "Param offset:%ld < 0, check invalid", offset);
+        GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p",
+               reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset)));
         return PARAM_INVALID;
       }
       var_addr = reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset));
@@ -394,6 +402,8 @@ Status ModelUtils::GetVarAddr(const RuntimeParam &model_param, const ConstOpDesc
       var_addr = model_param.var_base + offset - model_param.logic_var_base;
       break;
     default:
+      REPORT_INNER_ERROR("E19999", "Get mem_type:%d for offset:%ld is unsupported, check invalid",
+                         mem_type, offset);
       GELOGE(PARAM_INVALID, "unsupported memory type %u", mem_type);
       return PARAM_INVALID;
   }
@@ -419,6 +429,9 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
   vector<int64_t> v_memory_type;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_OUTPUT_MEM_TYPE_LIST, v_memory_type);
   if (has_mem_type_attr && (v_memory_type.size() != outputs_size)) {
+    REPORT_INNER_ERROR("E19999", "Attr:%s, memory_type.size:%zu != output_desc.size:%zu, op:%s(%s), check invalid",
+                       ATTR_NAME_OUTPUT_MEM_TYPE_LIST.c_str(), v_memory_type.size(), outputs_size,
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(PARAM_INVALID,
            "Fusion: check output size failed, op: %s, output v_memory_type size: %lu output numbers: %zu",
            op_desc->GetName().c_str(), v_memory_type.size(), outputs_size);
@@ -567,6 +580,7 @@ Status ModelUtils::GetRtAddress(const RuntimeParam &param, uintptr_t logic_addr,
            param.var_size);
   } else if (logic_addr != 0) {
     mem_addr = nullptr;
+    REPORT_INNER_ERROR("E19999", "Check param logic addr:0x%lx abnormal", logic_addr);
     GELOGE(PARAM_INVALID, "The logic addr:0x%lx is abnormal", logic_addr);
     return PARAM_INVALID;
   }

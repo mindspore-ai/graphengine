@@ -31,11 +31,15 @@ class KnownNodeTask : public NodeTask {
       : davinci_model_(davinci_model)
     {}
 
-  ~KnownNodeTask() {}
+  ~KnownNodeTask() = default;
 
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
   Status Init(TaskContext &context) override;
+  Status InitDavinciModel(const HybridModel &model, TensorBuffer *weight_buffer);
+
+ protected:
+  virtual Status DoInitDavinciModel(void *weight, size_t weight_size);
  private:
   std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
   bool load_flag_ = false;
@@ -47,8 +51,6 @@ class KnownNodeExecutor : public NodeExecutor {
   Status PrepareTask(NodeTask &task, TaskContext &context) const;
   Status ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const;
   ~KnownNodeExecutor() {}
- private:
-  std::shared_ptr<DavinciModel> davinci_model_ = nullptr;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -50,6 +50,28 @@ ComputeGraphPtr BuildGraph1(){
   return builder.GetGraph();
 }
 
+ComputeGraphPtr BuildGraph2() {
+  auto builder = ut::GraphBuilder("g2");
+  auto data1 = builder.AddNode("data1", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, std::vector<int64_t>({22, -1}));
+  ge::AttrUtils::SetStr(data1->GetOpDesc(), ATTR_ATC_USER_DEFINE_DATATYPE, "DT_INT8");
+  auto data_opdesc = data1->GetOpDesc();
+  AttrUtils::SetInt(data_opdesc, ATTR_NAME_INDEX, 0);
+
+  data1->UpdateOpDesc(data_opdesc);
+  return builder.GetGraph();
+}
+
+ComputeGraphPtr BuildGraph3() {
+  auto builder = ut::GraphBuilder("g3");
+  auto data1 = builder.AddNode("data1", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT);
+  ge::AttrUtils::SetStr(data1->GetOpDesc(), ATTR_ATC_USER_DEFINE_DATATYPE, "DT_INT8");
+  auto data_opdesc = data1->GetOpDesc();
+  AttrUtils::SetInt(data_opdesc, ATTR_NAME_INDEX, 0);
+
+  data1->UpdateOpDesc(data_opdesc);
+  return builder.GetGraph();
+}
+
 TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
   ge::GraphPrepare graph_prepare;
   graph_prepare.compute_graph_ = BuildGraph1();
@@ -73,5 +95,27 @@ TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
   for(size_t i =0; i< expect_shape.size(); ++i){
       EXPECT_EQ(result_shape.GetDim(i), expect_shape.at(i));
   }
+}
+
+TEST_F(UtestGraphPreproces, test_check_user_input) {
+  ge::GraphPrepare graph_prepare;
+  graph_prepare.compute_graph_ = BuildGraph1();
+
+  vector<int64_t> dim = {2, -3};
+  GeTensor tensor;
+  tensor.SetTensorDesc(GeTensorDesc(GeShape(dim)));
+  std::vector<GeTensor> user_input;
+  user_input.emplace_back(tensor);
+
+  Status ret = graph_prepare.CheckUserInput(user_input);
+  EXPECT_EQ(ret, GE_GRAPH_INIT_FAILED);
+}
+
+TEST_F(UtestGraphPreproces, test_update_input_output1) {
+  ge::GraphPrepare graph_prepare;
+  graph_prepare.compute_graph_ = BuildGraph3();
+
+  Status ret = graph_prepare.UpdateInputOutputByOptions();
+  EXPECT_EQ(ret, SUCCESS);
 }
 }

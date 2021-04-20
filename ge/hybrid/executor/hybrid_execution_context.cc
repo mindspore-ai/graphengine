@@ -59,8 +59,31 @@ Status GraphExecutionContext::Synchronize(rtStream_t rt_stream) {
     return SUCCESS;
   }
 
-  GELOGE(RT_FAILED, "Failed to invoke rtStreamSynchronize, ret = %d", rt_ret);
+  GELOGE(RT_FAILED, "[Invoke][rtStreamSynchronize] failed, ret = %d", rt_ret);
+  REPORT_CALL_ERROR("E19999", "invoke rtStreamSynchronize failed, ret = %d", rt_ret);
   return RT_FAILED;
+}
+
+Status GraphExecutionContext::DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos) {
+  if (exception_infos.empty()) {
+    GELOGI("[Dump][ExceptionInfo] Exception info is null.");
+    return SUCCESS;
+  }
+  GELOGI("[Dump][ExceptionInfo] Start to search dynamic op info and to dump.");
+  if (exception_dumper.DumpExceptionInfo(exception_infos) != SUCCESS) {
+    GELOGE(FAILED, "[Dump][Exception] Dump dynamic op exception info failed.");
+    return FAILED;
+  }
+  GELOGI("[Dump][ExceptionInfo] Start to search static op info and to dump.");
+  for (const auto &iter : davinci_model) {
+    if (iter != nullptr) {
+      if (iter->DumpExceptionInfo(exception_infos) != SUCCESS) {
+        GELOGE(FAILED, "[Dump][ExceptionInfo] Dump static op exception info failed.");
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
 }
 }  // namespace hybrid
 }  // namespace ge

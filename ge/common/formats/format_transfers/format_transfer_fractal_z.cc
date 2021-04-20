@@ -29,6 +29,25 @@
 namespace ge {
 namespace formats {
 namespace {
+constexpr int64_t kDim = 1;
+static int64_t Measure(int64_t x, int64_t y) {
+  int64_t z = y;
+  while (x % y != 0) {
+    z = x % y;
+    x = y;
+    y = z;
+  }
+  return z;
+}
+// least common multiple
+static int64_t Lcm(int64_t a, int64_t b) {
+  if (b == 0) {
+    return -1;
+  }
+  int64_t temp = (a * b) / (Measure(a, b));
+  return temp;
+}
+
 Status CheckDataTypeSupport(DataType data_type) { return GetSizeByDataType(data_type) > 0 ? SUCCESS : UNSUPPORTED; }
 
 /**
@@ -54,8 +73,39 @@ Status TransShapeToFz(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_
   dst_shape.push_back(kNiSize);
   dst_shape.push_back(c0);
   if (!IsShapeValid(dst_shape)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
            ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
+    return ACL_ERROR_GE_SHAPE_INVALID;
+  }
+  return SUCCESS;
+}
+
+Status TransShapeToFzWithGroups(int64_t n, int64_t c, int64_t h, int64_t w, DataType data_type, std::vector<int64_t> &dst_shape,
+  int64_t groups) {
+  auto c0 = GetCubeSizeByDataType(data_type);
+  if (c0 < 0) {
+    return ACL_ERROR_GE_DATATYPE_INVALID;
+  }
+  int64_t cin_ori = c;
+  int64_t cout_ori = n / groups;
+  int64_t cube_k = GetCubeSizeByDataType(data_type);
+  int64_t e_mult = std::min(
+      Lcm(Lcm(cin_ori, cube_k) / (cin_ori), Lcm(cout_ori, static_cast<int64_t>(kCubeSize)) / (cout_ori)),
+      groups);
+  int64_t cin_opt = Ceil(e_mult * cin_ori, cube_k) * cube_k;
+  int64_t c1_dim = cin_opt / cube_k;
+  int64_t g_dim = Ceil(groups, e_mult);
+  auto n1 = Ceil(cout_ori * e_mult, static_cast<int64_t>(kCubeSize));
+  dst_shape.clear();
+  dst_shape.push_back(g_dim * c1_dim * h * w);
+  dst_shape.push_back(n1);
+  dst_shape.push_back(16);
+  dst_shape.push_back(cube_k);
+  if (!IsShapeValid(dst_shape)) {
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Failed, dst shape %s",
+           ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   return SUCCESS;
@@ -85,6 +135,21 @@ Status TransShapeHwcnToFz(const std::vector<int64_t> &src_shape, DataType data_t
 
   return TransShapeToFz(n, c, h, w, data_type, dst_shape);
 }
+
+Status TransShapeHwcnToFzWithGroups(const std::vector<int64_t> &src_shape, DataType data_type, std::vector<int64_t> &dst_shape
+, int64_t groups){
+ if (!CheckShapeValid(src_shape, kHwcnDimsNum)) {
+    return ACL_ERROR_GE_SHAPE_INVALID;
+  }
+
+  auto h = src_shape.at(kHwcnH);
+  auto w = src_shape.at(kHwcnW);
+  auto c = src_shape.at(kHwcnC);
+  auto n = src_shape.at(kHwcnN);
+
+  return TransShapeToFzWithGroups(n, c, h, w, data_type, dst_shape, groups);
+}
+
 
 Status TransShapeNhwcToFz(const std::vector<int64_t> &src_shape, DataType data_type, std::vector<int64_t> &dst_shape) {
   if (!CheckShapeValid(src_shape, kNhwcDimsNum)) {
@@ -127,9 +192,14 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       dst == nullptr,
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
-             TypeUtils::FormatToSerialString(args.src_format).c_str(),
-             TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory "
+             "for dst buf %ld when trans format from %s to %s",
+             dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld "
+                        "when trans format from %s to %s",
+                        dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
 
   for (int64_t vfi = 0; vfi < vf_cnt; vfi++) {
@@ -173,8 +243,12 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
             }
           }
           if (ret != EOK) {
-            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d pad mode %d", offset,
-                   ret, need_pad_zero);
+            GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,"[Operate][DSTMemory]Failed at offset %ld, "
+                   "error-code %d pad mode %d",
+                   offset, ret, need_pad_zero);
+            REPORT_CALL_ERROR("E19999","Failed to operate dst memory at offset %ld, "
+                              "error-code %d pad mode %d",
+                              offset, ret, need_pad_zero);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -187,6 +261,89 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
   return SUCCESS;
 }
 
+Status TransFormatHwcnToFzWithGroups(const TransArgs &args, TransResult &result, int64_t groups){
+  int64_t h_dim = args.src_shape[kHwcnH];
+  int64_t w_dim = args.src_shape[kHwcnW];
+  int64_t c_dim = args.src_shape[kHwcnC];
+  int64_t n_dim = args.src_shape[kHwcnN];
+  int64_t cin_ori = c_dim;
+  int64_t cout_ori = n_dim / groups;
+  if (cin_ori == 0 || cout_ori == 0) {
+    GELOGE(GRAPH_FAILED, "[Check][Param]Failed, cin_ori, cout_ori must not be equal 0, "
+           "and current cin_ori, cout_ori, groups are %ld %ld %ld", cin_ori, cout_ori, groups);
+    REPORT_CALL_ERROR("E19999", "Check graph param failed, cin_ori, cout_ori must not be equal 0,"
+                      "and current cin_ori, cout_ori, groups are %ld %ld %ld",
+                      cin_ori, cout_ori, groups);
+    return GRAPH_FAILED;
+  }
+  const int64_t cube_k = GetCubeSizeByDataType(args.src_data_type);
+  int64_t e_mult = std::min(
+      Lcm(Lcm(cin_ori, cube_k) / (cin_ori), Lcm(cout_ori, static_cast<int64_t>(kCubeSize)) / (cout_ori)),
+      groups);
+  int64_t cin_opt = Ceil(e_mult * cin_ori, cube_k) * cube_k;
+  int64_t cout_opt = Ceil(e_mult * cout_ori, static_cast<int64_t>(kCubeSize)) * static_cast<int64_t>(kCubeSize);
+  int64_t c1_dim = cin_opt / cube_k;
+  int64_t g_dim = Ceil(groups, e_mult);
+  int64_t dim_cin = cin_opt / cube_k;
+  int64_t data_size = GetSizeByDataType(args.src_data_type);
+  int64_t size_output_data = g_dim * kDim * dim_cin * h_dim * w_dim * cout_opt * cube_k * data_size;
+  if (size_output_data == 0) {
+      result.length = static_cast<size_t>(size_output_data);
+      return SUCCESS;
+  }
+  errno_t ret = EOK;
+  std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[size_output_data], std::default_delete<uint8_t[]>());
+  if (dst == nullptr) {
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory "
+             "for dst buf %ld when trans format from %s to %s",
+             size_output_data, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld "
+                        "when trans format from %s to %s",
+                        size_output_data, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
+  }
+  ret = memset_s(dst.get(), static_cast<size_t>(size_output_data), 0, static_cast<size_t>(size_output_data));
+  if (ret != EOK) {
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed, ret is %d", ret);
+      REPORT_CALL_ERROR("E19999", "Failed to operate dst memory, ret is %d", ret);
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
+  }
+  for (int64_t g = 0; g < groups; g++) {
+    for (int64_t d = 0; d < kDim; d++) {
+      for (int64_t c = 0; c < c_dim; c++) {
+        for (int64_t h = 0; h < h_dim; h++) {
+          for (int64_t w = 0; w < w_dim; w++) {
+            for (int64_t n = 0; n < cout_ori; n++) {
+              int64_t e_val = g % e_mult;
+              int64_t dst_ci = e_val * cin_ori + c;
+              int64_t dst_co = e_val * cout_ori + n;
+              int64_t src_co = g * cout_ori + n;
+              int64_t tempory = dst_ci % cube_k;
+              int64_t srx_inx = 0;
+              int64_t dst_inx = (g / e_mult) * kDim * c1_dim * h_dim * w_dim * cout_opt * cube_k +
+                                d * c1_dim * h_dim * w_dim * cout_opt * cube_k +
+                                (dst_ci / cube_k) * h_dim * w_dim * cout_opt * cube_k +
+                                h * w_dim * cout_opt * cube_k + w * cout_opt * cube_k +
+                                dst_co * cube_k + tempory;
+              srx_inx = d * h_dim * w_dim * c_dim * n_dim + h * w_dim * c_dim * n_dim +
+                        w * c_dim * n_dim + c * n_dim + src_co;
+              char *dst_data = reinterpret_cast<char *>(dst.get() + dst_inx * data_size);
+              const char *src_data = reinterpret_cast<const char *>(args.data + srx_inx * data_size);
+              for (int64_t index = 0; index < data_size; index++) {
+                *dst_data++ = *src_data++;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  result.data = dst;
+  result.length = static_cast<size_t>(size_output_data);
+  return SUCCESS;
+}
 Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
   int64_t h = args.src_shape[kHwcnH];
   int64_t w = args.src_shape[kHwcnW];
@@ -213,9 +370,14 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       dst == nullptr,
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
-             TypeUtils::FormatToSerialString(args.src_format).c_str(),
-             TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory "
+             "for dst buf %ld when trans format from %s to %s",
+             dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld "
+                        "when trans format from %s to %s",
+                        dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
@@ -235,7 +397,8 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
                              static_cast<size_t>(data_size));
             } else {
               if (protected_size < data_size) {
-                GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
+                GELOGE(ACL_ERROR_GE_PARAM_INVALID,"[Operate][DSTMemory]Failed, protected_size "
+                       "is %ld and size is %ld",
                        protected_size, data_size);
                 return ACL_ERROR_GE_PARAM_INVALID;
               }
@@ -247,8 +410,11 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
               }
             }
             if (ret != EOK) {
-              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
-                     dst_offset, ret, pad_zero);
+              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed, "
+                     "at offset %ld, error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+              REPORT_CALL_ERROR("E19999", "Failed to operate dst memoery at offset %ld, "
+                                "error-code %d, pad mode %d",
+                                dst_offset, ret, pad_zero);
               return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
             }
           }
@@ -288,9 +454,14 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[dst_size], std::default_delete<uint8_t[]>());
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       dst == nullptr,
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld",
-             TypeUtils::FormatToSerialString(args.src_format).c_str(),
-             TypeUtils::FormatToSerialString(args.dst_format).c_str(), dst_size);
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allocate][DSTMemory]Failed to allcoate memory "
+             "for dst buf %ld when trans format from %s to %s",
+             dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+             TypeUtils::FormatToSerialString(args.dst_format).c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to allcoate memory for dst buf %ld "
+                        "when trans format from %s to %s",
+                        dst_size, TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                        TypeUtils::FormatToSerialString(args.dst_format).c_str());
       return ACL_ERROR_GE_MEMORY_ALLOCATION;);
 
   for (int64_t c1i = 0; c1i < c1; c1i++) {
@@ -310,7 +481,8 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
                              static_cast<size_t>(data_size));
             } else {
               if (protected_size < data_size) {
-                GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Failed to operate the dst memory, protected_size is %ld and size is %ld",
+                GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Operate][DSTMemory]Failed, protected_size "
+                       "is %ld and size is %ld",
                        protected_size, data_size);
                 return ACL_ERROR_GE_PARAM_INVALID;
               }
@@ -322,8 +494,11 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
               }
             }
             if (ret != EOK) {
-              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "Failed to operate the dst memory at offset %ld, error-code %d, pad mode %d",
-                     dst_offset, ret, pad_zero);
+              GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Operate][DSTMemory]Failed at offset %ld,"
+                     " error-code %d, pad mode %d", dst_offset, ret, pad_zero);
+              REPORT_CALL_ERROR("E19999", "Failed to operate dst memory at offset %ld, "
+                                "error-code %d, pad mode %d",
+                                dst_offset, ret, pad_zero);
               return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
             }
           }
@@ -355,15 +530,16 @@ Status FormatTransferFractalZ::TransFormat(const TransArgs &args, TransResult &r
   if (args.src_format == FORMAT_NHWC && args.dst_format == FORMAT_FRACTAL_Z) {
     return TransFormatNhwcToFz(args, result);
   }
-
-  if (args.src_format == FORMAT_HWCN && args.dst_format == FORMAT_FRACTAL_Z) {
+  if ((args.src_format == FORMAT_HWCN) && (GetPrimaryFormat(args.dst_format) == FORMAT_FRACTAL_Z)) {
+    if (GetSubFormat(args.dst_format) > 1) {
+      return TransFormatHwcnToFzWithGroups(args, result, GetSubFormat(args.dst_format));
+    }
     return TransFormatHwcnToFz(args, result);
   }
 
   if (args.src_format == FORMAT_NCHW && args.dst_format == FORMAT_FRACTAL_Z) {
     return TransFormatFromNchwToFz(args, result);
   }
-
   return ACL_ERROR_GE_FORMAT_INVALID;
 }
 
@@ -376,7 +552,10 @@ Status FormatTransferFractalZ::TransShape(Format src_format, const std::vector<i
   if (src_format == FORMAT_NHWC && dst_format == FORMAT_FRACTAL_Z) {
     return TransShapeNhwcToFz(src_shape, data_type, dst_shape);
   }
-  if (src_format == FORMAT_HWCN && dst_format == FORMAT_FRACTAL_Z) {
+  if ((src_format == FORMAT_HWCN) && (GetPrimaryFormat(dst_format) == FORMAT_FRACTAL_Z)) {
+    if (GetSubFormat(dst_format) > 1) {
+        return TransShapeHwcnToFzWithGroups(src_shape, data_type, dst_shape, GetSubFormat(dst_format));
+     }
     return TransShapeHwcnToFz(src_shape, data_type, dst_shape);
   }
   if (src_format == FORMAT_NCHW && dst_format == FORMAT_FRACTAL_Z) {

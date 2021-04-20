@@ -52,6 +52,7 @@ class HybridModelExecutor {
   Status Cleanup();
   Status InitExecutionContext();
   static Status ResetExecutionContext(GraphExecutionContext &context);
+  static Status CheckInputShapeByShapeRange(const GraphItem *graph_item, HybridModelExecutor::ExecuteArgs &args);
 
   HybridModel *model_;
   uint32_t device_id_;

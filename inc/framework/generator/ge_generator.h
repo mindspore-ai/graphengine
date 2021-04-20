@@ -31,6 +31,7 @@
 #include "omg/omg_inner_types.h"
 
 namespace ge {
+class GeRootModel;
 class GE_FUNC_VISIBILITY GeGenerator {
  public:
   static GeGenerator &GetInstance() {
@@ -64,10 +65,12 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] inputs: input tensors.
   /// @param [in] outputs: output tensors.
   /// @param [in] model_file_name: name of model file.
+  /// @param [in] compile_flag: op build flag, accurate build is 0, fuzz build is 1
   /// @return SUCCESS or FAILED
   ///
   Status BuildSingleOpModel(OpDescPtr &op_desc, const std::vector<GeTensor> &inputs,
-                            const std::vector<GeTensor> &outputs, const std::string &model_file_name);
+                            const std::vector<GeTensor> &outputs, const std::string &model_file_name,
+                            int32_t compile_flag = 0);
   ///
   /// @ingroup ge
   /// @brief: Build single Op into model buff.
@@ -75,10 +78,13 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] inputs: input tensors.
   /// @param [in] outputs: output tensors.
   /// @param [in] engine_type: engine type.
+  /// @param [in] compile_flag: op build flag, accurate build is 0, fuzz build is 1
   /// @param [out] model_buff: model buff of op.
   /// @return SUCCESS or FAILED
   Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                             OpEngineType engine_type, ModelBufferData &model_buff);
+  Status BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
+                            OpEngineType engine_type, int32_t compile_flag, ModelBufferData &model_buff);
   ///
   /// @ingroup ge
   /// @brief: Build single Op into model buff.
@@ -96,8 +102,13 @@ class GE_FUNC_VISIBILITY GeGenerator {
                        ge::ModelBufferData &model, bool is_offline = true);
   Status BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                        const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                       bool is_offline = true);
+                       bool is_offline = true, int32_t compile_flag = 0);
+  bool CheckNoAicore(const ComputeGraphPtr &graph);
+  void RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
   Status CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
+
+  using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
+  Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
 
   class Impl;
 

@@ -88,6 +88,7 @@ message AippOpParams {
 	int32 right_padding_size = 69;
 	int32 top_padding_size = 70;
 	int32 bottom_padding_size = 71;
+	float padding_value = 72;
 
 	int32 mean_chn_0 = 10;
 	int32 mean_chn_1 = 11;

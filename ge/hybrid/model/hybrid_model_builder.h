@@ -47,8 +47,8 @@ class HybridModelBuilder {
   static Status HandleDtString(const GeTensor &tensor, void *var_addr);
   static Status MergeInputNodes(ComputeGraph &compute_graph);
   static Status MergeNetOutputNode(ComputeGraph &compute_graph);
-  static Status UnfoldSubgraphs(ComputeGraph &root_graph, ComputeGraphPtr &merged_graph);
-  static Status UnfoldSubgraph(ComputeGraph &root_graph, ComputeGraph &parent_graph, ComputeGraph &sub_graph);
+  static Status UnfoldSubgraphs(ComputeGraphPtr &root_graph, ComputeGraphPtr &merged_graph);
+  static Status UnfoldSubgraph(ComputeGraphPtr &root_graph, ComputeGraphPtr &parent_graph, ComputeGraph &sub_graph);
   static Status BuildInputMapping(GraphItem &graph_item,
                                   std::vector<NodeItem *> &data_nodes,
                                   bool is_root_graph);
@@ -57,13 +57,17 @@ class HybridModelBuilder {
   Status ValidateParams();
   Status LoadGraph();
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
+  Status LoadTask(NodeItem &node_item);
   Status LoadTasks();
   Status IdentifyVariableOutputs(NodeItem &node_item);
   Status IdentifySameInputs(NodeItem &node_item);
   Status BuildNodeItem(const NodePtr &node, NodeItem &node_item);
   Status GetOrCreateNodeItem(const NodePtr &node, NodeItem **node_item);
+  Status ParseForceInfershapeNodes(const NodePtr &node, NodeItem &node_item);
+  Status CollectParallelGroups(NodeItem *node_item);
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);
-  Status ParseDependentForFusedSubgraph(NodeItem &node_item);
+  Status ParseDependentForFusedSubgraph(NodeItem &node_item, std::set<ge::NodePtr> &dependencies);
+  Status ParseDependentByParallelGroup();
   Status IndexTaskDefs();
   Status IndexTaskDefs(const ComputeGraphPtr &sub_graph, const GeModelPtr &ge_model);
   Status IndexSpecialNodes();
@@ -87,6 +91,8 @@ class HybridModelBuilder {
   Status GenerateBpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateEndProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateArProfilingTask(const OpDescPtr &op_desc, int64_t log_id, vector<domi::TaskDef> &task_def_list);
+  Status OptimizeDependenciesForConstantInputs();
+  Status Convert2HostTensor(const NodePtr &node, int node_id, uint32_t output_idx);
 
   const char* GetGraphName() const {
     return hybrid_model_.model_name_.c_str();
@@ -98,13 +104,20 @@ class HybridModelBuilder {
   GeRootModelPtr ge_root_model_;
   std::map<std::string, GeModelPtr> subgraph_models_;
   std::map<std::string, NodePtr> constant_op_nodes_;
+  std::map<std::string, std::set<NodeItem *>> parallel_group_to_nodes_;
+  std::map<NodeItem *, std::set<std::string>> node_to_parallel_groups_;
 
   HybridModel &hybrid_model_;
   std::map<NodePtr, std::vector<std::pair<int, NodePtr>>> node_ref_inputs_;
-  int node_index = 0;
 
   RuntimeParam &runtime_param_;
   VarManager *var_manager_ = nullptr;
+
+  // map<known_node_item, map<output_idx, constant_node>>
+  std::map<NodeItem *, std::map<uint32_t, NodePtr>> known_subgraph_constant_output_refs_;
+
+  // map<dst_node_item, vector<output_idx, src_node_item>>
+  std::map<NodeItem *, std::vector<std::pair<uint32_t, NodeItem *>>> host_input_value_dependencies_;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -81,6 +81,10 @@ class AiCoreOpTask {
  protected:
   Status UpdateTilingInfo(TaskContext &context);
   virtual std::string GetKeyForOpParamSize() const;
+  virtual std::string GetKeyForTbeKernel() const;
+  virtual std::string GetKeyForTvmMagic() const;
+  virtual std::string GetKeyForTvmMetaData() const;
+  virtual std::string GetKeyForKernelName(const OpDesc &op_desc) const;
   virtual Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info);
 
   std::unique_ptr<TensorBuffer> tiling_buffer_ = nullptr;
@@ -110,6 +114,9 @@ class AiCoreOpTask {
   uint32_t tiling_key_ = 0;
   void *handle_ = nullptr;
   bool is_dynamic_ = false;
+  uint64_t log_id_ = 0;
+  std::string log_name_;
+  uint32_t offset_ = 0;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {
@@ -119,6 +126,10 @@ class AtomicAddrCleanOpTask : public AiCoreOpTask {
 
  protected:
   std::string GetKeyForOpParamSize() const override;
+  std::string GetKeyForTbeKernel() const override;
+  std::string GetKeyForTvmMagic() const override;
+  std::string GetKeyForTvmMetaData() const override;
+  std::string GetKeyForKernelName(const OpDesc &op_desc) const override;
   Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info) override;
 
  private:

@@ -20,6 +20,8 @@ set(OPS_KERNEL_SRC_LIST
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge_ops_shared PROTO_OPS_SHARED_SRCS PROTO_OPS_SHARED_HDRS ${PROTO_LIST})
+protobuf_generate(ge_ops_static PROTO_OPS_STATIC_SRCS PROTO_OPS_STATIC_HDRS ${PROTO_LIST})
 
 ############ libge_local_engine.so ############
 add_library(ge_local_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
@@ -119,7 +121,7 @@ set_target_properties(atc_ge_local_engine PROPERTIES
 )
 
 ############ libge_local_opskernel_builder.so ############
-add_library(ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+add_library(ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_OPS_SHARED_HDRS})
 
 target_compile_options(ge_local_opskernel_builder PRIVATE
     -Werror
@@ -143,7 +145,7 @@ target_include_directories(ge_local_opskernel_builder PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_ops_shared
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
@@ -166,7 +168,7 @@ target_link_libraries(ge_local_opskernel_builder PRIVATE
 )
 
 ############ atclib/libge_local_opskernel_builder.so ############
-add_library(atc_ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+add_library(atc_ge_local_opskernel_builder SHARED ${OPS_KERNEL_SRC_LIST} ${PROTO_OPS_SHARED_HDRS})
 
 target_compile_options(atc_ge_local_opskernel_builder PRIVATE
     -Werror
@@ -190,7 +192,7 @@ target_include_directories(atc_ge_local_opskernel_builder PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_ops_shared
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
@@ -218,7 +220,7 @@ set_target_properties(atc_ge_local_opskernel_builder PROPERTIES
 )
 
 ############ libge_local_opskernel_builder.a ############
-add_library(ge_local_opskernel_builder_static STATIC ${OPS_KERNEL_SRC_LIST} ${PROTO_HDRS})
+add_library(ge_local_opskernel_builder_static STATIC ${OPS_KERNEL_SRC_LIST} ${PROTO_OPS_STATIC_HDRS})
 
 target_compile_options(ge_local_opskernel_builder_static PRIVATE
     -Werror
@@ -243,7 +245,7 @@ target_include_directories(ge_local_opskernel_builder_static PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_ops_static
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####

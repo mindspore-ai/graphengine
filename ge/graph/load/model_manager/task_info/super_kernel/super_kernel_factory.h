@@ -28,7 +28,7 @@ class SuperKernelFactory {
   void *func_stub_ = nullptr;
   void *func_ptr_ = nullptr;
   void *handle_ = nullptr;
-  std::string sk_stub_name_ = "_Z21super_kernel_templatePmm";
+  std::string sk_stub_name_ = "super_kernel_template";
   bool is_init_ = false;
   SuperKernelFactory() {};
   ~SuperKernelFactory() {

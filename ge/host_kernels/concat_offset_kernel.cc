@@ -33,7 +33,7 @@ const int kNumOne = 1;
 }  // namespace
 Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<ConstGeTensorPtr> &input,
                                    vector<GeTensorPtr> &v_output) {
-  GELOGI("ConcatOffsetKernel in.");
+  GELOGD("ConcatOffsetKernel in");
   if (op_desc_ptr == nullptr) {
     GELOGE(PARAM_INVALID, "input opdesc is nullptr.");
     return PARAM_INVALID;
@@ -41,7 +41,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   // validate attrs
   int N = 0;
   if (!(AttrUtils::GetInt(op_desc_ptr, "N", N))) {
-    GELOGW("Attr %s does not exist.", "N");
+    GELOGW("Attr %s does not exist", "N");
     return NOT_CHANGED;
   }
   // follow IR def, the first input is concat_dim
@@ -50,7 +50,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
   int32_t concat_dim = *(const_cast<int32_t *>(reinterpret_cast<const int32_t *>(input_0->GetData().data())));
   // validate inputs
   if ((static_cast<int>(input.size()) != (N + kNumOne)) || (input.size() <= kConcatOffsetInputIndexOne)) {
-    GELOGW("The number of input for concat offset must be equal to %d, and must be more than one.", (N + kNumOne));
+    GELOGW("The number of input for concat offset must be equal to %d, and must be more than one", (N + kNumOne));
     return NOT_CHANGED;
   }
 
@@ -61,7 +61,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     GELOGW("Concat dim is bigger than the size of output_shape.");
     return NOT_CHANGED;
   }
-  GELOGI("Output shape size is %ld", output_size);
+  GELOGI("Output shape size is %ld.", output_size);
   int32_t offset = 0;
   if (output_size < 0) {
     GELOGE(FAILED, "Index is negative.");
@@ -86,7 +86,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     output_ptr->MutableTensorDesc().SetShape(output_shape);
     GE_IF_BOOL_EXEC(output_ptr->SetData(reinterpret_cast<uint8_t *>(buf.get()),
                                         static_cast<size_t>(sizeof(DT_INT32) * output_size)) != GRAPH_SUCCESS,
-                    GELOGW("set data failed");
+                    GELOGW("set data failed.");
                     return NOT_CHANGED);
     v_output.push_back(output_ptr);
     // caculate offset
@@ -99,7 +99,7 @@ Status ConcatOffsetKernel::Compute(const OpDescPtr op_desc_ptr, const vector<Con
     }
     offset += input_dim;
   }
-  GELOGI("ConcatOffsetKernel success.");
+  GELOGD("ConcatOffsetKernel success");
   return SUCCESS;
 }
 REGISTER_KERNEL(CONCATOFFSET, ConcatOffsetKernel);

@@ -41,16 +41,26 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Failed to trans shape from FORMAT_FRACTAL_Z to HWCN, invalid data type %s",
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Check][DataType]Failed, "
+           "shape from FORMAT_FRACTAL_Z to HWCN, invalid data type %s",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to trans shape from FORMAT_FRACTAL_Z to HWCN, "
+                       "invalid data type %s",
+                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kFracZDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check src shape %s", ShapeToString(src_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
+           ShapeToString(src_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
+                      ShapeToString(src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kHwcnDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s", ShapeToString(dst_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
+           ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid",
+                      ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
@@ -66,7 +76,7 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
         FmtToStr(ShapeToString(dst_shape));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_SHAPE_INVALID, error.c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
-  } 
+  }
 
   return SUCCESS;
 }
@@ -74,9 +84,17 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const int size, const int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "[Allocate][DSTMemory]Failed, memory for dst buf %ld, shape %s "
+           "when trans format from %s to %s",
+           total_size, ShapeToString(args.dst_shape).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
+           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, shape %s "
+                      "when trans format from %s to %s",
+                      total_size, ShapeToString(args.dst_shape).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -114,9 +132,12 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                               static_cast<size_t>(size));
           if (ret != EOK) {
             GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
-                   "Failed to copy data from FracZ offset %ld to HWCN[%ld, %ld, %ld, %ld] "
-                   "offset %ld, err-code %d",
+                   "[Operate][Memory]Failed to copy data from FracZ offset %ld to "
+                   "HWCN[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                    src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
+            REPORT_CALL_ERROR("E19999", "Failed to copy data from FracZ offset %ld to "
+                              "HWCN[%ld, %ld, %ld, %ld], offset %ld, err-code %d",
+                              src_offset, h_idx, w_idx, c_idx, n_idx, dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }
@@ -142,9 +163,12 @@ Status FormatTransferFracZHwcn::TransFormat(const TransArgs &args, TransResult &
       result.length = static_cast<size_t>(total_size);
       return SUCCESS;
     }
-
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Get %ld total size from dst shape %s, src shape %s", total_size,
-        ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Get][ShapeSize]Failed, "
+           "total size %ld from dst shape %s, src shape %s", total_size,
+           ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+    REPORT_CALL_ERROR("E19999",  "Failed to get total size %ld from "
+                      "dst shape %s, src shape %s", total_size,
+                      ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   GELOGD("Begin to trans format from FracZ to HWCN, src shape %s, data type %s, dst shape %s, memory size %ld",
@@ -152,9 +176,16 @@ Status FormatTransferFracZHwcn::TransFormat(const TransArgs &args, TransResult &
          ShapeToString(args.dst_shape).c_str(), total_size);
   ret = GetDstDataAfterTrans(args, result, size, total_size);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
-           ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           ShapeToString(args.dst_shape).c_str(), total_size);
+    GELOGE(ret, "[Get][Data]Failed after trans, src shape %s, "
+           "data type %s, dst shape %s, memory size %ld, error_code %u",
+           ShapeToString(args.src_shape).c_str(),
+           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+           ShapeToString(args.dst_shape).c_str(), total_size, ret);
+    REPORT_CALL_ERROR("E19999", "Failed to get data after trans, src shape %s, "
+                      "data type %s, dst shape %s, memory size %ld, error_code %u",
+                      ShapeToString(args.src_shape).c_str(),
+                      TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+                      ShapeToString(args.dst_shape).c_str(), total_size, ret);
     return ret;
   }
   return SUCCESS;

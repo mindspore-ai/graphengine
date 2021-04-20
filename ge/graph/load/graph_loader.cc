@@ -52,15 +52,17 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
   GELOGI("Load model online begin.");
   rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_LOAD);
     return RT_FAILED;
   }
   if (ge_root_model_ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param ge_root_model_ptr nullptr, check invalid");
     GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_ptr is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
-  model_id = ge_root_model_ptr->GetModelId();
 
   auto model_manager = ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
@@ -71,6 +73,8 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
 
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                        GetContext().DeviceId(), rt_ret);
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     }
     return ret;
@@ -84,6 +88,8 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
 
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                        GetContext().DeviceId(), rt_ret);
       GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     }
 
@@ -93,6 +99,8 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
   }
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
@@ -121,6 +129,8 @@ Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string 
 
   GELOGI("Load model begin, model path is: %s", path.c_str());
   if (!key_path.empty() && !CheckInputPathValid(key_path)) {
+    REPORT_INNER_ERROR("E19999", "Param key_path:%s empty or invalid",
+                       key_path.c_str());
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
@@ -147,10 +157,12 @@ Status GraphLoader::CommandHandle(const Command &command) {
       return ret;
     }
   } catch (std::bad_alloc &) {
+    REPORT_INNER_ERROR("E19999", "Bad memory allocation occur");
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Command handle failed, bad memory allocation occur !");
 
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   } catch (...) {
+    REPORT_INNER_ERROR("E19999", "Some exceptions occur");
     GELOGE(FAILED, "Command handle failed, some exceptions occur !");
 
     return FAILED;
@@ -232,6 +244,8 @@ Status GraphLoader::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asyn
 Status GraphLoader::GetMemoryInfo(int64_t &free) {
   rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_LOAD);
     return RT_FAILED;
@@ -240,11 +254,14 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
   size_t free_mem = 0;
   rt_ret = rtMemGetInfo(&free_mem, &total_mem);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemGetInfo failed, ret:0x%X", rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_FAILED;
   }

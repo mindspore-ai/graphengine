@@ -56,7 +56,7 @@ TEST_F(UtestDataDumper, LoadDumpInfo_no_output_addrs_fail) {
 
 TEST_F(UtestDataDumper, UnloadDumpInfo_success) {
   RuntimeParam rts_param;
-  DataDumper data_dumper(rts_param);
+  DataDumper data_dumper(&rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
 

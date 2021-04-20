@@ -41,6 +41,7 @@ graphStatus CompileNodesPass::Run(ComputeGraphPtr graph) {
   }
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
   if (instance == nullptr || !instance->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid");
     GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "Run CompileNodesPass failed.");
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -99,6 +100,8 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
     (void)instance->DNNEngineManagerObj().GetDNNEngineName(node);
     kernel_lib_name = op_desc->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
+      REPORT_INNER_ERROR("E19999", "kernel_lib_name in op:%s(%s) is empty, check invalid",
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(GRAPH_FAILED, "Get node:%s, type:%s kernel lib failed.", node->GetName().c_str(),
              op_desc->GetType().c_str());
       return GRAPH_FAILED;
@@ -106,11 +109,16 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   }
   OpsKernelInfoStorePtr kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_lib_name);
   if (kernel_info == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed for op:%s(%s)",
+                       kernel_lib_name.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node->GetName().c_str());
     return ge::GE_GRAPH_PARAM_NULLPTR;
   }
+
+  std::map<std::string, std::string> unsupported_reasons;
+  std::string unsupported_reason;
   // begin accuracy supported check
-  if (!CheckAccuracySupport(kernel_info, instance, node)) {
+  if (!CheckAccuracySupport(kernel_info, instance, node, unsupported_reason)) {
     // if check accuracy support failed , try to go to other engine.
     GELOGD("Check Accuracy Supported return not support, node name is %s. Try to go to other engine.",
            op_desc->GetName().c_str());
@@ -123,13 +131,25 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
         continue;
       }
       OpsKernelInfoStorePtr tmp_kernel_info = it->second;
-      if (CheckAccuracySupport(tmp_kernel_info, instance, node)) {
+      if (CheckAccuracySupport(tmp_kernel_info, instance, node, unsupported_reason)) {
         kernel_lib_name = tmp_kernel_name;
         GELOGD("Find kernel lib %s support node:%s, type:%s , get kernel lib success.", tmp_kernel_name.c_str(),
                node->GetName().c_str(), op_desc->GetType().c_str());
         return GRAPH_SUCCESS;
+      } else {
+        unsupported_reasons.emplace(tmp_kernel_name, unsupported_reason);
       }
     }
+    for (const auto &it : unsupported_reasons) {
+      REPORT_INPUT_ERROR("E13002", std::vector<std::string>({"optype", "opskernel", "reason"}),
+                         std::vector<std::string>({op_desc->GetType(), it.first, it.second}));
+      GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED,
+             "CheckAccuracySupport:Op type %s of ops kernel %s is unsupported, reason:%s",
+             op_desc->GetType().c_str(), it.first.c_str(), it.second.c_str());
+    }
+
+    REPORT_INPUT_ERROR("E13003", std::vector<std::string>({"opname", "optype"}),
+                       std::vector<std::string>({op_desc->GetName(), op_desc->GetType()}));
     GELOGE(GRAPH_FAILED, "Cannot find kernel lib support node:%s, type:%s , get kernel lib failed.",
            node->GetName().c_str(), op_desc->GetType().c_str());
     return GRAPH_FAILED;
@@ -137,10 +157,10 @@ graphStatus CompileNodesPass::GetSupportedKernel(const NodePtr &node, const std:
   return GRAPH_SUCCESS;
 }
 
-bool CompileNodesPass::CheckAccuracySupport(const OpsKernelInfoStorePtr &kernel_info,
-                                            const std::shared_ptr<GELib> instance, const NodePtr &node) {
-  string reason;
-  if (!(kernel_info->CheckAccuracySupported(node, reason, true))) {
+bool CompileNodesPass::CheckAccuracySupport(
+    const OpsKernelInfoStorePtr &kernel_info, const std::shared_ptr<GELib> instance,
+    const NodePtr &node, string& unsupported_reason) {
+  if (!(kernel_info->CheckAccuracySupported(node, unsupported_reason, true))) {
     return false;
   }
   return true;
@@ -153,6 +173,8 @@ graphStatus CompileNodesPass::CompileNodes(const std::shared_ptr<GELib> instance
   for (auto &kernel_nodes : kernel_to_compile_nodes) {
     kernel_info = instance->OpsKernelManagerObj().GetOpsKernelInfoStore(kernel_nodes.first);
     if (kernel_info == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
+                         kernel_nodes.first.c_str());
       GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", kernel_nodes.first.c_str());
       return ge::GE_GRAPH_PARAM_NULLPTR;
     }
@@ -168,6 +190,8 @@ graphStatus CompileNodesPass::CompileNodes(const std::shared_ptr<GELib> instance
     }
     auto ret = kernel_info->CompileOp(kernel_nodes.second);
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Call CompileOp failed, kernel_lib_name:%s, ret:%d",
+                        kernel_nodes.first.c_str(), ret);
       GELOGE(ret, "Compile op failed, kernel name is %s", kernel_nodes.first.c_str());
       return GRAPH_FAILED;
     }

@@ -40,6 +40,7 @@ struct SingleOpModelParam {
 
   std::map<uintptr_t, int> addr_mapping_;
   int64_t core_type = 0;
+  bool graph_is_dynamic = false;
 };
 
 class SingleOpModel {
@@ -65,15 +66,17 @@ class SingleOpModel {
   void ParseOutputNode(const OpDescPtr &op_desc);
 
   Status BuildTaskList(StreamResource *stream_resource, SingleOp &single_op);
-  Status BuildTaskListForDynamicOp(DynamicSingleOp &dynamic_single_op);
+  Status BuildTaskListForDynamicOp(StreamResource *stream_resource, DynamicSingleOp &dynamic_single_op);
   Status BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask **task);
   Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
                            bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id);
   Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task, uint64_t kernel_id);
-  Status BuildModelTaskKernel(const domi::TaskDef &task_def, DynamicSingleOp &single_op);
+  Status BuildModelTaskKernel(StreamResource *stream_resource, const domi::TaskDef &task_def,
+                              DynamicSingleOp &single_op);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(OpTask *task, SingleOp &op);
+  Status InitHybridModelExecutor(const StreamResource &resource, const GeModelPtr &ge_model, SingleOp &single_op);
 
   std::string model_name_;
   uint32_t model_id_ = 0;

@@ -36,10 +36,10 @@ std::set<std::string> kControlOpTypes{
 Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-    GELOGE(FAILED,
-           "[%s] Failed to get attr [%s]",
-           op_desc.GetName().c_str(),
-           ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    GELOGE(FAILED, "[Invoke][GetInt][%s] Failed to get attr [%s]",
+           op_desc.GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    REPORT_CALL_ERROR("E19999", "[%s] Failed to get attr [%s]",
+                      op_desc.GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
     return FAILED;
   }
 
@@ -58,10 +58,10 @@ Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgr
 Status ParseOutputMapping(const OpDescPtr &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-    GELOGE(FAILED,
-           "[%s] Failed to get attr [%s]",
-           op_desc->GetName().c_str(),
-           ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    GELOGE(FAILED, "[Invoke][GetInt][%s] Failed to get attr [%s]",
+           op_desc->GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
+    REPORT_CALL_ERROR("E19999", "[%s] Failed to get attr [%s].",
+                      op_desc->GetName().c_str(), ATTR_NAME_PARENT_NODE_INDEX.c_str());
     return FAILED;
   }
 
@@ -122,7 +122,7 @@ Status NodeItem::Create(const NodePtr &node, std::unique_ptr<NodeItem> &node_ite
   GE_CHECK_NOTNULL(node->GetOpDesc());
   std::unique_ptr<NodeItem> instance(new(std::nothrow)NodeItem(node));
   GE_CHECK_NOTNULL(instance);
-  GE_CHK_STATUS_RET(instance->Init(), "Failed to init NodeItem [%s] .", node->GetName().c_str());
+  GE_CHK_STATUS_RET(instance->Init(), "[Invoke][Init]Failed to init NodeItem [%s] .", node->GetName().c_str());
   node_item = std::move(instance);
   return SUCCESS;
 }
@@ -149,14 +149,16 @@ Status NodeItem::InitInputsAndOutputs() {
   if (AttrUtils::GetInt(op_desc, ::ge::ATTR_STAGE_LEVEL, group)) {
     GELOGD("[%s] Got stage level from op_desc = %d", op_desc->GetName().c_str(), group);
   } else {
-    if (AttrUtils::GetInt(node->GetOwnerComputeGraph(), ::ge::ATTR_STAGE_LEVEL, group)) {
-      GELOGD("[%s] Got stage level from parent graph = %d", op_desc->GetName().c_str(), group);
-    } else {
-      auto parent_node = node->GetOwnerComputeGraph()->GetParentNode();
-      if ((parent_node != nullptr) && (AttrUtils::GetInt(parent_node->GetOpDesc(), ::ge::ATTR_STAGE_LEVEL, group))) {
-        GELOGD("[%s] Got stage level from parent node = %d", op_desc->GetName().c_str(), group);
+    if (node->GetOwnerComputeGraph() != nullptr) {
+      if (AttrUtils::GetInt(node->GetOwnerComputeGraph(), ::ge::ATTR_STAGE_LEVEL, group)) {
+        GELOGD("[%s] Got stage level from parent graph = %d", op_desc->GetName().c_str(), group);
       } else {
-        GELOGD("[%s] Node do not set stage level", op_desc->GetName().c_str());
+        auto parent_node = node->GetOwnerComputeGraph()->GetParentNode();
+        if ((parent_node != nullptr) && (AttrUtils::GetInt(parent_node->GetOpDesc(), ::ge::ATTR_STAGE_LEVEL, group))) {
+          GELOGD("[%s] Got stage level from parent node = %d", op_desc->GetName().c_str(), group);
+        } else {
+          GELOGD("[%s] Node do not set stage level", op_desc->GetName().c_str());
+        }
       }
     }
   }
@@ -166,10 +168,10 @@ Status NodeItem::InitInputsAndOutputs() {
 
 Status NodeItem::ResolveDynamicState() {
   (void) AttrUtils::GetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, is_dynamic);
-  GELOGD("node name = %s, is_dynamic = %d.", this->node_name.c_str(), is_dynamic);
+  GELOGD("Node name is %s, dynamic state is %d.", this->node_name.c_str(), is_dynamic);
   if (!is_dynamic) {
     GE_CHK_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_dynamic),
-                      "[%s] Failed to get shape status.",
+                      "[Invoke][GetNodeUnknownShapeStatus][%s] Failed to get shape status.",
                       node->GetName().c_str());
   }
   return SUCCESS;
@@ -239,7 +241,8 @@ Status NodeItem::Init() {
   ResolveUnknownShapeType();
   if (is_dynamic) {
     GE_CHK_STATUS_RET_NOLOG(ResolveStaticInputsAndOutputs());
-    GE_CHK_STATUS_RET(ParseFusedSubgraph(*this), "[%s] Failed to parse fused subgraph", node_name.c_str());
+    GE_CHK_STATUS_RET(ParseFusedSubgraph(*this),
+                      "[Invoke][ParseFusedSubgraph][%s] Failed to parse fused subgraph", node_name.c_str());
   }
 
   return SUCCESS;
@@ -247,6 +250,10 @@ Status NodeItem::Init() {
 
 bool NodeItem::IsControlOp() const {
   return ge::hybrid::IsControlOp(op_desc->GetType());
+}
+
+bool NodeItem::IsHcclOp() const {
+  return NodeExecutorManager::GetInstance().ResolveExecutorType(*node) == NodeExecutorManager::ExecutorType::HCCL;
 }
 
 std::string NodeItem::DebugString() const {
@@ -291,21 +298,54 @@ void NodeItem::SetToDynamic() {
   }
 }
 
-GeTensorDescPtr NodeItem::MutableInputDesc(int index) const {
+GeTensorDescPtr NodeItem::DoGetInputDesc(int index) const {
   if (!has_optional_inputs) {
     return op_desc->MutableInputDesc(static_cast<uint32_t>(index));
   }
 
   if (index < 0 || index >= num_inputs) {
-    GELOGE(PARAM_INVALID,
-           "[%s] Invalid input index, num inputs = %d, index = %d",
-           node_name.c_str(),
-           num_inputs,
-           index);
+    GELOGE(PARAM_INVALID, "[Check][Param:index][%s] Invalid input index, num inputs = %d, index = %d",
+           node_name.c_str(), num_inputs, index);
+    REPORT_INNER_ERROR("E19999", "Invalid input index, node:%s num inputs = %d, index = %d",
+                       node_name.c_str(), num_inputs, index);
     return nullptr;
   }
 
   return op_desc->MutableInputDesc(input_desc_indices_[index]);
+}
+
+GeTensorDescPtr NodeItem::MutableInputDesc(int index) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  return DoGetInputDesc(index);
+}
+
+Status NodeItem::GetInputDesc(int index, GeTensorDesc &tensor_desc) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto input_desc = DoGetInputDesc(index);
+  GE_CHECK_NOTNULL(input_desc);
+  tensor_desc = *input_desc;
+  return SUCCESS;
+}
+
+Status NodeItem::GetOutputDesc(int index, GeTensorDesc &tensor_desc) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto output_desc = op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+  GE_CHECK_NOTNULL(output_desc);
+  tensor_desc = *output_desc;
+  return SUCCESS;
+}
+
+GeTensorDescPtr NodeItem::MutableOutputDesc(int index) const {
+  std::lock_guard<std::mutex> lk(mu_);
+  return op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
+}
+
+Status NodeItem::UpdateInputDesc(int index, const GeTensorDesc &tensor_desc) {
+  std::lock_guard<std::mutex> lk(mu_);
+  auto input_desc = DoGetInputDesc(index);
+  GE_CHECK_NOTNULL(input_desc);
+  *input_desc = tensor_desc;
+  return SUCCESS;
 }
 
 Status NodeItem::GetCanonicalInputIndex(uint32_t index, int &canonical_index) const {
@@ -316,7 +356,11 @@ Status NodeItem::GetCanonicalInputIndex(uint32_t index, int &canonical_index) co
 
   auto iter = std::find(input_desc_indices_.begin(), input_desc_indices_.end(), index);
   if (iter == input_desc_indices_.end()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Invalid input index: %u", node_name.c_str(), index);
+    GELOGE(INTERNAL_ERROR,
+           "[Check][Param:index]input index:%u not in input_desc_indices_, check Invalid, node:%s",
+           index, node_name.c_str());
+    REPORT_INNER_ERROR("E19999", "input index:%u not in input_desc_indices_, check Invalid, node:%s",
+                       index, node_name.c_str());
     return INTERNAL_ERROR;
   }
 
@@ -331,7 +375,9 @@ bool NodeItem::IsInputShapeStatic(int index) const {
   }
 
   if (static_cast<size_t>(index) >= is_input_shape_static_.size()) {
-    GELOGE(PARAM_INVALID, "Input index(%d) out of range: [0, %zu)", index, is_input_shape_static_.size());
+    GELOGE(PARAM_INVALID, "[Check][Param:index]Input index(%d) out of range: [0, %zu)",
+           index, is_input_shape_static_.size());
+    REPORT_INNER_ERROR("E19999", "Input index(%d) out of range: [0, %zu).", index, is_input_shape_static_.size());
     return false;
   }
 

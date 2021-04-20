@@ -31,9 +31,13 @@ class LabelGotoTask : public TaskRepeater<LabelGotoTaskInfo> {
   bool Distribute() override;
 
  private:
+  bool CheckParamValid();
+
   std::shared_ptr<LabelGotoTaskInfo> task_info_;
-  void *stream_;
-  void *label_;
+  void *stream_{nullptr};
+  void *label_{nullptr};
+  void *label_info_{nullptr};
+  void *index_value_{nullptr};
 };
 }  // namespace model_runner
 }  // namespace ge

@@ -80,7 +80,6 @@ class WhileOpNodeTask : public ControlOpNodeTask {
   Status ExecuteCond(TaskContext &task_context, bool &is_continue) const;
 
   static Status MoveOutputs2Inputs(TaskContext &task_context);
-
   Status ExecuteOneLoop(TaskContext &task_context, bool &is_continue) const;
 
  private:

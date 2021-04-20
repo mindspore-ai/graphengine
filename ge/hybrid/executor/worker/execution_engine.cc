@@ -19,6 +19,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/tensor_adapter.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "hybrid/executor//worker//shape_inference_engine.h"
 #include "common/dump/dump_op.h"
@@ -70,6 +71,7 @@ class NodeDoneCallback {
   Status PrepareConstInputs(const NodeItem &node_item);
   Status DumpDynamicNode();
   Status ProfilingReport();
+  Status SaveDumpOpInfo();
   Status GetTaskDescInfo(const NodePtr node, const HybridModel *model,
                          std::vector<TaskDescInfo> &task_desc_info);
   GraphExecutionContext *graph_context_;
@@ -102,11 +104,13 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
 
     if (output_tensor->GetSize() < static_cast<size_t>(tensor_size)) {
       GELOGE(INTERNAL_ERROR,
-             "[%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s",
-             node_item.NodeName().c_str(),
-             output_idx,
-             tensor_size,
-             output_tensor->DebugString().c_str());
+          "[Check][Size][%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s.",
+          node_item.NodeName().c_str(), output_idx, tensor_size,
+          output_tensor->DebugString().c_str());
+      REPORT_INNER_ERROR("E19999",
+                         "[%s] Tensor size is not enough. output index = %d, required size = %ld, tensor = %s.",
+                         node_item.NodeName().c_str(), output_idx, tensor_size,
+                         output_tensor->DebugString().c_str());
       return INTERNAL_ERROR;
     }
 
@@ -128,7 +132,7 @@ Status NodeDoneCallback::PrepareConstInputs(const NodeItem &node_item) {
     GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(context_id, &runtime_infer_ctx),
                             "Failed to get RuntimeInferenceContext, context_id = %s", context_id.c_str());
     GE_CHK_STATUS_RET(runtime_infer_ctx->SetTensor(node_item.node_id, output_idx, std::move(tensor)),
-                      "Failed to SetTensor, node = %s, output_index = %d", node_item.NodeName().c_str(), output_idx);
+                      "[Set][Tensor] Failed, node = %s, output_index = %d", node_item.NodeName().c_str(), output_idx);
     GELOGD("[%s] Output[%d] cached successfully in context: %s. node_id = %d, shape = [%s]",
            node_item.NodeName().c_str(),
            output_idx,
@@ -173,7 +177,8 @@ Status NodeDoneCallback::GetTaskDescInfo(const NodePtr node, const HybridModel *
 Status NodeDoneCallback::ProfilingReport() {
   auto node = context_->GetNodeItem().node;
   if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "Get node is nullptr");
+    GELOGE(PARAM_INVALID, "[Get][Node] value is nullptr.");
+    REPORT_INNER_ERROR("E19999", "TaskContext GetNodeItem value is nullptr.");
     return PARAM_INVALID;
   }
 
@@ -190,7 +195,8 @@ Status NodeDoneCallback::ProfilingReport() {
   std::vector<TaskDescInfo> task_desc_info;
   auto profiling_ret = GetTaskDescInfo(node, model, task_desc_info);
   if (profiling_ret != RT_ERROR_NONE) {
-    GELOGE(profiling_ret, "Get task info of node[%s] failed.", node->GetName().c_str());
+    GELOGE(profiling_ret, "[Get][TaskDescInfo] of node:%s failed.", node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "GetTaskDescInfo of node:%s failed.", node->GetName().c_str());
     return profiling_ret;
   }
 
@@ -202,40 +208,40 @@ Status NodeDoneCallback::ProfilingReport() {
 Status NodeDoneCallback::DumpDynamicNode() {
   auto node = context_->GetNodeItem().node;
   if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "Get node is nullptr");
+    GELOGE(PARAM_INVALID, "[Get][Node] value is nullptr.");
+    REPORT_INNER_ERROR("E19999", "get node value is nullptr.");
     return PARAM_INVALID;
   }
   auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(graph_context_);
+  const HybridModel *model = graph_context_->model;
+  GE_CHECK_NOTNULL(model);
+  std::string dynamic_model_name = model->GetModelName();
+  std::string dynamic_om_name = model->GetOmName();
+  uint32_t model_id = model->GetModelId();
+  if (!context_->GetDumpProperties().IsLayerNeedDump(dynamic_model_name, dynamic_om_name, op_desc->GetName())) {
+    GELOGI("[%s] is not in dump list, no need dump", op_desc->GetName().c_str());
+    return SUCCESS;
+  }
+  dump_op_.SetDynamicModelInfo(dynamic_model_name, dynamic_om_name, model_id);
+
   auto stream = context_->GetStream();
   vector<uintptr_t> input_addrs;
   vector<uintptr_t> output_addrs;
   for (int i = 0; i < context_->NumInputs(); i++) {
     auto tensor_value = context_->GetInput(i);
-    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "Tensor value is nullptr");
-    uint64_t input_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "[Get][Tensor] value is nullptr.");
+    uintptr_t input_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
     input_addrs.emplace_back(input_addr);
   }
   for (int j = 0; j < context_->NumOutputs(); j++) {
     auto tensor_value = context_->GetOutput(j);
-    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "Tensor value is nullptr");
-    uint64_t output_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "[Get][Tensor] value is nullptr.");
+    uintptr_t output_addr = reinterpret_cast<uintptr_t>(tensor_value->GetData());
     output_addrs.emplace_back(output_addr);
   }
 
   dump_op_.SetDumpInfo(context_->GetDumpProperties(), op_desc, input_addrs, output_addrs, stream);
-
-  GE_CHECK_NOTNULL(graph_context_);
-  const HybridModel *model = graph_context_->model;
-  GE_CHECK_NOTNULL(model);
-  std::string dynamic_model_name = model->GetModelName();
-  uint32_t model_id = model->GetModelId();
-  dump_op_.SetDynamicModelInfo(dynamic_model_name, model_id);
-
-  void *global_step = nullptr;
-  TensorValue *varible_global_step = context_->GetVariable(NODE_NAME_GLOBAL_STEP);
-  if (varible_global_step != nullptr) {
-    global_step = const_cast<void *>(varible_global_step->GetData());
-  }
 
   void *loop_per_iter = nullptr;
   TensorValue *varible_loop_per_iter = context_->GetVariable(NODE_NAME_FLOWCTRL_LOOP_PER_ITER);
@@ -248,15 +254,51 @@ Status NodeDoneCallback::DumpDynamicNode() {
   if (varible_loop_cond != nullptr) {
     loop_cond = const_cast<void *>(varible_loop_cond->GetData());
   }
+  void *global_step = context_->GetExecutionContext()->global_step;
   dump_op_.SetLoopAddr(global_step, loop_per_iter, loop_cond);
 
-  GE_CHK_STATUS_RET(dump_op_.LaunchDumpOp(), "Failed to launch dump op in hybird model");
+  GE_CHK_STATUS_RET(dump_op_.LaunchDumpOp(), "[Launch][DumpOp] failed in hybird model.");
 
   auto rt_ret = rtStreamSynchronize(stream);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "rtStreamSynchronize failed");
+    GELOGE(rt_ret, "[Call][rtStreamSynchronize] failed, ret = %d.", rt_ret);
+    REPORT_CALL_ERROR("E19999", "call rtStreamSynchronize failed, ret = %d.", rt_ret);
     return rt_ret;
   }
+  return SUCCESS;
+}
+
+Status NodeDoneCallback::SaveDumpOpInfo() {
+  GE_CHECK_NOTNULL(graph_context_);
+  GE_CHECK_NOTNULL(graph_context_->model);
+
+  auto node = context_->GetNodeItem().node;
+  if (node == nullptr) {
+    GELOGE(PARAM_INVALID, "[Save][DumpOpInfo] Get node is nullptr.");
+    return PARAM_INVALID;
+  }
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+
+  vector<void *> input_addrs;
+  vector<void *> output_addrs;
+  for (int i = 0; i < context_->NumInputs(); i++) {
+    auto tensor_value = context_->GetInput(i);
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "[Save][DumpOpInfo] Tensor value is nullptr.");
+    void *input_addr = const_cast<void *>(tensor_value->GetData());
+    input_addrs.emplace_back(input_addr);
+  }
+  for (int j = 0; j < context_->NumOutputs(); j++) {
+    auto tensor_value = context_->GetOutput(j);
+    GE_CHK_BOOL_RET_STATUS(tensor_value != nullptr, PARAM_INVALID, "[Save][DumpOpInfo] Tensor value is nullptr.");
+    void *output_addr = const_cast<void *>(tensor_value->GetData());
+    output_addrs.emplace_back(output_addr);
+  }
+
+  uint32_t stream_id = context_->GetStreamId();
+  uint32_t task_id = context_->GetTaskId();
+  graph_context_->exception_dumper.SaveDumpOpInfo(op_desc, task_id, stream_id, input_addrs, output_addrs);
+
   return SUCCESS;
 }
 
@@ -269,12 +311,17 @@ Status NodeDoneCallback::OnNodeDone() {
   const DumpProperties &dump_properties = context_->GetDumpProperties();
   if (dump_properties.IsDumpOpen() || context_->IsOverFlow()) {
     GELOGI("Start to dump dynamic shape op");
-    GE_CHK_STATUS_RET(DumpDynamicNode(), "Failed to dump dynamic node");
+    GE_CHK_STATUS_RET(DumpDynamicNode(), "[Call][DumpDynamicNode] Failed.");
+  }
+
+  auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  if (model_manager->IsDumpExceptionOpen()) {
+    GE_CHK_STATUS_RET(SaveDumpOpInfo(), "[Save][DumpOpInfo] Failed to dump op info.");
   }
 
   if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
-    GE_CHK_STATUS_RET(ProfilingReport(), "Report node[%s] to profiling failed.",
-                      node_item.NodeName().c_str());
+    GE_CHK_STATUS_RET(ProfilingReport(), "[Report][Profiling] of node[%s] failed.", node_item.NodeName().c_str());
   }
 
   // release workspace
@@ -296,8 +343,7 @@ Status NodeDoneCallback::OnNodeDone() {
       (void) LogOutputs(node_item, *context_);
     }
 
-    GE_CHK_STATUS_RET(context_->PropagateOutputs(),
-                      "[%s] Failed to propagate outputs failed",
+    GE_CHK_STATUS_RET(context_->PropagateOutputs(), "[Propagate][Outputs] of [%s] failed.",
                       node_item.NodeName().c_str());
 
     RECORD_CALLBACK_EVENT(graph_context_, context_->GetNodeName(), "[PropagateOutputs] End");
@@ -338,7 +384,8 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
                                        const std::function<void()> &callback) {
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
-    GELOGE(INTERNAL_ERROR, "[%s] NodeTask is null.", node_state.GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][KernelTask] of [%s] is null.", node_state.GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "GetKernelTask of %s is null.", node_state.GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -352,8 +399,7 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
   auto executor = node_item.node_executor;
   GE_CHECK_NOTNULL(executor);
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PrepareTask] Start");
-  GE_CHK_STATUS_RET(executor->PrepareTask(*task, task_context),
-                    "[%s] Failed to prepare task",
+  GE_CHK_STATUS_RET(executor->PrepareTask(*task, task_context), "[Prepare][Task] for [%s] failed.",
                     node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PrepareTask] End");
   GELOGD("[%s] Done task preparation successfully.", node_state.GetName().c_str());
@@ -365,7 +411,8 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
     }
   }
 
-  GE_CHK_STATUS_RET(ValidateInputTensors(node_state, task_context), "Failed to validate input tensors.");
+  GE_CHK_STATUS_RET(ValidateInputTensors(node_state, task_context), "[Validate][InputTensors] for %s failed.",
+                    node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ValidateInputTensors] End");
 
   if (context.profiling_level > 0) {
@@ -419,11 +466,10 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
                input_tensor->GetSize());
       } else {
         GELOGE(INTERNAL_ERROR,
-               "[%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu",
-               task_context.GetNodeName(),
-               i,
-               expected_size,
-               input_tensor->GetSize());
+               "[Check][Size] for [%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu.",
+               task_context.GetNodeName(), i, expected_size, input_tensor->GetSize());
+        REPORT_INNER_ERROR("E19999", "[%s] Input[%d]: tensor size mismatches. expected: %ld, but given %zu.",
+                           task_context.GetNodeName(), i, expected_size, input_tensor->GetSize());
         return INTERNAL_ERROR;
       }
     }
@@ -436,8 +482,7 @@ Status ExecutionEngine::PropagateOutputs(const NodeItem &node_item,
                                          TaskContext &task_context,
                                          GraphExecutionContext &context) {
   if (node_item.shape_inference_type != DEPEND_COMPUTE) {
-    GE_CHK_STATUS_RET(task_context.PropagateOutputs(),
-                      "[%s] Failed to propagate outputs.",
+    GE_CHK_STATUS_RET(task_context.PropagateOutputs(), "[Propagate][Outputs] for [%s] failed.",
                       node_item.NodeName().c_str());
     RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PropagateOutputs] End");
     GELOGD("[%s] Done propagating outputs successfully.", node_item.NodeName().c_str());

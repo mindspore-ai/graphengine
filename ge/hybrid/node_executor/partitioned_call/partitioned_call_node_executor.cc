@@ -38,15 +38,14 @@ Status PartitionedCallNodeTask::Init(TaskContext &context) {
 
 Status PartitionedCallNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GE_CHK_STATUS_RET(subgraph_executor_->ExecuteAsync(context),
-                    "[%s] Failed to set inputs", graph_item_->GetName().c_str());
+                    "[Invoke][ExecuteAsync] failed for[%s]", graph_item_->GetName().c_str());
 
   auto callback = [=]() {
     Callback(done_callback);
   };
 
   GE_CHK_STATUS_RET(context.RegisterCallback(callback),
-                    "[%s] Failed to register callback",
-                    graph_item_->GetName().c_str());
+                    "[Register][Callback] failed for [%s]", graph_item_->GetName().c_str());
   GELOGD("[%s] Done executing subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
 }
@@ -83,7 +82,7 @@ Status PartitionedCallNodeExecutor::LoadTask(const ge::hybrid::HybridModel &mode
 
 Status PartitionedCallNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) const {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[PartitionedCallPrepareTask] Start");
-  GE_CHK_STATUS_RET(task.Init(context), "[%s] Failed to init task.", context.GetNodeName());
+  GE_CHK_STATUS_RET(task.Init(context), "[Init][Task] failed for [%s].", context.GetNodeName());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[PartitionedCallPrepareTask] End");
   return SUCCESS;
 }

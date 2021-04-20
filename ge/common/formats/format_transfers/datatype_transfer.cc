@@ -154,7 +154,11 @@ Status DataTypeTransfer::TransDataType(const CastArgs &args, TransResult &result
 
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to alloc the memory for dst buf %zu, data size %zu", total_size, args.src_data_size);
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
+           "[Allocate][DSTMemory]Failed, memory for dst buf %zu, data size %zu",
+           total_size, args.src_data_size);
+    REPORT_CALL_ERROR("E19999", "Failed to allocate memory for dst buf %zu, data size %zu",
+                      total_size, args.src_data_size);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 

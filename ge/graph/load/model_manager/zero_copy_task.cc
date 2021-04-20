@@ -36,6 +36,8 @@ ZeroCopyTask::~ZeroCopyTask() { args_addr_ = nullptr; }
  */
 Status ZeroCopyTask::SetTaskArgsOffset(uintptr_t addr, size_t offset) {
   if (offset + sizeof(uintptr_t) > args_size_) {
+    REPORT_INNER_ERROR("E19999", "Param offset:%zu + 8 > args_size_:%zu, check invalid",
+                       offset, args_size_);
     GELOGE(FAILED, "[ZCPY] %s set task args failed, args size: %zu, offset: %zu", name_.c_str(), args_size_, offset);
     return FAILED;  // unexpected error, need fix.
   }
@@ -116,6 +118,8 @@ Status ZeroCopyTask::DistributeParam(bool async_mode, rtStream_t stream) {
   }
 
   if (rt_err != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpyAsync or rtMemcpy failed, size:%zu, ret: 0x%X",
+                      args_size_, rt_err);
     GELOGE(RT_FAILED, "[ZCPY] %s distribute task param failed, error=0x%x", name_.c_str(), rt_err);
     return RT_ERROR_TO_GE_STATUS(rt_err);
   }

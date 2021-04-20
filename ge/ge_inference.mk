@@ -114,6 +114,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/atomic_addr_clean_pass.cc \
     graph/passes/mark_same_addr_pass.cc \
     graph/passes/mark_graph_unknown_status_pass.cc \
+    graph/passes/mark_node_unknown_shape_pass.cc \
     graph/passes/mark_agnostic_pass.cc \
     graph/common/omg_util.cc \
     graph/common/bcast.cc \
@@ -222,6 +223,7 @@ OMG_HOST_SRC_FILES := \
     graph/passes/hccl_group_pass.cc \
     graph/passes/memcpy_addr_async_pass.cc \
     graph/passes/set_input_output_offset_pass.cc \
+    graph/passes/buffer_pool_memory_pass.cc \
 
 OMG_DEVICE_SRC_FILES := $(OMG_HOST_SRC_FILES)
 

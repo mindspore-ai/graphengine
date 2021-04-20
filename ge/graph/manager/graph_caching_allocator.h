@@ -94,6 +94,13 @@ class CachingAllocator {
   ///
   Status Free(uint8_t *memory_addr, uint32_t device_id = 0);
 
+  ///
+  /// @ingroup ge_graph
+  /// @brief try to free memory when no memory is referenced
+  /// @return void
+  ///
+  void TryFreeBlocks();
+
  private:
 
   ///

@@ -416,8 +416,7 @@ Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char *
   if (is_offline) {
     ret = FileSaver::SaveToFile(output_file, model_header_, model_partition_tabels, all_model_partitions);
   } else {
-    GELOGW("do not support save ge root model to buff now");
-    return FAILED;
+    ret = FileSaver::SaveToBuffWithFileHeader(model_header_, model_partition_tabels, all_model_partitions, model);
   }
   if (ret == SUCCESS) {
     GELOGD("Save model success without encrypt.");

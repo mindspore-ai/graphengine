@@ -8,6 +8,7 @@ set(PROTO_LIST
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
+protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
 
 set(SRC_LIST
     "ge_executor.cc"
@@ -15,6 +16,7 @@ set(SRC_LIST
     "../common/ge/plugin_manager.cc"
     "../common/ge/op_tiling_manager.cc"
     "../common/dump/dump_properties.cc"
+    "../common/dump/exception_dumper.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
     "../common/dump/opdebug_register.cc"
@@ -162,7 +164,7 @@ set(SRC_LIST
 )
 
 ######## libge_executor.a ########
-add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
 
 target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
@@ -178,6 +180,7 @@ target_compile_definitions(ge_executor PRIVATE
     google=ascend_private
     $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
     $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
     LOG_CPP
 )
 
@@ -191,7 +194,7 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/ge_static
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/cce
@@ -212,6 +215,7 @@ target_link_libraries(ge_executor PRIVATE
 add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS})
 
 target_compile_options(ge_executor_shared PRIVATE
+    -fno-common
     -Werror
     -O2
     -Wno-deprecated-declarations
@@ -223,6 +227,7 @@ target_compile_definitions(ge_executor_shared PRIVATE
     DAVINCI_SUPPORT_PROFILING
     google=ascend_private
     FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_include_directories(ge_executor_shared PRIVATE

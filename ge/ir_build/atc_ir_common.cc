@@ -19,7 +19,9 @@
 #include "framework/common/string_util.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
+#include "graph/compute_graph.h"
 #include "graph/utils/type_utils.h"
+#include "graph/utils/tensor_utils.h"
 
 using std::pair;
 using std::string;
@@ -32,6 +34,8 @@ const int64_t kDynamicImageSizeNum = 2;
 const size_t kMaxDynamicDimNum = 100;
 const size_t kMaxNDDimNum = 4;
 const size_t kMinNDDimNum = 1;
+const size_t kSquareBracketsSize = 2;
+const size_t kRangePairSize = 2;
 // datatype/formats from user to GE, Unified to util interface file later
 const std::map<std::string, ge::DataType> kOutputTypeSupportDatatype = {
     {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
@@ -52,6 +56,11 @@ const char *const kCompressWeightError = "it must be appointed when appoint para
 const char *const kSelectImplmodeError = "only support high_performance, high_precision";
 const char *const kDynamicBatchSizeError = "It can only contains digit, \",\", \" \"";
 const char *const kKeepDtypeError = "file not found";
+const char *const kInputShapeRangeInvalid = "format of shape range is invalid";
+const char *const kShapeRangeValueConvertError = "transfer from string to int64 error";
+const char *const kInputShapeRangeSample1 = "\"input_name1:[n1~n2,c1,h1,w1]\"";
+const char *const kInputShapeRangeSample2 = "\"[1~20]\"";
+const char *const kInputShapeRangeSample3 = "\"[1~20,3,3~6,-1]\"";
 
 vector<string> SplitInputShape(const std::string &input_shape) {
   vector<string> shape_pair_vec;
@@ -71,7 +80,7 @@ Status CheckInputFormat(const string &input_format) {
   if (!ge::TypeUtils::IsFormatValid(input_format.c_str())) {
     ErrorManager::GetInstance().ATCReportErrMessage(
       "E10001", {"parameter", "value", "reason"}, {"--input_format", input_format, "input format is invalid!"});
-    GELOGE(ge::PARAM_INVALID, "input format [%s] is invalid!", input_format.c_str());
+    GELOGE(ge::PARAM_INVALID, "[Check][InputFormat] --input_format[%s] is invalid!", input_format.c_str());
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -84,7 +93,8 @@ bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map
     vector<int64_t> shape = iter->second;
     if (shape.empty()) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10012");
-      GELOGE(ge::PARAM_INVALID, "--input_shape's shape size can not be less than 1 when set --dynamic_batch_size.");
+      GELOGE(ge::PARAM_INVALID, 
+          "[Check][DynamicBatchSizeInputShape] shape size can not be less than 1 when set --dynamic_batch_size.");
       return false;
     }
 
@@ -100,7 +110,8 @@ bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map
 
   if (size == 0) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10031");
-    GELOGE(ge::PARAM_INVALID, "At least one batch n must be equal to -1 when set --dynamic_batch_size.");
+    GELOGE(ge::PARAM_INVALID, 
+        "[Check][DynamicBatchSizeInputShape]At least one batch n must be equal to -1 when set dynamic_batch_size.");
     return false;
   }
 
@@ -108,8 +119,8 @@ bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map
     if (!isdigit(c) && (c != ',') && (c != ' ')) {
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E10033", {"value", "reason"}, {dynamic_batch_size, kDynamicBatchSizeError});
-      GELOGE(ge::PARAM_INVALID, "Input parameter[--dynamic_batch_size]'s value[%s] is invalid. reason: %s",
-             dynamic_batch_size.c_str(), kDynamicBatchSizeError);
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicBatchSizeInputShape] --dynamic_batch_size:%s is invalid. reason: %s",
+          dynamic_batch_size.c_str(), kDynamicBatchSizeError);
       return false;
     }
   }
@@ -122,7 +133,9 @@ bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map
 bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map,
                                           const std::string input_format, std::string &dynamic_image_size) {
   if (!input_format.empty() && !ge::TypeUtils::IsFormatValid(input_format.c_str())) {
-    GELOGE(ge::PARAM_INVALID, "user input format [%s] is not found!", input_format.c_str());
+    GELOGE(ge::PARAM_INVALID,
+        "[Check][DynamicImagesizeInputShape] input_format [%s] invalid, can not support now.", input_format.c_str());
+    REPORT_INPUT_ERROR("E10414", std::vector<std::string>({"input_format"}), std::vector<std::string>({input_format}));
     return false;
   }
   int32_t size = 0;
@@ -132,8 +145,8 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
     if (shape.size() != DIM_DEFAULT_SIZE) {
       if (std::count(shape.begin(), shape.end(), kDynamicInputDim) > 0) {
         ErrorManager::GetInstance().ATCReportErrMessage("E10019");
-        GELOGE(ge::PARAM_INVALID,
-               "--input_shape's shape is invalid, only height and width can be -1 when set --dynamic_image_size.");
+        GELOGE(ge::PARAM_INVALID, "[Check][DynamicImagesizeInputShape] --input_shape invalid,"
+            " only height and width can be -1 when set --dynamic_image_size.");
         return false;
       }
       continue;
@@ -151,8 +164,8 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
   }
   if (size == 0) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10019");
-    GELOGE(ge::PARAM_INVALID,
-           "--input_shape's shape is invalid, only height and width can be -1 when set --dynamic_image_size.");
+    GELOGE(ge::PARAM_INVALID, "[Check][DynamicImagesizeInputShape]--input shape invalid, "
+        "only height and width can be -1 when set --dynamic_image_size.");
     return false;
   }
 
@@ -167,9 +180,8 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
       ErrorManager::GetInstance().ATCReportErrMessage("E10020", {"DynamicImageSizeNum"},
                                                       {std::to_string(kDynamicImageSizeNum)});
       GELOGE(ge::PARAM_INVALID,
-             "--dynamic_image_size's number of dimensions of each "
-             "group must be %ld.",
-             kDynamicImageSizeNum);
+          "[Check][DynamicImagesizeInputShape] invalid value:%s number of dimensions of each group must be %ld.",
+          dynamic_image_size.c_str(), kDynamicImageSizeNum);
       return false;
     }
   }
@@ -183,7 +195,7 @@ bool CheckDynamicDimsInputShapeValid(const map<string, vector<int64_t>> &shape_m
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10001", {"parameter", "value", "reason"},
         {"--input_format", input_format.c_str(), "input_format must be ND when set dynamic_dims"});
-    GELOGE(ge::PARAM_INVALID, "input_format must be ND when set dynamic_dims.");
+    GELOGE(ge::PARAM_INVALID, "[Check][DynamicDimsInputShape]--input_format must be ND when set dynamic_dims.");
     return false;
   }
 
@@ -194,7 +206,8 @@ bool CheckDynamicDimsInputShapeValid(const map<string, vector<int64_t>> &shape_m
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E10001", {"parameter", "value", "reason"},
           {"--input_shape's dim", std::to_string(shapes.size()), "Dim num must within [1, 4] when set dynamic_dims"});
-      GELOGE(ge::PARAM_INVALID, "Dim num must within [%zu, %zu] when set dynamic_dims.", kMinNDDimNum, kMaxNDDimNum);
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicDimsInputShape]Dim num must within [%zu, %zu] when set dynamic_dims.",
+             kMinNDDimNum, kMaxNDDimNum);
       return false;
     }
     dynamic_dim += std::count(shapes.begin(), shapes.end(), kDynamicInputDim);
@@ -203,12 +216,14 @@ bool CheckDynamicDimsInputShapeValid(const map<string, vector<int64_t>> &shape_m
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10001", {"parameter", "value", "reason"},
         {"--input_shape's dynamic dim num", "0", "at least one dim should be -1 when set dynamic_dims"});
-    GELOGE(ge::PARAM_INVALID, "input_shape's shape is invalid, at least one dim should be -1 when set dynamic_dims.");
+    GELOGE(ge::PARAM_INVALID,
+           "[Check][DynamicDimsInputShape]--input_shape invalid,"
+           "at least one dim should be -1 when set dynamic_dims.");
     return false;
   }
 
   if (!CheckAndParseDynamicDims(dynamic_dim, dynamic_dims)) {
-    GELOGE(ge::PARAM_INVALID, "Check and parse dynamic dims: %s failed.", dynamic_dims.c_str());
+    GELOGE(ge::PARAM_INVALID, "[CheckAndParse][DynamicDims]failed, %s invalid.", dynamic_dims.c_str());
     return false;
   }
 
@@ -221,7 +236,7 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10001", {"parameter", "value", "reason"},
         {"--dynamic_dims", dynamic_dims.c_str(), "dynamic_dims can not be empty"});
-    GELOGE(ge::PARAM_INVALID, "dynamic_dims can not be empty.");
+    GELOGE(ge::PARAM_INVALID, "[CheckAndParse][DynamicDims]--dynamic_dims can not be empty.");
     return false;
   }
   // Different parameter sets are split by ';'
@@ -229,7 +244,8 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
   if (split_set.size() > kMaxDynamicDimNum) {
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10042", {"parameter", "reason"}, {"dynamic_dims", "dynamic_dims's num of parameter set can not exceed 100"});
-    GELOGE(ge::PARAM_INVALID, "dynamic_dims's num of parameter set can not exceed %zu.", kMaxDynamicDimNum);
+    GELOGE(ge::PARAM_INVALID, 
+        "[CheckAndParse][DynamicDims]dynamic_dims's num of parameter set can not exceed %zu.", kMaxDynamicDimNum);
     return false;
   }
   for (auto split_dim : split_set) {
@@ -238,8 +254,9 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E10042", {"parameter", "reason"},
           {"dynamic_dims", "Each gear setting needs to be consistent with the number of -1 in the inputshape"});
-      GELOGE(ge::PARAM_INVALID, "Input parameter --dynamic_dims parse failed, "
-          "reason: Each gear setting needs to be consistent with the number of -1 in the inputshape.");
+      GELOGE(ge::PARAM_INVALID, "[CheckAndParse][DynamicDims] --dynamic_dims:%s invalid. "
+          "reason: Each gear setting needs to be consistent with the number of -1 in the inputshape.",
+          dynamic_dims.c_str());
       return false;
     }
     for (auto dim : one_set) {
@@ -248,7 +265,9 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
           ErrorManager::GetInstance().ATCReportErrMessage(
               "E10001", {"parameter", "value", "reason"},
               {"--dynamic_dims's parameter", dim.c_str(), "must be positive integer"});
-          GELOGE(ge::PARAM_INVALID, "dynamic_dims's parameter must be positive integer.");
+          GELOGE(ge::PARAM_INVALID, 
+              "[CheckAndParse][DynamicDims]--dynamic_dims:%s parameter must be positive integer.",
+              dynamic_dims.c_str());
           return false;
         }
       }
@@ -257,18 +276,146 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
   return true;
 }
 
+bool StringToLongNoThrow(const string &str, long &val) {
+  try {
+    val = std::stol(str);
+    return true;
+  } catch (const std::invalid_argument) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                    {str, kShapeRangeValueConvertError, kInputShapeRangeSample3});
+    GELOGE(PARAM_INVALID, "[Parse][Parameter] str:%s invalid, reason: %s, correct sample is %s.",
+        str.c_str(), kShapeRangeValueConvertError, kInputShapeRangeSample3);
+  } catch (const std::out_of_range) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                    {str, kShapeRangeValueConvertError, kInputShapeRangeSample3});
+    GELOGE(PARAM_INVALID, "[Parse][Parameter] str:%s invalid, reason: %s, correct sample is %s.",
+        str.c_str(), kShapeRangeValueConvertError, kInputShapeRangeSample3);
+  }
+  return false;
+}
+
+bool ParseSingleShapeRange(std::string &shape_range, vector<pair<int64_t, int64_t>> &shape_range_vec) {
+  vector<char> square_brackets;
+  for (auto ch : shape_range) {
+    if (ch == '[' || ch == ']') {
+      square_brackets.push_back(ch);
+    }
+  }
+
+  bool is_square_brackets = (square_brackets.size() == kSquareBracketsSize) &&
+                            (square_brackets[0] == '[') && (square_brackets[1] == ']');
+  if (!is_square_brackets) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                    {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample2});
+    GELOGE(PARAM_INVALID, "[Parse][Parameter] shape_range:%s invalid, reason: %s, correct sample is %s.",
+        shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample2);
+    return false;
+  }
+  // trim start bytes, after that, single input should be "1~20,3,3~6,-1"
+  if (ge::StringUtils::StartWith(shape_range, "[")) {
+    shape_range = shape_range.substr(1, shape_range.size() - 1);
+  }
+  // parse shape_range of single input. eg. "1~20,3,3~6,-1"
+  vector<string> dim_range_set = ge::StringUtils::Split(shape_range, ',');
+  for (const auto &range_pair_str : dim_range_set) {
+    vector<string> range_pair_set = ge::StringUtils::Split(range_pair_str, '~');
+    pair<int64_t, int64_t> range_pair;
+    if (range_pair_set.size() == 1) {
+      long range_value = 0;
+      if (!StringToLongNoThrow(range_pair_set.at(0), range_value)) {
+        return false;
+      }
+      if (range_value < 0) {
+        range_pair = std::make_pair(1, range_value);
+      } else {
+        range_pair = std::make_pair(range_value, range_value);
+      }
+    } else if (range_pair_set.size() == kRangePairSize) {
+      // unknown dim, should get range.
+      long range_left = 0;
+      if (!StringToLongNoThrow(range_pair_set.at(0), range_left)) {
+        return false;
+      }
+      long range_right = 0;
+      if (!StringToLongNoThrow(range_pair_set.at(1), range_right)) {
+        return false;
+      }
+      if (range_left < 0 || (range_right < 0)) {
+        ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+            {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample3});
+        GELOGE(PARAM_INVALID,
+               "[Parse][InputParameter] [--input_shape_range]'s shape range[%s] failed,"
+               "reason: %s, correct sample is %s.",
+               shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample3);
+        return false;
+      }
+      range_pair = std::make_pair(range_left, range_right);
+    } else {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+          {shape_range, kInputShapeRangeInvalid, kInputShapeRangeSample3});
+      GELOGE(PARAM_INVALID, "[Parse][Parameter]shape_range:%s invalid, reason: %s, correct sample is %s.",
+             shape_range.c_str(), kInputShapeRangeInvalid, kInputShapeRangeSample3);
+      return false;
+    }
+    shape_range_vec.emplace_back(range_pair);
+  }
+  return true;
+}
+
+bool ParseInputShapeRange(const std::string &shape_range,
+                          std::map<string, std::vector<std::pair<int64_t, int64_t>>> &shape_range_map) {
+  GELOGD("Input shape range %s", shape_range.c_str());
+
+  vector<string> shape_range_vec = StringUtils::Split(shape_range, ';');
+  const int DEFAULT_SHAPE_RANGE_PAIR_SIZE = 2;
+  for (const auto &shape_range_item : shape_range_vec) {
+    vector<string> shape_range_pair_vec = SplitInputShape(shape_range_item);
+    if (shape_range_pair_vec.size() != DEFAULT_SHAPE_RANGE_PAIR_SIZE) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
+                                                      {shape_range, kSplitError1, kInputShapeRangeSample1});
+      GELOGE(PARAM_INVALID, "[Parse][Parameter]--input shape_range:%s invalid, reason: %s, correct sample is %s.", 
+          shape_range.c_str(), kSplitError1, kInputShapeRangeSample1);
+      return false;
+    }
+    if (shape_range_pair_vec[1].empty()) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape", "reason", "sample"},
+                                                      {shape_range, kEmptyError, kInputShapeRangeSample1});
+      GELOGE(PARAM_INVALID, "[Parse][Parameter]shape_range:%s invalid,reason: %s, correct sample is %s.",
+          shape_range.c_str(), kEmptyError, kInputShapeRangeSample1);
+      return false;
+    }
+
+    string shape_range_str = shape_range_pair_vec[1];
+    vector<pair<int64_t, int64_t>> shape_range_val;
+    if (!ParseSingleShapeRange(shape_range_str, shape_range_val)) {
+      GELOGE(PARAM_INVALID, "[Parse][Parameter] shape_range_str: %s invalid.", shape_range_str.c_str());
+      return false;
+    }
+    shape_range_map.emplace(make_pair(StringUtils::Trim(shape_range_pair_vec[0]), shape_range_val));
+  }
+  return true;
+}
+
 Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_image_size, string &dynamic_dims,
-                                   const string input_shape, const string input_format, bool &is_dynamic_input) {
+    const string input_shape, const string input_shape_range, const string input_format, bool &is_dynamic_input) {
   int32_t param_size = static_cast<int32_t>(!dynamic_batch_size.empty()) +
-                       static_cast<int32_t>(!dynamic_image_size.empty()) + static_cast<int32_t>(!dynamic_dims.empty());
+      static_cast<int32_t>(!dynamic_image_size.empty()) + static_cast<int32_t>(!dynamic_dims.empty());
   if (param_size > 1) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10009", {"parameter0", "parameter1", "parameter2"},
                                                     {"dynamic_batch_size", "dynamic_image_size", "dynamic_dims"});
-    GELOGE(ge::PARAM_INVALID, "dynamic_batch_size, dynamic_image_size and dynamic_dims can only be set one");
+    GELOGE(ge::PARAM_INVALID,
+           "[Parse][Parameter]dynamic_batch_size, dynamic_image_size and dynamic_dims can only be set one");
     return ge::PARAM_INVALID;
   }
 
   if (param_size == 0) {
+    if (!input_shape_range.empty()) {
+      std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
+      if (!ParseInputShapeRange(input_shape_range, shape_range_map)) {
+        GELOGE(ge::PARAM_INVALID, "[Parse][InputShapeRange] failed, range: %s", input_shape_range.c_str());
+        return ge::PARAM_INVALID;
+      }
+    }
     return ge::SUCCESS;
   }
 
@@ -277,32 +424,34 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
   is_dynamic_input = true;
   if (input_shape.empty()) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"input_shape"});
-    GELOGE(ge::PARAM_INVALID, "The input_shape can not be empty in dynamic input size scenario.");
+    GELOGE(ge::PARAM_INVALID,
+           "[Check][Parameter:input_shape]The input_shape can not be empty in dynamic input size scenario.");
     return ge::PARAM_INVALID;
   }
 
   if (!ParseInputShape(input_shape, shape_map, user_shape_map, is_dynamic_input)) {
-    GELOGE(ge::PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
+    GELOGE(ge::PARAM_INVALID, "[Parse][InputShape]input_shape: %s invalid.", input_shape.c_str());
     return ge::PARAM_INVALID;
   }
 
   if (!dynamic_batch_size.empty()) {
     if (!CheckDynamicBatchSizeInputShapeValid(shape_map, dynamic_batch_size)) {
-      GELOGE(ge::PARAM_INVALID, "Check dynamic batch size input shape failed: %s", input_shape.c_str());
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicBatchSizeInputShape] input_shape: %s invalid.", input_shape.c_str());
       return ge::PARAM_INVALID;
     }
   }
 
   if (!dynamic_image_size.empty()) {
     if (!CheckDynamicImagesizeInputShapeValid(shape_map, input_format, dynamic_image_size)) {
-      GELOGE(ge::PARAM_INVALID, "Check dynamic image size input shape failed: %s", input_shape.c_str());
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicImagesizeInputShape] %s invalid. dynamic_image_size:%s ",
+             input_shape.c_str(), dynamic_image_size.c_str());
       return ge::PARAM_INVALID;
     }
   }
 
   if (!dynamic_dims.empty()) {
     if (!CheckDynamicDimsInputShapeValid(shape_map, input_format, dynamic_dims)) {
-      GELOGE(ge::PARAM_INVALID, "Check dynamic dims: %s of input shape: %s failed.", dynamic_dims.c_str(),
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicDimsInputShape]: %s of input shape: %s failed.", dynamic_dims.c_str(),
              input_shape.c_str());
       return ge::PARAM_INVALID;
     }
@@ -354,7 +503,8 @@ bool ParseInputShape(const string &input_shape, map<string, vector<int64_t>> &sh
           if (!isdigit(c)) {
             ErrorManager::GetInstance().ATCReportErrMessage("E10002", {"shape", "reason", "sample"},
                                                             {shape, kDigitError, kInputShapeSample2});
-            GELOGE(PARAM_INVALID, "--input_shape's shape value[%s] is not digit", shape_value_str.c_str());
+            GELOGE(PARAM_INVALID, "[Check][Param]--input_shape's shape value[%s] is not digit",
+                   shape_value_str.c_str());
             return false;
           }
         }
@@ -377,7 +527,8 @@ bool ParseInputShape(const string &input_shape, map<string, vector<int64_t>> &sh
       int64_t result = left_result;
       // - 1 is not currently supported
       if (!is_dynamic_input && result <= 0) {
-        ErrorManager::GetInstance().ATCReportErrMessage("E10011", {"shape", "result"}, {shape, std::to_string(result)});
+        ErrorManager::GetInstance().ATCReportErrMessage("E10011", {"shape", "result"},
+            {shape, std::to_string(result)});
         GELOGW(
             "Input parameter[--input_shape]â€™s shape value[%s] is invalid, "
             "expect positive integer, but value is %ld.",
@@ -396,10 +547,10 @@ bool ParseInputShape(const string &input_shape, map<string, vector<int64_t>> &sh
 
 Status CheckOutputTypeParamValid(const std::string output_type) {
   if ((!output_type.empty()) && (kOutputTypeSupportDatatype.find(output_type) == kOutputTypeSupportDatatype.end())) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"}, {"--output_type", output_type, kOutputTypeSupport});
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {"--output_type", output_type, kOutputTypeSupport});
     GELOGE(ge::PARAM_INVALID,
-        "Invalid value for --output_type[%s], %s.", output_type.c_str(), kOutputTypeSupport);
+           "[Check][Param]Invalid value for --output_type[%s], %s.", output_type.c_str(), kOutputTypeSupport);
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -408,33 +559,37 @@ Status CheckOutputTypeParamValid(const std::string output_type) {
 Status CheckBufferOptimizeParamValid(const std::string buffer_optimize) {
   if ((!buffer_optimize.empty()) &&
       (kBufferOptimizeSupportOption.find(buffer_optimize) == kBufferOptimizeSupportOption.end())) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"}, {"--buffer_optimize", buffer_optimize, kBufferOptimizeSupport});
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {"--buffer_optimize", buffer_optimize, kBufferOptimizeSupport});
     GELOGE(ge::PARAM_INVALID,
-        "Invalid value for --buffer_optimize[%s], %s.", buffer_optimize.c_str(), kBufferOptimizeSupport);
+           "[Check][BufferOptimize]Invalid value for [%s], %s.", buffer_optimize.c_str(), kBufferOptimizeSupport);
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
 }
 
-Status CheckCompressWeightParamValid(const std::string enable_compress_weight, const std::string compress_weight_conf) {
+Status CheckCompressWeightParamValid(const std::string enable_compress_weight,
+    const std::string compress_weight_conf) {
   if ((!compress_weight_conf.empty()) &&
       (!CheckInputPathValid(compress_weight_conf, "--compress_weight_conf"))) {
-    GELOGE(ge::PARAM_INVALID, "compress weight config file not found, file_name:%s", compress_weight_conf.c_str());
+    GELOGE(ge::PARAM_INVALID, "[Check][InputPath]compress weight config file not found, file_name:%s",
+           compress_weight_conf.c_str());
     return ge::PARAM_INVALID;
   }
   if ((enable_compress_weight != "") && (enable_compress_weight != "true") && (enable_compress_weight != "false")) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10005", {"parameter", "value"}, {"enable_compress_weight", enable_compress_weight});
-    GELOGE(ge::PARAM_INVALID,
-        "Input parameter[--enable_compress_weight]'s value[%s] must be true or false.", enable_compress_weight.c_str());
+    ErrorManager::GetInstance().ATCReportErrMessage("E10005", {"parameter", "value"},
+                                                    {"enable_compress_weight", enable_compress_weight});
+    GELOGE(ge::PARAM_INVALID, "[Check][Param:enable_compress_weight]"
+           "Input parameter[--enable_compress_weight]'s value:%s must be true or false.",
+           enable_compress_weight.c_str());
     return ge::PARAM_INVALID;
   }
 
   if ((enable_compress_weight == "true") && (!compress_weight_conf.empty())) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10047", {"parameter0", "parameter1"},
                                                     {"enable_compress_weight", "compress_weight_conf"});
-    GELOGE(ge::PARAM_INVALID, "enable_compress_weight and compress_weight_conf can not both exist!!");
+    GELOGE(ge::PARAM_INVALID,
+           "[Check][CompressWeight]enable_compress_weight and compress_weight_conf can not both exist!!");
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -442,9 +597,9 @@ Status CheckCompressWeightParamValid(const std::string enable_compress_weight, c
 
 Status CheckKeepTypeParamValid(const std::string &keep_dtype) {
   if ((!keep_dtype.empty()) && (!CheckInputPathValid(keep_dtype, "--keep_dtype"))) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10001", {"parameter", "value", "reason"}, {"--keep_dtype", keep_dtype, kKeepDtypeError});
-    GELOGE(ge::PARAM_INVALID, "keep dtype config file not found, file_name:%s", keep_dtype.c_str());
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {"--keep_dtype", keep_dtype, kKeepDtypeError});
+    GELOGE(ge::PARAM_INVALID, "[Check][InputPath::--keep_dtype] file not found, file_name:%s", keep_dtype.c_str());
     return ge::PARAM_INVALID;
   }
 
@@ -466,11 +621,15 @@ int CheckLogParamValidAndSetLogLevel(const std::string log) {
   } else if (log == "error") {
     ret = dlog_setlevel(-1, DLOG_ERROR, 1);
   } else {
-    GELOGE(ge::PARAM_INVALID, "invalid value for log:%s, only support debug, info, warning, error, null", log.c_str());
+    GELOGE(ge::PARAM_INVALID,
+           "[Check][LogParam]log:%s invalid, only support debug, info, warning, error, null", log.c_str());
+    REPORT_INPUT_ERROR("E10417", std::vector<std::string>({"loglevel"}), std::vector<std::string>({log}));
     return ret;
   }
   if (ret != 0) {
-    GELOGE(ge::PARAM_INVALID, "Log setlevel fail !");
+    GELOGE(ge::PARAM_INVALID, "[Set][LogLevel] fail, level:%s.", log.c_str());
+    REPORT_INPUT_ERROR("E10417", std::vector<std::string>({"loglevel"}), std::vector<std::string>({log}));
+
   }
   return ret;
 }
@@ -478,7 +637,7 @@ int CheckLogParamValidAndSetLogLevel(const std::string log) {
 Status CheckInsertOpConfParamValid(const std::string insert_op_conf) {
   if ((!insert_op_conf.empty()) &&
       (!CheckInputPathValid(insert_op_conf, "--insert_op_conf"))) {
-    GELOGE(ge::PARAM_INVALID, "insert op config file not found: %s", insert_op_conf.c_str());
+    GELOGE(ge::PARAM_INVALID, "[Check][InputPath]file not found: %s", insert_op_conf.c_str());
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -487,7 +646,7 @@ Status CheckInsertOpConfParamValid(const std::string insert_op_conf) {
 Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory) {
   if ((disable_reuse_memory != "") && (disable_reuse_memory != "0") && (disable_reuse_memory != "1")) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"disable_reuse_memory"});
-    GELOGE(ge::PARAM_INVALID, "Input parameter[--disable_reuse_memory]'s value must be 1 or 0.");
+    GELOGE(ge::PARAM_INVALID, "[Check][DisableReuseMemory]disable_reuse_memory must be 1 or 0.");
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -495,9 +654,9 @@ Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory)
 
 Status CheckEnableSingleStreamParamValid(const std::string enable_single_stream) {
   if ((enable_single_stream != "") && (enable_single_stream != "true") && (enable_single_stream != "false")) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-        "E10005", {"parameter", "value"}, {"enable_single_stream", enable_single_stream});
-    GELOGE(ge::PARAM_INVALID, "Input parameter[--enable_single_stream]'s value[%s] must be true or false.",
+    ErrorManager::GetInstance().ATCReportErrMessage("E10005", {"parameter", "value"},
+                                                    {"enable_single_stream", enable_single_stream});
+    GELOGE(ge::PARAM_INVALID, "[Check][Param:--enable_single_stream] value:%s must be true or false.",
            enable_single_stream.c_str());
     return ge::PARAM_INVALID;
   }
@@ -508,9 +667,10 @@ Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::
   // only appointed op_select_implmode, can user appoint optypelist_for_implmode
   if (optypelist_for_implmode != "" && op_select_implmode == "") {
     ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-        {"--op_select_implmode", op_select_implmode.c_str(), kCompressWeightError});
-    GELOGE(ge::PARAM_INVALID, "Invalid value for --op_select_implmode[%s], %s.",
-        op_select_implmode.c_str(), kCompressWeightError);
+                                                    {"--op_select_implmode", op_select_implmode.c_str(),
+                                                     kCompressWeightError});
+    GELOGE(ge::PARAM_INVALID, "[Check][Param:--op_select_implmode]value:%s invalid, %s.",
+           op_select_implmode.c_str(), kCompressWeightError);
     return ge::PARAM_INVALID;
   }
   // op_select_implmode default value is high_performance
@@ -520,9 +680,10 @@ Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::
     if (op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT &&
       op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_PRECISON) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-          {"--op_select_implmode", op_select_implmode.c_str(), kSelectImplmodeError});
-      GELOGE(ge::PARAM_INVALID, "Invalid value for --op_select_implmode[%s], %s.",
-          op_select_implmode.c_str(), kSelectImplmodeError);
+                                                      {"--op_select_implmode", op_select_implmode.c_str(),
+                                                       kSelectImplmodeError});
+      GELOGE(ge::PARAM_INVALID, "[Check][Implmode]Invalid value for --op_select_implmode[%s], %s.",
+             op_select_implmode.c_str(), kSelectImplmodeError);
       return ge::PARAM_INVALID;
     }
   }
@@ -545,5 +706,123 @@ void EraseEndSemicolon(string &param) {
   if (param.back() == ';') {
     param.erase(param.end() - 1);
   }
+}
+
+Status UpdateDataOpShape(const OpDescPtr &op, map<string, vector<int64_t>> &shape_map) {
+  GE_CHECK_NOTNULL(op);
+  if (shape_map.empty()) {
+    GELOGI("Shape map of data op [%s] is empty, no need to update.", op->GetName().c_str());
+    return SUCCESS;
+  }
+
+  auto tensor_input = op->MutableInputDesc(0);
+  auto tensor_output = op->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL(tensor_input);
+  GE_CHECK_NOTNULL(tensor_output);
+  string data_op_name = op->GetName();
+  auto iter = shape_map.find(data_op_name);
+  if (iter != shape_map.end()) {
+    tensor_input->SetShape(ge::GeShape(iter->second));
+    tensor_output->SetShape(ge::GeShape(iter->second));
+    GELOGI("Update input [%s] shape info", data_op_name.c_str());
+  } else {
+    GELOGI("No need update input [%s] attr because not found from input_shape.", data_op_name.c_str());
+  }
+
+  return SUCCESS;
+}
+
+Status UpdateDataOpShapeRange(const OpDescPtr &op,
+                              map<string, vector<pair<int64_t, int64_t>>> &shape_range_map) {
+  GE_CHECK_NOTNULL(op);
+  if (shape_range_map.empty()) {
+    GELOGI("Shape range map of data op [%s] is empty.", op->GetName().c_str());
+    return SUCCESS;
+  }
+
+  auto tensor_input = op->MutableInputDesc(0);
+  auto tensor_output = op->MutableOutputDesc(0);
+  GE_CHECK_NOTNULL(tensor_input);
+  GE_CHECK_NOTNULL(tensor_output);
+  string data_op_name = op->GetName();
+  auto origin_shape = tensor_input->GetShape();
+  auto iter = shape_range_map.find(data_op_name);
+  if (iter != shape_range_map.end()) {
+    auto cur_shape_range = iter->second;
+    if (TensorUtils::CheckShapeByShapeRange(origin_shape, cur_shape_range) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "[Check][OpDescPtr] Check shape by shape range failed for op:%s.", data_op_name.c_str());
+      return PARAM_INVALID;
+    }
+    for (size_t idx = 0; idx < cur_shape_range.size(); idx++) {
+      auto left_range = cur_shape_range[idx].first;
+      auto right_range = cur_shape_range[idx].second;
+      if (left_range != right_range) {
+        origin_shape.SetDim(idx, UNKNOWN_DIM);
+      }
+    }
+    tensor_input->SetShape(origin_shape);
+    tensor_input->SetShapeRange(cur_shape_range);
+    tensor_output->SetShape(origin_shape);
+    tensor_output->SetShapeRange(cur_shape_range);
+    GELOGI("Update input [%s] shape range info", data_op_name.c_str());
+  } else {
+    GELOGI("No need to update input [%s] attr because not found from input_shape_range.", data_op_name.c_str());
+  }
+
+  return SUCCESS;
+}
+
+static Status CheckInputShapeRangeNode(const ComputeGraphPtr &compute_graph,
+                                       const map<string, vector<pair<int64_t, int64_t>>> &shape_range_map) {
+  for (const auto &it : shape_range_map) {
+    std::string node_name = it.first;
+    ge::NodePtr node = compute_graph->FindNode(node_name);
+    if (node == nullptr) {
+      REPORT_INPUT_ERROR("E10016", std::vector<std::string>({"parameter", "opname"}),
+                         std::vector<std::string>({"input_shape_range", node_name}));
+      GELOGE(PARAM_INVALID, "[Check][InputNode]Input parameter[--input_shape_range]'s opname[%s] is not exist in model",
+             node_name.c_str());
+      return PARAM_INVALID;
+    }
+    if (node->GetType() != DATA) {
+      REPORT_INPUT_ERROR("E10017", std::vector<std::string>({"parameter", "opname"}),
+                         std::vector<std::string>({"input_shape_range", node_name}));
+      GELOGE(PARAM_INVALID, "[Check][InputNode]Input parameter[--input_shape_range]'s opname[%s] is not a input opname",
+             node_name.c_str());
+      return PARAM_INVALID;
+    }
+  }
+  return SUCCESS;
+}
+
+Status UpdateDynamicInputShapeRange(const ge::ComputeGraphPtr &compute_graph, const string &input_shape_range) {
+  if (input_shape_range.empty()) {
+    return SUCCESS;
+  }
+  GE_CHECK_NOTNULL(compute_graph);
+
+  map<string, vector<pair<int64_t, int64_t>>> shape_range_map;
+  if (!ParseInputShapeRange(input_shape_range, shape_range_map)) {
+    GELOGE(PARAM_INVALID, "[Parse][InputShapeRange] input_shape_range:%s invalid.", input_shape_range.c_str());
+    return PARAM_INVALID;
+  }
+
+  if (CheckInputShapeRangeNode(compute_graph, shape_range_map) != SUCCESS) {
+    GELOGE(PARAM_INVALID, "[Check][InputShapeRange]check input shape range:%s failed.", input_shape_range.c_str());
+    return PARAM_INVALID;
+  }
+
+  for (NodePtr &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    OpDescPtr op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      if (UpdateDataOpShapeRange(op, shape_range_map) != SUCCESS) {
+        GELOGE(FAILED, "[Update][InputShapeRange] fail for op:%s.", op->GetName().c_str());
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
 }
 }  // namespace ge

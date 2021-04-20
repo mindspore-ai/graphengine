@@ -4,6 +4,7 @@
 #include "common/dump/dump_manager.h"
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
+#include "graph/load/model_manager/model_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -38,6 +39,16 @@ Status StageExecutor::ResetExecutionContext(GraphExecutionContext &context) {
   string ctx_id = std::to_string(context.context_id);
   RuntimeInferenceContext::DestroyContext(ctx_id);
   GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::CreateContext(ctx_id), "Failed to Destroy RuntimeInferenceContext");
+  RuntimeInferenceContext *ctx = nullptr;
+  GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(ctx_id, &ctx), "Failed to get context");
+  for (auto &host_tensor : context.model->GetHostTensors()) {
+    auto node_id = host_tensor.first;
+    for (const auto &output_idx_and_tensor : host_tensor.second) {
+      auto output_idx = output_idx_and_tensor.first;
+      GELOGD("Preload const host tensor, node_id = %ld, output id = %d", node_id, output_idx);
+      ctx->SetTensor(node_id, output_idx, output_idx_and_tensor.second.Clone());
+    }
+  }
   return SUCCESS;
 }
 
@@ -59,23 +70,25 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     task_queue_.Pop(task_info);
     GELOGD("[Executor: %d] Got task, stage = %d, iteration = %ld", id_, task_info.stage, task_info.iteration);
     if (task_info.iteration >= pipe_config_->iteration_end) {
-      GELOGE(INTERNAL_ERROR, "[Executor: %d] Unexpected iteration: %d", id_, task_info.iteration);
+      GELOGE(INTERNAL_ERROR, "[Check][Range][Executor: %d] Unexpected iteration: %ld.", id_, task_info.iteration);
+      REPORT_INNER_ERROR("E19999", "[Executor: %d] Unexpected iteration: %ld.", id_, task_info.iteration);
       return INTERNAL_ERROR;
     }
 
     if (task_info.event != nullptr) {
       GELOGD("[%d] Add StreamWaitEvent", id_);
       GE_CHK_RT_RET(rtStreamWaitEvent(stream_, task_info.event));
-      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] [Stage = %d] End", task_info.iteration - 1,
+      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] End", task_info.iteration - 1,
                                    task_info.stage);
     }
 
-    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] [Stage = %d] Start", task_info.iteration,
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %lld] [Stage = %d] Start", task_info.iteration,
                                  task_info.stage);
 
     if (task_info.stage == 0) {
       GELOGD("[Executor: %d] To ResetExecutionContext", id_);
-      GE_CHK_STATUS_RET(ResetExecutionContext(context_), "[Executor: %d] Failed to reset context", id_);
+      GE_CHK_STATUS_RET(ResetExecutionContext(context_),
+                        "[Invoke][ResetExecutionContext][Executor: %d] Failed to reset context", id_);
       context_.iteration = task_info.iteration;
       GE_CHK_STATUS_RET_NOLOG(SetInputs(inputs, input_desc));
     }
@@ -92,19 +105,22 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
 
     auto sync_result = Synchronize();
     if (sync_result != SUCCESS) {
-      GELOGE(sync_result, "[Executor: %d] Failed to sync result. iteration = %d", id_, task_info.iteration);
-
+      GELOGE(sync_result,
+             "[Invoke][Synchronize][Executor: %d] Failed to sync result:%d. iteration = %ld",
+             id_, sync_result, task_info.iteration);
+      REPORT_CALL_ERROR("E19999", "[Executor: %d] Failed to sync result:%d. iteration = %ld",
+                        id_, sync_result, task_info.iteration);
       context_.profiler->Dump(std::cout);
       context_.callback_manager->Destroy();
       RuntimeInferenceContext::DestroyContext(std::to_string(context_.context_id));
       return sync_result;
     }
 
-    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] [Stage = %d] End", task_info.iteration, task_info.stage);
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] End", task_info.iteration, task_info.stage);
 
     // if not end stage
     if (task_info.stage >= pipe_config_->num_stages - 1) {
-      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %d] Schedule End", task_info.iteration);
+      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] Schedule End", task_info.iteration);
       GELOGD("[Executor: %d] End of iteration [%ld]", id_, task_info.iteration);
       context_.callback_manager->Destroy();
       RuntimeInferenceContext::DestroyContext(std::to_string(context_.context_id));
@@ -242,7 +258,8 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
     GELOGD("Start to sync result of executor[%zu]", i);
     auto ret = futures[i].get();
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Executor: %zu] Failed to schedule tasks.", i);
+      GELOGE(ret, "[Check][Result][Executor: %zu] Failed to schedule tasks.", i);
+      REPORT_INNER_ERROR("E19999", "[Executor: %zu] Failed to schedule tasks.", i);
       has_error = true;
       continue;
     }
@@ -250,7 +267,15 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
     ret = stage_executors_[i]->Synchronize();
 
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Executor: %zu] Failed to synchronize result.", i);
+      auto model_manager = ModelManager::GetInstance();
+      GE_CHECK_NOTNULL(model_manager);
+      auto exception_infos = model_manager->GetExceptionInfos();
+      if (!exception_infos.empty()) {
+        HYBRID_CHK_STATUS_RET(context_.DumpExceptionInfo(exception_infos),
+                              "[Execute][GraphInternal] Dump exception info failed.");
+      }
+      GELOGE(ret, "[Invoke][Synchronize] failed for [Executor: %zu].", i);
+      REPORT_CALL_ERROR("E19999", "[Executor: %zu] failed to Synchronize result.", i);
       has_error = true;
       continue;
     }
@@ -266,13 +291,14 @@ Status HybridModelPipelineExecutor::Execute(HybridModelExecutor::ExecuteArgs &ar
   iteration_ = config_.iteration_end;
 
   if (has_error) {
-    GELOGE(FAILED, "Error occurred while execution");
+    GELOGE(FAILED, "[Check][Error]Error occurred while execution.");
+    REPORT_INNER_ERROR("E19999", "Error occurred while execution.");
     return FAILED;
   }
 
   auto last_iter_executor_idx = loop_count % stage_executors_.size();
   GE_CHK_STATUS_RET(stage_executors_[last_iter_executor_idx]->GetOutputs(args.outputs, args.output_desc),
-                    "Failed to get output from executor[%zu]", last_iter_executor_idx);
+                    "[Get][Outputs]Failed from executor[%zu]", last_iter_executor_idx);
   return SUCCESS;
 }
 

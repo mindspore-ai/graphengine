@@ -8,6 +8,7 @@ local_lib_src_files :=  memory_assigner.cc \
                         hybrid_mem_assigner.cc \
                         max_block_mem_assigner.cc \
                         var_mem_assign_util.cc \
+                        buffer_pool_mem_assigner.cc \
 
 local_lib_inc_path :=   ${LOCAL_PATH} \
                         ${TOPDIR}inc \

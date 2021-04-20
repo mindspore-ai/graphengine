@@ -26,6 +26,7 @@ namespace ge {
 Status StreamActiveTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("StreamActiveTaskInfo Init Start.");
   if (davinci_model == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr");
     GELOGE(PARAM_INVALID, "davinci_model is null!");
     return PARAM_INVALID;
   }
@@ -45,17 +46,26 @@ Status StreamActiveTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *d
   GE_CHECK_NOTNULL(op_desc);
   std::vector<uint32_t> active_stream_index_list;
   if (!AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_stream_index_list)) {
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail",
+                       ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "StreamActiveOp get attr ACTIVE_STREAM fail, node name:%s.", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   if (internal_index >= active_stream_index_list.size()) {
+    REPORT_INNER_ERROR("E19999", "flowctrl index:%u >= active_stream_list size:%zu in op:%s(%s), "
+                       "check invalid", internal_index, active_stream_index_list.size(),
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "InitStreamSwitchTaskInfo stream id index invalid. index:%u, list size:%zu.", internal_index,
            active_stream_index_list.size());
     return INTERNAL_ERROR;
   }
 
   if (active_stream_index_list[internal_index] >= davinci_model->GetStreamList().size()) {
+    REPORT_INNER_ERROR("E19999", "active_stream_index:%u in op:%s(%s) >= stream size:%zu in model, "
+                       "check invalid", active_stream_index_list[internal_index],
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), davinci_model->GetStreamList().size());
     GELOGE(INTERNAL_ERROR, "InitStreamSwitchTaskInfo stream index invalid. index:%u, stream list size:%zu.",
            active_stream_index_list[internal_index], davinci_model->GetStreamList().size());
     return INTERNAL_ERROR;
@@ -73,6 +83,8 @@ Status StreamActiveTaskInfo::Distribute() {
   GELOGI("StreamActiveTaskInfo Distribute Start.");
   rtError_t rt_ret = rtStreamActive(active_stream_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamActive failed, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

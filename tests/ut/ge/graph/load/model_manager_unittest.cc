@@ -151,6 +151,15 @@ class DModelListener : public ModelListener {
   uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode) { return 0; }
 };
 
+TEST_F(UtestModelManagerModelManager, case_is_need_hybrid_load) {
+  ModelManager mm;
+  uint32_t model_id = 0;
+  ComputeGraphPtr root_graph = std::make_shared<ComputeGraph>("graph");
+  ge::GeRootModel model;
+  EXPECT_EQ(mm.IsNeedHybridLoad(model), false);
+  model.SetRootGraph(root_graph);
+  EXPECT_EQ(mm.IsNeedHybridLoad(model), false);
+}
 
 TEST_F(UtestModelManagerModelManager, case_load_incorrect_param) {
   ModelManager mm;

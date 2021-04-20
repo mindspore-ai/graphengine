@@ -27,6 +27,7 @@ class MemcpyAddrAsyncPass : public GraphPass {
 
  private:
   Status AddMemcpyAddrAsyncNode(const ComputeGraphPtr &graph, const NodePtr &node);
+  Status AddMemcpyAsyncNode(const NodePtr &node);
   void FindUserData(const NodePtr &node, uint32_t &parent_index);
   void FindUserDataForKnown(const NodePtr &parent_node, uint32_t &parent_index);
   void FindUserDataForNonDynamic(const ge::NodePtr &parent_node, uint32_t &parent_index);
@@ -48,6 +49,7 @@ class MemcpyAddrAsyncPass : public GraphPass {
   OutDataAnchorPtr peer_out_anchor_for_known_;
   InDataAnchorPtr in_anchor_for_known_;
   bool find_user_data_for_known_ = false;
+  bool known_sub_graph_ = false;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_MEMCPY_ADDR_ASYNC_PASS_H_

@@ -78,7 +78,8 @@ void CsaInteract::Init(int32_t dev_index, int64_t job_id) {
 Status CsaInteract::WriteJobState(JobState job_state, JobSubState job_sub_state, uint32_t module_ret_errcode,
                                   ErrorModule error_module) {
   if (!is_init_) {
-    GELOGE(INTERNAL_ERROR, "CsaInteract has not init, can't WriteJobState");
+    GELOGE(INTERNAL_ERROR, "[Init][CsaInteract] obj has not init, can't WriteJobState");
+    REPORT_INNER_ERROR("E19999", "WriteJobState failed before init. ");
     return INTERNAL_ERROR;
   }
   if ((curr_state_ == JOBSTATE_FAILED) || (curr_state_ == JOBSTATE_KILLED)) {
@@ -107,7 +108,10 @@ Status CsaInteract::WriteJobState(JobState job_state, JobSubState job_sub_state,
 
     content = content_json.dump();
   } catch (const nlohmann::json::exception &e) {
-    GELOGE(INTERNAL_ERROR, "build jobstate content json string failed, exception:%s job_state:%u", e.what(), job_state);
+    GELOGE(INTERNAL_ERROR, "[Create][JsonObject] exception:%s job_state:%u job_sub_state:%u.",
+           e.what(), job_state, job_sub_state);
+    REPORT_INNER_ERROR("E19999", "Create json object failed. exception:%s job_state:%u job_sub_state:%u.",
+                       e.what(), job_state, job_sub_state);
     return INTERNAL_ERROR;
   }
 
@@ -168,7 +172,8 @@ void CsaInteract::WriteInternalErrorCode() {
 ///
 Status CsaInteract::WriteHcomDetection(const std::string &content) {
   if (!is_init_) {
-    GELOGE(INTERNAL_ERROR, "CsaInteract has not init, can't WriteJobState");
+    GELOGE(INTERNAL_ERROR, "[Init][CsaInteract] obj has not init, can't WriteJobState");
+    REPORT_INNER_ERROR("E19999", "WriteHcomDetection failed before init.");
     return INTERNAL_ERROR;
   }
 
@@ -192,28 +197,33 @@ Status CsaInteract::WriteFile(const std::string &file_name, const std::string &c
   int32_t fd = mmOpen2(file_name.c_str(), flags, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD);
   if (fd == EN_ERROR) {
     if (MakePath(file_name) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "csainteract create file path fail, errno is %d", errno);
+      GELOGE(INTERNAL_ERROR, "[Create][File Path] errno is %d", errno);
+      REPORT_CALL_ERROR("E19999", "MakePath failed. errno is %d", errno);
       return INTERNAL_ERROR;
     }
     fd = mmOpen2(file_name.c_str(), flags, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD);
     if (fd == EN_ERROR) {
-      GELOGE(INTERNAL_ERROR, "open file fail, errno is %d", errno);
+      GELOGE(INTERNAL_ERROR, "[Open][File] errno is %d file_name: %s", errno, file_name.c_str());
+      REPORT_CALL_ERROR("E19999", "mmOpen2 failed. errno is %d file_name: %s", errno, file_name.c_str());
       return INTERNAL_ERROR;
     }
   }
 
   mmSsize_t ret = mmWrite(fd, reinterpret_cast<void *>(const_cast<char *>(content.c_str())), content.length());
   if (ret == EN_ERROR) {
-    GELOGE(INTERNAL_ERROR, "write file fail, errno is %d", errno);
+    GELOGE(INTERNAL_ERROR, "[Write][File] errno is %d", errno);
+    REPORT_CALL_ERROR("E19999", "mmWrite failed. errno is %d", errno);
     ret = mmClose(fd);
     if (ret == EN_ERROR) {
-      GELOGE(INTERNAL_ERROR, "close file fail, error is %d", errno);
+      GELOGE(INTERNAL_ERROR, "[Close][File] error is %d", errno);
+      REPORT_CALL_ERROR("E19999", "mmClose failed. error is %d", errno);
     }
     return INTERNAL_ERROR;
   }
   ret = mmClose(fd);
   if (ret == EN_ERROR) {
-    GELOGE(INTERNAL_ERROR, "close file fail, error is %d", errno);
+    GELOGE(INTERNAL_ERROR, "[Close][File] error is %d", errno);
+    REPORT_CALL_ERROR("E19999", "mmClose failed. error is %d", errno);
     return INTERNAL_ERROR;
   }
 
@@ -242,7 +252,8 @@ Status CsaInteract::MakePath(const std::string &file_name) {
     std::string pre_path = file_path.substr(0, found + 1);
     if (mmAccess(pre_path.c_str()) != EN_OK) {
       if (mmMkdir(pre_path.c_str(), M_IRWXU) != EN_OK) {
-        GELOGE(INTERNAL_ERROR, "csainteract mkdir fail, errno is %d", errno);
+        GELOGE(INTERNAL_ERROR, "[Create][FileDir] fail, errno is %d, pre_path:%s", errno, pre_path.c_str());
+        REPORT_CALL_ERROR("E19999", "mmMkdir failed. errno is %d pre_path:%s", errno, pre_path.c_str());
         return INTERNAL_ERROR;
       }
     }

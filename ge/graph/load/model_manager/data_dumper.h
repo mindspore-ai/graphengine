@@ -36,9 +36,21 @@
 namespace ge {
 class DataDumper {
  public:
-  DataDumper() : runtime_param_{} {}
-
-  explicit DataDumper(const RuntimeParam &rsh) : runtime_param_(rsh) {}
+  explicit DataDumper(RuntimeParam *rsh)
+      : model_name_(),
+        model_id_(0),
+        runtime_param_(rsh),
+        dev_mem_load_(nullptr),
+        dev_mem_unload_(nullptr),
+        op_list_(),
+        input_map_(),
+        load_flag_(false),
+        device_id_(0),
+        global_step_(0),
+        loop_per_iter_(0),
+        loop_cond_(0),
+        compute_graph_(nullptr),
+        ref_info_() {}
 
   ~DataDumper();
 
@@ -58,8 +70,6 @@ class DataDumper {
 
   void SaveDumpInput(const std::shared_ptr<Node> &node);
 
-  void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id);
-
   // args is device memory stored first output addr
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::shared_ptr<OpDesc> &op_desc, uintptr_t args);
   void SaveEndGraphId(uint32_t task_id, uint32_t stream_id);
@@ -75,13 +85,7 @@ class DataDumper {
 
   void SetDumpProperties(const DumpProperties &dump_properties) { dump_properties_ = dump_properties; }
   const DumpProperties &GetDumpProperties() const { return dump_properties_; }
-  bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
   const std::vector<OpDescInfo> &GetAllOpDescInfo() const { return op_desc_info_; }
-
-  // Dump exception info
-  Status DumpExceptionInput(const OpDescInfo &op_desc_info, const string &dump_file);
-  Status DumpExceptionOutput(const OpDescInfo &op_desc_info, const string &dump_file);
-  Status DumpExceptionInfo(const std::vector<rtExceptionInfo> exception_infos);
 
  private:
   void ReleaseDevMem(void **ptr) noexcept;
@@ -93,10 +97,10 @@ class DataDumper {
   // for inference data dump
   std::string om_name_;
 
-  uint32_t model_id_ = 0;
-  const RuntimeParam &runtime_param_;
-  void *dev_mem_load_ = nullptr;
-  void *dev_mem_unload_ = nullptr;
+  uint32_t model_id_;
+  RuntimeParam *runtime_param_;
+  void *dev_mem_load_;
+  void *dev_mem_unload_;
 
   struct InnerDumpInfo;
   struct InnerInputMapping;
@@ -107,12 +111,12 @@ class DataDumper {
   uint32_t end_graph_stream_id_ = 0;
   bool is_end_graph_ = false;
   std::multimap<std::string, InnerInputMapping> input_map_;  // release after DavinciModel::Init
-  bool load_flag_ = false;
-  uint32_t device_id_ = 0;
-  uintptr_t global_step_ = 0;
-  uintptr_t loop_per_iter_ = 0;
-  uintptr_t loop_cond_ = 0;
-  ComputeGraphPtr compute_graph_ = nullptr;  // release after DavinciModel::Init
+  bool load_flag_;
+  uint32_t device_id_;
+  uintptr_t global_step_;
+  uintptr_t loop_per_iter_;
+  uintptr_t loop_cond_;
+  ComputeGraphPtr compute_graph_;  // release after DavinciModel::Init
   std::map<OpDescPtr, void *> ref_info_;     // release after DavinciModel::Init
   void *l1_fusion_addr_ = nullptr;
 

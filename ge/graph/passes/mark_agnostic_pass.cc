@@ -132,7 +132,13 @@ Status MarkAgnosticPass::SetContinuousAttr(const NodePtr &node, const std::vecto
   (void)AttrUtils::SetBool(op_desc, ATTR_NAME_REFRESH_CONTINUOUS_FLAG, true);
   for (auto index : indexes) {
     auto out = op_desc->MutableOutputDesc(index);
-    GE_CHECK_NOTNULL(out);
+    if (out == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Op:%s(%s) output:%u desc is nullptr, check invalid",
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str(), index);
+      GELOGE(FAILED, "[Check][Param]Op:%s(%s) output:%u desc is nullptr",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), index);
+      return FAILED;
+    }
     // This attr is for out's dtype and format continuous with it's peer input
     (void)AttrUtils::SetInt(out, ATTR_NAME_FORMAT_CONTINUOUS, 1);
   }

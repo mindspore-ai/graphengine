@@ -97,7 +97,6 @@ class TbeTaskBuilder {
  private:
   Status InitTilingInfo(TbeOpTask &task);
   Status SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc);
-  Status SetKernelWithHandleArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc);
   Status GetSmDesc(void **sm_desc, const SingleOpModelParam &param) const;
 
   Status RegisterKernel(TbeOpTask &task, const SingleOpModelParam &param);

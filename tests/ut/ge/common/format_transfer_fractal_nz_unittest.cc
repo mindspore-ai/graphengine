@@ -9148,7 +9148,7 @@ TEST_F(UtestFormatTransferNdFractNz, invalid_src_data_type3) {
                      4,
                      4,
                  },
-                 DT_VARIANT};
+                 DT_STRING};
   TransResult result;
   FormatTransferFractalNzND transfer;
   EXPECT_EQ(transfer.TransFormat(args, result), ACL_ERROR_GE_DATATYPE_INVALID);

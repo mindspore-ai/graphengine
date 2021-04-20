@@ -149,6 +149,13 @@ class NodeStreamUpdatePass : public LogicalStreamPass {
   Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
 };
 
+// assign stream by parallel group
+class UpdateForParallelGroupPass : public LogicalStreamPass {
+ public:
+  STREAM_PASS_DEFAULT_FUNC(UpdateForParallelGroupPass);
+  Status Run(ComputeGraphPtr graph, const std::vector<SubgraphPtr> &subgraphs, Context &context) override;
+};
+
 // Update the stream of subgraphs to nodes.
 class UpdateForSkippedEnginePass : public LogicalStreamPass {
  public:

@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "stream_graph_optimizer.h"
+
+#include <securec.h>
+
 #include "common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/node_utils.h"
@@ -122,13 +125,16 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
         GE_CHECK_NOTNULL(op_desc);
         int64_t stream_id = op_desc->GetStreamId();
         if (static_cast<size_t>(stream_id) >= run_context.graphStreamList.size()) {
+          REPORT_INNER_ERROR("E19999", "Check stream_id:%ld in op:%s(%s) is bigger than "
+                             "run_context.graphStreamList.size():%zu", stream_id, op_desc->GetName().c_str(),
+                             op_desc->GetType().c_str(), run_context.graphStreamList.size());
           GELOGE(FAILED, "stream_id %ld is bigger than run_context.graphStreamList.size() %zu", stream_id,
                  run_context.graphStreamList.size());
           return FAILED;
         }
         run_context.stream = run_context.graphStreamList[stream_id];
-	std::string batch_label;
-	(void)AttrUtils::GetStr(subgraph, ATTR_NAME_BATCH_LABEL, batch_label);
+        std::string batch_label;
+        (void)AttrUtils::GetStr(subgraph, ATTR_NAME_BATCH_LABEL, batch_label);
         GELOGD("Subgraph has same stream id, subgraph: %s, engine_name: %s, stream_id: %ld, rtstream: %lu, "
 	       "batch_label: %s", subgraph->GetName().c_str(), engine_name.c_str(), stream_id,
                static_cast<uint64_t>(reinterpret_cast<uintptr_t>(run_context.stream)), batch_label.c_str());
@@ -136,6 +142,9 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
           GE_CHECK_NOTNULL(*iter);
           Status ret = (*iter)->OptimizeStreamGraph(*subgraph, run_context);
           if (ret != SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Call optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
+                              "Optimizer num: %zu, ret: %u", subgraph->GetName().c_str(), engine_name.c_str(),
+                              graph_optimizers.size(), ret);
             GELOGE(
               ret,
               "[optimizeStreamedSubGraph]: optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "

@@ -69,7 +69,11 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
   auto job_id_iter = options.find(OPTION_EXEC_JOB_ID);
   if (job_id_iter != options.end()) {
     if (job_id_iter->second.length() > kMaxStrLen) {
-      GELOGE(PARAM_INVALID, "CheckOptionsValid job_id failed, string len > %d", kMaxStrLen);
+      GELOGE(PARAM_INVALID,"[Check][JobId]Failed,"
+             "the job_id [%s] string length: %zu > max string length: %d",
+             job_id_iter->second.c_str(), job_id_iter->second.length(), kMaxStrLen);
+      REPORT_INPUT_ERROR("E10051", std::vector<std::string>({"id","length"}),
+                         std::vector<std::string>({job_id_iter->second, std::to_string(kMaxStrLen)}));
       return FAILED;
     }
   }
@@ -84,7 +88,8 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   std::string path_base = ge::GELib::GetPath();
   auto ret = ErrorManager::GetInstance().Init(path_base);
   if (ret != SUCCESS) {
-    GELOGE(GE_CLI_INIT_FAILED, "ErrorManager init fail");
+    GELOGE(GE_CLI_INIT_FAILED,
+           "[Init][PathBase]Init failed when pass param path_base:%s", path_base.c_str());
     return ret;
   }
 
@@ -104,7 +109,9 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   bool is_proto_init = manager->Initialize(option_tmp);
   GE_TIMESTAMP_END(GEInitialize, "GEInitialize::ManagerInitialize");
   if (!is_proto_init) {
-    GELOGE(GE_CLI_INIT_FAILED, "geInitialize failed, ops proto path is invalid.");
+    GELOGE(GE_CLI_INIT_FAILED,
+           "[Init][OpsProtoPath]Loading OpsProto lib plugin failed, OpsProtoPath:%s invalid.",
+	   opsproto_path.c_str());
     return FAILED;
   }
 
@@ -127,7 +134,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   ret = ge::GELib::Initialize(options);
   GE_TIMESTAMP_END(GELibInitialize, "GEInitialize::GELibInitialize");
   if (ret != SUCCESS) {
-    GELOGE(GE_CLI_INIT_FAILED, "geInitialize failed, error code = %u", ret);
+    GELOGE(GE_CLI_INIT_FAILED, "[Init][GELib]Failed, error code = %u", ret);
     return FAILED;
   }
 
@@ -155,7 +162,9 @@ Status GEInitialize(const std::map<AscendString, AscendString> &options) {
   std::map<std::string, std::string> str_options;
   for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
-      GELOGE(FAILED, "GEInitialize options is nullptr.");
+      GELOGE(FAILED, "[Check][Param]Options invalid, first or second option is nullptr.");
+      REPORT_INNER_ERROR("E19999", "Check parameter's options invalid,"
+                         "the first or second option is nullptr.");
       return FAILED;
     }
     std::string key = option.first.GetString();
@@ -171,17 +180,17 @@ Status GEInitialize(const std::map<AscendString, AscendString> &options) {
 
 // GE finalize, releasing all resources
 Status GEFinalize() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
-  GELOGT(TRACE_INIT, "GEFinalize start");
-
-  ErrorManager::GetInstance().GenWorkStreamIdDefault();
+  std::lock_guard<std::mutex> lock(g_ge_release_mutex);
   // check init status
   if (!g_ge_initialized) {
-    GELOGW("GEFinalize is called before GEInitialize");
+    GELOGW("[FINAL][FINAL]GEFinalize is called before GEInitialize");
     return SUCCESS;
   }
 
-  std::lock_guard<std::mutex> lock(g_ge_release_mutex);
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().GenWorkStreamIdDefault();
+  GELOGT(TRACE_INIT, "GEFinalize start");
+
   // call Finalize
   Status ret = SUCCESS;
   Status middle_ret;
@@ -237,13 +246,17 @@ Session::Session(const std::map<string, string> &options) {
   // check init status
   sessionId_ = 0;
   if (!g_ge_initialized) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Construct][Session]Failed because lack GEInitialize call before.");
+    REPORT_INNER_ERROR("E19999",
+                       "Creating session failed because lack GEInitialize call before.");
     return;
   }
   // call Initialize
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Session Constructor failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
+           "[Construct][Session]Failed, GELib instance is nullptr or it is not InitFlag");
     return;
   }
 
@@ -256,7 +269,7 @@ Session::Session(const std::map<string, string> &options) {
   if (ret == SUCCESS) {
     sessionId_ = session_id;
   } else {
-    GELOGE(ret, "Session constructor failed, session Id not initialized");
+    GELOGE(ret, "[Construct][Session]Failed, error code:%u.", ret);
     return;
   }
   GELOGT(TRACE_STOP, "Session Constructor finished");
@@ -270,13 +283,17 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
   // check init status
   sessionId_ = 0;
   if (!g_ge_initialized) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Construct][Session]Failed because lack GEInitialize call before.");
+    REPORT_INNER_ERROR("E19999",
+                       "Creating session failed because lack GEInitialize call before.");
     return;
   }
   // call Initialize
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Session Constructor failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Construct][Session]Failed, the GELib instance is nullptr or is not InitFlag");
     return;
   }
 
@@ -284,7 +301,9 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
   std::map<std::string, std::string> str_options;
   for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
-      GELOGE(FAILED, "Session options is nullptr.");
+      GELOGE(FAILED, "[Construct][Session]Failed, the first or second option is nullptr.");
+      REPORT_INNER_ERROR("E19999", "Creating session's options invalid,"
+                         "the first or second option is nullptr.");
       return;
     }
     std::string key = option.first.GetString();
@@ -299,7 +318,7 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
   if (ret == SUCCESS) {
     sessionId_ = session_id;
   } else {
-    GELOGE(ret, "Session constructor failed, session Id not initialized");
+    GELOGE(ret, "[Construct][Session]Failed, error code:%u.", ret);
     return;
   }
   GELOGT(TRACE_STOP, "Session Constructor finished");
@@ -331,17 +350,18 @@ Session::~Session() {
 
     ret = instance_ptr->SessionManagerObj().DestroySession(session_id);
   } catch (google::protobuf::FatalException &e) {
-    GELOGE(GE_CLI_SESS_DESTROY_FAILED, "SessionDestructor throws FatalException");
+    GELOGE(GE_CLI_SESS_DESTROY_FAILED, "[Destruct][Session]Failed because get fatalException.");
   }
 
   // check return status, return, update session id if success
   if (ret != SUCCESS) {
-    GELOGE(ret, "Session Destructor failed");
+    GELOGE(ret, "[Destruct][Session]Failed, error code:%u.", ret);
   }
 
   GELOGT(TRACE_STOP, "Session Destructor finished");
 }
 
+// Add Graph
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   std::map<std::string, std::string> options;
@@ -349,25 +369,32 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
   return AddGraph(graph_id, graph, options);
 }
 
+// Add Graph
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Add][Graph]Failed because GELib instance is nullptr or it is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+		       "AddGraph Failed, GELib instance is nullptr or it is not InitFlag.");
     return FAILED;
   }
   GELOGD("Adding graph to session");
   Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph, options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "AddGraph failed in Session.");
+    GELOGE(ret, 
+           "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+	   ret, sessionId_, graph_id);
     return FAILED;
   }
   GELOGD("AddGraph finished in Session.");
   return ret;
 }
 
+//Add Graph
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
                          const std::map<AscendString, AscendString> &options) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
@@ -375,14 +402,19 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Add][Graph]Failed, the GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+                       "AddGraph Failed, GELib instance is nullptr or it is not InitFlag.");
     return FAILED;
   }
   GELOGD("Adding graph to session");
   std::map<std::string, std::string> str_options;
   for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
-      GELOGE(FAILED, "AddGraph options is nullptr.");
+      GELOGE(FAILED, "[Add][Graph]Failed, the first or second option is nullptr.");
+      REPORT_INNER_ERROR("E19999",
+		         "Add Graph Failed, the first or second option is nullptr.");
       return FAILED;
     }
     std::string key = option.first.GetString();
@@ -391,7 +423,9 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
   }
   Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph, str_options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "AddGraph failed in Session.");
+    GELOGE(ret,
+           "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+	   ret, sessionId_, graph_id);
     return FAILED;
   }
   GELOGD("AddGraph finished in Session.");
@@ -405,6 +439,7 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph) {
   return AddGraphWithCopy(graph_id, graph, options);
 }
 
+// Add Graph With Copy
 Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
                                  const std::map<AscendString, AscendString> &options) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
@@ -412,7 +447,10 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "AddGraph failed in Session.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Add][Graph]Failed, the GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+		       "AddGraph Failed, GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   std::map<std::string, std::string> str_options;
@@ -422,13 +460,16 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
   GELOGD("Adding graph to session");
   Status ret = instance_ptr->SessionManagerObj().AddGraphWithCopy(sessionId_, graph_id, graph, str_options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "AddGraph failed in Session.");
+    GELOGE(ret,
+           "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+	   ret, sessionId_, graph_id);
     return FAILED;
   }
   GELOGD("AddGraph finished in Session.");
   return ret;
 }
 
+// Remove Graph
 Status Session::RemoveGraph(uint32_t graph_id) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session RemoveGraph start");
@@ -437,7 +478,10 @@ Status Session::RemoveGraph(uint32_t graph_id) {
   // call RemoveGraph
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (!instance_ptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Session RemoveGraph failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Remove][Graph]Failed, GELib instance is nullptr or is not InitFlag ");
+    REPORT_INNER_ERROR("E19999",
+		       "RemoveGraph Failed, GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
 
@@ -445,13 +489,16 @@ Status Session::RemoveGraph(uint32_t graph_id) {
   Status ret = instance_ptr->SessionManagerObj().RemoveGraph(sessionId_, graph_id);
   // check return status, return
   if (ret != SUCCESS) {
-    GELOGE(ret, "session RemoveGraph failed");
+    GELOGE(ret,
+           "[Remove][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+	   ret, sessionId_, graph_id);
     return FAILED;
   }
   GELOGT(TRACE_STOP, "Session RemoveGraph finished");
   return ret;
 }
 
+// Print Output Result
 void PrintOutputResult(std::vector<Tensor> &outputs) {
   if (outputs.empty() || outputs[0].GetData() == nullptr) {
     GELOGW("outputs is empty or data is nullptr.");
@@ -499,6 +546,7 @@ void PrintOutputResult(std::vector<Tensor> &outputs) {
   }
 }
 
+// Run Graph
 Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGT(TRACE_INIT, "Session RunGraph start");
@@ -508,14 +556,19 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
   // call RunGraph
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Session RunGraph failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Run][Graph]Failed, GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+	               "RunGraph Failed, GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Running Graph");
   Status ret = instance_ptr->SessionManagerObj().RunGraph(sessionId_, graph_id, graph_inputs, outputs);
   // check return status
   if (ret != SUCCESS) {
-    GELOGE(ret, "Session RunGraph failed");
+    GELOGE(ret,
+           "[Run][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+	   ret, sessionId_, graph_id);
     return FAILED;
   }
 
@@ -529,6 +582,7 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
   return ret;
 }
 
+// Register Call Back
 Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback) {
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, key, callback);
@@ -543,30 +597,40 @@ Status Session::RegisterCallBackFunc(const char *key, const session::pCallBackFu
   return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, str_key, callback);
 }
 
+// Build Graph
 Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
+           "[Build][Graph]Failed, the GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+		       "Build graph failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Building Graph");
   Status ret = instance_ptr->SessionManagerObj().BuildGraph(sessionId_, graph_id, inputs);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Session BuildGraph failed");
+    GELOGE(ret,
+           "[Build][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+	   ret, sessionId_, graph_id);
     return FAILED;
   }
   return SUCCESS;
 }
 
+// Run Graph Asynchronously
 Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
                               RunAsyncCallback callback) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Run][Graph]RunGraphAsyncFailed, the GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+		       "RunGraphAsync Failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Run Graph Asynchronously");
@@ -575,49 +639,59 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
 
   Status ret = ge::GELib::GetInstance()->SessionManagerObj().RunGraphAsync(sessionId_, graph_id, inputs, callback);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SessionManager RunGraphAsync failed");
+    GELOGE(ret, "[Run][Graph]RunGraphAsync Failed, error code:%u, session_id:%lu, graph_id:%u.",
+           ret, sessionId_, graph_id);
     return FAILED;
   }
   return SUCCESS;
 }
 
+// Get Variables
 Status Session::GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
+           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+                       "GetVariables failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Get Variables");
   Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, var_names, var_values);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SessionManager RunGraphAsync failed");
+    GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu.", ret, sessionId_);
     return FAILED;
   }
   return SUCCESS;
 }
 
+// Get Variables
 Status Session::GetVariables(const std::vector<AscendString> &var_names, std::vector<Tensor> &var_values) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "SessionConstructor failed");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.");
+    REPORT_INNER_ERROR("E19999",
+                       "GetVariables failed, the GELib instance is nullptr or is not InitFlag.");
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Get Variables");
   std::vector<ge::string> str_var_names;
   for (auto &var_name : var_names) {
     if (var_name.GetString() == nullptr) {
-      GELOGE(FAILED, "GetVariables name is nullptr.");
+      GELOGE(FAILED, "[Get][Variable]Failed, variables' names are nullptr.");
+      REPORT_INNER_ERROR("E19999", "GetVariables failed, variables' names are nullptr.");
       return FAILED;
     }
     str_var_names.emplace_back(var_name.GetString());
   }
   Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, str_var_names, var_values);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SessionManager RunGraphAsync failed");
+    GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu.", ret, sessionId_);
     return FAILED;
   }
   return SUCCESS;

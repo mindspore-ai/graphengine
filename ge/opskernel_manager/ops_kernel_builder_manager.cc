@@ -50,19 +50,19 @@ Status OpsKernelBuilderManager::Initialize(const map<std::string, std::string> &
     GE_CHK_STATUS_RET_NOLOG(GetLibPaths(options, lib_paths));
     plugin_manager_.reset(new (std::nothrow)PluginManager());
     GE_CHECK_NOTNULL(plugin_manager_);
-    GE_CHK_STATUS_RET(plugin_manager_->LoadSo(lib_paths), "Failed to load libs");
+    GE_CHK_STATUS_RET(plugin_manager_->LoadSo(lib_paths),
+        "[Load][Libs]Failed, lib_paths=%s.", lib_paths.c_str());
   }
 
   auto &kernel_builders = OpsKernelBuilderRegistry::GetInstance().GetAll();
-  GELOGI("Number of OpBuild = %zu", kernel_builders.size());
+  GELOGI("[Show][OpsKernelBuilderNum]Number of OpBuild = %zu", kernel_builders.size());
 
   for (const auto &it : kernel_builders) {
     const std::string &kernel_lib_name = it.first;
     GELOGI("Initialize ops kernel util for %s", kernel_lib_name.c_str());
     GE_CHECK_NOTNULL(it.second);
     GE_CHK_STATUS_RET(it.second->Initialize(options),
-                      "Failed to invoke Initialize, kernel lib name = %s",
-                      kernel_lib_name.c_str());
+        "[Invoke][Initialize]failed, kernel lib name = %s", kernel_lib_name.c_str());
 
     ops_kernel_builders_.emplace(kernel_lib_name, it.second);
   }
@@ -100,7 +100,8 @@ OpsKernelBuilderPtr OpsKernelBuilderManager::GetOpsKernelBuilder(const string &n
   return nullptr;
 }
 
-Status OpsKernelBuilderManager::GetLibPaths(const std::map<std::string, std::string> &options, std::string &lib_paths) {
+Status OpsKernelBuilderManager::GetLibPaths(const std::map<std::string,
+                                            std::string> &options, std::string &lib_paths) {
   GELOGD("Start to execute GetLibPaths");
   std::string path_base = PluginManager::GetPath();
   std::string so_path = "plugin/opskernel/";
@@ -128,18 +129,17 @@ Status OpsKernelBuilderManager::CalcOpRunningParam(Node &node) const {
   const std::string &lib_name = op_desc->GetOpKernelLibName();
   auto it = ops_kernel_builders_.find(lib_name);
   if (it == ops_kernel_builders_.end()) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to get OpKernelStore. libName = %s, node = %s",
-           lib_name.c_str(),
-           op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR,"[Find][LibName] fail for libName = %s, node = %s.",
+           lib_name.c_str(), op_desc->GetName().c_str());
+    REPORT_INNER_ERROR("E19999",
+                       "find LibName for CalcOpRunningParam failed, libName = %s, node = %s not exist.",
+                       lib_name.c_str(), op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   GELOGD("To invoke CalcOpRunningParam, node = %s, lib name = %s", op_desc->GetName().c_str(), lib_name.c_str());
   GE_CHK_STATUS_RET(it->second->CalcOpRunningParam(node),
-                    "Failed to invoke CalcOpRunningParam, libName = %s, node = %s",
-                    lib_name.c_str(),
-                    op_desc->GetName().c_str());
+      "[Invoke][CalcOpRunningParam]failed, libName = %s, node = %s", lib_name.c_str(), op_desc->GetName().c_str());
   GELOGD("Done invoking CalcOpRunningParam successfully");
   return SUCCESS;
 }
@@ -152,20 +152,17 @@ Status OpsKernelBuilderManager::GenerateTask(const Node &node,
   const std::string &lib_name = op_desc->GetOpKernelLibName();
   auto it = ops_kernel_builders_.find(lib_name);
   if (it == ops_kernel_builders_.end()) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to get OpKernelStore. libName = %s, node = %s",
-           lib_name.c_str(),
+    GELOGE(INTERNAL_ERROR, "[Find][LibName]fail for libName = %s, node:%s", lib_name.c_str(),
            op_desc->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "find LibName for GenerateTask failed, libName = %s, node = %s not exist",
+                       lib_name.c_str(), op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   GELOGD("To invoke GenerateTask, node = %s, lib name = %s", op_desc->GetName().c_str(), lib_name.c_str());
   GE_CHK_STATUS_RET(it->second->GenerateTask(node, context, tasks),
-                    "Failed to invoke GenerateTask, libName = %s, node = %s",
-                    lib_name.c_str(),
-                    op_desc->GetName().c_str());
+      "[Invoke][GenerateTask]failed, libName = %s, node = %s", lib_name.c_str(), op_desc->GetName().c_str());
   GELOGD("Done invoking GenerateTask successfully");
   return SUCCESS;
 }
-
 }  // namespace ge

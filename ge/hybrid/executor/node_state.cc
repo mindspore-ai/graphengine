@@ -35,12 +35,14 @@ ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(
          node_item.NodeName().c_str(),
          this->num_pending_shapes_);
 
-  for (int i = 0; i < node_item.num_inputs; ++i){
-    input_tensor_desc.emplace_back(*node_item.MutableInputDesc(i));
+  input_tensor_desc.resize(node_item.num_inputs);
+  for (int i = 0; i < node_item.num_inputs; ++i) {
+    node_item.GetInputDesc(i, input_tensor_desc[i]);
   }
 
-  for (int i = 0; i < node_item.num_outputs; ++i){
-    output_tensor_desc.emplace_back(*node_item.MutableOutputDesc(i));
+  output_tensor_desc.resize(node_item.num_outputs);
+  for (int i = 0; i < node_item.num_outputs; ++i) {
+    node_item.GetOutputDesc(i, output_tensor_desc[i]);
   }
 }
 
@@ -54,19 +56,28 @@ Status ShapeInferenceState::UpdateInputShape(int idx, const GeTensorDesc &target
     return SUCCESS;
   }
 
+  std::lock_guard<std::mutex> lk(mu_);
+  auto &input_desc = input_tensor_desc[idx];
+  GeShape shape = target.GetShape();
+  input_desc.SetShape(shape);
+  input_desc.SetOriginShape(target.GetOriginShape());
   int64_t tensor_size = -1;
   (void) TensorUtils::GetSize(target, tensor_size);
+  if (tensor_size <= 0) {
+    Format format = input_desc.GetFormat();
+    DataType data_type = input_desc.GetDataType();
+    if (TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size) != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "[Invoke][CalcTensorMemSize] failed for [%s].", node_item.NodeName().c_str());
+      REPORT_CALL_ERROR("E19999", "CalcTensorMemSize failed for [%s].", node_item.NodeName().c_str());
+      return FAILED;
+    }
+  }
   GELOGD("[%s] Update input shape [%d] with Shape: [%s] and OriginalShape: [%s], size = %ld",
          node_item.NodeName().c_str(),
          idx,
-         target.GetShape().ToString().c_str(),
+         shape.ToString().c_str(),
          target.GetOriginShape().ToString().c_str(),
          tensor_size);
-
-  std::lock_guard<std::mutex> lk(mu_);
-  auto &input_desc = input_tensor_desc[idx];
-  input_desc.SetShape(target.GetShape());
-  input_desc.SetOriginShape(target.GetOriginShape());
   (void) TensorUtils::SetSize(input_desc, tensor_size);
   if (--num_pending_shapes_ <= 0) {
     ready_cv_.notify_all();
@@ -111,13 +122,15 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
       }
 
       if (context.GetStatus() != SUCCESS) {
-        GELOGE(FAILED, "[%s] Await pending shape cancelled", node_item.NodeName().c_str());
+        GELOGE(FAILED, "[Check][Status][%s] Await pending shape cancelled.", node_item.NodeName().c_str());
+        REPORT_CALL_ERROR("E19999", "[%s] Await pending shape cancelled.", node_item.NodeName().c_str());
         break;
       }
     }
 
     if (!wait_success) {
-      GELOGE(FAILED, "[%s] Wait for shape timeout.", node_item.NodeName().c_str());
+      GELOGE(FAILED, "[Check][Status][%s] Wait for shape timeout:%d.", node_item.NodeName().c_str(), kWaitInternal);
+      REPORT_CALL_ERROR("E19999", "[%s] Wait for shape timeout:%d.", node_item.NodeName().c_str(), kWaitInternal);
       return FAILED;
     }
   }
@@ -221,8 +234,7 @@ Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
 Status NodeState::WaitForPrepareDone() {
   if (prepare_future_.valid()) {
     GELOGD("[%s] Start to wait for prepare future.", GetName().c_str());
-    GE_CHK_STATUS_RET(prepare_future_.get(),
-                      "[%s] PreRun failed.", GetName().c_str());
+    GE_CHK_STATUS_RET(prepare_future_.get(), "[Check][Status][%s] PreRun failed.", GetName().c_str());
   }
 
   return SUCCESS;

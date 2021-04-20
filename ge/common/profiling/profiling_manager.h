@@ -27,6 +27,7 @@
 #include "framework/common/ge_types.h"
 #include "external/register/register_types.h"
 #include "toolchain/prof_callback.h"
+#include "runtime/stream.h"
 
 using std::map;
 using std::string;
@@ -88,7 +89,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
                              const int32_t &device_id);
   void ProfilingOpInputOutInfo(const TaskDescInfo &task, Json &task_json);
-  Status PluginInit() const;
+  Status PluginInit();
   void PluginUnInit() const;
   Status CallMsprofReport(ReporterData &reporter_data) const;
   struct MsprofCallback &GetMsprofCallback() { return prof_cb_; }
@@ -97,6 +98,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void GetFpBpPoint(std::string &fp_point, std::string &bp_point);
   void GetOpInputOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const;
   void ReportData(const int32_t &device_id, const std::string &data, const std::string &tag_name);
+  Status ProfileStepInfo(uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id);
  private:
   Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
   Status ParseOptions(const std::string &options);
@@ -119,6 +121,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   MsprofCallback prof_cb_;
   std::string fp_point_;
   std::string bp_point_;
+  uint32_t reporter_max_len_ = 0;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

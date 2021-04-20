@@ -144,6 +144,8 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
   for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
     const auto &subgraph = graph->GetSubgraph(name);
     if (subgraph == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Get subgraph from graph:%s by name:%s failed",
+                         graph->GetName().c_str(), name.c_str());
       GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
@@ -156,6 +158,8 @@ Status SubexpressionMigrationPass::ClassifyDataNodes(const ComputeGraphPtr &grap
 
       uint32_t parent_index = 0;
       if (!AttrUtils::GetInt(data->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+        REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                          data->GetName().c_str(), data->GetType().c_str());
         GELOGE(FAILED, "Parent index not found, name: %s", data->GetName().c_str());
         return FAILED;
       }
@@ -229,6 +233,7 @@ bool SubexpressionMigrationPass::IsParallelNodeSame(const map<ComputeGraphPtr, m
     const auto &data_nodes = it->second;
     auto data_it = data_nodes.find(node_idx);
     if (data_it == data_nodes.end()) {
+      REPORT_INNER_ERROR("E19999", "Find node in data_nodes by index:%u failed", node_idx);
       GELOGE(FAILED, "Data: %s not fount, index: %u", base_node->GetName().c_str(), node_idx);
       return false;
     }
@@ -238,12 +243,15 @@ bool SubexpressionMigrationPass::IsParallelNodeSame(const map<ComputeGraphPtr, m
     const auto &in_anchors = out_anchor->GetPeerInDataAnchors();
     const auto &in_anchor = in_anchors.at(anchor_idx);
     if (in_anchor == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Index:%u anchor not exist in out:%u data anchor's peer of node:%s(%s)",
+                         node_idx, kDataOutIndex, work_data->GetName().c_str(), work_data->GetType().c_str());
       GELOGE(FAILED, "Data anchor size: %u, anchor size: %zu", anchor_idx, in_anchors.size());
       return false;
     }
 
     const auto &work_node = in_anchor->GetOwnerNode();
     if (work_node == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Owner node of anchor is nullptr, check invalid");
       GELOGE(FAILED, "Data: %s not found, index: %u", base_node->GetName().c_str(), node_idx);
       return false;
     }
@@ -279,7 +287,7 @@ Status SubexpressionMigrationPass::GraphNodeMigration(const ComputeGraphPtr &gra
       const auto &in_anchor = in_anchors.at(i);
       const auto &base_node = in_anchor->GetOwnerNode();
       GELOGD("Get Data direct node: %s", base_node->GetName().c_str());
-      if (!base_node->GetHostNode()) {
+      if (!base_node->GetHostNode() || base_node->GetType() == SWITCH) {
         continue;
       }
 
@@ -338,17 +346,22 @@ Status SubexpressionMigrationPass::AppendParallelNode(map<ComputeGraphPtr, map<u
       OpDescBuilder op_builder(data_name, DATA);
       const OpDescPtr op_desc = op_builder.AddInput("x").AddOutput("y").Build();
       if (op_desc == nullptr) {
+        REPORT_CALL_ERROR("E19999", "Build op:%s(%s) failed", data_name.c_str(), DATA);
         GELOGE(OUT_OF_MEMORY, "Create multi-batch case desc failed");
         return OUT_OF_MEMORY;
       }
 
       uint32_t data_index = item.second - kCaseInputBase;
       if (!AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_INDEX.c_str(),
+                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
         GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
         return FAILED;
       }
 
       if (!AttrUtils::SetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, item.second)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
         GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
         return FAILED;
       }
@@ -392,12 +405,14 @@ Status SubexpressionMigrationPass::DetachParallelNode(const map<uint32_t, NodePt
   for (uint32_t i = 0; i < detach->GetAllOutDataAnchorsSize(); ++i) {
     auto it_idx = outputs.find(i);
     if (it_idx == outputs.end()) {
+      REPORT_INNER_ERROR("E19999", "Node: %s parent index %u not found, check invalid", detach->GetName().c_str(), i);
       GELOGE(FAILED, "Node: %s parent index %u not found", detach->GetName().c_str(), i);
       return FAILED;
     }
 
     auto it_data = graph_datas.find(it_idx->second);
     if (it_data == graph_datas.end()) {
+      REPORT_INNER_ERROR("E19999", "Node: %s parent index %u not found, check invalid", detach->GetName().c_str(), i);
       GELOGE(FAILED, "Node: %s parent index %u not found", detach->GetName().c_str(), i);
       return FAILED;
     }
@@ -444,6 +459,7 @@ Status SubexpressionMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
   for (uint32_t i = 0; i < attach->GetAllInDataAnchorsSize(); ++i) {
     auto it_idx = inputs.find(i);
     if (it_idx == inputs.end()) {
+      REPORT_INNER_ERROR("E19999", "Node: %s parent index %u not found, check invalid", attach->GetName().c_str(), i);
       GELOGE(FAILED, "Node: %s parent index %u not found", attach->GetName().c_str(), i);
       return FAILED;
     }
@@ -505,6 +521,7 @@ Status SubexpressionMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
                                                     uint32_t anchor_idx, const map<uint32_t, uint32_t> &inputs,
                                                     const map<uint32_t, uint32_t> &outputs) {
   if (inputs.empty()) {
+    REPORT_INNER_ERROR("E19999", "Param inputs is empty, check invalid");
     GELOGE(FAILED, "Graph: %s, inputs is empty", graph->GetName().c_str());
     return FAILED;
   }
@@ -516,6 +533,8 @@ Status SubexpressionMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
     const auto &subnodes = groups.second;
     auto it = subnodes.find(base_index);
     if (it == subnodes.end()) {
+      REPORT_INNER_ERROR("E19999", "Index:%u data node not found in graph:%s, check invalid",
+                         base_index, subgraph->GetName().c_str());
       GELOGE(FAILED, "Graph: %s, Data: %u node not found", subgraph->GetName().c_str(), base_index);
       return FAILED;
     }
@@ -525,12 +544,15 @@ Status SubexpressionMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
     const auto &in_anchors = out_anchor->GetPeerInDataAnchors();
     const auto &in_anchor = in_anchors.at(anchor_idx);
     if (in_anchor == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Index:%u anchor not exist in out:%u data anchor's peer of node:%s(%s)",
+                         anchor_idx, kDataOutIndex, base_data->GetName().c_str(), base_data->GetType().c_str());
       GELOGE(FAILED, "Data anchor index: %u, anchor size: %zu", anchor_idx, in_anchors.size());
       return FAILED;
     }
 
     move_node = in_anchor->GetOwnerNode();
     if (move_node == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Owner node of anchor is nullptr, check invalid");
       GELOGE(FAILED, "Data: %s not found, index: %u", base_data->GetName().c_str(), base_index);
       return FAILED;
     }

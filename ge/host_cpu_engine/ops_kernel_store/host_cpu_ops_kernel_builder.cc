@@ -21,6 +21,7 @@
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include <securec.h>
 #include "framework/common/debug/ge_log.h"
 #include "host_cpu_engine/common/constant/constant.h"
 #include "register/ops_kernel_builder_registry.h"
@@ -39,7 +40,8 @@ Status HostCpuOpsKernelBuilder::Initialize(const map<std::string, std::string> &
 Status HostCpuOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
   OpDescPtr op_desc = ge_node.GetOpDesc();
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "CalcOpRunningParam failed, as op desc is null");
+    GELOGE(FAILED, "[Get][OpDesc]CalcOpRunningParam failed, as op desc is null");
+    REPORT_INNER_ERROR("E19999", "GetOpDesc failed.");
     return FAILED;
   }
 
@@ -73,9 +75,14 @@ Status HostCpuOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
     GeShape output_shape = output_tensor.GetShape();
     if ((TensorUtils::CalcTensorMemSize(output_shape, format, data_type, output_mem_size) != GRAPH_SUCCESS) ||
         (output_mem_size < 0)) {
-      GELOGE(FAILED, "Calc op[%s:%s] out[%zu] mem size failed, mem_size=%ld, format=%s, data_type=%s.",
-             name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
-             TypeUtils::DataTypeToSerialString(data_type).c_str());
+      GELOGE(FAILED, 
+          "[Calc][TensorMemSize] fail for op[%s:%s] out[%zu] mem size, mem_size=%ld, format=%s, data_type=%s.",
+          name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+          TypeUtils::DataTypeToSerialString(data_type).c_str());
+      REPORT_CALL_ERROR("E19999", 
+          "CalcTensorMemSize failed for op[%s:%s] out[%zu] mem size, mem_size=%ld, format=%s, data_type=%s.",
+          name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+          TypeUtils::DataTypeToSerialString(data_type).c_str());
       return FAILED;
     }
     GELOGI("Calc op[%s:%s] out[%zu] mem size is %ld, format=%s, data_type=%s.",
@@ -84,8 +91,13 @@ Status HostCpuOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
 
     TensorUtils::SetSize(output_tensor, output_mem_size);
     if (op_desc->UpdateOutputDesc(static_cast<uint32_t>(i), output_tensor) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Update op[%s:%s] out[%zu] desc failed, format=%s, data_type=%s.", name.c_str(), type.c_str(), i,
-             TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
+      GELOGE(FAILED, 
+          "[Update][OutputDesc] fail for op[%s:%s] out[%zu] desc , format=%s, data_type=%s.",
+          name.c_str(), type.c_str(), i,
+          TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
+      REPORT_CALL_ERROR("E19999", "UpdateOutputDesc failed for op[%s:%s] out[%zu] desc , format=%s, data_type=%s.",
+          name.c_str(), type.c_str(), i,
+          TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::DataTypeToSerialString(data_type).c_str());
       return FAILED;
     }
   }

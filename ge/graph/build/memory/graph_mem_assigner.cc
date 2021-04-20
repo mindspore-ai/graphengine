@@ -30,6 +30,7 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/build/memory/buffer_pool_mem_assigner.h"
 
 namespace {
 const int kAllInputAddrIsAtomic = -1;
@@ -99,7 +100,8 @@ Status VariableMemoryAssigner::AssignMemory2HasRefAttrNode() {
 Status GraphMemoryAssigner::AssignMemory() {
   ge::HybridMemAssignerPtr mem_assigner(new(std::nothrow) HybridMemAssigner(compute_graph_));
   if (mem_assigner->Assign() != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "Memory assigner failed");
+    GELOGE(ge::FAILED, "[Assign][GraphMem]graph_id:%u, graph_name:%s",
+           compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
   MemoryOffset memory_offset(RT_MEMORY_HBM, mem_assigner->GetMemOffset());
@@ -115,7 +117,10 @@ Status GraphMemoryAssigner::AssignMemory() {
   auto variable_assigner =
       std::unique_ptr<ge::VariableMemoryAssigner>(new(std::nothrow) ge::VariableMemoryAssigner(compute_graph_));
   if (variable_assigner == nullptr) {
-    GELOGE(ge::FAILED, "Alloc VariableMemoryAssigner failed.");
+    GELOGE(ge::FAILED, "[New][Object:VariableMemoryAssigner]graph_id:%u, graph_name:%s",
+           compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "New Object:VariableMemoryAssigner failed, "
+                      "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
@@ -134,7 +139,10 @@ ge::Status GraphMemoryAssigner::AssignVarAttr2Nodes() {
   auto variable_assigner =
       std::unique_ptr<ge::VariableMemoryAssigner>(new(std::nothrow) ge::VariableMemoryAssigner(compute_graph_));
   if (variable_assigner == nullptr) {
-    GELOGE(ge::FAILED, "Alloc VariableMemoryAssigner failed.");
+    GELOGE(ge::FAILED, "[New][Object:VariableMemoryAssigner]graph_id:%u, graph_name:%s",
+           compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "New Object:VariableMemoryAssigner failed, "
+                      "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
   if (variable_assigner->AssignVarAttr2Nodes() != ge::SUCCESS) {
@@ -147,8 +155,10 @@ ge::Status GraphMemoryAssigner::AssignMemory2HasRefAttrNode() {
   auto variable_assigner =
       std::unique_ptr<ge::VariableMemoryAssigner>(new(std::nothrow) ge::VariableMemoryAssigner(compute_graph_));
   if (variable_assigner == nullptr) {
-    GELOGE(ge::FAILED, "Alloc VariableMemoryAssigner failed.");
-    return ge::FAILED;
+    GELOGE(ge::FAILED, "[New][Object:VariableMemoryAssigner]graph_id:%u, graph_name:%s",
+           compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "New Object:VariableMemoryAssigner failed, "
+                      "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
   }
   if (variable_assigner->AssignMemory2HasRefAttrNode() != ge::SUCCESS) {
     return ge::FAILED;
@@ -161,17 +171,18 @@ ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &out
                                              int64_t &batch_dim_num, int64_t &out_size) {
   graphStatus graph_status = ge::TensorUtils::GetSize(*output_desc, out_size);
   if (graph_status != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Opdesc GetSize failed!");
+    GELOGE(FAILED, "[Get][TensorSize]");
+    REPORT_CALL_ERROR("E19999", "Get tensor size failed");
     return FAILED;
   }
 
   GeShape output_shape = output_desc->GetShape();
   std::vector<int64_t> output_dims = output_shape.GetDims();
   if (dim_index >= static_cast<int64_t>(output_dims.size())) {
-    std::string error = "Invaild value" + FmtToStr(dim_index) +
-        " of attr _reuse_input_on_dim_index, which is out of data range [0,"
-        + std::to_string(output_dims.size()) + ")";
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "Inner param dim_index value:%ld invalid, bigger than dim size:%lu in shape:%s",
+                       dim_index, output_dims.size(), output_shape.ToString().c_str());
+    GELOGE(FAILED, "[Check][Param:dim_index]value:%ld invalid, bigger than dim size:%lu in shape:%s",
+           dim_index, output_dims.size(), output_shape.ToString().c_str());
     return FAILED;
   }
 
@@ -187,14 +198,23 @@ ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &out
 
   graph_status = ge::TensorUtils::CalcTensorMemSize(output_shape, out_format, data_type, output_mem_size);
   if (graph_status != GRAPH_SUCCESS) {
-    GELOGE(graph_status, "Opdesc CalcTensorMemSize failed!");
+    GELOGE(graph_status, "[Calc][TensorSize]");
     return FAILED;
   }
 
   if (output_mem_size < 0) {
-    std::string error = "After calculating tensor memory size, output_mem_size" + FmtToStr(output_mem_size) +
-        " is out of data range [0," + std::to_string(INT64_MAX) + "]";
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "After calculating, tensor memory size:%ld invalid, less than 0. "
+                       "shape:%s, format:%s, dtype:%s, maybe has dynamic shape",
+                       output_mem_size,
+                       output_shape.ToString().c_str(),
+                       TypeUtils::FormatToSerialString(out_format).c_str(),
+                       TypeUtils::DataTypeToSerialString(data_type).c_str());
+    GELOGE(FAILED, "[Check][TensorSize]value:%ld invalid after calc, less than 0. shape:%s, format:%s, dtype:%s, "
+           "maybe has dynamic shape",
+           output_mem_size,
+           output_shape.ToString().c_str(),
+           TypeUtils::FormatToSerialString(out_format).c_str(),
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
     return FAILED;
   }
 
@@ -203,12 +223,16 @@ ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &out
 
 Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size_t> &mem_type_to_offset) {
   if (memory_offset_.empty()) {
-    GELOGE(FAILED, "memory_offset_ is empty.");
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ empty, not expected, graph_id:%u, graph_name:%s",
+                       compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData:memory_offset_]empty is not expected, "
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   GE_CHK_STATUS_RET(ReAssignContinuousMemory(is_loop_graph), "ReAssignContinuousMemory Failed!");
   GE_CHK_STATUS_RET(ReAssignAtomicMemory(is_loop_graph), "ReAssignAtomicMemory Failed!");
+  GE_CHK_STATUS_RET(AssignBufferPoolMemory(), "AssignBufferPoolMemory Failed!");
 
   size_t total_mem_offset = 0;
   for (auto pair : memory_offset_) {
@@ -218,8 +242,10 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size
 
   auto session_id = compute_graph_->GetSessionID();
   if (total_mem_offset > VarManager::Instance(session_id)->GetGraphMemoryMaxSize()) {
-    GELOGE(ge::FAILED, "Current memoffset %zu is greater than memory manager malloc max size %zu", total_mem_offset,
-           VarManager::Instance(session_id)->GetGraphMemoryMaxSize());
+    GELOGE(ge::FAILED, "[Check][TotalMemOffset] %zu is greater than memory manager malloc max size %zu, "
+           "graph_id:%u, graph_name:%s, reduce your batchsize or scale your model may solve problem",
+           total_mem_offset, VarManager::Instance(session_id)->GetGraphMemoryMaxSize(),
+           compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     for (auto iter : mem_type_to_offset) {
       ErrorManager::GetInstance().ATCReportErrMessage("E19022", {"memType", "size", "item", "maxsize"},
         {std::to_string(iter.first), std::to_string(iter.second), "featuremap",
@@ -234,7 +260,13 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size
 
 Status GraphMemoryAssigner::AssignZeroCopyMemory(map<int64_t, size_t> &mem_offset, size_t &zero_mem_copy_size) {
   BlockMemAssignerPtr priority_assigner = std::move(mem_assigner_->GetPriorityAssinger());
-  GE_IF_BOOL_EXEC(priority_assigner == nullptr, GELOGE(FAILED, "Get priority_assigner failed."); return ge::FAILED;);
+  if (priority_assigner == nullptr) {
+    REPORT_INNER_ERROR("E19999", "InnerData priority_assigner nullptr, not expected, graph_id:%u, graph_name:%s",
+                       compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData:priority_assigner]nullptr is invalid, "
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    return ge::FAILED;
+  }
 
   size_t mem_offset_tmp = mem_offset[RT_MEMORY_HBM];
 
@@ -254,8 +286,10 @@ Status GraphMemoryAssigner::AssignZeroCopyMemory(map<int64_t, size_t> &mem_offse
   zero_mem_copy_size = mem_offset[RT_MEMORY_HBM] - mem_offset_tmp;
   auto iter = memory_offset_.find(RT_MEMORY_HBM);
   if (iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type[HBM]";
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ does not have type[HBM], not expected, "
+                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData]memory_offset_ does not have memory type[HBM]"
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return FAILED;
   }
   iter->second.mem_offset_ = mem_offset[RT_MEMORY_HBM];
@@ -304,7 +338,7 @@ uint32_t GetContinuousMemoryType(const OpDescPtr &op_desc) {
   }
 
   if (continuous_type != 0) {
-    GELOGI("Current node %s continuous type %d.", op_desc->GetName().c_str(), continuous_type);
+    GELOGI("[Get][MemType:Continuous]Current node %s, value is %d", op_desc->GetName().c_str(), continuous_type);
   }
   return continuous_type;
 }
@@ -312,8 +346,8 @@ uint32_t GetContinuousMemoryType(const OpDescPtr &op_desc) {
 Status GetMemorySize(const OpDescPtr &op_desc, const ge::ConstGeTensorDescPtr &output_desc, uint32_t continuous_type,
                      int64_t &tensor_size, int64_t &nopadding_size) {
   if ((op_desc == nullptr) || (output_desc == nullptr)) {
-    GELOGE(FAILED, "Input para is nullptr.");
-    return FAILED;
+    REPORT_INNER_ERROR("E19999", "InnerData param op_desc or output_desc is nullptr, not expected");
+    GELOGE(FAILED, "[Check][Param]op_desc or output_desc is nullptr");
   }
   tensor_size = 0;
   nopadding_size = 0;
@@ -322,7 +356,10 @@ Status GetMemorySize(const OpDescPtr &op_desc, const ge::ConstGeTensorDescPtr &o
     int64_t attr_dim_index;
     bool get_attr_dim_flag = ge::AttrUtils::GetInt(op_desc, ATTR_NAME_REUSE_INPUT_ON_DIM_INDEX, attr_dim_index);
     if (!get_attr_dim_flag) {
-      GELOGE(FAILED, "Get attr _reuse_input_on_dim_index failed.");
+      REPORT_INNER_ERROR("E19999", "Get Attr:%s failed, op_name:%s",
+                         ATTR_NAME_REUSE_INPUT_ON_DIM_INDEX.c_str(), op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Get][Attr:%s]fail for op_name:%s",
+             ATTR_NAME_REUSE_INPUT_ON_DIM_INDEX.c_str(), op_desc->GetName().c_str());
       return FAILED;
     }
 
@@ -330,17 +367,25 @@ Status GetMemorySize(const OpDescPtr &op_desc, const ge::ConstGeTensorDescPtr &o
     int64_t batch_dim_num = 1;
     if (CalculateTensorRealSizeAndOutSize(output_desc, attr_dim_index, nopadding_size, batch_dim_num, tensor_size) !=
         SUCCESS) {
-      GELOGE(FAILED, "CalculateTensorRealSizeAndOutSize failed for node %s.", op_desc->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "CalculateTensorRealSizeAndOutSize failed, attr_dim_index:%ld, op_name:%s",
+                        attr_dim_index, op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Calculate][NopaddingSize]failed for node %s, attr_dim_index:%ld",
+             op_desc->GetName().c_str(), attr_dim_index);
       return FAILED;
     }
   } else {
     if (ge::TensorUtils::GetSize(*output_desc, tensor_size) != ge::SUCCESS) {
-      GELOGE(FAILED, "GetSize failed.");
+      REPORT_INNER_ERROR("E19999", "Get Tensor Size failed, op_name:%s", op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Get][TensorSize]failed in padding case, op_name:%s", op_desc->GetName().c_str());
       return FAILED;
     }
   }
   if ((tensor_size < 0) || (nopadding_size < 0)) {
-    GELOGE(FAILED, "GetMemorySize for node %s failed.", op_desc->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "GetMemorySize fail, "
+                       "tensor_size:%ld or nopadding_size:%ld less than 0, invalid, op_name:%s",
+                       tensor_size, nopadding_size, op_desc->GetName().c_str());
+    GELOGE(FAILED, "[Get][MemorySize]tensor_size:%ld or nopadding_size:%ld less than 0, invalid, op_name:%s",
+           tensor_size, nopadding_size, op_desc->GetName().c_str());
     return FAILED;
   }
   return SUCCESS;
@@ -374,7 +419,7 @@ bool IsContinuousInputConflict(const ge::NodePtr &node, const OpDescPtr &peer_op
   // If GetBool fail, is_peer_reference is false.
   (void) AttrUtils::GetBool(peer_op_desc, ATTR_NAME_REFERENCE, is_peer_reference);
   GE_IF_BOOL_EXEC(is_peer_reference,
-                  std::string warning = "Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
+                  std::string warning = "[Check][Continuous]Current op" + FmtToStr(node->GetOpDesc()->GetName()) +
                       " requires continuous input, while the previous op" + FmtToStr(peer_op_desc->GetName()) +
                       " is ref. There may be conflict between the two.";
                   GELOGW("%s", warning.c_str());
@@ -404,7 +449,7 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
     if (continuous_input) {
       if (AssignContinuousInputMemoryWithAtomicProcessDirectly(node, node_2_continuous_type)) {
         GE_CHK_STATUS_RET(AssignContinuousInputMemoryWithAtomicProcess(node, continuous_type),
-                          "Assign node %s continuous input memory failed.", node->GetName().c_str())
+                          "[Assign][Memory:Continuous:Input]fail for node:%s", node->GetName().c_str())
       } else {
         nodes_stack.push_back(node);
       }
@@ -413,10 +458,11 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
     int64_t memory_type = RT_MEMORY_HBM;
     bool continuous_output = ((continuous_type & kTypeOutput) != 0) || ((continuous_type & kTypeOutputNoPadding) != 0);
     if (continuous_output) {
-      GE_CHK_STATUS_RET(GetNodeMemoryType(node, memory_type, "output"), "Get node memory type failed.");
+      GE_CHK_STATUS_RET(GetNodeMemoryType(node, memory_type, "output"),
+                        "[Get][MemType]fail for node:%s", node->GetName().c_str());
       ret = AssignContinuousOutputMemory(node, memory_type, continuous_type);
       if (ret != ge::SUCCESS) {
-        GELOGE(ret, "Assign continuous output memory failed!");
+        GELOGE(ret, "[Assign][Memory:Continuous:Ouput]fail for node:%s", node->GetName().c_str());
         return ret;
       }
     }
@@ -427,14 +473,16 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
     nodes_stack.pop_back();
     auto iter = node_2_continuous_type.find(node);
     if (iter == node_2_continuous_type.end()) {
-      GELOGE(FAILED, "node %s has no continuous type!", node->GetName().c_str());
+      REPORT_INNER_ERROR("E19999", "Get ContinuousType from node_2_continuous_type map failed for node:%s",
+                         node->GetName().c_str());
+      GELOGE(FAILED, "[Get][ContinuousType] find fail for node:%s", node->GetName().c_str());
       return FAILED;
     }
     GE_CHK_STATUS_RET(AssignContinuousInputMemoryWithAtomicProcess(node, iter->second, true),
-                      "Assign node %s continuous input memory failed.", node->GetName().c_str())
+                      "[Assign][Memory:Continuous:Input]fail for node:%s.", node->GetName().c_str())
   }
   for (auto pair : memory_offset_) {
-    GELOGD("After reassign continuous memory, memory type = %ld, mem_offset = %zu.", pair.first,
+    GELOGD("[Reassign][Memory:Continuous]At last, memory type = %ld, mem offset = %zu", pair.first,
            pair.second.mem_offset_);
   }
   return ge::SUCCESS;
@@ -442,11 +490,13 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
 
 Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
     int64_t &continuous_mem_size, int64_t memory_type, uint32_t continuous_type, bool reverse_refresh) {
-  GELOGI("Current node %s needs continuous input.", node->GetName().c_str());
+  GELOGI("[Assign][Memory:Input:Continuous]start for Current node %s", node->GetName().c_str());
   auto iter = memory_offset_.find(memory_type);
   if (iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type" + FmtToStr(memory_type);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "find memory offset fail for mem_type:%ld, "
+                       "for node:%s, ", memory_type, node->GetName().c_str());
+    GELOGE(FAILED, "[Find][MemOffset]fail for mem_type:%ld, when AssignContinuousInputMemory for node:%s",
+           memory_type, node->GetName().c_str());
     return FAILED;
   }
   // The head and tail of hcom continuous input should be added 512
@@ -459,8 +509,9 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
   GE_CHECK_NOTNULL(op_desc);
   vector<int64_t> output_list_this = op_desc->GetOutputOffset();
   if (output_list_this.empty()) {
-    std::string error = "node:" + FmtToStr(op_desc->GetName()) + "has no output offset";
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "No output offset in node :%s, not expected",
+                       node->GetName().c_str());
+    GELOGE(FAILED, "[Get][OutputOffset] empty is invalid, node:%s", node->GetName().c_str());
     return FAILED;
   }
   (void) ge::AttrUtils::GetBool(op_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, is_continuous_input_allocated);
@@ -480,8 +531,9 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     lx_fusion = lx_fusion && !offsets_of_fusion.empty();
     if (lx_fusion) {
       if (peer_out_data_anchor->GetIdx() >= static_cast<int>(offsets_of_fusion.size())) {
-        std::string error = "fusion: peer node" + FmtToStr(peer_op_desc->GetName()) +
-            " index" + FmtToStr(peer_out_data_anchor->GetIdx()) + " is out of range.";
+        std::string error = "fusion: peer node:" + FmtToStr(peer_op_desc->GetName()) +
+            " anchor_index:" + FmtToStr(peer_out_data_anchor->GetIdx()) +
+            " is out of range:" + FmtToStr(offsets_of_fusion.size());
         GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
         return FAILED;
       }
@@ -497,7 +549,9 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     bool is_nopadding = ((continuous_type & kTypeInputNoPadding) != 0) || lx_fusion;
     vector<int64_t> output_list = peer_op_desc->GetOutputOffset();
     if (peer_out_data_anchor->GetIdx() >= static_cast<int>(output_list.size())) {
-      std::string error = "index" + FmtToStr(peer_out_data_anchor->GetIdx()) + " is out of range.";
+      std::string error = "peer node:" + FmtToStr(peer_op_desc->GetName()) +
+          " anchor_index:" + FmtToStr(peer_out_data_anchor->GetIdx()) +
+          " is out of range:" + FmtToStr(output_list.size());
       GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
       return FAILED;
     }
@@ -506,15 +560,15 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
     if (is_allocated_first_input) {
       std::map<int32_t, int32_t> out2ins;
-      GE_CHK_STATUS_RET(GetAllRef(node, out2ins), "Node: %s get all ref failed", node->GetName().c_str());
+      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
       // output is beginning offset, set offset for input; only support this case now
       if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
         auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
         output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
         peer_op_desc->SetOutputOffset(output_list);
-        GELOGI("Node %s out %d ref in %d input node %s, use output offset %ld update %ld.", node->GetName().c_str(),
-               out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(),
-               output_list_this.at(out2ins.begin()->first), peer_output_offset);
+        GELOGI("[Update][Offset]Node %s out %d ref in %d input node %s, use output offset %ld update %ld",
+               node->GetName().c_str(), out2ins.begin()->first, out2ins.begin()->second,
+               peer_op_desc->GetName().c_str(), output_list_this.at(out2ins.begin()->first), peer_output_offset);
       } else {
         GELOGD("Node %s out %d ref in %d input node %s with total ref numbers %zu.", node->GetName().c_str(),
                out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(), out2ins.size());
@@ -542,7 +596,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     }
 
     GELOGI("[IMAS]Continuous input : Set %s name[%s] optype[%s] output[%d] offset to [%zu] stream_id[%ld] memtype[%ld] "
-        "size[%zu] realsize[%ld] nopadding size[%d].", node->GetOwnerComputeGraph()->GetName().c_str(),
+        "size[%zu] realsize[%ld] nopadding size[%d]", node->GetOwnerComputeGraph()->GetName().c_str(),
         peer_op_desc->GetName().c_str(), node->GetType().c_str(), peer_out_data_anchor->GetIdx(),
         output_list.at(peer_out_data_anchor->GetIdx()), peer_op_desc->GetStreamId(), memory_type,
         is_continuous_input_allocated ? 0UL : align_size, real_size, is_nopadding);
@@ -563,17 +617,29 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
 Status GetFirstInputPeerOutOutputOffset(const ge::NodePtr &node, int64_t &mem_offset) {
   auto in_data_anchor_list = node->GetAllInDataAnchors();
   if (in_data_anchor_list.empty()) {
-    GELOGE(FAILED, "Node %s's in data anchor is empty.", node->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "InAnchor list empty in node:%s, not expect",
+                       node->GetName().c_str());
+    GELOGE(FAILED, "[Get][InAnchor]empty is invalid, node:%s", node->GetName().c_str());
     return FAILED;
   }
   auto peer_out_data_anchor = in_data_anchor_list.at(0)->GetPeerOutAnchor();
-  GE_IF_BOOL_EXEC(peer_out_data_anchor == nullptr, GELOGE(ge::FAILED, "peer_out_data_anchor is null.");
+  GE_IF_BOOL_EXEC(peer_out_data_anchor == nullptr,
+                  REPORT_INNER_ERROR("E19999", "PeerAcnhor is null, not expect for node:%s",
+                                     node->GetName().c_str());
+                  GELOGE(ge::FAILED, "[Check][PeerAnchor]null is invalid, node:%s", node->GetName().c_str());
                   return ge::FAILED);
   auto peer_op_desc = peer_out_data_anchor->GetOwnerNode()->GetOpDesc();
-  GE_IF_BOOL_EXEC(peer_op_desc == nullptr, GELOGE(ge::FAILED, "peer_op_desc is null."); return ge::FAILED);
+  GE_IF_BOOL_EXEC(peer_op_desc == nullptr,
+                  REPORT_INNER_ERROR("E19999", "PeerOpDesc is null, not expect for node:%s",
+                                     node->GetName().c_str());
+                  GELOGE(ge::FAILED, "[Check][PeerOpDesc]null is invalid, node:%s",  node->GetName().c_str());
+                  return ge::FAILED);
   vector<int64_t> in_node_output_offsets = peer_op_desc->GetOutputOffset();
   if (peer_out_data_anchor->GetIdx() >= static_cast<int>(in_node_output_offsets.size())) {
-    GELOGE(FAILED, "Index : %d is out of range.", peer_out_data_anchor->GetIdx());
+    REPORT_INNER_ERROR("E19999", "PeerAnchorIndex:%d bigger than in_offset size:%lu, judge invalid for node:%s",
+                       peer_out_data_anchor->GetIdx(), in_node_output_offsets.size(), node->GetName().c_str());
+    GELOGE(FAILED, "[Check][Index:PeerOutDataAnchor]PeerIndex:%d bigger than in_offset size:%lu, node:%s",
+           peer_out_data_anchor->GetIdx(), in_node_output_offsets.size(), node->GetName().c_str());
     return FAILED;
   }
   mem_offset = in_node_output_offsets.at(peer_out_data_anchor->GetIdx());
@@ -584,11 +650,16 @@ Status GraphMemoryAssigner::AssignContinuousOutputMemory(const ge::NodePtr &node
                                                          uint32_t continuous_type) {
   GELOGI("Current node %s needs continuous output.", node->GetName().c_str());
   auto out_op_desc = node->GetOpDesc();
-  GE_IF_BOOL_EXEC(out_op_desc == nullptr, GELOGE(ge::FAILED, "out_op_desc is null."); return ge::FAILED);
+  GE_IF_BOOL_EXEC(out_op_desc == nullptr,
+                  REPORT_INNER_ERROR("E19999", "OpDesc is null, not expect for node:%s",
+                                     node->GetName().c_str());
+                  GELOGE(ge::FAILED, "[Check][OpDesc]null is invalid, node:%s",  node->GetName().c_str()));
   vector<int64_t> output_list = out_op_desc->GetOutputOffset();
   if ((out_op_desc->GetOutputsSize() > output_list.size()) || (output_list.size() == 0)) {
-    GELOGE(ge::FAILED, "The size %zu of node output desc is more than output_list's size %zu.",
-           out_op_desc->GetOutputsSize(), output_list.size());
+    REPORT_INNER_ERROR("E19999", "Output size:%zu more than output offset size:%zu, invalid in node:%s",
+                       out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
+    GELOGE(ge::FAILED, "[Check][InnerData]Output size:%zu more than output offset size:%zu, invalid in node:%s",
+           out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
     return ge::FAILED;
   }
 
@@ -647,14 +718,17 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
   map<string, vector<NodePtr>> connecting_output_atomic_nodes;
   Status status = FilterAtomicNodesForMemoryAssign(normal_atomic_and_clean_nodes_map, connecting_output_atomic_nodes);
   if (status != SUCCESS) {
-    GELOGE(status, "Failed to filter atomic nodes for memory assignment.");
+    GELOGE(status, "[Filter][AtomicNode]failed in graph_id:%u, graph_name:%s",
+           compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return status;
   }
 
   auto mem_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ does not have type[HBM], not expected, "
+                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData]memory_offset_ does not have memory type[HBM]"
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return FAILED;
   }
 
@@ -670,7 +744,7 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
         vector<int64_t> mem_offset_end;
         status = AssignAtomicOutputAndWorkspaceMemory(atomic_node, mem_offset_end);
         if (status != SUCCESS) {
-          GELOGE(status, "Assign atomic output and workspace memory failed, node name is %s.",
+          GELOGE(status, "[Assign][Memory]output atomic mem and workspace mem, fail for node name is %s.",
                  atomic_node->GetName().c_str());
           return status;
         }
@@ -679,7 +753,7 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
       int64_t atomic_mem_size = static_cast<int64_t>(mem_iter->second.mem_offset_) - atomic_mem_start;
       if (atomic_mem_size != 0) {
         GE_CHK_STATUS_RET(SetAtomicCleanAttr(iter.first, {atomic_mem_start}, {atomic_mem_size}, RT_MEMORY_HBM),
-                          "Failed to set attr for atomic addr clean node %s.", iter.first->GetName().c_str());
+                          "[Set][Attr]fail for atomic addr clean node %s.", iter.first->GetName().c_str());
       }
     }
     batch_max_mem_offset = std::max(batch_max_mem_offset, static_cast<int64_t>(mem_iter->second.mem_offset_));
@@ -690,7 +764,8 @@ Status GraphMemoryAssigner::ReAssignAtomicMemory(bool is_loop_graph) {
   for (auto &iter_batch : connecting_output_atomic_nodes) {
     mem_iter->second.mem_offset_ = batch_atomic_mem_start;
     if (AssignConnectNetOutputAtomicMemory(iter_batch.second) != SUCCESS) {
-      GELOGE(FAILED, "Failed to assign memory of nodes that connect to netoutput.");
+      GELOGE(FAILED, "[Assign][Memory]for nodes that connect to netoutput failed."
+             "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
       return FAILED;
     }
     batch_max_mem_offset = std::max(batch_max_mem_offset, static_cast<int64_t>(mem_iter->second.mem_offset_));
@@ -721,9 +796,10 @@ Status GraphMemoryAssigner::FilterAtomicNodesForMemoryAssign(
               // If GetBool fail, is_reference is false.
               (void) ge::AttrUtils::GetBool(peer_in_node_desc, ATTR_NAME_REFERENCE, is_reference);
               if (is_reference) {
-                std::string error = "Op" + FmtToStr(peer_in_node_desc->GetName()) +
-                    " cannot have both atomic and is_reference attribute.";
-                GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+                REPORT_INNER_ERROR("E19999", "Op:%s cannot have both atomic and is_reference attribute, "
+                                   "not support now", peer_in_node_desc->GetName().c_str());
+                GELOGE(FAILED, "[Check][Attr]Op:%s cannot have both atomic and is_reference attribute, "
+                               "not support now", peer_in_node_desc->GetName().c_str());
                 return ge::PARAM_INVALID;
               }
 
@@ -761,7 +837,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputAndWorkspaceMemory(const ge::NodeP
   // Assign atomic node output memory
   Status ret = AssignAtomicOutputMemory(node, mem_offset_end);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to assign atomic output memory, node is %s.", node_op_desc->GetName().c_str());
+    GELOGE(ret, "[Assign][Memory:Ouput:Atomic]Failed for node:%s.", node_op_desc->GetName().c_str());
     return ret;
   }
 
@@ -781,7 +857,7 @@ Status GraphMemoryAssigner::AssignAtomicOutputAndWorkspaceMemory(const ge::NodeP
       ret = AssignOrdinaryAtomicWorkspaceMemory(node_op_desc, atomic_workspace_info, mem_offset_end);
     }
     if (ret != SUCCESS) {
-      GELOGE(ret, "Assign atomic workspace memory failed, node is %s.", node_op_desc->GetName().c_str());
+      GELOGE(ret, "[Assign][Memory:Atomic:Workspace]fail for node:%s.", node_op_desc->GetName().c_str());
       return ret;
     }
   } else {
@@ -794,8 +870,10 @@ Status GraphMemoryAssigner::AssignAtomicOutputAndWorkspaceMemory(const ge::NodeP
 Status GraphMemoryAssigner::AssignConnectNetOutputAtomicMemory(vector<NodePtr> &connect_netoutput_nodes) {
   auto iter = memory_offset_.find(RT_MEMORY_HBM);
   if (iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ does not have type[HBM], not expected, "
+                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData]memory_offset_ does not have memory type[HBM]"
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return FAILED;
   }
   for (auto &node : connect_netoutput_nodes) {
@@ -811,13 +889,14 @@ Status GraphMemoryAssigner::AssignConnectNetOutputAtomicMemory(vector<NodePtr> &
            node->GetName().c_str(), node->GetOpDesc()->GetType().c_str(), original_atomic_mem_start);
     vector<int64_t> mem_offset_end;
     if (AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end) != SUCCESS) {
-      GELOGE(FAILED, "Assign atomic output and workspace memory failed, node is %s.", node->GetName().c_str());
+      GELOGE(FAILED, "[Assign][Memory]output atomic mem and workspace mem, fail for node name is %s.",
+             node->GetName().c_str());
       return FAILED;
     }
 
     // All atomic nodes use atomic_addr_clean op independently, so we need to set the attr separately.
     if (SetIndependentAtomicAttr(node, original_atomic_mem_start, mem_offset_end, RT_MEMORY_HBM) != SUCCESS) {
-      GELOGE(FAILED, "Failed to set atomic attr separately.");
+      GELOGE(FAILED, "[Set][Attr:IndependentAtomic]fail for node:%s", node->GetName().c_str());
       return FAILED;
     }
   }
@@ -842,8 +921,10 @@ Status GraphMemoryAssigner::AssignReferenceMemory() {
     vector<int64_t> output_list = out_op_desc->GetOutputOffset();
 
     if (out_op_desc->GetOutputsSize() > output_list.size()) {
-      GELOGE(ge::FAILED, "The size %zu of node output desc is more than output_list's size %zu.",
-             out_op_desc->GetOutputsSize(), output_list.size());
+      REPORT_INNER_ERROR("E19999", "Output size:%zu more than output offset size:%zu, judge invalid in node:%s",
+                         out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
+      GELOGE(ge::FAILED, "[Check][InnerData]Output size:%zu more than output offset size:%zu, invalid in node:%s",
+             out_op_desc->GetOutputsSize(), output_list.size(), node->GetName().c_str());
       return ge::FAILED;
     }
 
@@ -896,9 +977,12 @@ bool GraphMemoryAssigner::CheckInputIsSupportAtomic(const ge::NodePtr &node) {
     }
     if ((peer_op_desc->GetType() == CONSTANTOP) || (peer_op_desc->GetType() == AIPP_DATA_TYPE) ||
         (peer_op_desc->GetType() == VARIABLE)) {
-      std::string error = "Op" + FmtToStr(node->GetName()) + "'s peer out node" +
-          FmtToStr(peer_op_desc->GetName()) + " is invalid, Constant/AippData/Variable is not supported";
-      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+      REPORT_INNER_ERROR("E19999", "node(type:%s, name:%s) link to atomic node(name:%s), "
+                         "this situation not supported now",
+                         peer_op_desc->GetType().c_str(), peer_op_desc->GetName().c_str(), node->GetName().c_str());
+      GELOGE(ge::FAILED, "[Check][Link]node(type:%s, name:%s) link to atomic node(name:%s), "
+             "this situation not supported now",
+             peer_op_desc->GetType().c_str(), peer_op_desc->GetName().c_str(), node->GetName().c_str());
       return false;
     }
   }
@@ -918,22 +1002,26 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
   // Check atomic output
   vector<int64_t> output_list = op_desc->GetOutputOffset();
   if (atomic_output_index.size() > output_list.size()) {
-    std::string error = "Op" + FmtToStr(node->GetName()) +
-        "'s size of atomic_output_index is more than the size of output_list";
+    std::string error =
+        "Op:" + FmtToStr(node->GetName()) + "'s size:" + FmtToStr(atomic_output_index.size()) +
+        " of atomic_output_index is more than the size:" + FmtToStr(output_list.size()) + " of output_list";
     GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
     return ge::FAILED;
   }
   auto output_list_size = static_cast<int64_t>(output_list.size());
   auto iter = memory_offset_.find(RT_MEMORY_HBM);
   if (iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ does not have type[HBM], not expected, "
+                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData]memory_offset_ does not have memory type[HBM]"
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return FAILED;
   }
   for (auto &output_index : atomic_output_index) {
     if (output_index >= output_list_size) {
-      std::string error = "Op" + FmtToStr(node->GetName()) + "'s output index" + FmtToStr(output_index) +
-          " is more than the size" + FmtToStr(output_list_size) + " of output_list.";
+      std::string error =
+          "Op:" + FmtToStr(node->GetName()) + "'s atomic_output index:" + FmtToStr(output_index) +
+          " is more than the size:" + FmtToStr(output_list_size) + " of output_list.";
       GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
       return ge::PARAM_INVALID;
     }
@@ -941,7 +1029,8 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
     // If the input of the cascade op needs to clear the atomic addr, there is no need to clear it separately here
     bool is_assigned_mem = false;
     if (GetMemoryAssignmentStatus(node, output_index, is_assigned_mem) != SUCCESS) {
-      GELOGE(ge::FAILED, "Failed to get memory assignment of node %s.", node->GetName().c_str());
+      GELOGE(ge::FAILED, "[Get][MemoryAssignmentStatus]fail for node %s, out_index:%ld",
+             node->GetName().c_str(), output_index);
       return ge::FAILED;
     }
 
@@ -981,8 +1070,9 @@ Status GraphMemoryAssigner::AssignAtomicOutputMemory(const ge::NodePtr &node, ve
 Status GraphMemoryAssigner::GetMemoryAssignmentStatus(const ge::NodePtr &node, int64_t output_index,
                                                       bool &is_mem_assigned) {
   if (static_cast<size_t>(output_index) >= node->GetAllOutDataAnchors().size()) {
-    std::string error = "Op" + FmtToStr(node->GetName()) + "'s output index" + FmtToStr(output_index) +
-        " is more than the size of node's AllOutDataAnchors.";
+    std::string error =
+        "Op:" + FmtToStr(node->GetName()) + "'s output index:" + FmtToStr(output_index) +
+        " is more than the size:" + FmtToStr(node->GetAllOutDataAnchors().size()) + " of node's AllOutDataAnchors.";
     GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
     return ge::PARAM_INVALID;
   }
@@ -1010,8 +1100,10 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
   GELOGI("Begin to reassign normal atomic memory, node = %s.", op_desc->GetName().c_str());
   auto mem_type_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_type_iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ does not have type[HBM], not expected, "
+                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData]memory_offset_ does not have memory type[HBM]"
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return FAILED;
   }
   vector<int64_t> workspace_vector = op_desc->GetWorkspace();
@@ -1032,8 +1124,9 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
       auto workspace_index = static_cast<uint64_t>(info_iter.first);
       auto workspace_size = info_iter.second;
       if (workspace_index >= workspace_vector.size()) {
-        std::string error = "The workspace index" + FmtToStr(workspace_index) +
-            " is more than the size" + FmtToStr(workspace_vector.size()) + " of workspace vector.";
+        std::string error = "The workspace index:" + FmtToStr(workspace_index) +
+            " is more than the size:" + FmtToStr(workspace_vector.size()) + " of workspace vector in op:" +
+            op_desc->GetName().c_str();
         GE_ERRORLOG_AND_ERRORMSG(ge::PARAM_INVALID, error.c_str());
         return ge::PARAM_INVALID;
       }
@@ -1063,8 +1156,10 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
   GELOGI("Begin to reassign fusion atomic memory, node = %s.", op_desc->GetName().c_str());
   auto mem_type_iter = memory_offset_.find(RT_MEMORY_HBM);
   if (mem_type_iter == memory_offset_.end()) {
-    std::string error = "Memory offset does not have memory type" + FmtToStr(RT_MEMORY_HBM);
-    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ does not have type[HBM], not expected, "
+                       "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData]memory_offset_ does not have memory type[HBM]"
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return FAILED;
   }
   map<string, map<int64_t, int64_t>> sub_node_workspace_offset;
@@ -1095,7 +1190,10 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
     sub_node_workspace_offset.insert(std::make_pair(iter.first, index_offset));
   }
   if (!(op_desc->SetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_OFFSET, sub_node_workspace_offset))) {
-    GELOGE(FAILED, "Set EXT_ATTR_ATOMIC_WORKSPACE_OFFSET failed, op name:%s.", op_desc->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for node:%s",
+                       EXT_ATTR_ATOMIC_WORKSPACE_OFFSET.c_str(), op_desc->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr:%s]fail for node:%s.",
+           EXT_ATTR_ATOMIC_WORKSPACE_OFFSET.c_str(), op_desc->GetName().c_str());
     return FAILED;
   }
 
@@ -1106,7 +1204,8 @@ Status GraphMemoryAssigner::CheckOffset() {
   std::map<std::string, std::string> anchor_to_symbol;
   std::map<std::string, std::list<NodeIndexIO>> symbol_to_anchors;
   if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors, anchor_to_symbol) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Get ref-mapping for graph %s failed", compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Get][RefMapping]fail for graph %s", compute_graph_->GetName().c_str());
     return FAILED;
   }
   for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
@@ -1148,18 +1247,55 @@ Status GraphMemoryAssigner::CheckOffset() {
         std::string error = "Invalid workspace" + FmtToStr(ge::kInvalidOffset) +
             + " in node" + FmtToStr(node->GetName());
         GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
-        GELOGE(FAILED, "Invalid workspace in node: %s workspace: %ld.", node->GetName().c_str(), ge::kInvalidOffset);
         return FAILED;
       }
     }
+    // check reuse input and output
+    GE_CHK_STATUS_RET(CheckRefNodeOffset(node), "[Check][Offset]fail for node: %s", node->GetName().c_str());
   }
+
   return SUCCESS;
+}
+
+ge::Status GraphMemoryAssigner::CheckRefNodeOffset(const NodePtr &node) {
+  std::map<int32_t, int32_t> out2ins;
+  GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
+  auto opdesc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(opdesc);
+  auto output_list = opdesc->GetOutputOffset();
+  auto input_list = opdesc->GetInputOffset();
+  for (const auto &out2in : out2ins) {
+    auto out_i = out2in.first;
+    if (static_cast<size_t>(out_i) >= output_list.size()) {
+      std::string error = "Node" + FmtToStr(opdesc->GetName()) + "output offset size" +
+                          FmtToStr(output_list.size()) + "should bigger than ref out index" + FmtToStr(out_i);
+      GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+      return ge::FAILED;
+    }
+    auto in_i = out2in.second;
+    if (static_cast<size_t>(in_i) >= input_list.size()) {
+      std::string error = "Node" + FmtToStr(opdesc->GetName()) + "input offset size" +
+                          FmtToStr(input_list.size()) + "should bigger than ref input index" + FmtToStr(in_i);
+      GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+      return ge::FAILED;
+    }
+    if (output_list[out_i] != input_list[in_i]) {
+      std::string error = "Node" + FmtToStr(opdesc->GetName()) + "input offset " + FmtToStr(input_list[in_i]) +
+                          "should equal to output offset" + FmtToStr(output_list[out_i]) + "with ref in" +
+                          FmtToStr(in_i) + "to output" + FmtToStr(out_i);
+      GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+      return ge::FAILED;
+    }
+  }
+  return ge::SUCCESS;
 }
 
 ge::Status GraphMemoryAssigner::SetInputOffset() {
   if (memory_offset_.empty()) {
-    GELOGE(FAILED, "memory_offset_ is empty.");
-    return FAILED;
+    REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ empty, not expected, graph_id:%u, graph_name:%s",
+                       compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Check][InnerData:memory_offset_]empty is not expected, "
+           "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
   }
   for (auto pair : memory_offset_) {
     GEEVENT("[IMAS]AfterAssignMemory : %s memoffset[%zu], memtype[%ld]", compute_graph_->GetName().c_str(),
@@ -1168,7 +1304,7 @@ ge::Status GraphMemoryAssigner::SetInputOffset() {
 
   for (const ge::NodePtr &node : compute_graph_->GetAllNodes()) {
     if (UpdateOpInputOffset(node) != ge::SUCCESS) {
-      GELOGE(ge::FAILED, "Update op input offset failed");
+      GELOGE(ge::FAILED, "[Update][Offset:Input]fail for op:%s", node->GetName().c_str());
       return ge::FAILED;
     }
   }
@@ -1230,6 +1366,8 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
   origin_input_list = tmp_op_desc->GetInputOffset();
   int64_t valid_input_index = 0;
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(tmp_op_desc, ATTR_NAME_INPUT_MEM_TYPE_LIST, memory_type);
+  std::map<int32_t, int32_t> out2ins;
+  GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
   for (const auto &anchor : node->GetAllInDataAnchors()) {
     vector<int64_t> output_list;
     auto peer_out_anchor = anchor->GetPeerOutAnchor();
@@ -1250,17 +1388,25 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         auto ori_input_offset_list_size = origin_input_list.size();
         auto mem_type_size = memory_type.size();
         if ((input_size != mem_type_size) || (input_size != ori_input_offset_list_size)) {
-            std::string error = "fusion: node" + FmtToStr(tmp_op_desc->GetName()) +
+            std::string error = "Node" + FmtToStr(tmp_op_desc->GetName()) +
                 + " input_size" + FmtToStr(input_size) + " diff from memory_type_size" +
                 FmtToStr(mem_type_size) + " from ori_input_offset_list_size" +
                 FmtToStr(ori_input_offset_list_size);
             GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
           return ge::FAILED;
         }
-        // not hbm keep orignal inputoffest
-        // hbm inputoffset = original inputoffset + outputoffset
-        input_offset = (memory_type[valid_input_index] == RT_MEMORY_L1 ? origin_input_list[valid_input_index]
-                       : origin_input_list[valid_input_index] + output_list.at(out_index));
+        GELOGD("Node[%s] input[%d] has origin offset[%ld]", tmp_op_desc->GetName().c_str(), anchor->GetIdx(),
+               origin_input_list[valid_input_index]);
+        // L1 keep original input_offset
+        if (memory_type[valid_input_index] == RT_MEMORY_L1) {
+          input_offset = origin_input_list[valid_input_index];
+        } else {
+          // hbm input_offset = original input_offset + output_offset
+          input_offset = origin_input_list[valid_input_index] + output_list.at(out_index);
+          // update ref output_offset when input change
+          GE_CHK_STATUS_RET(UpdateRefOpOutputOffset(node, out2ins, anchor->GetIdx(), input_offset),
+                            "[Update][RefOffset]fail for node: %s", node->GetName().c_str());
+        }
       }
       const auto &in_node = GetKnownInputNode(peer_out_anchor->GetOwnerNode());
       if (in_node->GetType() == CONSTANT) {
@@ -1268,15 +1414,35 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
         GE_CHK_STATUS(TensorUtils::GetDataOffset(tensor_desc, input_offset));
       }
 
-      GELOGD("%s node[%s] input[%ld] is set from node[%s] out index[%lu] offset[%ld]",
-             has_mem_type_attr ? "Fusion" : "",
-             tmp_op_desc->GetName().c_str(),
-             valid_input_index,
-             peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(),
-             out_index,
+      GELOGD("Node[%s] input[%d] is set from node[%s] out index[%lu] offset[%ld]", tmp_op_desc->GetName().c_str(),
+             anchor->GetIdx(), peer_out_anchor->GetOwnerNode()->GetOpDesc()->GetName().c_str(), out_index,
              input_offset);
       input_list.emplace_back(input_offset);
       valid_input_index++;
+    }
+  }
+  return ge::SUCCESS;
+}
+
+ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, const std::map<int32_t, int32_t> &out2ins,
+                                                        const int ref_in, const int64_t input_offset) const {
+  auto opdesc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(opdesc);
+  for (const auto &out2in : out2ins) {
+    auto out_i = out2in.first;
+    auto in_i = out2in.second;
+    if (in_i == ref_in) {
+      auto origin_output_list = opdesc->GetOutputOffset();
+      if (static_cast<size_t>(out_i) >= origin_output_list.size()) {
+        std::string error = "Node" + FmtToStr(opdesc->GetName()) + "output offset size" +
+                            FmtToStr(origin_output_list.size()) + "should bigger than ref out index" + FmtToStr(out_i);
+        GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+        return ge::FAILED;
+      }
+      origin_output_list[out_i] = input_offset;
+      opdesc->SetOutputOffset(origin_output_list);
+      GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld]", opdesc->GetName().c_str(),
+             out_i, ref_in, input_offset);
     }
   }
   return ge::SUCCESS;
@@ -1316,12 +1482,12 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node) const {
     }
   } else if (node->GetType() == DATA_TYPE) {
     if (UpdateConstArgsOffset(node, input_list) != SUCCESS) {
-      GELOGE(FAILED, "Update data: %s args offset failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Update][Offset:Input:Const]fail for node:%s ", node->GetName().c_str());
       return FAILED;
     }
   } else {
     if (UpdateOpInputOffset(node, input_list) != SUCCESS) {
-      GELOGE(FAILED, "Update node: %s input offset failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Update][Offset:Input]fail for node:%s", node->GetName().c_str());
       return FAILED;
     }
   }
@@ -1361,7 +1527,7 @@ Status GraphMemoryAssigner::SetIndependentAtomicAttr(const ge::NodePtr &node, in
              peer_out_node_desc->GetName().c_str(), peer_out_node_desc->GetType().c_str());
       if (peer_out_node_desc->GetType() == ATOMICADDRCLEAN) {
         if (SetAtomicCleanAttr(peer_out_node, memory_offset_start, memory_offset_size, memory_type) != SUCCESS) {
-          GELOGE(FAILED, "Set atomic clean attr failed.");
+          GELOGE(FAILED, "[Set][AtomicCleanAttr]fail for node:%s", peer_out_node->GetName().c_str());
           return FAILED;
         }
       }
@@ -1387,7 +1553,10 @@ ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &node, const ve
     (void) ge::AttrUtils::GetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_START, mem_start_vector);
     mem_start_vector.insert(mem_start_vector.end(), atomic_mem_start.begin(), atomic_mem_start.end());
     GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_START, mem_start_vector),
-                     GELOGE(FAILED, "SetListInt failed.");
+                     REPORT_INNER_ERROR("E19999", "Set Attr:%s failed, op_name:%s",
+                                        ATTR_NAME_AUTOMIC_ADD_START.c_str(), node_op_desc->GetName().c_str());
+                     GELOGE(FAILED, "[Set][Attr:%s]fail for op_name:%s",
+                            ATTR_NAME_AUTOMIC_ADD_START.c_str(), node_op_desc->GetName().c_str());
                      return FAILED);
 
     std::vector<int64_t> mem_size_vector;
@@ -1395,7 +1564,10 @@ ge::Status GraphMemoryAssigner::SetAtomicCleanAttr(const NodePtr &node, const ve
     (void) ge::AttrUtils::GetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_MEM_SIZE, mem_size_vector);
     mem_size_vector.insert(mem_size_vector.end(), atomic_mem_size.begin(), atomic_mem_size.end());
     GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(node_op_desc, ATTR_NAME_AUTOMIC_ADD_MEM_SIZE, mem_size_vector),
-                     GELOGE(FAILED, "SetListInt failed.");
+                     REPORT_INNER_ERROR("E19999", "Set Attr:%s failed, op_name:%s",
+                                        ATTR_NAME_AUTOMIC_ADD_MEM_SIZE.c_str(), node_op_desc->GetName().c_str());
+                     GELOGE(FAILED, "[Set][Attr:%s]fail for op_name:%s",
+                            ATTR_NAME_AUTOMIC_ADD_MEM_SIZE.c_str(), node_op_desc->GetName().c_str());
                      return FAILED);
 
     std::stringstream ss;
@@ -1437,12 +1609,14 @@ ge::Status GraphMemoryAssigner::GetNodeListMemoryType(const vector<NodePtr> &nod
   // In the dynamic batch scenario, the memory attributes of nodes are the same.
   for (auto &n : nodes) {
     if (mem_reuse_model == kVirtualInputNodeMemoryReuse) {
-      GE_CHK_STATUS_RET(GetNodeMemoryType(n, memory_type, "input"), "Get node memory type failed.")
+      GE_CHK_STATUS_RET(GetNodeMemoryType(n, memory_type, "input"),
+                        "[Get][MemType:input]fail for node:%s", n->GetName().c_str())
       break;
     }
 
     if (mem_reuse_model == kVirtualOutputNodeMemoryReuse) {
-      GE_CHK_STATUS_RET(GetNodeMemoryType(n, memory_type, "output"), "Get node memory type failed.");
+      GE_CHK_STATUS_RET(GetNodeMemoryType(n, memory_type, "output"),
+                        "[Get][MemType:output]fail for node:%s", n->GetName().c_str())
       break;
     }
   }
@@ -1478,7 +1652,7 @@ ge::Status GraphMemoryAssigner::GetNodeMemoryType(const NodePtr &node, int64_t &
   }
 
   if (!CheckContinuousMemType(mem_type_list)) {
-    GELOGE(FAILED, "Check continuous memory type failed.");
+    GELOGE(FAILED, "[Check][MemType:Continuous]fail for node:%s", node->GetName().c_str());
     return FAILED;
   }
   // It is continuous memory and memory type is the same, so use the first memory.
@@ -1518,7 +1692,7 @@ void GraphMemoryAssigner::PrintMemoryOffset() {
   }
 }
 
-ge::Status GraphMemoryAssigner::GetAllRef(const NodePtr &node, map<int32_t, int32_t> &out2ins) {
+ge::Status GraphMemoryAssigner::TryGetNodeRefIndexes(const NodePtr &node, map<int32_t, int32_t> &out2ins) const{
   for (const auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     int32_t reuse_in_index = -1;
     bool reuse_input_flag = GraphUtils::IsRefFromInput(out_data_anchor, reuse_in_index);
@@ -1526,7 +1700,11 @@ ge::Status GraphMemoryAssigner::GetAllRef(const NodePtr &node, map<int32_t, int3
       if (node->GetInDataAnchor(reuse_in_index) != nullptr) {
         out2ins.emplace(out_data_anchor->GetIdx(), reuse_in_index);
       } else {
-        GELOGE(FAILED, "Invalid reuse_input value %d on output %d of node %s, please check attr reuse_input",
+        REPORT_INNER_ERROR("E19999", "Invalid reuse_input value %d on output %d of node %s, "
+                           "please check attr reuse_input",
+                           reuse_in_index, out_data_anchor->GetIdx(), node->GetName().c_str());
+        GELOGE(FAILED, "[Check][Attr]Invalid reuse_input value %d on output %d of node %s, "
+               "please check attr reuse_input",
                reuse_in_index, out_data_anchor->GetIdx(), node->GetName().c_str());
         return FAILED;
       }
@@ -1549,7 +1727,7 @@ bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
     auto continuous_type = iter->second;
     bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
     if (continuous_input) {
-      GELOGI("Node %s 's precursor node %s need assign continuous input memory, store node firstly.",
+      GELOGI("[Store][Node] of %s cause it's precursor node %s need assign continuous input memory",
              input_continuous_node->GetName().c_str(), in_node->GetName().c_str());
       return false;
     }
@@ -1559,7 +1737,7 @@ bool GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcessDirectly(
     node_2_continuous_type.emplace(out_node, continuous_type);
     bool continuous_input = ((continuous_type & kTypeInput) != 0) || ((continuous_type & kTypeInputNoPadding) != 0);
     if (continuous_input) {
-      GELOGI("Node %s 's succeed node %s need assign continuous input memory, store node firstly.",
+      GELOGI("[Store][Node] of %s cause it's succeed node %s need assign continuous input memory",
              input_continuous_node->GetName().c_str(), out_node->GetName().c_str());
       return false;
     }
@@ -1575,11 +1753,12 @@ ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(con
   int64_t mem_clean_size = 0;
   int64_t memory_type = RT_MEMORY_HBM;
 
-  GE_CHK_STATUS_RET(GetNodeMemoryType(input_continuous_node, memory_type, "input"), "Get node memory type failed.");
+  GE_CHK_STATUS_RET(GetNodeMemoryType(input_continuous_node, memory_type, "input"),
+                    "[Get][MemType]fail for node:%s", input_continuous_node->GetName().c_str());
   auto ret = AssignContinuousInputMemory(input_continuous_node, mem_clean_start, mem_clean_size, memory_type,
                                          continuous_type, reverse_refresh);
   if (ret != ge::SUCCESS) {
-    GELOGE(ret, "Assign continuous input memory failed!");
+    GELOGE(ret, "[Assign][Memory:Input:continuous]fail for node:%s", input_continuous_node->GetName().c_str());
     return ret;
   }
 
@@ -1590,7 +1769,6 @@ ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(con
   if (!input_indexes.empty() && input_indexes[0] == kAllInputAddrIsAtomic) {
     // check whether there is an atomic conflict between the current node and the peer out node
     if (!CheckInputIsSupportAtomic(input_continuous_node)) {
-      GELOGE(ge::FAILED, "There is an atomic conflict between the current node and the peer out node, not supported!");
       return ge::FAILED;
     }
 
@@ -1602,7 +1780,7 @@ ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(con
       if (peer_out_node->GetType() == ATOMICADDRCLEAN) {
         ret = SetAtomicCleanAttr(peer_out_node, {mem_clean_start}, {mem_clean_size}, memory_type);
         if (ret != SUCCESS) {
-          GELOGE(ret, "Failed to set attr for atomic addr clean node %s.", peer_out_node->GetName().c_str());
+          GELOGE(ret, "[Set][AtomicCleanAttr]fail for node:%s", peer_out_node->GetName().c_str());
           return ret;
         }
       }
@@ -1612,4 +1790,54 @@ ge::Status GraphMemoryAssigner::AssignContinuousInputMemoryWithAtomicProcess(con
   return ge::SUCCESS;
 }
 
+Status GraphMemoryAssigner::AssignBufferPoolMemory() {
+  auto is_buffer_pool_mem_enable = [] (const ComputeGraphPtr &graph) -> bool {
+    for (NodePtr &node : graph->GetAllNodes()) {
+      auto op_desc = node->GetOpDesc();
+      if (op_desc == nullptr) {
+        continue;
+      }
+      bool has_attrs = op_desc->HasAttr(ATTR_NAME_BUFFER_POOL_ID) && op_desc->HasAttr(ATTR_NAME_BUFFER_POOL_SIZE);
+      if (has_attrs) {
+        return true;
+      }
+    }
+    return false;
+  };
+  auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
+  GE_CHECK_NOTNULL(root_graph);
+  if (root_graph->GetGraphUnknownFlag()) {
+    GELOGI("[Check][Enable]Unknown root graph does not support buffer pool memory, graph:%s.",
+           compute_graph_->GetName().c_str());
+    return SUCCESS;
+  }
+  if (!is_buffer_pool_mem_enable(compute_graph_)) {
+    GELOGD("[Check][Enable]Buffer pool memory is not enable, graph:%s.", compute_graph_->GetName().c_str());
+    return SUCCESS;
+  }
+  map<int64_t, size_t> mem_type_to_offset;
+  for (const auto &pair : memory_offset_) {
+    mem_type_to_offset[pair.first] = pair.second.mem_offset_;
+  }
+  BufferPoolMemAssigner buffer_pool_mem_assigner(compute_graph_, mem_type_to_offset);
+  Status status = buffer_pool_mem_assigner.Assign();
+  if (status != SUCCESS) {
+    GELOGE(status, "[Assign][BufferPoolMem]Graph:%s.", compute_graph_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to assign buffer pool memory, graph:%s.", compute_graph_->GetName().c_str());
+    return status;
+  }
+  int64_t mem_type = buffer_pool_mem_assigner.GetMemType();
+  auto iter = memory_offset_.find(mem_type);
+  if (iter == memory_offset_.end()) {
+    GELOGE(FAILED, "[Check][MemType]Memory type is not supported, graph:%s, mem type:%ld.",
+           compute_graph_->GetName().c_str(), mem_type);
+    REPORT_INNER_ERROR("E19999", "Memory type is not supported, graph:%s, mem type:%ld.",
+                       compute_graph_->GetName().c_str(), mem_type);
+    return FAILED;
+  }
+  iter->second.mem_offset_ = buffer_pool_mem_assigner.GetMemOffset();
+  GELOGI("[Assign][BufferPoolMem]Assign buffer pool memory successfully, graph:%s, mem type:%ld, mem offset:%zu.",
+         compute_graph_->GetName().c_str(), mem_type, buffer_pool_mem_assigner.GetMemOffset());
+  return SUCCESS;
+}
 }  // namespace ge

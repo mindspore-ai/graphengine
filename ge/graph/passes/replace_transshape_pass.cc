@@ -43,6 +43,8 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
   std::string op_type;
   auto ret = GetOriginalType(trans_shape_node, op_type);
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get OriginalType of op:%s(%s) failed",
+                      trans_shape_node->GetName().c_str(), trans_shape_node->GetType().c_str());
     GELOGE(FAILED, "Get node %s original type failede", trans_shape_node->GetName().c_str());
     return FAILED;
   }
@@ -52,6 +54,7 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
   std::string node_name = trans_shape_node->GetName() + "ToMemcpy";
   auto dst_op_desc = MakeShared<OpDesc>(node_name, MEMCPYASYNC);
   if (dst_op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(FAILED, "Make node %s opdesc failed", node_name.c_str());
     return FAILED;
   }
@@ -59,6 +62,8 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
   for (InDataAnchorPtr &in_anchor : trans_shape_node->GetAllInDataAnchors()) {
     auto ret = dst_op_desc->AddInputDesc(src_op_desc->GetInputDesc(in_anchor->GetIdx()));
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                        dst_op_desc->GetName().c_str(), dst_op_desc->GetType().c_str());
       GELOGE(FAILED, "Add input desc failed");
       return FAILED;
     }
@@ -66,6 +71,8 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
   for (OutDataAnchorPtr &out_anchor : trans_shape_node->GetAllOutDataAnchors()) {
     auto ret = dst_op_desc->AddOutputDesc(src_op_desc->GetOutputDesc(out_anchor->GetIdx()));
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
+                        src_op_desc->GetName().c_str(), src_op_desc->GetType().c_str());
       GELOGE(FAILED, "Add output desc failed");
       return FAILED;
     }

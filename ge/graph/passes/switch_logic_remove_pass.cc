@@ -45,11 +45,15 @@ Status GetPredNode(const NodePtr &switch_node, PredNodeAndOut &pred_node_index) 
   GE_CHECK_NOTNULL(switch_node);
   auto pred_in_anchor = switch_node->GetInDataAnchor(kSwitchPredIndex);
   if (pred_in_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d in data anchor, check invalid",
+                       switch_node->GetName().c_str(), switch_node->GetType().c_str(), kSwitchPredIndex);
     GELOGE(INTERNAL_ERROR, "Failed to get pred node for switch %s, no pred anchor", switch_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
   auto pred_node_anchor = pred_in_anchor->GetPeerOutAnchor();
   if (pred_node_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s)'s index:%d in data anchor, its peer anchor is nullptr, check invalid",
+                       switch_node->GetName().c_str(), switch_node->GetType().c_str(), kSwitchPredIndex);
     GELOGE(INTERNAL_ERROR,
            "Failed to get pred node for switch %s, node peer out anchor",
            switch_node->GetName().c_str());
@@ -57,6 +61,8 @@ Status GetPredNode(const NodePtr &switch_node, PredNodeAndOut &pred_node_index) 
   }
   auto pred_node = pred_node_anchor->GetOwnerNode();
   if (pred_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s)'s index:%d in data anchor, its peer node is nullptr, check invalid",
+                       switch_node->GetName().c_str(), switch_node->GetType().c_str(), kSwitchPredIndex);
     GELOGE(INTERNAL_ERROR,
            "Failed to get pred node for switch %s, null node",
            switch_node->GetName().c_str());
@@ -89,11 +95,15 @@ Status SwitchLogicRemovePass::Run(NodePtr &node) {
     }
     for (auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
       if (in_anchor == nullptr) {
+        REPORT_INNER_ERROR("E19999", "Node:%s(%s)'s index:%d out data anchor, its peer anchors has nullptr, "
+                           "check invalid", node->GetName().c_str(), node->GetType().c_str(), i);
         GELOGE(INTERNAL_ERROR, "The in-anchor from out anchor %d node %s is null", i, node->GetName().c_str());
         return INTERNAL_ERROR;
       }
       auto dst_node = in_anchor->GetOwnerNode();
       if (dst_node == nullptr) {
+        REPORT_INNER_ERROR("E19999", "Node:%s(%s)'s index:%d out data anchor, its peer nodes has nullptr, "
+                           "check invalid", node->GetName().c_str(), node->GetType().c_str(), i);
         GELOGE(INTERNAL_ERROR, "The peer node from out anchor %d node %s is null", i, node->GetName().c_str());
         return INTERNAL_ERROR;
       }
@@ -143,6 +153,8 @@ Status SwitchLogicRemovePass::RemoveSwitchNodeLogically(int parent_index, NodePt
     std::vector<NodePtr> end_nodes;
     auto ret = PassUtils::RemoveInactiveBranchToMerge(out_anchor, deleted_nodes, end_nodes);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove inactive branch from node:%s(%s) to merge failed",
+                        switch_node->GetName().c_str(), switch_node->GetType().c_str());
       return ret;
     }
 

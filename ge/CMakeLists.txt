@@ -31,6 +31,7 @@ set(PROTO_HEADER_LIST
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
 protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
 protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
+protobuf_generate(ge_client PROTO_CLIENT_HEADER_SRCS PROTO_CLIENT_HEADER_HDRS ${PROTO_HEADER_LIST})
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_proto_common.a ############
@@ -56,13 +57,18 @@ target_link_libraries(ge_proto_common PRIVATE
 
 ############ libge_proto_client.a ############
 add_library(ge_proto_client STATIC
-    ${PROTO_HEADER_HDRS}
+    ${PROTO_CLIENT_HEADER_HDRS}
     ${PROTO_CLIENT_SRCS}
 )
 
 target_compile_definitions(ge_proto_client PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     google=ascend_private
+)
+
+target_include_directories(ge_proto_client PRIVATE
+    ${CMAKE_BINARY_DIR}/proto/ge_client
+    ${CMAKE_BINARY_DIR}/proto/ge_client/proto
 )
 
 target_compile_options(ge_proto_client PRIVATE
@@ -102,6 +108,7 @@ set(TRAIN_SRC_LIST
     "common/helper/model_cache_helper.cc"
     "common/profiling/profiling_manager.cc"
     "common/dump/dump_manager.cc"
+    "common/dump/exception_dumper.cc"
     "common/dump/dump_properties.cc"
     "common/dump/opdebug_register.cc"
     "common/dump/dump_op.cc"
@@ -189,6 +196,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/atomic_addr_clean_pass.cc"
     "graph/passes/mark_same_addr_pass.cc"
     "graph/passes/mark_graph_unknown_status_pass.cc"
+    "graph/passes/mark_node_unknown_shape_pass.cc"
     "graph/passes/mark_agnostic_pass.cc"
     "graph/partition/dynamic_shape_partition.cc"
     "graph/partition/stage_partition.cc"
@@ -209,6 +217,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/dimension_compute_pass.cc"
     "graph/passes/dropout_pass.cc"
     "graph/passes/hccl_group_pass.cc"
+    "graph/passes/hccl_tailing_optimization_pass.cc"
     "graph/passes/enter_pass.cc"
     "graph/passes/assign_remove_pass.cc"
     "graph/passes/inplace_support_check_pass.cc"
@@ -320,7 +329,9 @@ set(TRAIN_SRC_LIST
     "graph/passes/variable_ref_useless_control_out_delete_pass.cc"
     "graph/passes/end_of_sequence_add_control_pass.cc"
     "graph/passes/memcpy_addr_async_pass.cc"
+    "graph/passes/parallel_group_pass.cc"
     "graph/passes/set_input_output_offset_pass.cc"
+    "graph/passes/buffer_pool_memory_pass.cc"
     "graph/preprocess/graph_preprocess.cc"
     "graph/preprocess/insert_op/ge_aipp_op.cc"
     "graph/preprocess/insert_op/util_insert_aipp_op.cc"
@@ -399,6 +410,7 @@ set(TRAIN_SRC_LIST
     "graph/build/memory/hybrid_mem_assigner.cc"
     "graph/build/memory/max_block_mem_assigner.cc"
     "graph/build/memory/var_mem_assign_util.cc"
+    "graph/build/memory/buffer_pool_mem_assigner.cc"
 )
 
 set(INFER_SRC_LIST
@@ -426,6 +438,7 @@ set(INFER_SRC_LIST
     "common/formats/formats.cc"
     "common/profiling/profiling_manager.cc"
     "common/dump/dump_properties.cc"
+    "common/dump/exception_dumper.cc"
     "common/dump/dump_manager.cc"
     "common/dump/dump_op.cc"
     "common/dump/opdebug_register.cc"
@@ -499,6 +512,7 @@ set(INFER_SRC_LIST
     "graph/passes/atomic_addr_clean_pass.cc"
     "graph/passes/mark_same_addr_pass.cc"
     "graph/passes/mark_graph_unknown_status_pass.cc"
+    "graph/passes/mark_node_unknown_shape_pass.cc"
     "graph/passes/mark_agnostic_pass.cc"
     "graph/common/omg_util.cc"
     "graph/common/bcast.cc"
@@ -605,8 +619,11 @@ set(INFER_SRC_LIST
     "graph/passes/link_gen_mask_nodes_pass.cc"
     "graph/passes/replace_with_empty_const_pass.cc"
     "graph/passes/hccl_group_pass.cc"
+    "graph/passes/hccl_tailing_optimization_pass.cc"
     "graph/passes/memcpy_addr_async_pass.cc"
     "graph/passes/set_input_output_offset_pass.cc"
+    "graph/passes/parallel_group_pass.cc"
+    "graph/passes/buffer_pool_memory_pass.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/util/rt_context_util.cc"
     "graph/manager/util/variable_accelerate_ctrl.cc"
@@ -670,6 +687,7 @@ set(INFER_SRC_LIST
     "graph/build/memory/hybrid_mem_assigner.cc"
     "graph/build/memory/max_block_mem_assigner.cc"
     "graph/build/memory/var_mem_assign_util.cc"
+    "graph/build/memory/buffer_pool_mem_assigner.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
@@ -700,6 +718,7 @@ target_compile_definitions(ge_runner PRIVATE
     DAVINCI_CLOUD
     google=ascend_private
     FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_runner PRIVATE
@@ -775,6 +794,7 @@ target_compile_definitions(ge_compiler PRIVATE
     COMPILE_OMG_PACKAGE
     google=ascend_private
     FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_compiler PRIVATE
@@ -937,6 +957,10 @@ add_library(atc_stub_ge_compiler SHARED
 
 add_dependencies(atc_stub_ge_compiler ge_stub)
 
+target_compile_options(atc_stub_ge_compiler PRIVATE
+    -fno-common
+)
+
 target_link_libraries(atc_stub_ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
 )
@@ -972,6 +996,10 @@ add_library(fwk_stub_ge_runner SHARED
 )
 
 add_dependencies(fwk_stub_ge_runner ge_stub)
+
+target_compile_options(fwk_stub_ge_runner PRIVATE
+    -fno-common
+)
 
 target_link_libraries(fwk_stub_ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>

@@ -40,6 +40,7 @@ class StreamResource {
   rtStream_t GetStream() const;
   void SetStream(rtStream_t stream);
 
+  Status Init();
   SingleOp *GetOperator(const uint64_t key);
   DynamicSingleOp *GetDynamicOperator(const uint64_t key);
 
@@ -49,6 +50,9 @@ class StreamResource {
   uint8_t *MallocMemory(const std::string &purpose, size_t size, bool holding_lock = true);
   uint8_t *MallocWeight(const std::string &purpose, size_t size);
   const uint8_t *GetMemoryBase() const;
+  void *GetDeviceBufferAddr() const {
+    return device_buffer_;
+  }
 
  private:
   uint8_t *DoMallocMemory(const std::string &purpose,
@@ -65,6 +69,7 @@ class StreamResource {
   rtStream_t stream_ = nullptr;
   std::mutex mu_;
   std::mutex stream_mu_;
+  void *device_buffer_ = nullptr;
 };
 }  // namespace ge
 

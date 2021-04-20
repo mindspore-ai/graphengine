@@ -184,6 +184,20 @@ class GraphManager {
 
   Status SaveCheckPointResult(const Graph &graph, const std::vector<Tensor> &outputs, map<string, Tensor> &var_results);
 
+  void RemoveGraphCount(GraphId graph_id);
+
+  void IncreaseGraphCount(GraphId graph_id);
+
+  void DecreaseGraphCount(GraphId graph_id);
+
+  Status GetGraphCount(GraphId graph_id, uint32_t &count);
+
+  void SetAddGraphCondition(GraphId graph_id, uint32_t cond);
+
+  uint32_t GetAddGraphCondition(GraphId graph_id);
+
+  void RemoveAddGraphCondition(GraphId graph_id);
+
  private:
   struct CompilerStages {
     GraphPrepare preparer;
@@ -358,6 +372,7 @@ class GraphManager {
                                      ComputeGraphPtr &compute_graph,
                                      GeRootModelPtr &ge_root_model,
                                      uint64_t session_id);
+  Status SetFuzzCompileFlag(ComputeGraphPtr &compute_graph);
 
   Status CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_graph,
                                    Graph2SubGraphInfoList &sub_graph_map,
@@ -379,6 +394,24 @@ class GraphManager {
 
   CompilerStages &GetCompilerStages(GraphId graph_id);
   void RemoveCompilerStages(GraphId graph_id);
+
+  static Status CheckIncreBuildAndPreRun(GraphManager *graph_manager, const PreRunArgs &args, GraphNodePtr &graph_node,
+                                         GeRootModelPtr &ge_root_model);
+
+  void ReleaseMemory(const GeModelPtr &ge_model, GraphNodePtr &graph_node, const std::vector<uint32_t> &model_ids,
+                     uint32_t graph_id, uint64_t session_id);
+
+  Status CheckRepeatAdd(uint32_t graph_id, bool &is_added);
+
+  Status NotifyWaittingGraph(uint32_t graph_id);
+
+  Status CreateGraphNode(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options);
+
+  Status SetStagesOptions(uint32_t graph_id, const GraphManagerOptions &options);
+
+  Status UnloadModel(GeRootModelPtr ge_root_model, uint32_t graph_id);
+
+  void SetSessionGraphId(ComputeGraphPtr compute_graph, uint32_t graph_id);
 
   std::atomic_bool thread_run_flag_;
   BlockingQueue<PreRunArgs> prerun_args_q_{};
@@ -415,6 +448,16 @@ class GraphManager {
 
   std::mutex member_mutex_;
   std::mutex unload_model_mutex_;
+  // avoid repeatively add same graph (owns same graph id)
+  std::mutex add_graph_mutex_;
+  std::mutex add_graph_cond_mutex_;
+  std::condition_variable add_graph_cv_;
+
+  std::map<GraphId, uint32_t> graph_id_to_add_graph_cond_;
+  // use for multi-thread online-infer scenario
+  std::set<GraphId> to_be_deleted_graphs_;
+  std::map<GraphId, uint32_t> graph_count_;
+  std::mutex graph_count_mutex_;
 };
 }  // namespace ge
 

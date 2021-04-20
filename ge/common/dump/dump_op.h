@@ -34,12 +34,13 @@ class DumpOp {
                    vector<uintptr_t> output_addrs, rtStream_t stream);
   Status LaunchDumpOp();
   void SetLoopAddr(void *global_step, void *loop_per_iter, void *loop_cond);
-  void SetDynamicModelInfo(const string &dynamic_model_name, uint32_t dynamic_model_id);
+  void SetDynamicModelInfo(const string &dynamic_model_name, const string &dynamic_om_name, uint32_t dynamic_model_id);
 
  private:
   Status ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info);
   Status DumpOutput(aicpu::dump::Task &task);
   Status DumpInput(aicpu::dump::Task &task);
+  Status SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info);
 
   DumpProperties dump_properties_;
   OpDescPtr op_desc_;
@@ -54,6 +55,7 @@ class DumpOp {
   uintptr_t loop_cond_;
 
   std::string dynamic_model_name_;
+  std::string dynamic_om_name_;
   std::uint32_t dynamic_model_id_;
 };
 }  // namespace ge

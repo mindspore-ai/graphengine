@@ -99,8 +99,9 @@ static void ParseAtcParms(const std::map<std::string, std::string> &atc_params, 
   }
 }
 
-static Status CheckInputShapeNode(const ComputeGraphPtr &graph, const bool is_dynamic_input, RunMode run_mode) {
-  if (!is_dynamic_input && run_mode != MODEL_TO_JSON) {
+static Status CheckInputShapeNode(const ComputeGraphPtr &graph, bool is_dynamic_input,
+                                  const std::string &input_shape_range, RunMode run_mode) {
+  if (!is_dynamic_input && run_mode != MODEL_TO_JSON && input_shape_range.empty()) {
     for (auto node : graph->GetDirectNode()) {
       if (node->GetType() == DATA) {
         auto data_op_desc = node->GetOpDesc();
@@ -576,6 +577,7 @@ Status InitDomiOmgContext(const string &input_shape, const string &input_format,
     GELOGE(PARAM_INVALID, "Failed to parse input shape: %s", input_shape.c_str());
     return PARAM_INVALID;
   }
+
   return SUCCESS;
 }
 
@@ -759,8 +761,9 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   ParseAtcParms(atc_params, "is_input_adjust_hw_layout", is_input_adjust_hw_layout);
   compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_RETURN_IF_ERROR(CheckInputFp16Nodes(compute_graph, input_fp16_nodes, is_input_adjust_hw_layout));
-
-  GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph, is_dynamic_input, run_mode));
+  std::string input_shape_range;
+  ParseAtcParms(atc_params, INPUT_SHAPE_RANGE, input_shape_range);
+  GE_RETURN_IF_ERROR(CheckInputShapeNode(compute_graph, is_dynamic_input, input_shape_range, run_mode));
 
   // Verify the contents of the op_name_map
   if (op_conf != nullptr && *op_conf != '\0') {
@@ -787,6 +790,10 @@ FMK_FUNC_HOST_VISIBILITY Status ParseGraph(ge::Graph &graph, const std::map<stri
   PreChecker::Instance().Clear();
 
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, ret, "ATC weights parse ret fail.");
+
+  // parser input shape range and update op shape range
+  GE_RETURN_WITH_LOG_IF_ERROR(UpdateDynamicInputShapeRange(compute_graph, input_shape_range),
+                              "Update input shape range failed");
 
   GELOGI("ATC parser success.");
 

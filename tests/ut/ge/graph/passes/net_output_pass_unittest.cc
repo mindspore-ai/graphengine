@@ -631,6 +631,23 @@ TEST_F(UtestGraphPassesNetOutputPass, no_output_no_target_no_retval_success) {
   EXPECT_EQ(status, ge::SUCCESS);
 }
 
+TEST_F(UtestGraphPassesNetOutputPass, no_output_no_target_no_retval_no_outnodes_success) {
+  ge::ComputeGraphPtr compute_graph = build_graph();
+
+  ge::PassManager pass_managers;
+  pass_managers.AddPass("", new (std::nothrow) NetOutputPass);
+  Status status = pass_managers.Run(compute_graph);
+  EXPECT_EQ(status, ge::SUCCESS);
+
+  NodePtr net_out_node = compute_graph->FindNode(NODE_NAME_NET_OUTPUT);
+  EXPECT_NE(net_out_node, nullptr);
+  EXPECT_EQ(net_out_node->GetInControlNodes().size(), 2);
+
+  int stream_label = -1;
+  EXPECT_TRUE(ge::AttrUtils::GetInt(net_out_node->GetOpDesc(), ATTR_NAME_TRUE_BRANCH_STREAM, stream_label));
+  EXPECT_EQ(stream_label, 0);
+}
+
 TEST_F(UtestGraphPassesNetOutputPass, user_out_node_success) {
   ge::ComputeGraphPtr compute_graph = build_graph();
 

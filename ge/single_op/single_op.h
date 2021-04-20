@@ -59,6 +59,9 @@ class SingleOp {
   std::vector<OpTask *> tasks_;
   std::vector<std::vector<uintptr_t *>> arg_table_;
   std::unique_ptr<SingleOpModelParam> running_param_;
+  std::unique_ptr<hybrid::HybridModel> hybrid_model_;
+  std::unique_ptr<hybrid::HybridModelExecutor> hybrid_model_executor_;
+  std::vector<GeTensorDesc> inputs_desc_;
 };
 
 class DynamicSingleOp {
@@ -76,7 +79,8 @@ class DynamicSingleOp {
                         const std::vector<DataBuffer> &inputs,
                         std::vector<GeTensorDesc> &output_desc,
                         std::vector<DataBuffer> &outputs) const;
-
+  Status SetHostTensorValue(const std::vector<std::pair<size_t, uint64_t>> &inputs_size,
+                            const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &input_buffers);
   std::unique_ptr<OpTask> op_task_;
   std::unique_ptr<hybrid::HybridModel> hybrid_model_;
   std::unique_ptr<hybrid::HybridModelExecutor> hybrid_model_executor_;
@@ -85,6 +89,7 @@ class DynamicSingleOp {
   rtStream_t stream_ = nullptr;
   size_t num_inputs_ = 0;
   size_t num_outputs_ = 0;
+  ComputeGraphPtr compute_graph_;
 };
 }  // namespace ge
 #endif  // GE_SINGLE_OP_SINGLE_OP_H_

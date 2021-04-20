@@ -29,6 +29,8 @@ Status SnapshotPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get OriginalType of op:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(status_ret, "SnapshotPass get original type failed.");
     return status_ret;
   }

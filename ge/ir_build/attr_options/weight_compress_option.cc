@@ -30,12 +30,14 @@ graphStatus WeightCompressFunc(ComputeGraphPtr &graph, const string &cfg_path) {
   }
   std::string real_path = RealPath(cfg_path.c_str());
   if (real_path.empty()) {
-    GELOGE(GRAPH_PARAM_INVALID, "Can not get real path for %s.", cfg_path.c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Get][Path]Can not get real path for %s.", cfg_path.c_str());
+    REPORT_INPUT_ERROR("E10410", std::vector<std::string>({"cfgpath"}), std::vector<std::string>({cfg_path}));
     return GRAPH_PARAM_INVALID;
   }
   std::ifstream ifs(real_path);
   if (!ifs.is_open()) {
-    GELOGE(GRAPH_FAILED, "Open file %s failed", cfg_path.c_str());
+    GELOGE(GRAPH_FAILED, "[Open][File] %s failed", cfg_path.c_str());
+    REPORT_INNER_ERROR("E19999", "open file:%s failed.", cfg_path.c_str());
     return GRAPH_FAILED;
   }
 
@@ -55,7 +57,8 @@ graphStatus WeightCompressFunc(ComputeGraphPtr &graph, const string &cfg_path) {
       if ((op_desc->GetName() == compress_node_vec[i]) || IsOriginalOpFind(op_desc, compress_node_vec[i])) {
         is_find = true;
         if (!ge::AttrUtils::SetBool(op_desc, ge::ATTR_NAME_COMPRESS_WEIGHT, true)) {
-          GELOGE(GRAPH_FAILED, "node %s SetBool failed.", compress_node_vec[i].c_str());
+          GELOGE(GRAPH_FAILED, "[Set][Bool] failed, node:%s.", compress_node_vec[i].c_str());
+          REPORT_CALL_ERROR("E19999", "SetBool failed, node:%s.", compress_node_vec[i].c_str());
           return GRAPH_FAILED;
         }
       }

@@ -108,6 +108,8 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
                node->GetType().c_str());
         return SUCCESS;
       }
+      REPORT_CALL_ERROR("E19999", "Calculate for node %s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Calculate for node %s failed in constant folding", node->GetName().c_str());
       return ret;
     }
@@ -125,6 +127,8 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
   }
 
   if (outputs.empty()) {
+    REPORT_INNER_ERROR("E19999", "After calculate for node %s(%s), output weight is empty, check invalid",
+                       node->GetName().c_str(), node->GetType().c_str());
     GELOGE(INTERNAL_ERROR,
            "Failed to constant folding on node %s,"
            " no output weight",

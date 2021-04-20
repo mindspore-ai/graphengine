@@ -29,6 +29,7 @@
 #include "common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/properties_manager.h"
+#include "common/dump/exception_dumper.h"
 #include "common/dump/opdebug_register.h"
 #include "common/types.h"
 #include "framework/common/util.h"
@@ -221,6 +222,11 @@ class DavinciModel {
   ///
   DataInputer *const GetDataInputer() const { return data_inputer_; }
 
+  uint32_t GetDataInputerSize() {
+    GE_CHECK_NOTNULL(data_inputer_);
+    return data_inputer_->Size();
+  }
+
   // get Stream number
   uint32_t StreamNum() const { return runtime_param_.stream_num; }
 
@@ -248,7 +254,10 @@ class DavinciModel {
   string Name() const { return name_; }
 
   // om_name
-  string OmName() const { return om_name_; }
+  const string &OmName() const { return om_name_; }
+
+  // dump_model_name
+  const string &DumpModelName() const { return dump_model_name_; }
 
   // version
   uint32_t Version() const { return version_; }
@@ -272,6 +281,8 @@ class DavinciModel {
   const vector<rtStream_t> &GetStreamList() const { return stream_list_; }
 
   const vector<rtLabel_t> &GetLabelList() const { return label_list_; }
+
+  Status GetLabelGotoAddr(uint32_t label_index, rtMemType_t memory_type, void *&addr, uint32_t &size);
 
   Status DestroyThread();
 
@@ -466,11 +477,15 @@ class DavinciModel {
   Status ReportProfilingData();
 
   void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
-    data_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);
+    exception_dumper_.SaveDumpOpInfo(model_param, op, task_id, stream_id);
   }
 
   void SaveDumpTask(uint32_t task_id, uint32_t stream_id, const shared_ptr<OpDesc> &op_desc, uintptr_t args) {
     data_dumper_.SaveDumpTask(task_id, stream_id, op_desc, args);
+  }
+
+  Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos) const {
+    return exception_dumper_.DumpExceptionInfo(exception_infos);
   }
 
   void SetKnownShapeGlobalStep(void *global_step) {
@@ -480,6 +495,12 @@ class DavinciModel {
   void DumperShrink() {
     data_dumper_.DumpShrink();
   }
+
+  bool OpNeedDump(const string &op_name) {
+    return GetDumpProperties().IsLayerNeedDump(dump_model_name_, om_name_, op_name);
+  }
+
+  bool ModelNeedDump();
 
   void SetEndGraphId(uint32_t task_id, uint32_t stream_id);
   DavinciModel &operator=(const DavinciModel &model) = delete;
@@ -529,10 +550,10 @@ class DavinciModel {
   void SetKnownNode(bool known_node) { known_node_ = known_node; }
   bool IsKnownNode() { return known_node_; }
   Status MallocKnownArgs();
+  Status CheckCapability(rtFeatureType_t featureType, int32_t featureInfo, bool &is_support) const;
   Status UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs);
   Status CreateKnownZeroCopyMap(const vector<void *> &inputs, const vector<void *> &outputs);
   Status UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, bool update_args = true);
-  void SetKnownNodeAddrNotChanged(bool base_addr_not_changed) { base_addr_not_changed_ = base_addr_not_changed; }
 
   Status GetOrigInputInfo(uint32_t index, OriginInputInfo &orig_input_info) const;
   Status GetAllAippInputOutputDims(uint32_t index, vector<InputOutputDims> &input_dims,
@@ -540,13 +561,19 @@ class DavinciModel {
 
   // om file name
   void SetOmName(const string &om_name) { om_name_ = om_name; }
+  void SetDumpModelName(const string &dump_model_name) { dump_model_name_ = dump_model_name; }
 
   void SetDumpProperties(const DumpProperties &dump_properties) { data_dumper_.SetDumpProperties(dump_properties); }
   const DumpProperties &GetDumpProperties() const { return data_dumper_.GetDumpProperties(); }
 
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
-    return data_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
+    return exception_dumper_.GetOpDescInfo(stream_id, task_id, op_desc_info);
   }
+  void UpdateOpIOAddrs(uint32_t task_id, uint32_t stream_id, const std::vector<void *> &io_addrs);
+
+  bool GetRunningFlag() const { return running_flg_; }
+  void SetRunningFlag(bool flag) { running_flg_ = flag; }
+  Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
 
  private:
   // memory address of weights
@@ -886,6 +913,7 @@ class DavinciModel {
 
   // used for inference data dump
   string om_name_;
+  string dump_model_name_;
 
   uint32_t version_;
   GeModelPtr ge_model_;  // release after DavinciModel::Init
@@ -911,6 +939,8 @@ class DavinciModel {
   shared_ptr<ModelListener> listener_;
 
   bool run_flg_;
+  // check whether model is running with data
+  bool running_flg_ = false;
 
   mutex mux_run_flg_;
 
@@ -929,6 +959,9 @@ class DavinciModel {
 
   vector<rtLabel_t> label_list_;
   set<uint32_t> label_id_indication_;
+
+  mutex label_args_mutex_;
+  map<uint32_t, pair<void *, uint32_t>> label_goto_args_;
 
   mutex outside_addrs_mutex_;
   vector<ZeroCopyTask> zero_copy_tasks_;  // Task used Data or NetOutput addr.
@@ -985,6 +1018,7 @@ class DavinciModel {
   int64_t maxDumpOpNum_;
   // for data dump
   DataDumper data_dumper_;
+  ExceptionDumper exception_dumper_;
   OpdebugRegister opdebug_register_;
   uint64_t iterator_count_;
   bool is_l1_fusion_enable_;
@@ -1002,8 +1036,6 @@ class DavinciModel {
   map<const void *, void *> known_input_data_info_;
   map<const void *, void *> known_output_data_info_;
   vector<void *> total_io_addrs_;
-  vector<void *> orig_total_io_addrs_;
-  bool base_addr_not_changed_ = false;
 
   vector<vector<int64_t>> batch_info_;
   vector<vector<int64_t>> combined_batch_info_;

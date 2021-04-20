@@ -47,6 +47,9 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
   GELOGD("Begin to bypass trans node %s", trans_node->GetName().c_str());
   auto ret = GraphUtils::CopyInCtrlEdges(trans_node, ref_node);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Copy in control edge from node:%s(%s) to node:%s(%s) failed",
+                      trans_node->GetName().c_str(), trans_node->GetType().c_str(),
+                      ref_node->GetName().c_str(), ref_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR,
            "Failed to move control edges from trans "
            "node %s to var-ref %s",
@@ -55,6 +58,8 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
   }
   auto ref_in_anchor = ref_node->GetInDataAnchor(0);
   if (ref_in_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no input anchor, check invalid",
+                       ref_node->GetName().c_str(), ref_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR,
            "The variable ref node %s does not have an "
            "input anchor",
@@ -64,6 +69,8 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
   ref_in_anchor->UnlinkAll();
   auto trans_in_anchor = trans_node->GetInDataAnchor(0);
   if (trans_in_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no input anchor, check invalid",
+                       trans_node->GetName().c_str(), trans_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR,
            "Failed to get the in data anchor from trans"
            " node %s type %s",
@@ -79,6 +86,11 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
   } else {
     ret = GraphUtils::AddEdge(prev_trans_node_out_anchor, ref_in_anchor);
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
+                      prev_trans_node_out_anchor->GetOwnerNode()->GetName().c_str(),
+                      prev_trans_node_out_anchor->GetOwnerNode()->GetType().c_str(),
+                      prev_trans_node_out_anchor->GetIdx(),
+                      ref_node->GetName().c_str(), ref_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR,
              "Failed to add edge between ref node %s "
              "and the prev node of trans node %s",
@@ -115,14 +127,17 @@ bool IsTransSupport(const TransNodeInfo &trans_info) {
 
 Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "Failed to run variable op pass, null graph");
     return INTERNAL_ERROR;
   }
 
+  auto graph_id = GraphUtils::FindRootGraph(graph)->GetGraphID();
   GELOGD("Begin to run variable op pass on graph %s, session %lu, graph id %u", graph->GetName().c_str(),
-         GetContext().SessionId(), graph->GetGraphID());
+         GetContext().SessionId(), graph_id);
 
   if (var_accelerate_ctrl_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "The variable accelerate control is nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "Failed to run var op pass, the variable accelerate control is null");
     return INTERNAL_ERROR;
   }
@@ -173,11 +188,15 @@ Status VariableOpPass::Run(ge::ComputeGraphPtr graph) {
 
     ret = VarManager::Instance(graph->GetSessionID())->SetTransRoad(node->GetName(), fusion_road);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Set Trans road for node:%s(%s) failed, session_id:%lu",
+                        node->GetName().c_str(), node->GetType().c_str(), graph->GetSessionID());
       GELOGE(INTERNAL_ERROR, "Failed to update the format fusion road for var %s", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    ret = VarManager::Instance(graph->GetSessionID())->SetChangedGraphId(node->GetName(), graph->GetGraphID());
+    ret = VarManager::Instance(graph->GetSessionID())->SetChangedGraphId(node->GetName(), graph_id);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update graph_id:%u for node:%s(%s) failed, session_id:%lu",
+                        graph_id, node->GetName().c_str(), node->GetType().c_str(), graph->GetSessionID());
       GELOGE(INTERNAL_ERROR, "Failed to update the graph id for var %s", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -209,10 +228,14 @@ Status VariableOpPass::DealFusion(const ge::NodePtr &var_node) {
            trans_node->GetType().c_str(), var_node->GetName().c_str());
 
     if (GraphUtils::IsolateNode(trans_node, {0}) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Isolate node:%s(%s) failed",
+                        trans_node->GetName().c_str(), trans_node->GetType().c_str());
       return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
     }
 
     if (GraphUtils::RemoveNodeWithoutRelink(graph, trans_node) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                        trans_node->GetName().c_str(), trans_node->GetType().c_str(), graph->GetName().c_str());
       return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
     }
   }
@@ -244,9 +267,13 @@ Status VariableOpPass::DealFusion(const ge::NodePtr &var_node) {
             " one output data nodes, isolate and remove it.",
             trans_node->GetName().c_str(), trans_node->GetType().c_str(), ref_node->GetName().c_str());
         if (GraphUtils::IsolateNode(trans_node, {0}) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Isolate node:%s(%s) failed",
+                            trans_node->GetName().c_str(), trans_node->GetType().c_str());
           return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
         }
         if (GraphUtils::RemoveNodeWithoutRelink(graph, trans_node) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                            trans_node->GetName().c_str(), trans_node->GetType().c_str(), graph->GetName().c_str());
           return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
         }
       }
@@ -364,6 +391,7 @@ Status VariableOpPass::CheckVariableRefLegally(const ge::NodePtr &var_node, bool
 
 Status VariableOpPass::UpdateVarAndRefOutputFormatInfo(const GeTensorDesc &final_output, const ge::NodePtr &node) {
   if (node == nullptr || node->GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node or its op_desc is nullptr, check invalid");
     GELOGE(FAILED, "node or opdesc is nullptr");
     return FAILED;
   }
@@ -376,6 +404,8 @@ Status VariableOpPass::UpdateVarAndRefOutputFormatInfo(const GeTensorDesc &final
   auto node_desc = node->GetOpDesc()->GetOutputDesc(0);
   CopyVariableFormatDataTypeAndShape(final_output, node_desc);
   if (node->GetOpDesc()->UpdateOutputDesc(0, node_desc) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update ouput:0 desc in op:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "update output desc fail.");
     return FAILED;
   }
@@ -459,6 +489,10 @@ Status VariableOpPass::CheckVarAndVarRefAreAlike(const NodePtr &var_node, const 
   GELOGD("var_ref_node_trans_nodes size is %zu.", var_ref_node_trans_nodes.size());
 
   if (var_ref_node_trans_nodes.size() > 1) {
+    REPORT_INNER_ERROR("E19999", "In data node num:%zu of node:%s(%s) bigger than 1, check invalid",
+                       var_ref_node_trans_nodes.size(),
+                       var_ref_node->GetName().c_str(), var_ref_node->GetType().c_str());
+
     GELOGE(GE_GRAPH_VARIABLE_OP_PASS_FAILED, "var_ref_node_trans_nodes.size() > 1.");
     return GE_GRAPH_VARIABLE_OP_PASS_FAILED;
   }
@@ -524,6 +558,7 @@ void VariableOpPass::CopyVariableFormatDataTypeAndShape(const GeTensorDesc &src_
 
 Status VariableOpPass::CheckIfCouldBeOptimized(const ge::NodePtr &node, bool &flag, VarTransRoad &fusion_road) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     return FAILED;
   }
   bool is_matched = false;
@@ -601,6 +636,8 @@ Status VariableOpPass::RenewVarDesc(ge::ComputeGraphPtr &graph) {
       GE_CHECK_NOTNULL(node->GetOpDesc());
       ret = ge::VarManager::Instance(graph->GetSessionID())->RenewCurVarDesc(node->GetName(), node->GetOpDesc());
       if (ret != SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Renew descriptor for node:%s(%s) failed, session_id:%lu",
+                          node->GetName().c_str(), node->GetType().c_str(), graph->GetSessionID());
         GELOGE(FAILED, "var manager renew var[%s] descriptor failed!", node->GetName().c_str());
         return FAILED;
       }
@@ -625,6 +662,8 @@ Status VariableOpPass::RenewVarDesc(uint64_t session_id, const NodePtr &node, co
   GE_CHECK_NOTNULL(node->GetOpDesc());
   Status ret = ge::VarManager::Instance(session_id)->RenewCurVarDesc(node->GetName(), node->GetOpDesc());
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Renew descriptor for node:%s(%s) failed, session_id:%lu",
+                      node->GetName().c_str(), node->GetType().c_str(), session_id);
     GELOGE(FAILED, "var manager renew var[%s] descriptor failed!", node->GetName().c_str());
     return FAILED;
   }

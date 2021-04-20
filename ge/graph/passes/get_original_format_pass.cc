@@ -51,6 +51,9 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
     GE_CHECK_NOTNULL(node_ptr);
 
     GE_IF_BOOL_EXEC(!AttrUtils::SetInt(node_ptr->GetOpDesc(), ATTR_NAME_INFERRED_FORMAT, DOMI_TENSOR_RESERVED),
+                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                      ATTR_NAME_INFERRED_FORMAT.c_str(),
+                                      node_ptr->GetName().c_str(), node_ptr->GetType().c_str());
                     GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
                     return FAILED);
   }
@@ -64,9 +67,15 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
       GELOGI("Data node: %s,format :%d", node_ptr->GetName().c_str(), GetLocalOmgContext().format);
       ori_format = static_cast<int64_t>(GetLocalOmgContext().format);
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(desc_ptr, ATTR_NAME_FORMAT, ori_format),
+                      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                        ATTR_NAME_FORMAT.c_str(),
+                                        desc_ptr->GetName().c_str(), desc_ptr->GetType().c_str());
                       GELOGE(FAILED, "set ATTR_NAME_FORMAT failed");
                       return FAILED);
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(desc_ptr, ATTR_NAME_INFERRED_FORMAT, ori_format),
+                      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                        ATTR_NAME_INFERRED_FORMAT.c_str(),
+                                        desc_ptr->GetName().c_str(), desc_ptr->GetType().c_str());
                       GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
                       return FAILED);
       continue;
@@ -130,6 +139,9 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
 
     if (ignore_pred_format) {
       GE_IF_BOOL_EXEC(!AttrUtils::SetBool(tmp_op_ptr, ATTR_NAME_IGNORE_PRED_FORMAT, true),
+                      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                        ATTR_NAME_IGNORE_PRED_FORMAT.c_str(),
+                                        tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
                       GELOGE(FAILED, "remove edge failed");
                       return FAILED);
     }
@@ -137,9 +149,15 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
     // Do not reset ATTR_NAME_FORMAT if it is set in the OpParser.
     if (!tmp_op_ptr->HasAttr(ATTR_NAME_FORMAT)) {
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(tmp_op_ptr, ATTR_NAME_FORMAT, ori_format),
+                      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                        ATTR_NAME_FORMAT.c_str(),
+                                        tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
                       GELOGE(FAILED, "set ATTR_NAME_FORMAT failed");
                       return FAILED);
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(tmp_op_ptr, ATTR_NAME_INFERRED_FORMAT, ori_format),
+                      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                        ATTR_NAME_INFERRED_FORMAT.c_str(),
+                                        tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
                       GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
                       return FAILED);
     } else {
@@ -147,6 +165,9 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
       GE_RETURN_WITH_LOG_IF_FALSE(AttrUtils::GetInt(tmp_op_ptr, ATTR_NAME_FORMAT, existingFormat),
                                   "Get existing_format attr failed");
       if (!AttrUtils::SetInt(tmp_op_ptr, ATTR_NAME_INFERRED_FORMAT, existingFormat)) {
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                          ATTR_NAME_INFERRED_FORMAT.c_str(),
+                          tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
         GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
         return FAILED;
       }

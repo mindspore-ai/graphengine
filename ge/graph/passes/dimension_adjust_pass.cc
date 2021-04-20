@@ -29,12 +29,14 @@ const int kRemoveInputIndex = 1;
 
 Status DimensionAdjustPass::Run(ge::NodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "node is nullptr.");
     return PARAM_INVALID;
   }
 
   OpDescPtr op_desc_ptr = node->GetOpDesc();
   if (op_desc_ptr == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "GetOpDesc return nullptr.");
     return PARAM_INVALID;
   }
@@ -42,6 +44,8 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
   string type;
   Status ret = GetOriginalType(node, type);
   if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get OriginalType of op:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(ret, "DimensionAdjustPass get originnal type fail.");
     return ret;
   }
@@ -69,14 +73,30 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     if (ret == NOT_CHANGED) {
       return SUCCESS;
     }
+    REPORT_CALL_ERROR("E19999", "kernel compute for op:%s(%s) failed",
+                      node->GetName().c_str(), node->GetType().c_str());
     GELOGE(ret, "DimensionAdjustPass compute failed");
     return ret;
   }
+  // Need to handle axis_input of node like ExpandDims
   if (node->GetAllInDataAnchors().size() > static_cast<size_t>(kRemoveInputIndex)) {
+    auto axis_node_out_anchor = node->GetInDataAnchor(kRemoveInputIndex)->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(axis_node_out_anchor);
+    auto axis_node = axis_node_out_anchor->GetOwnerNode();
+    // 1.Copy control dependency of axis node
     ret = PassUtils::UnlinkNodeWithControlCopy(node, kRemoveInputIndex);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Unlink op:%s(%s) data input:%u with control edge copy failed",
+                        node->GetName().c_str(), node->GetType().c_str(), kRemoveInputIndex);
       GELOGE(ret, "DimensionAdjustPass unlink node with control copy fail.");
       return ret;
+    }
+    // 2.Remove const axis node without any output
+    if ((axis_node->GetType() == CONSTANT || axis_node->GetType() == CONSTANTOP) &&
+        axis_node->GetOutDataNodesSize() == 0) {
+      ret = IsolateAndDeleteNode(axis_node, {});
+      GE_CHK_GRAPH_STATUS_RET(ret, "Fail to remove node %s.", axis_node->GetName().c_str());
+      GELOGI("Remove useless axis input const %s", axis_node->GetName().c_str());
     }
   }
 
@@ -111,12 +131,12 @@ Status DimensionAdjustPass::DealWithInNodes(NodePtr &node) {
       GE_CHECK_NOTNULL(identity);
       GELOGI("Create new identity node[%s] after node %s[type: %s] success.", identity->GetName().c_str(),
              in_node->GetName().c_str(), in_node->GetType().c_str());
-      GE_CHK_STATUS_RET(GraphUtils::AddEdge(in_node_anchor, identity->GetInDataAnchor(0)))
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(in_node_anchor, identity->GetInDataAnchor(0)))
       GE_CHECK_NOTNULL(identity->GetOutControlAnchor());
       if (identity->GetOutControlAnchor()->IsLinkedWith(node->GetInControlAnchor())) {
         continue;
       }
-      GE_CHK_STATUS_RET(GraphUtils::AddEdge(identity->GetOutControlAnchor(), node->GetInControlAnchor()))
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(identity->GetOutControlAnchor(), node->GetInControlAnchor()))
     }
   }
 
@@ -126,12 +146,14 @@ Status DimensionAdjustPass::DealWithInNodes(NodePtr &node) {
 NodePtr DimensionAdjustPass::AddIdentityNodeToGraph(const string &name, const GeTensorDesc &tensor,
                                                     ComputeGraphPtr &graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
     GELOGE(INTERNAL_ERROR, "Comput graph ptr is null in creating identity node.");
     return nullptr;
   }
 
   OpDescPtr desc = MakeShared<OpDesc>("", "");
   if (desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(MEMALLOC_FAILED, "Failed to create op desc.");
     return nullptr;
   }
@@ -141,6 +163,8 @@ NodePtr DimensionAdjustPass::AddIdentityNodeToGraph(const string &name, const Ge
   auto ret = desc->AddInputDesc(tensor);
   auto ret2 = desc->AddOutputDesc(tensor);
   if ((ret != GRAPH_SUCCESS) || (ret2 != GRAPH_SUCCESS)) {
+    REPORT_CALL_ERROR("E19999", "Add input or ouput desc to op:%s(%s) failed",
+                      desc->GetName().c_str(), desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Failed to add input/output desc in creating identity.");
     return nullptr;
   }

@@ -63,7 +63,10 @@ void TransOpWithoutReshapeFusionPass::SetRemainNode(
       continue;
     }
     GELOGI("SetRemainNode node is %s", op_desc->GetName().c_str());
-    GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true), GELOGE(INTERNAL_ERROR, "set ext attr failed"); return);
+    GE_IF_BOOL_EXEC(!op_desc->SetExtAttr(kRemainNode, true),
+                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", kRemainNode,
+                                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                    GELOGE(INTERNAL_ERROR, "set ext attr failed"); return);
   }
 }
 
@@ -74,17 +77,29 @@ bool TransOpWithoutReshapeFusionPass::FormatContinuousCheck(const OutDataAnchorP
     return false;
   }
   auto in_node = in_anchor->GetOwnerNode();
-  GE_IF_BOOL_EXEC(in_node == nullptr, GELOGE(INTERNAL_ERROR, "in_node is null"); return false);
+  GE_IF_BOOL_EXEC(in_node == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param in_anchor's owner node is nullptr, check invalid");
+                  GELOGE(INTERNAL_ERROR, "in_node is null"); return false);
   auto in_op = in_node->GetOpDesc();
   auto out_owner_node = out_anchor->GetOwnerNode();
-  GE_IF_BOOL_EXEC(out_owner_node == nullptr, GELOGE(INTERNAL_ERROR, "out_owner_node is null"); return false);
+  GE_IF_BOOL_EXEC(out_owner_node == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param out_anchor's owner node is nullptr, check invalid");
+                  GELOGE(INTERNAL_ERROR, "out_owner_node is null"); return false);
   auto out_op = out_owner_node->GetOpDesc();
-  GE_IF_BOOL_EXEC(in_op == nullptr, GELOGE(INTERNAL_ERROR, "in_op is null"); return false);
-  GE_IF_BOOL_EXEC(out_op == nullptr, GELOGE(INTERNAL_ERROR, "out_op is null"); return false);
+  GE_IF_BOOL_EXEC(in_op == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param in_anchor's owner op_desc is nullptr, check invalid");
+                  GELOGE(INTERNAL_ERROR, "in_op is null"); return false);
+  GE_IF_BOOL_EXEC(out_op == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param out_anchor's owner op_desc is nullptr, check invalid");
+                  GELOGE(INTERNAL_ERROR, "out_op is null"); return false);
   auto in_op_desc = in_op->GetInputDescPtr(in_anchor->GetIdx());
   auto out_op_desc = out_op->GetOutputDescPtr(out_anchor->GetIdx());
-  GE_IF_BOOL_EXEC(in_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "in_op_desc is null"); return false);
-  GE_IF_BOOL_EXEC(out_op_desc == nullptr, GELOGE(INTERNAL_ERROR, "out_op_desc is null"); return false);
+  GE_IF_BOOL_EXEC(in_op_desc == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param in_anchor corresponding tensor is nullptr, check invalid");
+                  GELOGE(INTERNAL_ERROR, "in_op_desc is null"); return false);
+  GE_IF_BOOL_EXEC(out_op_desc == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Param out_anchor corresponding tensor is nullptr, check invalid");
+                  GELOGE(INTERNAL_ERROR, "out_op_desc is null"); return false);
   if (!ShapeEqualCheck(in_op_desc->GetShape(), out_op_desc->GetShape())) {
     return false;
   }
@@ -357,6 +372,9 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkSubGraphControlEdges(
     GELOGI("add control edge.src:%s, dst:%s", out_owner_node->GetName().c_str(), in_owner_node->GetName().c_str());
     if (GraphUtils::AddEdge(out_owner_node->GetOutControlAnchor(), in_owner_node->GetInControlAnchor()) !=
         GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(),
+                        in_owner_node->GetName().c_str(), in_owner_node->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -365,6 +383,9 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkSubGraphControlEdges(
     GELOGI("add out data 2 in contorl edge.src:%s, dst:%s", out_owner_node->GetName().c_str(),
            in_owner_node->GetName().c_str());
     if (GraphUtils::AddEdge(out_anchor, in_owner_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(),
+                        in_owner_node->GetName().c_str(), in_owner_node->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -392,6 +413,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdgesWhenDescNotChange
     GELOGI("add control edge.src:%s, dst:%s, dst idx:%d", out_owner_node->GetName().c_str(),
            peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
     if (GraphUtils::AddEdge(out_owner_node->GetOutControlAnchor(), peer_in_anchor) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -401,6 +426,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdgesWhenDescNotChange
     GELOGI("add control edge.src:%s, src idx:%d, dst:%s", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
            peer_out_anchor->GetIdx(), in_owner_node->GetName().c_str());
     if (GraphUtils::AddEdge(peer_out_anchor, in_owner_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_out_anchor->GetOwnerNode()->GetType().c_str(),
+                        in_owner_node->GetName().c_str(), in_owner_node->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -410,6 +439,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdgesWhenDescNotChange
     GELOGI("add out control 2 in data edge.src:%s, dst:%s, dst idx:%d", out_owner_node->GetName().c_str(),
            peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
     if (GraphUtils::AddEdge(out_owner_node->GetOutControlAnchor(), peer_in_anchor) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -419,6 +452,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdgesWhenDescNotChange
     GELOGI("add out data 2 in control edge.src:%s, dst:%s, dst idx:%d", out_owner_node->GetName().c_str(),
            peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
     if (GraphUtils::AddEdge(out_anchor, peer_in_anchor) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -443,6 +480,9 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkNodesWhenDescNotChanged(
   GELOGI("relink node.src node:%s, src idx:%d, dst node:%s, dst idx:%d", out_owner_node->GetName().c_str(),
          out_anchor->GetIdx(), in_owner_node->GetName().c_str(), in_anchor->GetIdx());
   if (GraphUtils::AddEdge(out_anchor, in_anchor) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                      out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(), out_anchor->GetIdx(),
+                      in_owner_node->GetName().c_str(), in_owner_node->GetType().c_str(), in_anchor->GetIdx());
     GELOGE(GRAPH_FAILED, "add edge failed!src:%s, src idx:%d, dst:%s, dst idx:%d", out_owner_node->GetName().c_str(),
            out_anchor->GetIdx(), in_owner_node->GetName().c_str(), in_anchor->GetIdx());
     return GRAPH_FAILED;
@@ -466,16 +506,21 @@ OpDescPtr TransOpWithoutReshapeFusionPass::GetFormatTransferOp(const GeTensorDes
   format_transfer_op_name << "fusion_format_transfer_" << fusion_format_transfer_op_count;
   OpDescPtr format_transfer_op = MakeShared<OpDesc>(format_transfer_op_name.str().c_str(), TRANSDATA);
   if (format_transfer_op == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New GeTensor failed");
     GELOGE(INTERNAL_ERROR, "new format transfer op failed!");
     return nullptr;
   }
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(format_transfer_op, ATTR_NAME_INPUT_FORMAT,
                                      static_cast<int64_t>(format_trans_input_desc.GetFormat())),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_INPUT_FORMAT.c_str(),
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "set ATTR_NAME_INPUT_FORMAT failed");
                   return nullptr);
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(format_transfer_op, ATTR_NAME_OUTPUT_FORMAT,
                                      static_cast<int64_t>(format_trans_output_desc.GetFormat())),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_OUTPUT_FORMAT.c_str(),
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "set ATTR_NAME_OUTPUT_FORMAT failed");
                   return nullptr);
 
@@ -483,22 +528,32 @@ OpDescPtr TransOpWithoutReshapeFusionPass::GetFormatTransferOp(const GeTensorDes
   string dst_format = TypeUtils::FormatToSerialString(format_trans_output_desc.GetFormat());
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(format_transfer_op, kAttrNameSrcFormat, src_format),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", kAttrNameSrcFormat,
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "set kAttrNameSrcFormat failed");
                   return nullptr);
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(format_transfer_op, kAttrNameDstFormat, dst_format),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", kAttrNameDstFormat,
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "set kAttrNameDstFormat failed");
                   return nullptr);
 
   GE_IF_BOOL_EXEC(format_transfer_op->AddInputDesc(format_trans_input_desc) != GRAPH_SUCCESS,
+                  REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "add input desc failed");
                   return nullptr);
 
   GE_IF_BOOL_EXEC(format_transfer_op->AddOutputDesc(format_trans_output_desc) != GRAPH_SUCCESS,
+                  REPORT_CALL_ERROR("E19999", "Add ouput desc to op:%s(%s) failed",
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "add output desc failed");
                   return nullptr);
 
   GE_IF_BOOL_EXEC(!ge::AttrUtils::SetBool(format_transfer_op, ATTR_NEED_COMPILE, true),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NEED_COMPILE.c_str(),
+                                    format_transfer_op->GetName().c_str(), format_transfer_op->GetType().c_str());
                   GELOGE(INTERNAL_ERROR, "set ext attr failed");
                   return nullptr);
   return format_transfer_op;
@@ -515,6 +570,7 @@ OpDescPtr TransOpWithoutReshapeFusionPass::GetCastOp(const GeTensorDesc &cast_in
   auto cast_op = ge::OpDescUtils::GetOpDescFromOperator(node_op);
   node_op.BreakConnect();
   if (cast_op == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Create operator:%s(%s) failed", cast_op_name.str().c_str(), CAST);
     GELOGE(INTERNAL_ERROR, "new cast op failed!");
     return nullptr;
   }
@@ -522,29 +578,41 @@ OpDescPtr TransOpWithoutReshapeFusionPass::GetCastOp(const GeTensorDesc &cast_in
   const int default_output_index = 0;
   if (cast_op->GetInputsSize() == 0) {
     GE_IF_BOOL_EXEC(cast_op->AddInputDesc(cast_input_desc) != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
+                                      cast_op->GetName().c_str(), cast_op->GetType().c_str());
                     GELOGE(INTERNAL_ERROR, "add input desc failed");
                     return nullptr);
   } else {
     GE_IF_BOOL_EXEC(cast_op->UpdateInputDesc(default_input_index, cast_input_desc) != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Update input:%d desc of op:%s(%s) failed", default_input_index,
+                                      cast_op->GetName().c_str(), cast_op->GetType().c_str());
                     GELOGE(INTERNAL_ERROR, "update input desc failed");
                     return nullptr);
   }
 
   if (cast_op->GetOutputsSize() == 0) {
     GE_IF_BOOL_EXEC(cast_op->AddOutputDesc(cast_output_desc) != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
+                                      cast_op->GetName().c_str(), cast_op->GetType().c_str());
                     GELOGE(INTERNAL_ERROR, "add output desc failed");
                     return nullptr);
   } else {
     GE_IF_BOOL_EXEC(cast_op->UpdateOutputDesc(default_output_index, cast_output_desc) != GRAPH_SUCCESS,
+                    REPORT_CALL_ERROR("E19999", "Update output:%d desc of op:%s(%s) failed", default_output_index,
+                                      cast_op->GetName().c_str(), cast_op->GetType().c_str());
                     GELOGE(INTERNAL_ERROR, "update output desc failed");
                     return nullptr);
   }
 
   if (!AttrUtils::SetInt(cast_op, CAST_ATTR_DST_TYPE, static_cast<int64_t>(cast_output_desc.GetDataType()))) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", CAST_ATTR_DST_TYPE.c_str(),
+                      cast_op->GetName().c_str(), cast_op->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "set dst_type attr failed");
     return nullptr;
   }
   if (!AttrUtils::SetBool(cast_op, ATTR_NEED_COMPILE, true)) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NEED_COMPILE.c_str(),
+                      cast_op->GetName().c_str(), cast_op->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "set need_compile attr failed");
     return nullptr;
   }
@@ -879,6 +947,8 @@ graphStatus TransOpWithoutReshapeFusionPass::AddTransNode(const ComputeGraphPtr 
 
   trans_node = graph->AddNode(transop);
   if (trans_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      transop->GetName().c_str(), transop->GetType().c_str(), graph->GetName().c_str());
     GELOGE(GRAPH_FAILED, "add node failed!");
     return GRAPH_FAILED;
   }
@@ -945,6 +1015,9 @@ graphStatus TransOpWithoutReshapeFusionPass::InsertNewTransOp(const ComputeGraph
   GELOGI("add edge.src:%s, src idx:%d, dst:%s", out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetIdx(),
          new_trans_nodes.front()->GetName().c_str());
   if (GraphUtils::AddEdge(out_anchor, new_trans_nodes.front()->GetInAnchor(0)) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
+                      out_owner_node->GetName().c_str(), out_owner_node->GetType().c_str(), out_anchor->GetIdx(),
+                      new_trans_nodes.front()->GetName().c_str(), new_trans_nodes.front()->GetType().c_str());
     return GRAPH_FAILED;
   } else {
     auto old_peer_in_anchor = begin_out.second;
@@ -957,6 +1030,9 @@ graphStatus TransOpWithoutReshapeFusionPass::InsertNewTransOp(const ComputeGraph
            new_trans_nodes.back()->GetName().c_str());
     if (GraphUtils::AddEdge(new_trans_nodes.front()->GetOutAnchor(0), new_trans_nodes.back()->GetInAnchor(0)) !=
         GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:0) failed",
+                        new_trans_nodes.front()->GetName().c_str(), new_trans_nodes.front()->GetType().c_str(),
+                        new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str());
       return GRAPH_FAILED;
     } else {
       auto old_peer_out_anchor = end_in.first;
@@ -967,6 +1043,9 @@ graphStatus TransOpWithoutReshapeFusionPass::InsertNewTransOp(const ComputeGraph
   GELOGI("add edge.src:%s, dst:%s, dst idx:%d", new_trans_nodes.back()->GetName().c_str(),
          in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetIdx());
   if (GraphUtils::AddEdge(new_trans_nodes.back()->GetOutAnchor(0), in_anchor) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%d) failed",
+                      new_trans_nodes.front()->GetName().c_str(), new_trans_nodes.front()->GetType().c_str(),
+                      in_owner_node->GetName().c_str(), in_owner_node->GetType().c_str(), in_anchor->GetIdx());
     return GRAPH_FAILED;
   }
 
@@ -977,6 +1056,7 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
                                                                const vector<NodePtr> &new_trans_nodes) {
   GE_CHECK_NOTNULL(out_anchor);
   if (new_trans_nodes.front() == nullptr || new_trans_nodes.back() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param new_trans_nodes front or back is nullptr, check invalid");
     return GRAPH_FAILED;
   }
   if (sub_graph_has_control_edge_[index]) {
@@ -984,6 +1064,9 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
            new_trans_nodes.front()->GetName().c_str());
     if (GraphUtils::AddEdge(out_anchor->GetOwnerNode()->GetOutControlAnchor(),
                             new_trans_nodes.front()->GetInControlAnchor()) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
+                        new_trans_nodes.front()->GetName().c_str(), new_trans_nodes.front()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -993,6 +1076,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
     GELOGI("add control edge.src:%s, dst:%s", new_trans_nodes.back()->GetName().c_str(),
            peer_in_anchor->GetOwnerNode()->GetName().c_str());
     if (GraphUtils::AddEdge(new_trans_nodes.back()->GetOutControlAnchor(), peer_in_anchor) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                       new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
+                       peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                       peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -1002,6 +1089,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
     GELOGI("add control edge.src:%s, dst:%s", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
            new_trans_nodes.front()->GetName().c_str());
     if (GraphUtils::AddEdge(peer_out_anchor, new_trans_nodes.front()->GetInControlAnchor()) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_out_anchor->GetOwnerNode()->GetType().c_str(),
+                        new_trans_nodes.front()->GetName().c_str(), new_trans_nodes.front()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -1011,6 +1102,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
     GELOGI("add control edge.src:%s, dst:%s", new_trans_nodes.back()->GetName().c_str(),
            peer_in_anchor->GetOwnerNode()->GetName().c_str());
     if (GraphUtils::AddEdge(new_trans_nodes.back()->GetOutControlAnchor(), peer_in_anchor) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                       new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
+                       peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                       peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -1020,6 +1115,10 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
     GELOGI("add control edge.src:%s, dst:%s", new_trans_nodes.back()->GetName().c_str(),
            peer_in_anchor->GetOwnerNode()->GetName().c_str());
     if (GraphUtils::AddEdge(new_trans_nodes.back()->GetOutDataAnchor(0), peer_in_anchor) != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%d) failed",
+                        new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetType().c_str(), peer_in_anchor->GetIdx());
       return GRAPH_FAILED;
     }
   }
@@ -1081,6 +1180,7 @@ graphStatus TransOpWithoutReshapeFusionPass::GetSubGraphsBetweenNormalNode(
   vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> &nodes_list) {
   graphStatus ret = GRAPH_SUCCESS;
   if (out_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param out_anchor is nullptr, check invalid");
     return GRAPH_FAILED;
   }
 

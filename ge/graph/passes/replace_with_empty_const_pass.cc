@@ -26,10 +26,12 @@ namespace ge {
 Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   GELOGD("ReplaceWithEmptyConstPass in.");
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "Parameter is null.");
     return PARAM_INVALID;
   }
   if (node->GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node's op_desc is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "Param [opDesc] must not be null.");
     return PARAM_INVALID;
   }

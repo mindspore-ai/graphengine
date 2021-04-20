@@ -51,11 +51,17 @@ class HybridModelAsyncExecutor {
 
   void SetModelId(uint32_t model_id);
 
-  void SetModelName(const string &model_name);
-
   Status Stop();
 
   Status EnqueueData(const std::shared_ptr<InputDataWrapper> &data);
+
+  uint32_t GetDataInputerSize() { return data_inputer_->Size(); }
+
+  bool GetRunningFlag() const { return running_flag_; }
+
+  void SetRunningFlag(bool flag) { running_flag_ = flag; }
+
+  const GraphExecutionContext * GeContext() { return executor_->GetContext(); }
 
  private:
   Status InitInputDesc();
@@ -86,6 +92,8 @@ class HybridModelAsyncExecutor {
   uint32_t device_id_ = 0U;
   uint32_t model_id_ = 0U;
   std::atomic_bool run_flag_;
+  // check whether model is running with data
+  bool running_flag_ = false;
   std::unique_ptr<DataInputer> data_inputer_;
   std::unique_ptr<HybridModelExecutor> executor_;
   std::unique_ptr<HybridModelPipelineExecutor> pipe_executor_;
@@ -97,7 +105,6 @@ class HybridModelAsyncExecutor {
   std::map<uint32_t, GeTensorDescPtr> input_tensor_desc_;
   std::vector<bool> is_input_dynamic_;
   std::shared_ptr<ModelListener> listener_;
-  string om_name_;
   DataDumper data_dumper_;
   bool is_op_debug_reg_ = false;
   OpdebugRegister op_debug_register_;

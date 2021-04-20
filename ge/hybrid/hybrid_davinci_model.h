@@ -57,9 +57,11 @@ class HybridDavinciModel {
 
   void SetDeviceId(uint32_t device_id);
 
-  void SetModelName(const string &model_name);
+  void SetOmName(const string &om_name);
 
   uint64_t GetSessionId();
+
+  uint32_t GetDeviceId() const;
 
   Status GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type);
 
@@ -73,6 +75,14 @@ class HybridDavinciModel {
                                 std::vector<uint32_t> &output_formats);
 
   void SetModelDescVersion(bool is_new_model_desc);
+
+  uint32_t GetDataInputerSize();
+
+  bool GetRunningFlag() const;
+
+  Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
+
+  bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
 
  private:
   HybridDavinciModel() = default;

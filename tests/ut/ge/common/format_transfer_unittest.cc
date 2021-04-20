@@ -75,11 +75,11 @@ TEST_F(UtestFormatTransfer, get_size_by_data_type) {
   EXPECT_EQ(GetSizeByDataType(DT_QINT32), 4);
   EXPECT_EQ(GetSizeByDataType(DT_QUINT8), 1);
   EXPECT_EQ(GetSizeByDataType(DT_QUINT16), 2);
-  EXPECT_EQ(GetSizeByDataType(DT_RESOURCE), -1);
+  EXPECT_EQ(GetSizeByDataType(DT_RESOURCE), 8);
   EXPECT_EQ(GetSizeByDataType(DT_STRING_REF), -1);
   EXPECT_EQ(GetSizeByDataType(DT_DUAL), 5);
   EXPECT_EQ(GetSizeByDataType(DT_UNDEFINED), -1);
-  EXPECT_EQ(DT_UNDEFINED, 27);
+  EXPECT_EQ(DT_UNDEFINED, 28);
 }
 }  // namespace formats
 }  // namespace ge

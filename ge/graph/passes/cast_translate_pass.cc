@@ -223,6 +223,8 @@ Status CastTranslatePass::Run(NodePtr &node) {
           continue;
         }
         if (IsolateAndDeleteNode(out_data_node, {0}) != SUCCESS) {
+          REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
+                            out_data_node->GetName().c_str(), out_data_node->GetType().c_str());
           return FAILED;
         }
       }
@@ -247,14 +249,14 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
     GE_CHECK_NOTNULL(out_data_node);
     AddRePassNodesWithInOut(out_data_node);
     // Has checked nodes only has one in data anchor one out data anchor
-    GE_CHK_STATUS_RET(NodeUtils::MoveOutputEdges(out_data_node, base_node), "move out put edge failed");
+    GE_CHK_GRAPH_STATUS_RET(NodeUtils::MoveOutputEdges(out_data_node, base_node), "move out put edge failed");
 
     // Relink in control anchor, delete in data anchor
     auto in_ctr_anchor = out_data_node->GetInControlAnchor();
     GE_CHECK_NOTNULL(in_ctr_anchor);
     for (const auto &peer_anchor : in_ctr_anchor->GetPeerOutControlAnchors()) {
       GE_CHECK_NOTNULL(base_node->GetInControlAnchor());
-      GE_CHK_STATUS_RET(base_node->GetInControlAnchor()->LinkFrom(peer_anchor), "link from peer anchor failed");
+      GE_CHK_GRAPH_STATUS_RET(base_node->GetInControlAnchor()->LinkFrom(peer_anchor), "link from peer anchor failed");
     }
     in_ctr_anchor->UnlinkAll();
     out_data_node->GetAllInDataAnchors().at(0)->UnlinkAll();
@@ -262,6 +264,8 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
     ComputeGraphPtr graph = out_data_node->GetOwnerComputeGraph();
     GE_CHECK_NOTNULL(graph);
     if (GraphUtils::RemoveNodeWithoutRelink(graph, out_data_node) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
+                        out_data_node->GetName().c_str(), out_data_node->GetType().c_str(), graph->GetName().c_str());
       GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", out_data_node->GetName().c_str());
       return FAILED;
     }

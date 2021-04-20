@@ -1,4 +1,4 @@
-/**
+  /**
  * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -99,7 +99,7 @@ Status InsertNewOpUtil::InsertAippOps(ComputeGraphPtr &graph, std::string &aippC
 
   GE_CHK_STATUS_RET(CheckGraph(graph), "after inserting all ops, check graph failed");
 
-  GE_CHK_STATUS_RET(graph->TopologicalSorting(), "after insert dynamic op, sort graph failed");
+  GE_CHK_GRAPH_STATUS_RET(graph->TopologicalSorting(), "after insert dynamic op, sort graph failed");
 
   ClearNewOps();
 
@@ -124,13 +124,15 @@ Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
       if (another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_name and related_input_rank!"
                            " Please ensure param is the same with the first aipp config(related_input_name).";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
       if (item->related_input_name() == another_item->related_input_name()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_name"
                            " param is different in different aipp config.";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
     }
@@ -150,13 +152,15 @@ Status InsertNewOpUtil::CheckInputRankPositionNoRepeat() {
       if (!another_item->related_input_name().empty()) {
         string error_msg = "Can not both set related_input_rank and related_input_name!"
                            " Please ensure param is the same with the first aipp config(related_input_rank).";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
       if (item->related_input_rank() == another_item->related_input_rank()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_rank"
                           " param is different in different aipp config.";
-        GE_ERRORLOG_AND_ERRORMSG(PARAM_INVALID, error_msg.c_str());
+        GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
+        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
     }
@@ -212,7 +216,7 @@ Status InsertNewOpUtil::CheckGraph(const ComputeGraphPtr &graph) {
         }
       }
     }
-    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt), 
+    GE_CHK_LOG_AND_ERRORMSG((aippNodes.size() == 0) || (aippNodes.size() == next_nodes_cnt),
         PARAM_INVALID,
         "Can not config part of outputs of Data node to support AIPP, config all "
         "of the outputs of Data to support AIPP, or config none of them");
@@ -302,6 +306,9 @@ Status InsertNewOpUtil::FindMaxSizeNode(const ComputeGraphPtr &graph, const Node
   for (const auto &name : func_desc->GetSubgraphInstanceNames()) {
     const auto &subgraph = graph->GetSubgraph(name);
     if (subgraph == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Subgraph:%s of op:%s(%s) not find in graph:%s, check invalid",
+                         name.c_str(), func_desc->GetName().c_str(),
+                         func_desc->GetType().c_str(), graph->GetName().c_str());
       GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
@@ -321,6 +328,9 @@ Status InsertNewOpUtil::FindMaxSizeNode(const ComputeGraphPtr &graph, const Node
 
         uint32_t parent_index = 0;
         if (!AttrUtils::GetInt(src_op, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+          REPORT_INNER_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed",
+                             ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                             src_op->GetName().c_str(), src_op->GetType().c_str());
           GELOGE(FAILED, "Parent index not found, name: %s", src_op->GetName().c_str());
           return FAILED;
         }
@@ -372,12 +382,16 @@ Status InsertNewOpUtil::UpdateCaseNode(const ComputeGraphPtr &graph, const NodeP
 
     auto ret = data_opdesc->UpdateOutputDesc(0, *input_desc);
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update OutputDesc to op:%s(%s) failed, index:0",
+                        data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to update data %s output using case %s", data->GetName().c_str(),
              case_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
     ret = data_opdesc->UpdateInputDesc(0, *input_desc);
     if (ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update InputDesc to op:%s(%s) failed, index:0",
+                        data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to update data %s input using case %s", data->GetName().c_str(),
              case_node->GetName().c_str());
       return INTERNAL_ERROR;
@@ -400,11 +414,15 @@ Status InsertNewOpUtil::UpdatePrevNodeByAipp(NodePtr &node, std::set<NodePtr> &s
   int64_t size = 0;
   graphStatus graph_ret = ge::TensorUtils::GetSize(*aipp_input, size);
   if (graph_ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Get input size of op:%s(%s), index:0, failed",
+                      aipp_op_desc->GetName().c_str(), aipp_op_desc->GetType().c_str());
     GELOGE(FAILED, "UpdateOutputDesc fail, graph_ret:%d", graph_ret);
     return FAILED;
   }
   GELOGI("Get input size [%ld] from aipp [%s].", size, aipp_op_desc->GetName().c_str());
   if (size == 0) {
+    REPORT_CALL_ERROR("E19999", "Tensor size of op:%s(%s) is 0, input_index:0, check invalid",
+                      aipp_op_desc->GetName().c_str(), aipp_op_desc->GetType().c_str());
     GELOGE(FAILED, "Can not get size from aipp [%s]", aipp_op_desc->GetName().c_str());
     return FAILED;
   }
@@ -491,12 +509,16 @@ Status InsertNewOpUtil::UpdateDataBySwitchN(const NodePtr &switchn, const NodePt
 
   auto ret = data_opdesc->UpdateOutputDesc(0, *input_desc);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update OutputDesc to op:%s(%s) failed, index:0",
+                      data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Failed to update data %s output using switchn %s", data->GetName().c_str(),
            switchn->GetName().c_str());
     return INTERNAL_ERROR;
   }
   ret = data_opdesc->UpdateInputDesc(0, *input_desc);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update InputDesc to op:%s(%s) failed, index:0",
+                      data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Failed to update data %s input using switchn %s", data->GetName().c_str(),
            switchn->GetName().c_str());
     return INTERNAL_ERROR;
@@ -596,6 +618,9 @@ Status InsertNewOpUtil::GetAllAipps(const NodePtr &data_node, const NodePtr &nod
     for (const auto &name : op->GetSubgraphInstanceNames()) {
       const auto &subgraph = graph->GetSubgraph(name);
       if (subgraph == nullptr) {
+        REPORT_INNER_ERROR("E19999", "Subgraph:%s of op:%s(%s) not find in graph:%s, check invalid",
+                           name.c_str(), op->GetName().c_str(),
+                           op->GetType().c_str(), graph->GetName().c_str());
         GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
         return GE_GRAPH_EMPTY_SUBGRAPH;
       }
@@ -607,6 +632,9 @@ Status InsertNewOpUtil::GetAllAipps(const NodePtr &data_node, const NodePtr &nod
           GE_CHECK_NOTNULL(src_op);
           uint32_t parent_index = 0;
           if (!AttrUtils::GetInt(src_op, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
+            REPORT_INNER_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed",
+                               ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                               src_op->GetName().c_str(), src_op->GetType().c_str());
             GELOGE(FAILED, "Parent index not found, name: %s", src_op->GetName().c_str());
             return FAILED;
           }
@@ -746,6 +774,9 @@ Status InsertNewOpUtil::SetModelInputDims(NodePtr &data_node, NodePtr &aipp_node
     }
     GELOGD("After set N or H/W to -1, the model input dims: %s.", formats::JoinToString(model_input_dims).c_str());
     if (!AttrUtils::SetListInt(data_opdesc, ATTR_NAME_INPUT_DIMS, model_input_dims)) {
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s of op:%s(%s) failed",
+                         ATTR_NAME_INPUT_DIMS.c_str(),
+                         data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
       GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_INPUT_DIMS.c_str());
       return FAILED;
     }

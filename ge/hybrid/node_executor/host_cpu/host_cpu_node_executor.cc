@@ -33,7 +33,7 @@ Status HostNodeTaskBase::UpdateArgs(TaskContext &) {
 
 Status HostNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Start execute.", context.GetNodeName());
-  GE_CHK_STATUS_RET(Execute(context), "node:%s type:%s, task execute failed.",
+  GE_CHK_STATUS_RET(Execute(context), "[Invoke][Execute] failed for node:%s type:%s.",
                     node_->GetName().c_str(), node_->GetType().c_str())
   if (done_callback) {
     GELOGD("[%s] Start invoke callback.", context.GetNodeName());
@@ -70,7 +70,8 @@ Status CpuKernelNodeTask::Execute(TaskContext &context) {
     AllocationAttr attr;
     attr.SetMemType(HOST_DDR);
     if (context.AllocateOutput(i, output_desc, nullptr, &attr) != SUCCESS) {
-      GELOGE(FAILED, "node:%s Failed to allocate output %d", context.GetNodeName(), i);
+      REPORT_CALL_ERROR("E19999", "node:%s Failed to allocate output %d", context.GetNodeName(), i);
+      GELOGE(FAILED, "[Invoke][AllocateOutput]node:%s Failed to allocate output %d", context.GetNodeName(), i);
       return FAILED;
     }
     auto tensor = context.GetOutput(i);
@@ -92,14 +93,18 @@ Status HostCpuNodeTask::Execute(TaskContext &context) {
   RunContext run_context;
   auto host_kernel = hybrid::host_cpu::KernelFactory::Instance().CreateKernel(node_);
   if (host_kernel == nullptr) {
-    GELOGE(UNSUPPORTED, "node %s type %s is not supported by host kernel.",
+    REPORT_CALL_ERROR("E19999", "CreateKernel failed for node %s type %s is not supported by host kernel.",
+                      node_->GetName().c_str(), node_->GetType().c_str());
+    GELOGE(UNSUPPORTED, "[Create][Kernel]node %s type %s is not supported by host kernel.",
            node_->GetName().c_str(), node_->GetType().c_str());
     return UNSUPPORTED;
   }
 
   Status compute_ret = host_kernel->Compute(context);
   if (compute_ret != SUCCESS) {
-    GELOGE(compute_ret, "node %s type %s compute failed or not imply.",
+    REPORT_CALL_ERROR("E19999", "node %s type %s compute failed.",
+                      node_->GetName().c_str(), node_->GetType().c_str());
+    GELOGE(compute_ret, "[Invoke][Compute]node %s type %s compute failed or not imply.",
            node_->GetName().c_str(), node_->GetType().c_str());
     return compute_ret;
   }
@@ -131,7 +136,10 @@ Status HostCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
     task = MakeShared<HostCpuNodeTask>(node);
     GE_CHECK_NOTNULL(task);
   } else {
-    GELOGE(UNSUPPORTED, "node %s type %s is not support in HostCpuNodeExecutor now.", name.c_str(), type.c_str());
+    REPORT_INNER_ERROR("E19999", "Create NodeTask failed for node %s type %s.",
+                       name.c_str(), type.c_str());
+    GELOGE(UNSUPPORTED, "[Create][NodeTask]node %s type %s is not support in HostCpuNodeExecutor now.",
+           name.c_str(), type.c_str());
     return UNSUPPORTED;
   }
   return SUCCESS;

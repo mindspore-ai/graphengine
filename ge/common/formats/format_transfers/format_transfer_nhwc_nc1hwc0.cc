@@ -34,7 +34,10 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
                                std::vector<int64_t> &dst_shape) {
   int64_t c0 = GetCubeSizeByDataType(data_type);
   if (c0 <= 0) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Failed to get cube size, the data type is invalid");
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][Cube]Failed, the data type %s is invalid",
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to get cube size, the data type %s is invalid",
+                      TypeUtils::DataTypeToSerialString(data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   dst_shape.clear();
@@ -44,8 +47,10 @@ Status TransShapeNhwcToNc1hwc0(const std::vector<int64_t> &src_shape, DataType d
   dst_shape.push_back(src_shape.at(kNhwcW));
   dst_shape.push_back(c0);
   if (!CheckShapeValid(dst_shape, kNc1hwc0DimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s",
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
            ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid",
+                      ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   return SUCCESS;
@@ -60,16 +65,25 @@ Status CheckArgsForNhwcToNc1hwc0(const TransArgs &args) {
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
   if (!CheckDataTypeSupported(args.src_data_type)) {
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Failed to trans shape from NHWC to NC1HWC0, invalid data type %s",
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Check][DataType]Failed from NHWC to NC1HWC0, "
+           "invalid data type %s",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
+    REPORT_INNER_ERROR("E19999", "Failed to trans shape from NHWC to NC1HWC0, invalid data type %s",
+                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(args.src_shape, kNhwcDimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check src shape %s", ShapeToString(args.src_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
+           ShapeToString(args.src_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
+                      ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(args.dst_shape, kNc1hwc0DimsNum)) {
-    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check dst shape %s", ShapeToString(args.dst_shape).c_str());
+    GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
+           ShapeToString(args.dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check valid",
+                      ShapeToString(args.dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   std::vector<int64_t> expect_dst_shape;
@@ -79,10 +93,14 @@ Status CheckArgsForNhwcToNc1hwc0(const TransArgs &args) {
   }
   if (args.dst_shape != expect_dst_shape) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
-           "Failed to trans format, the src and dst shape are not compatible. src shape %s, dst shape %s, "
+           "[Trans][Format]Failed , the src shape %s and dst shape %s are not compatible. "
            "expect dst shape %s",
            ShapeToString(args.src_shape).c_str(), ShapeToString(args.dst_shape).c_str(),
            ShapeToString(expect_dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999",  "Failed to trans format, the src shape %s and "
+                      "dst shape %s are not compatible. expect dst shape %s",
+                      ShapeToString(args.src_shape).c_str(), ShapeToString(args.dst_shape).c_str(),
+                      ShapeToString(expect_dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
 
@@ -92,9 +110,16 @@ Status CheckArgsForNhwcToNc1hwc0(const TransArgs &args) {
 Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const int size, const int64_t total_size) {
   std::shared_ptr<uint8_t> dst(new (std::nothrow) uint8_t[total_size], std::default_delete<uint8_t[]>());
   if (dst == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Failed to trans format from %s to %s, can not alloc the memory for dst buf %ld, shape %s",
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Allcoate][Memory]Failed, memory for dst buf %ld, "
+           "shape %s when trans format from %s to %s",
+           total_size, ShapeToString(args.dst_shape).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
-           TypeUtils::FormatToSerialString(args.dst_format).c_str(), total_size, ShapeToString(args.dst_shape).c_str());
+           TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, "
+                      "shape %s when trans format from %s to %s",
+                      total_size, ShapeToString(args.dst_shape).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -132,17 +157,27 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
               auto ret = memcpy_s(dst.get() + dst_offset, protected_size, args.data + src_offset, size);
               if (ret != EOK) {
                 GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
-                       "Failed to copy data from NHWC[%ld, %ld, %ld, %ld] offset %ld to "
-                       "NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld err-code %d",
-                       n_idx, h_idx, w_idx, c_idx, src_offset, n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
+                       "[Operate][Memory]Failed to copy data from NHWC[%ld, %ld, %ld, %ld] "
+                       "offset %ld to NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld err-code %d",
+                       n_idx, h_idx, w_idx, c_idx, src_offset,
+                       n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
+                REPORT_CALL_ERROR("E19999", "Failed to copy data from NHWC[%ld, %ld, %ld, %ld] "
+                                  "offset %ld to "
+                                  "NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld err-code %d",
+                                  n_idx, h_idx, w_idx, c_idx, src_offset,
+                                  n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
                 return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
               }
             } else {
               auto ret = memset_s(dst.get() + dst_offset, protected_size, 0, size);
               if (ret != EOK) {
                 GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED,
-                       "Failed to set 0 to NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld base err-code %d", n_idx, c1_idx,
-                       h_idx, w_idx, c0_idx, dst_offset, ret);
+                       "[Operate][Memory]Failed to set 0 to "
+                       "NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld base err-code %d",
+                       n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
+                REPORT_CALL_ERROR("E19999", "Failed to set 0 to "
+                                  "NC1HWC0[%ld, %ld, %ld, %ld, %ld] offset %ld base err-code %d",
+                                  n_idx, c1_idx, h_idx, w_idx, c0_idx, dst_offset, ret);
                 return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
               }
             }
@@ -171,8 +206,12 @@ Status FormatTransferNhwcNc1hwc0::TransFormat(const TransArgs &args, TransResult
       return SUCCESS;
     }
 
-    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "Get %ld total size from dst shape %s, src shape %s", total_size,
+    GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Get][ShapeSize]Failed, "
+           "total size %ld from dst shape %s, src shape %s", total_size,
            ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "[Get][Shape]Failed, total size %ld from "
+                      "dst shape %s, src shape %s", total_size,
+                      ShapeToString(args.dst_shape).c_str(), ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   GELOGD("Begin to trans format from NHWC to NC1HWC0, src shape %s, data type %s, dst shape %s, memory size %ld",
@@ -181,9 +220,16 @@ Status FormatTransferNhwcNc1hwc0::TransFormat(const TransArgs &args, TransResult
 
   ret = GetDstDataAfterTrans(args, result, size, total_size);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to get data after trans, src shape %s, data type %s, dst shape %s, memory size %ld",
-           ShapeToString(args.src_shape).c_str(), TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
-           ShapeToString(args.dst_shape).c_str(), total_size);
+    GELOGE(ret, "[Get][Data]Failed, after trans, src shape %s, data type %s, "
+           "dst shape %s, memory size %ld, error_code %u",
+           ShapeToString(args.src_shape).c_str(),
+           TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+           ShapeToString(args.dst_shape).c_str(), total_size, ret);
+    REPORT_CALL_ERROR("E19999", "Failed to get data after trans, src shape %s, data type %s, "
+                      "dst shape %s, memory size %ld, error_code %u",
+                      ShapeToString(args.src_shape).c_str(),
+                      TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
+                      ShapeToString(args.dst_shape).c_str(), total_size, ret);
     return ret;
   }
   return SUCCESS;
@@ -193,8 +239,10 @@ Status FormatTransferNhwcNc1hwc0::TransShape(Format src_format, const std::vecto
                                              DataType data_type, Format dst_format, std::vector<int64_t> &dst_shape) {
   if (src_format == FORMAT_NHWC && CheckDataTypeSupported(data_type)) {
     if (!CheckShapeValid(src_shape, kNhwcDimsNum)) {
-      GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "Failed to check src shape %s",
+      GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
              ShapeToString(src_shape).c_str());
+      REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
+                        ShapeToString(src_shape).c_str());
       return ACL_ERROR_GE_SHAPE_INVALID;
     }
     return TransShapeNhwcToNc1hwc0(src_shape, data_type, dst_shape);

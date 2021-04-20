@@ -93,7 +93,7 @@ bool AtomicAddrCleanPass::CheckAtomicFromOpsKernel(const NodePtr &node) {
             in_data_anchor->GetPeerOutAnchor()->GetOwnerNode() != nullptr) {
           auto peer_in_node = in_data_anchor->GetPeerOutAnchor()->GetOwnerNode();
           if (peer_in_node->GetType() == DATA) {
-            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", node->GetName().c_str(), 
+            GELOGI("Recognized atomic op %s from %s engine and input is DATA.", node->GetName().c_str(),
                    op_info.engine.c_str());
             return false;
           }
@@ -126,11 +126,11 @@ bool AtomicAddrCleanPass::IsOutputIndexPeerInputAtomic(const NodePtr &node, int6
 
 bool AtomicAddrCleanPass::CheckSkipInsertInLoopGraph(const NodePtr &node) {
   OpDescPtr op_desc = node->GetOpDesc();
-  std::map<string, std::map<int, int>> node_workspace_offset;
+  std::map<string, std::map<int64_t, int64_t>> atomic_workspace_index_size;
   bool has_atomic_input = op_desc->HasAttr(ATOMIC_ATTR_INPUT_INDEX);
   bool has_atomic_output = op_desc->HasAttr(ATOMIC_ATTR_OUTPUT_INDEX);
-  node_workspace_offset = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_OFFSET, node_workspace_offset);
-  if (!has_atomic_input && has_atomic_output && node_workspace_offset.empty()) {
+  atomic_workspace_index_size = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, atomic_workspace_index_size);
+  if (!has_atomic_input && has_atomic_output && atomic_workspace_index_size.empty()) {
     std::vector<int64_t> atomic_output_index;
     (void) ge::AttrUtils::GetListInt(op_desc, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_index);
     bool is_all_output_peer_also_atomic = true;
@@ -222,6 +222,39 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
       }
     }
   }
+  return LinkToPotentialPrecedenceNode(graph, clean_addr_node);
+}
+
+// Add control edges from atomic clean node to all potential precedence nodes which may execute before atomic clean
+// node. We hope that atomic clean node can execute with the highest priority in the entire graph. Because of stream
+// concurrency mechanism, only placing it at the head can not ensure that priority. Therefore, we need to add control
+// edges from atomic clean node to the nodes that may be the first node on each stream. Generally, the first nodes on
+// each stream are successors of Data/Variable, and Data/Variable won't generate task or execute, so we link to the
+// successors of Data/Variable.
+Status AtomicAddrCleanPass::LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph, NodePtr &atomic_clean_node) {
+  GELOGD("Start to add control edges from %s to all second-nodes behind first-nodes which have no input.",
+         atomic_clean_node->GetName().c_str());
+  auto out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
+  GE_CHECK_NOTNULL(out_ctrl_anchor);
+
+  for (const auto &node : graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(node);
+    bool need_handle = (node->GetType() == DATA || node->GetType() == VARIABLE) && node->GetInAllNodes().empty();
+    if (!need_handle) {
+      continue;
+    }
+    auto second_nodes = node->GetOutAllNodes();
+    for (const auto &second_node : second_nodes) {
+      GE_CHECK_NOTNULL(second_node);
+      auto in_ctrl_anchor = second_node->GetInControlAnchor();
+      GE_CHECK_NOTNULL(in_ctrl_anchor);
+      if (!out_ctrl_anchor->IsLinkedWith(in_ctrl_anchor)) {
+        GE_CHK_STATUS_RET(out_ctrl_anchor->LinkTo(in_ctrl_anchor));
+        GELOGD("Add control edge from %s to %s.", atomic_clean_node->GetName().c_str(), second_node->GetName().c_str());
+      }
+    }
+  }
+
   return SUCCESS;
 }
 
@@ -266,6 +299,7 @@ Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
 NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
   OpDescPtr op_desc = MakeShared<OpDesc>(NODE_NAME_ATOMIC_ADDR_CLEAN, ATOMICADDRCLEAN);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     GELOGE(INTERNAL_ERROR, "Make shared atomic addr clean op failed.");
     return nullptr;
   }
@@ -292,10 +326,17 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
 
 Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr &atomic_clean_node) {
   GE_IF_BOOL_EXEC(atomic_node == nullptr || atomic_clean_node == nullptr,
-                    DOMI_LOGE("param [atomic_node][atomic_clean_node] must not be null."); return PARAM_INVALID);
+                  REPORT_INNER_ERROR("E19999", "Param atomic_node or atomic_clean_node is nullptr, "
+                                     "check invalid");
+                  DOMI_LOGE("param [atomic_node][atomic_clean_node] must not be null.");
+                  return PARAM_INVALID);
   InControlAnchorPtr in_ctrl_anchor = atomic_node->GetInControlAnchor();
   OutControlAnchorPtr out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
   if (in_ctrl_anchor == nullptr || out_ctrl_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "in_ctrl_anchor of op:%s(%s) or out_ctrl_anchor of op:%s(%s) is nullptr, "
+                       "check invalid",
+                       atomic_node->GetName().c_str(), atomic_node->GetType().c_str(),
+                       atomic_clean_node->GetName().c_str(), atomic_clean_node->GetType().c_str());
     GELOGE(INTERNAL_ERROR,
            "Get control anchor faild, dst node: %s.",
            atomic_node->GetName().c_str());
@@ -304,6 +345,11 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
 
   graphStatus status = GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor);
   if (status != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                      out_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                      out_ctrl_anchor->GetOwnerNode()->GetType().c_str(),
+                      in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                      in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
     GELOGE(INTERNAL_ERROR,
            "Graph add cleanAddrNode op out ctrl edge fail, dst node: %s.",
            atomic_node->GetName().c_str());
@@ -332,11 +378,11 @@ bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
   }
 
   // 2.Check atomic attr in node
-  std::map<string, std::map<int, int>> node_workspace_offset;
+  std::map<string, std::map<int64_t, int64_t>> atomic_workspace_index_size;
   bool has_atomic_input = op_desc->HasAttr(ATOMIC_ATTR_INPUT_INDEX);
   bool has_atomic_output = op_desc->HasAttr(ATOMIC_ATTR_OUTPUT_INDEX);
-  node_workspace_offset = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_OFFSET, node_workspace_offset);
-  if (!has_atomic_input && !has_atomic_output && node_workspace_offset.empty()) {
+  atomic_workspace_index_size = op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, atomic_workspace_index_size);
+  if (!has_atomic_input && !has_atomic_output && atomic_workspace_index_size.empty()) {
     return false;
   }
 
@@ -361,6 +407,7 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
   std::unordered_map<string, vector<ge::NodePtr>> node_vector_map;
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
   if ((instance == nullptr) || !instance->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "GeLib is not init before, check invalid");
     GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "CompileSingleOp failed.");
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
@@ -373,6 +420,8 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
     }
     string kernel_lib_name = op_desc->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
+      REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
+                         kernel_lib_name.c_str());
       GELOGE(ge::INTERNAL_ERROR, "Get atomic node:%s(%s) kernel lib failed.", atomic_node->GetName().c_str(),
              atomic_node->GetType().c_str());
       return ge::INTERNAL_ERROR;
@@ -393,6 +442,8 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
     GELOGI("The atomic node size of compile op of %s is %zu", kernel_lib_name.c_str(), node_vector.size());
     GE_TIMESTAMP_ADD(UnknownGraphCompileOp);
     if (ret != ge::SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Call CompileOp failed, kernel_lib_name:%s, ret:%d",
+                         kernel_lib_name.c_str(), ret);
       GELOGE(ret, "Compile atomic op failed, kernel lib name is %s", kernel_lib_name.c_str());
       return ret;
     }

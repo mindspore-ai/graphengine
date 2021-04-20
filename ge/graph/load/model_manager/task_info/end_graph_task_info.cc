@@ -27,6 +27,7 @@ namespace ge {
 Status EndGraphTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("InitEndGraphTaskInfo Init Start.");
   if (davinci_model == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr");
     GELOGE(PARAM_INVALID, "davinci_model is null!");
     return PARAM_INVALID;
   }
@@ -45,13 +46,11 @@ Status EndGraphTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 Status EndGraphTaskInfo::Distribute() {
   GELOGI("EndGraphTaskInfo Distribute Start.");
   GE_CHECK_NOTNULL(davinci_model_);
-  auto all_dump_model = davinci_model_->GetDumpProperties().GetAllDumpModel();
-  if (all_dump_model.find(ge::DUMP_ALL_MODEL) != all_dump_model.end() ||
-      all_dump_model.find(davinci_model_->Name()) != all_dump_model.end() ||
-      all_dump_model.find(davinci_model_->OmName()) != all_dump_model.end()) {
+  if (davinci_model_->ModelNeedDump()) {
     GELOGI("Start to call rtEndGraphEx");
     rtError_t rt_ret = rtEndGraphEx(model_, stream_, kDumpFlag);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtEndGraphEx failed, ret:0x%X", rt_ret);
       GELOGE(RT_FAILED, "Call rtEndGraphEx failed, ret: 0x%x", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -59,6 +58,7 @@ Status EndGraphTaskInfo::Distribute() {
     GELOGI("Start to call rtEndGraph");
     rtError_t rt_ret = rtEndGraph(model_, stream_);
     if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtEndGraph failed, ret:0x%X", rt_ret);
       GELOGE(RT_FAILED, "Call rtEndGraph failed, ret: 0x%x", rt_ret);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -68,6 +68,8 @@ Status EndGraphTaskInfo::Distribute() {
   uint32_t stream_id = 0;
   rtError_t rt_ret = rtModelGetTaskId(davinci_model_->GetRtModelHandle(), &task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtModelGetTaskId failed, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

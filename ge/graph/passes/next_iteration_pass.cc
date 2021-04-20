@@ -22,6 +22,10 @@
 using std::string;
 
 namespace ge {
+namespace {
+const int64_t kLoopType = 1;
+}
+
 Status NextIterationPass::Run(ComputeGraphPtr graph) {
   GELOGD("NextIterationPass Enter");
   /// Enter-----------+
@@ -67,6 +71,8 @@ Status NextIterationPass::GroupEnterNode(const NodePtr &enter_node) {
   GE_CHECK_NOTNULL(enter_desc);
   std::string frame_name;
   if (!ge::AttrUtils::GetStr(enter_desc, ENTER_ATTR_FRAME_NAME, frame_name) || frame_name.empty()) {
+    REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ENTER_ATTR_FRAME_NAME.c_str(),
+                      enter_desc->GetName().c_str(), enter_desc->GetType().c_str());
     GELOGE(FAILED, "Get attr ENTER_ATTR_FRAME_NAME failed, node: %s", enter_desc->GetName().c_str());
     return FAILED;
   }
@@ -80,6 +86,7 @@ Status NextIterationPass::GroupEnterNode(const NodePtr &enter_node) {
   if (iter == loop_group_map_.end()) {
     LoopCondGroupPtr loop_group = MakeShared<LoopCondGroup>();
     if (loop_group == nullptr) {
+      REPORT_CALL_ERROR("E19999", "New LoopCondGroup failed");
       GELOGE(FAILED, "MakeShared for LoopCondGroup failed.");
       return FAILED;
     }
@@ -101,7 +108,8 @@ Status NextIterationPass::FindWhileGroups() {
     const std::string &frame_name = loop_group_iter.first;
     for (const auto &enter_node : loop_group_iter.second->enter_nodes) {
       for (const auto &out_node : enter_node->GetOutAllNodes()) {
-        const string &type = out_node->GetType();
+        std::string type;
+        GE_CHK_STATUS_RET(GetOriginalType(out_node, type), "Get node type failed.");
         if ((type != MERGE) && (type != REFMERGE)) {
           continue;
         }
@@ -121,7 +129,12 @@ Status NextIterationPass::FindWhileGroups() {
         if (switch_node == nullptr) {
           continue;
         }
-
+        if (!AttrUtils::SetInt(switch_node->GetOpDesc(), ATTR_NAME_STREAM_SWITCH_TYPE, kLoopType)) {
+          REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_STREAM_SWITCH_TYPE.c_str(),
+                            switch_node->GetName().c_str(), switch_node->GetType().c_str());
+          GELOGE(INTERNAL_ERROR, "set int failed");
+          return INTERNAL_ERROR;
+        }
         NodePtr loop_cond = nullptr;
         if (FindTargetNode(switch_node, LOOPCOND, true, loop_cond) != SUCCESS) {
           GELOGE(INTERNAL_ERROR, "Get LoopCond node failed, frame_name: %s.", frame_name.c_str());
@@ -130,6 +143,7 @@ Status NextIterationPass::FindWhileGroups() {
         if (loop_group_iter.second->loop_cond == nullptr) {
           loop_group_iter.second->loop_cond = loop_cond;
         } else if (loop_group_iter.second->loop_cond != loop_cond) {
+          REPORT_INNER_ERROR("E19999", "Multi LoopCond nodes exist, frame_name:%s, check invalid", frame_name.c_str());
           GELOGE(FAILED, "Multi LoopCond nodes exist, frame_name: %s.", frame_name.c_str());
           return FAILED;
         }
@@ -149,16 +163,20 @@ bool NextIterationPass::VerifyWhileGroup() {
   for (const auto &loop_group_iter : loop_group_map_) {
     const std::string &frame_name = loop_group_iter.first;
     if (frame_name.empty()) {
+      REPORT_INNER_ERROR("E19999", "Verify while group failed, frame_name is empty");
       GELOGE(INTERNAL_ERROR, "Verify while group failed, frame_name is empty.");
       return false;
     }
     if (loop_group_iter.second->loop_cond == nullptr) {
+      REPORT_INNER_ERROR("E19999", "Verify while group failed, LoopCond is null, frame_name:%s.", frame_name.c_str());
       GELOGE(INTERNAL_ERROR, "Verify while group failed, LoopCond is null, frame_name: %s.", frame_name.c_str());
       return false;
     }
 
     for (const auto &pair_iter : loop_group_iter.second->merge_next_pairs) {
       if ((pair_iter.first == nullptr) || (pair_iter.second == nullptr)) {
+        REPORT_INNER_ERROR("E19999", "Verify while group failed, merge_node/next_node is null, frame_name:%s.",
+                           frame_name.c_str());
         GELOGE(INTERNAL_ERROR, "Verify while group failed, merge_node/next_node is null, frame_name: %s.",
                frame_name.c_str());
         return false;
@@ -190,6 +208,9 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
     for (const auto &enter_node : loop_cond_iter.second->enter_nodes) {
       // Enter --> Active
       if (GraphUtils::AddEdge(enter_node->GetOutControlAnchor(), enter_active->GetInControlAnchor()) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                          enter_node->GetName().c_str(), enter_node->GetType().c_str(),
+                          enter_active->GetName().c_str(), enter_active->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Add control edge from %s to %s failed.", enter_node->GetName().c_str(),
                enter_active->GetName().c_str());
         return INTERNAL_ERROR;
@@ -201,12 +222,18 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
       NodePtr next_node = pair.second;
       // Active --> Merge
       if (GraphUtils::AddEdge(enter_active->GetOutControlAnchor(), merge_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                          enter_active->GetName().c_str(), enter_active->GetType().c_str(),
+                          merge_node->GetName().c_str(), merge_node->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Add control edge failed.");
         return INTERNAL_ERROR;
       }
 
       // NextIteration --> Active
       if (GraphUtils::AddEdge(next_node->GetOutControlAnchor(), next_active->GetInControlAnchor()) != GRAPH_SUCCESS) {
+        REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                          next_node->GetName().c_str(), next_node->GetType().c_str(),
+                          next_active->GetName().c_str(), next_active->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "Add control edge failed.");
         return INTERNAL_ERROR;
       }
@@ -237,17 +264,22 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
 NodePtr NextIterationPass::CreateActiveNode(ComputeGraphPtr &graph, const std::string &name) {
   OpDescPtr op_desc = MakeShared<OpDesc>(name, STREAMACTIVE);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     return nullptr;
   }
 
   GELOGI("Create StreamActive op:%s.", op_desc->GetName().c_str());
   NodePtr active_node = graph->AddNode(op_desc);
   if (active_node == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
+                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Create node[%s] failed.", name.c_str());
     return nullptr;
   }
 
   if (SetSwitchBranchNodeLabel(active_node, name) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Set switch branch node label:%s to node:%s(%s) failed",
+                      name.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Set attr SWITCH_BRANCH_NODE_LABEL for node: %s failed.", active_node->GetName().c_str());
     return nullptr;
   }
@@ -272,11 +304,17 @@ Status NextIterationPass::BreakNextIteration(const NodePtr &next_node, NodePtr &
       continue;
     }
     if (GraphUtils::RemoveEdge(out_anchor, in_anchor) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                        out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
+                        out_anchor->GetIdx(),
+                        merge_node->GetName().c_str(), merge_node->GetType().c_str(), in_anchor->GetIdx());
       GELOGE(INTERNAL_ERROR, "Remove data edge failed, %s->%s.", next_node->GetName().c_str(),
              merge_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
     if (SetNextIteration(merge_node, next_node->GetName()) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Set attr NEXT_ITERATION value:%s to node:%s(%s) failed",
+                        next_node->GetName().c_str(), merge_node->GetName().c_str(), merge_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Set attr NEXT_ITERATION for node %s failed.", merge_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -295,6 +333,7 @@ Status NextIterationPass::BreakNextIteration(const NodePtr &next_node, NodePtr &
 Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input,
                                          NodePtr &target_node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "node is null.");
     return PARAM_INVALID;
   }
@@ -310,7 +349,8 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
   }
 
   for (const auto &tmp_node : nodes) {
-    const std::string type = tmp_node->GetType();
+    std::string type;
+    GE_CHK_STATUS_RET(GetOriginalType(tmp_node, type), "Get node type failed.");
     if ((target_type == LOOPCOND) && (type == target_type)) {
       target_node = tmp_node;
       break;
@@ -321,6 +361,8 @@ Status NextIterationPass::FindTargetNode(const NodePtr &node, const std::string 
   }
 
   if ((target_type != SWITCH) && (target_node == nullptr)) {
+    REPORT_INNER_ERROR("E19999", "Find target_type:%s node around node:%s(%s) failed",
+                       target_type.c_str(), node->GetName().c_str(), node->GetType().c_str());
     GELOGE(INTERNAL_ERROR, "Find node %s failed.", target_type.c_str());
     return INTERNAL_ERROR;
   }

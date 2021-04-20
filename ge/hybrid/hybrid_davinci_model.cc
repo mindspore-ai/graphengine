@@ -19,6 +19,7 @@
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/executor/hybrid_model_async_executor.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "graph/manager/graph_manager_utils.h"
 
 namespace ge {
 namespace hybrid {
@@ -32,9 +33,10 @@ class HybridDavinciModel::Impl {
   }
 
   Status Init() {
-    GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().EnsureInitialized(), "Failed to initialize executors");
-    GE_CHK_STATUS_RET(model_.Init(), "Failed to init model.")
-    GE_CHK_STATUS_RET(executor_.Init(), "Failed to init model executor.")
+    GE_CHK_STATUS_RET(NodeExecutorManager::GetInstance().EnsureInitialized(),
+                      "[Initialize][NodeExecutorManager] failed");
+    GE_CHK_STATUS_RET(model_.Init(), "[Init][HybridModel] failed.")
+    GE_CHK_STATUS_RET(executor_.Init(), "[Init][HybridModelAsyncExecutor] failed.")
     return SUCCESS;
   }
 
@@ -76,10 +78,15 @@ class HybridDavinciModel::Impl {
     executor_.SetDeviceId(device_id);
   }
 
-  void SetModelName(const string &model_name) {
-    model_.SetModelName(model_name);
-    executor_.SetModelName(model_name);
+  void SetOmName(const string &model_name) {
+    model_.SetOmName(model_name);
   }
+
+  uint32_t GetDeviceId() {
+    return model_.GetDeviceId();
+  }
+
+  const GraphExecutionContext * GeContext() { return executor_.GeContext(); }
 
   uint64_t GetSessionId() {
     return model_.GetSessionId();
@@ -106,6 +113,17 @@ class HybridDavinciModel::Impl {
 
   void SetModelDescVersion(bool is_new_model_desc) {
     model_.SetModelDescVersion(is_new_model_desc);
+  }
+
+  uint32_t GetDataInputerSize() { return executor_.GetDataInputerSize(); }
+
+  bool GetRunningFlag() const { return executor_.GetRunningFlag(); }
+
+  Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+    auto listener = dynamic_cast<RunAsyncListener *>(listener_.get());
+    GE_CHECK_NOTNULL(listener);
+    listener->SetCallback(callback);
+    return SUCCESS;
   }
 
  private:
@@ -181,10 +199,15 @@ void HybridDavinciModel::SetDeviceId(uint32_t device_id) {
   }
 }
 
-void HybridDavinciModel::SetModelName(const string &model_name) {
+void HybridDavinciModel::SetOmName(const string &om_name) {
   if (impl_ != nullptr) {
-    impl_->SetModelName(model_name);
+    impl_->SetOmName(om_name);
   }
+}
+
+uint32_t HybridDavinciModel::GetDeviceId() const {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetDeviceId();
 }
 
 Status HybridDavinciModel::GetDynamicBatchInfo(std::vector<std::vector<int64_t>> &batch_info, int32_t &dynamic_type) {
@@ -221,6 +244,34 @@ void HybridDavinciModel::SetModelDescVersion(bool is_new_model_desc) {
 uint64_t HybridDavinciModel::GetSessionId() {
   GE_CHECK_NOTNULL(impl_);
   return impl_->GetSessionId();
+}
+
+uint32_t HybridDavinciModel::GetDataInputerSize() {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetDataInputerSize();
+}
+
+bool HybridDavinciModel::GetRunningFlag() const { return impl_->GetRunningFlag(); }
+
+Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+  return impl_->SetRunAsyncListenerCallback(callback);
+}
+
+bool HybridDavinciModel::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
+  if (impl_ == nullptr) {
+    return false;
+  }
+  auto context = impl_->GeContext();
+  GE_CHECK_NOTNULL(context);
+  bool ret = context->exception_dumper.GetOpDescInfo(stream_id, task_id, op_desc_info);
+  if (!ret) {
+    for (const auto &iter : context->davinci_model) {
+      if (iter->GetOpDescInfo(stream_id, task_id, op_desc_info)) {
+        return true;
+      }
+    }
+  }
+  return ret;
 }
 }  // namespace hybrid
 }  // namespace ge

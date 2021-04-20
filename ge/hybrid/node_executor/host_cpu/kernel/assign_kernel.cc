@@ -34,7 +34,9 @@ Status AssignKernel::Compute(TaskContext& context) {
   const auto value_tensor = context.GetInput(kAssignValueInputIndex);
   GE_CHECK_NOTNULL(value_tensor);
   if (value_tensor->GetSize() > ref_tensor->GetSize()) {
-    GELOGE(INTERNAL_ERROR, "[%s] value_input_size=%zu, but ref_input_size=%zu.",
+    REPORT_INNER_ERROR("E19999", "[%s] value_input_size=%zu bigger than ref_input_size=%zu. check invalid",
+           node_->GetName().c_str(), value_tensor->GetSize(), ref_tensor->GetSize());
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] value_input_size=%zu, but ref_input_size=%zu.",
            node_->GetName().c_str(), value_tensor->GetSize(), ref_tensor->GetSize());
     return INTERNAL_ERROR;
   }
@@ -46,7 +48,7 @@ Status AssignKernel::Compute(TaskContext& context) {
                            value_tensor->GetSize(), RT_MEMCPY_HOST_TO_HOST));
   }
   GE_CHK_STATUS_RET(context.SetOutput(kAssignRefOutputIndex, *ref_tensor),
-                    "[%s] Failed to set output.", context.GetNodeName());
+                    "[Set][Output] failed for[%s].", context.GetNodeName());
 
   GELOGD("[%s] compute success.", node_->GetName().c_str());
   return SUCCESS;

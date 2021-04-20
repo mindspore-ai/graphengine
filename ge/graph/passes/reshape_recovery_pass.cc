@@ -23,18 +23,25 @@ NodePtr CreateReshape(const ConstGeTensorDescPtr &src, const ConstGeTensorDescPt
   auto next_num = reshape_num.fetch_add(1);
   auto reshape = MakeShared<OpDesc>("Reshape_ReshapeRecoveryPass_" + std::to_string(next_num), RESHAPE);
   if (reshape == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
     return nullptr;
   }
   auto ret = reshape->AddInputDesc("x", *src);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:x",
+                      reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
   ret = reshape->AddInputDesc("shape", GeTensorDesc(GeShape(), Format(), DT_INT32));
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:shape",
+                      reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
   ret = reshape->AddOutputDesc("y", *dst);
   if (ret != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:y",
+                      reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
 
@@ -55,14 +62,27 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
       GE_CHECK_NOTNULL(dst_node->GetOpDesc());
       auto dst_tensor = dst_node->GetOpDesc()->GetInputDescPtr(dst_anchor->GetIdx());
       GE_CHECK_NOTNULL(dst_tensor);
-      bool is_need_insert_reshape = src_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
-                                    dst_tensor->GetShape().GetDims() != UNKNOWN_RANK &&
-                                    src_tensor->GetShape().GetDims() != dst_tensor->GetShape().GetDims();
+      bool is_dynamic = false;
+      const auto &src_tensor_dims = src_tensor->GetShape().GetDims();
+      const auto &dst_tensor_dims = dst_tensor->GetShape().GetDims();
+      if ((std::any_of(src_tensor_dims.begin(), src_tensor_dims.end(), [](int64_t val) { return val < 0 ; }))
+          || (std::any_of(dst_tensor_dims.begin(), dst_tensor_dims.end(), [](int64_t val) { return val < 0; }))) {
+        GELOGD("No need to insert reshape node between %s nad %s.", node->GetName().c_str(),
+               dst_node->GetName().c_str());
+        is_dynamic = true;
+      }
+      bool is_need_insert_reshape = src_tensor_dims != dst_tensor_dims &&
+                                    !is_dynamic;
       if (is_need_insert_reshape) {
         auto reshape = CreateReshape(src_tensor, dst_tensor, node->GetOwnerComputeGraph());
         GE_CHECK_NOTNULL(reshape);
         auto ret = GraphUtils::InsertNodeBetweenDataAnchors(src_anchor, dst_anchor, reshape);
         if (ret != GRAPH_SUCCESS) {
+          REPORT_CALL_ERROR("E19999",
+                            "Insert node:%s(%s) between node:%s(%s)(out_index:%d) and node:%s(%s)(out_index:%d) failed",
+                            reshape->GetName().c_str(), reshape->GetType().c_str(),
+                            node->GetName().c_str(), node->GetType().c_str(), src_anchor->GetIdx(),
+                            dst_node->GetName().c_str(), dst_node->GetType().c_str(), dst_anchor->GetIdx());
           GELOGE(INTERNAL_ERROR, "Failed to insert reshape between node %s and %s",
                  node->GetName().c_str(), dst_node->GetName().c_str());
           return INTERNAL_ERROR;

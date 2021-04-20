@@ -45,6 +45,8 @@ class HybridModel {
     return root_runtime_param_.session_id;
   }
 
+  void *GetGlobalStep() const;
+
   GeModelPtr GetGeModel(const NodePtr &node) const;
 
   NodeItem *MutableNodeItem(const NodePtr &node);
@@ -69,8 +71,8 @@ class HybridModel {
     model_id_ = model_id;
   }
 
-  void SetModelName(const string &model_name) {
-    om_name_ = model_name;
+  void SetOmName(const string &om_name) {
+    om_name_ = om_name;
   }
 
   const std::string &GetOmName() const {
@@ -90,6 +92,10 @@ class HybridModel {
   NodePtr GetVariableNode(const string &name) const;
 
   TensorValue* GetTensor(const NodePtr &node) const;
+
+  TensorBuffer* GetModelWeight(const std::string &subgraph_name) const;
+
+  const std::map<int64_t, std::vector<std::pair<int, Tensor>>> &GetHostTensors() const;
 
   const std::vector<domi::TaskDef>* GetTaskDefs(const NodePtr &node) const;
 
@@ -135,6 +141,7 @@ class HybridModel {
   std::string model_name_;
   GeRootModelPtr ge_root_model_;
   std::map<uint32_t, NodeItem *> input_nodes_;
+  ComputeGraphPtr root_graph_;
   std::map<std::string, NodePtr> device_variable_nodes_; //lint !e148
   std::map<std::string, NodePtr> host_variable_nodes_; //lint !e148
   std::map<std::string, std::unique_ptr<TensorValue>> variable_tensors_;
@@ -145,6 +152,7 @@ class HybridModel {
   std::unique_ptr<GraphItem> root_graph_item_;
   std::map<std::string, std::unique_ptr<GraphItem>> subgraph_items_;
   std::map<NodePtr, std::unique_ptr<NodeItem>> node_items_;
+  std::map<int64_t, std::vector<std::pair<int, Tensor>>> host_tensors_;
 
   bool is_new_model_desc_ = false;    // support aipp
   bool is_single_op_ = false;
@@ -153,9 +161,10 @@ class HybridModel {
   uint32_t device_id_ = 0;
   uint32_t model_id_ = 0;
   uint8_t *var_mem_base_ = nullptr;
-  std::unique_ptr<TensorBuffer> weight_buffer_;
+  std::map<string, std::unique_ptr<TensorBuffer>> weight_buffer_map_;
   RuntimeParam root_runtime_param_;
   string om_name_;
+  std::unique_ptr<TensorBuffer> global_step_;
 };
 }  // namespace hybrid
 }  // namespace ge

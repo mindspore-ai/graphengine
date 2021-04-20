@@ -71,6 +71,11 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
   void SetModelId(uint32_t model_id) { model_id_ = model_id; }
   uint32_t GetModelId() const { return model_id_; }
 
+  Status GetSessionId(uint32_t model_id, uint64_t &session_id) const;
+  void InsertSessionMap(uint32_t model_id, uint64_t session_id) {
+    model_id_to_session_id_map_.insert({model_id, session_id});
+  }
+
  protected:
   ConstProtoAttrMapHelper GetAttrMap() const override;
 
@@ -90,6 +95,7 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
   std::string platform_version_;
   uint8_t platform_type_ = {0};
   uint32_t model_id_ = INVALID_MODEL_ID;
+  std::map<uint32_t, uint64_t> model_id_to_session_id_map_;
 };
 }  // namespace ge
 using GeModelPtr = std::shared_ptr<ge::GeModel>;

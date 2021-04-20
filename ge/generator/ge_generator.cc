@@ -36,6 +36,7 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "model/ge_model.h"
+#include "analyzer/analyzer.h"
 
 using std::map;
 using std::string;
@@ -50,9 +51,14 @@ const char *const kFileNameSuffix = "online";
 const char *const kAicpuAllshape = "_AllShape";
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 const int64_t kDynamicDimValue = -2;
+const int kDefaultDeviceId = 0;
+const int kDefaultJobId = 0;
+const int32_t kFuzzBuildPattern = 1;
 
 std::map<ge::OpEngineType, std::string> engine_type_map{
-    {ge::ENGINE_SYS, kEngineNameDefault}, {ge::ENGINE_AICORE, kAIcoreEngine}, {ge::ENGINE_VECTOR, kVectorEngine}};
+    {ge::ENGINE_SYS, kEngineNameDefault},
+    {ge::ENGINE_AICORE, kAIcoreEngine},
+    {ge::ENGINE_VECTOR, kVectorEngine}};
 
 bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
   for (auto &tensor_desc : op_desc.GetAllInputsDescPtr()) {
@@ -62,6 +68,10 @@ bool ContainsDynamicInpus(const ge::OpDesc &op_desc) {
     }
   }
   return false;
+}
+// if optional in/out, format is format_reserved and dtype is dt_undefined
+bool IsOptional(const ge::GeTensorDesc &tensor_desc) {
+  return tensor_desc.GetFormat() == ge::FORMAT_RESERVED && tensor_desc.GetDataType() == ge::DT_UNDEFINED;
 }
 }  // namespace
 
@@ -83,8 +93,9 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
   } else {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "engine type",
-        "it only support kEngineNameDefault/kAIcoreEngine/kVectorEngine"});
-    GELOGE(FAILED, "CheckEngineType: engine type: %d not support", static_cast<int>(engine_type));
+        "it only support default/AIcoreEngine/VectorEngine"});
+    GELOGE(FAILED, "[Check][EngineType]value:%d not support, "
+           "only support default/AIcoreEngine/VectorEngine now", static_cast<int>(engine_type));
     return FAILED;
   }
 
@@ -149,7 +160,7 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
 }
 
 static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const GeTensorDesc &tensor, int32_t index,
-                        bool attr) {
+                        bool attr, int32_t &data_index) {
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
 
@@ -188,17 +199,21 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
 
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
-  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail.");
-  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail.");
-  if (attr) {
-    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, index), return FAILED, "Set index fail.");
+  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                   "[Add][InputDesc]fail for node:%s", data_op->GetName().c_str());
+  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                   "[Add][OutputDesc]fail for node:%s", data_op->GetName().c_str());
+  if (attr && !is_const) {
+    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, data_index), return FAILED,
+                     "[Set][Attr:%s]fail for node:%s", ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
+    ++data_index;
   }
 
   ge::NodePtr arg_node = graph->AddNode(data_op);
-  GE_CHK_BOOL_EXEC(arg_node != nullptr, return FAILED, "Insert Data node fail.");
+  GE_CHK_BOOL_EXEC(arg_node != nullptr, return FAILED, "Insert Data node fail");
 
   GE_CHK_STATUS(GraphUtils::AddEdge(arg_node->GetOutDataAnchor(0), node->GetInDataAnchor(index)),
-                "Add edge[%s->%s] fail.", data_op->GetName().c_str(), node->GetName().c_str());
+                "[Add][Edge]fail from node:%s to node:%s", data_op->GetName().c_str(), node->GetName().c_str());
 
   return SUCCESS;
 }
@@ -213,20 +228,23 @@ static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, cons
   for (const auto &out_desc : outputs) {
     GeTensorDesc tensor = out_desc.GetTensorDesc();
     TensorUtils::SetInputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add input desc fail");
+    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                     "[Add][InputDesc]fail for node:%s", op_desc->GetName().c_str());
 
     TensorUtils::SetInputTensor(tensor, false);
     TensorUtils::SetOutputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED, "Add output desc fail");
+    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
+                     "[Add][OutputDesc]fail for node:%s", op_desc->GetName().c_str());
     count++;
   }
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   ge::NodePtr out_node = graph->AddNode(op_desc);
-  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED, "Insert Output node fail.");
+  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED,
+                   "[Add][Node:%s]fail in graph:%u", op_desc->GetName().c_str(), graph->GetGraphID());
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
   for (int32_t i = 0; i < count; ++i) {
     GE_CHK_STATUS(GraphUtils::AddEdge(node->GetOutDataAnchor(i), out_node->GetInDataAnchor(i)),
-                  "Add edge[%s->%s] fail.", node->GetName().c_str(), out_node->GetName().c_str());
+                  "[Add][Edge]fail from node:%s to node:%s", node->GetName().c_str(), out_node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -283,13 +301,44 @@ static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTenso
   return SUCCESS;
 }
 
+static Status GetFuzzBuildAttrs(const OpDescPtr &op_desc, const GeRootModelPtr &ge_root_model,
+                                GeAttrValue::LIST_NAMED_ATTRS &fuzz_build_attrs) {
+  GELOGD("Start get fuzz build attrs of %s.", op_desc->GetName().c_str());
+  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  for (const auto &node : ge_root_model->GetRootGraph()->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node);
+    GE_CHECK_NOTNULL(node->GetOpDesc());
+    GELOGD("Delete fuzz build attr of %s after build.", node->GetName().c_str());
+    node->GetOpDesc()->DelAttr(ATTR_NAME_FUZZ_BUILD);
+  }
+  (void)AttrUtils::GetListNamedAttrs(op_desc, ATTR_NAME_FUZZ_BUILD_RES_ATTRS, fuzz_build_attrs);
+  if (!fuzz_build_attrs.empty()) {
+    GELOGD("%s has split, get ATTR_NAME_FUZZ_BUILD_RES_ATTRS directly.", op_desc->GetName().c_str());
+    return SUCCESS;
+  } else {
+    GELOGW("%s build with fuzz build pattern, but not set ATTR_NAME_FUZZ_BUILD_RES_ATTRS.", op_desc->GetName().c_str());
+  }
+  return SUCCESS;
+}
+
+static bool HasShapeRange(const vector<GeTensor> &inputs) {
+  for (const auto &input : inputs) {
+    vector<pair<int64_t, int64_t>> shape_range;
+    (void)input.GetTensorDesc().GetShapeRange(shape_range);
+    if (!shape_range.empty()) {
+      GELOGD("Has set shape range.");
+      return true;
+    }
+  }
+  return false;
+}
+
 class GeGenerator::Impl {
  public:
   Impl(OmgContext &omg_context) : omg_context_(omg_context) {}
   ~Impl() = default;
 
   Status BuildModel(const Graph &graph, const vector<GeTensor> &inputs, GeRootModelPtr &ge_models);
-
   Status SaveModel(const string &file_name_prefix, GeModelPtr &models, ModelBufferData &model);
 
   Status SaveRootModel(const string &file_name_prefix, GeRootModelPtr &model, ModelBufferData &model_buff);
@@ -554,6 +603,42 @@ bool GeGenerator::Impl::SetOmSystemInfo(AttrHolder &obj) {
   return true;
 }
 
+Status GeGenerator::SetModelNameForDump(const GeRootModelPtr &ge_root_model) {
+  bool is_unknown_shape = false;
+  Status ret = ge_root_model->CheckIsUnknownShape(is_unknown_shape);
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "[Check][IsUnknownShape]Check root model is unknown shape failed, model id:%u",
+           ge_root_model->GetModelId());
+    REPORT_CALL_ERROR("E19999", "Check root model is unknown shape failed, model id:%u",
+                      ge_root_model->GetModelId());
+    return FAILED;
+  }
+  GeModelPtr model_root = nullptr;
+  if (is_unknown_shape) {
+    model_root = MakeShared<GeModel>();
+    GE_CHECK_NOTNULL(model_root);
+    model_root->SetGraph(GraphUtils::CreateGraphFromComputeGraph(ge_root_model->GetRootGraph()));
+    ge_root_model->SetSubgraphInstanceNameToModel(ge_root_model->GetRootGraph()->GetName(), model_root);
+  }
+
+  ModelHelper model_helper;
+  string model_name;
+  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
+  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
+                                                                 model_name);
+  if (name_ret != SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
+    GELOGE(FAILED, "[Check][GetModelNameStep]Get model_name failed. Param --output is invalid, root graph name: %s",
+           ge_root_model->GetRootGraph()->GetName().c_str());
+    return PARAM_INVALID;
+  }
+  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
+  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
+  GE_CHECK_NOTNULL(ge_model);
+  ge_model->SetName(model_name);
+  return SUCCESS;
+}
+
 Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
                                   ModelBufferData &model, bool is_offline) {
   rtContext_t ctx = nullptr;
@@ -588,20 +673,10 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   }
 
   GE_CHECK_NOTNULL(ge_root_model);
-  GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
-  ModelHelper model_helper;
-  string model_name = "";
-  Status name_ret = model_helper.GetModelNameFromMergedGraphName(ge_root_model->GetRootGraph()->GetName(),
-                                                                 model_name);
-  if (name_ret != SUCCESS) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10000", {"parameter"}, {"output"});
-    GELOGE(FAILED, "Get model_name failed. Param --output is invalid.");
-    return PARAM_INVALID;
+  ret = SetModelNameForDump(ge_root_model);
+  if (ret != SUCCESS) {
+    return ret;
   }
-  map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
-  GeModelPtr &ge_model = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
-  GE_RETURN_WITH_LOG_IF_FALSE(ge_model != nullptr, "ge_model cannot be null");
-  ge_model->SetName(model_name);
   ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "Save model failed");
@@ -654,6 +729,34 @@ namespace {
   }
 }
 
+bool GeGenerator::CheckNoAicore(const ComputeGraphPtr &graph) {
+  for (const auto &node : graph->GetDirectNode()) {
+    if (node == nullptr) {
+      continue;
+    }
+    auto op_desc = node->GetOpDesc();
+    if (op_desc == nullptr) {
+      continue;
+    }
+    if (op_desc->GetOpEngineName() == kAIcoreEngine) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void GeGenerator::RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs) {
+  for (auto &input : inputs) {
+    GeTensorDesc input_desc = input.GetTensorDesc();
+    bool is_const = false;
+    (void)AttrUtils::GetBool(input_desc, CONST_ATTR_NAME_INPUT, is_const);
+    bool is_optional = IsOptional(input_desc);
+    if (!is_optional && !is_const) {
+      outputs.emplace_back(input);
+    }
+  }
+}
+
 Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                      const vector<GeTensor> &outputs) {
   GE_CHECK_NOTNULL_EXEC(op_desc, return PARAM_INVALID);
@@ -676,7 +779,8 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
 
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
-                                  bool is_offline) {
+                                  bool is_offline, int32_t compile_flag) {
+  GELOGD("Inputs size is %zu, outputs size is %zu.", inputs.size(), outputs.size());
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   impl_->is_offline_ = is_offline;
   if (!is_offline) {
@@ -698,6 +802,16 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   OpDescPtr op_desc_tmp = AttrUtils::CloneOpDesc(op_desc);
   GE_CHECK_NOTNULL(op_desc_tmp);
 
+  bool fuzz_compile_flag = false;
+  if (!HasShapeRange(inputs) && compile_flag == kFuzzBuildPattern) {
+    fuzz_compile_flag = true;
+  }
+  if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, fuzz_compile_flag)) {
+    GELOGE(FAILED, "[Set][ATTR_NAME_FUZZ_BUILD] Failed to set attr for %s.", op_desc->GetName().c_str());
+    return FAILED;
+  }
+  impl_->omg_context_.fuzz_compile_flag = fuzz_compile_flag;
+
   // 1. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
   Graph graph;
@@ -710,7 +824,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     auto node = comp_graph->FindNode(op_desc->GetName());
     Status ret = CheckEngineTypeSupport(node, engine_type);
     if (ret != SUCCESS) {
-      GELOGE(ret, "check engine type failed.");
+      GELOGE(ret, "[Check][EngineType]value:%d for node:%s not support", engine_type, node->GetName().c_str());
       return ret;
     }
   }
@@ -718,7 +832,9 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GELOGI("ATC parser success in single op build.");
 
   GeRootModelPtr ge_root_model = nullptr;
-  GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, inputs, ge_root_model));
+  vector<GeTensor> data_inputs;
+  RemoveConst(inputs, data_inputs);
+  GE_CHK_STATUS_RET_NOLOG(impl_->BuildModel(graph, data_inputs, ge_root_model));
   map<string, GeAttrValue> op_attrs = op_desc_tmp->GetAllAttrs();
   GE_CHECK_NOTNULL(ge_root_model);
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
@@ -734,7 +850,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
-  if (all_shape) {
+  if (all_shape && CheckNoAicore(root_graph)) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
     vector<GeTensor> outputs_dynamic;
@@ -742,6 +858,19 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     GE_CHK_STATUS_RET_NOLOG(ResetTensorVecShape(outputs, outputs_dynamic));
     GE_CHK_STATUS_RET_NOLOG(
       impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
+  } else if (fuzz_compile_flag) {
+    GELOGD("Get fuzz build result of %s.", op_desc->GetName().c_str());
+    (void)AttrUtils::SetInt(ge_model, ATTR_NAME_BUILD_MODE, fuzz_compile_flag);
+    GeAttrValue::LIST_NAMED_ATTRS fuzz_build_attrs;
+    if (GetFuzzBuildAttrs(op_desc, ge_root_model, fuzz_build_attrs) != SUCCESS) {
+      GELOGE(FAILED, "[Get][FuzzRet]Failed to get fuzz build result of %s.", op_desc->GetName().c_str());
+      return FAILED;
+    }
+    if (!fuzz_build_attrs.empty()) {
+      GE_CHK_BOOL_EXEC(AttrUtils::SetListNamedAttrs(ge_model, ATTR_NAME_FUZZ_BUILD_RES_ATTRS, fuzz_build_attrs),
+                       return FAILED, "Set ATTR_NAME_FUZZ_BUILD_RES_ATTRS failed.");
+    }
+    GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   } else {
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   }
@@ -757,15 +886,17 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
  * @param [in] vector<GeTensor> &inputs: Operator input data description information.
  * @param [in] vector<GeTensor> &outputs: Operator output data description information.
  * @param [in] const string &model_file_name: Offline model filename.
+ * @param [in] compile_flag: op build flag from atc
  * @return SUCCESS handle successfully / others handle failed
  */
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
-                                       const vector<GeTensor> &outputs, const string &model_file_name) {
+                                       const vector<GeTensor> &outputs, const string &model_file_name,
+                                       int32_t compile_flag) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGI("Start to build single op offline model, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   ModelBufferData model_buff;
   OpEngineType engine_type = ENGINE_SYS;
-  Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true);
+  Status status = BuildSingleOp(op_desc, inputs, outputs, model_file_name, engine_type, model_buff, true, compile_flag);
   GELOGI("Finish build single offline model, status: %u", status);
   return status;
 }
@@ -777,15 +908,28 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
  * @param [in] vector<GeTensor> &inputs: Operator input data description information.
  * @param [in] vector<GeTensor> &outputs: Operator output data description information.
  * @param [in] engine_type: specific engine.
+ * @param [in] compile_flag: op build flag, compile flag by acl
  * @param [out] ModelBufferData &Model_buff: Model_buff: model buffer of the op.
  * @return SUCCESS handle successfully / others handle failed
  */
+
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
+  GELOGI("Finish build single online model, status: %u", status);
+  return status;
+}
+
+Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
+                                       const vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
+                                       ModelBufferData &model_buff) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
+  Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false,
+                                compile_flag);
   GELOGI("Finish build single online model, status: %u", status);
   return status;
 }
@@ -801,18 +945,19 @@ Status GeGenerator::BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor
 
   // 2. Create InputData node.
   int32_t arg_index = 0;
+  int32_t data_index = 0;
   if (inputs.empty()) {
     for (const auto &input_desc : op_desc->GetAllInputsDescPtr()) {
       GE_CHECK_NOTNULL_EXEC(input_desc, return INTERNAL_ERROR);
       if (!IsNeedConnectInputOpForSingleOp(*input_desc)) {
         continue;
       }
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false));
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, *input_desc, arg_index, false, data_index));
       arg_index++;
     }
   } else {
     for (const auto &in_desc : inputs) {
-      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, in_desc.GetTensorDesc(), arg_index, true));
+      GE_CHK_STATUS_RET_NOLOG(AddInputs(compute_graph, op_node, in_desc.GetTensorDesc(), arg_index, true, data_index));
       arg_index++;
     }
   }
@@ -871,13 +1016,12 @@ Status GeGenerator::Impl::SaveRootModel(const string &file_name_prefix, GeRootMo
                    "ge root model has no sub model")
   GeModelPtr model_root = nullptr;
   if (is_unknown_shape) {
-    model_root = make_shared<GeModel>();
-    model_root->SetGraph(GraphUtils::CreateGraphFromComputeGraph(ge_root_model->GetRootGraph()));
-    ge_root_model->SetSubgraphInstanceNameToModel(ge_root_model->GetRootGraph()->GetName(), model_root);
-    model_root->SetName(ge_root_model->GetRootGraph()->GetName());
+    auto name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
+    model_root = name_to_ge_model[ge_root_model->GetRootGraph()->GetName()];
   } else {
     model_root = ge_root_model->GetSubgraphInstanceNameToModel().begin()->second;
   }
+  GE_CHECK_NOTNULL(model_root);
   // set atc version
   if (!SetAtcVersionInfo(*(model_root.get()))) {
     GELOGW("SetPackageVersionInfo of atc failed!");
@@ -915,6 +1059,13 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
 
   static std::atomic<uint64_t> atomic_session_id(0);
   auto session_id = atomic_session_id.fetch_add(1);
+  // This is a temporary add for graph with variable
+  auto version = static_cast<int32_t>(SessionVersion::ClOUD_VERSION);
+  ret = VarManager::Instance(session_id)->Init(version, session_id, kDefaultDeviceId, kDefaultJobId);
+  GELOGI("Start init var instance, session_id %lu", session_id);
+  if (ret != SUCCESS) {
+    GELOGW("Failed init var instance, session_id %lu", session_id);
+  }
   if (is_singleop_unregistered_) {
     ret = graph_manager_.BuildGraphForUnregisteredOp(graph_id, inputs, ge_root_model, session_id);
   } else {
@@ -924,13 +1075,13 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", graph_id);
-    VarManagerPool::Instance().RemoveVarManager(session_id);
-    return GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
+    ret = GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
 
+  RtContextUtil::GetInstance().DestroyRtContexts(session_id);
+  Analyzer::GetInstance()->DestroySessionJsonObject(session_id);
   VarManagerPool::Instance().RemoveVarManager(session_id);
-
-  return SUCCESS;
+  return ret;
 }
 
 Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph) {

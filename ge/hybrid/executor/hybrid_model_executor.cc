@@ -17,7 +17,10 @@
 #include "hybrid_model_executor.h"
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
+#include "graph/utils/tensor_utils.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "common/dump/dump_manager.h"
+#include "common/profiling/profiling_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -47,6 +50,16 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   auto root_graph_item = model_->GetRootGraphItem();
   GE_CHECK_NOTNULL(root_graph_item);
 
+  if (root_graph_item->IsDynamic()) {
+    GE_CHK_STATUS_RET(CheckInputShapeByShapeRange(root_graph_item, args),
+                      "[%s] check input node shape by shape range failed.",
+                      root_graph_item->GetName().c_str());
+  }
+
+  if (context_.global_step != nullptr) {
+    GE_CHK_RT_RET(rtMemcpyAsync(context_.global_step, sizeof(uint64_t), &context_.iteration,
+                                sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE_EX, context_.stream));
+  }
   SubgraphExecutor executor(model_->GetRootGraphItem(), &context_);
   auto ret = ExecuteGraphInternal(executor, args);
   Cleanup();
@@ -61,7 +74,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   if (ret == END_OF_SEQUENCE) {
     args.is_eos = true;
   } else {
-    GE_CHK_STATUS_RET(ret, "Failed to execute model");
+    GE_CHK_STATUS_RET(ret, "[Invoke][ExecuteGraphInternal] Failed, ret:%d.", ret);
   }
   return SUCCESS;
 }
@@ -72,12 +85,37 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
 
+  uint64_t index_id = context_.iteration + 1;
+  uint64_t model_id = static_cast<uint64_t>(model_->GetModelId());
+  int32_t device_id = static_cast<int32_t>(device_id_);
+  auto &prof_mgr = ProfilingManager::Instance();
+  // tag_id 0 means step begin, 1 meas step end.
+  if (!model_->IsSingleOp() && prof_mgr.ProfilingModelLoadOn()) {
+    GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 0, stream_, device_id));
+  }
+
   HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc, args.outputs),
                         "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
 
-  HYBRID_CHK_STATUS_RET(executor.Synchronize(), "Failed to sync root graph.");
-  RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
+  if (!model_->IsSingleOp() && prof_mgr.ProfilingModelLoadOn()) {
+    GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 1, stream_, device_id));
+  }
+
+  if (!model_->IsSingleOp()) {
+    Status ret = executor.Synchronize();
+    if (ret != ge::SUCCESS) {
+      auto model_manager = ModelManager::GetInstance();
+      GE_CHECK_NOTNULL(model_manager);
+      auto exception_infos = model_manager->GetExceptionInfos();
+      if (!exception_infos.empty()) {
+        HYBRID_CHK_STATUS_RET(context_.DumpExceptionInfo(exception_infos),
+                              "[Execute][GraphInternal] Dump exception info failed.");
+      }
+      GELOGE(ret, "[Execute][GraphInternal] Synchronize failed.");
+    }
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
+  }
 
   args.outputs.clear();
   HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
@@ -98,6 +136,7 @@ Status HybridModelExecutor::InitExecutionContext() {
   GE_CHK_RT_RET(rtCtxCreate(&context_.rt_gen_context, RT_CTX_GEN_MODE, 0));
   GE_CHK_RT_RET(rtCtxSetCurrent(context_.rt_context));
 
+  context_.global_step = model_->GetGlobalStep();
   context_.stream = stream_;
   context_.model = model_;
   context_.is_eos_ = false;
@@ -130,6 +169,70 @@ Status HybridModelExecutor::ResetExecutionContext(GraphExecutionContext &context
   string ctx_id = std::to_string(context.context_id);
   RuntimeInferenceContext::DestroyContext(ctx_id);
   GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::CreateContext(ctx_id), "Failed to Destroy RuntimeInferenceContext");
+  RuntimeInferenceContext *ctx = nullptr;
+  GE_CHK_GRAPH_STATUS_RET(RuntimeInferenceContext::GetContext(ctx_id, &ctx), "Failed to get context");
+  for (auto &host_tensor : context.model->GetHostTensors()) {
+    auto node_id = host_tensor.first;
+    for (const auto &output_idx_and_tensor : host_tensor.second) {
+      auto output_idx = output_idx_and_tensor.first;
+      GELOGD("Preload const host tensor, node_id = %ld, output id = %d", node_id, output_idx);
+      ctx->SetTensor(node_id, output_idx, output_idx_and_tensor.second.Clone());
+    }
+  }
+  return SUCCESS;
+}
+
+Status HybridModelExecutor::CheckInputShapeByShapeRange(const GraphItem *graph_item,
+                                                        HybridModelExecutor::ExecuteArgs &args) {
+  GE_CHECK_NOTNULL(graph_item);
+  auto input_nodes = graph_item->GetInputNodes();
+  for (size_t i = 0; i < input_nodes.size(); ++i) {
+    auto &input_node = input_nodes[i];
+    if (input_node == nullptr) {
+      GELOGD("[%s] Input[%zu] is not needed by graph, skip it.", graph_item->GetName().c_str(), i);
+      continue;
+    }
+    if (!input_node->is_dynamic) {
+      GELOGD("[%s] Input[%zu] is not dynamic, skip it.", graph_item->GetName().c_str(), i);
+      continue;
+    }
+    GeTensorDescPtr model_input_desc = input_node->MutableInputDesc(0);
+    GE_CHECK_NOTNULL(model_input_desc);
+    std::vector<std::pair<int64_t, int64_t>> shape_range;
+    if (model_input_desc->GetShapeRange(shape_range) != SUCCESS) {
+      REPORT_INNER_ERROR("E19999", "[%s] Input[%zu] get shape range failed", graph_item->GetName().c_str(), i);
+      GELOGE(INTERNAL_ERROR, "[%s] Input[%zu] get shape range failed", graph_item->GetName().c_str(), i);
+      return INTERNAL_ERROR;
+    }
+    if (shape_range.empty()) {
+      GELOGD("[%s] Input[%zu] shape is not needed to check by shape range, skip it.", graph_item->GetName().c_str(), i);
+      continue;
+    }
+    if (i >= args.input_desc.size()) {
+      REPORT_INNER_ERROR("E19999", "[%s] Inputs[%zu] is greater than or equal to input desc size[%zu].",
+                         graph_item->GetName().c_str(), i, args.input_desc.size());
+      GELOGE(INTERNAL_ERROR, "[%s] inputs[%zu] is greater than or equal to input desc size[%zu].",
+             graph_item->GetName().c_str(), i, args.input_desc.size());
+      return INTERNAL_ERROR;
+    }
+    ConstGeTensorDescPtr args_tensor_desc = args.input_desc[i];
+    GE_CHECK_NOTNULL(args_tensor_desc);
+    GeShape shape = args_tensor_desc->GetShape();
+    if (shape.IsUnknownShape()) {
+      REPORT_INNER_ERROR("E19999", "[%s] Input desc shape [%zu] designed by user must be static.",
+                         graph_item->GetName().c_str(), i);
+      GELOGE(INTERNAL_ERROR, "[%s] Input desc shape [%zu] designed by user must be static.",
+             graph_item->GetName().c_str(), i);
+      return INTERNAL_ERROR;
+    }
+
+    if (TensorUtils::CheckShapeByShapeRange(shape, shape_range) != SUCCESS) {
+      GELOGE(PARAM_INVALID, "[Check][InputShape] [%s] check input [%zu] shape failed by shape range.",
+             graph_item->GetName().c_str(), i);
+      return PARAM_INVALID;
+    }
+  }
+
   return SUCCESS;
 }
 }  // namespace hybrid

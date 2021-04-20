@@ -22,6 +22,8 @@
 #include "graph/utils/node_utils.h"
 
 namespace ge {
+using GraphToNodeMap = std::map<ge::ComputeGraphPtr, std::map<std::string, ge::NodePtr>>;
+
 class VarMemAssignUtil {
  public:
   static Status AssignVarMemory(ge::ComputeGraphPtr &compute_graph);
@@ -47,7 +49,7 @@ class VarMemAssignUtil {
   static Status DealTransNode(const ge::NodePtr &final_trans_node);
   static Status DealExportTransNode(const ge::NodePtr &node, const ge::NodePtr &final_trans_node);
   static Status AssignData2VarRef(const ge::NodePtr &variable_ref, const std::string &src_var_name, uint64_t session_id,
-                                  uint32_t out_index);
+                                  uint32_t out_index, GraphToNodeMap &graph_to_node);
 
   static Status SetOutTransNodeToAssign(const ge::NodePtr &node, const ge::NodePtr &final_trans_node, size_t index);
 };

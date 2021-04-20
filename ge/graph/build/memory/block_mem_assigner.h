@@ -494,6 +494,8 @@ class BlockMemAssigner : public MemAssigner {
   /// @          [stream2][nodeid]
   ///
   DependStreamLife total_node_depend_stream_life_;
+
+  bool root_unknown_shape_flag_ = false;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_BUILD_MEMORY_BLOCK_MEM_ASSIGNER_H_

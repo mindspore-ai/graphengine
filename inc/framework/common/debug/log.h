@@ -19,6 +19,7 @@
 
 #include <string>
 #include <sstream>
+#include <securec.h>
 
 #include "runtime/rt.h"
 #include "common/string_util.h"
@@ -85,12 +86,13 @@
   } while (0);
 
 // If expr is not GRAPH_SUCCESS, print the log and return FAILED
-#define GE_CHK_GRAPH_STATUS_RET(expr, ...) \
-  do {                                     \
-    if ((expr) != ge::GRAPH_SUCCESS) {     \
-      DOMI_LOGE(__VA_ARGS__);              \
-      return FAILED;                       \
-    }                                      \
+#define GE_CHK_GRAPH_STATUS_RET(expr, ...)                  \
+  do {                                                      \
+    if ((expr) != ge::GRAPH_SUCCESS) {                      \
+      REPORT_CALL_ERROR("E19999", "Operator graph failed"); \
+      DOMI_LOGE(__VA_ARGS__);                               \
+      return FAILED;                                        \
+    }                                                       \
   } while (0);
 
 // If expr is not SUCCESS, print the log and execute a custom statement
@@ -105,6 +107,7 @@
   do {                                             \
     bool b = (expr);                               \
     if (!b) {                                      \
+      REPORT_INNER_ERROR("E19999", __VA_ARGS__);   \
       GELOGE(_status, __VA_ARGS__);                \
       return _status;                              \
     }                                              \
@@ -193,6 +196,7 @@
   {                                                                     \
     bool b = (expr);                                                    \
     if (b) {                                                            \
+      REPORT_INNER_ERROR("E19999", __VA_ARGS__);                        \
       DOMI_LOGE(__VA_ARGS__);                                           \
       exec_expr;                                                        \
       return _status;                                                   \
@@ -229,13 +233,14 @@
   }
 
 // If expr is not RT_ERROR_NONE, print the log and return
-#define GE_CHK_RT_RET(expr)                                \
-  do {                                                     \
-    rtError_t _rt_ret = (expr);                            \
-    if (_rt_ret != RT_ERROR_NONE) {                        \
-      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret); \
-      return RT_ERROR_TO_GE_STATUS(_rt_ret);               \
-    }                                                      \
+#define GE_CHK_RT_RET(expr)                                                   \
+  do {                                                                        \
+    rtError_t _rt_ret = (expr);                                               \
+    if (_rt_ret != RT_ERROR_NONE) {                                           \
+      REPORT_CALL_ERROR("E19999", "Call %s fail, ret: 0x%X", #expr, _rt_ret); \
+      DOMI_LOGE("Call rt api failed, ret: 0x%X", _rt_ret);                    \
+      return RT_ERROR_TO_GE_STATUS(_rt_ret);                                  \
+    }                                                                         \
   } while (0);
 
 // If expr is true, execute exec_expr without printing logs
@@ -255,10 +260,10 @@
     exec_expr1;                                \
   }
 
-#define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)                                    \
-  {                                                                                    \
-    GELOGE(_status, "%s", errormsg);                                                   \
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {errormsg}); \
+#define GE_ERRORLOG_AND_ERRORMSG(_status, errormsg)    \
+  {                                                    \
+    GELOGE(_status, "[Check][InnerData]%s", errormsg); \
+    REPORT_INNER_ERROR("E19999", "%s", errormsg);      \
   }
 
 #define GE_WARNINGLOG_AND_ERRORMSG(errormsg)                                           \

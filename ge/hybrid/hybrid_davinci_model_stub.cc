@@ -61,10 +61,18 @@ void HybridDavinciModel::SetModelId(uint32_t model_id) {
 void HybridDavinciModel::SetDeviceId(uint32_t device_id) {
 }
 
-void HybridDavinciModel::SetModelName(const string &model_name) {
+void HybridDavinciModel::SetOmName(const string &om_name) {
 }
 
 uint64_t HybridDavinciModel::GetSessionId() {
+  return 0;
+}
+
+uint32_t HybridDavinciModel::GetDataInputerSize() {
+  return 0;
+}
+
+uint32_t HybridDavinciModel::GetDeviceId() const {
   return 0;
 }
 
@@ -86,6 +94,18 @@ Status HybridDavinciModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &i
 }
 
 void HybridDavinciModel::SetModelDescVersion(bool is_new_model_desc) {
+}
+
+bool HybridDavinciModel::GetRunningFlag() const {
+  return false;
+}
+
+Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &callback) {
+  return UNSUPPORTED;
+}
+
+bool HybridDavinciModel::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
+  return true;
 }
 }  // namespace hybrid
 }  // namespace ge

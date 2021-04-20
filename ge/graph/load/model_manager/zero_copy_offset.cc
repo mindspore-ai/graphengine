@@ -76,6 +76,8 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
   auto tensor_desc = op_desc->GetInputDescPtr(idx);
   GE_CHECK_NOTNULL(tensor_desc);
   if (TensorUtils::GetTensorSizeInBytes(*tensor_desc, size) != GRAPH_SUCCESS) {
+    REPORT_INNER_ERROR("E19999", "Get input TensorSize in op:%s(%s) failed, input_index:%zu",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), idx);
     GELOGE(FAILED, "GetTensorSizeInBytes failed!");
     return FAILED;
   }

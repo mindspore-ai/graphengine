@@ -44,9 +44,9 @@ Status HybridModel::Init(bool is_single_op) {
   GELOGD("Start to init hybrid model.");
   is_single_op_ = is_single_op;
   if (is_single_op) {
-    GE_CHK_STATUS_RET(HybridModelBuilder(*this).BuildForSingleOp(), "Failed to build hybrid model.");
+    GE_CHK_STATUS_RET(HybridModelBuilder(*this).BuildForSingleOp(), "[Build][HybridModel] for SingleOp failed.");
   } else {
-    GE_CHK_STATUS_RET(HybridModelBuilder(*this).Build(), "Failed to build hybrid model.");
+    GE_CHK_STATUS_RET(HybridModelBuilder(*this).Build(), "[Build][HybridModel] failed.");
   }
   GELOGD("HybridModel initialized successfully.");
   return SUCCESS;
@@ -106,7 +106,10 @@ const NodeItem *HybridModel::GetNodeItem(const NodePtr &node) const {
 GeModelPtr HybridModel::GetGeModel(const NodePtr &node) const {
   auto it = known_shape_sub_models_.find(node);
   if (it == known_shape_sub_models_.end()) {
-    GELOGE(INTERNAL_ERROR, "[%s] Failed to get GeModel for subgraph node.", node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param:node][%s] Failed to get GeModel for subgraph node,"
+           "because node not in known_shape_sub_models_.", node->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "%s Failed to get GeModel for subgraph node,"
+                       "because node not in known_shape_sub_models_.", node->GetName().c_str());
     return nullptr;
   }
 
@@ -130,7 +133,10 @@ const GraphItem *HybridModel::GetSubgraphItem(const std::string &graph_name) con
 
 const GraphItem *HybridModel::GetSubgraphItem(const ComputeGraphPtr &subgraph) const {
   if (subgraph == nullptr) {
-    GELOGE(PARAM_INVALID, "subgraph is nullptr");
+    REPORT_INNER_ERROR("E19999", "Input param subgraph is nullptr, Graph:%s",
+                       root_graph_item_->GetName().c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param]subgraph is nullptr. graph:%s",
+           root_graph_item_->GetName().c_str());
     return nullptr;
   }
 
@@ -164,19 +170,27 @@ Status HybridModel::GetInputOutputDescInfo(vector<InputOutputDescInfo> &input_de
                                            std::vector<uint32_t> &output_formats) {
   auto node_item_list = root_graph_item_->GetInputNodes();
   if (node_item_list.empty()) {
-    GELOGE(FAILED, "node item list is empty!");
+    REPORT_INNER_ERROR("E19999", "node item list is empty!, graph:%s",
+                       root_graph_item_->GetName().c_str());
+    GELOGE(FAILED, "[Get][InputNodes]node item list is empty!, graph:%s",
+           root_graph_item_->GetName().c_str());
     return FAILED;
   }
 
   GE_CHECK_NOTNULL(node_item_list[0]->node);
   GE_CHECK_NOTNULL(node_item_list[0]->node->GetOpDesc());
   if (node_item_list[0]->node->GetOpDesc()->GetInputsSize() != 1) {
-    GELOGE(FAILED, "input size of op is not 1!");
+    REPORT_INNER_ERROR("E19999", "Input size of op is not 1, op:%s, type:%s",
+                       node_item_list[0]->node->GetName().c_str(),
+                       node_item_list[0]->node->GetType().c_str());
+    GELOGE(FAILED, "[Check][Size]input size of op is not 1! op:%s, type:%s",
+           node_item_list[0]->node->GetName().c_str(),
+           node_item_list[0]->node->GetType().c_str());
     return FAILED;
   }
 
-  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "get input desc info failed");
-  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, output_formats), "get ouput desc info failed");
+  GE_CHK_STATUS_RET(GetInputDescInfo(input_desc, input_formats), "[Get][InputDescInfo] failed.");
+  GE_CHK_STATUS_RET(GetOutputDescInfo(output_desc, output_formats), "[Get][OutputDescInfo] failed.");
 
   return SUCCESS;
 }
@@ -225,23 +239,26 @@ Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, st
     GE_CHECK_NOTNULL(op_desc->GetInputDescPtr(0));
 
     Format format = op_desc->GetInputDescPtr(0)->GetFormat();
-    input.data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+    DataType data_type = op_desc->GetInputDescPtr(0)->GetDataType();
+    input.data_type = static_cast<uint32_t>(data_type);
     input.name = op_desc->GetName();
-
-    int64_t input_size = 0;
-    GE_CHK_STATUS_RET(TensorUtils::GetSize(*op_desc->GetInputDescPtr(0), input_size), "get input size failed.");
-
-    // support dynamic shape
-    if (input_size < 0) {
-      GELOGD("dynamic shape scene, input size is unknown. "
-             "format=%d, data_type=%d, input_size=%ld",
-             format, input.data_type, input_size);
-      input_size = kMemSizeUnknownShape;   // -1
+    GeShape shape = op_desc->GetInputDescPtr(0)->GetShape();
+    int64_t tensor_size = 0;
+    if (TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size) != GRAPH_SUCCESS) {
+      GELOGE(FAILED, "[Calculate][TensorMemSize] failed input0 desc in node:%s."
+             "shape:%s, format:%s, datatype:%s.", op_desc->GetName().c_str(),
+             shape.ToString().c_str(), TypeUtils::FormatToSerialString(format).c_str(),
+             TypeUtils::DataTypeToSerialString(data_type).c_str());
+      REPORT_CALL_ERROR("E19999", "CalcTensorMemSize failed for input0 desc in node:%s,"
+                        "shape:%s, format:%s, datatype:%s", op_desc->GetName().c_str(),
+                        shape.ToString().c_str(), TypeUtils::FormatToSerialString(format).c_str(),
+                        TypeUtils::DataTypeToSerialString(data_type).c_str());
+      return FAILED;
     }
-
-    // not support dynamic shape input for now, so input_size here will be not less than zero.
-    input.size = input_size;
-
+    if (tensor_size == kMemSizeUnknownShape) {
+      tensor_size = 0;
+    }
+    input.size = static_cast<uint64_t>(tensor_size);
     CreateInputDimsInfo(op_desc, input);
 
     formats.push_back(format);
@@ -253,7 +270,10 @@ Status HybridModel::GetInputDescInfo(vector<InputOutputDescInfo> &input_desc, st
 
 void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc,
                                InputOutputDescInfo &output_desc_info, uint32_t &format_result) {
-  GE_IF_BOOL_EXEC(output_desc == nullptr, GELOGE(FAILED, "output desc ptr is nullptr"); return );
+  GE_IF_BOOL_EXEC(output_desc == nullptr,
+      REPORT_INNER_ERROR("E19999", "param output_desc is nullptr, check invalid.");
+      GELOGE(FAILED, "[Check][Param:output_desc]output desc ptr is nullptr");
+      return );
   Format format = output_desc->GetFormat();
   GeShape shape = output_desc->GetShape();
   std::vector<std::pair<int64_t,int64_t>> shape_ranges;
@@ -284,6 +304,9 @@ void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc,
   }
   int64_t tensor_size = 0;
   (void)TensorUtils::CalcTensorMemSize(shape, format, data_type, tensor_size);
+  if (tensor_size == kMemSizeUnknownShape) {
+    tensor_size = 0;
+  }
   output_desc_info.size = static_cast<uint64_t>(tensor_size);
   output_desc_info.data_type = output_desc->GetDataType();
 }
@@ -291,7 +314,9 @@ void HybridModel::CreateOutput(ConstGeTensorDescPtr &output_desc,
 Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, std::vector<uint32_t> &formats) {
   std::vector<ConstGeTensorDescPtr> output_desc_list;
   // output_desc_list contains vaild input desc
-  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list), "get output desc info failed");
+  GE_CHK_STATUS_RET(root_graph_item_->GetOutputDescList(output_desc_list),
+                    "[Invoke][GetOutputDescList]get output desc info failed, Graph:%s",
+                    root_graph_item_->GetName().c_str());
 
   vector<std::string> out_node_names;
   (void)ge::AttrUtils::GetListStr(ge_root_model_->GetRootGraph(), ATTR_MODEL_OUT_NODES_NAME, out_node_names);
@@ -301,8 +326,12 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
   GE_CHECK_NOTNULL(op_desc);
 
   auto out_size = static_cast<uint32_t>(op_desc->GetInputsSize());
-  GE_CHK_BOOL_RET_STATUS(out_size == output_desc_list.size(),
-      FAILED, "output size[%u] not match output_desc_list size[%zu]", out_size, output_desc_list.size());
+  GE_IF_BOOL_EXEC(out_size != output_desc_list.size(),
+                  REPORT_INNER_ERROR("E19999", "output size[%u] not match output_desc_list size[%zu]",
+                                     out_size, output_desc_list.size());
+                  GELOGE(FAILED, "[Check][Size]output size[%u] not match output_desc_list size[%zu]",
+                         out_size, output_desc_list.size());
+                  return FAILED;);
 
   for (uint32_t index = 0; index < out_size; ++index) {
     string output_name;
@@ -330,7 +359,8 @@ Status HybridModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_desc, 
 
 TensorValue *HybridModel::GetConstant(const NodePtr &node) const {
   if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "Param is null");
+    GELOGE(PARAM_INVALID, "[Check][Param:node]node is null.");
+    REPORT_INNER_ERROR("E19999", "param node is null, check invalid.");
     return nullptr;
   }
 
@@ -348,7 +378,8 @@ TensorValue *HybridModel::GetConstant(const NodePtr &node) const {
 
 TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
   if (node == nullptr) {
-    GELOGE(PARAM_INVALID, "Param is null");
+    GELOGE(PARAM_INVALID, "[Check][Param:node]node is null.");
+    REPORT_INNER_ERROR("E19999", "param node is null, check invalid.");
     return nullptr;
   }
 
@@ -357,6 +388,26 @@ TensorValue *HybridModel::GetTensor(const NodePtr &node) const {
   }
 
   return GetVariable(node->GetName());
+}
+
+const map<int64_t, std::vector<std::pair<int, Tensor>>> &HybridModel::GetHostTensors() const {
+  return host_tensors_;
+}
+
+void *HybridModel::GetGlobalStep() const {
+  if (global_step_ == nullptr) {
+    return nullptr;
+  }
+  return global_step_->GetData();
+}
+
+TensorBuffer *HybridModel::GetModelWeight(const string &subgraph_name) const {
+  auto it = weight_buffer_map_.find(subgraph_name);
+  if (it == weight_buffer_map_.end()) {
+    GELOGD("Model weight not found, subgraph name = %s", subgraph_name.c_str());
+    return nullptr;
+  }
+  return it->second.get();
 }
 }  // namespace hybrid
 }  // namespace ge

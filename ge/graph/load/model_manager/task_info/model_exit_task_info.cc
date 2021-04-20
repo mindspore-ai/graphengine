@@ -24,6 +24,7 @@ namespace ge {
 Status ModelExitTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_model) {
   GELOGI("InitModelExitTaskInfo Init Start.");
   if (davinci_model == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr");
     GELOGE(PARAM_INVALID, "davinci_model is null!");
     return PARAM_INVALID;
   }
@@ -43,6 +44,8 @@ Status ModelExitTaskInfo::Distribute() {
   GELOGI("ModelExitTaskInfo Distribute Start.");
   rtError_t rt_ret = rtModelExit(model_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtModelExit failed, ret:0x%X",
+                      rt_ret);
     GELOGE(RT_FAILED, "Call rtModelExit failed, ret: 0x%x", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }

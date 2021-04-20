@@ -43,6 +43,11 @@ rtError_t rtEventCreate(rtEvent_t *event) {
   *event = new int[EVENT_LENTH];
   return RT_ERROR_NONE;
 }
+
+rtError_t rtEventCreateWithFlag(rtEvent_t *event, uint32_t flag) {
+  return rtEventCreate(event);
+}
+
 rtError_t rtEventRecord(rtEvent_t event, rtStream_t stream) { return RT_ERROR_NONE; }
 
 rtError_t rtEventSynchronize(rtEvent_t event) { return RT_ERROR_NONE; }
@@ -313,6 +318,8 @@ rtError_t rtFlushCache(uint64_t base, uint32_t len) { return RT_ERROR_NONE; }
 
 rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtStream_t stream_) { return RT_ERROR_NONE; }
 
+rtError_t rtProfilerTraceEx(uint64_t id, uint64_t modelId, uint16_t tagId, rtStream_t stream) { return RT_ERROR_NONE; }
+
 rtError_t rtMemSetRC(const void *dev_ptr, uint64_t size, uint32_t read_count) { return RT_ERROR_NONE; }
 
 rtError_t rtStreamSwitch(void *ptr, rtCondition_t condition, int64_t value, rtStream_t true_stream, rtStream_t stream) {
@@ -433,5 +440,9 @@ rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId)
 }
 
 rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, const void *addr, uint32_t *streamId, uint32_t *taskId) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtDebugUnRegisterForStream(rtStream_t stream) {
   return RT_ERROR_NONE;
 }

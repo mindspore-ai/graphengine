@@ -60,6 +60,15 @@ void GraphNode::Unlock() {
   sem_.Pop(unused);
 }
 
+void GraphNode::IncreaseLoadCount() {
+  std::unique_lock<std::mutex> lock(load_count_mu_);
+  if (load_record_ == kMaxLoadNum) {
+    GELOGW("Reach the maximum of load_count:%u", kMaxLoadNum);
+    return;
+  }
+  ++load_count_;
+}
+
 SubGraphInfo::SubGraphInfo() : subgraph_ptr_(nullptr), ge_model_ptr_(nullptr), malloc_flag_(false) {}
 
 SubGraphInfo::~SubGraphInfo() {
@@ -84,6 +93,7 @@ Status SubGraphInfo::FreeInOutBuffer() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(*iter);
       if (rt_ret != RT_ERROR_NONE) {
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail");
         GELOGE(rt_ret, "[GraphManager] subgraph free buffer failed, modelId = %u", model_id_info_.model_id);
         buffer_addr_.erase(buffer_addr_.begin(), iter);
         return GE_GRAPH_FREE_FAILED;
@@ -119,6 +129,7 @@ Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, ui
 
 uint32_t GraphModelListener::GetResultCode() const {
   if (!is_finished_) {
+    REPORT_CALL_ERROR("E19999", "Model not run finish");
     GELOGE(INTERNAL_ERROR, "[GraphManager] model not run finish.");
     return INTERNAL_ERROR;
   }

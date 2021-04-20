@@ -17,6 +17,7 @@
 #ifndef GE_HYBRID_MODEL_NODE_ITEM_H_
 #define GE_HYBRID_MODEL_NODE_ITEM_H_
 
+#include <mutex>
 #include <vector>
 #include "external/ge/ge_api_error_codes.h"
 #include "graph/node.h"
@@ -57,15 +58,21 @@ struct NodeItem {
 
   bool IsInputShapeStatic(int index) const;
 
-  GeTensorDescPtr MutableOutputDesc(int index) const {
-    return op_desc->MutableOutputDesc(static_cast<uint32_t>(index));
-  }
+  GeTensorDescPtr MutableOutputDesc(int index) const;
+
+  Status UpdateInputDesc(int index, const GeTensorDesc &tensor_desc);
 
   GeTensorDescPtr MutableInputDesc(int index) const;
+
+  Status GetInputDesc(int index, GeTensorDesc &tensor_desc) const;
+
+  Status GetOutputDesc(int index, GeTensorDesc &tensor_desc) const;
 
   Status GetCanonicalInputIndex(uint32_t index, int &canonical_index) const;
 
   bool IsControlOp() const;
+
+  bool IsHcclOp() const;
 
   void SetToDynamic();
 
@@ -83,6 +90,7 @@ struct NodeItem {
   bool has_observer = false;
   bool has_optional_inputs = false;
   bool is_output_shape_static = true;
+  bool is_need_force_infershape = false;
   UnknowShapeOpType shape_inference_type = DEPEND_IN_SHAPE;
   std::string node_name;
   std::string node_type;
@@ -110,9 +118,11 @@ struct NodeItem {
   Status ResolveDynamicState();
   Status ResolveStaticInputsAndOutputs();
   void ResolveUnknownShapeType();
+  GeTensorDescPtr DoGetInputDesc(int index) const;
 
   std::vector<bool> is_input_shape_static_;
   std::vector<uint32_t> input_desc_indices_;
+  mutable std::mutex mu_;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -31,6 +31,7 @@ const int kDefaultInputIndex = -1;
 
 bool ParsePred(const ConstGeTensorPtr &tensor) {
   if (tensor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param tensor is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return false;
   }
@@ -65,6 +66,8 @@ bool ParseOutDataAnchors(const NodePtr &node, const NodePtr &pred_node, OutDataA
                          OutDataAnchorPtr &inactive_out_data_anchor) {
   auto tensors = OpDescUtils::MutableWeights(pred_node);
   if (tensors.empty()) {
+    REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no weight, check invalid",
+                       pred_node->GetName().c_str(), pred_node->GetType().c_str());
     return false;
   }
 
@@ -72,6 +75,7 @@ bool ParseOutDataAnchors(const NodePtr &node, const NodePtr &pred_node, OutDataA
   int inactive_output_index = pred_value ? 0 : 1;
 
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return false;
   }
@@ -91,11 +95,21 @@ bool ParseOutDataAnchors(const NodePtr &node, const NodePtr &pred_node, OutDataA
 Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pred_node,
                                                      const OutDataAnchorPtr &active_out_data_anchor) {
   if (node == nullptr || active_out_data_anchor == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node or active_out_data_anchor is nullptr, check invalid");
     GELOGE(FAILED, "parameter is null.");
     return FAILED;
   }
+
+  // If two nodes aren't in same graph, get node's direct in_node instead of pred_node.
+  if (node->GetOwnerComputeGraph() != pred_node->GetOwnerComputeGraph()) {
+    pred_node = PassUtils::GetInDataNode(node, kPredInputIndex);
+  }
+
   // link pred's in control nodes to switch
   if (GraphUtils::CopyInCtrlEdges(pred_node, node) != GRAPH_SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Copy in control edge from node:%s(%s) to node:%s(%s) failed",
+                      pred_node->GetName().c_str(), pred_node->GetType().c_str(),
+                      node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
   // Remove link between pred and switch
@@ -108,6 +122,8 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
   std::vector<int> switch_io_map = {kDefaultInputIndex, kDefaultInputIndex};
   size_t out_index = static_cast<size_t>(active_out_data_anchor->GetIdx());
   if (out_index >= switch_io_map.size()) {
+    REPORT_INNER_ERROR("E19999", "Out index:%zu of node:%s(%s) >= %zu, check invalid", out_index,
+                       node->GetName().c_str(), node->GetType().c_str(), switch_io_map.size());
     GELOGE(FAILED, "[%s] out index check failed, out_index:%zu.", node->GetName().c_str(), out_index);
     return FAILED;
   }
@@ -117,6 +133,7 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
 
 Status SwitchDeadBranchElimination::Run(NodePtr &node) {
   if (node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "Param [node] must not be null.");
     return PARAM_INVALID;
   }
@@ -131,7 +148,7 @@ Status SwitchDeadBranchElimination::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  auto pred_node = PassUtils::GetInDataNode(node, kPredInputIndex);
+  auto pred_node = PassUtils::GetInNodeCrossSubgraphByIndex(node, kPredInputIndex);
   if (pred_node == nullptr) {
     GELOGD("[%s] Pred input is null.", node->GetName().c_str());
     return SUCCESS;
@@ -143,7 +160,7 @@ Status SwitchDeadBranchElimination::Run(NodePtr &node) {
     return SUCCESS;
   }
 
-  auto input_node = PassUtils::GetInDataNode(node, kDataInputIndex);
+  auto input_node = PassUtils::GetInNodeCrossSubgraphByIndex(node, kDataInputIndex);
   if (input_node == nullptr) {
     GELOGD("[%s] Data input is null.", node->GetName().c_str());
     return SUCCESS;
@@ -162,6 +179,8 @@ Status SwitchDeadBranchElimination::Run(NodePtr &node) {
     std::vector<NodePtr> end_nodes;
     Status ret = PassUtils::RemoveInactiveBranchToMerge(inactive_out_data_anchor, del_nodes, end_nodes);
     if (ret != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Remove inactive branch from node:%s(%s) to merge failed",
+                        node->GetName().c_str(), node->GetType().c_str());
       return ret;
     }
 

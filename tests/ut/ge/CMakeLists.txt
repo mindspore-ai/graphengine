@@ -33,7 +33,7 @@ set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/tensorflow/tensor_shape.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/types.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/node_def.proto"
-    "${GE_CODE_DIR}/metadef/proto/proto_inner/ge_onnx.proto"
+    "${GE_CODE_DIR}/metadef/proto/onnx/ge_onnx.proto"
     )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -45,6 +45,7 @@ include_directories(${GE_CODE_DIR}/inc)
 include_directories(${GE_CODE_DIR}/metadef/inc)
 include_directories(${GE_CODE_DIR}/ge)
 include_directories(${GE_CODE_DIR}/ge/inc)
+include_directories(${GE_CODE_DIR}/ge/ir_build)
 include_directories(${GE_CODE_DIR}/metadef)
 include_directories(${GE_CODE_DIR}/metadef/graph)
 include_directories(${GE_CODE_DIR}/inc/external)
@@ -54,6 +55,7 @@ include_directories(${GE_CODE_DIR}/metadef/inc/graph)
 include_directories(${GE_CODE_DIR}/inc/framework)
 include_directories(${GE_CODE_DIR}/metadef/inc/common)
 include_directories(${GE_CODE_DIR}/metadef/third_party)
+include_directories(${GE_CODE_DIR}/metadef/third_party/transformer/inc)
 include_directories(${GE_CODE_DIR}/parser)
 include_directories(${GE_CODE_DIR}/parser/parser)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
@@ -61,6 +63,7 @@ include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain)
 include_directories(${GE_CODE_DIR}/tests/ut/ge)
+include_directories(${GE_CODE_DIR}/tests/ut/common)
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge/proto)
@@ -85,8 +88,9 @@ set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/node.cc"
     "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
     "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cpp"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cpp"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cc"
+    "${GE_CODE_DIR}/metadef/third_party/transformer/src/expand_dimension.cc"
     "${GE_CODE_DIR}/metadef/graph/operator.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
@@ -162,7 +166,9 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/dump/dump_properties.cc"
     "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_manager.cc"
+	"${GE_CODE_DIR}/ge/common/dump/exception_dumper.cc"
     "${GE_CODE_DIR}/ge/common/dump/opdebug_register.cc"
+    "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/model/ge_root_model.cc"
     "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
@@ -266,10 +272,14 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/link_gen_mask_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/replace_with_empty_const_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/hccl_group_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/hccl_tailing_optimization_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/set_input_output_offset_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/buffer_pool_memory_pass.cc"
+	"${GE_CODE_DIR}/ge/graph/passes/mark_node_unknown_shape_pass.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
     "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_utils.cc"
@@ -295,7 +305,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/ir_build/attr_options/keep_dtype_option.cc"
     "${GE_CODE_DIR}/ge/ir_build/attr_options/weight_compress_option.cc"
     "${GE_CODE_DIR}/ge/graph/build/label_allocator.cc"
-    "${GE_CODE_DIR}/ge/graph/passes/memcpy_addr_async_pass.cc"
     "${GE_CODE_DIR}/ge/graph/partition/stage_partition.cc"
     "${GE_CODE_DIR}/ge/graph/partition/dynamic_shape_partition.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
@@ -317,6 +326,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/build/memory/block_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/build/memory/binary_block_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/build/memory/max_block_mem_assigner.cc"
+    "${GE_CODE_DIR}/ge/graph/build/memory/buffer_pool_mem_assigner.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_var_manager.cc"
     "${GE_CODE_DIR}/ge/analyzer/analyzer.cc"
@@ -421,7 +431,6 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/memcpy_async_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/profiler_trace_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/stream_active_task_info.cc"
-    "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/stream_switch_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/end_graph_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/model_exit_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/super_kernel/super_kernel.cc"
@@ -515,6 +524,7 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/compile_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/common/transop_util.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
     #"${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/folding_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/variable_op_pass.cc"
@@ -584,6 +594,7 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_model_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_model_async_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_execution_context.cc"
+    "${GE_CODE_DIR}/ge/hybrid/executor/hybrid_model_pipeline_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/subgraph_context.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/subgraph_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/worker/task_compile_engine.cc"
@@ -620,6 +631,7 @@ set(SINGLE_OP_SRC_FILES
 # test files
 set(COMMON_TEST_FILES
     "graph/passes/graph_builder_utils.cc"
+    "graph/utils/buffer_pool_graph_builder.cc"
     "test.cc"
 )
 
@@ -662,8 +674,10 @@ set(PASS_TEST_FILES
     "graph/passes/addn_pass_unittest.cc"
     "graph/passes/save_pass_unittest.cc"
     "graph/passes/merge_pass_unittest.cc"
-    #"graph/passes/switch_pass_unittest.cc"
     "graph/passes/switch_logic_remove_pass_unittest.cc"
+    "graph/passes/cond_branch_v1_unittest.cc"
+    "graph/passes/loop_branch_v1_unittest.cc"
+    "graph/passes/switch_dead_branch_elimination_unittest.cc"
     "graph/passes/assert_pass_unittest.cc"
     "graph/passes/dropout_pass_unittest.cc"
     "graph/passes/unused_const_pass_unittest.cc"
@@ -691,7 +705,12 @@ set(PASS_TEST_FILES
     "graph/passes/infershape_pass_unittest.cc"
     "graph/passes/multi_batch_clone_pass_unittest.cc"
     "graph/passes/replace_with_empty_const_pass_unittest.cc"
+    "graph/passes/link_gen_mask_nodes_pass_unittest.cc"
     "graph/passes/transpose_transdata_pass_unittest.cc"
+    "graph/passes/parallel_group_pass_unittest.cc"
+    "graph/passes/buffer_pool_memory_pass_unittest.cc"
+	"graph/passes/mark_node_unknown_shape_pass_unittest.cc"
+	"graph/passes/reshape_recovery_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -728,13 +747,17 @@ set(KERNEL_TEST_FILES
     "graph/passes/folding_kernel/gather_v2_kernel_unittest.cc"
     "graph/passes/folding_kernel/slice_kernel_unittest.cc"
     "graph/passes/folding_kernel/dynamic_stitch_kernel_unittest.cc"
+    "graph/passes/atomic_addr_clean_pass_unittest.cc"
 )
 
 set(MULTI_PARTS_TEST_FILES
     "graph_ir/ge_operator_factory_unittest.cc"
+	"graph_ir/ge_ir_build_unittest.cc"
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
     "common/dump_manager_unittest.cc"
+    "common/dump_op_unittest.cc"
+	"common/dump_exception_unittest.cc"
     "common/opdebug_register_unittest.cc"
     "common/format_transfer_unittest.cc"
     "common/format_transfer_transpose_unittest.cc"
@@ -753,12 +776,19 @@ set(MULTI_PARTS_TEST_FILES
     "common/format_transfer_fracz_nhwc_unittest.cc"
     "common/format_transfer_fracz_hwcn_unittest.cc"
     "common/ge_format_util_unittest.cc"
+	"common/ge_auth_file_saver_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
+    "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "graph/build/task_generator_unittest.cc"
+    "graph/build/buffer_pool_mem_assigner_unittest.cc"
+    "graph/execute/graph_execute_unittest.cc"
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
+    "graph/partition/dynamic_shape_partition_unittest.cc"
+    "graph/manager/graph_manager_unittest.cc"
     "session/omg_omg_unittest.cc"
 )
 
@@ -775,6 +805,7 @@ set(SINGLE_OP_TEST_FILES
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
     "single_op/single_op_task_unittest.cc"
+	"single_op/single_op_unittest.cc"
 )
 
 set(PROFILING_MNG_TEST_FILES
@@ -783,6 +814,7 @@ set(PROFILING_MNG_TEST_FILES
 
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
+    "hybrid/known_node_executor_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES
@@ -825,6 +857,7 @@ add_library(ge_ut_common STATIC ${COMMON_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_ut_common PRIVATE
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_ut_common PRIVATE
@@ -838,6 +871,7 @@ target_link_libraries(ge_ut_common PRIVATE
     ascend_protobuf
     json
     ge_ut_graph
+    runtime_stub
 )
 
 # build common format
@@ -845,6 +879,7 @@ add_library(ge_ut_common_format STATIC ${COMMON_SRC_FILES} ${COMMON_FORMAT_SRC_F
 
 target_compile_definitions(ge_ut_common_format PRIVATE
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_ut_common_format PRIVATE
@@ -997,6 +1032,7 @@ add_library(ge_single_op STATIC ${SINGLE_OP_SRC_FILES} ${PROTO_HDRS})
 
 target_compile_definitions(ge_single_op PRIVATE
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_compile_options(ge_single_op PRIVATE
@@ -1093,6 +1129,7 @@ target_compile_options(ut_libge_distinct_load_utest PRIVATE
 
 target_compile_definitions(ut_libge_distinct_load_utest PRIVATE
     google=ascend_private
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
 )
 
 target_link_libraries(ut_libge_distinct_load_utest

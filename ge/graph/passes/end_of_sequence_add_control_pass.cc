@@ -26,6 +26,7 @@ namespace ge {
 
 Status EndOfSequenceAddControlPass::Run(ComputeGraphPtr graph) {
   if (graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
     GELOGE(PARAM_INVALID, "param [graph] must not be null.");
     return PARAM_INVALID;
   }
@@ -82,6 +83,10 @@ Status EndOfSequenceAddControlPass::AddControlEdge(NodePtr &end_of_sequence, std
     }
     Status status = GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor);
     if (status != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999",
+                        "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                        end_of_sequence->GetName().c_str(), end_of_sequence->GetType().c_str(),
+                        node->GetName().c_str(), node->GetType().c_str());
       GELOGE(FAILED, "Graph add EndOfSequence op out ctrl edge fail, dst node: %s.", node->GetName().c_str());
       return FAILED;
     }

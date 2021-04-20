@@ -495,7 +495,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   compute_graph->SetGraphID(graph_id);
-
+  (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
   SetSessionGraphId(compute_graph, graph_id);
 
   if (CreateGraphNode(graph_id, graph, options) != SUCCESS) {
@@ -527,14 +527,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   return SUCCESS;
 }
 
-Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
-                                      const std::map<std::string, std::string> &options,
-                                      const OmgContext &omg_context) {
-  if (HasGraphNode(graph_id)) {
-    REPORT_INNER_ERROR("E19999", "graph_id:%u is exist, check invalid", graph_id);
-    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u.", graph_id);
-    return GE_GRAPH_GRAPH_ALREADY_EXIST;
-  }
+Status GraphManager::CheckGraphAdded(const GraphId &graph_id, const Graph &graph) {
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   if (compute_graph != nullptr) {
     compute_graph->SetGraphID(graph_id);
@@ -553,58 +546,44 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
     GELOGE(FAILED, "compute graph is null");
     return FAILED;
   }
+  return SUCCESS;
+}
+
+Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
+                                      const std::map<std::string, std::string> &options,
+                                      const OmgContext &omg_context) {
+  if (CheckGraphAdded(graph_id, graph) != SUCCESS) {
+    GELOGE(FAILED, "AddGraphWithCopy failed.");
+    return FAILED;
+  }
+  IncreaseGraphCount(graph_id);
+  // Do add graph
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
   std::vector<NodePtr> input_nodes;
   std::vector<NodePtr> output_nodes;
   auto new_compute_graph = GraphUtils::CloneGraph(compute_graph, "", input_nodes, output_nodes);
-  std::string session_graph_id;
-  if (!AttrUtils::GetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id) ||
-      session_graph_id.empty()) {
-    session_graph_id = "-1_" + to_string(graph_id);
-    if (!AttrUtils::SetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
-      GELOGW("Set attribute of compute graph failed.");
-    }
-    for (auto &subgraph : new_compute_graph->GetAllSubgraphs()) {
-      (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
-    }
-    GELOGD("Get graph session_graph_id attr failed, set session id to default value: [0]");
-  }
-
-  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
-  if (graph_node == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New GraphNode fail, graph_id:%u",
-                      graph_id);
-    GELOGE(FAILED, "GraphNode make shared failed");
+  GE_CHECK_NOTNULL(new_compute_graph);
+  new_compute_graph->SetGraphID(graph_id);
+  SetSessionGraphId(new_compute_graph, graph_id);
+  std::shared_ptr<Graph> new_graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
+  if (CreateGraphNode(graph_id, *new_graph_ptr, options) != SUCCESS) {
+    GELOGE(FAILED, "Failed to create graph_node.");
     return FAILED;
   }
-  std::shared_ptr<Graph> graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
-  if (graph_ptr == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New Graph fail, graph_id:%u",
-                      graph_id);
-    GELOGE(FAILED, "GraphPtr make shared failed");
-    return FAILED;
-  }
-  // update option about tuning graph
-  ParseOption(options, BUILD_MODE, options_.build_mode);
-  ParseOption(options, BUILD_STEP, options_.build_step);
-  ParseOption(options, TUNING_PATH, options_.tuning_path);
-
-  graph_node->SetGraph(graph_ptr);
-  graph_node->SetOptions(options);
-  AddGraphNode(graph_id, graph_node);
 
   AddLocalOmgContext(graph_id, omg_context);
   if (!options_.output_datatype.empty()) {
     GetLocalOmgContext().output_type = options_.output_datatype;
   }
-
-  CompilerStages &stages = GetCompilerStages(graph_id);
-  stages.preparer.SetOptions(options_);
-  Status status = stages.optimizer.SetOptions(options_);
-  if (status != SUCCESS) {
-    GELOGE(status, "Graph optimizer set options failed.");
-    return status;
+  if (InitDynamicParams(new_compute_graph) != SUCCESS) {
+    GELOGE(GRAPH_PARAM_INVALID, "Failed to init params when online infer is dynamic.");
+    return GRAPH_PARAM_INVALID;
   }
-  stages.builder.SetOptions(options_);
+
+  if (SetStagesOptions(graph_id, options_) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Set stage options failed.");
+    return INTERNAL_ERROR;
+  }
 
   var_acc_ctrl_.AddGraph(graph_id, new_compute_graph);
   return SUCCESS;
@@ -1080,7 +1059,6 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
     if (!graph_node->IsAsync()) {
       ret = LoadGraph(ge_root_model, graph_node);
     } else {
-      GE_CHECK_NOTNULL(ge_root_model);
       ret = LoadGraphAsync(ge_root_model, graph_node);
     }
     if (ret != SUCCESS) {
@@ -1095,7 +1073,6 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
     if (!graph_node->IsAsync()) {
       ret = LoadGraph(ge_root_model_ptr, graph_node);
     } else {
-      GE_CHECK_NOTNULL(ge_root_model);
       ret = LoadGraphAsync(ge_root_model_ptr, graph_node);
     }
     if (ret != SUCCESS) {

@@ -1,3 +1,18 @@
+### Major Features and Improvements
+* Multiple parallel communication groups can be distinguished and the communication tasks of different parallel communication groups can be divided into different streams.
+* Parallel tasks are added for the entire map optimization. The execution sequence is optimized for parallel groups.
+* Dynamic shape is supported for single operator in inference scenarios.
+* Online inference supports concurrent execution of multiple threads.
+* Memory allocation supports address reuse in the buffer pool.
+* Supports Event resource reuse.
+* Supports the BF16 data type.
+
+## Thanks to our Contributors
+Thanks goes to these wonderful people: wuweikang，weiyang，yanghaorang，xutianchun，shibeiji，zhouchao, tanghuikang, zhoulili, liujunzhu, zhengyuanhua, taoxiangdong Contributions of any kind are welcome!
+
+Contributions of any kind are welcome!
+
+
 # Release 1.0.0
 
 ## Major Features and Improvements

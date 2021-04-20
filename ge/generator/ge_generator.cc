@@ -822,7 +822,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     auto node = comp_graph->FindNode(op_desc->GetName());
     Status ret = CheckEngineTypeSupport(node, engine_type);
     if (ret != SUCCESS) {
-      GELOGE(ret, "[Check][EngineType]value:%d for node:%s not support", engine_type, node->GetName().c_str());
+      GELOGE(ret, "[Check][EngineType]not support node:%s with engine of %d.", node->GetName().c_str(), engine_type);
       return ret;
     }
   }
@@ -848,6 +848,11 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
+  GELOGD("Node: %s, all_shape is %d, compile_flag is %d.", op_desc->GetName().c_str(), all_shape, compile_flag);
+  (void)AttrUtils::SetInt(ge_model, ATTR_NAME_BUILD_MODE, fuzz_compile_flag);
+  if (all_shape) {
+    (void)AttrUtils::SetBool(ge_model, kAicpuAllshape, all_shape);
+  }
   if (all_shape && CheckNoAicore(root_graph)) {
     GELOGD("Get aicpu all_shape kernel!");
     vector<GeTensor> inputs_dynamic;
@@ -857,8 +862,6 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     GE_CHK_STATUS_RET_NOLOG(
       impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs_dynamic, outputs_dynamic));
   } else if (fuzz_compile_flag) {
-    GELOGD("Get fuzz build result of %s.", op_desc->GetName().c_str());
-    (void)AttrUtils::SetInt(ge_model, ATTR_NAME_BUILD_MODE, fuzz_compile_flag);
     GeAttrValue::LIST_NAMED_ATTRS fuzz_build_attrs;
     if (GetFuzzBuildAttrs(op_desc, ge_root_model, fuzz_build_attrs) != SUCCESS) {
       GELOGE(FAILED, "[Get][FuzzRet]Failed to get fuzz build result of %s.", op_desc->GetName().c_str());

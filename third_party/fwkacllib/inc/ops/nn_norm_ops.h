@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,20 +160,20 @@ REG_OP(SigmoidCrossEntropyWithLogits)
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogits)
 
 /**
-*@brief Computes the sigmoid cross entropy loss of "predict" and "target" . \n
+*@brief Computes the sigmoid cross entropy loss of "predict" and "target".
 
 *@par Inputs:
 * four inputs, including:
 *@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
-*@li weight: An multi-dimensional Tensor, specifying the weight value. \n
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
+*@li weight: An multi-dimensional Tensor, specifying the weight value.
 *@li pos_weight: An multi-dimensional Tensor, specifying the pos weight value. \n
 
 *@par Attributes:
-*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean" . \n
+*reduction: A character string from "none", "mean", and "sum", specifying the reduction type to be applied to the output. Defaults to "mean". \n
 
 *@par Outputs:
-*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
+*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict". \n
 
 *@par Third-party framework compatibility
 * Compatible with PyTorch operator BCEWithLogitsLoss.
@@ -426,6 +426,33 @@ REG_OP(MVN)
     .ATTR(across_channels, Bool, false)
     .ATTR(eps, Float, 1e-9)
     .OP_END_FACTORY_REG(MVN)
+
+/**
+*@brief Normalizes the input . \n
+
+*@par Inputs:
+* One input:
+*x: An NCHW tensor of type float16 or float32 . \n
+
+*@par Attributes:
+*@li eps: An optional float32 epsilon for not dividing by zero. Defaults to "1e-9" . \n
+*@li axes: A list of Intefers, along which axis to reduce. Defaults to "[0, 2, 3]" . \n
+
+*@par Outputs:
+*y: An NCHW tensor of type float16 or float32 . \n
+
+*@attention Constraints:
+* The input tensor must have the NCHW format, whose shape length must be 4.
+*@par Third-party framework compatibility
+* Compatible with the ONNX operator MeanVarianceNormalization.
+*/
+
+REG_OP(MVNV2)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16})) /* "First operand." */
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))  /* "Result, has same element type as inputs" */
+    .ATTR(eps, Float, 1e-9)
+    .ATTR(axes, ListInt, {0, 2, 3})
+    .OP_END_FACTORY_REG(MVNV2)
 
 /**
 *@brief Normalizes the input "x1" . \n
@@ -978,6 +1005,357 @@ REG_OP(InHost)
      .OUTPUT(variance_sqrt, TensorType({DT_FLOAT}))
      .ATTR(epsilon, Float, 0.00001)
      .OP_END_FACTORY_REG(InHost)
+
+/**
+* @brief perform instance normalization to x. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, format is NC1HWC0.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32, format is ND.
+* @li beta: A Tensor. Must be one of the following types: float16, float32, format is ND.
+
+* @par Attributes:
+* @li data_format: An attribute of type String \n
+* @li epsilon: An attribute of type Float, . \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x", format is NC1HWC0. \n
+* @li mean: A Tensor. Has the same type as "x", format is NC1HWC0 and the shape is [N, C1, 1, 1, C0]. \n
+* @li variance: A Tensor. Has the same type as "x", format is NC1HWC0 and the shape is [N, C1, 1, 1, C0]. \n
+
+* @par Third-party framework compatibility
+* Can be used by onnx InstanceNormalization
+*/
+REG_OP(InstanceNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(beta, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(variance, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(data_format, String)
+    .REQUIRED_ATTR(epsilon, Float)
+    .OP_END_FACTORY_REG(InstanceNorm)
+
+REG_OP(KlDivLossGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(input, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .ATTR(log_target, Bool, false)
+    .OP_END_FACTORY_REG(KlDivLossGrad)
+
+/**
+* @brief Computes l1_loss_grad or l1_loss_backward. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li grads: A Tensor. Must be one of the following types: float16, float32.
+* Required.
+* @li predict: A Tensor. Has the same type as "grads". Required.
+* @li label: A Tensor. Has the same type as "grads". Required. \n
+
+* @par Attributes:
+* @li reduction: An optional attribute of type String. Defaults to "mean". \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator L1LossGrad.
+*/
+REG_OP(L1LossGrad)
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(L1LossGrad)
+
+/**
+* @brief Computes loss of lp, p=1,2,3....
+
+* @par Inputs:
+* @li predict: An ND tensor of type float16, float32.
+* @li label: An ND tensor of type float16, float32. \n
+
+* @par Attributes:
+* @li p: A required int attribute that decides which loss to compute, now the p only can be 1 to compute l1_loss.
+* @li reduction: An optional string.Defaults to "mean". \n
+
+* @par Outputs:
+* @li y: An ND tensor tensor with the same shape and type as "predict". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpLoss.
+*/
+REG_OP(LpLoss)
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .REQUIRED_ATTR(p, Int)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(LpLoss)
+
+/**
+* @brief Computes gradients of mse loss.
+
+* @par Inputs:
+* @li predict: An ND tensor of type float16, float32.
+* @li label: An ND tensor of type float16, float32.
+* @li dout: An ND tensor of type float16, float32. \n
+
+* @par Attributes:
+* @li reduction: An optional string.Defaults to "mean". \n
+
+* @par Outputs:
+* @li y: An ND tensor tensor with the same shape and type as "predict". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator MseLossGrad.
+*/
+REG_OP(MseLossGrad)
+    .INPUT(predict, TensorType({DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(label, TensorType({DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(dout, TensorType({DT_FLOAT32, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT32, DT_FLOAT16}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(MseLossGrad)
+
+/**
+* @brief Computes mse loss.
+* @par Inputs:
+* two inputs, including:
+*  @li predict: An ND Tensor of dtype float16 or float32.
+*  @li label: An ND Tensor of dtype float16 or float32.\n
+*
+* @par Attributes:
+*  @li reduction:An optional str from sum, none, mean, Defaults to "mean".\n
+*
+* @par Outputs:
+*  @li y: when reduction=sum/mean, y is scale. when reduction=none, y has
+*    same type and shape as "predict".\n
+*/
+REG_OP(MseLoss)
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(MseLoss)
+
+/**
+* @brief Calculates the reversed outputs of the function "smooth_l1_loss_v2". \n
+
+* @par Inputs:
+* Three Inputs, including:
+* @li predict: A Tensor. Must be one of the following types:
+*     float16, float32.
+* @li label: A Tensor. Has the same type as "predict".
+* @li dout: A Tensor. Has the same type as "predict". \n
+
+* @par Attributes:
+* Two Attributes, including:
+* @li sigma: An optional float. Defaults to 1.0. \n
+
+* @li reduction: An optional string. Defaults to "mean",
+*    Must be one of the following: "none", "mean", "sum". \n
+
+* @par Outputs:
+* @li gradient: A Tensor. Has the same type as "predict". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator SmoothL1LossBackward.
+*/
+REG_OP(SmoothL1LossGradV2)
+    .INPUT(predict, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(label, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(dout, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(sigma, Float, 1.0)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SmoothL1LossGradV2)
+
+/**
+* @brief Creates a criterion that uses a squared term if the absolute
+* element-wise error falls below beta and an L1 term otherwise. It is
+* less sensitive to outliers than the MSELoss and in some cases prevents
+* exploding gradients.
+
+* @par Inputs:
+* @li predict: A multi-dimensional Tensor of type float16 or float32,
+* specifying the predictive value. \n
+* @li label: A multi-dimensional Tensor of type float16 or float32,
+* specifying the target value. \n
+
+* @par Attributes:
+* @li sigma: An optional int. Specifies the threshold of loss. Defaults
+* to "1.0". \n
+* @li reduction: An optional str. Specifies the reduction to apply to
+* the output: 'none' | 'mean' | 'sum'. 'none': no reduction will be applied,
+* 'mean': the sum of the output will be divided by the number of elements in
+* the output,'sum': the output will be summed. Default: 'mean'. \n
+
+* @par Outputs:
+* @li loss: Indicates the loss between the predictive value and target value.
+* Has the same dimensions as "predict". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator smooth_l1_loss. \n
+*/
+REG_OP(SmoothL1LossV2)
+    .INPUT(predict, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(label, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(loss, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .ATTR(sigma, Float, 1.0)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SmoothL1LossV2)
+
+/**
+* @brief Computes Centralization. result = x - mean(x, axes)
+
+* @par Inputs:
+* @li x: An ND tensor of type float16, float32.
+* @par Attributes:
+* @li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
+* Must be in the range [-rank(x), rank(x)).
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x". \n
+
+* @par Third-party framework compatibility
+* custom operator \n
+*/
+REG_OP(Centralization)
+    .INPUT(x, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(y, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .ATTR(axes, ListInt, {-1})
+    .OP_END_FACTORY_REG(Centralization)
+
+/**
+*@brief Roll the tensor along the given dimension(s).
+* Elements that are shifted beyond the last position are re-introduced at the first position.
+* If a dimension is not specified, the tensor will be flattened before rolling and then restored to the original shape. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A tensor . Must be one of the following types:
+*     float16, float32, int32, uint32, int8, uint8. \n
+
+*@par Attributes:
+* @li shifts: The number of places by which the elements of the tensor are shifted. \n
+* @li dims: Axis along which to roll. \n
+
+*@par Outputs:
+* y: A Tensor with the same type and shape of x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Roll. \n
+*/
+REG_OP(Roll)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_UINT32,DT_INT8,DT_UINT8}))
+    .REQUIRED_ATTR(shifts, ListInt)
+    .ATTR(dims, ListInt, {})
+    .OP_END_FACTORY_REG(Roll)
+
+/**
+ *@brief Calculate the loss. Creates a criterion that optimizes a two-class classification
+ logistic loss between input_x and input_y (containing 1 or -1). \n
+
+ *@par Inputs:
+ *One inputs, including:
+ * @li input_x: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+ * @li input_y: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+
+ *@par Attributes:
+ *@li lambd: An optional string.Defaults to "mean". \n
+
+ *@par Outputs:
+ *output_z: while reduction == "none", A Tensor with the same type and shape of input_x's. \n
+ *          while reduction == "sum" or "mean", A Tensor with the same type of input_x , shape of which is (1,)
+
+ *@par Third-party framework compatibility
+ *Compatible with the Pytorch operator SoftMarginLoss. \n
+ */
+REG_OP(SoftMarginLoss)
+    .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(reduction, String, "mean")
+    .OUTPUT(output_z, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(SoftMarginLoss)
+
+/**
+* @brief Computes gradients of sigmoid_cross_entropy_with_logits_v2.
+
+* @par Inputs:
+* @li predict: An ND tensor of type float16, float32.
+* @li target: An ND tensor of type float16, float32.
+* @li dout: An ND tensor of type float16, float32.
+* @li weight: An optional ND tensor of type float16, float32.
+* @li pos_weight: An optional ND tensor of type float16, float32. \n
+
+* @par Attributes:
+* @li reduction: An optional string.Defaults to "mean". \n
+
+* @par Outputs:
+* @li gradient: An ND tensor tensor with the same shape and type as "predict". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator SigmoidCrossEntropyWithLogitsGrad.
+*/
+REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
+    .INPUT(predict, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(dout, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(pos_weight, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
+/**
+ * @brief Calculate the PoissonNllLoss function. 
+ *        target∼Poisson(input)loss(input,target)=input−target∗log(input)+log(target!) \n
+
+ * @par Inputs:
+ * Two inputs, including:
+ * @li input_x: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+ * 
+ * @par Inputs:
+ * @li target: A tensor. Must be one of the following types:
+ *     float16, float32. \n
+
+ * @par Attributes:
+ * four Attributes, including:
+ * @li log_input: An optional bool. Defaults to "True" \n
+ * 
+ *  @par Attributes:
+ * @li full: An optional bool. Defaults to "False" \n
+ * 
+ *  @par Attributes:
+ * @li eps: An optional float. Defaults to "1e-8" \n
+ * 
+ *  @par Attributes:
+ * @li reduction: An optional string. Defaults to "mean" \n
+
+ * @par Outputs:
+ * loss: A Tensor has same element type as two inputs. \n
+
+ * @par Third-party framework compatibility
+ * Compatible with the Pytorch operator PoissonNllLoss. \n
+ */
+REG_OP(PoissonNllLoss)
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(target, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(loss, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(log_input, Bool, true)
+    .ATTR(full, Bool, false)
+    .ATTR(eps, Float, 1e-8)
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(PoissonNllLoss)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

@@ -120,15 +120,15 @@ typedef struct tagKV {
 } KeyValue;
 
 typedef enum {
-  APPLICATION = 0,
-  SYSTEM
+    APPLICATION = 0,
+    SYSTEM
 } ProcessType;
 
 typedef struct {
-  ProcessType type;
-  unsigned int pid;
-  unsigned int deviceId;
-  char reserved[RESERVERD_LENGTH];
+    ProcessType type;
+    unsigned int pid;
+    unsigned int deviceId;
+    char reserved[RESERVERD_LENGTH];
 } LogAttr;
 
 /**
@@ -141,7 +141,7 @@ enum {
   IDEDD,         /**< IDE daemon device */
   IDEDH,         /**< IDE daemon host */
   HCCL,          /**< HCCL */
-  FMK,           /**< Framework */
+  FMK,           /**< Adapter */
   HIAIENGINE,    /**< Matrix */
   DVPP,          /**< DVPP */
   RUNTIME,       /**< Runtime */
@@ -162,11 +162,11 @@ enum {
   MDCDEFAULT, /**< MDC undefine */
   MDCSC,      /**< MDC spatial cognition */
   MDCPNC,
-  MLL,
+  MLL,      /**< abandon */
   DEVMM,    /**< Dlog memory managent */
   KERNEL,   /**< Kernel */
   LIBMEDIA, /**< Libmedia */
-  CCECPU,   /**< ai cpu */
+  CCECPU,   /**< aicpu shedule */
   ASCENDDK, /**< AscendDK */
   ROS,      /**< ROS */
   HCCP,
@@ -179,7 +179,7 @@ enum {
   TSDUMP,    /**< TSDUMP module */
   AICPU,     /**< AICPU module */
   LP,        /**< LP module */
-  TDT,
+  TDT,       /**< tsdaemon or aicpu shedule */
   FE,
   MD,
   MB,
@@ -381,13 +381,13 @@ DLL_EXPORT void DlogFlush(void);
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
-void DlogErrorInner(int moduleId, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void DlogWarnInner(int moduleId, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void DlogInfoInner(int moduleId, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void DlogDebugInner(int moduleId, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void DlogEventInner(int moduleId, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void DlogInner(int moduleId, int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
-void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...) __attribute__((format(printf, 5, 6)));
+void DlogErrorInner(int moduleId, const char *fmt, ...);
+void DlogWarnInner(int moduleId, const char *fmt, ...);
+void DlogInfoInner(int moduleId, const char *fmt, ...);
+void DlogDebugInner(int moduleId, const char *fmt, ...);
+void DlogEventInner(int moduleId, const char *fmt, ...);
+void DlogInner(int moduleId, int level, const char *fmt, ...);
+void DlogWithKVInner(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 #ifndef LOG_CPP
@@ -500,8 +500,8 @@ DLL_EXPORT void DlogFlushForC(void);
  * @ingroup slog
  * @brief Internal log interface, other modules are not allowed to call this interface
  */
-void DlogInnerForC(int moduleId, int level, const char *fmt, ...) __attribute__((format(printf, 3, 4)));
-void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...) __attribute__((format(printf, 5, 6)));
+void DlogInnerForC(int moduleId, int level, const char *fmt, ...);
+void DlogWithKVInnerForC(int moduleId, int level, KeyValue *pstKVArray, int kvNum, const char *fmt, ...);
 
 #ifdef __cplusplus
 }

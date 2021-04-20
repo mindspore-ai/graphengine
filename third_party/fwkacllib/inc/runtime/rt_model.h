@@ -133,12 +133,13 @@ typedef struct tagAllKernelTaskInfo {
     uint16_t argsCount;
     uint16_t argsSize;
     uint16_t reserved;
-    const void *dev_func;
+    void *devfunc;
     void *handle;
     uint8_t *smDesc;
     uint8_t *args;
     uint16_t *argsOffset;
 } rtAllKernelTaskInfo_t;
+
 typedef struct tagKernelTaskInfoEx {
     uint32_t flags;
     uint32_t argsSize;
@@ -263,7 +264,7 @@ typedef struct tagTaskInfo {
     union {
         rtKernelTaskInfoEx_t kernelTaskEx;
         rtKernelTaskInfo_t kernelTask;
-        rtAllKernelTaskInfo_t allkernelTask;
+        rtAllKernelTaskInfo_t allKernelTask;
         rtEventTaskInfo_t eventTask;
         rtStreamSwitchTaskInfo_t streamSwitchTask;
         rtStreamActiveTaskInfo_t streamActiveTask;

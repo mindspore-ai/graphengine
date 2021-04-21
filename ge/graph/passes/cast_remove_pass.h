@@ -19,6 +19,7 @@
 
 #include <vector>
 #include "graph/passes/base_pass.h"
+#include "opskernel_manager/ops_kernel_manager.h"
 
 namespace ge {
 class CastRemovePass : public BaseNodePass {
@@ -28,8 +29,9 @@ class CastRemovePass : public BaseNodePass {
  private:
   bool CheckPrecisionLoss(const std::vector<NodePtr> &nodes_to_fuse);
   bool HasSameDataType(OpDescPtr &begin_op_desc, OpDescPtr &end_op_desc, DataType &type) const;
-  Status RemoveCast(DataType &type, std::vector<NodePtr> &nodes_to_fuse);
   NodePtr GetTheEndNode(NodePtr begin_node, std::vector<NodePtr> &nodes_to_fuse);
+  Status DoRemoveCast(const std::vector<size_t> &to_be_deleted_cast_index, std::vector<NodePtr> &nodes_to_fuse);
+  Status DoFuse(const OpsKernelManager &ops_kernel_manager, const DataType &type, std::vector<NodePtr> &nodes_to_fuse);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_CAST_REMOVE_PASS_H_

@@ -291,8 +291,6 @@ target_link_options(ge_executor_shared PRIVATE
 
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    msprofiler
-    static_mmpa
     ge_proto_dump
     -Wl,--no-as-needed
     ge_common

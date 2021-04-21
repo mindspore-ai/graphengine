@@ -4,7 +4,6 @@ COMMON_LOCAL_SRC_FILES := \
     proto/fusion_model.proto \
     proto/optimizer_priority.proto \
     graph/manager/trans_var_data_utils.cc \
-    omm/csa_interact.cc \
     common/fp16_t.cc \
     common/formats/utils/formats_trans_utils.cc \
     common/formats/format_transfers/datatype_transfer.cc \

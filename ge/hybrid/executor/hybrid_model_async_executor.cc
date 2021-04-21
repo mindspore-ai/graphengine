@@ -19,7 +19,6 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_context.h"
-#include "omm/csa_interact.h"
 
 namespace ge {
 namespace hybrid {
@@ -163,7 +162,6 @@ Status HybridModelAsyncExecutor::RunInternal() {
     ret = PreRun(current_data, args);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ret != SUCCESS, (void) HandleResult(ret, current_data.index, args, data_wrapper->GetOutput());
-        CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
         continue, "[Invoke][PreRun] failed, model_id:%u.", model_id_);  // [No need to check value]
 
     if (pipe_executor_ != nullptr) {
@@ -181,7 +179,6 @@ Status HybridModelAsyncExecutor::RunInternal() {
     }
     ret = HandleResult(ret, current_data.index, args, data_wrapper->GetOutput());
     if (ret != SUCCESS) {
-      CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
       continue;
     }
 
@@ -191,7 +188,6 @@ Status HybridModelAsyncExecutor::RunInternal() {
     GELOGI("run iterator count is %lu,  model_id:%u", iterator_count_, model_id_);
   }
 
-  CsaInteract::GetInstance().WriteInternalErrorCode();
   GELOGI("Model run end, model id:%u", model_id_);
   return SUCCESS;
 }

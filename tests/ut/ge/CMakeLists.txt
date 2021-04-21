@@ -287,7 +287,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/model_manager/zero_copy_task.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/cpu_queue_schedule.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/aipp_utils.cc"
-    "${GE_CODE_DIR}/ge/omm/csa_interact.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/tbe_handle_store.cc"
     "${GE_CODE_DIR}/ge/common/kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
@@ -391,7 +390,6 @@ set(GRAPH_PARTITION_COMMON_SRC_FILES
 set(GRAPH_LOAD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/graph_loader.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_manager_utils.cc"
-    "${GE_CODE_DIR}/ge/omm/csa_interact.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_var_manager.cc"
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"

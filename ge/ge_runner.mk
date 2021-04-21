@@ -256,7 +256,6 @@ LIBGE_LOCAL_SRC_FILES := \
     init/gelib.cc \
     model/ge_model.cc \
     model/ge_root_model.cc \
-    omm/csa_interact.cc \
     opskernel_manager/ops_kernel_manager.cc \
     opskernel_manager/ops_kernel_builder_manager.cc \
     session/inner_session.cc \

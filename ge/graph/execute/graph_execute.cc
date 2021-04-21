@@ -21,7 +21,6 @@
 
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "omm/csa_interact.h"
 
 namespace ge {
 using Uint32Pair = pair<uint32_t, uint32_t>;
@@ -490,12 +489,10 @@ Status GraphExecutor::AsyncExecuteModel(const GeRootModelPtr &ge_root_model, con
   } catch (std::bad_alloc &) {
     REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "RunAsync failed, bad memory allocation occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
     REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "RunAsync failed, some exceptions occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
   }
 
@@ -509,18 +506,15 @@ Status GraphExecutor::DataInput(const InputData &input_data, OutputData &output_
     Status ret = model_manager->DataInput(input_data, output_data);
     if (ret != SUCCESS) {
       GELOGE(ret, "DataInput: DataInput failed.");
-      CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
       return ret;
     }
   } catch (std::bad_alloc &) {
     REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "DataInput failed, bad memory allocation occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
     REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "DataInput failed, some exceptions occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
   }
 
@@ -535,18 +529,15 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
     Status ret = model_manager->GetInputOutputDescInfo(model_id, input_desc, output_desc);
     if (ret != SUCCESS) {
       GELOGE(ret, "GetInputOutputDescInfo  failed.");
-      CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
       return ret;
     }
   } catch (std::bad_alloc &) {
     REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "GetInputOutputDescInfo failed, bad memory allocation occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
     REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "GetInputOutputDescInfo failed, some exceptions occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
   }
 
@@ -564,18 +555,15 @@ Status GraphExecutor::GetInputOutputDescInfo(const uint32_t model_id, vector<Inp
                                                        new_model_desc);
     if (ret != SUCCESS) {
       GELOGE(ret, "GetInputOutputDescInfo  failed.");
-      CsaInteract::GetInstance().WriteErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
       return ret;
     }
   } catch (std::bad_alloc &) {
     REPORT_INNER_ERROR("E19999", "Bad memory allocation exception occur failed");
     GELOGE(MEMALLOC_FAILED, "GetInputOutputDescInfo failed, bad memory allocation occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return MEMALLOC_FAILED;
   } catch (...) {
     REPORT_INNER_ERROR("E19999", "Some exceptions occur failed");
     GELOGE(FAILED, "GetInputOutputDescInfo failed, some exceptions occur !");
-    CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
     return FAILED;
   }
 

@@ -11,7 +11,6 @@ local_ge_executor_src_files :=  \
     ../common/profiling/ge_profiling.cc \
     ../graph/load/graph_loader.cc \
     ../graph/execute/graph_execute.cc \
-    ../omm/csa_interact.cc \
     ../graph/manager/graph_manager_utils.cc \
     ../graph/manager/graph_var_manager.cc \
     ../graph/manager/rdma_pool_allocator.cc \

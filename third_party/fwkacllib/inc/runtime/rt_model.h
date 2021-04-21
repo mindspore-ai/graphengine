@@ -51,6 +51,7 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_STREAM_LABEL_GOTO,
     RT_MODEL_TASK_MODEL_EXIT,
     RT_MODEL_TASK_ALL_KERNEL,
+    RT_MODEL_TASK_PROFILER_TRACE_EX,
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {
@@ -197,6 +198,13 @@ typedef struct tagProfilerTraceTaskInfo {
     uint32_t reserved[6];
 } rtProfilerTrace_t;
 
+typedef struct tagProfilerTraceExTaskInfo {
+    uint64_t profilerTraceId;
+    uint64_t modelId;
+    uint16_t tagId;
+    uint8_t reserved[22];
+} rtProfilerTraceEx_t;
+
 typedef struct tagrtMemcpyAsyncTaskInfo {
     void *dst;
     uint64_t destMax;
@@ -272,6 +280,7 @@ typedef struct tagTaskInfo {
         rtLabelSwitchTaskInfo_t labelSwitchTask;
         rtLabelGotoTaskInfo_t labelGotoTask;
         rtProfilerTrace_t profilertraceTask;
+        rtProfilerTraceEx_t profilertraceExTask;
         rtMemcpyAsyncTaskInfo_t memcpyAsyncTask;
         rtNotifyTaskInfo_t notifyTask;
         rtReduceAsyncTaskInfo_t reduceAsyncTask;

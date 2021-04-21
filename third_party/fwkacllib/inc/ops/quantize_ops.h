@@ -62,6 +62,26 @@ REG_OP(Dequantize)
 
 /**
 *@brief Quantizes the input . \n
+*@par Inputs:
+*x:  shape and dtype of input_x. \n
+*scales: shape and dtype of input_scales. \n
+*zero_points: shape and dtype of input_zero_points \n
+*@par Attributes:
+*@li axis: the processed dim. \n
+*@par Outputs:
+*y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
+*/
+REG_OP(Quantize)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(scales, TensorType({DT_FLOAT}))
+    .INPUT(zero_points, TensorType({DT_INT8,DT_UINT8,DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT8,DT_UINT8,DT_INT32}))
+    .REQUIRED_ATTR(dtype, String)
+    .ATTR(axis, Int, 1)
+    .OP_END_FACTORY_REG(Quantize)
+
+/**
+*@brief Quantizes the input . \n
 
 *@par Inputs:
 *x: An NC1HWC0 tensor of type float16 or float32, specifying the input . \n

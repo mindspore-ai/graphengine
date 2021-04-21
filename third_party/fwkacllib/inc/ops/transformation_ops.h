@@ -418,12 +418,8 @@ REG_OP(BatchToSpace)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use BatchToSpace instead.
 */
 REG_OP(BatchToSpaceD)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_UINT8,
-                        DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, DT_INT16, DT_COMPLEX64,
-                        DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_UINT8,
-                        DT_UINT16, DT_UINT32, DT_UINT64, DT_INT8, DT_INT16, DT_COMPLEX64,
-                        DT_COMPLEX128, DT_QINT8, DT_QUINT8, DT_QINT16, DT_QUINT16, DT_QINT32}))
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
     .REQUIRED_ATTR(block_size, Int)
     .REQUIRED_ATTR(crops, ListInt)
     .OP_END_FACTORY_REG(BatchToSpaceD)

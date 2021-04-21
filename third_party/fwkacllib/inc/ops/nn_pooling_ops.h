@@ -397,8 +397,8 @@ No default value.
 specifying the stride of the sliding window for each dimension of
 the input tensor. No default value.
 *@li padding: A required string type of float16.
-*@li pads: A list type of int32. Default value {0, 0, 0}.
-*@li dilation: A list type of int32. Default value {1, 1, 1}.
+*@li pads: A list type of int32. Default value {0,0,0,0,0,0}.
+*@li dilation: A list type of int32. Default value {1,1,1,1,1,1}.
 *@li ceil_mode: A ceil mode number of int32 . Default value 0.
 *@li data_format: An optional string. Defaults to "NDHWC" . \n
 
@@ -421,8 +421,8 @@ REG_OP(MaxPool3D)
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(padding, String)
-    .ATTR(pads, ListInt, {0,0,0})
-    .ATTR(dilation, ListInt, {1,1,1})
+    .ATTR(pads, ListInt, {0,0,0,0,0,0})
+    .ATTR(dilation, ListInt, {1,1,1,1,1,1})
     .ATTR(ceil_mode, Int, 0)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(MaxPool3D)
@@ -1184,6 +1184,7 @@ REG_OP(MaxPool3DGrad)
     .OUTPUT(y, TensorType::RealNumberType())
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
+    .ATTR(padding, String, "SAME")
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(data_format, String, "NDHWC")
     .OP_END_FACTORY_REG(MaxPool3DGrad)
@@ -1440,12 +1441,11 @@ REG_OP(MaxPoolV3Grad)
     .OP_END_FACTORY_REG(MaxPoolV3Grad)
 
 /**
-*@brief Performs dilation2d on the input . \n
+*@brief Performs Dilation2D on the input . \n
 
 *@par Inputs:
 *x: A tensor of shape is 4d, format is support NHWC.
-*filter: A tensor of shape is 3d, the type is same with x,
-and the c dimension is same with x. \n
+*filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x. \n
 
 *@par Attributes:
 *@li strides: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C dimensions are 1.
@@ -1472,6 +1472,84 @@ REG_OP(Dilation2D)
     .ATTR(ceil_mode, Bool, false)
     .ATTR(data_format, String, "NHWC")
     .OP_END_FACTORY_REG(Dilation2D)
+
+/**
+*@brief Performs Dilation2DBackpropFilter on the input. \n
+
+*@par Inputs:
+*x: A tensor of shape is 4d, format is support NHWC.
+*filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x.
+*out_backprop: Has the same type and format as input x and the c dimension is same with x. \n
+
+*@par Attributes
+*@li strides: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C dimension are 1.
+*@li rates: A required list of 4 ints, the rates of the N and C dimensions are 1.
+*@li padding_mode: A optional string. Defaults to "SAME", it support SAME and VALID.
+*@li pads: A optional list of 4 ints.
+*@li ceil_mode: An optional bool. Defaults to "false". Use ceil or floor to calculate the output size when padding_mode is "CALCULATED".
+*@li data_format: An optional string, specifying the data format of "rates" and "strides", either "NCHW" or "NHWC" (default). \n
+
+*@par Outputs:
+*y: The output tensor. Has the same type and format as input "filter" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Dilation2DBackpropFilter.
+*/
+
+REG_OP(Dilation2DBackpropFilter)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(filter,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(out_backprop,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .OUTPUT(y,
+            TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(rates, ListInt)
+    .ATTR(padding_mode, String, "SAME")
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
+    .ATTR(ceil_mode, Bool, false)
+    .ATTR(data_format, String, "NHWC")
+    .OP_END_FACTORY_REG(Dilation2DBackpropFilter)
+
+/**
+*@brief Performs Dilation2DBackpropInput on the input. \n
+
+*@par Inputs:
+*x: A tensor of shape is 4d, format is support NHWC.
+*filter: A tensor of shape is 3d, the type is same with x, and the c dimension is same with x.
+*out_backprop: Has the same type and format as input x and the c dimension is same with x. \n
+
+*@par Attributes
+*@li strides: A required list of 4 ints, specifying the stride of the sliding window. The strides of the N and C dimension are 1.
+*@li rates: A required list of 4 ints, the rates of the N and C dimensions are 1.
+*@li padding_mode: A optional string. Defaults to "SAME", it support SAME and VALID.
+*@li pads: A optional list of 4 ints.
+*@li ceil_mode: An optional bool. Defaults to "false". Use ceil or floor to calculate the output size when padding_mode is "CALCULATED".
+*@li data_format: An optional string, specifying the data format of "rates" and "strides", either "NCHW" or "NHWC" (default). \n
+
+*@par Outputs:
+*y: The output tensor. Has the same type and format as input "x" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Dilation2DBackpropInput.
+*/
+
+REG_OP(Dilation2DBackpropInput)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(filter,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .INPUT(out_backprop,
+           TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .OUTPUT(y,
+            TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT32, DT_INT64, DT_UINT8, DT_INT16, DT_INT8, DT_UINT16}))
+    .REQUIRED_ATTR(strides, ListInt)
+    .REQUIRED_ATTR(rates, ListInt)
+    .ATTR(padding_mode, String, "SAME")
+    .ATTR(pads, ListInt, {0, 0, 0, 0})
+    .ATTR(ceil_mode, Bool, false)
+    .ATTR(data_format, String, "NHWC")
+    .OP_END_FACTORY_REG(Dilation2DBackpropInput)
 
 /**
 * @brief Applies a 2D adaptive average pooling over  
@@ -1603,6 +1681,23 @@ REG_OP(MaxPoolWithArgmaxV1)
     .ATTR(dilation, ListInt, {1, 1, 1, 1})
     .ATTR(ceil_mode, Bool, false)
     .OP_END_FACTORY_REG(MaxPoolWithArgmaxV1)
+
+// SubSample
+REG_OP(SubSample)
+    .INPUT(labels, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(batch_size_per_images, Int)
+    .REQUIRED_ATTR(positive_fraction, Float)
+    .OP_END_FACTORY_REG(SubSample)
+
+//  SubSampleLabels
+REG_OP(SubSampleLabels)
+    .INPUT(labels, TensorType({DT_INT32}))
+    .INPUT(shuffle_matrix, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(batch_size_per_images, Int)
+    .REQUIRED_ATTR(positive_fraction, Float)
+    .OP_END_FACTORY_REG(SubSampleLabels)
 
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_POOLING_OPS_H

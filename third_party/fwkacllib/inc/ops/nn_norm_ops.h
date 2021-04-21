@@ -526,6 +526,31 @@ REG_OP(LayerNorm)
     .OP_END_FACTORY_REG(LayerNorm)
 
 /**
+*@brief Returns a tensor where each sub-tensor of input along dimension 
+*       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
+
+*@par Inputs:
+*One input, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Attributes:
+* @li p: Specify L_p norm, the type is float. 
+* @li dim: The processed dim, the type is int.
+* @li maxnorm: Threshold for comparison, the type is float.  \n
+
+*@par Outputs:
+*One outputs, including:
+* @li y: shape and dtype of output, should be same shape and type as input.
+*/
+REG_OP(Renorm)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(p, Float)
+    .REQUIRED_ATTR(dim, Int)
+    .REQUIRED_ATTR(maxnorm, Float)
+    .OP_END_FACTORY_REG(Renorm)
+
+/**
 *@brief LayerNormGrad operator interface implementation
 *  calculating: dy, x, variance, mean, gamma
 *  pd_xl = data_dy*data_gamma
@@ -683,7 +708,68 @@ REG_OP(DropOutDoMask)
     .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(DropOutDoMask)
-	
+
+/**
+*@brief Return "output" according to the algorithm of dropout_do_mask:
+*  scale_x = x *(1 / keep_prob)
+*  output = select(mask == 1, scale_x, 0)
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A mutable Tensor. Must be one of the following types:
+*     float16, float32
+* @li mask: A mutable Tensor. Must met all of the following rules:
+*     shape of mask should be 1D.
+*     dtype of mask should be uint8.
+*     value of shape should met the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128
+* @li keep_prob: A mutable Tensor. Must met all of the following rules:
+*     shape of "keep_prob" should be (1,) or [1,].
+*     Has the same type as "x" . \n
+
+*@par Output:
+*y: A mutable Tensor. Has the same type as "x".
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DropOutDoMaskV3)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mask, TensorType({DT_UINT8}))
+    .INPUT(keep_prob, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(DropOutDoMaskV3)
+
+/**
+*@brief Return "output" according to the algorithm of dropout_do_mask:
+*  scale_x = x *(1 / keep_prob)
+*  output = select(mask == 1, scale_x, 0)
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A mutable Tensor. Must be one of the following types:
+*     float16, float32
+* @li mask: A mutable Tensor. Must met all of the following rules:
+*     shape of mask should be 1D.
+*     dtype of mask should be uint8.
+*     value of shape should met the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128
+*@par Attributes:
+* @li keep_prob: A mutable Tensor. Must met all of the following rules:
+*     shape of "keep_prob" should be (1,) or [1,].
+*     Has the same type as "x" . \n
+
+*@par Output:
+*y: A mutable Tensor. Has the same type as "x".
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DropOutDoMaskV3D)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(keep_prob, Float)
+    .OP_END_FACTORY_REG(DropOutDoMaskV3D)
+
 /**
 *@brief Scales the input . \n
 
@@ -1356,6 +1442,58 @@ REG_OP(PoissonNllLoss)
     .ATTR(eps, Float, 1e-8)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(PoissonNllLoss)
+/**
+ *@brief rnn_gen_mask
+ * @par Inputs:
+ * @li seq_length: A ND Tensor of type int32. Recoed the current length of each batch.\n
+ *
+ * @par Attributes:
+ * @li num_step: A required int.\n
+ * @li hidden_size: A required int. \n
+ *
+ * 
+ * @par Output:
+ * y: A mutable Tensor of type int32, with the shape of [num_step, batch_size, hidden_size]. \n
+ *
+ */
+REG_OP(RnnGenMask)
+    .INPUT(seq_length, TensorType({DT_INT32}))
+    .OUTPUT(seq_mask, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(num_step, Int)
+    .REQUIRED_ATTR(hidden_size, Int)
+    .OP_END_FACTORY_REG(RnnGenMask)
+
+/**
+* @brief Creates a criterion that optimizes a multi-class multi-classification hinge loss (margin-based loss) 
+*        between input x (a 2D mini-batch Tensor) and output y (which is a 2D Tensor of target class indices) \n
+ 
+* @par Inputs:
+* Two inputs, including:
+* @li x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+* 
+* @par Inputs:
+* @li target: A tensor. Must be the following types:
+*     int32. \n
+
+* @par Attributes:
+* @li reduction: An optional string. Defaults to "mean" \n
+
+* @par Outputs:
+* y: A Tensor has same element type as input x. \n
+* is_target: A Tensor has same element type as input target. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator MultiLabelMarginLoss. \n
+*/
+REG_OP(MultilabelMarginLoss)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(target, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(is_target, TensorType({DT_INT32}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(MultilabelMarginLoss)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

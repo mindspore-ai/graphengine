@@ -356,6 +356,39 @@ REG_OP(DropOutGenMask)
     .ATTR(seed2, Int, 0)
     .OP_END_FACTORY_REG(DropOutGenMask)
 
+
+/**
+*@brief Generate random uint8 mask for dropout v3 . \n
+
+*@par Inputs:
+include:
+*@li shape:The shape of the output tensor.
+*@li prob:0-D. Prob of 1 . \n
+
+*@par Attributes:
+*@li seed:If either seed or seed2 are set to be non-zero, the random number
+*generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2:A second seed to avoid seed collision . \n
+
+*@par Outputs:
+*y:Output (1-D) random number using uint8 data format . \n
+
+*@attention Constraints:
+*The output is aligned with 16
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+
+*@see DropOutGenMaskV3()
+*/
+REG_OP(DropOutGenMaskV3)
+    .INPUT(shape, TensorType({ DT_INT32, DT_INT64 }))
+    .INPUT(prob, TensorType({ DT_FLOAT16, DT_FLOAT }))
+    .OUTPUT(y, TensorType({ DT_UINT8 }))
+    .ATTR(seed, Int, 0)
+    .ATTR(seed2, Int, 0)
+    .OP_END_FACTORY_REG(DropOutGenMaskV3)
+
 /**
 *@brief Generates values in an interval . \n
 

@@ -957,6 +957,17 @@ ACL_FUNC_VISIBILITY aclError aclrtDeviceDisablePeerAccess(int32_t peerDeviceId);
  */
 ACL_FUNC_VISIBILITY aclError aclrtGetMemInfo(aclrtMemAttr attr, size_t *free, size_t *total);
 
+/**
+ * @ingroup AscendCL
+ * @brief Set the timeout interval for waitting of op
+ *
+ * @param timeout [IN]   op wait timeout
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtSetOpWaitTimeout(uint32_t timeout);
+
 #ifdef __cplusplus
 }
 #endif

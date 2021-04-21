@@ -534,6 +534,29 @@ REG_OP(NextAfter)
     .OP_END_FACTORY_REG(NextAfter)
 
 /**
+*@brief Calculate the P-norm distance between vectors  function. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li input_x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+*@li  p: An optional float.Defaults to 2. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of input_x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Pdist. \n
+*/
+REG_OP(Pdist)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(Pdist)
+
+/**
  *@brief Compute element-wise finiteness, return a boolean tensor.
 
  *@par Inputs:

@@ -32,7 +32,7 @@
 #include "graph/utils/type_utils.h"
 #include "graph/ge_global_options.h"
 #include "init/gelib.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "model/ge_model.h"
 #include "graph/shape_refiner.h"
 #include "graph/opsproto_manager.h"
@@ -299,10 +299,19 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
     GE_CHK_BOOL_EXEC(ParseInputShape(input_shape, shape_map, user_shape_map, true),
                      return GRAPH_PARAM_INVALID, "[Parse][InputShape] failed!");
   }
-  std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
+  std::map<string, std::vector<std::pair<int64_t, int64_t>>> name_shape_range_map;
+  std::vector<std::vector<std::pair<int64_t, int64_t>>> index_shape_range_map;
   if (!input_shape_range.empty()) {
-    GE_CHK_BOOL_EXEC(ParseInputShapeRange(input_shape_range, shape_range_map),
-                     return GRAPH_PARAM_INVALID, "[Parse][InputShapeRange] failed.");
+    Status ret = GRAPH_PARAM_INVALID;
+    if (input_shape_range.find(":") != string::npos) {
+      ret = ParseInputShapeRange(input_shape_range, name_shape_range_map);
+    } else {
+      ret = ParseInputShapeRange(input_shape_range, index_shape_range_map);
+    }
+    if (ret != SUCCESS) {
+      GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShapeRange] parse shape range[%s] failed.", input_shape_range.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
   }
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
@@ -315,10 +324,14 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
         GELOGE(GRAPH_FAILED, "[Update][DataOpShape] fail for op:%s.", op->GetName().c_str());
         return GRAPH_FAILED;
       }
-      if (UpdateDataOpShapeRange(op, shape_range_map) != SUCCESS) {
+      if (UpdateDataOpShapeRange(op, name_shape_range_map) != SUCCESS) {
         GELOGE(GRAPH_FAILED, "[Update][DataOpShapeRange] fail for op:%s.", op->GetName().c_str());
         return GRAPH_FAILED;
-      }     
+      }
+      if (UpdateDataOpShapeRange(op, index_shape_range_map) != SUCCESS) {
+        GELOGE(GRAPH_FAILED, "[Update][DataOpShapeRange] fail for op:%s.", op->GetName().c_str());
+        return GRAPH_FAILED;
+      }
     }
   }
 

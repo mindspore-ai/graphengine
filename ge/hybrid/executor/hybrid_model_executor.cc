@@ -112,7 +112,12 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
         HYBRID_CHK_STATUS_RET(context_.DumpExceptionInfo(exception_infos),
                               "[Execute][GraphInternal] Dump exception info failed.");
       }
-      GELOGE(ret, "[Execute][GraphInternal] Synchronize failed.");
+      if (ret == ge::END_OF_SEQUENCE) {
+        GELOGD("Got end of sequence");
+      } else {
+        GELOGE(ret, "[Execute][GraphInternal] Synchronize failed.");
+      }
+      return ret;
     }
     RECORD_MODEL_EXECUTION_EVENT(&context_, "[Synchronize] End");
   }

@@ -101,7 +101,7 @@
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "graph/common/local_context.h"
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"

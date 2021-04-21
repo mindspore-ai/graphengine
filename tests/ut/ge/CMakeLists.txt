@@ -307,7 +307,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/partition/stage_partition.cc"
     "${GE_CODE_DIR}/ge/graph/partition/dynamic_shape_partition.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
-    "${GE_CODE_DIR}/ge/ir_build/atc_ir_common.cc"
+    "${GE_CODE_DIR}/ge/ir_build/option_utils.cc"
     "${GE_CODE_DIR}/ge/graph/preprocess/insert_op/ge_aipp_op.cc"
     "${GE_CODE_DIR}/ge/graph/preprocess/multi_batch_options.cc"
     "${GE_CODE_DIR}/ge/graph/build/model_builder.cc"

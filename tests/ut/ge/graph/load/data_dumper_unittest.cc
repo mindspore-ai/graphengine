@@ -51,30 +51,19 @@ static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {
   return op_desc;
 }
 
-/*
-TEST_F(UtestDataDumper, LoadDumpInfo_no_output_addrs_fail) {
+TEST_F(UtestDataDumper, LoadDumpInfo_success) {
   RuntimeParam rts_param;
-  DataDumper data_dumper(rts_param);
+  DataDumper data_dumper(&rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
   std::shared_ptr<OpDesc> op_desc_1(new OpDesc());
   op_desc_1->AddOutputDesc("test", GeTensorDesc());
   data_dumper.SaveDumpTask(0, 0, op_desc_1, 0);
   string dump_mode = "output";
+  data_dumper.is_op_debug_ = true;
   data_dumper.dump_properties_.SetDumpMode(dump_mode);
-  Status ret = data_dumper.LoadDumpInfo();
-  EXPECT_EQ(ret, SUCCESS);
-}
-*/
-
-TEST_F(UtestDataDumper, UnloadDumpInfo_success) {
-  RuntimeParam rts_param;
-  DataDumper data_dumper(&rts_param);
-  data_dumper.SetModelName("test");
-  data_dumper.SetModelId(2333);
-
-  Status ret = data_dumper.UnloadDumpInfo();
-  EXPECT_EQ(ret, SUCCESS);
+  EXPECT_EQ(data_dumper.LoadDumpInfo(), SUCCESS);
+  EXPECT_EQ(data_dumper.UnloadDumpInfo(), SUCCESS);
 }
 
 TEST_F(UtestDataDumper, DumpOutputWithTask_success) {
@@ -83,7 +72,7 @@ TEST_F(UtestDataDumper, DumpOutputWithTask_success) {
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
 
-  aicpu::dump::Task task;
+  toolkit::aicpu::dump::Task task;
   OpDescPtr op_desc = CreateOpDesc("conv", CONVOLUTION);
   GeTensorDesc tensor_0(GeShape(), FORMAT_NCHW, DT_FLOAT);
   GeTensorDesc tensor_1(GeShape(), FORMAT_NCHW, DT_FLOAT);
@@ -95,5 +84,7 @@ TEST_F(UtestDataDumper, DumpOutputWithTask_success) {
   inner_dump_info.op = op_desc;
   Status ret = data_dumper.DumpOutputWithTask(inner_dump_info, task);
   EXPECT_EQ(ret, SUCCESS);
+  int64_t task_size = 1;
+  data_dumper.GenerateOpBuffer(task_size, task);
 }
 }  // namespace ge

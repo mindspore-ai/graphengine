@@ -26,7 +26,7 @@
 #include "graph/op_desc.h"
 #include "graph/utils/tensor_utils.h"
 #include "proto/ge_ir.pb.h"
-#include "proto/op_mapping_info.pb.h"
+#include "proto/op_mapping.pb.h"
 #include "runtime/mem.h"
 #include "aicpu/common/aicpu_task_struct.h"
 
@@ -64,7 +64,7 @@ void DumpOp::SetDynamicModelInfo(const string &dynamic_model_name, const string 
 }
 
 static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uintptr_t loop_cond,
-                                 aicpu::dump::OpMappingInfo &op_mapping_info) {
+                                 toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (step_id != 0) {
     GELOGI("step_id exists.");
     op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
@@ -87,11 +87,11 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   }
 }
 
-Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
+Status DumpOp::DumpOutput(toolkit::aicpu::dump::Task &task) {
   GELOGI("Start dump output in Launch dump op");
   const auto &output_descs = op_desc_->GetAllOutputsDesc();
   for (size_t i = 0; i < output_descs.size(); ++i) {
-    aicpu::dump::Output output;
+    toolkit::aicpu::dump::Output output;
     output.set_data_type(static_cast<int32_t>(DataTypeUtil::GetIrDataType(output_descs.at(i).GetDataType())));
     output.set_format(static_cast<int32_t>(output_descs.at(i).GetFormat()));
     for (auto dim : output_descs.at(i).GetShape().GetDims()) {
@@ -113,11 +113,11 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
   return SUCCESS;
 }
 
-Status DumpOp::DumpInput(aicpu::dump::Task &task) {
+Status DumpOp::DumpInput(toolkit::aicpu::dump::Task &task) {
   GELOGI("Start dump input in Launch dump op");
   const auto &input_descs = op_desc_->GetAllInputsDesc();
   for (size_t i = 0; i < input_descs.size(); ++i) {
-    aicpu::dump::Input input;
+    toolkit::aicpu::dump::Input input;
     input.set_data_type(static_cast<int32_t>(DataTypeUtil::GetIrDataType(input_descs.at(i).GetDataType())));
     input.set_format(static_cast<int32_t>(input_descs.at(i).GetFormat()));
 
@@ -149,7 +149,7 @@ void DumpOp::SetDumpInfo(const DumpProperties &dump_properties, const OpDescPtr 
   stream_ = stream;
 }
 
-Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DumpOp::ExecutorDumpOp(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   std::string proto_msg;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_msg);
@@ -203,7 +203,7 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
   return SUCCESS;
 }
 
-Status DumpOp::SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DumpOp::SetDumpModelName(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (dynamic_model_name_.empty() && dynamic_om_name_.empty()) {
     GELOGI("Single op dump, no need set model name");
     return SUCCESS;
@@ -242,7 +242,7 @@ Status DumpOp::LaunchDumpOp() {
            device_id);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
-  aicpu::dump::OpMappingInfo op_mapping_info;
+  toolkit::aicpu::dump::OpMappingInfo op_mapping_info;
   auto dump_path = dump_properties_.GetDumpPath() + std::to_string(device_id) + "/";
   op_mapping_info.set_dump_path(dump_path);
   op_mapping_info.set_flag(kAicpuLoadFlag);
@@ -261,7 +261,7 @@ Status DumpOp::LaunchDumpOp() {
   if (rt_ret != RT_ERROR_NONE) {
     GELOGW("call rtGetTaskIdAndStreamID failed, ret = 0x%X", rt_ret);
   }
-  aicpu::dump::Task task;
+  toolkit::aicpu::dump::Task task;
   task.set_task_id(task_id);
   task.set_stream_id(stream_id);
   task.mutable_op()->set_op_name(op_desc_->GetName());

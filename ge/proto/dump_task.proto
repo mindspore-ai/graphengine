@@ -1,5 +1,5 @@
 syntax = "proto3";
-package toolkit.dumpdata;
+package toolkit.dump;
 
 enum OutputDataType {
     DT_UNDEFINED = 0;

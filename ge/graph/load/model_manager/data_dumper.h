@@ -27,7 +27,7 @@
 #include "graph/node.h"
 #include "graph/compute_graph.h"
 #include "proto/ge_ir.pb.h"
-#include "proto/op_mapping_info.pb.h"
+#include "proto/op_mapping.pb.h"
 #include "runtime/mem.h"
 #include "task_info/task_info.h"
 #include "framework/common/ge_types.h"
@@ -128,24 +128,25 @@ class DataDumper {
   DumpProperties dump_properties_;
 
   // Build task info of op mapping info
-  Status BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
-  Status DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
-  Status DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Output &output, size_t i,
-                       const std::string &node_name_index);
-  Status DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
-  Status DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task);
-  Status DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Input &input, size_t i,
-                      const std::string &node_name_index);
-  Status ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
-  void SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id, aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status BuildTaskInfo(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status DumpOutput(const InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Task &task);
+  Status DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Output &output,
+                       size_t i, const std::string &node_name_index);
+  Status DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Task &task);
+  Status DumpInput(const InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Task &task);
+  Status DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Input &input,
+                      size_t i, const std::string &node_name_index);
+  Status ExecuteLoadDumpInfo(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  void SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
+                            toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
   void SetOpDebugIdToAicpu(uint32_t task_id, uint32_t stream_id, void *op_debug_addr,
-                           aicpu::dump::OpMappingInfo &op_mapping_info);
-  Status ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info);
-  Status GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
+                           toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status ExecuteUnLoadDumpInfo(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status GenerateInput(toolkit::aicpu::dump::Input &input, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
                        const uintptr_t &addr, size_t index);
-  Status GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
+  Status GenerateOutput(toolkit::aicpu::dump::Output &output, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
                         const uintptr_t &addr, size_t index);
-  void GenerateOpBuffer(const int64_t &size, aicpu::dump::Task &task);
+  void GenerateOpBuffer(const int64_t &size, toolkit::aicpu::dump::Task &task);
 };
 struct DataDumper::InnerDumpInfo {
   uint32_t task_id;

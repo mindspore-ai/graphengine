@@ -24,7 +24,7 @@ set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/insert_op.proto"
     "${GE_CODE_DIR}/metadef/proto/dump_task.proto"
     "${GE_CODE_DIR}/metadef/proto/fwk_adapter.proto"
-    "${GE_CODE_DIR}/metadef/proto/op_mapping_info.proto"
+    "${GE_CODE_DIR}/metadef/proto/op_mapping.proto"
     "${GE_CODE_DIR}/metadef/proto/optimizer_priority.proto"
     "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/attr_value.proto"

@@ -35,7 +35,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "proto/dump_task.pb.h"
 #include "proto/ge_ir.pb.h"
-#include "proto/op_mapping_info.pb.h"
+#include "proto/op_mapping.pb.h"
 #include "runtime/base.h"
 #include "runtime/mem.h"
 
@@ -217,7 +217,7 @@ void DataDumper::SaveDumpTask(uint32_t task_id, uint32_t stream_id, const std::s
 }
 
 static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uintptr_t loop_cond,
-                                 aicpu::dump::OpMappingInfo &op_mapping_info) {
+                                 toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (step_id != 0) {
     GELOGI("step_id exists.");
     op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
@@ -234,7 +234,8 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   }
 }
 
-Status DataDumper::GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
+Status DataDumper::GenerateOutput(toolkit::aicpu::dump::Output &output,
+                                  const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
                                   const uintptr_t &addr, size_t index) {
   output.set_data_type(static_cast<int32_t>(GetIrDataType(tensor_descs.at(index).GetDataType())));
   output.set_format(static_cast<int32_t>(tensor_descs.at(index).GetFormat()));
@@ -265,7 +266,8 @@ Status DataDumper::GenerateOutput(aicpu::dump::Output &output, const OpDesc::Vis
   return SUCCESS;
 }
 
-Status DataDumper::DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Output &output,
+Status DataDumper::DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_info,
+                                 toolkit::aicpu::dump::Output &output,
                                  size_t i, const std::string &node_name_index) {
   std::string dump_op_name;
   std::string input_or_output;
@@ -306,7 +308,7 @@ Status DataDumper::DumpRefOutput(const DataDumper::InnerDumpInfo &inner_dump_inf
   return SUCCESS;
 }
 
-Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
+Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Task &task) {
   const auto &output_descs = inner_dump_info.op->GetAllOutputsDesc();
   const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
   std::vector<int64_t> v_memory_type;
@@ -318,7 +320,7 @@ Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicp
 
   size_t no_need_dump_output_num = 0;
   for (size_t i = 0; i < output_descs.size(); ++i) {
-    aicpu::dump::Output output;
+    toolkit::aicpu::dump::Output output;
     std::string node_name_index;
     const auto &output_desc = output_descs.at(i);
     int32_t calc_type = 0;
@@ -370,14 +372,14 @@ Status DataDumper::DumpOutputWithTask(const InnerDumpInfo &inner_dump_info, aicp
   return SUCCESS;
 }
 
-Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
+Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Task &task) {
   GELOGI("Start dump output");
   if (inner_dump_info.is_task) {
     // tbe or aicpu op, these ops are with task
     return DumpOutputWithTask(inner_dump_info, task);
   }
   // else data, const or variable op
-  aicpu::dump::Output output;
+  toolkit::aicpu::dump::Output output;
   auto output_tensor = inner_dump_info.op->GetOutputDescPtr(inner_dump_info.output_anchor_index);
   const std::vector<void *> output_addrs = ModelUtils::GetOutputDataAddrs(*runtime_param_, inner_dump_info.op);
   if (output_tensor == nullptr) {
@@ -422,7 +424,7 @@ Status DataDumper::DumpOutput(const InnerDumpInfo &inner_dump_info, aicpu::dump:
   return SUCCESS;
 }
 
-Status DataDumper::GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
+Status DataDumper::GenerateInput(toolkit::aicpu::dump::Input &input, const OpDesc::Vistor<GeTensorDesc> &tensor_descs,
                                  const uintptr_t &addr, size_t index) {
   input.set_data_type(static_cast<int32_t>(GetIrDataType(tensor_descs.at(index).GetDataType())));
   input.set_format(static_cast<int32_t>(tensor_descs.at(index).GetFormat()));
@@ -447,8 +449,8 @@ Status DataDumper::GenerateInput(aicpu::dump::Input &input, const OpDesc::Vistor
   return SUCCESS;
 }
 
-Status DataDumper::DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info, aicpu::dump::Input &input, size_t i,
-                                const std::string &node_name_index) {
+Status DataDumper::DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Input &input,
+                                size_t i, const std::string &node_name_index) {
   std::string dump_op_name;
   std::string input_or_output;
   size_t index;
@@ -488,7 +490,7 @@ Status DataDumper::DumpRefInput(const DataDumper::InnerDumpInfo &inner_dump_info
   return SUCCESS;
 }
 
-Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::Task &task) {
+Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, toolkit::aicpu::dump::Task &task) {
   GELOGI("Start dump input");
   const auto &input_descs = inner_dump_info.op->GetAllInputsDesc();
   const std::vector<void *> input_addrs = ModelUtils::GetInputDataAddrs(*runtime_param_, inner_dump_info.op);
@@ -507,7 +509,7 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
                                        inner_dump_info.op->GetName().c_str(), input_descs.size(), v_memory_type.size());
 
   for (size_t i = 0; i < input_descs.size(); ++i) {
-    aicpu::dump::Input input;
+    toolkit::aicpu::dump::Input input;
     std::string node_name_index;
     // check dump input tensor desc is redirected by attr ATTR_DATA_DUMP_REF
     if (AttrUtils::GetStr(&input_descs.at(i), ATTR_DATA_DUMP_REF, node_name_index)) {
@@ -538,15 +540,15 @@ Status DataDumper::DumpInput(const InnerDumpInfo &inner_dump_info, aicpu::dump::
   return SUCCESS;
 }
 
-void DataDumper::GenerateOpBuffer(const int64_t &size, aicpu::dump::Task &task) {
-  aicpu::dump::OpBuffer op_buffer;
-  op_buffer.set_buffer_type(aicpu::dump::BufferType::L1);
+void DataDumper::GenerateOpBuffer(const int64_t &size, toolkit::aicpu::dump::Task &task) {
+  toolkit::aicpu::dump::OpBuffer op_buffer;
+  op_buffer.set_buffer_type(toolkit::aicpu::dump::BufferType::L1);
   op_buffer.set_address(reinterpret_cast<uintptr_t>(l1_fusion_addr_));
   op_buffer.set_size(size);
   task.mutable_buffer()->Add(std::move(op_buffer));
 }
 
-Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DataDumper::ExecuteLoadDumpInfo(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   std::string proto_str;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
@@ -590,7 +592,7 @@ Status DataDumper::ExecuteLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_in
   return SUCCESS;
 }
 
-Status DataDumper::ExecuteUnLoadDumpInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DataDumper::ExecuteUnLoadDumpInfo(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   std::string proto_str;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_str);
@@ -641,7 +643,7 @@ Status DataDumper::LoadDumpInfo() {
     GELOGD("op_list_ is empty");
   }
 
-  aicpu::dump::OpMappingInfo op_mapping_info;
+  toolkit::aicpu::dump::OpMappingInfo op_mapping_info;
 
   auto dump_path = dump_properties_.GetDumpPath() + std::to_string(device_id_) + "/";
   op_mapping_info.set_dump_path(dump_path);
@@ -670,11 +672,11 @@ Status DataDumper::LoadDumpInfo() {
   return SUCCESS;
 }
 
-Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DataDumper::BuildTaskInfo(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   for (const auto &op_iter : op_list_) {
     auto op_desc = op_iter.op;
     GELOGD("Op %s in model begin to add task in op_mapping_info", op_desc->GetName().c_str());
-    aicpu::dump::Task task;
+    toolkit::aicpu::dump::Task task;
     task.set_end_graph(false);
     task.set_task_id(op_iter.task_id);
     task.set_stream_id(op_iter.stream_id);
@@ -722,10 +724,10 @@ Status DataDumper::BuildTaskInfo(aicpu::dump::OpMappingInfo &op_mapping_info) {
 }
 
 void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
-                                      aicpu::dump::OpMappingInfo &op_mapping_info) {
+                                      toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (dump_properties_.GetDumpMode() == kDumpOutput || dump_properties_.GetDumpMode() == kDumpInput ||
       dump_properties_.GetDumpMode() == kDumpAll) {
-    aicpu::dump::Task task;
+    toolkit::aicpu::dump::Task task;
     task.set_end_graph(true);
     task.set_task_id(end_graph_task_id_);
     task.set_stream_id(end_graph_stream_id_);
@@ -734,7 +736,7 @@ void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
     op_mapping_info.mutable_task()->Add(std::move(task));
 
     is_end_graph_ = true;
-    if (op_mapping_info.model_name_param_case() == aicpu::dump::OpMappingInfo::kModelName) {
+    if (op_mapping_info.model_name_param_case() == toolkit::aicpu::dump::OpMappingInfo::kModelName) {
       GELOGI("Add end_graph_info to aicpu, model_name is %s, task_id is %u, stream_id is %u",
           op_mapping_info.model_name().c_str(), end_graph_task_id_, end_graph_stream_id_);
       return;
@@ -744,10 +746,10 @@ void DataDumper::SetEndGraphIdToAicpu(uint32_t task_id, uint32_t stream_id,
 }
 
 void DataDumper::SetOpDebugIdToAicpu(uint32_t task_id, uint32_t stream_id, void *op_debug_addr,
-                                     aicpu::dump::OpMappingInfo &op_mapping_info) {
+                                     toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (is_op_debug_) {
     GELOGI("add op_debug_info to aicpu, task_id is %u, stream_id is %u", task_id, stream_id);
-    aicpu::dump::Task task;
+    toolkit::aicpu::dump::Task task;
     task.set_end_graph(false);
     task.set_task_id(task_id);
     task.set_stream_id(stream_id);
@@ -755,7 +757,7 @@ void DataDumper::SetOpDebugIdToAicpu(uint32_t task_id, uint32_t stream_id, void 
     task.mutable_op()->set_op_type(OP_TYPE_OP_DEBUG);
 
     // set output
-    aicpu::dump::Output output;
+    toolkit::aicpu::dump::Output output;
     output.set_data_type(DT_UINT8);
     output.set_format(FORMAT_ND);
 
@@ -781,12 +783,12 @@ Status DataDumper::UnloadDumpInfo() {
   }
 
   GELOGI("UnloadDumpInfo start.");
-  aicpu::dump::OpMappingInfo op_mapping_info;
+  toolkit::aicpu::dump::OpMappingInfo op_mapping_info;
   op_mapping_info.set_model_id(model_id_);
   op_mapping_info.set_flag(kAicpuUnloadFlag);
 
   for (const auto &op_iter : op_list_) {
-    aicpu::dump::Task task;
+    toolkit::aicpu::dump::Task task;
     task.set_task_id(op_iter.task_id);
     task.set_stream_id(op_iter.stream_id);
     op_mapping_info.mutable_task()->Add(std::move(task));

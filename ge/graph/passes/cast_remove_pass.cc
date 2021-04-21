@@ -123,6 +123,7 @@ Status CastRemovePass::DoFuse(const OpsKernelManager &ops_kernel_manager,
     in_desc->SetDataType(type);
     out_desc->SetDataType(type);
     bool is_supported = false;
+    string un_supported_reasons;
     for (const auto &ops_kernel_store_info : ops_kernel_manager.GetAllOpsKernelInfoStores()) {
       map<string, OpInfo> op_infos;
       ops_kernel_store_info.second->GetAllOpsKernelInfo(op_infos);
@@ -134,12 +135,14 @@ Status CastRemovePass::DoFuse(const OpsKernelManager &ops_kernel_manager,
       if (is_supported) {
         break;
       }
+      un_supported_reasons += "{op_store " + ops_kernel_store_info.first + ":" + un_supported_reason + "} ";
     }
     if (!is_supported) {
       // if no operator_info_store supported, do nothing
       in_desc->SetDataType(in_desc_org_dtype);
       out_desc->SetDataType(out_desc_org_dtype);
       to_be_deleted_cast_index.clear();
+      GELOGI("Fused Op[%s] check supported fail! Reasons is as follows: %s", un_supported_reasons.c_str());
       return SUCCESS;
     }
 

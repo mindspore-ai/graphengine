@@ -56,6 +56,7 @@
 #include <dirent.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <malloc.h>
 
 #include <linux/types.h>
 #include <linux/hdreg.h>

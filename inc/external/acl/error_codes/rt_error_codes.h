@@ -94,6 +94,7 @@ static const int32_t ACL_ERROR_RT_DEV_SETUP_ERROR            = 507033; // device
 
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR         = 507899; // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR       = 507900; // aicpu internal error
+static const int32_t ACL_ERROR_RT_SOCKET_CLOSE               = 507901; // hdc disconnect
 
 #ifdef __cplusplus
 }

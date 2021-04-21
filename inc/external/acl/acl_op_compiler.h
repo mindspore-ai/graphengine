@@ -38,8 +38,14 @@ typedef enum {
     ACL_OP_DEBUG_LEVEL,
     ACL_DEBUG_DIR,
     ACL_OP_COMPILER_CACHE_MODE,
-    ACL_OP_COMPILER_CACHE_DIR
+    ACL_OP_COMPILER_CACHE_DIR,
+    ACL_OP_PERFORMANCE_MODE
 } aclCompileOpt;
+
+typedef enum aclCompileFlag {
+    ACL_OP_COMPILE_DEFAULT,
+    ACL_OP_COMPILE_FUZZ
+} aclOpCompileFlag;
 
 /**
  * @ingroup AscendCL
@@ -107,6 +113,18 @@ ACL_FUNC_VISIBILITY aclError aclopCompileAndExecute(const char *opType,
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclSetCompileopt(aclCompileOpt opt, const char *value);
+
+/**
+ * @ingroup AscendCL
+ * @brief set compile flag
+ *
+ * @param flag [IN]    compile flag, ACL_OP_COMPILE_DEFAULT means compile with default mode
+ *                     ACL_OP_COMPILE_FUZZ means compile with fuzz mode
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclopSetCompileFlag(aclOpCompileFlag flag);
 
 #ifdef __cplusplus
 }

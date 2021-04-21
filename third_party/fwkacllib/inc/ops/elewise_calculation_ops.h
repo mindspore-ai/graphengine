@@ -146,6 +146,8 @@ REG_OP(Cast)
 
 /**
 *@brief Returns the truth value of (x1 >= x2) element-wise. \n
+*when input is int32 and (x2 - x1) > 2**31 or < -2**31
+*aicore accuracy is not guaranteed \n
 
 *@par Inputs:
 *Two inputs, including:
@@ -167,6 +169,8 @@ REG_OP(GreaterEqual)
 
 /**
 *@brief Returns the truth value of (x1 < x2) element-wise. \n
+*when input is int32 and (x2 - x1) > 2**31 or < -2**31
+*aicore accuracy is not guaranteed \n
 
 *@par Inputs:
 *Two inputs, including:
@@ -567,6 +571,8 @@ REG_OP(InvGrad)
 
 /**
 *@brief: Returns the truth value of (x <= y) element-wise. \n
+*when input is int32 and (x2 - x1) > 2**31 or < -2**31
+*aicore accuracy is not guaranteed \n
 
 *@par Inputs:
 * Two inputs, including:
@@ -1464,6 +1470,8 @@ REG_OP(ReciprocalGrad)
 
 /**
 *@brief Returns the truth value of (x1 > x2) element-wise. \n
+*when input is int32 and (x2 - x1) > 2**31 or < -2**31
+*aicore accuracy is not guaranteed \n
 
 *@par Inputs:
 *@li x1: A Tensor of type float16, float32, double, int64, int32, int16, int8,
@@ -3799,6 +3807,34 @@ REG_OP(ArgMaxGradD)
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
     .REQUIRED_ATTR(dimension, Int)
     .OP_END_FACTORY_REG(ArgMaxGradD)
+
+/**
+*@brief Calculates the reversed outputs of the function "AddMatMatElements"
+*  c = c * beta + alpha * a * b
+
+*@par Inputs:
+*Three inputs, including:
+* @li c: A mutable Tensor. Must be one of the following types:
+*     float16, float32.
+* @li a: A mutable Tensor of the same type as "c".
+* @li b: A mutable Tensor of the same type as "c".
+* @li beta: A mutable scalar of the same type as "c".
+* @li alpha: A mutable scalar of the same type as "c". \n
+
+*@par Outputs:
+* @li c: A mutable Tensor. Has the same type as "c". \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator AddMatMatElements.
+*/
+REG_OP(AddMatMatElements)
+    .INPUT(c, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(a, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(b, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(c, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(AddMatMatElements)
 
 /**
 *@brief Returns cosine similarity between x1 and x2,computed along dim. \n

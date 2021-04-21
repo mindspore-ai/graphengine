@@ -183,6 +183,18 @@ RTS_API rtError_t rtNotifyWait(rtNotify_t notify, rtStream_t stream);
 
 /**
  * @ingroup dvrt_event
+ * @brief Wait for a notify with time out
+ * @param [in] notify_ notify to be wait
+ * @param [in] stream_  input stream
+ * @param [in] timeOut  input timeOut
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
+ */
+RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify_, rtStream_t stream_, uint32_t timeOut);
+
+/**
+ * @ingroup dvrt_event
  * @brief Name a notify
  * @param [in] notify_ notify to be named
  * @param [in|out] name   identification name

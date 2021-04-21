@@ -282,6 +282,21 @@ ACL_FUNC_VISIBILITY aclError aclmdlAddDatasetBuffer(aclmdlDataset *dataset, aclD
 
 /**
  * @ingroup AscendCL
+ * @brief Set aclTensorDesc to aclmdlDataset
+ *
+ * @param dataset [OUT]    aclmdlDataset address of aclDataBuffer to be added
+ * @param tensorDesc [IN]  aclTensorDesc address to be added
+ * @param index [IN]       index of tensorDesc which to be added
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclmdlSetDatasetTensorDesc(aclmdlDataset *dataset,
+                                                        aclTensorDesc *tensorDesc,
+                                                        size_t index);
+
+/**
+ * @ingroup AscendCL
  * @brief Get the number of aclDataBuffer in aclmdlDataset
  *
  * @param dataset [IN]   aclmdlDataset poiter

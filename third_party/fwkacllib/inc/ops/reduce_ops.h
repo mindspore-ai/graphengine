@@ -898,14 +898,14 @@ REG_OP(Reduction)
 *@brief Computes the euclidean norm of elements across dimensions of a tensor . \n
 
 *@par Inputs:
-*@li input_tensor: A Tensor. Must be one of the following types: float16, float32, int32.
+*@li x: A Tensor. Must be one of the following types: float16, float32, int32.
 *@li axes: A Tensor of type int8 or int32. Specifies the dimensions to reduce. Defaults to "None" . \n
 
 *@par Attributes:
 *keep_dims: An optional bool. If "True", reduced dimensions will be retained. Defaults to "False" . \n
 
 *@par Outputs:
-*output_tensor: A Tensor. Must be one of the following types: float16, float32, int32 . \n
+*y: A Tensor. Must be one of the following types: float16, float32, int32 . \n
 
 *@attention Constraints:
 * If "axes = None", all dimensions will be reduced. "axes" must be in the range [-rank(input_shape), rank(input_shape)) . \n
@@ -1132,6 +1132,29 @@ REG_OP(GNTrainingUpdate)
     .OUTPUT(batch_mean, TensorType({DT_FLOAT}))
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OP_END_FACTORY_REG(GNTrainingUpdate)
+
+/**
+*@brief Joins a string Tensor across the given dimensions. \n
+
+*@par Inputs:
+include:
+*@li input:A Tensor of type string. The text to be processed.
+*@li reduction_indices:A Tensor of type int. The text to be processed. 
+
+*@par Attributes:
+*@li keep_dims:A bool, An optional bool. Defaults to False. If True, retain reduced dimensions with length 1..
+*@li separator:string.
+
+*@par output:
+*@li output::A Tensor of type string..
+*/
+REG_OP(ReduceJoin)
+    .INPUT(input, TensorType({DT_STRING}))
+    .INPUT(reduction_indices, TensorType({DT_INT32}))
+    .OUTPUT(output, TensorType({DT_STRING}))
+    .ATTR(keep_dims, Bool, true)
+    .ATTR(separator, String, "")
+    .OP_END_FACTORY_REG(ReduceJoin)
 
 /**
 * @brief Calculates the standard deviation and average value of Tensors.

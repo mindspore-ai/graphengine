@@ -836,7 +836,7 @@ REG_OP(HardShrink)
 *backprops: A Tensor with the same type and shape of features's. \n
 *
 *@par Attributes:
-*@li lambda: An optional float.Defaults to 0.5. \n
+*@li lambd: An optional float.Defaults to 0.5. \n
 *
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator Hardshrink_backward. \n
@@ -845,7 +845,7 @@ REG_OP(HardShrink)
   .INPUT(gradients, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .ATTR(lambda, Float, 0.5)
+  .ATTR(lambd, Float, 0.5)
   .OP_END_FACTORY_REG(HardShrinkGrad)
 
 /**
@@ -920,7 +920,30 @@ REG_OP(SoftShrinkGrad)
      .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
      .ATTR(lambd, Float, 0.5)
      .OP_END_FACTORY_REG(SoftShrinkGrad)
-	 
+
+/**
+*@brief Calculate the gradient of log simoid. \n
+
+*@par Inputs:
+*Two inputs, including:
+* @li grads: A tensor, gradient of previous layer. Must be one of the following types:
+*       float16, float32. \n
+* @li features: A tensor, input of log sigmoid. Must be one of the following types:
+*       float16, float32. \n
+
+*@par Outputs:
+*One outputs, including:
+* @li backprops: A tensor with the same type of and shape of grads. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator LogSigmoidBackward. \n
+*/
+REG_OP(LogSigmoidGrad)
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(features, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(backprops, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(LogSigmoidGrad)
+
 /**
 *@brief Calculate -ln(1+e^(-x)). \n
 

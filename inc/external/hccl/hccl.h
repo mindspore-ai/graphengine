@@ -119,6 +119,15 @@ extern HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount
 HcclComm comm, aclrtStream stream);
 
 /**
+ * @brief Barrier operator.
+ *
+ * @param comm A pointer identifying the communication resource based on.
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult 
+ */
+extern HcclResult HcclBarrier(HcclComm comm, aclrtStream stream);
+
+/**
  * @brief Destroy HCCL comm
  *
  * @param comm A pointer identifying the communication resource targetting

@@ -83,6 +83,25 @@ REG_OP(Cholesky)
     .OP_END_FACTORY_REG(Cholesky)
 
 /**
+*@brief Computes the outer product of two 1D vectors . \n
+
+*@par Inputs:
+*The input x1 and x2 has to be a 1D vector.Inputs include:
+*@li x1:A Tensor. Must be one of the following types: float16, float32. 
+Shape is [N] . \n
+*@li x2:A Tensor. Must have the same type as x. Shape is [M] . \n
+
+*@par Outputs:
+*y:A Tensor. Has the same type as x . \n
+*/
+
+REG_OP(Ger)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(Ger)
+
+/**
 *@brief Computes the sign and the log of the absolute value of the determinant
 of one or more square matrices . \n
 
@@ -326,6 +345,34 @@ REG_OP(SelfAdjointEig)
     .OUTPUT(eigen_vector, TensorType({ DT_DOUBLE, DT_FLOAT }))
     .ATTR(compute_v, Bool, true)
     .OP_END_FACTORY_REG(SelfAdjointEig)
+
+/**
+*@brief Computes the sign and the log of the absolute value of the determinant
+of one or more square matrices . \n
+
+*@par Inputs:
+*The input x is a tensor of shape [N, M, M] whose inner-most 2 dimensions
+form square matrices. Inputs include:
+*x:A Tensor. Must be one of the following types: double, float32, float16
+Shape is [..., M, M] . \n
+
+*@par Outputs:
+*@li y:A Tensor. Has the same type as x.
+*@li sign:A Tensor. Has the same type as x . \n
+
+*@attention Constraints:
+*The input x is a tensor of shape [N, M, M] whose inner-most 2 dimensions
+form square matrices. \n
+
+*@par Third-party framework compatibility
+*Compatible with tensorflow LogMatrixDeterminant operator.
+*/
+
+REG_OP(Slogdet)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(sign, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(Slogdet)
 
 /**
 *@brief Computes the singular value decompositions of one or more matrices . \n

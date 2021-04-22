@@ -142,7 +142,9 @@ Status CastRemovePass::DoFuse(const OpsKernelManager &ops_kernel_manager,
       in_desc->SetDataType(in_desc_org_dtype);
       out_desc->SetDataType(out_desc_org_dtype);
       to_be_deleted_cast_index.clear();
-      GELOGI("Fused Op[%s] check supported fail! Reasons is as follows: %s", un_supported_reasons.c_str());
+      GELOGI("Fused Op[%s] check supported fail! Reasons is as follows: %s",
+            op_desc->GetName().c_str(),
+            un_supported_reasons.c_str());
       return SUCCESS;
     }
 

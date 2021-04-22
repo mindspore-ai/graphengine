@@ -127,7 +127,7 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
       ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
           {"mmDlopen", "shared library path is " + FmtToStr(file_path_dlopen) + ". Errormessage" + FmtToStr(error)});
       GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID,
-             "Failed to dlopen the shared library path[%s]. Errormessage[%s]!",
+             "[DLOpen][SharedLibraryPath]Failed, path[%s]. Errormessage[%s]!",
              file_path_dlopen.c_str(), error);
       continue;
     }
@@ -140,14 +140,15 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
         ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
             {"mmDlsym", FmtToStr(func_name) + " is skipped since function" +
             FmtToStr(func_name) + " is not existed!"});
-        GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID, "%s is skipped since function %s is not existed!",
+        GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID,
+               "[Check][So]%s is skipped since function %s is not existed!",
                func_name.c_str(), func_name.c_str());
         is_valid = false;
         break;
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(mmDlclose(handle), "Failed to dlclose.");
+      GE_LOGE_IF(mmDlclose(handle), "[DLClose][Handle]Failed.");
       continue;
     }
 

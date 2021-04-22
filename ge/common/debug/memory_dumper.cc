@@ -60,14 +60,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
   // mmWrite return -1:Failed to write data to file；return -2:Invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
     GELOGE(FAILED, "[Write][Data]Failed, errno = %d, error:%s", mmpa_ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Write data failed, errno = %d, error:%s.", mmpa_ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Write data failed, errno = %d, error:%s.",
+                       mmpa_ret, strerror(errno));
     ret = FAILED;
   }
 
   // Close the file
   if (mmClose(fd) != EN_OK) {  // mmClose return 0: success
     GELOGE(FAILED, "[Close][File]Failed, error_code:%u, filename:%s.", ret, filename);
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u, filename:%s.", ret, filename);
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u, filename:%s.",
+                       ret, filename);
     ret = FAILED;
   }
 
@@ -110,7 +112,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Dump(void 
   // mmWrite return -1:failed to write data to file；return -2:invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
     GELOGE(FAILED, "[Write][Data]Failed, errno = %d, error:%s", mmpa_ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Write data to file failed, errno = %d, error:%s.", mmpa_ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Write data to file failed, errno = %d, error:%s.",
+                       mmpa_ret, strerror(errno));
     return FAILED;
   }
 

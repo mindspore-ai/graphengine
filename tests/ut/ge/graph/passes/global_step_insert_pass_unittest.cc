@@ -60,11 +60,11 @@ static ComputeGraphPtr BuildGraph1() {
   return builder.GetGraph();
 }
 
-TEST_F(UtestGlobalStepInsertPass, skip_tune) {
+TEST_F(UtestGlobalStepInsertPass, skip_insert) {
   auto graph = BuildGraph1();
   std::string build_mode;
   std::map<string, string> options_map;
-  options_map.insert({ge::BUILD_MODE, BUILD_MODE_TUNING});
+  options_map.insert({ge::RUN_FLAG, "0"});
   ge::GetThreadLocalContext().SetGraphOption(options_map);
   GlobalStepInsertPass pass;
   Status status = pass.Run(graph);

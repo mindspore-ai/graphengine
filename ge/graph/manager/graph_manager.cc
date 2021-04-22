@@ -1665,7 +1665,7 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
 
   // ge.graphType
   ret =
-    ParseTrainGraphFlag(options_.run_graph_flag, options_.train_graph_flag, options_.build_mode == BUILD_MODE_TUNING);
+    ParseTrainGraphFlag(options_.run_graph_flag, options_.train_graph_flag);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
                   GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid");
                   return GE_GRAPH_OPTIONS_INVALID);
@@ -1707,7 +1707,7 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   return SUCCESS;
 }
 
-Status GraphManager::ParseTrainGraphFlag(const bool &run_flag, bool &train_flag, const bool &tune_flag) {
+Status GraphManager::ParseTrainGraphFlag(const bool &run_flag, bool &train_flag) {
   std::shared_ptr<GELib> ge_instance_ptr = ge::GELib::GetInstance();
   if (ge_instance_ptr == nullptr) {
     GELOGW("[Initialize] set train_graph_flag to 0 when GE is not initialized or finalized");
@@ -1715,13 +1715,10 @@ Status GraphManager::ParseTrainGraphFlag(const bool &run_flag, bool &train_flag,
   } else if (!ge_instance_ptr->isTrainMode()) {
     train_flag = false;
   } else {  //  ge_instance_ptr->isTrainMode() is true
-    // tune mode no need check
-    if (!run_flag && !tune_flag) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID,
-             "Key:ge.runFlag, its value %d is invalid, it must be 1 when GElib::is_train_mode_ flag is 1", run_flag);
-      return GE_GRAPH_OPTIONS_INVALID;
-    }
     train_flag = true;
+    if (!run_flag) {
+      GELOGW("Key:ge.runFlag, its value %d is invalid, it must be 1 when GElib::is_train_mode_ flag is 1", run_flag);
+    }
   }
   return SUCCESS;
 }

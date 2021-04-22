@@ -731,9 +731,6 @@ Status KernelTaskInfo::InitTVMTask(uint16_t offset, const domi::KernelDef &kerne
   skt_dump_args_ = static_cast<char *>(args_) + offset;
   InitDumpTask(offset);
 
-  GE_CHK_BOOL_TRUE_EXEC_INFO(davinci_model_->GetOpDugReg(), dump_args_ = static_cast<char *>(args_) + offset,
-                             "Op debug is open in TVM task info");
-
   vector<void *> virtual_io_addrs;  // use virtual address for zero copy key.
   virtual_io_addrs.insert(virtual_io_addrs.end(), input_data_addrs.begin(), input_data_addrs.end());
   virtual_io_addrs.insert(virtual_io_addrs.end(), output_data_addrs.begin(), output_data_addrs.end());
@@ -1070,10 +1067,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   InitDumpTask(sizeof(aicpu::AicpuParamHead));
-  if (davinci_model_->GetOpDugReg()) {
-    GELOGI("Op debug is open in aicpu task info");
-    dump_args_ = static_cast<char *>(args_) + sizeof(aicpu::AicpuParamHead);
-  }
+  
   if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
     dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }
@@ -1085,11 +1079,16 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
 
 void KernelTaskInfo::InitDumpTask(uint32_t offset) {
   if (davinci_model_->OpNeedDump(op_desc_->GetName())) {
+    GELOGD("Op %s need dump in task info", op_desc_->GetName().c_str());
     if (IsL1FusionOp(op_desc_)) {
       dump_flag_ = RT_FUSION_KERNEL_DUMPFLAG;
     } else {
       dump_flag_ = RT_KERNEL_DUMPFLAG;
     }
+    dump_args_ = static_cast<char *>(args_) + offset;
+  }
+  if (davinci_model_->GetOpDugReg()) {
+    GELOGD("Op debug is open in kernel task info");
     dump_args_ = static_cast<char *>(args_) + offset;
   }
 }

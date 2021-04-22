@@ -239,10 +239,6 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     InitDumpTask(input_output_addr_, op_desc);
-    if (davinci_model_->GetOpDugReg()) {
-      GELOGI("Op debug is open in kernel ex task info");
-      dump_args_ = input_output_addr_;
-    }
   }
 
   uint64_t input_output_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr_));
@@ -275,8 +271,13 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 }
 
 void KernelExTaskInfo::InitDumpTask(void *addr, const OpDescPtr &op_desc) {
-  if (davinci_model_->OpNeedDump(op_desc->GetName())) {
+  if (davinci_model_->OpNeedDump(op_desc->GetName()) || davinci_model_->GetOpDugReg()) {
+    GELOGD("Op %s need dump in kernel ex task info", op_desc->GetName().c_str());
     dump_flag_ = RT_KERNEL_DUMPFLAG;
+    dump_args_ = addr;
+  }
+  if (davinci_model_->GetOpDugReg()) {
+    GELOGD("Op debug is open in kernel ex task info");
     dump_args_ = addr;
   }
 }

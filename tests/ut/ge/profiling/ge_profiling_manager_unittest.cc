@@ -78,3 +78,9 @@ TEST_F(UtestGeProfilinganager, plungin_init_) {
   EXPECT_EQ(ret, INTERNAL_ERROR);
   ProfilingManager::Instance().prof_cb_.msprofReporterCallback = nullptr;
 }
+
+TEST_F(UtestGeProfilinganager, report_data_) {
+  std::string data = "ge is better than tensorflow.";
+  std::string tag_name = "fmk";
+  ProfilingManager::Instance().ReportData(0, data, tag_name);
+}

@@ -163,7 +163,7 @@ TEST(UtestIrCommon, check_dynamic_input_param_succ) {
   string dynamic_batch_size = "1";
   string dynamic_image_size;
   string dynamic_dims;
-  string input_shape = "data:1,3,244,244";
+  string input_shape = "data:-1,3,244,244";
   string input_shape_range;
   string input_format = "NCHW";
   bool is_dynamic_input = false;
@@ -171,6 +171,20 @@ TEST(UtestIrCommon, check_dynamic_input_param_succ) {
   Status ret = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims,
                                            input_shape, input_shape_range, input_format,is_dynamic_input);
   EXPECT_EQ(ret, ge::SUCCESS);
+}
+
+TEST(UtestIrCommon, check_dynamic_input_param_failed) {
+  string dynamic_batch_size = "1";
+  string dynamic_image_size;
+  string dynamic_dims;
+  string input_shape = "data:1,3,244,244";
+  string input_shape_range;
+  string input_format = "NCHW";
+  bool is_dynamic_input = false;
+
+  Status ret = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims,
+                                           input_shape, input_shape_range, input_format,is_dynamic_input);
+  EXPECT_EQ(ret, ge::PARAM_INVALID);
 }
 
 TEST(UtestIrCommon, check_compress_weight) {

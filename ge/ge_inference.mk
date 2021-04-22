@@ -122,12 +122,10 @@ OMG_HOST_SRC_FILES := \
     graph/passes/dimension_adjust_pass.cc \
     graph/passes/get_original_format_pass.cc \
     graph/passes/shape_operate_op_remove_pass.cc \
-    graph/passes/unused_op_remove_pass.cc \
     graph/passes/assert_pass.cc \
     graph/passes/dropout_pass.cc \
     graph/passes/infershape_pass.cc \
     graph/passes/unused_const_pass.cc \
-    graph/passes/isolated_op_remove_pass.cc \
     graph/passes/permute_pass.cc \
     graph/passes/ctrl_edge_transfer_pass.cc \
     graph/passes/end_of_sequence_add_control_pass.cc \
@@ -209,7 +207,6 @@ OMG_HOST_SRC_FILES := \
     graph/passes/switch_logic_remove_pass.cc \
     graph/passes/switch_data_edges_bypass.cc \
     graph/passes/merge_pass.cc \
-    graph/passes/variable_format_pass.cc \
     graph/passes/variable_op_pass.cc \
     graph/passes/cast_remove_pass.cc \
     graph/passes/transpose_transdata_pass.cc \

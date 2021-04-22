@@ -187,7 +187,6 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/identity_pass.cc \
     graph/passes/ref_identity_delete_op_pass.cc \
     graph/passes/infershape_pass.cc \
-    graph/passes/isolated_op_remove_pass.cc \
     graph/passes/iterator_op_pass.cc \
     graph/passes/link_gen_mask_nodes_pass.cc \
     graph/passes/merge_pass.cc \
@@ -233,13 +232,11 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/passes/transop_without_reshape_fusion_pass.cc \
     graph/passes/transpose_transdata_pass.cc \
     graph/passes/unused_const_pass.cc \
-    graph/passes/unused_op_remove_pass.cc \
     graph/passes/var_is_initialized_op_pass.cc \
     graph/passes/parallel_concat_start_op_pass.cc \
     graph/passes/cond_pass.cc \
     graph/passes/cond_remove_pass.cc \
     graph/passes/for_pass.cc \
-    graph/passes/variable_format_pass.cc \
     graph/passes/variable_op_pass.cc \
     graph/passes/variable_prepare_op_pass.cc \
     graph/passes/variable_ref_delete_op_pass.cc \

@@ -11,8 +11,6 @@ elseif (ENABLE_D)
 endif ()
 
 set(PROTO_LIST
-    "${METADEF_DIR}/proto/dump_task.proto"
-    "${METADEF_DIR}/proto/op_mapping_info.proto"
     "${METADEF_DIR}/proto/fusion_model.proto"
     "${GE_CODE_DIR}/ge/proto/optimizer_priority.proto"
 )
@@ -27,6 +25,7 @@ set(PROTO_HEADER_LIST
     "${METADEF_DIR}/proto/insert_op.proto"
     "${METADEF_DIR}/proto/ge_ir.proto"
     "${METADEF_DIR}/proto/fwk_adapter.proto"
+    "${METADEF_DIR}/proto/op_mapping.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})

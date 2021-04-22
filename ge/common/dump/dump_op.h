@@ -21,7 +21,7 @@
 
 #include "common/ge_inner_error_codes.h"
 #include "common/properties_manager.h"
-#include "proto/op_mapping_info.pb.h"
+#include "proto/op_mapping.pb.h"
 #include "runtime/stream.h"
 
 namespace ge {
@@ -37,10 +37,10 @@ class DumpOp {
   void SetDynamicModelInfo(const string &dynamic_model_name, const string &dynamic_om_name, uint32_t dynamic_model_id);
 
  private:
-  Status ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info);
-  Status DumpOutput(aicpu::dump::Task &task);
-  Status DumpInput(aicpu::dump::Task &task);
-  Status SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status ExecutorDumpOp(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
+  Status DumpOutput(toolkit::aicpu::dump::Task &task);
+  Status DumpInput(toolkit::aicpu::dump::Task &task);
+  Status SetDumpModelName(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info);
 
   DumpProperties dump_properties_;
   OpDescPtr op_desc_;

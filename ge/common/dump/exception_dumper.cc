@@ -43,15 +43,15 @@ static void ReplaceStringElem(std::string &str) {
   });
 }
 
-static void SetDumpData(const ge::OpDescInfo &op_desc_info, toolkit::dumpdata::DumpData &dump_data) {
+static void SetDumpData(const ge::OpDescInfo &op_desc_info, toolkit::dump::DumpData &dump_data) {
   dump_data.set_version("2.0");
   dump_data.set_dump_time(GetNowTime());
   dump_data.set_op_name(op_desc_info.op_name);
   for (size_t i = 0; i < op_desc_info.input_format.size(); ++i) {
-    toolkit::dumpdata::OpInput input;
-    input.set_data_type(toolkit::dumpdata::OutputDataType(
+    toolkit::dump::OpInput input;
+    input.set_data_type(toolkit::dump::OutputDataType(
         ge::DataTypeUtil::GetIrDataType(op_desc_info.input_data_type[i])));
-    input.set_format(toolkit::dumpdata::OutputFormat(op_desc_info.input_format[i]));
+    input.set_format(toolkit::dump::OutputFormat(op_desc_info.input_format[i]));
     for (auto dim : op_desc_info.input_shape[i]) {
       input.mutable_shape()->add_dim(dim);
     }
@@ -61,10 +61,10 @@ static void SetDumpData(const ge::OpDescInfo &op_desc_info, toolkit::dumpdata::D
   }
 
   for (size_t j = 0; j < op_desc_info.output_format.size(); ++j) {
-    toolkit::dumpdata::OpOutput output;
-    output.set_data_type(toolkit::dumpdata::OutputDataType(
+    toolkit::dump::OpOutput output;
+    output.set_data_type(toolkit::dump::OutputDataType(
         ge::DataTypeUtil::GetIrDataType(op_desc_info.output_data_type[j])));
-    output.set_format(toolkit::dumpdata::OutputFormat(op_desc_info.output_format[j]));
+    output.set_format(toolkit::dump::OutputFormat(op_desc_info.output_format[j]));
     for (auto dim : op_desc_info.output_shape[j]) {
       output.mutable_shape()->add_dim(dim);
     }
@@ -148,7 +148,7 @@ Status ExceptionDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> &ex
   for (const rtExceptionInfo &iter : exception_infos) {
     OpDescInfo op_desc_info;
     if (GetOpDescInfo(iter.streamid, iter.taskid, op_desc_info)) {
-      toolkit::dumpdata::DumpData dump_data;
+      toolkit::dump::DumpData dump_data;
       SetDumpData(op_desc_info, dump_data);
       uint64_t now_time = GetNowTime();
       std::string op_name = op_desc_info.op_name;

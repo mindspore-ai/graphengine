@@ -32,14 +32,6 @@ class UtestGeTestDefType : public testing::Test {
   void TearDown() {}
 };
 
-TEST_F(UtestGeTestDefType, base) {
-  CompressInfo com1;
-  com1.set_blockrow(1);
-  int32_t a = com1.blockrow;
-  EXPECT_EQ(a, 1);
-
-}
-
 TEST_F(UtestGeTestDefType, quant) {
   OpDescPtr desc_ptr1 = std::make_shared<OpDesc>("name1", "type1");
   EXPECT_EQ(desc_ptr1->AddInputDesc("x", GeTensorDesc(GeShape({1, 16, 16, 16}), FORMAT_NCHW)), GRAPH_SUCCESS);
@@ -48,28 +40,4 @@ TEST_F(UtestGeTestDefType, quant) {
 
   EXPECT_EQ(OpDescUtils::HasQuantizeFactorParams(desc_ptr1), false);
   EXPECT_EQ(OpDescUtils::HasQuantizeFactorParams(*desc_ptr1), false);
-  QuantizeFactorParams q1;
-  EXPECT_EQ(q1.has_quantize_param(), false);
-  QuantizeFactor *qf1 = q1.mutable_quantize_param();
-  EXPECT_EQ(q1.has_quantize_param(), true);
-
-  string s1 = "value1";
-  q1.quantize_param.set_scale_value(s1.data(), s1.size());
-  EXPECT_EQ(OpDescUtils::SetQuantizeFactorParams(desc_ptr1, q1), GRAPH_SUCCESS);
-  QuantizeFactorParams q2;
-  EXPECT_EQ(OpDescUtils::GetQuantizeFactorParams(desc_ptr1, q2), GRAPH_SUCCESS);
-  string s2((char *)q2.quantize_param.scale_value.GetData(), q2.quantize_param.scale_value.GetSize());
-  EXPECT_EQ(s2, "value1");
-
-  float f[2] = {1, 2};
-  string s(static_cast<char *>(static_cast<void *>(f)), 2 * sizeof(float));
-  q1.quantize_param.set_scale_value(f, 2 * sizeof(float));
-  EXPECT_EQ(OpDescUtils::SetQuantizeFactorParams(*desc_ptr1, q1), GRAPH_SUCCESS);
-  QuantizeFactorParams q3;
-  EXPECT_EQ(OpDescUtils::GetQuantizeFactorParams(*desc_ptr1, q3), GRAPH_SUCCESS);
-  Buffer &b = q3.quantize_param.scale_value;
-  float f1[2];
-  memcpy(f1, b.GetData(), b.GetSize());
-  EXPECT_EQ(f1[0], 1);
-  EXPECT_EQ(f1[1], 2);
 }

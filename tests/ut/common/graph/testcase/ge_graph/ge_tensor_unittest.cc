@@ -209,18 +209,6 @@ TEST_F(UtestGeTensor, test_tensor_desc_invalid_null) {
   tensor_desc2.SetDataType(DT_DUAL_SUB_INT8);
   EXPECT_EQ(tensor_desc2.GetDataType(), DT_DUAL_SUB_INT8);
 
-  CompressInfo info;
-  EXPECT_EQ(TensorUtils::GetCmpsInfo(tensor_desc2, info), GRAPH_FAILED);
-  TensorUtils::SetCmpsInfo(tensor_desc2, info);
-  EXPECT_EQ(TensorUtils::GetCmpsInfo(tensor_desc2, info), GRAPH_SUCCESS);
-
-  AllOffsetQuantizeInfo quantize_info;
-  EXPECT_FALSE(TensorUtils::HasAlloffsetQuantizeInfo(tensor_desc2));
-  EXPECT_EQ(TensorUtils::GetAlloffsetQuantizeInfo(tensor_desc2, quantize_info), GRAPH_FAILED);
-  TensorUtils::SetAlloffsetQuantizeInfo(tensor_desc2, quantize_info);
-  EXPECT_EQ(TensorUtils::GetAlloffsetQuantizeInfo(tensor_desc2, quantize_info), GRAPH_SUCCESS);
-  EXPECT_TRUE(TensorUtils::HasAlloffsetQuantizeInfo(tensor_desc2));
-
   TensorUtils::SetWeightSize(tensor_desc, 100);
   EXPECT_EQ(TensorUtils::GetWeightSize(tensor_desc), 0);
 }

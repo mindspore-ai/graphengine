@@ -52,6 +52,41 @@ class UtestGraphPassesCastRemovePass : public testing::Test {
 };
 
 // case1:no net_out_put_node
+// TEST_F(UtestGraphPassesCastRemovePass, DoFuseProcess) {
+//   std::vector<NodePtr> nodes_to_fuse;
+
+//   auto builder = ut::GraphBuilder("g1");
+//   auto data = builder.AddNode("data", DATA, 1, 1);
+//   auto cast1 = builder.AddNode("cast1", CAST, 1, 1);
+//   cast1->GetOpDesc()->MutableOutputDesc(0)->SetDataType(DT_FLOAT16);
+//   auto trans = builder.AddNode("trans", TRANSPOSE, 1, 1, FORMAT_NCHW, DT_FLOAT16);
+//   auto cast2 = builder.AddNode("cast2", CAST, 1, 1);
+//   cast2->GetOpDesc()->MutableInputDesc(0)->SetDataType(DT_FLOAT16);
+//   auto net = builder.AddNode("netout", NETOUTPUT, 1, 1);
+
+//   builder.AddDataEdge(data, 0, cast1, 0);
+//   builder.AddDataEdge(cast1, 0, trans, 0);
+//   builder.AddDataEdge(trans, 0, cast2, 0);
+//   builder.AddDataEdge(cast2, 0, net, 0);
+//   ComputeGraphPtr compute_graph = builder.GetGraph();
+
+//   map<string, string> options;
+
+//   CastRemovePass cast_remove_pass;
+//   DataType type = DT_FLOAT;
+//   nodes_to_fuse.emplace_back(cast1);
+//   nodes_to_fuse.emplace_back(trans);
+//   nodes_to_fuse.emplace_back(cast2);
+//   OpsKernelManager ops_kernel_manager;
+//   cast_remove_pass.DoFuse(ops_kernel_manager, type, nodes_to_fuse);
+//   EXPECT_EQ(compute_graph->GetAllNodesSize(),5);
+//   std::vector<size_t> to_be_deleted_cast_index;
+//   to_be_deleted_cast_index.emplace_back(0);
+//   to_be_deleted_cast_index.emplace_back(2);
+//   (void)cast_remove_pass.DoRemoveCast(to_be_deleted_cast_index, nodes_to_fuse);
+//   EXPECT_EQ(compute_graph->GetAllNodesSize(),3);
+// }
+
 TEST_F(UtestGraphPassesCastRemovePass, DoFuseProcess) {
   std::vector<NodePtr> nodes_to_fuse;
 
@@ -77,12 +112,6 @@ TEST_F(UtestGraphPassesCastRemovePass, DoFuseProcess) {
   nodes_to_fuse.emplace_back(cast1);
   nodes_to_fuse.emplace_back(trans);
   nodes_to_fuse.emplace_back(cast2);
-  OpsKernelManager ops_kernel_manager;
-  cast_remove_pass.DoFuse(ops_kernel_manager, type, nodes_to_fuse);
-  EXPECT_EQ(compute_graph->GetAllNodesSize(),5);
-  std::vector<size_t> to_be_deleted_cast_index;
-  to_be_deleted_cast_index.emplace_back(0);
-  to_be_deleted_cast_index.emplace_back(2);
-  (void)cast_remove_pass.DoRemoveCast(to_be_deleted_cast_index, nodes_to_fuse);
+  cast_remove_pass.RemoveCast(type, nodes_to_fuse);
   EXPECT_EQ(compute_graph->GetAllNodesSize(),3);
 }

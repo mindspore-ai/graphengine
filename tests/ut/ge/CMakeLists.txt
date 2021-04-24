@@ -166,7 +166,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/dump/dump_properties.cc"
     "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_manager.cc"
-	"${GE_CODE_DIR}/ge/common/dump/exception_dumper.cc"
+    "${GE_CODE_DIR}/ge/common/dump/exception_dumper.cc"
     "${GE_CODE_DIR}/ge/common/dump/opdebug_register.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
@@ -512,8 +512,8 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/reshape_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_add_control_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/resource_pair_remove_control_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
-	"${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/remove_same_const_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/useless_control_out_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_breadth_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_without_reshape_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transop_depth_fusion_pass.cc"
@@ -621,6 +621,8 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/hccl/hccl_node_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/rts/rts_node_executor.cc"
+    "${GE_CODE_DIR}/ge/hybrid/node_executor/rts/rts_node_task.cc"
+    "${GE_CODE_DIR}/ge/hybrid/node_executor/rts/rts_task_factory.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/node_executor.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/task_context.cc"
     "${GE_CODE_DIR}/ge/hybrid/hybrid_davinci_model.cc"
@@ -707,8 +709,8 @@ set(PASS_TEST_FILES
     "graph/passes/transpose_transdata_pass_unittest.cc"
     "graph/passes/parallel_group_pass_unittest.cc"
     "graph/passes/buffer_pool_memory_pass_unittest.cc"
-	"graph/passes/mark_node_unknown_shape_pass_unittest.cc"
-	"graph/passes/reshape_recovery_pass_unittest.cc"
+    "graph/passes/mark_node_unknown_shape_pass_unittest.cc"
+    "graph/passes/reshape_recovery_pass_unittest.cc"
     "graph/passes/cast_remove_pass_unittest.cc"
 )
 
@@ -751,12 +753,12 @@ set(KERNEL_TEST_FILES
 
 set(MULTI_PARTS_TEST_FILES
     "graph_ir/ge_operator_factory_unittest.cc"
-	"graph_ir/ge_ir_build_unittest.cc"
+    "graph_ir/ge_ir_build_unittest.cc"
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
     "common/dump_manager_unittest.cc"
     "common/dump_op_unittest.cc"
-	"common/dump_exception_unittest.cc"
+    "common/dump_exception_unittest.cc"
     "common/opdebug_register_unittest.cc"
     "common/format_transfer_unittest.cc"
     "common/format_transfer_transpose_unittest.cc"
@@ -775,7 +777,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/format_transfer_fracz_nhwc_unittest.cc"
     "common/format_transfer_fracz_hwcn_unittest.cc"
     "common/ge_format_util_unittest.cc"
-	"common/ge_auth_file_saver_unittest.cc"
+    "common/ge_auth_file_saver_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
     "graph/build/model_builder_unittest.cc"
@@ -804,7 +806,7 @@ set(SINGLE_OP_TEST_FILES
     "single_op/single_op_manager_unittest.cc"
     "single_op/stream_resource_unittest.cc"
     "single_op/single_op_task_unittest.cc"
-	"single_op/single_op_unittest.cc"
+    "single_op/single_op_unittest.cc"
 )
 
 set(PROFILING_MNG_TEST_FILES
@@ -814,7 +816,9 @@ set(PROFILING_MNG_TEST_FILES
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
     "hybrid/known_node_executor_unittest.cc"
-	"hybrid/executor/worker/execution_engine_unittest.cc"
+    "hybrid/executor/worker/execution_engine_unittest.cc"
+    "hybrid/model/hybrid_model_builder_unittest.cc"
+    "hybrid/node_executor/rts/rts_node_task_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

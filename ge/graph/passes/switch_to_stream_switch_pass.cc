@@ -369,6 +369,7 @@ NodePtr SwitchToStreamSwitchPass::CreateStreamSwitchNode(const ComputeGraphPtr &
   GE_CHK_STATUS(GraphUtils::AddEdge(peer_cond_anchor, stream_switch->GetInDataAnchor(0)),
                 "StreamSwitch node add cond edge failed.");
 
+  MarkForceUnknownShape(stream_switch, switch_node->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE));
   return stream_switch;
 }
 
@@ -487,6 +488,12 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
         return FAILED;
       }
 
+      std::function<bool(const NodePtr &)> callback = [](const NodePtr &n) {
+        return n->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
+      };
+      bool is_unknown_shape = std::any_of(same_cond_switch.begin(), same_cond_switch.end(), callback);
+      MarkForceUnknownShape(active_node, is_unknown_shape);
+
       const std::string &cond_group = cond_node->GetName();
       for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
         bool true_branch_flag = (i == SWITCH_TRUE_OUTPUT);
@@ -515,6 +522,7 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
         GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutDataAnchor(0), stream_switch->GetInDataAnchor(0)),
                       "Cast add data edge failed.");
 
+        MarkForceUnknownShape(stream_switch, is_unknown_shape);
         for (const NodePtr &node : switch_list) {
           GE_IF_BOOL_EXEC(node != stream_switch, {
             GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, node->GetInDataAnchor(0)),

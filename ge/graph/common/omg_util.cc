@@ -16,9 +16,6 @@
 
 #include "graph/common/omg_util.h"
 
-#include <algorithm>
-
-#include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -243,5 +240,42 @@ Status GetMemorySize(const NodePtr &node, int64_t &output_size) {
   FMK_INT64_ADDCHECK(size, (kBufferPoolMemAlignSize + kBufferPoolMemAlignSize));
   output_size = kBufferPoolMemAlignSize + size + kBufferPoolMemAlignSize;
   return SUCCESS;
+}
+
+///
+/// @brief Check Is Unknown shape Tensor
+/// @param [in] tensor_desc
+/// @return true: Unknown / false: Known
+///
+bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc) {
+  const static int kUnknowShape = -1;
+  const static int kUnknowRank = -2;
+  for (auto dim_size : tensor_desc.GetShape().GetDims()) {
+    if (dim_size == kUnknowShape || dim_size == kUnknowRank) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+///
+/// @brief Set Op _force_unknown_shape flag
+/// @param [in] node
+/// @param [in] force_unknown, set attribute if true
+/// @return
+///
+void MarkForceUnknownShape(const NodePtr &node, bool force_unknown) {
+  GE_RT_VOID_CHECK_NOTNULL(node);
+  if (!force_unknown) {
+    return;
+  }
+
+  GELOGD("[%s] mark as force unknown shape node", node->GetName().c_str());
+  if (!AttrUtils::SetBool(node->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, force_unknown)) {
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
+                       node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "Op: %s set %s failed", node->GetName().c_str(), ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str());
+  }
 }
 }  // namespace ge

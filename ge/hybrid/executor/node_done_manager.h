@@ -31,6 +31,8 @@ class NodeDoneManager {
 
   bool Await(const NodePtr &node);
 
+  void Reset(const NodePtr &node);
+
   void Destroy();
 
  private:
@@ -40,6 +42,7 @@ class NodeDoneManager {
     void Release();
     void Cancel();
     bool Await();
+    void Reset();
    private:
     std::mutex cond_mu_;
     std::condition_variable cv_;

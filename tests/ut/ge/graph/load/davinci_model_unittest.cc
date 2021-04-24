@@ -333,8 +333,8 @@ TEST_F(UtestDavinciModel, init_unknown) {
 TEST_F(UtestDavinciModel, Init_variable_op) {
   DavinciModel model(0, g_local_call_back);
   model.ge_model_ = make_shared<GeModel>();
-  model.runtime_param_.mem_base = (uint8_t *)0x08000000;
-  model.runtime_param_.mem_size = 5120000;
+  model.runtime_param_.mem_size = 51200;
+  model.runtime_param_.mem_base = (uint8_t *)malloc(model.runtime_param_.mem_size);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
   GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
@@ -365,6 +365,8 @@ TEST_F(UtestDavinciModel, Init_variable_op) {
   EXPECT_EQ(model.CopyOutputData(1, output_data, RT_MEMCPY_DEVICE_TO_HOST), SUCCESS);
 
   EXPECT_EQ(model.ReturnResult(1, false, true, &output_data), INTERNAL_ERROR);
+  free(model.runtime_param_.mem_base);
+  model.runtime_param_.mem_base = nullptr;
 }
 
 TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {

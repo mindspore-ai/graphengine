@@ -29,6 +29,7 @@ class GraphItem {
   Status GroupNodes();
   const vector<NodeItem *> &GetAllNodes() const;
   const vector<NodeItem *> &GetAllNodes(int group) const;
+  const vector<NodeItem *> &GetRootNodes(int group) const;
   const vector<const NodeItem *> &GetInputNodes() const;
   Status GetOutputDescList(std::vector<ConstGeTensorDescPtr> &output_desc_list) const;
   const vector<std::pair<const NodeItem *, int>> &GetOutputEdges() const;
@@ -38,6 +39,12 @@ class GraphItem {
 
   int TotalOutputs() const {
     return total_outputs_;
+  }
+
+  size_t GetNodeSize(int group) const;
+
+  bool HasCtrlFlowOp() const {
+    return has_ctrl_flow_op_;
   }
 
   const std::string& GetName() const {
@@ -60,9 +67,14 @@ class GraphItem {
 
  private:
   friend class HybridModelBuilder;
+  Status GroupNodes(const std::vector<NodeItem *> &node_items,
+                    std::vector<std::vector<NodeItem *>> &grouped_node_items) const;
+
   std::string name_;
   std::vector<NodeItem *> node_items_;
   std::vector<std::vector<NodeItem *>> grouped_node_items_;
+  std::vector<NodeItem *> root_items_;
+  std::vector<std::vector<NodeItem *>> grouped_root_items_;
   std::vector<const NodeItem *> input_nodes_;
   const NodeItem *output_node_ = nullptr;
   // <src_node, out_index>
@@ -71,6 +83,7 @@ class GraphItem {
   int total_outputs_ = 0;
 
   bool is_dynamic_ = true;
+  bool has_ctrl_flow_op_ = false;
   std::vector<int> input_index_mapping_;
   std::vector<int> output_index_mapping_;
 };

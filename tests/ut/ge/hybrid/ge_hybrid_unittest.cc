@@ -288,7 +288,7 @@ TEST_F(UtestGeHybrid, hybrid_model_executor) {
   HybridModel *model_ptr = &model;
 
   uint32_t device_id = 0;
-  rtStream_t stream;
+  rtStream_t stream = nullptr;
   HybridModelExecutor executor(model_ptr, device_id, stream);
   executor.Init();
 }
@@ -644,17 +644,28 @@ TEST_F(UtestGeHybrid, TestParseDependentInputNodesForHccl) {
   std::unique_ptr<NodeItem> node_item_1;
   NodeItem::Create(node_1, node_item_1);
   node_item_1->node_id = 1;
-
   node->GetOutControlAnchor()->LinkTo(node_1->GetInControlAnchor());
+
+  OpDescPtr op_desc_2 = CreateOpDesc("net_output", NETOUTPUT);
+  auto node_2 = compute_graph->AddNode(op_desc_2);
+  std::unique_ptr<NodeItem> node_item_2;
+  NodeItem::Create(node_2, node_item_2);
+  node_item_2->node_id = 2;
+  node_1->GetOutControlAnchor()->LinkTo(node_2->GetInControlAnchor());
 
   GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
   HybridModel model(root_model);
   model.root_graph_ = compute_graph;
   model.node_items_.emplace(node, std::move(node_item));
+  model.node_items_.emplace(node_1, std::move(node_item_1));
+  model.node_items_.emplace(node_2, std::move(node_item_2));
 
   HybridModelBuilder builder(model);
   std::vector<std::string> deps;
-  ASSERT_EQ(builder.ParseDependentInputNodes(*node_item_1, deps), SUCCESS);
-  ASSERT_TRUE(model.GetNodeItem(node)->has_observer);
-  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
+  ASSERT_EQ(builder.ParseDependentInputNodes(*model.node_items_[node_1], deps), SUCCESS);
+  ASSERT_EQ(builder.ParseDependentInputNodes(*model.node_items_[node_2], deps), SUCCESS);
+  ASSERT_FALSE(model.GetNodeItem(node)->has_observer);
+  ASSERT_TRUE(model.GetNodeItem(node_1)->has_observer);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution.size(), 0);
+  ASSERT_EQ(model.node_items_[node_2]->dependents_for_execution.size(), 1);
 }

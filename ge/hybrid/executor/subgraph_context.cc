@@ -37,10 +37,15 @@ Status SubgraphContext::Init() {
   return SUCCESS;
 }
 
+void SubgraphContext::ResetContext(const NodePtr &node) {
+  node_done_manager_.Reset(node);
+}
+
 NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
   std::lock_guard<std::mutex> lk(mu_);
   auto &node_state = node_states_[node_item];
   if (node_state == nullptr) {
+    const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
     node_state.reset(new(std::nothrow)NodeState(*node_item, this));
   }
 

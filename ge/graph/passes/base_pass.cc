@@ -36,6 +36,7 @@ struct DuringPassNodeSets {
   std::unordered_set<NodePtr> nodes_re_pass;
   std::unordered_set<NodePtr> nodes_re_pass_immediately;
   std::unordered_set<NodePtr> nodes_last;
+  std::unordered_set<NodePtr> nodes_stopped;
 };
 
 void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::deque<NodePtr> &input_edge_nodes,
@@ -56,9 +57,16 @@ void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::deque<NodePtr> &i
 }
 
 void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::deque<NodePtr> &nodes_to_pass,
-                      std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_last) {
+                      DuringPassNodeSets &during_pass_node_set) {
+  std::unordered_set<Node *> &nodes_seen = during_pass_node_set.nodes_seen;
+  const std::unordered_set<NodePtr> &nodes_last = during_pass_node_set.nodes_last;
+  const std::unordered_set<NodePtr> &nodes_stopped = during_pass_node_set.nodes_stopped;
   for (auto &node : nodes) {
     if (node == nullptr) {
+      continue;
+    }
+    if (nodes_stopped.count(node) > 0) {
+      GELOGD("The node %s was stopped by pass, skip it.", node->GetName().c_str());
       continue;
     }
     if (nodes_last.count(node) != 0) {
@@ -73,7 +81,7 @@ void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::deque<NodePtr> &n
 }
 
 void PushToRePassIfSeen(NodePtr &node, const std::pair<std::string, BaseNodePass *> &name_to_pass,
-                        std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_to_re_pass,
+                        std::unordered_set<Node *> &nodes_seen, const std::unordered_set<NodePtr> &nodes_to_re_pass,
                         std::unordered_set<NodePtr> &nodes_re_pass) {
   for (const auto &node_to_re_pass : nodes_to_re_pass) {
     if (node_to_re_pass == nullptr) {
@@ -113,15 +121,24 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, DuringPassNo
       return result;
     }
 
-    auto nodes_to_re_pass = name_to_pass.second->GetNodesNeedRePass();
+    const auto &nodes_to_re_pass = name_to_pass.second->GetNodesNeedRePass();
     PushToRePassIfSeen(node, name_to_pass, during_pass_node_set.nodes_seen, nodes_to_re_pass,
                        during_pass_node_set.nodes_re_pass);
 
-    auto nodes_to_re_pass_immediately = name_to_pass.second->GetNodesNeedRePassImmediately();
+    const auto &nodes_to_re_pass_immediately = name_to_pass.second->GetNodesNeedRePassImmediately();
     PushToRePassIfSeen(node, name_to_pass, during_pass_node_set.nodes_seen, nodes_to_re_pass_immediately,
                        during_pass_node_set.nodes_re_pass_immediately);
 
-    auto nodes_deleted_by_pass = name_to_pass.second->GetNodesDeleted();
+    for (const auto &node : name_to_pass.second->GetNodesStopped()) {
+      GELOGD("The node %s was stopped by pass %s", node->GetName().c_str(), name_to_pass.first.c_str());
+      during_pass_node_set.nodes_stopped.emplace(node);
+    }
+    for (const auto &node : name_to_pass.second->GetNodesRestored()) {
+      GELOGD("The node %s was restored by pass %s", node->GetName().c_str(), name_to_pass.first.c_str());
+      during_pass_node_set.nodes_stopped.erase(node);
+    }
+
+    const auto &nodes_deleted_by_pass = name_to_pass.second->GetNodesDeleted();
     during_pass_node_set.nodes_deleted.insert(nodes_deleted_by_pass.begin(), nodes_deleted_by_pass.end());
     if (nodes_deleted_by_pass.count(node) > 0) {
       GELOGD("The node %s was deleted by pass %s, stop the remain passes", node->GetName().c_str(),
@@ -222,8 +239,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         continue;
       }
 
-      AddNextIterNodes(node->GetOutNodes(), nodes, during_pass_node_set.nodes_seen, during_pass_node_set.nodes_last);
-
+      const auto all_out_nodes = node->GetOutNodes();
       auto ret = RunPasses(node, names_to_passes, during_pass_node_set);
       if (ret != SUCCESS) {
         GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
@@ -258,6 +274,8 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         nodes.push_front(node);
       }
       during_pass_node_set.nodes_re_pass_immediately.clear();
+
+      AddNextIterNodes(all_out_nodes, nodes, during_pass_node_set);
     }
 
     for (auto &node : during_pass_node_set.nodes_last) {

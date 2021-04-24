@@ -62,6 +62,10 @@ const uint32_t SWITCH_TRUE_OUTPUT = 1;
 const uint32_t SWITCH_DATA_INPUT = 0;
 const uint32_t SWITCH_PRED_INPUT = 1;
 
+// Merge
+const uint32_t MERGE_DATA_OUTPUT = 0;
+const uint32_t MERGE_INDEX_OUTPUT = 1;
+
 // FunctionOp
 const uint32_t IF_COND_INPUT = 0;
 const uint32_t FOR_START_INPUT = 0;

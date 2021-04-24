@@ -32,7 +32,7 @@ REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::COMPILED_SUBGR
 
 Status KnownNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeTaskExecuteAsync] Start");
-  GELOGD("[%s] KnownNodeTask::ExecuteAsync in.", context.GetNodeName());
+  GELOGD("[%s] KnownNodeTask::ExecuteAsync in, model id: %u.", context.GetNodeName(), davinci_model_->Id());
   if (davinci_model_->GetTaskList().empty()) {
     GELOGW("KnownNodeExecutor::ExecuteAsync davinci model has no taskinfo.");
 
@@ -62,7 +62,7 @@ Status KnownNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> d
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodertModelExecute] End");
 
   GE_CHK_STATUS_RET_NOLOG(context.RegisterCallback(done_callback));
-  GELOGD("[%s] KnownNodeTask::ExecuteAsync success.", context.GetNodeName());
+  GELOGD("[%s] KnownNodeTask::ExecuteAsync success, model id: %u.", context.GetNodeName(), davinci_model_->Id());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeTaskExecuteAsync] End");
   return SUCCESS;
 }

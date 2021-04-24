@@ -97,7 +97,7 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
     return ExecutorType::GE_LOCAL;
   }
 
-  if (IsControlOp(op_type)) {
+  if (IsControlFlowV2Op(op_type)) {
     return ExecutorType::CONTROL_OP;
   }
 

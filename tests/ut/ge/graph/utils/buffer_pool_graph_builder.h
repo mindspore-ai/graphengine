@@ -54,9 +54,9 @@ class BufferPoolGraphBuilder {
   /// Normal graph
   ///
   ///             w1         w2         w3         w4         w5
-  ///              \          \          \         \          \
+  ///              \          \          \         \          \.
   ///          prefetch1  prefetch2  prefetch3  prefetch4  prefetch5
-  ///               \          \          \         \          \
+  ///               \          \          \         \          \.
   /// const1 ----- add1 ----- add2 ----- add3 ----- add4 ----- add5 ----- net_output
   ///
   ///
@@ -72,10 +72,10 @@ class BufferPoolGraphBuilder {
   /// Normal graph with multi buffer pool
   ///
   ///             w1         w2         w3         w4         w5
-  ///              \          \          \         \          \
+  ///              \          \          \         \          \.
   ///          prefetch1  prefetch2  prefetch3  prefetch4  prefetch5
   ///            (pool0)    (pool1)    (pool0)   (pool0)    (pool1)
-  ///               \          \          \         \          \
+  ///               \          \          \         \          \.
   /// const1 ----- add1 ----- add2 ----- add3 ----- add4 ----- add5 ----- net_output
   ///
   ///
@@ -92,9 +92,9 @@ class BufferPoolGraphBuilder {
   /// SerialGraph: Buffer pool size only can contain one prefetch node
   ///
   ///             w1         w2         w3         w4         w5
-  ///              \          \          \         \          \
+  ///              \          \          \         \          \.
   ///          prefetch1  prefetch2  prefetch3  prefetch4  prefetch5
-  ///               \          \          \         \          \
+  ///               \          \          \         \          \.
   /// const1 ----- add1 ----- add2 ----- add3 ----- add4 ----- add5 ----- net_output
   ///
   ///
@@ -116,7 +116,7 @@ class BufferPoolGraphBuilder {
   /// GraphWithMultiPrefetch: Calc node with more prefetch node
   ///
   ///            w1          w2         w3         w4       w5
-  ///             \           \          \          \        \
+  ///             \           \          \          \        \.
   ///          prefetch1  prefetch2  prefetch3  prefetch4  prefetch5  const1
   ///               \         /           \         /          \       /
   ///                \       /             \       /            \     /
@@ -144,9 +144,9 @@ class BufferPoolGraphBuilder {
   ///   Subgraph1:                                                    Subgraph2:
   ///
   ///             w1         w2         w3                                      w4         w5
-  ///              \          \          \                                      \          \
+  ///              \          \          \                                      \          \.
   ///          prefetch1  prefetch2  prefetch3                               prefetch4  prefetch5
-  ///               \          \          \                                      \          \
+  ///               \          \          \                                      \          \.
   /// const1 ----- add1 ----- add2 ----- add3 ---- subgraph1_out      data1 ---- add4 ----- add5 ---- subgraph2_out
   ///
   ///
@@ -168,9 +168,9 @@ class BufferPoolGraphBuilder {
   ///   Subgraph1:                                       Subgraph2:
   ///
   ///             w1         w2                                      w3         w4         w5
-  ///              \          \                                       \         \          \
+  ///              \          \                                       \         \          \.
   ///          prefetch1  prefetch2                               prefetch3  prefetch4  prefetch5
-  ///               \          \                                       \         \          \
+  ///               \          \                                       \         \          \.
   /// const1 ----- add1 ----- add2 ----- subgraph1_out     data1 ---- add3 ---- add4 ----- add5 ---- subgraph2_out
   ///
   ///
@@ -189,10 +189,10 @@ class BufferPoolGraphBuilder {
   ///                                                      batch_label_128
   ///
   ///                            const1 ----- add1 ----- add2 ----- add3 ----- add4 ----- add5 ---
-  ///                           /              /          /          /         /          /       \
-  ///  				                 /c        prefetch1  prefetch2  prefetch3  prefetch4  prefetch5     \
-  ///   const1        switch_false           /          /          /         /          /           \
-  ///       \         /                     /          /          /         /          /             \
+  ///                           /              /          /          /         /          /       \.
+  ///  				                 /c        prefetch1  prefetch2  prefetch3  prefetch4  prefetch5     \.
+  ///   const1        switch_false           /          /          /         /          /           \.
+  ///       \         /                     /          /          /         /          /             \.
   ///         switch1                      w1         w2         w3        w4         w5           merge1 -- net_output
   ///  	   /          \                     \          \          \         \          \             /
   ///   const2        switch_true            \          \          \         \          \           /
@@ -215,7 +215,7 @@ class BufferPoolGraphBuilder {
   /// GraphWithMultiOutputPrefetch: Prefetch has more than one output
   ///
   ///                      w1         w2         w3         w4         w5
-  ///                       \          \          \         \          \
+  ///                       \          \          \         \          \.
   ///                   prefetch1  prefetch2  prefetch3  prefetch4  prefetch5
   ///                     /   \      /   \      /   \      /   \      /
   ///                    /     \    /     \    /     \    /     \    /
@@ -238,7 +238,7 @@ class BufferPoolGraphBuilder {
   /// GraphWithMultiOutputPrefetch: Prefetch has more than one output
   ///
   ///                     w1      w2        w3         w4         w5
-  ///                      \    /   \      /  \      /   \      /    \
+  ///                      \    /   \      /  \      /   \      /    \.
   ///                   prefetch1  prefetch2  prefetch3  prefetch4  prefetch5
   ///                     /   \      /   \      /   \      /   \      /
   ///                    /     \    /     \    /     \    /     \    /

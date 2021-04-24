@@ -187,9 +187,9 @@ void StageExecutor::Reset() {
 Status HybridModelPipelineExecutor::Init() {
   const char *profiling_level = std::getenv(kEnvProfilingLevel);
   if (profiling_level != nullptr) {
-    context_.profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
-    GELOGD("Got profiling level = %ld", context_.profiling_level);
-    if (context_.profiling_level > 0) {
+    GraphExecutionContext::profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
+    GELOGD("Got profiling level = %ld", GraphExecutionContext::profiling_level);
+    if (GraphExecutionContext::profiling_level > 0) {
       context_.profiler.reset(new (std::nothrow) HybridProfiler());
       GE_CHECK_NOTNULL(context_.profiler);
     }
@@ -210,7 +210,6 @@ Status HybridModelPipelineExecutor::InitStageExecutors() {
     if (context_.profiler != nullptr) {
       // will call unique_ptr::release later
       stage_executor->context_.profiler.reset(context_.profiler.get());
-      stage_executor->context_.profiling_level = context_.profiling_level;
     }
 
     stage_executors_.emplace_back(std::move(stage_executor));

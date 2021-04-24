@@ -45,6 +45,7 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
     return SUCCESS;
   }
 
+  const auto &guard = node_item.MutexGuard("InferShape");
   if (node_item.fused_subgraph != nullptr) {
     GE_CHK_STATUS_RET_NOLOG(InferShapeForSubgraph(node_item, *node_item.fused_subgraph));
     GE_CHK_STATUS_RET_NOLOG(CalcOutputTensorSizes(node_item));
@@ -123,8 +124,9 @@ Status ShapeInferenceEngine::PropagateOutputShapes(NodeState &node_state) {
          node_item.shape_inference_type);
   RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[PropagateOutputShapes] Start");
   // propagate each output
+  const auto &guard = node_item.MutexGuard("PropagateOutputShapes");
   for (int i = 0; i < node_item.num_outputs; ++i) {
-    auto output_desc = node_item.op_desc->MutableOutputDesc(i);
+    auto output_desc = node_item.MutableOutputDesc(i);
     auto &output_nodes = node_item.outputs[i];
 
     // propagate output to all sub-inputs

@@ -27,6 +27,8 @@ const uint32_t MEMORY_ALIGN_RATIO = 2;
 const uint32_t MEMORY_ALIGN_SIZE = 32;
 namespace hybrid {
 class HybridModel;
+using NodeTaskPtr = std::shared_ptr<NodeTask>;
+
 // Base class of Node Task
 class NodeTask {
  public:

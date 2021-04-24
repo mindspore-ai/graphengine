@@ -48,6 +48,14 @@ int FormatErrorMessage(char *str_dst, size_t dst_max, const char *format, ...) {
     return 0;
   }
 
+  std::string ErrorManager::GetErrorMessage() {
+    return std::string();
+  }
+
+  std::string ErrorManager::GetWarningMessage() {
+    return std::string();
+  }
+
   int ErrorManager::ReportInterErrMessage(std::string error_code, const std::string &error_msg) {
     return 0;
   }
@@ -99,7 +107,7 @@ int FormatErrorMessage(char *str_dst, size_t dst_max, const char *format, ...) {
   const std::string &ErrorManager::GetLogHeader() { return error_context_.log_header; }
 
   struct error_message::Context &ErrorManager::GetErrorManagerContext() {
-    struct error_message::Context error_context;
+    static struct error_message::Context error_context;
     return error_context;
   }
 

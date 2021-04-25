@@ -355,7 +355,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportDa
     reporter_data.deviceId = device_id;
     ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, tag_name.c_str(), tag_name.size());
     GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag [%s] memcpy error!", tag_name.c_str()); return;);
-    std::lock_guard<std::mutex> lock(mutex_);
     for (size_t i = 0; i < index; ++i) {
       reporter_data.data = (unsigned char *)data.c_str() + report_max_len * i;
       reporter_data.dataLen = report_max_len;
@@ -376,7 +375,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportDa
     reporter_data.dataLen = data.size();
     ret = memcpy_s(reporter_data.tag, MSPROF_ENGINE_MAX_TAG_LEN + 1, tag_name.c_str(), tag_name.size());
     GE_IF_BOOL_EXEC(ret != EOK, GELOGE(ret, "Report data tag [%s] memcpy error!", tag_name.c_str()); return;);
-    std::lock_guard<std::mutex> lock(mutex_);
+
     cb_ret = CallMsprofReport(reporter_data);
     GE_IF_BOOL_EXEC(cb_ret != 0, GELOGE(cb_ret, "Reporter data [%s] failed, ret:%d", tag_name.c_str(), cb_ret);
                     return;);

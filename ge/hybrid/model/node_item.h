@@ -41,8 +41,9 @@ bool IsControlFlowV2Op(const std::string &op_type);
 
 class OptionalMutexGuard {
  public:
-  OptionalMutexGuard(std::mutex *mutex, const string &name);
+  OptionalMutexGuard(std::mutex *mutex, const std::string &name);
   ~OptionalMutexGuard();
+
  private:
   std::mutex *mu_{nullptr};
   std::string name_;

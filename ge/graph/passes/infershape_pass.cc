@@ -145,8 +145,10 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
 
   if (node->GetType() == MERGE || node->GetType() == REFMERGE) {
     if (node->GetOpDesc()->HasAttr(ATTR_NAME_NEED_INFER_AGAIN)) {
+      node->GetOpDesc()->DelAttr(ATTR_NAME_NEED_INFER_AGAIN);
       return RePassNode({SWITCH, REFSWITCH}); // Re-Pass Switch
     }
+    return SUCCESS;
   }
 
   if (node->GetType() == SWITCH || node->GetType() == REFSWITCH) {

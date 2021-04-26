@@ -31,7 +31,9 @@ Status SuperKernelFactory::Init() {
     std::string skt_bin = "libcce_aicore.so";
     handle_ = mmDlopen(skt_bin.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
     if (handle_ == nullptr) {
-      GELOGE(FAILED, "SKT: open skt lib failed, please check LD_LIBRARY_PATH.");
+      const char* error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGE(FAILED, "SKT: open skt lib failed, please check LD_LIBRARY_PATH. errmsg:%s", error);
     }
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(this->sk_stub_name_.c_str(), &this->func_stub_);

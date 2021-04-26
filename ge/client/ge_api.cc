@@ -100,7 +100,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
     GELOGW("GEInitialize is called more than once");
     return SUCCESS;
   }
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOpsProtoInit);
   // Load OpsProto lib plugin
   std::string opsproto_path;
   GetOpsProtoPath(opsproto_path);
@@ -119,7 +119,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
     return FAILED;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   // check options is valid
   GE_TIMESTAMP_START(CheckOptionsValid);
   if (CheckOptionsValid(options) != SUCCESS) {
@@ -127,13 +127,13 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
   }
   GE_TIMESTAMP_END(CheckOptionsValid, "GEInitialize::CheckOptionsValid");
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOpsProtoInit);
   GE_TIMESTAMP_START(InitPreparation);
   TBEPluginManager::Instance().InitPreparation(options);
   GE_TIMESTAMP_END(InitPreparation, "GEInitialize::InitPreparation");
   // call Initialize
   GELOGT(TRACE_RUNNING, "Initializing environment");
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   GE_TIMESTAMP_START(GELibInitialize);
   ret = ge::GELib::Initialize(options);
   GE_TIMESTAMP_END(GELibInitialize, "GEInitialize::GELibInitialize");
@@ -154,7 +154,7 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
 
 // Initialize GE, prepare for execution, call GELib::Initialize
 Status GEInitialize(const std::map<string, string> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   if (DlogReportInitialize() != SUCCESS) {
     GELOGW("Dlog report device log initialize failed.");
   }
@@ -162,7 +162,7 @@ Status GEInitialize(const std::map<string, string> &options) {
 }
 
 Status GEInitialize(const std::map<AscendString, AscendString> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   std::map<std::string, std::string> str_options;
   for (auto &option : options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
@@ -191,7 +191,7 @@ Status GEFinalize() {
     return SUCCESS;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   GELOGT(TRACE_INIT, "GEFinalize start");
 
@@ -243,7 +243,7 @@ std::string GEGetWarningMsg() {
 
 // Initialize session，which calls innerSession
 Session::Session(const std::map<string, string> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   GELOGT(TRACE_INIT, "Session Constructor start");
 
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
@@ -259,7 +259,7 @@ Session::Session(const std::map<string, string> &options) {
   // call Initialize
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Construct][Session]Failed, GELib instance is nullptr or it is not InitFlag");
     return;
   }
@@ -280,7 +280,7 @@ Session::Session(const std::map<string, string> &options) {
 }
 
 Session::Session(const std::map<AscendString, AscendString> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   GELOGT(TRACE_INIT, "Session Constructor start");
 
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
@@ -331,7 +331,7 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
 
 // session destructor
 Session::~Session() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
   GELOGT(TRACE_INIT, "Session Destructor start");
   // 0.check init status
   if (!g_ge_initialized) {
@@ -371,7 +371,7 @@ Session::~Session() {
 
 // Add Graph
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   std::map<std::string, std::string> options;
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   return AddGraph(graph_id, graph, options);
@@ -379,7 +379,7 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph) {
 
 // Add Graph
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<std::string, std::string> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
@@ -393,7 +393,7 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<s
   GELOGD("Adding graph to session");
   Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph, options);
   if (ret != SUCCESS) {
-    GELOGE(ret, 
+    GELOGE(ret,
            "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
 	   ret, sessionId_, graph_id);
     return FAILED;
@@ -405,7 +405,7 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<s
 //Add Graph
 Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
                          const std::map<AscendString, AscendString> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
@@ -441,7 +441,7 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
 }
 
 Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::map<AscendString, AscendString> options;
   return AddGraphWithCopy(graph_id, graph, options);
@@ -450,7 +450,7 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph) {
 // Add Graph With Copy
 Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
                                  const std::map<AscendString, AscendString> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGT(TRACE_INIT, "Start to add graph in Session. graph_id: %u, session_id: %lu.", graph_id, sessionId_);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
@@ -479,7 +479,7 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
 
 // Remove Graph
 Status Session::RemoveGraph(uint32_t graph_id) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGT(TRACE_INIT, "Session RemoveGraph start");
 
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
@@ -560,7 +560,7 @@ void PrintOutputResult(std::vector<Tensor> &outputs) {
 
 // Run Graph
 Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGT(TRACE_INIT, "Session RunGraph start");
 
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
@@ -615,7 +615,7 @@ Status Session::RegisterCallBackFunc(const char *key, const session::pCallBackFu
 
 // Build Graph
 Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
@@ -643,7 +643,7 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
 // Run Graph Asynchronously
 Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
                               RunAsyncCallback callback) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
@@ -672,11 +672,11 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorIn
 
 // Get Variables
 Status Session::GetVariables(const std::vector<std::string> &var_names, std::vector<Tensor> &var_values) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, 
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
            "[Get][Variables]Failed, the GELib instance is nullptr or is not InitFlag.");
     REPORT_INNER_ERROR("E19999",
                        "GetVariables failed, the GELib instance is nullptr or is not InitFlag.");
@@ -693,7 +693,7 @@ Status Session::GetVariables(const std::vector<std::string> &var_names, std::vec
 
 // Get Variables
 Status Session::GetVariables(const std::vector<AscendString> &var_names, std::vector<Tensor> &var_values) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {

@@ -435,7 +435,7 @@ Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle h
   const char *file = file_path.data();
   if ((mmAccess2(file, M_F_OK)) != EN_OK) {
     if (engines_map_.size() != 0) {
-      GELOGE(FAILED, "The json file %s is not exist, %s", file_path.c_str(), strerror(errno));
+      GELOGE(FAILED, "The json file %s is not exist, errmsg:%s", file_path.c_str(), strerror(errno));
       return FAILED;
     } else {
       GELOGW("The json file %s is not needed.", file_path.c_str());

@@ -441,11 +441,11 @@ Status ModelCacheHelper::SaveJsonToFile(const string &file_name, const Json &jso
   const int FILE_AUTHORITY = 0600;
   int fd = mmOpen2(path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, FILE_AUTHORITY);
   if (fd < 0) {
-    GELOGW("Fail to open the file: %s.", path.c_str());
+    GELOGW("Fail to open the file:%s. errmsg:%s", path.c_str(), strerror(errno));
     return INTERNAL_ERROR;
   }
   if (mmClose(fd) != 0) {
-    GELOGW("Fail to close the file: %s.", path.c_str());
+    GELOGW("Fail to close the file:%s. errmsg:%s", path.c_str(), strerror(errno));
     return INTERNAL_ERROR;
   }
 

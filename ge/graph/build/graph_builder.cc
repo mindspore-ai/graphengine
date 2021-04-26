@@ -233,7 +233,7 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
     return SUCCESS;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kPreBuild);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kPreBuild);
   GELOGI("Begin to build known shape graph[%s].", comp_graph->GetName().c_str());
   Status ret = SecondPartition(comp_graph);
   GE_CHK_STATUS_RET(ret, "Graph[%s] second partition Failed.", comp_graph->GetName().c_str());
@@ -264,7 +264,7 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
   GE_TIMESTAMP_END(BuildModelForGetTask, "GraphBuilder::BuildModelForGetTask");
   GE_DUMP(comp_graph, "AfterBuildModel");
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kTaskGenerate);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kTaskGenerate);
   GE_TIMESTAMP_START(GetTaskInfo);
   ret = GetTaskInfo(builder, model_ptr, comp_graph, subgraph_map, session_id);
   GE_TIMESTAMP_END(GetTaskInfo, "GraphBuilder::GetTaskInfo");
@@ -274,7 +274,7 @@ Status GraphBuilder::BuildForKnownShapeGraph(ComputeGraphPtr &comp_graph,
     return ret;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   ge_model_ptr = MakeShared<ge::GeModel>();
   if (ge_model_ptr == nullptr) {
     return MEMALLOC_FAILED;
@@ -336,7 +336,7 @@ Status GraphBuilder::SetConstantInputOffset(ComputeGraphPtr &comp_graph) {
 
 Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeModelPtr &ge_model_ptr,
                                                uint64_t session_id) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kPreBuild);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kPreBuild);
   GELOGI("Begin to build unknown shape graph[%s].", comp_graph->GetName().c_str());
   Graph2SubGraphInfoList subgraph_map;
   ge::ModelBuilder builder(session_id, comp_graph, subgraph_map, stream_max_parallel_num_, hcom_parallel_, build_mode_);
@@ -369,11 +369,11 @@ Status GraphBuilder::BuildForUnknownShapeGraph(ComputeGraphPtr &comp_graph, GeMo
   GE_CHK_STATUS_RET(builder.BuildModelForGetDynShapeTask(*model_ptr),
                     "Graph[%s] builder BuildModelForGetDynShapeTask() return fail.", comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(BuildModelForGetDynShapeTask, "GraphBuilder::BuildModelForGetDynShapeTask");
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kTaskGenerate);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kTaskGenerate);
   GE_TIMESTAMP_START(GetTaskInfo);
   Status ret = GetTaskInfo(builder, model_ptr, comp_graph, subgraph_map, session_id);
   GE_TIMESTAMP_END(GetTaskInfo, "GraphBuilder::GetTaskInfo");
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
 
   GraphUtils::DumpGEGraph(comp_graph, "AfterGetTask");
   GraphUtils::DumpGEGraphToOnnx(*comp_graph, "AfterGetTask");

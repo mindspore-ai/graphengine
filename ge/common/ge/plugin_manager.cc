@@ -39,7 +39,7 @@ void PluginManager::ClearHandles_() noexcept {
     if (mmDlclose(handle.second) != 0) {
       const char *error = mmDlerror();
       GE_IF_BOOL_EXEC(error == nullptr, error = "");
-      GELOGW("Failed to close handle of %s: %s", handle.first.c_str(), error);
+      GELOGW("Failed to close handle of %s, errmsg:%s", handle.first.c_str(), error);
     }
   }
   handles_.clear();
@@ -50,7 +50,9 @@ PluginManager::~PluginManager() { ClearHandles_(); }
 string PluginManager::GetPath() {
   mmDlInfo dl_info;
   if (mmDladdr(reinterpret_cast<void *>(&PluginManager::GetPath), &dl_info) != EN_OK) {
-    GELOGW("Failed to read the shared library file path!");
+    const char *error = mmDlerror();
+    GE_IF_BOOL_EXEC(error == nullptr, error = "");
+    GELOGW("Failed to read the shared library file path! errmsg:%s", error);
     return string();
   } else {
     GE_IF_BOOL_EXEC(dl_info.dli_fname == nullptr, return string());
@@ -61,7 +63,7 @@ string PluginManager::GetPath() {
       return string();
     }
     if (mmRealPath(so_path.c_str(), path, MMPA_MAX_PATH) != EN_OK) {
-      GELOGW("Failed to get realpath of %s", so_path.c_str());
+      GELOGW("Failed to get realpath of %s, errmsg:%s", so_path.c_str(), strerror(errno));
       return string();
     }
 
@@ -137,18 +139,24 @@ Status PluginManager::LoadSo(const string &path, const vector<string> &func_chec
     for (const auto &func_name : func_check_list) {
       auto real_fn = (void (*)())mmDlsym(handle, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
+        const char *error = mmDlerror();
+        GE_IF_BOOL_EXEC(error == nullptr, error = "");
         ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
             {"mmDlsym", FmtToStr(func_name) + " is skipped since function" +
             FmtToStr(func_name) + " is not existed!"});
         GELOGE(ACL_ERROR_GE_PLGMGR_PATH_INVALID,
-               "[Check][So]%s is skipped since function %s is not existed!",
-               func_name.c_str(), func_name.c_str());
+               "[Check][So]%s is skipped since function %s is not existed! errmsg:%s",
+               func_name.c_str(), func_name.c_str(), error);
         is_valid = false;
         break;
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(mmDlclose(handle), "[DLClose][Handle]Failed.");
+      if (mmDlclose(handle) != 0) {
+        const char *error = mmDlerror();
+        GE_IF_BOOL_EXEC(error == nullptr, error = "");
+        GELOGE(FAILED, "[DLClose][Handle]Failed. errmsg:%s", error);
+      }
       continue;
     }
 
@@ -212,21 +220,21 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path.length() >= MMPA_MAX_PATH, GELOGW("File path is too long!");
                                  return FAILED, "File path is too long!");
   if (mmRealPath(path.c_str(), canonical_path, MMPA_MAX_PATH) != EN_OK) {
-    GELOGW("Failed to get realpath of %s", path.c_str());
+    GELOGW("Failed to get realpath of %s, errmsg:%s", path.c_str(), strerror(errno));
     return SUCCESS;
   }
 
   INT32 is_dir = mmIsDir(canonical_path);
   // Lib plugin path not exist
   if (is_dir != EN_OK) {
-      GELOGW("Invalid path for load: %s", path.c_str());
+      GELOGW("Invalid path for load: %s, errmsg:%s", path.c_str(), strerror(errno));
       return SUCCESS;
   }
 
   mmDirent **entries = nullptr;
   auto ret = mmScandir(canonical_path, &entries, nullptr, nullptr);
   if (ret < EN_OK) {
-      GELOGW("scan dir failed. path = %s, ret = %d", canonical_path, ret);
+      GELOGW("scan dir failed. path = %s, ret = %d, errmsg = %s", canonical_path, ret, strerror(errno));
       return FAILED;
   }
   for (int i = 0; i < ret; ++i) {
@@ -283,13 +291,20 @@ Status PluginManager::Load(const string &path, const vector<string> &func_check_
     for (const auto &func_name : func_check_list) {
       auto real_fn = (void (*)())mmDlsym(handle, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
-        GELOGW("The %s is skipped since function %s is not existed!", file_name.c_str(), func_name.c_str());
+        const char *error = mmDlerror();
+        GE_IF_BOOL_EXEC(error == nullptr, error = "");
+        GELOGW("The %s is skipped since function %s is not existed! errmsg:%s",
+               file_name.c_str(), func_name.c_str(), error);
         is_valid = false;
         break;
       }
     }
     if (!is_valid) {
-      GE_LOGE_IF(mmDlclose(handle), "Failed to dlclose.");
+      if (mmDlclose(handle) != 0) {
+        const char *error = mmDlerror();
+        GE_IF_BOOL_EXEC(error == nullptr, error = "");
+        GELOGE(FAILED, "[DLClose][Handle]Failed. errmsg:%s", error);
+      }
       continue;
     }
 

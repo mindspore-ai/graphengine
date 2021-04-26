@@ -1092,7 +1092,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 
   mmTimeval tv;
   if (mmGetTimeOfDay(&tv, nullptr) != 0) {
-    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail");
+    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail. errmsg:%s", strerror(errno));
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }

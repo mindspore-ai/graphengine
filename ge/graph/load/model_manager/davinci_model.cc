@@ -2733,7 +2733,7 @@ void *DavinciModel::Run(DavinciModel *model) {
   // DeviceReset before thread run finished!
   GE_MAKE_GUARD(not_used_var, [&] { GE_CHK_RT(rtDeviceReset(device_id)); });
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   while (model->RunFlag()) {
     // Model hasn't truly started runing before received data
     model->SetRunningFlag(false);
@@ -2886,7 +2886,7 @@ Status DavinciModel::ModelRunStart() {
   int64_t maxDumpOpNum = std::strtol(opt.c_str(), nullptr, kDecimal);
   maxDumpOpNum_ = maxDumpOpNum;
 
-  error_context_ = ErrorManager::GetInstance().GetErrorContext();
+  error_context_ = ErrorManager::GetInstance().GetErrorManagerContext();
   CREATE_STD_THREAD(thread_id_, DavinciModel::Run, this);
   GELOGI("model thread create success, model id:%u.", model_id_);
   return SUCCESS;

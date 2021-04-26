@@ -82,7 +82,9 @@ Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
 void HostCpuEngine::CloseSo() {
   for (auto handle : lib_handles_) {
     if (mmDlclose(handle) != 0) {
-      GELOGW("failed to close handle, message: %s", mmDlerror());
+      const char *error = mmDlerror();
+      error = (error == nullptr) ? "" : error;
+      GELOGW("failed to close handle, message: %s", error);
     }
   }
   lib_handles_.clear();
@@ -284,7 +286,7 @@ Status HostCpuEngine::ListSoFiles(const std::string &base_dir, std::vector<std::
   mmDirent **entries = nullptr;
   auto ret = mmScandir(real_path.c_str(), &entries, RegularFileFilterFn, nullptr);
   if (ret < 0) {
-    GELOGW("scan dir failed. path = %s, ret = %d", real_path.c_str(), ret);
+    GELOGW("scan dir failed. path = %s, ret = %d, errmsg = %s", real_path.c_str(), ret, strerror(errno));
     return INTERNAL_ERROR;
   }
 
@@ -324,7 +326,9 @@ Status HostCpuEngine::LoadLib(const std::string &lib_path) {
   GELOGI("To invoke dlopen on lib: %s", lib_path.c_str());
   auto handle = mmDlopen(lib_path.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
   if (handle == nullptr) {
-    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), mmDlerror());
+    const char *error = mmDlerror();
+    error = (error == nullptr) ? "" : error;
+    GELOGE(INTERNAL_ERROR, "Failed to invoke dlopen. path = %s, error = %s", lib_path.c_str(), error);
     return INTERNAL_ERROR;
   }
 

@@ -377,7 +377,7 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
     return MEMALLOC_FAILED;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsProtoInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOpsProtoInit);
   string opsproto_path;
   GetOpsProtoPath(opsproto_path);
   GELOGI("Get opsproto path is %s", opsproto_path.c_str());
@@ -426,7 +426,7 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
 }
 
 Status GeGenerator::Finalize() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   Status ret = impl_->graph_manager_.Finalize();
   if (ret != SUCCESS) {
@@ -438,14 +438,14 @@ Status GeGenerator::Finalize() {
 
 Status GeGenerator::GenerateOfflineModel(const Graph &graph, const string &file_name_prefix,
                                          const vector<GeTensor> &inputs) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGI("Start to generate offline model.");
   ModelBufferData model;
   return GenerateModel(graph, file_name_prefix, inputs, model, true);
 }
 
 Status GeGenerator::GenerateOnlineModel(const Graph &graph, const vector<GeTensor> &inputs, ModelBufferData &model) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   return GenerateModel(graph, "online", inputs, model, false);
 }
 
@@ -893,7 +893,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, const string &model_file_name,
                                        int32_t compile_flag) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGI("Start to build single op offline model, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   ModelBufferData model_buff;
   OpEngineType engine_type = ENGINE_SYS;
@@ -917,7 +917,7 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type,
                                        ModelBufferData &model_buff) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false);
   GELOGI("Finish build single online model, status: %u", status);
@@ -927,7 +927,7 @@ Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor
 Status GeGenerator::BuildSingleOpModel(OpDescPtr &op_desc, const vector<GeTensor> &inputs,
                                        const vector<GeTensor> &outputs, OpEngineType engine_type, int32_t compile_flag,
                                        ModelBufferData &model_buff) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGI("Start to build single op online, input size: %zu, output size: %zu", inputs.size(), outputs.size());
   Status status = BuildSingleOp(op_desc, inputs, outputs, kFileNameSuffix, engine_type, model_buff, false,
                                 compile_flag);
@@ -1073,7 +1073,7 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
     ret = graph_manager_.BuildGraph(graph_id, inputs, ge_root_model, session_id);
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", graph_id);
     ret = GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;

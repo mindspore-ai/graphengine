@@ -48,8 +48,8 @@ Status FileSaver::OpenFile(int32_t &fd, const std::string &file_path) {
   fd = mmOpen2(real_path, M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_INVALID_PARAM || fd == EN_ERROR) {
     // -1: Failed to open file; - 2: Illegal parameter
-    GELOGE(FAILED, "[Open][File]Failed. mmpa_errno = %d, %s", fd, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Open file failed, mmpa_errno = %d, error:%s.",
+    GELOGE(FAILED, "[Open][File]Failed. errno:%d, errmsg:%s", fd, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Open file failed, errno:%d, errmsg:%s.",
                        fd, strerror(errno));
     return FAILED;
   }
@@ -67,9 +67,9 @@ Status FileSaver::WriteData(const void *data, uint32_t size, int32_t fd) {
     while (size > size_1g) {
       write_count = mmWrite(fd, reinterpret_cast<void *>(seek), size_1g);
       if (write_count == EN_INVALID_PARAM || write_count == EN_ERROR) {
-        GELOGE(FAILED, "[Write][Data]Failed, mmpa_errorno = %ld, error:%s",
+        GELOGE(FAILED, "[Write][Data]Failed, errno:%ld, errmsg:%s",
                write_count, strerror(errno));
-        REPORT_INNER_ERROR("E19999", "Write data failed, mmpa_errorno = %ld, error:%s.",
+        REPORT_INNER_ERROR("E19999", "Write data failed, errno:%ld, errmsg:%s.",
                            write_count, strerror(errno));
         return FAILED;
       }

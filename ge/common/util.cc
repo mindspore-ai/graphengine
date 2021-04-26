@@ -122,7 +122,7 @@ long GetFileLength(const std::string &input_file) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
     mmGetFileSize(input_file.c_str(), &file_length) != EN_OK,
     ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {input_file, strerror(errno)});
-    return kFileSizeOutLimitedOrOpenFailed, "Open file[%s] failed. %s", input_file.c_str(), strerror(errno));
+    return kFileSizeOutLimitedOrOpenFailed, "Open file[%s] failed. errmsg:%s", input_file.c_str(), strerror(errno));
 
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_length == 0),
                                  ErrorManager::GetInstance().ATCReportErrMessage("E19015", {"filepath"}, {input_file});
@@ -226,7 +226,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
         if (ret != 0) {
           if (errno != EEXIST) {
             ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {directory_path});
-            GELOGW("Can not create directory %s. Make sure the directory exists and writable.", directory_path.c_str());
+            GELOGW("Can not create directory %s. Make sure the directory exists and writable. errmsg:%s",
+                   directory_path.c_str(), strerror(errno));
             return ret;
           }
         }
@@ -237,7 +238,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
   if (ret != 0) {
     if (errno != EEXIST) {
       ErrorManager::GetInstance().ATCReportErrMessage("E19006", {"path"}, {directory_path});
-      GELOGW("Can not create directory %s. Make sure the directory exists and writable.", directory_path.c_str());
+      GELOGW("Can not create directory %s. Make sure the directory exists and writable. errmsg:%s",
+             directory_path.c_str(), strerror(errno));
       return ret;
     }
   }
@@ -310,7 +312,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const cha
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() {
   mmTimeval tv{};
   int ret = mmGetTimeOfDay(&tv, nullptr);
-  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed: ret=%d", ret);
+  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed, ret:%d, errmsg:%s", ret, strerror(errno));
   auto total_use_time = tv.tv_usec + tv.tv_sec * 1000000;  // 1000000: seconds to microseconds
   return static_cast<uint64_t>(total_use_time);
 }
@@ -318,7 +320,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t GetCurrentSecondTimestap() {
   mmTimeval tv{};
   int ret = mmGetTimeOfDay(&tv, nullptr);
-  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed: ret=%d", ret);
+  GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed, ret:%d, errmsg:%s", ret, strerror(errno));
   auto total_use_time = tv.tv_sec;  // seconds
   return static_cast<uint32_t>(total_use_time);
 }
@@ -568,7 +570,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CheckPath(const char *pa
 
   INT32 is_dir = mmIsDir(path);
   if (is_dir != EN_OK) {
-    GELOGE(PATH_INVALID, "Open directory %s failed, maybe it is not exit or not a dir", path);
+    GELOGE(PATH_INVALID, "Open directory %s failed, maybe it is not exit or not a dir. errmsg:%s",
+           path, strerror(errno));
     return PATH_INVALID;
   }
 

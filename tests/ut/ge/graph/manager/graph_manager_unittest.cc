@@ -251,7 +251,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread) {
   GraphId graph_id = 1;
   std::vector<ge::InputTensorInfo> input_tensor;
   uint64_t session_id = 0;
-  ErrorMessage::Context error_context;
+  error_message::Context error_context;
   GEThreadLocalContext context;
   RunAsyncCallback callback;
   // PreRunArgs args{graph_id, input_tensor, session_id, error_context, context, callback};
@@ -277,7 +277,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread_2) {
   graph_node_1->SetBuildFlag(true);
   std::vector<ge::InputTensorInfo> input_tensor;
   uint64_t session_id = 0;
-  ErrorMessage::Context error_context;
+  error_message::Context error_context;
   GEThreadLocalContext context;
   RunAsyncCallback callback;
   // PreRunArgs args{graph_id, input_tensor, session_id, error_context, context, callback};

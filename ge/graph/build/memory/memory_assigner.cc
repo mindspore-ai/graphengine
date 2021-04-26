@@ -65,6 +65,8 @@ Status MemoryAssigner::AssignMemory(bool is_loop_graph, map<int64_t, size_t> &me
     GELOGE(FAILED, "CheckOffset Fail!");
     return FAILED;
   }
+
+  graph_mem_assigner.MarkDistanceAttr();
   return SUCCESS;
 }
 }  // namespace ge

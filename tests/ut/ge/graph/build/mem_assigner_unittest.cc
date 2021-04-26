@@ -284,9 +284,9 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_set_last_used_attr) {
   size_t zero_memory_size = 0;
   EXPECT_EQ(memory_assigner.AssignMemory(false, mem_offset, zero_memory_size), GRAPH_SUCCESS);
 
-  int32_t flag = 0;
-  (void) ge::AttrUtils::GetInt(node_f->GetOpDesc()->GetInputDesc(0), ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, flag);
-  EXPECT_EQ(flag, 1);
+  bool flag = 0;
+  (void) ge::AttrUtils::GetBool(node_f->GetOpDesc()->GetInputDesc(0), ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, flag);
+  EXPECT_EQ(flag, true);
 }
 
 TEST_F(UtestMemoryAssignerTest, graph_memory_assign_ref_var) {

@@ -431,7 +431,7 @@ void SetLastUsedInputMemAttr(NodePtr &node, int input_index) {
   auto node_op_desc = node->GetOpDesc();
   if (node_op_desc != nullptr) {
     auto input_desc = node_op_desc->MutableInputDesc(input_index);
-    if (!ge::AttrUtils::SetInt(*input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, true)) {
+    if (!ge::AttrUtils::SetBool(*input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, true)) {
       GELOGW("Set %s input[%d] ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE to true failed.", node_op_desc->GetName().c_str(),
              input_index);
       return;
@@ -1493,8 +1493,8 @@ void BlockMemAssigner::ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock
                                      bool same_stream) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr, return, "Input parameter to_release is null.");
   GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0, return, "Release memory");
-  GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "doesn't reuse memory");
   --to_release->ref_count_;
+  GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "doesn't reuse memory");
   if (!same_stream) {
     to_release->same_stream_ = false;
   }
@@ -2158,6 +2158,17 @@ void BlockMemAssigner::SetOpMemOffset(bool is_zero_copy) {
       SetOffsetSize(node_type_index, &block, 0, 0, 0);
     }
   }
+}
+
+size_t BlockMemAssigner::GetAnchorDataOffset(const NodeIndexIO &node_index_io, std::string &symbol) {
+  MemoryBlock *mem_block = nullptr;
+  if (IsSymbolExist(node_index_io, symbol)) {
+    mem_block = symbol_blocks_[symbol];
+    if (mem_block != nullptr) {
+      return mem_block->HeadOffset();
+    }
+  }
+  return kInvalidOffset;
 }
 
 Status BlockMemAssigner::Assign() {

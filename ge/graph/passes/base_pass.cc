@@ -259,7 +259,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
       }
 
       std::vector<NodePtr> nodes_to_pass;
-      GetNextIterNodes(node->GetOutAllNodes(), nodes_to_pass, during_pass_node_set);
+      GetNextIterNodes(node->GetOutNodes(), nodes_to_pass, during_pass_node_set);
 
       auto ret = RunPasses(node, names_to_passes, during_pass_node_set);
       if (ret != SUCCESS) {

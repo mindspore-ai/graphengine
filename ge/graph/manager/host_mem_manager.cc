@@ -92,6 +92,7 @@ void HostMemManager::Finalize() noexcept {
     }
   }
   var_memory_base_map_.clear();
+  
 }
 
 Status HostMemManager::MallocSharedMemory(SharedMemInfo &mem_info) {

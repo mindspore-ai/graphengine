@@ -16,9 +16,6 @@
 
 #include "hybrid/executor/worker/execution_engine.h"
 #include "graph/runtime_inference_context.h"
-#include "graph/utils/tensor_utils.h"
-#include "graph/utils/tensor_adapter.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "hybrid/executor//worker//shape_inference_engine.h"

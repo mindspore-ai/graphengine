@@ -295,6 +295,7 @@ Status SubgraphExecutor::PrepareNodes(int group) {
       GE_CHK_STATUS_RET(PrepareNode(*node_item, group), "[%s] failed to prepare task.", node_item->NodeName().c_str());
       RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] End");
     }
+
     GELOGD("[%s] Done preparing nodes successfully.", graph_item_->GetName().c_str());
     return SUCCESS;
   }
@@ -348,6 +349,7 @@ Status SubgraphExecutor::NodeScheduled(NodeState *node_state) {
          graph_item_->GetName().c_str(), node_state->GetName().c_str(),
          node_state->GetNodeItem()->data_send_.size(), node_state->GetNodeItem()->ctrl_send_.size(),
          node_state->GetSwitchIndex(), node_state->GetMergeIndex());
+
   auto future = pre_run_pool_.commit([this, node_state]() -> Status {
     RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] Start");
     std::function<void(const NodeItem *)> callback = [&](const NodeItem *node_item) {
@@ -391,6 +393,7 @@ Status SubgraphExecutor::AfterPrepared(NodeState *node_state) {
   if (node_state->IsShapeDependence()) {
     return SUCCESS;
   }
+
   // Not control flow node, propagate state.
   return NodeScheduled(node_state);
 }
@@ -399,6 +402,7 @@ void SubgraphExecutor::AfterExecuted(NodeState *node_state) {
   if (!node_state->IsShapeDependence()) {
     return;
   }
+
   // For control flow node, propagate state.
   auto error = NodeScheduled(node_state);
   if (error != SUCCESS) {

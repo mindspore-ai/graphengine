@@ -23,6 +23,7 @@ const char *const kDumpOFF = "OFF";
 const char *const kDumpoff = "off";
 const char *const kDumpOn = "on";
 const uint64_t kInferSessionId = 0;
+const uint32_t kAllOverflow = 3;
 }  // namespace
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpManager &DumpManager::GetInstance() {
@@ -30,78 +31,103 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpManager &DumpManager::GetIn
   return instance;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf(const DumpConfig &dump_config) {
-  DumpProperties dump_properties;
-  std::string dump_status;
-  std::string dump_path;
-  std::string dump_mode;
-  std::string dump_op_switch;
-
-  if (dump_config.dump_status.empty()) {
+bool DumpManager::NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump_properties) {
+  if (dump_config.dump_status.empty() && dump_config.dump_debug.empty()) {
     dump_properties_map_.emplace(kInferSessionId, dump_properties);
     GELOGI("Dump does not open");
-    return SUCCESS;
+    return false;
   }
-
-  dump_status = dump_config.dump_status;
-  GELOGI("Dump status is %s", dump_status.c_str());
-  if (dump_config.dump_status == kDumpoff || dump_config.dump_status == kDumpOFF) {
+  GELOGI("Dump status is %s, dump debug is %s.", dump_config.dump_status.c_str(), dump_config.dump_debug.c_str());
+  if ((dump_config.dump_status == kDumpoff || dump_config.dump_status == kDumpOFF) &&
+       dump_config.dump_debug == kDumpoff) {
     dump_properties.ClearDumpPropertyValue();
     dump_properties_map_.emplace(kInferSessionId, dump_properties);
-    return SUCCESS;
+    return false;
   }
-  dump_properties.SetDumpStatus(dump_status);
-
-  dump_op_switch = dump_config.dump_op_switch;
-  dump_properties.SetDumpOpSwitch(dump_op_switch);
-  if (dump_op_switch == kDumpoff && dump_config.dump_list.empty()) {
-    dump_properties_map_.emplace(kInferSessionId, dump_properties);
-    GELOGE(PARAM_INVALID, "[Check][DumpList]Invalid, dump_op_switch is %s",
-           dump_op_switch.c_str());
-    REPORT_INNER_ERROR("E19999", "Dump list check invalid, dump_op_switch is %s",
-                       dump_op_switch.c_str());
-    return PARAM_INVALID;
+  if (dump_config.dump_status == kDumpOn && dump_config.dump_debug == kDumpOn) {
+    GELOGW("Not support coexistence of dump debug and dump status.");
+    return false;
   }
+  return true;
+}
 
-  if (!dump_config.dump_list.empty()) {
-    for (auto model_dump : dump_config.dump_list) {
-      std::string model_name = model_dump.model_name;
-      GELOGI("Dump model is %s", model_name.c_str());
-      std::set<std::string> dump_layers;
-      for (auto layer : model_dump.layers) {
-        GELOGI("Dump layer is %s in model", layer.c_str());
-        dump_layers.insert(layer);
+void DumpManager::SetDumpDebugConf(const DumpConfig &dump_config, DumpProperties &dump_properties) {
+  if (dump_config.dump_debug == kDumpOn) {
+    GELOGI("Only do overflow detection, dump debug is %s.", dump_config.dump_debug.c_str());
+    dump_properties.InitInferOpDebug();
+    dump_properties.SetOpDebugMode(kAllOverflow);
+  }
+}
+
+void DumpManager::SetDumpList(const DumpConfig &dump_config, DumpProperties &dump_properties) {
+  for (const auto &model_dump : dump_config.dump_list) {
+    std::string model_name = model_dump.model_name;
+    GELOGI("Dump model is %s", model_name.c_str());
+    std::set<std::string> dump_layers;
+    for (const auto &layer : model_dump.layers) {
+      GELOGI("Dump layer is %s in model", layer.c_str());
+      dump_layers.insert(layer);
+    }
+    dump_properties.AddPropertyValue(model_name, dump_layers);
+  }
+}
+
+Status DumpManager::SetNormalDumpConf(const DumpConfig &dump_config, DumpProperties &dump_properties) {
+  if (dump_config.dump_status == kDumpOn) {
+    GELOGI("Only do normal dump process, dump status is %s.", dump_config.dump_status.c_str());
+    dump_properties.SetDumpStatus(dump_config.dump_status);
+    std::string dump_op_switch = dump_config.dump_op_switch;
+    dump_properties.SetDumpOpSwitch(dump_op_switch);
+    if (dump_op_switch == kDumpoff && dump_config.dump_list.empty()) {
+      dump_properties_map_.emplace(kInferSessionId, dump_properties);
+      GELOGE(PARAM_INVALID, "[Check][DumpList]Invalid, dump_op_switch is %s", dump_op_switch.c_str());
+      REPORT_INNER_ERROR("E19999", "Dump list check invalid, dump_op_switch is %s", dump_op_switch.c_str());
+      return PARAM_INVALID;
+    }
+
+    if (!dump_config.dump_list.empty()) {
+      if (dump_op_switch == kDumpOn) {
+        GELOGI("Start to dump model and single op, dump op switch is %s", dump_op_switch.c_str());
+      } else {
+        GELOGI("Only dump model, dump op switch is %s", dump_op_switch.c_str());
       }
-      dump_properties.AddPropertyValue(model_name, dump_layers);
-    }
-    if (dump_op_switch == kDumpOn) {
-      GELOGI("Start to dump model and single op,dump op switch is %s", dump_op_switch.c_str());
+      SetDumpList(dump_config, dump_properties);
     } else {
-      GELOGI("Only dump model,dump op switch is %s", dump_op_switch.c_str());
+      GELOGI("Only dump single op, dump op switch is %s", dump_op_switch.c_str());
     }
-  } else {
-    GELOGI("Only dump single op,dump op switch is %s", dump_op_switch.c_str());
+    GELOGI("Dump mode is %s", dump_config.dump_mode.c_str());
+    dump_properties.SetDumpMode(dump_config.dump_mode);
   }
+  return SUCCESS;
+}
 
-  dump_path = dump_config.dump_path;
+Status DumpManager::SetDumpPath(const DumpConfig &dump_config, DumpProperties &dump_properties) {
+  std::string dump_path = dump_config.dump_path;
   if (dump_path.empty()) {
     GELOGE(PARAM_INVALID, "[Check][DumpPath]It is empty");
     REPORT_INNER_ERROR("E19999", "Dump path check is empty");
     return PARAM_INVALID;
   }
-
   if (dump_path[dump_path.size() - 1] != '/') {
     dump_path = dump_path + "/";
   }
   dump_path = dump_path + CurrentTimeInStr() + "/";
   GELOGI("Dump path is %s", dump_path.c_str());
   dump_properties.SetDumpPath(dump_path);
+  return SUCCESS;
+}
 
-  dump_mode = dump_config.dump_mode;
-  GELOGI("Dump mode is %s", dump_mode.c_str());
-  dump_properties.SetDumpMode(dump_mode);
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf(const DumpConfig &dump_config) {
+  DumpProperties dump_properties;
+  if (!NeedDoDump(dump_config, dump_properties)) {
+    GELOGD("No need do dump process.");
+    return SUCCESS;
+  }
+  SetDumpDebugConf(dump_config, dump_properties);
+  GE_CHK_STATUS_RET(SetNormalDumpConf(dump_config, dump_properties), "[Init][DumpConf] failed when dump status is on.");
+  GE_CHK_STATUS_RET(SetDumpPath(dump_config, dump_properties), "[Init][DumpPath] failed.");
   dump_properties_map_[kInferSessionId] = dump_properties;
-
+  
   return SUCCESS;
 }
 

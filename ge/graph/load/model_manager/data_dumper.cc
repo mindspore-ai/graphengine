@@ -663,7 +663,7 @@ Status DataDumper::LoadDumpInfo() {
   SetOpDebugIdToAicpu(op_debug_task_id_, op_debug_stream_id_, op_debug_addr_, op_mapping_info);
 
   if (!op_list_.empty() || is_op_debug_ || is_end_graph_) {
-    auto ret = ExecuteLoadDumpInfo(op_mapping_info);
+    ret = ExecuteLoadDumpInfo(op_mapping_info);
     if (ret != SUCCESS) {
       GELOGE(ret, "Execute load dump info failed");
       return ret;

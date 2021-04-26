@@ -361,6 +361,7 @@ using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensor
 namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";
 static const char *const INPUT_SHAPE = "input_shape";
+static const char *const INPUT_SHAPE_RANGE = ge::INPUT_SHAPE_RANGE;
 static const char *const OP_NAME_MAP = "op_name_map";
 static const char *const IS_DYNAMIC_INPUT = "is_dynamic_input";
 static const char *const IS_INPUT_ADJUST_HW_LAYOUT = "is_input_adjust_hw_layout";

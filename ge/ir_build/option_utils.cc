@@ -523,11 +523,9 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
   }
 
   if (!dynamic_batch_size.empty()) {
-    if (input_shape_range.find(":") != string::npos) {
-      if (!CheckDynamicBatchSizeInputShapeValid(shape_map, dynamic_batch_size)) {
-        GELOGE(ge::PARAM_INVALID, "[Check][DynamicBatchSizeInputShape] input_shape: %s invalid.", input_shape.c_str());
-        return ge::PARAM_INVALID;
-      }
+    if (!CheckDynamicBatchSizeInputShapeValid(shape_map, dynamic_batch_size)) {
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicBatchSizeInputShape] input_shape: %s invalid.", input_shape.c_str());
+      return ge::PARAM_INVALID;
     }
   }
 

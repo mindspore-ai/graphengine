@@ -486,6 +486,15 @@ Status GraphMemoryAssigner::UpdateRefOpOffsetReverse(const NodePtr &node) {
     auto peer_op_desc = peer_node->GetOpDesc();
     GE_CHECK_NOTNULL(peer_op_desc);
     vector<int64_t> peer_output_list = peer_op_desc->GetOutputOffset();
+    if ((peer_out_anchor->GetIdx() >= static_cast<int>(peer_output_list.size()))
+        || (out2in.first >= static_cast<int32_t>(output_list.size()))) {
+      GELOGW("out of range, peer_out_anchor:%d, peer_output_list size:%zu, out2in:%d, output_list size:%zu",
+             peer_out_anchor->GetIdx(),
+             peer_output_list.size(),
+             out2in.first,
+             output_list.size());
+      continue;
+    }
     peer_output_list.at(peer_out_anchor->GetIdx()) = output_list.at(out2in.first);
     peer_op_desc->SetOutputOffset(peer_output_list);
     GELOGD("UpdateRefOpOffsetReverse: Node[%s] output[%d] is set from node[%s] output index[%d] offset[%ld]",

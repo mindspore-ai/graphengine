@@ -126,19 +126,6 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
     return SUCCESS;
   };
 
-  const auto ExProcNode = [&](const std::set<std::string> &proc_types,
-                              const std::function<void(InferShapePass *, NodePtr)> &proc_func,
-                              const std::string &info) {
-    for (auto &n : node->GetOutDataNodes()) {
-      GE_CHECK_NOTNULL(n);
-      if (proc_types.count(n->GetType()) > 0) {
-        proc_func(this, n);
-        GELOGD("Node %s %s after %s.", n->GetName().c_str(), info.c_str(), node->GetName().c_str());
-      }
-    }
-    return SUCCESS;
-  };
-
   if (node->GetType() == NEXTITERATION || node->GetType() == REFNEXTITERATION) {
     return RePassNode({MERGE, REFMERGE}); // Re-Pass Merge
   }
@@ -146,18 +133,8 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
   if (node->GetType() == MERGE || node->GetType() == REFMERGE) {
     if (node->GetOpDesc()->HasAttr(ATTR_NAME_NEED_INFER_AGAIN)) {
       node->GetOpDesc()->DelAttr(ATTR_NAME_NEED_INFER_AGAIN);
-      return RePassNode({SWITCH, REFSWITCH}); // Re-Pass Switch
     }
     return SUCCESS;
-  }
-
-  if (node->GetType() == SWITCH || node->GetType() == REFSWITCH) {
-    if (node->GetOpDesc()->HasAttr(ATTR_NAME_NEED_INFER_AGAIN)) {
-      node->GetOpDesc()->DelAttr(ATTR_NAME_NEED_INFER_AGAIN);
-      return ExProcNode({EXIT, REFEXIT}, &InferShapePass::AddNodeRestored, "need restore"); // Restore Exit
-    } else {
-      return ExProcNode({EXIT, REFEXIT}, &InferShapePass::AddNodeStopped, "need stop"); // Stop Exit
-    }
   }
 
   return SUCCESS;

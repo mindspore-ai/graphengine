@@ -246,6 +246,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
+  ge::Status GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                       std::string &attr_value);
+
   ge::Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
   ge::Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);

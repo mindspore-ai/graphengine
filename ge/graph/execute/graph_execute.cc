@@ -637,6 +637,19 @@ Status GraphExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> 
   return SUCCESS;
 }
 
+Status GraphExecutor::GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                                   std::string &attr_value) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status ret = model_manager->GetOpAttr(model_id, op_name, attr_name, attr_value);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Get][OpAttr]Get op:%s attr:%s failed.", op_name.c_str(), attr_name.c_str());
+    REPORT_CALL_ERROR("E19999", "Get op:%s attr:%s failed.", op_name.c_str(), attr_name.c_str());
+    return ret;
+  }
+  return SUCCESS;
+}
+
 Status GraphExecutor::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);

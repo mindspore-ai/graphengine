@@ -45,11 +45,12 @@ Status SharedMemAllocator::Allocate(SharedMemInfo &mem_info) {
     return GE_GRAPH_MEMORY_ALLOC_FAILED;
   }
   mem_info.fd = output_para.fd;
-  mem_info.host_aligned_ptr = AlignedPtr::BuildFromAllocFunc(
-    [&output_para](std::unique_ptr<uint8_t[], AlignedPtr::Deleter> &ptr) {
-      ptr.reset(reinterpret_cast<uint8_t *>(output_para.ptr));
-    },
-    [](uint8_t *ptr) { ptr = nullptr; });
+  mem_info.host_aligned_ptr = AlignedPtr::BuildFromAllocFunc([&output_para](std::unique_ptr<uint8_t[], deleter> &ptr) {
+                                                               ptr.reset(reinterpret_cast<uint8_t *>(output_para.ptr));
+                                                             },
+                                                             [](uint8_t *ptr) {
+                                                               ptr = nullptr;
+                                                             });
   mem_info.device_address = reinterpret_cast<uint8_t *>(output_para.devPtr);
   return SUCCESS;
 }

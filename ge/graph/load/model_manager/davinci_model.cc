@@ -280,7 +280,7 @@ void DavinciModel::UnbindHcomStream() {
   if (!all_hccl_stream_list_.empty()) {
     for (size_t i = 0; i < all_hccl_stream_list_.size(); i++) {
       GE_LOGW_IF(rtModelUnbindStream(rt_model_handle_, all_hccl_stream_list_[i]) != RT_ERROR_NONE,
-                 "Unbind hccl stream from model failed! Index: %zu", i);
+                 "Unbind hccl stream from model failed, Index: %zu", i);
       GE_LOGW_IF(rtStreamDestroy(all_hccl_stream_list_[i]) != RT_ERROR_NONE, "Destroy hccl stream for rt_model failed")
     }
   }
@@ -551,7 +551,7 @@ Status DavinciModel::DoTaskSink() {
   }
 
   GE_CHK_RT_RET(rtGetAicpuDeploy(&deploy_type_));
-  GELOGI("Do task_sink. AiCpu deploy type is: %x.", deploy_type_);
+  GELOGI("Do task sink. AiCpu deploy type is: %x.", deploy_type_);
 
   GE_CHK_STATUS_RET(BindModelStream(), "Bind model stream failed.");
 
@@ -582,7 +582,7 @@ Status DavinciModel::SetTSDevice() {
   int64_t value = 0;
   bool ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_CORE_TYPE, value);
   uint32_t core_type = ret ? static_cast<uint32_t>(value) : 0;
-  GELOGD("SetTSDevice: %u.", core_type);
+  GELOGD("Set TSDevice: %u.", core_type);
   rtError_t rt_ret = rtSetTSDevice(core_type);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtSetTSDevice failed, core_type:%u, model_id:%u",
@@ -969,7 +969,7 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
     return SUCCESS;
   }
 
-  GELOGI("Init Data node: %s.", op_desc->GetName().c_str());
+  GELOGI("Init data node: %s.", op_desc->GetName().c_str());
   auto data_index = data_op_index++;
   if (AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
     GELOGD("Get new index %u, old %u", data_index, data_op_index - 1);
@@ -1027,7 +1027,7 @@ Status DavinciModel::GenInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_
   GELOGD("Data node size: %zu, NetOutput node size: %zu", data_by_index.size(), output_op_list.size());
   for (auto &item : data_by_index) {
     const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, item.second);
-    GELOGD("Data node: %s, output addr size: %zu", item.second->GetName().c_str(), output_addrs.size());
+    GELOGD("Data node is: %s, output addr size: %zu", item.second->GetName().c_str(), output_addrs.size());
     input_addrs_list_.emplace_back(output_addrs);
 
     GE_CHK_STATUS_RET(InitAippInfo(item.first, item.second), "Init AIPP Info failed");
@@ -1043,10 +1043,10 @@ Status DavinciModel::GenInputOutputInfo(const map<uint32_t, OpDescPtr> &data_by_
 
   vector<string> out_node_name;
   (void)AttrUtils::GetListStr(ge_model_, ATTR_MODEL_OUT_NODES_NAME, out_node_name);
-  GELOGD("Output node size: %zu, out nodes name: %zu", output_op_list.size(), out_node_name.size());
+  GELOGD("Output node size: %zu, out nodes name is: %zu", output_op_list.size(), out_node_name.size());
   for (const auto &op_desc : output_op_list) {
     const auto input_addrs = ModelUtils::GetInputDataAddrs(runtime_param_, op_desc);
-    GELOGD("NetOutput node: %s, input addr size: %zu", op_desc->GetName().c_str(), input_addrs.size());
+    GELOGD("NetOutput node is: %s, input addr size: %zu", op_desc->GetName().c_str(), input_addrs.size());
     output_addrs_list_.emplace_back(input_addrs);
 
     bool getnext_sink_dynamic = false;

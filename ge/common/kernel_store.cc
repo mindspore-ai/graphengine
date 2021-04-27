@@ -38,6 +38,10 @@ bool KernelStore::Build() {
     buffer_.resize(total_len);
   } catch (std::bad_alloc &e) {
     GELOGE(ge::MEMALLOC_FAILED, "All build memory failed, memory size %zu", total_len);
+    GELOGE(ge::MEMALLOC_FAILED, "[Malloc][Memmory]Resize buffer failed, memory size %zu, "
+           "exception %s", total_len, e.what());
+    REPORT_CALL_ERROR("E19999", "Resize buffer failed, memory size %zu, exception %s",
+                      total_len, e.what());
     return false;
   }
 

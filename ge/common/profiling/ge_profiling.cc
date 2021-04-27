@@ -67,11 +67,13 @@ bool TransProfConfigToParam(const ProfCommandHandleData &profCommand, vector<str
 
 bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
   if (deviceid_list == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "deviceIdList is nullptr");
+    GELOGE(ge::PARAM_INVALID, "[Check][DeviceIDList]Invalid, it is nullptr");
+    REPORT_INNER_ERROR("E19999", "Device id list is nullptr");
     return false;
   }
   if (device_nums == 0 || device_nums > MAX_DEV_NUM) {
-    GELOGE(ge::PARAM_INVALID, "The device nums: %u is invalid.", device_nums);
+    GELOGE(ge::PARAM_INVALID, "[Check][DeviceNums]Invalid, device nums: %u", device_nums);
+    REPORT_INNER_ERROR("E19999", "DeviceNums %u check invalid", device_nums);
     return false;
   }
 
@@ -79,12 +81,16 @@ bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
   int32_t dev_count = 0;
   rtError_t rt_err = rtGetDeviceCount(&dev_count);
   if (rt_err != RT_ERROR_NONE) {
-    GELOGE(ge::INTERNAL_ERROR, "Get the Device count fail.");
+    GELOGE(ge::INTERNAL_ERROR, "[Get][DeviceCount]Failed, error_code %d", rt_err);
+    REPORT_CALL_ERROR("E19999", "Get device count failed, error_code %d", rt_err);
     return false;
   }
 
   if (device_nums > static_cast<uint32_t>(dev_count)) {
-    GELOGE(ge::PARAM_INVALID, "Device num(%u) is not in range 1 ~ %d.", device_nums, dev_count);
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]Device num %u is not in range [1,%d]",
+           device_nums, dev_count);
+    REPORT_INNER_ERROR("E19999", "Device num %u check invalid, it is not in range [1,%d]",
+                       device_nums, dev_count);
     return false;
   }
 
@@ -92,11 +98,14 @@ bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
   for (size_t i = 0; i < device_nums; ++i) {
     uint32_t dev_id = deviceid_list[i];
     if (dev_id >= static_cast<uint32_t>(dev_count)) {
-      GELOGE(ge::PARAM_INVALID, "Device id %u is not in range 0 ~ %d(exclude %d)", dev_id, dev_count, dev_count);
+      GELOGE(ge::PARAM_INVALID, "[Check][DeviceId]Device id %u is not in range [0,%d)",
+             dev_id, dev_count);
+      REPORT_CALL_ERROR("E19999", "Device id %u is not in range [0,%d)", dev_id, dev_count);
       return false;
     }
     if (record.count(dev_id) > 0) {
-      GELOGE(ge::PARAM_INVALID, "Device id %u is duplicatedly set", dev_id);
+      GELOGE(ge::PARAM_INVALID, "[Check][DeviceId]Device id %u is duplicatedly set", dev_id);
+      REPORT_CALL_ERROR("E19999", "Device id %u is not unique, duplicatedly set", dev_id);
       return false;
     }
     record.insert(dev_id);
@@ -106,7 +115,8 @@ bool isProfConfigValid(const uint32_t *deviceid_list, uint32_t device_nums) {
 
 ge::Status RegProfCtrlCallback(MsprofCtrlCallback func) {
   if (func == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "Msprof ctrl callback is nullptr.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]Msprof ctrl callback is nullptr");
+    REPORT_INNER_ERROR("E19999", "Msprof ctrl callback is nullptr");
     return ge::PARAM_INVALID;
   }
   if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofCtrlCallback != nullptr) {
@@ -119,13 +129,15 @@ ge::Status RegProfCtrlCallback(MsprofCtrlCallback func) {
 
 ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
   if (func == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "MsprofSetDeviceCallback callback is nullptr.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofSetDeviceCallback callback is nullptr");
+    REPORT_INNER_ERROR("E19999", "MsprofSetDeviceCallback callback is nullptr");
     return ge::PARAM_INVALID;
   }
   // Pass MsprofSetDeviceCallback to runtime
   ge::Status rt_ret = rtRegDeviceStateCallback(kRtSetDeviceRegName.c_str(), static_cast<rtDeviceStateCallback>(func));
   if (rt_ret != ge::SUCCESS) {
-    GELOGE(rt_ret, "Pass MsprofSetDeviceCallback to runtime failed!");
+    GELOGE(rt_ret, "[Pass][MsprofSetDeviceCallback]To runtime failed!");
+    REPORT_CALL_ERROR("E19999", "Pass MsprofSetDeviceCallback to runtime failed, ret 0x%X", rt_ret);    
     return rt_ret;
   }
   return ge::SUCCESS;
@@ -133,7 +145,8 @@ ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
 
 ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
   if (func == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
+    REPORT_INNER_ERROR("E19999", "MsprofReporterCallback callback is nullptr");
     return ge::PARAM_INVALID;
   }
   if (ge::ProfilingManager::Instance().GetMsprofCallback().msprofReporterCallback != nullptr) {
@@ -144,7 +157,10 @@ ge::Status RegProfReporterCallback(MsprofReporterCallback func) {
     // Pass MsprofReporterCallback to runtime
     ge::Status rt_ret = rtSetMsprofReporterCallback(func);
     if (rt_ret != ge::SUCCESS) {
-      GELOGE(rt_ret, "Pass MsprofReporterCallback to runtime failed!!");
+      GELOGE(rt_ret, "[Pass][Param]Pass MsprofReporterCallback to runtime failed, error_code %u",
+             rt_ret);
+      REPORT_CALL_ERROR("E19999", "Pass MsprofReporterCallback to runtime failed, error_code %u",
+                        rt_ret);
       return rt_ret;
     }
     // Pass MsprofReporterCallback to hccl
@@ -169,7 +185,8 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
     }
   
     if (!TransProfConfigToParam(*prof_config_param, prof_params)) {
-      GELOGE(ge::PARAM_INVALID, "Transfer profilerConfig to string vector failed");
+      GELOGE(ge::PARAM_INVALID, "[Check][Param]Transfer profilerConfig to string vector failed");
+      REPORT_CALL_ERROR("E19999", "Transfer profilerConfig to string vector failed");
       return ge::PARAM_INVALID;
     }
   }
@@ -188,7 +205,10 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   }
   ge::Status ret = graph_loader.CommandHandle(command);
   if (ret != ge::SUCCESS) {
-    GELOGE(ret, "Handle profiling command failed");
+    GELOGE(ret, "[Handle][Command]Handle profiling command failed, command type %s, error_code %u",
+           iter->second.c_str(), ret);
+    REPORT_CALL_ERROR("E19999", "Handle profiling command failed, command type %s, error_code %u",
+                      iter->second.c_str(), ret);    
     return ge::FAILED;
   }
 

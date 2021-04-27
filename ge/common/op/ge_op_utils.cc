@@ -239,7 +239,8 @@ Status OpUtils::SetDataByDataType(size_t out_size, const std::vector<char *> &ch
                                   const std::vector<char *> &chunk_output, GeTensor *output) {
   unique_ptr<T[]> output_data(new (std::nothrow) T[out_size]());
   if (output_data == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "New buf failed");
+    GELOGE(MEMALLOC_FAILED, "[Malloc][Data]New buf failed");
+    REPORT_CALL_ERROR("E19999", "New buf failed");
     return INTERNAL_ERROR;
   }
 
@@ -275,7 +276,10 @@ Status OpUtils::SetOutputSliceDataByDataType(void *data, int64_t data_size, cons
     int64_t dim_i = input_dims[i];
     int64_t stride_i = stride[i];
     if (dim_i == 0) {
-      GELOGE(PARAM_INVALID, "Dim_i of size tensor can't be 0.");
+      GELOGE(PARAM_INVALID, "[Check][Param]Invalid, Dim_i %s of size tensor is 0",
+             ShapeToString(input_dims[i]).c_str());
+      REPORT_INNER_ERROR("E19999", "Dim_i %s of size tensor is 0, invalid",
+                         ShapeToString(input_dims[i]).c_str());
       return PARAM_INVALID;
     }
     chunk_size = chunk_size / dim_i;
@@ -299,7 +303,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetOutputSliceD
   void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims, std::vector<int64_t> &begin,
   std::vector<int64_t> &output_dims, GeTensor *output, std::vector<int64_t> &stride) {
   if (data == nullptr || output == nullptr) {
-    GELOGE(PARAM_INVALID, "Input param is nullptr.");
+    GELOGE(PARAM_INVALID, "[Check][Param]Input param is nullptr");
+    REPORT_INNER_ERROR("E19999", "Input param is nullptr");
     return PARAM_INVALID;
   }
 
@@ -436,14 +441,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetWeights(ge::
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims) {
   if (tensor == nullptr) {
-    GELOGE(PARAM_INVALID, "Input tensor is nullptr");
+    GELOGE(PARAM_INVALID, "[Check][Param]Input tensor is nullptr");
+    REPORT_INNER_ERROR("E19999","Input tensor is nullptr");
     return PARAM_INVALID;
   }
 
   // If the tensor data is a vector, the shape dimension must be 1
   if (tensor->GetTensorDesc().GetShape().GetDims().size() > 1) {
-    GELOGE(PARAM_INVALID, "The dimension of the input tensor shape cannot be more than 1, it is %zu",
+    GELOGE(PARAM_INVALID, "[Check][Param]The dimension of the input tensor shape "
+           "cannot be more than 1, it is %zu",
            tensor->GetTensorDesc().GetShape().GetDims().size());
+    REPORT_CALL_ERROR("E19999", "The dimension of the input tensor shape %zu invalid, "
+                      "more than 1", tensor->GetTensorDesc().GetShape().GetDims().size());
     return PARAM_INVALID;
   }
 
@@ -462,8 +471,10 @@ OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType ty
       dims.push_back(shape_data[i]);
     }
   } else {
-    GELOGE(PARAM_INVALID, "Data type only can be DT_INT32 or DT_INT64. type is %s",
-           TypeUtils::DataTypeToSerialString(type).c_str());
+    GELOGE(PARAM_INVALID, "[Check][DataType]Invalid, type only can be DT_INT32 or DT_INT64, "
+           "type is %s", TypeUtils::DataTypeToSerialString(type).c_str());
+    REPORT_INNER_ERROR("E19999", "Data type %s check invalid, only can be DT_INT32 or DT_INT64",
+                       TypeUtils::DataTypeToSerialString(type).c_str());
     return PARAM_INVALID;
   }
 

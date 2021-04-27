@@ -87,21 +87,26 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
   struct MsprofGeOptions prof_conf = {{ 0 }};
   Status ret = InitFromOptions(options, prof_conf);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to init profiling.");
+    GELOGE(ret, "[Init][Profiling]Failed, error_code %u", ret);
+    REPORT_CALL_ERROR("E19999", "Init profiling failed, error_code %u", ret);
     return ret;
   }
 
   if (is_execute_profiling_) {
     if (prof_cb_.msprofCtrlCallback == nullptr) {
-      GELOGE(ge::PARAM_INVALID, "MsprofCtrlCallback callback is nullptr.");
+      GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofCtrlCallback callback is nullptr");
+      REPORT_INNER_ERROR("E19999", "MsprofCtrlCallback callback is nullptr");
       return ge::PARAM_INVALID;
     }
     int32_t cb_ret = prof_cb_.msprofCtrlCallback(
         static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS),
         static_cast<void *>(&prof_conf), sizeof(MsprofGeOptions));
     if (cb_ret != 0) {
-      GELOGE(FAILED, "Call msprofCtrlCallback failed, type:%u, return:%d",
+      GELOGE(FAILED, "[Call][msprofCtrlCallback]Failed, type %u, return %d",
              static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS), cb_ret);
+      REPORT_CALL_ERROR("E19999", "Call msprofCtrlCallback failed, type %u, return %d",
+                        static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS),
+                        cb_ret);	
       return FAILED;
     }
     GELOGI("Profiling init success");
@@ -122,7 +127,10 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
     // enable profiling by ge option
     if (strncpy_s(prof_conf.options, MSPROF_OPTIONS_DEF_LEN_MAX, options.profiling_options.c_str(),
                   MSPROF_OPTIONS_DEF_LEN_MAX - 1) != EOK) {
-      GELOGE(INTERNAL_ERROR, "copy profiling_options failed.");
+      GELOGE(INTERNAL_ERROR, "[copy][ProfilingOptions]Failed, options %s",
+             options.profiling_options.c_str());
+      REPORT_CALL_ERROR("E19999", "Copy profiling_options %s failed",
+                        options.profiling_options.c_str());
       return INTERNAL_ERROR;
     }
     is_execute_profiling_ = true;
@@ -147,13 +155,17 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
   // Parse json str for bp fp
   Status ret = ParseOptions(prof_conf.options);
   if (ret != ge::SUCCESS) {
-    GELOGE(ge::PARAM_INVALID, "Parse training trace param failed.");
+    GELOGE(ge::PARAM_INVALID, "[Parse][Options]Parse training trace param %s failed, error_code %u",
+           prof_conf.options, ret);
+    REPORT_CALL_ERROR("E19999", "Parse training trace param %s failed, error_code %u",
+                      prof_conf.options, ret);
     return ge::PARAM_INVALID;
   }
 
   if (strncpy_s(prof_conf.jobId, MSPROF_OPTIONS_DEF_LEN_MAX, options.job_id.c_str(), MSPROF_OPTIONS_DEF_LEN_MAX - 1) !=
       EOK) {
-    GELOGE(INTERNAL_ERROR, "copy job_id failed.");
+    GELOGE(INTERNAL_ERROR, "[Copy][JobId]Failed, original job_id %s", options.job_id.c_str());
+    REPORT_CALL_ERROR("E19999", "Copy job_id %s failed", options.job_id.c_str());
     return INTERNAL_ERROR;
   }
   GELOGI("Job id: %s, original job id: %s.", prof_conf.jobId, options.job_id.c_str());
@@ -163,7 +175,8 @@ ge::Status ProfilingManager::InitFromOptions(const Options &options, MsprofGeOpt
 
 ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   if (options.empty()) {
-    GELOGE(ge::PARAM_INVALID, "Profiling options is empty.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]Profiling options is empty");
+    REPORT_INNER_ERROR("E19999", "Profiling options is empty");
     return ge::PARAM_INVALID;
   }
   try {
@@ -178,7 +191,9 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     }
     GELOGI("GE profiling training trace:%s", training_trace.c_str());
     if (training_trace != "on") {
-      GELOGE(ge::PARAM_INVALID, "Training trace param:%s is invalid.", training_trace.c_str());
+      GELOGE(ge::PARAM_INVALID, "[Check][Param]Training trace param:%s is invalid.",
+             training_trace.c_str());
+      REPORT_INNER_ERROR("E19999", "Training trace param:%s is invalid.", training_trace.c_str());
       return ge::PARAM_INVALID;
     }
     fp_point_ = prof_options[kFpPoint];
@@ -188,7 +203,8 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     }
     is_training_trace_ = true;
   } catch (...) {
-    GELOGE(FAILED, "Json prof_conf options is invalid.");
+    GELOGE(FAILED, "[Check][Param]Json prof_conf options is invalid");
+    REPORT_INNER_ERROR("E19999", "Json prof_conf options is invalid");    
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -202,7 +218,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   if (device_num != 0) {
     auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
     if (device_id_ptr == nullptr) {
-      GELOGE(FAILED, "Stop profiling: device id ptr is null.");
+      GELOGE(FAILED, "[Stop][Profiling]Device id ptr is null.");
+      REPORT_INNER_ERROR("E19999", "Stop profiling, device id ptr is null");
       return;
     }
     for (int32_t i = 0; i < device_num; i++) {
@@ -216,7 +233,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
 
   // stop profiling
   if (prof_cb_.msprofCtrlCallback == nullptr) {
-      GELOGE(ge::PARAM_INVALID, "MsprofCtrlCallback callback is nullptr.");
+      GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofCtrlCallback callback is nullptr");
+      REPORT_INNER_ERROR("E19999", "MsprofCtrlCallback callback is nullptr");      
       return;
   }
   int32_t cb_ret = prof_cb_.msprofCtrlCallback(static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_FINALIZE),
@@ -278,10 +296,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
     try {
       reported_data = task_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
     } catch (std::exception &e) {
-      GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+      GELOGE(FAILED, "[Convert][ReportData]Failed to convert json to string, reason %s.",
+             e.what());
+      REPORT_CALL_ERROR("E19999", "Failed to convert reported_data from json to string, reason %s",
+                        e.what());      
       return ;
     } catch (...) {
-      GELOGE(FAILED, "Failed to convert JSON to string.");
+      GELOGE(FAILED, "[Convert][ReportedData]Failed to convert JSON to string");
+      REPORT_CALL_ERROR("E19999", "Failed to convert reported data from json to string");
       return;
     }
     reported_data.append(",")
@@ -300,7 +322,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Profil
          index_id, model_id, tag_id);
   rt_ret = rtProfilerTraceEx(index_id, model_id, tag_id, stream);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "[Call][rtProfilerTraceEx] failed, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtProfilerTraceEx]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtProfilerTraceEx failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGD("Profiling Step Info TraceTask execute async success, index_id = %lu, model_id = %lu, tag_id = %u",
@@ -314,7 +337,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Profil
   uint32_t stream_id = 0;
   rt_ret = rtGetTaskIdAndStreamID(&task_id, &stream_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(RT_FAILED, "[Get][RtsInfo] task_id and stream_id failed, ret: 0x%X.", rt_ret);
+    GELOGE(RT_FAILED, "[Get][RtsInfo]Task_id and stream_id failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Get task_id and stream_id failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGD("Get profiling args, task_id[%u], stream_id[%u]", task_id, stream_id);
@@ -333,8 +357,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Profil
     reported_data = step_info.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
   } catch (std::exception &e) {
     GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+    GELOGE(FAILED, "[Convert][ReportedData]Failed to convert from json to string, reason: %s",
+           e.what());
+    REPORT_CALL_ERROR("E19999", "Failed to convert reported data from json to string, reason: %s",
+                      e.what());
   } catch (...) {
-    GELOGE(FAILED, "Failed to convert JSON to string.");
+    GELOGE(FAILED, "[Convert][ReportedData]Failed to convert from json to string");
+    REPORT_CALL_ERROR("E19999", "Failed to convert reported data from json to string");
   }
   reported_data.append(",")
                .append("\n");
@@ -390,7 +419,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
   int32_t logic_device_id = 0;
   rtError_t rt_ret = rtGetDevice(&logic_device_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "runtime get logic_device_id failed, current logic_device_id:%d", logic_device_id);
+    GELOGE(rt_ret, "[Get][LogicDeviceId]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Get logic device id failed, ret 0x%X", rt_ret);
     return;
   }
   GELOGD("current logic_device_id:%d", logic_device_id);
@@ -452,7 +482,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
     // register Framework to profiling
     int32_t cb_ret = PluginInit();
     if (cb_ret != 0) {
-      GELOGE(cb_ret, "profiling plugin init failed, ret:%d", cb_ret);
+      GELOGE(cb_ret, "[Init][ProfilingPlugin]Failed, ret %d", cb_ret);
+      REPORT_CALL_ERROR("E19999", "Init profiling plugin failed, ret %d", cb_ret);
       return cb_ret;
     }
     GELOGI("Prof subscribe: model load profiling on.");
@@ -465,7 +496,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
   device[0] = davinci_model->GetDeviceId();
   rtError_t rt_ret = rtProfilerStart(module, device_num, device);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(FAILED, "Runtime profiler start failed.");
+    GELOGE(FAILED, "[Start][Profiler]Malloc buffer failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Malloc buffer failed when start profiling, ret 0x%X", rt_ret);    
     return FAILED;
   }
   UpdateSubscribeDeviceModuleMap(kProfModelSubscribe, device[0], module);
@@ -473,7 +505,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
   // Report profiling data
   Status p_ret = davinci_model->ReportProfilingData();
   if (p_ret != SUCCESS) {
-    GELOGE(p_ret, "Report profiling data failed.");
+    GELOGE(p_ret, "[Report][ProfilingData]Failed, ret %u", p_ret);
+    REPORT_CALL_ERROR("E19999", "Report profiling data failed, ret %u", p_ret);
     return p_ret;
   }
 #endif
@@ -499,13 +532,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
       // The same device_id, only stop at last time
       rtError_t rt_ret = rtProfilerStop(subs_dev_module_[device[0]].module, dev_num, device);
       if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(FAILED, "Runtime profiler stop failed.");
+        GELOGE(FAILED, "[Stop][Profiler]Malloc buffer Failed, ret %d", rt_ret);
+        REPORT_CALL_ERROR("E19999", "Malloc buffer failed when stop profiling, ret %d", rt_ret);	
         return FAILED;
       }
     }
     UpdateSubscribeDeviceModuleMap(kProfModelUnsubscribe, device[0], subs_dev_module_[device[0]].module);
   } else {
-    GELOGE(FAILED, "The device_id:%u has not been subscribed, do not need to cancel.", device[0]);
+    GELOGE(FAILED, "[Cancel][DeviceId]The device_id %u has not been subscribed, "
+           "do not need to cancel", device[0]);
+    REPORT_CALL_ERROR("E19999", "The device_id %u has not been subscribed, do not need to cancel",
+                      device[0]);
     return FAILED;
   }
 
@@ -527,14 +564,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfIn
     // register Framework to profiling
     int32_t cb_ret = PluginInit();
     if (cb_ret != 0) {
-      GELOGE(cb_ret, "profiling plugin init failed, ret:%d", cb_ret);
+      GELOGE(cb_ret, "[Init][ProfilingPlugin]Failed, ret %d", cb_ret);
+      REPORT_CALL_ERROR("E19999", "Init profiling plugin failed, ret %d", cb_ret);
       return cb_ret;
     }
 
     int32_t device_num = -1;
     rtError_t rt_ret = rtProfilerStart(model_load_mask, device_num, nullptr);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(FAILED, "Runtime profiler start failed.");
+      GELOGE(FAILED, "[Start][Profiler]Malloc buffer failed, ret 0x%X", rt_ret);
+      REPORT_CALL_ERROR("E19999", "Malloc buffer failed when start profiling, ret 0x%X", rt_ret);
       return FAILED;
     }
     is_load_profiling_ = true;
@@ -563,7 +602,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   int32_t dev_num = -1;
   rtError_t rt_ret = rtProfilerStop(PROF_MODEL_LOAD_MASK, dev_num, nullptr);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(FAILED, "Runtime profiler stop failed.");
+    GELOGE(FAILED, "[Stop][Profiler]Malloc buffer failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Malloc buffer failed when stop profiling, ret 0x%X", rt_ret);
     return FAILED;
   }
   for (auto device_id_module : device_id_module_map_) {
@@ -572,7 +612,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
       GELOGI("Prof finalize: device_id: %u, module: 0x%lx.", device_id, device_id_module.second);
       rt_ret = rtProfilerStop(device_id_module.second, 1, &device_id);
       if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(FAILED, "Runtime profiler stop failed.");
+        GELOGE(FAILED, "[Stop][Profiler]Failed, device_id %d, ret 0x%X", device_id, rt_ret);
+        REPORT_CALL_ERROR("E19999", "Stop runtime profiler failed, device_id %d, ret 0x%X",
+                          device_id,rt_ret);
         return FAILED;
       }
     }
@@ -611,18 +653,26 @@ Status ProfilingManager::ProfParseDeviceId(const std::map<std::string, std::stri
         int32_t dev_id = std::stoi(decvice_id[i]);
         device_list.push_back(dev_id);
       } catch (std::invalid_argument &) {
-        GELOGE(FAILED, "Device id: %s is invalid.", decvice_id[i].c_str());
+        GELOGE(FAILED, "[Parse][DeviceId]Failed, it is invalid, %s", decvice_id[i].c_str());
+        REPORT_CALL_ERROR("E19999", "Parse device id %s failed, it is invalid",
+                          decvice_id[i].c_str());
         return FAILED;
       } catch (std::out_of_range &) {
-        GELOGE(FAILED, "Device id: %s is  out of range.", decvice_id[i].c_str());
+        GELOGE(FAILED, "[Parse][DeviceId]Failed, it is out of range, %s", decvice_id[i].c_str());
+        REPORT_CALL_ERROR("E19999", "Parse device id %s failed, it is out of range",
+                          decvice_id[i].c_str());
         return FAILED;
       } catch (...) {
-        GELOGE(FAILED, "Device id: %s cannot change to int.", decvice_id[i].c_str());
+        GELOGE(FAILED, "[Parse][DeviceId]Faield, it cannot change to int, %s",
+               decvice_id[i].c_str());
+        REPORT_CALL_ERROR("E19999", "Parse device id %s failed, it cannot change to int",
+                          decvice_id[i].c_str());
         return FAILED;
       }
     }
   } else {
-    GELOGE(FAILED, "Config para not contain device id list.");
+    GELOGE(FAILED, "[Parse][DeviceId]Config para not contain device id list");
+    REPORT_CALL_ERROR("E19999", "Parse device id failed, config para not contain device id list");
     return FAILED;
   }
 #endif
@@ -638,27 +688,41 @@ Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string>
     try {
       device_num = std::stoi(iter->second);
     } catch (std::invalid_argument &) {
-      GELOGE(FAILED, "Device nun: %s is invalid.", iter->second.c_str());
+      GELOGE(FAILED, "[Parse][Param]Failed, device num %s is invalid", iter->second.c_str());
+      REPORT_CALL_ERROR("E19999", "Parse param failed, device num %s is invalid",
+                        iter->second.c_str());
       return FAILED;
     } catch (std::out_of_range &) {
-      GELOGE(FAILED, "Device num: %s is  out of range.", iter->second.c_str());
+      GELOGE(FAILED, "[Parse][Param]Failed, device num %s cannot change to int",
+             iter->second.c_str());
+      REPORT_CALL_ERROR("E19999", "Parse param failed, device num %s cannot change to int",
+                        iter->second.c_str());
       return FAILED;
     } catch (...) {
-      GELOGE(FAILED, "Device num: %s cannot change to int.", iter->second.c_str());
+      GELOGE(FAILED, "[Parse][Param]Failed, device num %s cannot change to int",
+             iter->second.c_str());
+      REPORT_CALL_ERROR("E19999", "Parse param failed, device num %s cannot change to int",
+                        iter->second.c_str());
       return FAILED;
     }
   } else {
-    GELOGE(FAILED, "Config para not contain device num.");
+    GELOGE(FAILED, "[Parse][Param]Config para not contain device num %s", iter->second.c_str());
+    REPORT_CALL_ERROR("E19999", "Parse param failed, config para not contain device num %s",
+                      iter->second.c_str());
     return FAILED;
   }
   // device id
   if (ProfParseDeviceId(config_para, device_list) != SUCCESS) {
-    GELOGE(FAILED, "Parse config para device id failed.");
+    GELOGE(FAILED, "[Parse][DeviceId]Failed");
+    REPORT_CALL_ERROR("E19999", "Parse device id failed");
     return FAILED;
   }
 
   if (device_num == 0 || device_num > kMaxDeviceNum || device_num != static_cast<int32_t>(device_list.size())) {
-    GELOGE(FAILED, "Config para device num: %d not equal to device list size: %zu.", device_num, device_list.size());
+    GELOGE(FAILED, "[Parse][Param]Failed, config para device num %d not equal to "
+           "device list size %zu", device_num, device_list.size());
+    REPORT_INNER_ERROR("E19999", "[Parse][Param]Failed, config para device num %d "
+                       "not equal to device list size %zu", device_num, device_list.size());
     return FAILED;
   }
 #endif
@@ -676,13 +740,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   int32_t device_num = 0;
   vector<int32_t> device_list;
   if (ProfParseParam(config_para, device_num, device_list) != SUCCESS) {
-    GELOGE(FAILED, "Prof start parse param failed.");
+    GELOGE(FAILED, "[Parse][Param]Prof start parse param failed, device num %d, "
+           "device list size %zu", device_num, device_list.size());
+    REPORT_CALL_ERROR("E19999", "Prof start parse param failed, device num %d, "
+                      "device list size %zu", device_num, device_list.size());
     return FAILED;
   }
 
   auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
   if (device_id_ptr == nullptr) {
-    GELOGE(FAILED, "Prof start: device id ptr is null.");
+    GELOGE(FAILED, "[Start][Profiling]Malloc buffer failed when start profiling, device num %d", device_num);
+    REPORT_CALL_ERROR("E19999", "Malloc buffer failed when start profiling, device num %d",
+                      device_num);
     return FAILED;
   }
   for (int32_t i = 0; i < device_num; i++) {
@@ -692,7 +761,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
 
   rtError_t rt_ret = rtProfilerStart(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(FAILED, "Runtime profiler config proc failed.");
+    GELOGE(FAILED, "[Start][Profiler]Runtime profiler config proc failed, config param 0x%lx, "
+           "device num %d, ret 0x%X", module, device_num, rt_ret);
+    REPORT_CALL_ERROR("E19999", "Runtime profiler config proc failed, config param 0x%lx, "
+                      "device num %d, ret 0x%X", module, device_num, rt_ret);
     return FAILED;
   }
   if ((module & PROF_MODEL_EXECUTE_MASK) == PROF_MODEL_EXECUTE_MASK) {
@@ -719,12 +791,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   int32_t device_num = 0;
   vector<int32_t> device_list;
   if (ProfParseParam(config_para, device_num, device_list) != SUCCESS) {
-    GELOGE(FAILED, "Prof stop parse param failed.");
+    GELOGE(FAILED, "[Stop][Profiling]Prof stop parse param failed, device num %d, "
+           "device list size %zu", device_num, device_list.size());
+    REPORT_CALL_ERROR("E19999", "Prof stop parse param failed, device num %d, device list size %zu",
+                      device_num, device_list.size());
     return FAILED;
   }
   auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
   if (device_id_ptr == nullptr) {
-    GELOGE(FAILED, "Prof stop: device id ptr is null.");
+    GELOGE(FAILED, "[Stop][Profiling]Malloc buffer failed when stop profiling, device num %d", device_num);
+    REPORT_CALL_ERROR("E19999", "Malloc buffer failed when stop profiling, device num %d",
+                      device_num);
     return FAILED;
   }
   for (int32_t i = 0; i < device_num; i++) {
@@ -733,7 +810,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   GELOGI("Prof stop: runtime config param: 0x%lx, device num: %d", module, device_num);
   rtError_t rt_ret = rtProfilerStop(module, device_num, device_id_ptr.get());
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(FAILED, "Prof stop: runtime profiler config proc failed.");
+    GELOGE(FAILED, "[Stop][Profiler]Runtime profiler config proc failed, config param 0x%lx, "
+           "device num: %d, ret 0x%X", module, device_num, rt_ret);
+    REPORT_CALL_ERROR("E19999", "Runtime profiler config proc failed, config param 0x%lx, "
+                      "device num %d, ret 0x%X", module, device_num, rt_ret);
     return FAILED;
   }
   uint64_t execute_model_mask = module & PROF_MODEL_EXECUTE_MASK;
@@ -790,7 +870,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
   int32_t logic_device_id = 0;
   rtError_t rt_ret = rtGetDevice(&logic_device_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Runtime get logic_device_id failed, current logic_device_id:%d", logic_device_id);
+    GELOGE(rt_ret, "[Get][LogicDeviceId]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Get logic device id failed, ret 0x%X", rt_ret);
   }
   GELOGI("Current logic_device_id:%d", logic_device_id);
 
@@ -805,7 +886,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::PluginInit() {
   if (prof_cb_.msprofReporterCallback == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
+    REPORT_INNER_ERROR("E19999", "MsprofReporterCallback callback is nullptr");
     return ge::PARAM_INVALID;
   }
   int32_t cb_ret = prof_cb_.msprofReporterCallback(
@@ -813,8 +895,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_INIT),
       nullptr, 0);
   if (cb_ret != MSPROF_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Profiling reporter init failed, ret = %d.", cb_ret);
-    GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter] profiling init failed, ret = %d.", cb_ret);
+    REPORT_CALL_ERROR("E19999", "Profiling reporter init failed, ret 0x%X", cb_ret);
+    GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter]Failed, ret 0x%X", cb_ret);
     return INTERNAL_ERROR;
   }
 
@@ -823,8 +905,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
       static_cast<uint32_t>(MsprofReporterCallbackType::MSPROF_REPORTER_DATA_MAX_LEN),
       &reporter_max_len_, sizeof(uint32_t));
   if (cb_ret != MSPROF_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Get profiling reporter data max len failed, ret = %d.", cb_ret);
-    GELOGE(INTERNAL_ERROR, "[Init][ProfilingReporter] Get profiling reporter data max len failed, ret = %d.", cb_ret);
+    REPORT_CALL_ERROR("E19999", "Get profiling reporter data max len failed, ret 0x%X", cb_ret);
+    GELOGE(INTERNAL_ERROR, "[Get][ProfilingDataMaxLen]Failed, ret 0x%X", cb_ret);
     return INTERNAL_ERROR;
   }
 
@@ -834,7 +916,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUnInit() const {
 #ifdef DAVINCI_SUPPORT_PROFILING
   if (prof_cb_.msprofReporterCallback == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
+    REPORT_INNER_ERROR("E19999", "MsprofReporterCallback callback is nullptr");
     return;
   }
   int32_t cb_ret = prof_cb_.msprofReporterCallback(
@@ -850,7 +933,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUn
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMsprofReport(
     ReporterData &reporter_data) const {
   if (prof_cb_.msprofReporterCallback == nullptr) {
-    GELOGE(ge::PARAM_INVALID, "MsprofReporterCallback callback is nullptr.");
+    GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
+    REPORT_INNER_ERROR("E19999", "MsprofReporterCallback callback is nullptr");
     return ge::PARAM_INVALID;
   }
   return prof_cb_.msprofReporterCallback(
@@ -945,6 +1029,5 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
 
   return;
 }
-
 
 }  // namespace ge

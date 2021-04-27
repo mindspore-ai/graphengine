@@ -33,7 +33,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
                                                                                    const Json &model) {
   Status ret = SUCCESS;
   if (file_path == nullptr || SUCCESS != CheckPath(file_path)) {
-    GELOGE(FAILED, "Check output file failed.");
+    GELOGE(FAILED, "[Check][OutputFile]Failed, file %s", file_path);
+    REPORT_CALL_ERROR("E19999", "Output file %s check invalid", file_path);
     return FAILED;
   }
   std::string model_str;
@@ -41,11 +42,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
     model_str = model.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
   } catch (std::exception &e) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19007", {"exception"}, {e.what()});
-    GELOGE(FAILED, "Failed to convert JSON to string, reason: %s.", e.what());
+    GELOGE(FAILED, "[Convert][File]Failed to convert JSON to string, file %s, reason %s",
+           file_path, e.what());
     return FAILED;
   } catch (...) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19008");
-    GELOGE(FAILED, "Failed to convert JSON to string.");
+    GELOGE(FAILED, "[Convert][File]Failed to convert JSON to string, file %s", file_path);
     return FAILED;
   }
 
@@ -59,7 +61,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   int32_t fd = mmOpen2(real_path, M_RDWR | M_CREAT | O_TRUNC, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {file_path, strerror(errno)});
-    GELOGE(FAILED, "Open file[%s] failed. errmsg:%s", file_path, strerror(errno));
+    GELOGE(FAILED, "[Open][File]Failed, file %s, errmsg %s", file_path, strerror(errno));
     return FAILED;
   }
   const char *model_char = model_str.c_str();
@@ -70,12 +72,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E19004", {"file", "errmsg"}, {file_path, strerror(errno)});
     // Need to both print the error info of mmWrite and mmClose, so return ret after mmClose
-    GELOGE(FAILED, "Write to file failed. errno:%ld, errmsg:%s", mmpa_ret, strerror(errno));
+    GELOGE(FAILED, "[Write][Data]To file %s failed. errno %ld, errmsg %s", file_path, mmpa_ret, strerror(errno));
     ret = FAILED;
   }
   // Close file
   if (mmClose(fd) != EN_OK) {
-    GELOGE(FAILED, "Close file failed. errmsg:%s", strerror(errno));
+    GELOGE(FAILED, "[Close][File]Failed, file %s, errmsg %s", file_path, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Close file %s failed, errmsg %s", file_path, strerror(errno));
     ret = FAILED;
   }
   return ret;

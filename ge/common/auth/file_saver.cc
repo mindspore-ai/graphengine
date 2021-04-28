@@ -128,7 +128,6 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
 
 Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFileHeader &file_header,
                                      ModelPartitionTable &model_partition_table,
-
                                      const std::vector<ModelPartition> &partition_datas) {
   GE_CHK_BOOL_RET_STATUS(!partition_datas.empty() && model_partition_table.num != 0
       && model_partition_table.num == partition_datas.size(), FAILED,

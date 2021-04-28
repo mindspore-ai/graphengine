@@ -867,7 +867,12 @@ FMK_FUNC_HOST_VISIBILITY void PrintModelInfo(ge::proto::ModelDef *model_def, uin
   auto soc_version = (iter != model_attr_map->end()) ? iter->second.s() : "";
   iter = model_attr_map->find("framework_type");
   auto framework_type = (iter != model_attr_map->end()) ? iter->second.s() : "";
-  std::cout << "system   info: "
+  // original atc cmdline
+  iter = model_attr_map->find(ATTR_MODEL_ATC_CMDLINE);
+  auto cmdline = (iter != model_attr_map->end()) ? iter->second.s() : "";
+  std::cout << "Original Atc command line: "
+            << cmdline << std::endl
+            << "system   info: "
             <<  ATTR_MODEL_ATC_VERSION
             << "[" << atc_version << "], "
             << "soc_version"

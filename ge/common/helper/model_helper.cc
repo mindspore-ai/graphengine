@@ -21,6 +21,7 @@
 #include "framework/omg/version.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
+#include "framework/omg/omg_inner_types.h"
 
 using std::string;
 using domi::ModelTaskDef;
@@ -304,7 +305,6 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
     return FAILED;
   }
 
-
   if (SaveModelTaskDef(om_file_save_helper, ge_model, task_buffer, model_index) != SUCCESS) {
     GELOGE(FAILED, "[Save][TaskDef]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
@@ -333,6 +333,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   ge::Buffer model_buffer;
   ge::Buffer task_buffer;
 
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetStr(*(ge_model.get()), ATTR_MODEL_ATC_CMDLINE,
+                   domi::GetContext().atc_cmdline),
+                   GELOGE(FAILED, "SetStr for atc_cmdline failed.");
+                   return FAILED);
   auto ret = SaveAllModelPartiton(om_file_save_helper, ge_model, model_buffer, task_buffer);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Save][AllModelPartition]Failed, model %s, error_code %u",
@@ -386,9 +390,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
                   REPORT_INNER_ERROR("E19999", "GraphBuilder SaveModel received invalid "
                                      "file name prefix");
                   return FAILED);
-
   if (!is_unknown_shape) {
     auto &model_root = name_to_ge_model.begin()->second;
+    GE_CHK_BOOL_EXEC(ge::AttrUtils::SetStr(*(model_root.get()), ATTR_MODEL_ATC_CMDLINE,
+                     domi::GetContext().atc_cmdline),
+                     GELOGE(FAILED, "SetStr for atc_cmdline failed.");
+                     return FAILED);
     return SaveToOmModel(model_root, save_param, output_file, model);
   }
 
@@ -396,6 +403,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
   GE_CHECK_NOTNULL(om_file_save_helper);
 
   auto &first_ge_model = name_to_ge_model.at(ge_root_model->GetRootGraph()->GetName());
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetStr(*(first_ge_model.get()), ATTR_MODEL_ATC_CMDLINE,
+                   domi::GetContext().atc_cmdline),
+                   GELOGE(FAILED, "SetStr for atc_cmdline failed.");
+                   return FAILED);
 
   // ge root model must be the first to be loaded
   vector<string> model_names{ge_root_model->GetRootGraph()->GetName()};

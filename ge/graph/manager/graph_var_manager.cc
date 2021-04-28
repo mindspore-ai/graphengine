@@ -556,7 +556,7 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   // reuse old format variable memory
   if (result == SUCCESS) {
     result = var_resource_->GetVarAddr(
-      var_name, tensor_desc, reinterpret_cast<uint8_t **>(reinterpret_cast<uintptr_t>(&mem_offset)), memory_type);
+      var_name, cur_tensor_desc, reinterpret_cast<uint8_t **>(reinterpret_cast<uintptr_t>(&mem_offset)), memory_type);
     if (result == SUCCESS) {
       result = TensorUtils::GetSize(cur_tensor_desc, cur_tensor_desc_size);
       GELOGD("tensor_desc_size is %ld, cur_tensor_desc_size is %ld, memoffset is %zu", tensor_desc_size,

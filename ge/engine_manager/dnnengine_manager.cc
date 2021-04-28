@@ -450,7 +450,7 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
     }
   } catch (const json::exception &e) {
     GELOGE(FAILED, "[Construct][JsonContent]Failed, reason %s", e.what());
-    REPORT_CALL_ERROR("E19999", "Construct json content failed, reason %s", e.what())
+    REPORT_CALL_ERROR("E19999", "Construct json content failed, reason %s", e.what());
     return FAILED;
   }
   GELOGI("Parser engine massage success");

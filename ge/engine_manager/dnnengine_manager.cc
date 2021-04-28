@@ -108,9 +108,9 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
     if (attrs.runtime_type == RuntimeType::DEVICE) {
       if ((attrs.mem_type.size()) != 1 || (attrs.mem_type[0] != GE_ENGINE_ATTR_MEM_TYPE_HBM)) {
         GELOGE(GE_ENG_MEMTYPE_ERROR, "[Check][Param]Engine %s in aicore, but the memory type is "
-               "not HBM, mem_type_size %d", (iter->first).c_str(), attrs.mem_type.size());
+               "not HBM, mem_type_size %lu", (iter->first).c_str(), attrs.mem_type.size());
         REPORT_CALL_ERROR("E19999", "Engine %s in aicore, but the memory type is not HBM, "
-                          "mem_type_size %d", (iter->first).c_str(), attrs.mem_type.size());
+                          "mem_type_size %lu", (iter->first).c_str(), attrs.mem_type.size());
         return GE_ENG_MEMTYPE_ERROR;
       }
     }
@@ -364,9 +364,9 @@ Status DNNEngineManager::ParserJsonFile() {
       }
       status = ParserEngineMessage(engines_json_map, scheduler_id_temp, engine_conf_map);
       if (status != SUCCESS) {
-        GELOGE(FAILED, "[Parse][EngineMessage]Failed, scheduler_id_temp %s", scheduler_id_temp);
+        GELOGE(FAILED, "[Parse][EngineMessage]Failed, scheduler_id_temp %s", scheduler_id_temp.c_str());
         REPORT_CALL_ERROR("E19999", "Parse engine message failed, scheduler_id_temp %s",
-                          scheduler_id_temp);
+                          scheduler_id_temp.c_str());
         return FAILED;
       }
       scheduler_conf.name = scheduler_utils_json[i][kName];

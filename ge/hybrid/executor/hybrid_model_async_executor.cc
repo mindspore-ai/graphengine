@@ -544,9 +544,15 @@ Status HybridModelAsyncExecutor::DumpOpDebug() {
     data_dumper_.SetModelId(model_->GetModelId());
     data_dumper_.SetDeviceId(model_->GetDeviceId());
     void *global_step = nullptr;
-    TensorValue *varible_global_step = model_->GetVariable(NODE_NAME_GLOBAL_STEP);
-    if (varible_global_step != nullptr) {
-      global_step = const_cast<void *>(varible_global_step->GetData());
+
+    if (dump_properties.IsInferOpDebug()) {
+      GELOGD("Init global step when infer with op debug.");
+      global_step = executor_->GetContext()->global_step;
+    } else {
+      TensorValue *varible_global_step = model_->GetVariable(NODE_NAME_GLOBAL_STEP);
+      if (varible_global_step != nullptr) {
+        global_step = const_cast<void *>(varible_global_step->GetData());
+      }
     }
 
     void *loop_per_iter = nullptr;

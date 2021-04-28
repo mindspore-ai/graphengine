@@ -492,9 +492,12 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   }
   // Do add graph
   SetAddGraphCondition(graph_id, kStartAdd);
+  if (CheckGraphAdded(graph_id, graph) != SUCCESS) {
+    GELOGE(FAILED, "AddGraph failed.");
+    return FAILED;
+  }
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
-  compute_graph->SetGraphID(graph_id);
   (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
   SetSessionGraphId(compute_graph, graph_id);
 
@@ -552,6 +555,10 @@ Status GraphManager::CheckGraphAdded(const GraphId &graph_id, const Graph &graph
 Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
                                       const std::map<std::string, std::string> &options,
                                       const OmgContext &omg_context) {
+  if (HasGraphNode(graph_id)) {
+    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u", graph_id);
+    return GE_GRAPH_GRAPH_ALREADY_EXIST;
+  }
   if (CheckGraphAdded(graph_id, graph) != SUCCESS) {
     GELOGE(FAILED, "AddGraphWithCopy failed.");
     return FAILED;

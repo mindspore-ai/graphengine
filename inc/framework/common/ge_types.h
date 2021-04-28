@@ -293,6 +293,7 @@ struct DumpConfig {
   std::string dump_mode;
   std::string dump_status;
   std::string dump_op_switch;
+  std::string dump_debug;
   std::vector<ModelDumpConfig> dump_list;
 };
 }  // namespace ge

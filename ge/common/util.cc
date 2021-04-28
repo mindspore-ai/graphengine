@@ -288,8 +288,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
   google::protobuf::io::IstreamInputStream input(&fs);
   bool ret = google::protobuf::TextFormat::Parse(&input, message);
   GE_IF_BOOL_EXEC(!ret, ErrorManager::GetInstance().ATCReportErrMessage("E19018", {"protofile"}, {file});
-                  GELOGE(ret, "[Parse][File]Through [google::protobuf::TextFormat::Parse] failed, file %s",
-                         file));
+                  GELOGE(ret, "[Parse][File]Through [google::protobuf::TextFormat::Parse] failed, "
+                         "file %s", file));
   fs.close();
 
   return ret;
@@ -554,8 +554,8 @@ FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
     return false;
   }
   if (stat.st_size > kMaxConfigFileByte) {
-    GELOGE(PARAM_INVALID, "[Check][Param]Config file %s size %ld is larger than max config file Bytes %u",
-           resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
+    GELOGE(PARAM_INVALID, "[Check][Param]Config file %s size %ld is larger than max config "
+           "file Bytes %u", resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
     REPORT_CALL_ERROR("E19999", "Config file %s size %ld is larger than max config file Bytes %u",
                       resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
     return false;
@@ -586,7 +586,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CheckPath(const char *pa
 
   INT32 is_dir = mmIsDir(path);
   if (is_dir != EN_OK) {
-    GELOGE(PATH_INVALID, "[Open][Directory]Failed, directory path %s, errmsg %s", path, strerror(errno));
+    GELOGE(PATH_INVALID, "[Open][Directory]Failed, directory path %s, errmsg %s",
+           path, strerror(errno));
     REPORT_CALL_ERROR("E19999", "Open directory %s failed, errmsg %s", path, strerror(errno));
     return PATH_INVALID;
   }

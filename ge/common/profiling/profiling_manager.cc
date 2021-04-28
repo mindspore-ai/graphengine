@@ -106,7 +106,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::In
              static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS), cb_ret);
       REPORT_CALL_ERROR("E19999", "Call msprofCtrlCallback failed, type %u, return %d",
                         static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_INIT_GE_OPTIONS),
-                        cb_ret);	
+                        cb_ret);
       return FAILED;
     }
     GELOGI("Profiling init success");
@@ -204,7 +204,7 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     is_training_trace_ = true;
   } catch (...) {
     GELOGE(FAILED, "[Check][Param]Json prof_conf options is invalid");
-    REPORT_INNER_ERROR("E19999", "Json prof_conf options is invalid");    
+    REPORT_INNER_ERROR("E19999", "Json prof_conf options is invalid");
     return ge::PARAM_INVALID;
   }
   return ge::SUCCESS;
@@ -234,7 +234,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
   // stop profiling
   if (prof_cb_.msprofCtrlCallback == nullptr) {
       GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofCtrlCallback callback is nullptr");
-      REPORT_INNER_ERROR("E19999", "MsprofCtrlCallback callback is nullptr");      
+      REPORT_INNER_ERROR("E19999", "MsprofCtrlCallback callback is nullptr");
       return;
   }
   int32_t cb_ret = prof_cb_.msprofCtrlCallback(static_cast<uint32_t>(MsprofCtrlCallbackType::MSPROF_CTRL_FINALIZE),
@@ -299,7 +299,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
       GELOGE(FAILED, "[Convert][ReportData]Failed to convert json to string, reason %s.",
              e.what());
       REPORT_CALL_ERROR("E19999", "Failed to convert reported_data from json to string, reason %s",
-                        e.what());      
+                        e.what());
       return ;
     } catch (...) {
       GELOGE(FAILED, "[Convert][ReportedData]Failed to convert JSON to string");
@@ -497,7 +497,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
   rtError_t rt_ret = rtProfilerStart(module, device_num, device);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(FAILED, "[Start][Profiler]Malloc buffer failed, ret 0x%X", rt_ret);
-    REPORT_CALL_ERROR("E19999", "Malloc buffer failed when start profiling, ret 0x%X", rt_ret);    
+    REPORT_CALL_ERROR("E19999", "Malloc buffer failed when start profiling, ret 0x%X", rt_ret);
     return FAILED;
   }
   UpdateSubscribeDeviceModuleMap(kProfModelSubscribe, device[0], module);
@@ -533,7 +533,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
       rtError_t rt_ret = rtProfilerStop(subs_dev_module_[device[0]].module, dev_num, device);
       if (rt_ret != RT_ERROR_NONE) {
         GELOGE(FAILED, "[Stop][Profiler]Malloc buffer Failed, ret %d", rt_ret);
-        REPORT_CALL_ERROR("E19999", "Malloc buffer failed when stop profiling, ret %d", rt_ret);	
+        REPORT_CALL_ERROR("E19999", "Malloc buffer failed when stop profiling, ret %d", rt_ret);
         return FAILED;
       }
     }
@@ -749,7 +749,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
 
   auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
   if (device_id_ptr == nullptr) {
-    GELOGE(FAILED, "[Start][Profiling]Malloc buffer failed when start profiling, device num %d", device_num);
+    GELOGE(FAILED, "[Start][Profiling]Malloc buffer failed when start profiling, device num %d",
+           device_num);
     REPORT_CALL_ERROR("E19999", "Malloc buffer failed when start profiling, device num %d",
                       device_num);
     return FAILED;
@@ -799,7 +800,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   }
   auto device_id_ptr = std::unique_ptr<uint32_t[]>(new (std::nothrow) uint32_t[device_num]);
   if (device_id_ptr == nullptr) {
-    GELOGE(FAILED, "[Stop][Profiling]Malloc buffer failed when stop profiling, device num %d", device_num);
+    GELOGE(FAILED, "[Stop][Profiling]Malloc buffer failed when stop profiling, device num %d",
+           device_num);
     REPORT_CALL_ERROR("E19999", "Malloc buffer failed when stop profiling, device num %d",
                       device_num);
     return FAILED;

@@ -72,7 +72,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E19004", {"file", "errmsg"}, {file_path, strerror(errno)});
     // Need to both print the error info of mmWrite and mmClose, so return ret after mmClose
-    GELOGE(FAILED, "[Write][Data]To file %s failed. errno %ld, errmsg %s", file_path, mmpa_ret, strerror(errno));
+    GELOGE(FAILED, "[Write][Data]To file %s failed. errno %ld, errmsg %s",
+           file_path, mmpa_ret, strerror(errno));
     ret = FAILED;
   }
   // Close file

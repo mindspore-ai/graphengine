@@ -107,8 +107,8 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
     iter->second->GetAttributes(attrs);
     if (attrs.runtime_type == RuntimeType::DEVICE) {
       if ((attrs.mem_type.size()) != 1 || (attrs.mem_type[0] != GE_ENGINE_ATTR_MEM_TYPE_HBM)) {
-        GELOGE(GE_ENG_MEMTYPE_ERROR, "[Check][Param]Engine %s in aicore, but the memory type is not HBM, "
-               "mem_type_size %d", (iter->first).c_str(), attrs.mem_type.size());
+        GELOGE(GE_ENG_MEMTYPE_ERROR, "[Check][Param]Engine %s in aicore, but the memory type is "
+               "not HBM, mem_type_size %d", (iter->first).c_str(), attrs.mem_type.size());
         REPORT_CALL_ERROR("E19999", "Engine %s in aicore, but the memory type is not HBM, "
                           "mem_type_size %d", (iter->first).c_str(), attrs.mem_type.size());
         return GE_ENG_MEMTYPE_ERROR;
@@ -246,7 +246,8 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
                                                           {kernel_name, op_desc->GetType(), op_desc->GetName()});
           GELOGE(FAILED,
                  "[Check][Param]The custom operator registered by the user does not support "
-                 "the logic function delivered by this network, kernel_name %s, op type %s, op name %s",
+                 "the logic function delivered by this network, kernel_name %s, op type %s, "
+                 "op name %s",
                  kernel_name.c_str(), op_desc->GetType().c_str(), op_desc->GetName().c_str());
           std::string error_info = "The custom operator registered by the user does not support the logic function"
                                    "delivered by this network";
@@ -273,8 +274,9 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
     reason += it.first + ":" + it.second + ";";
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E13002", {"optype", "opskernel", "reason"}, {op_desc->GetType(), it.first, it.second});
-    GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Concat][UnsupportedReasons]Op type %s of ops kernel %s is unsupported, "
-           "reason %s", op_desc->GetType().c_str(), it.first.c_str(), it.second.c_str());
+    GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Concat][UnsupportedReasons]Op type %s of ops kernel %s "
+           "is unsupported, reason %s",
+           op_desc->GetType().c_str(), it.first.c_str(), it.second.c_str());
   }
 
   analyzer::DataInfo analyze_info{root_graph->GetSessionID(), root_graph->GetGraphID(),
@@ -284,7 +286,8 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
 
   ErrorManager::GetInstance().ATCReportErrMessage(
       "E13003", {"opname", "optype"}, {op_desc->GetName(), op_desc->GetType()});
-  GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Get][DNNEngineName]Can't find any supported ops kernel and engine of %s, type is %s",
+  GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Get][DNNEngineName]Can't find any supported ops kernel "
+         "and engine of %s, type is %s",
          op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return "";
 }
@@ -335,10 +338,10 @@ Status DNNEngineManager::ParserJsonFile() {
       return FAILED;
     }
     if (!scheduler_utils_json.is_array()) {
-      GELOGE(FAILED, "[Check][Param]The message of kSchedulerUnits is not array and the file path is %s",
-             json_file_path.c_str());
-      REPORT_CALL_ERROR("E19999", "The message of kSchedulerUnits is not array and the file path is %s",
-                        json_file_path.c_str());
+      GELOGE(FAILED, "[Check][Param]The message of kSchedulerUnits is not array and "
+             "the file path is %s", json_file_path.c_str());
+      REPORT_CALL_ERROR("E19999", "The message of kSchedulerUnits is not array and "
+                        "the file path is %s", json_file_path.c_str());
       return FAILED;
     }
     auto size = scheduler_json_file[kSchedulerUnits].size();
@@ -362,7 +365,8 @@ Status DNNEngineManager::ParserJsonFile() {
       status = ParserEngineMessage(engines_json_map, scheduler_id_temp, engine_conf_map);
       if (status != SUCCESS) {
         GELOGE(FAILED, "[Parse][EngineMessage]Failed, scheduler_id_temp %s", scheduler_id_temp);
-        REPORT_CALL_ERROR("E19999", "Parse engine message failed, scheduler_id_temp %s", scheduler_id_temp);
+        REPORT_CALL_ERROR("E19999", "Parse engine message failed, scheduler_id_temp %s",
+                          scheduler_id_temp);
         return FAILED;
       }
       scheduler_conf.name = scheduler_utils_json[i][kName];
@@ -372,8 +376,8 @@ Status DNNEngineManager::ParserJsonFile() {
       if (it != schedulers_.end()) {
         GELOGE(FAILED, "[Check][Param]There are the same scheduler ts %s in the json file",
                scheduler_id_temp.c_str());
-        REPORT_CALL_ERROR("E19999", "[Check][Param]There are the same scheduler ts %s in the json file",
-                          scheduler_id_temp.c_str());
+        REPORT_CALL_ERROR("E19999", "[Check][Param]There are the same scheduler ts %s "
+                          "in the json file", scheduler_id_temp.c_str());
         return FAILED;
       }
       schedulers_.emplace(scheduler_id_temp, scheduler_conf);
@@ -469,8 +473,10 @@ Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle h
   const char *file = file_path.data();
   if ((mmAccess2(file, M_F_OK)) != EN_OK) {
     if (engines_map_.size() != 0) {
-      GELOGE(FAILED, "[Check][Param]The json file %s not exists, err %s", file_path.c_str(), strerror(errno)); 
-      REPORT_CALL_ERROR("E19999", "Json file %s not exists, err %s", file_path.c_str(), strerror(errno));
+      GELOGE(FAILED, "[Check][Param]The json file %s not exists, err %s",
+             file_path.c_str(), strerror(errno));
+      REPORT_CALL_ERROR("E19999", "Json file %s not exists, err %s",
+                        file_path.c_str(), strerror(errno));
       return FAILED;
     } else {
       GELOGW("The json file %s is not needed.", file_path.c_str());

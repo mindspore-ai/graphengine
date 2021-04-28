@@ -169,6 +169,7 @@ class KernelTaskInfo : public TaskInfo {
   uint16_t io_addr_offset_ = 0;
   bool l2_buffer_on_ = false;
   bool call_save_dump_ = false;
+  int32_t topic_type_flag_ = -1;
 
   // aicpu ext_info device mem
   void *aicpu_ext_info_addr_ = nullptr;

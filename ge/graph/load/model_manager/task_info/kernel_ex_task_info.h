@@ -76,6 +76,7 @@ class KernelExTaskInfo : public TaskInfo {
   vector<void *> io_addrs_;
   uint32_t args_offset_ = 0;
   int64_t fixed_addr_offset_ = 0;
+  int32_t topic_type_flag_ = -1;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_EX_TASK_INFO_H_

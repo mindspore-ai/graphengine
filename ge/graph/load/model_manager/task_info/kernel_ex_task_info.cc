@@ -53,6 +53,7 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
                     "Parse kernel ext info failed, kernel_ext_info_size=%zu.", ext_info.size());
   GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
   GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
+  topic_type_flag_ = ext_handle->GetTopicTypeFlag();
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc, kAicpuAllshape, all_shape);
@@ -406,6 +407,14 @@ Status KernelExTaskInfo::CopyTaskInfo(const domi::KernelExDef &kernel_def, const
 
 Status KernelExTaskInfo::Distribute() {
   GELOGI("KernelExTaskInfo Distribute Start.");
+  // Use the fifth and sixth bits of dump_flag_ indicate the value of topic_type.
+  // xxxxxxxx xxxxxxxx xxxxxxxx xx00xxxx: DEVICE_ONLY
+  // xxxxxxxx xxxxxxxx xxxxxxxx xx01xxxx: DEVICE_FIRST
+  // xxxxxxxx xxxxxxxx xxxxxxxx xx10xxxx: HOST_ONLY
+  // xxxxxxxx xxxxxxxx xxxxxxxx xx11xxxx: HOST_FIRST
+  if (topic_type_flag_ > 0) {
+    dump_flag_ = dump_flag_ | topic_type_flag_;
+  }
   rtError_t rt_ret = rtKernelLaunchEx(kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtKernelLaunchEx failed, ret:0x%X",

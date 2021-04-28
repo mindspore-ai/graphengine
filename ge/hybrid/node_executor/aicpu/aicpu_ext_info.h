@@ -62,6 +62,7 @@ class AicpuExtInfoHandler {
   Status GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type);
 
   bool IsNeedRefreshIOAddr();
+  int32_t GetTopicTypeFlag() const { return topic_type_flag_; }
 
  private:
 
@@ -71,6 +72,7 @@ class AicpuExtInfoHandler {
   Status ParseExtSessionInfo(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtBitMap(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtUpdateAddr(AicpuExtInfo *aicpu_ext_info);
+  Status ParseExtTopicType(AicpuExtInfo *aicpu_ext_info);
 
   static Status UpdateShapeAndType(const GeShape &shape,
                                    DataType data_type,
@@ -81,6 +83,8 @@ class AicpuExtInfoHandler {
                               DataType &data_type);
 
  private:
+  int32_t TopicTypeToRtsFlag(int32_t topic_type);
+
   const std::string node_name_;
   const uint32_t input_num_;
   const uint32_t output_num_;
@@ -88,6 +92,7 @@ class AicpuExtInfoHandler {
   AicpuSessionInfo *session_info_ = nullptr;
   uint64_t *bit_map_ = nullptr;
   uint32_t *update_addr_ = nullptr;
+  int32_t topic_type_flag_ = -1;
 
   std::unique_ptr<uint8_t[]> ext_info_;
   size_t ext_info_len_ = 0;

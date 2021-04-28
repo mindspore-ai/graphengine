@@ -206,6 +206,37 @@ TEST_F(UtestGraphManagerTest, test_add_graph_3) {
   EXPECT_EQ(status2, ge::SUCCESS);
 }
 
+TEST_F(UtestGraphManagerTest, test_add_graph_4) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  // create graph
+  Graph graph("test_graph");
+  CreateGraph(graph);
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
+
+  std::map<std::string, std::string> options;
+  OmgContext context;
+  Status status = graph_manager.AddGraph(graph_id, graph, options, context);
+  EXPECT_NE(status, ge::SUCCESS);
+}
+
+TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_1) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  
+  // create graph
+  Graph graph("test_graph");
+  CreateGraph(graph);
+  GraphNodePtr graph_node = MakeShared<GraphNode>(graph_id);
+  graph_manager.graph_map_.insert({1, graph_node});
+
+  std::map<std::string, std::string> options;
+  OmgContext context;
+  Status status = graph_manager.AddGraphWithCopy(graph_id, graph, options, context);
+  EXPECT_NE(status, ge::SUCCESS);
+}
+
 TEST_F(UtestGraphManagerTest, test_remove_graph_1) {
   GraphId graph_id = 1;
   GraphManager graph_manager;

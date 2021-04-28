@@ -217,17 +217,22 @@ class GraphMemoryAssigner {
                          const OutDataAnchorPtr &peer_out_anchor);
 
   void CheckNeedCalcDistAndUpdateVisitInfo(map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
-                                           size_t matched_mem_offset,
+                                           const size_t matched_mem_offset,
                                            const NodePtr &peer_out_node,
                                            const OutDataAnchorPtr &peer_out_anchor,
                                            bool &is_need_calc_distance);
 
   void CalcDistanceAndUpdateDesc(map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
-                                 size_t matched_mem_offset,
+                                 const size_t matched_mem_offset,
                                  const map<string, int64_t> &node_index_in_stream,
                                  NodePtr &node,
                                  const InDataAnchorPtr &in_data_anchor,
                                  bool &is_need_skip);
+
+  void DeleteVisitInfoWhenLifecycleEnded(map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
+                                         const size_t matched_mem_offset,
+                                         const NodePtr &node,
+                                         const InDataAnchorPtr &in_data_anchor);
 
   MemoryOffsetMap memory_offset_;
   ge::ComputeGraphPtr compute_graph_;

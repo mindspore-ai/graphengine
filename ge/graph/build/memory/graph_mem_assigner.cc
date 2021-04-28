@@ -2049,7 +2049,7 @@ size_t GraphMemoryAssigner::GetMemoryOffset(const HybridMemAssignerPtr &mem_assi
 
 void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
     map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
-    size_t matched_mem_offset,
+    const size_t matched_mem_offset,
     const NodePtr &peer_out_node,
     const OutDataAnchorPtr &peer_out_anchor,
     bool &is_need_calc_distance) {
@@ -2069,7 +2069,8 @@ void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
       return;
     }
   } else {
-    if (mem_block_visit_info[matched_mem_offset].first == nullptr) {  // multi-stream visit, no need to calculate
+    if (mem_block_visit_info[matched_mem_offset].first == nullptr) {
+      // multi-stream visit, no need to calculate
       is_need_calc_distance = false;
       return;
     }
@@ -2086,7 +2087,7 @@ void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
 
 // calculate distance, update visit info, update prev_node input desc, update cur node input desc
 void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
-                                                    size_t matched_mem_offset,
+                                                    const size_t matched_mem_offset,
                                                     const map<string, int64_t> &node_index_in_stream,
                                                     NodePtr &node,
                                                     const InDataAnchorPtr &in_data_anchor,
@@ -2128,7 +2129,7 @@ void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(map<size_t, pair<NodePtr, ve
         is_need_skip = true;
         return;
       } else {
-        distance = prev_next_distances[0]; //use the same prev_distance of previous anchor
+        distance = prev_next_distances[0]; // use the same prev_distance as previous anchor
       }
       mem_block_visit_info[matched_mem_offset].second.push_back(in_data_anchor->GetIdx());
     } else {
@@ -2141,6 +2142,28 @@ void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(map<size_t, pair<NodePtr, ve
   }
   UpdateCurNodeInputDesc(node, in_data_anchor->GetIdx(), distance);
 }
+
+void GraphMemoryAssigner::DeleteVisitInfoWhenLifecycleEnded(
+    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
+    const size_t matched_mem_offset,
+    const NodePtr &node,
+    const InDataAnchorPtr &in_data_anchor) {
+  auto input_desc = node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx());
+  bool is_end_of_inputmem_lifecycle = false;
+  // if is_end_of_inputmem_lifecycle is true, indicating that cur node is the last customer of this data,
+  // then we need to delete the visit info of the block in case that the memblock be reused and visited.
+  if (ge::AttrUtils::GetBool(input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, is_end_of_inputmem_lifecycle) &&
+      is_end_of_inputmem_lifecycle) {
+    GELOGD("ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE is true, node name is [%s], in_data_anchor index is [%d]",
+           node->GetName().c_str(),
+           in_data_anchor->GetIdx());
+    auto iter = mem_block_visit_info.find(matched_mem_offset);
+    if (iter != mem_block_visit_info.end()) {
+      mem_block_visit_info.erase(iter);
+    }
+  }
+}
+
 
 void GraphMemoryAssigner::MarkNodeDistanceAttr(const ComputeGraphPtr &compute_graph,
                                                NodePtr &node,
@@ -2170,18 +2193,7 @@ void GraphMemoryAssigner::MarkNodeDistanceAttr(const ComputeGraphPtr &compute_gr
       continue;
     }
 
-    auto input_desc = node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx());
-    bool is_end_of_inputmem_lifecycle = false;
-    // if is_end_of_inputmem_lifecycle is true, indicating that cur node is the last customer of this data,
-    // then we need to delete the visit info of the block in case that the memblock be reused and visited.
-    if (ge::AttrUtils::GetBool(input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, is_end_of_inputmem_lifecycle) &&
-        is_end_of_inputmem_lifecycle) {
-      GELOGD("ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE is true");
-      auto iter = mem_block_visit_info.find(matched_mem_offset);
-      if (iter != mem_block_visit_info.end()) {
-        mem_block_visit_info.erase(iter);
-      }
-    }
+    DeleteVisitInfoWhenLifecycleEnded(mem_block_visit_info, matched_mem_offset, node, in_data_anchor);
   }
 }
 

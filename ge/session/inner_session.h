@@ -48,7 +48,9 @@ class InnerSession {
 
   Status BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
 
-  Status RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs, RunAsyncCallback callback);
+  Status BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs);
+
+  Status RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback);
 
   Status Finalize();
 

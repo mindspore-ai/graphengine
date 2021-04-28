@@ -122,6 +122,8 @@ const char* const kInferEndTime = "infer_end_time";
 const char* const kOutputBeginTime = "output_start_time";
 const char* const kOutputEndTime = "output_end_time";
 const uint32_t kStringHeadElems = 2;
+const uint32_t kPlacementHostData = 0;
+const size_t kAlignment = 64;
 
 inline bool IsDataOp(const std::string &node_type) {
   return (node_type == DATA_TYPE) || (node_type == AIPP_DATA_TYPE) || (node_type == ANN_DATA_TYPE);
@@ -2261,8 +2263,7 @@ Status DavinciModel::GetOutputDescInfo(vector<InputOutputDescInfo> &output_descs
   return SUCCESS;
 }
 
-Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data) {
-  rtMemcpyKind_t kind = device_data ? RT_MEMCPY_DEVICE_TO_DEVICE : RT_MEMCPY_HOST_TO_DEVICE;
+Status DavinciModel::CopyInputData(const InputData &input_data) {
   const std::vector<DataBuffer> &blobs = input_data.blobs;
   for (const auto &data : input_data_info_) {
     if (data.first >= blobs.size()) {
@@ -2275,6 +2276,8 @@ Status DavinciModel::CopyInputData(const InputData &input_data, bool device_data
     }
 
     const DataBuffer &data_buf = blobs[data.first];
+    rtMemcpyKind_t kind =
+      data_buf.placement == kPlacementHostData ? RT_MEMCPY_HOST_TO_DEVICE : RT_MEMCPY_DEVICE_TO_DEVICE;
     if (data_buf.length == 0) {
       GELOGW("No data need to memcpy!");
       return SUCCESS;
@@ -2615,7 +2618,7 @@ Status DavinciModel::InitOutputTensorInfo(const OpDescPtr &op_desc) {
   return SUCCESS;
 }
 
-Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputTensorInfo> &outputs) {
+Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<ge::Tensor> &outputs) {
   GE_CHECK_NOTNULL(output_data);
   if (!output_data->blobs.empty()) {
     GELOGI("No need to generate output tensor info, model id:%u", model_id_);
@@ -2644,26 +2647,25 @@ Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputT
 
   GELOGI("Output blobs size:%zu, model id:%u", output_buffer_size_.size(), model_id_);
   for (size_t i = 0; i < output_buffer_size.size(); ++i) {
-    std::unique_ptr<uint8_t[]> data_buf(new (std::nothrow) uint8_t[output_buffer_size[i]]);
-    if (data_buf == nullptr) {
-      REPORT_CALL_ERROR("E19999", "New buffer failed, size:%ld, model_id:%u",
-                        output_buffer_size[i], model_id_);
-      GELOGE(GE_GRAPH_MALLOC_FAILED, "Malloc buffer failed.");
-      return GE_GRAPH_MALLOC_FAILED;
-    }
-    output_data->blobs.push_back({data_buf.get(), static_cast<uint64_t>(output_buffer_size[i]), false});
-    OutputTensorInfo output;
-    output.dims = output_shape_info[i];
-    output.data = std::move(data_buf);
-    output.length = output_buffer_size[i];
-    outputs.emplace_back(std::move(output));
+    auto aligned_ptr = MakeShared<AlignedPtr>(output_buffer_size[i], kAlignment);
+    GE_CHECK_NOTNULL(aligned_ptr);
+    GeShape ge_shape(output_shape_info[i]);
+    GeTensorDesc tensor_desc;
+    tensor_desc.SetShape(ge_shape);
+    GeTensor ge_tensor(tensor_desc);
+    ge_tensor.SetData(aligned_ptr, output_buffer_size[i]);
+    ge::Tensor output_tensor = TensorAdapter::AsTensor(ge_tensor);
+
+    auto data_ptr = aligned_ptr->MutableGet();
+    output_data->blobs.push_back(
+      {reinterpret_cast<void *>(data_ptr), static_cast<uint64_t>(output_buffer_size[i]), false});
+    outputs.emplace_back(std::move(output_tensor));
     GELOGD("Output index:%zu, output dims is %s, data length:%lu.", i,
-           formats::JoinToString(output.dims).c_str(), output.length);
+           formats::JoinToString(output_shape_info[i]).c_str(), output_buffer_size[i]);
   }
 
   return SUCCESS;
 }
-
 ///
 /// @ingroup ge
 /// @brief send Output Op result to upper layer
@@ -2678,7 +2680,7 @@ Status DavinciModel::GenOutputTensorInfo(OutputData *output_data, vector<OutputT
 Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const bool seq_end_flag,
                                   OutputData *output_data) {
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null.");
-  std::vector<ge::OutputTensorInfo> outputs;
+  std::vector<ge::Tensor> outputs;
 
   // return result is not required
   if (!rslt_flg && !seq_end_flag) {
@@ -2742,7 +2744,7 @@ Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
   GELOGI("ReturnNoOutput model id:%u.", model_id_);
 
   GE_CHK_BOOL_EXEC(listener_ != nullptr, return PARAM_INVALID, "listener_ is null!");
-  std::vector<ge::OutputTensorInfo> outputs;
+  std::vector<ge::Tensor> outputs;
   GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, SUCCESS, outputs), "OnComputeDone failed.");
   return SUCCESS;
 }
@@ -2798,7 +2800,7 @@ void *DavinciModel::Run(DavinciModel *model) {
     GELOGI("Copy input data, model id:%u", model_id);
     GE_IF_BOOL_EXEC(ProfilingManager::Instance().ProfilingModelExecuteOn(),
                     model->SetProfileTime(MODEL_PRE_PROC_START));
-    ret = model->CopyInputData(current_data, false);
+    ret = model->CopyInputData(current_data);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ret != SUCCESS, (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
         continue, "Copy input data to model failed.");  // [No need to check value]

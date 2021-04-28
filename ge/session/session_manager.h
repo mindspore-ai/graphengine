@@ -139,6 +139,8 @@ class SessionManager {
   ///
   Status BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
 
+  Status BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<ge::Tensor> &inputs);
+
   ///
   /// @ingroup ge_session
   /// @brief run a graph of the session with specific session id for train asynchronously
@@ -147,7 +149,7 @@ class SessionManager {
   /// @param [in] inputs input data
   /// @return Status result of function
   ///
-  Status RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+  Status RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<ge::Tensor> &inputs,
                        RunAsyncCallback callback);
 
   ///

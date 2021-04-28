@@ -408,7 +408,26 @@ Status InnerSession::BuildGraph(uint32_t graph_id, const std::vector<InputTensor
   return ret;
 }
 
-Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+Status InnerSession::BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs) {
+  UpdateThreadContext(graph_id);
+  GELOGI("[InnerSession:%lu] build graph on session, graph_id=%u.", session_id_, graph_id);
+  std::vector<ge::GeTensor> ge_inputs;
+  for (const auto &input : inputs) {
+    ge_inputs.emplace_back(TensorAdapter::AsGeTensor(input));
+  }
+  GeRootModelPtr ge_root_model = nullptr;
+  Status ret = graph_manager_.BuildGraph(graph_id, ge_inputs, ge_root_model, session_id_, true);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Build][Graph] failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager BuildGraph failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
+    return ret;
+  }
+  GELOGI("[InnerSession:%lu] build graph success, graph_id=%u.", session_id_, graph_id);
+  return ret;
+}
+
+Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs,
                                    RunAsyncCallback callback) {
   UpdateThreadContext(graph_id);
   GELOGI("[InnerSession:%lu] run graph on session, graph_id=%u.", session_id_, graph_id);
@@ -422,7 +441,6 @@ Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<InputTen
   GELOGI("[InnerSession:%lu] run graph success, graph_id=%u.", session_id_, graph_id);
   return ret;
 }
-
 const GraphManager &InnerSession::getGraphManagerObj() const { return graph_manager_; }
 
 void InnerSession::UpdateThreadContext(const std::map<std::string, std::string> &options) {

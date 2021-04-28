@@ -50,7 +50,7 @@ class GraphExecutor {
                       std::vector<GeTensor> &output_tensor);
 
   ge::Status ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
-                               const std::vector<InputTensorInfo> &input_tensor, const RunAsyncCallback &callback);
+                               const std::vector<ge::Tensor> &input_tensor, const RunAsyncCallback &callback);
 
   Status ExecuteGraphWithStream(GraphId graph_id,
                                 rtStream_t stream,
@@ -137,7 +137,7 @@ class GraphExecutor {
   Status SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                           std::vector<GeTensor> &output_tensor);
 
-  Status AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<InputTensorInfo> &input_tensor,
+  Status AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<ge::Tensor> &input_tensor,
                            const RunAsyncCallback &callback);
 
   void InitModelIdInfo(std::vector<uint32_t> &out_model_id_info, std::vector<SubGraphInfoPtr> &sub_graph_vec,

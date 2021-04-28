@@ -26,6 +26,7 @@ namespace {
 const int kDataOutputIndex = 0;
 const size_t kMinimumPiplineStages = 2;
 const int kDefaultLoopCount = 10;
+const size_t kAlignment = 64;
 }
 HybridModelAsyncExecutor::HybridModelAsyncExecutor(HybridModel *model)
     : model_(model), run_flag_(false), data_dumper_(nullptr) {
@@ -70,6 +71,8 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
     GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     GetContext().SetSessionId(executor_->GetContext()->session_id);
     GetContext().SetContextId(executor_->GetContext()->context_id);
+    GE_CHECK_NOTNULL(executor_->GetContext()->ge_context);
+    GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     return RunInternal();
   });
 
@@ -197,7 +200,7 @@ Status HybridModelAsyncExecutor::HandleResult(Status exec_ret,
                                               HybridModelExecutor::ExecuteArgs &args,
                                               OutputData *output_data) {
   GELOGD("Start to handle result. model id = %u, data index = %u, execution ret = %u", model_id_, data_id, exec_ret);
-  std::vector<ge::OutputTensorInfo> output_tensor_info_list;
+  std::vector<ge::Tensor> output_tensor_info_list;
   if (args.is_eos) {
     GELOGI("End of sequence, model id = %u", model_id_);
     GE_CHK_STATUS_RET_NOLOG(OnComputeDone(data_id, END_OF_SEQUENCE, output_tensor_info_list));
@@ -368,7 +371,7 @@ Status HybridModelAsyncExecutor::InitInputDesc() {
 }
 
 Status HybridModelAsyncExecutor::OnComputeDone(uint32_t data_index, uint32_t result_code,
-                                               std::vector<ge::OutputTensorInfo> &outputs) {
+                                               std::vector<ge::Tensor> &outputs) {
   GELOGD("OnComputeDone. model id = %u, data index = %u, execution ret = %u", model_id_, data_index, result_code);
   if (listener_ != nullptr) {
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_index, result_code, outputs),
@@ -378,9 +381,8 @@ Status HybridModelAsyncExecutor::OnComputeDone(uint32_t data_index, uint32_t res
   return result_code;
 }
 
-Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &args,
-                                             OutputData *output_data,
-                                             std::vector<ge::OutputTensorInfo> &outputs) {
+Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &args, OutputData *output_data,
+                                             std::vector<ge::Tensor> &outputs) {
   // copy output data from op to designated position
   std::vector<ConstGeTensorDescPtr> &output_tensor_desc_list = args.output_desc;
   std::vector<TensorValue> &output_tensors = args.outputs;
@@ -395,6 +397,12 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
   }
 
   GELOGD("Number of outputs = %zu", output_tensor_desc_list.size());
+  string execute_mode;
+  auto result = ge::GetContext().GetOption(OPTION_EXEC_DYNAMIC_EXECUTE_MODE, execute_mode);
+  if (result != SUCCESS) {
+    GELOGW("Can not get dynamic execute mode attr");
+  }
+  GELOGD("The dynamic execute is %s", execute_mode.c_str());
   for (size_t i = 0; i < output_tensors.size(); ++i) {
     GELOGD("Start to process output[%zu]", i);
     auto &output_tensor = output_tensors[i];
@@ -429,32 +437,28 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
       return INTERNAL_ERROR;
     }
 
-    ge::OutputTensorInfo output;
-    output.data_type = static_cast<uint32_t>(tensor_desc->GetDataType());
-    output.dims = tensor_desc->GetShape().GetDims();
-    output.length = output_size;
+    GeShape ge_shape(tensor_desc->GetShape().GetDims());
+    GeTensorDesc ge_tensor_desc;
+    ge_tensor_desc.SetShape(ge_shape);
+    GeTensor ge_tensor(ge_tensor_desc);
     if (output_size > 0) {
-      std::unique_ptr<uint8_t[]> data_buf(new(std::nothrow) uint8_t[output_size]);
+      auto aligned_ptr = MakeShared<AlignedPtr>(output_size, kAlignment);
+      GE_CHECK_NOTNULL(aligned_ptr);
+      auto data_buf = aligned_ptr->MutableGet();
       GE_CHECK_NOTNULL(data_buf);
-      GE_CHK_RT_RET(rtMemcpy(data_buf.get(),
-                             output_size,
-                             output_tensor.GetData(),
-                             output_size,
-                             RT_MEMCPY_DEVICE_TO_HOST));
-      output.data = std::move(data_buf);
-      output_data->blobs.emplace_back(data_buf.get(), static_cast<uint32_t>(output_size), false);
+      GE_CHK_RT_RET(rtMemcpy(data_buf, output_size, output_tensor.GetData(), output_size, RT_MEMCPY_DEVICE_TO_HOST));
+      ge_tensor.SetData(aligned_ptr, output_size);
+      output_data->blobs.emplace_back(data_buf, static_cast<uint32_t>(output_size), false);
     } else {
       GELOGW("Output[%zu] is empty. shape = [%s]", i, tensor_desc->GetShape().ToString().c_str());
-      output.data = nullptr;
+      ge_tensor.SetData(nullptr, 0U);
       output_data->blobs.emplace_back(nullptr, 0U, false);
     }
-
-    outputs.emplace_back(std::move(output));
-    GELOGD("Output[%zu] added, type = %s, shape = [%s], size = %ld",
-           i,
+    auto tensor = TensorAdapter::AsTensor(ge_tensor);
+    outputs.emplace_back(std::move(tensor));
+    GELOGD("Output[%zu] added, type = %s, shape = [%s], size = %ld", i,
            TypeUtils::DataTypeToSerialString(tensor_desc->GetDataType()).c_str(),
-           tensor_desc->GetShape().ToString().c_str(),
-           output_size);
+           tensor_desc->GetShape().ToString().c_str(), output_size);
   }
 
   return SUCCESS;
@@ -507,7 +511,7 @@ Status HybridModelAsyncExecutor::Execute(const vector<GeTensor> &inputs, vector<
   GELOGD("Done copying input data successfully.");
   GE_CHK_STATUS_RET(executor_->Execute(args), "[Invoke][Execute] Failed, model_id = %u.", model_id_);
 
-  std::vector<ge::OutputTensorInfo> output_tensor_info_list;
+  std::vector<ge::Tensor> output_tensor_info_list;
   OutputData output_data;
   GE_CHK_STATUS_RET(CopyOutputs(args, &output_data, output_tensor_info_list),
       "[Invoke][CopyOutputs]Failed to copy outputs, model_id = %u.", model_id_);
@@ -517,15 +521,15 @@ Status HybridModelAsyncExecutor::Execute(const vector<GeTensor> &inputs, vector<
   outputs.resize(output_tensor_info_list.size());
   for (auto &out_tensor_info : output_tensor_info_list) {
     auto &ge_tensor = outputs[out_index];
-    if (out_tensor_info.length > 0) {
-      GE_CHK_GRAPH_STATUS_RET(ge_tensor.SetData(out_tensor_info.data.get(), out_tensor_info.length),
+    if (out_tensor_info.GetSize() > 0) {
+      GE_CHK_GRAPH_STATUS_RET(ge_tensor.SetData(out_tensor_info.GetData(), out_tensor_info.GetSize()),
                               "Failed to set output[%d].", out_index);
     }
 
     ge_tensor.MutableTensorDesc() = *args.output_desc[out_index];
     GELOGD("Set output[%d], tensor size = %ld, shape = [%s]",
            out_index,
-           out_tensor_info.length,
+           out_tensor_info.GetSize(),
            ge_tensor.MutableTensorDesc().MutableShape().ToString().c_str());
     ++out_index;
   }

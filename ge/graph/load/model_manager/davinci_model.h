@@ -639,7 +639,7 @@ class DavinciModel {
   Status UpdateIoTaskArgs(const map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                           const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label);
 
-  Status CopyInputData(const InputData &input_data, bool device_data = false);
+  Status CopyInputData(const InputData &input_data);
 
   Status CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind);
 
@@ -884,7 +884,7 @@ class DavinciModel {
   Status SinkTimeProfile(const InputData &current_data);
 
   Status InitOutputTensorInfo(const OpDescPtr &op_desc);
-  Status GenOutputTensorInfo(OutputData *output_data, vector<OutputTensorInfo> &outputs);
+  Status GenOutputTensorInfo(OutputData *output_data, vector<ge::Tensor> &outputs);
 
   Status InitInputDescInfo(const OpDescPtr &op_desc);
   Status InitOutputDescInfo(const OpDescPtr &op_desc, const vector<string> &out_node_name);

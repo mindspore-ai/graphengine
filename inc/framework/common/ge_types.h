@@ -226,7 +226,7 @@ class GE_FUNC_VISIBILITY ModelListener {
   /// @param [in] resultCode Execution results
   ///
   virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
-                               std::vector<ge::OutputTensorInfo> &outputs) = 0;
+                               std::vector<ge::Tensor> &outputs) = 0;
 };
 
 // OMM configuration item

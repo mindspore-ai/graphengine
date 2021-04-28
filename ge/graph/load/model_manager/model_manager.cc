@@ -542,7 +542,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
 /// @brief load Input and output TensorInfo for Model
 /// @return Status run result
 ///
-Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs) {
+Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Tensor> &inputs) {
   std::shared_ptr<DavinciModel> model = GetModel(model_id);
   auto hybrid_model = GetHybridModel(model_id);
   if (hybrid_model == nullptr) {
@@ -556,9 +556,11 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
   input_data.index = 0;
   for (size_t i = 0; i < inputs.size(); ++i) {
     DataBuffer data;
-    data.data = inputs[i].data;
-    data.length = inputs[i].length;
-    input_data.shapes.emplace_back(inputs[i].dims);
+    const TensorDesc &tensor_desc = inputs[i].GetTensorDesc();
+    data.data = reinterpret_cast<void *>(const_cast<uint8_t *>(inputs[i].GetData()));
+    data.length = inputs[i].GetSize();
+    data.placement = static_cast<uint32_t>(tensor_desc.GetPlacement());
+    input_data.shapes.emplace_back(tensor_desc.GetShape().GetDims());
     input_data.blobs.push_back(data);
   }
   if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
@@ -608,7 +610,6 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
 
   return SUCCESS;
 }
-
 ///
 /// @ingroup domi_ome
 /// @brief create model thread, start to execute model

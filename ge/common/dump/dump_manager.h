@@ -34,6 +34,11 @@ class DumpManager {
   void RemoveDumpProperties(uint64_t session_id);
 
  private:
+  bool NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump_properties);
+  void SetDumpDebugConf(const DumpConfig &dump_config, DumpProperties &dump_properties);
+  Status SetDumpPath(const DumpConfig &dump_config, DumpProperties &dump_properties);
+  Status SetNormalDumpConf(const DumpConfig &dump_config, DumpProperties &dump_properties);
+  void SetDumpList(const DumpConfig &dump_config, DumpProperties &dump_properties);
   std::mutex mutex_;
   std::map<uint64_t, DumpProperties> dump_properties_map_;
 };

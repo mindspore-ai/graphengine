@@ -65,15 +65,25 @@ class DumpProperties {
 
   const std::string &GetDumpStatus() const;
 
+  void InitInferOpDebug();
+
+  bool IsInferOpDebug() const {
+    return is_infer_op_debug_;
+  }
+
   void SetDumpOpSwitch(const std::string &dump_op_switch);
 
   const std::string &GetDumpOpSwitch() const;
 
-  bool IsOpDebugOpen() const { return is_op_debug_; }
+  bool IsOpDebugOpen() const {
+    return is_train_op_debug_ || is_infer_op_debug_;
+  }
 
   bool IsDumpOpen() const;
 
   bool IsSingleOpNeedDump() const;
+
+  void SetOpDebugMode(const uint32_t &op_debug_mode);
 
   uint32_t GetOpDebugMode() const { return op_debug_mode_; }
 
@@ -96,7 +106,8 @@ class DumpProperties {
   std::string dump_op_switch_;
   std::map<std::string, std::set<std::string>> model_dump_properties_map_;
 
-  bool is_op_debug_ = false;
+  bool is_train_op_debug_ = false;
+  bool is_infer_op_debug_ = false;
   uint32_t op_debug_mode_ = 0;
 };
 }

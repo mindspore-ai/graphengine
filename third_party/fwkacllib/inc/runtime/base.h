@@ -156,6 +156,12 @@ RTS_API rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtSt
 
 /**
  * @ingroup profiling_base
+ * @brief ts send keypoint profiler log.
+ */
+RTS_API rtError_t rtProfilerTraceEx(uint64_t id, uint64_t modelId, uint16_t tagId, rtStream_t stream);
+
+/**
+ * @ingroup profiling_base
  * @brief ts set profiling reporter callback.
  */
 RTS_API rtError_t rtSetMsprofReporterCallback(MsprofReporterCallback callback);
@@ -200,7 +206,7 @@ RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCal
 
 /**
  * @ingroup dvrt_base
- * @brief register callback for fail task 
+ * @brief register callback for fail task
  * @param [in] uniName unique register name, can't be null
  * @param [in] callback fail task callback function
  * @param [out] NA
@@ -339,11 +345,11 @@ RTS_API rtError_t rtLabelCreateEx(rtLabel_t *label, rtStream_t stream);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream);
+RTS_API rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_t stream);
 
 /**
  * @ingroup dvrt_base
- * @brief get current thread last stream id and task id 
+ * @brief get current thread last stream id and task id
  * @param [out] stream id and task id
  * @param [in] null
  * @return RT_ERROR_NONE for ok

@@ -1343,6 +1343,9 @@ domi::Status ConvertPbtxtToJson() {
 
 int init(int argc, char* argv[]) {
   GFlagUtils::InitGFlag(argc, argv);
+  const char *gflag_argv = gflags::GetArgv();
+  string cmdline = gflag_argv == nullptr ? "" : gflag_argv;
+  domi::GetContext().atc_cmdline = cmdline;
   // set log level
   int ret = -1;
   const std::set<string> log_level = {"null", "debug", "info", "warning", "error"};

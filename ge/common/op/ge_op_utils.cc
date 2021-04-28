@@ -276,10 +276,8 @@ Status OpUtils::SetOutputSliceDataByDataType(void *data, int64_t data_size, cons
     int64_t dim_i = input_dims[i];
     int64_t stride_i = stride[i];
     if (dim_i == 0) {
-      GELOGE(PARAM_INVALID, "[Check][Param]Invalid, Dim_i %s of size tensor is 0",
-             ShapeToString(input_dims[i]).c_str());
-      REPORT_INNER_ERROR("E19999", "Dim_i %s of size tensor is 0, invalid",
-                         ShapeToString(input_dims[i]).c_str());
+      GELOGE(PARAM_INVALID, "[Check][Param]Invalid, Dim_i of size tensor is 0");
+      REPORT_INNER_ERROR("E19999", "Dim_i of size tensor is 0, invalid");
       return PARAM_INVALID;
     }
     chunk_size = chunk_size / dim_i;

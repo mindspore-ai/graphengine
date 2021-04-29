@@ -212,22 +212,22 @@ class GraphMemoryAssigner {
 
   void UpdateCurNodeInputDesc(const NodePtr &cur_node, int64_t cur_node_input_index, int64_t distance);
 
-  void CheckNeedCalcDistAndUpdateVisitInfo(const size_t matched_mem_offset,
-                                           const NodePtr &peer_out_node,
+  void CheckNeedCalcDistAndUpdateVisitInfo(const NodePtr &peer_out_node,
                                            const OutDataAnchorPtr &peer_out_anchor,
+                                           size_t matched_mem_offset,
                                            map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
                                            bool &is_need_calc_distance);
 
-  void CalcDistanceAndUpdateDesc(const size_t matched_mem_offset,
-                                 const map<string, int64_t> &node_index_in_stream,
-                                 NodePtr &node,
+  void CalcDistanceAndUpdateDesc(const map<string, int64_t> &node_index_in_stream,
                                  const InDataAnchorPtr &in_data_anchor,
+                                 size_t matched_mem_offset,
+                                 NodePtr &node,
                                  map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
                                  bool &is_need_skip);
 
-  void DeleteVisitInfoWhenLifecycleEnded(const size_t matched_mem_offset,
-                                         const NodePtr &node,
+  void DeleteVisitInfoWhenLifecycleEnded(const NodePtr &node,
                                          const InDataAnchorPtr &in_data_anchor,
+                                         size_t matched_mem_offset,
                                          map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info);
 
   MemoryOffsetMap memory_offset_;

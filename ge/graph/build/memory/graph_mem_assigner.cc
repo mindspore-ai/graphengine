@@ -2035,9 +2035,9 @@ void GraphMemoryAssigner::UpdateCurNodeInputDesc(const NodePtr &cur_node,
 }
 
 void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
-    const size_t matched_mem_offset,
     const NodePtr &peer_out_node,
     const OutDataAnchorPtr &peer_out_anchor,
+    size_t matched_mem_offset,
     map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
     bool &is_need_calc_distance) {
   auto iter = mem_block_visit_info.find(matched_mem_offset);
@@ -2073,10 +2073,10 @@ void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
 }
 
 // calculate distance, update visit info, update prev_node input desc, update cur node input desc
-void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(const size_t matched_mem_offset,
-                                                    const map<string, int64_t> &node_index_in_stream,
-                                                    NodePtr &node,
+void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(const map<string, int64_t> &node_index_in_stream,
                                                     const InDataAnchorPtr &in_data_anchor,
+                                                    size_t matched_mem_offset,
+                                                    NodePtr &node,
                                                     map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
                                                     bool &is_need_skip) {
   int64_t distance = -1;
@@ -2134,9 +2134,9 @@ void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(const size_t matched_mem_off
 }
 
 void GraphMemoryAssigner::DeleteVisitInfoWhenLifecycleEnded(
-    const size_t matched_mem_offset,
     const NodePtr &node,
     const InDataAnchorPtr &in_data_anchor,
+    size_t matched_mem_offset,
     map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info) {
   GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, return);
   auto input_desc = node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx());
@@ -2172,20 +2172,20 @@ void GraphMemoryAssigner::MarkNodeDistanceAttr(const ComputeGraphPtr &compute_gr
     auto matched_mem_offset = peer_out_node->GetOpDesc()->GetOutputOffset().at(peer_out_anchor->GetIdx());
 
     bool is_need_calc_distance = false;
-    CheckNeedCalcDistAndUpdateVisitInfo(mem_block_visit_info, matched_mem_offset, peer_out_node,
-                                        peer_out_anchor, is_need_calc_distance);
+    CheckNeedCalcDistAndUpdateVisitInfo(peer_out_node, peer_out_anchor, matched_mem_offset,
+                                        mem_block_visit_info, is_need_calc_distance);
     if (!is_need_calc_distance) {
       continue;
     }
 
     bool is_need_skip = false;
-    CalcDistanceAndUpdateDesc(mem_block_visit_info, matched_mem_offset, node_index_in_stream, node,
-                              in_data_anchor, is_need_skip);
+    CalcDistanceAndUpdateDesc(node_index_in_stream, in_data_anchor, matched_mem_offset, node,
+                              mem_block_visit_info, is_need_skip);
     if (is_need_skip) {
       continue;
     }
 
-    DeleteVisitInfoWhenLifecycleEnded(mem_block_visit_info, matched_mem_offset, node, in_data_anchor);
+    DeleteVisitInfoWhenLifecycleEnded(node, in_data_anchor, matched_mem_offset, mem_block_visit_info);
   }
 }
 

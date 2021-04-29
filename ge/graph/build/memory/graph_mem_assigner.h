@@ -228,7 +228,7 @@ class GraphMemoryAssigner {
   void DeleteVisitInfoWhenLifecycleEnded(const size_t matched_mem_offset,
                                          const NodePtr &node,
                                          const InDataAnchorPtr &in_data_anchor,
-                                         map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,);
+                                         map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info);
 
   MemoryOffsetMap memory_offset_;
   ge::ComputeGraphPtr compute_graph_;

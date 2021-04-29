@@ -101,7 +101,7 @@
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "graph/common/local_context.h"
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
@@ -125,6 +125,7 @@ const uint32_t kInitGraphCount = 1;
 const uint32_t kNotAdded = 0;
 const uint32_t kStartAdd = 1;
 const uint32_t kDoneAdded = 2;
+const uint32_t kNeverLoaded = 0;
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;
@@ -164,7 +165,7 @@ GraphManager::GraphManager()
 }
 
 Status GraphManager::Initialize(const std::map<string, string> &options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   if (init_flag_) {
     GELOGW("[Initialize] GraphManager already initialized.");
     return SUCCESS;
@@ -494,7 +495,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   compute_graph->SetGraphID(graph_id);
-
+  (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
   SetSessionGraphId(compute_graph, graph_id);
 
   if (CreateGraphNode(graph_id, graph, options) != SUCCESS) {
@@ -526,14 +527,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   return SUCCESS;
 }
 
-Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
-                                      const std::map<std::string, std::string> &options,
-                                      const OmgContext &omg_context) {
-  if (HasGraphNode(graph_id)) {
-    REPORT_INNER_ERROR("E19999", "graph_id:%u is exist, check invalid", graph_id);
-    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u.", graph_id);
-    return GE_GRAPH_GRAPH_ALREADY_EXIST;
-  }
+Status GraphManager::CheckGraphAdded(const GraphId &graph_id, const Graph &graph) {
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   if (compute_graph != nullptr) {
     compute_graph->SetGraphID(graph_id);
@@ -552,58 +546,44 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
     GELOGE(FAILED, "compute graph is null");
     return FAILED;
   }
+  return SUCCESS;
+}
+
+Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &graph,
+                                      const std::map<std::string, std::string> &options,
+                                      const OmgContext &omg_context) {
+  if (CheckGraphAdded(graph_id, graph) != SUCCESS) {
+    GELOGE(FAILED, "AddGraphWithCopy failed.");
+    return FAILED;
+  }
+  IncreaseGraphCount(graph_id);
+  // Do add graph
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
   std::vector<NodePtr> input_nodes;
   std::vector<NodePtr> output_nodes;
   auto new_compute_graph = GraphUtils::CloneGraph(compute_graph, "", input_nodes, output_nodes);
-  std::string session_graph_id;
-  if (!AttrUtils::GetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id) ||
-      session_graph_id.empty()) {
-    session_graph_id = "-1_" + to_string(graph_id);
-    if (!AttrUtils::SetStr(*new_compute_graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id)) {
-      GELOGW("Set attribute of compute graph failed.");
-    }
-    for (auto &subgraph : new_compute_graph->GetAllSubgraphs()) {
-      (void)AttrUtils::SetStr(*subgraph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id);
-    }
-    GELOGD("Get graph session_graph_id attr failed, set session id to default value: [0]");
-  }
-
-  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
-  if (graph_node == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New GraphNode fail, graph_id:%u",
-                      graph_id);
-    GELOGE(FAILED, "GraphNode make shared failed");
+  GE_CHECK_NOTNULL(new_compute_graph);
+  new_compute_graph->SetGraphID(graph_id);
+  SetSessionGraphId(new_compute_graph, graph_id);
+  std::shared_ptr<Graph> new_graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
+  if (CreateGraphNode(graph_id, *new_graph_ptr, options) != SUCCESS) {
+    GELOGE(FAILED, "Failed to create graph_node.");
     return FAILED;
   }
-  std::shared_ptr<Graph> graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
-  if (graph_ptr == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New Graph fail, graph_id:%u",
-                      graph_id);
-    GELOGE(FAILED, "GraphPtr make shared failed");
-    return FAILED;
-  }
-  // update option about tuning graph
-  ParseOption(options, BUILD_MODE, options_.build_mode);
-  ParseOption(options, BUILD_STEP, options_.build_step);
-  ParseOption(options, TUNING_PATH, options_.tuning_path);
-
-  graph_node->SetGraph(graph_ptr);
-  graph_node->SetOptions(options);
-  AddGraphNode(graph_id, graph_node);
 
   AddLocalOmgContext(graph_id, omg_context);
   if (!options_.output_datatype.empty()) {
     GetLocalOmgContext().output_type = options_.output_datatype;
   }
-
-  CompilerStages &stages = GetCompilerStages(graph_id);
-  stages.preparer.SetOptions(options_);
-  Status status = stages.optimizer.SetOptions(options_);
-  if (status != SUCCESS) {
-    GELOGE(status, "Graph optimizer set options failed.");
-    return status;
+  if (InitDynamicParams(new_compute_graph) != SUCCESS) {
+    GELOGE(GRAPH_PARAM_INVALID, "Failed to init params when online infer is dynamic.");
+    return GRAPH_PARAM_INVALID;
   }
-  stages.builder.SetOptions(options_);
+
+  if (SetStagesOptions(graph_id, options_) != SUCCESS) {
+    GELOGE(INTERNAL_ERROR, "Set stage options failed.");
+    return INTERNAL_ERROR;
+  }
 
   var_acc_ctrl_.AddGraph(graph_id, new_compute_graph);
   return SUCCESS;
@@ -703,7 +683,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
                                             compute_graph->GetGraphID(), subgraph,
                                             compute_graph->GetName(), session_id,
-                                            ErrorManager::GetInstance().GetErrorContext(),
+                                            ErrorManager::GetInstance().GetErrorManagerContext(),
                                             GetThreadLocalContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
@@ -720,7 +700,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
       std::future<Status> f = executor.commit(GraphManager::ProcessSubGraphWithMultiThreads, this,
                                               compute_graph->GetGraphID(), subgraph,
                                               compute_graph->GetName(), session_id,
-                                              ErrorManager::GetInstance().GetErrorContext(),
+                                              ErrorManager::GetInstance().GetErrorManagerContext(),
                                               GetThreadLocalContext());
       if (!f.valid()) {
         GELOGE(FAILED, "Future is invalid");
@@ -832,7 +812,7 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
 
 Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
                                                  ge::ComputeGraphPtr &compute_graph, uint64_t session_id) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kPrepareOptimize);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kPrepareOptimize);
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(compute_graph);
 
@@ -841,10 +821,10 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
   GM_RUN_AND_DUMP_PERF("HandleSummaryOp", stages.optimizer.HandleSummaryOp, compute_graph);
   GM_RUN_AND_DUMP_PERF("Prepare", stages.preparer.PrepareDynShape, graph_node, inputs, compute_graph,
                        session_id);
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOriginOptimize);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOriginOptimize);
   GM_RUN_AND_DUMP_PERF("OptimizeOriginalGraph", stages.optimizer.OptimizeOriginalGraph, compute_graph);
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kPrepareOptimize);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kPrepareOptimize);
   GM_RUN_AND_DUMP_PERF("PrepareRunningFormatRefiner", stages.preparer.PrepareRunningFormatRefiner);
   GM_RUN_AND_DUMP_PERF("RefineRunningFormat", stages.optimizer.OptimizeOriginalGraphJudgeInsert, compute_graph);
   GM_RUN_AND_DUMP_PERF("SubexpressionMigration", SubexpressionMigration, compute_graph);
@@ -887,7 +867,7 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
   GE_CHECK_NOTNULL(graph_node);
   GE_CHECK_NOTNULL(compute_graph);
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kMergeGraphOptimize);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kMergeGraphOptimize);
   CompilerStages &stages = GetCompilerStages(graph_node->GetGraphId());
   GM_RUN_AND_DUMP_PERF("OptimizeWholeGraph", stages.optimizer.OptimizeWholeGraph, compute_graph);
   GM_RUN_AND_DUMP_PERF("Optimize2", OptimizeStage2, compute_graph);
@@ -981,7 +961,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kSubGraphOptimize);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kSubGraphOptimize);
   // set fuzz compile flag after origin graph optimize
   GE_CHK_STATUS_RET(SetFuzzCompileFlag(compute_graph), "Set fuzz compile flag failed.");
   ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
@@ -1005,7 +985,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   // when set incre build, save om model and var manager
   GeModelPtr ge_model = nullptr;
   auto save_ret = SaveCacheAfterBuild(graph_node->GetGraphId(), compute_graph, ge_model);
@@ -1053,7 +1033,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
   // it will not execute graph prreprocess, optimize, parition, build if the graph has built successful.
   Status ret = SUCCESS;
   if (IsGraphNeedBuild(graph_node)) {
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+    ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
     if (graph_node->GetBuildFlag()) {
       REPORT_INNER_ERROR("E19999", "Graph:%u has not build before, can't run directly, "
                          "check invalid", graph_node->GetGraphId());
@@ -1075,11 +1055,10 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
         return ret;
       }
     }
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelLoad, ErrorMessage::kModelLoad);
+    ErrorManager::GetInstance().SetStage(error_message::kModelLoad, error_message::kModelLoad);
     if (!graph_node->IsAsync()) {
       ret = LoadGraph(ge_root_model, graph_node);
     } else {
-      GE_CHECK_NOTNULL(ge_root_model);
       ret = LoadGraphAsync(ge_root_model, graph_node);
     }
     if (ret != SUCCESS) {
@@ -1089,12 +1068,11 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
     graph_node->SetBuildFlag(true);
     var_acc_ctrl_.SetGraphBuildEnd(graph_node->GetGraphId());
   } else if (!graph_node->GetLoadFlag()) {
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelLoad, ErrorMessage::kModelLoad);
+    ErrorManager::GetInstance().SetStage(error_message::kModelLoad, error_message::kModelLoad);
     GeRootModelPtr ge_root_model_ptr = graph_node->GetGeRootModel();
     if (!graph_node->IsAsync()) {
       ret = LoadGraph(ge_root_model_ptr, graph_node);
     } else {
-      GE_CHECK_NOTNULL(ge_root_model);
       ret = LoadGraphAsync(ge_root_model_ptr, graph_node);
     }
     if (ret != SUCCESS) {
@@ -1249,7 +1227,7 @@ Status GraphManager::InnerRunGraph(GraphNodePtr &graph_node, const GraphId &grap
 
 Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                               std::vector<GeTensor> &outputs, uint64_t session_id) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   std::lock_guard<std::mutex> lock(run_mutex_);
   GELOGI("[RunGraph] start to run graph, graph_id = %u, is_train_graph: %d", graph_id, GetTrainFlag());
 
@@ -1310,7 +1288,7 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
     return ret;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   // excute graph
   ret = InnerRunGraph(graph_node, graph_id, inputs, outputs);
   if (ret != SUCCESS) {
@@ -1443,7 +1421,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
 
 Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                                 GeRootModelPtr &ge_root_model, uint64_t session_id, bool async) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGD("[BuildGraph] start to build graph, graph_id:%u", graph_id);
   if (inputs.empty()) {
     GELOGW("[BuildGraph] BuildGraph warning: empty GeTensor inputs");
@@ -2748,6 +2726,15 @@ void GraphManager::ReleaseMemory(const GeModelPtr &ge_model, GraphNodePtr &graph
     GELOGI("CheckAndReleaseMemory UnloadGraph[%u], model[%u] success.", graph_id, model_id);
   }
   graph_node->SetLoadFlag(false);
+  // Allow model to be loaded agagin without adding graph again
+  graph_node->SetLoadCount(graph_node->GetLoadRecord());
+  graph_node->SetLoadRecord(kNeverLoaded);
+  GeRootModelPtr ge_root_model = graph_node->GetGeRootModel();
+  if (ge_root_model == nullptr) {
+    GELOGW("ge_root_model is null, graph_id:%u", graph_id);
+    return;
+  }
+  ge_root_model->ClearAllModelId();
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, when GraphManager %s",
@@ -2825,10 +2812,10 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
                                                      const SubGraphInfoPtr &sub_graph_info_ptr,
                                                      const std::string &root_graph_name,
                                                      uint64_t session_id,
-                                                     const struct ErrorMessage::Context &error_context,
+                                                     const struct error_message::Context &error_context,
                                                      const GEThreadLocalContext &ge_context) {
+  ErrorManager::GetInstance().SetErrorContext(error_context);
   if (sub_graph_info_ptr != nullptr && graph_manager != nullptr) {
-    ErrorManager::GetInstance().SetErrorContext(error_context);
     GetContext().SetSessionId(session_id);
     GetThreadLocalContext() = ge_context;
     graph_manager->UpdateLocalOmgContext(root_graph_id);
@@ -2878,11 +2865,11 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
 // run graph async on session
 Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge::InputTensorInfo> &inputs,
                                    uint64_t session_id, RunAsyncCallback callback) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   GELOGI("[GraphManager] Start to run graph async, graph_id=%u, inputsSize=%zu.", graph_id, inputs.size());
 
   bool ret = prerun_args_q_.Push(PreRunArgs({graph_id, inputs, session_id,
-    ErrorManager::GetInstance().GetErrorContext(),
+    ErrorManager::GetInstance().GetErrorManagerContext(),
     GetThreadLocalContext(), callback}));
   if (!ret) {
     GELOGE(FAILED, "[GraphManager] Run graph async failed, graph_id=%u.", graph_id);
@@ -3003,7 +2990,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     GELOGI("[PreRunThread] A new loop start, graph_id:%u.", args.graph_id);
 
     ErrorManager::GetInstance().SetErrorContext(args.error_context);
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+    ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
     GetContext().SetSessionId(args.session_id);
     GetThreadLocalContext() = args.context;
     graph_manager->UpdateLocalOmgContext(args.graph_id);
@@ -3173,7 +3160,7 @@ Status GraphManager::ParseInputsDims(const std::vector<InputTensorInfo> &input_t
 }
 
 void GraphManager::RunThread(GraphManager *graph_manager) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   if (prctl(PR_SET_NAME, ("GE_Run")) != 0) {
     GELOGW("Set thread name failed.");
   }
@@ -3203,7 +3190,7 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
 
     args.graph_node->UpdateLoadFlag();
     if (!args.graph_node->GetLoadFlag()) {
-      ErrorManager::GetInstance().SetStage(ErrorMessage::kModelLoad, ErrorMessage::kModelLoad);
+      ErrorManager::GetInstance().SetStage(error_message::kModelLoad, error_message::kModelLoad);
       args.ge_root_model->SetTrainFlag(graph_manager->GetTrainFlag());
       ret = graph_manager->LoadGraphAsync(args.ge_root_model, args.graph_node);
       if (ret != SUCCESS || args.ge_root_model == nullptr) {
@@ -3221,7 +3208,7 @@ void GraphManager::RunThread(GraphManager *graph_manager) {
              args.ge_root_model->GetModelId());
     }
 
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+    ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
     if (graph_manager->GetTrainFlag()) {
       ret = graph_manager->graph_executor_.SetGraphContext(graph_manager->GetGraphContext());
       if (ret != SUCCESS) {
@@ -3519,7 +3506,7 @@ Status GraphManager::ConvertGraphToFile(ComputeGraphPtr &compute_graph, GraphPar
 
 Status GraphManager::Build(const GraphNodePtr &graph_node, ComputeGraphPtr &compute_graph,
                            GeRootModelPtr &ge_root_model, uint64_t session_id) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   // build
   if (compute_graph != nullptr) {
     std::string graph_name = compute_graph->GetName();

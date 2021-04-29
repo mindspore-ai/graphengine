@@ -166,6 +166,8 @@ const std::string COMPRESS_FLAG = "ge.compressFlag";
 
 const std::string PRECISION_MODE = "ge.exec.precision_mode";
 
+const std::string TUNE_DEVICE_IDS = "ge.exec.tuneDeviceIds";
+
 // Configure single op flag for FE
 // its value should be "0" or "1", default value is "0"
 const std::string SINGLE_OP_FLAG = "ge.exec.single_op";
@@ -359,6 +361,7 @@ using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensor
 namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";
 static const char *const INPUT_SHAPE = "input_shape";
+static const char *const INPUT_SHAPE_RANGE = ge::INPUT_SHAPE_RANGE;
 static const char *const OP_NAME_MAP = "op_name_map";
 static const char *const IS_DYNAMIC_INPUT = "is_dynamic_input";
 static const char *const IS_INPUT_ADJUST_HW_LAYOUT = "is_input_adjust_hw_layout";
@@ -370,6 +373,7 @@ static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
 static const char *const DYNAMIC_DIMS = kDynamicDims;
 static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
 static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
+static const char *const TUNE_DEVICE_IDS = ge::TUNE_DEVICE_IDS.c_str();
 static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
 static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
 static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();
@@ -407,6 +411,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              DYNAMIC_DIMS,
                                                              INSERT_OP_FILE,
                                                              PRECISION_MODE,
+                                                             TUNE_DEVICE_IDS,
                                                              EXEC_DISABLE_REUSED_MEMORY,
                                                              AUTO_TUNE_MODE,
                                                              OUTPUT_TYPE,
@@ -434,6 +439,7 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               ENABLE_COMPRESS_WEIGHT,
                                               COMPRESS_WEIGHT_CONF,
                                               PRECISION_MODE,
+                                              TUNE_DEVICE_IDS,
                                               EXEC_DISABLE_REUSED_MEMORY,
                                               AUTO_TUNE_MODE,
                                               ENABLE_SINGLE_STREAM,

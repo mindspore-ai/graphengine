@@ -256,7 +256,6 @@ LIBGE_LOCAL_SRC_FILES := \
     init/gelib.cc \
     model/ge_model.cc \
     model/ge_root_model.cc \
-    omm/csa_interact.cc \
     opskernel_manager/ops_kernel_manager.cc \
     opskernel_manager/ops_kernel_builder_manager.cc \
     session/inner_session.cc \
@@ -316,7 +315,7 @@ LIBGE_LOCAL_SRC_FILES := \
     ir_build/attr_options/utils.cc \
     ir_build/attr_options/keep_dtype_option.cc \
     ir_build/attr_options/weight_compress_option.cc \
-    ir_build/atc_ir_common.cc \
+    ir_build/option_utils.cc \
 
 LIBCLIENT_LOCAL_SRC_FILES := \
     proto/ge_api.proto \

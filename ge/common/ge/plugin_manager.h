@@ -59,7 +59,11 @@ class PluginManager {
     for (const auto &handle : handles_) {
       auto real_fn = (R(*)(Types...))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
-        GELOGW("Failed to get function %s in %s!", func_name.c_str(), handle.first.c_str());
+        const char *error = mmDlerror();
+        if (error == nullptr) {
+          error = "";
+        }
+        GELOGW("Failed to get function %s in %s! errmsg:%s", func_name.c_str(), handle.first.c_str(), error);
         return GE_PLGMGR_FUNC_NOT_EXIST;
       } else {
         funcs[handle.first] = real_fn;
@@ -74,7 +78,11 @@ class PluginManager {
       // If the funcName is existed, signature of realFn can be casted to any type
       auto real_fn = (void (*)(Types...))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
-        GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
+        const char *error = mmDlerror();
+        if (error == nullptr) {
+          error = "";
+        }
+        GELOGW("Failed to invoke function %s in %s! errmsg:%s", func_name.c_str(), handle.first.c_str(), error);
         return GE_PLGMGR_INVOKE_FAILED;
       } else {
         real_fn(args...);
@@ -89,7 +97,11 @@ class PluginManager {
       // If the funcName is existed, signature of realFn can be casted to any type
       auto real_fn = (void (*)(T))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
-        GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
+        const char *error = mmDlerror();
+        if (error == nullptr) {
+          error = "";
+        }
+        GELOGW("Failed to invoke function %s in %s! errmsg:%s", func_name.c_str(), handle.first.c_str(), error);
         return GE_PLGMGR_INVOKE_FAILED;
       }
       typename std::remove_reference<T>::type arg_temp;
@@ -114,7 +126,11 @@ class PluginManager {
       // If the funcName is existed, signature of realFn can be casted to any type
       auto real_fn = (T2(*)(T1))mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
-        GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
+        const char *error = mmDlerror();
+        if (error == nullptr) {
+          error = "";
+        }
+        GELOGW("Failed to invoke function %s in %s! errmsg:%s", func_name.c_str(), handle.first.c_str(), error);
         return GE_PLGMGR_INVOKE_FAILED;
       } else {
         T2 res = real_fn(arg);
@@ -132,7 +148,11 @@ class PluginManager {
       // If the funcName is existed, signature of realFn can be casted to any type
       auto real_fn = (T(*)())mmDlsym(handle.second, const_cast<char *>(func_name.c_str()));
       if (real_fn == nullptr) {
-        GELOGW("Failed to invoke function %s in %s!", func_name.c_str(), handle.first.c_str());
+        const char *error = mmDlerror();
+        if (error == nullptr) {
+          error = "";
+        }
+        GELOGW("Failed to invoke function %s in %s! errmsg:%s", func_name.c_str(), handle.first.c_str(), error);
         return GE_PLGMGR_INVOKE_FAILED;
       } else {
         T res = real_fn();

@@ -42,7 +42,6 @@
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
-#include "omm/csa_interact.h"
 #include "runtime/kernel.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
 #include "external/runtime/rt_error_codes.h"
@@ -73,7 +72,7 @@ Status GELib::Initialize(const map<string, string> &options) {
     return GE_CLI_INIT_FAILED;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kSystemInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kSystemInit);
   map<string, string> new_options;
   Status ret = instancePtr_->SetRTSocVersion(options, new_options);
   if (ret != SUCCESS) {
@@ -116,7 +115,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return SUCCESS;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kSystemInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kSystemInit);
   GELOGI("GE System initial.");
   GE_TIMESTAMP_START(SystemInitialize);
   Status initSystemStatus = SystemInitialize(options);
@@ -127,7 +126,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initSystemStatus;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kEngineInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kEngineInit);
   GELOGI("engineManager initial.");
   GE_TIMESTAMP_START(EngineInitialize);
   Status initEmStatus = engineManager_.Initialize(options);
@@ -139,7 +138,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initEmStatus;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsKernelInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOpsKernelInit);
   GELOGI("opsManager initial.");
   GE_TIMESTAMP_START(OpsManagerInitialize);
   Status initOpsStatus = opsManager_.Initialize(options);
@@ -151,7 +150,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initOpsStatus;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOpsKernelBuilderInit);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOpsKernelBuilderInit);
   GELOGI("opsBuilderManager initial.");
   GE_TIMESTAMP_START(OpsKernelBuilderManagerInitialize);
   Status initOpsBuilderStatus = OpsKernelBuilderManager::Instance().Initialize(options);
@@ -163,7 +162,7 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initOpsBuilderStatus;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   GELOGI("sessionManager initial.");
   GE_TIMESTAMP_START(SessionManagerInitialize);
   Status initSmStatus = sessionManager_.Initialize(options);
@@ -376,10 +375,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status GELib::InitSystemWithOpt
   }
 
   GE_CHK_STATUS_RET(HostMemManager::Instance().Initialize());
-  // Update CSA file
-  CsaInteract::GetInstance().Init(options.device_id, GetContext().TraceId());
-  Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_RUNNING, JOBSUBSTATE_ENV_INIT);
-  GE_LOGE_IF(ret != SUCCESS, "[Write][JobState] failed, ret:%u ", ret);
 
   // set device id
   GELOGI("set logical device id:%u", options.device_id);
@@ -407,10 +402,6 @@ Status GELib::SystemShutdownWithOptions(const Options &options) {
                   return SUCCESS);
 
   GE_CHK_RT(rtDeviceReset(options.device_id));
-
-  // Update CSA file
-  Status ret = CsaInteract::GetInstance().WriteJobState(JOBSTATE_SUCCEED);
-  GE_LOGE_IF(ret != SUCCESS, "[Write][JobState] failed, ret:%u ", ret);
 
   is_system_inited = false;
   is_shutdown = true;
@@ -447,7 +438,7 @@ string GELib::GetPath() { return PluginManager::GetPath(); }
 
 // Finalize all modules
 Status GELib::Finalize() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
   GELOGI("finalization start");
   // Finalization is not allowed before initialization
   if (!init_flag_) {

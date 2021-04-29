@@ -1,5 +1,5 @@
 syntax = "proto3";
-package aicpu.dump;
+package toolkit.aicpu.dump;
 
 message Shape {
     repeated uint64 dim = 1;

@@ -35,6 +35,8 @@ class ExecutionEngine {
                                TaskContext &task_context,
                                GraphExecutionContext &context,
                                const std::function<void()> &callback);
+  static Status InitCallback(const std::shared_ptr<TaskContext> &task_context,
+                             GraphExecutionContext &execution_context, std::function<void()> &callback);
 };
 }  // namespace hybrid
 }  // namespace ge

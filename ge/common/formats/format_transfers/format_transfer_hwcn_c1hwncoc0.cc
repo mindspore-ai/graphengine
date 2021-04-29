@@ -187,7 +187,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                 }
               }
             }
-	  }
+          }
         }
       }
     }

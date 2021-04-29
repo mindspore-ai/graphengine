@@ -35,14 +35,14 @@ void Debug::DumpProto(const Message &proto, const char *file) {
   int fd = mmOpen2(file_path.c_str(), M_WRONLY | M_CREAT | O_TRUNC, M_IRUSR | M_IWUSR | M_UMASK_GRPREAD |
                    M_UMASK_OTHREAD);
   if (fd == -1) {
-    GELOGW("Write %s failed", file_path.c_str());
+    GELOGW("Write %s failed. errmsg:%s", file_path.c_str(), strerror(errno));
     return;
   }
   auto output = ge::MakeShared<FileOutputStream>(fd);
   if (output == nullptr) {
     GELOGW("create output failed.");
     if (mmClose(fd) != 0) {
-      GELOGW("close fd failed.");
+      GELOGW("close fd failed. errmsg:%s", strerror(errno));
     }
     return;
   }
@@ -51,7 +51,7 @@ void Debug::DumpProto(const Message &proto, const char *file) {
     GELOGW("dump proto failed.");
   }
   if (mmClose(fd) != 0) {
-    GELOGW("close fd failed.");
+    GELOGW("close fd failed. errmsg:%s", strerror(errno));
   }
 }
 

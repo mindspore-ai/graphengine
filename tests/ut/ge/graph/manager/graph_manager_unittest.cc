@@ -109,7 +109,7 @@
 #include "graph/build/label_allocator.h"
 #include "graph/utils/tensor_adapter.h"
 #include "inc/pass_manager.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "graph/common/local_context.h"
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
@@ -251,7 +251,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread) {
   GraphId graph_id = 1;
   std::vector<ge::InputTensorInfo> input_tensor;
   uint64_t session_id = 0;
-  ErrorMessage::Context error_context;
+  error_message::Context error_context;
   GEThreadLocalContext context;
   RunAsyncCallback callback;
   // PreRunArgs args{graph_id, input_tensor, session_id, error_context, context, callback};
@@ -277,7 +277,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread_2) {
   graph_node_1->SetBuildFlag(true);
   std::vector<ge::InputTensorInfo> input_tensor;
   uint64_t session_id = 0;
-  ErrorMessage::Context error_context;
+  error_message::Context error_context;
   GEThreadLocalContext context;
   RunAsyncCallback callback;
   // PreRunArgs args{graph_id, input_tensor, session_id, error_context, context, callback};
@@ -371,5 +371,35 @@ TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_3) {
   graph_node->SetBuildFlag(false);
   graph_node->Lock();
   Status status = graph_manager.CheckIncreBuildAndPreRun(&graph_manager, arg, graph_node, ge_root_model);
+  EXPECT_NE(status, ge::SUCCESS);
+}
+
+TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_success) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  // create graph
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
+  Graph graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+
+  std::map<std::string, std::string> options;
+  OmgContext context;
+  Status status = graph_manager.AddGraphWithCopy(graph_id, graph, options, context);
+  EXPECT_EQ(status, ge::SUCCESS);
+}
+
+TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_fail) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  // create graph
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
+  Graph graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+
+  std::map<std::string, std::string> options;
+  OmgContext context;
+  Status status = graph_manager.AddGraph(graph_id, graph, options, context);
+  EXPECT_EQ(status, ge::SUCCESS);
+  status = graph_manager.RemoveGraph(graph_id);
+  EXPECT_EQ(status, ge::SUCCESS);
+  status = graph_manager.AddGraphWithCopy(graph_id, graph, options, context);
   EXPECT_NE(status, ge::SUCCESS);
 }

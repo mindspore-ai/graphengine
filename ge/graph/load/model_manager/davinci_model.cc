@@ -50,7 +50,6 @@
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
 #include "mmpa/mmpa_api.h"
-#include "omm/csa_interact.h"
 #include "runtime/base.h"
 #include "runtime/dev.h"
 #include "runtime/event.h"
@@ -2718,7 +2717,6 @@ Status DavinciModel::ReturnNoOutput(uint32_t data_id) {
 
 void *DavinciModel::Run(DavinciModel *model) {
   GE_CHK_BOOL_EXEC(model != nullptr,
-                   CsaInteract::GetInstance().WriteErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
                    return nullptr, "model_pointer is null!")
   bool seq_end_flag = false;
   uint32_t model_id = model->Id();
@@ -2735,14 +2733,13 @@ void *DavinciModel::Run(DavinciModel *model) {
   // DeviceReset before thread run finished!
   GE_MAKE_GUARD(not_used_var, [&] { GE_CHK_RT(rtDeviceReset(device_id)); });
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelExecute, ErrorMessage::kModelExecute);
+  ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   while (model->RunFlag()) {
     // Model hasn't truly started runing before received data
     model->SetRunningFlag(false);
     bool rslt_flg = true;
     if (model->GetDataInputer() == nullptr) {
       GELOGW("Data inputer is nullptr.");
-      CsaInteract::GetInstance().StoreInternalErrorCode(FAILED, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
       break;
     }
 
@@ -2763,7 +2760,6 @@ void *DavinciModel::Run(DavinciModel *model) {
     ret = model->SyncVarData();
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ret != SUCCESS, (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-        CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
         continue, "Copy input data to model failed.");  // [No need to check value]
     GE_IF_BOOL_EXEC(model->is_first_execute_, GE_TIMESTAMP_EVENT_END(Model_SyncVarData, "Model Run SyncVarData"));
 
@@ -2773,7 +2769,6 @@ void *DavinciModel::Run(DavinciModel *model) {
     ret = model->CopyInputData(current_data, false);
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         ret != SUCCESS, (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-        CsaInteract::GetInstance().StoreInternalErrorCode(ret, ERROR_MODULE_FMK, JOBSUBSTATE_GRAPH_EXEC);
         continue, "Copy input data to model failed.");  // [No need to check value]
     if (model->is_online_infer_dynamic_ && !model->is_getnext_sink_dynamic_) {
       model->cur_dynamic_dims_.clear();
@@ -2794,7 +2789,6 @@ void *DavinciModel::Run(DavinciModel *model) {
     rt_ret = rtModelExecute(model->rt_model_handle_, model->rt_model_stream_, 0);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE, rslt_flg = false;
                     (void)model->ReturnResult(current_data.index, false, false, data_wrapper->GetOutput());
-                    CsaInteract::GetInstance().WriteErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
                     continue);
     GELOGI("rtModelExecute end");
     GE_IF_BOOL_EXEC(model->is_first_execute_, GE_TIMESTAMP_EVENT_END(rtModelExecute, "GraphExcute::rtModelExecute"));
@@ -2812,7 +2806,6 @@ void *DavinciModel::Run(DavinciModel *model) {
         rt_ret != RT_ERROR_NONE, rslt_flg = false; GELOGI("seq_end_flg: %d", seq_end_flag);
         (void)model->ReturnResult(current_data.index, false, seq_end_flag,
                                   data_wrapper->GetOutput());  // [No need to check value]
-        CsaInteract::GetInstance().StoreInternalErrorCode(rt_ret, ERROR_MODULE_RUNTIME, JOBSUBSTATE_GRAPH_EXEC);
         continue);
     }
 
@@ -2841,7 +2834,6 @@ void *DavinciModel::Run(DavinciModel *model) {
     GELOGI("run iterator count is %lu, model_id:%u", model->iterator_count_, model->model_id_);
   }
 
-  CsaInteract::GetInstance().WriteInternalErrorCode();
   GELOGI("Model run end, model id:%u", model->model_id_);
   return nullptr;
 }
@@ -2894,7 +2886,7 @@ Status DavinciModel::ModelRunStart() {
   int64_t maxDumpOpNum = std::strtol(opt.c_str(), nullptr, kDecimal);
   maxDumpOpNum_ = maxDumpOpNum;
 
-  error_context_ = ErrorManager::GetInstance().GetErrorContext();
+  error_context_ = ErrorManager::GetInstance().GetErrorManagerContext();
   CREATE_STD_THREAD(thread_id_, DavinciModel::Run, this);
   GELOGI("model thread create success, model id:%u.", model_id_);
   return SUCCESS;

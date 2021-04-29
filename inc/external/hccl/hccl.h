@@ -27,7 +27,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif // __cplusplus
+#endif  // __cplusplus
 
 /**
  * @brief Initialize HCCL.
@@ -66,14 +66,15 @@ extern HcclResult HcclCommInitRootInfo(uint32_t nRanks, const HcclRootInfo *root
  * @param sendBuf A pointer identifying the input data address of the operator.
  * @param recvBuf A pointer identifying the output data address of the operator.
  * @param count An integer(u64) identifying the number of the output data.
- * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, float16, float32.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int16, int32, float16,
+ * float32.
  * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclAllReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType, 
-HcclReduceOp op, HcclComm comm, aclrtStream stream);
+extern HcclResult HcclAllReduce(void *sendBuf, void *recvBuf, uint64_t count, HcclDataType dataType, HcclReduceOp op,
+                                HcclComm comm, aclrtStream stream);
 
 /**
  * @brief Broadcast operator.
@@ -84,10 +85,10 @@ HcclReduceOp op, HcclComm comm, aclrtStream stream);
  * @param root An integer(u32) identifying the the root rank in the operator.
  * @param comm A pointer identifying the communication resource based on
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclBroadcast(void *buf, uint64_t count, HcclDataType dataType, uint32_t root, HcclComm comm, 
-aclrtStream stream);
+extern HcclResult HcclBroadcast(void *buf, uint64_t count, HcclDataType dataType, uint32_t root, HcclComm comm,
+                                aclrtStream stream);
 
 /**
  * @brief ReduceScatter operator.
@@ -99,10 +100,10 @@ aclrtStream stream);
  * @param op The reduction type of the operator, must be one of the following types: sum, min, max, prod.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType, 
-HcclReduceOp op, HcclComm comm, aclrtStream stream);
+extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvCount, HcclDataType dataType,
+                                    HcclReduceOp op, HcclComm comm, aclrtStream stream);
 
 /**
  * @brief AllGather operator.
@@ -113,17 +114,17 @@ HcclReduceOp op, HcclComm comm, aclrtStream stream);
  * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
-extern HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount, HcclDataType dataType, 
-HcclComm comm, aclrtStream stream);
+extern HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount, HcclDataType dataType, HcclComm comm,
+                                aclrtStream stream);
 
 /**
  * @brief Barrier operator.
  *
  * @param comm A pointer identifying the communication resource based on.
  * @param stream A pointer identifying the stream information.
- * @return HcclResult 
+ * @return HcclResult
  */
 extern HcclResult HcclBarrier(HcclComm comm, aclrtStream stream);
 
@@ -138,5 +139,5 @@ extern HcclResult HcclCommDestroy(HcclComm comm);
 
 #ifdef __cplusplus
 }
-#endif // __cplusplus
-#endif // HCCL_H_
+#endif  // __cplusplus
+#endif  // HCCL_H_

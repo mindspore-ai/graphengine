@@ -210,7 +210,7 @@ class GraphManager {
     GraphId graph_id;
     std::vector<ge::InputTensorInfo> input_tensor;
     uint64_t session_id;
-    struct ErrorMessage::Context error_context;
+    struct error_message::Context error_context;
     GEThreadLocalContext context;
     RunAsyncCallback callback;
   };
@@ -219,7 +219,7 @@ class GraphManager {
     GraphNodePtr graph_node;
     GraphId graph_id;
     uint64_t session_id;
-    struct ErrorMessage::Context error_context;
+    struct error_message::Context error_context;
     std::vector<ge::InputTensorInfo> input_tensor;
     GeRootModelPtr ge_root_model;
     GEThreadLocalContext context;
@@ -237,7 +237,7 @@ class GraphManager {
                                                 const SubGraphInfoPtr &sub_graph_info_ptr,
                                                 const std::string &root_graph_name,
                                                 uint64_t session_id,
-                                                const struct ErrorMessage::Context &error_context,
+                                                const struct error_message::Context &error_context,
                                                 const GEThreadLocalContext &ge_context);
   Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
   void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);
@@ -412,6 +412,8 @@ class GraphManager {
   Status UnloadModel(GeRootModelPtr ge_root_model, uint32_t graph_id);
 
   void SetSessionGraphId(ComputeGraphPtr compute_graph, uint32_t graph_id);
+
+  static Status CheckGraphAdded(const GraphId &graph_id, const Graph &graph);
 
   std::atomic_bool thread_run_flag_;
   BlockingQueue<PreRunArgs> prerun_args_q_{};

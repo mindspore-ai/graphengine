@@ -12,7 +12,7 @@ LOCAL_SRC_FILES := \
     main.cc \
     single_op_parser.cc \
     ../session/omg.cc \
-    ../ir_build/atc_ir_common.cc \
+    ../ir_build/option_utils.cc \
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../ ./ \
@@ -65,7 +65,7 @@ LOCAL_SRC_FILES := \
     main.cc \
     single_op_parser.cc \
     ../session/omg.cc \
-    ../ir_build/atc_ir_common.cc \
+    ../ir_build/option_utils.cc \
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../ ./ \
@@ -118,7 +118,7 @@ LOCAL_SRC_FILES := \
     main.cc \
     single_op_parser.cc \
     ../session/omg.cc \
-    ../ir_build/atc_ir_common.cc \
+    ../ir_build/option_utils.cc \
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/../ ./ \

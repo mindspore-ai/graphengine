@@ -25,7 +25,7 @@ set(PROTO_HEADER_LIST
     "${METADEF_DIR}/proto/insert_op.proto"
     "${METADEF_DIR}/proto/ge_ir.proto"
     "${METADEF_DIR}/proto/fwk_adapter.proto"
-    "${METADEF_DIR}/proto/op_mapping_info.proto"
+    "${METADEF_DIR}/proto/op_mapping.proto"
 )
 
 protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
@@ -340,7 +340,6 @@ set(TRAIN_SRC_LIST
     "init/gelib.cc"
     "model/ge_model.cc"
     "model/ge_root_model.cc"
-    "omm/csa_interact.cc"
     "opskernel_manager/ops_kernel_manager.cc"
     "opskernel_manager/ops_kernel_builder_manager.cc"
     "session/inner_session.cc"
@@ -402,7 +401,7 @@ set(TRAIN_SRC_LIST
     "ir_build/attr_options/utils.cc"
     "ir_build/attr_options/keep_dtype_option.cc"
     "ir_build/attr_options/weight_compress_option.cc"
-    "ir_build/atc_ir_common.cc"
+    "ir_build/option_utils.cc"
     "graph/build/memory/memory_assigner.cc"
     "graph/build/memory/graph_mem_assigner.cc"
     "graph/build/memory/binary_block_mem_assigner.cc"
@@ -415,7 +414,6 @@ set(TRAIN_SRC_LIST
 
 set(INFER_SRC_LIST
     "graph/manager/trans_var_data_utils.cc"
-    "omm/csa_interact.cc"
     "common/fp16_t.cc"
     "common/formats/utils/formats_trans_utils.cc"
     "common/formats/format_transfers/datatype_transfer.cc"
@@ -663,7 +661,7 @@ set(INFER_SRC_LIST
     "ir_build/attr_options/utils.cc"
     "ir_build/attr_options/keep_dtype_option.cc"
     "ir_build/attr_options/weight_compress_option.cc"
-    "ir_build/atc_ir_common.cc"
+    "ir_build/option_utils.cc"
     "graph/preprocess/insert_op/ge_aipp_op.cc"
     "graph/preprocess/insert_op/util_insert_aipp_op.cc"
     "hybrid/node_executor/aicpu/aicpu_ext_info.cc"

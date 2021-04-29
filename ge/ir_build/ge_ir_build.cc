@@ -32,7 +32,7 @@
 #include "graph/utils/type_utils.h"
 #include "graph/ge_global_options.h"
 #include "init/gelib.h"
-#include "ir_build/atc_ir_common.h"
+#include "ir_build/option_utils.h"
 #include "model/ge_model.h"
 #include "graph/shape_refiner.h"
 #include "graph/opsproto_manager.h"
@@ -202,12 +202,12 @@ graphStatus aclgrphBuildInitializeImpl(std::map<std::string, std::string> &globa
 }
 
 graphStatus aclgrphBuildInitialize(std::map<std::string, std::string> global_options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   return aclgrphBuildInitializeImpl(global_options);
 }
 
 graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_options) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   std::map<std::string, std::string> tmp_global_options;
   for (auto &option : global_options) {
     if (option.first.GetString() == nullptr || option.second.GetString() == nullptr) {
@@ -222,7 +222,7 @@ graphStatus aclgrphBuildInitialize(std::map<AscendString, AscendString> &global_
 }
 
 void aclgrphBuildFinalize() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
   if (ge::GELib::GetInstance() != nullptr && ge::GELib::GetInstance()->InitFlag()) {
     (void)ge::GELib::GetInstance()->Finalize();
     return;
@@ -299,10 +299,19 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
     GE_CHK_BOOL_EXEC(ParseInputShape(input_shape, shape_map, user_shape_map, true),
                      return GRAPH_PARAM_INVALID, "[Parse][InputShape] failed!");
   }
-  std::map<string, std::vector<std::pair<int64_t, int64_t>>> shape_range_map;
+  std::map<string, std::vector<std::pair<int64_t, int64_t>>> name_shape_range_map;
+  std::vector<std::vector<std::pair<int64_t, int64_t>>> index_shape_range_map;
   if (!input_shape_range.empty()) {
-    GE_CHK_BOOL_EXEC(ParseInputShapeRange(input_shape_range, shape_range_map),
-                     return GRAPH_PARAM_INVALID, "[Parse][InputShapeRange] failed.");
+    Status ret = GRAPH_PARAM_INVALID;
+    if (input_shape_range.find(":") != string::npos) {
+      ret = ParseInputShapeRange(input_shape_range, name_shape_range_map);
+    } else {
+      ret = ParseInputShapeRange(input_shape_range, index_shape_range_map);
+    }
+    if (ret != SUCCESS) {
+      GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShapeRange] parse shape range[%s] failed.", input_shape_range.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
   }
   auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
@@ -315,10 +324,14 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
         GELOGE(GRAPH_FAILED, "[Update][DataOpShape] fail for op:%s.", op->GetName().c_str());
         return GRAPH_FAILED;
       }
-      if (UpdateDataOpShapeRange(op, shape_range_map) != SUCCESS) {
+      if (UpdateDataOpShapeRange(op, name_shape_range_map) != SUCCESS) {
         GELOGE(GRAPH_FAILED, "[Update][DataOpShapeRange] fail for op:%s.", op->GetName().c_str());
         return GRAPH_FAILED;
-      }     
+      }
+      if (UpdateDataOpShapeRange(op, index_shape_range_map) != SUCCESS) {
+        GELOGE(GRAPH_FAILED, "[Update][DataOpShapeRange] fail for op:%s.", op->GetName().c_str());
+        return GRAPH_FAILED;
+      }
     }
   }
 
@@ -574,7 +587,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
   }
 
   if (!ParseInputShape(input_shape, omg_context_.input_dims, omg_context_.user_input_dims, is_dynamic_input)) {
-    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:input_shape] Failed, shape: %s", input_shape.c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape:InputShape] Failed, shape: %s", input_shape.c_str());
     return GRAPH_PARAM_INVALID;
   }
   return GRAPH_SUCCESS;
@@ -582,7 +595,7 @@ graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &in
 
 graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string, std::string> &build_options,
                               ModelBufferData &model) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGD("Enter aclmdlBuildModel process!");
   Impl builder;
   return builder.BuildModel(graph, build_options, model);
@@ -590,7 +603,7 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<std::string
 
 graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendString, AscendString> &build_options,
                               ModelBufferData &model) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGD("Enter aclmdlBuildModel process!");
   std::map<std::string, std::string> tmp_build_options;
   for (auto &option : build_options) {
@@ -608,7 +621,7 @@ graphStatus aclgrphBuildModel(const ge::Graph &graph, const std::map<AscendStrin
 }
 
 graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
     GELOGE(GRAPH_PARAM_INVALID, "[Check][ModelBufferData] model is illegal");
@@ -619,7 +632,7 @@ graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &m
 }
 
 graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGD("Enter aclmdlSaveModel process!");
   if (model.data.get() == nullptr || model.length == 0) {
     GELOGE(GRAPH_PARAM_INVALID, "[Check][ModelBufferData]model is illegal");
@@ -635,7 +648,7 @@ graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &mod
 }
 
 graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *patch_version) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGD("Enter aclgrphGetIRVersion process!");
   GE_CHECK_NOTNULL(major_version);
   GE_CHECK_NOTNULL(minor_version);
@@ -647,7 +660,7 @@ graphStatus aclgrphGetIRVersion(int *major_version, int *minor_version, int *pat
 }
 
 graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const size_t len) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GE_CHECK_NOTNULL(file);
 
   if (len > PATH_MAX || len != strlen(file) || strlen(file) == 0) {
@@ -703,7 +716,7 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
 
 graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<TensorDesc> &inputs,
                                  const vector<TensorDesc> &outputs, Graph &graph) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   auto op_type_str = std::string(op_type.GetString());
   auto op_name = op_type_str + "_" + std::to_string(ge::GetCurrentTimestamp());
   auto op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type_str);
@@ -763,7 +776,7 @@ static std::string AttrTypeToSerialString(aclgrphAttrType attr_type) {
 }
 
 graphStatus aclgrphSetOpAttr(Graph &graph, aclgrphAttrType attr_type, const char *cfg_path) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   if (cfg_path == nullptr) {

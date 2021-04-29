@@ -33,7 +33,9 @@ void OpTilingManager::ClearHandles() noexcept {
     if (mmDlclose(handle.second) != 0) {
       const char *error = mmDlerror();
       GE_IF_BOOL_EXEC(error == nullptr, error = "");
-      GELOGE(FAILED, "Failed to close handle of %s: %s", handle.first.c_str(), error);
+      GELOGE(FAILED, "[Close][Handle]Failed, handle of %s: %s", handle.first.c_str(), error);
+      REPORT_CALL_ERROR("E19999", "Failed to close handle of %s: %s",
+                        handle.first.c_str(), error);
     }
   }
   handles_.clear();
@@ -50,7 +52,8 @@ std::string OpTilingManager::GetPath() {
     if (mmRealPath(opp_path_env, resolved_path, MMPA_MAX_PATH) != EN_OK) {
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E19024", {"env", "value", "situation"}, {"ASCEND_OPP_PATH", opp_path_env, "loading the tiling lib"});
-      GELOGE(PARAM_INVALID, "Failed load tiling lib as env 'ASCEND_OPP_PATH'[%s] is invalid path.", opp_path_env);
+      GELOGE(PARAM_INVALID, "[Load][TilingLib]Failed, as env 'ASCEND_OPP_PATH'[%s] "
+             "is invalid path. errmsg:%s", opp_path_env, strerror(errno));
       return std::string();
     }
     opp_path = resolved_path;
@@ -73,7 +76,7 @@ void OpTilingManager::LoadSo() {
   if (handle_bi == nullptr) {
     const char *error = mmDlerror();
     GE_IF_BOOL_EXEC(error == nullptr, error = "");
-    GELOGW("Failed to dlopen %s!", error);
+    GELOGW("Failed to dlopen %s! errmsg:%s", built_in_tiling_lib.c_str(), error);
   } else {
     handles_[built_in_name] = handle_bi;
   }
@@ -82,7 +85,7 @@ void OpTilingManager::LoadSo() {
   if (handle_ct == nullptr) {
     const char *error = mmDlerror();
     GE_IF_BOOL_EXEC(error == nullptr, error = "");
-    GELOGW("Failed to dlopen %s!", error);
+    GELOGW("Failed to dlopen %s! errmsg:%s", custom_tiling_lib.c_str(), error);
   } else {
     handles_[custom_name] = handle_ct;
   }

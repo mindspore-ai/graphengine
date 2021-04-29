@@ -341,11 +341,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
   mmTimespec timespec = mmGetTickCount();
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, listener);
-  if (davinci_model == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New DavinciModel fail, model_id:%u", model_id);
-    GELOGE(FAILED, "davinci_model is nullptr");
-    return FAILED;
-  }
+  GE_CHECK_NOTNULL(davinci_model);
   davinci_model->SetProfileTime(MODEL_LOAD_START, (timespec.tv_sec * kTimeSpecNano +
                                                    timespec.tv_nsec));  // 1000 ^ 3 converts second to nanosecond
   davinci_model->SetId(model_id);
@@ -1096,7 +1092,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 
   mmTimeval tv;
   if (mmGetTimeOfDay(&tv, nullptr) != 0) {
-    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail");
+    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail. errmsg:%s", strerror(errno));
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }

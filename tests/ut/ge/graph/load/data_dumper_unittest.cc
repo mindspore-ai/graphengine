@@ -38,29 +38,53 @@ std::vector<void *> stub_get_output_addrs(const RuntimeParam &model_param, Const
   res.emplace_back(reinterpret_cast<void *>(23333));
   return res;
 }
-/*
-TEST_F(UtestDataDumper, LoadDumpInfo_no_output_addrs_fail) {
+
+static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {
+  auto op_desc = std::make_shared<ge::OpDesc>(name, type);
+  op_desc->SetStreamId(0);
+  op_desc->SetId(0);
+
+  op_desc->SetWorkspace({});
+  op_desc->SetWorkspaceBytes({});
+  op_desc->SetInputOffset({});
+  op_desc->SetOutputOffset({100, 200});
+  return op_desc;
+}
+
+TEST_F(UtestDataDumper, LoadDumpInfo_success) {
   RuntimeParam rts_param;
-  DataDumper data_dumper(rts_param);
+  DataDumper data_dumper(&rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
   std::shared_ptr<OpDesc> op_desc_1(new OpDesc());
   op_desc_1->AddOutputDesc("test", GeTensorDesc());
   data_dumper.SaveDumpTask(0, 0, op_desc_1, 0);
   string dump_mode = "output";
+  data_dumper.is_op_debug_ = true;
   data_dumper.dump_properties_.SetDumpMode(dump_mode);
-  Status ret = data_dumper.LoadDumpInfo();
-  EXPECT_EQ(ret, SUCCESS);
+  EXPECT_EQ(data_dumper.LoadDumpInfo(), SUCCESS);
+  EXPECT_EQ(data_dumper.UnloadDumpInfo(), SUCCESS);
 }
-*/
 
-TEST_F(UtestDataDumper, UnloadDumpInfo_success) {
+TEST_F(UtestDataDumper, DumpOutputWithTask_success) {
   RuntimeParam rts_param;
   DataDumper data_dumper(&rts_param);
   data_dumper.SetModelName("test");
   data_dumper.SetModelId(2333);
 
-  Status ret = data_dumper.UnloadDumpInfo();
+  toolkit::aicpu::dump::Task task;
+  OpDescPtr op_desc = CreateOpDesc("conv", CONVOLUTION);
+  GeTensorDesc tensor_0(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  GeTensorDesc tensor_1(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  int32_t calc_type = 1;
+  ge::AttrUtils::SetInt(tensor_1, ATTR_NAME_MEMORY_SIZE_CALC_TYPE, calc_type);
+  op_desc->AddOutputDesc(tensor_0);
+  op_desc->AddOutputDesc(tensor_1);
+  DataDumper::InnerDumpInfo inner_dump_info;
+  inner_dump_info.op = op_desc;
+  Status ret = data_dumper.DumpOutputWithTask(inner_dump_info, task);
   EXPECT_EQ(ret, SUCCESS);
+  int64_t task_size = 1;
+  data_dumper.GenerateOpBuffer(task_size, task);
 }
 }  // namespace ge

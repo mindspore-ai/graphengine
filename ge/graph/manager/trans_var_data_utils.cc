@@ -487,7 +487,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
 
     std::future<Status> f = executor.commit(
         [](const ge::NodePtr &node, uint64_t session_id, rtContext_t ctx, uint32_t graph_id,
-           const struct ErrorMessage::Context &error_context) -> Status {
+           const struct error_message::Context &error_context) -> Status {
           ErrorManager::GetInstance().SetErrorContext(error_context);
           rtError_t rt_ret = rtCtxSetCurrent(ctx);
           if (rt_ret != RT_ERROR_NONE) {
@@ -525,7 +525,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
           }
           return SUCCESS;
         },
-        node, session_id, context, graph_id, ErrorManager::GetInstance().GetErrorContext());
+        node, session_id, context, graph_id, ErrorManager::GetInstance().GetErrorManagerContext());
     if (!f.valid()) {
       GELOGE(FAILED, "Future is invalid");
       return FAILED;

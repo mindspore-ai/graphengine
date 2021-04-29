@@ -26,7 +26,7 @@
 #include "graph/op_desc.h"
 #include "graph/utils/tensor_utils.h"
 #include "proto/ge_ir.pb.h"
-#include "proto/op_mapping_info.pb.h"
+#include "proto/op_mapping.pb.h"
 #include "runtime/mem.h"
 #include "aicpu/common/aicpu_task_struct.h"
 
@@ -64,7 +64,7 @@ void DumpOp::SetDynamicModelInfo(const string &dynamic_model_name, const string 
 }
 
 static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uintptr_t loop_cond,
-                                 aicpu::dump::OpMappingInfo &op_mapping_info) {
+                                 toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (step_id != 0) {
     GELOGI("step_id exists.");
     op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
@@ -87,11 +87,11 @@ static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uin
   }
 }
 
-Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
+Status DumpOp::DumpOutput(toolkit::aicpu::dump::Task &task) {
   GELOGI("Start dump output in Launch dump op");
   const auto &output_descs = op_desc_->GetAllOutputsDesc();
   for (size_t i = 0; i < output_descs.size(); ++i) {
-    aicpu::dump::Output output;
+    toolkit::aicpu::dump::Output output;
     output.set_data_type(static_cast<int32_t>(DataTypeUtil::GetIrDataType(output_descs.at(i).GetDataType())));
     output.set_format(static_cast<int32_t>(output_descs.at(i).GetFormat()));
     for (auto dim : output_descs.at(i).GetShape().GetDims()) {
@@ -102,7 +102,10 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
     }
     int64_t output_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(output_descs.at(i), output_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Get output size filed");
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, output %zu, node %s(%s),",
+             i, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
+      REPORT_CALL_ERROR("E19999", "Get output %zu tensor size of node %s(%s) failed",
+                        i, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get output size in lanch dump op is %ld", output_size);
@@ -113,11 +116,11 @@ Status DumpOp::DumpOutput(aicpu::dump::Task &task) {
   return SUCCESS;
 }
 
-Status DumpOp::DumpInput(aicpu::dump::Task &task) {
+Status DumpOp::DumpInput(toolkit::aicpu::dump::Task &task) {
   GELOGI("Start dump input in Launch dump op");
   const auto &input_descs = op_desc_->GetAllInputsDesc();
   for (size_t i = 0; i < input_descs.size(); ++i) {
-    aicpu::dump::Input input;
+    toolkit::aicpu::dump::Input input;
     input.set_data_type(static_cast<int32_t>(DataTypeUtil::GetIrDataType(input_descs.at(i).GetDataType())));
     input.set_format(static_cast<int32_t>(input_descs.at(i).GetFormat()));
 
@@ -129,7 +132,10 @@ Status DumpOp::DumpInput(aicpu::dump::Task &task) {
     }
     int64_t input_size = 0;
     if (TensorUtils::GetTensorSizeInBytes(input_descs.at(i), input_size) != SUCCESS) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Get output size filed");
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Get][TensorSize]Failed, input %zu, node %s(%s)",
+             i, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
+      REPORT_CALL_ERROR("E19999", "Get input %zu tensor size of node %s(%s) failed",
+                        i, op_desc_->GetName().c_str(), op_desc_->GetType().c_str());
       return ACL_ERROR_GE_INTERNAL_ERROR;
     }
     GELOGD("Get input size in lanch dump op is %ld", input_size);
@@ -149,35 +155,41 @@ void DumpOp::SetDumpInfo(const DumpProperties &dump_properties, const OpDescPtr 
   stream_ = stream;
 }
 
-Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DumpOp::ExecutorDumpOp(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   std::string proto_msg;
   size_t proto_size = op_mapping_info.ByteSizeLong();
   bool ret = op_mapping_info.SerializeToString(&proto_msg);
   if (!ret || proto_size == 0) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Protobuf serialize failed, proto_size is %zu", proto_size);
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Serialize][Protobuf]Failed, proto_size is %zu",
+           proto_size);
+    REPORT_CALL_ERROR("E19999", "[Serialize][Protobuf]Failed, proto_size is %zu", proto_size);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
   rtError_t rt_ret = rtMalloc(&proto_dev_mem_, proto_size, RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+    GELOGE(rt_ret, "[Call][rtMalloc]Failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMemcpy(proto_dev_mem_, proto_size, proto_msg.c_str(), proto_size, RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
+    GELOGE(rt_ret, "[Call][rtMemcpy]Failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
   rt_ret = rtMalloc(&proto_size_dev_mem_, sizeof(size_t), RT_MEMORY_HBM);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+    GELOGE(rt_ret, "[Call][rtMalloc]Failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, ret: 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   rt_ret = rtMemcpy(proto_size_dev_mem_, sizeof(size_t), &proto_size, sizeof(size_t), RT_MEMCPY_HOST_TO_DEVICE);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtMemcpy failed, ret: 0x%X", rt_ret);
+    GELOGE(rt_ret, "[Call][rtMemcpy]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
@@ -196,14 +208,15 @@ Status DumpOp::ExecutorDumpOp(aicpu::dump::OpMappingInfo &op_mapping_info) {
                              nullptr,  // no need smDesc
                              stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtCpuKernelLaunch failed,rt_ret:0x%X", rt_ret);
+    GELOGE(rt_ret, "[Call][rtCpuKernelLaunch]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGI("Kernel launch dump op success");
   return SUCCESS;
 }
 
-Status DumpOp::SetDumpModelName(aicpu::dump::OpMappingInfo &op_mapping_info) {
+Status DumpOp::SetDumpModelName(toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (dynamic_model_name_.empty() && dynamic_om_name_.empty()) {
     GELOGI("Single op dump, no need set model name");
     return SUCCESS;
@@ -234,15 +247,16 @@ Status DumpOp::LaunchDumpOp() {
   int32_t device_id = 0;
   rtError_t rt_ret = rtGetDevice(&device_id);
   if (rt_ret != RT_ERROR_NONE) {
-    GELOGE(rt_ret, "Call rtGetDevice failed, ret = 0x%X, device_id = %d.", rt_ret, device_id);
+    GELOGE(rt_ret, "[Call][rtGetDevice]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "[Call][rtGetDevice]Failed, ret 0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   if (device_id < 0) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "Check device_id failed, device_id = %d, which should be not less than 0.",
-           device_id);
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][DeviceId]Failed, device_id %d", device_id);
+    REPORT_INNER_ERROR("E19999","Check device_id %d failed", device_id);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
-  aicpu::dump::OpMappingInfo op_mapping_info;
+  toolkit::aicpu::dump::OpMappingInfo op_mapping_info;
   auto dump_path = dump_properties_.GetDumpPath() + std::to_string(device_id) + "/";
   op_mapping_info.set_dump_path(dump_path);
   op_mapping_info.set_flag(kAicpuLoadFlag);
@@ -261,7 +275,7 @@ Status DumpOp::LaunchDumpOp() {
   if (rt_ret != RT_ERROR_NONE) {
     GELOGW("call rtGetTaskIdAndStreamID failed, ret = 0x%X", rt_ret);
   }
-  aicpu::dump::Task task;
+  toolkit::aicpu::dump::Task task;
   task.set_task_id(task_id);
   task.set_stream_id(stream_id);
   task.mutable_op()->set_op_name(op_desc_->GetName());
@@ -269,7 +283,10 @@ Status DumpOp::LaunchDumpOp() {
   if (dump_properties_.GetDumpMode() == kDumpOutput) {
     auto ret = DumpOutput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Dump output failed");
+      GELOGE(ret, "[Dump][Output]Failed, node %s(%s), ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Output failed, node %s(%s), ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
@@ -277,7 +294,10 @@ Status DumpOp::LaunchDumpOp() {
   if (dump_properties_.GetDumpMode() == kDumpInput) {
     auto ret = DumpInput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Dump input failed");
+      GELOGE(ret, "[Dump][Input]Failed, node %s(%s), ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Input failed, node %s(%s), ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
@@ -285,19 +305,26 @@ Status DumpOp::LaunchDumpOp() {
   if (dump_properties_.GetDumpMode() == kDumpAll || dump_properties_.IsOpDebugOpen()) {
     auto ret = DumpOutput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Dump output failed when in dumping all");
+      GELOGE(ret, "[Dump][Output]Failed when in dumping all, node %s(%s), ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Output failed when in dumping all, node %s(%s), ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     ret = DumpInput(task);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Dump input failed when in dumping all");
+      GELOGE(ret, "[Dump][Input]Failed when in dumping all, node %s(%s), ret 0x%X",
+             op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
+      REPORT_CALL_ERROR("E19999", "Dump Input failed when in dumping all, node %s(%s), ret 0x%X",
+                        op_desc_->GetName().c_str(), op_desc_->GetType().c_str(), ret);
       return ret;
     }
     op_mapping_info.mutable_task()->Add(std::move(task));
   }
   auto ret = ExecutorDumpOp(op_mapping_info);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Executor dump op failed");
+    GELOGE(ret, "[Dump][Op]Failed, ret 0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Executor dump op failed, ret 0x%X", ret);
     return ret;
   }
   return SUCCESS;

@@ -24,7 +24,7 @@ set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/insert_op.proto"
     "${GE_CODE_DIR}/metadef/proto/dump_task.proto"
     "${GE_CODE_DIR}/metadef/proto/fwk_adapter.proto"
-    "${GE_CODE_DIR}/metadef/proto/op_mapping_info.proto"
+    "${GE_CODE_DIR}/metadef/proto/op_mapping.proto"
     "${GE_CODE_DIR}/metadef/proto/optimizer_priority.proto"
     "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
     "${GE_CODE_DIR}/metadef/proto/tensorflow/attr_value.proto"
@@ -287,7 +287,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/model_manager/zero_copy_task.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/cpu_queue_schedule.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/aipp_utils.cc"
-    "${GE_CODE_DIR}/ge/omm/csa_interact.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/tbe_handle_store.cc"
     "${GE_CODE_DIR}/ge/common/kernel_store.cc"
     "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
@@ -308,7 +307,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/partition/stage_partition.cc"
     "${GE_CODE_DIR}/ge/graph/partition/dynamic_shape_partition.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
-    "${GE_CODE_DIR}/ge/ir_build/atc_ir_common.cc"
+    "${GE_CODE_DIR}/ge/ir_build/option_utils.cc"
     "${GE_CODE_DIR}/ge/graph/preprocess/insert_op/ge_aipp_op.cc"
     "${GE_CODE_DIR}/ge/graph/preprocess/multi_batch_options.cc"
     "${GE_CODE_DIR}/ge/graph/build/model_builder.cc"
@@ -391,7 +390,6 @@ set(GRAPH_PARTITION_COMMON_SRC_FILES
 set(GRAPH_LOAD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/graph_loader.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_manager_utils.cc"
-    "${GE_CODE_DIR}/ge/omm/csa_interact.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_var_manager.cc"
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"
@@ -711,6 +709,7 @@ set(PASS_TEST_FILES
     "graph/passes/buffer_pool_memory_pass_unittest.cc"
 	"graph/passes/mark_node_unknown_shape_pass_unittest.cc"
 	"graph/passes/reshape_recovery_pass_unittest.cc"
+    "graph/passes/cast_remove_pass_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES
@@ -815,6 +814,7 @@ set(PROFILING_MNG_TEST_FILES
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
     "hybrid/known_node_executor_unittest.cc"
+	"hybrid/executor/worker/execution_engine_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

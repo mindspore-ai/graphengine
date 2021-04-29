@@ -3,7 +3,7 @@ set(PROTO_LIST
     "${METADEF_DIR}/proto/ge_ir.proto"
     "${METADEF_DIR}/proto/insert_op.proto"
     "${METADEF_DIR}/proto/task.proto"
-    "${METADEF_DIR}/proto/op_mapping_info.proto"
+    "${METADEF_DIR}/proto/op_mapping.proto"
     "${METADEF_DIR}/proto/dump_task.proto"
 )
 
@@ -23,7 +23,6 @@ set(SRC_LIST
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
-    "../omm/csa_interact.cc"
     "../graph/manager/graph_manager_utils.cc"
     "../graph/manager/graph_var_manager.cc"
     "../graph/manager/graph_mem_allocator.cc"
@@ -250,12 +249,11 @@ target_include_directories(ge_executor_shared PRIVATE
 
 target_link_options(ge_executor_shared PRIVATE
     -Wl,-Bsymbolic
+    -Wl,--exclude-libs,ALL
 )
 
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
-    msprofiler
-    static_mmpa
     -Wl,--no-as-needed
     ge_common
     runtime

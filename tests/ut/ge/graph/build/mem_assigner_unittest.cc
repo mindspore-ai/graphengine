@@ -339,3 +339,25 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_set_input_offset) {
   EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[1], 0);
   EXPECT_EQ(memoryAssigner.CheckOffset(), GRAPH_SUCCESS);
 }
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_update_ref_op_offset_reverse) {
+    ge::ut::GraphBuilder builder("graph");
+    auto data_input = builder.AddNode("data", "Data", 1, 1);
+    auto const_input = builder.AddNode("const", "Const", 1, 1);
+    auto add = builder.AddNode("add", "Add", 2, 1);
+     // add link
+    builder.AddDataEdge(data_input, 0, add, 0);
+    builder.AddDataEdge(const_input, 0, add, 1);
+    // set ref
+    uint32_t reuse_input_index = 0;
+    auto output_tensordesc = data_input->GetOpDesc()->MutableOutputDesc(0);
+    ge::TensorUtils::SetReuseInput(*output_tensordesc, true);
+    ge::TensorUtils::SetReuseInputIndex(*output_tensordesc, reuse_input_index);
+    auto output_tensordesc1 = add->GetOpDesc()->MutableOutputDesc(0);
+    ge::TensorUtils::SetReuseInput(*output_tensordesc1, true);
+    ge::TensorUtils::SetReuseInputIndex(*output_tensordesc1, reuse_input_index);
+    ge::ComputeGraphPtr graph = builder.GetGraph();
+
+    GraphMemoryAssigner memoryAssigner(graph);
+    EXPECT_EQ(memoryAssigner.UpdateRefOpOffsetReverse(add), SUCCESS);
+}

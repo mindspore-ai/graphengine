@@ -458,8 +458,8 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
 Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle handle) {
   GELOGD("Begin to read json file");
   if (file_path.empty()) {
-    GELOGE(FAILED, "[Check][Param]Json path is invalid");
-    REPORT_INNER_ERROR("E19999", "Json path is invalid");
+    GELOGE(FAILED, "[Check][Param]Json path is empty");
+    REPORT_INNER_ERROR("E19999", "Json path is empty");
     return FAILED;
   }
   nlohmann::json *json_file = reinterpret_cast<nlohmann::json *>(handle);

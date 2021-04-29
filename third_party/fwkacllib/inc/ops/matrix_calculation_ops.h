@@ -444,6 +444,9 @@ REG_OP(ScatterNdUpdate)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator TensorScatterUpdate.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TensorScatterUpdate)
     .INPUT(x, TensorType::BasicType())
@@ -565,6 +568,9 @@ REG_OP(ScatterNdAdd)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator TensorScatterAdd.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TensorScatterAdd)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
@@ -623,6 +629,9 @@ REG_OP(ScatterNdSub)
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator TensorScatterSub.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(TensorScatterSub)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
@@ -1045,6 +1054,28 @@ REG_OP(MatrixDiagV2)
     .OUTPUT(output, TensorType::BasicType())
     .OP_END_FACTORY_REG(MatrixDiagV2)
 
+/**
+* @brief Add updates to var_out according to axis and indices.
+
+* @par Inputs:
+* Three inputs, including:
+* @li var: A Tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8.
+* @li indices: A Tensor of the indices, type should be int32.
+* @li updates: A Tensor of the same type as "var".
+
+* @par Attributes:
+* @li axis: An required int to specify the axis to perform indices add.
+
+* @par Outputs:
+* @li var_out: A Tensor. Same as input "var".
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator index_add.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(IndexAdd)
     .INPUT(var, TensorType({DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
     .INPUT(indices, TensorType({DT_INT32}))

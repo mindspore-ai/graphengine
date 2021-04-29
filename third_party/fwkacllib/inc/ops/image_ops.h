@@ -1134,7 +1134,7 @@ REG_OP(DecodeBmp)
     .ATTR(channels, Int, 0)
     .OP_END_FACTORY_REG(DecodeBmp)
 
-/*
+/**
 *@brief Function parse image from string to int. \n
 
 *@par Inputs:
@@ -1602,11 +1602,11 @@ REG_OP(DecodeJpeg)
 *@brief Image warping using per-pixel flow vectors. \n
 
 *@par Inputs:
-*@li images: 4-D Tensor with shape `[batch, height, width, channels]`.
+*@li image: 4-D Tensor with shape `[batch, height, width, channels]`.
 *@li flow: 4-D Tensor with shape `[batch, height, width, 2]`. \n
 
 *@par Outputs:
-*y: Returns 4-D with the same shape and dtype as `images`. \n
+*y: Returns 4-D with the same shape and dtype as `image`. \n
 */
 REG_OP(DenseImageWarp)
     .INPUT(image, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1709,11 +1709,11 @@ REG_OP(ResizeGradD)
 
 *@par Inputs:
 *@li grad: gradients with respect to DenseImageWarp output.
-*@li images: 4-D Tensor with shape `[batch, height, width, channels]`.
+*@li image: 4-D Tensor with shape `[batch, height, width, channels]`.
 *@li flow: 4-D Tensor with shape `[batch, height, width, 2]`. \n
 
 *@par Outputs:
-*grad_image: Returns 4-D with the same shape and dtype as `images`.
+*grad_image: Returns 4-D with the same shape and dtype as `image`.
 *grad_flow: Returns 4-D with the same shape and dtype as `flow`. \n
 */
 REG_OP(DenseImageWarpGrad)
@@ -1747,6 +1747,9 @@ REG_OP(DenseImageWarpGrad)
 
 *@par Third-party framework compatibility
 *Compatible with pytorch GridSampler2D operator.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GridSampler2D)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))

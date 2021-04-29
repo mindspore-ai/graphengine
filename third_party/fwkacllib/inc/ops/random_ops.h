@@ -548,6 +548,8 @@ REG_OP(ShuffleChannel)
  * Each value along the axis zero represents the outcome of 
  * the corresponding sample in a batch.
  * 
+ * @par Restrictions:
+ * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
  */
 REG_OP(MultinomialFuss)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64}))

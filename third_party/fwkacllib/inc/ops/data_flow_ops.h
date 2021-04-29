@@ -2331,6 +2331,22 @@ REG_OP(CacheAllIndexToLocal)
   .REQUIRED_ATTR(dtype, Type)
   .OP_END_FACTORY_REG(CacheAllIndexToLocal)
 
+/**
+*@brief DynamicGetNext, dynamic get next data
+*@par Inputs:
+*x: the iterator, all types are available
+*@par Outputs:
+*y: the date in iterator, all types are available
+*@par Attributes:
+*output_types: types of all outputs
+*output_shapes: shapes of all outputs
+*_dynamic_graph_execute_mode: dynamic graph execution mode, 
+value is one of lazy_recompile and dynamic_execute
+*_getnext_inputs_shape_range: shape ranges of outputs, 
+it works where _dynamic_graph_execute_mode is dynamic_execute
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
 REG_OP(DynamicGetNext)
   .INPUT(x, TensorType::ALL())
   .DYNAMIC_OUTPUT(y, TensorType::ALL())

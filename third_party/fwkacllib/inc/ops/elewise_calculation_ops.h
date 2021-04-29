@@ -28,7 +28,7 @@ namespace ge {
 
 *@par Inputs:
 *Dynamic inputs, including:
-* @li x: A list of Tensor objects, each with same shape and type. The supported types are:
+*x: A list of Tensor objects, each with same shape and type. The supported types are:
 *   float16, float32, double, int32, uint8, int16, int8, complex64, int64,
 *   qint8, quint8, qint32, uint16, complex128, uint32, uint64. It's a dynamic input. \n
 
@@ -330,8 +330,8 @@ REG_OP(Sub)
 *@brief computes the absolute value of a tensor. \n
 
 *@par Inputs:
-*One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32, int64. \n
+*One input, including: \n
+*x: A Tensor. Must be one of the following types: float16, float32, double, int32, int64. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". \n
@@ -3243,9 +3243,11 @@ REG_OP(Fills)
 *@brief Add tensor with scale. \n
 
 *@par Inputs:
-*Five inputs, including:
-* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float. \n
+*One input, including: \n
+*x: A Tensor. Must be one of the following types:int32,int16, float16, float32. \n
+
+*@par Attributes:
+*value: A scale. Must be float. \n
 
 *@par Outputs:
 *@li y: A Tensor. Has the same type and shape as "x1". \n

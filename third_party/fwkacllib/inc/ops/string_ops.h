@@ -114,6 +114,7 @@ REG_OP(UnicodeDecodeWithOffsets)
     .ATTR(errors, String, "replace")
     .ATTR(replacement_char, Int, 65533)
     .ATTR(replace_control_characters, Bool, false)
+    .ATTR(Tsplits, Type, DT_INT64)
     .OP_END_FACTORY_REG(UnicodeDecodeWithOffsets)
 
 /**
@@ -161,6 +162,7 @@ REG_OP(UnicodeDecode)
     .ATTR(errors, String, "replace")
     .ATTR(replacement_char, Int, 65533)
     .ATTR(replace_control_characters, Bool, false)
+    .ATTR(Tsplits, Type, DT_INT64)
     .OP_END_FACTORY_REG(UnicodeDecode)
 
 /**

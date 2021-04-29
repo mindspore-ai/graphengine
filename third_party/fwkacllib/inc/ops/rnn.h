@@ -190,7 +190,7 @@ REG_OP(DynamicRNNGrad)
 *@li x:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li w:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
 *@li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
-*@li seq_length:A optional 1D Tensor. Must be one of the following types: int32. The format must be ND.
+*@li seq_length:A optional Tensor. Only Support float16 in FRACTAL_NZ and int32 in ND.
 *@li init_h:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li init_c:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li wci:A 4D optional Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
@@ -228,7 +228,7 @@ REG_OP(DynamicRNN)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(b, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OPTIONAL_INPUT(seq_length, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_INT32, DT_FLOAT16}))
     .OPTIONAL_INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(init_c, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OPTIONAL_INPUT(wci, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -698,9 +698,6 @@ REG_OP(DynamicGRU)
 *@li reset:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li new:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li hidden_new:Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(DynamicGRUV2)
     .INPUT(x, TensorType({DT_FLOAT16}))
@@ -989,6 +986,27 @@ REG_OP(CommonLSTM)
     .OP_END_FACTORY_REG(CommonLSTM)
 
 /**
+ * @brief Calculate the mask. According to hidden_size and num_step, convert seq_length to mask.
+ *
+ * @par Inputs:
+ * @li seq_length: A 1D Tensor. Must be one of the following types: int32. Record the current length of each batch. [batch_size].
+ * @li b: A 1D Tensor. Must be one of the following types: fp16/fp32. Record the hidden_size. [4 * hidden_size].
+ * @li x: A 3D Tensor. Must be one of the following types: fp16/fp32. Record the num_step/batch_size/input_size. [num_step, batch_size, input_size].
+ *
+ * @par Outputs:
+ * seq_mask: A 3D Tensor. Must be one of the following types: fp16/fp32. with the shape of [num_step, batch_size, hidden_size]. And has the same type as "b" \n
+ *
+ * @par Restrictions:
+ * Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+ */
+REG_OP(RnnGenMaskV2)
+    .INPUT(seq_length, TensorType({DT_INT32}))
+    .INPUT(b, TensorType({{DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(seq_mask, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(RnnGenMaskV2)
+
+/**
 * @brief Common GRU calculation.
 
 * @par Inputs:
@@ -1002,22 +1020,15 @@ REG_OP(CommonLSTM)
 
 * @par Attributes:
 * @li activation_alpha: Optional scaling values used by some activation functions.  \n
-
 * @li activation_beta: Optional scaling values used by some activation functions.  \n
-
 * @li activations: A list of 2 (or 4 if bidirectional) activation functions for update, reset, and hidden gates.  \n
-
 * @li clip: Cell clip threshold. \n
-
 * @li direction: Specify if the RNN is forward, reverse, or bidirectional. \n
-
 * @li hidden_size: Number of neurons in the hidden layer. \n
-
 * @li linear_before_reset: When computing the output of the hidden gate, apply the linear transformation before multiplying by the output of the reset gate. \n
 
 * @par Outputs:
 * @li y: A Tensor that concats all the intermediate output values of the hidden(float16,float32). The format must be FRACTAL_NZ
-
 * @li y_h: The last output value of the hidden(float16,float32). The format must be FRACTAL_NZ
 */
 REG_OP(CommonGRU)

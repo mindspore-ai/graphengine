@@ -2254,6 +2254,33 @@ REG_OP(IndexFillD)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(dim, Int)
     .OP_END_FACTORY_REG(IndexFillD)
+
+/**
+* @brief For each row r of this and for each column c, do (*this)(r, c) += src(j, c), \n
+*   where j ranges from indexes[r].first through indexes[r].second - 1. \n
+*   In general indexes must be >= 0 and < src.NumRows(); \n
+*   but to represent an empty range you may use the pair (-1, -1) or any pair of numbers (i, j) such that i >= j. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor. Must be one of the following types:
+*     float16, float32.
+* @li indices: A Tensor of the indices, type should be int32.
+* @li src: A Tensor of the same type as "x". \n
+
+* @par Outputs:
+* @li x: A Tensor. Same as input "x".
+
+* @par Third-party framework compatibility
+* Compatible with the kaldi operator AddRowRanges.
+*/
+REG_OP(AddRowRanges)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(src, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .OUTPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(AddRowRanges)
+
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

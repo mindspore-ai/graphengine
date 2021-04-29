@@ -2102,6 +2102,55 @@ REG_OP(FusedMulApplyMomentumExtern)
     .OP_END_FACTORY_REG(FusedMulApplyMomentumExtern)
 
 /**
+*@brief Updates '*var' according to the momentum scheme.
+*   accum = accum * momentum - x1 * x2 * lr
+*   if use_nesterov is True:
+*       var += accum * momentum - x1 * x2 * lr
+*   else:
+*       var += accum
+*
+*@par Inputs:
+*@li var: A mutable tensor. Must be one of the data types defined in
+*    TensorType::NumberType(). Should be from a Variable().
+*@li accum: A mutable tensor. Has the same type as "var". Should be from a
+*    Variable().
+*@li lr: A tensor for the learning rate. Has the same type as "var". Should be
+*    from a Variable().
+*@li x1: A Tensor has type TensorType::NumberType().
+*@li momentum: A scalar. Has the same type as "var".
+*@li x2: A scalar has the same type as "var".
+*
+*@par Attributes:
+*@li use_nesterov: An optional bool. Defaults to "False".
+*    If "True", var will be updated by using Nesterov momentum.
+*@li use_locking: An optional bool. Defaults to "False".
+*    If "True", updating of the "var" tensor is protected by a lock;
+*    otherwise the behavior is undefined, but may exhibit less contention.
+*
+*@par Outputs:
+* var: A mutable tensor. Has the same type as input "var".
+*
+*@attention Constraints:
+* The input tensors must have the same shape.
+*
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ResourceApplyKerasMomentum.
+*
+*/
+REG_OP(FusedMulApplyKerasMomentum)
+    .INPUT(var, TensorType::NumberType())
+    .INPUT(accum, TensorType::NumberType())
+    .INPUT(lr, TensorType::NumberType())
+    .INPUT(x1, TensorType::NumberType())
+    .INPUT(momentum, TensorType::NumberType())
+    .INPUT(x2, TensorType::NumberType())
+    .OUTPUT(var, TensorType::NumberType())
+    .OUTPUT(accum, TensorType::NumberType())
+    .ATTR(use_locking, Bool, false)
+    .ATTR(use_nesterov, Bool, false)
+    .OP_END_FACTORY_REG(FusedMulApplyKerasMomentum)
+
+/**
 *@brief Update "g" according to the LARS algorithm . \n
 
 *@par Inputs:

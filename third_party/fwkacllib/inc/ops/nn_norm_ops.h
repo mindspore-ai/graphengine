@@ -1073,26 +1073,6 @@ REG_OP(INInferV2D)
     .OP_END_FACTORY_REG(INInferV2D)
 
 /**
-*@brief Performs instance normalization for inference of InHost part.
-
-*@par Inputs:\n
-* One input, including: (NC1HWC0 supported)
-* variance: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance.
-
-*@par Attributes:
-* epsilon: An optional float32, specifying the small value added to
-variance to avoid dividing by zero. Defaults to "0.00001" . \n
-
-*@par Outputs:\n
-* variance_sqrt: A [N, C1, 1, 1, C0] Tensor of type float32, for the variance_sqrt.
-*/
-REG_OP(InHost)
-     .INPUT(variance, TensorType({DT_FLOAT}))
-     .OUTPUT(variance_sqrt, TensorType({DT_FLOAT}))
-     .ATTR(epsilon, Float, 0.00001)
-     .OP_END_FACTORY_REG(InHost)
-
-/**
 * @brief perform instance normalization to x. \n
 
 * @par Inputs:
@@ -1124,6 +1104,26 @@ REG_OP(InstanceNorm)
     .REQUIRED_ATTR(epsilon, Float)
     .OP_END_FACTORY_REG(InstanceNorm)
 
+/**
+* @brief Computes Kl_div_loss_grad or Kl_div_loss_backward. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li grad: A Tensor. Must be one of the following types: float16, float32.
+* Required.
+* @li input: A Tensor. Has the same type as "grad". Required.
+* @li target: A Tensor. Has the same type as "grad". Required. \n
+
+* @par Attributes:
+* @li reduction: An optional attribute of type String. Defaults to "mean". \n
+* @li log_target: An optional attribute of type Bool. Defaults to false. \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "grad". \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator KlDivLossGrad.
+*/
 REG_OP(KlDivLossGrad)
     .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(input, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1453,12 +1453,12 @@ REG_OP(PoissonNllLoss)
  *
  * 
  * @par Output:
- * y: A mutable Tensor of type int32, with the shape of [num_step, batch_size, hidden_size]. \n
+ * y: A mutable Tensor of type float16, with the shape of [num_step, batch_size, hidden_size]. \n
  *
  */
 REG_OP(RnnGenMask)
     .INPUT(seq_length, TensorType({DT_INT32}))
-    .OUTPUT(seq_mask, TensorType({DT_INT32}))
+    .OUTPUT(seq_mask, TensorType({DT_FLOAT16}))
     .REQUIRED_ATTR(num_step, Int)
     .REQUIRED_ATTR(hidden_size, Int)
     .OP_END_FACTORY_REG(RnnGenMask)

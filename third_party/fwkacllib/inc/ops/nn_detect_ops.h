@@ -1202,35 +1202,6 @@ REG_OP(RpnProposalsD)
     .OUTPUT(sorted_box, TensorType({DT_FLOAT16}))
     .OP_END_FACTORY_REG(RpnProposalsD)
 
-/**
-*@brief Computes Score Filte Pre-Sort function.
-
-*@par Inputs:
-*Inputs include:
-* @li rois: A Tensor. Must be float16. N-D with shape [N, 4].
-* @li cls_bg_prob: A Tensor. Must be float16. N-D with shape [N, 1].
-
-*@par Attributes:
-* @li score_threshold: required, float, threahold of topk process.
-* @li k: required, Int, threahold of topk process.
-* @li score_filter: bool, mark of score_filter. Defaults to "true"
-* @li core_max_num: int, max number of core. Defaults to "8"
-*@par Outputs:
-* @li sorted_proposal: A Tensor. Must be float16.
-*                      N-D with shape [8*6002, 8].
-* @li proposal_num: A Tensor. Must be uint32. N-D with shape [8, 8].
-*/
-
-REG_OP(ScoreFiltePreSort)
-    .INPUT(rois, TensorType({DT_FLOAT16}))
-    .INPUT(cls_bg_prob, TensorType({DT_FLOAT16}))
-    .OUTPUT(sorted_proposal, TensorType({ DT_FLOAT16}))
-    .OUTPUT(proposal_num, TensorType({ DT_UINT32}))
-    .REQUIRED_ATTR(score_threshold, Float)
-    .REQUIRED_ATTR(k, Int)
-    .ATTR(score_filter, Bool, true)
-    .ATTR(core_max_num, Int, 8)
-    .OP_END_FACTORY_REG(ScoreFiltePreSort)
 
 /**
 *@brief Computes Score Filte Pre-Sort function.
@@ -1500,6 +1471,26 @@ REG_OP(Sort)
     .ATTR(descending, Bool, false)
     .OP_END_FACTORY_REG(Sort)
 
+/**
+*@brief Computes iou for input bboxes and gtboxes.
+
+*@par Inputs:
+* Two inputs, including:
+*@li bboxes: boxes, a 4D Tensor of type float16 with the shape (x0, x1, y0, y1),
+*@li gtboxes: boxes, a 4D Tensor of type float16 with the shape (x0, x1, y0, y1).\n
+
+*@par Attributes:
+*@li mode: A optional attribute of type string, whether judge the mode of iou. \n
+
+*@par Outputs:
+*@li overlap: A 2D Tensor of type float16 with shape [n, m]. \n
+
+*@attention Constraints:
+* Only computation of float16 data is supported.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS DEPRECATED. Please use Iou instead.
+*/
 REG_OP(PtIou)
     .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1541,6 +1532,9 @@ selected indices from the boxes tensor, where M <= max_output_size. \n
 
 *@par Third-party framework compatibility
 *Compatible with onnx NonMaxSuppression operator.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(NonMaxSuppressionV6)
@@ -1729,3 +1723,4 @@ REG_OP(PSROIPoolingGradV2D)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_
+

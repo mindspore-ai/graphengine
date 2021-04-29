@@ -989,6 +989,8 @@ REG_OP(Conv2DCompress)
 *@li deformable_groups: Optional. An integer of type int32. The number of
 * deformable group partitions. In_channels must be divisible by
 * "deformable_groups". Defaults to 1.
+*@li modulated: Optional. Specify version of DeformableConv2D, true means v2,
+* false means v1, currently only support v2.
 *\n
 *\n
 * The following value range restrictions must be met:
@@ -1037,6 +1039,7 @@ REG_OP(DeformableConv2D)
     .ATTR(groups, Int, 1)
     .ATTR(data_format, String, "NHWC")
     .ATTR(deformable_groups, Int, 1)
+    .ATTR(modulated, Bool, true)
     .OP_END_FACTORY_REG(DeformableConv2D)
 
 /**

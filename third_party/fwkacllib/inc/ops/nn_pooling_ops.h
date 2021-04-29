@@ -237,18 +237,18 @@ REG_OP(AvgPool3DD)
 * @li ceil_mode: When true, will use ceil instead of floor in the formula to compute the output shape.
 * @li count_include_pad: When true, will include the zero-padding in the averaging calculation.
 * @li divisor_override: if specified, it will be used as divisor, otherwise size of the pooling region will be used.
-* @li data_format: A string, format of input data . 
+* @li data_format: A string, format of input data.
 
 * @par Outputs:
-* @output: A mutable tensor with the same shape and type as "orig_input".
+* @output: A mutable tensor with the same shape and type as "orig_input_shape".
 
 * @par Third-party framework compatibility
 * @li Compatible with the TensorFlow operator AvgPoolGrad.
 */
 
 REG_OP(AvgPool3DGrad)
-    .INPUT(orig_input_shape, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
-    .INPUT(grads, TensorType({DT_INT32}))
+    .INPUT(orig_input_shape, TensorType({DT_INT32}))
+    .INPUT(grads, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
     .OUTPUT(output, TensorType({DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
     .REQUIRED_ATTR(ksize, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
@@ -888,7 +888,7 @@ REG_OP(AvgPoolV2Grad)
 * @brief Computes gradients of averagev2 pooling function.
 
 * @par Inputs:
-* @li input_grad: An NHWC tensor of type float16, float32, or double.
+*input_grad: An NHWC tensor of type float16, float32, or double.
 
 * @par Attributes:
 * @li orig_input_shape: A required tuple or list of type int32.
@@ -906,10 +906,10 @@ REG_OP(AvgPoolV2Grad)
 * @li data_format: An optional string. Defaults to "NHWC".
 
 * @par Outputs:
-* @out_grad: A mutable tensor with the same shape and type as "orig_input".
+*out_grad: A mutable tensor with the same shape and type as "orig_input".
 
 * @par Third-party framework compatibility
-* @li Compatible with the TensorFlow operator AvgPoolGrad.
+*Compatible with the TensorFlow operator AvgPoolGrad.
 */
 REG_OP(AvgPoolV2GradD)
     .INPUT(input_grad, TensorType({DT_FLOAT16}))
@@ -1682,7 +1682,27 @@ REG_OP(MaxPoolWithArgmaxV1)
     .ATTR(ceil_mode, Bool, false)
     .OP_END_FACTORY_REG(MaxPoolWithArgmaxV1)
 
-// SubSample
+/**
+*@brief Randomly sample a subset of positive and negative examples,and overwrite
+the label vector to the ignore value (-1) for all elements that are not
+included in the sample.\n
+
+* @par Inputs:
+* One input:
+* labels: shape of labels,(N, ) label vector with values. \n
+
+* @par Attributes:
+* @li batch_size_per_images: A require attribute of type int.
+* @li positive_fraction: A require attribute of type float.
+
+*@par Outputs:
+*y: The result of subSample. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator SubSample.
+*@par Restrictions:
+*Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
+*/
 REG_OP(SubSample)
     .INPUT(labels, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT32}))
@@ -1690,7 +1710,28 @@ REG_OP(SubSample)
     .REQUIRED_ATTR(positive_fraction, Float)
     .OP_END_FACTORY_REG(SubSample)
 
-//  SubSampleLabels
+/**
+*@brief Randomly sample a subset of positive and negative examples,and overwrite
+the label vector to the ignore value (-1) for all elements that are not
+included in the sample.\n
+
+* @par Inputs:
+* two inputs, including:
+* @li labels: shape of labels,(N, ) label vector with values:.
+* @li shuffle_matrix: random matrix with shape (N, ). \n
+
+* @par Attributes:
+* @li batch_size_per_images: A require attribute of type int.
+* @li positive_fraction: A require attribute of type float.
+
+*@par Outputs:
+*y: The result of subSample. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator SubSampleLabels.
+*@par Restrictions:
+*Warning: This operator can be integrated only by MaskRcnn. Please do not use it directly.
+*/
 REG_OP(SubSampleLabels)
     .INPUT(labels, TensorType({DT_INT32}))
     .INPUT(shuffle_matrix, TensorType({DT_INT32}))

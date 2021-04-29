@@ -419,35 +419,7 @@ REG_OP(BNInference)
     .ATTR(use_global_stats, Bool,true)
     .ATTR(mode, Int,1)
     .OP_END_FACTORY_REG(BNInference)
-/**
-*@brief aicpu batch normalization host  . \n
 
-*@par Inputs:
-
-*@li mean: A Tensor of type float32 or float16. Must be 1D if input "x"  Specifies the mean used for inference.
-*@li variance: A Tensor of type float32 or float16 . Must be 1D if input "x"  Specifies the variance used for inference.
-*@li momentum: An optional float, mean and variance's Scale factor
-*@par Attributes:
-*@li epsilon: An optional float32, specifying the small value added to variance to avoid dividing by zero. Defaults to "0.00001".
-*@li use_global_stats: mean inference mode , only can be "True".
-*@li mode: An optional attr, not use
-*@par Outputs:
-*@li alpha: A Tensor of type float16 or float32 for the cpu calculate mean
-*@li beta: A Tensor of type float16 or float32 for the cpu calculate variance
-*/
-REG_OP(BnHost)
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(momentum, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OPTIONAL_INPUT(scale, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OPTIONAL_INPUT(offset, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .ATTR(epsilon, Float, 0.00001)
-    .ATTR(mode, Int, 1)
-    .ATTR(use_global_stats, Bool, true)
-    .OUTPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(mu, TensorType({DT_FLOAT16,DT_FLOAT}))
-    .OP_END_FACTORY_REG(BnHost)
 /**
 *@brief Performs batch normalization . \n
 

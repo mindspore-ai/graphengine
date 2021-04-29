@@ -462,7 +462,7 @@ Status TaskContext::PropagateOutputs() {
       }
     }
   }
-
+  (void)guard;
   return SUCCESS;
 }
 

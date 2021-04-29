@@ -317,6 +317,7 @@ Status NodeDoneCallback::OnNodeDone() {
     const auto &guard = node_item.MutexGuard("OnNodeDone");
     GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(node_item));
     GE_CHK_STATUS_RET_NOLOG(context_->GetNodeState()->GetShapeInferenceState().UpdateOutputDesc());
+    (void)guard;
   }
   // PropagateOutputs for type == DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {

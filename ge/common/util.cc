@@ -253,7 +253,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string CurrentTimeInStr() 
   std::tm *ptm = std::localtime(&now);
   if (ptm == nullptr) {
     GELOGE(ge::FAILED, "[Check][Param]Localtime incorrect, errmsg %s", strerror(errno));
-    REPORT_CALL_ERROR("E19999", "Localtime incorrect, errmsg", strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Localtime incorrect, errmsg %s", strerror(errno));
     return "";
   }
 

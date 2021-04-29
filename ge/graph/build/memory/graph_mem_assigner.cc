@@ -2035,10 +2035,10 @@ void GraphMemoryAssigner::UpdateCurNodeInputDesc(const NodePtr &cur_node,
 }
 
 void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
-    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
     const size_t matched_mem_offset,
     const NodePtr &peer_out_node,
     const OutDataAnchorPtr &peer_out_anchor,
+    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
     bool &is_need_calc_distance) {
   auto iter = mem_block_visit_info.find(matched_mem_offset);
   // cannot find visit info, peer_out_node must be a producer and this data is the first time to be visited.
@@ -2073,11 +2073,11 @@ void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
 }
 
 // calculate distance, update visit info, update prev_node input desc, update cur node input desc
-void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
-                                                    const size_t matched_mem_offset,
+void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(const size_t matched_mem_offset,
                                                     const map<string, int64_t> &node_index_in_stream,
                                                     NodePtr &node,
                                                     const InDataAnchorPtr &in_data_anchor,
+                                                    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
                                                     bool &is_need_skip) {
   int64_t distance = -1;
   auto prev_node = mem_block_visit_info[matched_mem_offset].first;
@@ -2134,10 +2134,10 @@ void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(map<size_t, pair<NodePtr, ve
 }
 
 void GraphMemoryAssigner::DeleteVisitInfoWhenLifecycleEnded(
-    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
     const size_t matched_mem_offset,
     const NodePtr &node,
-    const InDataAnchorPtr &in_data_anchor) {
+    const InDataAnchorPtr &in_data_anchor,
+    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info) {
   GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, return);
   auto input_desc = node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx());
   bool is_end_of_inputmem_lifecycle = false;

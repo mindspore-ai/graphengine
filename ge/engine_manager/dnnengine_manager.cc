@@ -78,7 +78,7 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
 
   status = plugin_mgr_.InvokeAll<std::map<std::string, DNNEnginePtr> &>(so_api_func, engines_map_);
   if (status != SUCCESS) {
-    GELOGE(status, "[Get][DNNEngineObjs]Failed, so_api_func %s", so_api_fun.c_str());
+    GELOGE(status, "[Get][DNNEngineObjs]Failed, so_api_func %s", so_api_func.c_str());
     REPORT_CALL_ERROR("E19999", "Get DNNEngineObjs failed, so_api_func %s", so_api_func.c_str());
     return status;
   }

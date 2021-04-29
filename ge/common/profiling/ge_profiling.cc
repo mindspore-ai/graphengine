@@ -136,8 +136,8 @@ ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
   // Pass MsprofSetDeviceCallback to runtime
   ge::Status rt_ret = rtRegDeviceStateCallback(kRtSetDeviceRegName.c_str(), static_cast<rtDeviceStateCallback>(func));
   if (rt_ret != ge::SUCCESS) {
-    GELOGE(rt_ret, "[Pass][MsprofSetDeviceCallback]To runtime failed!");
-    REPORT_CALL_ERROR("E19999", "Pass MsprofSetDeviceCallback to runtime failed, ret 0x%X", rt_ret);    
+    GELOGE(rt_ret, "[Pass][MsprofSetDeviceCallback]To runtime failed, ret 0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Pass MsprofSetDeviceCallback to runtime failed, ret 0x%X", rt_ret);
     return rt_ret;
   }
   return ge::SUCCESS;
@@ -183,7 +183,7 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
     if (!isProfConfigValid(prof_config_param->devIdList, prof_config_param->devNums)) {
       return ge::FAILED;
     }
-  
+
     if (!TransProfConfigToParam(*prof_config_param, prof_params)) {
       GELOGE(ge::PARAM_INVALID, "[Check][Param]Transfer profilerConfig to string vector failed");
       REPORT_CALL_ERROR("E19999", "Transfer profilerConfig to string vector failed");
@@ -208,7 +208,7 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
     GELOGE(ret, "[Handle][Command]Handle profiling command failed, command type %s, error_code %u",
            iter->second.c_str(), ret);
     REPORT_CALL_ERROR("E19999", "Handle profiling command failed, command type %s, error_code %u",
-                      iter->second.c_str(), ret);    
+                      iter->second.c_str(), ret);
     return ge::FAILED;
   }
 

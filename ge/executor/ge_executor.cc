@@ -731,6 +731,23 @@ Status GeExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType 
   return SUCCESS;
 }
 
+Status GeExecutor::GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                             std::string &attr_value) {
+  GELOGI("Begin to get op attr.");
+  if (!isInit_) {
+    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "[Init][GeExecutor]Ge executor not inited yet!");
+    REPORT_INNER_ERROR("E19999", "Ge executor not inited yet!");
+    return ACL_ERROR_GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetOpAttr(model_id, op_name, attr_name, attr_value);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Get][OpAttr]Get op:%s attr:%s failed.", op_name.c_str(), attr_name.c_str());
+    REPORT_CALL_ERROR("E19999", "Get op:%s attr:%s failed.", op_name.c_str(), attr_name.c_str());
+    return ret;
+  }
+  return SUCCESS;
+}
+
 Status GeExecutor::GetModelAttr(uint32_t model_id, std::vector<std::string> &dynamic_output_shape_info) {
   if (!isInit_) {
     GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "not inited yet!");

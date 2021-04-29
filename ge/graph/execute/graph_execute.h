@@ -108,6 +108,9 @@ class GraphExecutor {
 
   static Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
+  static Status GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                          std::string &attr_value);
+
   static Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
   static Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);

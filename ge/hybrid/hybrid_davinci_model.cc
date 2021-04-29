@@ -126,6 +126,11 @@ class HybridDavinciModel::Impl {
     return SUCCESS;
   }
 
+  Status GetOpAttr(const std::string &op_name, const std::string &attr_name,
+                                       std::string &attr_value) {
+    return model_.GetOpAttr(op_name, attr_name, attr_value);
+  }
+
  private:
   std::shared_ptr<ModelListener> listener_;
   HybridModel model_;
@@ -272,6 +277,12 @@ bool HybridDavinciModel::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpD
     }
   }
   return ret;
+}
+
+Status HybridDavinciModel::GetOpAttr(const std::string &op_name, const std::string &attr_name,
+                                     std::string &attr_value) const {
+  GE_CHECK_NOTNULL(impl_);
+  return impl_->GetOpAttr(op_name, attr_name, attr_value);
 }
 }  // namespace hybrid
 }  // namespace ge

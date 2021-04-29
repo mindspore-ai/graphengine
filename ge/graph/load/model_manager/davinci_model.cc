@@ -743,6 +743,19 @@ Status DavinciModel::Init(void *dev_ptr, size_t mem_size, void *weight_ptr, size
   return SUCCESS;
 }
 
+// save specify attr values of op, such as ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES
+// it will save more attr values in the future
+void DavinciModel::SaveSpecifyAttrValues(const OpDescPtr &op_desc) {
+  std::vector<std::string> value;
+  if (AttrUtils::GetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, value)) {
+    std::map<std::string, std::vector<std::string>> attr_name_to_value;
+    attr_name_to_value[ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES]= value;
+    op_name_to_attrs_[op_desc->GetName()] = attr_name_to_value;
+    GELOGD("Get op:%s attr:%s success.", op_desc->GetName().c_str(), ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES.c_str());
+  }
+  return;
+}
+
 Status DavinciModel::ReportProfilingData() {
   ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo());
   GE_CHK_STATUS(SinkModelProfile(), "Sink model profiler failed.");
@@ -846,7 +859,7 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     const auto &node = nodes.at(i);
     const auto &op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-
+    SaveSpecifyAttrValues(op_desc);
     op_list_[op_desc->GetId()] = op_desc;
 
     GE_TIMESTAMP_RESTART(LoadTBEKernelBinToOpDesc);
@@ -2054,6 +2067,25 @@ void DavinciModel::GetCurShape(std::vector<int64_t> &batch_info, int32_t &dynami
   }
 
   dynamic_type = dynamic_type_;
+}
+
+Status DavinciModel::GetOpAttr(const std::string &op_name, const std::string &attr_name,
+                               std::string &attr_value) const {
+  auto itr = op_name_to_attrs_.find(op_name);
+  if (itr == op_name_to_attrs_.end()) {
+    GELOGW("Did not save op:%s attr", op_name.c_str());
+    return SUCCESS;
+  }
+  auto attr_itr = itr->second.find(attr_name);
+  if (attr_itr == itr->second.end()) {
+    GELOGW("Did not save attr:%s of op:%s", attr_name.c_str(), op_name.c_str());
+    return SUCCESS;
+  }
+  for (const auto &name : attr_itr->second) {
+    attr_value += "[" + std::to_string(name.size()) + "]" + name;
+  }
+  GELOGD("Get attr:%s of op:%s success, attr value:%s", attr_name.c_str(), op_name.c_str(), attr_value.c_str());
+  return SUCCESS;
 }
 
 void DavinciModel::GetModelAttr(vector<string> &out_shape_info) const {

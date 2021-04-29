@@ -34,6 +34,7 @@
 #include "common/types.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
+#include "hybrid/hybrid_davinci_model.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/task_info/kernel_task_info.h"
 #include "graph/load/model_manager/task_info/kernel_ex_task_info.h"
@@ -189,5 +190,38 @@ TEST_F(UtestGeExecutor, kernel_ex_InitDumpTask) {
   KernelExTaskInfo kernel_ex_task_info;
   kernel_ex_task_info.davinci_model_ = &model;
   kernel_ex_task_info.InitDumpTask(nullptr, op_desc);
+}
+
+TEST_F(UtestGeExecutor, get_op_attr) {
+  shared_ptr<DavinciModel> model = MakeShared<DavinciModel>(1, g_label_call_back);
+  model->SetId(1);
+  model->om_name_ = "testom";
+  model->name_ = "test";
+
+  shared_ptr<hybrid::HybridDavinciModel> hybrid_model = MakeShared<hybrid::HybridDavinciModel>();
+  model->SetId(2);
+  model->om_name_ = "testom_hybrid";
+  model->name_ = "test_hybrid";
+
+  std::shared_ptr<ModelManager> model_manager = ModelManager::GetInstance();
+  model_manager->InsertModel(1, model);
+  model_manager->InsertModel(2, hybrid_model);
+
+  OpDescPtr op_desc = CreateOpDesc("test", "test");
+  std::vector<std::string> value{"test"};
+  ge::AttrUtils::SetListStr(op_desc, ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, value);
+
+  model->SaveSpecifyAttrValues(op_desc);
+
+  GeExecutor ge_executor;
+  GeExecutor::isInit_ = true;
+  std::string attr_value;
+  auto ret = ge_executor.GetOpAttr(1, "test", ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, attr_value);
+  EXPECT_EQ(ret, SUCCESS);
+  EXPECT_EQ(attr_value, "[4]test");
+  ret = ge_executor.GetOpAttr(2, "test", ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, attr_value);
+  EXPECT_EQ(ret, UNSUPPORTED);
+  ret = ge_executor.GetOpAttr(3, "test", ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, attr_value);
+  EXPECT_EQ(ret, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID);
 }
 }

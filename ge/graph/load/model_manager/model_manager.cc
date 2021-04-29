@@ -1045,6 +1045,21 @@ Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &
   return SUCCESS;
 }
 
+Status ModelManager::GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                               std::string &attr_value) {
+  auto davinci_model = GetModel(model_id);
+  if (davinci_model != nullptr) {
+    return davinci_model->GetOpAttr(op_name, attr_name, attr_value);
+  }
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    return hybrid_davinci_model->GetOpAttr(op_name, attr_name, attr_value);
+  }
+  GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "[Get][Model]Get model failed, invalid model id:%u.", model_id);
+  REPORT_INNER_ERROR("E19999", "Get model failed, invalid model id:%u.", model_id);
+  return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
+}
+
 Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
   std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
   if (hybrid_davinci_model != nullptr) {

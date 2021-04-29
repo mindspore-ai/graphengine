@@ -361,6 +361,8 @@ class DavinciModel {
 
   void GetCurShape(vector<int64_t> &batch_info, int32_t &dynamic_type) const;
 
+  Status GetOpAttr(const std::string &op_name, const std::string &attr_name, std::string &attr_value) const;
+
   void GetModelAttr(vector<string> &dynamic_output_shape_info) const;
 
   ///
@@ -473,6 +475,8 @@ class DavinciModel {
   int64_t GetLoadBeginTime() { return load_begin_time_; }
 
   int64_t GetLoadEndTime() { return load_end_time_; }
+
+  void SaveSpecifyAttrValues(const OpDescPtr &op_desc);
 
   Status ReportProfilingData();
 
@@ -1096,6 +1100,9 @@ class DavinciModel {
 
   // known shape node for dump
   void *known_shape_global_step_;
+
+  // op name to attrs mapping
+  std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

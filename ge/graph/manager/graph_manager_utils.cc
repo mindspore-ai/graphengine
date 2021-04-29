@@ -41,6 +41,7 @@ GraphNode::GraphNode(GraphId graph_id)
       build_flag_(false),
       load_flag_(false),
       async_(false),
+      is_specific_stream_(false),
       ge_model_(nullptr),
       sem_(1) {
   graph_run_async_listener_ = MakeShared<RunAsyncListener>();

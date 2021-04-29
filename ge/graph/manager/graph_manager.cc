@@ -1109,6 +1109,7 @@ Status GraphManager::LoadGraph(const GeRootModelPtr &ge_root_model, const GraphN
         GE_CHK_STATUS_RET(CheckAndReleaseMemory(ge_model, graph_node));
       }
     }
+    ge_root_model->SetIsSpecificStream(graph_node->IsSpecificStream());
     GE_TIMESTAMP_START(LoadGraph);
     Status ret = GraphLoader::LoadModelOnline(model_id_info.model_id, ge_root_model, model_listener);
     GE_TIMESTAMP_EVENT_END(LoadGraph, "GraphManager::LoadGraph");
@@ -1230,6 +1231,78 @@ Status GraphManager::InnerRunGraph(GraphNodePtr &graph_node, const GraphId &grap
     return ret;
   }
   return SUCCESS;
+}
+
+Status GraphManager::InnerRunGraphWithStream(GraphNodePtr &graph_node, const GraphId &graph_id, rtStream_t stream,
+                                             const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) {
+  auto ret = graph_executor_.SetCondition(&sync_run_mutex_, &condition_, graph_run_listener_);
+  if (ret != SUCCESS) {
+    GELOGE(GE_GRAPH_RUNGRAPH_FAILED, "[Run][GraphWithStreamAsync] set condition failed, "
+           "graph id = %u, stream = %p.", graph_id, stream);
+    graph_node->SetRunFlag(false);
+    return GE_GRAPH_RUNGRAPH_FAILED;
+  }
+
+  ret = graph_executor_.ExecuteGraphWithStream(graph_id, stream, graph_node->GetGeRootModel(), inputs, outputs);
+  graph_node->SetRunFlag(false);
+  graph_node->SetIsSpecificStream(false);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Run][GraphWithStreamAsync] execute graph failed, graph id = %u, stream = %p.", graph_id, stream);
+    return ret;
+  }
+  GELOGI("[Run][GraphWithStreamAsync] run graph success, graph id = %u, stream = %p.", graph_id, stream);
+  return SUCCESS;
+}
+
+Status GraphManager::RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t stream, uint64_t session_id,
+                                             const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  std::lock_guard<std::mutex> lock(run_mutex_);
+  GELOGI("Start to run graph with stream async, graph id = %u, stream = %p.", graph_id, stream);
+
+  if (inputs.empty()) {
+    GELOGI("Run graph with stream async, initialize sub graph has no inputs.");
+  }
+
+  // find graph
+  GraphNodePtr graph_node = nullptr;
+  Status ret = GetGraphNode(graph_id, graph_node);
+  if (ret != SUCCESS) {
+    REPORT_INNER_ERROR("E19999", "graph id = %u not exist in graph_map, check invalid.", graph_id);
+    GELOGE(ret, "Run graph with stream async graph not exist, graph id = %u.", graph_id);
+    return ret;
+  }
+  if (graph_node == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph id = %u, check invalid.", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Run graph with stream async graph node is NULL, graph id = %u.", graph_id);
+    return GE_GRAPH_GRAPH_NODE_NULL;
+  }
+  if (graph_node->GetRunFlag()) {
+    REPORT_INNER_ERROR("E19999", "Graph is already running, can't be run again, graph id = %u, "
+                       "check invalid.", graph_id);
+    GELOGE(GE_GRAPH_ALREADY_RUNNING, "Run graph with stream async graph already running, graph id = %u.", graph_id);
+    return GE_GRAPH_ALREADY_RUNNING;
+  }
+
+  UpdateLocalOmgContext(graph_id);
+  // set graph's run flag
+  graph_node->SetRunFlag(true);
+  graph_node->SetIsSpecificStream(true);
+  ComputeGraphPtr compute_graph_tmp = GraphUtils::GetComputeGraph(*(graph_node->GetGraph()));
+
+  // when set incre build, add cache helper map
+  AddModelCacheHelperToMap(graph_id, session_id, compute_graph_tmp);
+  if (options_.local_fmk_op_flag) {
+    GetCompilerStages(graph_id).optimizer.TranFrameOp(compute_graph_tmp);
+  }
+  GeRootModelPtr ge_root_model = nullptr;
+  ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Run][GraphWithStreamAsync] StartForRunGraph failed!");
+    graph_node->SetRunFlag(false);
+    return ret;
+  }
+  return InnerRunGraphWithStream(graph_node, graph_id, stream, inputs, outputs);
 }
 
 Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTensor> &inputs,

@@ -51,6 +51,7 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
     GE_CHK_STATUS_RET_NOLOG(CalcOutputTensorSizes(node_item));
     return SUCCESS;
   }
+  (void)guard;
 
   // Skip shape inference for node of type DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {
@@ -150,6 +151,7 @@ Status ShapeInferenceEngine::PropagateOutputShapes(NodeState &node_state) {
       }
     }
   }
+  (void)guard;
   RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[PropagateOutputShapes] End");
   GELOGD("[%s] Propagating output shapes finished successfully.", node_item.NodeName().c_str());
   return SUCCESS;

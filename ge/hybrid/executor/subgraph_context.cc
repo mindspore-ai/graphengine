@@ -47,6 +47,7 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
   if (node_state == nullptr) {
     const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
     node_state.reset(new(std::nothrow)NodeState(*node_item, this));
+    (void)guard;
   }
 
   return node_state;

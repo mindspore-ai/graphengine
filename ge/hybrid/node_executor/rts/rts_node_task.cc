@@ -149,7 +149,7 @@ Status StreamMergeNodeTask::ExecuteAsync(TaskContext &task_context, std::functio
 
   const auto in_x = task_context.MutableInput(index); // x
   GE_CHECK_NOTNULL(in_x);
-  task_context.SetOutput(MERGE_DATA_OUTPUT, *in_x); // y
+  GE_CHK_STATUS_RET_NOLOG(task_context.SetOutput(MERGE_DATA_OUTPUT, *in_x)); // y
 
   const auto out_y = task_context.MutableOutput(MERGE_INDEX_OUTPUT);  // value_index
   GE_CHECK_NOTNULL(out_y);
@@ -194,7 +194,7 @@ Status PassThroughNodeTask::ExecuteAsync(TaskContext &task_context, std::functio
   GELOGD("[%s] Start to execute.", task_context.GetNodeName());
   const auto in_x = task_context.GetInput(0); // x
   GE_CHECK_NOTNULL(in_x);
-  task_context.SetOutput(0, *in_x); // y
+  GE_CHK_STATUS_RET_NOLOG(task_context.SetOutput(0, *in_x)); // y
 
   if (done_callback) {
     GE_CHK_STATUS_RET(task_context.RegisterCallback(done_callback));

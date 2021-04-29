@@ -155,6 +155,7 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
       dst_tensor_desc->SetOriginShape(tensor_desc.GetOriginShape());
       (void)TensorUtils::SetSize(*dst_tensor_desc, tensor_size);
     }
+    (void)guard;
   }
 
   for (auto &p : shape_futures) {
@@ -180,6 +181,7 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
     input_desc->SetShape(src_tensor_desc->GetShape());
     input_desc->SetOriginShape(src_tensor_desc->GetOriginShape());
     (void) TensorUtils::SetSize(*input_desc, tensor_size);
+    (void)guard;
   }
 
   return SUCCESS;
@@ -285,6 +287,7 @@ void NodeState::ResetContext(int group) {
   shape_inference_state_.InitShapeState();
   subgraph_context_->ResetContext(node_item_->node);
   GELOGD("Node[%s] in while loop, current loop: %lu, merge index: %d", GetName().c_str(), loop_count_, merge_index_);
+  (void)guard;
 }
 
 void NodeState::ResetSchedule() {

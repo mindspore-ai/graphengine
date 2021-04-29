@@ -27,6 +27,7 @@
 #include "graph/load/model_manager/davinci_model.h"
 #include "model/ge_root_model.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "toolchain/adx_datadump_server.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -48,6 +49,7 @@ const int kTimeSpecNano = 1000000000;
 const int kTimeSpecMiro = 1000000;
 const int kOpNameMaxSize = 100;
 const uint64_t kInferSessionId = 0;
+const int32_t kDumpStatus = 0;
 #pragma pack(push, 1)
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
@@ -321,6 +323,58 @@ bool ModelManager::IsNeedHybridLoad(ge::GeRootModel &ge_root_model) {
   (void)AttrUtils::GetBool(root_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dsp_partitioned_graph);
   return is_shape_unknown || is_dsp_partitioned_graph || GetContext().GetHostExecFlag();
 }
+
+bool ModelManager::IsDumpSeverInited(uint64_t session_id) {
+  auto it = session_id_to_dump_server_init_flag_.find(session_id);
+  return it != session_id_to_dump_server_init_flag_.end() && it->second;
+}
+
+Status ModelManager::AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties) {
+  if (!IsDumpSeverInited(session_id)) {
+    if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
+      GE_IF_BOOL_EXEC(AdxDataDumpServerInit() != kDumpStatus,
+                      GELOGE(PARAM_INVALID, "[Init][AdxDataDumpServer] failed, session_id:%lu.", session_id);
+                      return PARAM_INVALID)
+      GELOGI("Init adx data dump server success");
+      session_id_to_dump_server_init_flag_[session_id] = true;
+    }
+  }
+  DumpManager::GetInstance().AddDumpProperties(session_id, dump_properties);
+  return SUCCESS;
+}
+
+Status ModelManager::InitDumPropertiesWithNewSessionId(uint64_t session_id) {
+  DumpProperties dump_properties;
+  dump_properties.InitByOptions();
+  GE_CHK_STATUS_RET(AddDumpProperties(session_id, dump_properties), "[Add][DumpProperties] failed.");
+  return SUCCESS;
+}
+
+Status ModelManager::UpdateSessionId(uint32_t model_id, GeModelPtr ge_model,
+                                     std::shared_ptr<DavinciModel> &davinci_model, uint64_t &session_id) {
+  uint64_t new_session_id;
+  Status ret = GenSessionId(new_session_id);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
+  ret = davinci_model->UpdateSessionId(new_session_id);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
+  ge_model->InsertSessionMap(model_id, new_session_id);
+  GELOGD("Update new session id: %lu.", new_session_id);
+  session_id = new_session_id;
+  return SUCCESS;
+}
+
+bool ModelManager::HasVarNode(ComputeGraphPtr &compute_graph) const {
+  for (ge::NodePtr &node : compute_graph->GetAllNodes()) {
+    if (node == nullptr) {
+      continue;
+    }
+    if (node->GetType() == VARIABLE) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ///
 /// @ingroup domi_ome
 /// @brief load model online
@@ -347,10 +401,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   davinci_model->SetId(model_id);
   davinci_model->SetDeviceId(GetContext().DeviceId());
 
-  const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(GetContext().SessionId());
-  davinci_model->SetDumpProperties(dump_properties);
-  dump_properties_ = dump_properties;
-
   auto root_graph = ge_root_model->GetRootGraph();
   GE_CHECK_NOTNULL(root_graph);
   string root_model_name = root_graph->GetName();
@@ -364,15 +414,23 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
     /// These session_ids come from the same model, so the values of session_id are the same.
     /// Update session_id for infer in load model to avoid the same session_id.
-    if (!ge_root_model->GetTrainFlag()) {
-      uint64_t new_session_id;
-      ret = GenSessionId(new_session_id);
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
-      ret = davinci_model->UpdateSessionId(new_session_id);
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
-      ge_model->InsertSessionMap(model_id, new_session_id);
-      GELOGD("Update new session id: %lu.", new_session_id);
+    uint64_t session_id = GetContext().SessionId();
+    // Inference graph with variable node is not support for multi-threads scenario
+    if (!ge_root_model->GetTrainFlag() && !HasVarNode(root_graph)) {
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(UpdateSessionId(model_id, ge_model, davinci_model, session_id) != SUCCESS,
+                                     return ret,
+                                     "UpdateSessionId failed.");
+      GE_CHK_RT_RET(rtSetDevice(GetContext().DeviceId()));
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(InitDumPropertiesWithNewSessionId(session_id) != SUCCESS,
+                                     GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
+                                     return ret,
+                                     "Init DumProperties with new session_id failed.");
     }
+
+    const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(session_id);
+    davinci_model->SetDumpProperties(dump_properties);
+    dump_properties_ = dump_properties;
+
     GE_TIMESTAMP_START(Init);
     GE_IF_BOOL_EXEC(SUCCESS != (ret = davinci_model->Init()), GELOGW("DavinciInit failed."); break;);
     GE_TIMESTAMP_END(Init, "GraphLoader::ModelInit");

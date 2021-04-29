@@ -252,8 +252,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string CurrentTimeInStr() 
   std::time_t now = std::time(nullptr);
   std::tm *ptm = std::localtime(&now);
   if (ptm == nullptr) {
-    GELOGE(ge::FAILED, "[Check][Param]Localtime incorrect");
-    REPORT_CALL_ERROR("E19999", "Localtime incorrect");
+    GELOGE(ge::FAILED, "[Check][Param]Localtime incorrect, errmsg %s", strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Localtime incorrect, errmsg", strerror(errno));
     return "";
   }
 
@@ -532,8 +532,8 @@ FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
   // Normalize the path
   std::string resolved_file_path = RealPath(file_path);
   if (resolved_file_path.empty()) {
-    GELOGE(PARAM_INVALID, "[Check][Param]Invalid input file path %s", file_path);
-    REPORT_CALL_ERROR("E19999", "Invalid input file path %s", file_path);
+    GELOGE(PARAM_INVALID, "[Check][Param]Invalid input file path %s, errmsg %s", file_path, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Invalid input file path %s, errmsg %s", file_path, strerror(errno));
     return false;
   }
 

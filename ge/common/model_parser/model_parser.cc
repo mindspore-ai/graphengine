@@ -31,10 +31,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
                                                                                       ge::ModelData &model_data) {
   std::string real_path = RealPath(model_path);
   if (real_path.empty()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "Model file path '%s' is invalid", model_path);
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "[Check][Param]Model file path %s is invalid",
            model_path);
-    REPORT_INNER_ERROR("E19999", "Model file path %s is invalid", model_path);
+    REPORT_CALL_ERROR("E19999", "Model file path %s is invalid", model_path);
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
@@ -117,7 +116,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
     GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param]Invalid, model encrypt type not supported");
-    REPORT_CALL_ERROR("E19999","Invalid model ,encrypt type not supported");
+    REPORT_CALL_ERROR("E19999","Invalid model, encrypt type not supported");
     res = ACL_ERROR_GE_PARAM_INVALID;
   }
 

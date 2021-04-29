@@ -78,8 +78,8 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
 
   status = plugin_mgr_.InvokeAll<std::map<std::string, DNNEnginePtr> &>(so_api_func, engines_map_);
   if (status != SUCCESS) {
-    GELOGE(status, "[Get][DNNEngineObjs]Failed");
-    REPORT_CALL_ERROR("E19999", "Get DNNEngineObjs failed");
+    GELOGE(status, "[Get][DNNEngineObjs]Failed, so_api_func %s", so_api_fun.c_str());
+    REPORT_CALL_ERROR("E19999", "Get DNNEngineObjs failed, so_api_func %s", so_api_func.c_str());
     return status;
   }
 
@@ -109,7 +109,7 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
       if ((attrs.mem_type.size()) != 1 || (attrs.mem_type[0] != GE_ENGINE_ATTR_MEM_TYPE_HBM)) {
         GELOGE(GE_ENG_MEMTYPE_ERROR, "[Check][Param]Engine %s in aicore, but the memory type is "
                "not HBM, mem_type_size %lu", (iter->first).c_str(), attrs.mem_type.size());
-        REPORT_CALL_ERROR("E19999", "Engine %s in aicore, but the memory type is not HBM, "
+        REPORT_INNER_ERROR("E19999", "Engine %s in aicore, but the memory type is not HBM, "
                           "mem_type_size %lu", (iter->first).c_str(), attrs.mem_type.size());
         return GE_ENG_MEMTYPE_ERROR;
       }
@@ -119,14 +119,12 @@ Status DNNEngineManager::Initialize(const std::map<std::string, std::string> &op
   status = ParserJsonFile();
   if (status != SUCCESS) {
     GELOGE(status, "[Parse][JsonFile]Failed");
-    REPORT_CALL_ERROR("E19999", "Parse json file failed");
     return status;
   }
 
   status = CheckJsonFile();
   if (status != SUCCESS) {
     GELOGE(status, "[Check][JsonFile]Failed");
-    REPORT_CALL_ERROR("E19999", "Check json file failed");
     return status;
   }
 
@@ -198,8 +196,8 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
   // Use the OpsKernelManager in GELib to get the opInfos for this opCode
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][DNNEngineName]Failed, instance_ptr is null");
-    REPORT_CALL_ERROR("E19999", "Get DNNEngineName failed, instance_ptr is null");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][DNNEngineName]Failed, gelib not init before");
+    REPORT_INNER_ERROR("E19999", "Get DNNEngineName failed, gelib not init before");
     return "";
   }
   OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
@@ -274,7 +272,7 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
     reason += it.first + ":" + it.second + ";";
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E13002", {"optype", "opskernel", "reason"}, {op_desc->GetType(), it.first, it.second});
-    GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Concat][UnsupportedReasons]Op type %s of ops kernel %s "
+    GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Check][OpSupported]Op type %s of ops kernel %s "
            "is unsupported, reason %s",
            op_desc->GetType().c_str(), it.first.c_str(), it.second.c_str());
   }
@@ -305,7 +303,7 @@ std::string DNNEngineManager::GetHostCpuEngineName(const std::vector<OpInfo> &op
   }
   GELOGE(FAILED, "[Get][HostCpuEngineName]Failed, HostCpuEngine not support [%s, %s]",
          op_desc->GetName().c_str(), op_desc->GetType().c_str());
-  REPORT_CALL_ERROR("E19999", "Get HostCpuEngineName failed, HostCpuEngine not support [%s, %s]",
+  REPORT_INNER_ERROR("E19999", "Get HostCpuEngineName failed, HostCpuEngine not support [%s, %s]",
                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return "";
 }
@@ -333,15 +331,15 @@ Status DNNEngineManager::ParserJsonFile() {
   try {
     nlohmann::json scheduler_utils_json = scheduler_json_file[kSchedulerUnits];
     if (scheduler_utils_json.is_null()) {
-      GELOGE(FAILED, "[Check[Param]Find scheduler units failed, the message is null");
-      REPORT_CALL_ERROR("E19999", "Find scheduler units failed, the message is null");
+      GELOGE(FAILED, "[Check[Param]Find scheduler units failed, the message is null, file %s", path.c_str());
+      REPORT_INNER_ERROR("E19999", "Find scheduler units failed, the message is null, file %s", path.c_str());
       return FAILED;
     }
     if (!scheduler_utils_json.is_array()) {
       GELOGE(FAILED, "[Check][Param]The message of kSchedulerUnits is not array and "
-             "the file path is %s", json_file_path.c_str());
-      REPORT_CALL_ERROR("E19999", "The message of kSchedulerUnits is not array and "
-                        "the file path is %s", json_file_path.c_str());
+             "the file path is %s", path.c_str());
+      REPORT_INNER_ERROR("E19999", "The message of kSchedulerUnits is not array and "
+                        "the file path is %s", path.c_str());
       return FAILED;
     }
     auto size = scheduler_json_file[kSchedulerUnits].size();
@@ -350,16 +348,16 @@ Status DNNEngineManager::ParserJsonFile() {
       std::map<std::string, EngineConfPtr> engine_conf_map;
       nlohmann::json engines_json_map = scheduler_utils_json[i][kCalEngines];
       if (engines_json_map.is_null()) {
-        GELOGE(FAILED, "[Check][Param]The message of cal_engines is null");
-        REPORT_CALL_ERROR("E19999", "The message of cal_engines is null");
+        GELOGE(FAILED, "[Check][Param]The message of cal_engines is null, file %s", path.c_str());
+        REPORT_INNER_ERROR("E19999", "The message of cal_engines is null, file %s", path.c_str());
         return FAILED;
       }
       std::string scheduler_id_temp = scheduler_utils_json[i][kId];
       if (!scheduler_id_temp.empty()) {
         scheduler_conf.id = scheduler_id_temp;
       } else {
-        GELOGE(FAILED, "[Check][Param]Scheduler ID is null");
-        REPORT_CALL_ERROR("E19999", "Scheduler ID is null");
+        GELOGE(FAILED, "[Check][Param]Scheduler ID is null, file %s", path.c_str());
+        REPORT_INNER_ERROR("E19999", "Scheduler ID is null, file %s", path.c_str());
         return FAILED;
       }
       status = ParserEngineMessage(engines_json_map, scheduler_id_temp, engine_conf_map);
@@ -376,15 +374,15 @@ Status DNNEngineManager::ParserJsonFile() {
       if (it != schedulers_.end()) {
         GELOGE(FAILED, "[Check][Param]There are the same scheduler ts %s in the json file",
                scheduler_id_temp.c_str());
-        REPORT_CALL_ERROR("E19999", "[Check][Param]There are the same scheduler ts %s "
+        REPORT_INNER_ERROR("E19999", "[Check][Param]There are the same scheduler ts %s "
                           "in the json file", scheduler_id_temp.c_str());
         return FAILED;
       }
       schedulers_.emplace(scheduler_id_temp, scheduler_conf);
     }
   } catch (const nlohmann::detail::type_error &e) {
-    GELOGE(FAILED, "[Parse][JsonFile]Failed, reason %s", e.what());
-    REPORT_CALL_ERROR("E19999", "Parse json file failed, reason %s", e.what());
+    GELOGE(FAILED, "[Parse][JsonFile]Failed, file %s, reason %s", path.c_str(), e.what());
+    REPORT_CALL_ERROR("E19999", "Parse json file %s failed, reason %s", path.c_str(), e.what());
     return FAILED;
   }
 
@@ -413,7 +411,7 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
           engine_conf_ptr->id = engine_id;
         } else {
           GELOGE(FAILED, "[Check][Param]Engine ID is null");
-          REPORT_CALL_ERROR("E19999", "Engine ID is null");
+          REPORT_INNER_ERROR("E19999", "Engine ID is null");
           return FAILED;
         }
         if (engines_elems.find(kName) != engines_elems.end()) {
@@ -437,7 +435,7 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
         if (it != engines.end()) {
           GELOGE(FAILED, "[Check][Param]There are the same engine %s message in the json file",
                  engine_id.c_str());
-          REPORT_CALL_ERROR("E19999", "There are the same engine %s message in the json file",
+          REPORT_INNER_ERROR("E19999", "There are the same engine %s message in the json file",
                             engine_id.c_str());
           return FAILED;
         }
@@ -445,12 +443,12 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
       }
     } else {
       GELOGE(FAILED, "[Check][Param]The message of cal_engines is not array in the json file");
-      REPORT_CALL_ERROR("E19999", "The message of cal_engines is not array in the json file");
+      REPORT_INNER_ERROR("E19999", "The message of cal_engines is not array in the json file");
       return FAILED;
     }
   } catch (const json::exception &e) {
     GELOGE(FAILED, "[Construct][JsonContent]Failed, reason %s", e.what());
-    REPORT_CALL_ERROR("E19999", "Construct json content failed, reason %s", e.what());
+    REPORT_INNER_ERROR("E19999", "Construct json content failed, reason %s", e.what());
     return FAILED;
   }
   GELOGI("Parser engine massage success");
@@ -460,8 +458,8 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
 Status DNNEngineManager::ReadJsonFile(const std::string &file_path, JsonHandle handle) {
   GELOGD("Begin to read json file");
   if (file_path.empty()) {
-    GELOGE(FAILED, "[Check][Param]Json path %s is invalid", file_path.c_str());
-    REPORT_CALL_ERROR("E19999", "Json path %s is invalid", file_path.c_str());
+    GELOGE(FAILED, "[Check][Param]Json path is invalid");
+    REPORT_INNER_ERROR("E19999", "Json path is invalid");
     return FAILED;
   }
   nlohmann::json *json_file = reinterpret_cast<nlohmann::json *>(handle);

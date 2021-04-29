@@ -30,6 +30,9 @@ class InferShapePass : public BaseNodePass {
   /// @author
   ///
   Status Run(ge::NodePtr &node) override;
+
+ private:
+  Status RePassLoopNode(const NodePtr &node);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_INFERSHAPE_PASS_H_

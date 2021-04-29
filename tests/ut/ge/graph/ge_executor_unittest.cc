@@ -115,7 +115,7 @@ TEST_F(UtestGeExecutor, load_data_from_file) {
 
   string test_smap = "/tmp/" + std::to_string(getpid()) + "_maps";
   string self_smap = "/proc/" + std::to_string(getpid()) + "/maps";
-  string copy_smap = "cp " + self_smap + " " + test_smap;
+  string copy_smap = "cp -f " + self_smap + " " + test_smap;
   EXPECT_EQ(system(copy_smap.c_str()), 0);
 
   ModelData model_data;

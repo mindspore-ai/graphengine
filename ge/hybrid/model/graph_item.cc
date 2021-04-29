@@ -43,6 +43,27 @@ const vector<NodeItem *> &GraphItem::GetAllNodes(int group) const {
   return grouped_node_items_[group];
 }
 
+const vector<NodeItem *> &GraphItem::GetRootNodes(int group) const {
+  if (group == -1) {
+    return root_items_;
+  }
+
+  if (static_cast<uint32_t>(group) >= grouped_root_items_.size()) {
+    static vector<NodeItem *> empty_nodes;
+    return empty_nodes;
+  }
+
+  return grouped_root_items_[group];
+}
+
+size_t GraphItem::GetNodeSize(int group) const {
+  if (group == -1) {
+    return node_items_.size();
+  }
+
+  return (static_cast<uint32_t>(group) < grouped_node_items_.size()) ? grouped_node_items_[group].size() : 0;
+}
+
 const vector<const NodeItem *> &GraphItem::GetInputNodes() const {
   return input_nodes_;
 }
@@ -88,10 +109,12 @@ const vector<std::pair<const NodeItem *, int>> &GraphItem::GetOutputEdges() cons
   return output_edges_;
 }
 
-Status GraphItem::GroupNodes() {
+Status GraphItem::GroupNodes(const std::vector<NodeItem *> &node_items,
+                             std::vector<std::vector<NodeItem *>> &grouped_node_items) const {
+  int curr_group = 0;
   int last_group = INT32_MIN;
   std::set<int> seen_groups;
-  for (auto node : node_items_) {
+  for (auto node : node_items) {
     int group = node->group;
     if (group != last_group) {
       if (seen_groups.find(group) != seen_groups.end()) {
@@ -101,14 +124,22 @@ Status GraphItem::GroupNodes() {
       } else {
         last_group = group;
         seen_groups.insert(group);
-        grouped_node_items_.emplace_back(std::vector<NodeItem *>());
+        curr_group = static_cast<int>(grouped_node_items.size());
+        grouped_node_items.emplace_back(std::vector<NodeItem *>());
       }
     }
 
-    GELOGD("Adding node [%s] to group %d", node->NodeName().c_str(), group);
-    grouped_node_items_.back().emplace_back(node);
+    node->group = curr_group;
+    GELOGD("Adding node [%s] to group %d", node->NodeName().c_str(), node->group);
+    grouped_node_items.back().emplace_back(node);
   }
 
+  return SUCCESS;
+}
+
+Status GraphItem::GroupNodes() {
+  GE_CHK_STATUS_RET_NOLOG(GroupNodes(node_items_, grouped_node_items_));
+  GE_CHK_STATUS_RET_NOLOG(GroupNodes(root_items_, grouped_root_items_));
   return SUCCESS;
 }
 }  // namespace hybrid

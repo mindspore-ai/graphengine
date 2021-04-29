@@ -178,7 +178,9 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
   known_shape_task_context_ = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
   GE_CHECK_NOTNULL(known_shape_task_context_);
 
-  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_),
+  std::function<void()> callback;
+  GE_CHK_STATUS_RET_NOLOG(InitCallback(node_state.get(), callback));
+  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_, callback),
                         "[%s] Failed to execute node [%s] for known subgraph.",
                         graph_item_->GetName().c_str(),
                         known_shape_task_context_->GetNodeName());
@@ -206,76 +208,260 @@ Status SubgraphExecutor::ExecuteAsync(TaskContext &task_context) {
   return SUCCESS;
 }
 
+BlockingQueue<const NodeItem *> &SubgraphExecutor::GetPrepareQueue(int group) {
+  std::lock_guard<std::mutex> lk(mu_);
+  return prepare_queues_[group];
+}
+
+Status SubgraphExecutor::NodeEnqueue(NodeState *node_state) {
+  if (!ready_queue_.Push(node_state)) {
+    if (context_->is_eos_) {
+      GELOGD("Got end of sequence");
+      return SUCCESS;
+    }
+    GELOGE(INTERNAL_ERROR, "[Check][State][%s] Error occurs while launching tasks. quit from preparing nodes.",
+           graph_item_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] Error occurs while launching tasks. quit from preparing nodes.",
+                       graph_item_->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  GELOGD("[%s] Push node [%s] to queue.", graph_item_->GetName().c_str(), node_state->GetName().c_str());
+  return SUCCESS;
+}
+
+Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
+  GELOGD("[%s] Start to prepare node [%s].", graph_item_->GetName().c_str(), node_item.NodeName().c_str());
+  // for while op
+  if (force_infer_shape_ && !node_item.is_dynamic) {
+    GELOGD("[%s] Force infer shape is set, updating node to dynamic.", node_item.NodeName().c_str());
+    auto &mutable_node_item = const_cast<NodeItem &>(node_item);
+    mutable_node_item.SetToDynamic();
+  }
+
+  auto node_state = subgraph_context_->GetOrCreateNodeState(&node_item);
+  GE_CHECK_NOTNULL(node_state);
+  node_state->ResetContext(group);
+  auto p_node_state = node_state.get();
+
+  if (node_item.node_type == NETOUTPUT) {
+    GE_CHK_STATUS_RET_NOLOG(NodeEnqueue(p_node_state));
+    return AfterPrepared(p_node_state);
+  }
+
+  // only do shape inference and compilation for nodes with dynamic shapes.
+  if (node_item.is_dynamic) {
+    auto prepare_future = pre_run_pool_.commit([this, p_node_state]() -> Status {
+      GetContext().SetSessionId(context_->session_id);
+      GetContext().SetContextId(context_->context_id);
+      GE_CHK_STATUS_RET_NOLOG(InferShape(shape_inference_engine_.get(), *p_node_state));
+      GE_CHK_STATUS_RET_NOLOG(PrepareForExecution(context_, *p_node_state));
+      return AfterPrepared(p_node_state);
+    });
+
+    p_node_state->SetPrepareFuture(std::move(prepare_future));
+    return NodeEnqueue(p_node_state);
+  } else {
+    GELOGD("[%s] Skipping shape inference and compilation for node with static shape.",
+           node_item.NodeName().c_str());
+    if (node_item.kernel_task == nullptr) {
+      GELOGW("[%s] Node of static shape got no task.", node_item.NodeName().c_str());
+      GE_CHK_STATUS_RET(TaskCompileEngine::Compile(*p_node_state, context_),
+                        "[Invoke][Compile] failed for [%s].", p_node_state->GetName().c_str());
+    } else {
+      node_state->SetKernelTask(node_item.kernel_task);
+    }
+    auto unique_task_context = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
+    GE_CHECK_NOTNULL(unique_task_context);
+    const auto &task = node_state->GetKernelTask();
+    if (task == nullptr) {
+      GELOGE(INTERNAL_ERROR, "[Get][KernelTask] failed for[%s], NodeTask is null.", node_state->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "GetKernelTask failed for %s, nodetask is null.", node_state->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
+    node_state->SetTaskContext(shared_task_context);
+    GE_CHK_STATUS_RET_NOLOG(NodeEnqueue(p_node_state));
+    return AfterPrepared(p_node_state);
+  }
+}
+
 Status SubgraphExecutor::PrepareNodes(int group) {
-  GELOGD("[%s] Start to prepare nodes. group = %d",
-         graph_item_->GetName().c_str(),
-         group);
-  auto &all_nodes = graph_item_->GetAllNodes(group);
-  for (auto all_node : all_nodes) {
-    auto &node_item = *all_node;
-    // for while op
-    if (force_infer_shape_ && !node_item.is_dynamic) {
-      GELOGD("[%s] Force infer shape is set, updating node to dynamic.", node_item.NodeName().c_str());
-      auto &mutable_node_item = const_cast<NodeItem &>(node_item);
-      mutable_node_item.SetToDynamic();
+  const size_t node_size = graph_item_->GetNodeSize(group);
+  GELOGD("[%s] Start to prepare nodes. group = %d, size = %zu", graph_item_->GetName().c_str(), group, node_size);
+  if (!graph_item_->HasCtrlFlowOp()) {
+    for (const auto &node_item : graph_item_->GetAllNodes(group)) {
+      RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] Start");
+      GE_CHK_STATUS_RET(PrepareNode(*node_item, group), "[%s] failed to prepare task.", node_item->NodeName().c_str());
+      RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] End");
     }
 
-    GELOGD("[%s] Start to prepare node [%s].", graph_item_->GetName().c_str(), node_item.NodeName().c_str());
-    auto node_state = subgraph_context_->GetOrCreateNodeState(&node_item);
-    GE_CHECK_NOTNULL(node_state);
-    auto p_node_state = node_state.get();
+    GELOGD("[%s] Done preparing nodes successfully.", graph_item_->GetName().c_str());
+    return SUCCESS;
+  }
 
-    if (node_item.node_type != NETOUTPUT) {
-      // only do shape inference and compilation for nodes with dynamic shapes.
-      if (node_item.is_dynamic) {
-        auto prepare_future = pre_run_pool_.commit([this, p_node_state]() -> Status {
-          GetContext().SetSessionId(context_->session_id);
-          GetContext().SetContextId(context_->context_id);
-          GE_CHK_STATUS_RET_NOLOG(InferShape(shape_inference_engine_.get(), *p_node_state));
-          return PrepareForExecution(context_, *p_node_state);
-        });
+  // Initialize the ready queue
+  size_t node_count = 0;
+  bool node_complete = false;
+  for (const auto &node_item : graph_item_->GetRootNodes(group)) {
+    RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] Start");
+    GE_CHK_STATUS_RET(PrepareNode(*node_item, group), "[%s] failed to prepare task.", node_item->NodeName().c_str());
+    RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] End");
+    node_complete = node_item->NodeType() == NETOUTPUT;
+    node_count++;
+  }
 
-        p_node_state->SetPrepareFuture(std::move(prepare_future));
-      } else {
-        GELOGD("[%s] Skipping shape inference and compilation for node with static shape.",
-               node_item.NodeName().c_str());
-        if (node_item.kernel_task == nullptr) {
-          GELOGW("[%s] Node of static shape got no task.", node_item.NodeName().c_str());
-          GE_CHK_STATUS_RET(TaskCompileEngine::Compile(*p_node_state, context_),
-                            "[Invoke][Compile] failed for [%s].", p_node_state->GetName().c_str());
-        } else {
-          node_state->SetKernelTask(node_item.kernel_task);
-        }
-        auto unique_task_context =
-            TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
-        GE_CHECK_NOTNULL(unique_task_context);
-        const auto &task = node_state->GetKernelTask();
-        if (task == nullptr) {
-          GELOGE(INTERNAL_ERROR, "[Get][KernelTask] failed for[%s], NodeTask is null.", node_state->GetName().c_str());
-          REPORT_CALL_ERROR("E19999", "GetKernelTask failed for %s, nodetask is null.", node_state->GetName().c_str());
-          return INTERNAL_ERROR;
-        }
-        auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-        node_state->SetTaskContext(shared_task_context);
-      }
-    }
-
-    if (!ready_queue_.Push(p_node_state)) {
+  GELOGD("[%s] Done preparing root nodes.", graph_item_->GetName().c_str());
+  BlockingQueue<const NodeItem *> &prepare_queue = GetPrepareQueue(group);
+  while (((group != -1) && (node_count < node_size)) || ((group == -1) && !node_complete)) {
+    const NodeItem *node_item = nullptr;
+    if (!prepare_queue.Pop(node_item)) {
       if (context_->is_eos_) {
-        GELOGD("Got end of sequence");
+        GELOGD("[%s] Got end of sequence.", graph_item_->GetName().c_str());
+        break;
+      }
+      if (context_->GetStatus() != SUCCESS) {
+        GELOGD("[%s] Graph execution Got failed.", graph_item_->GetName().c_str());
         return SUCCESS;
       }
-      GELOGE(INTERNAL_ERROR, "[Check][State][%s] Error occurs while launching tasks. quit from preparing nodes.",
-             graph_item_->GetName().c_str());
-      REPORT_INNER_ERROR("E19999", "[%s] Error occurs while launching tasks. quit from preparing nodes.",
-                         graph_item_->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[%s] failed to pop node.", graph_item_->GetName().c_str());
       return INTERNAL_ERROR;
     }
 
-    GELOGD("[%s] Push node [%s] to queue.", graph_item_->GetName().c_str(), node_item.NodeName().c_str());
+    if (node_item == nullptr) {
+      GELOGD("[%s] Got EOF from queue.", graph_item_->GetName().c_str());
+      break;
+    }
+
+    RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] Start");
+    GE_CHK_STATUS_RET(PrepareNode(*node_item, group), "[%s] failed to prepare task.", node_item->NodeName().c_str());
+    RECORD_EXECUTION_EVENT(context_, node_item->NodeName().c_str(), "[PrepareNode] End");
+    node_complete = node_item->NodeType() == NETOUTPUT;
+    node_count++;
   }
 
   GELOGD("[%s] Done preparing nodes successfully.", graph_item_->GetName().c_str());
+  return SUCCESS;
+}
+
+Status SubgraphExecutor::NodeScheduled(NodeState *node_state) {
+  GELOGD("Graph[%s] After [%s] scheduled, data size: %zu, ctrl size: %zu, switch index: %d, merge index: %d",
+         graph_item_->GetName().c_str(), node_state->GetName().c_str(),
+         node_state->GetNodeItem()->data_send_.size(), node_state->GetNodeItem()->ctrl_send_.size(),
+         node_state->GetSwitchIndex(), node_state->GetMergeIndex());
+
+  auto future = pre_run_pool_.commit([this, node_state]() -> Status {
+    RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] Start");
+    std::function<void(const NodeItem *)> callback = [&](const NodeItem *node_item) {
+      const auto &node_name = node_item->node_name;
+      int group = (node_state->GetGroup() != -1) ? node_item->group : -1;
+      GELOGI("After [%s] scheduled, [%s] is ready for prepare.", node_state->GetName().c_str(), node_name.c_str());
+      BlockingQueue<const NodeItem *> &prepare_queue = GetPrepareQueue(group);
+      if (!prepare_queue.Push(node_item)) {
+        if (!context_->is_eos_) {
+          GELOGE(INTERNAL_ERROR, "[Check][State][%s] error occurs when push to queue.", graph_item_->GetName().c_str());
+          REPORT_INNER_ERROR("E19999", "[%s] error occurs when push to queue.", graph_item_->GetName().c_str());
+        }
+      }
+    };
+
+    GE_CHK_STATUS_RET_NOLOG(node_state->NodeScheduled(callback));
+    node_state->ResetSchedule();
+    RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] End");
+    return SUCCESS;
+  });
+
+  node_state->SetScheduleFuture(std::move(future));
+  if (schedule_queue_.Push(node_state)) {
+    return SUCCESS;
+  }
+
+  if (context_->is_eos_) {
+    GELOGD("[%s] Got end of sequence", graph_item_->GetName().c_str());
+    return SUCCESS;
+  }
+
+  GELOGE(INTERNAL_ERROR, "[Check][State][%s] error occurs when push to queue.", graph_item_->GetName().c_str());
+  REPORT_INNER_ERROR("E19999", "[%s] error occurs when push to queue.", graph_item_->GetName().c_str());
+  return INTERNAL_ERROR;
+}
+
+Status SubgraphExecutor::AfterPrepared(NodeState *node_state) {
+  if (!graph_item_->HasCtrlFlowOp()) {
+    return SUCCESS;
+  }
+  if (node_state->IsShapeDependence()) {
+    return SUCCESS;
+  }
+
+  // Not control flow node, propagate state.
+  return NodeScheduled(node_state);
+}
+
+void SubgraphExecutor::AfterExecuted(NodeState *node_state) {
+  if (!node_state->IsShapeDependence()) {
+    return;
+  }
+
+  // For control flow node, propagate state.
+  auto error = NodeScheduled(node_state);
+  if (error != SUCCESS) {
+    auto task_context = node_state->GetTaskContext();
+    task_context->OnError(error);
+  }
+}
+
+void SubgraphExecutor::OnNodeDone(NodeState *node_state) {
+  auto task_context = node_state->GetTaskContext();
+  NodeDoneCallback cb(context_, task_context);
+  auto error = cb.OnNodeDone();
+  if (error != SUCCESS) {
+    task_context->OnError(error);
+  }
+
+  if (node_state->IsShapeDependence() && graph_item_->HasCtrlFlowOp()) {
+    AfterExecuted(node_state);
+  }
+}
+
+Status SubgraphExecutor::InitCallback(NodeState *node_state, std::function<void()> &callback) {
+  auto task_context = node_state->GetTaskContext();
+  GE_CHECK_NOTNULL(task_context);
+  if (task_context->NeedCallback()) {
+    callback = std::bind(&SubgraphExecutor::OnNodeDone, this, node_state);
+  } else if (node_state->IsShapeDependence() && graph_item_->HasCtrlFlowOp()) {
+    callback = std::bind(&SubgraphExecutor::AfterExecuted, this, node_state);
+  }
+
+  return SUCCESS;
+}
+
+Status SubgraphExecutor::ScheduleNodes() {
+  GELOGD("[%s] Start to schedule nodes.", graph_item_->GetName().c_str());
+  while (true) {
+    NodeState *node_state = nullptr;
+    if (!schedule_queue_.Pop(node_state)) {
+      if (context_->is_eos_) {
+        GELOGD("[%s] Got end of sequence.", graph_item_->GetName().c_str());
+        break;
+      }
+      if (context_->GetStatus() != SUCCESS) {
+        GELOGD("[%s] Graph execution Got failed.", graph_item_->GetName().c_str());
+        return SUCCESS;
+      }
+      GELOGE(INTERNAL_ERROR, "[%s] failed to pop node.", graph_item_->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    if (node_state == nullptr) {
+      GELOGD("[%s] Got EOF from queue.", graph_item_->GetName().c_str());
+      break;
+    }
+
+    GE_CHK_STATUS_RET_NOLOG(node_state->WaitForScheduleDone());
+  }
+
+  GELOGD("[%s] Done schedule nodes successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
 }
 
@@ -341,7 +527,10 @@ Status SubgraphExecutor::LaunchTasks() {
     auto shared_task_context = node_state->GetTaskContext();
     GE_CHECK_NOTNULL(shared_task_context);
     shared_task_context->SetForceInferShape(force_infer_shape_);
-    HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, shared_task_context, *context_),
+
+    std::function<void()> callback;
+    GE_CHK_STATUS_RET_NOLOG(InitCallback(node_state, callback));
+    HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, shared_task_context, *context_, callback),
                           "[Invoke][ExecuteAsync] failed for [%s].", node_state->GetName().c_str());
     GELOGD("[%s] Done executing node successfully.", node_state->GetName().c_str());
   }
@@ -354,7 +543,15 @@ Status SubgraphExecutor::ScheduleTasks(int group) {
     GetContext().SetContextId(context_->context_id);
     auto ret = PrepareNodes(group);
     ready_queue_.Push(nullptr);
+    schedule_queue_.Push(nullptr);
+    for (auto &item : prepare_queues_) {
+      item.second.Push(nullptr);
+    }
     return ret;
+  });
+
+  auto schedule_future = std::async(std::launch::async, [&]() -> Status {
+    return ScheduleNodes();
   });
 
   GELOGD("[%s] Start to execute subgraph.", graph_item_->GetName().c_str());
@@ -363,11 +560,19 @@ Status SubgraphExecutor::ScheduleTasks(int group) {
     subgraph_context_->OnError(ret);
     context_->SetErrorCode(ret);
     ready_queue_.Stop();
+    schedule_queue_.Stop();
+    for (auto &item : prepare_queues_) {
+      item.second.Stop();
+    }
     prepare_future.wait();
+    schedule_future.wait();
     return ret;
   }
 
   GE_CHK_STATUS_RET(prepare_future.get(), "[Invoke][get] [%s] Error occurred in task preparation.",
+                    graph_item_->GetName().c_str());
+
+  GE_CHK_STATUS_RET(schedule_future.get(), "[Invoke][get] [%s] Error occurred in task preparation.",
                     graph_item_->GetName().c_str());
 
   GELOGD("[%s] Done launching all tasks successfully.", graph_item_->GetName().c_str());

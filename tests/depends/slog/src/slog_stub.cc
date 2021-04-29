@@ -15,6 +15,7 @@
  */
 
 #include "toolchain/slog.h"
+#include "toolchain/plog.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -46,3 +47,22 @@ int CheckLogLevel(int moduleId, int logLevel)
 {
   return 1;
 }
+
+/**
+ * @ingroup plog
+ * @brief DlogReportInitialize: init log in service process before all device setting.
+ * @return: 0: SUCCEED, others: FAILED
+ */
+int DlogReportInitialize() {
+  return 0;
+}
+
+/**
+ * @ingroup plog
+ * @brief DlogReportFinalize: release log resource in service process after all device reset.
+ * @return: 0: SUCCEED, others: FAILED
+ */
+int DlogReportFinalize() {
+  return 0;
+}
+

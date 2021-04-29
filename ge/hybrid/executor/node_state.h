@@ -20,6 +20,8 @@
 #include <condition_variable>
 #include <future>
 #include <mutex>
+
+#include "common/blocking_queue.h"
 #include "external/ge/ge_api_error_codes.h"
 #include "hybrid/model/node_item.h"
 #include "node_done_manager.h"
@@ -31,6 +33,8 @@ struct GraphExecutionContext;
 class SubgraphContext;
 class TaskContext;
 struct NodeState;
+
+using NodeStatePtr = std::shared_ptr<NodeState>;
 
 class ShapeFuture {
  public:
@@ -47,6 +51,8 @@ class ShapeFuture {
 
 struct ShapeInferenceState {
   explicit ShapeInferenceState(const NodeItem &node_item);
+
+  void InitShapeState();
 
   Status UpdateInputShape(int idx, const GeTensorDesc &tensor_desc);
 
@@ -100,6 +106,43 @@ struct NodeState {
 
   Status UpdateOutputShapes(int index, const GeShape &shape, const GeShape &ori_shape);
 
+  inline bool IsShapeDependence() const {
+    return node_item_->IsControlFlowOp() || node_item_->shape_inference_type >= DEPEND_SHAPE_RANGE;
+  }
+
+  void ResetContext(int group);
+
+  void ResetSchedule();
+
+  Status NodeScheduled(const std::function<void(const NodeItem *)> &ready) const;
+
+  void SetScheduleFuture(std::future<Status> &&future);
+  Status WaitForScheduleDone();
+
+  void SetSwitchIndex(int index) {
+    switch_index_ = index;
+  }
+
+  int GetSwitchIndex() const {
+    return switch_index_;
+  }
+
+  void SetMergeIndex(int index) {
+    merge_index_ = index;
+  }
+
+  int GetMergeIndex() const {
+    return merge_index_;
+  }
+
+  void SetGroup(int group) {
+    group_ = group;
+  }
+
+  int GetGroup() const {
+    return group_;
+  }
+
   const shared_ptr<NodeTask> &GetKernelTask() const {
     return kernel_task_;
   }
@@ -120,6 +163,10 @@ struct NodeState {
   std::shared_ptr<TaskContext> GetTaskContext();
 
  private:
+  bool IsScheduleReady() const;
+  void SetDataSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready);
+  void SetCtrlSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready);
+
   const NodeItem *node_item_ = nullptr;
   std::shared_ptr<NodeTask> kernel_task_ = nullptr;
   std::future<Status> prepare_future_;
@@ -128,9 +175,15 @@ struct NodeState {
   SubgraphContext *subgraph_context_;
   std::shared_ptr<TaskContext> task_context_ = nullptr;
   std::mutex mu_;
-};
 
-using NodeStatePtr = std::shared_ptr<NodeState>;
+  std::future<Status> schedule_future_;
+  uint64_t loop_count_ = 0;
+  uint32_t ctrl_scheduled_ = 0;
+  uint32_t data_scheduled_ = 0;
+  int merge_index_ = -1; // Use for Execute (Reset after Executed).
+  int switch_index_ = -1; // Use for Schedule (Reset after Prepared).
+  int group_ = -1;
+};
 }  // namespace hybrid
 }  // namespace ge
 

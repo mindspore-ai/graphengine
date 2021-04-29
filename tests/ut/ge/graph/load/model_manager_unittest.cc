@@ -418,6 +418,6 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   vector<InputTensorInfo> inputs;
   inputs.emplace_back(input_tensor);
   auto ret = mm.DataInputTensor(model_id,inputs);
-  EXPECT_EQ(UNSUPPORTED, ret);
+  EXPECT_EQ(PARAM_INVALID, ret);    // HybridDavinciModel::impl_ is null.
 }
 }  // namespace ge

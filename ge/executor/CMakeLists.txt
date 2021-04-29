@@ -110,6 +110,8 @@ set(SRC_LIST
     "../hybrid/node_executor/controlop/control_op_executor.cc"
     "../hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
     "../hybrid/node_executor/rts/rts_node_executor.cc"
+    "../hybrid/node_executor/rts/rts_node_task.cc"
+    "../hybrid/node_executor/rts/rts_task_factory.cc"
     "../hybrid/node_executor/node_executor.cc"
     "../hybrid/node_executor/task_context.cc"
     "../hybrid/hybrid_davinci_model.cc"

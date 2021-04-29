@@ -22,18 +22,6 @@
 namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::CONTROL_OP, ControlOpNodeExecutor);
-namespace {
-template<typename T>
-Status CopyScalarValueToHost(const TensorValue &tensor, T &value) {
-  GE_CHECK_GE(tensor.GetSize(), sizeof(value));
-  GE_CHK_RT_RET(rtMemcpy(&value,
-                         sizeof(value),
-                         tensor.GetData(),
-                         sizeof(value),
-                         RT_MEMCPY_DEVICE_TO_HOST));
-  return SUCCESS;
-}
-}
 
 Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph,
                                           TaskContext &task_context,
@@ -60,12 +48,12 @@ Status ControlOpNodeTask::ExecuteSubgraph(const GraphItem *subgraph,
 
 Status ControlOpNodeTask::ToBool(const TensorValue &tensor, DataType data_type, bool &value) {
   switch (data_type) {
-#define CASE(DT, T)                                         \
-  case (DT): {                                              \
-    T val{};                                                \
-    GE_CHK_STATUS_RET(CopyScalarValueToHost(tensor, val));  \
-    value = val != 0;                                       \
-    break;                                                  \
+#define CASE(DT, T)                                       \
+  case (DT): {                                            \
+    T val{};                                              \
+    GE_CHK_STATUS_RET(tensor.CopyScalarValueToHost(val)); \
+    value = val != 0;                                     \
+    break;                                                \
   }
     // DT_STRING was handled in CondPass
     CASE(DT_FLOAT, float)
@@ -77,7 +65,7 @@ Status ControlOpNodeTask::ToBool(const TensorValue &tensor, DataType data_type, 
     CASE(DT_INT64, int64_t)
 #undef CASE
     case DT_BOOL:
-      GE_CHK_STATUS_RET(CopyScalarValueToHost(tensor, value));
+      GE_CHK_STATUS_RET(tensor.CopyScalarValueToHost(value));
       break;
     default:
       GELOGE(UNSUPPORTED, "Data type %s is not support by cond.", TypeUtils::DataTypeToSerialString(data_type).c_str());
@@ -182,7 +170,7 @@ Status CaseOpNodeTask::DoExecuteAsync(TaskContext &task_context, const std::func
   auto branch_tensor = task_context.GetInput(kCaseBranchIndex);
   GE_CHECK_NOTNULL(branch_tensor);
   int32_t branch_index = 0;
-  GE_CHK_STATUS_RET(CopyScalarValueToHost(*branch_tensor, branch_index));
+  GE_CHK_STATUS_RET(branch_tensor->CopyScalarValueToHost(branch_index));
   const GraphItem *subgraph = SelectBranch(branch_index);
   GELOGI("[%s] Taking subgraph [%s] by branch = [%d]",
          task_context.GetNodeName(),

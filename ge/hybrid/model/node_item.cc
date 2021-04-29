@@ -29,8 +29,17 @@ namespace hybrid {
 namespace {
 const char *const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
 const char *const kNodeTypeRetVal = "_RetVal";
-std::set<std::string> kControlOpTypes{
+const std::set<std::string> kControlOpTypes{
     IF, STATELESSIF, CASE, WHILE, STATELESSWHILE
+};
+
+const std::set<std::string> kControlFlowOpTypes{
+    STREAMACTIVE, STREAMSWITCH, STREAMSWITCHN, LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX,
+    NEXTITERATION, REFNEXTITERATION
+};
+
+const std::set<std::string> kMergeOpTypes{
+    MERGE, REFMERGE, STREAMMERGE
 };
 
 Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
@@ -107,7 +116,7 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
 }
 }  // namespace
 
-bool IsControlOp(const std::string &op_type) {
+bool IsControlFlowV2Op(const std::string &op_type) {
   return kControlOpTypes.count(op_type) > 0;
 }
 
@@ -226,7 +235,7 @@ Status NodeItem::ResolveStaticInputsAndOutputs() {
 }
 
 void NodeItem::ResolveUnknownShapeType() {
-  if (IsControlOp() || node_type == PARTITIONEDCALL) {
+  if (IsControlFlowV2Op() || (is_dynamic && node_type == PARTITIONEDCALL)) {
     shape_inference_type = DEPEND_COMPUTE;
   } else {
     int32_t unknown_shape_type_val = 0;
@@ -236,6 +245,10 @@ void NodeItem::ResolveUnknownShapeType() {
 }
 
 Status NodeItem::Init() {
+  is_ctrl_flow_v2_op_ = ge::hybrid::IsControlFlowV2Op(node_type);
+  is_ctrl_flow_op_ = kControlFlowOpTypes.count(node_type) > 0;
+  is_merge_op_ = kMergeOpTypes.count(node_type) > 0;
+  is_root_node_ = node->GetInAllNodes().empty();
   GE_CHK_STATUS_RET_NOLOG(InitInputsAndOutputs());
   GE_CHK_STATUS_RET_NOLOG(ResolveDynamicState());
   ResolveUnknownShapeType();
@@ -244,12 +257,10 @@ Status NodeItem::Init() {
     GE_CHK_STATUS_RET(ParseFusedSubgraph(*this),
                       "[Invoke][ParseFusedSubgraph][%s] Failed to parse fused subgraph", node_name.c_str());
   }
+  copy_mu_ = MakeShared<std::mutex>();
+  GE_CHECK_NOTNULL(copy_mu_);
 
   return SUCCESS;
-}
-
-bool NodeItem::IsControlOp() const {
-  return ge::hybrid::IsControlOp(op_desc->GetType());
 }
 
 bool NodeItem::IsHcclOp() const {
@@ -382,6 +393,46 @@ bool NodeItem::IsInputShapeStatic(int index) const {
   }
 
   return is_input_shape_static_[index];
+}
+
+void NodeItem::SetDataSend(NodeItem *node_item, int anchor_index) {
+  data_send_.emplace(node_item);
+  node_item->data_recv_[this] = anchor_index;
+  if (is_root_node_) {
+    node_item->root_data_.emplace(this);
+  }
+  GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
+}
+
+void NodeItem::SetCtrlSend(NodeItem *node_item, uint32_t switch_index) {
+  if (switch_index < switch_groups_.size()) {
+    std::vector<const NodeItem *> &switch_group = switch_groups_[switch_index];
+    switch_group.emplace_back(node_item);
+  } else {
+    ctrl_send_.insert(node_item);
+  }
+
+  node_item->ctrl_recv_.emplace(this);
+  if (is_root_node_) {
+    node_item->root_ctrl_.emplace(this);
+  }
+
+  GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
+}
+
+OptionalMutexGuard::OptionalMutexGuard(std::mutex *mutex, const string &name) : mu_(mutex), name_(name) {
+  if (mu_ != nullptr) {
+    GELOGD("lock for %s", name_.c_str());
+    mu_->lock();
+  }
+}
+
+OptionalMutexGuard::~OptionalMutexGuard() {
+  if (mu_ != nullptr) {
+    GELOGD("unlock for %s", name_.c_str());
+    mu_->unlock();
+    mu_ = nullptr;
+  }
 }
 }  // namespace hybrid
 }  // namespace ge

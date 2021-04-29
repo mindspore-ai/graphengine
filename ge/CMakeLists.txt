@@ -748,6 +748,7 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include

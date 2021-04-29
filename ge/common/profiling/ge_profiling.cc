@@ -136,7 +136,7 @@ ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func) {
   // Pass MsprofSetDeviceCallback to runtime
   ge::Status rt_ret = rtRegDeviceStateCallback(kRtSetDeviceRegName.c_str(), static_cast<rtDeviceStateCallback>(func));
   if (rt_ret != ge::SUCCESS) {
-    GELOGE(rt_ret, "[Pass][MsprofSetDeviceCallback]To runtime failed, ret 0x%X", ret);
+    GELOGE(rt_ret, "[Pass][MsprofSetDeviceCallback]To runtime failed, ret 0x%X", rt_ret);
     REPORT_CALL_ERROR("E19999", "Pass MsprofSetDeviceCallback to runtime failed, ret 0x%X", rt_ret);
     return rt_ret;
   }

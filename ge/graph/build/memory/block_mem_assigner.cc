@@ -2160,17 +2160,6 @@ void BlockMemAssigner::SetOpMemOffset(bool is_zero_copy) {
   }
 }
 
-size_t BlockMemAssigner::GetAnchorDataOffset(const NodeIndexIO &node_index_io, std::string &symbol) {
-  MemoryBlock *mem_block = nullptr;
-  if (IsSymbolExist(node_index_io, symbol)) {
-    mem_block = symbol_blocks_[symbol];
-    if (mem_block != nullptr) {
-      return mem_block->HeadOffset();
-    }
-  }
-  return kInvalidOffset;
-}
-
 Status BlockMemAssigner::Assign() {
   vector<int64_t> ranges;
   if (GetMemoryRanges(ranges) != SUCCESS) {

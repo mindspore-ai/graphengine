@@ -212,10 +212,6 @@ class GraphMemoryAssigner {
 
   void UpdateCurNodeInputDesc(const NodePtr &cur_node, int64_t cur_node_input_index, int64_t distance);
 
-  size_t GetMemoryOffset(const HybridMemAssignerPtr &mem_assigner,
-                         const NodePtr &peer_out_node,
-                         const OutDataAnchorPtr &peer_out_anchor);
-
   void CheckNeedCalcDistAndUpdateVisitInfo(map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
                                            const size_t matched_mem_offset,
                                            const NodePtr &peer_out_node,

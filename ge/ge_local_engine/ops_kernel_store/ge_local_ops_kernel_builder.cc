@@ -52,7 +52,8 @@ Status GeLocalOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
   GELOGD("[%s] CalcOpRunningParam In.", ge_node.GetName().c_str());
   OpDescPtr op_desc = ge_node.GetOpDesc();
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "CalcOpRunningParam failed, as op desc is null");
+    REPORT_CALL_ERROR("E19999", "param ge_node has no opdesc, check invalid.");
+    GELOGE(FAILED, "[Get][OpDesc] CalcOpRunningParam failed, as op desc is null");
     return FAILED;
   }
 
@@ -97,15 +98,21 @@ Status GeLocalOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
     }
 
     if (graph_status != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Calc op[%s:%s] out[%zu] mem size failed, format=%s, data_type=%s, error=%u.", node_name.c_str(),
-             node_type.c_str(), i, TypeUtils::FormatToSerialString(format).c_str(),
+      REPORT_CALL_ERROR("E19999", "calc op[%s:%s] out[%zu] mem size failed, format=%s, data_type=%s, error=%u.",
+                        node_name.c_str(), node_type.c_str(), i, TypeUtils::FormatToSerialString(format).c_str(),
+                        TypeUtils::DataTypeToSerialString(data_type).c_str(), graph_status);
+      GELOGE(FAILED, "[Calc][MemSize] for op[%s:%s] out[%zu] failed, format=%s, data_type=%s, error=%u.",
+             node_name.c_str(), node_type.c_str(), i, TypeUtils::FormatToSerialString(format).c_str(),
              TypeUtils::DataTypeToSerialString(data_type).c_str(), graph_status);
       return FAILED;
     }
 
     if (output_mem_size < 0) {
-      GELOGE(FAILED,
-             "Calc op[%s:%s] out[%zu] mem size is negative(not support),"
+      REPORT_INNER_ERROR("E19999", "Calc op[%s:%s] out[%zu] mem size is negative(not support),"
+                         " format=%s, data_type=%s, mem_size=%ld.",
+                         node_name.c_str(), node_type.c_str(), i, TypeUtils::FormatToSerialString(format).c_str(),
+                         TypeUtils::DataTypeToSerialString(data_type).c_str(), output_mem_size);
+      GELOGE(FAILED, "[Calc][MemSize] op[%s:%s] out[%zu] mem size is negative(not support),"
              " format=%s, data_type=%s, mem_size=%ld.",
              node_name.c_str(), node_type.c_str(), i, TypeUtils::FormatToSerialString(format).c_str(),
              TypeUtils::DataTypeToSerialString(data_type).c_str(), output_mem_size);
@@ -133,17 +140,20 @@ Status GeLocalOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
 
 Status GeLocalOpsKernelBuilder::CalcConstantStrMemSize(const OpDescPtr &op_desc, int64_t &mem_size) {
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "CalcConstantStrMemSize failed, as op desc is null");
+    REPORT_INNER_ERROR("E19999", "param op_desc is nullptr, check invalid");
+    GELOGE(FAILED, "[Check][Param] CalcConstantStrMemSize failed, as op desc is null");
     return FAILED;
   }
   ConstGeTensorPtr value = MakeShared<const GeTensor>();
   if (value == nullptr) {
-    GELOGE(FAILED, "make shared ConstGeTensor exception.");
+    REPORT_CALL_ERROR("E19999", "make shared ConstGeTensor exception.");
+    GELOGE(FAILED, "[Create][GeTensor] make shared ConstGeTensor exception.");
     return FAILED;
   }
   // Constant op attr name is "value"
   if (!AttrUtils::GetTensor(op_desc, kConstantOpAttrName, value)) {
-    GELOGE(FAILED, "Get Constant op attr value failed");
+    REPORT_CALL_ERROR("E19999", "get op:%s attr value failed", op_desc->GetName().c_str());
+    GELOGE(FAILED, "[Get][Value] of Constant op attr failed");
     return FAILED;
   }
   mem_size = static_cast<int64_t>(value->GetData().size());
@@ -165,13 +175,15 @@ Status GeLocalOpsKernelBuilder::GenerateTask(const Node &node, RunContext &conte
 
   auto op = OpFactory::Instance().CreateOp(node, context);
   if (op == nullptr) {
-    GELOGE(FAILED, "CreateOp for node:%s(%s) failed.", name.c_str(), type.c_str());
+    REPORT_CALL_ERROR("E19999", "create op for node:%s(%s) failed.", name.c_str(), type.c_str());
+    GELOGE(FAILED, "[Create][Op] for node:%s(%s) failed.", name.c_str(), type.c_str());
     return FAILED;
   }
 
   Status ret = op->Run();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Node:%s(%s) op run failed.", name.c_str(), type.c_str());
+    REPORT_CALL_ERROR("E19999", "Node:%s(%s) op run failed.", name.c_str(), type.c_str());
+    GELOGE(ret, "[Call][Run] for Node:%s(%s) op failed.", name.c_str(), type.c_str());
     return ret;
   }
   GELOGD("Ge local generate task for node:%s(%s) end, tasks.size()=%zu.", name.c_str(), type.c_str(), tasks.size());

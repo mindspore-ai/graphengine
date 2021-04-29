@@ -119,8 +119,7 @@ Status NodeExecutorManager::GetExecutor(Node &node, const NodeExecutor **executo
   auto executor_type = ResolveExecutorType(node);
   const auto it = executors_.find(executor_type);
   if (it == executors_.end()) {
-    REPORT_INNER_ERROR("E19999", "Failed to get executor by type: %d.",
-           static_cast<int>(executor_type));
+    REPORT_INNER_ERROR("E19999", "Failed to get executor by type: %d.", static_cast<int>(executor_type));
     GELOGE(INTERNAL_ERROR, "[Check][ExecutorType]Failed to get executor by type: %d.",
            static_cast<int>(executor_type));
     return INTERNAL_ERROR;

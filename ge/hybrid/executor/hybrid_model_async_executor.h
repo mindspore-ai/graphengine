@@ -61,7 +61,7 @@ class HybridModelAsyncExecutor {
 
   void SetRunningFlag(bool flag) { running_flag_ = flag; }
 
-  const GraphExecutionContext * GeContext() { return executor_->GetContext(); }
+  const GraphExecutionContext *GeContext() { return executor_->GetContext(); }
 
  private:
   Status InitInputDesc();

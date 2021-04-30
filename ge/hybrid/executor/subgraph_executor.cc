@@ -177,6 +177,7 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
 
   known_shape_task_context_ = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
   GE_CHECK_NOTNULL(known_shape_task_context_);
+  node_state->SetTaskContext(known_shape_task_context_);
 
   std::function<void()> callback;
   GE_CHK_STATUS_RET_NOLOG(InitCallback(node_state.get(), callback));

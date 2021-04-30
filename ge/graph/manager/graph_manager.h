@@ -105,6 +105,19 @@ class GraphManager {
 
   ///
   /// @ingroup ge_graph
+  /// @brief run specific graph with specific session id and stream
+  /// @param [in] graph_id graph id
+  /// @param [in] stream specific stream
+  /// @param [in] session_id session id
+  /// @param [in] inputs input data
+  /// @param [out] outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t stream, uint64_t session_id, 
+                                 const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief build specific graph
   /// @param [in] graph_id graph id
   /// @param [in] inputs input data
@@ -257,6 +270,9 @@ class GraphManager {
 
   Status InnerRunGraph(GraphNodePtr &graph_node, const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                        std::vector<GeTensor> &outputs);
+
+  Status InnerRunGraphWithStream(GraphNodePtr &graph_node, const GraphId &graph_id, rtStream_t stream,
+                                 const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
 
   Status ParseOptions(const std::map<std::string, std::string> &options);
 

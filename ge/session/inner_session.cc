@@ -262,6 +262,51 @@ Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inpu
   }
 }
 
+Status InnerSession::RunGraphWithStreamAsync(uint32_t graph_id, rtStream_t stream,
+                                             const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs) {
+  GELOGI("Run graph with stream, session id = %lu, graph id = %u, stream = %p.",
+         session_id_, graph_id, stream);
+  if (mutex_.try_lock()) {
+    std::lock_guard<std::mutex> lock(mutex_, std::adopt_lock);
+    if (!init_flag_) {
+      GELOGE(GE_SESS_INIT_FAILED, "[Run][GraphWithStream]failed because GraphManager not Init,"
+             "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      REPORT_INNER_ERROR("E19999", "RunGraphWithStreamAsync failed because GraphManager not Init,"
+                         "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      return GE_SESS_INIT_FAILED;
+    }
+    UpdateThreadContext(graph_id);
+    vector<GeTensor> ge_inputs;
+    for (auto &item : inputs) {
+      ge_inputs.emplace_back(TensorAdapter::AsGeTensor(item));
+    }
+    vector<GeTensor> ge_outputs;
+    for (auto &item : outputs) {
+      ge_outputs.emplace_back(TensorAdapter::AsGeTensor(item));
+    }
+    Status ret = graph_manager_.RunGraphWithStreamAsync(graph_id, stream, session_id_, ge_inputs, ge_outputs);
+    domi::GetContext().out_nodes_map.clear();
+    domi::GetContext().user_out_nodes.clear();
+    if (ret != SUCCESS) {
+      GELOGE(ret, "[Run][GraphWithStreamAsync]failed,"
+             "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      REPORT_CALL_ERROR("E19999", "GraphManager RunGrapWithStreamhAsync failed,"
+                        "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      return ret;
+    }
+
+    GELOGI("Run graph with stream success, session id = %lu, graph id = %u, stream = %p.",
+           session_id_, graph_id, stream);
+    return SUCCESS;
+  } else {
+    GELOGE(GE_SESS_ALREADY_RUNNING, "[Run][GraphWithStreamAsync]failed because mutex try_lock false,"
+           "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+    REPORT_INNER_ERROR("E19999", "[Run][GraphWithStreamAsync]failed failed because mutex try_lock false,"
+                       "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+    return GE_SESS_ALREADY_RUNNING;
+  }
+}
+
 Status InnerSession::RemoveGraph(uint32_t graph_id) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {

@@ -403,6 +403,72 @@ Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &
   return SUCCESS;
 }
 
+Status GraphExecutor::GetExecuteData(const std::vector<GeTensor> &input_tensor, std::vector<DataBuffer> &blobs,
+                                     std::vector<GeTensorDesc> &tensor_desc) {
+  for (const auto &tensor : input_tensor) {
+    DataBuffer in_data_buf;
+    // check placement
+    in_data_buf.data = const_cast<uint8_t *>(tensor.GetData().data());
+    in_data_buf.length = tensor.GetData().size();
+    in_data_buf.isDataSupportMemShare = false;
+    blobs.emplace_back(in_data_buf);
+    tensor_desc.emplace_back(tensor.GetTensorDesc());
+  }
+  return SUCCESS;
+}
+
+Status GraphExecutor::ExecuteGraphWithStream(GraphId graph_id,
+                                             rtStream_t stream,
+                                             const GeRootModelPtr &ge_root_model,
+                                             const std::vector<GeTensor> &input_tensor,
+                                             std::vector<GeTensor> &output_tensor) {
+  GELOGI("[GraphExecutor] Start to execute graph with stream, graph id = %u, stream = %p.", graph_id, stream);
+  if (!init_flag_) {
+    REPORT_INNER_ERROR("E19999", "No SetCondition called before, graph id = %u, stream = %p, check invalid.",
+                       graph_id, stream);
+    GELOGE(GE_GRAPH_EXECUTE_NOT_INIT, "[GraphExecutor] AI Core Engine without calling SetCondition!");
+    return GE_GRAPH_EXECUTE_NOT_INIT;
+  }
+
+  if (graph_id != last_graph_id_) {
+    auto ret = FreeExecuteMemory();
+    if (ret != SUCCESS) {
+      return ret;
+    }
+  }
+  last_graph_id_ = graph_id;
+
+  GE_CHECK_NOTNULL_EXEC(ge_root_model, return FAILED);
+  auto model_id = ge_root_model->GetModelId();
+  InputData input_data;
+  input_data.index = 0;
+  input_data.model_id = model_id;
+  std::vector<GeTensorDesc> input_desc;
+  auto ret = GetExecuteData(input_tensor, input_data.blobs, input_desc);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+  OutputData output_data;
+  output_data.index = 0;
+  output_data.model_id = model_id;
+  std::vector<GeTensorDesc> output_desc;
+  ret = GetExecuteData(output_tensor, output_data.blobs, output_desc);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+
+  auto async_mode = true;
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  ret = model_manager->ExecuteModel(model_id, stream, async_mode, input_data, input_desc, output_data, output_desc);
+  if (ret != SUCCESS) {
+    return ret;
+  }
+
+  GELOGI("[GraphExecutor] Async execute graph with stream success graph id = %u, stream = %p.", graph_id, stream);
+  return SUCCESS;
+}
+
 bool CompareByLoad(const Uint32Pair &lhs, const Uint32Pair &rhs) {
   return lhs.second < rhs.second;
 }

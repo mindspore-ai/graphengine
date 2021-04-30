@@ -52,6 +52,12 @@ class GraphExecutor {
   ge::Status ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
                                const std::vector<InputTensorInfo> &input_tensor, const RunAsyncCallback &callback);
 
+  Status ExecuteGraphWithStream(GraphId graph_id,
+                                rtStream_t stream,
+                                const GeRootModelPtr &ge_root_model,
+                                const std::vector<GeTensor> &input_tensor,
+                                std::vector<GeTensor> &output_tensor);
+
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
 
   Status SetGraphContext(GraphContextPtr graph_context_ptr);
@@ -124,6 +130,9 @@ class GraphExecutor {
  private:
   Status PrepareInputData(const std::vector<GeTensor> &input_tensor, InputData &graph_input_data,
                           OutputData &graph_output_data, std::vector<InputOutputDescInfo> &output_desc);
+
+  Status GetExecuteData(const std::vector<GeTensor> &input_tensor, std::vector<DataBuffer> &blobs,
+                        std::vector<GeTensorDesc> &tensor_desc);
 
   Status SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                           std::vector<GeTensor> &output_tensor);

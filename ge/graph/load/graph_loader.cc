@@ -75,6 +75,16 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
     return ret;
   }
 
+  if (ge_root_model_ptr->IsSpecificStream()) {
+    GELOGI("No need to start a new thread to run model in specific scene.");
+    rt_ret = rtDeviceReset(GetContext().DeviceId());
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                        GetContext().DeviceId(), rt_ret);
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    }
+    return SUCCESS;
+  }
   ret = model_manager->Start(model_id);
   if (ret != SUCCESS) {
     if (model_manager->Unload(model_id) != SUCCESS) {

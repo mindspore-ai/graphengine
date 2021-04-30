@@ -598,6 +598,47 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
   return ret;
 }
 
+// Run Graph with stream Asynchronously
+Status Session::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<Tensor> &inputs,
+                                        std::vector<Tensor> &outputs) {
+  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  GELOGT(TRACE_INIT, "Session run graph with stream async start");
+
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Run][Graph]Run graph with stream asyn failed, the GELib instance is nullptr,"
+           "session id = %lu, graph id = %u, stream = %p.", sessionId_, graph_id, stream);
+    REPORT_INNER_ERROR("E19999",
+                       "Run graph with stream asyn failed, the GELib instance is nullptr"
+                       "session id = %lu, graph id = %u, stream = %p.", sessionId_, graph_id, stream);
+    return FAILED;
+  }
+  if (!instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Run][Graph]Run graph with stream asyn failed, the GELib instance is not init,"
+           "session id = %lu, graph id = %u, stream = %p.", sessionId_, graph_id, stream);
+    REPORT_INNER_ERROR("E19999",
+                       "Run graph with stream asyn failed, the GELib instance is not init,"
+                       "session id = %lu, graph id = %u, stream = %p.", sessionId_, graph_id, stream);
+    return FAILED;
+  }
+  GELOGT(TRACE_RUNNING, "Run Graph Run graph with stream asyn.");
+  Status ret = instance_ptr->SessionManagerObj().RunGraphWithStreamAsync(sessionId_, graph_id, stream, inputs,
+                                                                         outputs);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Run][Graph]Run graph with stream asyn Failed,"
+           "error code = %u, session id = %lu, graph id = %u, stream = %p.", ret, sessionId_, graph_id, stream);
+    REPORT_CALL_ERROR("E19999", "[Run][Graph]Run graph with stream asyn failed, error code = %u, session id = %lu,"
+                      "graph id = %u, stream = %p.", ret, sessionId_, graph_id, stream);
+    return FAILED;
+  }
+
+  GELOGT(TRACE_STOP, "Session run graph with stream async finished");
+  return SUCCESS;
+}
+
 // Register Call Back
 Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback) {
   ErrorManager::GetInstance().GenWorkStreamIdDefault();

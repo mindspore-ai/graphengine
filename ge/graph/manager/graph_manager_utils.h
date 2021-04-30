@@ -167,6 +167,8 @@ class GraphNode {
   void UpdateLoadFlag() { load_flag_ = load_count_ == 0 || load_record_ >= kMaxLoadNum; }
   void SetLoadFlag(bool load_flag) { load_flag_ = load_flag; }
   void SetGeModel(const GeModelPtr &ge_model) { ge_model_ = ge_model; }
+  void SetIsSpecificStream(bool specific_stream) { is_specific_stream_ = specific_stream; }
+  bool IsSpecificStream() const { return is_specific_stream_; }
   GeModelPtr GetGeModel() const { return ge_model_; }
   void SetGeRootModel(const GeRootModelPtr &ge_root_model) { ge_root_model_ = ge_root_model; }
   GeRootModelPtr GetGeRootModel() const { return ge_root_model_; }
@@ -200,6 +202,7 @@ class GraphNode {
   // load_flag_ is true if more than 1 model were loaded
   bool load_flag_;
   bool async_;
+  bool is_specific_stream_;
   GeModelPtr ge_model_;
   GeRootModelPtr ge_root_model_;
   BlockingQueue<uint8_t> sem_;

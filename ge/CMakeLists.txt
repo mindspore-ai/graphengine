@@ -825,6 +825,7 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -985,6 +986,7 @@ target_include_directories(atc_stub_ge_compiler PRIVATE
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -1025,6 +1027,7 @@ target_include_directories(fwk_stub_ge_runner PRIVATE
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include

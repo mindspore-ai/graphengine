@@ -18,7 +18,7 @@
 
 namespace ge {
 namespace hybrid {
-NodeTaskPtr RtsTaskFactory::Create(const std::string &task_type) const {
+RtsNodeTaskPtr RtsTaskFactory::Create(const std::string &task_type) const {
   auto it = creators_.find(task_type);
   if (it == creators_.end()) {
     GELOGW("Cannot find task type %s in inner map.", task_type.c_str());

@@ -20,6 +20,7 @@
 #include "common/debug/log.h"
 #include "common/ge/ge_util.h"
 #include "common/types.h"
+#include "graph/common/omg_util.h"
 #include "graph/utils/tensor_utils.h"
 #include "hybrid/model/hybrid_model.h"
 #include "runtime/rt.h"
@@ -132,15 +133,15 @@ Status ProfilingTraceNodeTask::ExecuteAsync(TaskContext &context, std::function<
 Status RtsNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
   GELOGD("[%s] Load for local task.", node->GetName().c_str());
-  auto op_type = node->GetType();
-  task = RtsTaskFactory::GetInstance().Create(op_type);
-  if (task == nullptr) {
-    GELOGE(INTERNAL_ERROR, "[%s] Unsupported RTS op type: %s", node->GetName().c_str(), op_type.c_str());
-    return INTERNAL_ERROR;
+  std::string node_type;
+  GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original type failed.");
+  RtsNodeTaskPtr rts_task = RtsTaskFactory::GetInstance().Create(node_type);
+  if (rts_task == nullptr) {
+    GELOGE(UNSUPPORTED, "[%s] Unsupported RTS op type: %s", node->GetName().c_str(), node_type.c_str());
+    return UNSUPPORTED;
   }
 
-  RtsNodeTask *rts_task = dynamic_cast<RtsNodeTask *>(task.get());
-  GE_CHECK_NOTNULL(rts_task);
+  task = rts_task;
   return rts_task->Init(model, node);
 }
 }  // namespace hybrid

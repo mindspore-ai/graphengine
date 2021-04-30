@@ -93,6 +93,13 @@ class NextIterationPass : public GraphPass {
   ///
   Status FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input, NodePtr &target_node);
 
+  ///
+  /// @brief Mark force unknown for Exit node
+  /// @param [in] group of LoopCond
+  /// @return void
+  ///
+  void HandleSwitchExitNodes(const LoopCondGroup &loop_group);
+
   // map<frame_name, LoopCondGroup>
   std::unordered_map<std::string, LoopCondGroupPtr> loop_group_map_;
 };

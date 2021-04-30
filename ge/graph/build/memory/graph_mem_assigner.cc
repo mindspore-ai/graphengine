@@ -36,6 +36,9 @@ namespace {
 const int kAllInputAddrIsAtomic = -1;
 const int kVirtualInputNodeMemoryReuse = 0;
 const int kVirtualOutputNodeMemoryReuse = 1;
+const int kPrevNextDistanceNum = 2;
+const int64_t kInvalidStream = -1;
+const char *const kEngineNameGeLocal = "DNN_VM_GE_LOCAL_OP_STORE";
 // One state per bit cannot be repeated
 enum ContinuousType { kTypeInput = 1, kTypeInputNoPadding = 2, kTypeOutput = 4, kTypeOutputNoPadding = 8 };
 
@@ -1943,5 +1946,282 @@ Status GraphMemoryAssigner::AssignBufferPoolMemory() {
   GELOGI("[Assign][BufferPoolMem]Assign buffer pool memory successfully, graph:%s, mem type:%ld, mem offset:%zu.",
          compute_graph_->GetName().c_str(), mem_type, buffer_pool_mem_assigner.GetMemOffset());
   return SUCCESS;
+}
+
+// if producer and customers in the same stream, or customers on the same stream when producer not assign a stream,
+// then return false.
+bool GraphMemoryAssigner::IsOutputVisitedByMultiStream(const NodePtr &peer_out_node, int64_t out_anchor_index) {
+  GE_IF_BOOL_EXEC(peer_out_node->GetOpDesc() == nullptr, return true);
+  int64_t unique_stream_id = peer_out_node->GetOpDesc()->GetStreamId();
+
+  GE_IF_BOOL_EXEC(peer_out_node->GetOutDataAnchor(out_anchor_index) == nullptr, return true);
+  for (const auto &in_data_anchor : peer_out_node->GetOutDataAnchor(out_anchor_index)->GetPeerInDataAnchors()) {
+    auto node = in_data_anchor->GetOwnerNode();
+    GE_IF_BOOL_EXEC(node == nullptr || node->GetOpDesc() == nullptr, continue);
+    if (node->GetOpDesc()->GetStreamId() == kInvalidStream) {
+      continue;
+    }
+    if (unique_stream_id == kInvalidStream) { // peer_out_node not belong to any stream
+      unique_stream_id = node->GetOpDesc()->GetStreamId();
+      continue;
+    }
+    if (node->GetOpDesc()->GetStreamId() != unique_stream_id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void GraphMemoryAssigner::UpdatePrevNodeInputDesc(const NodePtr &prev_node,
+                                                  const vector<int64_t> &prev_node_input_index_vec,
+                                                  int64_t distance) {
+  GE_IF_BOOL_EXEC(prev_node == nullptr, return);
+  auto prev_node_op_desc = prev_node->GetOpDesc();
+  GE_IF_BOOL_EXEC(prev_node_op_desc == nullptr, return);
+
+  for (const auto prev_node_input_index : prev_node_input_index_vec) {
+    auto input_desc = prev_node_op_desc->GetInputDesc(prev_node_input_index);
+    vector<int64_t> prev_next_distances;
+    if (!ge::AttrUtils::GetListInt(input_desc, ATTR_NAME_DATA_VISIT_DISTANCE, prev_next_distances)) {
+      GELOGW("Get [%s] input [%ld] ATTR_NAME_DATA_VISIT_DISTANCE failed",
+             prev_node_op_desc->GetName().c_str(),
+             prev_node_input_index);
+      continue;
+    }
+
+    if (prev_next_distances.size() == kPrevNextDistanceNum) {
+      prev_next_distances[1] = distance;
+    } else {
+      GELOGW("Size of prev_next_distances is not %d.", kPrevNextDistanceNum);
+      continue;
+    }
+    if (!ge::AttrUtils::SetListInt(input_desc, ATTR_NAME_DATA_VISIT_DISTANCE, prev_next_distances)) {
+      GELOGW("Set [%s] input [%ld] ATTR_NAME_DATA_VISIT_DISTANCE failed.",
+             prev_node_op_desc->GetName().c_str(),
+             prev_node_input_index);
+      continue;
+    }
+
+    if (prev_node_op_desc->UpdateInputDesc(prev_node_input_index, input_desc) != GRAPH_SUCCESS) {
+      GELOGW("Update [%s] input [%ld] ATTR_NAME_DATA_VISIT_DISTANCE failed.",
+             prev_node_op_desc->GetName().c_str(),
+             prev_node_input_index);
+      continue;
+    }
+    GELOGD("Set the next distance[%ld] to node[%s], input index[%ld]",
+           distance,
+           prev_node->GetName().c_str(),
+           prev_node_input_index);
+  }
+  return;
+}
+
+void GraphMemoryAssigner::UpdateCurNodeInputDesc(const NodePtr &cur_node,
+                                                 int64_t cur_node_input_index,
+                                                 int64_t distance) {
+  GE_IF_BOOL_EXEC(cur_node == nullptr, return);
+  GE_IF_BOOL_EXEC(cur_node->GetOpDesc() == nullptr, return);
+  auto input_desc = cur_node->GetOpDesc()->GetInputDesc(cur_node_input_index);
+  vector<int64_t> prev_next_distances{distance, -1};
+
+  if (!ge::AttrUtils::SetListInt(input_desc, ATTR_NAME_DATA_VISIT_DISTANCE, prev_next_distances)) {
+    GELOGW("Set [%s] input[%ld] ATTR_NAME_DATA_VISIT_DISTANCE failed.",
+           cur_node->GetOpDesc()->GetName().c_str(),
+           cur_node_input_index);
+    return;
+  }
+  if (cur_node->GetOpDesc()->UpdateInputDesc(cur_node_input_index, input_desc) != GRAPH_SUCCESS) {
+    GELOGW("Update [%s] input[%ld] ATTR_NAME_DATA_VISIT_DISTANCE failed.",
+           cur_node->GetOpDesc()->GetName().c_str(),
+           cur_node_input_index);
+    return;
+  }
+  GELOGD("Set the prev distance[%ld] to node[%s], input index[%ld]",
+         distance,
+         cur_node->GetName().c_str(),
+         cur_node_input_index);
+  return;
+}
+
+void GraphMemoryAssigner::CheckNeedCalcDistAndUpdateVisitInfo(
+    const NodePtr &peer_out_node,
+    const OutDataAnchorPtr &peer_out_anchor,
+    size_t matched_mem_offset,
+    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
+    bool &is_need_calc_distance) {
+  auto iter = mem_block_visit_info.find(matched_mem_offset);
+  // cannot find visit info, peer_out_node must be a producer and this data is the first time to be visited.
+  if (iter == mem_block_visit_info.end()) {
+    if (IsOutputVisitedByMultiStream(peer_out_node, peer_out_anchor->GetIdx())) {
+      vector<int64_t> temp;
+      mem_block_visit_info.insert(std::make_pair(matched_mem_offset, std::make_pair(nullptr, temp)));
+      is_need_calc_distance = false;
+      return;
+    } else {
+      vector<int64_t> temp = {-1};
+      // producer's prev_node_index set to -1 as default
+      mem_block_visit_info.insert(std::make_pair(matched_mem_offset, std::make_pair(peer_out_node, temp)));
+      is_need_calc_distance = true;
+      return;
+    }
+  } else {
+    if (mem_block_visit_info[matched_mem_offset].first == nullptr) {
+      // multi-stream visit, no need to calculate
+      is_need_calc_distance = false;
+      return;
+    }
+    if (peer_out_node->GetOpDesc()->GetStreamId() !=
+        mem_block_visit_info[matched_mem_offset].first->GetOpDesc()->GetStreamId()) {
+      // cur node and peer_out_node not in the same stream, no need to calculate
+      is_need_calc_distance = false;
+      return;
+    }
+  }
+  is_need_calc_distance = true;
+  return;
+}
+
+// calculate distance, update visit info, update prev_node input desc, update cur node input desc
+void GraphMemoryAssigner::CalcDistanceAndUpdateDesc(const map<string, int64_t> &node_index_in_stream,
+                                                    const InDataAnchorPtr &in_data_anchor,
+                                                    size_t matched_mem_offset,
+                                                    NodePtr &node,
+                                                    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
+                                                    bool &is_need_skip) {
+  int64_t distance = -1;
+  auto prev_node = mem_block_visit_info[matched_mem_offset].first;
+  auto prev_node_input_index_vec = mem_block_visit_info[matched_mem_offset].second;
+  GE_IF_BOOL_EXEC(prev_node == nullptr, is_need_skip = true; return);
+  if (prev_node_input_index_vec.size() == 1 && prev_node_input_index_vec[0] == -1) {
+    // prev_node is producer and the data is just be produced(not visited by other node)
+    GE_IF_BOOL_EXEC(prev_node->GetOpDesc() == nullptr, is_need_skip = true; return);
+    if (prev_node->GetOpDesc()->GetStreamId() == -1) { // producer not assigned a stream
+      distance = 0;
+    } else {
+      auto iter = node_index_in_stream.find(prev_node->GetName());
+      if (iter == node_index_in_stream.end()) {
+        distance = 0;
+      } else {
+        distance = node_index_in_stream.at(node->GetName()) - iter->second - 1;
+      }
+    }
+    mem_block_visit_info[matched_mem_offset].first = node;
+    mem_block_visit_info[matched_mem_offset].second.clear();
+    mem_block_visit_info[matched_mem_offset].second.push_back(in_data_anchor->GetIdx());
+  } else { // the data is visit by other customer just before.
+    if (prev_node_input_index_vec.empty()) {
+      GELOGW("Missing prev node[%s] input index.", prev_node->GetName().c_str());
+      is_need_skip = true;
+      return;
+    }
+    if (prev_node == node) { // scene: multiple anchors of a node access the same data
+      vector<int64_t> prev_next_distances;
+      GE_IF_BOOL_EXEC(prev_node->GetOpDesc() == nullptr, is_need_skip = true; return);
+      auto input_desc = prev_node->GetOpDesc()->GetInputDesc(prev_node_input_index_vec[0]);
+      if (!ge::AttrUtils::GetListInt(input_desc, ATTR_NAME_DATA_VISIT_DISTANCE, prev_next_distances)) {
+        GELOGW("Get ATTR_NAME_DATA_VISIT_DISTANCE failed.");
+        is_need_skip = true;
+        return;
+      }
+      if (prev_next_distances.size() != kPrevNextDistanceNum) {
+        GELOGW("Size of prev_next_distance is not %d.", kPrevNextDistanceNum);
+        is_need_skip = true;
+        return;
+      } else {
+        distance = prev_next_distances[0]; // use the same prev_distance as previous anchor
+      }
+      mem_block_visit_info[matched_mem_offset].second.push_back(in_data_anchor->GetIdx());
+    } else {
+      distance = node_index_in_stream.at(node->GetName()) - node_index_in_stream.at(prev_node->GetName()) - 1;
+      UpdatePrevNodeInputDesc(prev_node, prev_node_input_index_vec, distance);
+      mem_block_visit_info[matched_mem_offset].first = node;
+      mem_block_visit_info[matched_mem_offset].second.clear();
+      mem_block_visit_info[matched_mem_offset].second.push_back(in_data_anchor->GetIdx());
+    }
+  }
+  UpdateCurNodeInputDesc(node, in_data_anchor->GetIdx(), distance);
+}
+
+void GraphMemoryAssigner::DeleteVisitInfoWhenLifecycleEnded(
+    const NodePtr &node,
+    const InDataAnchorPtr &in_data_anchor,
+    size_t matched_mem_offset,
+    map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info) {
+  GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, return);
+  auto input_desc = node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx());
+  bool is_end_of_inputmem_lifecycle = false;
+  // if is_end_of_inputmem_lifecycle is true, indicating that cur node is the last customer of this data,
+  // then we need to delete the visit info of the block in case that the memblock be reused and visited.
+  if (ge::AttrUtils::GetBool(input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, is_end_of_inputmem_lifecycle) &&
+      is_end_of_inputmem_lifecycle) {
+    GELOGD("ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE is true, node name is [%s], in_data_anchor index is [%d]",
+           node->GetName().c_str(),
+           in_data_anchor->GetIdx());
+    auto iter = mem_block_visit_info.find(matched_mem_offset);
+    if (iter != mem_block_visit_info.end()) {
+      mem_block_visit_info.erase(iter);
+    }
+  }
+}
+
+
+void GraphMemoryAssigner::MarkNodeDistanceAttr(const ComputeGraphPtr &compute_graph,
+                                               NodePtr &node,
+                                               map<size_t, pair<NodePtr, vector<int64_t>>> &mem_block_visit_info,
+                                               const map<string, int64_t> &node_index_in_stream) {
+  GELOGD("Begin to mark node distance attr, node name is [%s]", node->GetName().c_str());
+  GE_IF_BOOL_EXEC(node == nullptr, return);
+  for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+    auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
+    GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+    auto peer_out_node = peer_out_anchor->GetOwnerNode();
+    GE_IF_BOOL_EXEC(peer_out_node == nullptr, continue);
+
+    GE_IF_BOOL_EXEC(peer_out_node->GetOpDesc() == nullptr, continue);
+    auto matched_mem_offset = peer_out_node->GetOpDesc()->GetOutputOffset().at(peer_out_anchor->GetIdx());
+
+    bool is_need_calc_distance = false;
+    CheckNeedCalcDistAndUpdateVisitInfo(peer_out_node, peer_out_anchor, matched_mem_offset,
+                                        mem_block_visit_info, is_need_calc_distance);
+    if (!is_need_calc_distance) {
+      continue;
+    }
+
+    bool is_need_skip = false;
+    CalcDistanceAndUpdateDesc(node_index_in_stream, in_data_anchor, matched_mem_offset, node,
+                              mem_block_visit_info, is_need_skip);
+    if (is_need_skip) {
+      continue;
+    }
+
+    DeleteVisitInfoWhenLifecycleEnded(node, in_data_anchor, matched_mem_offset, mem_block_visit_info);
+  }
+}
+
+void GraphMemoryAssigner::MarkDistanceAttr() {
+  // key: mem_offset of the memory which we visited. value: node we visited and input index of this node
+  map<size_t, pair<NodePtr, vector<int64_t>>> mem_block_visit_info;
+  // key: node name, value: topo order of node in it's belonged stream(exclude ge_local_op)
+  map<string, int64_t> node_index_in_stream;
+  // key: stream id, value: cur nodes num in that stream
+  map<int64_t, int64_t> stream_nodes_num;
+
+  for (auto &node : compute_graph_->GetAllNodes()) {
+    auto node_op_desc = node->GetOpDesc();
+    GE_IF_BOOL_EXEC(node_op_desc == nullptr, return);
+    int64_t stream_id = node_op_desc->GetStreamId();
+    if (node_op_desc->GetOpKernelLibName() != kEngineNameGeLocal) {
+      if (stream_nodes_num.find(stream_id) == stream_nodes_num.end()) {
+        stream_nodes_num.insert(std::make_pair(stream_id, 1));
+      } else {
+        ++stream_nodes_num[stream_id];
+      }
+      node_index_in_stream.insert(std::make_pair(node->GetName(), stream_nodes_num[stream_id] - 1));
+
+      MarkNodeDistanceAttr(compute_graph_, node, mem_block_visit_info, node_index_in_stream);
+    } else {
+      GELOGD("node[%s] is ge_local_op, no need to calculate distance.", node->GetName().c_str());
+    }
+  }
 }
 }  // namespace ge

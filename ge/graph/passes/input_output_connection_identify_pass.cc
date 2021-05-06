@@ -48,8 +48,6 @@ Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
   }
 
   if (graph->GetParentGraph() != nullptr) {
-    REPORT_INNER_ERROR("E19999", "Param graph's parent graph is nullptr, "
-                       "check invalid");
     GELOGD("Current graph %s is a subgraph, skip identification of nodes that connect to input and output.",
            graph->GetName().c_str());
     return SUCCESS;

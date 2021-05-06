@@ -25,13 +25,13 @@ Status ModelExitTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davi
   GELOGI("InitModelExitTaskInfo Init Start.");
   if (davinci_model == nullptr) {
     REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr");
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    GELOGE(PARAM_INVALID, "[Check][Param] davinci_model is null!");
     return PARAM_INVALID;
   }
 
   Status ret = SetStream(task_def.stream_id(), davinci_model->GetStreamList());
   if (ret != SUCCESS) {
-    GELOGE(ret, "SetStream fail, stream_id:%u", task_def.stream_id());
+    GELOGE(ret, "[Set][Stream] fail, stream_id:%u", task_def.stream_id());
     return ret;
   }
 
@@ -44,9 +44,8 @@ Status ModelExitTaskInfo::Distribute() {
   GELOGI("ModelExitTaskInfo Distribute Start.");
   rtError_t rt_ret = rtModelExit(model_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtModelExit failed, ret:0x%X",
-                      rt_ret);
-    GELOGE(RT_FAILED, "Call rtModelExit failed, ret: 0x%x", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtModelExit failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtModelExit] failed, ret:0x%x", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   GELOGI("ModelExitTaskInfo Distribute Success.");

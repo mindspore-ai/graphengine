@@ -36,9 +36,8 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   dst_max_ = memcpy_async.dst_max();
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(memcpy_async.op_index());
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u",
-                       memcpy_async.op_index());
-    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range", memcpy_async.op_index());
+    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u", memcpy_async.op_index());
+    GELOGE(INTERNAL_ERROR, "[Get][Op] Task op index:%u out of range", memcpy_async.op_index());
     return INTERNAL_ERROR;
   }
 
@@ -47,7 +46,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     dst_ = reinterpret_cast<uint8_t *>(reinterpret_cast<uintptr_t>(src_) + sizeof(void *));
     // for zero copy
     kind_ = RT_MEMCPY_ADDR_DEVICE_TO_DEVICE;
-    GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addrs failed");
+    GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "[Set][Addrs] failed, op:%s", op_desc->GetName().c_str());
     GELOGI("MemcpyAsyncTaskInfo op name %s, src_ %p, dst_ %p, args_offset %u.",
            op_desc->GetName().c_str(), src_, dst_, args_offset_);
     return SUCCESS;
@@ -77,7 +76,7 @@ Status MemcpyAsyncTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
 
   davinci_model_->DisableZeroCopy(src_);
   davinci_model_->DisableZeroCopy(dst_);
-  GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "Set addrs failed");
+  GE_CHK_STATUS_RET(SetIoAddrs(op_desc, memcpy_async), "[Set][Addrs] failed, op:%s", op_desc->GetName().c_str());
   GELOGI("MemcpyAsyncTaskInfo Init Success, logic[0x%lx, 0x%lx], src:%p, dst:%p, max:%lu, count:%lu",
          memcpy_async.src(), memcpy_async.dst(), src_, dst_, dst_max_, count_);
   return SUCCESS;
@@ -88,9 +87,8 @@ Status MemcpyAsyncTaskInfo::Distribute() {
 
   rtError_t rt_ret = rtMemcpyAsync(dst_, dst_max_, src_, count_, static_cast<rtMemcpyKind_t>(kind_), stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpyAsync failed, size:%lu, ret:0x%X",
-                      dst_max_, rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpyAsync failed, size:%lu, ret:0x%X", dst_max_, rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtMemcpyAsync] failed, size:%lu, ret:0x%X", dst_max_, rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 

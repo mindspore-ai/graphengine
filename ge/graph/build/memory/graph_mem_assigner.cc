@@ -233,9 +233,12 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size
     return ge::FAILED;
   }
 
-  GE_CHK_STATUS_RET(ReAssignContinuousMemory(is_loop_graph), "ReAssignContinuousMemory Failed!");
-  GE_CHK_STATUS_RET(ReAssignAtomicMemory(is_loop_graph), "ReAssignAtomicMemory Failed!");
-  GE_CHK_STATUS_RET(AssignBufferPoolMemory(), "AssignBufferPoolMemory Failed!");
+  GE_CHK_STATUS_RET(ReAssignContinuousMemory(is_loop_graph),
+                    "[ReAssign][ContinuousMemory] Failed! graph:%s", compute_graph_->GetName().c_str());
+  GE_CHK_STATUS_RET(ReAssignAtomicMemory(is_loop_graph),
+                    "[ReAssign][AtomicMemory] Failed! graph:%s", compute_graph_->GetName().c_str());
+  GE_CHK_STATUS_RET(AssignBufferPoolMemory(),
+                    "[Assign][BufferPoolMemory] Failed! graph:%s", compute_graph_->GetName().c_str());
 
   size_t total_mem_offset = 0;
   for (auto pair : memory_offset_) {
@@ -1009,7 +1012,9 @@ Status GraphMemoryAssigner::AssignReferenceMemory() {
            node->GetName().c_str());
 
     auto out_op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(out_op_desc == nullptr, GELOGE(ge::FAILED, "out_op_desc is null."); return ge::FAILED);
+    GE_IF_BOOL_EXEC(out_op_desc == nullptr,
+                    REPORT_INNER_ERROR("E19999", "out_op_desc is null.");
+                    GELOGE(ge::FAILED, "[Check][Param] out_op_desc is null."); return ge::FAILED);
     vector<int64_t> output_list = out_op_desc->GetOutputOffset();
 
     if (out_op_desc->GetOutputsSize() > output_list.size()) {

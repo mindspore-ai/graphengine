@@ -29,7 +29,7 @@ LabelAllocator::LabelAllocator(const ComputeGraphPtr &graph) : compute_graph_(gr
 Status LabelAllocator::AssignFunctionalLabels() {
   if (compute_graph_ == nullptr) {
     REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr");
-    GELOGE(INTERNAL_ERROR, "ComputeGraph not set, Assign labels failed.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] ComputeGraph not set, Assign labels failed.");
     return INTERNAL_ERROR;
   }
 
@@ -49,14 +49,14 @@ Status LabelAllocator::AssignFunctionalLabels() {
     if (maker == nullptr) {
       REPORT_CALL_ERROR("E19999", "Check Node:%s(%s) label maker not registed",
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "Node: %s label maker not registed.", node->GetType().c_str());
+      GELOGE(INTERNAL_ERROR, "[Create][LabelMaker] Node: %s label maker not registed.", node->GetType().c_str());
       return INTERNAL_ERROR;
     }
 
     if (maker->Run(label_index) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Node:%s(%s) run label maker failed",
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "Node: %s run label maker failed.", node->GetType().c_str());
+      GELOGE(INTERNAL_ERROR, "[Call][Run] Node: %s run label maker failed.", node->GetType().c_str());
       return INTERNAL_ERROR;
     }
   }
@@ -69,7 +69,7 @@ Status LabelAllocator::AssignFunctionalLabels() {
 bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<NodePtr> &functional_nodes) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "check param compute_graph nullptr");
-    GELOGE(INTERNAL_ERROR, "Sub ComputeGraph is null.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Sub ComputeGraph is null.");
     return false;
   }
 
@@ -82,7 +82,7 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
   if (func_node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Parent node not set in node:%s(%s), graph:%s",
                        func_node->GetName().c_str(), func_node->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Parent functional node not set: %s.", graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][Node] Parent functional node not set: %s.", graph->GetName().c_str());
     return false;
   }
 
@@ -90,7 +90,7 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
   if (owner_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "ComputeGraph owner not set in node:%s(%s), graph:%s",
                        func_node->GetName().c_str(), func_node->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "ComputeGraph owner not set: %s.", func_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][Graph] ComputeGraph owner not set: %s.", func_node->GetName().c_str());
     return false;
   }
 

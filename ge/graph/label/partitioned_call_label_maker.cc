@@ -41,7 +41,7 @@ Status PartitionedCallLabelMaker::Run(uint32_t &label_index) {
   if (sub_graph_name.empty()) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) subgraph_index:%d name is empty, check invalid",
                        call_desc->GetName().c_str(), call_desc->GetType().c_str(), kSubGraphIndex);
-    GELOGE(INTERNAL_ERROR, "Node: %s has no subgraph name.", sub_graph_name.c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Node:%s has no subgraph name.", sub_graph_name.c_str());
     return FAILED;
   }
 
@@ -50,7 +50,7 @@ Status PartitionedCallLabelMaker::Run(uint32_t &label_index) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) subgraph_name:%s is not exist in parent_graph, check invalid",
                        call_desc->GetName().c_str(), call_desc->GetType().c_str(),
                        sub_graph_name.c_str());
-    GELOGE(INTERNAL_ERROR, "Node: %s has no subgraph.", sub_graph_name.c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][SubGraph] Node:%s has no subgraph.", sub_graph_name.c_str());
     return FAILED;
   }
 
@@ -59,7 +59,7 @@ Status PartitionedCallLabelMaker::Run(uint32_t &label_index) {
   if (stream_active == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add StreamActive node in graph:%s fail",
                       sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active node failed.", sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][StreamActive] in Subgraph:%s failed.", sub_graph->GetName().c_str());
     return FAILED;
   }
 

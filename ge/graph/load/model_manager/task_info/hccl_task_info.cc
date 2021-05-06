@@ -31,7 +31,7 @@ HcclTaskInfo::~HcclTaskInfo() {
     rtError_t ret = rtFreeHost(private_def_);
     if (ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtFreeHost failed, ret:0x%X", ret);
-      GELOGE(RT_FAILED, "Call rtFree Fail, ret = 0x%X.", ret);
+      GELOGE(RT_FAILED, "[Call][RtFree] Fail, ret = 0x%X.", ret);
     }
     private_def_ = nullptr;
   }
@@ -43,7 +43,7 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   GELOGI("HcclTaskInfo Init Start.");
   if (davinci_model == nullptr) {
     REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr");
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    GELOGE(PARAM_INVALID, "[Check][Param] davinci_model is null!");
     return PARAM_INVALID;
   }
   davinci_model_ = davinci_model;
@@ -71,21 +71,21 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Call GetHorovodInputs fail for op:%s(%s)",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(ret, "davinci_model: GetHorovodInputs fail! domi error: %u", ret);
+    GELOGE(ret, "[Get][HorovodInputs] fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return ret;
   }
   Status dmrt = HcomOmeUtil::GetHcclDataType(op_desc, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Call GetHcclDataType fail for op:%s(%s)",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(dmrt, "davinci_model: GetHcomDataType fail! domi error: %u", dmrt);
+    GELOGE(dmrt, "[Get][HcomDataType] fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return dmrt;
   }
   dmrt = HcomOmeUtil::GetHcclCount(op_desc, kernel_hccl_infos_);
   if (dmrt != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Call GetHcclCount fail for op:%s(%s)",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(dmrt, "davinci_model: GetHcomCount fail! domi error: %u", dmrt);
+    GELOGE(dmrt, "[Get][HcomCount] fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return dmrt;
   }
   // Only HCOMBROADCAST and HVDCALLBACKBROADCAST need to get the rootId
@@ -93,14 +93,14 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
   if (dmrt != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Call GetAllRootId fail for op:%s(%s)",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(dmrt, "davinci_model: Get rootId fail! domi error: %u", dmrt);
+    GELOGE(dmrt, "[Get][RootId] fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return dmrt;
   }
 
   // GE's new process: hccl declares the number of streams required, creates a stream by GE, and sends it to hccl
   ret = SetFollowStream(op_desc, davinci_model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SetStream Fail.");
+    GELOGE(ret, "[Set][Stream] Fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return ret;
   }
 
@@ -111,13 +111,13 @@ Status HcclTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davinci_m
 
   ret = SetAddrs(op_desc, kernel_hccl_infos_);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Setaddrs Fail.");
+    GELOGE(ret, "[Set][Addrs] Fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return ret;
   }
   // GE's new process: hccl declares the need for Workspace size, and GE allocates Workspace
   ret = SetWorkspace(op_desc, kernel_hccl_infos_);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SetWorkspace Fail.");
+    GELOGE(ret, "[Set][Workspace] Fail for op:%s(%s)", op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return ret;
   }
 
@@ -156,7 +156,8 @@ Status HcclTaskInfo::SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciM
       }
       ret = CreateStream(hccl_stream_num - created_stream_num, davinci_model, main_stream_id);
       if (ret != SUCCESS) {
-        GELOGE(RT_FAILED, "Create hccl stream failed.");
+        GELOGE(RT_FAILED, "[Create][Stream] for %s failed, stream id:%ld, stream num:%ld.",
+               op_desc->GetName().c_str(), main_stream_id, hccl_stream_num - created_stream_num);
         return RT_ERROR_TO_GE_STATUS(ret);
       }
     }
@@ -165,7 +166,8 @@ Status HcclTaskInfo::SetFollowStream(const ge::ConstOpDescPtr &op_desc, DavinciM
     GELOGI("need to create follow stream for %s with new mainstream %ld.", op_desc->GetName().c_str(), main_stream_id);
     ret = CreateStream(hccl_stream_num, davinci_model, main_stream_id);
     if (ret != SUCCESS) {
-      GELOGE(RT_FAILED, "Create hccl stream failed.");
+      GELOGE(RT_FAILED, "[Create][Stream] for %s failed, stream id:%ld, stream num:%ld.",
+             op_desc->GetName().c_str(), main_stream_id, hccl_stream_num);
       return RT_ERROR_TO_GE_STATUS(ret);
     }
   }
@@ -181,7 +183,8 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtStreamCreateWithFlags failed, ret:0x%X, stream_idx:%ld, stream_num:%ld",
                         rt_ret, i, stream_num);
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "[Call][RtStreamCreateWithFlags] failed, ret:0x%X, stream_idx:%ld, stream_num:%ld",
+             rt_ret, i, stream_num);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
     // Create slave stream, inactive by default, activated by hccl
@@ -189,7 +192,8 @@ Status HcclTaskInfo::CreateStream(int64_t stream_num, DavinciModel *davinci_mode
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtModelBindStream failed, ret:0x%X, stream_idx:%ld, stream_num:%ld",
                         rt_ret, i, stream_num);
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "[Call][RtModelBindStream] failed, ret:0x%X, stream_idx:%ld, stream_num:%ld",
+             rt_ret, i, stream_num);
       (void)rtStreamDestroy(stream);
       return RT_ERROR_TO_GE_STATUS(rt_ret);
     }
@@ -207,7 +211,7 @@ Status HcclTaskInfo::Distribute() {
   GELOGI("HcclTaskInfo Distribute Start. begin to call function LoadTask in hccl.");
   if (ops_kernel_store_ == nullptr) {
     REPORT_INNER_ERROR("E19999", "Check param ops_kernel_store_ nullptr");
-    GELOGE(INTERNAL_ERROR, "ops kernel store is null.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] ops kernel store is null.");
     return INTERNAL_ERROR;
   }
   OpsKernelInfoStore *ops_kernel_info_store = reinterpret_cast<OpsKernelInfoStore *>(ops_kernel_store_);
@@ -217,7 +221,7 @@ Status HcclTaskInfo::Distribute() {
   auto result = ops_kernel_info_store->LoadTask(ge_task);
   if (result != HCCL_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Call ops_kernel_info_store LoadTask fail");
-    GELOGE(INTERNAL_ERROR, "davinci_model : load task fail, return ret: %u", result);
+    GELOGE(INTERNAL_ERROR, "[Load][Task] fail, return ret:%u", result);
     return INTERNAL_ERROR;
   }
   GELOGI("HcclTaskInfo Distribute Success.");
@@ -265,8 +269,9 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
                               std::vector<GETaskKernelHcclInfo> &kernel_hccl_infos) {
   GE_CHECK_NOTNULL(op_desc);
   GE_CHK_STATUS_RET(HcomOmeUtil::CheckKernelHcclInfo(op_desc, kernel_hccl_infos),
-                    "HcomOmeUtil:: the number of GETaskKernelHcclInfo is invalid.");
-  GELOGI("Set hccl task input output address, node[%s}, type[%s] kernel_hccl_infos.size[%zu].",
+                    "[Check][Param] HcomOmeUtil:: the number of GETaskKernelHcclInfo is invalid, node:%s(%s).",
+                    op_desc->GetName().c_str(), op_desc->GetType().c_str());
+  GELOGI("Set hccl task input output address, node[%s], type[%s] kernel_hccl_infos.size[%zu].",
          op_desc->GetName().c_str(), op_desc->GetType().c_str(), kernel_hccl_infos.size());
   if (op_desc->GetType() == HVDWAIT) {
     return SUCCESS;
@@ -300,7 +305,7 @@ Status HcclTaskInfo::SetAddrs(const std::shared_ptr<OpDesc> &op_desc,
     } else if (hccl_type == HCOMALLREDUCE ||
                hccl_type == HCOMREDUCESCATTER || hccl_type == HVDCALLBACKALLREDUCE || hccl_type == HCOMREDUCE) {
       GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclOperationType(op_desc, op_type),
-                        "davinci_model: GetHcomOperationType fail!");
+                        "[Get][HcomOperationType] fail! op:%s", op_desc->GetName().c_str());
       kernel_hccl_infos[i].outputDataAddr = output_data_addr;
       kernel_hccl_infos[i].opType = op_type;
     }
@@ -332,18 +337,16 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
       private_def_len_ = private_def_temp.size();
       rtError_t ret = rtMallocHost(&private_def_, private_def_len_);
       if (ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, ret:0x%X, size:%u",
-                          ret, private_def_len_);
-        GELOGE(RT_FAILED, "Call rtMallocHost Fail, ret = 0x%X.", ret);
+        REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, ret:0x%X, size:%u", ret, private_def_len_);
+        GELOGE(RT_FAILED, "[Call][RtMallocHost] Fail, ret:0x%X, size:%u", ret, private_def_len_);
         return;
       }
 
       ret = rtMemcpy(private_def_, private_def_len_, task.private_def().c_str(), private_def_len_,
                      RT_MEMCPY_HOST_TO_HOST);
       if (ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%u",
-                          ret, private_def_len_);
-        GELOGE(RT_FAILED, "Call rtMemcpy Fail, ret = 0x%X.", ret);
+        REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, ret:0x%X, size:%u", ret, private_def_len_);
+        GELOGE(RT_FAILED, "[Call][RtMemcpy] Fail, ret:0x%X, size:%u", ret, private_def_len_);
         return;
       }
       GELOGI("The first address of the custom info, privateDef=%p.", private_def_);

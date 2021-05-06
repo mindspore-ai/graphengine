@@ -24,7 +24,7 @@ Status ProfilerTraceTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
   GELOGI("ProfilerTraceTaskInfo Init Start.");
   if (davinci_model == nullptr) {
     REPORT_INNER_ERROR("E19999", "Check param davinci_model nullptr");
-    GELOGE(PARAM_INVALID, "davinci_model is null!");
+    GELOGE(PARAM_INVALID, "[Check][Param] davinci_model is null!");
     return PARAM_INVALID;
   }
 
@@ -47,9 +47,9 @@ Status ProfilerTraceTaskInfo::Distribute() {
 
   rtError_t rt_ret = rtProfilerTrace(log_id_, notify_, flat_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtProfilerTrace failed, ret:0x%X",
-                      rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtProfilerTrace failed, ret:0x%X, logid:%lu. notify:%d",
+                      rt_ret, log_id_, notify_);
+    GELOGE(RT_FAILED, "[Call][RtProfilerTrace] failed, ret:0x%X, logid:%lu. notify:%d", rt_ret, log_id_, notify_);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 

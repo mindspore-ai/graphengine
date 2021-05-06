@@ -53,9 +53,8 @@ Status VarMemAssignUtil::AssignStaticMemory2Node(ge::ComputeGraphPtr &compute_gr
     GE_IF_BOOL_EXEC(ge::AttrUtils::GetStr(n->GetOpDesc(), REF_VAR_SRC_VAR_NAME, ref_var_src_var_name), continue);
     string node_name = n->GetName();
     GE_IF_BOOL_EXEC(n->GetOpDesc()->GetAllOutputsDesc().empty(),
-                    REPORT_INNER_ERROR("E19999", "check node:%s has no OutputDesc",
-                                       n->GetName().c_str());
-                    GELOGE(FAILED, "node:%s has no OutputDesc.", n->GetName().c_str());
+                    REPORT_INNER_ERROR("E19999", "check node:%s has no OutputDesc", n->GetName().c_str());
+                    GELOGE(FAILED, "[Check][Param] node:%s has no OutputDesc.", n->GetName().c_str());
                     return FAILED);
     ge::ConstGeTensorDescPtr tensor_desc = n->GetOpDesc()->GetOutputDescPtr(0);
     GE_CHECK_NOTNULL(tensor_desc);
@@ -118,9 +117,8 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
   GE_CHECK_NOTNULL(node->GetOpDesc());
   output_list = node->GetOpDesc()->GetOutputOffset();
   if (output_list.empty()) {
-    REPORT_INNER_ERROR("E19999", "check node:%s output_offset_list is empty",
-                       node->GetName().c_str());
-    GELOGE(PARAM_INVALID, "Output_list is empty");
+    REPORT_INNER_ERROR("E19999", "check node:%s output_offset_list is empty", node->GetName().c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] node:%s Output_list is empty", node->GetName().c_str());
     return PARAM_INVALID;
   }
   GE_CHECK_NOTNULL(var_node->GetOpDesc());
@@ -133,7 +131,8 @@ Status VarMemAssignUtil::SetOutVariableAttr(const ge::NodePtr &node, const ge::N
   if (index >= out_list_size) {
     REPORT_INNER_ERROR("E19999", "param index:%d >= output_list.size() %d in node %s, check invalid",
                        index, out_list_size, node->GetName().c_str());
-    GELOGE(FAILED, "index %d >= output_list.size() %d", index, out_list_size);
+    GELOGE(FAILED, "[Check][Param] index %d >= output_list.size() %d in node %s", index, out_list_size,
+           node->GetName().c_str());
     return FAILED;
   }
 
@@ -169,7 +168,8 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
   broad_cast_info.broadcast_name = node->GetName();
 
   auto op_desc = node->GetOpDesc();
-  GE_CHK_BOOL_RET_STATUS(op_desc != nullptr, FAILED, "Get broadcast op %s desc is nullptr", node->GetName().c_str());
+  GE_CHK_BOOL_RET_STATUS(op_desc != nullptr, FAILED,
+                         "[Check][Param] Get broadcast op %s desc is nullptr", node->GetName().c_str());
 
   GE_IF_BOOL_EXEC(broad_cast_info.idx < 0,
                   GELOGI("Broadcast input index must be positive, actual %d", broad_cast_info.idx);
@@ -180,8 +180,8 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
   if (input_tensor_desc_ptr_vistor.size() <= broad_cast_index) {
     REPORT_INNER_ERROR("E19999", "Get broadcast op %s input tensor desc size [%zu] < idx [%d]",
                        node->GetName().c_str(), input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
-    GELOGE(FAILED, "Get broadcast op %s input tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),
-           input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
+    GELOGE(FAILED, "[Check][Param] Get broadcast op %s input tensor desc size [%zu] < idx [%d]",
+           node->GetName().c_str(), input_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
     return FAILED;
   }
   const ge::GeTensorDescPtr input_tensor_desc =
@@ -192,8 +192,8 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
 
   vector<int64_t> output_list = op_desc->GetOutputOffset();
   GE_CHK_BOOL_RET_STATUS(output_list.size() > broad_cast_index, FAILED,
-                         "Get broadcast op %s output_list size [%zu] < idx [%d]", node->GetName().c_str(),
-                         output_list.size(), broad_cast_info.idx);
+                         "[Check][Param] Get broadcast op %s output_list size [%zu] < idx [%d]",
+                         node->GetName().c_str(), output_list.size(), broad_cast_info.idx);
   broad_cast_info.input_offset = output_list[broad_cast_info.idx];
   broad_cast_info.output_offset = output_list[broad_cast_info.idx];
 
@@ -201,16 +201,16 @@ Status VarMemAssignUtil::DealBroadCastNode(uint32_t graph_id, const ge::NodePtr 
 
   auto output_tensor_desc_ptr_vistor = op_desc->GetAllOutputsDescPtr();
   GE_CHK_BOOL_RET_STATUS(output_tensor_desc_ptr_vistor.size() > broad_cast_index, FAILED,
-                         "Get broadcast op %s output tensor desc size [%zu] < idx [%d]", node->GetName().c_str(),
-                         output_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
+                         "[Check][Param] Get broadcast op %s output tensor desc size [%zu] < idx [%d]",
+                         node->GetName().c_str(), output_tensor_desc_ptr_vistor.size(), broad_cast_info.idx);
   const ge::GeTensorDescPtr output_tensor_desc =
       output_tensor_desc_ptr_vistor.at(static_cast<size_t>(broad_cast_info.idx));
   int64_t output_size = 0;
-  GE_CHK_STATUS(TensorUtils::GetSize(*output_tensor_desc, output_size), "get input size failed.");
+  GE_CHK_STATUS(TensorUtils::GetSize(*output_tensor_desc, output_size), "[Check][Param] get output size failed.");
   broad_cast_info.output_size = output_size;
   GE_CHK_BOOL_RET_STATUS(broad_cast_info.output_size == broad_cast_info.input_size, FAILED,
-                         "Broadcast op input size[%lu] is not equal output size[%lu]", broad_cast_info.input_size,
-                         broad_cast_info.output_size);
+                         "[Check][Param] Broadcast op input size[%lu] is not equal output size[%lu]",
+                         broad_cast_info.input_size, broad_cast_info.output_size);
 
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->SaveBroadCastInfo(graph_id, broad_cast_info));
   return SUCCESS;
@@ -298,7 +298,9 @@ Status VarMemAssignUtil::SetOutTransNodeToAssign(const ge::NodePtr &node, const 
   vector<int64_t> output_list = node->GetOpDesc()->GetOutputOffset();
   auto out_list_size = output_list.size();
   GE_CHECK_SIZE(out_list_size);
-  GE_CHK_BOOL_RET_STATUS(index < out_list_size, FAILED, "index %zu >= output_list.size() %zu", index, out_list_size);
+  GE_CHK_BOOL_RET_STATUS(index < out_list_size, FAILED,
+                         "[Check][Param] index %zu >= output_list.size() %zu, node:%s",
+                         index, out_list_size, node->GetName().c_str());
 
   // final_trans_node outputOffset[0] to assign_node outputOffset[0]
   GELOGI("final_trans_node outputOffset[0] is: %ld", final_trans_output_list[0]);
@@ -372,7 +374,7 @@ Status VarMemAssignUtil::AssignData2VarRef(const ge::NodePtr &has_ref_attr_node,
   GE_CHECK_SIZE(ref_attr_node_output_list.size());
 
   GE_CHK_BOOL_RET_STATUS(out_index < ref_attr_node_output_list.size(), FAILED,
-                         "out_index %u >= ref_attr_node_output_list.size() %zu", out_index,
+                         "[Check][Param] out_index %u >= ref_attr_node_output_list.size() %zu", out_index,
                          ref_attr_node_output_list.size());
 
   ref_attr_node_output_list[out_index] = static_cast<int64_t>(reinterpret_cast<uintptr_t>(dev_ptr));

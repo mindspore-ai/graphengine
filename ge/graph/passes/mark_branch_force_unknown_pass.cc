@@ -40,7 +40,7 @@ Status MarkBranchForceUnknownPass::Run(ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     std::string node_type;
     GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original type failed.");
-    if ((node_type != MERGE) && (node_type != REFMERGE)) {
+    if (kMergeOpTypes.count(node_type) == 0) {
       continue;
     }
 

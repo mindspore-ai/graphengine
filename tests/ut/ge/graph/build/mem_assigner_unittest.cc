@@ -361,3 +361,61 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_update_ref_op_offset_reverse
     GraphMemoryAssigner memoryAssigner(graph);
     EXPECT_EQ(memoryAssigner.UpdateRefOpOffsetReverse(add), SUCCESS);
 }
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_atomic_output_and_workspace) {
+  ge::ut::GraphBuilder builder("graph");
+  auto data_input = builder.AddNode("data", "Data", 1, 1);
+  auto const_input = builder.AddNode("const", "Const", 1, 1);
+  auto add = builder.AddNode("add", "Add", 2, 1);
+  // add link
+  builder.AddDataEdge(data_input, 0, add, 0);
+  builder.AddDataEdge(const_input, 0, add, 1);
+  ge::ComputeGraphPtr graph = builder.GetGraph();
+
+  auto node = graph->FindNode("add");
+  EXPECT_NE(node, nullptr);
+  auto output_tensor_desc = node->GetOpDesc()->MutableOutputDesc(0);
+  ge::TensorUtils::SetSize(*output_tensor_desc, 100);
+  vector<int64_t> output_list = {0};
+  node->GetOpDesc()->SetOutputOffset(output_list);
+  vector<int64_t> workspace_list = {0};
+  node->GetOpDesc()->SetWorkspace(workspace_list);
+  vector<int64_t> atomic_output_index = {0};
+  bool set_attr = ge::AttrUtils::SetListInt(node->GetOpDesc(), ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_index);
+  EXPECT_EQ(set_attr, true);
+
+  map<string, map<int64_t, int64_t>> workspace_info;
+  workspace_info["add"][0] = 100;
+  set_attr = node->GetOpDesc()->SetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, workspace_info);
+  EXPECT_EQ(set_attr, true);
+
+  {
+    bool is_fusion_node = false;
+    set_attr = ge::AttrUtils::SetBool(node->GetOpDesc(), ATOMIC_ATTR_IS_FUSION_NODE, is_fusion_node);
+    EXPECT_EQ(set_attr, true);
+
+    GraphMemoryAssigner graph_memory_assigner(graph);
+    graph_memory_assigner.memory_offset_.insert({RT_MEMORY_HBM, MemoryOffset(RT_MEMORY_HBM, 0)});
+    vector<int64_t> mem_offset_end;
+    Status ret = graph_memory_assigner.AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(mem_offset_end.size(), 2);
+    MemoryOffset mem_offset = graph_memory_assigner.memory_offset_.at(RT_MEMORY_HBM);
+    EXPECT_EQ(mem_offset.mem_offset_, 1024);
+  }
+
+  {
+    bool is_fusion_node = true;
+    set_attr = ge::AttrUtils::SetBool(node->GetOpDesc(), ATOMIC_ATTR_IS_FUSION_NODE, is_fusion_node);
+    EXPECT_EQ(set_attr, true);
+
+    GraphMemoryAssigner graph_memory_assigner(graph);
+    graph_memory_assigner.memory_offset_.insert({RT_MEMORY_HBM, MemoryOffset(RT_MEMORY_HBM, 0)});
+    vector<int64_t> mem_offset_end;
+    Status ret = graph_memory_assigner.AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(mem_offset_end.size(), 2);
+    MemoryOffset mem_offset = graph_memory_assigner.memory_offset_.at(RT_MEMORY_HBM);
+    EXPECT_EQ(mem_offset.mem_offset_, 1024);
+  }
+}

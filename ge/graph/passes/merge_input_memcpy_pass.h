@@ -44,21 +44,6 @@ class MergeInputMemcpyPass : public GraphPass {
   ///
   NodePtr CreateMemcpyAsyncNode(const ComputeGraphPtr &graph, const std::string &name,
                                 const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag);
-
-  ///
-  /// @brief Mark force unknown shape for Switch node
-  /// @param [in] merge node
-  /// @param [out] switch_groups
-  /// @return
-  ///
-  void CollectSwitchGroup(const NodePtr &node, std::unordered_map<NodePtr, std::vector<NodePtr>> &switch_groups);
-
-  ///
-  /// @brief Mark force unknown shape for Switch node
-  /// @param [in] switch_groups
-  /// @return
-  ///
-  void MarkUnknownForSwitch(const std::unordered_map<NodePtr, std::vector<NodePtr>> &switch_groups);
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_MERGE_ADD_INPUT_MEMCPY_PASS_H_

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "mark_branch_force_unknown_pass.h"
+#include "mark_force_unknown_for_cond_pass.h"
 
 #include <queue>
 
@@ -35,8 +35,8 @@ inline bool IsMergeInLoop(const NodePtr &node) {
 }
 }
 
-Status MarkBranchForceUnknownPass::Run(ComputeGraphPtr graph) {
-  GELOGD("MarkBranchForceUnknownPass Enter");
+Status MarkForceUnknownForCondPass::Run(ComputeGraphPtr graph) {
+  GELOGD("MarkForceUnknownForCondPass Enter");
   for (const auto &node : graph->GetDirectNode()) {
     std::string node_type;
     GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original type failed.");
@@ -58,7 +58,7 @@ Status MarkBranchForceUnknownPass::Run(ComputeGraphPtr graph) {
     MarkUnknownForSwitch(node);
   }
 
-  GELOGD("MarkBranchForceUnknownPass Leave");
+  GELOGD("MarkForceUnknownForCondPass Leave");
   return SUCCESS;
 }
 
@@ -67,7 +67,7 @@ Status MarkBranchForceUnknownPass::Run(ComputeGraphPtr graph) {
 /// @param [in] merge node
 /// @return
 ///
-void MarkBranchForceUnknownPass::MarkUnknownForSwitch(const NodePtr &node) {
+void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const NodePtr &node) {
   // Switch --> {Switch --> Merge} --> Merge
   std::vector<NodePtr> switch_group;
   std::unordered_set<NodePtr> nodes_seen;

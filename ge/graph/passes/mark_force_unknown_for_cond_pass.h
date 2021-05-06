@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef GE_GRAPH_PASSES_MARK_BRANCH_FORCE_UNKNOWN_PASS_H_
-#define GE_GRAPH_PASSES_MARK_BRANCH_FORCE_UNKNOWN_PASS_H_
+#ifndef GE_GRAPH_PASSES_MARK_FORCE_UNKNOWN_FOR_COND_PASS_H_
+#define GE_GRAPH_PASSES_MARK_FORCE_UNKNOWN_FOR_COND_PASS_H_
 
 #include "inc/graph_pass.h"
 
 namespace ge {
-class MarkBranchForceUnknownPass : public GraphPass {
+class MarkForceUnknownForCondPass : public GraphPass {
  public:
   Status Run(ComputeGraphPtr graph);
 
@@ -33,4 +33,4 @@ class MarkBranchForceUnknownPass : public GraphPass {
   void MarkUnknownForSwitch(const NodePtr &node);
 };
 } // namespace ge
-#endif  // GE_GRAPH_PASSES_MARK_BRANCH_FORCE_UNKNOWN_PASS_H_
+#endif  // GE_GRAPH_PASSES_MARK_FORCE_UNKNOWN_FOR_COND_PASS_H_

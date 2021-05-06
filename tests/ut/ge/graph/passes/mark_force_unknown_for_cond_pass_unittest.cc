@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@
 
 #define protected public
 #define private public
-#include "graph/passes/mark_branch_force_unknown_pass.h"
+#include "graph/passes/mark_force_unknown_for_cond_pass.h"
 
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/graph_utils.h"
@@ -29,7 +29,7 @@
 using namespace std;
 using namespace testing;
 namespace ge {
-class UtestMarkBranchForceUnknownPass : public testing::Test {
+class UtestMarkForceUnknownForCondPass : public testing::Test {
  protected:
   void SetUp() {}
   void TearDown() {}
@@ -194,28 +194,28 @@ static void CreateCondGraph(ComputeGraphPtr &graph, NodePtr &merge) {
   merge = merge1;
 }
 
-TEST_F(UtestMarkBranchForceUnknownPass, skip_while_loop_merge) {
+TEST_F(UtestMarkForceUnknownForCondPass, skip_while_loop_merge) {
   auto graph = std::make_shared<ComputeGraph>("test_graph");
   NodePtr merge;
   CreateLoopGraph(graph, merge);
 
   AttrUtils::SetBool(merge->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, true);
 
-  MarkBranchForceUnknownPass mark_force_unknown_pass;
+  MarkForceUnknownForCondPass mark_force_unknown_pass;
   EXPECT_EQ(mark_force_unknown_pass.Run(graph), SUCCESS);   // skip LoopCond
 }
 
-TEST_F(UtestMarkBranchForceUnknownPass, skip_known_shape_merge) {
+TEST_F(UtestMarkForceUnknownForCondPass, skip_known_shape_merge) {
   auto graph = std::make_shared<ComputeGraph>("test_graph");
   NodePtr merge;
   CreateCondGraph(graph, merge);
 
-  MarkBranchForceUnknownPass mark_force_unknown_pass;
+  MarkForceUnknownForCondPass mark_force_unknown_pass;
   EXPECT_EQ(mark_force_unknown_pass.Run(graph), SUCCESS);   // skip known shape merge
 }
 
 
-TEST_F(UtestMarkBranchForceUnknownPass, mark_unknown_shape_merge) {
+TEST_F(UtestMarkForceUnknownForCondPass, mark_unknown_shape_merge) {
   auto graph = std::make_shared<ComputeGraph>("test_graph");
   NodePtr merge;
   CreateCondGraph(graph, merge);
@@ -224,7 +224,7 @@ TEST_F(UtestMarkBranchForceUnknownPass, mark_unknown_shape_merge) {
   tensor_desc.SetShape(GeShape({-1}));  // Set for unknown.
   merge->GetOpDesc()->UpdateOutputDesc(0, tensor_desc);
 
-  MarkBranchForceUnknownPass mark_force_unknown_pass;
+  MarkForceUnknownForCondPass mark_force_unknown_pass;
   EXPECT_EQ(mark_force_unknown_pass.Run(graph), SUCCESS);
 }
 }  // namespace ge

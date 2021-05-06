@@ -414,8 +414,8 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   mm.model_map_[1] = model;
   mm.hybrid_model_map_[1] = std::make_shared<hybrid::HybridDavinciModel>();
 
-  auto input_tensor = InputTensorInfo();
-  vector<InputTensorInfo> inputs;
+  ge::Tensor input_tensor;
+  vector<ge::Tensor> inputs;
   inputs.emplace_back(input_tensor);
   auto ret = mm.DataInputTensor(model_id,inputs);
   EXPECT_EQ(PARAM_INVALID, ret);    // HybridDavinciModel::impl_ is null.

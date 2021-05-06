@@ -122,7 +122,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   ge::Status DataInput(const InputData &input_data, OutputData &output_data);
 
-  ge::Status DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs);
+  ge::Status DataInputTensor(uint32_t model_id, const std::vector<ge::Tensor> &inputs);
 
   ///
   /// @ingroup domi_ome

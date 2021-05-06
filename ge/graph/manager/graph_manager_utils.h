@@ -130,7 +130,7 @@ class RunAsyncListener : public ge::ModelListener {
 
   // callback
   Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
-                       std::vector<ge::OutputTensorInfo> &outputs) override;
+                       std::vector<ge::Tensor> &outputs) override;
 
  private:
   RunAsyncCallback callback_;
@@ -224,7 +224,7 @@ class GraphModelListener : public ge::ModelListener {
 
   // callback
   Status OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
-                       std::vector<ge::OutputTensorInfo> &outputs) override;
+                       std::vector<ge::Tensor> &outputs) override;
 
   Status ResetResult();
 

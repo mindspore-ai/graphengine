@@ -97,6 +97,7 @@ set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
     "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
     "${GE_CODE_DIR}/metadef/graph/tensor.cc"
+    "${GE_CODE_DIR}/metadef/graph/types.cc"
     "${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
@@ -795,6 +796,8 @@ set(MULTI_PARTS_TEST_FILES
     "graph/manager/graph_manager_unittest.cc"
     "session/omg_omg_unittest.cc"
     "session/ge_api_unittest.cc"
+    "session/inner_session_unittest.cc"
+    "session/session_manager_unittest.cc"
 )
 
 set(GENERATOR_TEST_FILES

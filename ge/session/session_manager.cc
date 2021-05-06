@@ -384,8 +384,29 @@ Status SessionManager::BuildGraph(SessionId session_id, uint32_t graph_id, const
   return innerSession->BuildGraph(graph_id, inputs);
 }
 
+Status SessionManager::BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<ge::Tensor> &inputs) {
+  if (!init_flag_) {
+    GELOGE(GE_SESSION_MANAGER_NOT_INIT, "[Build][Graph]fail for Session manager is not initialized,"
+           "session_id:%lu, graph_id:%u.", session_id, graph_id);
+    REPORT_INNER_ERROR("E19999", "BuildGraph fail for Session manager is not initialized,"
+                       "session_id:%lu, graph_id:%u.", session_id, graph_id);
+    return GE_SESSION_MANAGER_NOT_INIT;
+  }
+  SessionPtr innerSession = nullptr;
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
+    if (it == session_manager_map_.end()) {
+      return GE_SESSION_NOT_EXIST;
+    } else {
+      innerSession = it->second;
+    }
+  }
+  return innerSession->BuildGraph(graph_id, inputs);
+}
+
 Status SessionManager::RunGraphAsync(SessionId session_id, uint32_t graph_id,
-                                     const std::vector<InputTensorInfo> &inputs, RunAsyncCallback callback) {
+                                     const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback) {
   if (!init_flag_) {
     GELOGE(GE_SESSION_MANAGER_NOT_INIT,
            "[AsyncRun][Graph]fail for Session manager is not initialized, session_id:%lu, graph_id:%u.",

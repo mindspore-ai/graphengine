@@ -55,4 +55,12 @@ TEST_F(UtestGeApi, run_graph_with_stream) {
   ret = inner_session.RunGraphWithStreamAsync(10, nullptr, inputs, outputs);
   ASSERT_NE(ret, SUCCESS);
 }
+
+TEST_F(UtestGeApi, build_graph_success) {
+  vector<Tensor> inputs;
+  std::map<std::string, std::string> options;
+  Session session(options);
+  auto ret = session.BuildGraph(1, inputs);
+  ASSERT_NE(ret, SUCCESS);
+}
 }  // namespace ge

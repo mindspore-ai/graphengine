@@ -23,6 +23,7 @@
 #include <set>
 #include <functional>
 #include <memory>
+#include "graph/tensor.h"
 
 namespace ge {
 // Option key: graph run mode
@@ -356,7 +357,8 @@ struct OutputTensorInfo {
 };
 
 using Status = uint32_t;
-using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensorInfo> &)>;
+using RunAsyncCallback = std::function<void(Status, std::vector<ge::Tensor> &)>;
+
 // for ir build
 namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";

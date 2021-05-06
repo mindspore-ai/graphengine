@@ -681,8 +681,35 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
   return SUCCESS;
 }
 
+// Build Graph
+Status Session::BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs) {
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
+  ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED,
+           "[Build][Graph]Failed, the GELib instance is nullptr or is not InitFlag, "
+           "session_id %lu, graph_id %u", sessionId_, graph_id);
+    REPORT_INNER_ERROR("E19999",
+                       "Build graph failed, the GELib instance is nullptr or is not InitFlag, "
+                       "session_id %lu, graph_id %u", sessionId_, graph_id);
+    return FAILED;
+  }
+  GELOGT(TRACE_RUNNING, "Building Graph");
+  Status ret = instance_ptr->SessionManagerObj().BuildGraph(sessionId_, graph_id, inputs);
+  if (ret != SUCCESS) {
+    GELOGE(ret,
+           "[Build][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
+           ret, sessionId_, graph_id);
+    REPORT_CALL_ERROR("E19999", "Build graph failed , error code:%u, "
+                      "session_id:%lu, graph_id:%u", ret, sessionId_, graph_id);
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 // Run Graph Asynchronously
-Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs,
                               RunAsyncCallback callback) {
   ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);

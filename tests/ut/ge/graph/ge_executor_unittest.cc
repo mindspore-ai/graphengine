@@ -75,7 +75,7 @@ class DModelListener : public ge::ModelListener {
   DModelListener() {
   };
   Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode,
-                       std::vector<ge::OutputTensorInfo> &outputs) {
+                       std::vector<ge::Tensor> &outputs) {
     GELOGI("In Call back. OnComputeDone");
     return SUCCESS;
   }
@@ -276,7 +276,7 @@ TEST_F(UtestGeExecutor, execute_graph_with_stream) {
   EXPECT_EQ(model.task_list_.size(), 2);
 
   OutputData output_data;
-  vector<OutputTensorInfo> outputs;
+  vector<Tensor> outputs;
   EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
   
 

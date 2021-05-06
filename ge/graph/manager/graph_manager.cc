@@ -107,6 +107,7 @@
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "register/custom_pass_helper.h"
+#include "external/graph/types.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -127,6 +128,7 @@ const uint32_t kNotAdded = 0;
 const uint32_t kStartAdd = 1;
 const uint32_t kDoneAdded = 2;
 const uint32_t kNeverLoaded = 0;
+const size_t kAlignment = 64;
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;
@@ -369,9 +371,9 @@ void GraphManager::RemoveAddGraphCondition(GraphId graph_id) {
   auto it = graph_id_to_add_graph_cond_.find(graph_id);
   if (it != graph_id_to_add_graph_cond_.end()) {
     graph_id_to_add_graph_cond_.erase(it);
-    GELOGD("Successfully removed add_graph_cond of graph [id:%u].", graph_id);
+    GELOGD("Successfully remove add_graph_cond of graph [id:%u].", graph_id);
   } else {
-    GELOGD("Graph [id:%u] has not been added. no need to remove.", graph_id);
+    GELOGD("Graph [id:%u] has not been added, no need to be removed.", graph_id);
   }
 }
 
@@ -538,7 +540,7 @@ Status GraphManager::CheckGraphAdded(const GraphId &graph_id, const Graph &graph
     bool graph_has_been_added = false;
     if (AttrUtils::GetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, graph_has_been_added)
         && graph_has_been_added) {
-      REPORT_INNER_ERROR("E19999", "Get Attr:%s from graph:%u fail",
+      REPORT_INNER_ERROR("E19999", "Get Attr:%s from graph:%u fail.",
                          ATTR_NAME_GRAPH_HAS_BEEN_ADDED.c_str(), graph_id);
       GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST,
              "[GraphManager] same graph object can not be added again, graph_id = %u.", graph_id);
@@ -897,7 +899,7 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
 }
 
 Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint64_t session_id, uint32_t graph_id) {
-  GELOGD("set rt_context: session id: %lu, graph id: %u, mode %d, device id:%u.",
+  GELOGD("Set rt_context: session id: %lu, graph id: %u, mode %d, device id:%u.",
          session_id, graph_id, static_cast<int>(mode), ge::GetContext().DeviceId());
 
   rtError_t rt_ret = rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId());
@@ -943,7 +945,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   GE_CHK_STATUS_RET(analyzer_instance->BuildJsonObject(session_id, compute_graph->GetGraphID()),
                     "BuildJsonObject Failed")
 
-  GEEVENT("PreRun start: graph node size %zu, session id %lu, graph id %u, graph name %s",
+  GEEVENT("PreRun start: graph node size %zu, session id %lu, graph id %u, graph name %s.",
           compute_graph->GetDirectNodesSize(), session_id, compute_graph->GetGraphID(),
           compute_graph->GetName().c_str());
   GE_DUMP(compute_graph, "PreRunBegin");
@@ -964,7 +966,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   if (run_optimize_original_graph) {
     Status ret = PreRunOptimizeOriginalGraph(graph_node, inputs, compute_graph, session_id);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Run PreRunOptimizeOriginalGraph failed for graph:%s", compute_graph->GetName().c_str());
+      GELOGE(ret, "Run PreRunOptimizeOriginalGraph failed for graph:%s.", compute_graph->GetName().c_str());
       return ret;
     }
   }
@@ -1059,7 +1061,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
       // release rts generate context
       RtContextUtil::GetInstance().DestroyRtContexts(session_id, graph_node->GetGraphId());
       if (ret != SUCCESS) {
-        GELOGE(ret, "PreRun Failed. graph_id:%u.", graph_node->GetGraphId());
+        GELOGE(ret, "PreRun Failed, graph_id:%u.", graph_node->GetGraphId());
         return ret;
       }
     }
@@ -2946,7 +2948,7 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
 }
 
 // run graph async on session
-Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge::InputTensorInfo> &inputs,
+Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge::Tensor> &inputs,
                                    uint64_t session_id, RunAsyncCallback callback) {
   ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
   GELOGI("[GraphManager] Start to run graph async, graph_id=%u, inputsSize=%zu.", graph_id, inputs.size());
@@ -3018,14 +3020,6 @@ Status GraphManager::IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_m
   return FAILED;
 }
 
-void GraphManager::ConstructGeInput(const vector<InputTensorInfo> &inputs, vector<GeTensor> &ge_inputs) {
-  for (auto const &input : inputs) {
-    GeTensorDesc input_tensor_desc(GeShape(input.dims));
-    input_tensor_desc.SetDataType(static_cast<ge::DataType>(input.data_type));
-    ge_inputs.emplace_back(input_tensor_desc);
-  }
-}
-
 Status GraphManager::CheckIncreBuildAndPreRun(GraphManager *graph_manager, const PreRunArgs &args,
                                               GraphNodePtr &graph_node, GeRootModelPtr &ge_root_model) {
   if (!graph_manager->IsGraphNeedBuild(graph_node)) {
@@ -3044,7 +3038,9 @@ Status GraphManager::CheckIncreBuildAndPreRun(GraphManager *graph_manager, const
   GeModelPtr ge_model = nullptr;
   if (graph_manager->IncreBuild(graph_node, ge_model) != SUCCESS) {
     std::vector<GeTensor> ge_inputs;
-    ConstructGeInput(args.input_tensor, ge_inputs);
+    for (const auto &item: args.input_tensor) {
+      ge_inputs.emplace_back(TensorAdapter::AsGeTensor(item));
+    }
     Status ret = graph_manager->PreRun(graph_node, ge_inputs, ge_root_model, args.session_id);
     // release rts generate context
     RtContextUtil::GetInstance().DestroyRtContexts(args.session_id, graph_node->GetGraphId());
@@ -3156,20 +3152,19 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
   }
 }
 
-void GraphManager::ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor) {
+void GraphManager::ParseInputsDimsForData(const std::vector<ge::Tensor> &input_tensor) {
   GELOGD("Start parse input dims from data.");
   for (size_t i = 0; i < input_tensor.size(); ++i) {
-    std::vector<int64_t> dynamic_dim;
-    for (size_t j = 0; j < input_tensor[i].dims.size(); ++j) {
-      dynamic_dim.emplace_back(input_tensor[i].dims[j]);
-    }
-    GELOGD("Input tensor dims is %s.", formats::JoinToString(dynamic_dim).c_str());
-    GetLocalOmgContext().user_real_input_dims.emplace_back(input_tensor[i].dims);
+    const TensorDesc &tensor_desc = input_tensor[i].GetTensorDesc();
+    const Shape &shape = tensor_desc.GetShape();
+    const auto &shape_dims = shape.GetDims();
+    GELOGD("Input tensor dims is %s.", formats::JoinToString(shape_dims).c_str());
+    GetLocalOmgContext().user_real_input_dims.emplace_back(shape_dims);
   }
 }
 
 Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
-                                                           const std::vector<InputTensorInfo> &input_tensor) {
+                                                           const std::vector<ge::Tensor> &input_tensor) {
   GELOGD("Start parse inputs dims when coexist data and getnext sink.");
   for (size_t i = 0; i < dynamic_nodes.size(); ++i) {
     auto op_desc = dynamic_nodes.at(i)->GetOpDesc();
@@ -3192,13 +3187,16 @@ Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr>
       return PARAM_INVALID;
     }
 
-    GetLocalOmgContext().user_real_input_dims.emplace_back(input_tensor.at(index).dims);
-    GELOGI("Shape dims of %zu data is %s.", index, formats::JoinToString(input_tensor.at(index).dims).c_str());
+    const TensorDesc &tensor_desc = input_tensor[i].GetTensorDesc();
+    const Shape &shape = tensor_desc.GetShape();
+    const auto &shape_dims = shape.GetDims();
+    GELOGI("Shape dims of %zu data is %s.", index, formats::JoinToString(shape_dims).c_str());
+    GetLocalOmgContext().user_real_input_dims.emplace_back(std::move(shape_dims));
   }
   return SUCCESS;
 }
 
-Status GraphManager::ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor) {
+Status GraphManager::ParseInputsDims(const std::vector<ge::Tensor> &input_tensor) {
   GELOGI("Start parse input dims of %zu input tensor.", input_tensor.size());
   GetLocalOmgContext().user_real_input_dims.clear();
   if (!GetLocalOmgContext().dynamic_node_type.empty()) {
@@ -3329,13 +3327,13 @@ void GraphManager::ReturnError(GraphManager *graph_manager, RunAsyncCallback cal
   }
   StopQueue(graph_manager);
   GELOGE(ret, "%s.", log.c_str());
-  std::vector<ge::OutputTensorInfo> outputs;
+  std::vector<ge::Tensor> outputs;
   callback(ret, outputs);
 }
 
-void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node,
-                               RunAsyncCallback callback, Status ret, const string &log) {
-  std::vector<ge::OutputTensorInfo> outputs;
+void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback,
+                               Status ret, const string &log) {
+  std::vector<ge::Tensor> outputs;
   auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
   if (graph_manager == nullptr || compute_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph_manager or compute_graph in graph_node is nullptr, "
@@ -3351,9 +3349,10 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
     }
     for (size_t i = 0; i < node->GetAllInDataAnchorsSize(); i++) {
       auto input_desc = node->GetOpDesc()->MutableInputDesc(i);
-      ge::OutputTensorInfo tensor;
-      tensor.dims = input_desc->GetShape().GetDims();
-      tensor.data_type = static_cast<uint32_t>(input_desc->GetDataType());
+      GeShape ge_shape(input_desc->GetShape().GetDims());
+      GeTensorDesc ge_tensor_desc;
+      ge_tensor_desc.SetShape(ge_shape);
+      GeTensor ge_tensor(ge_tensor_desc);
       int64_t len = 1;
       if (input_desc->GetShape().GetDims() != std::vector<int64_t>({})) {
         len = input_desc->GetShape().GetShapeSize();
@@ -3369,30 +3368,19 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
         GELOGI("getted shape size is 0.Do process as empty tensor!");
         len = 1;
       }
-      auto size = GetSizeByDataType(input_desc->GetDataType());
-      if (size <= 0) {
-        REPORT_INNER_ERROR("E19999", "data_type:%s of op:%s(%s) is not support, input_index:%zu check invalid",
-                           ge::TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str(),
-                           node->GetName().c_str(), node->GetType().c_str(), i);
-        GELOGE(PARAM_INVALID, "Failed to get cube size, the data type %s is invalid",
-               ge::TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str());
-        callback(GRAPH_FAILED, outputs);
+      auto length = GetSizeInBytes(len, input_desc->GetDataType());
+      auto aligned_ptr = MakeShared<AlignedPtr>(length, kAlignment);
+      if (aligned_ptr == nullptr) {
+        REPORT_INNER_ERROR("E19999", "Aligned_ptr is nullptr");
+        GELOGE(GRAPH_FAILED, "[Analyze Mode] Aligned_ptr is nullptr");
         return;
       }
-      if (CheckInt64MulOverflow(len, static_cast<int64_t>(size)) != true) {
-        REPORT_INNER_ERROR("E19999", "shape_size:%ld of op:%s(%s) will overflow after multiply by "
-                           "size:%u of data_type:%s, input_index:%zu, check invalid", len,
-                           node->GetName().c_str(), node->GetType().c_str(), size,
-                           ge::TypeUtils::DataTypeToSerialString(input_desc->GetDataType()).c_str(), i);
-        GELOGE(MEMALLOC_FAILED, "int64 multiply happens overflow! a:%ld b:%d", len, size);
-        callback(GRAPH_FAILED, outputs);
-        return;
-      }
-      tensor.length = len * size;
-      tensor.data.reset(new(std::nothrow) uint8_t[tensor.length]);
+      ge_tensor.SetData(aligned_ptr, length);
+      ge::Tensor tensor = TensorAdapter::AsTensor(ge_tensor);
       // To avoid global step too small and can not stop, totally set a bigger value
-      for (int64_t i = 0; i < tensor.length; i++) {
-        tensor.data[i] = 0x7F; // here stands for a positive max value
+      auto ptr = aligned_ptr->MutableGet();
+      for (int64_t i = 0; i < length; i++) {
+        ptr[i] = 0x7F;  // here stands for a positive max value
       }
       outputs.emplace_back(std::move(tensor));
     }
@@ -3740,7 +3728,7 @@ void GraphManager::UpdateLocalOmgContext(GraphId graph_id) {
   if (iter != omg_contexts_.end()) {
     SetLocalOmgContext(iter->second);
   } else {
-    GELOGW("OmgContext of graph %u not found.", graph_id);
+    GELOGW("OmgContext of graph %u is not found.", graph_id);
   }
 }
 
@@ -3770,9 +3758,9 @@ void GraphManager::RemoveGraphCount(GraphId graph_id) {
   std::lock_guard<std::mutex> lock(graph_count_mutex_);
   auto it = graph_count_.find(graph_id);
   if (it == graph_count_.end()) {
-    GELOGW("Graph of id: %u has not been added, count cannot be decreased.", graph_id);
+    GELOGW("Graph of id: %u has not been added, count cannot be decreased", graph_id);
   } else {
-    GELOGD("RemoveGraphCount success, graph count of id[%u] is %u.", graph_id, graph_count_[graph_id]);
+    GELOGD("RemoveGraphCount success, graph count of id[%u] is %u", graph_id, graph_count_[graph_id]);
     graph_count_.erase(it);
   }
 }

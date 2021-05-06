@@ -114,7 +114,7 @@ GraphModelListener::GraphModelListener(std::mutex &mutex, std::condition_variabl
     : result_code_(0), is_finished_(false), mutex_(mutex), condition_(cond) {}
 
 Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
-                                         std::vector<ge::OutputTensorInfo> &outputs) {
+                                         std::vector<ge::Tensor> &outputs) {
   GELOGI(
       "[GraphManager] graph compute call back, model_id:%u, task_id:%u, "
       "resultCode:%u.",
@@ -151,7 +151,7 @@ void RunAsyncListener::SetCallback(const RunAsyncCallback &callback) {
 }
 
 Status RunAsyncListener::OnComputeDone(uint32_t model_id, uint32_t task_id, uint32_t result,
-                                       std::vector<ge::OutputTensorInfo> &outputs) {
+                                       std::vector<ge::Tensor> &outputs) {
   GELOGI("[GraphManager] run graph async call back, modelId:%u, taskId:%u, resultCode:%u.",
          model_id, task_id, result);
   GE_CHECK_NOTNULL(callback_);

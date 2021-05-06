@@ -382,7 +382,7 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeRootModelPtr &ge_ro
 }
 
 Status GraphExecutor::ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
-                                        const std::vector<InputTensorInfo> &input_tensor,
+                                        const std::vector<ge::Tensor> &input_tensor,
                                         const RunAsyncCallback& callback) {
   GELOGI("[GraphExecutor] Start to async execute graph, graph_id=%u", graph_id);
   if (graph_id != last_graph_id_) {
@@ -529,7 +529,7 @@ Status GraphExecutor::SetCallback(uint32_t model_id, const GeRootModelPtr &ge_ro
   return SUCCESS;
 }
 
-Status GraphExecutor::AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<InputTensorInfo> &inputs,
+Status GraphExecutor::AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<ge::Tensor> &inputs,
                                         const RunAsyncCallback &callback) {
   uint32_t model_id = GetExecuteModelId(ge_root_model);
   if (model_id == kInvalidModelId) {

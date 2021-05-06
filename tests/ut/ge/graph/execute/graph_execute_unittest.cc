@@ -115,7 +115,7 @@ TEST_F(UtestGraphExecuteTest, test_set_callback) {
   ComputeGraphPtr graph = MakeShared<ComputeGraph>("test");
   // is_unknown_shape_graph_ = false
   GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(graph);
-  RunAsyncCallback callback = [](Status, std::vector<ge::OutputTensorInfo> &) {};
+  RunAsyncCallback callback = [](Status, std::vector<ge::Tensor> &) {};
 
   auto model_manager = ModelManager::GetInstance();
   auto listener = MakeShared<RunAsyncListener>();

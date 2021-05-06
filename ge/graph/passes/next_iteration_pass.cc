@@ -266,17 +266,32 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
     MarkForceUnknownShape(loop_group.loop_cond, loop_group.is_unknown_shape);
     MarkForceUnknownShape(enter_active, loop_group.is_unknown_shape);
     MarkForceUnknownShape(next_active, loop_group.is_unknown_shape);
-    for (const auto &switch_node : loop_group.switch_nodes) {
-      MarkForceUnknownShape(switch_node, loop_group.is_unknown_shape);
-      for (const auto &exit_node : switch_node->GetOutDataNodes()) {
-        if (exit_node->GetType() == EXIT || exit_node->GetType() == REFEXIT) {
-          MarkForceUnknownShape(exit_node, loop_group.is_unknown_shape);
-        }
-      }
-    }
+    HandleSwitchExitNodes(loop_group);
   }
 
   return SUCCESS;
+}
+
+///
+/// @brief Mark force unknown for Exit node
+/// @param [in] group of LoopCond
+/// @return void
+///
+void NextIterationPass::HandleSwitchExitNodes(const LoopCondGroup &loop_group) {
+  if (!loop_group.is_unknown_shape) {
+    return;
+  }
+
+  for (const auto &switch_node : loop_group.switch_nodes) {
+    MarkForceUnknownShape(switch_node, loop_group.is_unknown_shape);
+    for (const auto &node : switch_node->GetOutDataNodes()) {
+      std::string node_type;
+      (void)GetOriginalType(node, node_type);
+      if (node_type == EXIT || node_type == REFEXIT) {
+        MarkForceUnknownShape(node, loop_group.is_unknown_shape);
+      }
+    }
+  }
 }
 
 ///

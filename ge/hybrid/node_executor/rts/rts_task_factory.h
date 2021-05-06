@@ -17,11 +17,12 @@
 #ifndef GE_HYBRID_NODE_EXECUTOR_RTS_TASK_FACTORY_H_
 #define GE_HYBRID_NODE_EXECUTOR_RTS_TASK_FACTORY_H_
 
-#include "hybrid/node_executor/node_executor.h"
+#include "hybrid/node_executor/rts/rts_node_task.h"
 
 namespace ge {
 namespace hybrid {
-using RtsTaskCreatorFun = std::function<NodeTaskPtr()>;
+using RtsNodeTaskPtr = std::shared_ptr<RtsNodeTask>;
+using RtsTaskCreatorFun = std::function<RtsNodeTaskPtr()>;
 
 class RtsTaskFactory {
  public:
@@ -30,7 +31,7 @@ class RtsTaskFactory {
     return instance;
   }
 
-  NodeTaskPtr Create(const std::string &task_type) const;
+  RtsNodeTaskPtr Create(const std::string &task_type) const;
 
   class RtsTaskRegistrar {
    public:
@@ -60,6 +61,6 @@ class RtsTaskFactory {
     REGISTER_RTS_TASK_CREATOR_UNIQ_HELPER(__COUNTER__, task_type, task_clazz)
 
 #define REGISTER_RTS_TASK_CREATOR_UNIQ_HELPER(ctr, type, clazz) \
-  RtsTaskFactory::RtsTaskRegistrar g_##type##_Creator##ctr(type, []()-> NodeTaskPtr { return MakeShared<clazz>(); })
+  RtsTaskFactory::RtsTaskRegistrar g_##type##_Creator##ctr(type, []()-> RtsNodeTaskPtr { return MakeShared<clazz>(); })
 
 #endif // GE_HYBRID_NODE_EXECUTOR_RTS_TASK_FACTORY_H_

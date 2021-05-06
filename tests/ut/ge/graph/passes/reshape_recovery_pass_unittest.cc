@@ -42,8 +42,8 @@ ut::GraphBuilder Graph1Builder() {
   auto var1 = builder.AddNode("var1", "Variable", 0, 1, FORMAT_ND, DT_FLOAT, {-1});
   auto const1 = builder.AddNode("const1", "Const", 0, 1, FORMAT_ND, DT_FLOAT, {1, 1, 224, 224});
   auto transdata2 = builder.AddNode("transdata2", "Transdata", 1, 1, FORMAT_ND, DT_FLOAT, {224, 224});
-  auto transdata1 = builder.AddNode("transdata1", "Transdata", 1, 1, FORMAT_ND, DT_FLOAT, {224, 224});
-  auto netoutput1 = builder.AddNode("netoutput1", "Netoutput", 2, 0);
+  auto transdata1 = builder.AddNode("transdata1", "Transdata", 1, 1, FORMAT_ND, DT_FLOAT, {-1, 224});
+  auto netoutput1 = builder.AddNode("netoutput1", "NetOutput", 2, 0);
 
   builder.AddDataEdge(var1, 0, transdata1, 0);
   builder.AddDataEdge(const1, 0, transdata2, 0);
@@ -58,10 +58,10 @@ TEST_F(UtestReshapeRecoveryPass, reshape_recovery_with_dynamic_shape) {
   auto builder = Graph1Builder();
   auto graph = builder.GetGraph();
   ReshapeRecoveryPass reshape_recovery_pass;
-  EXPECT_EQ(graph->GetDirectNodesSize(),5);
+  EXPECT_EQ(graph->GetDirectNodesSize(), 5);
   Status ret = reshape_recovery_pass.Run(graph);
   EXPECT_EQ(ret, SUCCESS);
-  EXPECT_EQ(graph->GetDirectNodesSize(),8);
+  EXPECT_EQ(graph->GetDirectNodesSize(), 7);
 
   auto reshape1 = graph->FindNode("Reshape_ReshapeRecoveryPass_0");
   EXPECT_NE(reshape1, nullptr);

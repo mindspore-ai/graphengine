@@ -377,7 +377,7 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   tiling_key_ = tiling_info.tiling_key;
   GELOGD("Successfully getting [tiling_key] : %u", tiling_key_);
   if (tiling_data_.empty()) {
-    GELOGD("[%s] Tiling data is empty.", op_desc->GsetName().c_str());
+    GELOGD("[%s] Tiling data is empty.", op_desc->GetName().c_str());
     return SUCCESS;
   }
   if (tiling_buffer_ == nullptr) {

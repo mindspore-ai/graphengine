@@ -10,34 +10,62 @@ elseif (ENABLE_D)
     add_subdirectory(ge_runtime)
 endif ()
 
-set(PROTO_LIST
-    "${METADEF_DIR}/proto/fusion_model.proto"
-    "${GE_CODE_DIR}/ge/proto/optimizer_priority.proto"
-)
-
-set(PROTO_CLIENT_LIST
-    "${METADEF_DIR}/proto/ge_api.proto"
-)
-
-set(PROTO_HEADER_LIST
+set(GRAPHENGINE_PROTO_LIST
     "${METADEF_DIR}/proto/om.proto"
     "${METADEF_DIR}/proto/task.proto"
     "${METADEF_DIR}/proto/insert_op.proto"
     "${METADEF_DIR}/proto/ge_ir.proto"
+    "${METADEF_DIR}/proto/ge_api.proto"
+    "${METADEF_DIR}/proto/fusion_model.proto"
+    "${METADEF_DIR}/proto/optimizer_priority.proto"
     "${METADEF_DIR}/proto/fwk_adapter.proto"
     "${METADEF_DIR}/proto/op_mapping.proto"
+    "${METADEF_DIR}/proto/dump_task.proto"
+    "${METADEF_DIR}/proto/tensorflow/graph_library.proto"
+    "${METADEF_DIR}/proto/tensorflow/graph.proto"
+    "${METADEF_DIR}/proto/tensorflow/node_def.proto"
+    "${METADEF_DIR}/proto/tensorflow/function.proto"
+    "${METADEF_DIR}/proto/tensorflow/versions.proto"
+    "${METADEF_DIR}/proto/tensorflow/attr_value.proto"
+    "${METADEF_DIR}/proto/tensorflow/op_def.proto"
+    "${METADEF_DIR}/proto/tensorflow/tensor.proto"
+    "${METADEF_DIR}/proto/tensorflow/tensor_shape.proto"
+    "${METADEF_DIR}/proto/tensorflow/types.proto"
+    "${METADEF_DIR}/proto/tensorflow/resource_handle.proto"
 )
 
-protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-protobuf_generate(ge PROTO_CLIENT_SRCS PROTO_CLIENT_HDRS ${PROTO_CLIENT_LIST})
-protobuf_generate(ge PROTO_HEADER_SRCS PROTO_HEADER_HDRS ${PROTO_HEADER_LIST})
-protobuf_generate(ge_client PROTO_CLIENT_HEADER_SRCS PROTO_CLIENT_HEADER_HDRS ${PROTO_HEADER_LIST})
+protobuf_generate(graphengine_protos GRAPHENGINE_PROTO_SRCS GRAPHENGINE_PROTO_HDRS ${GRAPHENGINE_PROTO_LIST} TARGET)
+
+set(GE_FUSION_MODEL_PROTO_SRCS
+    "${CMAKE_BINARY_DIR}/proto/graphengine_protos/proto/fusion_model.pb.cc"
+    "${CMAKE_BINARY_DIR}/proto/graphengine_protos/proto/optimizer_priority.pb.cc"
+)
+
+
+add_library(ge_fusion_model_protos_obj OBJECT ${GE_FUSION_MODEL_PROTO_SRCS})
+add_dependencies(ge_fusion_model_protos_obj graphengine_protos)
+target_include_directories(ge_fusion_model_protos_obj PRIVATE
+    #### blue zone ####
+    ${PROTOBUF_SHARED_PKG_DIR}/include
+    #### yellow zone ####
+    ${ASCEND_PROTOBUF_SHARED_PKG_DIR}/include
+)
+target_compile_definitions(ge_fusion_model_protos_obj PRIVATE
+    google=ascend_private
+)
+target_link_libraries(ge_fusion_model_protos_obj PRIVATE ascend_protobuf $<BUILD_INTERFACE:intf_pub>)
+target_compile_options(ge_fusion_model_protos_obj PRIVATE
+    $<$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>:-O2 -fPIC>
+    $<$<OR:$<STREQUAL:${PRODUCT_SIDE},host>,$<STREQUAL:${ENABLE_OPEN_SRC},True>>:-fexceptions>
+    $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>: -Wno-deprecated-declarations -fno-common>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
+)
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 ############ libge_proto_common.a ############
 add_library(ge_proto_common STATIC
-    ${PROTO_HEADER_HDRS}
-    ${PROTO_SRCS}
+    $<TARGET_OBJECTS:ge_fusion_model_protos_obj>
 )
 
 target_compile_definitions(ge_proto_common PRIVATE
@@ -57,8 +85,7 @@ target_link_libraries(ge_proto_common PRIVATE
 
 ############ libge_proto_client.a ############
 add_library(ge_proto_client STATIC
-    ${PROTO_CLIENT_HEADER_HDRS}
-    ${PROTO_CLIENT_SRCS}
+    $<TARGET_OBJECTS:ge_fusion_model_protos_obj>
 )
 
 target_compile_definitions(ge_proto_client PRIVATE
@@ -67,8 +94,8 @@ target_compile_definitions(ge_proto_client PRIVATE
 )
 
 target_include_directories(ge_proto_client PRIVATE
-    ${CMAKE_BINARY_DIR}/proto/ge_client
-    ${CMAKE_BINARY_DIR}/proto/ge_client/proto
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos/proto
 )
 
 target_compile_options(ge_proto_client PRIVATE
@@ -742,7 +769,7 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/external
@@ -787,6 +814,10 @@ add_library(ge_compiler SHARED
     ${INFER_SRC_LIST}
 )
 
+add_dependencies(ge_compiler
+    graphengine_protos
+)
+
 target_compile_definitions(ge_compiler PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     REUSE_MEMORY=1
@@ -819,7 +850,7 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/external

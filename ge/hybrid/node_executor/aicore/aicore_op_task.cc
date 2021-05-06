@@ -354,8 +354,6 @@ Status AiCoreOpTask::PrepareWithShape(TaskContext &context) {
 Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   auto node = context.GetNodeItem().node;
   GE_CHECK_NOTNULL(node);
-  auto op_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(op_desc);
 
   GELOGD("[%s] Start to update tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());
   OpRunInfo tiling_info;
@@ -370,12 +368,14 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 
   // update op args by tiling info
   block_dim_ = static_cast<uint32_t>(tiling_info.block_dim);
-  op_desc->SetWorkspaceBytes(tiling_info.workspaces);
   clear_atomic_ = tiling_info.clear_atomic;
-
   tiling_data_ = tiling_info.tiling_data.str();
   tiling_key_ = tiling_info.tiling_key;
   GELOGD("Successfully getting [tiling_key] : %u", tiling_key_);
+
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  op_desc->SetWorkspaceBytes(tiling_info.workspaces);
   if (tiling_data_.empty()) {
     GELOGD("[%s] Tiling data is empty.", op_desc->GetName().c_str());
     return SUCCESS;
@@ -401,9 +401,8 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   }
 
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] Start");
-  GE_CHK_RT_RET(rtMemcpy(tiling_buffer_->GetData(), tiling_buffer_->GetSize(),
-                         tiling_data_.c_str(), tiling_data_.size(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_->GetData(), tiling_buffer_->GetSize(), tiling_data_.c_str(),
+                              tiling_data_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, context.GetStream()));
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] End");
 
   GELOGD("[%s] Done updating tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());

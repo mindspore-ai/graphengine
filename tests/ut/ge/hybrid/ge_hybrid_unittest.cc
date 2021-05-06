@@ -111,14 +111,26 @@ TEST_F(UtestGeHybrid, aicore_op_task_init_success) {
 
 TEST_F(UtestGeHybrid, task_update_tiling_info) {
   auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
-  aicore_task->is_single_op_ = true;
   auto graph = make_shared<ComputeGraph>("graph");
   OpDescPtr op_desc = CreateOpDesc("Add", "Add");
   ge::AttrUtils::SetStr(op_desc, "compile_info_key", "key");
   ge::AttrUtils::SetStr(op_desc, "compile_info_json", "json");
+  ge::AttrUtils::SetBool(op_desc, "support_dynamicshape", true);
+  ge::AttrUtils::SetInt(op_desc, "op_para_size", 1);
   auto node = graph->AddNode(op_desc);
-  optiling::OpRunInfo tiling_info;
-  ASSERT_EQ(aicore_task->CalcTilingInfo(node, tiling_info), SUCCESS);
+
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphExecutionContext execution_context;
+  SubgraphContext subgraph_context(nullptr, &execution_context);
+  NodeState node_state(*node_item, &subgraph_context);
+  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  ASSERT_TRUE(task_context != nullptr);
+  ASSERT_EQ(aicore_task->InitTilingInfo(*op_desc), SUCCESS);
+  ASSERT_EQ(aicore_task->UpdateTilingInfo(*task_context), SUCCESS);
 }
 
 TEST_F(UtestGeHybrid, index_taskdefs_failed) {

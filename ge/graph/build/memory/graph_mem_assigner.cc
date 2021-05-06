@@ -1234,6 +1234,7 @@ Status GraphMemoryAssigner::AssignOrdinaryAtomicWorkspaceMemory(const ge::OpDesc
           batch_label.c_str());
 
       mem_type_iter->second.mem_offset_ += workspace_size;
+      AlignMemOffset(MEM_ALIGN_SIZE, RT_MEMORY_HBM);
       mem_offset_end.emplace_back(mem_type_iter->second.mem_offset_);
     }
   }
@@ -1276,6 +1277,7 @@ Status GraphMemoryAssigner::AssignFusionAtomicWorkspaceMemory(const ge::OpDescPt
           op_desc->GetStreamId(), RT_MEMORY_HBM, workspace_size, workspace_size, batch_label.c_str());
 
       mem_type_iter->second.mem_offset_ += workspace_size;
+      AlignMemOffset(MEM_ALIGN_SIZE, RT_MEMORY_HBM);
       mem_offset_end.emplace_back(mem_type_iter->second.mem_offset_);
       index_offset.insert(std::make_pair(workspace_index, workspace_offset));
     }

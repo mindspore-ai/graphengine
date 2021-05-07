@@ -81,9 +81,12 @@ class DynamicSingleOp {
                         std::vector<DataBuffer> &outputs) const;
   Status SetHostTensorValue(const std::vector<std::pair<size_t, uint64_t>> &inputs_size,
                             const vector<GeTensorDesc> &input_desc, const std::vector<DataBuffer> &input_buffers);
+  Status SetHostTensorValue(const vector<GeTensorDesc> &input_desc, const vector<DataBuffer> &input_buffers);
   std::unique_ptr<OpTask> op_task_;
   std::unique_ptr<hybrid::HybridModel> hybrid_model_;
   std::unique_ptr<hybrid::HybridModelExecutor> hybrid_model_executor_;
+  std::map<int32_t, std::vector<GeTensorDescPtr>> tensor_with_hostmem_;
+
   uintptr_t resource_id_ = 0;
   std::mutex *stream_mutex_;
   rtStream_t stream_ = nullptr;

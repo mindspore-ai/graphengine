@@ -361,6 +361,37 @@ Status DynamicSingleOp::SetHostTensorValue(const std::vector<std::pair<size_t, u
   return SUCCESS;
 }
 
+Status DynamicSingleOp::SetHostTensorValue(const vector<GeTensorDesc> &input_desc,
+                                           const vector<DataBuffer> &input_buffers) {
+  for (auto &tensor_map : tensor_with_hostmem_) {
+    auto index = tensor_map.first;
+    if (index >= input_desc.size() || index >= input_buffers.size()) {
+      GELOGE(INTERNAL_ERROR, "[Check][Size]Index %d should smaller then input desc size %zu "
+             "and input buffers size %zu.", index, input_desc.size(), input_buffers.size());
+      return INTERNAL_ERROR;
+    }
+    auto ge_tensor_desc = input_desc[index];
+    // reconstruct GeTensor by DataBuffer
+    GeTensorPtr ge_tensor = MakeShared<GeTensor>(ge_tensor_desc);
+    GE_CHECK_NOTNULL(ge_tensor);
+    GELOGD("The %d tensor input type is host, desc data type is %d, input buffer addr is %p, size is %ld.",
+           index, ge_tensor_desc.GetDataType(), input_buffers[index].data, input_buffers[index].length);
+    if (ge_tensor->SetData(reinterpret_cast<uint8_t *>(input_buffers[index].data),
+                           static_cast<size_t>(input_buffers[index].length)) != SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "[Set][Data]Failed to set data of ge tensor.");
+      return INTERNAL_ERROR;
+    }
+    for (auto &tensor_desc : tensor_map.second) {
+      GE_CHECK_NOTNULL(tensor_desc);
+      if (!AttrUtils::SetTensor(tensor_desc, ATTR_NAME_VALUE, ge_tensor)) {
+        GELOGE(FAILED, "[Set][ATTR_NAME_VALUE]Failed to set ATTR_NAME_VALUE.");
+        return FAILED;
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
                                      const vector<DataBuffer> &input_buffers,
                                      vector<GeTensorDesc> &output_desc,
@@ -374,6 +405,7 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   if (!inputs_size.empty()) {
     StreamResource *stream_resource  = SingleOpManager::GetInstance().GetResource(resource_id_, stream_);
     GE_CHK_STATUS_RET_NOLOG(UpdateInputsBufferAddr(stream_resource, stream_, inputs_size, update_buffers));
+    GE_CHK_STATUS_RET_NOLOG(SetHostTensorValue(input_desc, input_buffers));
   }
 
   if (hybrid_model_executor_ != nullptr) {

@@ -77,6 +77,7 @@ class SingleOpModel {
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(OpTask *task, SingleOp &op);
   Status InitHybridModelExecutor(const StreamResource &resource, const GeModelPtr &ge_model, SingleOp &single_op);
+  Status SetHostMemTensor(DynamicSingleOp &single_op);
 
   std::string model_name_;
   uint32_t model_id_ = 0;
@@ -86,6 +87,7 @@ class SingleOpModel {
   ModelHelper model_helper_;
 
   map<uint32_t, NodePtr> op_list_;
+  map<int32_t, NodePtr> op_with_hostmem_;
   SingleOpModelParam model_params_;
 
   std::vector<ptrdiff_t> input_offset_list_;

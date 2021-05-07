@@ -364,9 +364,9 @@ Status DynamicSingleOp::SetHostTensorValue(const std::vector<std::pair<size_t, u
 Status DynamicSingleOp::SetHostTensorValue(const vector<GeTensorDesc> &input_desc,
                                            const vector<DataBuffer> &input_buffers) {
   for (auto &tensor_map : tensor_with_hostmem_) {
-    auto index = tensor_map.first;
+    auto index = static_cast<size_t>(tensor_map.first);
     if (index >= input_desc.size() || index >= input_buffers.size()) {
-      GELOGE(INTERNAL_ERROR, "[Check][Size]Index %d should smaller then input desc size %zu "
+      GELOGE(INTERNAL_ERROR, "[Check][Size]Index %zu should smaller then input desc size %zu "
              "and input buffers size %zu.", index, input_desc.size(), input_buffers.size());
       return INTERNAL_ERROR;
     }
@@ -374,7 +374,7 @@ Status DynamicSingleOp::SetHostTensorValue(const vector<GeTensorDesc> &input_des
     // reconstruct GeTensor by DataBuffer
     GeTensorPtr ge_tensor = MakeShared<GeTensor>(ge_tensor_desc);
     GE_CHECK_NOTNULL(ge_tensor);
-    GELOGD("The %d tensor input type is host, desc data type is %d, input buffer addr is %p, size is %ld.",
+    GELOGD("The %zu tensor input type is host, desc data type is %d, input buffer addr is %p, size is %ld.",
            index, ge_tensor_desc.GetDataType(), input_buffers[index].data, input_buffers[index].length);
     if (ge_tensor->SetData(reinterpret_cast<uint8_t *>(input_buffers[index].data),
                            static_cast<size_t>(input_buffers[index].length)) != SUCCESS) {

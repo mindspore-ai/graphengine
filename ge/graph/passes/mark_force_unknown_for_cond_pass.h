@@ -28,9 +28,17 @@ class MarkForceUnknownForCondPass : public GraphPass {
   ///
   /// @brief Mark force unknown shape for Switch node
   /// @param [in] merge node
+  /// @param [out] switch group
   /// @return
   ///
-  void MarkUnknownForSwitch(const NodePtr &node);
+  void MarkUnknownForSwitch(const NodePtr &node, std::vector<NodePtr> &switch_group);
+
+  ///
+  /// @brief Mark force unknown shape for Switch node
+  /// @param [in] switch groups
+  /// @return
+  ///
+  void MarkUnknownForSwitch(const std::map<NodePtr, std::vector<NodePtr>> &switch_groups);
 };
 } // namespace ge
 #endif  // GE_GRAPH_PASSES_MARK_FORCE_UNKNOWN_FOR_COND_PASS_H_

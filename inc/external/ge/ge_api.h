@@ -142,7 +142,8 @@ class GE_FUNC_VISIBILITY Session {
   ///
   Status BuildGraph(uint32_t graphId, const std::vector<InputTensorInfo> &inputs);
 
-  Status BuildGraph(uint32_t graphId, const std::vector<ge::Tensor> &inputs);  // lint !e720
+  Status BuildGraph(uint32_t graphId, const std::vector<ge::Tensor> &inputs);  /*lint !e148*/
+
   ///
   /// @ingroup ge_graph
   /// @brief run graph in the session with specific session id asynchronously

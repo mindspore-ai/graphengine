@@ -26,6 +26,7 @@
 #undef private
 #undef protected
 #include "graph/manager/graph_mem_allocator.h"
+#include "../graph/passes/graph_builder_utils.h"
 
 using namespace std;
 using namespace testing;
@@ -68,4 +69,23 @@ TEST_F(UnknownNodeExecutorTest, test_init_davinci_model) {
   int32_t buffer[8];
   model.weight_buffer_map_.emplace("subgraph", TensorBuffer::Create(buffer, sizeof(buffer)));
   ASSERT_EQ(mock.InitDavinciModel(model, model.GetModelWeight("subgraph")), SUCCESS);
+}
+
+TEST_F(UnknownNodeExecutorTest, TestParseAttrForAllocatingOutputs) {
+  ut::GraphBuilder builder("test-graph");
+  auto data_node = builder.AddNode("Data0", DATA, 1, 1);
+  auto netoutput_node = builder.AddNode("NodeOutput", NETOUTPUT, 2, 2);
+  builder.AddDataEdge(data_node, 0, netoutput_node, 0);
+  auto const_node = builder.AddNode("Const0", CONSTANT, 0, 1);
+  builder.AddDataEdge(const_node, 0, netoutput_node, 1);
+  auto graph = builder.GetGraph();
+
+  ut::GraphBuilder builder2("root-graph");
+  auto partitioned_call = builder2.AddNode("Node0", PARTITIONEDCALL, 1, 2);
+  NodeItem node_item(partitioned_call);
+  ASSERT_EQ(KnownNodeExecutor::ParseAttrForAllocatingOutputs(node_item, *graph), SUCCESS);
+  ASSERT_EQ(node_item.ref_outputs.size(), 1);
+  ASSERT_EQ(node_item.ref_outputs[1], const_node);
+  ASSERT_EQ(node_item.reuse_inputs.size(), 1);
+  ASSERT_EQ(node_item.reuse_inputs[0], 0);
 }

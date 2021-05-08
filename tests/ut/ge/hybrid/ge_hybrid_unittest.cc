@@ -202,7 +202,7 @@ TEST_F(UtestGeHybrid, data_direct_connect) {
   GeRootModelPtr ge_root_model = make_shared<GeRootModel>(root_graph);
   HybridModel hybrid_model(ge_root_model);
   HybridModelBuilder hybrid_model_builder(hybrid_model);
-  auto ret = hybrid_model_builder.IdentifyVariableOutputs(*new_node.get());
+  auto ret = hybrid_model_builder.IdentifyVariableOutputs(*new_node.get(), sub_graph);
   ASSERT_EQ(ret, SUCCESS);
 }
 

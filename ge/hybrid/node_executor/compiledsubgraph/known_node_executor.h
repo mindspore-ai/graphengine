@@ -51,6 +51,14 @@ class KnownNodeExecutor : public NodeExecutor {
   Status PrepareTask(NodeTask &task, TaskContext &context) const;
   Status ExecuteTask(NodeTask &task, TaskContext &context, const std::function<void()> &callback) const;
   ~KnownNodeExecutor() {}
+
+ private:
+  static Status ParseAttrForAllocatingOutputs(NodeItem &node_item, ComputeGraph &graph);
+  static Status GetDataNodes(ComputeGraph &graph, std::map<NodePtr, int> &data_indices);
+  static Status GetModelAndGraph(const HybridModel &model,
+                                 const NodePtr &node,
+                                 GeModelPtr &ge_model,
+                                 ComputeGraphPtr &graph);
 };
 }  // namespace hybrid
 }  // namespace ge

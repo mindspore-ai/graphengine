@@ -101,6 +101,8 @@ class HybridModel {
 
   const GraphItem *GetRootGraphItem() const;
 
+  const ComputeGraphPtr &GetRootGraph() const;
+
   const GraphItem *GetSubgraphItem(const std::string &graph_name) const;
 
   const GraphItem *GetSubgraphItem(const ComputeGraphPtr &subgraph) const;

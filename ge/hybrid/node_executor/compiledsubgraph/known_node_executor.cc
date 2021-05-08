@@ -22,6 +22,7 @@
 #include "common/ge/ge_util.h"
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/utils/graph_utils.h"
 #include "graph/load/model_manager/model_utils.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "hybrid/executor/hybrid_execution_context.h"
@@ -184,13 +185,15 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   GELOGI("[%s] KnownNodeExecutor::LoadTask in.", node->GetName().c_str());
   GE_CHECK_NOTNULL(node);
 
-  const GeModelPtr ge_model = model.GetGeModel(node);
-  GE_CHECK_NOTNULL(ge_model);
-
-  AscendString graph_name;
-  GE_CHK_GRAPH_STATUS_RET(ge_model->GetGraph().GetName(graph_name), "Failed to get graph name");
-  auto weight_buffer = model.GetModelWeight(graph_name.GetString());
-
+  GeModelPtr ge_model;
+  ComputeGraphPtr compute_graph;
+  GE_CHK_STATUS_RET(GetModelAndGraph(model, node, ge_model, compute_graph),
+                    "[%s] Failed to get model and graph",
+                    node->GetName().c_str());
+  auto node_item = const_cast<NodeItem *>(model.GetNodeItem(node));
+  GE_CHECK_NOTNULL(node_item);
+  GE_CHK_STATUS_RET_NOLOG(ParseAttrForAllocatingOutputs(*node_item, *compute_graph));
+  auto weight_buffer = model.GetModelWeight(compute_graph->GetName());
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
   GE_CHECK_NOTNULL(davinci_model);
 
@@ -221,6 +224,103 @@ Status KnownNodeExecutor::ExecuteTask(NodeTask &task, TaskContext &context,
   GE_CHK_STATUS_RET(task.ExecuteAsync(context, callback), "[Invoke][ExecuteAsync]Failed to execute task. node = %s",
                     context.GetNodeItem().NodeName().c_str());
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[KnownNodeExecutorExecuteTask] End");
+  return SUCCESS;
+}
+
+Status KnownNodeExecutor::ParseAttrForAllocatingOutputs(NodeItem &node_item, ComputeGraph &graph) {
+  GELOGD("[%s] Start to parse attributes for outputs", node_item.NodeName().c_str());
+  auto net_output_node = graph.FindFirstNodeMatchType(NETOUTPUT);
+  if (net_output_node == nullptr) {
+    GELOGD("[%s] Subgraph do not got net output", graph.GetName().c_str());
+    return SUCCESS;
+  }
+
+  auto net_output_desc = net_output_node->GetOpDesc();
+  GE_CHECK_NOTNULL(net_output_desc);
+  std::map<std::string, int> connected_inputs;
+  std::map<NodePtr, int> data_indices;
+  GE_CHK_STATUS_RET(GetDataNodes(graph, data_indices),
+                    "[%s] Failed to get data node indices",
+                    node_item.NodeName().c_str());
+  for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
+    auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
+    if (out_data_anchor == nullptr) {
+      continue;
+    }
+    auto src_node = out_data_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+    auto op_desc = src_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op_desc);
+    auto src_op_type = src_node->GetType();
+    auto output_index = in_data_anchor->GetIdx();
+    GELOGD("Node %s, output %d, src node = %s, src node type = %s",
+           node_item.NodeName().c_str(),
+           output_index,
+           src_node->GetName().c_str(),
+           src_op_type.c_str());
+    // parse reuse outputs
+    std::string input_key = std::to_string(op_desc->GetId()) + "_" + std::to_string(out_data_anchor->GetIdx());
+    auto it = connected_inputs.find(input_key);
+    if (it == connected_inputs.end()) {
+      connected_inputs.emplace(input_key, output_index);
+    } else {
+      GELOGD("[%s] output [%d] reuse output [%d] input node = %s, idx = %d.", node_item.NodeName().c_str(),
+             output_index,
+             it->second,
+             src_node->GetName().c_str(),
+             out_data_anchor->GetIdx());
+      node_item.reuse_outputs.emplace(output_index, it->second);
+    }
+
+    if (src_op_type == DATA) {
+      int data_index = data_indices[src_node];
+      node_item.reuse_inputs.emplace(output_index, data_index);
+      GELOGD("[%s] output[%u] reuses input[%d]", node_item.NodeName().c_str(), output_index, data_index);
+    } else if (src_op_type == CONSTANTOP || src_op_type == CONSTANT || src_op_type == VARIABLE) {
+      node_item.ref_outputs.emplace(output_index, src_node);
+      GELOGD("[%s] output[%d] ref to node [%s]",
+             node_item.NodeName().c_str(),
+             output_index,
+             src_node->GetName().c_str());
+    }
+  }
+
+  GELOGD("[%s] Done parsing attributes for outputs successfully", node_item.NodeName().c_str());
+  return SUCCESS;
+}
+
+Status KnownNodeExecutor::GetDataNodes(ComputeGraph &graph, std::map<NodePtr, int> &data_indices) {
+  std::map<int, NodePtr> ordered_data_nodes;
+  for (const auto &node : graph.GetDirectNode()) {
+    GE_CHECK_NOTNULL(node);
+    if (node->GetType() == DATA) {
+      int index = -1;
+      (void) AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_INDEX, index);
+      ordered_data_nodes.emplace(index, node);
+    }
+  }
+
+  // reindex
+  int data_index = 0;
+  for (const auto &it : ordered_data_nodes) {
+    data_indices.emplace(it.second, data_index++);
+  }
+
+  return SUCCESS;
+}
+
+Status KnownNodeExecutor::GetModelAndGraph(const HybridModel &model,
+                                           const NodePtr &node,
+                                           GeModelPtr &ge_model,
+                                           ComputeGraphPtr &graph) {
+  ge_model = model.GetGeModel(node);
+  GE_CHECK_NOTNULL(ge_model);
+  const auto &root_graph = model.GetRootGraph();
+  GE_CHECK_NOTNULL(root_graph);
+  AscendString graph_name;
+  GE_CHK_GRAPH_STATUS_RET(ge_model->GetGraph().GetName(graph_name), "Failed to get subgraph name");
+  graph = root_graph->GetSubgraph(graph_name.GetString());
+  GE_CHECK_NOTNULL(graph);
   return SUCCESS;
 }
 }  // namespace hybrid

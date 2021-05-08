@@ -169,17 +169,22 @@ Status StreamMergeNodeTask::ExecuteAsync(TaskContext &task_context, std::functio
 
 Status MemcpyAsyncNodeTask::ExecuteAsync(TaskContext &task_context, std::function<void()> done_callback) {
   GELOGD("[%s] Start to execute.", task_context.GetNodeName());
-  const auto in_x = task_context.GetInput(0); // x
-  GE_CHECK_NOTNULL(in_x);
-  const auto out_y = task_context.MutableOutput(0);  // value_index
-  GE_CHECK_NOTNULL(out_y);
-
-  GELOGD("[%s] input size: %zu, output size: %zu", task_context.GetNodeName(), in_x->GetSize(), out_y->GetSize());
-  if (in_x->GetSize() > 0 && out_y->GetSize() > 0) {
-    GE_CHK_RT_RET(rtMemcpyAsync(out_y->MutableData(), out_y->GetSize(), in_x->GetData(), in_x->GetSize(),
+  auto input_desc = task_context.MutableInputDesc(0);
+  GE_CHECK_NOTNULL(input_desc);
+  int64_t copy_size = 0;
+  GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorSizeInBytes(*input_desc, copy_size));
+  // copy_size would not be negative since GetTensorSizeInBytes returned successfully.
+  if (copy_size > 0) {
+    const auto in_v = task_context.MutableInput(0);
+    const auto out_v = task_context.MutableOutput(0);
+    GE_CHECK_NOTNULL(in_v);
+    GE_CHECK_NOTNULL(out_v);
+    GELOGD("[%s] input size: %zu, output size: %zu, copy size: %ld", task_context.GetNodeName(),
+           in_v->GetSize(), out_v->GetSize(), copy_size);
+    GE_CHK_RT_RET(rtMemcpyAsync(out_v->MutableData(), out_v->GetSize(), in_v->GetData(), copy_size,
                                 RT_MEMCPY_DEVICE_TO_DEVICE, task_context.GetStream()));
   } else {
-    GELOGW("[%s] invalid copy size, src: %zu, dst: %zu", task_context.GetNodeName(), in_x->GetSize(), out_y->GetSize());
+    GELOGW("[%s] invalid copy size: %ld", task_context.GetNodeName(), copy_size);
   }
 
   if (done_callback) {

@@ -357,7 +357,7 @@ void DynamicShapePartitioner::MergeClustersUnknownShape() {
       continue;
     }
     for (const auto &in_cluster : cluster->Inputs()) {
-      if (!in_cluster->IsUnknownShape()) {
+      if (!in_cluster->IsUnknownShape() || in_cluster->IsControlFlow()) {
         continue;
       }
       auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);

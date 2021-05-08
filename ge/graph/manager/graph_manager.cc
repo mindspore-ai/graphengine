@@ -1259,7 +1259,7 @@ Status GraphManager::InnerRunGraphWithStream(GraphNodePtr &graph_node, const Gra
 
 Status GraphManager::RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t stream, uint64_t session_id,
                                              const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   std::lock_guard<std::mutex> lock(run_mutex_);
   GELOGI("Start to run graph with stream async, graph id = %u, stream = %p.", graph_id, stream);
 

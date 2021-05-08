@@ -693,6 +693,7 @@ set(PASS_TEST_FILES
     "graph/passes/stop_gradient_pass_unittest.cc"
     "graph/passes/prevent_gradient_pass_unittest.cc"
     "graph/passes/identity_pass_unittest.cc"
+    "graph/passes/global_step_insert_pass_unittest.cc"
     "graph/passes/placeholder_with_default_pass_unittest.cc"
     "graph/passes/snapshot_pass_unittest.cc"
     "graph/passes/guarantee_const_pass_unittest.cc"

@@ -292,7 +292,7 @@ class GraphManager {
 
   static Status ParseParallelNum(const std::string &parallel_num, const std::string &key, int &num);
 
-  static Status ParseTrainGraphFlag(bool &options, bool &option);
+  static Status ParseTrainGraphFlag(const bool &run_flag, bool &train_flag);
 
   static bool IsPerfLevelInvalid(int32_t perf_level);
 

@@ -127,12 +127,9 @@ Status CollectDependenciesForFusedGraph(NodeItem &node_item, std::set<OpDesc *> 
   return SUCCESS;
 }
 
-bool CheckHasHostMem(NodeItem *src_node_item) {
-  if (src_node_item == nullptr) {
-    return false;
-  }
-  if (src_node_item->NodeType() == DATA) {
-    auto op_desc = src_node_item->GetOpDesc();
+bool CheckHasHostMem(NodeItem &node_item) {
+  if (node_item.NodeType() == DATA) {
+    auto op_desc = node_item->GetOpDesc();
     if (op_desc == nullptr) {
       return false;
     }
@@ -381,7 +378,8 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     const auto &src_node = peer_out_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(src_node);
     auto src_node_item = MutableNodeItem(src_node);
-    GE_IF_BOOL_EXEC(CheckHasHostMem(src_node_item),
+    GE_CHECK_NOTNULL(src_node_item);
+    GE_IF_BOOL_EXEC(CheckHasHostMem(*src_node_item),
                     GELOGD("Skip d2h memcpy, get hostmem from node %s.", src_node_item->NodeName().c_str());
                     continue;)
     src_node_item->to_const_output_id_list.emplace(peer_out_anchor->GetIdx());

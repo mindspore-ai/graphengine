@@ -227,7 +227,8 @@ Status AicpuExtInfoHandler::ParseExtTopicType(AicpuExtInfo *aicpu_ext_info) {
     return ACL_ERROR_GE_PARAM_INVALID;
   }
   GE_CHECK_NOTNULL(aicpu_ext_info->infoMsg);
-  auto type = *reinterpret_cast<const int32_t *>(aicpu_ext_info->infoMsg);
+  auto type_info = reinterpret_cast<int32_t *>(aicpu_ext_info->infoMsg);
+  int32_t type = *type_info;
 
   topic_type_flag_ = TopicTypeToRtsFlag(type);
   if (topic_type_flag_ == -1) {

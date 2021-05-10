@@ -129,7 +129,7 @@ Status CollectDependenciesForFusedGraph(NodeItem &node_item, std::set<OpDesc *> 
 
 bool CheckHasHostMem(NodeItem &node_item) {
   if (node_item.NodeType() == DATA) {
-    auto op_desc = node_item->GetOpDesc();
+    auto op_desc = node_item.GetOpDesc();
     if (op_desc == nullptr) {
       return false;
     }

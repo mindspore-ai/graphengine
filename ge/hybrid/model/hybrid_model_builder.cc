@@ -126,6 +126,23 @@ Status CollectDependenciesForFusedGraph(NodeItem &node_item, std::set<OpDesc *> 
 
   return SUCCESS;
 }
+
+bool CheckHasHostMem(NodeItem &src_node_item) {
+  if (src_node_item == nullptr) {
+    return false;
+  }
+  if (src_node_item->NodeType() == DATA) {
+    auto op_desc = src_node_item->GetOpDesc();
+    if (op_desc == nullptr) {
+      return false;
+    }
+    auto tensor = op_desc->MutableInputDesc(0);
+    if (AttrUtils::HasAttr(tensor, ATTR_NAME_VALUE)) {
+      return true;
+    }
+  }
+  return false;
+}
 }  // namespace
 HybridModelBuilder::HybridModelBuilder(HybridModel &hybrid_model)
     : hybrid_model_(hybrid_model), runtime_param_(hybrid_model.root_runtime_param_) {
@@ -364,6 +381,9 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     const auto &src_node = peer_out_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(src_node);
     auto src_node_item = MutableNodeItem(src_node);
+    GE_IF_BOOL_EXEC(CheckHasHostMem(src_node_item),
+                    GELOGD("Skip d2h memcpy, get hostmem from node %s.", src_node_item->NodeName().c_str());
+                    continue;)
     src_node_item->to_const_output_id_list.emplace(peer_out_anchor->GetIdx());
     dependent_for_shape_inference.emplace(src_node);
     host_input_value_dependencies_[&node_item].emplace_back(peer_out_anchor->GetIdx(), src_node_item);

@@ -44,12 +44,12 @@ using domi::GetContext;
 
 class UtestMemoryAssignerTest : public testing::Test {
  public:
-  ge::OpDescPtr CreateOpWithWsSize(const string &name, int64_t wsByte, const string &type = "some") {
+  ge::OpDescPtr CreateOpWithWsSize(const string &name, int64_t wsByte, const string &type = "some", int64_t size = 1024) {
     ge::OpDescPtr op_def = make_shared<ge::OpDesc>(name, type);
     auto desc_temp_ptr = make_shared<ge::GeTensorDesc>();
     auto desc_temp = *desc_temp_ptr;
 
-    TensorUtils::SetSize(desc_temp, 1024);
+    TensorUtils::SetSize(desc_temp, size);
     op_def->AddInputDesc(desc_temp);
     op_def->AddOutputDesc(desc_temp);
 
@@ -213,6 +213,44 @@ class UtestMemoryAssignerTest : public testing::Test {
     ge::TensorUtils::SetReuseInputIndex(*output_tensordesc, reuse_input_index);
 
     return builder.GetGraph();
+  }
+  void make_ffts_reuse_graph(ge::ComputeGraphPtr graph, int32_t thread_scope_id_1 = kInvalidThreadScopeId,
+                            int32_t thread_scope_id_2 = kInvalidThreadScopeId) {
+    ge::OpDescPtr op_def_a = CreateOpWithWsSize("A", 512);
+    ge::OpDescPtr op_def_b = CreateOpWithWsSize("B", 0);
+    ge::OpDescPtr op_def_c = CreateOpWithWsSize("C", 512);
+    ge::OpDescPtr op_def_d = CreateOpWithWsSize("D", 512);
+    ge::OpDescPtr op_def_e = CreateOpWithWsSize("E", 0);
+    ge::OpDescPtr op_def_f = CreateOpWithWsSize("F", 512, "some", 2048UL);
+    ge::OpDescPtr op_def_g = CreateOpWithWsSize("G", 0);
+
+    if (thread_scope_id_1 != kInvalidThreadScopeId) {
+      (void)ge::AttrUtils::SetInt(op_def_a, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_1);
+      (void)ge::AttrUtils::SetInt(op_def_b, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_1);
+      (void)ge::AttrUtils::SetInt(op_def_c, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_1);
+    }
+
+    if (thread_scope_id_2 != kInvalidThreadScopeId) {
+      (void)ge::AttrUtils::SetInt(op_def_d, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_2);
+      (void)ge::AttrUtils::SetInt(op_def_e, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_2);
+      (void)ge::AttrUtils::SetInt(op_def_f, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_2);
+    }
+
+    ge::NodePtr node_a = graph->AddNode(op_def_a);
+    ge::NodePtr node_b = graph->AddNode(op_def_b);
+    ge::NodePtr node_c = graph->AddNode(op_def_c);
+    ge::NodePtr node_d = graph->AddNode(op_def_d);
+    ge::NodePtr node_e = graph->AddNode(op_def_e);
+    ge::NodePtr node_f = graph->AddNode(op_def_f);
+    ge::NodePtr node_g = graph->AddNode(op_def_g);
+
+    ge::GraphUtils::AddEdge(node_a->GetOutDataAnchor(0), node_b->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_b->GetOutDataAnchor(0), node_c->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_c->GetOutDataAnchor(0), node_d->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_d->GetOutDataAnchor(0), node_e->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_e->GetOutDataAnchor(0), node_f->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_f->GetOutDataAnchor(0), node_g->GetInDataAnchor(0));
+    graph->TopologicalSorting();
   }
 
  protected:
@@ -418,4 +456,34 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_atomic_output_and_workspace)
     MemoryOffset mem_offset = graph_memory_assigner.memory_offset_.at(RT_MEMORY_HBM);
     EXPECT_EQ(mem_offset.mem_offset_, 1024);
   }
+}
+
+TEST_F(UtestMemoryAssignerTest, Mock_ffts_reuse_no_functinon_op) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  make_ffts_reuse_graph(graph, kInvalidThreadScopeId, kInvalidThreadScopeId);
+  HybridMemAssigner hybridMemAssigner(graph);
+  ge::Status ret = hybridMemAssigner.Assign();
+  size_t offset = hybridMemAssigner.GetMemOffset();
+  EXPECT_EQ(offset, 5120);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, Mock_ffts_reuse_two_functinon_op) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  make_ffts_reuse_graph(graph, 0, 1);
+  HybridMemAssigner hybridMemAssigner(graph);
+  ge::Status ret = hybridMemAssigner.Assign();
+  size_t offset = hybridMemAssigner.GetMemOffset();
+  EXPECT_EQ(offset, 6656);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, Mock_ffts_reuse_one_functinon_op) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  make_ffts_reuse_graph(graph, 0, kInvalidThreadScopeId);
+  HybridMemAssigner hybridMemAssigner(graph);
+  ge::Status ret = hybridMemAssigner.Assign();
+  size_t offset = hybridMemAssigner.GetMemOffset();
+  EXPECT_EQ(offset, 5632);
+  EXPECT_EQ(ret, SUCCESS);
 }

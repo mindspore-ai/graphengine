@@ -431,6 +431,14 @@ Status KernelTaskInfo::Distribute() {
   int64_t env_flag = (res == EN_OK) ? strtol(skt_enable_env, nullptr, kBaseInt) : kStrtolFail;
   bool call_skt = ((env_flag != 0) || is_l1_fusion_enable_);
   if (kernel_type_ == ccKernelType::AI_CPU || kernel_type_ == ccKernelType::CUST_AI_CPU) {
+    if (topic_type_flag_ > 0) {
+      // Use the fifth and sixth bits of dump_flag_ indicate the value of topic_type.
+      // xxxxxxxx xxxxxxxx xxxxxxxx xx00xxxx: DEVICE_ONLY
+      // xxxxxxxx xxxxxxxx xxxxxxxx xx01xxxx: DEVICE_FIRST
+      // xxxxxxxx xxxxxxxx xxxxxxxx xx10xxxx: HOST_ONLY
+      // xxxxxxxx xxxxxxxx xxxxxxxx xx11xxxx: HOST_FIRST
+      dump_flag_ = dump_flag_ | topic_type_flag_;
+    }
     GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
     // blockDim is reserved parameter, set to 1
     rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
@@ -1116,6 +1124,7 @@ Status KernelTaskInfo::InitAicpuTaskExtInfo(const std::string &ext_info) {
   GELOGD("Update aicpu_task ext_info session_info session_id is %lu", davinci_model_->GetSessionId());
   GE_CHK_STATUS_RET(ext_handle->UpdateExecuteMode(true), "UpdateExecuteMode failed.");
   GELOGD("Update aicpu_task ext_info bit_map execute mode to 1.");
+  topic_type_flag_ = ext_handle->GetTopicTypeFlag();
 
   bool all_shape = false;
   (void)AttrUtils::GetBool(op_desc_, kAicpuAllshape, all_shape);

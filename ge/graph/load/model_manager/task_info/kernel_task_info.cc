@@ -414,8 +414,7 @@ Status KernelTaskInfo::SuperKernelDistribute() {
   return SUCCESS;
 }
 
-Status KernelTaskInfo::Distribute() {
-  GELOGD("KernelTaskInfo Distribute Start.");
+void KernelTaskInfo::SetArgs() {
   if (davinci_model_->IsKnownNode()) {
     if (kernel_type_ == ccKernelType::TE) {
       args_ = l2_buffer_on_ ? davinci_model_->GetCurrentHybridArgsAddr(hybrid_args_offset_)
@@ -425,6 +424,11 @@ Status KernelTaskInfo::Distribute() {
     }
     GELOGI("Known node %s args addr %p, offset %u.", op_desc_->GetName().c_str(), args_, args_offset_);
   }
+}
+
+Status KernelTaskInfo::Distribute() {
+  GELOGD("KernelTaskInfo Distribute Start.");
+  SetArgs();
   rtError_t rt_ret = RT_ERROR_NONE;
   char skt_enable_env[MMPA_MAX_PATH] = { 0x00 };
   INT32 res = mmGetEnv("SKT_ENABLE", skt_enable_env, MMPA_MAX_PATH);
@@ -1075,7 +1079,7 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
   InitDumpTask(sizeof(aicpu::AicpuParamHead));
-  
+
   if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
     dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }

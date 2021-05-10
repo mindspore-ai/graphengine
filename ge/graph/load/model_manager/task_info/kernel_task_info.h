@@ -145,6 +145,7 @@ class KernelTaskInfo : public TaskInfo {
   bool IsMarkedFirstNode();
   bool FirstCallSKTLaunchCheck();
   bool DoubleCallSKTSaveCheck();
+  void SetArgs();
 
   void *stub_func_;
   void *args_;

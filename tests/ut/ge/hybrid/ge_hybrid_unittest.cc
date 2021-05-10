@@ -670,3 +670,30 @@ TEST_F(UtestGeHybrid, TestParseDependentInputNodesForHccl) {
   ASSERT_TRUE(model.GetNodeItem(node)->has_observer);
   ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
 }
+
+TEST_F(UtestGeHybrid, TestParseDependencies) {
+  // make graph
+  ut::GraphBuilder graph_builder = ut::GraphBuilder("graph");
+  auto data = graph_builder.AddNode("Data", "Data", 0, 1);
+  auto netoutput = graph_builder.AddNode("Netoutput", "NetOutput", 1, 0);
+  graph_builder.AddDataEdge(data, 0, netoutput, 0);
+  auto graph = graph_builder.GetGraph();
+
+  GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(graph);
+  HybridModel model(root_model);
+  HybridModelBuilder builder(model);
+
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(netoutput, node_item);
+
+  std::vector<std::string> deps;
+  deps.push_back("data");
+  auto op_desc = netoutput->GetOpDesc();
+  op_desc->input_name_idx_["Data"] = 0;
+  auto tensor = std::make_shared<GeTensor>();
+  auto tensor_desc = op_desc->MutableInputDesc(0);
+  AttrUtils::SetTensor(tensor_desc, "_value", tensor);
+
+  std::set<NodePtr> dependent_for_shape_inference;
+  ASSERT_EQ(builder.ParseDependencies(*node_item, deps, dependent_for_shape_inference), SUCCESS);
+}

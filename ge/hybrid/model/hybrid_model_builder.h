@@ -66,6 +66,8 @@ class HybridModelBuilder {
   Status ParseForceInfershapeNodes(const NodePtr &node, NodeItem &node_item);
   Status CollectParallelGroups(NodeItem *node_item);
   Status ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies);
+  Status ParseDependencies(NodeItem &node_item, const std::vector<string> &dependencies,
+                           std::set<NodePtr> &dependent_for_shape_inference);
   Status ParseDependentForFusedSubgraph(NodeItem &node_item, std::set<ge::NodePtr> &dependencies);
   Status ParseDependentByParallelGroup();
   Status IndexTaskDefs();

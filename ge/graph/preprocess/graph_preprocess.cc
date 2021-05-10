@@ -1257,7 +1257,8 @@ Status GraphPrepare::CheckRefInputNode(const NodePtr &node, const std::string &i
   // Since ME dont differentiate between RefSwitch and Switch, and only issue Switch.
   static std::set<std::string> acceptable_types = {ge::VARIABLE,         ge::VARIABLEV2, ge::VARHANDLEOP,
                                                    ge::REFSWITCH,        ge::REFMERGE,   ge::REFENTER,
-                                                   ge::REFNEXTITERATION, ge::REFEXIT,    ge::SWITCH};
+                                                   ge::REFNEXTITERATION, ge::REFEXIT,    ge::SWITCH,
+                                                   ge::DATA};
   GE_CHECK_NOTNULL(node);
   const auto &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);

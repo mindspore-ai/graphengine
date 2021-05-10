@@ -127,7 +127,7 @@ Status CollectDependenciesForFusedGraph(NodeItem &node_item, std::set<OpDesc *> 
   return SUCCESS;
 }
 
-bool CheckHasHostMem(NodeItem &src_node_item) {
+bool CheckHasHostMem(NodeItem *src_node_item) {
   if (src_node_item == nullptr) {
     return false;
   }

@@ -19,9 +19,9 @@
 #include <vector>
 #include "runtime/rt.h"
 
-#include "graph/utils/node_utils.h"
 #define protected public
 #define private public
+#include "graph/utils/node_utils.h"
 #include "hybrid/model/hybrid_model_builder.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -685,15 +685,18 @@ TEST_F(UtestGeHybrid, TestParseDependencies) {
 
   std::unique_ptr<NodeItem> node_item;
   NodeItem::Create(netoutput, node_item);
+  std::unique_ptr<NodeItem> node_item2;
+  NodeItem::Create(data, node_item2);
+  model.node_items_.emplace(data, std::move(node_item2));
 
   std::vector<std::string> deps;
-  deps.push_back("data");
+  deps.push_back("Data");
   auto op_desc = netoutput->GetOpDesc();
   op_desc->input_name_idx_["Data"] = 0;
+  auto data_desc = data->GetOpDesc();
   auto tensor = std::make_shared<GeTensor>();
-  auto tensor_desc = op_desc->MutableInputDesc(0);
+  auto tensor_desc = data_desc->MutableInputDesc(0);
   AttrUtils::SetTensor(tensor_desc, "_value", tensor);
-
   std::set<NodePtr> dependent_for_shape_inference;
   ASSERT_EQ(builder.ParseDependencies(*node_item, deps, dependent_for_shape_inference), SUCCESS);
 }

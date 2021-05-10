@@ -286,7 +286,6 @@ Status HybridModelBuilder::ParseForceInfershapeNodes(const NodePtr &node, NodeIt
 
 Status HybridModelBuilder::ParseDependencies(NodeItem &node_item, const std::vector<string> &dependencies,
                                              std::set<NodePtr> &dependent_for_shape_inference) {
-  auto &ge_node = node_item.node;
   for (const auto &input_name : dependencies) {
     int input_index = node_item.op_desc->GetInputIndexByName(input_name);
     if (input_index < 0) {
@@ -297,7 +296,7 @@ Status HybridModelBuilder::ParseDependencies(NodeItem &node_item, const std::vec
       return INTERNAL_ERROR;
     }
 
-    const auto &in_anchor = ge_node->GetInDataAnchor(input_index);
+    const auto &in_anchor = node_item.node->GetInDataAnchor(input_index);
     GE_CHECK_NOTNULL(in_anchor);
     const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
     GE_CHECK_NOTNULL(peer_out_anchor);

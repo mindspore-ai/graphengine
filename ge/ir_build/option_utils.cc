@@ -239,7 +239,8 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
     bool is_char_valid = isdigit(c) || (c == ',') || (c == ' ') || (c == ';');
     if (!is_char_valid) {
       ErrorManager::GetInstance().ATCReportErrMessage(
-              "E10033", {"value", "reason"}, {dynamic_image_size, kDynamicImageSizeError});
+              "E10001", {"parameter", "value", "reason"}, 
+              {"dynamic_image_size", dynamic_image_size.c_str(), kDynamicImageSizeError});
       GELOGE(ge::PARAM_INVALID, "[Check][DynamicImageSizeInputShape] --dynamic_image_size:%s is invalid. reason: %s",
              dynamic_image_size.c_str(), kDynamicImageSizeError);
       return false;

@@ -398,26 +398,32 @@ void ModelManager::InsertModel(uint32_t model_id, shared_ptr<hybrid::HybridDavin
 }
 
 Status ModelManager::DeleteModel(uint32_t id) {
-  std::lock_guard<std::recursive_mutex> lock(map_mutex_);
+  // These two pointers are used to unbind erase() and model destruction process.
+  std::shared_ptr<DavinciModel> tmp_model;
+  std::shared_ptr<hybrid::HybridDavinciModel> tmp_hybrid_model;
+  {
+    std::lock_guard<std::recursive_mutex> lock(map_mutex_);
 
-  auto it = model_map_.find(id);
-  auto hybrid_model_it = hybrid_model_map_.find(id);
-  if (it != model_map_.end()) {
-    uint64_t session_id = it->second->GetSessionId();
-    std::string model_key = std::to_string(session_id) + "_" + std::to_string(id)  + "_" +
-                            std::to_string(it->second->SubModelId());
-    auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
-    if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
-      (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
+    auto it = model_map_.find(id);
+    auto hybrid_model_it = hybrid_model_map_.find(id);
+    if (it != model_map_.end()) {
+      uint64_t session_id = it->second->GetSessionId();
+      std::string model_key = std::to_string(session_id) + "_" + std::to_string(id)  + "_" +
+                              std::to_string(it->second->SubModelId());
+      auto iter_aicpu_kernel = model_aicpu_kernel_.find(model_key);
+      if (iter_aicpu_kernel != model_aicpu_kernel_.end()) {
+        (void)model_aicpu_kernel_.erase(iter_aicpu_kernel);
+      }
+      tmp_model = it->second;
+      (void)model_map_.erase(it);
+    } else if (hybrid_model_it != hybrid_model_map_.end()) {
+      tmp_hybrid_model = hybrid_model_it->second;
+      (void)hybrid_model_map_.erase(hybrid_model_it);
+    } else {
+      REPORT_INNER_ERROR("E19999", "model_id:%u not exist in model_map, check invalid", id);
+      GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
+      return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
     }
-    (void)model_map_.erase(it);
-  } else if (hybrid_model_it != hybrid_model_map_.end()) {
-    (void)hybrid_model_map_.erase(hybrid_model_it);
-  } else {
-    REPORT_INNER_ERROR("E19999", "model_id:%u not exist in model_map, check invalid",
-                       id);
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "model id %u does not exists.", id);
-    return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
   }
 
   return SUCCESS;

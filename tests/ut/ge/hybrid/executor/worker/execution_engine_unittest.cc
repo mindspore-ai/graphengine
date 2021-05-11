@@ -120,6 +120,11 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_callback_and_kernel_task) {
 
   NodeState node_state(*node_item, &subgraph_context);
   auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  uint32_t task_id = 0;
+  uint32_t stream_id = 1;
+  std::string task_type = "rts";
+  uint32_t block_dim = 0;
+  task_context->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim);
   auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
   node_state.SetTaskContext(shared_task_context);
 

@@ -563,7 +563,7 @@ const DumpProperties &TaskContext::GetDumpProperties() const {
 
 bool TaskContext::NeedCallback() {
   return node_item_->has_observer || IsDumpEnabled() || GraphExecutionContext::profiling_level > 0 ||
-         !execution_context_->model->IsSingleOp();
+         !execution_context_->model->IsSingleOp() || ProfilingManager::Instance().ProfilingModelLoadOn();
 }
 
 Status TaskContext::Synchronize() {
@@ -572,7 +572,7 @@ Status TaskContext::Synchronize() {
 
 Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id,
                                               const std::string &task_type, uint32_t block_dim) {
-  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+  if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);

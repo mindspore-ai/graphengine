@@ -601,7 +601,7 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
 // Run Graph with stream Asynchronously
 Status Session::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<Tensor> &inputs,
                                         std::vector<Tensor> &outputs) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GELOGT(TRACE_INIT, "Session run graph with stream async start");
 
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);

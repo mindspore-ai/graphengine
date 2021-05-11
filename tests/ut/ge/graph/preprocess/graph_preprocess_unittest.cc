@@ -72,6 +72,19 @@ ComputeGraphPtr BuildGraph3() {
   return builder.GetGraph();
 }
 
+ComputeGraphPtr BuildGraph5() {
+  auto builder = ut::GraphBuilder("g5");
+  auto data1 = builder.AddNode("input1", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 2, 3});
+  auto data2 = builder.AddNode("input2", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {4, 10});
+  auto add = builder.AddNode("add", ADD, 2, 1);
+  auto netoutput = builder.AddNode("netoutput", NETOUTPUT, 1, 0);
+
+  builder.AddDataEdge(data1, 0, add, 0);
+  builder.AddDataEdge(data2, 0, add, 1);
+  builder.AddDataEdge(add, 0,netoutput, 0);
+  return builder.GetGraph();
+}
+
 /*
  *   MapIndex   Data1          subgraph1        subgraph2
  *         \    /
@@ -151,6 +164,23 @@ TEST_F(UtestGraphPreproces, test_update_input_output1) {
   graph_prepare.compute_graph_ = BuildGraph3();
 
   Status ret = graph_prepare.UpdateInputOutputByOptions();
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+
+TEST_F(UtestGraphPreproces, check_ref_op_data_succ) {
+  GraphPrepare graph_preparer;
+  ComputeGraphPtr graph_test = BuildGraph5();
+  NodePtr add_node = nullptr;
+  for (auto &node : graph_test->GetAllNodes()) {
+    if (node->GetName() == "add") {
+      add_node = node;
+    }
+  }
+  EXPECT_NE(add_node, nullptr);
+  string input_name = "__input0";
+  std::set<NodePtr> ref_nodes;
+  auto ret = graph_preparer.CheckRefInputNode(add_node, input_name, ref_nodes);
   EXPECT_EQ(ret, SUCCESS);
 }
 

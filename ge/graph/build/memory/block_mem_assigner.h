@@ -33,14 +33,17 @@
 
 namespace ge {
 const size_t kMaxLifeTime = 0xffffffff;
+const int32_t kInvalidThreadScopeId = -1;
 
 using DependStreamLife = std::map<int64_t, std::map<int64_t, size_t>>;
 
 enum OpMemoryType { kOutput, kWorkspace };
 
 struct NodeTypeIndex {
-  NodeTypeIndex(ge::NodePtr node, OpMemoryType mem_type, uint32_t index, bool ref_input = false, size_t begin = 0)
-      : node(std::move(node)), mem_type(mem_type), index(index), ref_input(ref_input), life_time_begin(begin) {}
+  NodeTypeIndex(ge::NodePtr node, OpMemoryType mem_type, uint32_t index, bool ref_input = false, size_t begin = 0,
+                int32_t thread_scope_id = kInvalidThreadScopeId)
+      : node(std::move(node)), mem_type(mem_type), index(index), ref_input(ref_input), life_time_begin(begin),
+        thread_scope_id(thread_scope_id) {}
 
   ge::NodePtr node = nullptr;
   OpMemoryType mem_type = kOutput;
@@ -48,6 +51,7 @@ struct NodeTypeIndex {
   bool ref_input = false;
   size_t life_time_begin = 0;
   size_t life_time_end = kMaxLifeTime;
+  int32_t thread_scope_id = kInvalidThreadScopeId;
   const string GetMemType() const {
     if (mem_type == kOutput) {
       return "output";
@@ -143,6 +147,9 @@ class MemoryBlock {
         same_stream_ = false;
       }
     }
+    if (node_type_index.thread_scope_id != kInvalidThreadScopeId) {
+      thread_scope_id_.insert(node_type_index.thread_scope_id);
+    }
   }
 
   void AddSymbol(const std::string &symbol) {
@@ -154,6 +161,7 @@ class MemoryBlock {
   const std::vector<size_t> &RealSizeList() const { return real_size_list_; }
   const std::vector<MemoryBlock *> &ChildBlockList() const { return child_blocks_; }
   const std::vector<size_t> &NoAlignSizeList() const { return no_align_size_list_; }
+  const std::set<int32_t> &ThreadScopeId() const { return thread_scope_id_; }
 
   void Resize();
 
@@ -174,6 +182,8 @@ class MemoryBlock {
   void AddDependLifeBegin(DependStreamLife &node_depend_stream_life);
 
   size_t GetDependLifeBegin(int64_t stream_id, DependStreamLife &node_depend_stream_life);
+
+  bool CanReuse(int32_t thread_scope_id) const;
 
   int ref_count_;
   int64_t stream_id_;
@@ -198,6 +208,7 @@ class MemoryBlock {
   std::vector<NodeTypeIndex> node_type_index_list_;
   std::vector<std::string> symbol_list_;
   std::vector<MemoryBlock *> child_blocks_;
+  std::set<int32_t> thread_scope_id_;
 };
 
 class BlockMemAssigner : public MemAssigner {

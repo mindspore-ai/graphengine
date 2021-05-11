@@ -18,14 +18,26 @@ const char *const kEnvProfilingLevel = "HYBRID_PROFILING_LEVEL";
 StageExecutor::StageExecutor(int id, HybridModel *model, PipeExecutionConfig *config)
     : id_(id), model_(model), pipe_config_(config) {}
 
-StageExecutor::~StageExecutor() { GELOGD("~StageExecutor(), id = %d", id_); }
+StageExecutor::~StageExecutor() {
+  GELOGD("~StageExecutor(), id = %d", id_);
+  if (stream_ != nullptr) {
+    GE_CHK_RT(rtStreamDestroy(stream_));
+    stream_ = nullptr;
+  }
+  if (hccl_stream_ != nullptr) {
+    GE_CHK_RT(rtStreamDestroy(hccl_stream_));
+    hccl_stream_ = nullptr;
+  }
+}
 
 Status StageExecutor::Init() {
   GELOGD("[Executor: %d] Start to init StateExecutor", id_);
   context_.rt_context = pipe_config_->rt_context;
   GE_CHK_STATUS_RET_NOLOG(InitExecutionContext());
   GE_CHK_RT_RET(rtStreamCreate(&stream_, RT_STREAM_PRIORITY_DEFAULT));
+  GE_CHK_RT_RET(rtStreamCreate(&hccl_stream_, RT_STREAM_PRIORITY_DEFAULT));
   context_.stream = stream_;
+  context_.hccl_stream = hccl_stream_;
 
   root_graph_executor_.reset(new (std::nothrow) SubgraphExecutor(model_->GetRootGraphItem(), &context_));
   GE_CHECK_NOTNULL(root_graph_executor_);
@@ -78,11 +90,11 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     if (task_info.event != nullptr) {
       GELOGD("[%d] Add StreamWaitEvent", id_);
       GE_CHK_RT_RET(rtStreamWaitEvent(stream_, task_info.event));
-      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] End", task_info.iteration - 1,
+      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] EventWait End", task_info.iteration,
                                    task_info.stage);
     }
 
-    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %lld] [Stage = %d] Start", task_info.iteration,
+    RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] Start", task_info.iteration,
                                  task_info.stage);
 
     if (task_info.stage == 0) {
@@ -102,6 +114,10 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
     StageTask next_task;
     next_task.stage = task_info.stage;
     next_task.iteration = task_info.iteration + 1;
+    if ((task_info.iteration + 1) % iteration_count > 0) {
+      GE_CHK_RT_RET(rtEventCreate(&next_task.event));
+      GE_CHK_RT_RET(rtEventRecord(next_task.event, context_.hccl_stream));
+    }
 
     auto sync_result = Synchronize();
     if (sync_result != SUCCESS) {
@@ -110,15 +126,22 @@ Status StageExecutor::Start(const std::vector<TensorValue> &inputs, const std::v
              id_, sync_result, task_info.iteration);
       REPORT_CALL_ERROR("E19999", "[Executor: %d] Failed to sync result:%d. iteration = %ld",
                         id_, sync_result, task_info.iteration);
-      context_.profiler->Dump(std::cout);
+      if (context_.profiler != nullptr) {
+        context_.profiler->Dump(std::cout);
+      }
       context_.callback_manager->Destroy();
       RuntimeInferenceContext::DestroyContext(std::to_string(context_.context_id));
       return sync_result;
     }
+    if (task_info.event != nullptr) {
+      GE_CHK_RT_RET(rtEventDestroy(task_info.event));
+      RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] EventDestroy End", task_info.iteration,
+                                   task_info.stage);
+    }
 
     RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] [Stage = %d] End", task_info.iteration, task_info.stage);
 
-    // if not end stage
+    // if end stage
     if (task_info.stage >= pipe_config_->num_stages - 1) {
       RECORD_MODEL_EXECUTION_EVENT(&context_, "[iteration = %ld] Schedule End", task_info.iteration);
       GELOGD("[Executor: %d] End of iteration [%ld]", id_, task_info.iteration);
@@ -163,6 +186,7 @@ Status StageExecutor::InitExecutionContext() {
   context_.callback_manager = std::unique_ptr<CallbackManager>(new (std::nothrow) CallbackManager());
   GE_CHECK_NOTNULL(context_.callback_manager);
   context_.dump_properties = DumpManager::GetInstance().GetDumpProperties(context_.session_id);
+  context_.is_eos_ = false;
   if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {
     context_.trace_enabled = true;
   }

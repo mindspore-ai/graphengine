@@ -21,7 +21,10 @@
 namespace ge {
 const void *HostMemAllocator::Malloc(const std::shared_ptr<AlignedPtr> &aligned_ptr, size_t size) {
   if (aligned_ptr == nullptr) {
-    GELOGW("Insert a null aligned_ptr");
+    GELOGW("Insert a null aligned_ptr, size=%zu", size);
+    if (size == 0) {
+      allocated_blocks_[nullptr] = { size, nullptr };
+    }
     return nullptr;
   }
   GELOGD("allocate existed host memory succ, size=%zu", size);

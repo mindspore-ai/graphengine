@@ -264,4 +264,19 @@ TEST_F(UtestSubgraphExecutor, cond_graph_schedule_tasks) {
   ASSERT_EQ(state_it_f->second->GetSwitchIndex(), 0);
   ASSERT_EQ(graph_context.callback_manager->Destroy(), SUCCESS);
 }
+
+TEST_F(UtestSubgraphExecutor, partial_execution_init) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  ASSERT_NE(graph, nullptr);
+  GeRootModelPtr ge_root_model = std::make_shared<GeRootModel>(graph);
+  ASSERT_NE(ge_root_model, nullptr);
+  HybridModel hybrid_model(ge_root_model);
+  hybrid_model.root_graph_item_ = std::unique_ptr<GraphItem>(new(std::nothrow)GraphItem());
+  hybrid_model.root_graph_item_->is_dynamic_ = false;
+  GraphExecutionContext graph_context;
+  SubgraphExecutor executor(hybrid_model.GetRootGraphItem(), &graph_context);
+
+  ASSERT_EQ(executor.Init({}, {}), SUCCESS);
+  ASSERT_EQ(executor.InitForPartialExecution({}, {}), SUCCESS);
+}
 } // namespace ge

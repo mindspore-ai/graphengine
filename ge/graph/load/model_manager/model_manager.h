@@ -345,6 +345,16 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   void GenModelId(uint32_t *id);
 
+  Status InitDumPropertiesWithNewSessionId(uint64_t session_id);
+
+  bool IsDumpSeverInited(uint64_t session_id);
+
+  Status AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties);
+
+  Status UpdateSessionId(uint32_t model_id, GeModelPtr ge_model,
+                         std::shared_ptr<DavinciModel> &davinci_model, uint64_t &session_id);
+
+  bool HasVarNode(ComputeGraphPtr &compute_graph) const;
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
@@ -361,6 +371,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   static DumpProperties dump_properties_;
   bool dump_exception_flag_ = false;
+  std::map<uint64_t, bool> session_id_to_dump_server_init_flag_;
 };
 }  // namespace ge
 

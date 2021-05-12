@@ -19,6 +19,7 @@ set(SRC_LIST
     "../common/dump/exception_dumper.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
+    "../common/dump/dump_server.cc"
     "../common/dump/opdebug_register.cc"
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
@@ -201,6 +202,7 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(ge_executor PRIVATE
@@ -247,6 +249,7 @@ target_include_directories(ge_executor_shared PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_options(ge_executor_shared PRIVATE

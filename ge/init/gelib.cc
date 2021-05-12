@@ -60,8 +60,6 @@ static std::shared_ptr<GELib> instancePtr_ = nullptr;
 
 // Initial each module of GE, if one failed, release all
 Status GELib::Initialize(const map<string, string> &options) {
-
-
   GELOGI("initial start");
   GEEVENT("[GEPERFTRACE] GE Init Start");
   // Multiple initializations are not allowed

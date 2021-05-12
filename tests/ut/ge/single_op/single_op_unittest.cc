@@ -159,5 +159,12 @@ TEST_F(UtestSingleOp, test_singleop_execute_async2) {
   single_op.hybrid_model_executor_.reset(new (std::nothrow)hybrid::HybridModelExecutor(single_op.hybrid_model_.get(), 0, stream));
   EXPECT_EQ(single_op.running_param_->mem_base, nullptr);
   EXPECT_EQ(single_op.tasks_.size(), 0);
+
+  GeTensorDesc tensor;
+  int64_t storage_format_val = static_cast<Format>(FORMAT_NCHW);
+  AttrUtils::SetInt(tensor, "storage_format", storage_format_val);
+  std::vector<int64_t> storage_shape{1, 1, 1, 1};
+  AttrUtils::SetListInt(tensor, "storage_shape", storage_shape);
+  single_op.inputs_desc_.emplace_back(tensor);
   EXPECT_EQ(single_op.ExecuteAsync(input_buffers, output_buffers), PARAM_INVALID);
 }

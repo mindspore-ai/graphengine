@@ -50,7 +50,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   auto root_graph_item = model_->GetRootGraphItem();
   GE_CHECK_NOTNULL(root_graph_item);
 
-  if (root_graph_item->IsDynamic()) {
+  if (root_graph_item->IsDynamic() && !model_->IsSingleOp()) {
     GE_CHK_STATUS_RET(CheckInputShapeByShapeRange(root_graph_item, args),
                       "[%s] check input node shape by shape range failed.",
                       root_graph_item->GetName().c_str());

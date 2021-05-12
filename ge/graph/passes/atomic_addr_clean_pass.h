@@ -73,7 +73,8 @@ class AtomicAddrCleanPass : public GraphPass {
    * @param atomic_clean_node
    * @return
    */
-  Status LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph, NodePtr &atomic_clean_node);
+  Status LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph, NodePtr &atomic_clean_node,
+                                       const std::vector<NodePtr> &dispersed_atomic_nodes);
 
   /**
    * Check if this node is atomic op.
@@ -90,7 +91,8 @@ class AtomicAddrCleanPass : public GraphPass {
   Status CompileUnknownGraphOp(const vector<NodePtr> &atomic_node_vec);
 
   Status HandleDispersedAtomicNodes(ComputeGraphPtr &graph, const std::vector<NodePtr> &atomic_node_vec,
-                                    std::vector<NodePtr> &common_atomic_nodes);
+                                    std::vector<NodePtr> &common_atomic_nodes,
+                                    std::vector<NodePtr> &dispersed_atomic_nodes);
 
   bool CheckAtomicFromOpsKernel(const NodePtr &node);
 

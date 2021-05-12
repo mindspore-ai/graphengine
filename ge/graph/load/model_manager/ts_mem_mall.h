@@ -43,7 +43,7 @@ class TsMemMall {
     for (auto it : mem_store_size_) {
       rtError_t ret = rtFree(it.second);
       if (ret != RT_ERROR_NONE) {
-        GELOGE(RT_FAILED, "Call rtFree failed, ret: 0x%X", ret);
+        GELOGE(RT_FAILED, "[Call][RtFree] failed, ret:0x%X", ret);
       }
     }
     mem_store_size_.clear();
@@ -52,7 +52,7 @@ class TsMemMall {
 
   void *Acquire(int64_t offset, uint64_t size) {
     if (size == 0) {
-      GELOGE(RT_FAILED, "Acquire mem block failed, size: %lu", size);
+      GELOGE(RT_FAILED, "[Check][Param] Acquire mem block failed, size:%lu", size);
       return nullptr;
     }
 
@@ -71,7 +71,7 @@ class TsMemMall {
     void *addr = nullptr;
     rtError_t rt_ret = rtMalloc(&addr, bytes, mem_type_);
     if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rtMalloc failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%lu, ret:0x%X", bytes, rt_ret);
       return nullptr;
     }
 
@@ -94,7 +94,7 @@ class TsMemMall {
     mem_store_addr_.erase(it);
     rtError_t ret = rtFree(addr);
     if (ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "Call rtFree failed, ret: 0x%X", ret);
+      GELOGE(RT_FAILED, "[Call][RtFree] failed, ret:0x%X", ret);
     }
   }
 

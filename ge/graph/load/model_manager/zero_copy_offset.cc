@@ -38,8 +38,13 @@ Status ZeroCopyOffset::InitInputDataInfo(int64_t output_size, void *virtual_addr
   op_name_ = op_desc->GetName();
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset_);
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset_);
-  GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,
-                   "basic_offset_size should be equal to relative_offset_size");
+  GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(),
+                   REPORT_INNER_ERROR("E19999", "basic_offset_size:%zu not equal to relative_offset_size:%zu, "
+                                      "check invalid", zero_copy_basic_offset_.size(),
+                                      zero_copy_relative_offset_.size());
+                   return PARAM_INVALID,
+                   "[Check][Param] basic_offset_size:%zu should be equal to relative_offset_size:%zu",
+                   zero_copy_basic_offset_.size(), zero_copy_relative_offset_.size());
   GELOGD("[ZCPY] zero_copy_basic_offset size is %zu", zero_copy_basic_offset_.size());
 
   int64_t virtual_addr_offset = op_desc->GetOutputOffset().at(kDataIndex);
@@ -78,7 +83,8 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
   if (TensorUtils::GetTensorSizeInBytes(*tensor_desc, size) != GRAPH_SUCCESS) {
     REPORT_INNER_ERROR("E19999", "Get input TensorSize in op:%s(%s) failed, input_index:%zu",
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), idx);
-    GELOGE(FAILED, "GetTensorSizeInBytes failed!");
+    GELOGE(FAILED, "[Get][InputTensorSize] in op:%s(%s) failed, input_index:%zu",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), idx);
     return FAILED;
   }
 
@@ -88,8 +94,13 @@ Status ZeroCopyOffset::InitOutputDataInfo(const vector<int64_t> &input_size_list
   op_name_ = op_desc->GetName();
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset_);
   (void)ge::AttrUtils::GetListInt(op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset_);
-  GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(), return PARAM_INVALID,
-                   "basic_offset_size should be equal to relative_offset_size");
+  GE_CHK_BOOL_EXEC(zero_copy_basic_offset_.size() == zero_copy_relative_offset_.size(),
+                   REPORT_INNER_ERROR("E19999", "basic_offset_size:%zu not equal to relative_offset_size:%zu, "
+                                      "check invalid",
+                                      zero_copy_basic_offset_.size(), zero_copy_relative_offset_.size());
+                   return PARAM_INVALID,
+                   "[Check][Param] basic_offset_size:%zu should be equal to relative_offset_size:%zu",
+                   zero_copy_basic_offset_.size(), zero_copy_relative_offset_.size());
   int64_t virtual_addr_offset = op_desc->GetInputOffset().at(idx);
   IsL2Fusion(zero_copy_basic_offset_, virtual_addr_offset, fusion_flag);
 
@@ -194,7 +205,8 @@ void ZeroCopyOffset::SetOutsideAddrsValue(ZeroCopyTask &zero_copy_task, void *ou
   for (uint32_t out_count = 0; out_count < GetAddrCount(); ++out_count) {
     auto args_addrs = outside_addrs_[out_count].find(outside_addr);
     if (args_addrs != outside_addrs_[out_count].end()) {
-      GE_CHK_STATUS(zero_copy_task.SetTaskArgsOffset(addr_val, offset), "Input args invalid.");
+      GE_CHK_STATUS(zero_copy_task.SetTaskArgsOffset(addr_val, offset),
+                    "[Set][TaskArgsOffset] failed, Input args invalid, offset:%zu.", offset);
       void *args_val = static_cast<uint8_t *>(args) + offset;
       args_addrs->second.push_back(args_val);
       GELOGD("[ZCPY] set copy input: virtual_addr: 0x%lx, task_addr: %p, args: %p, offset: %zu.", addr_val, args_val,

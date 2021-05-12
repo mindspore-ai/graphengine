@@ -37,7 +37,8 @@ class RtContextSwitchGuard {
     if (ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtCtxGetCurrent failed, device_id:%u, ret:0x%X,",
                         device_id, ret);
-      GELOGE(RT_FAILED, "Failed to get current context from rt, error-code %d", ret);
+      GELOGE(RT_FAILED, "[Call][RtCtxGetCurrent] Failed to get current context, device_id:%u, ret:0x%X",
+             device_id, ret);
       return;
     }
 
@@ -45,15 +46,14 @@ class RtContextSwitchGuard {
     if (ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtCtxCreate failed, device_id:%u, ret:0x%X,",
                         device_id, ret);
-      GELOGE(RT_FAILED, "Failed to create new context for device %u, error-code %d", device_id, ret);
+      GELOGE(RT_FAILED, "[Call][RtCtxCreate] Failed to create new context for device:%u, ret:%d", device_id, ret);
       return;
     }
 
     ret = rtCtxSetCurrent(current_);
     if (ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtCtxSetCurrent failed, device_id:%u, ret:0x%X,",
-                        device_id, ret);
-      GELOGE(RT_FAILED, "Failed to switch context to normal, context %p, device %u", current_, device_id);
+      REPORT_CALL_ERROR("E19999", "Call rtCtxSetCurrent failed, device_id:%u, ret:0x%X", device_id, ret);
+      GELOGE(RT_FAILED, "[Call][RtCtxSetCurrent] failed, device_id:%u, ret:0x%X", device_id, ret);
       return;
     }
     GELOGD("Create and switch rt context %p type %d for device %u, backup last %p.", current_, mode, device_id, last_);
@@ -80,7 +80,7 @@ int64_t CalcVarSizeInBytes(const GeTensorDesc &desc) {
   if (var_size <= 0) {
     REPORT_INNER_ERROR("E19999", "Data type:%s in desc, it's size:%ld < 0, check invalid",
                        TypeUtils::DataTypeToSerialString(desc.GetDataType()).c_str(), var_size);
-    GELOGE(PARAM_INVALID, "Failed to calc var data size from data type %s",
+    GELOGE(PARAM_INVALID, "[Calc][VarDataSize] by data type %s failed.",
            TypeUtils::DataTypeToSerialString(desc.GetDataType()).c_str());
     return -1;
   }
@@ -99,7 +99,8 @@ Status CopyVarToDevice(const NodePtr &var, const formats::TransResult &trans_res
   if (ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, op:%s(%s), size:%lu, ret:0x%X,", var->GetName().c_str(),
                       var->GetType().c_str(), trans_result.length, ret);
-    GELOGE(RT_FAILED, "Failed to copy memory to device, size %zu", trans_result.length);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, op:%s(%s), size:%lu, ret:0x%X,", var->GetName().c_str(),
+           var->GetType().c_str(), trans_result.length, ret);
     return RT_FAILED;
   }
   return SUCCESS;
@@ -111,21 +112,17 @@ Status CopyVarFromDevice(uint64_t session_id, const NodePtr &var, std::unique_pt
   GE_CHECK_NOTNULL(var);
   auto ret = VarManager::Instance(session_id)->GetVarAddr(var->GetName(), input_desc, &var_logic);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to copy var %s from device, can not find it"
-           " from var manager %u",
-           var->GetName().c_str(), ret);
+    GELOGE(INTERNAL_ERROR, "[Get][VarAddr] failed, node:%s, session_id:%lu, ret:%d",
+           var->GetName().c_str(), session_id, ret);
     return INTERNAL_ERROR;
   }
 
   uint8_t *var_addr = VarManager::Instance(session_id)->GetVarMemoryAddr(var_logic, RT_MEMORY_HBM);
   if (var_addr == nullptr) {
-    REPORT_CALL_ERROR("E19999", "Get variable memory addr failed, mem_type:%d, op:%s(%s), session_id:%lu,",
+    REPORT_CALL_ERROR("E19999", "Get variable memory addr failed, mem_type:%d, op:%s(%s), session_id:%lu",
                       RT_MEMORY_HBM, var->GetName().c_str(), var->GetType().c_str(), session_id);
-    GELOGE(INTERNAL_ERROR,
-           "Failed to copy var %s from device, cant not get "
-           "var addr from logic addr %p",
-           var->GetName().c_str(), var_logic);
+    GELOGE(INTERNAL_ERROR, "[Get][VarMemoryAddr] failed, mem_type:%d, op:%s(%s), session_id:%lu",
+           RT_MEMORY_HBM, var->GetName().c_str(), var->GetType().c_str(), session_id);
     return INTERNAL_ERROR;
   }
 
@@ -136,9 +133,10 @@ Status CopyVarFromDevice(uint64_t session_id, const NodePtr &var, std::unique_pt
 
   std::unique_ptr<uint8_t[]> var_host(new(std::nothrow) uint8_t[var_size_bytes]);
   if (var_host == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New host memory failed, size:%ld, op:%s(%s), session_id:%lu,",
+    REPORT_CALL_ERROR("E19999", "New host memory failed, size:%ld, op:%s(%s), session_id:%lu",
                       var_size_bytes, var->GetName().c_str(), var->GetType().c_str(), session_id);
-    GELOGE(OUT_OF_MEMORY, "Failed to malloc rt-host memory, size %ld", var_size_bytes);
+    GELOGE(OUT_OF_MEMORY, "[New][Memory] for rt-host failed, size:%ld, op:%s(%s), session_id:%lu",
+           var_size_bytes, var->GetName().c_str(), var->GetType().c_str(), session_id);
     return OUT_OF_MEMORY;
   }
 
@@ -147,10 +145,8 @@ Status CopyVarFromDevice(uint64_t session_id, const NodePtr &var, std::unique_pt
   if (ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%ld, op:%s(%s), session_id:%lu, ret:0x%X",
                       var_size_bytes, var->GetName().c_str(), var->GetType().c_str(), session_id, ret);
-    GELOGE(RT_FAILED,
-           "Failed to copy var memory from device, var %s, size %ld,"
-           " rt-error-code %u",
-           var->GetName().c_str(), var_size_bytes, ret);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%ld, op:%s(%s), session_id:%lu, ret:0x%X",
+           var_size_bytes, var->GetName().c_str(), var->GetType().c_str(), session_id, ret);
     return RT_FAILED;
   }
 
@@ -197,9 +193,7 @@ Status TransVarOnHost(uint8_t *var_data, const VarTransRoad &trans_road, formats
                           formats::ShapeToString(src_shape).c_str(),
                           formats::ShapeToString(dst_shape).c_str(),
                           TypeUtils::DataTypeToSerialString(data_type).c_str(), ret);
-        GELOGE(INTERNAL_ERROR,
-               "Failed to trans format from %s to %s, shape %s to %s, "
-               "data type %s error code %u",
+        GELOGE(INTERNAL_ERROR, "[Trans][Format] from %s to %s, shape %s to %s failed, data type %s error code %u",
                TypeUtils::FormatToSerialString(src_format).c_str(), TypeUtils::FormatToSerialString(dst_format).c_str(),
                formats::ShapeToString(src_shape).c_str(), formats::ShapeToString(dst_shape).c_str(),
                TypeUtils::DataTypeToSerialString(data_type).c_str(), ret);
@@ -221,7 +215,7 @@ Status TransVarOnHost(uint8_t *var_data, const VarTransRoad &trans_road, formats
                           TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
                           TypeUtils::DataTypeToSerialString(dst_data_type).c_str(),
                           formats::ShapeToString(input_shape).c_str(), src_data_size, ret);
-        GELOGE(INTERNAL_ERROR, "Failed to trans data type from %s to %s, input shape %s, data size %ld, error code %u",
+        GELOGE(INTERNAL_ERROR, "[Trans][DataType] from %s to %s failed, input shape %s, data size %ld, error code %u",
                TypeUtils::DataTypeToSerialString(src_data_type).c_str(),
                TypeUtils::DataTypeToSerialString(dst_data_type).c_str(), formats::ShapeToString(input_shape).c_str(),
                src_data_size, ret);
@@ -230,7 +224,7 @@ Status TransVarOnHost(uint8_t *var_data, const VarTransRoad &trans_road, formats
     } else {
       REPORT_INNER_ERROR("E19999", "Trans var data failed, the trans type %s does not supported, check invalid",
                          trans_info.node_type.c_str());
-      GELOGE(UNSUPPORTED, "Failed to trans var data, the trans type %s does not supported",
+      GELOGE(UNSUPPORTED, "[Trans][VarData] failed, the trans type %s does not supported",
              trans_info.node_type.c_str());
       return UNSUPPORTED;
     }
@@ -255,10 +249,8 @@ Status ReAssignVarAddr(uint64_t session_id,
   uint8_t *var_logic = nullptr;
   Status ret = VarManager::Instance(session_id)->GetVarAddr(var_name, tensor_desc, &var_logic);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR,
-           "Failed to get var %s device addr, can not find it"
-           " from var manager %u",
-           var_name.c_str(), ret);
+    GELOGE(INTERNAL_ERROR, "[Get][VarAddr] failed, var name:%s, session_id:%lu, ret:%u",
+           var_name.c_str(), session_id, ret);
     return INTERNAL_ERROR;
   }
 
@@ -266,7 +258,8 @@ Status ReAssignVarAddr(uint64_t session_id,
   if (var_addr == nullptr) {
     REPORT_CALL_ERROR("E19999", "Get variable memory addr failed, mem_type:%d, var_name:%s, session_id:%lu,",
                       RT_MEMORY_HBM, var_name.c_str(), session_id);
-    GELOGE(INTERNAL_ERROR, "Failed to convert var %s logic addr to real addr", var_name.c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][VarMemoryAddr] failed, mem_type:%d, var_name:%s, session_id:%lu",
+           RT_MEMORY_HBM, var_name.c_str(), session_id);
     return INTERNAL_ERROR;
   }
   *var_device = var_addr;
@@ -293,9 +286,8 @@ Status TransVarData(const NodePtr &var, const VarTransRoad &trans_road, uint64_t
   // Sync var data from device
   std::unique_ptr<uint8_t[]> var_data;
   if (trans_road.empty()) {
-    REPORT_INNER_ERROR("E19999", "Param trans_road is empty, session_id:%lu, check invalid",
-                       session_id);
-    GELOGE(INTERNAL_ERROR, "Failed to get trans_road, trans_road is empty.");
+    REPORT_INNER_ERROR("E19999", "Param trans_road is empty, session_id:%lu, check invalid", session_id);
+    GELOGE(INTERNAL_ERROR, "[Check][Param] trans_road is empty, session_id:%lu", session_id);
     return INTERNAL_ERROR;
   }
   const GeTensorDesc &input_desc = trans_road.begin()->input;
@@ -307,7 +299,7 @@ Status TransVarData(const NodePtr &var, const VarTransRoad &trans_road, uint64_t
   formats::TransResult trans_result{};
   ret = TransVarOnHost(var_data.get(), trans_road, trans_result);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to trans var data on host, error code %u", ret);
+    GELOGE(ret, "[Call][TransVarOnHost] failed, session_id:%lu, ret:%u", session_id, ret);
     return ret;
   }
 
@@ -319,14 +311,15 @@ Status TransVarData(const NodePtr &var, const VarTransRoad &trans_road, uint64_t
   /// TensorDesc needs to be removed. This change is large and needs to be performed step by step.
   ret = ReAssignVarAddr(session_id, var->GetName(), trans_road.rbegin()->output, &var_device);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to re-assign memory on device, size %zu", trans_result.length);
+    GELOGE(ret, "[Call][ReAssignVarAddr] failed, session id:%lu, op:%s, ret:%u",
+           session_id, var->GetName().c_str(), ret);
     return ret;
   }
 
   // sync new data to device
   ret = CopyVarToDevice(var, trans_result, var_device);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to send var data to device");
+    GELOGE(ret, "[Call][CopyVarToDevice] failed, var:%s, ret:%u", var->GetName().c_str(), ret);
     return ret;
   }
 
@@ -350,7 +343,10 @@ Status TransTensor(uint8_t *var_data, const NodePtr &var_src, const NodePtr &var
                               TypeUtils::DataTypeToSerialString(src_data_datatype).c_str(),
                               TypeUtils::DataTypeToSerialString(dst_data_datatype).c_str(),
                               src_data_shape_size, ret);
-            GELOGE(INTERNAL_ERROR, "trans var data on host failed");
+            GELOGE(INTERNAL_ERROR, "[Trans][DataType] from %s to %s failed, data size %ld, ret:%u",
+                   TypeUtils::DataTypeToSerialString(src_data_datatype).c_str(),
+                   TypeUtils::DataTypeToSerialString(dst_data_datatype).c_str(),
+                   src_data_shape_size, ret);
             return ret;
           });
   return SUCCESS;
@@ -366,9 +362,11 @@ Status CopyTensorFromSrcVarNode(const NodePtr &var_src,
   /// need copy value from var_fp32 to var_fp16.
   /// [opdesc of var_src and var_dst are checked before passed in, no need to check if they are nullptr]
   GE_IF_BOOL_EXEC(var_src == nullptr || var_dst == nullptr,
-                  REPORT_INNER_ERROR("E19999", "Param var_src or var_dst is empty, session_id:%lu, device_id:%u, "
+                  REPORT_INNER_ERROR("E19999", "Param var_src or var_dst is nullptr, session_id:%lu, device_id:%u, "
                                      "check invalid", session_id, device_id);
-                  GELOGE(FAILED, "node var is nullptr"); return FAILED);
+                  GELOGE(FAILED, "[Check][Param] Param var_src or var_dst is nullptr, session_id:%lu, device_id:%u",
+                         session_id, device_id);
+                  return FAILED);
   // src_node output_desc (fp32)
   GeTensorDesc output_desc = var_src->GetOpDesc()->GetOutputDesc(0);
   auto src_data_type = output_desc.GetDataType();
@@ -390,31 +388,45 @@ Status CopyTensorFromSrcVarNode(const NodePtr &var_src,
   RtContextSwitchGuard switch_context(RT_CTX_NORMAL_MODE, device_id);
   // copy from src_node
   auto ret = CopyVarFromDevice(session_id, var_src, var_src_data, output_desc);
-  GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(FAILED, "Copy Var From Device failed"); return ret);
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(FAILED, "[Call][CopyVarFromDevice] failed, session id:%lu, var_src:%s",
+                         session_id, var_src->GetName().c_str());
+                  return ret);
   // trans dtype
   formats::TransResult trans_result{};
   ret = TransTensor(var_src_data.get(), var_src, var_dst, trans_result);
-  GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(INTERNAL_ERROR, "trans var data on host failed"); return ret);
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(INTERNAL_ERROR, "[Trans][Tensor] failed, var_src:%s, var_dst:%s",
+                         var_src->GetName().c_str(), var_dst->GetName().c_str());
+                  return ret);
   // reset src value.
   void *var_device = nullptr;
   ret = ReAssignVarAddr(session_id, var_dst->GetName(), dst_tensor_desc, &var_device);
-  GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(INTERNAL_ERROR, "assign mem failed"); return ret);
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(INTERNAL_ERROR, "[Call][ReAssignVarAddr] failed, session id:%lu, var_dst:%s",
+                         session_id, var_dst->GetName().c_str());
+                  return ret);
   // copy to device
   ret = CopyVarToDevice(var_dst, trans_result, var_device);
-  GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "Failed to send var data to device"); return ret);
+  GE_IF_BOOL_EXEC(ret != SUCCESS,
+                  GELOGE(ret, "[Call][CopyVarToDevice] failed, var_dst:%s, ret:%u",
+                         var_dst->GetName().c_str(), ret);
+                  return ret);
   return SUCCESS;
 }
 } // namespace
 Status TransVarDataUtils::SyncVarData2BroadCast(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,
                                                 uint8_t *dst_addr, int64_t dst_addr_size, uint64_t session_id) {
-  GE_CHK_BOOL_RET_STATUS(dst_addr != nullptr, FAILED, "dst addr is null. ");
+  GE_CHK_BOOL_RET_STATUS(dst_addr != nullptr, FAILED, "[Check][Param] dst addr is nullptr.");
   uint8_t *src_host_addr = nullptr;
   int64_t src_addr_size = 0;
   GE_MAKE_GUARD_RTMEM(src_host_addr);
   GE_CHK_STATUS_RET(SyncTensorToHost(var_name, src_tensor_desc, &src_host_addr, src_addr_size, session_id));
 
   GELOGI("src_addr_size: %ld, dst_addr_size: %ld", src_addr_size, dst_addr_size);
-  GE_CHK_BOOL_RET_STATUS(src_addr_size == dst_addr_size, FAILED, "var data size is not equal broadcast ");
+  GE_CHK_BOOL_RET_STATUS(src_addr_size == dst_addr_size, FAILED,
+                         "[Check][Param] src_addr_size:%ld not equal to dst_addr_size:%ld",
+                         src_addr_size, dst_addr_size);
 
   GE_CHK_RT_RET(rtMemcpy(dst_addr, dst_addr_size, src_host_addr, src_addr_size, RT_MEMCPY_HOST_TO_DEVICE));
   return SUCCESS;
@@ -422,7 +434,7 @@ Status TransVarDataUtils::SyncVarData2BroadCast(const string &var_name, const ge
 
 Status TransVarDataUtils::SyncBroadCastData2Var(uint8_t *src_addr, int64_t src_addr_size, const string &var_name,
                                                 const ge::GeTensorDesc &dst_tensor_desc, uint64_t session_id) {
-  GE_CHK_BOOL_RET_STATUS(src_addr != nullptr, FAILED, "src addr is null. ");
+  GE_CHK_BOOL_RET_STATUS(src_addr != nullptr, FAILED, "[Check][Param] src addr is nullptr. ");
   uint8_t *host_addr = nullptr;
   GE_MAKE_GUARD_RTMEM(host_addr);
   GE_CHK_RT_RET(rtMallocHost(reinterpret_cast<void **>(&host_addr), src_addr_size));
@@ -436,7 +448,7 @@ Status TransVarDataUtils::SyncBroadCastData2Var(uint8_t *src_addr, int64_t src_a
 
 Status TransVarDataUtils::SyncTensorToHost(const string &var_name, const ge::GeTensorDesc &src_tensor_desc,
                                            uint8_t **host_addr, int64_t &src_tensor_size, uint64_t session_id) {
-  GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(src_tensor_desc, src_tensor_size), "get size from TensorDesc failed");
+  GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(src_tensor_desc, src_tensor_size), "[Get][Size] from TensorDesc failed");
 
   uint8_t *src_addr = nullptr;
   GE_CHK_STATUS_RET(VarManager::Instance(session_id)->GetVarAddr(var_name, src_tensor_desc, &src_addr));
@@ -493,7 +505,8 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
           if (rt_ret != RT_ERROR_NONE) {
             REPORT_CALL_ERROR("E19999", "Call rtCtxSetCurrent failed, session_id:%lu, graph_id:%u, ret:0x%X,",
                               session_id, graph_id, rt_ret);
-            GELOGE(RT_FAILED, "Failed to set context, error_code is: 0x%X.", rt_ret);
+            GELOGE(RT_FAILED, "[Call][RtCtxSetCurrent] failed, session_id:%lu, graph_id:%u, ret:0x%X,",
+                   session_id, graph_id, rt_ret);
             return RT_ERROR_TO_GE_STATUS(rt_ret);
           }
           uint32_t allocated_graph_id = 0;
@@ -501,8 +514,8 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
           if (ret != SUCCESS) {
             REPORT_CALL_ERROR("E19999", "Get allocated GraphId failed, session_id:%lu, graph_id:%u, ret:0x%X,",
                               session_id, graph_id, ret);
-            GELOGE(INTERNAL_ERROR, "var has not been allocated, node:%s, graph_id:%u.", node->GetName().c_str(),
-                   graph_id);
+            GELOGE(INTERNAL_ERROR, "[Get][AllocatedGraphId] failed, node:%s, graph_id:%u.",
+                   node->GetName().c_str(), graph_id);
             return INTERNAL_ERROR;
           }
           uint32_t changed_graph_id = 0;
@@ -518,7 +531,8 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
             }
             ret = TransVarData(node, *trans_road, session_id);
             if (ret != SUCCESS) {
-              GELOGE(INTERNAL_ERROR, "TransVarData failed, node:%s, graph_id:%u.", node->GetName().c_str(), graph_id);
+              GELOGE(INTERNAL_ERROR, "[Trans][VarData] failed, node:%s, graph_id:%u, session_id:%lu.",
+                     node->GetName().c_str(), graph_id, session_id);
               return INTERNAL_ERROR;
             }
             VarManager::Instance(session_id)->RemoveChangedGraphId(node->GetName());
@@ -527,7 +541,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
         },
         node, session_id, context, graph_id, ErrorManager::GetInstance().GetErrorManagerContext());
     if (!f.valid()) {
-      GELOGE(FAILED, "Future is invalid");
+      GELOGE(FAILED, "[Check][Param] Future is invalid, session id:%lu, graph id:%u", session_id, graph_id);
       return FAILED;
     }
     vector_future.push_back(std::move(f));
@@ -537,7 +551,7 @@ Status TransVarDataUtils::TransAllVarData(const vector<NodePtr> &variable_nodes,
   for (size_t i = 0; i < vector_future.size(); ++i) {
     ret_status = vector_future[i].get();
     if (ret_status != SUCCESS) {
-      GELOGE(ret_status, "TransAllVarData:: trans %zu vardata failed", i);
+      GELOGE(ret_status, "[Check][Param] trans %zu vardata failed", i);
       return ret_status;
     }
   }
@@ -550,7 +564,8 @@ Status TransVarDataUtils::CopyVarData(const ComputeGraphPtr &compute_graph, uint
   if (compute_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, session_id:%lu, device_id:%u, check invalid",
                        session_id, device_id);
-    GELOGE(FAILED, "compute_graph is nullptr");
+    GELOGE(FAILED, "[Check][Param] compute_graph is nullptr, session_id:%lu, device_id:%u",
+           session_id, device_id);
     return FAILED;
   }
 
@@ -568,7 +583,10 @@ Status TransVarDataUtils::CopyVarData(const ComputeGraphPtr &compute_graph, uint
         GELOGI("current_var_node__: [%s] copy_from_var_node__: [%s].", node->GetName().c_str(),
                src_node->GetName().c_str());
         auto ret = CopyTensorFromSrcVarNode(src_node, node, session_id, device_id);
-        GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(FAILED, "copy tensor failed!"); return FAILED);
+        GE_IF_BOOL_EXEC(ret != SUCCESS,
+                        GELOGE(FAILED, "[Copy][Tensor] failed, src_node:%s, node:%s, session_id:%lu, device_id:%u",
+                               src_node->GetName().c_str(), node->GetName().c_str(), session_id, device_id);
+                        return FAILED);
         // only copy once
         (void) ge::AttrUtils::SetBool(node->GetOpDesc(), "_copy_value", true);  // no need to check value
       }

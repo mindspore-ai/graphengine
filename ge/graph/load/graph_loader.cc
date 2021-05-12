@@ -33,12 +33,12 @@ Status GraphLoader::UnloadModel(uint32_t model_id) {
 
   Status ret = model_manager->Stop(model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UnloadModel: Stop failed. model id:%u", model_id);
+    GELOGE(ret, "[Stop][Model] failed. model id:%u", model_id);
   }
 
   ret = model_manager->Unload(model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UnloadModel: Unload failed. model id:%u", model_id);
+    GELOGE(ret, "[Unload][Model] failed. model id:%u", model_id);
     return ret;
   }
   GELOGI("UnLoad model success, model id:%u.", model_id);
@@ -50,14 +50,13 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
   GELOGI("Load model online begin.");
   rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
-                      GetContext().DeviceId(), rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtSetDevice] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     return RT_FAILED;
   }
   if (ge_root_model_ptr == nullptr) {
     REPORT_INNER_ERROR("E19999", "Check param ge_root_model_ptr nullptr, check invalid");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph] GE load graph model_ptr is nullptr.");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[LoadGraph][Check][Param] GE load graph model_ptr is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
 
@@ -65,12 +64,12 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->LoadModelOnline(model_id, ge_root_model_ptr, listener);
   if (ret != SUCCESS) {
-    GELOGE(ret, "LoadModel: Load failed. ret = %u", ret);
+    GELOGE(ret, "[Load][Model] Online failed. ret = %u, model_id:%u", ret, model_id);
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
                         GetContext().DeviceId(), rt_ret);
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     }
     return ret;
   }
@@ -81,31 +80,31 @@ Status GraphLoader::LoadModelOnline(uint32_t &model_id, const std::shared_ptr<ge
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
                         GetContext().DeviceId(), rt_ret);
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     }
     return SUCCESS;
   }
   ret = model_manager->Start(model_id);
   if (ret != SUCCESS) {
     if (model_manager->Unload(model_id) != SUCCESS) {
-      GELOGE(ret, "LoadModel: Unload failed while trying to unload after a failed start.");
+      GELOGE(ret, "[Unload][Model] failed while trying to unload after a failed start, model_id:%u.", model_id);
     }
 
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
                         GetContext().DeviceId(), rt_ret);
-      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     }
 
-    GELOGE(ret, "LoadModel: Start failed.");
+    GELOGE(ret, "[Start][Model] failed, model_id:%u.", model_id);
     return ret;
   }
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
                       GetContext().DeviceId(), rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     return RT_FAILED;
   }
   GELOGI("Load model online success, model_id:%u.", model_id);
@@ -118,7 +117,7 @@ Status GraphLoader::GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size) {
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->GetMaxUsedMemory(model_id, max_size);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GetMaxUsedMemory: GetMaxUsedMemory failed.");
+    GELOGE(ret, "[Call][GetMaxUsedMemory] failed, model_id:%u.", model_id);
     return ret;
   }
   return SUCCESS;
@@ -127,21 +126,20 @@ Status GraphLoader::GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size) {
 Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string &key_path, int32_t priority,
                                      ModelData &model_data) {
   if (!CheckInputPathValid(path)) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "model path is invalid: %s", path.c_str());
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "[Check][Param] model path is invalid:%s", path.c_str());
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   GELOGI("Load model begin, model path is: %s", path.c_str());
   if (!key_path.empty() && !CheckInputPathValid(key_path)) {
-    REPORT_INNER_ERROR("E19999", "Param key_path:%s empty or invalid",
-                       key_path.c_str());
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "decrypt_key path is invalid: %s", key_path.c_str());
+    REPORT_INNER_ERROR("E19999", "Param key_path:%s empty or invalid", key_path.c_str());
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param] decrypt_key path is invalid:%s", key_path.c_str());
     return ACL_ERROR_GE_PARAM_INVALID;
   }
 
   Status ret = ModelParserBase::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
   if (ret != SUCCESS) {
-    GELOGE(ret, "LoadModelFromFile: Load failed. ret = %u", ret);
+    GELOGE(ret, "[Call][LoadFromFile] failed. ret = %u, path:%s, key path:%s", ret, path.c_str(), key_path.c_str());
     if (model_data.model_data != nullptr) {
       delete[] static_cast<char *>(model_data.model_data);
       model_data.model_data = nullptr;
@@ -156,18 +154,19 @@ Status GraphLoader::CommandHandle(const Command &command) {
     GE_CHECK_NOTNULL(model_manager);
     Status ret = model_manager->HandleCommand(command);
     if (ret != SUCCESS) {
-      GELOGE(ret, "CommandHandle: Command Handle failed.");
+      GELOGE(ret, "[Handle][Command] failed, module_index:%lu.", command.module_index);
 
       return ret;
     }
   } catch (std::bad_alloc &) {
     REPORT_INNER_ERROR("E19999", "Bad memory allocation occur");
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Command handle failed, bad memory allocation occur !");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Handle][Command] failed, "
+           "bad memory allocation occur, module_index:%lu.", command.module_index);
 
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   } catch (...) {
     REPORT_INNER_ERROR("E19999", "Some exceptions occur");
-    GELOGE(FAILED, "Command handle failed, some exceptions occur !");
+    GELOGE(FAILED, "[Handle][Command] failed, some exceptions occur, module_index:%lu.", command.module_index);
 
     return FAILED;
   }
@@ -184,7 +183,7 @@ Status GraphLoader::LoadModelFromData(uint32_t &model_id, const ModelData &model
   Status ret = model_manager->LoadModelOffline(
       model_id, model_data, nullptr, dev_ptr, mem_size, weight_ptr, weight_size);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Load model failed, model_id:%u.", model_id);
+    GELOGE(ret, "[Load][Model] failed, model_id:%u.", model_id);
     return ret;
   }
   GELOGI("Load model success, model_id:%u.", model_id);
@@ -210,7 +209,7 @@ Status GraphLoader::LoadModelWithQ(uint32_t &model_id, const ModelData &model_da
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->LoadModelWithQ(model_id, model_data, input_queue_ids, output_queue_ids);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Load model with queue failed, model_id:%u.", model_id);
+    GELOGE(ret, "[Load][Model] with queue failed, model_id:%u.", model_id);
     return ret;
   }
 
@@ -237,7 +236,7 @@ Status GraphLoader::ExecuteModel(uint32_t model_id, rtStream_t stream, bool asyn
   Status ret = model_manager->ExecuteModel(model_id, stream, async_mode,
                                            input_data, input_desc, output_data, output_desc);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Execute model failed, model_id:%u.", model_id);
+    GELOGE(ret, "[Execute][Model] failed, model_id:%u.", model_id);
     return ret;
   }
 
@@ -250,7 +249,7 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
                       GetContext().DeviceId(), rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtSetDevice] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     return RT_FAILED;
   }
   size_t total_mem = 0;
@@ -258,14 +257,14 @@ Status GraphLoader::GetMemoryInfo(int64_t &free) {
   rt_ret = rtMemGetInfo(&free_mem, &total_mem);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemGetInfo failed, ret:0x%X", rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtMemGetInfo] failed, ret:0x%X", rt_ret);
     return RT_FAILED;
   }
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
                       GetContext().DeviceId(), rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
     return RT_FAILED;
   }
   // Add small page memory size
@@ -280,7 +279,8 @@ Status GraphLoader::DestroyAicpuKernel(uint64_t session_id, uint32_t model_id, u
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->DestroyAicpuKernel(session_id, model_id, sub_model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Destroy aicpu kernel failed.");
+    GELOGE(ret, "[Destroy][AicpuKernel] failed, session_id:%lu, model_id:%u, sub_model_id:%u.",
+           session_id, model_id, sub_model_id);
     return ret;
   }
   return SUCCESS;
@@ -291,7 +291,7 @@ Status GraphLoader::DestroyAicpuSessionForInfer(uint32_t model_id) {
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->DestroyAicpuSessionForInfer(model_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Destroy aicpu serrion for infer failed.");
+    GELOGE(ret, "[Call][DestroyAicpuSessionForInfer] failed, model_id:%u.", model_id);
     return ret;
   }
   return SUCCESS;

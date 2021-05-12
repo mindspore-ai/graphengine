@@ -47,7 +47,7 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
                        "then branch graph: %s, else branch graph: %s",
                        if_desc->GetName().c_str(), if_desc->GetType().c_str(),
                        then_branch_name.c_str(), else_branch_name.c_str());
-    GELOGE(INTERNAL_ERROR, "Node: %s has invalid subgraph, then branch: %s, else branch: %s.",
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Node: %s has invalid subgraph, then branch: %s, else branch: %s.",
            if_desc->GetName().c_str(), then_branch_name.c_str(), else_branch_name.c_str());
     return FAILED;
   }
@@ -72,7 +72,7 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   if (then_stream_active == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add StreamActive node in graph:%s fail",
                       then_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", then_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][StreamActive] in Subgraph:%s failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
 
@@ -80,14 +80,14 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   if (then_enter_label == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add LabelSetEnter node in graph:%s fail",
                       then_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", then_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][LabelSetEnter] in Subgraph:%s failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
 
   if (AddLabelGotoLeave(then_sub_graph, then_leave_name, else_leave_index) == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add LabelGotoLeave node in graph:%s fail",
                       then_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add label goto failed.", then_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][LabelGotoLeave] in Subgraph:%s failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
 
@@ -95,20 +95,20 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   if (else_stream_active == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add StreamActive node in graph:%s fail",
                       else_stream_active->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add stream active failed.", else_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][StreamActive] in Subgraph:%s failed.", else_sub_graph->GetName().c_str());
     return FAILED;
   }
 
   if (AddLabelSetEnter(else_sub_graph, else_enter_name, else_enter_index, else_stream_active) == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add LabelSetEnter node in graph:%s fail",
                       else_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", else_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][LabelSetEnter] in Subgraph:%s failed.", else_sub_graph->GetName().c_str());
     return FAILED;
   }
   if (AddLabelSetLeave(else_sub_graph, else_leave_name, else_leave_index) == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add LabelSetLeave node in graph:%s fail",
                       else_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add label set failed.", else_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][LabelSetLeave] in Subgraph:%s failed.", else_sub_graph->GetName().c_str());
     return FAILED;
   }
 
@@ -121,7 +121,7 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   if (switch_node == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add LabelSwitchEnter node in graph:%s fail",
                       then_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add label switch failed.", then_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][LabelSwitchEnter] in Subgraph:%s failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
 
@@ -129,7 +129,7 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   if (GraphUtils::AddEdge(switch_node->GetOutControlAnchor(), then_enter_label->GetInControlAnchor()) != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add ctrl edge from %s to %s in graph:%s fail", switch_node->GetName().c_str(),
                       then_enter_label->GetName().c_str(), then_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "LabelSwitchByIndex: Add ctrl edge to %s failed.", then_enter_label->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][CtrlEdge] to %s failed.", then_enter_label->GetName().c_str());
     return FAILED;
   }
 
@@ -138,7 +138,7 @@ Status IfOpLabelMaker::Run(uint32_t &label_index) {
   if (AddLabelSwitchIndex(then_sub_graph, data_name, pred_desc, switch_node, parent_index) == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add LabelSwitchIndex node in graph:%s fail",
                       then_sub_graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Subgraph: %s add switch input failed.", then_sub_graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][LabelSwitchIndex] in Subgraph:%s failed.", then_sub_graph->GetName().c_str());
     return FAILED;
   }
 

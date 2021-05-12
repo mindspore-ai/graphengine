@@ -176,8 +176,8 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
 
   auto gelib = GELib::GetInstance();
   if (gelib == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check GELib instance nullptr");
-    GELOGE(FAILED, "Get GELib instance failed.");
+    REPORT_INNER_ERROR("E19999", "Check GELib instance nullptr, graph:%s", whole_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Get][Instance] of GELib failed. graph:%s", whole_graph_->GetName().c_str());
     return FAILED;
   }
 
@@ -188,7 +188,7 @@ Status StreamAllocator::AssignLogicalStreams(const std::map<std::string, int> &m
 
   Status status = logical_allocator.Assign(whole_graph_, subgraphs_, stream_num_);
   if (status != SUCCESS) {
-    GELOGE(status, "Assign logical streams failed.");
+    GELOGE(status, "[Assign][LogicalStreams] failed. graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
   GE_DUMP(whole_graph_, "AfterAssignedLogicalStreams");
@@ -203,62 +203,62 @@ Status StreamAllocator::RefreshRealStream(int64_t &stream_num, int64_t &event_nu
 
   Status status = AssignSingleStream();
   if (status != SUCCESS) {
-    GELOGE(status, "AssignSingleStream failed!");
+    GELOGE(status, "[Assign][SingleStream] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = SetActiveStreamsByLabel();
   if (status != SUCCESS) {
-    GELOGE(status, "SetActiveStreamsByLabel failed!");
+    GELOGE(status, "[Set][ActiveStreams] By Label failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = SetActiveStreamsForSubgraphs();
   if (status != SUCCESS) {
-    GELOGE(status, "SetActiveStreamsForSubgraphs failed.");
+    GELOGE(status, "[Set][ActiveStreams] For Subgraphs failed. graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = InsertSyncEvents();
   if (status != SUCCESS) {
-    GELOGE(status, "InsertSyncEventId failed!");
+    GELOGE(status, "[Insert][SyncEventId] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = OptimizeSyncEvents();
   if (status != SUCCESS) {
-    GELOGE(status, "OptimizeSyncEventId failed!");
+    GELOGE(status, "[Optimize][SyncEventId] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   vector<set<int64_t>> split_streams(stream_num_);
   status = SplitStreams(split_streams);
   if (status != SUCCESS) {
-    GELOGE(status, "SplitStreams failed!");
+    GELOGE(status, "[Split][Streams] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = UpdateActiveStreams(split_streams);
   if (status != SUCCESS) {
-    GELOGE(status, "UpdateActiveStreams failed!");
+    GELOGE(status, "[Update][ActiveStreams] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = RefreshContinuousEvents();
   if (status != SUCCESS) {
-    GELOGE(status, "RefreshContinuousEvents failed!");
+    GELOGE(status, "[Refresh][ContinuousEvents] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = RefreshEventsWithReuse();
   if (status != SUCCESS) {
-    GELOGE(status, "[Refresh][Events]RefreshEventsWithReuse failed!");
+    GELOGE(status, "[Refresh][Events] With Reuse failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = InsertSyncEventNodes();
   if (status != SUCCESS) {
-    GELOGE(status, "InsertSyncEventNode failed!");
+    GELOGE(status, "[Insert][SyncEventNode] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
@@ -293,7 +293,7 @@ Status StreamAllocator::AssignSingleStream() {
   if (stream_num_ > 1) {
     REPORT_INNER_ERROR("E19999", "The number of ts streams is %ld, only one is supported",
                        stream_num_);
-    GELOGE(FAILED, "The number of ts streams is %ld, only one is supported.", stream_num_);
+    GELOGE(FAILED, "[Check][Param] The number of ts streams is %ld, only one is supported.", stream_num_);
     return FAILED;
   }
 
@@ -311,7 +311,7 @@ Status StreamAllocator::AssignSingleStream() {
   uint32_t max_normal_task_count = 0;
   Status status = GetMaxStreamAndTask(false, max_normal_stream_count, max_normal_task_count);
   if (status != SUCCESS) {
-    GELOGE(status, "Get max task count of normal stream failed.");
+    GELOGE(status, "[Get][MaxCount] of normal stream and task failed. graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
@@ -369,7 +369,8 @@ Status StreamAllocator::SetActiveStreamsByLabel() {
                      REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed",
                                         ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                                         node->GetName().c_str(), node->GetType().c_str());
-                     GELOGE(FAILED, "SetListInt failed.");
+                     GELOGE(FAILED, "[Set][Attr] %s for op:%s(%s) failed",
+                            ATTR_NAME_ACTIVE_STREAM_LIST.c_str(), node->GetName().c_str(), node->GetType().c_str());
                      return FAILED);
   }
 
@@ -422,7 +423,7 @@ Status StreamAllocator::SetActiveStreamsForSubgraphs() {
       REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed",
                          ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                          first_active_node->GetName().c_str(), first_active_node->GetType().c_str());
-      GELOGE(FAILED, "Set active streams for node %s failed.", first_active_node->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] active streams for node %s failed.", first_active_node->GetName().c_str());
       return FAILED;
     }
   }
@@ -438,7 +439,7 @@ Status StreamAllocator::InsertSyncEvents() {
         NodePtr next_node = peer_in_anchor->GetOwnerNode();
         Status status = InsertOneEventInTwoNodes(cur_node, next_node);
         if (status != SUCCESS) {
-          GELOGE(status, "InsertOneEventInTwoNodes failed!");
+          GELOGE(status, "[Insert][OneEvent] In Two Nodes failed! cur node:%s", cur_node->GetName().c_str());
           return status;
         }
       }
@@ -451,7 +452,7 @@ Status StreamAllocator::InsertSyncEvents() {
         NodePtr next_node = peer_in_anchor->GetOwnerNode();
         Status status = InsertOneEventInTwoNodes(cur_node, next_node);
         if (status != SUCCESS) {
-          GELOGE(status, "InsertOneEventInTwoNodes failed!");
+          GELOGE(status, "[Insert][OneEvent] In Two Nodes failed! cur node:%s", cur_node->GetName().c_str());
           return status;
         }
       }
@@ -460,7 +461,8 @@ Status StreamAllocator::InsertSyncEvents() {
 
   Status status = InsertEventsForSubgraph();
   if (status != SUCCESS) {
-    GELOGE(status, "InsertEventsBetweenSubAndParentGraphNodes failed!");
+    GELOGE(status, "[Insert][Events] Between Sub And Parent GraphNodes failed! graph:%s",
+           whole_graph_->GetName().c_str());
     return status;
   }
 
@@ -493,7 +495,8 @@ Status StreamAllocator::InsertOneEventInTwoNodes(const NodePtr &cur_node, const 
   if (next_stream_id == kInvalidStream) {
     REPORT_INNER_ERROR("E19999", "Stream id of next_node %s(%s) should not be %ld",
                        next_node->GetName().c_str(), next_node->GetType().c_str(), kInvalidStream);
-    GELOGE(FAILED, "Stream id of next_node %s should not be %ld", next_node->GetName().c_str(), kInvalidStream);
+    GELOGE(FAILED, "[Check][Param] Stream id of next_node %s should not be %ld",
+           next_node->GetName().c_str(), kInvalidStream);
     return FAILED;
   }
 
@@ -542,7 +545,7 @@ Status StreamAllocator::InsertEventsForSubgraph() {
       for (const auto &next_node : parent_node->GetOutAllNodes()) {
         Status status = InsertOneEventInTwoNodes(node, next_node);
         if (status != SUCCESS) {
-          GELOGE(status, "InsertOneEventInTwoNodes failed!");
+          GELOGE(status, "[Insert][OneEvent] In Two Nodes failed! node:%s", node->GetName().c_str());
           return status;
         }
       }
@@ -566,19 +569,19 @@ Status StreamAllocator::OptimizeSyncEvents() {
 
   Status status = OptimizeBySendEvents(stream_nodes);
   if (status != SUCCESS) {
-    GELOGE(status, "OptimizeBySendEvents failed!");
+    GELOGE(status, "[Optimize][StreamNodes] By Send Events failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = OptimizeByRecvEvents(stream_nodes);
   if (status != SUCCESS) {
-    GELOGE(status, "OptimizeByRecvEvents failed!");
+    GELOGE(status, "[Optimize][StreamNodes] By Recv Events failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = OptimizeByStreamActivate();
   if (status != SUCCESS) {
-    GELOGE(status, "OptimizeByStreamActivate failed!");
+    GELOGE(status, "[Call][OptimizeByStreamActivate] failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
   for (auto pair : node_to_send_events_) {
@@ -708,11 +711,11 @@ Status StreamAllocator::OptimizeByStreamActivate() {
 bool StreamAllocator::IsRecvNodeActivatedBySendNode(const NodePtr &send_node_ptr, const NodePtr &recv_node_ptr) const {
   GE_CHECK_NOTNULL_EXEC(send_node_ptr->GetOpDesc(),
                         REPORT_INNER_ERROR("E19999", "Check param send_node_ptr nullptr");
-                        GELOGE(FAILED, "op desc is nullptr");
+                        GELOGE(FAILED, "[Check][Param] op desc is nullptr");
                         return false);
   GE_CHECK_NOTNULL_EXEC(recv_node_ptr->GetOpDesc(),
                         REPORT_INNER_ERROR("E19999", "Check param recv_node_ptr nullptr");
-                        GELOGE(FAILED, "op desc is nullptr");
+                        GELOGE(FAILED, "[Check][Param] op desc is nullptr");
                         return false);
   auto cur_stream_id = send_node_ptr->GetOpDesc()->GetStreamId();
   if (AttrUtils::HasAttr(recv_node_ptr->GetOpDesc(), ATTR_NAME_STREAM_LABEL)) {
@@ -826,7 +829,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
   uint32_t max_stream_count = 0;
   uint32_t max_task_count = 0;
   GE_CHK_STATUS_RET(GetMaxStreamAndTask(false, max_stream_count, max_task_count),
-                    "Get max stream and task count failed.");
+                    "[Get][MaxCount] of stream and task failed.");
 
   for (const auto &cur_node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(cur_node);
@@ -839,7 +842,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
     if (stream_id > last_stream_id) {
       REPORT_INNER_ERROR("E19999", "streamid(%ld) > last_stream_id(%ld), check invalid",
                          stream_id, last_stream_id);
-      GELOGE(FAILED, "SplitStreams:streamid(%ld) > last_stream_id(%ld)", stream_id, last_stream_id);
+      GELOGE(FAILED, "[Check][Param] SplitStreams:streamid(%ld) > last_stream_id(%ld)", stream_id, last_stream_id);
       return FAILED;
     }
     bool is_stream_first_node = (stream_node_num_vec[stream_id] == 0);
@@ -854,7 +857,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
       if (stream_continuous_2_node_num_map[continuous_stream_label] > max_node_num_one_stream) {
         REPORT_INNER_ERROR("E19999", "Check node[%s] stream_id[%ld] continuous stream label[%s] unsatisfied",
                            op_desc->GetName().c_str(), stream_id, continuous_stream_label.c_str());
-        GELOGE(FAILED, "SplitStreams:node[%s] stream_id[%ld] continuous stream label[%s] unsatisfied ",
+        GELOGE(FAILED, "[Check][Param] SplitStreams:node[%s] stream_id[%ld] continuous stream label[%s] unsatisfied ",
                op_desc->GetName().c_str(), stream_id, continuous_stream_label.c_str());
         return FAILED;
       }
@@ -877,7 +880,8 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
       if (HasContinuousStreamLabel(op_desc, cur_continuous_stream_label)) {
         // get stored nodes
         auto nodes = stream_continuous_2_nodes_map[cur_continuous_stream_label];
-        GE_RETURN_WITH_LOG_IF_FALSE(!nodes.empty(), "split stream with continuous stream label %s failed",
+        GE_RETURN_WITH_LOG_IF_FALSE(!nodes.empty(),
+                                    "[Check][Param] split stream with continuous stream label %s failed",
                                     cur_continuous_stream_label.c_str());
         for (const auto &node : nodes) {
           auto stored_op_desc = node->GetOpDesc();
@@ -893,7 +897,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
         auto iter = std::find(stream_2_nodes_map[stream_id].begin(), stream_2_nodes_map[stream_id].end(), not_cur);
         GE_RETURN_WITH_LOG_IF_FALSE(
             (iter != stream_2_nodes_map[stream_id].end()) && (iter != stream_2_nodes_map[stream_id].begin()),
-            "split stream with continuous stream label %s failed", cur_continuous_stream_label.c_str());
+            "[Check][Param] split stream with continuous stream label %s failed", cur_continuous_stream_label.c_str());
         iter--;
         pre_node = *iter;
       }
@@ -905,7 +909,9 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
 
       // Add the send/recv event to the first and last nodes of the split stream.
       if (pre_node != nullptr) {
-        GE_CHK_STATUS_RET(AddEventId(pre_node, not_cur, cur_node, not_use_cur), "AddEventId failed.");
+        GE_CHK_STATUS_RET(AddEventId(pre_node, not_cur, cur_node, not_use_cur),
+                          "[Add][EventId] failed, pre node:%s, not cur node:%s, cur node:%s.",
+                          pre_node->GetName().c_str(), not_cur->GetName().c_str(), cur_node->GetName().c_str());
       }
     }
 
@@ -943,12 +949,12 @@ Status StreamAllocator::UpdateActiveStreams(const vector<set<int64_t>> &split_st
   for (auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     if ((node->GetType() == STREAMSWITCH) || (node->GetType() == STREAMSWITCHN)) {
       if (UpdateActiveStreamsForSwitchNode(node) != SUCCESS) {
-        GELOGE(FAILED, "Update active streams for switch node: %s failed.", node->GetName().c_str());
+        GELOGE(FAILED, "[Update][ActiveStreams] for switch node: %s failed.", node->GetName().c_str());
         return FAILED;
       }
     } else {
       if (UpdateActiveStreamsForActiveNode(split_streams, node) != SUCCESS) {
-        GELOGE(FAILED, "Update active streams for active node: %s failed.", node->GetName().c_str());
+        GELOGE(FAILED, "[Update][ActiveStreams] for active node: %s failed.", node->GetName().c_str());
         return FAILED;
       }
     }
@@ -956,13 +962,13 @@ Status StreamAllocator::UpdateActiveStreams(const vector<set<int64_t>> &split_st
 
   Status status = UpdateActiveStreamsForSubgraphs();
   if (status != SUCCESS) {
-    GELOGE(status, "Update active streams for subgraphs failed!");
+    GELOGE(status, "[Update][ActiveStreams] for subgraphs failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
   status = SetActiveStreamsForLoop();
   if (status != SUCCESS) {
-    GELOGE(status, "SetActiveStreamsForLoop failed!");
+    GELOGE(status, "[Set][ActiveStreams] For Loop failed! graph:%s", whole_graph_->GetName().c_str());
     return status;
   }
 
@@ -990,7 +996,7 @@ void StreamAllocator::UpdateLabelStreams(const vector<set<int64_t>> &split_strea
 Status StreamAllocator::UpdateActiveStreamsForSwitchNode(NodePtr &switch_node) {
   vector<NodePtr> active_nodes;
   if (InsertActiveNodesAfterSwitch(switch_node, active_nodes) != SUCCESS) {
-    GELOGE(FAILED, "Insert active nodes after node %s failed.", switch_node->GetName().c_str());
+    GELOGE(FAILED, "[Insert][ActiveNodes] after node %s failed.", switch_node->GetName().c_str());
     return FAILED;
   }
   if (active_nodes.empty()) {
@@ -1010,7 +1016,8 @@ Status StreamAllocator::UpdateActiveStreamsForSwitchNode(NodePtr &switch_node) {
   if (!AttrUtils::SetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, stream_ids)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "SetListInt failed.");
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
 
@@ -1024,21 +1031,21 @@ Status StreamAllocator::InsertActiveNodesAfterSwitch(NodePtr &switch_node, vecto
   vector<string> ori_active_label_list;
   if (!AttrUtils::GetListStr(switch_desc, ATTR_NAME_ACTIVE_LABEL_LIST, ori_active_label_list) ||
       ori_active_label_list.empty()) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s fail from op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
                        switch_node->GetName().c_str(), switch_node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Get active label list of switch %s failed.", switch_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][Attr] active label list of switch %s failed.", switch_node->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   vector<string> active_label_list;
   vector<NodePtr> added_active_nodes;
   if (AddActiveNodes(switch_node, ori_active_label_list, active_label_list, added_active_nodes) != SUCCESS) {
-    GELOGE(FAILED, "Add active nodes after node %s failed.", switch_node->GetName().c_str());
+    GELOGE(FAILED, "[Add][ActiveNodes] after node %s failed.", switch_node->GetName().c_str());
     return FAILED;
   }
 
   if (SetActiveLabelList(switch_node, active_label_list) != SUCCESS) {
-    GELOGE(FAILED, "set active label list failed");
+    GELOGE(FAILED, "[Set][ActiveLabelList] failed, node:%s", switch_node->GetName().c_str());
     return FAILED;
   }
 
@@ -1051,7 +1058,8 @@ Status StreamAllocator::InsertActiveNodesAfterSwitch(NodePtr &switch_node, vecto
     if (switch_node->GetOutControlAnchor()->LinkTo(active_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Link from %s to %s failed",
                         switch_node->GetName().c_str(), active_node->GetName().c_str());
-      GELOGE(FAILED, "Link %s to %s failed.", switch_node->GetName().c_str(), active_node->GetName().c_str());
+      GELOGE(FAILED, "[Link][Nodes] from %s to %s failed.",
+             switch_node->GetName().c_str(), active_node->GetName().c_str());
       return FAILED;
     }
     active_nodes.emplace_back(active_node);
@@ -1068,7 +1076,8 @@ Status StreamAllocator::UpdateActiveStreamsForActiveNode(const vector<set<int64_
       if (static_cast<size_t>(logical_stream) >= split_streams.size()) {
         REPORT_INNER_ERROR("E19999", "Check logical stream:%u is out of range:%zu",
                            logical_stream, split_streams.size());
-        GELOGE(FAILED, "logical stream is out of range.");
+        GELOGE(FAILED, "[Check][Param] logical stream:%u is out of range(0, %zu).",
+               logical_stream, split_streams.size());
         return FAILED;
       }
       const set<int64_t> &new_split_streams = split_streams[logical_stream];
@@ -1088,7 +1097,7 @@ Status StreamAllocator::UpdateActiveStreamsForActiveNode(const vector<set<int64_
     if (!AttrUtils::SetListInt(node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, new_active_streams)) {
       REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                          node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "Set active streams for node %s failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] active streams for node %s failed.", node->GetName().c_str());
       return FAILED;
     }
   }
@@ -1130,7 +1139,7 @@ Status StreamAllocator::UpdateActiveStreamsForSubgraphs() const {
     if (!AttrUtils::SetListInt(active_op, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
       REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                          active_op->GetName().c_str(), active_op->GetType().c_str());
-      GELOGE(FAILED, "Set active streams for node %s failed.", active_node->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] active streams for node %s failed.", active_node->GetName().c_str());
       return FAILED;
     }
   }
@@ -1200,7 +1209,7 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
       if (pre_switch_node == nullptr) {
         REPORT_INNER_ERROR("E19999", "Find switch node before loop active node %s fail",
                            node->GetName().c_str());
-        GELOGE(FAILED, "find switch node before loop active node %s failed", node->GetName().c_str());
+        GELOGE(FAILED, "[Find][SwitchNode] before loop active node %s failed", node->GetName().c_str());
         return FAILED;
       }
 
@@ -1210,7 +1219,8 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
                          REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)",
                                             ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                                             node->GetName().c_str(), node->GetType().c_str());
-                         GELOGE(FAILED, "SetListInt failed.");
+                         GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
+                                node->GetName().c_str(), node->GetType().c_str());
                          return FAILED);
         for (const auto &stream_id : loop_active_streams) {
           GELOGI("Active stream %u for node: %s.", stream_id, node->GetName().c_str());
@@ -1258,7 +1268,7 @@ Status StreamAllocator::CheckStreamActived() const {
       if (iter != active_streams.end()) {
         REPORT_INNER_ERROR("E19999", "Node:%s(%s) cannot active its own stream %u, check invalid ",
                            node->GetName().c_str(), node->GetType().c_str(), stream_id);
-        GELOGE(FAILED, "Node %s cannot active its own stream %u.", node->GetName().c_str(), stream_id);
+        GELOGE(FAILED, "[Check][Param] Node %s cannot active its own stream %u.", node->GetName().c_str(), stream_id);
         return FAILED;
       }
     }
@@ -1376,7 +1386,7 @@ Status StreamAllocator::RefreshContinuousEvents() {
       auto find_it = old_to_new_events.find(send_events[i]);
       if (find_it == old_to_new_events.end()) {
         REPORT_INNER_ERROR("E19999", "Check invalid send event %u", send_events[i]);
-        GELOGE(FAILED, "RefreshContinuousEvents: invalid send event %u", send_events[i]);
+        GELOGE(FAILED, "[Check][Param] RefreshContinuousEvents: invalid send event %u", send_events[i]);
         return FAILED;
       }
       send_events[i] = find_it->second;
@@ -1390,7 +1400,7 @@ Status StreamAllocator::RefreshContinuousEvents() {
       auto find_it = old_to_new_events.find(recv_events[i]);
       if (find_it == old_to_new_events.end()) {
         REPORT_INNER_ERROR("E19999", "Check invalid recv event %u", recv_events[i]);
-        GELOGE(FAILED, "RefreshContinuousEvents: invalid recv event %u", recv_events[i]);
+        GELOGE(FAILED, "[Check][Param] RefreshContinuousEvents: invalid recv event %u", recv_events[i]);
         return FAILED;
       }
       recv_events[i] = find_it->second;
@@ -1430,7 +1440,8 @@ Status StreamAllocator::InsertSyncEventNodes() {
                        REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed, event_id:%u,",
                                           RECV_ATTR_EVENT_ID.c_str(),
                                           node->GetName().c_str(), node->GetType().c_str(), event_id);
-                       GELOGE(FAILED, "SetInt failed.");
+                       GELOGE(FAILED, "[Set][Attr] %s for op:%s(%s) failed, event_id:%u,",
+                              RECV_ATTR_EVENT_ID.c_str(), node->GetName().c_str(), node->GetType().c_str(), event_id);
                        return FAILED);
       (void)AttrUtils::SetListStr(op_desc_ptr, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES,
                                   std::move(std::vector<std::string>()));
@@ -1441,7 +1452,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
       if (status != SUCCESS) {
         REPORT_INNER_ERROR("E19999", "Add edge from node %s to node %s failed",
                            recv_node->GetName().c_str(), node->GetName().c_str());
-        GELOGE(status, "Add edge for node %s and node %s failed.", recv_node->GetName().c_str(),
+        GELOGE(status, "[Add][Edge] for node %s and node %s failed.", recv_node->GetName().c_str(),
                node->GetName().c_str());
         return status;
       }
@@ -1478,7 +1489,7 @@ Status StreamAllocator::InsertSyncEventNodes() {
       if (status != SUCCESS) {
         REPORT_INNER_ERROR("E19999", "Add edge from node %s to node %s failed",
                            node->GetName().c_str(), send_node->GetName().c_str());
-        GELOGE(status, "Add edge for node %s and node %s failed.", node->GetName().c_str(),
+        GELOGE(status, "[Add][Edge] for node %s and node %s failed.", node->GetName().c_str(),
                send_node->GetName().c_str());
         return status;
       }
@@ -1491,7 +1502,8 @@ Status StreamAllocator::InsertSyncEventNodes() {
   if (status != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Insert Graph Events fail, graph:%s,",
                       whole_graph_->GetName().c_str());
-    GELOGE(status, "Graph ReorderEventNodes failed");
+    GELOGE(status, "[Insert][GraphEvents] Graph ReorderEventNodes failed, graph:%s,",
+           whole_graph_->GetName().c_str());
     return status;
   }
 
@@ -1544,7 +1556,8 @@ Status StreamAllocator::GetMaxStreamAndTask(bool huge_stream, uint32_t &max_stre
   if (ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "call rtGetMaxStreamAndTask fail, ret:%d, stream_type:%u,",
                       static_cast<int>(ret), stream_type);
-    GELOGE(FAILED, "Get max stream and task count by rts failed.");
+    GELOGE(FAILED, "[Call][RtGetMaxStreamAndTask] Get max stream and task count by rts failed, "
+           "ret:%d, stream_type:%u,", static_cast<int>(ret), stream_type);
     return FAILED;
   }
   GELOGD("Allowed max stream count: %u, max task count per stream: %u.", max_stream_count, max_task_count);
@@ -1687,7 +1700,7 @@ Status StreamAllocator::AddActiveNodes(NodePtr &switch_node, const vector<string
     const string &active_label = ori_active_label_list[i];
     if (labeled_streams_.find(active_label) == labeled_streams_.end()) {
       REPORT_INNER_ERROR("E19999", "can not find stream label:%s", active_label.c_str());
-      GELOGE(FAILED, "can not find stream label %s", active_label.c_str());
+      GELOGE(FAILED, "[Check][Param] can not find stream label %s", active_label.c_str());
       return FAILED;
     }
     if (labeled_streams_[active_label].size() <= 1) {
@@ -1715,32 +1728,32 @@ Status StreamAllocator::AddActiveNodes(NodePtr &switch_node, const vector<string
       if (switch_node->GetOutControlAnchor()->Unlink(node->GetInControlAnchor()) != GRAPH_SUCCESS) {
         REPORT_CALL_ERROR("E19999", "Unlink %s to %s failed",
                           switch_node->GetName().c_str(), node->GetName().c_str());
-        GELOGE(FAILED, "Unlink %s to %s failed.", switch_node->GetName().c_str(), node->GetName().c_str());
+        GELOGE(FAILED, "[Unlink][Nodes] %s to %s failed.", switch_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
       }
       GE_CHECK_NOTNULL(active_node->GetOutControlAnchor());
       if (active_node->GetOutControlAnchor()->LinkTo(node->GetInControlAnchor()) != GRAPH_SUCCESS) {
         REPORT_CALL_ERROR("E19999", "Link %s to %s failed",
                           active_node->GetName().c_str(), node->GetName().c_str());
-        GELOGE(FAILED, "Link %s to %s failed.", active_node->GetName().c_str(), node->GetName().c_str());
+        GELOGE(FAILED, "[Link][Nodes] %s to %s failed.", active_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
       }
     }
 
     if (SetSwitchBranchNodeLabel(active_node, name) != SUCCESS) {
-      GELOGE(FAILED, "Set switch branch node label failed.");
+      GELOGE(FAILED, "[Set][SwitchBranchNodeLabel] failed, node:%s.", active_node->GetName().c_str());
       return FAILED;
     }
     if (SetStreamLabel(active_node, name) != SUCCESS) {
-      GELOGE(FAILED, "Set stream label failed.");
+      GELOGE(FAILED, "[Set][StreamLabel] failed, node:%s.", active_node->GetName().c_str());
       return FAILED;
     }
     if (SetActiveLabelList(active_node, {active_label}) != SUCCESS) {
-      GELOGE(FAILED, "Set active label list failed.");
+      GELOGE(FAILED, "[Set][ActiveLabelList] failed, node:%s.", active_node->GetName().c_str());
       return FAILED;
     }
     if (SetActiveStreamList(active_node, active_label) != SUCCESS) {
-      GELOGE(FAILED, "Set active stream list failed.");
+      GELOGE(FAILED, "[Set][ActiveStreamList] failed, node:%s.", active_node->GetName().c_str());
       return FAILED;
     }
 
@@ -1753,7 +1766,7 @@ Status StreamAllocator::AddActiveNodes(NodePtr &switch_node, const vector<string
 Status StreamAllocator::SetActiveStreamList(NodePtr &active_node, const string &active_label) {
   if (labeled_streams_.find(active_label) == labeled_streams_.end()) {
     REPORT_INNER_ERROR("E19999", "Can not find stream label:%s", active_label.c_str());
-    GELOGE(FAILED, "Can not find stream label %s.", active_label.c_str());
+    GELOGE(FAILED, "[Check][Param] Can not find stream label %s.", active_label.c_str());
     return FAILED;
   }
   set<int64_t> &streams = labeled_streams_[active_label];
@@ -1761,7 +1774,8 @@ Status StreamAllocator::SetActiveStreamList(NodePtr &active_node, const string &
   if (!AttrUtils::SetListInt(active_node->GetOpDesc(), ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                        active_node->GetName().c_str(), active_node->GetType().c_str());
-    GELOGE(FAILED, "SetListInt of %s failed.", ATTR_NAME_ACTIVE_STREAM_LIST.c_str());
+    GELOGE(FAILED, "[Set][Attr] %s failed for op:%s(%s).", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
+           active_node->GetName().c_str(), active_node->GetType().c_str());
     return FAILED;
   }
   return SUCCESS;

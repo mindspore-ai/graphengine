@@ -128,8 +128,8 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
           REPORT_INNER_ERROR("E19999", "Check stream_id:%ld in op:%s(%s) is bigger than "
                              "run_context.graphStreamList.size():%zu", stream_id, op_desc->GetName().c_str(),
                              op_desc->GetType().c_str(), run_context.graphStreamList.size());
-          GELOGE(FAILED, "stream_id %ld is bigger than run_context.graphStreamList.size() %zu", stream_id,
-                 run_context.graphStreamList.size());
+          GELOGE(FAILED, "[Check][Param] stream_id %ld is bigger than run_context.graphStreamList.size() %zu",
+                 stream_id, run_context.graphStreamList.size());
           return FAILED;
         }
         run_context.stream = run_context.graphStreamList[stream_id];
@@ -145,11 +145,9 @@ Status StreamGraphOptimizer::OptimizeStreamedSubGraph(const ComputeGraphPtr &com
             REPORT_CALL_ERROR("E19999", "Call optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
                               "Optimizer num: %zu, ret: %u", subgraph->GetName().c_str(), engine_name.c_str(),
                               graph_optimizers.size(), ret);
-            GELOGE(
-              ret,
-              "[optimizeStreamedSubGraph]: optimize streamed subgraph failed, subgraph: %s, engine_name: %s, graph "
-              "Optimizer num: %zu, ret: %u",
-              subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size(), ret);
+            GELOGE(ret, "[Optimize][StreamGraph] failed, subgraph: %s, engine_name: %s, graph "
+                   "Optimizer num: %zu, ret: %u",
+                   subgraph->GetName().c_str(), engine_name.c_str(), graph_optimizers.size(), ret);
             return ret;
           }
           GELOGD(

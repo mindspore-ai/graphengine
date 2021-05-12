@@ -798,7 +798,8 @@ bool IsContinuousInputNodeMaxLife(const NodePtr &n, uint32_t out_index) {
       }
       auto peer_in_node_desc = peer_in_anchor->GetOwnerNode()->GetOpDesc();
       GE_IF_BOOL_EXEC(peer_in_node_desc == nullptr,
-                      GELOGE(FAILED, "Node[%s] output[%u] peer in node desc is null.", n->GetName().c_str(), out_index);
+                      GELOGE(FAILED, "[Get][OpDesc] Node[%s] output[%u] peer in node desc is null.",
+                             n->GetName().c_str(), out_index);
       return false;);
 
       if(peer_in_node_desc->GetId() > max_node_life_time) {
@@ -1074,7 +1075,8 @@ void BlockMemAssigner::UpdateOpTensorMemType(std::list<NodeIndexIO> node_index_i
 
 bool BlockMemAssigner::IsContinuousOutput(const NodePtr &n) {
   if (n == nullptr) {
-    GELOGE(FAILED, "Node is null.");
+    REPORT_INNER_ERROR("E19999", "param n is nullptr, check invalid.");
+    GELOGE(FAILED, "[Check][Param] Node is null.");
     return false;
   }
 
@@ -1082,7 +1084,8 @@ bool BlockMemAssigner::IsContinuousOutput(const NodePtr &n) {
   bool is_output_continuous = false;
   auto node_desc = n->GetOpDesc();
   if (node_desc == nullptr) {
-    GELOGE(FAILED, "Node[%s] nodedesc is null.", n->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "param node:%s opdesc is nullptr, check invalid.", n->GetName().c_str());
+    GELOGE(FAILED, "[Get][OpDesc] Node[%s] nodedesc is null.", n->GetName().c_str());
     return false;
   }
 
@@ -1450,7 +1453,9 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
     auto op_desc = owner_node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
     Params *instance = Params::Instance();
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(instance == nullptr, return nullptr, "Params instance is nullptr.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(instance == nullptr,
+                                   REPORT_INNER_ERROR("E19999", "Params instance is nullptr.");
+                                   return nullptr, "[Get][Instance] Params instance is nullptr.");
     if (!((instance->GetTarget() == TARGET_TYPE_TINY) && (op_desc->GetType() == NETOUTPUT))) {
       out_count++;
     }
@@ -1462,7 +1467,9 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
 
 bool IsOutputBlock(const ge::InDataAnchorPtr &in_data_anchor) {
   auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-  GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, GELOGE(FAILED, "Peer out anchor is nullptr."); return false);
+  GE_IF_BOOL_EXEC(peer_out_anchor == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Peer out anchor is nullptr.");
+                  GELOGE(FAILED, "[Check][Param] Peer out anchor is nullptr."); return false);
   auto src = peer_out_anchor->GetOwnerNode();
   int32_t index = peer_out_anchor->GetIdx();
   auto iter = GetLocalOmgContext().out_nodes_map.find(src->GetName());
@@ -1511,8 +1518,11 @@ bool IsKnownSubgraphData(const NodePtr &node) {
 
 void BlockMemAssigner::ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory,
                                      bool same_stream) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr, return, "Input parameter to_release is null.");
-  GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0, return, "Release memory");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr,
+                                 return, "[Check][Param] Input parameter to_release is null.");
+  GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0,
+                        return, "[Check][Param] to_release->ref_count_ must greater than 0");
+  GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "[Check][Param] doesn't reuse memory");
   --to_release->ref_count_;
   GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "doesn't reuse memory");
   if (!same_stream) {
@@ -1613,13 +1623,13 @@ void CheckAndGetOpReuseEnv(const string &env, vector<string> &env_vec, bool &op_
   string env_str;
   env_str = string(env);
   if (env_str.size() > kReuseMaxCharNum) {
-    GELOGE(FAILED, "The OP_NO_REUSE_MEM has more than %d characters.", kReuseMaxCharNum);
+    GELOGE(FAILED, "[Check][Param] The OP_NO_REUSE_MEM has more than %d characters.", kReuseMaxCharNum);
     return;
   }
 
   SplitStringByComma(env_str, env_vec);
   if (env_vec.size() > kReuseMaxOpNum) {
-    GELOGE(FAILED, "The OP_NO_REUSE_MEM has more than %d nodes.", kReuseMaxOpNum);
+    GELOGE(FAILED, "[Check][Param] The OP_NO_REUSE_MEM has more than %d nodes.", kReuseMaxOpNum);
     return;
   }
 
@@ -1860,7 +1870,9 @@ void BlockMemAssigner::CheckWorkspaceReuse(const vector<bool> &workspace_reuse_f
 
 void BlockMemAssigner::GetNodeWorkSpaceSize(const NodePtr &node, vector<int64_t> &workspace_memory,
                                             int64_t &total_size) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node->GetOpDesc() == nullptr, return, "Op desc is null.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node->GetOpDesc() == nullptr,
+                                 REPORT_INNER_ERROR("E19999", "param node opdesc is nullptr, check invalid.");
+                                 return, "[Check][Param] Op desc is null.");
   vector<int64_t> workspace_byte_nums = node->GetOpDesc()->GetWorkspaceBytes();
 
   GELOGD("node[%s] size:%zu", node->GetOpDesc()->GetName().c_str(), workspace_byte_nums.size());

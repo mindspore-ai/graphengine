@@ -51,18 +51,16 @@ CpuTaskInfo::~CpuTaskInfo() {
 ///
 Status CpuTaskModelDequeue::Init(uint32_t queue_id, uintptr_t &in_mbuf) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
-    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0,"
-                       "check invalid", args_size_);
-    GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0, check invalid", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task already initialized, size:%u", args_size_);
     return FAILED;
   }
 
   args_size_ = sizeof(MbufQueueInfo) + sizeof(uintptr_t);  // sizeof(uintptr_t) for save in_mbuf.
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   in_mbuf = reinterpret_cast<uintptr_t>(args_) + sizeof(MbufQueueInfo);
@@ -73,9 +71,8 @@ Status CpuTaskModelDequeue::Init(uint32_t queue_id, uintptr_t &in_mbuf) {
   queue_info.in_mbuf = in_mbuf;  // Placeholder, input mbuf addr will save to this place.
   status = rtMemcpy(args_, args_size_, &queue_info, sizeof(MbufQueueInfo), RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -86,15 +83,14 @@ Status CpuTaskModelDequeue::Distribute() {
   if ((args_ == nullptr) || (args_size_ == 0) || (stream_ == nullptr)) {
     REPORT_INNER_ERROR("E19999", "Param args_ is nullptr or args_size_:%u is 0 or stream_ is nullptr,"
                        "check invalid", args_size_);
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskModelDequeue, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X",
-                      status);
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ModelDequeue failed, status: 0x%X", status);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X", status);
+    GELOGE(RT_FAILED, "[Call][RtCpuKernelLaunch] failed, ret:0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -111,9 +107,8 @@ Status CpuTaskModelDequeue::Distribute() {
 ///
 Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, const map<uint32_t, ZeroCopyOffset> &outside_addrs) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
-    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0,"
-                       "check invalid", args_size_);
-    GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0, check invalid", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task already initialized, size:%u", args_size_);
     return FAILED;
   }
 
@@ -127,7 +122,7 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, const map<uint32
   vector<uint64_t> dst_addrs;
   for (const auto &addrs : outside_addrs) {
     const auto &addrs_mapping_list = addrs.second.GetOutsideAddrs();
-    GE_CHK_BOOL_EXEC(!addrs_mapping_list.empty(), return PARAM_INVALID, "not set outside_addrs");
+    GE_CHK_BOOL_EXEC(!addrs_mapping_list.empty(), return PARAM_INVALID, "[Check][Param] not set outside_addrs");
     std::map<const void *, std::vector<void *>> virtual_args_addrs = addrs_mapping_list[0];
     for (const auto &virtual_args_addr : virtual_args_addrs) {
       addr_map_info.addr_num += virtual_args_addr.second.size();
@@ -143,13 +138,21 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, const map<uint32
   GE_CHK_RT_RET(rtMalloc(&src_addr_, src_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM));
   rtError_t status = rtMemcpy(src_addr_, src_addrs.size() * sizeof(uint64_t), src_addrs.data(),
                               src_addrs.size() * sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
-  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", status);
+  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE,
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%lu, ret:0x%X",
+                                    src_addrs.size() * sizeof(uint64_t), status);
+                  GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%lu, ret:0x%X",
+                         src_addrs.size() * sizeof(uint64_t), status);
                   return RT_ERROR_TO_GE_STATUS(status);)
 
   GE_CHK_RT_RET(rtMalloc(&dst_addr_, dst_addrs.size() * sizeof(uint64_t), RT_MEMORY_HBM));
   status = rtMemcpy(dst_addr_, dst_addrs.size() * sizeof(uint64_t), dst_addrs.data(),
                     dst_addrs.size() * sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE);
-  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", status);
+  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE,
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%lu, ret:0x%X",
+                                    dst_addrs.size() * sizeof(uint64_t), status);
+                  GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%lu, ret:0x%X",
+                         dst_addrs.size() * sizeof(uint64_t), status);
                   return RT_ERROR_TO_GE_STATUS(status);)
 
   // src_addr_list is init to src_addr, which is the point to src_addrs
@@ -160,7 +163,9 @@ Status CpuTaskZeroCopy::Init(std::vector<uintptr_t> &mbuf_list, const map<uint32
   }
 
   status = rtMemcpy(args_, args_size_, &addr_map_info, sizeof(AddrMapInfo), RT_MEMCPY_HOST_TO_DEVICE);
-  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE, GELOGE(RT_FAILED, "rtMemcpy error, ret: Ox%X", status);
+  GE_IF_BOOL_EXEC(status != RT_ERROR_NONE,
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X", args_size_, status);
+                  GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%u, ret:0x%X", args_size_, status);
                   return RT_ERROR_TO_GE_STATUS(status);)
   return SUCCESS;
 }
@@ -169,15 +174,14 @@ Status CpuTaskZeroCopy::Distribute() {
   if ((args_ == nullptr) || (args_size_ == 0) || (stream_ == nullptr)) {
     REPORT_INNER_ERROR("E19999", "Param args_ is nullptr or args_size_:%u is 0 or stream_ is nullptr,"
                        "check invalid", args_size_);
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskZeroCopy, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X",
-                      status);
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ZeroCopy failed, status: 0x%X", status);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X", status);
+    GELOGE(RT_FAILED, "[Call][RtCpuKernelLaunch] failed, ret:0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -215,18 +219,16 @@ CpuTaskZeroCopy::~CpuTaskZeroCopy() {
 ///
 Status CpuTaskPrepareOutput::Init(uintptr_t addr, uint32_t size, uintptr_t in_mbuf, uintptr_t &out_mbuf) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
-    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0,"
-                       "check invalid", args_size_);
-    GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0, check invalid", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task already initialized, size:%u", args_size_);
     return FAILED;
   }
 
   args_size_ = sizeof(PrepareOutputInfo) + sizeof(uintptr_t);  // sizeof(uintptr_t) for save out_mbuf.
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   out_mbuf = reinterpret_cast<uintptr_t>(args_) + sizeof(PrepareOutputInfo);
@@ -240,9 +242,8 @@ Status CpuTaskPrepareOutput::Init(uintptr_t addr, uint32_t size, uintptr_t in_mb
   prepare.out_mbuf = out_mbuf;  // Placeholder, output mbuf addr will save to this place.
   status = rtMemcpy(args_, args_size_, &prepare, sizeof(PrepareOutputInfo), RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -253,15 +254,14 @@ Status CpuTaskPrepareOutput::Distribute() {
   if ((args_ == nullptr) || (args_size_ == 0) || (stream_ == nullptr)) {
     REPORT_INNER_ERROR("E19999", "Param args_ is nullptr or args_size_:%u is 0 or stream_ is nullptr,"
                        "check invalid", args_size_);
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskPrepareOutput, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X",
-                      status);
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch PrepareOutput failed, status: 0x%X", status);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X", status);
+    GELOGE(RT_FAILED, "[Call][RtCpuKernelLaunch] failed, ret:0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -278,9 +278,8 @@ Status CpuTaskPrepareOutput::Distribute() {
 ///
 Status CpuTaskModelEnqueue::Init(uint32_t queue_id, uintptr_t out_mbuf) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
-    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0,"
-                       "check invalid", args_size_);
-    GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0, check invalid", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task already initialized, size:%u", args_size_);
     return FAILED;
   }
 
@@ -288,9 +287,8 @@ Status CpuTaskModelEnqueue::Init(uint32_t queue_id, uintptr_t out_mbuf) {
   args_size_ = sizeof(MbufQueueInfo);
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
@@ -300,9 +298,8 @@ Status CpuTaskModelEnqueue::Init(uint32_t queue_id, uintptr_t out_mbuf) {
   queue_info.in_mbuf = out_mbuf;
   status = rtMemcpy(args_, args_size_, &queue_info, args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -313,15 +310,14 @@ Status CpuTaskModelEnqueue::Distribute() {
   if ((args_ == nullptr) || (args_size_ == 0) || (stream_ == nullptr)) {
     REPORT_INNER_ERROR("E19999", "Param args_ is nullptr or args_size_ is 0 or stream_ is nullptr, arg_size:%u,"
                        "check invalid", args_size_);
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskModelEnqueue, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X",
-                      status);
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ModelEnqueue failed, status: 0x%X", status);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X", status);
+    GELOGE(RT_FAILED, "[Call][RtCpuKernelLaunch] failed, ret:0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -338,7 +334,7 @@ Status CpuTaskModelEnqueue::Distribute() {
 Status CpuTaskActiveEntry::Init(rtStream_t stream) {
   if (stream == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param stream is nullptr, check invalid");
-    GELOGE(FAILED, "Task active stream not valid");
+    GELOGE(FAILED, "[Check][Param] Task active stream not valid");
     return FAILED;
   }
 
@@ -348,17 +344,15 @@ Status CpuTaskActiveEntry::Init(rtStream_t stream) {
 
 Status CpuTaskActiveEntry::Distribute() {
   if ((active_stream_ == nullptr) || (stream_ == nullptr)) {
-    REPORT_INNER_ERROR("E19999", "Param stream is nullptr or active_stream_ is nullptr, "
-                       "check invalid");
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param stream is nullptr or active_stream_ is nullptr, check invalid");
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t ret = rtStreamActive(active_stream_, stream_);
   if (ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtStreamActive failed, ret:0x%X",
-                      ret);
-    GELOGE(RT_FAILED, "Call rt StreamActive failed, ret: 0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Call rtStreamActive failed, ret:0x%X", ret);
+    GELOGE(RT_FAILED, "[Call][RtStreamActive] failed, ret:0x%X", ret);
     return RT_ERROR_TO_GE_STATUS(ret);
   }
 
@@ -374,27 +368,24 @@ Status CpuTaskActiveEntry::Distribute() {
 ///
 Status CpuTaskWaitEndGraph::Init(uint32_t model_id) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
-    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0,"
-                       "check invalid", args_size_);
-    GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0, check invalid", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task already initialized, size:%u", args_size_);
     return FAILED;
   }
 
   args_size_ = sizeof(model_id);
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
   status = rtMemcpy(args_, args_size_, &model_id, args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -405,15 +396,14 @@ Status CpuTaskWaitEndGraph::Distribute() {
   if ((args_ == nullptr) || (args_size_ == 0) || (stream_ == nullptr)) {
     REPORT_INNER_ERROR("E19999", "Param args_ is nullptr or args_size_:%u is 0 or stream_ is nullptr,"
                        "check invalid", args_size_);
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskWaitEndGraph, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X",
-                      status);
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch WaitEndGraph failed, status: 0x%X", status);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X", status);
+    GELOGE(RT_FAILED, "[Call][RtCpuKernelLaunch] failed, ret:0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -429,27 +419,24 @@ Status CpuTaskWaitEndGraph::Distribute() {
 ///
 Status CpuTaskModelRepeat::Init(uint32_t model_id) {
   if ((args_ != nullptr) || (args_size_ > 0)) {
-    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0,"
-                       "check invalid", args_size_);
-    GELOGE(FAILED, "Task already initialized, size: %u", args_size_);
+    REPORT_INNER_ERROR("E19999", "Param args_ is not nullptr or args_size_:%u > 0, check invalid", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task already initialized, size:%u", args_size_);
     return FAILED;
   }
 
   args_size_ = sizeof(model_id);
   rtError_t status = rtMalloc(&args_, args_size_, RT_MEMORY_HBM);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt malloc failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
   GE_PRINT_DYNAMIC_MEMORY(rtMalloc, "args data.", args_size_)
 
   status = rtMemcpy(args_, args_size_, &model_id, args_size_, RT_MEMCPY_HOST_TO_DEVICE);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X",
-                      args_size_, status);
-    GELOGE(RT_FAILED, "Call rt memcpy failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%u, ret:0x%X", args_size_, status);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%u, ret:0x%X", args_size_, status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 
@@ -460,15 +447,14 @@ Status CpuTaskModelRepeat::Distribute() {
   if ((args_ == nullptr) || (args_size_ == 0) || (stream_ == nullptr)) {
     REPORT_INNER_ERROR("E19999", "Param args_ is nullptr or args_size_:%u is 0 or stream_ is nullptr,"
                        "check invalid", args_size_);
-    GELOGE(FAILED, "Task not initialized, distribute failed, size: %u", args_size_);
+    GELOGE(FAILED, "[Check][Param] Task not initialized, distribute failed, size:%u", args_size_);
     return FAILED;
   }
 
   rtError_t status = rtCpuKernelLaunch(nullptr, kCpuTaskModelRepeat, kCoreDim, args_, args_size_, nullptr, stream_);
   if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X",
-                      status);
-    GELOGE(RT_FAILED, "Call rt CpuKernelLaunch ModelRepeat failed, status: 0x%x", status);
+    REPORT_CALL_ERROR("E19999", "Call rtCpuKernelLaunch failed, ret:0x%X", status);
+    GELOGE(RT_FAILED, "[Call][RtCpuKernelLaunch] failed, ret:0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
 

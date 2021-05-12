@@ -235,6 +235,13 @@ Status SingleOpModel::LoadAllNodes() {
 
     if (op_type == DATA_TYPE || op_type == AIPP_DATA_TYPE) {
       data_ops_.emplace_back(op_desc);
+      auto tensor = op_desc->MutableInputDesc(0);
+      if (AttrUtils::HasAttr(tensor, ATTR_NAME_VALUE)) {
+        int32_t index = 0;
+        (void) AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, index);
+        GELOGD("Node %s, index %d, has host mem.", node->GetName().c_str(), index);
+        op_with_hostmem_[index] = node;
+      }
       continue;
     }
 
@@ -616,6 +623,7 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
   if (need_hybrid_model) {
     GELOGD("Build single op HybridModel.");
     GE_CHK_STATUS_RET_NOLOG(hybrid::NodeExecutorManager::GetInstance().EnsureInitialized());
+    GE_CHK_STATUS(SetHostMemTensor(single_op), "[Init][HostMem]Failed.");
     auto root_model = model_helper_.GetGeRootModel();
     GE_CHECK_NOTNULL(root_model);
     root_model->SetRootGraph(GraphUtils::GetComputeGraph(ge_model->GetGraph()));
@@ -633,5 +641,29 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
     return SUCCESS;
   }
   return BuildTaskListForDynamicOp(&resource, single_op);
+}
+
+Status SingleOpModel::SetHostMemTensor(DynamicSingleOp &single_op) {
+  for (auto &node_map : op_with_hostmem_) {
+    auto node = node_map.second;
+    auto out_anchor = node->GetOutDataAnchor(0);
+    GE_CHECK_NOTNULL(out_anchor);
+    auto in_anchors = out_anchor->GetPeerInDataAnchors();
+    vector<GeTensorDescPtr> tensor_descs;
+    auto idx = node_map.first;
+    for (auto anchor : in_anchors) {
+      GE_CHECK_NOTNULL(anchor);
+      auto output_node = anchor->GetOwnerNode();
+      GE_CHECK_NOTNULL(output_node);
+      auto op_desc = output_node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto tensor_desc = op_desc->MutableInputDesc(anchor->GetIdx());
+      tensor_descs.emplace_back(tensor_desc);
+      GELOGD("Get %d th input tensor desc of %s by %d data node: %s.", anchor->GetIdx(),
+             output_node->GetName().c_str(), idx, node->GetName().c_str());
+    }
+    single_op.tensor_with_hostmem_[idx] = tensor_descs;
+  }
+  return SUCCESS;
 }
 }  // namespace ge

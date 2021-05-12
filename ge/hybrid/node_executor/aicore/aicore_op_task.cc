@@ -401,9 +401,8 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   }
 
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] Start");
-  GE_CHK_RT_RET(rtMemcpy(tiling_buffer_->GetData(), tiling_buffer_->GetSize(),
-                         tiling_data_.c_str(), tiling_data_.size(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_->GetData(), tiling_buffer_->GetSize(), tiling_data_.c_str(),
+                              tiling_data_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, context.GetStream()));
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] End");
 
   GELOGD("[%s] Done updating tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());

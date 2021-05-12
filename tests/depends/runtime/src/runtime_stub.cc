@@ -17,6 +17,9 @@
 #include <cce/dnn.h>
 #include <securec.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define EVENT_LENTH 10
 
 rtError_t rtCtxSetCurrent(rtContext_t ctx) { return RT_ERROR_NONE; }
@@ -96,15 +99,16 @@ rtError_t rtSetDevice(int32_t device) { return RT_ERROR_NONE; }
 rtError_t rtStreamSynchronize(rtStream_t stream) { return RT_ERROR_NONE; }
 
 rtError_t rtMemcpy(void *dst, uint64_t dest_max, const void *src, uint64_t count, rtMemcpyKind_t kind) {
-#ifdef OTQT_UT
-  if (dest_max == 12 && count == 12) {  // UTEST_kernelinfo_manager.all_success special treatment
+  if (dst != nullptr && src != nullptr) {
     memcpy_s(dst, dest_max, src, count);
   }
-#endif
   return RT_ERROR_NONE;
 }
 rtError_t rtMemcpyAsync(void *dst, uint64_t dest_max, const void *src, uint64_t count, rtMemcpyKind_t kind,
                         rtStream_t stream) {
+  if (dst != nullptr && src != nullptr) {
+    memcpy_s(dst, dest_max, src, count);
+  }
   return RT_ERROR_NONE;
 }
 
@@ -123,9 +127,6 @@ rtError_t rtDeviceReset(int32_t device) { return RT_ERROR_NONE; }
 
 rtError_t rtEventElapsedTime(float *time, rtEvent_t start, rtEvent_t end) {
   *time = 10.0f;
-  return RT_ERROR_NONE;
-}
-rtError_t rtFunctionRegister(void *bin_handle, const void *stub_func, const char *stub_name, const void *dev_func) {
   return RT_ERROR_NONE;
 }
 
@@ -156,7 +157,7 @@ rtError_t rtConfigureCall(uint32_t num_blocks, rtSmDesc_t *sm_desc, rtStream_t s
 
 rtError_t rtSetProfDir(char *prof_dir) { return RT_ERROR_NONE; }
 
-rtError_t rtSetProfDirEx(char *prof_dir, char *address, char *job_ctx) { return RT_ERROR_NONE; }
+rtError_t rtSetProfDirEx(const char *profDir, const char *address, const char *jobCtx) { return RT_ERROR_NONE; }
 
 rtError_t rtAiCoreMemorySizes(rtAiCoreMemorySize_t *aicore_memory_size) { return RT_ERROR_NONE; }
 
@@ -218,9 +219,8 @@ rtError_t rtGetFunctionByName(const char *stub_name, void **stub_func) {
   *(char **)stub_func = "func";
   return RT_ERROR_NONE;
 }
-rtError_t rtGetAddrByFun(const void *stubFunc, void **addr)
-{
-  *(char**)addr =  "dev_func";
+rtError_t rtGetAddrByFun(const void *stubFunc, void **addr) {
+  *(char **)addr = "dev_func";
   return RT_ERROR_NONE;
 }
 rtError_t rtQueryFunctionRegistered(const char *stub_name) { return RT_ERROR_NONE; }
@@ -244,7 +244,9 @@ rtError_t rtEndGraphEx(rtModel_t model, rtStream_t stream, uint32_t flags)
 {
   return RT_ERROR_NONE;
 }
-rtError_t rtProfilerStop(void) { return RT_ERROR_NONE; }
+rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList) {
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtSetDvfsProfile(DvfsProfileMode mode) { return RT_ERROR_NONE; }
 
@@ -256,7 +258,9 @@ rtError_t rtCtxDestroy(rtContext_t ctx) { return RT_ERROR_NONE; }
 
 rtError_t rtProfilerInit(const char *prof_dir, const char *address, const char *job_ctx) { return RT_ERROR_NONE; }
 
-rtError_t rtProfilerStart(void) { return RT_ERROR_NONE; }
+rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList) {
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtLabelCreate(rtLabel_t *label) {
   *label = new uint64_t;
@@ -305,7 +309,9 @@ rtError_t rtLabelGotoEx(rtLabel_t label, rtStream_t stream) {
 }
 
 
-rtError_t rtInvalidCache(uint64_t base, uint32_t len) { return RT_ERROR_NONE; }
+rtError_t rtInvalidCache(void *base, size_t len) {
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtModelLoadComplete(rtModel_t model) { return RT_ERROR_NONE; }
 
@@ -314,7 +320,9 @@ rtError_t rtStreamCreateWithFlags(rtStream_t *stream, int32_t priority, uint32_t
   return RT_ERROR_NONE;
 }
 
-rtError_t rtFlushCache(uint64_t base, uint32_t len) { return RT_ERROR_NONE; }
+rtError_t rtFlushCache(void *base, size_t len) {
+  return RT_ERROR_NONE;
+}
 
 rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtStream_t stream_) { return RT_ERROR_NONE; }
 
@@ -446,3 +454,6 @@ rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, const void 
 rtError_t rtDebugUnRegisterForStream(rtStream_t stream) {
   return RT_ERROR_NONE;
 }
+#ifdef __cplusplus
+}
+#endif

@@ -307,6 +307,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/merge_to_stream_merge_pass.cc"
     "graph/passes/merge_input_memcpy_pass.cc"
     "graph/passes/switch_to_stream_switch_pass.cc"
+    "graph/passes/mark_force_unknown_for_cond_pass.cc"
     "graph/passes/attach_stream_label_pass.cc"
     "graph/passes/switch_dead_branch_elimination.cc"
     "graph/passes/replace_transshape_pass.cc"
@@ -391,6 +392,8 @@ set(TRAIN_SRC_LIST
     "hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
     "hybrid/node_executor/hccl/hccl_node_executor.cc"
     "hybrid/node_executor/rts/rts_node_executor.cc"
+    "hybrid/node_executor/rts/rts_node_task.cc"
+    "hybrid/node_executor/rts/rts_task_factory.cc"
     "hybrid/node_executor/node_executor.cc"
     "hybrid/node_executor/task_context.cc"
     "hybrid/hybrid_davinci_model.cc"
@@ -582,6 +585,7 @@ set(INFER_SRC_LIST
     "graph/passes/merge_to_stream_merge_pass.cc"
     "graph/passes/merge_input_memcpy_pass.cc"
     "graph/passes/switch_to_stream_switch_pass.cc"
+    "graph/passes/mark_force_unknown_for_cond_pass.cc"
     "graph/passes/attach_stream_label_pass.cc"
     "graph/passes/multi_batch_pass.cc"
     "graph/passes/multi_batch_clone_pass.cc"
@@ -746,6 +750,7 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -822,6 +827,7 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -982,6 +988,7 @@ target_include_directories(atc_stub_ge_compiler PRIVATE
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -1022,6 +1029,7 @@ target_include_directories(fwk_stub_ge_runner PRIVATE
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include

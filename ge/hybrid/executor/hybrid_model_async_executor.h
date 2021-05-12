@@ -61,7 +61,7 @@ class HybridModelAsyncExecutor {
 
   void SetRunningFlag(bool flag) { running_flag_ = flag; }
 
-  const GraphExecutionContext * GeContext() { return executor_->GetContext(); }
+  const GraphExecutionContext *GeContext() { return executor_->GetContext(); }
 
  private:
   Status InitInputDesc();
@@ -77,9 +77,9 @@ class HybridModelAsyncExecutor {
 
   Status CopyOutputs(HybridModelExecutor::ExecuteArgs &args,
                      OutputData *output_data,
-                     std::vector<ge::OutputTensorInfo> &outputs);
+                     std::vector<ge::Tensor> &outputs);
 
-  Status OnComputeDone(uint32_t data_index, uint32_t result_code, std::vector<ge::OutputTensorInfo> &outputs);
+  Status OnComputeDone(uint32_t data_index, uint32_t result_code, std::vector<ge::Tensor> &outputs);
 
   Status PreRun(InputData &current_data, HybridModelExecutor::ExecuteArgs &args);
 

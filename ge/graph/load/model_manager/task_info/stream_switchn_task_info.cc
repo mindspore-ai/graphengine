@@ -36,9 +36,8 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
   auto stream_switchn_def = task_def.stream_switch_n();
   OpDescPtr op_desc = davinci_model->GetOpByIndex(stream_switchn_def.op_index());
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u",
-                       stream_switchn_def.op_index());
-    GELOGE(FAILED, "Index is out of range, index: %u", stream_switchn_def.op_index());
+    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u", stream_switchn_def.op_index());
+    GELOGE(FAILED, "[Get][Op] failed, as Index is out of range, index:%u", stream_switchn_def.op_index());
     return FAILED;
   }
 
@@ -51,7 +50,8 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
     REPORT_INNER_ERROR("E19999", "task_Def.stream_switch_n.target_value:%d in op:%s(%s) is 0,"
                        "check invalid", value.size(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "The number of gears in dynamic batch scenario can not be 0.");
+    GELOGE(FAILED, "[Check][Param] The number of gears in dynamic batch scenario can not be 0, op:%s.",
+           op_desc->GetName().c_str());
     return FAILED;
   }
   for (int i = 0; i < value.size(); ++i) {
@@ -62,15 +62,15 @@ Status StreamSwitchNTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *
 
   // set element_size_
   if (!AttrUtils::GetInt(op_desc, ATTR_NAME_BATCH_NUM, element_size_)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail",
-                       ATTR_NAME_BATCH_NUM.c_str(),
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail", ATTR_NAME_BATCH_NUM.c_str(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "Get ATTR_NAME_BATCH_NUM of switchN op failed.");
+    GELOGE(FAILED, "[Get][Attr] %s in op:%s(%s) fail",
+           ATTR_NAME_BATCH_NUM.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
 
   if (GetTrueStreamPtr(op_desc, davinci_model) != SUCCESS) {
-    GELOGE(FAILED, "Get true stream ptr of switchN op failed.");
+    GELOGE(FAILED, "[Get][TrueStreamPtr] of switchN op:%s failed.", op_desc->GetName().c_str());
     return FAILED;
   }
 
@@ -92,9 +92,8 @@ Status StreamSwitchNTaskInfo::Distribute() {
   rtError_t rt_ret =
       rtStreamSwitchN(input_ptr_, input_size_, value_ptr_, true_stream_ptr_, element_size_, stream_, data_type_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtStreamSwitchN failed, ret:0x%X",
-                      rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtStreamSwitchN failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtStreamSwitchN] failed, ret:0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
@@ -106,10 +105,10 @@ Status StreamSwitchNTaskInfo::Distribute() {
 Status StreamSwitchNTaskInfo::GetTrueStreamPtr(const OpDescPtr &op_desc, DavinciModel *davinci_model) {
   vector<uint32_t> true_stream_id_list;
   if (!AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, true_stream_id_list)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail",
-                       ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail", ATTR_NAME_ACTIVE_STREAM_LIST.c_str(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "StreamSwitchNOp get attr ACTIVE_STREAM_LIST fail.");
+    GELOGE(FAILED, "[Get][Attr] %s in op:%s(%s) fail",
+           ATTR_NAME_ACTIVE_STREAM_LIST.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
 
@@ -118,9 +117,8 @@ Status StreamSwitchNTaskInfo::GetTrueStreamPtr(const OpDescPtr &op_desc, Davinci
                        "check invalid", true_stream_id_list.size(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), davinci_model->GetStreamList().size());
     GELOGE(FAILED,
-           "InitStreamSwitchNTaskInfo get true stream id list failed. true stream size:%zu, "
-           "stream list size:%zu.",
-           true_stream_id_list.size(), davinci_model->GetStreamList().size());
+           "[Check][Param] InitStreamSwitchNTaskInfo get true stream id list failed. true stream size:%zu, "
+           "stream list size:%zu.", true_stream_id_list.size(), davinci_model->GetStreamList().size());
     return FAILED;
   }
 
@@ -131,8 +129,8 @@ Status StreamSwitchNTaskInfo::GetTrueStreamPtr(const OpDescPtr &op_desc, Davinci
       REPORT_INNER_ERROR("E19999", "active_stream_id:%u in op:%s(%s) >= stream list size:%zu in model,"
                          "check invalid", true_stream_id,
                          op_desc->GetName().c_str(), op_desc->GetType().c_str(), davinci_model->GetStreamList().size());
-      GELOGE(FAILED, "InitStreamSwitchNTaskInfo stream id invalid. id:%u, stream list size:%zu.", true_stream_id,
-             davinci_model->GetStreamList().size());
+      GELOGE(FAILED, " [Check][Param] stream id:%u in op:%s invalid, stream list size:%zu.",
+             true_stream_id, op_desc->GetName().c_str(), davinci_model->GetStreamList().size());
       return FAILED;
     }
     rtStream_t true_stream = davinci_model->GetStreamList()[true_stream_id];
@@ -144,7 +142,7 @@ Status StreamSwitchNTaskInfo::GetTrueStreamPtr(const OpDescPtr &op_desc, Davinci
     REPORT_INNER_ERROR("E19999", "active_stream_list.size():%zu in op:%s(%s) is empty, "
                        "check invalid", true_stream_id_list.size(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "true stream list is null.");
+    GELOGE(FAILED, "[Check][Param] true stream list is null, op:%s.", op_desc->GetName().c_str());
     return FAILED;
   }
   true_stream_ptr_ = &true_stream_list_[0];
@@ -160,10 +158,11 @@ Status StreamSwitchNTaskInfo::CalculateArgs(const domi::TaskDef &task_def, Davin
   GE_CHECK_NOTNULL(op_desc);
   GELOGI("Calc opType[%s] args size. Node name is [%s]", op_desc->GetType().c_str(), op_desc->GetName().c_str());
   if (op_desc->GetInputsSize() != kStreamSwitchnInputNum) {
-    REPORT_INNER_ERROR("E19999", "input size:%zu in op:%s(%s) != kStreamSwitchnInputNum:%u ,"
+    REPORT_INNER_ERROR("E19999", "input size:%zu in op:%s(%s) != kStreamSwitchnInputNum:%u, "
                        "check invalid", op_desc->GetInputsSize(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), kStreamSwitchnInputNum);
-    GELOGE(FAILED, "Stream switchn op only have one data input. Now input size is %zu", op_desc->GetInputsSize());
+    GELOGE(FAILED, "[Check][Param] Stream switchn op:%s only have one data input. Now input size is %zu",
+           op_desc->GetName().c_str(), op_desc->GetInputsSize());
     return FAILED;
   }
   string input_tensor_name = op_desc->GetInputNameByIndex(0);
@@ -187,7 +186,8 @@ Status StreamSwitchNTaskInfo::InputPtrUpdate(const OpDescPtr &op_desc, DavinciMo
       REPORT_INNER_ERROR("E19999", "input_offset size:%zu or input_length.size:%zu in op:%s(%s) is empty,"
                          "check invalid", input_offset.size(), input_legnth.size(),
                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "input offset size %zu, input legnth size: %zu", input_offset.size(), input_legnth.size());
+      GELOGE(FAILED, "[Check][Param] op:%s input offset size %zu, input legnth size:%zu",
+             op_desc->GetName().c_str(), input_offset.size(), input_legnth.size());
       return FAILED;
     }
     const RuntimeParam &rts_param = davinci_model->GetRuntimeParam();
@@ -201,7 +201,7 @@ Status StreamSwitchNTaskInfo::InputPtrUpdate(const OpDescPtr &op_desc, DavinciMo
         REPORT_INNER_ERROR("E19999", "input_data_addr size:%zu in op:%s(%s) is empty,"
                            "check invalid", input_data_addr.size(),
                            op_desc->GetName().c_str(), op_desc->GetType().c_str());
-        GELOGE(FAILED, "input data addr is empty");
+        GELOGE(FAILED, "[Check][Param] input data addr is empty in op:%s", op_desc->GetName().c_str());
         return FAILED;
       }
       input_ptr_ = input_data_addr[0];

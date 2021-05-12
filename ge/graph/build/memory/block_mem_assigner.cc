@@ -239,6 +239,10 @@ bool MemoryBlock::IsSameBatchLabel() {
   return all_same_label;
 }
 
+bool MemoryBlock::CanReuse(int32_t thread_scope_id) const {
+  return (thread_scope_id_.find(thread_scope_id) == thread_scope_id_.end());
+}
+
 bool CanNotLifeReuse(MemoryBlock *block) {
   if ((block == nullptr) || !block->reuse_mem_ || block->deleted_block_) {
     return true;
@@ -283,6 +287,14 @@ void MemoryBlock::AddLifeReuseBlock(MemoryBlock *block, DependStreamLife &total_
   if (CanNotLifeReuse(this) || CanNotLifeReuse(block) || (batch_label_ != block->batch_label_)) {
     return;
   }
+
+  // not same thread scode id can reuse
+  for (auto thread_scope_id : ThreadScopeId()) {
+    if (!block->CanReuse(thread_scope_id)) {
+      return;
+    }
+  }
+
   if (block->continuous_block_) {
     AddContinuousLifeReuseBlock(block, total_node_depend_stream_life);
     return;
@@ -431,7 +443,7 @@ void SetLastUsedInputMemAttr(NodePtr &node, int input_index) {
   auto node_op_desc = node->GetOpDesc();
   if (node_op_desc != nullptr) {
     auto input_desc = node_op_desc->MutableInputDesc(input_index);
-    if (!ge::AttrUtils::SetInt(*input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, true)) {
+    if (!ge::AttrUtils::SetBool(*input_desc, ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, true)) {
       GELOGW("Set %s input[%d] ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE to true failed.", node_op_desc->GetName().c_str(),
              input_index);
       return;
@@ -659,7 +671,12 @@ bool IsDirectOutputNode(const NodePtr &node, int idx) {
   return false;
 }
 
-bool CanReuseBlock(size_t continuous_life_begin, const MemoryBlock &reusable_block, size_t block_size) {
+bool CanReuseBlock(int32_t thread_scope_id, size_t continuous_life_begin, const MemoryBlock &reusable_block,
+                   size_t block_size) {
+  if (!reusable_block.CanReuse(thread_scope_id)) {
+    return false;
+  }
+
   bool can_reuse = false;
   if (reusable_block.Size() == block_size) {
     // in some continuous input case, continuous first input node's is not same as topo first node.
@@ -781,7 +798,8 @@ bool IsContinuousInputNodeMaxLife(const NodePtr &n, uint32_t out_index) {
       }
       auto peer_in_node_desc = peer_in_anchor->GetOwnerNode()->GetOpDesc();
       GE_IF_BOOL_EXEC(peer_in_node_desc == nullptr,
-                      GELOGE(FAILED, "Node[%s] output[%u] peer in node desc is null.", n->GetName().c_str(), out_index);
+                      GELOGE(FAILED, "[Get][OpDesc] Node[%s] output[%u] peer in node desc is null.",
+                             n->GetName().c_str(), out_index);
       return false;);
 
       if(peer_in_node_desc->GetId() > max_node_life_time) {
@@ -1057,7 +1075,8 @@ void BlockMemAssigner::UpdateOpTensorMemType(std::list<NodeIndexIO> node_index_i
 
 bool BlockMemAssigner::IsContinuousOutput(const NodePtr &n) {
   if (n == nullptr) {
-    GELOGE(FAILED, "Node is null.");
+    REPORT_INNER_ERROR("E19999", "param n is nullptr, check invalid.");
+    GELOGE(FAILED, "[Check][Param] Node is null.");
     return false;
   }
 
@@ -1065,7 +1084,8 @@ bool BlockMemAssigner::IsContinuousOutput(const NodePtr &n) {
   bool is_output_continuous = false;
   auto node_desc = n->GetOpDesc();
   if (node_desc == nullptr) {
-    GELOGE(FAILED, "Node[%s] nodedesc is null.", n->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "param node:%s opdesc is nullptr, check invalid.", n->GetName().c_str());
+    GELOGE(FAILED, "[Get][OpDesc] Node[%s] nodedesc is null.", n->GetName().c_str());
     return false;
   }
 
@@ -1122,6 +1142,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
   }
 
   bool is_reuse_memory = false;
+  int32_t thread_scope_id = kInvalidThreadScopeId;
+  (void)ge::AttrUtils::GetInt(node_op_desc, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id);
   if (ge_disable_reuse_mem_env_ != "1") {
     bool reuse_mem_flag = (mem_type == kOutput) ? IsPreReuse(n, out_index) :
                           !((workspace_reuse_flag.size() > out_index) && !workspace_reuse_flag[out_index]);
@@ -1141,8 +1163,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
         GE_IF_BOOL_EXEC(reusable_block->batch_label_ != batch_label, continue);
 
         // A node can reuse blocks of the same stream and preorder streams
-        if (CanReuseBlock(continuous_life_begin_, *reusable_block, block_size)) {
-          reusable_block->AddNodeTypeIndex({n, mem_type, out_index, false, continuous_life_begin_},
+        if (CanReuseBlock(thread_scope_id, continuous_life_begin_, *reusable_block, block_size)) {
+          reusable_block->AddNodeTypeIndex({n, mem_type, out_index, false, continuous_life_begin_, thread_scope_id},
                                            real_size, no_align_size);
           if (mem_type == kOutput) {
             auto iter = anchor_to_symbol_.find(NodeIndexIO(n, out_index, kOut).ToString());
@@ -1168,7 +1190,8 @@ MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, 
 
   // Data and netoutput need zero copy block
   block->is_zero_copy_ = IsZeroCopyBlock(n, continuous);
-  block->AddNodeTypeIndex({n, mem_type, out_index, false, continuous_life_begin_}, real_size, no_align_size);
+  block->AddNodeTypeIndex({n, mem_type, out_index, false, continuous_life_begin_, thread_scope_id},
+                          real_size, no_align_size);
   block->stream_id_ = node_op_desc->GetStreamId();
   block->continuous_block_ = continuous;
   block->batch_label_ = batch_label;
@@ -1430,7 +1453,9 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
     auto op_desc = owner_node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
     Params *instance = Params::Instance();
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(instance == nullptr, return nullptr, "Params instance is nullptr.");
+    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(instance == nullptr,
+                                   REPORT_INNER_ERROR("E19999", "Params instance is nullptr.");
+                                   return nullptr, "[Get][Instance] Params instance is nullptr.");
     if (!((instance->GetTarget() == TARGET_TYPE_TINY) && (op_desc->GetType() == NETOUTPUT))) {
       out_count++;
     }
@@ -1442,7 +1467,9 @@ MemoryBlock *BlockMemAssigner::ApplyOutMemory(const NodePtr &n, uint32_t index, 
 
 bool IsOutputBlock(const ge::InDataAnchorPtr &in_data_anchor) {
   auto peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
-  GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, GELOGE(FAILED, "Peer out anchor is nullptr."); return false);
+  GE_IF_BOOL_EXEC(peer_out_anchor == nullptr,
+                  REPORT_INNER_ERROR("E19999", "Peer out anchor is nullptr.");
+                  GELOGE(FAILED, "[Check][Param] Peer out anchor is nullptr."); return false);
   auto src = peer_out_anchor->GetOwnerNode();
   int32_t index = peer_out_anchor->GetIdx();
   auto iter = GetLocalOmgContext().out_nodes_map.find(src->GetName());
@@ -1491,10 +1518,13 @@ bool IsKnownSubgraphData(const NodePtr &node) {
 
 void BlockMemAssigner::ReleaseMemory(MemoryBlock *to_release, vector<MemoryBlock *> &reusable_memory,
                                      bool same_stream) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr, return, "Input parameter to_release is null.");
-  GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0, return, "Release memory");
-  GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "doesn't reuse memory");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(to_release == nullptr,
+                                 return, "[Check][Param] Input parameter to_release is null.");
+  GE_CHK_TRUE_EXEC_INFO(to_release->ref_count_ <= 0,
+                        return, "[Check][Param] to_release->ref_count_ must greater than 0");
+  GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "[Check][Param] doesn't reuse memory");
   --to_release->ref_count_;
+  GE_CHK_TRUE_EXEC_INFO(!to_release->reuse_mem_, return, "doesn't reuse memory");
   if (!same_stream) {
     to_release->same_stream_ = false;
   }
@@ -1593,13 +1623,13 @@ void CheckAndGetOpReuseEnv(const string &env, vector<string> &env_vec, bool &op_
   string env_str;
   env_str = string(env);
   if (env_str.size() > kReuseMaxCharNum) {
-    GELOGE(FAILED, "The OP_NO_REUSE_MEM has more than %d characters.", kReuseMaxCharNum);
+    GELOGE(FAILED, "[Check][Param] The OP_NO_REUSE_MEM has more than %d characters.", kReuseMaxCharNum);
     return;
   }
 
   SplitStringByComma(env_str, env_vec);
   if (env_vec.size() > kReuseMaxOpNum) {
-    GELOGE(FAILED, "The OP_NO_REUSE_MEM has more than %d nodes.", kReuseMaxOpNum);
+    GELOGE(FAILED, "[Check][Param] The OP_NO_REUSE_MEM has more than %d nodes.", kReuseMaxOpNum);
     return;
   }
 
@@ -1840,7 +1870,9 @@ void BlockMemAssigner::CheckWorkspaceReuse(const vector<bool> &workspace_reuse_f
 
 void BlockMemAssigner::GetNodeWorkSpaceSize(const NodePtr &node, vector<int64_t> &workspace_memory,
                                             int64_t &total_size) {
-  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node->GetOpDesc() == nullptr, return, "Op desc is null.");
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(node->GetOpDesc() == nullptr,
+                                 REPORT_INNER_ERROR("E19999", "param node opdesc is nullptr, check invalid.");
+                                 return, "[Check][Param] Op desc is null.");
   vector<int64_t> workspace_byte_nums = node->GetOpDesc()->GetWorkspaceBytes();
 
   GELOGD("node[%s] size:%zu", node->GetOpDesc()->GetName().c_str(), workspace_byte_nums.size());
@@ -2062,7 +2094,13 @@ void SetOffsetSize(const NodeTypeIndex &node_type, const MemoryBlock *block,
                    size_t real_size, size_t no_align_size, int32_t child_block_level) {
   ge::OpDescPtr op_desc = node_type.node->GetOpDesc();
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(op_desc == nullptr, return, "op_desc is null.");
-  string graph_name = node_type.node->GetOwnerComputeGraph()->GetName();
+  auto owner_graph = node_type.node->GetOwnerComputeGraph();
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(owner_graph == nullptr, return, "owner_graph is null.");
+  string graph_name = owner_graph->GetName();
+  if (owner_graph->GetParentGraph() != nullptr) {
+    graph_name = owner_graph->GetParentGraph()->GetName();
+  }
+
   vector<int64_t> memorys_type;
   int64_t offset = block->HeadOffset();
   size_t end = node_type.life_time_end;
@@ -2108,12 +2146,12 @@ void SetOffsetSize(const NodeTypeIndex &node_type, const MemoryBlock *block,
     op_desc->SetWorkspace(workspace_list);
   }
   GELOGI("[IMAS]Set %s name[%s] optype[%s] %s[%u] offset to [%ld] streamid[%ld] memtype[%ld] size[%zu] realsize[%zu] "
-         "noalignsize[%zu] life time begin[%s] life time end[%zu] child[%d:%d:%d:%d:%d] isref[%d] batch[%s]",
+         "noalignsize[%zu] life time begin[%s] life time end[%zu] child[%d:%d:%d:%d:%d] isref[%d] batch[%s] scope[%d]",
          graph_name.c_str(), op_desc->GetName().c_str(), node_type.node->GetType().c_str(),
          node_type.GetMemType().c_str(), node_type.index, offset, op_desc->GetStreamId(),block->memory_type_,
          block->Size(), real_size, no_align_size, node_type.GetLifeBeginDesc().c_str(), end, child_block_level,
          block->reuse_mem_, block->continuous_block_, block->is_zero_copy_, block->same_stream_, node_type.ref_input,
-         block->batch_label_.c_str());
+         block->batch_label_.c_str(), node_type.thread_scope_id);
 }
 
 void SetBlockOpMemOffset(MemoryBlock *block, int32_t child_block_level) {
@@ -2176,8 +2214,7 @@ Status BlockMemAssigner::Assign() {
 
 bool BlockMemAssigner::CheckIsZeroMemNodeType(const string &node_type) const {
   return (node_type == VARIABLE) || (node_type == CONSTANT) || (node_type == MULTISHAPE) ||
-         (node_type == CONSTANTOP) || (node_type == ASSIGNADD) || (node_type == ASSIGNSUB) ||
-         (node_type == ASSIGN) || (node_type == HVDWAIT);
+         (node_type == CONSTANTOP) || (node_type == HVDWAIT);
 }
 
 bool BlockMemAssigner::GetWorkSpaceMemoryType(const NodePtr &node, size_t index, int64_t &memory_type) {

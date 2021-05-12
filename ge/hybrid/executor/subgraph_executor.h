@@ -105,6 +105,18 @@ class SubgraphExecutor {
   Status PrepareNodes(int group = -1);
   Status LaunchTasks();
   Status SetOutputsToParentNode(TaskContext &task_context);
+  Status InitCallback(NodeState *node_state, std::function<void()> &callback);
+
+  Status NodeEnqueue(NodeState *node_state);
+  Status PrepareNode(const NodeItem &node_item, int group);
+
+  BlockingQueue<const NodeItem *> &GetPrepareQueue(int group);
+
+  Status ScheduleNodes();
+  Status NodeScheduled(NodeState *node_state);
+  Status AfterPrepared(NodeState *node_state);
+  void AfterExecuted(NodeState *node_state);
+  void OnNodeDone(NodeState *node_state);
 
   const GraphItem *graph_item_;
   GraphExecutionContext *context_;
@@ -114,6 +126,10 @@ class SubgraphExecutor {
   BlockingQueue<NodeState *> ready_queue_;
   std::unique_ptr<ShapeInferenceEngine> shape_inference_engine_;
   std::shared_ptr<TaskContext> known_shape_task_context_;
+
+  std::mutex mu_; // Guard for prepare_queues_.
+  std::map<int, BlockingQueue<const NodeItem *>> prepare_queues_;
+  BlockingQueue<NodeState *> schedule_queue_;
 };
 }  // namespace hybrid
 }  // namespace ge

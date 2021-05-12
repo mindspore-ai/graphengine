@@ -54,6 +54,10 @@ GE_FUNC_VISIBILITY extern const uint32_t SWITCH_TRUE_OUTPUT;
 GE_FUNC_VISIBILITY extern const uint32_t SWITCH_DATA_INPUT;
 GE_FUNC_VISIBILITY extern const uint32_t SWITCH_PRED_INPUT;
 
+// Merge
+GE_FUNC_VISIBILITY extern const uint32_t MERGE_DATA_OUTPUT;
+GE_FUNC_VISIBILITY extern const uint32_t MERGE_INDEX_OUTPUT;
+
 // FunctionOp
 GE_FUNC_VISIBILITY extern const uint32_t IF_COND_INPUT;
 GE_FUNC_VISIBILITY extern const uint32_t FOR_START_INPUT;
@@ -129,7 +133,7 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @param [out] output Data pointer after conversion. The format is HWCK
   ///
   static void TransDataKCHW2HWCK(const void *input, int64_t K, int64_t C, int64_t H, int64_t W, void *output);
-  
+
   static vector<ConstGeTensorPtr> GetWeights(const ge::Node &node);
   static vector<ConstGeTensorPtr> GetWeights(ge::ConstNodePtr node);
   static vector<GeTensorPtr> MutableWeights(const ge::Node &node);

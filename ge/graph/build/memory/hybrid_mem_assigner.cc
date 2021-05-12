@@ -29,7 +29,7 @@ Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_
   vector<int64_t> ranges;
   GE_CHECK_NOTNULL(block_assigner);
   if (block_assigner->GetMemoryRanges(ranges) != SUCCESS) {
-    GELOGE(FAILED, "GetMemoryRanges Fail!");
+    GELOGE(FAILED, "[Get][MemoryRanges] Fail!");
     return FAILED;
   }
   GE_IF_BOOL_EXEC(ranges.empty(), return SUCCESS);
@@ -43,7 +43,7 @@ Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_
 Status HybridMemAssigner::Assign() {
   if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Get ref-mapping for graph %s failed", compute_graph_->GetName().c_str());
-    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Get][RefMapping] for graph %s failed.", compute_graph_->GetName().c_str());
     return FAILED;
   }
 
@@ -58,8 +58,8 @@ Status HybridMemAssigner::Assign() {
   size_t bin_mem_size = 0;
   size_t max_mem_size = 0;
 
-  GE_CHK_STATUS_RET(AssignMemory(binary_assigner, bin_mem_size), "BinaryBlock Method AssignMemory Fail!");
-  GE_CHK_STATUS_RET(AssignMemory(max_assigner, max_mem_size), "MaxBlock Method AssignMemory Fail!");
+  GE_CHK_STATUS_RET(AssignMemory(binary_assigner, bin_mem_size), "[Assign][Memory] Fail!");
+  GE_CHK_STATUS_RET(AssignMemory(max_assigner, max_mem_size), "[Assign][Memory] Fail!");
 
   std::unique_ptr<BlockMemAssigner> priority_assigner;
 

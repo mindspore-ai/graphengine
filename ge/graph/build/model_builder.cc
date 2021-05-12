@@ -118,14 +118,16 @@ Status ModelBuilder::CalcOutputSize(const ge::NodePtr &n) {
     if (graph_status != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed for op:%s(%s) index:%u",
                         node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str(), index);
-      GELOGE(graph_status, "GetTensorMemorySizeInBytes failed!");
+      GELOGE(graph_status, "[Get][TensorMemorySize] In Bytes failed for op:%s(%s) index:%u",
+             node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str(), index);
       return FAILED;
     }
     TensorUtils::SetSize(desc_temp, size_temp);
     if (node_op_desc->UpdateOutputDesc(index, desc_temp) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Update Output desc size failed for op:%s(%s) index:%u",
                         node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str(), index);
-      GELOGE(FAILED, "UpdateOutputDesc failed.");
+      GELOGE(FAILED, "[Update][OutputDesc] failed for op:%s(%s) index:%u",
+             node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str(), index);
       return FAILED;
     }
 
@@ -212,14 +214,14 @@ Status ModelBuilder::AdjustConstWeightSize(const ge::NodePtr &node, size_t &mem_
     if (weights.empty()) {
       REPORT_INNER_ERROR("E19999", "Check weights size of node %s(%s) is empty",
                          node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "weights size of node %s is empty", node->GetName().c_str());
+      GELOGE(FAILED, "[Check][Param] weights size of node %s is empty", node->GetName().c_str());
       return FAILED;
     }
     GeTensorPtr weight = weights[0];
     if (weight == nullptr) {
       REPORT_INNER_ERROR("E19999", "Check weight of node %s(%s) is nullptr",
                          node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "weights[0] is null.");
+      GELOGE(FAILED, "[Check][Param] weights[0] is null, node:%s.", node->GetName().c_str());
       return FAILED;
     }
     GeTensorDesc &tensor_desc = weight->MutableTensorDesc();
@@ -271,15 +273,16 @@ Status ModelBuilder::SetInputOutputDesc() {
     bool is_unknow = false;
     (void)NodeUtils::GetNodeUnknownShapeStatus(*n, is_unknow);
     if ((IsGeLocalOp(n->GetOpDesc())) && (!is_unknow)) {
-      GE_CHK_STATUS_RET(CalcOutputSize(n), "Calculate output size failed");
+      GE_CHK_STATUS_RET(CalcOutputSize(n), "[Calc][OutputSize] failed, node:%s", n->GetName().c_str());
     }
     ret = AdjustConstWeightSize(n, weight_offset_);
-    GE_CHK_STATUS_RET(ret, "AdjustConstWeightSize failed");
+    GE_CHK_STATUS_RET(ret, "[Adjust][ConstWeightSize] failed, node:%s", n->GetName().c_str());
 
     GE_IF_BOOL_EXEC(((weight_offset_ > 0) && (weight_offset_ % MEM_ALIGN_SIZE != 0)),
                     weight_offset_ = (weight_offset_ + MEM_ALIGN_SIZE - 1) / MEM_ALIGN_SIZE * MEM_ALIGN_SIZE);
   }
-  GE_CHK_STATUS_RET(compute_graph_->TopologicalSorting(), "TopologicalSorting failed");
+  GE_CHK_STATUS_RET(compute_graph_->TopologicalSorting(), "[Call][TopologicalSorting] failed, graph:%s",
+                    compute_graph_->GetName().c_str());
   return SUCCESS;
 }
 
@@ -363,7 +366,8 @@ Status ModelBuilder::AdjustInputTensorFlag() {
             REPORT_CALL_ERROR("E19999", "Update Input desc size failed for op:%s(%s) index:%u",
                               owner_node_op_desc->GetName().c_str(), owner_node_op_desc->GetType().c_str(),
                               in_anchors->GetIdx());
-            GELOGE(FAILED, "UpdateOutputDesc failed.");
+            GELOGE(FAILED, "[Update][InputDesc] failed for op:%s(%s) index:%u",
+                   owner_node_op_desc->GetName().c_str(), owner_node_op_desc->GetType().c_str(), in_anchors->GetIdx());
             return FAILED;
           }
         }
@@ -391,61 +395,52 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
 
   max_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_HBM];
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_MEMORY_SIZE, max_mem_offset_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_MEMORY_SIZE.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_MEMORY_SIZE failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_MEMORY_SIZE.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_MEMORY_SIZE.c_str());
                    return FAILED);
   if (mem_type_to_mem_offset_.find(RT_MEMORY_P2P_DDR) != mem_type_to_mem_offset_.end()) {
     p2p_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_P2P_DDR];
   }
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_P2P_MEMORY_SIZE, p2p_mem_offset_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_P2P_MEMORY_SIZE.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_P2P_MEMORY_SIZE failed.");
-                       return FAILED);
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_P2P_MEMORY_SIZE.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_P2P_MEMORY_SIZE.c_str());
+                   return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_WEIGHT_SIZE, weight_offset_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_WEIGHT_SIZE.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_WEIGHT_SIZE failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_WEIGHT_SIZE.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_WEIGHT_SIZE.c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_STREAM_NUM, stream_num_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_STREAM_NUM.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_STREAM_NUM failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_STREAM_NUM.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_STREAM_NUM.c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_EVENT_NUM, event_num_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_EVENT_NUM.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_EVENT_NUM failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_EVENT_NUM.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_EVENT_NUM.c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(&model, ATTR_MODEL_HUGE_STREAM_LIST, huge_streams_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_HUGE_STREAM_LIST.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_HUGE_STREAM_LIST failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_HUGE_STREAM_LIST.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_HUGE_STREAM_LIST.c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_LABEL_NUM, label_num_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_LABEL_NUM.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_LABEL_NUM failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_LABEL_NUM.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_LABEL_NUM.c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_ZERO_COPY_MEMORY_SIZE, zero_copy_mem_size_),
                    REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
                                       ATTR_MODEL_ZERO_COPY_MEMORY_SIZE.c_str());
-                   GELOGE(FAILED, "SetInt of ATTR_MODEL_ZERO_COPY_MEMORY_SIZE failed.");
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed.", ATTR_MODEL_ZERO_COPY_MEMORY_SIZE.c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, ATTR_MODEL_OUT_NODES_NAME, GetLocalOmgContext().net_out_nodes),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_MODEL_OUT_NODES_NAME.c_str());
-                   GELOGE(FAILED, "SetListStr of ATTR_MODEL_OUT_NODES_NAME failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_OUT_NODES_NAME.c_str());
+                   GELOGE(FAILED, "[Set][Str] %s in model failed.", ATTR_MODEL_OUT_NODES_NAME.c_str());
                    return FAILED);
   GELOGI("For model, max_mem_offset_: %zu, p2p_mem_size: %zu, zero_copy_mem_size_: %zu", max_mem_offset_,
          p2p_mem_offset_, zero_copy_mem_size_);
   string fp_ceiling_mode;
   if (ge::GetContext().GetOption("ge.fpCeilingMode", fp_ceiling_mode) == SUCCESS) {
     if (!ge::AttrUtils::SetStr(&model, ATTR_FP_CEILING_MODE, fp_ceiling_mode)) {
-      REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                         ATTR_FP_CEILING_MODE.c_str());
-      GELOGE(FAILED, "Failed to set attr ATTR_FP_CEILING_MODE");
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_FP_CEILING_MODE.c_str());
+      GELOGE(FAILED, "[Set][Str] %s in model failed", ATTR_FP_CEILING_MODE.c_str());
       return FAILED;
     }
     GELOGI("Set attr ATTR_FP_CEILING_MODE to model, value is %s.", fp_ceiling_mode.c_str());
@@ -459,31 +454,27 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
   int64_t core_type = (ge_core_type == kVectorCore) ? 1 : 0;
   GELOGI("core_type: %ld", core_type);
   if (!ge::AttrUtils::SetInt(&model, ATTR_MODEL_CORE_TYPE, core_type)) {
-    REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                       ATTR_MODEL_CORE_TYPE.c_str());
-    GELOGE(FAILED, "SetInt of ATTR_CORE_TYPE failed.");
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_CORE_TYPE.c_str());
+    GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_CORE_TYPE.c_str());
   }
   InitL1FusionOption();
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetBool(&model, ATTR_NAME_SWITCH_FOR_L1_FUSION, is_l1_fusion_enable_),
-                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                                      ATTR_NAME_SWITCH_FOR_L1_FUSION.c_str());
-                   GELOGE(FAILED, "SetBool of ATTR_NAME_SWITCH_FOR_L1_FUSION failed.");
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_NAME_SWITCH_FOR_L1_FUSION.c_str());
+                   GELOGE(FAILED, "[Set][Attr] %s in model failed.", ATTR_NAME_SWITCH_FOR_L1_FUSION.c_str());
                    return FAILED);
   const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(session_id_);
   bool is_op_debug = dump_properties.IsOpDebugOpen();
   if (is_op_debug) {
     if (!ge::AttrUtils::SetBool(&model, ATTR_OP_DEBUG_FLAG, is_op_debug)) {
-      REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                         ATTR_OP_DEBUG_FLAG.c_str());
-      GELOGE(FAILED, "SetBool of ATTR_OP_DEBUG_FLAG failed.");
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_OP_DEBUG_FLAG.c_str());
+      GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_OP_DEBUG_FLAG.c_str());
       return FAILED;
     }
     uint32_t op_debug_mode = dump_properties.GetOpDebugMode();
     GELOGI("Get op debug mode:%d", op_debug_mode);
     if (!ge::AttrUtils::SetInt(&model, ATTR_OP_DEBUG_MODE, op_debug_mode)) {
-      REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
-                         ATTR_OP_DEBUG_MODE.c_str());
-      GELOGE(FAILED, "SetBool of ATTR_OP_DEBUG_MODE failed.");
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_OP_DEBUG_MODE.c_str());
+      GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_OP_DEBUG_MODE.c_str());
       return FAILED;
     }
   }
@@ -556,7 +547,7 @@ Status ModelBuilder::MergeWeights() {
     if (weight == nullptr) {
       REPORT_INNER_ERROR("E19999", "Can't get const weight in op:%s(%s)",
                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "Can't get const op weight, name: %s", node->GetName().c_str());
+      GELOGE(FAILED, "[Call][MutableTensor] Can't get const op weight, name:%s", node->GetName().c_str());
       return FAILED;
     }
 
@@ -581,14 +572,15 @@ Status ModelBuilder::MergeWeights() {
       GE_IF_BOOL_EXEC(base_addr == nullptr,
                       REPORT_INNER_ERROR("E19999", "Check weight in op:%s(%s) is nullptr",
                                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                      GELOGE(FAILED, "Base addr is nullptr.");
+                      GELOGE(FAILED, "[Check][Param] weight in op:%s(%s) is nullptr",
+                             op_desc->GetName().c_str(), op_desc->GetType().c_str());
                       return FAILED);
       if (weight_offset_ - offset < weight_data.size()) {
         REPORT_INNER_ERROR("E19999", "left weight size not enough for op:%s(%s) left_size:%zu, weight_size:%zu",
                            op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                            weight_offset_ - offset, weight_data.size());
-        GELOGE(FAILED, "left weight size not enough. left_size:%lu, weight_size:%lu",
-               weight_offset_ - offset, weight_data.size());
+        GELOGE(FAILED, "[Check][Param] left weight size not enough for op:%s(%s). left_size:%lu, weight_size:%lu",
+               op_desc->GetName().c_str(), op_desc->GetType().c_str(), weight_offset_ - offset, weight_data.size());
         return FAILED;
       }
       uintptr_t dst_ptr = reinterpret_cast<uintptr_t>(base_addr) + offset;
@@ -615,7 +607,7 @@ Status ModelBuilder::MergeWeights() {
         REPORT_CALL_ERROR("E19999", "mem copy failed. errret:%u, "
                           "dst_ptr:%lx, dst_size:%lu, src_ptr:%lx, src_size:%lu,",
                           err, dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
-        GELOGE(FAILED, "mem copy failed. errret:%u, "
+        GELOGE(FAILED, "[Update][Data] mem copy failed. errret:%u, "
                "dst_ptr:%lx, dst_size:%lu, src_ptr:%lx, src_size:%lu",
                err, dst_ptr, SECUREC_MEM_MAX_LEN, src_ptr, SECUREC_MEM_MAX_LEN);
         return FAILED;
@@ -647,6 +639,13 @@ Status ModelBuilder::SaveAtomicTBEKernel(const OpDescPtr &op_desc) {
       std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
       tbe_kernel = MakeShared<OpKernelBin>(kernel_name, std::move(data));
       GE_CHECK_NOTNULL(tbe_kernel);
+      GELOGI("Node [%s][%s] start recovery extra attr %s from %s", atomic_op_desc->GetName().c_str(),
+             atomic_op_desc->GetType().c_str(), ge::OP_EXTATTR_NAME_TBE_KERNEL, ATTR_NAME_TBE_KERNEL_NAME.c_str());
+      if (!(atomic_op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel))) {
+        std::string error = "Node" + FmtToStr(atomic_op_desc->GetName()) + "set extra tbeKernel attr failed";
+        GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+        return ge::FAILED;
+      }
     }
   }
   if (tbe_kernel == nullptr) {
@@ -695,13 +694,22 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
         GE_CHECK_NOTNULL(kernel_buffer.GetData());
         std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
         tbe_kernel = std::make_shared<OpKernelBin>(kernel_name, std::move(data));
+        GE_CHECK_NOTNULL(tbe_kernel);
+        GELOGI("Node [%s][%s] start recovery extra attr %s from %s", node_op_desc->GetName().c_str(),
+               node_op_desc->GetType().c_str(), ge::OP_EXTATTR_NAME_TBE_KERNEL, ATTR_NAME_TBE_KERNEL_NAME.c_str());
+        if (!(node_op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel))) {
+          std::string error = "Node" + FmtToStr(node_op_desc->GetName()) + "set extra tbeKernel attr failed";
+          GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+          return ge::FAILED;
+        }
       }
     }
     GE_IF_BOOL_EXEC(tbe_kernel == nullptr, continue);
     if (tbe_name_set.count(tbe_kernel->GetName()) > 0) {
-      REPORT_INNER_ERROR("E19999", "tbe_kernel name %s can't be the same, judge for op:%s(%s),",
+      REPORT_INNER_ERROR("E19999", "tbe_kernel name %s can't be the same, judge for op:%s(%s)",
                          tbe_kernel->GetName().c_str(), n->GetName().c_str(), n->GetType().c_str());
-      GELOGE(FAILED, "tbe_kernel name %s can't be the same", tbe_kernel->GetName().c_str());
+      GELOGE(FAILED, "[Check][Param] tbe_kernel name %s can't be the same, judge for op:%s(%s)",
+             tbe_kernel->GetName().c_str(), n->GetName().c_str(), n->GetType().c_str());
       return FAILED;
     }
     tbe_name_set.insert(tbe_kernel->GetName());
@@ -719,9 +727,10 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
         node_op_desc->TryGetExtAttr(ge::OP_EXTATTR_CUSTAICPU_KERNEL, CustAICPUKernelPtr());
     GE_IF_BOOL_EXEC(cust_aicpu_kernel == nullptr, continue);
     if (aicpu_name_set.count(cust_aicpu_kernel->GetName()) > 0) {
-      REPORT_INNER_ERROR("E19999", "aicpu_kernel name %s can't be the same, judge for op:%s(%s),",
+      REPORT_INNER_ERROR("E19999", "aicpu_kernel name %s can't be the same, judge for op:%s(%s)",
                          cust_aicpu_kernel->GetName().c_str(), n->GetName().c_str(), n->GetType().c_str());
-      GELOGE(FAILED, "aicpu_kernel name %s can't be the same", cust_aicpu_kernel->GetName().c_str());
+      GELOGE(FAILED, "[Check][Param] aicpu_kernel name %s can't be the same, judge for op:%s(%s)",
+             cust_aicpu_kernel->GetName().c_str(), n->GetName().c_str(), n->GetType().c_str());
       return FAILED;
     }
     aicpu_name_set.insert(cust_aicpu_kernel->GetName());
@@ -730,11 +739,11 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
   }
 
   if (!tbe_kernel_store_.Build()) {
-    GELOGE(FAILED, "TBE Kernels store build failed!");
+    GELOGE(FAILED, "[Call][Build] TBE Kernels store build failed!");
     return FAILED;
   }
   if (!cust_aicpu_kernel_store_.Build()) {
-    GELOGE(FAILED, "custom AICPU kernels store build failed!");
+    GELOGE(FAILED, "[Call][Build] custom AICPU kernels store build failed!");
     return FAILED;
   }
   ge_model.SetTBEKernelStore(tbe_kernel_store_);
@@ -744,14 +753,14 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
   GeAttrValue::BYTES task_def_bytes;
   if (!AttrUtils::GetZeroCopyBytes(model, MODEL_ATTR_TASKS, task_def_bytes)) {
     REPORT_CALL_ERROR("E19999", "Get attr:%s in model failed", MODEL_ATTR_TASKS.c_str());
-    GELOGE(INTERNAL_ERROR, "Get zero copy bytes fail.");
+    GELOGE(INTERNAL_ERROR, "[Get][Attr] %s in model failed", MODEL_ATTR_TASKS.c_str());
     return INTERNAL_ERROR;
   }
   int byte_size = static_cast<int>(task_def_bytes.GetSize());
   std::shared_ptr<domi::ModelTaskDef> task = ge::MakeShared<domi::ModelTaskDef>();
   GE_CHECK_NOTNULL(task);
   GE_CHK_BOOL_EXEC(ReadProtoFromArray(task_def_bytes.GetData(), byte_size, task.get()), return INTERNAL_ERROR,
-                   "ReadProtoFromArray failed.");
+                   "[Read][Proto] From Array failed.");
   ge_model.SetModelTaskDef(task);
 
   // Add graph
@@ -780,11 +789,12 @@ void ModelBuilder::SetModelVersion(ge::Model &model) {
 Status ModelBuilder::PreBuildModel() {
   if ((compute_graph_ == nullptr) || !(compute_graph_->IsValid())) {
     REPORT_INNER_ERROR("E19999", "Check compute_graph no valid");
-    GELOGE(FAILED, "Graph_ is not valid.");
+    GELOGE(FAILED, "[Check][Param] Graph_ is not valid.");
     return FAILED;
   }
 
-  GE_CHK_STATUS_RET(SetInputOutputDesc(), "SetInputOutputDesc Failed!");
+  GE_CHK_STATUS_RET(SetInputOutputDesc(),
+                    "[Set][InputOutputDesc] Failed! graph:%s", compute_graph_->GetName().c_str());
 
   AddNodeInputProperty();
 
@@ -792,17 +802,18 @@ Status ModelBuilder::PreBuildModel() {
 }
 
 Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
-  GE_CHK_STATUS_RET(AdjustInputTensorFlag(), "AdjustInputTensorFlag failed!");
+  GE_CHK_STATUS_RET(AdjustInputTensorFlag(), "[Adjust][InputTensorFlag] failed! graph:%s",
+                    compute_graph_->GetName().c_str());
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kStreamAlloc);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kStreamAlloc);
   // Assign logical streams.
   StreamAllocator stream_allocator(compute_graph_, subgraphs_);
   GE_TIMESTAMP_START(AssignLogicalStreams);
   GE_CHK_STATUS_RET(stream_allocator.AssignLogicalStreams(stream_max_parallel_num_, hcom_parallel_),
-                    "Assign logical streams failed.");
+                    "[Assign][LogicalStreams] failed. graph:%s", compute_graph_->GetName().c_str());
   GE_TIMESTAMP_END(AssignLogicalStreams, "GraphBuilder::AssignLogicalStreams");
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kMemoryAlloc);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kMemoryAlloc);
   // Assign functional op labels.
   auto root_graph = GraphUtils::FindRootGraph(compute_graph_);
   (void)AttrUtils::GetInt(*root_graph, ATTR_MODEL_LABEL_NUM, label_num_);
@@ -810,34 +821,36 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
   GE_TIMESTAMP_START(AssignMemory);
   MemoryAssigner mem_assigner(compute_graph_);
   GE_CHK_STATUS_RET(mem_assigner.AssignMemory(is_loop_graph_, mem_type_to_mem_offset_, zero_copy_mem_size_),
-                    "Assign Memory Failed!");
+                    "[Assign][Memory] Failed! graph:%s", compute_graph_->GetName().c_str());
   GE_TIMESTAMP_END(AssignMemory, "GraphBuilder::AssignMemory");
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GE_TIMESTAMP_START(SetInputOutputOffset);
   SetInputOutputOffsetPass input_output_offset;
-  GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_), "Set input output offset failed.");
+  GE_CHK_STATUS_RET(input_output_offset.Run(compute_graph_),
+                    "[Set][InputOutputOffset] failed. graph:%s", compute_graph_->GetName().c_str());
   GE_TIMESTAMP_END(SetInputOutputOffset, "SetInputOutputOffsetPass::Run");
 
   // Compile single op in graph build stage
   GE_TIMESTAMP_START(CompileSingleOp);
-  GE_CHK_STATUS_RET(CompileSingleOp(), "ATC builder CompileSingleOp() return fail.");
+  GE_CHK_STATUS_RET(CompileSingleOp(), "[Compile][SingleOp] fail. graph:%s", compute_graph_->GetName().c_str());
   GE_TIMESTAMP_EVENT_END(CompileSingleOp, "GraphBuilder::CompileSingleOp");
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kStreamAlloc);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kStreamAlloc);
   // Refresh real streams and insert event nodes.
   GE_TIMESTAMP_START(RefreshRealStream);
-  GE_CHK_STATUS_RET(stream_allocator.RefreshRealStream(stream_num_, event_num_), "RefreshRealStream failed.");
+  GE_CHK_STATUS_RET(stream_allocator.RefreshRealStream(stream_num_, event_num_),
+                    "[Refresh][RealStream] failed. graph:%s", compute_graph_->GetName().c_str());
   huge_streams_ = stream_allocator.GetHugeStreams();
   GE_TIMESTAMP_END(RefreshRealStream, "GraphBuilder::RefreshRealStream");
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   GE_TIMESTAMP_START(MergeWeights);
-  GE_CHK_STATUS_RET(MergeWeights(), "MergeWeights Failed!");
+  GE_CHK_STATUS_RET(MergeWeights(), "[Merge][Weights] Failed! graph:%s", compute_graph_->GetName().c_str());
   GE_TIMESTAMP_END(MergeWeights, "GraphBuilder::MergeWeights");
 
   GE_TIMESTAMP_START(BuildModelDef);
-  GE_CHK_STATUS_RET(BuildModelDef(model), "BuildModelDef failed!");
+  GE_CHK_STATUS_RET(BuildModelDef(model), "[Build][ModelDef] failed! graph:%s", compute_graph_->GetName().c_str());
   GE_TIMESTAMP_END(BuildModelDef, "GraphBuilder::BuildModelDef");
 
   SetModelVersion(model);
@@ -847,7 +860,7 @@ Status ModelBuilder::BuildModelForGetTask(ge::Model &model) {
 
 Status ModelBuilder::BuildModelForGetDynShapeTask(ge::Model &model_def) {
   GE_TIMESTAMP_START(BuildModelDef);
-  GE_CHK_STATUS_RET(BuildModelDef(model_def), "BuildModelDef failed!");
+  GE_CHK_STATUS_RET(BuildModelDef(model_def), "[Build][ModelDef] failed!");
   GE_TIMESTAMP_END(BuildModelDef, "GraphBuilder::BuildModelDef");
   SetModelVersion(model_def);
   return SUCCESS;
@@ -860,7 +873,7 @@ Status ModelBuilder::CompileSingleOp() {
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
   if ((instance == nullptr) || !instance->InitFlag()) {
     REPORT_INNER_ERROR("E19999", "Check GELib instance not init before");
-    GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "CompileSingleOp failed.");
+    GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] CompileSingleOp failed.");
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
 
@@ -883,7 +896,7 @@ Status ModelBuilder::CompileSingleOp() {
         if (kernel_lib_name.empty()) {
           REPORT_INNER_ERROR("E19999", "Check kernel lib name empty of op:%s(%s)",
                              node->GetName().c_str(), node->GetType().c_str());
-          GELOGE(ge::INTERNAL_ERROR, "Get node:%s(%s) kernel lib failed.", node->GetName().c_str(),
+          GELOGE(ge::INTERNAL_ERROR, "[Get][Name] of node:%s(%s) kernel lib failed.", node->GetName().c_str(),
                  node->GetType().c_str());
           return ge::INTERNAL_ERROR;
         }
@@ -895,7 +908,7 @@ Status ModelBuilder::CompileSingleOp() {
       } else {
         REPORT_INNER_ERROR("E19999", "Get ops kernel info store failed for op:%s(%s), op_kernel_name:%s,",
                            node->GetName().c_str(), node->GetType().c_str(), kernel_lib_name.c_str());
-        GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "Get op %s ops kernel info store failed", node->GetName().c_str());
+        GELOGE(ge::GE_GRAPH_PARAM_NULLPTR, "[Get][OpsKernelInfoStore] for op %s failed", node->GetName().c_str());
         return ge::GE_GRAPH_PARAM_NULLPTR;
       }
     }
@@ -912,7 +925,7 @@ Status ModelBuilder::CompileSingleOp() {
     if (ret != ge::SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Batch compile op failed, kernel lib name, node size:%zu,",
                         node_vector.size());
-      GELOGE(ret, "Compile op failed, kernel lib name is %s", kernel_lib_name.c_str());
+      GELOGE(ret, "[Compile][Op] failed, kernel lib name is %s", kernel_lib_name.c_str());
       return ret;
     }
   }
@@ -960,10 +973,10 @@ void ModelBuilder::SetModelCheckAicpuAttr(ge::Model &model, std::set<std::string
     compute_graph_->GetName().c_str(), aicpu_op_types.size(), aicpu_optype_list.size(), aicpu_tf_op_types.size(),
     aicpu_tf_optype_list.size());
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, "needCheckCpu", aicpu_optype_list), return,
-                   "Set attr needCheckCpu fail.");
+                   "[Set][Attr] needCheckCpu fail.");
 
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListStr(&model, "needCheckTf", aicpu_tf_optype_list), return,
-                   "Set attr needCheckTf fail.");
+                   "[Set][Attr] needCheckTf fail.");
   return;
 }
 }  // namespace ge

@@ -168,7 +168,7 @@ Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
   if (it == allocated_blocks_.end()) {
     REPORT_INNER_ERROR("E19999", "Param ptr not allocated before, device_id:%u, check invalid",
                        device_id);
-    GELOGE(PARAM_INVALID, "Invalid memory pointer");
+    GELOGE(PARAM_INVALID, "Invalid memory pointer: %p", ptr);
     return ge::PARAM_INVALID;
   }
   Block *block = it->second;

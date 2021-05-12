@@ -16,15 +16,15 @@
 
 #include "common/util/error_manager/error_manager.h"
 
-using namespace ErrorMessage;
+using namespace error_message;
+
+thread_local Context ErrorManager::error_context_ = {0, "", "", ""};
 
 namespace error_message {
 int FormatErrorMessage(char *str_dst, size_t dst_max, const char *format, ...) {
   return 1;
 }
 }
-
-thread_local Context ErrorManager::error_context_ = {0, "", "", ""};
 
   ErrorManager &ErrorManager::GetInstance() {
     static ErrorManager instance;
@@ -46,6 +46,14 @@ thread_local Context ErrorManager::error_context_ = {0, "", "", ""};
   ///
   int ErrorManager::ReportErrMessage(std::string error_code, const std::map<std::string, std::string> &args_map) {
     return 0;
+  }
+
+  std::string ErrorManager::GetErrorMessage() {
+    return std::string();
+  }
+
+  std::string ErrorManager::GetWarningMessage() {
+    return std::string();
   }
 
   int ErrorManager::ReportInterErrMessage(std::string error_code, const std::string &error_msg) {
@@ -98,11 +106,11 @@ thread_local Context ErrorManager::error_context_ = {0, "", "", ""};
 
   const std::string &ErrorManager::GetLogHeader() { return error_context_.log_header; }
 
-  struct Context &ErrorManager::GetErrorContext() {
-    struct Context error_context;
+  struct error_message::Context &ErrorManager::GetErrorManagerContext() {
+    static struct error_message::Context error_context;
     return error_context;
   }
 
-void ErrorManager::SetErrorContext(struct Context error_context) {}
+void ErrorManager::SetErrorContext(struct error_message::Context error_context) {}
 
 void ErrorManager::SetStage(const std::string &first_stage, const std::string &second_stage) {}

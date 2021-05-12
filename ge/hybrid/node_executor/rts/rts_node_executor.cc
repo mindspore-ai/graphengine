@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-#include "rts_node_executor.h"
+#include "hybrid/node_executor/rts/rts_node_executor.h"
+#include "hybrid/node_executor/rts/rts_task_factory.h"
+
 #include "common/debug/log.h"
 #include "common/ge/ge_util.h"
 #include "common/types.h"
+#include "graph/common/omg_util.h"
 #include "graph/utils/tensor_utils.h"
 #include "hybrid/model/hybrid_model.h"
 #include "runtime/rt.h"
@@ -25,6 +28,11 @@
 namespace ge {
 namespace hybrid {
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::RTS, RtsNodeExecutor);
+
+REGISTER_RTS_TASK_CREATOR(IDENTITY, IdentityNodeTask);
+REGISTER_RTS_TASK_CREATOR(IDENTITYN, IdentityNNodeTask);
+REGISTER_RTS_TASK_CREATOR(READVARIABLEOP, ReadVariableOpNodeTask);
+REGISTER_RTS_TASK_CREATOR(PROFILINGTRAININGTRACE, ProfilingTraceNodeTask);
 
 Status IdentityNodeTask::DoCopyTensor(TaskContext &context, int index) {
   auto input_desc = context.MutableInputDesc(index);
@@ -77,10 +85,6 @@ Status IdentityNodeTask::ExecuteAsync(TaskContext &context, std::function<void()
   return SUCCESS;
 }
 
-Status IdentityNodeTask::UpdateArgs(TaskContext &context) {
-  return SUCCESS;
-}
-
 Status IdentityNNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
   GELOGD("[%s] Start to execute.", context.GetNodeName());
   for (int i = 0; i < context.NumInputs(); ++i) {
@@ -95,7 +99,15 @@ Status IdentityNNodeTask::ExecuteAsync(TaskContext &context, std::function<void(
   return SUCCESS;
 }
 
-Status ProfilingTraceNodeTask::UpdateArgs(TaskContext &context) {
+Status ProfilingTraceNodeTask::Init(const HybridModel &model, const NodePtr &node) {
+  auto *task_defs = model.GetTaskDefs(node);
+  if (task_defs == nullptr || task_defs->empty()) {
+    GELOGE(INTERNAL_ERROR, "Profiling node has no task to execute.");
+    return INTERNAL_ERROR;
+  }
+
+  task_defs_ = *task_defs;
+  GELOGD("[%s] Done initialization successfully.", node->GetName().c_str());
   return SUCCESS;
 }
 
@@ -116,32 +128,21 @@ Status ProfilingTraceNodeTask::ExecuteAsync(TaskContext &context, std::function<
   }
 
   return SUCCESS;
-};
+}
 
 Status RtsNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
-
-  auto op_type = node->GetType();
-  if (op_type == IDENTITY) {
-    task = MakeShared<IdentityNodeTask>();
-  } else if (op_type == IDENTITYN) {
-    task = MakeShared<IdentityNNodeTask>();
-  } else if (op_type == READVARIABLEOP) {
-    task = MakeShared<ReadVariableOpNodeTask>();
-  } else if (op_type == PROFILINGTRAININGTRACE) {
-    auto *task_defs = model.GetTaskDefs(node);
-    if (task_defs == nullptr || task_defs->empty()) {
-      GELOGE(INTERNAL_ERROR, "Profiling node has no task to execute.");
-      return INTERNAL_ERROR;
-    }
-    task = MakeShared<ProfilingTraceNodeTask>(*task_defs);
-  } else {
-    GELOGE(INTERNAL_ERROR, "[%s] Unsupported RTS op type: %s", node->GetName().c_str(), op_type.c_str());
-    return INTERNAL_ERROR;
+  GELOGD("[%s] Load for local task.", node->GetName().c_str());
+  std::string node_type;
+  GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original type failed.");
+  RtsNodeTaskPtr rts_task = RtsTaskFactory::GetInstance().Create(node_type);
+  if (rts_task == nullptr) {
+    GELOGE(UNSUPPORTED, "[%s] Unsupported RTS op type: %s", node->GetName().c_str(), node_type.c_str());
+    return UNSUPPORTED;
   }
 
-  GE_CHECK_NOTNULL(task);
-  return SUCCESS;
+  task = rts_task;
+  return rts_task->Init(model, node);
 }
 }  // namespace hybrid
 }  // namespace ge

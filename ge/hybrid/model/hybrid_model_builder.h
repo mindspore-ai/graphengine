@@ -59,8 +59,7 @@ class HybridModelBuilder {
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
   Status LoadTask(NodeItem &node_item);
   Status LoadTasks();
-  Status IdentifyVariableOutputs(NodeItem &node_item);
-  Status IdentifySameInputs(NodeItem &node_item);
+  Status IdentifyVariableOutputs(NodeItem &node_item, const ComputeGraphPtr &subgraph);
   Status BuildNodeItem(const NodePtr &node, NodeItem &node_item);
   Status GetOrCreateNodeItem(const NodePtr &node, NodeItem **node_item);
   Status ParseForceInfershapeNodes(const NodePtr &node, NodeItem &node_item);
@@ -87,14 +86,28 @@ class HybridModelBuilder {
   Status LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem *parent_node_item);
   Status RecoverGraphUnknownFlag();
   Status CheckAicpuOpList();
-  Status CreateProfilingNodeBefore(GraphItem &graph_item, const NodePtr &node);
-  Status CreateProfilingNodeAfter(GraphItem &graph_item, const NodePtr &node);
+  Status CreateProfilingNodeBefore(GraphItem &graph_item, const NodePtr &node, uint32_t &prev_num);
+  Status CreateProfilingNodeAfter(GraphItem &graph_item, const NodePtr &node, uint32_t &post_num);
   Status GenerateFpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateBpProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateEndProfilingTask(const OpDescPtr &op_desc, vector<domi::TaskDef> &task_def_list);
   Status GenerateArProfilingTask(const OpDescPtr &op_desc, int64_t log_id, vector<domi::TaskDef> &task_def_list);
   Status OptimizeDependenciesForConstantInputs();
   Status Convert2HostTensor(const NodePtr &node, int node_id, uint32_t output_idx);
+
+  Status RelinkNextIteration();
+  Status BuildProfilingControl(GraphItem &graph_item, const std::map<size_t, std::pair<uint32_t, uint32_t>> &nodes);
+  Status BuildControlFlowGroup(GraphItem &graph_item, const NodePtr &node, NodeItem *node_item);
+  Status CreateNormalNodeGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateStreamActiveGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateStreamSwitchGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateStreamSwitchNGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateNextIterationGroup(const NodePtr &node, NodeItem *node_item);
+
+  Status CreateSwitchGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateLabelSetGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateLabelGotoGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateLabelSwitchGroup(const NodePtr &node, NodeItem *node_item);
 
   const char* GetGraphName() const {
     return hybrid_model_.model_name_.c_str();
@@ -106,6 +119,8 @@ class HybridModelBuilder {
   GeRootModelPtr ge_root_model_;
   std::map<std::string, GeModelPtr> subgraph_models_;
   std::map<std::string, NodePtr> constant_op_nodes_;
+  std::map<std::string, NodePtr> stream_merge_op_nodes_;
+  std::map<std::string, NodePtr> next_iteration_op_nodes_;
   std::map<std::string, std::set<NodeItem *>> parallel_group_to_nodes_;
   std::map<NodeItem *, std::set<std::string>> node_to_parallel_groups_;
 

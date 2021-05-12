@@ -23,6 +23,7 @@
 #include <set>
 #include <functional>
 #include <memory>
+#include "graph/tensor.h"
 
 namespace ge {
 // Option key: graph run mode
@@ -356,11 +357,13 @@ struct OutputTensorInfo {
 };
 
 using Status = uint32_t;
-using RunAsyncCallback = std::function<void(Status, std::vector<ge::OutputTensorInfo> &)>;
+using RunAsyncCallback = std::function<void(Status, std::vector<ge::Tensor> &)>;
+
 // for ir build
 namespace ir_option {
 static const char *const INPUT_FORMAT = "input_format";
 static const char *const INPUT_SHAPE = "input_shape";
+static const char *const INPUT_SHAPE_RANGE = ge::INPUT_SHAPE_RANGE;
 static const char *const OP_NAME_MAP = "op_name_map";
 static const char *const IS_DYNAMIC_INPUT = "is_dynamic_input";
 static const char *const IS_INPUT_ADJUST_HW_LAYOUT = "is_input_adjust_hw_layout";
@@ -372,6 +375,7 @@ static const char *const DYNAMIC_IMAGE_SIZE = kDynamicImageSize;
 static const char *const DYNAMIC_DIMS = kDynamicDims;
 static const char *const INSERT_OP_FILE = ge::INSERT_OP_FILE.c_str();
 static const char *const PRECISION_MODE = ge::PRECISION_MODE.c_str();
+static const char *const TUNE_DEVICE_IDS = ge::TUNE_DEVICE_IDS.c_str();
 static const char *const EXEC_DISABLE_REUSED_MEMORY = ge::OPTION_EXEC_DISABLE_REUSED_MEMORY;
 static const char *const AUTO_TUNE_MODE = ge::AUTO_TUNE_MODE.c_str();
 static const char *const CORE_TYPE = ge::CORE_TYPE.c_str();

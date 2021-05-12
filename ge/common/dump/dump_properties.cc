@@ -53,7 +53,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::InitByOpti
   dump_path_.clear();
   dump_step_.clear();
   dump_mode_.clear();
-  is_op_debug_ = false;
+  is_train_op_debug_ = false;
+  is_infer_op_debug_ = false;
   op_debug_mode_ = 0;
 
   std::string enable_dump;
@@ -124,7 +125,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::ClearDumpI
   dump_mode_.clear();
   dump_op_switch_.clear();
   dump_status_.clear();
-  is_op_debug_ = false;
+  is_train_op_debug_ = false;
+  is_infer_op_debug_ = false;
   op_debug_mode_ = 0;
 }
 
@@ -203,6 +205,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::string &DumpProperti
   return dump_status_;
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::InitInferOpDebug() {
+  is_infer_op_debug_ = true;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetOpDebugMode(const uint32_t &op_debug_mode) {
+  op_debug_mode_ = op_debug_mode;
+}
+
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpProperties::SetDumpOpSwitch(
   const std::string &dump_op_switch) {
   dump_op_switch_ = dump_op_switch;
@@ -237,7 +247,8 @@ void DumpProperties::CopyFrom(const DumpProperties &other) {
     dump_op_switch_ = other.dump_op_switch_;
 
     model_dump_properties_map_ = other.model_dump_properties_map_;
-    is_op_debug_ = other.is_op_debug_;
+    is_train_op_debug_ = other.is_train_op_debug_;
+    is_infer_op_debug_ = other.is_infer_op_debug_;
     op_debug_mode_ = other.op_debug_mode_;
   }
 }
@@ -254,15 +265,15 @@ void DumpProperties::SetDumpDebugOptions() {
 
     if (dump_debug_mode == OP_DEBUG_AICORE) {
       GELOGD("ge.exec.dumpDebugMode=aicore_overflow, op debug is open.");
-      is_op_debug_ = true;
+      is_train_op_debug_ = true;
       op_debug_mode_ = kAicoreOverflow;
     } else if (dump_debug_mode == OP_DEBUG_ATOMIC) {
       GELOGD("ge.exec.dumpDebugMode=atomic_overflow, op debug is open.");
-      is_op_debug_ = true;
+      is_train_op_debug_ = true;
       op_debug_mode_ = kAtomicOverflow;
     } else if (dump_debug_mode == OP_DEBUG_ALL) {
       GELOGD("ge.exec.dumpDebugMode=all, op debug is open.");
-      is_op_debug_ = true;
+      is_train_op_debug_ = true;
       op_debug_mode_ = kAllOverflow;
     } else {
       GELOGW("ge.exec.dumpDebugMode is invalid.");

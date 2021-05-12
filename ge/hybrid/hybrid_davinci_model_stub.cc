@@ -107,5 +107,9 @@ Status HybridDavinciModel::SetRunAsyncListenerCallback(const RunAsyncCallback &c
 bool HybridDavinciModel::GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const {
   return true;
 }
+Status HybridDavinciModel::GetOpAttr(const std::string &op_name, const std::string &attr_name,
+                                     std::string &attr_value) const {
+  return UNSUPPORTED;
+}
 }  // namespace hybrid
 }  // namespace ge

@@ -118,6 +118,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   map<uint32_t, DeviceSubsInfo> subs_dev_module_; // key: device_id, value: profiling on module
   uint32_t subscribe_count_;
   std::mutex mutex_;
+  std::mutex mutex_report_;
   MsprofCallback prof_cb_;
   std::string fp_point_;
   std::string bp_point_;

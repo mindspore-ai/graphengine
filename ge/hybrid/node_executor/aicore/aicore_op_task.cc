@@ -309,7 +309,7 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
   auto rt_ret = ValidateTaskDef(task_def);
   if (rt_ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "op:%s(op_type:%s) failed to validate task def:%s",
-           op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
+                      op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
     GELOGE(rt_ret, "[Invoke][ValidateTaskDef]failed for op:%s(op_type:%s) to validate task def:%s",
            op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
     return rt_ret;

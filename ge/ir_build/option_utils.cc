@@ -158,7 +158,7 @@ bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map
     vector<int64_t> shape = iter->second;
     if (shape.empty()) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10012");
-      GELOGE(ge::PARAM_INVALID, 
+      GELOGE(ge::PARAM_INVALID,
           "[Check][DynamicBatchSizeInputShape] shape size can not be less than 1 when set --dynamic_batch_size.");
       return false;
     }
@@ -175,7 +175,7 @@ bool CheckDynamicBatchSizeInputShapeValid(map<string, vector<int64_t>> shape_map
 
   if (size == 0) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10031");
-    GELOGE(ge::PARAM_INVALID, 
+    GELOGE(ge::PARAM_INVALID,
         "[Check][DynamicBatchSizeInputShape]At least one batch n must be equal to -1 when set dynamic_batch_size.");
     return false;
   }
@@ -319,7 +319,7 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
   if (split_set.size() > kMaxDynamicDimNum) {
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E10042", {"parameter", "reason"}, {"dynamic_dims", "dynamic_dims's num of parameter set can not exceed 100"});
-    GELOGE(ge::PARAM_INVALID, 
+    GELOGE(ge::PARAM_INVALID,
         "[CheckAndParse][DynamicDims]dynamic_dims's num of parameter set can not exceed %zu.", kMaxDynamicDimNum);
     return false;
   }
@@ -340,7 +340,7 @@ bool CheckAndParseDynamicDims(int32_t dynamic_dim_num, std::string &dynamic_dims
           ErrorManager::GetInstance().ATCReportErrMessage(
               "E10001", {"parameter", "value", "reason"},
               {"--dynamic_dims's parameter", dim.c_str(), "must be positive integer"});
-          GELOGE(ge::PARAM_INVALID, 
+          GELOGE(ge::PARAM_INVALID,
               "[CheckAndParse][DynamicDims]--dynamic_dims:%s parameter must be positive integer.",
               dynamic_dims.c_str());
           return false;
@@ -402,7 +402,7 @@ Status ParseInputShapeRange(const std::string &shape_range,
     if (shape_range_pair_vec.size() != DEFAULT_SHAPE_RANGE_PAIR_SIZE) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10048", {"shape_range", "reason", "sample"},
                                                       {shape_range, kSplitError1, kInputShapeRangeSample1});
-      GELOGE(PARAM_INVALID, "[Parse][Parameter]--input shape_range:%s invalid, reason: %s, correct sample is %s.", 
+      GELOGE(PARAM_INVALID, "[Parse][Parameter]--input shape_range:%s invalid, reason: %s, correct sample is %s.",
           shape_range.c_str(), kSplitError1, kInputShapeRangeSample1);
       return PARAM_INVALID;
     }
@@ -523,11 +523,9 @@ Status CheckDynamicInputParamValid(string &dynamic_batch_size, string &dynamic_i
   }
 
   if (!dynamic_batch_size.empty()) {
-    if (input_shape_range.find(":") != string::npos) {
-      if (!CheckDynamicBatchSizeInputShapeValid(shape_map, dynamic_batch_size)) {
-        GELOGE(ge::PARAM_INVALID, "[Check][DynamicBatchSizeInputShape] input_shape: %s invalid.", input_shape.c_str());
-        return ge::PARAM_INVALID;
-      }
+    if (!CheckDynamicBatchSizeInputShapeValid(shape_map, dynamic_batch_size)) {
+      GELOGE(ge::PARAM_INVALID, "[Check][DynamicBatchSizeInputShape] input_shape: %s invalid.", input_shape.c_str());
+      return ge::PARAM_INVALID;
     }
   }
 
@@ -698,6 +696,11 @@ Status CheckKeepTypeParamValid(const std::string &keep_dtype) {
 
 int CheckLogParamValidAndSetLogLevel(const std::string log) {
   int ret = -1;
+  char *npu_collect_path = std::getenv("NPU_COLLECT_PATH");
+  if (npu_collect_path != nullptr && log == "null") {
+    return 0;
+  }
+
   if (log == "default") {
     ret = 0;
   } else if (log == "null") {

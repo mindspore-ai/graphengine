@@ -123,12 +123,26 @@ class GE_FUNC_VISIBILITY Session {
 
   ///
   /// @ingroup ge_graph
+  /// @brief run a graph of the session with specific session id and specific stream asynchronously
+  /// @param [in] graph_id graph id
+  /// @param [in] stream specific stream
+  /// @param [in] inputs input data
+  /// @param [out] outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<Tensor> &inputs,
+                                 std::vector<Tensor> &outputs);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief build graph in the session with specific session id
   /// @param [in] graphId: graph id
   /// @param [in] inputs: input data
   /// @return Status result of function
   ///
   Status BuildGraph(uint32_t graphId, const std::vector<InputTensorInfo> &inputs);
+
+  Status BuildGraph(uint32_t graphId, const std::vector<ge::Tensor> &inputs);  /*lint !e148*/
 
   ///
   /// @ingroup ge_graph
@@ -140,7 +154,7 @@ class GE_FUNC_VISIBILITY Session {
   ///                        Please ensure that the implementation of the function is trusted.
   /// @return Status result of function
   ///
-  Status RunGraphAsync(uint32_t graphId, const std::vector<ge::InputTensorInfo> &inputs, RunAsyncCallback callback);
+  Status RunGraphAsync(uint32_t graphId, const std::vector<ge::Tensor> &inputs, RunAsyncCallback callback);
 
   ///
   /// @ingroup ge_graph

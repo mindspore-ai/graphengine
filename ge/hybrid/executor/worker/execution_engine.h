@@ -19,14 +19,33 @@
 
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/task_context.h"
+#include "common/dump/dump_op.h"
 
 namespace ge {
 namespace hybrid {
+class NodeDoneCallback {
+ public:
+  NodeDoneCallback(GraphExecutionContext *graph_context, std::shared_ptr<TaskContext> task_context);
+  ~NodeDoneCallback() = default;
+  Status OnNodeDone();
+ private:
+  Status PrepareConstInputs(const NodeItem &node_item);
+  Status DumpDynamicNode();
+  Status ProfilingReport();
+  Status SaveDumpOpInfo();
+  Status GetTaskDescInfo(const NodePtr node, const HybridModel *model,
+                         std::vector<TaskDescInfo> &task_desc_info);
+  GraphExecutionContext *graph_context_;
+  std::shared_ptr<TaskContext> context_;
+  DumpOp dump_op_;
+};
+
 class ExecutionEngine {
  public:
   static Status ExecuteAsync(NodeState &node_state,
                              const std::shared_ptr<TaskContext> &task_context,
-                             GraphExecutionContext &execution_context);
+                             GraphExecutionContext &execution_context,
+                             const std::function<void()> &callback);
 
  private:
   static Status ValidateInputTensors(const NodeState &node_state, const TaskContext &task_context);
@@ -35,8 +54,6 @@ class ExecutionEngine {
                                TaskContext &task_context,
                                GraphExecutionContext &context,
                                const std::function<void()> &callback);
-  static Status InitCallback(const std::shared_ptr<TaskContext> &task_context,
-                             GraphExecutionContext &execution_context, std::function<void()> &callback);
 };
 }  // namespace hybrid
 }  // namespace ge

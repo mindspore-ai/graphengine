@@ -69,51 +69,9 @@ Status MergeToStreamMergePass::Run(ComputeGraphPtr graph) {
 Status MergeToStreamMergePass::ReplaceMergeNode(const ComputeGraphPtr &graph, const NodePtr &merge_node) {
   OpDescPtr merge_op_desc = merge_node->GetOpDesc();
   GE_CHECK_NOTNULL(merge_op_desc);
+  merge_op_desc->SetType(STREAMMERGE);
 
-  const std::string &node_name = merge_node->GetName();
-  GELOGI("Create StreamMerge Op, name=%s.", node_name.c_str());
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name, STREAMMERGE);
-  if (op_desc == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New GeTensor failed");
-    GELOGE(FAILED, "Create op_desc failed, StreamMerge:%s.", node_name.c_str());
-    return FAILED;
-  }
-
-  for (const InDataAnchorPtr &in_anchor : merge_node->GetAllInDataAnchors()) {
-    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(merge_op_desc->GetInputDesc(in_anchor->GetIdx())) == GRAPH_SUCCESS,
-                     REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
-                                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                     return FAILED, "Create StreamMerge op: add input desc failed.");
-  }
-
-  for (const OutDataAnchorPtr &out_anchor : merge_node->GetAllOutDataAnchors()) {
-    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(merge_op_desc->GetOutputDesc(out_anchor->GetIdx())) == GRAPH_SUCCESS,
-                     REPORT_CALL_ERROR("E19999", "Add ouput desc to op:%s(%s) failed",
-                                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                     return FAILED, "Create StreamMerge op: add output desc failed.");
-  }
-
-  NodePtr stream_merge = graph->AddNode(op_desc);
-  GE_CHK_BOOL_EXEC(stream_merge != nullptr,
-                   REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
-                                     op_desc->GetName().c_str(), op_desc->GetType().c_str(),
-                                     graph->GetName().c_str());
-                   return FAILED, "Insert StreamMerge node failed.");
-  GE_CHK_STATUS_RET(MoveEdges(merge_node, stream_merge), "Move edges failed.");
-  bypass_nodes_.insert(merge_node);
-
-  if (merge_op_desc->HasAttr(ATTR_NAME_NEXT_ITERATION)) {
-    std::string next_iteration_name;
-    GE_IF_BOOL_EXEC(!AttrUtils::GetStr(merge_op_desc, ATTR_NAME_NEXT_ITERATION, next_iteration_name),
-                    REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed",
-                                      ATTR_NAME_NEXT_ITERATION.c_str(),
-                                      merge_op_desc->GetName().c_str(), merge_op_desc->GetType().c_str());
-                    GELOGE(INTERNAL_ERROR, "Get ATTR_NAME_NEXT_ITERATION failed");
-                    return INTERNAL_ERROR);
-    GE_CHK_STATUS_RET(SetNextIteration(stream_merge, next_iteration_name), "Set next iteration failed");
-  }
-
-  return AddActiveNodes(graph, stream_merge);
+  return AddActiveNodes(graph, merge_node);
 }
 
 ///
@@ -126,6 +84,8 @@ Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, cons
   GE_CHK_BOOL_EXEC(node != nullptr,
                    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
                    return FAILED, "Param of pre node is null.");
+  bool force_unknown = node->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
+  MarkForceUnknownShape(node, force_unknown);
   for (const InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
@@ -142,6 +102,7 @@ Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, cons
       GELOGE(FAILED, "SetActiveLabelList for node %s failed.", active_node->GetName().c_str());
       return FAILED;
     }
+    MarkForceUnknownShape(active_node, force_unknown);
   }
 
   return SUCCESS;

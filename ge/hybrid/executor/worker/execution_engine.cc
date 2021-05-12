@@ -16,13 +16,9 @@
 
 #include "hybrid/executor/worker/execution_engine.h"
 #include "graph/runtime_inference_context.h"
-#include "graph/utils/tensor_utils.h"
-#include "graph/utils/tensor_adapter.h"
-#include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "hybrid/node_executor/node_executor.h"
 #include "hybrid/executor//worker//shape_inference_engine.h"
-#include "common/dump/dump_op.h"
 #include "common/profiling/profiling_manager.h"
 
 namespace ge {
@@ -62,22 +58,6 @@ Status LogOutputs(const NodeItem &node_item, const TaskContext &task_context) {
   return SUCCESS;
 }
 }  // namespace
-class NodeDoneCallback {
- public:
-  NodeDoneCallback(GraphExecutionContext *graph_context, std::shared_ptr<TaskContext> task_context);
-  ~NodeDoneCallback() = default;
-  Status OnNodeDone();
- private:
-  Status PrepareConstInputs(const NodeItem &node_item);
-  Status DumpDynamicNode();
-  Status ProfilingReport();
-  Status SaveDumpOpInfo();
-  Status GetTaskDescInfo(const NodePtr node, const HybridModel *model,
-                         std::vector<TaskDescInfo> &task_desc_info);
-  GraphExecutionContext *graph_context_;
-  std::shared_ptr<TaskContext> context_;
-  DumpOp dump_op_;
-};
 
 NodeDoneCallback::NodeDoneCallback(GraphExecutionContext *graph_context,
                                    std::shared_ptr<TaskContext> task_context)
@@ -334,8 +314,10 @@ Status NodeDoneCallback::OnNodeDone() {
   GE_CHK_STATUS_RET_NOLOG(PrepareConstInputs(node_item));
   if (node_item.shape_inference_type == DEPEND_SHAPE_RANGE || node_item.shape_inference_type == DEPEND_COMPUTE) {
     // update output tensor sizes
+    const auto &guard = node_item.MutexGuard("OnNodeDone");
     GE_CHK_STATUS_RET_NOLOG(ShapeInferenceEngine::CalcOutputTensorSizes(node_item));
     GE_CHK_STATUS_RET_NOLOG(context_->GetNodeState()->GetShapeInferenceState().UpdateOutputDesc());
+    (void)guard;
   }
   // PropagateOutputs for type == DEPEND_COMPUTE
   if (node_item.shape_inference_type == DEPEND_COMPUTE) {
@@ -361,28 +343,12 @@ Status NodeDoneCallback::OnNodeDone() {
 
 Status ExecutionEngine::ExecuteAsync(NodeState &node_state,
                                      const std::shared_ptr<TaskContext> &task_context,
-                                     GraphExecutionContext &execution_context) {
+                                     GraphExecutionContext &execution_context,
+                                     const std::function<void()> &callback) {
   GELOGI("[%s] Node is ready for execution", task_context->GetNodeName());
   RECORD_EXECUTION_EVENT(&execution_context, task_context->GetNodeName(), "Start");
-  std::function<void()> callback = nullptr;
-  GE_CHK_STATUS_RET_NOLOG(InitCallback(task_context, execution_context, callback));
   GE_CHK_STATUS_RET_NOLOG(DoExecuteAsync(node_state, *task_context, execution_context, callback));
   GE_CHK_STATUS_RET_NOLOG(PropagateOutputs(*node_state.GetNodeItem(), *task_context, execution_context));
-  return SUCCESS;
-}
-
-Status ExecutionEngine::InitCallback(const std::shared_ptr<TaskContext> &task_context,
-                                     GraphExecutionContext &execution_context, std::function<void()> &callback) {
-  if (task_context->NeedCallback()) {
-    auto cb = std::shared_ptr<NodeDoneCallback>(new(std::nothrow) NodeDoneCallback(&execution_context, task_context));
-    GE_CHECK_NOTNULL(cb);
-    callback = [task_context, cb]() {
-      auto ret = cb->OnNodeDone();
-      if (ret != SUCCESS) {
-        task_context->OnError(ret);
-      }
-    };
-  }
   return SUCCESS;
 }
 
@@ -423,7 +389,7 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
                     node_state.GetName().c_str());
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[ValidateInputTensors] End");
 
-  if (context.profiling_level > 0) {
+  if (GraphExecutionContext::profiling_level > 0) {
     auto *ctx = &context;
     const string &name = node_state.GetName();
     (void)task_context.RegisterCallback([ctx, name]() {

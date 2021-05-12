@@ -23,22 +23,24 @@
 #include "graph/op_desc.h"
 #include "graph/utils/tensor_utils.h"
 
-#define CHECK_PARAM_NOT_NULL(param)                            \
-  do {                                                         \
-    if (param == nullptr) {                                    \
-      GELOGE(ge::PARAM_INVALID, "Param: %s is null.", #param); \
-      return ge::PARAM_INVALID;                                \
-    }                                                          \
+#define CHECK_PARAM_NOT_NULL(param)                                              \
+  do {                                                                           \
+    if (param == nullptr) {                                                      \
+      REPORT_INNER_ERROR("E19999", "param:%s is null", #param);                  \
+      GELOGE(ge::PARAM_INVALID, "[Check][Param] %s is null.", #param);           \
+      return ge::PARAM_INVALID;                                                  \
+    }                                                                            \
   } while (0)
 
-#define CHECK_PARAM_OBJECT(object, param)                      \
-  ({                                                           \
-    object *obj_value = reinterpret_cast<object *>(param);     \
-    if (obj_value == nullptr) {                                \
-      GELOGE(ge::PARAM_INVALID, "Param: %s is null.", #param); \
-      return ge::PARAM_INVALID;                                \
-    }                                                          \
-    obj_value;                                                 \
+#define CHECK_PARAM_OBJECT(object, param)                                        \
+  ({                                                                             \
+    object *obj_value = reinterpret_cast<object *>(param);                       \
+    if (obj_value == nullptr) {                                                  \
+      REPORT_INNER_ERROR("E19999", "param:%s is null.", #param);                 \
+      GELOGE(ge::PARAM_INVALID, "[Check][Param] %s is null.", #param);           \
+      return ge::PARAM_INVALID;                                                  \
+    }                                                                            \
+    obj_value;                                                                   \
   })
 
 class OpAttr {
@@ -118,6 +120,8 @@ Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int 
   std::string op_name = std::string(op_type) + "_" + std::to_string(ge::GetCurrentTimestamp());
   ge::OpDescPtr op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "MakeShared ge::OpDesc failed, as return nullptr");
+    GELOGE(ge::FAILED, "[Call][MakeShared] create ge::OpDesc failed.");
     return ge::FAILED;
   }
   std::vector<ge::GeTensor> inputs;
@@ -132,7 +136,8 @@ Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int 
     ge::TensorUtils::SetOutputTensor(tensor_desc, false);
 
     if (op_desc->AddInputDesc(tensor_desc) != ge::GRAPH_SUCCESS) {
-      GELOGE(ge::FAILED, "AddInputDesc fail.");
+      REPORT_CALL_ERROR("E19999", "add inputdesc failed, op:%s", op_desc->GetName().c_str());
+      GELOGE(ge::FAILED, "[Add][InputDesc] fail, op:%s.", op_desc->GetName().c_str());
       return ge::FAILED;
     }
     inputs.emplace_back(tensor_desc);
@@ -157,6 +162,8 @@ Status_t OpTaskGernerator(const char *op_type, const OpTensor_t *in_tensor, int 
     OpAttr *op_attr = CHECK_PARAM_OBJECT(OpAttr, attr);
     for (const auto &it : op_attr->Attrs()) {
       GE_IF_BOOL_EXEC(op_desc->SetAttr(it.first, it.second) != ge::SUCCESS, GELOGE(ge::FAILED, "SetAttr failed.");
+                      REPORT_CALL_ERROR("E19999", "set attr:%s failed, op:%s",
+                                        it.first.c_str(), op_desc->GetName().c_str());
                       return ge::FAILED);
     }
   }

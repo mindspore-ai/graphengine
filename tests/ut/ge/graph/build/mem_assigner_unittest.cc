@@ -44,12 +44,12 @@ using domi::GetContext;
 
 class UtestMemoryAssignerTest : public testing::Test {
  public:
-  ge::OpDescPtr CreateOpWithWsSize(const string &name, int64_t wsByte, const string &type = "some") {
+  ge::OpDescPtr CreateOpWithWsSize(const string &name, int64_t wsByte, const string &type = "some", int64_t size = 1024) {
     ge::OpDescPtr op_def = make_shared<ge::OpDesc>(name, type);
     auto desc_temp_ptr = make_shared<ge::GeTensorDesc>();
     auto desc_temp = *desc_temp_ptr;
 
-    TensorUtils::SetSize(desc_temp, 1024);
+    TensorUtils::SetSize(desc_temp, size);
     op_def->AddInputDesc(desc_temp);
     op_def->AddOutputDesc(desc_temp);
 
@@ -214,6 +214,44 @@ class UtestMemoryAssignerTest : public testing::Test {
 
     return builder.GetGraph();
   }
+  void make_ffts_reuse_graph(ge::ComputeGraphPtr graph, int32_t thread_scope_id_1 = kInvalidThreadScopeId,
+                            int32_t thread_scope_id_2 = kInvalidThreadScopeId) {
+    ge::OpDescPtr op_def_a = CreateOpWithWsSize("A", 512);
+    ge::OpDescPtr op_def_b = CreateOpWithWsSize("B", 0);
+    ge::OpDescPtr op_def_c = CreateOpWithWsSize("C", 512);
+    ge::OpDescPtr op_def_d = CreateOpWithWsSize("D", 512);
+    ge::OpDescPtr op_def_e = CreateOpWithWsSize("E", 0);
+    ge::OpDescPtr op_def_f = CreateOpWithWsSize("F", 512, "some", 2048UL);
+    ge::OpDescPtr op_def_g = CreateOpWithWsSize("G", 0);
+
+    if (thread_scope_id_1 != kInvalidThreadScopeId) {
+      (void)ge::AttrUtils::SetInt(op_def_a, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_1);
+      (void)ge::AttrUtils::SetInt(op_def_b, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_1);
+      (void)ge::AttrUtils::SetInt(op_def_c, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_1);
+    }
+
+    if (thread_scope_id_2 != kInvalidThreadScopeId) {
+      (void)ge::AttrUtils::SetInt(op_def_d, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_2);
+      (void)ge::AttrUtils::SetInt(op_def_e, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_2);
+      (void)ge::AttrUtils::SetInt(op_def_f, ATTR_NAME_THREAD_SCOPE_ID, thread_scope_id_2);
+    }
+
+    ge::NodePtr node_a = graph->AddNode(op_def_a);
+    ge::NodePtr node_b = graph->AddNode(op_def_b);
+    ge::NodePtr node_c = graph->AddNode(op_def_c);
+    ge::NodePtr node_d = graph->AddNode(op_def_d);
+    ge::NodePtr node_e = graph->AddNode(op_def_e);
+    ge::NodePtr node_f = graph->AddNode(op_def_f);
+    ge::NodePtr node_g = graph->AddNode(op_def_g);
+
+    ge::GraphUtils::AddEdge(node_a->GetOutDataAnchor(0), node_b->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_b->GetOutDataAnchor(0), node_c->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_c->GetOutDataAnchor(0), node_d->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_d->GetOutDataAnchor(0), node_e->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_e->GetOutDataAnchor(0), node_f->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_f->GetOutDataAnchor(0), node_g->GetInDataAnchor(0));
+    graph->TopologicalSorting();
+  }
 
  protected:
   void SetUp() {}
@@ -284,9 +322,9 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_set_last_used_attr) {
   size_t zero_memory_size = 0;
   EXPECT_EQ(memory_assigner.AssignMemory(false, mem_offset, zero_memory_size), GRAPH_SUCCESS);
 
-  int32_t flag = 0;
-  (void) ge::AttrUtils::GetInt(node_f->GetOpDesc()->GetInputDesc(0), ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, flag);
-  EXPECT_EQ(flag, 1);
+  bool flag = 0;
+  (void) ge::AttrUtils::GetBool(node_f->GetOpDesc()->GetInputDesc(0), ATTR_NAME_IS_END_OF_INPUTMEM_LIFECYCLE, flag);
+  EXPECT_EQ(flag, true);
 }
 
 TEST_F(UtestMemoryAssignerTest, graph_memory_assign_ref_var) {
@@ -338,4 +376,114 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_set_input_offset) {
   EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[0], 10100);
   EXPECT_EQ(assgin->GetOpDesc()->GetInputOffset()[1], 0);
   EXPECT_EQ(memoryAssigner.CheckOffset(), GRAPH_SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_update_ref_op_offset_reverse) {
+    ge::ut::GraphBuilder builder("graph");
+    auto data_input = builder.AddNode("data", "Data", 1, 1);
+    auto const_input = builder.AddNode("const", "Const", 1, 1);
+    auto add = builder.AddNode("add", "Add", 2, 1);
+     // add link
+    builder.AddDataEdge(data_input, 0, add, 0);
+    builder.AddDataEdge(const_input, 0, add, 1);
+    // set ref
+    uint32_t reuse_input_index = 0;
+    auto output_tensordesc = data_input->GetOpDesc()->MutableOutputDesc(0);
+    ge::TensorUtils::SetReuseInput(*output_tensordesc, true);
+    ge::TensorUtils::SetReuseInputIndex(*output_tensordesc, reuse_input_index);
+    auto output_tensordesc1 = add->GetOpDesc()->MutableOutputDesc(0);
+    ge::TensorUtils::SetReuseInput(*output_tensordesc1, true);
+    ge::TensorUtils::SetReuseInputIndex(*output_tensordesc1, reuse_input_index);
+    ge::ComputeGraphPtr graph = builder.GetGraph();
+
+    GraphMemoryAssigner memoryAssigner(graph);
+    EXPECT_EQ(memoryAssigner.UpdateRefOpOffsetReverse(add), SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_atomic_output_and_workspace) {
+  ge::ut::GraphBuilder builder("graph");
+  auto data_input = builder.AddNode("data", "Data", 1, 1);
+  auto const_input = builder.AddNode("const", "Const", 1, 1);
+  auto add = builder.AddNode("add", "Add", 2, 1);
+  // add link
+  builder.AddDataEdge(data_input, 0, add, 0);
+  builder.AddDataEdge(const_input, 0, add, 1);
+  ge::ComputeGraphPtr graph = builder.GetGraph();
+
+  auto node = graph->FindNode("add");
+  EXPECT_NE(node, nullptr);
+  auto output_tensor_desc = node->GetOpDesc()->MutableOutputDesc(0);
+  ge::TensorUtils::SetSize(*output_tensor_desc, 100);
+  vector<int64_t> output_list = {0};
+  node->GetOpDesc()->SetOutputOffset(output_list);
+  vector<int64_t> workspace_list = {0};
+  node->GetOpDesc()->SetWorkspace(workspace_list);
+  vector<int64_t> atomic_output_index = {0};
+  bool set_attr = ge::AttrUtils::SetListInt(node->GetOpDesc(), ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_index);
+  EXPECT_EQ(set_attr, true);
+
+  map<string, map<int64_t, int64_t>> workspace_info;
+  workspace_info["add"][0] = 100;
+  set_attr = node->GetOpDesc()->SetExtAttr(EXT_ATTR_ATOMIC_WORKSPACE_INFO, workspace_info);
+  EXPECT_EQ(set_attr, true);
+
+  {
+    bool is_fusion_node = false;
+    set_attr = ge::AttrUtils::SetBool(node->GetOpDesc(), ATOMIC_ATTR_IS_FUSION_NODE, is_fusion_node);
+    EXPECT_EQ(set_attr, true);
+
+    GraphMemoryAssigner graph_memory_assigner(graph);
+    graph_memory_assigner.memory_offset_.insert({RT_MEMORY_HBM, MemoryOffset(RT_MEMORY_HBM, 0)});
+    vector<int64_t> mem_offset_end;
+    Status ret = graph_memory_assigner.AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(mem_offset_end.size(), 2);
+    MemoryOffset mem_offset = graph_memory_assigner.memory_offset_.at(RT_MEMORY_HBM);
+    EXPECT_EQ(mem_offset.mem_offset_, 1024);
+  }
+
+  {
+    bool is_fusion_node = true;
+    set_attr = ge::AttrUtils::SetBool(node->GetOpDesc(), ATOMIC_ATTR_IS_FUSION_NODE, is_fusion_node);
+    EXPECT_EQ(set_attr, true);
+
+    GraphMemoryAssigner graph_memory_assigner(graph);
+    graph_memory_assigner.memory_offset_.insert({RT_MEMORY_HBM, MemoryOffset(RT_MEMORY_HBM, 0)});
+    vector<int64_t> mem_offset_end;
+    Status ret = graph_memory_assigner.AssignAtomicOutputAndWorkspaceMemory(node, mem_offset_end);
+    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(mem_offset_end.size(), 2);
+    MemoryOffset mem_offset = graph_memory_assigner.memory_offset_.at(RT_MEMORY_HBM);
+    EXPECT_EQ(mem_offset.mem_offset_, 1024);
+  }
+}
+
+TEST_F(UtestMemoryAssignerTest, Mock_ffts_reuse_no_functinon_op) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  make_ffts_reuse_graph(graph, kInvalidThreadScopeId, kInvalidThreadScopeId);
+  HybridMemAssigner hybridMemAssigner(graph);
+  ge::Status ret = hybridMemAssigner.Assign();
+  size_t offset = hybridMemAssigner.GetMemOffset();
+  EXPECT_EQ(offset, 5120);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, Mock_ffts_reuse_two_functinon_op) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  make_ffts_reuse_graph(graph, 0, 1);
+  HybridMemAssigner hybridMemAssigner(graph);
+  ge::Status ret = hybridMemAssigner.Assign();
+  size_t offset = hybridMemAssigner.GetMemOffset();
+  EXPECT_EQ(offset, 6656);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, Mock_ffts_reuse_one_functinon_op) {
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  make_ffts_reuse_graph(graph, 0, kInvalidThreadScopeId);
+  HybridMemAssigner hybridMemAssigner(graph);
+  ge::Status ret = hybridMemAssigner.Assign();
+  size_t offset = hybridMemAssigner.GetMemOffset();
+  EXPECT_EQ(offset, 5632);
+  EXPECT_EQ(ret, SUCCESS);
 }

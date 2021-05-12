@@ -59,17 +59,17 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
   int32_t mmpa_ret = mmWrite(fd, data, len);
   // mmWrite return -1:Failed to write data to file；return -2:Invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    GELOGE(FAILED, "[Write][Data]Failed, errno = %d, error:%s", mmpa_ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Write data failed, errno = %d, error:%s.",
+    GELOGE(FAILED, "[Write][Data]Failed, errno:%d, errmsg:%s", mmpa_ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Write data failed, errno:%d, errmsg:%s.",
                        mmpa_ret, strerror(errno));
     ret = FAILED;
   }
 
   // Close the file
   if (mmClose(fd) != EN_OK) {  // mmClose return 0: success
-    GELOGE(FAILED, "[Close][File]Failed, error_code:%u, filename:%s.", ret, filename);
-    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u, filename:%s.",
-                       ret, filename);
+    GELOGE(FAILED, "[Close][File]Failed, error_code:%u, filename:%s errmsg:%s.", ret, filename, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Close file failed, error_code:%u, filename:%s errmsg:%s.",
+                       ret, filename, strerror(errno));
     ret = FAILED;
   }
 
@@ -111,8 +111,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Dump(void 
   int32_t mmpa_ret = mmWrite(fd_, data, len);
   // mmWrite return -1:failed to write data to file；return -2:invalid parameter
   if (mmpa_ret == EN_ERROR || mmpa_ret == EN_INVALID_PARAM) {
-    GELOGE(FAILED, "[Write][Data]Failed, errno = %d, error:%s", mmpa_ret, strerror(errno));
-    REPORT_INNER_ERROR("E19999", "Write data to file failed, errno = %d, error:%s.",
+    GELOGE(FAILED, "[Write][Data]Failed, errno:%d, errmsg:%s", mmpa_ret, strerror(errno));
+    REPORT_INNER_ERROR("E19999", "Write data to file failed, errno:%d, errmsg:%s.",
                        mmpa_ret, strerror(errno));
     return FAILED;
   }
@@ -128,7 +128,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Dump(void 
 void MemoryDumper::Close() noexcept {
   // Close file
   if (fd_ != kInvalidFd && mmClose(fd_) != EN_OK) {
-    GELOGW("Close file failed.");
+    GELOGW("Close file failed, errmsg:%s.", strerror(errno));
   }
   fd_ = kInvalidFd;
 }
@@ -151,7 +151,7 @@ int MemoryDumper::OpenFile(const char *filename) {
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(prefix_path.length() >= MMPA_MAX_PATH,
         return kInvalidFd, "Prefix path is too long!");
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(mmRealPath(prefix_path.c_str(), tmp_path, MMPA_MAX_PATH) != EN_OK, return kInvalidFd,
-                                   "Dir %s does not exit.", prefix_path.c_str());
+                                   "Dir %s does not exit, errmsg:%s.", prefix_path.c_str(), strerror(errno));
     real_path = std::string(tmp_path) + last_path;)
   GE_IF_BOOL_EXEC(
     path_split_pos == -1 || path_split_pos == 0,
@@ -166,7 +166,7 @@ int MemoryDumper::OpenFile(const char *filename) {
 
   int32_t fd = mmOpen2(real_path.c_str(), M_RDWR | M_CREAT | M_APPEND, mode);
   if (fd == EN_ERROR || fd == EN_INVALID_PARAM) {
-    GELOGE(kInvalidFd, "[Open][File]Failed. errno = %d, error:%s, filename:%s.",
+    GELOGE(kInvalidFd, "[Open][File]Failed. errno:%d, errmsg:%s, filename:%s.",
            fd, strerror(errno), filename);
     return kInvalidFd;
   }

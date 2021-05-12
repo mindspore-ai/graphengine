@@ -32,7 +32,7 @@ extern OpDescPtr CreateOpDesc(string name, string type);
 class DModelListener : public ModelListener {
  public:
   DModelListener(){};
-  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result, vector<OutputTensorInfo> &outputs) {
+  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result, vector<ge::Tensor> &outputs) {
     return 0;
   }
 };
@@ -138,7 +138,7 @@ TEST_F(UtestDavinciModel, init_success) {
   EXPECT_EQ(model.task_list_.size(), 2);
 
   OutputData output_data;
-  vector<OutputTensorInfo> outputs;
+  vector<ge::Tensor> outputs;
   EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
   EXPECT_EQ(output_data.blobs.size(), 1);
   EXPECT_EQ(outputs.size(), 1);
@@ -333,8 +333,8 @@ TEST_F(UtestDavinciModel, init_unknown) {
 TEST_F(UtestDavinciModel, Init_variable_op) {
   DavinciModel model(0, g_local_call_back);
   model.ge_model_ = make_shared<GeModel>();
-  model.runtime_param_.mem_base = (uint8_t *)0x08000000;
-  model.runtime_param_.mem_size = 5120000;
+  model.runtime_param_.mem_size = 51200;
+  model.runtime_param_.mem_base = (uint8_t *)malloc(model.runtime_param_.mem_size);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
   GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
@@ -365,6 +365,8 @@ TEST_F(UtestDavinciModel, Init_variable_op) {
   EXPECT_EQ(model.CopyOutputData(1, output_data, RT_MEMCPY_DEVICE_TO_HOST), SUCCESS);
 
   EXPECT_EQ(model.ReturnResult(1, false, true, &output_data), INTERNAL_ERROR);
+  free(model.runtime_param_.mem_base);
+  model.runtime_param_.mem_base = nullptr;
 }
 
 TEST_F(UtestDavinciModel, InitRealSizeAndShapeInfo_succ1) {
@@ -1022,7 +1024,7 @@ TEST_F(UtestDavinciModel, NnExecute) {
   rtStream_t stream = nullptr;
   InputData input_data;
   OutputData output_data;
-  vector<OutputTensorInfo> outputs;
+  vector<ge::Tensor> outputs;
   EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
   EXPECT_EQ(output_data.blobs.size(), 1);
   EXPECT_EQ(outputs.size(), 1);

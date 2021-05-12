@@ -69,7 +69,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status TBEPluginManager::Finali
 string TBEPluginManager::GetPath() {
   mmDlInfo dl_info;
   if (mmDladdr(reinterpret_cast<void *>(&TBEPluginManager::GetPath), &dl_info) != EN_OK) {
-    GELOGW("Failed to read so path!");
+    const char *error = mmDlerror();
+    GE_IF_BOOL_EXEC(error == nullptr, error = "");
+    GELOGW("Failed to read so path! errmsg:%s", error);
     return string();
   } else {
     string so_path = dl_info.dli_fname;
@@ -79,7 +81,7 @@ string TBEPluginManager::GetPath() {
       return string();
     }
     if (mmRealPath(so_path.c_str(), path, MMPA_MAX_PATH) != EN_OK) {
-      GELOGW("Failed to get realpath of %s", so_path.c_str());
+      GELOGW("Failed to get realpath of %s, errmsg:%s", so_path.c_str(), strerror(errno));
       return string();
     }
 
@@ -113,14 +115,14 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
   INT32 is_dir = mmIsDir(real_path.c_str());
   // Lib plugin path not exist
   if (is_dir != EN_OK) {
-      GELOGW("%s is not a dir.", real_path.c_str());
+      GELOGW("%s is not a dir. errmsg:%s", real_path.c_str(), strerror(errno));
       return;
   }
 
   mmDirent **entries = nullptr;
   auto ret = mmScandir(real_path.c_str(), &entries, nullptr, nullptr);
   if (ret < EN_OK) {
-      GELOGW("scan dir failed. path = %s, ret = %d", real_path.c_str(), ret);
+      GELOGW("scan dir failed. path = %s, ret = %d, errmsg = %s", real_path.c_str(), ret, strerror(errno));
       return;
   }
   for (int i = 0; i < ret; ++i) {

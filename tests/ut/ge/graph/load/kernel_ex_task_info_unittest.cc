@@ -91,8 +91,8 @@ TEST_F(UtestKernelExTaskInfo, success_kernel_ex_task_release) {
 // test kernel_ex_task_Release
 TEST_F(UtestKernelExTaskInfo, success_kernel_ex_task_info_copy) {
   DavinciModel model(0, nullptr);
-  model.runtime_param_.mem_base = (uint8_t *)0x12345;
-  model.runtime_param_.mem_size = 100332000;
+  model.runtime_param_.mem_size = 10240;
+  model.runtime_param_.mem_base = new uint8_t[model.runtime_param_.mem_size];
 
   rtStream_t stream = nullptr;
   rtStreamCreate(&stream, 0);
@@ -108,19 +108,20 @@ TEST_F(UtestKernelExTaskInfo, success_kernel_ex_task_info_copy) {
 
   EXPECT_EQ(kernel_ex_task_info.Init(task_def, &model), FAILED);  // workspace empty.
 
-  model.op_list_[0]->SetWorkspace({100331008});   // offset
+  model.op_list_[0]->SetWorkspace({1008});   // offset
   model.op_list_[0]->SetWorkspaceBytes({0});      // length
   EXPECT_EQ(kernel_ex_task_info.Init(task_def, &model), FAILED);  // workspace addr is null.
 
-  model.op_list_[0]->SetWorkspace({100331008});   // offset
+  model.op_list_[0]->SetWorkspace({1208});   // offset
   model.op_list_[0]->SetWorkspaceBytes({10});     // length
   EXPECT_EQ(kernel_ex_task_info.Init(task_def, &model), FAILED);  // workspace addr is small.
 
-  model.op_list_[0]->SetWorkspace({100331008});   // offset
+  model.op_list_[0]->SetWorkspace({1308});   // offset
   model.op_list_[0]->SetWorkspaceBytes({150});    // length
   EXPECT_EQ(kernel_ex_task_info.Init(task_def, &model), SUCCESS);
 
   task_def.clear_kernel_ex();
+  delete [] model.runtime_param_.mem_base;
   model.runtime_param_.mem_base = nullptr;
 }
 
@@ -153,5 +154,59 @@ TEST_F(UtestKernelExTaskInfo, parse_update_addr) {
 
   KernelExTaskInfo kernel_ex_task_info;
   EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, parse_topic_type_success_1) {
+  const string ext_info = {7,0,0,0,4,0,0,0,0,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, parse_topic_type_success_2) {
+  const string ext_info = {7,0,0,0,4,0,0,0,1,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, parse_topic_type_success_3) {
+  const string ext_info = {7,0,0,0,4,0,0,0,2,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, parse_topic_type_success_4) {
+  const string ext_info = {7,0,0,0,4,0,0,0,3,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, parse_topic_type_failed_1) {
+  const string ext_info = {7,0,0,0,4,0,0,0,4,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_NE(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, parse_topic_type_failed_2) {
+  const string ext_info = {7,0,0,0,2,0,0,0,2,0,0,0};
+  const OpDescPtr op_desc = CreateOpDesc("FrameworkOp", "FrameworkOp");
+  AttrUtils::SetBool(op_desc, "_AllShape", true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  EXPECT_NE(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
 }
 }  // namespace ge

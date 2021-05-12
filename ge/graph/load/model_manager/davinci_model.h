@@ -361,6 +361,8 @@ class DavinciModel {
 
   void GetCurShape(vector<int64_t> &batch_info, int32_t &dynamic_type) const;
 
+  Status GetOpAttr(const std::string &op_name, const std::string &attr_name, std::string &attr_value) const;
+
   void GetModelAttr(vector<string> &dynamic_output_shape_info) const;
 
   ///
@@ -424,7 +426,7 @@ class DavinciModel {
   ///
   uint64_t GetSessionId() const { return session_id_; }
 
-  const struct ErrorMessage::Context &GetErrorContext() const { return error_context_; }
+  const struct error_message::Context &GetErrorContext() const { return error_context_; }
 
   ///
   /// @ingroup ge
@@ -473,6 +475,8 @@ class DavinciModel {
   int64_t GetLoadBeginTime() { return load_begin_time_; }
 
   int64_t GetLoadEndTime() { return load_end_time_; }
+
+  void SaveSpecifyAttrValues(const OpDescPtr &op_desc);
 
   Status ReportProfilingData();
 
@@ -635,7 +639,7 @@ class DavinciModel {
   Status UpdateIoTaskArgs(const map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                           const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label);
 
-  Status CopyInputData(const InputData &input_data, bool device_data = false);
+  Status CopyInputData(const InputData &input_data);
 
   Status CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind);
 
@@ -880,7 +884,7 @@ class DavinciModel {
   Status SinkTimeProfile(const InputData &current_data);
 
   Status InitOutputTensorInfo(const OpDescPtr &op_desc);
-  Status GenOutputTensorInfo(OutputData *output_data, vector<OutputTensorInfo> &outputs);
+  Status GenOutputTensorInfo(OutputData *output_data, vector<ge::Tensor> &outputs);
 
   Status InitInputDescInfo(const OpDescPtr &op_desc);
   Status InitOutputDescInfo(const OpDescPtr &op_desc, const vector<string> &out_node_name);
@@ -992,7 +996,7 @@ class DavinciModel {
   vector<uintptr_t> output_mbuf_list_;  // output mbuf created by dequeue task.
 
   uint64_t session_id_;
-  struct ErrorMessage::Context error_context_;
+  struct error_message::Context error_context_;
 
   uint32_t device_id_;
 
@@ -1096,6 +1100,9 @@ class DavinciModel {
 
   // known shape node for dump
   void *known_shape_global_step_;
+
+  // op name to attrs mapping
+  std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

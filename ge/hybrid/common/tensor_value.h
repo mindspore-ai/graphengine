@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <memory>
 #include "memory/memory_api.h"
+#include "framework/common/util.h"
 
 namespace ge {
 namespace hybrid {
@@ -83,6 +84,12 @@ class TensorValue {
   void *MutableData();
 
   size_t GetSize() const;
+
+  template<typename T>
+  Status CopyScalarValueToHost(T &value) const {
+    GE_CHECK_GE(this->GetSize(), sizeof(value));
+    return rtMemcpy(&value, sizeof(value), this->GetData(), sizeof(value), RT_MEMCPY_DEVICE_TO_HOST);
+  }
 
  private:
   std::shared_ptr<TensorBuffer> buffer_;

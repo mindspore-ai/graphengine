@@ -101,6 +101,8 @@ class HybridModel {
 
   const GraphItem *GetRootGraphItem() const;
 
+  const ComputeGraphPtr &GetRootGraph() const;
+
   const GraphItem *GetSubgraphItem(const std::string &graph_name) const;
 
   const GraphItem *GetSubgraphItem(const ComputeGraphPtr &subgraph) const;
@@ -131,6 +133,9 @@ class HybridModel {
   void SetInputDimsAndShapeRangesInfo(const vector<int64_t> &model_input_dims,
                                       std::vector<std::pair<int64_t, int64_t>> &shape_ranges,
                                       InputOutputDescInfo &input);
+  void SaveSpecifyAttrValues();
+
+  Status GetOpAttr(const std::string &op_name, const std::string &attr_name, std::string &attr_value) const;
 
  private:
   friend class HybridModelBuilder;
@@ -165,6 +170,8 @@ class HybridModel {
   RuntimeParam root_runtime_param_;
   string om_name_;
   std::unique_ptr<TensorBuffer> global_step_;
+  // op name to attrs mapping
+  std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;
 };
 }  // namespace hybrid
 }  // namespace ge

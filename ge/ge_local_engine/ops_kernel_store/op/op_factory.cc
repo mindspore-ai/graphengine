@@ -31,8 +31,10 @@ std::shared_ptr<Op> OpFactory::CreateOp(const Node &node, RunContext &run_contex
   if (iter != op_creator_map_.end()) {
     return iter->second(node, run_context);
   }
-
-  GELOGE(FAILED, "Not supported OP, type = %s, name = %s", node.GetType().c_str(), node.GetName().c_str());
+  REPORT_INNER_ERROR("E19999", "Not supported OP, type = %s, name = %s",
+                     node.GetType().c_str(), node.GetName().c_str());
+  GELOGE(FAILED, "[Check][Param] Not supported OP, type = %s, name = %s",
+         node.GetType().c_str(), node.GetName().c_str());
   return nullptr;
 }
 

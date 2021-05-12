@@ -37,7 +37,17 @@ struct FusedSubgraph {
   ComputeGraphPtr graph;
 };
 
-bool IsControlOp(const std::string &op_type);
+bool IsControlFlowV2Op(const std::string &op_type);
+
+class OptionalMutexGuard {
+ public:
+  OptionalMutexGuard(std::mutex *mutex, const std::string &name);
+  ~OptionalMutexGuard();
+
+ private:
+  std::mutex *mu_{nullptr};
+  std::string name_;
+};
 
 // for caching static information across execution
 struct NodeItem {
@@ -70,11 +80,28 @@ struct NodeItem {
 
   Status GetCanonicalInputIndex(uint32_t index, int &canonical_index) const;
 
-  bool IsControlOp() const;
+  bool IsControlFlowV2Op() const {
+    return is_ctrl_flow_v2_op_;
+  }
+
+  bool IsControlFlowOp() const {
+    return is_ctrl_flow_op_;
+  }
+
+  bool IsMergeOp() const {
+    return is_merge_op_;
+  }
 
   bool IsHcclOp() const;
 
   void SetToDynamic();
+
+  void SetDataSend(NodeItem *node_item, int anchor_index);
+  void SetCtrlSend(NodeItem *node_item, uint32_t switch_index);
+
+  OptionalMutexGuard MutexGuard(const std::string &name) const {
+    return OptionalMutexGuard(copy_mu_.get(), name + "_" + node_name);
+  }
 
   std::string DebugString() const;
 
@@ -99,7 +126,20 @@ struct NodeItem {
   std::set<int> to_const_output_id_list;
 
   // src_output_id, dst_anchor_id, dst_node
-  vector<vector<pair<int, NodeItem *>>> outputs;
+  std::vector<std::vector<std::pair<int, NodeItem *>>> outputs;
+
+  // for linked drive
+  bool is_root_node_ = false;
+  bool is_ctrl_flow_v2_op_ = false;
+  bool is_ctrl_flow_op_ = false;
+  bool is_merge_op_ = false;
+  std::set<const NodeItem *> root_ctrl_;  // Recv ctrl from root node
+  std::set<const NodeItem *> root_data_;  // Recv data from root node
+  std::set<const NodeItem *> data_send_;  // Send data notify to
+  std::map<const NodeItem *, int> data_recv_;  // Recv data notify from
+  std::set<const NodeItem *> ctrl_send_;  // Send ctrl notify to
+  std::set<const NodeItem *> ctrl_recv_;  // Recv ctrl notify from
+  std::vector<std::vector<const NodeItem *>> switch_groups_;  // Send ctrl notify to
 
   std::shared_ptr<NodeTask> kernel_task;
   std::unique_ptr<FusedSubgraph> fused_subgraph;
@@ -122,6 +162,7 @@ struct NodeItem {
 
   std::vector<bool> is_input_shape_static_;
   std::vector<uint32_t> input_desc_indices_;
+  std::shared_ptr<std::mutex> copy_mu_;
   mutable std::mutex mu_;
 };
 }  // namespace hybrid

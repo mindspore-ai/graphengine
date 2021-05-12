@@ -37,7 +37,7 @@ Status BCast::GenerateBcastInfo(const kVecInt &sx, const kVecInt &sy) {
     Reverse(x);
     Reverse(y);
     ExtendTensorDim(x, y);
-    GE_RETURN_WITH_LOG_IF_ERROR(SetShapeDifferentInfo(x, y), "GenerateBcastInfo failed.");
+    GE_RETURN_WITH_LOG_IF_ERROR(SetShapeDifferentInfo(x, y), "[Set][ShapeDifferentInfo] GenerateBcastInfo failed.");
   }
   ReverseAllIntermediateShapes();
   return domi::SUCCESS;
@@ -76,7 +76,7 @@ Status BCast::SetShapeDifferentInfo(const kVecInt &x, const kVecInt &y) {
       REPORT_INNER_ERROR("E19999", "SetShapeDifferentInfo failed. Two tensor shapes are not compatible "
                          "according to the broadcasting rule.");
       GELOGE(domi::PARAM_INVALID,
-             "SetShapeDifferentInfo failed. Two tensor shapes are not compatible "
+             "[Check][Param] SetShapeDifferentInfo failed. Two tensor shapes are not compatible "
              "according to the broadcasting rule.");
       return domi::PARAM_INVALID;
     }

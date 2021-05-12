@@ -105,6 +105,19 @@ class GraphManager {
 
   ///
   /// @ingroup ge_graph
+  /// @brief run specific graph with specific session id and stream
+  /// @param [in] graph_id graph id
+  /// @param [in] stream specific stream
+  /// @param [in] session_id session id
+  /// @param [in] inputs input data
+  /// @param [out] outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t stream, uint64_t session_id, 
+                                 const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
+
+  ///
+  /// @ingroup ge_graph
   /// @brief build specific graph
   /// @param [in] graph_id graph id
   /// @param [in] inputs input data
@@ -149,9 +162,8 @@ class GraphManager {
   /// @param [out] callback: callback while run graph async finish
   /// @return Status result of function
   ///
-  Status RunGraphAsync(const GraphId &graph_id, const std::vector<ge::InputTensorInfo> &inputs,
+  Status RunGraphAsync(const GraphId &graph_id, const std::vector<ge::Tensor> &inputs,
                        uint64_t session_id, RunAsyncCallback callback);
-
   ///
   /// @ingroup ge_graph
   /// @brief me register the callback function to get the result of summary or checkpoin
@@ -208,9 +220,9 @@ class GraphManager {
 
   struct PreRunArgs {
     GraphId graph_id;
-    std::vector<ge::InputTensorInfo> input_tensor;
+    std::vector<ge::Tensor> input_tensor;
     uint64_t session_id;
-    struct ErrorMessage::Context error_context;
+    struct error_message::Context error_context;
     GEThreadLocalContext context;
     RunAsyncCallback callback;
   };
@@ -219,8 +231,8 @@ class GraphManager {
     GraphNodePtr graph_node;
     GraphId graph_id;
     uint64_t session_id;
-    struct ErrorMessage::Context error_context;
-    std::vector<ge::InputTensorInfo> input_tensor;
+    struct error_message::Context error_context;
+    std::vector<ge::Tensor> input_tensor;
     GeRootModelPtr ge_root_model;
     GEThreadLocalContext context;
     RunAsyncCallback callback;
@@ -237,12 +249,12 @@ class GraphManager {
                                                 const SubGraphInfoPtr &sub_graph_info_ptr,
                                                 const std::string &root_graph_name,
                                                 uint64_t session_id,
-                                                const struct ErrorMessage::Context &error_context,
+                                                const struct error_message::Context &error_context,
                                                 const GEThreadLocalContext &ge_context);
-  Status ParseInputsDims(const std::vector<InputTensorInfo> &input_tensor);
-  void ParseInputsDimsForData(const std::vector<InputTensorInfo> &input_tensor);
+  Status ParseInputsDims(const std::vector<ge::Tensor> &input_tensor);
+  void ParseInputsDimsForData(const std::vector<ge::Tensor> &input_tensor);
   Status ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
-                                               const std::vector<InputTensorInfo> &input_tensor);
+                                               const std::vector<ge::Tensor> &input_tensor);
   Status RunCustomPass(const GraphNodePtr &graph_node);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, GeRootModelPtr &ge_root_model,
                 uint64_t session_id = INVALID_SESSION_ID);
@@ -257,6 +269,9 @@ class GraphManager {
 
   Status InnerRunGraph(GraphNodePtr &graph_node, const GraphId &graph_id, const std::vector<GeTensor> &inputs,
                        std::vector<GeTensor> &outputs);
+
+  Status InnerRunGraphWithStream(GraphNodePtr &graph_node, const GraphId &graph_id, rtStream_t stream,
+                                 const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
 
   Status ParseOptions(const std::map<std::string, std::string> &options);
 
@@ -277,7 +292,7 @@ class GraphManager {
 
   static Status ParseParallelNum(const std::string &parallel_num, const std::string &key, int &num);
 
-  static Status ParseTrainGraphFlag(bool &options, bool &option);
+  static Status ParseTrainGraphFlag(const bool &run_flag, bool &train_flag);
 
   static bool IsPerfLevelInvalid(int32_t perf_level);
 
@@ -353,7 +368,6 @@ class GraphManager {
   void RemoveModelCacheHelper(const GraphId &graph_id);
   ModelCacheHelperPtr FindModelCacheHelper(GraphId graph_id);
 
-  static void ConstructGeInput(const std::vector<InputTensorInfo> &inputs, std::vector<GeTensor> &ge_inputs);
   static void PreRunThread(GraphManager *graph_manager);
   static void RunThread(GraphManager *graph_manager);
   static void StopQueue(GraphManager *graph_manager);

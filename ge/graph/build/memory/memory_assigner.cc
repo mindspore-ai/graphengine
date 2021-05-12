@@ -24,47 +24,50 @@ Status MemoryAssigner::AssignMemory(bool is_loop_graph, map<int64_t, size_t> &me
   GraphMemoryAssigner graph_mem_assigner(compute_graph_);
 
   if (graph_mem_assigner.AssignMemory() != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "Memory assigner failed");
+    GELOGE(ge::FAILED, "[Assign][Memory] failed, graph:%s", compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   // Reassign memory for special nodes
   if (graph_mem_assigner.ReAssignMemory(is_loop_graph, mem_offset) != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "Memory assigner failed");
+    GELOGE(ge::FAILED, "[ReAssign][Memory] failed, graph:%s", compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   // Assign memory (block and offset) for zero copy nodes
   if (graph_mem_assigner.AssignZeroCopyMemory(mem_offset, zero_copy_mem_size) != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "Zero copy memory assigner failed");
+    GELOGE(ge::FAILED, "[Assign][ZeroCopyMemory] failed, graph:%s", compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   if (graph_mem_assigner.AssignMemory2HasRefAttrNode() != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "Assign memory to node which has ref attr failed!");
+    GELOGE(ge::FAILED, "[Assign][Memory] to node which has ref attr failed! graph:%s",
+           compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   // Assign memory for reference
   if (graph_mem_assigner.AssignReferenceMemory() != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "Assign reference memory failed!");
+    GELOGE(ge::FAILED, "[Assign][ReferenceMemory] failed! graph:%s", compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   // Must do variable attr assign after all the memory assigned
   if (graph_mem_assigner.AssignVarAttr2Nodes() != SUCCESS) {
-    GELOGE(FAILED, "Variable Memory assigner failed");
+    GELOGE(FAILED, "[Variable][Memory] assigner failed, graph:%s", compute_graph_->GetName().c_str());
     return FAILED;
   }
   if (graph_mem_assigner.SetInputOffset() != ge::SUCCESS) {
-    GELOGE(ge::FAILED, "SetInputOffset Fail!");
+    GELOGE(ge::FAILED, "[Set][InputOffset] Fail! graph:%s", compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
 
   if (graph_mem_assigner.CheckOffset() != SUCCESS) {
-    GELOGE(FAILED, "CheckOffset Fail!");
+    GELOGE(FAILED, "[Check][Offset] Fail! graph:%s", compute_graph_->GetName().c_str());
     return FAILED;
   }
+
+  graph_mem_assigner.MarkDistanceAttr();
   return SUCCESS;
 }
 }  // namespace ge

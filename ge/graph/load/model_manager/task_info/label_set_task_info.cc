@@ -32,9 +32,8 @@ Status LabelSetTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   const domi::LabelSetDef &label_set = task_def.label_set();
   OpDescPtr op_desc = davinci_model->GetOpByIndex(label_set.op_index());
   if (op_desc == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u",
-                       label_set.op_index());
-    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range!", label_set.op_index());
+    REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u", label_set.op_index());
+    GELOGE(INTERNAL_ERROR, "[Get][Op] Task op index:%u out of range!", label_set.op_index());
     return INTERNAL_ERROR;
   }
 
@@ -43,7 +42,7 @@ Status LabelSetTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail",
                        ATTR_NAME_LABEL_SWITCH_INDEX.c_str(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "LabelSetTaskInfo: %s attr [%s] not exist.",
+    GELOGE(INTERNAL_ERROR, "[Get][Attr] LabelSetTaskInfo:%s attr [%s] not exist.",
            op_desc->GetName().c_str(), ATTR_NAME_LABEL_SWITCH_INDEX.c_str());
     return INTERNAL_ERROR;
   }
@@ -53,7 +52,8 @@ Status LabelSetTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
     REPORT_INNER_ERROR("E19999", "lable_index:%u >= label_list.size():%zu in model, op:%s(%s), "
                        "check invalid", label_index, label_list.size(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "LabelSetTaskInfo: Invalid label id:%u, label size:%zu", label_index, label_list.size());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] LabelSetTaskInfo: Invalid label id:%u, label size:%zu, op:%s(%s)",
+           label_index, label_list.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return INTERNAL_ERROR;
   }
   label_ = label_list[label_index];
@@ -66,9 +66,8 @@ Status LabelSetTaskInfo::Distribute() {
   GELOGI("LabelSetTaskInfo Distribute Start.");
   rtError_t rt_ret = rtLabelSet(label_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelSet failed, ret:0x%X",
-                      rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelSet failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtLabelSet] failed, ret:0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 

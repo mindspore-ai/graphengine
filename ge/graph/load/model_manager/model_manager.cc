@@ -27,6 +27,7 @@
 #include "graph/load/model_manager/davinci_model.h"
 #include "model/ge_root_model.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "toolchain/adx_datadump_server.h"
 
 namespace ge {
 thread_local uint32_t device_count = 0;
@@ -48,6 +49,7 @@ const int kTimeSpecNano = 1000000000;
 const int kTimeSpecMiro = 1000000;
 const int kOpNameMaxSize = 100;
 const uint64_t kInferSessionId = 0;
+const int32_t kDumpStatus = 0;
 #pragma pack(push, 1)
 struct CustAicpuSoBuf {
   uint64_t kernelSoBuf;
@@ -321,6 +323,58 @@ bool ModelManager::IsNeedHybridLoad(ge::GeRootModel &ge_root_model) {
   (void)AttrUtils::GetBool(root_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dsp_partitioned_graph);
   return is_shape_unknown || is_dsp_partitioned_graph || GetContext().GetHostExecFlag();
 }
+
+bool ModelManager::IsDumpSeverInited(uint64_t session_id) {
+  auto it = session_id_to_dump_server_init_flag_.find(session_id);
+  return it != session_id_to_dump_server_init_flag_.end() && it->second;
+}
+
+Status ModelManager::AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties) {
+  if (!IsDumpSeverInited(session_id)) {
+    if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
+      GE_IF_BOOL_EXEC(AdxDataDumpServerInit() != kDumpStatus,
+                      GELOGE(PARAM_INVALID, "[Init][AdxDataDumpServer] failed, session_id:%lu.", session_id);
+                      return PARAM_INVALID)
+      GELOGI("Init adx data dump server success");
+      session_id_to_dump_server_init_flag_[session_id] = true;
+    }
+  }
+  DumpManager::GetInstance().AddDumpProperties(session_id, dump_properties);
+  return SUCCESS;
+}
+
+Status ModelManager::InitDumPropertiesWithNewSessionId(uint64_t session_id) {
+  DumpProperties dump_properties;
+  dump_properties.InitByOptions();
+  GE_CHK_STATUS_RET(AddDumpProperties(session_id, dump_properties), "[Add][DumpProperties] failed.");
+  return SUCCESS;
+}
+
+Status ModelManager::UpdateSessionId(uint32_t model_id, GeModelPtr ge_model,
+                                     std::shared_ptr<DavinciModel> &davinci_model, uint64_t &session_id) {
+  uint64_t new_session_id;
+  Status ret = GenSessionId(new_session_id);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
+  ret = davinci_model->UpdateSessionId(new_session_id);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
+  ge_model->InsertSessionMap(model_id, new_session_id);
+  GELOGD("Update new session id: %lu.", new_session_id);
+  session_id = new_session_id;
+  return SUCCESS;
+}
+
+bool ModelManager::HasVarNode(ComputeGraphPtr &compute_graph) const {
+  for (ge::NodePtr &node : compute_graph->GetAllNodes()) {
+    if (node == nullptr) {
+      continue;
+    }
+    if (node->GetType() == VARIABLE) {
+      return true;
+    }
+  }
+  return false;
+}
+
 ///
 /// @ingroup domi_ome
 /// @brief load model online
@@ -347,10 +401,6 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   davinci_model->SetId(model_id);
   davinci_model->SetDeviceId(GetContext().DeviceId());
 
-  const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(GetContext().SessionId());
-  davinci_model->SetDumpProperties(dump_properties);
-  dump_properties_ = dump_properties;
-
   auto root_graph = ge_root_model->GetRootGraph();
   GE_CHECK_NOTNULL(root_graph);
   string root_model_name = root_graph->GetName();
@@ -364,15 +414,23 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
     /// In multi-threaded inference,  using the same session_id among multiple threads may cause some threads to fail.
     /// These session_ids come from the same model, so the values of session_id are the same.
     /// Update session_id for infer in load model to avoid the same session_id.
-    if (!ge_root_model->GetTrainFlag()) {
-      uint64_t new_session_id;
-      ret = GenSessionId(new_session_id);
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Generate session_id for infer failed.");
-      ret = davinci_model->UpdateSessionId(new_session_id);
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret, "Update session_id for infer failed.");
-      ge_model->InsertSessionMap(model_id, new_session_id);
-      GELOGD("Update new session id: %lu.", new_session_id);
+    uint64_t session_id = GetContext().SessionId();
+    // Inference graph with variable node is not support for multi-threads scenario
+    if (!ge_root_model->GetTrainFlag() && !HasVarNode(root_graph)) {
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(UpdateSessionId(model_id, ge_model, davinci_model, session_id) != SUCCESS,
+                                     return ret,
+                                     "UpdateSessionId failed.");
+      GE_CHK_RT_RET(rtSetDevice(GetContext().DeviceId()));
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(InitDumPropertiesWithNewSessionId(session_id) != SUCCESS,
+                                     GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
+                                     return ret,
+                                     "Init DumProperties with new session_id failed.");
     }
+
+    const DumpProperties &dump_properties = DumpManager::GetInstance().GetDumpProperties(session_id);
+    davinci_model->SetDumpProperties(dump_properties);
+    dump_properties_ = dump_properties;
+
     GE_TIMESTAMP_START(Init);
     GE_IF_BOOL_EXEC(SUCCESS != (ret = davinci_model->Init()), GELOGW("DavinciInit failed."); break;);
     GE_TIMESTAMP_END(Init, "GraphLoader::ModelInit");
@@ -542,7 +600,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
 /// @brief load Input and output TensorInfo for Model
 /// @return Status run result
 ///
-Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs) {
+Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Tensor> &inputs) {
   std::shared_ptr<DavinciModel> model = GetModel(model_id);
   auto hybrid_model = GetHybridModel(model_id);
   if (hybrid_model == nullptr) {
@@ -556,9 +614,11 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
   input_data.index = 0;
   for (size_t i = 0; i < inputs.size(); ++i) {
     DataBuffer data;
-    data.data = inputs[i].data;
-    data.length = inputs[i].length;
-    input_data.shapes.emplace_back(inputs[i].dims);
+    const TensorDesc &tensor_desc = inputs[i].GetTensorDesc();
+    data.data = reinterpret_cast<void *>(const_cast<uint8_t *>(inputs[i].GetData()));
+    data.length = inputs[i].GetSize();
+    data.placement = static_cast<uint32_t>(tensor_desc.GetPlacement());
+    input_data.shapes.emplace_back(tensor_desc.GetShape().GetDims());
     input_data.blobs.push_back(data);
   }
   if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
@@ -608,7 +668,6 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<InputT
 
   return SUCCESS;
 }
-
 ///
 /// @ingroup domi_ome
 /// @brief create model thread, start to execute model
@@ -1045,6 +1104,21 @@ Status ModelManager::GetCurShape(const uint32_t model_id, std::vector<int64_t> &
   return SUCCESS;
 }
 
+Status ModelManager::GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                               std::string &attr_value) {
+  auto davinci_model = GetModel(model_id);
+  if (davinci_model != nullptr) {
+    return davinci_model->GetOpAttr(op_name, attr_name, attr_value);
+  }
+  std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
+  if (hybrid_davinci_model != nullptr) {
+    return hybrid_davinci_model->GetOpAttr(op_name, attr_name, attr_value);
+  }
+  GELOGE(ACL_ERROR_GE_EXEC_MODEL_ID_INVALID, "[Get][Model]Get model failed, invalid model id:%u.", model_id);
+  REPORT_INNER_ERROR("E19999", "Get model failed, invalid model id:%u.", model_id);
+  return ACL_ERROR_GE_EXEC_MODEL_ID_INVALID;
+}
+
 Status ModelManager::GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info) {
   std::shared_ptr<hybrid::HybridDavinciModel> hybrid_davinci_model = GetHybridModel(model_id);
   if (hybrid_davinci_model != nullptr) {
@@ -1092,7 +1166,7 @@ Status ModelManager::GenSessionId(uint64_t &session_id) {
 
   mmTimeval tv;
   if (mmGetTimeOfDay(&tv, nullptr) != 0) {
-    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail");
+    REPORT_CALL_ERROR("E19999", "Call mmGetTimeOfDay fail. errmsg:%s", strerror(errno));
     GELOGE(INTERNAL_ERROR, "Failed to get current time.");
     return INTERNAL_ERROR;
   }

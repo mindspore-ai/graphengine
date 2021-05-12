@@ -161,3 +161,22 @@ TEST_F(UtestModelBuilderTest, test_save_atomic_bin) {
   op_desc->SetExtAttr("atomic_clean_node_ptr", atomic_node);
   EXPECT_EQ(builder.SaveAtomicTBEKernel(op_desc), SUCCESS);
 }
+
+TEST_F(UtestModelBuilderTest, test_model_save) {
+  Graph2SubGraphInfoList subgraphs;
+  std::map<std::string, int> stream_max_parallel_num;
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  ge::ModelBuilder builder(0, graph, subgraphs, stream_max_parallel_num, false);
+
+  auto op_desc = make_shared<OpDesc>("Conv2d", "Conv2d");
+  auto kernel_buffer = static_cast<GeAttrValue::BYTES>(Buffer(10));
+  AttrUtils::SetStr(op_desc, ATTR_NAME_TBE_KERNEL_NAME, "Conv2d");
+  AttrUtils::SetBytes(op_desc, ATTR_NAME_TBE_KERNEL_BUFFER, kernel_buffer);
+
+  ge::NodePtr node = graph->AddNode(op_desc);
+  ge::Model ge_model;
+  ge::GeModel ge_gemodel;
+  builder.SaveDataToModel(ge_model, ge_gemodel);
+  auto tbe_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+  EXPECT_NE(tbe_kernel, nullptr);
+}

@@ -31,18 +31,24 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
                                                                                       ge::ModelData &model_data) {
   std::string real_path = RealPath(model_path);
   if (real_path.empty()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "Model file path '%s' is invalid", model_path);
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "[Check][Param]Model file path %s is invalid",
+           model_path);
+    REPORT_CALL_ERROR("E19999", "Model file path %s is invalid", model_path);
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   if (GetFileLength(model_path) == -1) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "File size not valid, file: %s.", model_path);
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "[Check][Param]File size not valid, file %s",
+           model_path);
+    REPORT_INNER_ERROR("E19999", "File size not valid, file %s", model_path);
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   std::ifstream fs(real_path.c_str(), std::ifstream::binary);
   if (!fs.is_open()) {
-    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "Open file: %s failed, error: %s", model_path, strerror(errno));
+    GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "[Open][File]Failed, file %s, error %s",
+           model_path, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Open file %s failed, error %s", model_path, strerror(errno));
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
@@ -57,6 +63,10 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
   char *data = new (std::nothrow) char[len];
   if (data == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Load model From file failed, bad memory allocation occur. (need:%u)", len);
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Load][ModelFromFile]Failed, "
+           "bad memory allocation occur(need %u), file %s", len, model_path);
+    REPORT_CALL_ERROR("E19999", "Load model from file %s failed, "
+                      "bad memory allocation occur(need %u)", model_path, len);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
@@ -105,7 +115,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
     model_len = file_header->length;
     GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "Invalid model. ModelEncryptType not supported.");
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param]Invalid, model encrypt type not supported");
+    REPORT_CALL_ERROR("E19999","Invalid model, encrypt type not supported");
     res = ACL_ERROR_GE_PARAM_INVALID;
   }
 

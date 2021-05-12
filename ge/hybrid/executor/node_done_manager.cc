@@ -36,6 +36,16 @@ bool NodeDoneManager::Cond::Await() {
   return is_released_;
 }
 
+void NodeDoneManager::Cond::Reset() {
+  std::unique_lock<std::mutex> lk(cond_mu_);
+  if (!is_released_ && !is_cancelled_) {
+    GELOGW("Called before done, released: %d, cancelled: %d", is_released_, is_cancelled_);
+  }
+
+  is_released_ = false;
+  is_cancelled_ = false;
+}
+
 void NodeDoneManager::Cond::Release() {
   std::unique_lock<std::mutex> lk(cond_mu_);
   is_released_ = true;
@@ -102,6 +112,14 @@ bool NodeDoneManager::Await(const NodePtr &node) {
   bool ret = sub->Await();
   GELOGD("[%s] Await ended. is_released = %s", node->GetName().c_str(), sub->IsRelease() ? "true" : "false");
   return ret;
+}
+
+void NodeDoneManager::Reset(const NodePtr &node) {
+  auto sub = GetSubject(node);
+  if (sub != nullptr) {
+    sub->Reset();
+    GELOGD("[%s] Node reset.", node->GetName().c_str());
+  }
 }
 }  // namespace hybrid
 }  // namespace ge

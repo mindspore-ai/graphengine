@@ -28,6 +28,8 @@ const int32_t kModelAbortNormalNew = 507024;
 std::atomic_ulong context_id_gen {};
 }  // namespace
 
+long GraphExecutionContext::profiling_level = 0;
+
 GraphExecutionContext::GraphExecutionContext() {
   context_id = context_id_gen++;
 }

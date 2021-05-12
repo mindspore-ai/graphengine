@@ -69,7 +69,8 @@ bool PropertiesManager::LoadFileContent(const std::string &file_path) {
   std::ifstream fs(resolved_file_path, std::ifstream::in);
 
   if (!fs.is_open()) {
-    GELOGE(PARAM_INVALID, "Open %s failed.", file_path.c_str());
+    GELOGE(PARAM_INVALID, "[Open][File]Failed, file path %s invalid", file_path.c_str());
+    REPORT_CALL_ERROR("E19999", "Open file failed, path %s invalid", file_path.c_str());
     return false;
   }
 
@@ -77,7 +78,8 @@ bool PropertiesManager::LoadFileContent(const std::string &file_path) {
 
   while (getline(fs, line)) {  // line not with \n
     if (!ParseLine(line)) {
-      GELOGE(PARAM_INVALID, "Parse line failed. content is [%s].", line.c_str());
+      GELOGE(PARAM_INVALID, "[Parse][Line]Failed, content is %s", line.c_str());
+      REPORT_CALL_ERROR("E19999", "Parse line failed, content is %s", line.c_str());
       fs.close();
       return false;
     }
@@ -100,15 +102,18 @@ bool PropertiesManager::ParseLine(const std::string &line) {
   if (!temp.empty()) {
     std::string::size_type pos = temp.find_first_of(delimiter);
     if (pos == std::string::npos) {
-      GELOGE(PARAM_INVALID, "Incorrect line [%s], it must include [%s].Perhaps you use illegal chinese symbol",
+      GELOGE(PARAM_INVALID, "[Check][Param]Incorrect line %s, it must include %s",
              line.c_str(), delimiter.c_str());
+      REPORT_CALL_ERROR("E19999", "Incorrect line %s, it must include %s",
+                        line.c_str(), delimiter.c_str());
       return false;
     }
 
     std::string map_key = Trim(temp.substr(0, pos));
     std::string value = Trim(temp.substr(pos + 1));
     if (map_key.empty() || value.empty()) {
-      GELOGE(PARAM_INVALID, "Map_key or value empty. %s", line.c_str());
+      GELOGE(PARAM_INVALID, "[Check][Param]Map_key or value empty, line %s", line.c_str());
+      REPORT_CALL_ERROR("E19999", "Map_key or value empty, line %s", line.c_str());
       return false;
     }
 

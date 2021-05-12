@@ -15,7 +15,7 @@
 
 #cmake_minimum_required(VERSION 2.8)
 
-project(STUB_MMPA)
+project(runtime_stub)
 
 file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
         "src/runtime_stub.cc"
@@ -26,7 +26,13 @@ include_directories(${GE_CODE_DIR}/inc/framework)
 
 add_library(runtime_stub SHARED ${SRCS})
 
+target_compile_options(runtime_stub PRIVATE
+    -g
+)
+
 target_link_libraries(runtime_stub PRIVATE
     $<BUILD_INTERFACE:intf_pub>
     c_sec
 )
+
+target_include_directories(runtime_stub INTERFACE ${CMAKE_CURRENT_LIST_DIR}/src)

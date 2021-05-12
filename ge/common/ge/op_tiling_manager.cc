@@ -53,7 +53,7 @@ std::string OpTilingManager::GetPath() {
       ErrorManager::GetInstance().ATCReportErrMessage(
           "E19024", {"env", "value", "situation"}, {"ASCEND_OPP_PATH", opp_path_env, "loading the tiling lib"});
       GELOGE(PARAM_INVALID, "[Load][TilingLib]Failed, as env 'ASCEND_OPP_PATH'[%s] "
-             "is invalid path.", opp_path_env);
+             "is invalid path. errmsg:%s", opp_path_env, strerror(errno));
       return std::string();
     }
     opp_path = resolved_path;
@@ -76,7 +76,7 @@ void OpTilingManager::LoadSo() {
   if (handle_bi == nullptr) {
     const char *error = mmDlerror();
     GE_IF_BOOL_EXEC(error == nullptr, error = "");
-    GELOGW("Failed to dlopen %s!", error);
+    GELOGW("Failed to dlopen %s! errmsg:%s", built_in_tiling_lib.c_str(), error);
   } else {
     handles_[built_in_name] = handle_bi;
   }
@@ -85,7 +85,7 @@ void OpTilingManager::LoadSo() {
   if (handle_ct == nullptr) {
     const char *error = mmDlerror();
     GE_IF_BOOL_EXEC(error == nullptr, error = "");
-    GELOGW("Failed to dlopen %s!", error);
+    GELOGW("Failed to dlopen %s! errmsg:%s", custom_tiling_lib.c_str(), error);
   } else {
     handles_[custom_name] = handle_ct;
   }

@@ -31,20 +31,22 @@ Status SuperKernelFactory::Init() {
     std::string skt_bin = "libcce_aicore.so";
     handle_ = mmDlopen(skt_bin.c_str(), MMPA_RTLD_NOW | MMPA_RTLD_GLOBAL);
     if (handle_ == nullptr) {
-      GELOGE(FAILED, "SKT: open skt lib failed, please check LD_LIBRARY_PATH.");
+      const char* error = mmDlerror();
+      GE_IF_BOOL_EXEC(error == nullptr, error = "");
+      GELOGE(FAILED, "[Open][SktLib] failed, please check LD_LIBRARY_PATH. errmsg:%s", error);
     }
     rtError_t rt_ret;
     rt_ret = rtGetFunctionByName(this->sk_stub_name_.c_str(), &this->func_stub_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     REPORT_CALL_ERROR("E19999", "Call rtGetFunctionByName failed, stub_func:%s, ret:0x%X",
                                       this->sk_stub_name_.c_str(), rt_ret);
-                    GELOGE(RT_FAILED, "rtGetFunctionByName failed. stub_func: %s, please export LD_LIBRARY_PATH for "
-                           "libcce_aicore.so", this->sk_stub_name_.c_str());
+                    GELOGE(RT_FAILED, "[Call][RtGetFunctionByName] failed. stub_func:%s, "
+                           "please export LD_LIBRARY_PATH for libcce_aicore.so", this->sk_stub_name_.c_str());
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
     rt_ret = rtGetAddrByFun(this->func_stub_, &this->func_ptr_);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     REPORT_CALL_ERROR("E19999", "Call rtGetAddrByFun failed, ret:0x%X", rt_ret);
-                    GELOGE(RT_FAILED, "rtGetAddrByFun failed. error: 0x%X", rt_ret);
+                    GELOGE(RT_FAILED, "[Call][RtGetAddrByFun] failed, ret:0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
     GELOGD(
       "SKT: fuseKernels super_kernel_template subFunc %p, device func "
@@ -102,7 +104,7 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
     rt_ret = rtGetAddrByFun(stub_func_list[i], &sub_device_func);
     GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                     REPORT_CALL_ERROR("E19999", "Call rtGetAddrByFun failed, ret:0x%X", rt_ret);
-                    GELOGE(RT_FAILED, "rtGetAddrByFun failed. error: 0x%X", rt_ret);
+                    GELOGE(RT_FAILED, "[Call][RtGetAddrByFun] failed, ret:0x%X", rt_ret);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
     GELOGD("SKT: fuseKernels subFunc %p, device func address %p", stub_func_list[i], sub_device_func);
     // store two uint64_t address
@@ -114,16 +116,14 @@ Status SuperKernelFactory::FuseKernels(const std::vector<void *> &stub_func_list
   }
   rt_ret = rtMalloc(reinterpret_cast<void **>(&hbm_nav_table_addr), nav_table_size, RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%lu, ret:0x%X",
-                                    nav_table_size, rt_ret);
-                  GELOGE(RT_FAILED, "rtMalloc failed. error: 0x%X", rt_ret);
+                  REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%lu, ret:0x%X", nav_table_size, rt_ret);
+                  GELOGE(RT_FAILED, "[Call][RtMalloc] failed, size:%lu, ret:0x%X", nav_table_size, rt_ret);
                   return RT_ERROR_TO_GE_STATUS(rt_ret);)
   rt_ret = rtMemcpy(reinterpret_cast<void *>(hbm_nav_table_addr), nav_table_size,
                     reinterpret_cast<void *>(nav_table.get()), nav_table_size, RT_MEMCPY_HOST_TO_DEVICE);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
-                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%lu, ret:0x%X",
-                                    nav_table_size, rt_ret);
-                  GELOGE(RT_FAILED, "rtMemcpy failed. error: 0x%X", rt_ret);
+                  REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%lu, ret:0x%X", nav_table_size, rt_ret);
+                  GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, size:%lu, ret:0x%X", nav_table_size, rt_ret);
                   GE_CHK_RT(rtFree(hbm_nav_table_addr)); return RT_ERROR_TO_GE_STATUS(rt_ret);)
   // Create the necessary metadata for the super kernel
   h =

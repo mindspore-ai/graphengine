@@ -216,10 +216,6 @@ DEFINE_string(op_bank_path, "", "Optional; op bank path");
 
 DEFINE_string(display_model_info, "0", "Optional; display model info");
 
-DEFINE_string(performance_mode, "", "Optional; express high compile performance or high execute performance."
-                                     "normal: no need to compile, used saved .o files directly;"
-                                     "high: need to recompile, high execute performance mode.");
-
 DEFINE_string(device_id, "0", "Optional; user device id");
 
 class GFlagUtils {
@@ -336,8 +332,7 @@ class GFlagUtils {
         "Default value: $HOME/atc_data\n"
         "  --op_compiler_cache_mode   Set the operator compilation cache mode."
         "Options are disable(default), enable and force(force to refresh the cache)\n"
-        "  --display_model_info     enable for display model info; 0(default): close display, 1: open display.\n"
-        "  --performance_mode       Set high performance mode of compile or execute.");
+        "  --display_model_info     enable for display model info; 0(default): close display, 1: open display.");
 
     gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
     // Using gflags to analyze input parameters
@@ -971,7 +966,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
   ge::Graph graph;
   std::vector<ge::GeTensor> inputs;
   if (FLAGS_framework == domi::MINDSPORE) {
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+    ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
     // load model from file
     ge::Model load_model = ge::Model("loadmodel", "version2");
     auto ret1 = load_model.LoadFromFile(FLAGS_model);
@@ -1012,12 +1007,12 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     atc_params.insert(std::pair<string, string>(string(ge::OUTPUT_DATATYPE), FLAGS_output_type));
     atc_params.insert(std::pair<string, string>("output", output));
 
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kParser);
+    ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kParser);
     Status ret =
         ParseGraph(graph, atc_params, FLAGS_model.c_str(), FLAGS_weight.c_str(), (domi::FrameworkType)FLAGS_framework,
                    FLAGS_op_name_map.c_str(), FLAGS_target.c_str(), (ge::RunMode)FLAGS_mode, is_dynamic_input);
 
-    ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+    ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
     // in ONLY_PRE_CHECK mode, pre-checking report has already saved in ParseGraph
     if (FLAGS_mode == ge::ONLY_PRE_CHECK) {
       (void)ge_generator.Finalize();
@@ -1085,7 +1080,6 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::OP_COMPILER_CACHE_MODE, FLAGS_op_compiler_cache_mode);
   options.emplace(ge::MDL_BANK_PATH_FLAG, FLAGS_mdl_bank_path);
   options.emplace(ge::OP_BANK_PATH_FLAG, FLAGS_op_bank_path);
-  options.emplace(ge::PERFORMANCE_MODE, FLAGS_performance_mode);
   options.emplace(ge::TUNE_DEVICE_IDS, FLAGS_device_id);
 }
 
@@ -1117,7 +1111,7 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
     return domi::FAILED;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kParser);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kParser);
   vector<ge::SingleOpBuildParam> build_params;
   if (ge::SingleOpParser::ParseSingleOpList(json_file_path, build_params) != ge::SUCCESS) {
     DOMI_LOGE("parse single op json file failed");
@@ -1240,7 +1234,6 @@ domi::Status GenerateOmModel() {
 
   options.insert(std::pair<string, string>(string(ge::DISPLAY_MODEL_INFO), FLAGS_display_model_info));
 
-  options.insert(std::pair<string, string>(string(ge::PERFORMANCE_MODE), FLAGS_performance_mode));
   // set enable scope fusion passes
   SetEnableScopeFusionPasses(FLAGS_enable_scope_fusion_passes);
   // print atc option map
@@ -1253,7 +1246,7 @@ domi::Status GenerateOmModel() {
     return domi::FAILED;
   }
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   if (FLAGS_display_model_info == "1") {
     GELOGI("need to display model info.");
     return ge::ConvertOm(FLAGS_output.c_str(), "", false);
@@ -1263,7 +1256,7 @@ domi::Status GenerateOmModel() {
 }
 
 domi::Status ConvertModelToJson() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   GE_CHK_BOOL_EXEC(ret == domi::SUCCESS, return domi::FAILED, "[CheckConver][JsonParamFlags] failed!");
 
@@ -1274,7 +1267,7 @@ domi::Status ConvertModelToJson() {
 }
 
 domi::Status DisplayModelInfo() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   // No model path passed in
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(FLAGS_om == "",
       ErrorManager::GetInstance().ATCReportErrMessage("E10004", {"parameter"}, {"om"});
@@ -1323,7 +1316,7 @@ bool CheckRet(domi::Status ret) {
 }
 
 domi::Status ConvertPbtxtToJson() {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kModelCompile, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   Status ret = GFlagUtils::CheckConverJsonParamFlags();
   if (ret != domi::SUCCESS) {
     GELOGE(ge::FAILED, "[CheckConver][JsonParamFlags] failed!");
@@ -1343,6 +1336,9 @@ domi::Status ConvertPbtxtToJson() {
 
 int init(int argc, char* argv[]) {
   GFlagUtils::InitGFlag(argc, argv);
+  const char *gflag_argv = gflags::GetArgv();
+  string cmdline = gflag_argv == nullptr ? "" : gflag_argv;
+  domi::GetContext().atc_cmdline = cmdline;
   // set log level
   int ret = -1;
   const std::set<string> log_level = {"null", "debug", "info", "warning", "error"};
@@ -1413,7 +1409,7 @@ bool CheckMemInfo() {
 }
 
 int main(int argc, char* argv[]) {
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kInitialize, ErrorMessage::kOther);
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
   Status ret = domi::SUCCESS;
   std::cout << "ATC start working now, please wait for a moment." << std::endl;
 
@@ -1454,7 +1450,7 @@ int main(int argc, char* argv[]) {
     }
   } while (0);
 
-  ErrorManager::GetInstance().SetStage(ErrorMessage::kFinalize, ErrorMessage::kFinalize);
+  ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
   if (!CheckRet(ret)) {
     std::cout << "ATC run failed, Please check the detail log, Try \'atc --help\' for more information" << std::endl;
     int result = ErrorManager::GetInstance().OutputErrMessage(STDOUT_FILENO);

@@ -24,7 +24,7 @@
 
 namespace ge {
 domi::Status InputDataWrapper::Init(const InputData &input, const OutputData &output) {
-  GE_CHK_BOOL_RET_STATUS(!is_init, domi::INTERNAL_ERROR, "InputDataWrapper is re-initialized");
+  GE_CHK_BOOL_RET_STATUS(!is_init, domi::INTERNAL_ERROR, "[Check][Param] InputDataWrapper is re-initialized");
 
   input_ = input;
   output_ = output;

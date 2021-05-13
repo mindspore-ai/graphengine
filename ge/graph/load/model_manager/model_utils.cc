@@ -340,9 +340,12 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
 
     int64_t input_offset = v_input_offset[non_const_index];
     non_const_index++;
-    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset),
+    int64_t inner_offset;
+    (void)ge::AttrUtils::GetInt(op_desc->MutableInputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
+    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset - inner_offset),
                     uint8_t *variable_addr = nullptr;
-                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, input_offset, variable_addr), return {});
+                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, input_offset - inner_offset, variable_addr), return {});
+                    variable_addr += inner_offset;
                     v_input_data_addr.push_back(variable_addr);
                     GELOGI("[IMAS]GetInputDataAddrs graph_%u type[V] name[%s] input[%lu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
@@ -450,9 +453,12 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       GELOGD("%s is an optional output, the address don't need to be saved.", tensor_desc->GetName().c_str());
       continue;
     }
-    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i]),
+    int64_t inner_offset;
+    (void)ge::AttrUtils::GetInt(op_desc->MutableOutputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
+    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i] - inner_offset),
                     uint8_t *variable_addr = nullptr;
-                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i], variable_addr), return {});
+                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i] - inner_offset, variable_addr), return {});
+                    variable_addr += inner_offset;
                     v_output_data_addr.push_back(variable_addr);
                     GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[V] name[%s] output[%zu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);

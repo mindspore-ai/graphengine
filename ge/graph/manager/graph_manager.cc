@@ -466,6 +466,39 @@ Status GraphManager::SetStagesOptions(uint32_t graph_id, const GraphManagerOptio
   return SUCCESS;
 }
 
+Status GraphManager::ModifyDataIndex(const Graph &graph) {
+  vector<OpDescPtr> data_desc;
+  set<int64_t> indexes;
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  for (auto &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    auto op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      int64_t index = 0;
+      (void) AttrUtils::GetInt(op, ATTR_NAME_INDEX, index);
+      indexes.insert(index);
+      data_desc.emplace_back(op);
+    }
+  }
+  if (!indexes.empty()) {
+    auto first_iter = indexes.begin();
+    auto end_iter = indexes.end();
+    --end_iter;
+    auto data_size = static_cast<int64_t>(data_desc.size());
+    // The valid index starts with 0 and increases by 1, and num is equal to data_node.
+    if (indexes.size() != data_desc.size() || *first_iter != 0 || *end_iter != data_size - 1) {
+      GELOGI("Graph[%s] input data index is invalid, set data index by topo order.", compute_graph->GetName().c_str());
+      int64_t index = 0;
+      for (auto &op : data_desc) {
+        (void) AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
                               const std::map<std::string, std::string> &options,
                               const OmgContext &omg_context) {
@@ -499,6 +532,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
     GELOGE(FAILED, "AddGraph failed.");
     return FAILED;
   }
+  GE_CHK_STATUS_RET(ModifyDataIndex(graph));
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);

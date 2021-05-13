@@ -48,8 +48,14 @@ function(protobuf_generate comp c_var h_var)
     endif()
     set(${c_var})
     set(${h_var})
+    set(_add_target FALSE)
 
     foreach(file ${ARGN})
+        if("${file}" STREQUAL "TARGET")
+            set(_add_target TRUE)
+            continue()
+        endif()
+
         get_filename_component(abs_file ${file} ABSOLUTE)
         get_filename_component(file_name ${file} NAME_WE)
         get_filename_component(file_dir ${abs_file} PATH)
@@ -67,10 +73,17 @@ function(protobuf_generate comp c_var h_var)
                 OUTPUT "${proto_output_path}/${file_name}.pb.cc" "${proto_output_path}/${file_name}.pb.h"
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${proto_output_path}"
+                COMMAND ${CMAKE_COMMAND} -E echo "generate proto cpp_out ${comp} by ${abs_file}"
                 COMMAND ${protoc_EXECUTABLE} -I${file_dir} --cpp_out=${proto_output_path} ${abs_file}
                 DEPENDS protoc_build ${abs_file}
                 COMMENT "Running C++ protocol buffer compiler on ${file}" VERBATIM )
     endforeach()
+
+    if(_add_target)
+        add_custom_target(
+            ${comp} DEPENDS ${${c_var}} ${${h_var}}
+        )
+    endif()
 
     set_source_files_properties(${${c_var}} ${${h_var}} PROPERTIES GENERATED TRUE)
     set(${c_var} ${${c_var}} PARENT_SCOPE)
@@ -84,8 +97,14 @@ function(protobuf_generate_py comp py_var)
         return()
     endif()
     set(${py_var})
+    set(_add_target FALSE)
 
     foreach(file ${ARGN})
+        if("${file}" STREQUAL "TARGET")
+            set(_add_target TRUE)
+            continue()
+        endif()
+
         get_filename_component(abs_file ${file} ABSOLUTE)
         get_filename_component(file_name ${file} NAME_WE)
         get_filename_component(file_dir ${abs_file} PATH)
@@ -102,10 +121,17 @@ function(protobuf_generate_py comp py_var)
                 OUTPUT "${proto_output_path}/${file_name}_pb2.py"
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${proto_output_path}"
+                COMMAND ${CMAKE_COMMAND} -E echo "generate proto cpp_out ${comp} by ${abs_file}"
                 COMMAND ${protoc_EXECUTABLE} -I${file_dir} --python_out=${proto_output_path} ${abs_file}
                 DEPENDS protoc_build ${abs_file}
                 COMMENT "Running PYTHON protocol buffer compiler on ${file}" VERBATIM )
     endforeach()
+
+    if(_add_target)
+        add_custom_target(
+            ${comp} DEPENDS ${${py_var}}
+        )
+    endif()
 
     set_source_files_properties(${${py_var}} PROPERTIES GENERATED TRUE)
     set(${py_var} ${${py_var}} PARENT_SCOPE)

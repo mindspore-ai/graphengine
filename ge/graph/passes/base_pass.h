@@ -51,11 +51,15 @@ class BaseNodePass {
 
   virtual ~BaseNodePass() = default;
 
-  std::unordered_set<NodePtr> GetNodesNeedRePass() { return nodes_need_re_pass_; }
+  const std::unordered_set<NodePtr> &GetNodesNeedRePass() { return nodes_need_re_pass_; }
 
-  std::unordered_set<NodePtr> GetNodesNeedRePassImmediately() { return nodes_need_re_pass_immediately_; }
+  const std::unordered_set<NodePtr> &GetNodesNeedRePassImmediately() { return nodes_need_re_pass_immediately_; }
 
-  std::unordered_set<NodePtr> GetNodesDeleted() { return nodes_deleted_; }
+  const std::unordered_set<NodePtr> &GetNodesDeleted() { return nodes_deleted_; }
+
+  const std::unordered_set<NodePtr> &GetNodesSuspend() { return nodes_suspend_; }
+
+  const std::unordered_set<NodePtr> &GetNodesResume() { return nodes_resume_; }
 
   void SetOption(NodePassOption option, const std::string &value) { options_[option] = value; }
 
@@ -65,6 +69,8 @@ class BaseNodePass {
     nodes_need_re_pass_.clear();
     nodes_deleted_.clear();
     nodes_need_re_pass_immediately_.clear();
+    nodes_suspend_.clear();
+    nodes_resume_.clear();
   }
 
  protected:
@@ -80,7 +86,7 @@ class BaseNodePass {
   /// optimized by other passes, call this function.
   /// @param node
   ///
-  void AddRePassNode(NodePtr &node) { nodes_need_re_pass_.insert(node); }
+  void AddRePassNode(const NodePtr &node) { nodes_need_re_pass_.insert(node); }
 
   ///
   /// Add a node to be optimized immediately again. If you add a new node to the graph, or
@@ -88,13 +94,13 @@ class BaseNodePass {
   /// optimized by other passes, call this function.
   /// @param node
   ///
-  void AddImmediateRePassNode(NodePtr &node) { nodes_need_re_pass_immediately_.insert(node); }
+  void AddImmediateRePassNode(const NodePtr &node) { nodes_need_re_pass_immediately_.insert(node); }
 
   ///
   /// Add a node and it's input/output data nodes to be optimized again.
   /// @param node
   ///
-  void AddRePassNodesWithInOut(NodePtr &node) {
+  void AddRePassNodesWithInOut(const NodePtr &node) {
     AddRePassNode(node);
     auto out_nodes = node->GetOutNodes();
     for (auto &out_node : out_nodes) {
@@ -116,12 +122,34 @@ class BaseNodePass {
   ///
   void AddNodeDeleted(const NodePtr &node) { nodes_deleted_.insert(node); }
 
+  ///
+  /// If you suspend a node from the graph, especially following node. The remain
+  /// iterate passes will stop process on the suspend node(if it can be
+  /// reached by edge connections) till the last one. Obviously it is a waste of
+  /// time. You can add the suspend nodes by calling this function, to stop the
+  /// next iterations.
+  /// @param node
+  ///
+  void AddNodeSuspend(const NodePtr &node) { nodes_suspend_.insert(node); }
+
+  ///
+  /// If you resume a node from the graph, especially following node. The remain
+  /// iterate passes will continue process on the resume node(if it can be
+  /// reached by edge connections) till the last one.
+  /// You can add the resume nodes by calling this function, to resume the
+  /// next iterations.
+  /// @param node
+  ///
+  void AddNodeResume(const NodePtr &node) { nodes_resume_.insert(node); }
+
   bool OptionExists(NodePassOption option) { return options_.count(option) > 0; }
 
  private:
   std::unordered_set<NodePtr> nodes_need_re_pass_;
   std::unordered_set<NodePtr> nodes_need_re_pass_immediately_;
   std::unordered_set<NodePtr> nodes_deleted_;
+  std::unordered_set<NodePtr> nodes_suspend_;
+  std::unordered_set<NodePtr> nodes_resume_;
   std::map<NodePassOption, std::string> options_;
 };
 

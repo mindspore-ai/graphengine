@@ -214,11 +214,17 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
     ASSERT_EQ(it->second->frame_index_, index);
     ASSERT_EQ(it->second->parent_frame_, -1);
   };
-  TestFrameGroup(enter1, control_group_index);
-  TestFrameGroup(active1, control_group_index);
-  TestFrameGroup(active2, control_group_index);
-  TestFrameGroup(active3, control_group_index);
-  TestFrameGroup(output1, -1);
+  auto root_graph = hybrid_model.root_graph_;
+  auto enter1_node = root_graph->FindNode("enter");
+  auto active1_node = root_graph->FindNode("active1");
+  auto active2_node = root_graph->FindNode("active2");
+  auto active3_node = root_graph->FindNode("active3");
+  auto output1_node = root_graph->FindNode("net_output");
+  TestFrameGroup(enter1_node, control_group_index);
+  TestFrameGroup(active1_node, control_group_index);
+  TestFrameGroup(active2_node, control_group_index);
+  TestFrameGroup(active3_node, control_group_index);
+  TestFrameGroup(output1_node, -1);
 
   engine_mapping.clear();
   task_executor.clear();
@@ -372,5 +378,15 @@ TEST_F(UtestHybridModelBuilder, TestInitHcclExecutorOnDemand) {
   // repeat get, do not access builder
   NodeExecutorManager::GetInstance().builders_.erase(NodeExecutorManager::ExecutorType::HCCL);
   ASSERT_EQ(HybridModelBuilder::InitHcclExecutorOnDemand(ge_model), SUCCESS);
+}
+
+TEST_F(UtestHybridModelBuilder, copy_graph_success) {
+ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+HybridModel hybrid_model(ge_root_model);
+HybridModelBuilder hybrid_model_builder(hybrid_model);
+
+Status st = hybrid_model_builder.CopyGraph();
+EXPECT_EQ(st, SUCCESS);
 }
 } // namespace ge

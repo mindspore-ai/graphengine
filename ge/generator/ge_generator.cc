@@ -843,6 +843,9 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   Graph graph;
   GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph),
                 "[Build][Graph] for single op:%s fail.", op_desc->GetName().c_str());
+  auto op = OpDescUtils::CreateOperatorFromOpDesc(op_desc);
+  GE_CHK_STATUS_RET(op_desc->CallInferFormatFunc(op),
+                    "[Call][InferFormatFunc] for single op:%s fail.", op_desc->GetName().c_str());
 
   // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {

@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "common/ge/plugin_manager.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/rdma_pool_allocator.h"
 #include "graph/utils/type_utils.h"

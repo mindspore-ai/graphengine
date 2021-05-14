@@ -248,8 +248,6 @@ class DavinciModel {
   // get total mem size
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
 
-  const map<uint32_t, MemInfo> &P2PMemInfos() const { return runtime_param_.memory_infos; }
-
   // model name
   string Name() const { return name_; }
 
@@ -586,10 +584,8 @@ class DavinciModel {
   // memory address of model
   uintptr_t fixed_mem_base_;  // Initial of mem_base_, keep forever.
   uint8_t *mem_base_;
-  uint8_t *p2p_mem_base_;
   bool is_inner_mem_base_;
   bool is_inner_weight_base_;
-  bool is_inner_p2p_mem_base_;
   // input data manager
   DataInputer *data_inputer_;
   int64_t load_begin_time_;
@@ -668,13 +664,13 @@ class DavinciModel {
 
   uint8_t *MallocWeightsMem(size_t weights_size);
 
-  uint8_t *MallocP2PMem(size_t p2p_data_size);
+  Status MallocExMem();
 
   void FreeFeatureMapMem();
 
   void FreeWeightsMem();
 
-  void FreeP2PMem();
+  void FreeExMem();
 
   void ReleaseTask();
 

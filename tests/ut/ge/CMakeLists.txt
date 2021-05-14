@@ -337,8 +337,10 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"
     "${GE_CODE_DIR}/ge/graph/common/local_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/session_scope_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/graph_mem_manager.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
     "${GE_CODE_DIR}/ge/common/model_saver.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
@@ -396,8 +398,10 @@ set(GRAPH_LOAD_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/graph_var_manager.cc"
     "${GE_CODE_DIR}/ge/graph/manager/trans_var_data_utils.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_caching_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/session_scope_mem_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/rdma_pool_allocator.cc"
     "${GE_CODE_DIR}/ge/graph/manager/host_mem_allocator.cc"
+    "${GE_CODE_DIR}/ge/graph/manager/graph_mem_manager.cc"
     "${GE_CODE_DIR}/ge/common/thread_pool.cc"
 )
 
@@ -792,6 +796,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
+    "graph/manager/session_scope_mem_allocator_unittest.cc"
     "graph/manager/run_graph_unittest.cc"
     "graph/partition/dynamic_shape_partition_unittest.cc"
     "graph/manager/graph_manager_unittest.cc"
@@ -824,6 +829,7 @@ set(PROFILING_MNG_TEST_FILES
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
     "hybrid/known_node_executor_unittest.cc"
+    "hybrid/executor/worker/execution_engine_unittest.cc"
     "hybrid/executor/subgraph_executor_unittest.cc"
     "hybrid/executor/worker/execution_engine_unittest.cc"
     "hybrid/model/hybrid_model_builder_unittest.cc"

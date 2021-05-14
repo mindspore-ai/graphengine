@@ -30,6 +30,7 @@
 #define protected public
 #define private public
 #include "graph/build/model_builder.h"
+#include "memory/memory_assigner.h"
 #undef protected
 #undef private
 
@@ -127,6 +128,41 @@ class UtestModelBuilderTest : public testing::Test {
     graph->TopologicalSorting();
   }
 
+void MakeSessionScopeReuseGraph(ge::ComputeGraphPtr graph) {
+    ge::OpDescPtr op_def_a = CreateOpWithWsSize("A", 512);
+    ge::OpDescPtr op_def_b = CreateOpWithWsSize("B", 0);
+    ge::OpDescPtr op_def_c = CreateOpWithWsSize("C", 512);
+    ge::OpDescPtr op_def_d = CreateOpWithWsSize("D", 512);
+    ge::OpDescPtr op_def_e = CreateOpWithWsSize("E", 1024);
+    ge::OpDescPtr op_def_f = CreateOpWithWsSize("F", 512);
+    ge::OpDescPtr op_def_g = CreateOpWithWsSize("G", 0);
+
+    std::vector<int64_t> workspace_bytes;
+    workspace_bytes.push_back(1024);
+    workspace_bytes.push_back(512);
+    op_def_c->SetWorkspaceBytes(workspace_bytes);
+    vector<int32_t> workspace_no_reuse_scope = { 0 , 1 };
+    (void)ge::AttrUtils::SetListInt(op_def_c, ATTR_NAME_WORKSPACE_MEMORY_NO_REUSE_SCOPE, workspace_no_reuse_scope);
+
+    vector<int32_t> workspace_no_reuse_scope_e = { 1 };
+    (void)ge::AttrUtils::SetListInt(op_def_e, ATTR_NAME_WORKSPACE_MEMORY_NO_REUSE_SCOPE, workspace_no_reuse_scope_e);
+
+    ge::NodePtr node_a = graph->AddNode(op_def_a);
+    ge::NodePtr node_b = graph->AddNode(op_def_b);
+    ge::NodePtr node_c = graph->AddNode(op_def_c);
+    ge::NodePtr node_d = graph->AddNode(op_def_d);
+    ge::NodePtr node_e = graph->AddNode(op_def_e);
+    ge::NodePtr node_f = graph->AddNode(op_def_f);
+    ge::NodePtr node_g = graph->AddNode(op_def_g);
+
+    ge::GraphUtils::AddEdge(node_a->GetOutDataAnchor(0), node_b->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_b->GetOutDataAnchor(0), node_c->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_c->GetOutDataAnchor(0), node_d->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_d->GetOutDataAnchor(0), node_e->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_e->GetOutDataAnchor(0), node_f->GetInDataAnchor(0));
+    ge::GraphUtils::AddEdge(node_f->GetOutDataAnchor(0), node_g->GetInDataAnchor(0));
+    graph->TopologicalSorting();
+  }
 
  protected:
   void SetUp() {}
@@ -160,6 +196,24 @@ TEST_F(UtestModelBuilderTest, test_save_atomic_bin) {
   auto op_desc = make_shared<OpDesc>("Sum", "Sum");
   op_desc->SetExtAttr("atomic_clean_node_ptr", atomic_node);
   EXPECT_EQ(builder.SaveAtomicTBEKernel(op_desc), SUCCESS);
+}
+
+TEST_F(UtestModelBuilderTest, build_model_for_get_task) {
+  Graph2SubGraphInfoList subgraphs;
+  std::map<std::string, int> stream_max_parallel_num;
+  ge::ComputeGraphPtr graph = make_shared<ge::ComputeGraph>("");
+  MakeSessionScopeReuseGraph(graph);
+  std::map<std::string, std::string> option;
+  ge::ModelBuilder builder(0, graph, subgraphs, stream_max_parallel_num, false);
+
+  MemoryAssigner mem_assigner(graph);
+  EXPECT_EQ(mem_assigner.AssignMemory(false, builder.mem_type_to_mem_offset_, builder.zero_copy_mem_size_), SUCCESS);
+
+  ge::Model model;
+  EXPECT_EQ(builder.BuildModelDef(model), SUCCESS);
+  int64_t session_scope_mem_offset = 0;
+  ge::AttrUtils::GetInt(&model, ATTR_MODEL_SESSION_SCOPE_MEMORY_SIZE, session_scope_mem_offset);
+  EXPECT_EQ(session_scope_mem_offset, 1536);
 }
 
 TEST_F(UtestModelBuilderTest, test_model_save) {

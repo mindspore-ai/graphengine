@@ -18,6 +18,7 @@
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_TASK_INFO_H_
 
 #include <vector>
+#include <sstream>
 
 #include "cce/customize.h"
 #include "framework/common/taskdown_common.h"
@@ -28,9 +29,11 @@
 
 namespace ge {
 struct MemInfo {
-  uint64_t memory_size = 0;
+  size_t memory_size = 0;
   uint64_t logic_memory_base = 0;
   uint8_t *memory_base = nullptr;
+  uint32_t memory_type = RT_MEMORY_HBM;
+  std::string memory_key = "";
 };
 
 struct RuntimeParam {
@@ -39,6 +42,19 @@ struct RuntimeParam {
     aicpu_mem_mall = std::unique_ptr<TsMemMall>(new (std::nothrow) TsMemMall(RT_MEMORY_HBM));
   }
   ~RuntimeParam() = default;
+
+  std::string ToString() {
+    std::stringstream ss;
+    ss << "session_id:" << session_id << ", stream_num:" << stream_num << ", event_num:" << event_num
+       << ", label_num:" << label_num << ", logic_mem_base:" << logic_mem_base
+       << ", logic_weight_base:" << logic_weight_base << ", logic_var_base:" << logic_var_base
+       << ", memory_size:" << mem_size << ", weight_size:" << weight_size << ", var_size:" << var_size
+       << ", ex_memory_info:";
+    for (auto it : memory_infos) {
+      ss << "[memory_type:" << it.first << ", memory_size:" << it.second.memory_size << "]";
+    }
+    return ss.str();
+  }
 
   uint64_t mem_size = 0;
   uint64_t logic_mem_base = 0;
@@ -49,7 +65,7 @@ struct RuntimeParam {
   uint64_t var_size = 0;
   uint64_t logic_var_base = 0;
   uint8_t *var_base = nullptr;
-  std::map<uint32_t, MemInfo> memory_infos;
+  std::map<uint64_t, MemInfo> memory_infos;
   uint32_t batch_num = 0;
   uint32_t stream_num = 0;
   uint32_t event_num = 0;

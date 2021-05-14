@@ -21,6 +21,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/types.h"
+#include "graph/build/memory/block_mem_assigner.h"
 
 #define VALIDATE_MEM_RANGE(OP, SIZE, OFFSET)                                                                 \
   do {                                                                                                       \
@@ -514,10 +515,16 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
   bool has_mem_type_attr = ge::AttrUtils::GetListInt(op_desc, TVM_ATTR_NAME_WORKSPACE_TYPE, v_memory_type);
   bool has_mem_type_workspace =
     ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_WORKSPACE_TYPE_LIST, workspace_memory_type);
+
+  vector<int32_t> workspace_no_reuse_scope;
+  bool has_workspace_no_reuse_scope =
+    ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_WORKSPACE_MEMORY_NO_REUSE_SCOPE, workspace_no_reuse_scope);
+
   for (size_t i = 0; i < v_workspace_bytes.size(); ++i) {
     // Temporary solution, the aicpu workspace of multiple images cannot be shared.
-    if (has_workspace_reuse && i < workspace_reuse_flag.size() && !workspace_reuse_flag[i] &&
-        !model_param.is_single_op) {
+    bool aicpu_work_space = (has_workspace_reuse && i < workspace_reuse_flag.size() && !workspace_reuse_flag[i] &&
+                             !model_param.is_single_op);
+    if (aicpu_work_space) {
       void *mem_addr = model_param.aicpu_mem_mall->Acquire(v_workspace_offset[i], v_workspace_bytes[i]);
       v_workspace_data_addr.push_back(mem_addr);
       GELOGI(
@@ -548,7 +555,13 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
              model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i], v_workspace_bytes[i]);
     } else {
       VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_workspace_offset[i]);
-      uint8_t *mem_addr = model_param.mem_base + v_workspace_offset[i];
+      uint8_t *mem_addr = nullptr;
+      bool session_scope_memory = (has_workspace_no_reuse_scope) && (i < workspace_no_reuse_scope.size());
+      if (session_scope_memory) {
+        mem_addr = model_param.memory_infos.at(kSessionScopeMemory | RT_MEMORY_HBM).memory_base + v_workspace_offset[i];
+      } else {
+        mem_addr = model_param.mem_base + v_workspace_offset[i];
+      }
       v_workspace_data_addr.push_back(mem_addr);
       GELOGI("[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] workspace[%zu] offset[%ld] bytes[%ld] memaddr[%p]",
              model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i], v_workspace_bytes[i],

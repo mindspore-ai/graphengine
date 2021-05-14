@@ -35,7 +35,7 @@
 #include "graph/manager/graph_context.h"
 #include "graph/optimize/graph_optimize.h"
 #include "graph/manager/util/variable_accelerate_ctrl.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph_builder_utils.h"
 #include "cce/dnn.h"

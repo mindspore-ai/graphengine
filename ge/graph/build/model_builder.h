@@ -93,7 +93,7 @@ class ModelBuilder {
 
   uint64_t session_id_;
 
-  map<int64_t, size_t> mem_type_to_mem_offset_;
+  map<uint64_t, size_t> mem_type_to_mem_offset_;
 
   size_t weight_offset_;
 

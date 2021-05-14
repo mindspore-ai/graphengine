@@ -34,6 +34,10 @@
 namespace ge {
 const size_t kMaxLifeTime = 0xffffffff;
 const int32_t kInvalidThreadScopeId = -1;
+const uint64_t kSessionScopeMemory = 0x100000000;
+const uint64_t kMemoryTypeMask = 0xffffffff;
+
+enum MemoryNoReuseScope { kReuse, kSessionNoReuse, kGraphNoReuse };
 
 using DependStreamLife = std::map<int64_t, std::map<int64_t, size_t>>;
 
@@ -224,9 +228,7 @@ class BlockMemAssigner : public MemAssigner {
 
   Status Assign() override;
 
-  size_t GetMemOffset() const { return mem_offset_; }
-
-  size_t GetP2PMemOffset() const { return p2p_mem_offset_; }
+  const std::map<uint64_t, size_t> &GetMemOffsets() const { return mem_offsets_; }
 
   int64_t GetAtomicAddrCleanId() const { return atomic_addr_clean_id_; }
 
@@ -329,14 +331,10 @@ class BlockMemAssigner : public MemAssigner {
   ///
   void UpdateOpTensorMemType(std::list<NodeIndexIO> node_index_io_list, int64_t memory_type);
 
-  size_t mem_offset_;
-  size_t p2p_mem_offset_;
-
+  std::map<uint64_t, size_t> mem_offsets_;
   ge::ComputeGraphPtr compute_graph_;
-
   std::vector<MemoryBlock *> memory_blocks_;
   std::vector<MemoryBlock *> blocks_store_;
-
   std::vector<NodeTypeIndex> zero_memory_list_;
 
   // ref mapping
@@ -380,7 +378,7 @@ class BlockMemAssigner : public MemAssigner {
   ///
   MemoryBlock *ApplyMemory(size_t block_size, size_t real_size, size_t no_align_size, OpMemoryType mem_type,
                            const ge::NodePtr &n, uint32_t out_index, const std::vector<bool> &workspace_reuse_flag,
-                           const bool is_op_reuse_mem, const bool continuous, int64_t memory_type);
+                           const bool is_op_reuse_mem, const bool continuous, uint64_t memory_type);
 
   ///
   /// @ingroup GE
@@ -394,7 +392,7 @@ class BlockMemAssigner : public MemAssigner {
   /// @author
   ///
   void CheckWorkspaceReuse(const vector<bool> &workspace_reuse_flag, uint32_t index, int64_t stream_id,
-                           MemoryBlock *mem_block, int64_t memory_type);
+                           MemoryBlock *mem_block, uint64_t memory_type);
 
   ///
   /// @ingroup GE
@@ -457,7 +455,8 @@ class BlockMemAssigner : public MemAssigner {
 
   bool IsContinuousOutput(const NodePtr &n);
 
-  bool GetWorkSpaceMemoryType(const NodePtr &node, size_t index, int64_t &memory_type);
+  bool GetWorkSpaceMemoryType(const NodePtr &node, size_t index, uint64_t &memory_type,
+                              vector<bool> &workspace_reuse_flag);
 
   void ContinuousOutRefCheck(bool &isAllOutputRef, bool &isOutputHasRef, const NodePtr &n);
 

@@ -17,8 +17,7 @@
 #include "graph/manager/graph_var_manager.h"
 
 #include "graph/debug/ge_attr_define.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/rdma_pool_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/type_utils.h"
 
@@ -728,7 +727,7 @@ ge::Status VarManager::MallocVarMemory(size_t memory_size) {
   var_memory_size = (var_memory_size + kSessionMemAlignSize - 1) / kSessionMemAlignSize * kSessionMemAlignSize;
 
   const string purpose("variables and constant op memory in training network.");
-  var_mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, memory_key, var_memory_size);
+  var_mem_base = MemManager::Instance().MemInstance(RT_MEMORY_HBM).MallocMemory(purpose, memory_key, var_memory_size);
   if (var_mem_base == nullptr) {
     GELOGE(ge::INTERNAL_ERROR,
            "VarManager::MallocVarMemory failed "
@@ -745,7 +744,7 @@ uint8_t *VarManager::GetVarMemoryBase(rtMemType_t memory_type) {
     return MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).GetRdmaBaseAddr();
   }
   string memory_key = std::to_string(session_id_);
-  return MemManager::Instance(memory_type)->GetMemoryAddr(memory_key);
+  return MemManager::Instance().MemInstance(memory_type).GetMemoryAddr(memory_key);
 }
 
 uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_type) {
@@ -754,7 +753,7 @@ uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_ty
     return logic_addr;
   }
   string mem_key = std::to_string(session_id_);
-  uint8_t *mem_base = MemManager::Instance(memory_type)->GetMemoryAddr(mem_key);
+  uint8_t *mem_base = MemManager::Instance().MemInstance(memory_type).GetMemoryAddr(mem_key);
   if (mem_base == nullptr) {
     return nullptr;
   }
@@ -766,7 +765,7 @@ uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_ty
 ge::Status VarManager::FreeVarMemory() {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   string memory_key = std::to_string(SessionId());
-  return MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(memory_key);
+  return MemManager::Instance().MemInstance(RT_MEMORY_HBM).FreeMemory(memory_key);
 }
 
 ge::Status VarManager::SetTransRoad(const std::string &var_name, const VarTransRoad &trans_road) {

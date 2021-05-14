@@ -40,7 +40,7 @@
 #include "graph/load/model_manager/cpu_queue_schedule.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/manager/util/debug.h"
@@ -60,6 +60,8 @@
 #include "graph/common/local_context.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "graph/common/omg_util.h"
+#include "graph/build/memory/block_mem_assigner.h"
+#include "graph/manager/session_scope_mem_allocator.h"
 
 // create std::thread, catch exceptions using try/catch
 #define CREATE_STD_THREAD(thread_id, func, args)                                                  \
@@ -168,7 +170,6 @@ DavinciModel::DavinciModel(int32_t priority, const std::shared_ptr<ModelListener
       mem_base_(nullptr),
       is_inner_mem_base_(false),
       is_inner_weight_base_(false),
-      is_inner_p2p_mem_base_(false),
       data_inputer_(nullptr),
       load_begin_time_(0),
       load_end_time_(0),
@@ -236,7 +237,7 @@ DavinciModel::~DavinciModel() {
 
       FreeFeatureMapMem();
 
-      FreeP2PMem();
+      FreeExMem();
 
       OpDebugUnRegister();
 
@@ -389,7 +390,6 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   is_feature_map_mem_has_inited_ = true;
 
   std::size_t data_size = TotalMemSize();
-  std::size_t p2p_data_size = P2PMemInfos().at(RT_MEMORY_P2P_DDR).memory_size;
 
   if ((dev_ptr != nullptr) && (mem_size < TotalMemSize())) {
     REPORT_INNER_ERROR("E19999", "Param dev_ptr is nullptr or mem_size:%zu < ge_model.mem_size:%zu, "
@@ -400,7 +400,6 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   }
 
   mem_base_ = static_cast<uint8_t *>(dev_ptr);
-  p2p_mem_base_ = static_cast<uint8_t *>(dev_ptr);
   is_inner_mem_base_ = false;
 
   if (TotalMemSize() && mem_base_ == nullptr) {
@@ -422,24 +421,13 @@ Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
     is_inner_mem_base_ = true;
   }
 
-  if (p2p_data_size != 0) {
-    p2p_mem_base_ = MallocP2PMem(p2p_data_size);
-    if (p2p_mem_base_ == nullptr) {
-      REPORT_CALL_ERROR("E19999", "MallocFeatureMapMem fail, p2p_data_size:%zu, model_id:%u, check invalid",
-                        p2p_data_size, model_id_);
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Alloc][Memory] for p2p failed, size:%zu, model_id:%u",
-             p2p_data_size, model_id_);
-      return ACL_ERROR_GE_MEMORY_ALLOCATION;
-    }
-    GELOGI("InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] memaddr[%p] mem_size[%zu]", runtime_param_.graph_id,
-           p2p_mem_base_, p2p_data_size);
-    is_inner_p2p_mem_base_ = true;
+  if (!runtime_param_.memory_infos.empty()) {
+    GE_CHK_STATUS_RET(MallocExMem(), "MallocExMem failed.");
   }
 
   GE_CHK_STATUS_RET(InitVariableMem(), "[Init][VariableMemory] failed, model_id:%u", model_id_);
   runtime_param_.mem_base = mem_base_;
   runtime_param_.weight_base = weights_mem_base_;
-  runtime_param_.memory_infos[RT_MEMORY_P2P_DDR].memory_base = p2p_mem_base_;
   return SUCCESS;
 }
 
@@ -465,7 +453,6 @@ Status DavinciModel::InitVariableMem() {
 void DavinciModel::InitRuntimeParams() {
   int64_t value = 0;
   bool ret;
-  MemInfo p2p_mem_info;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_MEMORY_SIZE, value);
   runtime_param_.mem_size = ret ? (uint64_t)value : 0;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_WEIGHT_SIZE, value);
@@ -490,16 +477,18 @@ void DavinciModel::InitRuntimeParams() {
   runtime_param_.var_size = ret ? (uint64_t)value : 0;
   session_id_ = runtime_param_.session_id;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_P2P_MEMORY_SIZE, value);
-  p2p_mem_info.memory_size = ret ? (uint64_t)value : 0;
+  MemInfo p2p_mem_info;
+  p2p_mem_info.memory_size = static_cast<size_t>(ret ? value : 0);
+  p2p_mem_info.memory_type = RT_MEMORY_P2P_DDR;
+  p2p_mem_info.memory_key = "_p";
   runtime_param_.memory_infos[RT_MEMORY_P2P_DDR] = std::move(p2p_mem_info);
 
-  GELOGI(
-      "InitRuntimeParams(), session_id:%lu, stream_num:%u, event_num:%u, label_num:%u, "
-      "logic_mem_base:0x%lx, logic_weight_base:0x%lx, logic_var_base:0x%lx, "
-      "memory_size:%lu, weight_size:%lu, var_size:%lu",
-      runtime_param_.session_id, runtime_param_.stream_num, runtime_param_.event_num, runtime_param_.label_num,
-      runtime_param_.logic_mem_base, runtime_param_.logic_weight_base, runtime_param_.logic_var_base,
-      runtime_param_.mem_size, runtime_param_.weight_size, runtime_param_.var_size);
+  ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_SESSION_SCOPE_MEMORY_SIZE, value);
+  MemInfo session_scope_mem_info;
+  session_scope_mem_info.memory_size = static_cast<size_t>(ret ? value : 0);
+  runtime_param_.memory_infos[kSessionScopeMemory | RT_MEMORY_HBM] = std::move(session_scope_mem_info);
+
+  GELOGI("InitRuntimeParams(), %s.", runtime_param_.ToString().c_str());
 }
 
 void DavinciModel::CheckHasHcomOp(const ComputeGraphPtr &compute_graph) {
@@ -4089,14 +4078,15 @@ Status DavinciModel::InitEntryTask() {
 uint8_t *DavinciModel::MallocFeatureMapMem(size_t data_size) {
   uint8_t *mem_base = nullptr;
   const string purpose("feature map,used for op input and output.");
-  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
   if (res == EN_OK) {
     data_size = static_cast<size_t>(VarManager::Instance(session_id_)->GetGraphMemoryMaxSize());
     string memory_key = std::to_string(0) + "_f";
-    mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, memory_key, data_size, GetDeviceId());
+    mem_base =
+      MemManager::Instance().MemInstance(RT_MEMORY_HBM).MallocMemory(purpose, memory_key, data_size, GetDeviceId());
   } else {
-    mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, data_size, GetDeviceId());
+    mem_base = MemManager::Instance().MemInstance(RT_MEMORY_HBM).MallocMemory(purpose, data_size, GetDeviceId());
   }
 
   if (mem_base != nullptr) {
@@ -4105,83 +4095,119 @@ uint8_t *DavinciModel::MallocFeatureMapMem(size_t data_size) {
   return mem_base;
 }
 
-uint8_t *DavinciModel::MallocP2PMem(size_t p2p_data_size) {
-  uint8_t *p2p_mem_base = nullptr;
-  const string purpose("p2p memory, used for some op related to hcom");
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
-    string p2p_memory_key = std::to_string(0) + "_p";
-    p2p_mem_base =
-        MemManager::Instance(RT_MEMORY_P2P_DDR)->MallocMemory(purpose, p2p_memory_key, p2p_data_size, GetDeviceId());
-  } else {
-    p2p_mem_base = MemManager::Instance(RT_MEMORY_P2P_DDR)->MallocMemory(purpose, p2p_data_size, GetDeviceId());
+Status DavinciModel::MallocExMem() {
+  char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
+  INT32 res_static_memory = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
+  for (auto it : runtime_param_.memory_infos) {
+    auto mem_size = it.second.memory_size;
+    if (mem_size == 0) {
+      continue;
+    }
+    bool sessoion_scope = ((kSessionScopeMemory & it.first) == kSessionScopeMemory);
+    auto mem_type = it.first & kMemoryTypeMask;
+    uint8_t *mem_base = nullptr;
+    const string purpose("p2p memory, used for some op related to hcom or session scope memory");
+    if (sessoion_scope) {
+      mem_base = MemManager::Instance().SessionScopeMemInstance(mem_type).Malloc(mem_size, runtime_param_.session_id);
+    } else if (res_static_memory == EN_OK) {
+      string memory_key = std::to_string(0) + it.second.memory_key;
+      mem_base =
+        MemManager::Instance().MemInstance(mem_type).MallocMemory(purpose, memory_key, mem_size, GetDeviceId());
+    } else {
+      mem_base = MemManager::Instance().MemInstance(mem_type).MallocMemory(purpose, mem_size, GetDeviceId());
+    }
+
+    if (mem_base == nullptr) {
+      REPORT_CALL_ERROR("E19999", "MallocExMem fail, type:%ld size:%zu, model_id:%u, check invalid",
+                        mem_type, mem_size, model_id_);
+      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc ex memory failed, type:%ld size: %zu", mem_type, mem_size);
+      return ACL_ERROR_GE_MEMORY_ALLOCATION;
+    }
+    it.second.memory_base = mem_base;
+    GELOGI("InitFeatureMapAndP2PMem graph_%u MallocMemory type[F] mem_type[%ld] mem_addr[%p] mem_size[%zu]",
+           runtime_param_.graph_id, mem_type, mem_base, mem_size);
   }
-  return p2p_mem_base;
+  return SUCCESS;
 }
 
 uint8_t *DavinciModel::MallocWeightsMem(size_t weights_size) {
   uint8_t *weights_mem_base = nullptr;
   const string purpose("weights memory in inference network.");
-  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
   if (res == EN_OK) {
     string weight_memory_key = std::to_string(0) + "_w";
-    weights_mem_base =
-        MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, weight_memory_key, weights_size, GetDeviceId());
+    weights_mem_base = MemManager::Instance()
+                         .MemInstance(RT_MEMORY_HBM)
+                         .MallocMemory(purpose, weight_memory_key, weights_size, GetDeviceId());
   } else {
-    weights_mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, weights_size, GetDeviceId());
+    weights_mem_base =
+      MemManager::Instance().MemInstance(RT_MEMORY_HBM).MallocMemory(purpose, weights_size, GetDeviceId());
   }
   return weights_mem_base;
 }
 
 void DavinciModel::FreeFeatureMapMem() {
-  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
   if (res == EN_OK && is_inner_mem_base_) {
     string weight_memory_key = std::to_string(0) + "_f";
-    if (MemManager::Instance(RT_MEMORY_HBM)->GetMemoryAddr(weight_memory_key) != nullptr) {
-      GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(weight_memory_key, GetDeviceId()),
-                    "[Free][Memory] failed, model_id:%u", model_id_);
+    if (MemManager::Instance().MemInstance(RT_MEMORY_HBM).GetMemoryAddr(weight_memory_key) != nullptr) {
+      GE_CHK_STATUS(MemManager::Instance().MemInstance(RT_MEMORY_HBM).FreeMemory(weight_memory_key, GetDeviceId()),
+                    "failed to free weight memory");
     }
     mem_base_ = nullptr;
   } else {
-    GE_IF_BOOL_EXEC(mem_base_ != nullptr && is_inner_mem_base_,
-                    GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(mem_base_, GetDeviceId()),
-                                  "[Free][Memory] failed, model_id:%u", model_id_);
-                    mem_base_ = nullptr);
+    GE_IF_BOOL_EXEC(
+      mem_base_ != nullptr && is_inner_mem_base_,
+      GE_CHK_STATUS(MemManager::Instance().MemInstance(RT_MEMORY_HBM).FreeMemory(mem_base_, GetDeviceId()),
+                    "failed to free feature_map memory");
+      mem_base_ = nullptr);
   }
 }
 
-void DavinciModel::FreeP2PMem() {
-  if (std::getenv(kEnvGeuseStaticMemory) != nullptr) {
-    std::string p2p_memory_key = std::to_string(0) + "_p";
-    if (MemManager::Instance(RT_MEMORY_P2P_DDR)->GetMemoryAddr(p2p_memory_key) != nullptr) {
-      GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_P2P_DDR)->FreeMemory(p2p_memory_key, GetDeviceId()),
-                    "[Free][Memory] failed, model_id:%u", model_id_);
+void DavinciModel::FreeExMem() {
+  char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
+  INT32 res_static_memory = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
+  for (auto it : runtime_param_.memory_infos) {
+    // free when session destory
+    if ((kSessionScopeMemory & it.first) == kSessionScopeMemory) {
+      continue;
     }
-    p2p_mem_base_ = nullptr;
-  } else {
-    GE_IF_BOOL_EXEC(p2p_mem_base_ != nullptr && is_inner_mem_base_,
-                    GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_P2P_DDR)->FreeMemory(p2p_mem_base_, GetDeviceId()),
-                                  "[Free][Memory] failed, model_id:%u", model_id_);
-                    p2p_mem_base_ = nullptr);
+    auto mem_type = it.first & kMemoryTypeMask;
+    if (res_static_memory == EN_OK) {
+      std::string memory_key = std::to_string(0) + it.second.memory_key;
+      if (MemManager::Instance().MemInstance(mem_type).GetMemoryAddr(memory_key) != nullptr) {
+        GE_CHK_STATUS(MemManager::Instance().MemInstance(mem_type).FreeMemory(memory_key, GetDeviceId()),
+                      "failed to free memory");
+      }
+      it.second.memory_base = nullptr;
+    } else {
+      GE_IF_BOOL_EXEC(
+        it.second.memory_base != nullptr,
+        GE_CHK_STATUS(MemManager::Instance().MemInstance(mem_type).FreeMemory(it.second.memory_base, GetDeviceId()),
+                      "failed to free memory");
+        it.second.memory_base = nullptr);
+    }
   }
 }
 
 void DavinciModel::FreeWeightsMem() {
-  char ge_static_mem_env[MMPA_MAX_PATH] = { 0x00 };
+  char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
   if (res == EN_OK) {
     string memory_key = std::to_string(0) + "_w";
-    if (MemManager::Instance(RT_MEMORY_HBM)->GetMemoryAddr(memory_key) != nullptr) {
-      GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(memory_key, GetDeviceId()),
-                    "[Free][Memory] failed, model_id:%u", model_id_);
+    if (MemManager::Instance().MemInstance(RT_MEMORY_HBM).GetMemoryAddr(memory_key) != nullptr) {
+      GE_CHK_STATUS(MemManager::Instance().MemInstance(RT_MEMORY_HBM).FreeMemory(memory_key, GetDeviceId()),
+                    "failed to free feature_map memory");
     }
     weights_mem_base_ = nullptr;
   } else {
-    GE_IF_BOOL_EXEC(weights_mem_base_ != nullptr && weights_mem_base_ != mem_base_ && is_inner_weight_base_,
-                    GE_CHK_STATUS(MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(weights_mem_base_, GetDeviceId()),
-                                  "[Free][Memory] failed, model_id:%u", model_id_);
-                    weights_mem_base_ = nullptr);
+    GE_IF_BOOL_EXEC(
+      weights_mem_base_ != nullptr && weights_mem_base_ != mem_base_ && is_inner_weight_base_,
+      GE_CHK_STATUS(MemManager::Instance().MemInstance(RT_MEMORY_HBM).FreeMemory(weights_mem_base_, GetDeviceId()),
+                    "failed to free weight memory");
+      weights_mem_base_ = nullptr);
   }
 }
 

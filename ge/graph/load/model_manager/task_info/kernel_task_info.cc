@@ -1066,10 +1066,6 @@ Status KernelTaskInfo::InitAicpuTask(uint32_t op_index, const domi::KernelDef &k
   }
   InitDumpArgs(sizeof(aicpu::AicpuParamHead));
 
-  if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
-    dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
-  }
-
   davinci_model_->SetZeroCopyAddr(op_desc, io_addrs, args_addr.get(), args_, args_size_, sizeof(aicpu::AicpuParamHead));
 
   return SUCCESS;
@@ -1094,6 +1090,9 @@ void KernelTaskInfo::InitDumpArgs(uint32_t offset) {
   if (davinci_model_->GetOpDugReg()) {
     GELOGD("Op debug is open in kernel task info");
     dump_args_ = static_cast<char *>(args_) + offset;
+  }
+  if (kernel_type_ == ccKernelType::CUST_AI_CPU) {
+    dump_flag_ |= RT_KERNEL_CUSTOM_AICPU;
   }
 }
 

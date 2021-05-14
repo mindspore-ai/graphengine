@@ -1184,6 +1184,22 @@ TEST_F(UtestKernelTaskInfo, kernel_task_info_calculate_args_aicpu) {
   EXPECT_EQ(kernel_task_info.CalculateArgs(task_def, &model), SUCCESS);
 }
 
+TEST_F(UtestKernelTaskInfo, kernel_task_info_calculate_args_custom_aicpu) {
+  DavinciModel model(0, nullptr);
+  domi::TaskDef task_def;
+
+  domi::KernelDef *kernel_def = task_def.mutable_kernel();
+  domi::KernelContext *ctx = kernel_def->mutable_context();
+  ctx->set_kernel_type(7);
+
+  KernelTaskInfo kernel_task_info;
+  kernel_task_info.davinci_model_ = &model;
+  kernel_task_info.kernel_type_ = ccKernelType::CUST_AI_CPU;
+  kernel_task_info.op_desc_ = std::make_shared<OpDesc>("concat", "TensorArrayWrite");
+  kernel_task_info.InitDumpArgs(0);
+  EXPECT_EQ(kernel_task_info.CalculateArgs(task_def, &model), SUCCESS);
+}
+
 TEST_F(UtestKernelTaskInfo, kernel_task_info_update_args_te) {
   DavinciModel model(0, nullptr);
 

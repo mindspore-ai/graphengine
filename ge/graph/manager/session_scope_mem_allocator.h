@@ -53,6 +53,7 @@ class SessionScopeMemoryInfo {
     }
     size = other.size;
     ptr = other.ptr;
+    return *this;
   };
 
  private:

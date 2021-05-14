@@ -18,6 +18,9 @@
 #include "ir_build/option_utils.h"
 #include "graph/testcase/ge_graph/graph_builder_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/utils/graph_utils.h"
+#include "ge/ge_ir_build.h"
+#include "graph/ops_stub.h"
 
 #define protected public
 #define private public
@@ -31,6 +34,13 @@ const string NETOUTPUT = "NetOutput";
 
 using namespace ge;
 class UtestIrCommon : public testing::Test {
+ protected:
+  void SetUp() {}
+
+  void TearDown() {}
+};
+
+class UtestIrBuild : public testing::Test {
  protected:
   void SetUp() {}
 
@@ -58,6 +68,59 @@ static ComputeGraphPtr BuildComputeGraph() {
   builder.AddDataEdge(addn1, 0,netoutput, 0);
 
   return builder.GetGraph();
+}
+
+// data not set attr index;
+// but becasue of op proto, register attr index. so all data index is zero;
+static Graph BuildIrGraph() {
+  auto data1 = op::Data("data1");
+  auto data2 = op::Data("data2");
+  auto data3 = op::Data("data3");
+  std::vector<Operator> inputs {data1, data2, data3};
+  std::vector<Operator> outputs;
+
+  Graph graph("test_graph");
+  graph.SetInputs(inputs).SetOutputs(outputs);
+  return graph;
+}
+
+// data set attr index, but is not valid
+static Graph BuildIrGraph1() {
+  auto data1 = op::Data("data1").set_attr_index(0);
+  auto data2 = op::Data("data2").set_attr_index(1);
+  auto data3 = op::Data("data3");
+  std::vector<Operator> inputs {data1, data2, data3};
+  std::vector<Operator> outputs;
+
+  Graph graph("test_graph");
+  graph.SetInputs(inputs).SetOutputs(outputs);
+  return graph;
+}
+
+// data set attr index, but is not valid
+static Graph BuildIrGraph2() {
+  auto data1 = op::Data("data1").set_attr_index(0);
+  auto data2 = op::Data("data2");
+  auto data3 = op::Data("data3").set_attr_index(2);
+  std::vector<Operator> inputs {data1, data2, data3};
+  std::vector<Operator> outputs;
+
+  Graph graph("test_graph");
+  graph.SetInputs(inputs).SetOutputs(outputs);
+  return graph;
+}
+
+// data set attr index
+static Graph BuildIrGraph3() {
+  auto data1 = op::Data("data1").set_attr_index(0);
+  auto data2 = op::Data("data2").set_attr_index(1);
+  auto data3 = op::Data("data3").set_attr_index(2);
+  std::vector<Operator> inputs {data1, data2, data3};
+  std::vector<Operator> outputs;
+
+  Graph graph("test_graph");
+  graph.SetInputs(inputs).SetOutputs(outputs);
+  return graph;
 }
 
 TEST(UtestIrCommon, update_data_op_shape) {
@@ -226,4 +289,64 @@ TEST(UtestIrCommon, check_param_failed) {
   EXPECT_EQ(ret, PARAM_INVALID);
 
   ret = CheckLogParamValidAndSetLogLevel(param_invalid);
+}
+
+// Get attr index failed, when set input shape range
+TEST(UtestIrBuild, check_data_op_attr_index_invalid_0) {
+  ComputeGraphPtr compute_graph = BuildComputeGraph();
+  Graph graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+  const map<string, string> build_options = {
+    {"input_shape_range", "[1, 2~3, -1],[4~5, 3~5, 10],[1, 2~3, -1]"}
+  };
+  ModelBufferData model;
+  graphStatus ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_FAILED);
+}
+
+// not set attr index, when set input shape range
+TEST(UtestIrBuild, check_data_op_attr_index_invalid_1) {
+  Graph graph = BuildIrGraph();
+  const map<string, string> build_options = {
+    {"input_shape_range", "[1, 2~3, -1],[4~5, 3~5, 10],[1, 2~3, -1]"}
+  };
+  ModelBufferData model;
+  graphStatus ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_FAILED);
+}
+
+// set attr index, but not valid, when set input shape range
+TEST(UtestIrBuild, check_data_op_attr_index_invalid_2) {
+  Graph graph = BuildIrGraph1();
+  const map<string, string> build_options = {
+    {"input_shape_range", "[1, 2~3, -1],[4~5, 3~5, 10],[1, 2~3, -1]"}
+  };
+  ModelBufferData model;
+  graphStatus ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_FAILED);
+
+  Graph graph2 = BuildIrGraph2();
+  ret = aclgrphBuildModel(graph2, build_options, model);
+  EXPECT_EQ(ret, GRAPH_FAILED);
+}
+
+// set attr index valid, when set input shape range
+// only check data op attr index valid func.
+TEST(UtestIrBuild, check_data_op_attr_index_valid) {
+  Graph graph = BuildIrGraph3();
+  const map<string, string> build_options = {
+    {"input_shape_range", "[1, 2~3, -1],[4~5, 3~5, 10],[1, 2~3, -1]"}
+  };
+  ModelBufferData model;
+  graphStatus ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+}
+
+// set attr index invalid, when not set input shape range
+// only check data op attr index valid func.
+TEST(UtestIrBuild, check_data_attr_index_succ_no_input_range) {
+  Graph graph = BuildIrGraph1();
+  const map<string, string> build_options;
+  ModelBufferData model;
+  graphStatus ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
 }

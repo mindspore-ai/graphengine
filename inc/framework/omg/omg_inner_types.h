@@ -125,6 +125,7 @@ struct OmgContext {
   std::vector<NodePtr> getnext_nosink_nodes;
   bool fuzz_compile_flag = false;
   std::string atc_cmdline;
+  bool user_attr_index_valid = false;
 };
 }  // namespace ge
 

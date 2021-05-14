@@ -73,3 +73,22 @@ TEST_F(UtestSessionScopeMemAllocator, free_success) {
   EXPECT_NE(SUCCESS, MemManager::Instance().SessionScopeMemInstance(RT_MEMORY_HBM).Free(0));
   MemManager::Instance().Finalize();
 }
+
+TEST_F(UtestSessionScopeMemAllocator, free_success_session) {
+  std::vector<rtMemType_t> mem_type;
+  mem_type.push_back(RT_MEMORY_HBM);
+  mem_type.push_back(RT_MEMORY_P2P_DDR);
+  EXPECT_EQ(MemManager::Instance().Initialize(mem_type), SUCCESS);
+  uint8_t *ptr = MemManager::Instance().SessionScopeMemInstance(RT_MEMORY_HBM).Malloc(100, 0);
+  EXPECT_NE(nullptr, ptr);
+  ptr = MemManager::Instance().SessionScopeMemInstance(RT_MEMORY_HBM).Malloc(100, 0);
+  EXPECT_NE(nullptr, ptr);
+  for (auto memory_type : MemManager::Instance().GetAllMemoryType()) {
+    if (RT_MEMORY_P2P_DDR == memory_type) {
+      EXPECT_NE(MemManager::Instance().SessionScopeMemInstance(memory_type).Free(0), SUCCESS);
+    } else {
+      EXPECT_EQ(MemManager::Instance().SessionScopeMemInstance(memory_type).Free(0), SUCCESS);
+    }
+  }
+  MemManager::Instance().Finalize();
+}

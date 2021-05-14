@@ -65,9 +65,7 @@ Status SessionScopeMemAllocator::Free(uint64_t session_id, uint32_t device_id) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = allocated_memory_.find(session_id);
   if (it == allocated_memory_.end()) {
-    REPORT_INNER_ERROR("E19999", "Param memory not allocated before, session_id:%lu device_id:%u, check invalid",
-                       session_id, device_id);
-    GELOGE(PARAM_INVALID, "Invalid session_id");
+    GELOGW("Invalid session_id");
     return ge::PARAM_INVALID;
   }
   allocated_memory_.erase(it);

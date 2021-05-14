@@ -65,6 +65,7 @@ Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
     return ret;
   }
   init_ = true;
+  memory_type_ = memory_type;
   return SUCCESS;
 }
 
@@ -90,6 +91,7 @@ void MemManager::Finalize() noexcept {
   FinalizeAllocatorMap(host_allocator_map_);
   FinalizeAllocatorMap(memory_allocator_map_);
   init_ = false;
+  memory_type_.clear();
 }
 
 MemoryAllocator &MemManager::MemInstance(rtMemType_t memory_type) {

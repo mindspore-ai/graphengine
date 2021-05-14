@@ -107,11 +107,22 @@ Status GraphMemoryAssigner::AssignMemory() {
            compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     return ge::FAILED;
   }
-  MemoryOffset memory_offset(RT_MEMORY_HBM, mem_assigner->GetMemOffset());
-  memory_offset_.emplace(RT_MEMORY_HBM, memory_offset);
 
-  if (mem_assigner->GetP2PMemOffset() >= 0) {
-    MemoryOffset p2p_memory_offset(RT_MEMORY_P2P_DDR, mem_assigner->GetP2PMemOffset());
+  for (auto pair : mem_assigner->GetMemOffsets()) {
+    MemoryOffset offset(pair.first, pair.second);
+    memory_offset_.emplace(pair.first, offset);
+  }
+
+  // base memtype offset must be exist
+  auto it = mem_assigner->GetMemOffsets().find(RT_MEMORY_HBM);
+  if (it == mem_assigner->GetMemOffsets().end()) {
+    MemoryOffset memory_offset(RT_MEMORY_HBM, 0);
+    memory_offset_.emplace(RT_MEMORY_HBM, memory_offset);
+  }
+
+  it = mem_assigner->GetMemOffsets().find(RT_MEMORY_P2P_DDR);
+  if (it == mem_assigner->GetMemOffsets().end()) {
+    MemoryOffset p2p_memory_offset(RT_MEMORY_P2P_DDR, 0);
     memory_offset_.emplace(RT_MEMORY_P2P_DDR, p2p_memory_offset);
   }
 
@@ -224,7 +235,7 @@ ge::Status CalculateTensorRealSizeAndOutSize(const ge::ConstGeTensorDescPtr &out
   return SUCCESS;
 }
 
-Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size_t> &mem_type_to_offset) {
+Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<uint64_t, size_t> &mem_type_to_offset) {
   if (memory_offset_.empty()) {
     REPORT_INNER_ERROR("E19999", "InnerData memory_offset_ empty, not expected, graph_id:%u, graph_name:%s",
                        compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
@@ -264,7 +275,7 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<int64_t, size
   return SUCCESS;
 }
 
-Status GraphMemoryAssigner::AssignZeroCopyMemory(map<int64_t, size_t> &mem_offset, size_t &zero_mem_copy_size) {
+Status GraphMemoryAssigner::AssignZeroCopyMemory(map<uint64_t, size_t> &mem_offset, size_t &zero_mem_copy_size) {
   BlockMemAssignerPtr priority_assigner = std::move(mem_assigner_->GetPriorityAssinger());
   if (priority_assigner == nullptr) {
     REPORT_INNER_ERROR("E19999", "InnerData priority_assigner nullptr, not expected, graph_id:%u, graph_name:%s",
@@ -1398,6 +1409,9 @@ ge::Status GraphMemoryAssigner::SetInputOffset() {
            "graph_id:%u, graph_name:%s", compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
   }
   for (auto pair : memory_offset_) {
+    if ((pair.first != RT_MEMORY_HBM) && (pair.second.mem_offset_ == 0)) {
+      continue;
+    }
     GEEVENT("[IMAS]AfterAssignMemory : %s memoffset[%zu], memtype[%ld]", compute_graph_->GetName().c_str(),
             pair.second.mem_offset_, pair.first);
   }

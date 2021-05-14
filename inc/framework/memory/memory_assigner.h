@@ -33,7 +33,7 @@ class GE_FUNC_VISIBILITY MemoryAssigner {
 
   MemoryAssigner &operator=(const MemoryAssigner &) = delete;
 
-  Status AssignMemory(bool is_loop_graph, map<int64_t, size_t> &mem_offset, size_t &zero_copy_mem_size);
+  Status AssignMemory(bool is_loop_graph, map<uint64_t, size_t> &mem_offset, size_t &zero_copy_mem_size);
 
  private:
   ge::ComputeGraphPtr compute_graph_;

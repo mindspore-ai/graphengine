@@ -500,6 +500,7 @@ string MemoryBlock::String() {
   ss << "Block size: " << Size() << " from " << HeadOffset() << " to " << TailOffset() << " ";
   ss << "real_size_list: " << ToString(real_size_list_) << " ";
   ss << "ref_count: " << ref_count_ << " ";
+  ss << "reuse_mem_: " << reuse_mem_ << " ";
   ss << "members: ";
   for (auto x : NodeTypeIndexList()) {
     ss << "__node: " << ToString(x) << " ";
@@ -513,8 +514,8 @@ string MemoryBlock::String() {
 
 BlockMemAssigner::BlockMemAssigner(ComputeGraphPtr compute_graph, const map<string, string> &anchor_to_symbol,
                                    const map<string, list<NodeIndexIO>> &symbol_to_anchors)
-    : mem_offset_(0), p2p_mem_offset_(0), compute_graph_(std::move(compute_graph)),
-      symbol_to_anchors_(symbol_to_anchors), anchor_to_symbol_(anchor_to_symbol), life_time_(0) {}
+    : compute_graph_(std::move(compute_graph)), symbol_to_anchors_(symbol_to_anchors),
+      anchor_to_symbol_(anchor_to_symbol), life_time_(0) {}
 
 BlockMemAssigner::~BlockMemAssigner() {
   GELOGD("[Destruct][BlockMemAssigner]blocks_store_ size : %lu", blocks_store_.size());
@@ -1123,7 +1124,7 @@ bool BlockMemAssigner::IsZeroCopyBlock(const NodePtr &node, bool continuous) {
 MemoryBlock *BlockMemAssigner::ApplyMemory(size_t block_size, size_t real_size, size_t no_align_size,
                                            OpMemoryType mem_type, const NodePtr &n, uint32_t out_index,
                                            const vector<bool> &workspace_reuse_flag, const bool is_op_reuse_mem,
-                                           const bool continuous, int64_t memory_type) {
+                                           const bool continuous, uint64_t memory_type) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       n == nullptr,
       REPORT_INNER_ERROR("E19999", "Input parameter n(type:node_ptr) is null, apply memory failed");
@@ -1824,8 +1825,8 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
         zero_memory_list_.emplace_back(n, kWorkspace, static_cast<uint32_t>(i), false);
         continue;
       }
-      int64_t memory_type = RT_MEMORY_HBM;
-      if (!GetWorkSpaceMemoryType(n, i, memory_type)) {
+      uint64_t memory_type = RT_MEMORY_HBM;
+      if (!GetWorkSpaceMemoryType(n, i, memory_type, workspace_reuse_flag)) {
         GELOGW("Get workspace memory type failed.");
         return;
       }
@@ -1860,7 +1861,7 @@ void BlockMemAssigner::AssignMemoryWithReuse(vector<int64_t> &ranges) {
 }
 
 void BlockMemAssigner::CheckWorkspaceReuse(const vector<bool> &workspace_reuse_flag, uint32_t index, int64_t stream_id,
-                                           MemoryBlock *mem_block, int64_t memory_type) {
+                                           MemoryBlock *mem_block, uint64_t memory_type) {
   bool reuse_mem_flag =
       ((workspace_reuse_flag.size() > index) && (workspace_reuse_flag[index] == false)) ? false : true;
   if (reuse_mem_flag) {
@@ -1992,24 +1993,29 @@ void BlockMemAssigner::ReuseBlocksByLifeTime(size_t range_size) {
   }
 }
 
-void AddBlockMemOffset(size_t &mem_offset, size_t &p2p_mem_offset, MemoryBlock &block) {
-  if (block.memory_type_ == RT_MEMORY_HBM) {
-    if (block.first_continuous_block_) {
-      mem_offset += MEM_ALIGN_SIZE;
+void AddBlockMemOffset(std::map<uint64_t, size_t> &mem_offsets, MemoryBlock &block) {
+  auto it = mem_offsets.find(block.memory_type_);
+  if (it == mem_offsets.end()) {
+    auto result = mem_offsets.insert(std::pair<int64_t, size_t>(block.memory_type_, 0));
+    // Insert failure is unlikely
+    if (!result.second) {
+      return;
     }
-    block.Resize();
-    block.SetHeadOffset(mem_offset);
-    mem_offset += block.Size();
-    block.SetTailOffset(mem_offset - 1);
-  } else if (block.memory_type_ == RT_MEMORY_P2P_DDR) {
-    if (block.first_continuous_block_) {
-      p2p_mem_offset += MEM_ALIGN_SIZE;
-    }
-    block.Resize();
-    block.SetHeadOffset(p2p_mem_offset);
-    p2p_mem_offset += block.Size();
-    block.SetTailOffset(p2p_mem_offset - 1);
+    it = result.first;
   }
+
+  if (it == mem_offsets.end()) {
+    return;
+  }
+
+  auto &mem_offset = it->second;
+  if (block.first_continuous_block_) {
+    mem_offset += MEM_ALIGN_SIZE;
+  }
+  block.Resize();
+  block.SetHeadOffset(mem_offset);
+  mem_offset += block.Size();
+  block.SetTailOffset(mem_offset - 1);
 }
 
 bool DynamicBatchBlockReuse(MemoryBlock &block) {
@@ -2036,27 +2042,27 @@ void BlockMemAssigner::ResizeDynamicBatchBlocks() {
     }
   }
 
-  size_t max_mem_offset = mem_offset_;
-  size_t max_p2p_mem_offset = p2p_mem_offset_;
+  std::map<uint64_t, size_t> max_mem_offsets = mem_offsets_;
   for (auto &batch_blocks : dynamic_batch_blocks) {
-    size_t mem_offset = mem_offset_;
-    size_t p2p_mem_offset = p2p_mem_offset_;
+    std::map<uint64_t, size_t> mem_offsets = mem_offsets_;
     for (auto block : batch_blocks.second) {
       if (block == nullptr || block->deleted_block_ || block->is_zero_copy_) {
         continue;
       }
-      AddBlockMemOffset(mem_offset, p2p_mem_offset, *block);
+      AddBlockMemOffset(mem_offsets, *block);
     }
-    if (mem_offset > max_mem_offset) {
-      max_mem_offset = mem_offset;
+
+    for (auto &it : mem_offsets) {
+      auto itmax = max_mem_offsets.find(it.first);
+      if (itmax == max_mem_offsets.end()) {
+        max_mem_offsets[it.first] = it.second;
+      } else if (it.second > itmax->second) {
+        itmax->second = it.second;
+      }
+      GELOGI("Batch:%s memory type:%ld offset:%zu", batch_blocks.first.c_str(), it.first, it.second);
     }
-    if (p2p_mem_offset > max_p2p_mem_offset) {
-      max_p2p_mem_offset = p2p_mem_offset;
-    }
-    GELOGI("Batch[%s] offset[%zu] p2p_offset[%zu]", batch_blocks.first.c_str(), mem_offset, p2p_mem_offset);
   }
-  mem_offset_ = max_mem_offset;
-  p2p_mem_offset_ = max_p2p_mem_offset;
+  mem_offsets_ = max_mem_offsets;
 }
 
 ///
@@ -2074,11 +2080,13 @@ void BlockMemAssigner::ResizeMemoryBlocks() {
       continue;
     }
 
-    AddBlockMemOffset(mem_offset_, p2p_mem_offset_, *memory_block);
+    AddBlockMemOffset(mem_offsets_, *memory_block);
   }
   ResizeDynamicBatchBlocks();
-  GELOGI("mem_offset_ exclude zero_copy_memory is %zu, p2p_mem_offset_ exclude zero_copy_memory is %zu,"
-         "theory_min_memory_size %zu", mem_offset_, p2p_mem_offset_, theory_min_memory_size_);
+  for (auto it : mem_offsets_) {
+    GELOGI("Memory type:%ld mem_offset exclude zero_copy_memory:%zu, theory_min_memory_size:%zu", it.first, it.second,
+           theory_min_memory_size_);
+  }
 }
 
 ///
@@ -2217,7 +2225,8 @@ bool BlockMemAssigner::CheckIsZeroMemNodeType(const string &node_type) const {
          (node_type == CONSTANTOP) || (node_type == HVDWAIT);
 }
 
-bool BlockMemAssigner::GetWorkSpaceMemoryType(const NodePtr &node, size_t index, int64_t &memory_type) {
+bool BlockMemAssigner::GetWorkSpaceMemoryType(const NodePtr &node, size_t index, uint64_t &memory_type,
+                                              vector<bool> &workspace_reuse_flag) {
   memory_type = RT_MEMORY_HBM;
   vector<int64_t> workspace_memory_type;
   auto op_desc = node->GetOpDesc();
@@ -2233,6 +2242,20 @@ bool BlockMemAssigner::GetWorkSpaceMemoryType(const NodePtr &node, size_t index,
     return false;
   }
   memory_type = has_workspace_mem_type_attr ? workspace_memory_type[index] : RT_MEMORY_HBM;
+
+  vector<int32_t> workspace_no_reuse_scope;
+  bool has_workspace_no_reuse_scope =
+    ge::AttrUtils::GetListInt(op_desc, ATTR_NAME_WORKSPACE_MEMORY_NO_REUSE_SCOPE, workspace_no_reuse_scope);
+  if (has_workspace_no_reuse_scope && (index < workspace_no_reuse_scope.size())
+      && (workspace_no_reuse_scope[index] == kSessionNoReuse)) {
+    memory_type |= kSessionScopeMemory;
+    if (workspace_reuse_flag.empty()) {
+      workspace_reuse_flag.assign(workspace_no_reuse_scope.size(), true);
+    }
+    // set to no reuse
+    workspace_reuse_flag[index] = false;
+    GELOGI("%s's workspace is session scope no reuse, memory type:%lu.", node->GetName().c_str(), memory_type);
+  }
   return true;
 }
 }  // namespace ge

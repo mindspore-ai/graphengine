@@ -43,6 +43,7 @@
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/utils/graph_utils.h"
 #include "proto/ge_ir.pb.h"
+#include "graph/manager/graph_var_manager.h"
 #undef private
 #undef protected
 
@@ -194,6 +195,11 @@ TEST_F(UtestGeExecutor, kernel_ex_InitDumpTask) {
 }
 
 TEST_F(UtestGeExecutor, execute_graph_with_stream) {
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  map<string, string> options;
+  options[GRAPH_MEMORY_MAX_SIZE] = "1048576";
+  VarManager::Instance(0)->SetMemoryMallocSize(options);
+
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
@@ -278,7 +284,6 @@ TEST_F(UtestGeExecutor, execute_graph_with_stream) {
   OutputData output_data;
   vector<Tensor> outputs;
   EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
-  
 
   GraphExecutor graph_executer;
   graph_executer.init_flag_ = true;

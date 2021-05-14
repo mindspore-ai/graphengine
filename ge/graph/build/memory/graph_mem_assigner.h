@@ -103,9 +103,9 @@ class GraphMemoryAssigner {
 
   ge::Status AssignMemory2HasRefAttrNode();
 
-  ge::Status ReAssignMemory(bool is_loop_graph, map<int64_t, size_t> &mem_type_to_offset);
+  ge::Status ReAssignMemory(bool is_loop_graph, map<uint64_t, size_t> &mem_type_to_offset);
 
-  ge::Status AssignZeroCopyMemory(map<int64_t, size_t> &mem_offset, size_t &zero_mem_copy_size);
+  ge::Status AssignZeroCopyMemory(map<uint64_t, size_t> &mem_offset, size_t &zero_mem_copy_size);
 
   ge::Status SetInputOffset();
 

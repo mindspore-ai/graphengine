@@ -28,8 +28,7 @@
 
 #define protected public
 #define private public
-#include "graph/manager/graph_caching_allocator.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #undef protected
 #undef private
 

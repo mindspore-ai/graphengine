@@ -427,7 +427,7 @@ class GraphManager {
 
   void SetSessionGraphId(ComputeGraphPtr compute_graph, uint32_t graph_id);
 
-  Status ModifyDataIndex(const Graph &graph);
+  Status ModifyDataIndex(const Graph &graph, const std::map<std::string, std::string> &graph_option);
 
   static Status CheckGraphAdded(const GraphId &graph_id, const Graph &graph);
 

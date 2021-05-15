@@ -466,7 +466,7 @@ Status GraphManager::SetStagesOptions(uint32_t graph_id, const GraphManagerOptio
   return SUCCESS;
 }
 
-Status GraphManager::ModifyDataIndex(const Graph &graph) {
+Status GraphManager::ModifyDataIndex(const Graph &graph, const std::map<std::string, std::string> &graph_option) {
   vector<OpDescPtr> data_desc;
   set<int64_t> indexes;
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
@@ -489,6 +489,13 @@ Status GraphManager::ModifyDataIndex(const Graph &graph) {
     auto data_size = static_cast<int64_t>(data_desc.size());
     // The valid index starts with 0 and increases by 1, and num is equal to data_node.
     if (indexes.size() != data_desc.size() || *first_iter != 0 || *end_iter != data_size - 1) {
+      auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
+      bool enable_input_shape_range = (iter != graph_option.end()) && (!iter->second.empty());
+      if (enable_input_shape_range) {
+        REPORT_INNER_ERROR("E19999", "Input data index is invalid when data shape range enabled, please check!");
+        GELOGE(GRAPH_PARAM_INVALID, "Input data index is invalid when data shape range enabled.");
+        return GRAPH_PARAM_INVALID;
+      }
       GELOGI("Graph[%s] input data index is invalid, set data index by topo order.", compute_graph->GetName().c_str());
       int64_t index = 0;
       for (auto &op : data_desc) {
@@ -532,7 +539,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
     GELOGE(FAILED, "AddGraph failed.");
     return FAILED;
   }
-  GE_CHK_STATUS_RET(ModifyDataIndex(graph));
+  GE_CHK_STATUS_RET(ModifyDataIndex(graph, options));
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);

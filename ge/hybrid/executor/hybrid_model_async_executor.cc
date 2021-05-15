@@ -19,6 +19,13 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_context.h"
+#include "graph/types.h"
+#include "graph/debug/ge_attr_define.h"
+#include "graph/manager/graph_caching_allocator.h"
+#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/rdma_pool_allocator.h"
+#include "graph/manager/host_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 
 namespace ge {
 namespace hybrid {
@@ -440,28 +447,60 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
     GeShape ge_shape(tensor_desc->GetShape().GetDims());
     GeTensorDesc ge_tensor_desc;
     ge_tensor_desc.SetShape(ge_shape);
-    GeTensor ge_tensor(ge_tensor_desc);
     if (output_size > 0) {
-      auto aligned_ptr = MakeShared<AlignedPtr>(output_size, kAlignment);
-      GE_CHECK_NOTNULL(aligned_ptr);
-      auto data_buf = aligned_ptr->MutableGet();
-      GE_CHECK_NOTNULL(data_buf);
-      GE_CHK_RT_RET(rtMemcpy(data_buf, output_size, output_tensor.GetData(), output_size, RT_MEMCPY_DEVICE_TO_HOST));
-      ge_tensor.SetData(aligned_ptr, output_size);
-      output_data->blobs.emplace_back(data_buf, static_cast<uint32_t>(output_size), false);
+      if (execute_mode != kLazyRecompile) {
+        auto aligned_ptr = MakeShared<AlignedPtr>(output_size, kAlignment);
+        GE_CHECK_NOTNULL(aligned_ptr);
+        auto data_buf = aligned_ptr->MutableGet();
+        GE_CHECK_NOTNULL(data_buf);
+        GE_CHK_RT_RET(rtMemcpy(data_buf, output_size, output_tensor.GetData(), output_size, RT_MEMCPY_DEVICE_TO_HOST));
+        GeTensor ge_tensor(ge_tensor_desc);
+        ge_tensor.SetData(aligned_ptr, output_size);
+        output_data->blobs.emplace_back(data_buf, static_cast<uint32_t>(output_size), false);
+        auto tensor = TensorAdapter::AsTensor(ge_tensor);
+        outputs.emplace_back(std::move(tensor));
+      } else {
+        BuildDeviceTensor(output_tensor, ge_tensor_desc, output_size, outputs);
+        output_data->blobs.emplace_back(output_tensor.Release(), static_cast<uint32_t>(output_size), false,
+                                        static_cast<uint32_t>(kPlacementDevice));
+      }
     } else {
-      GELOGW("Output[%zu] is empty. shape = [%s]", i, tensor_desc->GetShape().ToString().c_str());
+      GELOGW("Output [%zu] is empty. shape = [%s]", i, tensor_desc->GetShape().ToString().c_str());
+      GeTensor ge_tensor(ge_tensor_desc);
       ge_tensor.SetData(nullptr, 0U);
       output_data->blobs.emplace_back(nullptr, 0U, false);
+      auto tensor = TensorAdapter::AsTensor(ge_tensor);
+      outputs.emplace_back(std::move(tensor));
     }
-    auto tensor = TensorAdapter::AsTensor(ge_tensor);
-    outputs.emplace_back(std::move(tensor));
     GELOGD("Output[%zu] added, type = %s, shape = [%s], size = %ld", i,
            TypeUtils::DataTypeToSerialString(tensor_desc->GetDataType()).c_str(),
            tensor_desc->GetShape().ToString().c_str(), output_size);
   }
 
   return SUCCESS;
+}
+
+void HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeTensorDesc &ge_tensor_desc,
+                                                 int64_t output_size, std::vector<ge::Tensor> &outputs) {
+  GELOGD("Start to build device tensor");
+  auto mem_type = output_tensor.GetMemType();
+  GELOGD("Mem type is %d", static_cast<uint32_t>(mem_type));
+  auto deleter = [=](uint8_t *device_data) {
+    if (device_data != nullptr) {
+      if (mem_type == RDMA_HBM) {
+        MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Free(device_data, device_id_);
+      } else if (mem_type == HOST_DDR) {
+        MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Free(device_data);
+      } else {
+        MemManager::Instance().CachingInstance(RT_MEMORY_HBM).Free(device_data, device_id_);
+      }
+    }
+  };
+  ge_tensor_desc.SetPlacement(kPlacementDevice);
+  GeTensor ge_tensor(ge_tensor_desc);
+  auto tensor = TensorAdapter::AsTensor(ge_tensor);
+  tensor.SetData(reinterpret_cast<uint8_t *>(output_tensor.Release()), static_cast<size_t>(output_size), deleter);
+  outputs.emplace_back(std::move(tensor));
 }
 
 Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,

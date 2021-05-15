@@ -493,7 +493,7 @@ Status GraphManager::ModifyDataIndex(const Graph &graph, const std::map<std::str
       bool enable_input_shape_range = (iter != graph_option.end()) && (!iter->second.empty());
       if (enable_input_shape_range) {
         REPORT_INNER_ERROR("E19999", "Input data index is invalid when data shape range enabled, please check!");
-        GELOGE(GRAPH_PARAM_INVALID, "Input data index is invalid when data shape range enabled.");
+        GELOGE(GRAPH_PARAM_INVALID, "[COMP][AddGraph]Input data index is invalid when data shape range enabled.");
         return GRAPH_PARAM_INVALID;
       }
       GELOGI("Graph[%s] input data index is invalid, set data index by topo order.", compute_graph->GetName().c_str());

@@ -490,7 +490,7 @@ Status GraphManager::ModifyDataIndex(const Graph &graph, const std::map<std::str
     // The valid index starts with 0 and increases by 1, and num is equal to data_node.
     if (indexes.size() != data_desc.size() || *first_iter != 0 || *end_iter != data_size - 1) {
       auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
-      if (iter != graph_option.end()) && (!iter->second.empty()) {
+      if (iter != graph_option.end() && !iter->second.empty()) {
         // If data inputs shape range is set, user must set valid data index.
         REPORT_INNER_ERROR("E19999", "Input data index is invalid when data shape range enabled, please check!");
         GELOGE(GRAPH_PARAM_INVALID, "[COMP][AddGraph]Input data index is invalid when data shape range enabled.");

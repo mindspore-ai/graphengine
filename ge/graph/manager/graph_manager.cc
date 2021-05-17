@@ -108,6 +108,7 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "register/custom_pass_helper.h"
 #include "external/graph/types.h"
+#include "common/util/error_manager/error_manager.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -492,7 +493,9 @@ Status GraphManager::ModifyDataIndex(const Graph &graph, const std::map<std::str
       auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
       if (iter != graph_option.end() && !iter->second.empty()) {
         // If data inputs shape range is set, user must set valid data index.
-        REPORT_INNER_ERROR("E19999", "Input data index is invalid when data shape range enabled, please check!");
+        std::string failed_reason = "Data index must be set continuous from 0 when data shape range enabled!";
+        REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+                           std::vector<std::string>({"--data_index", "-", failed_reason}));
         GELOGE(GRAPH_PARAM_INVALID, "[COMP][AddGraph]Input data index is invalid when data shape range enabled.");
         return GRAPH_PARAM_INVALID;
       }

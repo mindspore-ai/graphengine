@@ -221,6 +221,21 @@ TEST_F(UtestGraphManagerTest, test_add_graph_4) {
   EXPECT_NE(status, ge::SUCCESS);
 }
 
+TEST_F(UtestGraphManagerTest, test_add_graph_5) {
+  Graph graph("test_graph");
+  auto data = op::Data("Data").set_attr_index(1);
+  auto flatten = op::Flatten("Flatten").set_input_x(data, data.name_out_out());
+  std::vector<Operator> inputs{data};
+  std::vector<Operator> outputs{flatten};
+  graph.SetInputs(inputs).SetOutputs(outputs);
+
+  std::map<std::string, std::string> options = {{"ge.exec.dataInputsShapeRange", "0:[-1]"}};
+  OmgContext context;
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  EXPECT_EQ(graph_manager.AddGraph(graph_id, graph, options, context), GRAPH_PARAM_INVALID);
+}
+
 TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_1) {
   GraphId graph_id = 1;
   GraphManager graph_manager;

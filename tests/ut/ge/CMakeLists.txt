@@ -823,7 +823,7 @@ set(PROFILING_MNG_TEST_FILES
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
     "hybrid/known_node_executor_unittest.cc"
-    "hybrid/executor/worker/execution_engine_unittest.cc"
+    "hybrid/executor/node_state_unittest.cc"
     "hybrid/executor/subgraph_executor_unittest.cc"
     "hybrid/executor/worker/execution_engine_unittest.cc"
     "hybrid/model/hybrid_model_builder_unittest.cc"

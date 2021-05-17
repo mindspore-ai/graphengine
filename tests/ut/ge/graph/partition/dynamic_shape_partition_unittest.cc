@@ -15,20 +15,17 @@
  */
 
 #include <gtest/gtest.h>
+
+#define private public
+#define protected public
 #include "graph/partition/dynamic_shape_partition.h"
 #include "compute_graph.h"
 #include "inc/framework/common/types.h"
 #include "utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 
-
-#define private public
-#define protected public
-
 namespace ge {
-
 namespace {
-
 GeTensorDescPtr CreateTensorDesc(std::initializer_list<int64_t> shape, Format format = FORMAT_NCHW,
                                  DataType data_type = DT_FLOAT) {
   GeShape ge_shape{vector<int64_t>(shape)};
@@ -93,5 +90,30 @@ TEST_F(UtestDynamicShapePartition, single_op_scene_success) {
 
   DynamicShapePartitioner partitioner(graph);
   EXPECT_EQ(partitioner.Partition(), SUCCESS);
+}
+
+TEST_F(UtestDynamicShapePartition, merge_control_flow_group) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("default");
+  AttrUtils::SetStr(*graph, ATTR_NAME_SESSION_GRAPH_ID, "session_graph_id");
+
+  NodePtr data1 = NodeBuilder("data1", DATA).AddInputDesc({1}).AddOutputDesc({1}).Build(graph);
+  NodePtr data2 = NodeBuilder("data2", DATA).AddInputDesc({1}).AddOutputDesc({1}).Build(graph);
+  NodePtr merge = NodeBuilder("node2", MERGE).AddInputDesc({1}).AddInputDesc({1})
+                    .AddOutputDesc({1}).AddOutputDesc({}).Build(graph);
+
+  GraphUtils::AddEdge(data1->GetOutDataAnchor(0), merge->GetInDataAnchor(0));
+  GraphUtils::AddEdge(data2->GetOutDataAnchor(0), merge->GetInDataAnchor(1));
+
+  (void)AttrUtils::SetBool(data1->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, true);
+  (void)AttrUtils::SetInt(data1->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, 3);
+  (void)AttrUtils::SetBool(data2->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, true);
+  (void)AttrUtils::SetInt(data2->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, 3);
+  (void)AttrUtils::SetBool(merge->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, true);
+  (void)AttrUtils::SetInt(merge->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, 3);
+
+  EXPECT_EQ(graph->sub_graph_.size(), 0);
+  DynamicShapePartitioner partitioner(graph);
+  EXPECT_EQ(partitioner.Partition(), SUCCESS);
+  EXPECT_EQ(graph->sub_graph_.size(), 1);
 }
 } // namespace ge

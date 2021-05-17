@@ -223,4 +223,17 @@ TEST_F(UtestGraphPreproces, test_update_dtype_mbatch_case) {
   auto data1_output = data1_desc->MutableOutputDesc(0);
   EXPECT_EQ(data1_output->GetDataType(), 1);
 }
+
+TEST_F(UtestGraphPreproces, test_prepare_dyn_shape) {
+  ComputeGraphPtr compute_graph = BuildGraph5();
+  GraphPtr graph_ptr = std::make_shared<Graph>(GraphUtils::CreateGraphFromComputeGraph(compute_graph));
+
+  GraphNodePtr graph_node = make_shared<GraphNode>(0);
+  graph_node->SetComputeGraph(compute_graph);
+  graph_node->SetGraph(graph_ptr);
+
+  std::vector<GeTensor> user_input;
+  GraphPrepare graph_prepare;
+  EXPECT_EQ(graph_prepare.PrepareDynShape(graph_node, user_input, compute_graph, 0), SUCCESS);
+}
 }

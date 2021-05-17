@@ -65,7 +65,6 @@
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/merge_input_memcpy_pass.h"
 #include "graph/passes/merge_to_stream_merge_pass.h"
-#include "graph/passes/mark_force_unknown_for_cond_pass.h"
 #include "graph/passes/multi_batch_pass.h"
 #include "graph/passes/next_iteration_pass.h"
 #include "graph/passes/permute_pass.h"
@@ -2582,8 +2581,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::Migration", new (std::nothrow) SubgraphConstMigrationPass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ArgsClean", new (std::nothrow) UnusedArgsCleanPass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::PrunePass", new (std::nothrow) PrunePass));
-  auto mark_force_unknown_pass = new (std::nothrow) MarkForceUnknownForCondPass;
-  GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::MarkForceUnknownForCondPass", mark_force_unknown_pass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::NextIterationPass", new (std::nothrow) NextIterationPass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ControlTriggerPass", new (std::nothrow) ControlTriggerPass))
   GE_CHK_STATUS_RET(

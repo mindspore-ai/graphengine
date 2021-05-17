@@ -79,6 +79,7 @@ class GraphPrepare {
   Status ProcessNetOutput();
   Status ProcessBeforeInfershape();
   Status UpdateInputOutputByOptions();
+  Status CtrlFlowPreProcess();
 
   bool IsTansDataOpData(const ge::NodePtr &var_node);
 

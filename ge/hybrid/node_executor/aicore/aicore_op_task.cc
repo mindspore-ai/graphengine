@@ -23,6 +23,7 @@
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/types.h"
 #include "single_op/task/build_task_utils.h"
+#include "single_op/task/tbe_task_builder.h"
 
 using optiling::OpRunInfo;
 
@@ -131,8 +132,8 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
     GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForKernelName(op_desc), kernel_name),
                     GELOGI("Get original type of kernel_name"));
     GELOGI("TBE: binfile_key=%s, kernel_name=%s", stub_name_.c_str(), kernel_name.c_str());
-    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_name_.c_str(),
-                                     stub_name_.c_str(), kernel_name.c_str(), 0));
+    auto stub_func = KernelBinRegistry::GetInstance().GetUnique(stub_name_);
+    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_func, stub_name_.c_str(), kernel_name.c_str(), 0));
   }
   return SUCCESS;
 }

@@ -46,11 +46,6 @@
 #define REQUIRE_GRAPH_SUCCESS(cond, ...) REQUIRE(((cond) == GRAPH_SUCCESS), __VA_ARGS__)
 
 namespace ge {
-namespace {
-const std::set<std::string> kControlFlowOps{
-    STREAMACTIVE, STREAMSWITCH, STREAMMERGE, ENTER, REFENTER, LOOPCOND, NEXTITERATION, REFNEXTITERATION, EXIT, REFEXIT
-};
-}
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
@@ -279,9 +274,17 @@ Status DynamicShapePartitioner::InitClusters() {
     auto cluster = MakeShared<Cluster>(rank++, type, node, this);
     REQUIRE_NOT_NULL(cluster, "Failed new memory for cluster.");
     node_2_cluster_[node] = cluster;
-    if (cluster->IsUnknownShape() && !cluster->IsControlFlow()) {
+    if (cluster->IsUnknownShape()) {
       ordered_cluster_.push_back(cluster);
     }
+
+    int64_t group_index = -1;
+    if (AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
+      GELOGD("[%s] is rts control flow Op, group index: %ld", node->GetName().c_str(), group_index);
+      auto &control_cluster = control_clusters_[group_index];
+      control_cluster.emplace_back(cluster);
+    }
+
     // Already sorted topologically, so access to the parent cluster is safe
     for (const auto &parent : node->GetInAllNodes()) {
       cluster->AddInput(node_2_cluster_[parent]);
@@ -350,14 +353,38 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
 }
 }
 
+void DynamicShapePartitioner::MergeClustersControlFlow() {
+  for (const auto &item : control_clusters_) {
+    const auto &control_cluster = item.second;
+    auto rit = control_cluster.rbegin();
+    if (rit == control_cluster.rend()) {
+      GELOGW("Invalid empty control flow cluster.");
+      continue;
+    }
+
+    const auto &cluster = *rit;
+    for (++rit; rit != control_cluster.rend(); ++rit) {
+      const auto &cluster_from = *rit;
+      auto merged_clusters = cluster->MergeAllPathFrom(cluster_from);
+      GELOGD("Merge all path cluster from %lu to %lu %s.", cluster_from->Id(), cluster->Id(),
+             ToString(merged_clusters).c_str());
+      for (const auto &merged_cluster : merged_clusters) {
+        for (const auto &node : merged_cluster->Nodes()) {
+          node_2_cluster_[node] = cluster;
+        }
+      }
+    }
+  }
+}
+
 void DynamicShapePartitioner::MergeClustersUnknownShape() {
   // Merge unknown shape clusters
   for (const auto &cluster : ordered_cluster_) {
-    if (cluster->IsIndependent() || cluster->IsControlFlow()) {
+    if (cluster->IsIndependent()) {
       continue;
     }
     for (const auto &in_cluster : cluster->Inputs()) {
-      if (!in_cluster->IsUnknownShape() || in_cluster->IsControlFlow()) {
+      if (!in_cluster->IsUnknownShape()) {
         continue;
       }
       auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);
@@ -419,6 +446,7 @@ void DynamicShapePartitioner::MergeClustersInputData() {
 }
 
 Status DynamicShapePartitioner::MergeClusters() {
+  MergeClustersControlFlow();
   MergeClustersUnknownShape();
   REQUIRE_SUCCESS(TopologicalSortClusters(), "Failed topological sort clusters after merge unknown shape clusters.");
   MergeClustersKnownShape();
@@ -608,13 +636,6 @@ bool Cluster::IsRefVariable() const {
   return false;
 }
 
-bool Cluster::IsControlFlow() const {
-  const auto &op_desc = nodes_[0]->GetOpDesc();
-  bool is_ctrl_flow = kControlFlowOps.count(op_desc->GetType()) > 0 && op_desc->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
-  GELOGD("[%s] %s rts control flow Op ", op_desc->GetName().c_str(), is_ctrl_flow ? "Is" : "Not");
-  return is_ctrl_flow;
-}
-
 void Cluster::AddInput(ClusterPtr in) {
   if (std::find(in_clusters_.begin(), in_clusters_.end(), in) != in_clusters_.end()) return;
   in_clusters_.insert(in_clusters_.end(), in);
@@ -694,10 +715,7 @@ std::vector<ClusterPtr> Cluster::MergeAllPathFrom(ClusterPtr other) {
   if (other->IsIndependent()) {
     return path_clusters;
   }
-  if (std::find(other->out_clusters_.begin(), other->out_clusters_.end(), shared_from_this()) ==
-      other->out_clusters_.end()) {
-    return path_clusters;
-  }
+
   path_clusters.push_back(other);
   forward_reached_queue.push(other);
   backward_reached_queue.push(shared_from_this());
@@ -761,7 +779,7 @@ InControlAnchorPtr Cluster::GetFrameInControlAnchor() { return partition_node_->
 OutControlAnchorPtr Cluster::GetFrameOutControlAnchor() { return partition_node_->GetOutControlAnchor(); };
 
 Status Cluster::BuildFrame() {
-  if ((IsUnknownShape() || IsKnownShape() || IsInputNode()) && !IsControlFlow()) {
+  if (IsUnknownShape() || IsKnownShape() || IsInputNode()) {
     return BuildPartitionFrame();
   } else {
     auto node = nodes_.front();
@@ -896,7 +914,7 @@ Status Cluster::CombinePartitionFrame() {
 }
 
 Status Cluster::BuildPartitionSubgraph() {
-  if (IsData() || IsNetOutput() || IsIndependent() || IsControlFlow()) {
+  if (IsData() || IsNetOutput() || IsIndependent()) {
     return SUCCESS;
   }
   int64_t parent_node_index = 0;

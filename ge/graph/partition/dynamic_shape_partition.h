@@ -47,7 +47,6 @@ class DynamicShapePartitioner {
     bool IsUnknownShape() const;
     bool IsIndependent() const;
     bool IsNetOutput() const;
-    bool IsControlFlow() const;
     std::vector<std::shared_ptr<Cluster>> Inputs() const;
     std::vector<std::shared_ptr<Cluster>> Outputs() const;
     bool IsInputNode() const;
@@ -126,13 +125,15 @@ class DynamicShapePartitioner {
   //    and there's only one path between the two clusters , merge the two clusters
   // 3) Iterate through the INPUT_DATA clusters, merge all INPUT_DATA
   Status MergeClusters();
+  // Merge clusters step0
+  void MergeClustersControlFlow();
   // Merge clusters step1
   void MergeClustersUnknownShape();
   // Merge clusters step2
   void MergeClustersKnownShape();
   // Merge clusters step3
   void MergeClustersInputData();
-  // Topological sort clusters after merge unknow shape clusters.
+  // Topological sort clusters after merge unknown shape clusters.
   Status TopologicalSortClusters();
   // Deduplicate merged clusters
   void PruneUniqueClusters();
@@ -140,7 +141,7 @@ class DynamicShapePartitioner {
   Status BuildPartitionFrame();
   // Establish connection between corresponding partitioned of clusters
   Status CombinePartitionFrame();
-  // Convert the nodes in cluster into a complete ComputeGraoh
+  // Convert the nodes in cluster into a complete ComputeGraph
   Status BuildPartitionSubgraph();
   // Clear resource and break circular dependency
   void ClearResource();
@@ -155,6 +156,8 @@ class DynamicShapePartitioner {
   Status CtrlEdgeTransfer();
   ge::ComputeGraphPtr root_graph_;                                        // The original graph to partition
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // Record nodes and the cluster it belongs to
+  // V1 control flow cluster, need merge to one Graph.
+  std::unordered_map<int64_t, std::vector<std::shared_ptr<Cluster>>> control_clusters_;
   // topological sorted clusters, this field will change with the splitting.
   // When partitioning UNKNOWN_SHAPE cluster, it is a collection of all topological sorted UNKNOWN_SHAPE clusters
   // When partitioning KNOWN_SHAPE cluster, it is a collection of all topological sorted KNOWN_SHAPE clusters

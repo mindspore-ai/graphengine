@@ -18,20 +18,25 @@
 
 #include <queue>
 
+#include "graph/utils/node_utils.h"
 #include "graph/common/omg_util.h"
 
 namespace ge {
 namespace {
-const std::set<std::string> kMergeOpTypes{ MERGE, REFMERGE };
-
-const std::set<std::string> kSwitchOpTypes{ SWITCH, REFSWITCH };
-
-const std::set<std::string> kLoopMergeInputs{ ENTER, REFENTER, NEXTITERATION, REFNEXTITERATION };
-
 inline bool IsMergeInLoop(const NodePtr &node) {
+  const static std::set<std::string> kLoopMergeInputs{ ENTER, REFENTER, NEXTITERATION, REFNEXTITERATION };
+
   std::string node_type;
   (void)GetOriginalType(node, node_type);
   return kLoopMergeInputs.count(node_type) > 0;
+}
+
+inline bool IsSwitchInLoop(const NodePtr &node) {
+  const static std::set<std::string> kLoopSwitchInputs{ MERGE, REFMERGE, LOOPCOND };
+
+  std::string node_type;
+  (void)GetOriginalType(node, node_type);
+  return kLoopSwitchInputs.count(node_type) > 0;
 }
 }
 
@@ -103,7 +108,13 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const NodePtr &node, std:
         if (dst_span > 0) {
           search_queue.push({in_node, dst_span - 1});
         } else {
-          switch_group.emplace_back(in_node);
+          const auto &all_in_nodes = in_node->GetInDataNodes();
+          if (std::any_of(all_in_nodes.begin(), all_in_nodes.end(), IsSwitchInLoop)) {
+            GELOGW("Travel node: %s, %s node: %s, Skip LoopCond switch", dst_node->GetName().c_str(), node_type.c_str(),
+                   in_node->GetName().c_str());
+          } else {
+            switch_group.emplace_back(in_node);
+          }
         }
       } else if (kMergeOpTypes.count(node_type) > 0) { // Merge input node.
         search_queue.push({in_node, dst_span + 1});
@@ -121,19 +132,37 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const NodePtr &node, std:
 ///
 void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const std::map<NodePtr, std::vector<NodePtr>> &switch_groups) {
   std::function<bool(const NodePtr &)> callback = [](const NodePtr &n) {
-    return n->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
+    return n->GetOpDesc()->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP);
   };
 
-  for (const auto &group : switch_groups) {
-    const auto &node = group.first;
-    const auto &switch_group = group.second;
-    const auto &op_desc = node->GetOpDesc();
-    if (IsUnknownShapeTensor(op_desc->GetOutputDesc(0)) || op_desc->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE) ||
-        std::any_of(switch_group.begin(), switch_group.end(), callback)) {
-      GELOGI("Mark [%s] as force unknown shape", node->GetName().c_str());
-      MarkForceUnknownShape(node, true);
-      for (const auto &n : switch_group) {
-        MarkForceUnknownShape(n, true);
+  for (auto it1 = switch_groups.begin(); it1 != switch_groups.end(); ++it1) {
+    const auto &op_node1 = it1->first;
+    const auto &op_desc1 = op_node1->GetOpDesc();
+    if (op_desc1->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP)) {
+      continue;
+    }
+
+    if (IsUnknownShapeTensor(op_desc1->GetOutputDesc(0))) {
+      int64_t group_index = op_desc1->GetId();
+      GELOGI("Mark %s as unknown shape control flow, group index: %ld", op_desc1->GetName().c_str(), group_index);
+      MarkForceUnknownShape(op_node1, true, group_index);
+      for (const auto &n : it1->second) {
+        MarkForceUnknownShape(n, true, group_index);
+      }
+
+      for (auto it2 = switch_groups.begin(); it2 != switch_groups.end(); ++it2) {
+        const auto &op_node2 = it2->first;
+        const auto &op_desc2 = op_node2->GetOpDesc();
+        if (op_desc2->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP)) {
+          continue;
+        }
+
+        if (std::any_of(it2->second.begin(), it2->second.end(), callback)) {
+          MarkForceUnknownShape(op_node2, true, group_index);
+          for (const auto &n : it2->second) {
+            MarkForceUnknownShape(n, true, group_index);
+          }
+        }
       }
     }
   }

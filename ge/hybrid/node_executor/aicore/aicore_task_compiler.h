@@ -18,7 +18,6 @@
 #define GE_HYBRID_KERNEL_AICORE_TASK_COMPILER_H_
 
 #include <mutex>
-#include <atomic>
 #include "opskernel_manager/ops_kernel_manager.h"
 #include "aicore_node_executor.h"
 
@@ -35,7 +34,7 @@ class AiCoreTaskCompiler : public TaskCompiler {
   Status DoCompileOp(const NodePtr &node) const;
   Status DoGenerateTask(const Node &node, std::vector<domi::TaskDef> &tasks);
   OpsKernelInfoStorePtr aic_kernel_store_;
-  std::atomic_bool is_initialized_{false};
+  bool is_initialized_ = false;
   static std::mutex mu_;
 };
 }  // namespace hybrid

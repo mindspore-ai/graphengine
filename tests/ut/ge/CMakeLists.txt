@@ -829,6 +829,7 @@ set(HYBRID_TEST_FILES
     "hybrid/model/hybrid_model_builder_unittest.cc"
     "hybrid/node_executor/rts/rts_node_task_unittest.cc"
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
+    "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

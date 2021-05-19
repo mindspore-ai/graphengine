@@ -372,6 +372,7 @@ set(COMMON_FORMAT_SRC_FILES
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/optimize/graph_optimize.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
+    "${GE_CODE_DIR}/ge/graph/optimize/mem_rw_conflict_optimize.cc"
 )
 
 
@@ -715,7 +716,10 @@ set(PASS_TEST_FILES
     "graph/passes/mark_node_unknown_shape_pass_unittest.cc"
     "graph/passes/reshape_recovery_pass_unittest.cc"
     "graph/passes/cast_remove_pass_unittest.cc"
-    "graph/passes/memcpy_addr_async_unittest.cc"
+	"graph/passes/memcpy_addr_async_unittest.cc"
+    "graph/passes/hccl_continuous_pass_unittest.cc"
+    "graph/passes/hccl_memcpy_pass_unittest.cc"
+		
 )
 
 set(KERNEL_TEST_FILES
@@ -798,6 +802,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/manager/run_graph_unittest.cc"
     "graph/partition/dynamic_shape_partition_unittest.cc"
     "graph/manager/graph_manager_unittest.cc"
+    "graph/optimize/mem_rw_conflict_optimize_unittest.cc"
     "session/omg_omg_unittest.cc"
     "session/ge_api_unittest.cc"
     "session/inner_session_unittest.cc"

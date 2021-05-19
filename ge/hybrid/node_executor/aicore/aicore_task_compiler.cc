@@ -31,6 +31,11 @@ REGISTER_TASK_COMPILER(AiCoreTaskCompiler);
 std::mutex AiCoreTaskCompiler::mu_;
 
 Status AiCoreTaskCompiler::Initialize() {
+  std::lock_guard<std::mutex> lk(mu_);
+  if (is_initialized_) {
+    return SUCCESS;
+  }
+
   auto ge_lib = GELib::GetInstance();
   GE_CHECK_NOTNULL(ge_lib);
   if (!ge_lib->InitFlag()) {
@@ -41,6 +46,7 @@ Status AiCoreTaskCompiler::Initialize() {
   auto &kernel_manager = ge_lib->OpsKernelManagerObj();
   aic_kernel_store_ = kernel_manager.GetOpsKernelInfoStore("AIcoreEngine");
   GE_CHECK_NOTNULL(aic_kernel_store_);
+  is_initialized_ = true;
   return SUCCESS;
 }
 
@@ -57,6 +63,13 @@ Status AiCoreTaskCompiler::DoCompileOp(const NodePtr &node) const {
 }
 
 Status AiCoreTaskCompiler::CompileOp(const NodePtr &node, std::vector<domi::TaskDef> &tasks) {
+  Status ret = Initialize();
+  if (ret != SUCCESS) {
+    GELOGE(FAILED, "[Check][State][%s] Offline inference not support online compile.", node->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] Offline inference not support online compile.", node->GetName().c_str());
+    return ret;
+  }
+
   GE_CHECK_NOTNULL(node);
   GELOGI("AiCoreTaskCompiler(%s) CompileOp Start.", node->GetName().c_str());
 

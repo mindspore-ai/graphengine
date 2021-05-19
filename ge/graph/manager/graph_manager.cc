@@ -3072,7 +3072,6 @@ Status GraphManager::CheckIncreBuildAndPreRun(GraphManager *graph_manager, const
                 "The graph " + std::to_string(graph_node->GetGraphId()) +
                 " need to re-build, you should remove it"
                 " from GE first, then AddGraph again and rebuild it.");
-    graph_node->Unlock();
     return PARAM_INVALID;
   }
   // check need incre build.
@@ -3177,12 +3176,11 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     if (ret != SUCCESS) {
       graph_node->SetRunFlag(false);
       if (!ge::Analyzer::GetInstance()->IsEnableNetAnalyzeDebug()) {
-        ReturnError(graph_manager, args.callback, ret, "CheckIncreBuildAndPreRun Failed, thread exit..");
+        GELOGE(ret, "CheckIncreBuildAndPreRun Failed, thread exit..");
         graph_node->Unlock();
         return;
       } else {
-        ReturnError(graph_manager, graph_node, args.callback, ret,
-                    "CheckIncreBuildAndPreRun Failed, keep geop continue!");
+        GELOGE(ret, "CheckIncreBuildAndPreRun Failed, keep geop continue!");
         graph_node->Unlock();
         continue;
       }

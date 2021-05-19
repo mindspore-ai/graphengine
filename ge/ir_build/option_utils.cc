@@ -253,8 +253,7 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
   for (auto str : split_set) {
     split_dim = StringUtils::Split(str, ',');
     if (split_dim.size() != static_cast<size_t>(kDynamicImageSizeNum)) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10020", {"DynamicImageSizeNum"},
-                                                      {std::to_string(kDynamicImageSizeNum)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10020");
       GELOGE(ge::PARAM_INVALID,
           "[Check][DynamicImagesizeInputShape] invalid value:%s number of dimensions of each group must be %ld.",
           dynamic_image_size.c_str(), kDynamicImageSizeNum);

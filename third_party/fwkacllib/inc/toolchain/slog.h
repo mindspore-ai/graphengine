@@ -17,6 +17,8 @@
 #ifndef D_SYSLOG_H_
 #define D_SYSLOG_H_
 
+static const int TMP_LOG = 0;
+
 #ifdef __cplusplus
 #ifndef LOG_CPP
 extern "C" {
@@ -261,7 +263,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
 #define dlog_error(moduleId, fmt, ...)                                          \
   do {                                                                          \
     DlogErrorInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -276,7 +278,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     if(CheckLogLevel(moduleId, DLOG_WARN) == 1) {                                   \
         DlogWarnInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
     }                                                                               \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -291,7 +293,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     if(CheckLogLevel(moduleId, DLOG_INFO) == 1) {                                   \
         DlogInfoInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
     }                                                                               \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -306,7 +308,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     if(CheckLogLevel(moduleId, DLOG_DEBUG) == 1) {                                  \
         DlogDebugInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
     }                                                                               \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -318,7 +320,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
 #define dlog_event(moduleId, fmt, ...)                                          \
   do {                                                                          \
     DlogEventInner(moduleId, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__); \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -334,7 +336,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     if(CheckLogLevel(moduleId, level) == 1) {                                           \
         DlogInner(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
      }                                                                                  \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -351,7 +353,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     if(CheckLogLevel(moduleId, level) == 1) {                                                           \
         DlogInner(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
     }                                                                                                   \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -369,7 +371,7 @@ DLL_EXPORT int DlogSetAttr(LogAttr logAttr);
     if(CheckLogLevel(moduleId, level) == 1) {                                                                   \
         DlogWithKVInner(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
     }                                                                                                           \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -453,7 +455,7 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttr);
     if(CheckLogLevelForC(moduleId, level) == 1) {                                           \
         DlogInnerForC(moduleId, level, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);   \
      }                                                                                  \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -470,7 +472,7 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttr);
     if(CheckLogLevelForC(moduleId, level) == 1) {                                                           \
         DlogInnerForC(moduleId, level, "[%s:%d][%s]" fmt, __FILE__, __LINE__, submodule, ##__VA_ARGS__);    \
     }                                                                                                   \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog
@@ -488,7 +490,7 @@ DLL_EXPORT int DlogSetAttrForC(LogAttr logAttr);
     if(CheckLogLevelForC(moduleId, level) == 1) {                                                                   \
         DlogWithKVInnerForC(moduleId, level, pstKVArray, kvNum, "[%s:%d]" fmt, __FILE__, __LINE__, ##__VA_ARGS__);  \
     }                                                                                                           \
-  } while (0)
+  } while (TMP_LOG != 0)
 
 /**
  * @ingroup slog

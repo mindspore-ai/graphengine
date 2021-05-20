@@ -273,14 +273,11 @@ REG_OP(PadV3)
 *@brief Pads a tensor.
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li paddings: A Tensor. Must be int32 type 
+*     paddings is a required input tensor.
 
 *@par Attributes:
-* @li paddings: An required "vector<vector<int>>".
-*     For each dimension D of input, paddings[D, 0] indicates how many
-*     values to add before the contents of tensor in that dimension,
-*     and paddings[D, 1] indicates how many values to add after the
-*     contents of tensor in that dimension.
 * @li constant_values: An optional int value for pad.
 * @li mode: An optional string, Defaults to "constant", indicates paddings mode,
 *     support "constant", "reflect", "edge"
@@ -298,9 +295,9 @@ REG_OP(PadV3)
 * Warning: THIS FUNCTION IS DEPRECATED. Please use PadV3 instead.
 */
 REG_OP(PadV3D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
-    .REQUIRED_ATTR(paddings, ListListInt)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(paddings, TensorType({DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(constant_values, Int, 0)
     .ATTR(mode, String, "constant")
     .ATTR(paddings_contiguous, Bool, true)

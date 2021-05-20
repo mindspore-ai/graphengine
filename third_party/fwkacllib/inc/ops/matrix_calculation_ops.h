@@ -179,7 +179,7 @@ REG_OP(GEMM)
 *@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
 
 *@par Inputs:
-*Three inputs, including:
+*Two inputs, including:
 * @li x1: A matrix Tensor. Must be one of the following types: float16,
 * float32, int32. 2D or higher. Has format [ND, NHWC, FRACTAL_NZ].
 * @li x2: A matrix Tensor. Must be one of the following types: float16,

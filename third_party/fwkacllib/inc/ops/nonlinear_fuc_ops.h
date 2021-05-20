@@ -536,13 +536,19 @@ REG_OP(Elu)
 *       max(0, x) + min(0, alpha * (exp(x/alpha) - 1)). \n
 
 *@par Inputs:
-*x: A float16, float32 or double, for the input data type . \n
+*x: A float16, float32, for the input data type . \n
 
 *@par Attributes:
-*alpha: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+*alpha1: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+
+*@par Attributes:
+*alpha2: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
+
+*@par Attributes:
+*alpha3: A float32. Defines at which positive value the ELU saturates. Defaults to "1.0" . \n
 
 *@par Outputs:
-*y: A float16, float32 or double, for the normalized result . \n
+*y: A float16, float32, for the normalized result . \n
 
 *@attention Constraints:
 *@li The input is of type float16 or float32 . \n
@@ -553,9 +559,11 @@ REG_OP(Elu)
 *@li Compatible with ONNX's Celu operator
 */
 REG_OP(Celu)
-    .INPUT(x, TensorType::FloatingDataType())
-    .OUTPUT(y, TensorType::FloatingDataType())
-    .ATTR(alpha, Float, 1.0)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16}))
+    .ATTR(alpha1, Float, 1.0)
+    .ATTR(alpha2, Float, 1.0)
+    .ATTR(alpha3, Float, 1.0)
     .OP_END_FACTORY_REG(Celu)
 
 /**
@@ -689,6 +697,25 @@ REG_OP(Mish)
     .INPUT(x, TensorType({ DT_FLOAT,DT_FLOAT16 }))
     .OUTPUT(y, TensorType({ DT_FLOAT,DT_FLOAT16 }))
     .OP_END_FACTORY_REG(Mish)
+
+/**
+ * @brief: pytorch mish_grad operator.
+ * @par Inputs:
+ * three input, including:
+ * @li grad: A Tensor. shape, datatype and format is same as x
+ * @li x: A Tensor. Must be one of the following types: float16, float32
+ * @li tanhx: A Tensor. shape, datatype and format is same as x
+ * @par Outputs:
+ * 1 output, including:
+ * @li x_grad: A Tensor. shape, datatype and format is same as x
+ */
+
+REG_OP(MishGrad)
+    .INPUT(grad, TensorType({ DT_FLOAT,DT_FLOAT16 }))
+    .INPUT(x, TensorType({ DT_FLOAT,DT_FLOAT16 }))
+    .OPTIONAL_INPUT(tanhx, TensorType({ DT_FLOAT,DT_FLOAT16 }))
+    .OUTPUT(x_grad, TensorType({ DT_FLOAT,DT_FLOAT16 }))
+    .OP_END_FACTORY_REG(MishGrad)
 
 /**
  * @brief pytorch hardtanh_backward operator.
@@ -993,6 +1020,30 @@ REG_OP(HardSigmoidGrad)
     .ATTR(beta, Float, 0.5)
     .OP_END_FACTORY_REG(HardSigmoidGrad)
 
+/**
+* @brief Calculate the shrink function. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li input_x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+* @par Attributes:
+* @li lambd: An optional float. Defaults to 0.5. \n
+* @li bias: An optional float. Defaults to 0.0. \n
+
+* @par Outputs:
+* y: A Tensor with the same dtype and shape of input_x's. \n
+
+* @par Third-party framework compatibility
+* Compatible with the ONNX operator Shrink. \n
+*/
+REG_OP(Shrink)
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(lambd, Float, 0.5)
+    .ATTR(bias, Float, 0.0)
+    .OP_END_FACTORY_REG(Shrink)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NONLINEAR_FUC_OPS_H_

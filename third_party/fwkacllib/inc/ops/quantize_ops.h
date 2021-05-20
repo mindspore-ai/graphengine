@@ -214,7 +214,7 @@ REG_OP(AscendRequant)
 *@brief Requantizes the input of int16 . \n
 
 *@par Inputs:
-*@li x: An NC1HWC0 tensor of type int16, specifying the input.
+*@li x0: An NC1HWC0 tensor of type int16, specifying the input.
 *@li req_scale: An NC1HWC0 tensor of type uint64, specifying the scaling ratio.
 *@li x1: An NC1HWC0 tensor of type int16 . \n
 
@@ -223,17 +223,17 @@ REG_OP(AscendRequant)
 *@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
 
 *@par Outputs:
-*@li y: The dequantized output tensor of type int8 and with format NC1HWC0.
+*@li y0: The dequantized output tensor of type int8 and with format NC1HWC0.
 *@li y1: The dequantized output tensor of type int16 and with format NC1HWC0 . \n
 
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendRequantS16)
-  .INPUT(x, TensorType({DT_INT16}))
+  .INPUT(x0, TensorType({DT_INT16}))
   .INPUT(req_scale, TensorType({DT_UINT64}))
   .OPTIONAL_INPUT(x1, TensorType({DT_INT16}))
-  .OUTPUT(y, TensorType({DT_INT8}))
+  .OUTPUT(y0, TensorType({DT_INT8}))
   .OUTPUT(y1, TensorType({DT_INT16}))
   .ATTR(dual_output, Bool, false)
   .ATTR(relu_flag, Bool, false)

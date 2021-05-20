@@ -118,7 +118,23 @@ extern HcclResult HcclReduceScatter(void *sendBuf, void *recvBuf, uint64_t recvC
  */
 extern HcclResult HcclAllGather(void *sendBuf, void *recvBuf, uint64_t sendCount, HcclDataType dataType, HcclComm comm,
                                 aclrtStream stream);
+/**
+ * @brief Get the rank size of this comm.
+ *
+ * @param comm A pointer identifying the communication resource based on.
+ * @param rankSize  A pointer identifying the rank size.
+ * @return HcclResult
+ */
+extern HcclResult HcclGetRankSize(HcclComm comm, uint32_t *rankSize);
 
+/**
+ * @brief Get the rank id of this comm.
+ *
+ * @param comm A pointer identifying the communication resource based on.
+ * @param rankSize  A pointer identifying the rank id.
+ * @return HcclResult
+ */
+extern HcclResult HcclGetRankId(HcclComm comm, uint32_t *rank);
 /**
  * @brief Barrier operator.
  *

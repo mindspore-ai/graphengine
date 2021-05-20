@@ -55,7 +55,9 @@ REG_OP(LogSoftmaxGrad)
 *Two inputs, including:
 * @li features: A Tensor. Must be one of the following types: half, float32, double.
 *    A "batch_size * num_classes" matrix.
-* @li labels: A Tensor of the same type as "features". batch_size vector with values in [0, num_classes).
+* @li labels: A Tensor. Must be one of the following types: 'int32', 'int64'.
+*             batch_size vector with values in [0, num_classes).
+*             This is the label for the given minibatch entry.
 
 
 *@par Outputs:
@@ -639,6 +641,48 @@ REG_OP(LayerNormXBackprop)
     .OP_END_FACTORY_REG(LayerNormXBackprop)
 
 /**
+*@brief LayerNormXBackpropV2 operator interface implementation
+*  calculating: dy, x, variance, mean, gamma
+*  pd_xl = data_dy*data_gamma
+*  pd_var = np.sum(((-0.5)*pd_xl*(data_x - data_mean)
+*           np.power((data_variance + EPSLON), (-1.5))),
+*           reduce_axis, keepdims=True)
+*  pd_mean = np.sum(((-1.0)*pd_xl
+*            np.power((data_variance + EPSLON), (-0.5))),
+*            reduce_axis, keepdims=True)
+*            + pd_var*(1.0/m)
+*            np.sum(((-2.0)*(data_x - data_mean)), reduce_axis, keepdims=True)
+*  pd_x = pd_xl*np.power((data_variance + EPSLON), (-0.5)) +
+*         pd_var*(2.0/m)*(data_x - data_mean) + pd_mean*(1.0/m)
+*  res_for_gamma = (data_x - data_mean) * np.power((data_variance + EPSLON), (-0.5))
+
+*@par Inputs:
+*Five inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+* @li res_for_gamma: A Tensor. Must be one of the following types: float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(LayerNormXBackpropV2)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(LayerNormXBackpropV2)
+
+/**
 *@brief LayerNormBetaGammaBackprop operator interface implementation
 *  calculating: dy, x, variance, mean
 *  pd_xl = data_dy*data_gamma
@@ -680,6 +724,35 @@ REG_OP(LayerNormBetaGammaBackprop)
     .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
     .REQUIRED_ATTR(shape_gamma, ListInt)
     .OP_END_FACTORY_REG(LayerNormBetaGammaBackprop)
+
+/**
+*@brief LayerNormBetaGammaBackpropV2 operator interface implementation
+*  calculating: dy, x, variance, mean
+*  pd_gamma = np.sum((data_dy*res_for_gamma), param_axis, keepdims=True)
+*  pd_beta = np.sum(data_dy, param_axis, keepdims=True)
+
+*@par Inputs:
+*Three inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(LayerNormBetaGammaBackpropV2)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(res_for_gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR(shape_gamma, ListInt)
+    .OP_END_FACTORY_REG(LayerNormBetaGammaBackpropV2)
 
 /**
 *@brief Return "output" according to the algorithm of dropout_do_mask:

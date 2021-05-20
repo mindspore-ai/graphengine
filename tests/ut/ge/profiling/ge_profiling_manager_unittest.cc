@@ -24,6 +24,7 @@
 #define protected public
 #define private public
 #include "common/profiling/profiling_manager.h"
+#include "graph/ge_local_context.h"
 #undef protected
 #undef private
 
@@ -64,11 +65,12 @@ TEST_F(UtestGeProfilinganager, ParseOptions) {
   options.profiling_mode = "1";
   options.profiling_options = R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","fp_point":"Data_0","bp_point":"addn","ai_core_metrics":"ResourceConflictRatio"})";
 
-
   struct MsprofGeOptions prof_conf = {{ 0 }};
-
   Status ret = ProfilingManager::Instance().ParseOptions(options.profiling_options);
   EXPECT_EQ(ret, ge::SUCCESS);
+  EXPECT_EQ(ProfilingManager::Instance().is_training_trace_, true);
+  EXPECT_EQ(ProfilingManager::Instance().fp_point_, "Data_0");
+  EXPECT_EQ(ProfilingManager::Instance().bp_point_, "addn");
 }
 
 TEST_F(UtestGeProfilinganager, plungin_init_) {
@@ -83,4 +85,34 @@ TEST_F(UtestGeProfilinganager, report_data_) {
   std::string data = "ge is better than tensorflow.";
   std::string tag_name = "fmk";
   ProfilingManager::Instance().ReportData(0, data, tag_name);
+}
+
+TEST_F(UtestGeProfilinganager, get_fp_bp_point_) {
+  map<std::string, string> options_map = {
+    {OPTION_EXEC_PROFILING_OPTIONS,
+    R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","fp_point":"Data_0","bp_point":"addn","ai_core_metrics":"ResourceConflictRatio"})"}};
+  GEThreadLocalContext &context = GetThreadLocalContext();
+  context.SetGraphOption(options_map);
+
+  std::string fp_point;
+  std::string bp_point;
+  ProfilingManager::Instance().GetFpBpPoint(fp_point, bp_point);
+  EXPECT_EQ(fp_point, "Data_0");
+  EXPECT_EQ(bp_point, "addn");
+}
+
+TEST_F(UtestGeProfilinganager, get_fp_bp_point_empty) {
+  // fp bp empty
+  map<std::string, string> options_map = {
+    { OPTION_EXEC_PROFILING_OPTIONS,
+      R"({"result_path":"/data/profiling","training_trace":"on","task_trace":"on","aicpu_trace":"on","ai_core_metrics":"ResourceConflictRatio"})"}};
+  GEThreadLocalContext &context = GetThreadLocalContext();
+  context.SetGraphOption(options_map);
+  std::string fp_point = "fp";
+  std::string bp_point = "bp";
+  ProfilingManager::Instance().bp_point_ = "";
+  ProfilingManager::Instance().fp_point_ = "";
+  ProfilingManager::Instance().GetFpBpPoint(fp_point, bp_point);
+  EXPECT_EQ(fp_point, "");
+  EXPECT_EQ(bp_point, "");
 }

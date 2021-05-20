@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,26 @@ REG_OP(Dequantize)
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .ATTR(mode, String, "MIN_COMBINED")
     .OP_END_FACTORY_REG(Dequantize)
+
+/**
+*@brief Quantizes the input . \n
+*@par Inputs:
+*x:  shape and dtype of input_x. \n
+*scales: shape and dtype of input_scales. \n
+*zero_points: shape and dtype of input_zero_points \n
+*@par Attributes:
+*@li axis: the processed dim. \n
+*@par Outputs:
+*y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
+*/
+REG_OP(Quantize)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(scales, TensorType({DT_FLOAT}))
+    .INPUT(zero_points, TensorType({DT_INT8,DT_UINT8,DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT8,DT_UINT8,DT_INT32}))
+    .REQUIRED_ATTR(dtype, String)
+    .ATTR(axis, Int, 1)
+    .OP_END_FACTORY_REG(Quantize)
 
 /**
 *@brief Quantizes the input . \n

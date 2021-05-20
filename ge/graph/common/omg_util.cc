@@ -16,9 +16,6 @@
 
 #include "graph/common/omg_util.h"
 
-#include <algorithm>
-
-#include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -38,9 +35,10 @@ Status GetOriginalType(const ge::NodePtr &node, string &type) {
   GE_CHECK_NOTNULL(node->GetOpDesc());
   bool ret = ge::AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, type);
   if (!ret) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s fail for op:%s(%s)", ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE.c_str(),
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s fail from op:%s(%s)", ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Get FrameWorkOp original type [%s]", type.c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][Attr] %s fail from op:%s(%s)", ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
   }
   GELOGD("Get FrameWorkOp original type [%s]", type.c_str());
@@ -61,7 +59,8 @@ Status SetStreamLabel(const ge::NodePtr &node, const std::string &label) {
   if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_STREAM_LABEL, label)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_STREAM_LABEL.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_STREAM_LABEL failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_STREAM_LABEL.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -80,7 +79,8 @@ Status SetCycleEvent(const ge::NodePtr &node) {
   if (!AttrUtils::SetBool(tmp_desc, ge::ATTR_NAME_STREAM_CYCLE_EVENT_FLAG, true)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_STREAM_CYCLE_EVENT_FLAG.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_STREAM_CYCLE_EVENT_FLAG failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_STREAM_CYCLE_EVENT_FLAG.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -100,7 +100,8 @@ Status SetActiveLabelList(const ge::NodePtr &node, const std::vector<std::string
   if (!AttrUtils::SetListStr(tmp_desc, ge::ATTR_NAME_ACTIVE_LABEL_LIST, active_label_list)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_ACTIVE_LABEL_LIST failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -120,7 +121,8 @@ Status SetSwitchBranchNodeLabel(const ge::NodePtr &node, const std::string &bran
   if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_SWITCH_BRANCH_NODE_LABEL, branch_label)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_SWITCH_BRANCH_NODE_LABEL.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_SWITCH_BRANCH_NODE_LABEL failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_SWITCH_BRANCH_NODE_LABEL.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -140,7 +142,8 @@ Status SetSwitchTrueBranchFlag(const ge::NodePtr &node, bool value) {
   if (!AttrUtils::SetBool(tmp_desc, ge::ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG, value)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_SWITCH_TRUE_BRANCH_FLAG.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -160,7 +163,8 @@ Status SetOriginalNodeName(const ge::NodePtr &node, const std::string &orig_name
   if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_ORIG_NODE_NAME, orig_name)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ORIG_NODE_NAME.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_ORIG_NODE_NAME failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ORIG_NODE_NAME.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -179,7 +183,8 @@ Status SetCyclicDependenceFlag(const ge::NodePtr &node) {
   if (!AttrUtils::SetBool(tmp_desc, ge::ATTR_NAME_CYCLIC_DEPENDENCE_FLAG, true)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_CYCLIC_DEPENDENCE_FLAG.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_CYCLIC_DEPENDENCE_FLAG failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_CYCLIC_DEPENDENCE_FLAG.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -200,7 +205,8 @@ Status SetNextIteration(const ge::NodePtr &node, const std::string &next) {
   if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_NEXT_ITERATION, next)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Op: %s set ATTR_NAME_NEXT_ITERATION failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -243,5 +249,43 @@ Status GetMemorySize(const NodePtr &node, int64_t &output_size) {
   FMK_INT64_ADDCHECK(size, (kBufferPoolMemAlignSize + kBufferPoolMemAlignSize));
   output_size = kBufferPoolMemAlignSize + size + kBufferPoolMemAlignSize;
   return SUCCESS;
+}
+
+///
+/// @brief Check Is Unknown shape Tensor
+/// @param [in] tensor_desc
+/// @return true: Unknown / false: Known
+///
+bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc) {
+  const static int kUnknowShape = -1;
+  const static int kUnknowRank = -2;
+  for (auto dim_size : tensor_desc.GetShape().GetDims()) {
+    if (dim_size == kUnknowShape || dim_size == kUnknowRank) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+///
+/// @brief Set Op _force_unknown_shape flag
+/// @param [in] node
+/// @param [in] force_unknown, set attribute if true
+/// @return
+///
+void MarkForceUnknownShape(const NodePtr &node, bool force_unknown) {
+  GE_RT_VOID_CHECK_NOTNULL(node);
+  if (!force_unknown) {
+    return;
+  }
+
+  GELOGD("[%s] mark as force unknown shape node", node->GetName().c_str());
+  if (!AttrUtils::SetBool(node->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, force_unknown)) {
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
+                       node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
+  }
 }
 }  // namespace ge

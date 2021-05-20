@@ -418,13 +418,14 @@ Status TaskContext::AllocateWorkspace(size_t size, void **buffer, void *ori_addr
     return MEMALLOC_FAILED;
   }
 
-  GELOGD("Allocating workspace of size = %zu successfully", size);
+  GELOGD("[%s] Allocating workspace of size = %zu successfully", node_item_->NodeName().c_str(), size);
   workspaces_.emplace_back(*buffer);
   return SUCCESS;
 }
 
 Status TaskContext::PropagateOutputs() {
   // propagate outputs
+  const auto &guard = node_item_->MutexGuard("PropagateOutputs");
   for (int i = 0; i < NumOutputs(); ++i) {
     auto tensor = MutableOutput(i);
     GE_CHECK_NOTNULL(tensor);
@@ -461,7 +462,7 @@ Status TaskContext::PropagateOutputs() {
       }
     }
   }
-
+  (void)guard;
   return SUCCESS;
 }
 
@@ -561,8 +562,8 @@ const DumpProperties &TaskContext::GetDumpProperties() const {
 }
 
 bool TaskContext::NeedCallback() {
-  return node_item_->has_observer || IsDumpEnabled() || execution_context_->profiling_level > 0 ||
-         !execution_context_->model->IsSingleOp();
+  return node_item_->has_observer || IsDumpEnabled() || GraphExecutionContext::profiling_level > 0 ||
+         !execution_context_->model->IsSingleOp() || ProfilingManager::Instance().ProfilingModelLoadOn();
 }
 
 Status TaskContext::Synchronize() {
@@ -571,7 +572,7 @@ Status TaskContext::Synchronize() {
 
 Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id,
                                               const std::string &task_type, uint32_t block_dim) {
-  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+  if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);

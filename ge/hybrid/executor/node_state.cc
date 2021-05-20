@@ -30,6 +30,10 @@ constexpr auto kWaitInternal = 5;
 constexpr auto kMaxWaitTimes = 120;
 }
 ShapeInferenceState::ShapeInferenceState(const NodeItem &node_item) : node_item(node_item) {
+  InitShapeState();
+}
+
+void ShapeInferenceState::InitShapeState() {
   this->num_pending_shapes_ = node_item.num_inputs - node_item.num_static_input_shapes;
   GELOGD("[%s] ShapeInferenceState created, pending shape count = %d",
          node_item.NodeName().c_str(),
@@ -135,19 +139,23 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
     }
   }
 
-  for (size_t i = 0; i < input_tensor_desc.size(); ++i) {
-    auto dst_tensor_desc = node_item.op_desc->MutableInputDesc(i);
-    if (dst_tensor_desc == nullptr) {
-      continue;
+  {
+    const auto &guard = node_item.MutexGuard("AwaitShapesReady");
+    for (size_t i = 0; i < input_tensor_desc.size(); ++i) {
+      auto dst_tensor_desc = node_item.MutableInputDesc(i);
+      if (dst_tensor_desc == nullptr) {
+        continue;
+      }
+
+      auto &tensor_desc = input_tensor_desc[i];
+      int64_t tensor_size = -1;
+      (void)TensorUtils::GetSize(tensor_desc, tensor_size);
+
+      dst_tensor_desc->SetShape(tensor_desc.MutableShape());
+      dst_tensor_desc->SetOriginShape(tensor_desc.GetOriginShape());
+      (void)TensorUtils::SetSize(*dst_tensor_desc, tensor_size);
     }
-
-    auto &tensor_desc = input_tensor_desc[i];
-    int64_t tensor_size = -1;
-    (void) TensorUtils::GetSize(tensor_desc, tensor_size);
-
-    dst_tensor_desc->SetShape(tensor_desc.MutableShape());
-    dst_tensor_desc->SetOriginShape(tensor_desc.GetOriginShape());
-    (void) TensorUtils::SetSize(*dst_tensor_desc, tensor_size);
+    (void)guard;
   }
 
   for (auto &p : shape_futures) {
@@ -159,8 +167,6 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
     GE_CHECK_NOTNULL(src_tensor_desc);
     RECORD_SHAPE_INFERENCE_EVENT(&context, node_item.NodeName().c_str(), "[AwaitShape] [idx = %u] End", idx);
 
-    auto input_desc = node_item.MutableInputDesc(idx);
-    GE_CHECK_NOTNULL(input_desc);
     int64_t tensor_size = -1;
     (void) TensorUtils::GetSize(*src_tensor_desc, tensor_size);
     GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s], index = %zu",
@@ -169,9 +175,13 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
            src_tensor_desc->GetShape().ToString().c_str(),
            src_tensor_desc->GetOriginShape().ToString().c_str(),
            tensor_size);
+    const auto &guard = node_item.MutexGuard("AwaitShapesReady");
+    auto input_desc = node_item.MutableInputDesc(idx);
+    GE_CHECK_NOTNULL(input_desc);
     input_desc->SetShape(src_tensor_desc->GetShape());
     input_desc->SetOriginShape(src_tensor_desc->GetOriginShape());
     (void) TensorUtils::SetSize(*input_desc, tensor_size);
+    (void)guard;
   }
 
   return SUCCESS;
@@ -207,6 +217,11 @@ NodeState::NodeState(const NodeItem &node_item, SubgraphContext *subgraph_contex
 }
 
 Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
+  if (node_item_->IsMergeOp()) {
+    GELOGD("[%s] merge index %d, input nodes: %zu", GetName().c_str(), merge_index_, node_item_->data_recv_.size());
+    return SUCCESS;
+  }
+
   for (auto &src_node : node_item_->dependents_for_execution) {
     GELOGD("[%s] Start to wait for data dependent node: [%s]",
            node_item_->NodeName().c_str(),
@@ -225,7 +240,7 @@ Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
                            node_item_->NodeName().c_str(),
                            "[AwaitNodeDone] [%s] End",
                            src_node->GetName().c_str());
-    GELOGD("[%s] Done waiting node.", src_node->GetName().c_str());
+    GELOGD("[%s] Done waiting node: [%s]", node_item_->NodeName().c_str(), src_node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -253,6 +268,126 @@ void NodeState::SetTaskContext(std::shared_ptr<TaskContext> &task_context) {
 
 std::shared_ptr<TaskContext> NodeState::GetTaskContext() {
   return task_context_;
+}
+
+void NodeState::ResetContext(int group) {
+  SetGroup(group);
+  if (loop_count_ == 0) {
+    ++loop_count_;
+    return;
+  }
+
+  ++loop_count_;
+  if (loop_count_ == UINT64_MAX) {
+    loop_count_ = 1;
+  }
+
+  switch_index_ = -1;
+  const auto &guard = node_item_->MutexGuard("ResetContext");
+  shape_inference_state_.InitShapeState();
+  subgraph_context_->ResetContext(node_item_->node);
+  GELOGD("Node[%s] in while loop, current loop: %lu, merge index: %d", GetName().c_str(), loop_count_, merge_index_);
+  (void)guard;
+}
+
+void NodeState::ResetSchedule() {
+  std::lock_guard<std::mutex> lk(mu_);
+  data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size());
+  ctrl_scheduled_ = static_cast<uint32_t>(node_item_->root_ctrl_.size());
+  GELOGD("[%s] set schedule for root nodes, data: %u, ctrl: %u", GetName().c_str(), data_scheduled_, ctrl_scheduled_);
+}
+
+Status NodeState::NodeScheduled(const std::function<void(const NodeItem *)> &ready) const {
+  // Schedule data output.
+  for (const auto &node : node_item_->data_send_) {
+    const auto &dst_node_state = subgraph_context_->GetOrCreateNodeState(node);
+    GE_CHECK_NOTNULL(dst_node_state);
+    dst_node_state->SetDataSchedule(node_item_, ready);
+  }
+
+  // Schedule ctrl output.
+  for (const auto &node : node_item_->ctrl_send_) {
+    const auto &dst_node_state = subgraph_context_->GetOrCreateNodeState(node);
+    GE_CHECK_NOTNULL(dst_node_state);
+    dst_node_state->SetCtrlSchedule(node_item_, ready);
+  }
+
+  // Schedule switch group.
+  if (switch_index_ >= 0 && static_cast<uint32_t>(switch_index_) < node_item_->switch_groups_.size()) {
+    GELOGI("After [%s] scheduled, switch index: %d", GetName().c_str(), switch_index_);
+    for (const auto &node : node_item_->switch_groups_[switch_index_]) {
+      const auto &dst_node_state = subgraph_context_->GetOrCreateNodeState(node);
+      GE_CHECK_NOTNULL(dst_node_state);
+      dst_node_state->SetCtrlSchedule(node_item_, ready);
+    }
+  }
+
+  return SUCCESS;
+}
+
+bool NodeState::IsScheduleReady() const {
+  GELOGD("[%s] data[input: %zu, scheduled: %u], ctrl[input: %zu, scheduled: %u]", GetName().c_str(),
+         node_item_->data_recv_.size(), data_scheduled_, node_item_->ctrl_recv_.size(), ctrl_scheduled_);
+  if (ctrl_scheduled_ != node_item_->ctrl_recv_.size()) {
+    return false;
+  }
+
+  if (node_item_->IsMergeOp()) {
+    return data_scheduled_ > 0;
+  }
+
+  // Exit may feed loop times...
+  return data_scheduled_ >= node_item_->data_recv_.size();
+}
+
+void NodeState::SetDataSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready) {
+  GELOGD("[%s] data schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu, current scheduled: %u",
+         node_item->node_name.c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
+         node_item_->ctrl_recv_.size(), ctrl_scheduled_);
+
+  std::lock_guard<std::mutex> lk(mu_);
+  ++data_scheduled_;
+
+  if (node_item_->IsMergeOp()) {
+    const auto it = node_item_->data_recv_.find(node_item);
+    if (it != node_item_->data_recv_.end()) {
+      merge_index_ = it->second;
+      (void)AttrUtils::SetInt(node_item_->node->GetOpDesc(), ATTR_NAME_MERGE_INPUT_INDEX, it->second);
+      GELOGD("[%s] scheduled, [%s] set merge index: %d", node_item->node_name.c_str(), GetName().c_str(), it->second);
+    } else {
+      GELOGW("[%s] scheduled, [%s] not followed", node_item->node_name.c_str(), GetName().c_str());
+    }
+  }
+
+  if (IsScheduleReady()) {
+    ready(node_item_);
+  }
+}
+
+void NodeState::SetCtrlSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready) {
+  GELOGD("[%s] ctrl schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu, current scheduled: %u",
+         node_item->node_name.c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
+         node_item_->ctrl_recv_.size(), ctrl_scheduled_);
+
+  std::lock_guard<std::mutex> lk(mu_);
+  ++ctrl_scheduled_;
+
+  if (IsScheduleReady()) {
+    ready(node_item_);
+  }
+}
+
+void NodeState::SetScheduleFuture(std::future<Status> &&future) {
+  schedule_future_ = std::move(future);
+}
+
+Status NodeState::WaitForScheduleDone() {
+  if (schedule_future_.valid()) {
+    GELOGD("[%s] Start to wait for schedule future.", GetName().c_str());
+    GE_CHK_STATUS_RET(schedule_future_.get(), "[Check][Status][%s] wait thread failed", GetName().c_str());
+  }
+
+  return SUCCESS;
 }
 
 Status ShapeFuture::Get(GeShape &ori_shape, GeShape &shape) {

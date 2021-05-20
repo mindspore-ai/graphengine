@@ -182,10 +182,11 @@ Status AtomicAddrCleanPass::HandleLoopGraph(ComputeGraphPtr &graph, const vector
 }
 
 Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vector<NodePtr> &atomic_node_vec) {
-  GELOGD("Not loop graph and unknown graph. It will insert only 1 clean node.");
+  GELOGD("Not loop graph and unknown graph. It will insert atomic clean nodes.");
 
   vector<NodePtr> common_atomic_nodes;
-  auto ret = HandleDispersedAtomicNodes(graph, atomic_node_vec, common_atomic_nodes);
+  vector<NodePtr> dispersed_atomic_nodes;
+  auto ret = HandleDispersedAtomicNodes(graph, atomic_node_vec, common_atomic_nodes, dispersed_atomic_nodes);
   if (ret != SUCCESS) {
     GELOGE(ret, "Handle dispersed atomic nodes failed, graph name is %s.", graph->GetName().c_str());
     return ret;
@@ -222,7 +223,7 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
       }
     }
   }
-  return LinkToPotentialPrecedenceNode(graph, clean_addr_node);
+  return LinkToPotentialPrecedenceNode(graph, clean_addr_node, dispersed_atomic_nodes);
 }
 
 // Add control edges from atomic clean node to all potential precedence nodes which may execute before atomic clean
@@ -231,7 +232,8 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
 // edges from atomic clean node to the nodes that may be the first node on each stream. Generally, the first nodes on
 // each stream are successors of Data/Variable, and Data/Variable won't generate task or execute, so we link to the
 // successors of Data/Variable.
-Status AtomicAddrCleanPass::LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph, NodePtr &atomic_clean_node) {
+Status AtomicAddrCleanPass::LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph, NodePtr &atomic_clean_node,
+                                                          const vector<NodePtr> &dispersed_atomic_nodes) {
   GELOGD("Start to add control edges from %s to all second-nodes behind first-nodes which have no input.",
          atomic_clean_node->GetName().c_str());
   auto out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
@@ -246,6 +248,10 @@ Status AtomicAddrCleanPass::LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph
     auto second_nodes = node->GetOutAllNodes();
     for (const auto &second_node : second_nodes) {
       GE_CHECK_NOTNULL(second_node);
+      if ((std::find(dispersed_atomic_nodes.begin(), dispersed_atomic_nodes.end(), second_node) !=
+          dispersed_atomic_nodes.end()) || (second_node->GetType() == NETOUTPUT)) {
+        continue;
+      }
       auto in_ctrl_anchor = second_node->GetInControlAnchor();
       GE_CHECK_NOTNULL(in_ctrl_anchor);
       if (!out_ctrl_anchor->IsLinkedWith(in_ctrl_anchor)) {
@@ -260,7 +266,8 @@ Status AtomicAddrCleanPass::LinkToPotentialPrecedenceNode(ComputeGraphPtr &graph
 
 Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
                                                        const std::vector<NodePtr> &atomic_node_vec,
-                                                       std::vector<NodePtr> &common_atomic_nodes) {
+                                                       std::vector<NodePtr> &common_atomic_nodes,
+                                                       vector<NodePtr> &dispersed_atomic_nodes) {
   int index = 0;
   for (const auto &node : atomic_node_vec) {
     vector<int> node_anchors_connect_netoutput;
@@ -280,7 +287,7 @@ Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
       oss << node_name << "_" << index;
       node_name = oss.str();
       dispersed_node_op_desc->SetName(node_name);
-      GELOGD("Inserted dispersed atomic clean node name is %s", node_name.c_str());
+      GELOGD("Inserted dispersed atomic clean node [%s] before [%s]", node_name.c_str(), node->GetName().c_str());
       ++index;
       Status ret = LinkToAtomicNode(node, dispersed_clean_addr_node);
       if (ret != SUCCESS) {
@@ -288,6 +295,7 @@ Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
                node->GetName().c_str(), dispersed_clean_addr_node->GetName().c_str());
         return ret;
       }
+      dispersed_atomic_nodes.emplace_back(node);
     } else {
       common_atomic_nodes.emplace_back(node);
     }

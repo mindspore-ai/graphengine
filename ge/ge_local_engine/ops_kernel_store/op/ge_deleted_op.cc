@@ -24,7 +24,8 @@ namespace ge_local {
 GeDeletedOp::GeDeletedOp(const Node &node, RunContext &run_context) : Op(node, run_context) {}
 
 Status GeDeletedOp::Run() {
-  GELOGE(FAILED, "Node:%s type is %s, should be deleted by ge.", name_.c_str(), type_.c_str());
+  REPORT_INNER_ERROR("E19999", "Node:%s type is %s, should be deleted by ge.", name_.c_str(), type_.c_str());
+  GELOGE(FAILED, "[Delelte][Node] Node:%s type is %s, should be deleted by ge.", name_.c_str(), type_.c_str());
   // Do nothing
   return FAILED;
 }

@@ -23,27 +23,30 @@
 
 namespace ge {
 HybridMemAssigner::HybridMemAssigner(ge::ComputeGraphPtr compute_graph)
-    : mem_offset_(0), p2p_mem_offset_(0), compute_graph_(std::move(compute_graph)), priority_assigner_(nullptr) {}
+    : compute_graph_(std::move(compute_graph)), priority_assigner_(nullptr) {}
 
 Status HybridMemAssigner::AssignMemory(std::unique_ptr<BlockMemAssigner> &block_assigner, size_t &mem_size) {
   vector<int64_t> ranges;
   GE_CHECK_NOTNULL(block_assigner);
   if (block_assigner->GetMemoryRanges(ranges) != SUCCESS) {
-    GELOGE(FAILED, "GetMemoryRanges Fail!");
+    GELOGE(FAILED, "[Get][MemoryRanges] Fail!");
     return FAILED;
   }
   GE_IF_BOOL_EXEC(ranges.empty(), return SUCCESS);
 
   block_assigner->AssignMemoryWithReuse(ranges);
 
-  mem_size = block_assigner->GetMemOffset();
+  // total size
+  for (auto it : block_assigner->GetMemOffsets()) {
+    mem_size += it.second;
+  }
   return SUCCESS;
 }
 
 Status HybridMemAssigner::Assign() {
   if (GraphUtils::GetRefMapping(compute_graph_, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Get ref-mapping for graph %s failed", compute_graph_->GetName().c_str());
-    GELOGE(FAILED, "Get ref-mapping for graph %s failed.", compute_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Get][RefMapping] for graph %s failed.", compute_graph_->GetName().c_str());
     return FAILED;
   }
 
@@ -58,8 +61,8 @@ Status HybridMemAssigner::Assign() {
   size_t bin_mem_size = 0;
   size_t max_mem_size = 0;
 
-  GE_CHK_STATUS_RET(AssignMemory(binary_assigner, bin_mem_size), "BinaryBlock Method AssignMemory Fail!");
-  GE_CHK_STATUS_RET(AssignMemory(max_assigner, max_mem_size), "MaxBlock Method AssignMemory Fail!");
+  GE_CHK_STATUS_RET(AssignMemory(binary_assigner, bin_mem_size), "[Assign][Memory] Fail!");
+  GE_CHK_STATUS_RET(AssignMemory(max_assigner, max_mem_size), "[Assign][Memory] Fail!");
 
   std::unique_ptr<BlockMemAssigner> priority_assigner;
 
@@ -73,8 +76,7 @@ Status HybridMemAssigner::Assign() {
   }
 
   priority_assigner->SetOpMemOffset(false);
-  mem_offset_ = priority_assigner->GetMemOffset();
-  p2p_mem_offset_ = priority_assigner->GetP2PMemOffset();
+  mem_offsets_ = priority_assigner->GetMemOffsets();
   priority_assigner_ = std::move(priority_assigner);
 
   return SUCCESS;

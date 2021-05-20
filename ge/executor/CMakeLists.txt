@@ -19,6 +19,7 @@ set(SRC_LIST
     "../common/dump/exception_dumper.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
+    "../common/dump/dump_server.cc"
     "../common/dump/opdebug_register.cc"
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
@@ -27,6 +28,8 @@ set(SRC_LIST
     "../graph/manager/graph_var_manager.cc"
     "../graph/manager/graph_mem_allocator.cc"
     "../graph/manager/graph_caching_allocator.cc"
+    "../graph/manager/session_scope_mem_allocator.cc"
+    "../graph/manager/graph_mem_manager.cc"
     "../graph/manager/trans_var_data_utils.cc"
     "../graph/manager/util/debug.cc"
     "../graph/manager/rdma_pool_allocator.cc"
@@ -110,6 +113,8 @@ set(SRC_LIST
     "../hybrid/node_executor/controlop/control_op_executor.cc"
     "../hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
     "../hybrid/node_executor/rts/rts_node_executor.cc"
+    "../hybrid/node_executor/rts/rts_node_task.cc"
+    "../hybrid/node_executor/rts/rts_task_factory.cc"
     "../hybrid/node_executor/node_executor.cc"
     "../hybrid/node_executor/task_context.cc"
     "../hybrid/hybrid_davinci_model.cc"
@@ -199,6 +204,7 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_libraries(ge_executor PRIVATE
@@ -245,6 +251,7 @@ target_include_directories(ge_executor_shared PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_options(ge_executor_shared PRIVATE

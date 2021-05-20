@@ -32,6 +32,7 @@
 #include "graph/common/local_context.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/tensor_adapter.h"
 #include "runtime/mem.h"
 
@@ -155,6 +156,11 @@ Status InnerSession::Finalize() {
   // release var memory
   GELOGI("VarManager free var memory.");
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
+
+  for (auto memory_type : MemManager::Instance().GetAllMemoryType()) {
+    (void)MemManager::Instance().SessionScopeMemInstance(memory_type).Free(session_id_);
+  }
+
   // release analyzer saved info(Session Level)
   Analyzer::GetInstance()->DestroySessionJsonObject(session_id_);
 
@@ -262,6 +268,51 @@ Status InnerSession::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inpu
   }
 }
 
+Status InnerSession::RunGraphWithStreamAsync(uint32_t graph_id, rtStream_t stream,
+                                             const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs) {
+  GELOGI("Run graph with stream, session id = %lu, graph id = %u, stream = %p.",
+         session_id_, graph_id, stream);
+  if (mutex_.try_lock()) {
+    std::lock_guard<std::mutex> lock(mutex_, std::adopt_lock);
+    if (!init_flag_) {
+      GELOGE(GE_SESS_INIT_FAILED, "[Run][GraphWithStream]failed because GraphManager not Init,"
+             "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      REPORT_INNER_ERROR("E19999", "RunGraphWithStreamAsync failed because GraphManager not Init,"
+                         "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      return GE_SESS_INIT_FAILED;
+    }
+    UpdateThreadContext(graph_id);
+    vector<GeTensor> ge_inputs;
+    for (auto &item : inputs) {
+      ge_inputs.emplace_back(TensorAdapter::AsGeTensor(item));
+    }
+    vector<GeTensor> ge_outputs;
+    for (auto &item : outputs) {
+      ge_outputs.emplace_back(TensorAdapter::AsGeTensor(item));
+    }
+    Status ret = graph_manager_.RunGraphWithStreamAsync(graph_id, stream, session_id_, ge_inputs, ge_outputs);
+    domi::GetContext().out_nodes_map.clear();
+    domi::GetContext().user_out_nodes.clear();
+    if (ret != SUCCESS) {
+      GELOGE(ret, "[Run][GraphWithStreamAsync]failed,"
+             "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      REPORT_CALL_ERROR("E19999", "GraphManager RunGrapWithStreamhAsync failed,"
+                        "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+      return ret;
+    }
+
+    GELOGI("Run graph with stream success, session id = %lu, graph id = %u, stream = %p.",
+           session_id_, graph_id, stream);
+    return SUCCESS;
+  } else {
+    GELOGE(GE_SESS_ALREADY_RUNNING, "[Run][GraphWithStreamAsync]failed because mutex try_lock false,"
+           "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+    REPORT_INNER_ERROR("E19999", "[Run][GraphWithStreamAsync]failed failed because mutex try_lock false,"
+                       "session id = %lu, graph id = %u, stream = %p.", session_id_, graph_id, stream);
+    return GE_SESS_ALREADY_RUNNING;
+  }
+}
+
 Status InnerSession::RemoveGraph(uint32_t graph_id) {
   std::lock_guard<std::mutex> lock(resource_mutex_);
   if (!init_flag_) {
@@ -363,7 +414,26 @@ Status InnerSession::BuildGraph(uint32_t graph_id, const std::vector<InputTensor
   return ret;
 }
 
-Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+Status InnerSession::BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inputs) {
+  UpdateThreadContext(graph_id);
+  GELOGI("[InnerSession:%lu] build graph on session, graph_id=%u.", session_id_, graph_id);
+  std::vector<ge::GeTensor> ge_inputs;
+  for (const auto &input : inputs) {
+    ge_inputs.emplace_back(TensorAdapter::AsGeTensor(input));
+  }
+  GeRootModelPtr ge_root_model = nullptr;
+  Status ret = graph_manager_.BuildGraph(graph_id, ge_inputs, ge_root_model, session_id_, true);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Build][Graph] failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
+    REPORT_CALL_ERROR("E19999",
+                      "GraphManager BuildGraph failed, InnerSession:%lu graph_id=%u.", session_id_, graph_id);
+    return ret;
+  }
+  GELOGI("[InnerSession:%lu] build graph success, graph_id=%u.", session_id_, graph_id);
+  return ret;
+}
+
+Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &inputs,
                                    RunAsyncCallback callback) {
   UpdateThreadContext(graph_id);
   GELOGI("[InnerSession:%lu] run graph on session, graph_id=%u.", session_id_, graph_id);
@@ -377,7 +447,6 @@ Status InnerSession::RunGraphAsync(uint32_t graph_id, const std::vector<InputTen
   GELOGI("[InnerSession:%lu] run graph success, graph_id=%u.", session_id_, graph_id);
   return ret;
 }
-
 const GraphManager &InnerSession::getGraphManagerObj() const { return graph_manager_; }
 
 void InnerSession::UpdateThreadContext(const std::map<std::string, std::string> &options) {

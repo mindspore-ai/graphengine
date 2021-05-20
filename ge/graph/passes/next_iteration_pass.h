@@ -20,10 +20,11 @@
 #include "inc/graph_pass.h"
 
 struct LoopCondGroup {
-  LoopCondGroup() : loop_cond(nullptr) {}
   ge::NodePtr loop_cond;                                              // LoopCond node
   std::vector<ge::NodePtr> enter_nodes;                               // Enter nodes
   std::vector<std::pair<ge::NodePtr, ge::NodePtr>> merge_next_pairs;  // <Merge, NextIteration>
+  std::vector<ge::NodePtr> switch_nodes;                              // Switch nodes
+  bool is_unknown_shape{false};
 };
 using LoopCondGroupPtr = std::shared_ptr<LoopCondGroup>;
 
@@ -91,6 +92,13 @@ class NextIterationPass : public GraphPass {
   /// @return Status
   ///
   Status FindTargetNode(const NodePtr &node, const std::string &target_type, bool is_input, NodePtr &target_node);
+
+  ///
+  /// @brief Mark force unknown for Exit node
+  /// @param [in] group of LoopCond
+  /// @return void
+  ///
+  void HandleSwitchExitNodes(const LoopCondGroup &loop_group);
 
   // map<frame_name, LoopCondGroup>
   std::unordered_map<std::string, LoopCondGroupPtr> loop_group_map_;

@@ -26,7 +26,6 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/manager/host_mem_allocator.h"
 #include "graph/node.h"
 #include "runtime/mem.h"
 
@@ -71,9 +70,9 @@ class MemoryAllocator {
   /// @ingroup ge_graph
   /// @brief memory allocator init
   /// @param [in] options user config params
-  /// @return void
+  /// @return Status of init
   ///
-  void Initialize(uint32_t device_id = 0);
+  Status Initialize(uint32_t device_id = 0);
 
   ///
   /// @ingroup ge_graph
@@ -135,109 +134,6 @@ class MemoryAllocator {
   rtMemType_t memory_type_;
   bool mem_malloced_;
   map<string, MemoryInfo> memory_base_map_;
-};
-
-using MemoryAllocatorPtr = std::shared_ptr<MemoryAllocator>;
-class CachingAllocator;
-class RdmaPoolAllocator;
-class MemManager {
- public:
-  MemManager();
-  virtual ~MemManager();
-  static MemManager &Instance();
-  static MemoryAllocator *Instance(rtMemType_t memory_type);
-  CachingAllocator &CachingInstance(rtMemType_t memory_type);
-  RdmaPoolAllocator &RdmaPoolInstance(rtMemType_t memory_type);
-  HostMemAllocator &HostMemInstance(rtMemType_t memory_type);
-  MemManager(const MemManager &) = delete;
-  MemManager &operator=(const MemManager &) = delete;
-  ///
-  /// @ingroup ge_graph
-  /// @brief memory allocator manager init
-  /// @param [in] options user config params
-  /// @return Status result of function
-  ///
-  Status Initialize(const std::vector<rtMemType_t> &memory_type);
-
-  ///
-  /// @ingroup ge_graph
-  /// @brief memory allocator finalize
-  /// @return void
-  ///
-  void Finalize() noexcept;
-
- private:
-  ///
-  /// @ingroup ge_graph
-  /// @brief ge memory allocator
-  /// @param [in] memory_type memory type
-  /// @return MemoryAllocator ptr
-  ///
-  MemoryAllocator *GetMemoryAllocator(rtMemType_t memory_type);
-
-  ///
-  /// @ingroup ge_graph
-  /// @param [in] memory_type memory type
-  /// @param [in] allocate_map memory allocator map
-  /// @return Status result of function
-  ///
-  template <typename T>
-  Status InitAllocator(const std::vector<rtMemType_t> &memory_type, std::map<rtMemType_t, T *> &allocate_map) {
-    T *allocator = nullptr;
-    for (unsigned int index : memory_type) {
-      auto it = allocate_map.find(index);
-      if (it == allocate_map.end()) {
-        allocator = new (std::nothrow) T(index);
-        if (allocator != nullptr) {
-          allocate_map[index] = allocator;
-          GELOGI("Create Allocator memory type[%u] success.", index);
-        } else {
-          GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc Allocator failed.");
-        }
-      } else {
-        allocator = it->second;
-      }
-
-      if (allocator == nullptr) {
-        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create Allocator failed.");
-        return ACL_ERROR_GE_MEMORY_ALLOCATION;
-      } else {
-        if (allocator->Initialize() != SUCCESS) {
-          return ACL_ERROR_GE_INTERNAL_ERROR;
-        }
-      }
-    }
-    return SUCCESS;
-  }
-  ///
-  /// @ingroup ge_graph
-  /// @param [in] memory_type memory type
-  /// @param [in] allocate_map memory allocator map
-  /// @return Allocator ptr
-  ///
-  template <typename T>
-  T &GetAllocator(rtMemType_t memory_type, std::map<rtMemType_t, T *> allocate_map) {
-    std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
-    T *allocator = nullptr;
-    auto it = allocate_map.find(memory_type);
-    if (it != allocate_map.end()) {
-      allocator = it->second;
-    }
-
-    // Usually impossible
-    if (allocator == nullptr) {
-      GELOGW("Get allocator failed, memory type is %u.", memory_type);
-      static T default_allocator(RT_MEMORY_RESERVED);
-      return default_allocator;
-    }
-    return *allocator;
-  }
-
-  std::map<rtMemType_t, MemoryAllocator *> memory_allocator_map_;
-  std::map<rtMemType_t, CachingAllocator *> caching_allocator_map_;
-  std::map<rtMemType_t, RdmaPoolAllocator *> rdma_allocator_map_;
-  std::map<rtMemType_t, HostMemAllocator *> host_allocator_map_;
-  std::recursive_mutex allocator_mutex_;
 };
 }  // namespace ge
 

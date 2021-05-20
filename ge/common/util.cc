@@ -83,7 +83,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromBinaryFile(co
   std::ifstream fs(real_path, std::ifstream::in | std::ifstream::binary);
   if (!fs.is_open()) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19001", {"file", "errmsg"}, {file, "ifstream is_open failed"});
-    GELOGE(ge::FAILED, "Open real path[%s] failed.", file);
+    GELOGE(ge::FAILED, "[Open][File]Failed, file path %s", file);
     return false;
   }
 
@@ -96,7 +96,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromBinaryFile(co
 
   if (!ret) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19005", {"file"}, {file});
-    GELOGE(ge::FAILED, "Parse file[%s] failed.", file);
+    GELOGE(ge::FAILED, "[Parse][File]Failed, file %s", file);
     return ret;
   }
 
@@ -155,7 +155,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
 
   std::ifstream file(real_path.c_str(), std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
-    GELOGE(ge::FAILED, "Read file %s failed.", file_name);
+    GELOGE(ge::FAILED, "[Read][File]Failed, file %s", file_name);
+    REPORT_CALL_ERROR("E19999", "Read file %s failed", file_name);
     return false;
   }
 
@@ -182,7 +183,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
 
   std::ifstream file(real_path.c_str(), std::ios::binary | std::ios::ate);
   if (!file.is_open()) {
-    GELOGE(ge::FAILED, "Read file %s failed.", file_name);
+    GELOGE(ge::FAILED, "[Read][File]Failed, file %s", file_name);
+    REPORT_CALL_ERROR("E19999", "Read file %s failed", file_name);
     return false;
   }
 
@@ -250,7 +252,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string CurrentTimeInStr() 
   std::time_t now = std::time(nullptr);
   std::tm *ptm = std::localtime(&now);
   if (ptm == nullptr) {
-    GELOGE(ge::FAILED, "Localtime failed.");
+    GELOGE(ge::FAILED, "[Check][Param]Localtime incorrect, errmsg %s", strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Localtime incorrect, errmsg %s", strerror(errno));
     return "";
   }
 
@@ -277,18 +280,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
 
   if (!fs.is_open()) {
     ErrorManager::GetInstance().ATCReportErrMessage("E19017", {"realpth", "protofile"}, {real_path, file});
-    GELOGE(ge::FAILED, "Fail to open proto file real path is '%s' when orginal file path is '%s'.", real_path.c_str(),
-           file);
+    GELOGE(ge::FAILED, "[Open][ProtoFile]Failed, real path %s, orginal file path %s",
+           real_path.c_str(), file);
     return false;
   }
 
   google::protobuf::io::IstreamInputStream input(&fs);
   bool ret = google::protobuf::TextFormat::Parse(&input, message);
   GE_IF_BOOL_EXEC(!ret, ErrorManager::GetInstance().ATCReportErrMessage("E19018", {"protofile"}, {file});
-                  GELOGE(ret,
-                         "Parse file[%s] through [google::protobuf::TextFormat::Parse] failed, "
-                         "please check whether the file is a valid protobuf format file.",
-                         file));
+                  GELOGE(ret, "[Parse][File]Through [google::protobuf::TextFormat::Parse] failed, "
+                         "file %s", file));
   fs.close();
 
   return ret;
@@ -490,7 +491,8 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
   ret = regexec(&reg, str.c_str(), 0, NULL, 0);
   if (ret) {
     regerror(ret, &reg, ebuff, kMaxBuffSize);
-    GELOGE(ge::PARAM_INVALID, "regexec failed, reason: %s", ebuff);
+    GELOGE(ge::PARAM_INVALID, "[Rgexec][Param]Failed, reason %s", ebuff);
+    REPORT_CALL_ERROR("E19999", "Rgexec failed, reason %s", ebuff);
     regfree(&reg);
     return false;
   }
@@ -518,35 +520,44 @@ FMK_FUNC_HOST_VISIBILITY bool ValidateStr(const std::string &str, const std::str
 
 FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
   if (file_path == nullptr) {
-    GELOGE(PARAM_INVALID, "Config path is null.");
+    GELOGE(PARAM_INVALID, "[Check][Param]Config path is null");
+    REPORT_INNER_ERROR("E19999", "Config path is null");
     return false;
   }
   if (!CheckInputPathValid(file_path)) {
-    GELOGE(PARAM_INVALID, "Config path is invalid: %s", file_path);
+    GELOGE(PARAM_INVALID, "[Check][Param]Config path %s is invalid", file_path);
+    REPORT_CALL_ERROR("E19999", "Config path %s is invalid", file_path);
     return false;
   }
   // Normalize the path
   std::string resolved_file_path = RealPath(file_path);
   if (resolved_file_path.empty()) {
-    GELOGE(PARAM_INVALID, "Invalid input file path [%s], make sure that the file path is correct.", file_path);
+    GELOGE(PARAM_INVALID, "[Check][Param]Invalid input file path %s, errmsg %s", file_path, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Invalid input file path %s, errmsg %s", file_path, strerror(errno));
     return false;
   }
 
   mmStat_t stat = {0};
   int32_t ret = mmStatGet(resolved_file_path.c_str(), &stat);
   if (ret != EN_OK) {
-    GELOGE(PARAM_INVALID, "cannot get config file status, which path is %s, maybe not exist, return %d, errcode %d",
-           resolved_file_path.c_str(), ret, mmGetErrorCode());
+    GELOGE(PARAM_INVALID, "[Get][FileStatus]Failed, which path %s maybe not exist, "
+           "return %d, errcode %d", resolved_file_path.c_str(), ret, mmGetErrorCode());
+    REPORT_CALL_ERROR("E19999", "Get config file status failed, which path %s maybe not exist, "
+                      "return %d, errcode %d", resolved_file_path.c_str(), ret, mmGetErrorCode());
     return false;
   }
   if ((stat.st_mode & S_IFMT) != S_IFREG) {
-    GELOGE(PARAM_INVALID, "config file is not a common file, which path is %s, mode is %u", resolved_file_path.c_str(),
-           stat.st_mode);
+    GELOGE(PARAM_INVALID, "[Check][Param]Config file is not a common file, which path is %s, "
+           "mode is %u", resolved_file_path.c_str(), stat.st_mode);
+    REPORT_CALL_ERROR("E19999", "Config file is not a common file, which path is %s, "
+                      "mode is %u", resolved_file_path.c_str(), stat.st_mode);
     return false;
   }
   if (stat.st_size > kMaxConfigFileByte) {
-    GELOGE(PARAM_INVALID, "config file %s size[%ld] is larger than max config file Bytes[%u]",
-           resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
+    GELOGE(PARAM_INVALID, "[Check][Param]Config file %s size %ld is larger than max config "
+           "file Bytes %u", resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
+    REPORT_CALL_ERROR("E19999", "Config file %s size %ld is larger than max config file Bytes %u",
+                      resolved_file_path.c_str(), stat.st_size, kMaxConfigFileByte);
     return false;
   }
   return true;
@@ -554,29 +565,36 @@ FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CheckPath(const char *path, size_t length) {
   if (path == nullptr) {
-    GELOGE(PARAM_INVALID, "Config path is invalid.");
+    GELOGE(PARAM_INVALID, "[Check][Param]Config path is invalid");
+    REPORT_CALL_ERROR("E19999", "Config path is invalid");
     return PARAM_INVALID;
   }
 
   if (strlen(path) != length) {
-    GELOGE(PARAM_INVALID, "Path is invalid or length of config path is not equal to given length.");
+    GELOGE(PARAM_INVALID, "[Check][Param]Path %s is invalid or length %zu "
+           "not equal to given length %zu", path, strlen(path), length);
+    REPORT_CALL_ERROR("E19999", "Path %s is invalid or length %zu "
+                      "not equal to given length %zu", path, strlen(path), length);
     return PARAM_INVALID;
   }
 
   if (length == 0 || length > MMPA_MAX_PATH) {
-    GELOGE(PARAM_INVALID, "Length of config path is invalid.");
+    GELOGE(PARAM_INVALID, "[Check][Param]Length of config path %zu is invalid", length);
+    REPORT_INNER_ERROR("E19999", "Length of config path %zu is invalid", length);
     return PARAM_INVALID;
   }
 
   INT32 is_dir = mmIsDir(path);
   if (is_dir != EN_OK) {
-    GELOGE(PATH_INVALID, "Open directory %s failed, maybe it is not exit or not a dir. errmsg:%s",
+    GELOGE(PATH_INVALID, "[Open][Directory]Failed, directory path %s, errmsg %s",
            path, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Open directory %s failed, errmsg %s", path, strerror(errno));
     return PATH_INVALID;
   }
 
   if (mmAccess2(path, M_R_OK) != EN_OK) {
-    GELOGE(PATH_INVALID, "Read path[%s] failed, errmsg[%s]", path, strerror(errno));
+    GELOGE(PATH_INVALID, "[Read][Path]Failed, path %s, errmsg %s", path, strerror(errno));
+    REPORT_CALL_ERROR("E19999", "Read path %s failed, errmsg %s", path, strerror(errno));
     return PATH_INVALID;
   }
   return SUCCESS;

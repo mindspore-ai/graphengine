@@ -27,6 +27,7 @@
 #include "single_op/task/tbe_task_builder.h"
 #undef private
 #undef protected
+#include "graph/passes/graph_builder_utils.h"
 
 using namespace std;
 using namespace testing;
@@ -223,3 +224,19 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   model.BuildDynamicOp(res, dynamic_single_op);
 }
 
+TEST_F(UtestSingleOpModel, test_host_mem) {
+  string model_data_str = "123456789";
+  SingleOpModel model("model", model_data_str.c_str(), model_data_str.size());
+
+  // make graph
+  ut::GraphBuilder builder = ut::GraphBuilder("graph");
+  auto data = builder.AddNode("Data", "Data", 0, 1);
+  auto netoutput = builder.AddNode("Netoutput", "NetOutput", 1, 0);
+  builder.AddDataEdge(data, 0, netoutput, 0);
+  auto graph = builder.GetGraph();
+  model.op_with_hostmem_[0] = data;
+
+  std::mutex stream_mu_;
+  DynamicSingleOp single_op(0, &stream_mu_, nullptr);
+  ASSERT_EQ(model.SetHostMemTensor(single_op), SUCCESS);
+}

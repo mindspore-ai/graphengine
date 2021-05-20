@@ -31,6 +31,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
+#include "graph/common/omg_util.h"
 
 #define REQUIRE(cond, ...)                                     \
   do {                                                         \
@@ -45,6 +46,11 @@
 #define REQUIRE_GRAPH_SUCCESS(cond, ...) REQUIRE(((cond) == GRAPH_SUCCESS), __VA_ARGS__)
 
 namespace ge {
+namespace {
+const std::set<std::string> kControlFlowOps{
+    STREAMACTIVE, STREAMSWITCH, STREAMMERGE, ENTER, REFENTER, LOOPCOND, NEXTITERATION, REFNEXTITERATION, EXIT, REFEXIT
+};
+}
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
@@ -273,7 +279,7 @@ Status DynamicShapePartitioner::InitClusters() {
     auto cluster = MakeShared<Cluster>(rank++, type, node, this);
     REQUIRE_NOT_NULL(cluster, "Failed new memory for cluster.");
     node_2_cluster_[node] = cluster;
-    if (cluster->IsUnknownShape()) {
+    if (cluster->IsUnknownShape() && !cluster->IsControlFlow()) {
       ordered_cluster_.push_back(cluster);
     }
     // Already sorted topologically, so access to the parent cluster is safe
@@ -347,11 +353,11 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
 void DynamicShapePartitioner::MergeClustersUnknownShape() {
   // Merge unknown shape clusters
   for (const auto &cluster : ordered_cluster_) {
-    if (cluster->IsIndependent()) {
+    if (cluster->IsIndependent() || cluster->IsControlFlow()) {
       continue;
     }
     for (const auto &in_cluster : cluster->Inputs()) {
-      if (!in_cluster->IsUnknownShape()) {
+      if (!in_cluster->IsUnknownShape() || in_cluster->IsControlFlow()) {
         continue;
       }
       auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);
@@ -545,17 +551,6 @@ Status DynamicShapePartitioner::IsUnknownShapeGraph(ComputeGraphPtr graph, bool 
   return SUCCESS;
 }
 
-bool DynamicShapePartitioner::IsUnknownShapeTensor(const GeTensorDesc &tensor) {
-  const static int kUnknowShape = -1;
-  const static int kUnknowRank = -2;
-  for (auto dim_size : tensor.GetShape().GetDims()) {
-    if (dim_size == kUnknowShape || dim_size == kUnknowRank) {
-      return true;
-    }
-  }
-  return false;
-}
-
 std::string Cluster::DebugString() const {
   std::stringstream ss;
   switch (type_) {
@@ -612,6 +607,14 @@ bool Cluster::IsRefVariable() const {
   }
   return false;
 }
+
+bool Cluster::IsControlFlow() const {
+  const auto &op_desc = nodes_[0]->GetOpDesc();
+  bool is_ctrl_flow = kControlFlowOps.count(op_desc->GetType()) > 0 && op_desc->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
+  GELOGD("[%s] %s rts control flow Op ", op_desc->GetName().c_str(), is_ctrl_flow ? "Is" : "Not");
+  return is_ctrl_flow;
+}
+
 void Cluster::AddInput(ClusterPtr in) {
   if (std::find(in_clusters_.begin(), in_clusters_.end(), in) != in_clusters_.end()) return;
   in_clusters_.insert(in_clusters_.end(), in);
@@ -732,29 +735,33 @@ std::vector<ClusterPtr> Cluster::Outputs() const { return out_clusters_; };
 std::vector<NodePtr> Cluster::Nodes() const { return nodes_; };
 
 void Cluster::AddFrameInput(InDataAnchorPtr anchor) {
-  inputs_index_[anchor] = inputs_.size();
-  inputs_.push_back(anchor);
-};
+  if (anchor != nullptr && anchor->GetPeerOutAnchor() != nullptr) {
+    inputs_index_[anchor] = inputs_.size();
+    inputs_.push_back(anchor);
+  }
+}
 
 void Cluster::AddFrameOutput(OutDataAnchorPtr anchor) {
-  outputs_index_[anchor] = outputs_.size();
-  outputs_.push_back(anchor);
-};
+  if (anchor != nullptr) {
+    outputs_index_[anchor] = outputs_.size();
+    outputs_.push_back(anchor);
+  }
+}
 
 InDataAnchorPtr Cluster::GetFrameInDataAnchor(InDataAnchorPtr anchor) {
   return partition_node_->GetInDataAnchor(static_cast<int>(inputs_index_[anchor]));
-};
+}
 
 OutDataAnchorPtr Cluster::GetFrameOutDataAnchor(OutDataAnchorPtr anchor) {
   return partition_node_->GetOutDataAnchor(static_cast<int>(outputs_index_[anchor]));
-};
+}
 
 InControlAnchorPtr Cluster::GetFrameInControlAnchor() { return partition_node_->GetInControlAnchor(); };
 
 OutControlAnchorPtr Cluster::GetFrameOutControlAnchor() { return partition_node_->GetOutControlAnchor(); };
 
 Status Cluster::BuildFrame() {
-  if (IsUnknownShape() || IsKnownShape() || IsInputNode()) {
+  if ((IsUnknownShape() || IsKnownShape() || IsInputNode()) && !IsControlFlow()) {
     return BuildPartitionFrame();
   } else {
     auto node = nodes_.front();
@@ -889,7 +896,7 @@ Status Cluster::CombinePartitionFrame() {
 }
 
 Status Cluster::BuildPartitionSubgraph() {
-  if (IsData() || IsNetOutput() || IsIndependent()) {
+  if (IsData() || IsNetOutput() || IsIndependent() || IsControlFlow()) {
     return SUCCESS;
   }
   int64_t parent_node_index = 0;

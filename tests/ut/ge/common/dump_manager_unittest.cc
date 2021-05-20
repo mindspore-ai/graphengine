@@ -67,6 +67,35 @@ TEST_F(UTEST_dump_manager, is_dump_single_op_close_success) {
    EXPECT_EQ(ret, ge::SUCCESS);
  }
 
+ // dump_debug and debug_status are on
+  TEST_F(UTEST_dump_manager, dump_op_debug_on) {
+    DumpConfig dump_config;
+    dump_config.dump_debug = "on";
+    dump_config.dump_status = "on";
+    auto ret = DumpManager::GetInstance().SetDumpConf(dump_config);
+    EXPECT_EQ(ret, ge::SUCCESS);
+  }
+
+  // just dump_status is on
+  TEST_F(UTEST_dump_manager, dump_status_without_dump_list) {
+    DumpConfig dump_config;
+    dump_config.dump_status = "on";
+    auto ret = DumpManager::GetInstance().SetDumpConf(dump_config);
+    EXPECT_EQ(ret, ge::PARAM_INVALID);
+  }
+
+  // dump_status is on with dump_list
+  TEST_F(UTEST_dump_manager, dump_status_with_dump_list) {
+    DumpConfig dump_config;
+    dump_config.dump_status = "on";
+    ModelDumpConfig dump_list;
+    dump_list.model_name = "test";
+    dump_list.layers.push_back("first");
+    dump_config.dump_list.push_back(dump_list);
+    auto ret = DumpManager::GetInstance().SetDumpConf(dump_config);
+    EXPECT_EQ(ret, ge::PARAM_INVALID);
+  }
+
  TEST_F(UTEST_dump_manager, add_dump_properties_success) {
    DumpProperties dump_properties;
    DumpManager::GetInstance().AddDumpProperties(0, dump_properties);

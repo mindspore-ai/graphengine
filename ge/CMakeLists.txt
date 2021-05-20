@@ -173,10 +173,12 @@ set(TRAIN_SRC_LIST
     "graph/manager/graph_manager_utils.cc"
     "graph/manager/graph_mem_allocator.cc"
     "graph/manager/graph_caching_allocator.cc"
+    "graph/manager/session_scope_mem_allocator.cc"
     "graph/manager/graph_var_manager.cc"
     "graph/manager/host_mem_manager.cc"
     "graph/manager/rdma_pool_allocator.cc"
     "graph/manager/host_mem_allocator.cc"
+    "graph/manager/graph_mem_manager.cc"
     "graph/manager/memory_api.cc"
     "graph/manager/model_manager/event_manager.cc"
     "graph/manager/trans_var_data_utils.cc"
@@ -270,7 +272,6 @@ set(TRAIN_SRC_LIST
     "graph/passes/identity_pass.cc"
     "graph/passes/ref_identity_delete_op_pass.cc"
     "graph/passes/infershape_pass.cc"
-    "graph/passes/isolated_op_remove_pass.cc"
     "graph/passes/iterator_op_pass.cc"
     "graph/passes/link_gen_mask_nodes_pass.cc"
     "graph/passes/merge_pass.cc"
@@ -307,6 +308,7 @@ set(TRAIN_SRC_LIST
     "graph/passes/merge_to_stream_merge_pass.cc"
     "graph/passes/merge_input_memcpy_pass.cc"
     "graph/passes/switch_to_stream_switch_pass.cc"
+    "graph/passes/mark_force_unknown_for_cond_pass.cc"
     "graph/passes/attach_stream_label_pass.cc"
     "graph/passes/switch_dead_branch_elimination.cc"
     "graph/passes/replace_transshape_pass.cc"
@@ -316,13 +318,11 @@ set(TRAIN_SRC_LIST
     "graph/passes/transop_without_reshape_fusion_pass.cc"
     "graph/passes/transpose_transdata_pass.cc"
     "graph/passes/unused_const_pass.cc"
-    "graph/passes/unused_op_remove_pass.cc"
     "graph/passes/var_is_initialized_op_pass.cc"
     "graph/passes/parallel_concat_start_op_pass.cc"
     "graph/passes/cond_pass.cc"
     "graph/passes/cond_remove_pass.cc"
     "graph/passes/for_pass.cc"
-    "graph/passes/variable_format_pass.cc"
     "graph/passes/variable_op_pass.cc"
     "graph/passes/variable_prepare_op_pass.cc"
     "graph/passes/variable_ref_delete_op_pass.cc"
@@ -391,6 +391,8 @@ set(TRAIN_SRC_LIST
     "hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
     "hybrid/node_executor/hccl/hccl_node_executor.cc"
     "hybrid/node_executor/rts/rts_node_executor.cc"
+    "hybrid/node_executor/rts/rts_node_task.cc"
+    "hybrid/node_executor/rts/rts_task_factory.cc"
     "hybrid/node_executor/node_executor.cc"
     "hybrid/node_executor/task_context.cc"
     "hybrid/hybrid_davinci_model.cc"
@@ -475,6 +477,8 @@ set(INFER_SRC_LIST
     "graph/manager/host_mem_allocator.cc"
     "graph/manager/graph_mem_allocator.cc"
     "graph/manager/graph_caching_allocator.cc"
+    "graph/manager/session_scope_mem_allocator.cc"
+    "graph/manager/graph_mem_manager.cc"
     "model/ge_model.cc"
     "model/ge_root_model.cc"
     "graph/common/transop_util.cc"
@@ -519,12 +523,10 @@ set(INFER_SRC_LIST
     "graph/passes/dimension_adjust_pass.cc"
     "graph/passes/get_original_format_pass.cc"
     "graph/passes/shape_operate_op_remove_pass.cc"
-    "graph/passes/unused_op_remove_pass.cc"
     "graph/passes/assert_pass.cc"
     "graph/passes/dropout_pass.cc"
     "graph/passes/infershape_pass.cc"
     "graph/passes/unused_const_pass.cc"
-    "graph/passes/isolated_op_remove_pass.cc"
     "graph/passes/permute_pass.cc"
     "graph/passes/ctrl_edge_transfer_pass.cc"
     "graph/passes/end_of_sequence_add_control_pass.cc"
@@ -582,6 +584,7 @@ set(INFER_SRC_LIST
     "graph/passes/merge_to_stream_merge_pass.cc"
     "graph/passes/merge_input_memcpy_pass.cc"
     "graph/passes/switch_to_stream_switch_pass.cc"
+    "graph/passes/mark_force_unknown_for_cond_pass.cc"
     "graph/passes/attach_stream_label_pass.cc"
     "graph/passes/multi_batch_pass.cc"
     "graph/passes/multi_batch_clone_pass.cc"
@@ -606,7 +609,6 @@ set(INFER_SRC_LIST
     "graph/passes/switch_logic_remove_pass.cc"
     "graph/passes/switch_data_edges_bypass.cc"
     "graph/passes/merge_pass.cc"
-    "graph/passes/variable_format_pass.cc"
     "graph/passes/variable_op_pass.cc"
     "graph/passes/cast_remove_pass.cc"
     "graph/passes/transpose_transdata_pass.cc"
@@ -746,6 +748,7 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -822,6 +825,7 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/external
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -982,6 +986,7 @@ target_include_directories(atc_stub_ge_compiler PRIVATE
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -1022,6 +1027,7 @@ target_include_directories(fwk_stub_ge_runner PRIVATE
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
+    ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include

@@ -47,6 +47,7 @@ class DynamicShapePartitioner {
     bool IsUnknownShape() const;
     bool IsIndependent() const;
     bool IsNetOutput() const;
+    bool IsControlFlow() const;
     std::vector<std::shared_ptr<Cluster>> Inputs() const;
     std::vector<std::shared_ptr<Cluster>> Outputs() const;
     bool IsInputNode() const;
@@ -151,7 +152,6 @@ class DynamicShapePartitioner {
   Status CollectSpreadUnknownShapeNodes(NodePtr node);
   Status IsUnknownShapeGraph(ge::ComputeGraphPtr graph, bool &is_unknow);
   Status IsUnknownShapeNode(ge::NodePtr node, bool &is_unknow);
-  bool IsUnknownShapeTensor(const ge::GeTensorDesc &tensor);
   Status CtrlEdgeTransfer();
   ge::ComputeGraphPtr root_graph_;                                        // The original graph to partition
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // Record nodes and the cluster it belongs to

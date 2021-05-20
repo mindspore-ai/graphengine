@@ -322,7 +322,7 @@ Status SingleStreamPass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr> &s
       if (!stream_label.empty()) {
         REPORT_INNER_ERROR("E19999", "Stream labels are not supported in SingleStream mode "
                            "(subgraph: %s, stream label: %s)", subgraph->name.c_str(), stream_label.c_str());
-        GELOGE(INTERNAL_ERROR, "Stream labels are not supported (subgraph: %s, stream label: %s).",
+        GELOGE(INTERNAL_ERROR, "[Get][Label] Stream labels are not supported (subgraph: %s, stream label: %s).",
                subgraph->name.c_str(), stream_label.c_str());
         return INTERNAL_ERROR;
       }
@@ -341,8 +341,8 @@ Status NodeStreamUpdatePass::Run(ComputeGraphPtr graph, const vector<SubgraphPtr
     if (!IsEngineSkip(*subgraph) && !HasAssignedStream(*subgraph)) {
       REPORT_INNER_ERROR("E19999", "Subgraph %s has not yet been assigned a stream (engine: %s)",
                          subgraph->name.c_str(), engine_name.c_str());
-      GELOGE(INTERNAL_ERROR, "Subgraph %s has not yet been assigned a stream (engine: %s).", subgraph->name.c_str(),
-             engine_name.c_str());
+      GELOGE(INTERNAL_ERROR, "[Check][Param] Subgraph %s has not yet been assigned a stream (engine: %s).",
+             subgraph->name.c_str(), engine_name.c_str());
       return INTERNAL_ERROR;
     } else {
       GELOGI("[Assign][StreamId] %ld for Subgraph %s (engine: %s).", subgraph->stream_id, subgraph->name.c_str(),
@@ -402,7 +402,7 @@ Status UpdateForParallelGroupPass::Run(ComputeGraphPtr graph, const vector<Subgr
     for (const auto &op_desc : itr.second) {
       std::string group_name;
       if (!AttrUtils::GetStr(op_desc, ATTR_NAME_PARALLEL_GROUP, group_name)) {
-        GELOGE(FAILED, "[GetAttr][OpDesc]Get node %s ATTR_NAME_PARALLEL_GROUP failed.", op_desc->GetName().c_str());
+        GELOGE(FAILED, "[Get][Attr] ATTR_NAME_PARALLEL_GROUP of node %s failed.", op_desc->GetName().c_str());
         REPORT_INNER_ERROR("E19999", "Get node %s ATTR_NAME_PARALLEL_GROUP failed.", op_desc->GetName().c_str());
         return FAILED;
       }
@@ -606,7 +606,7 @@ Status LogicalStreamAllocator::Assign(const ComputeGraphPtr &root_graph, const G
 
   Status status = DoAssign(root_graph, subgraph_map, engine_confs);
   if (status != SUCCESS) {
-    GELOGE(status, "Assign streams failed.");
+    GELOGE(status, "[Assign][Streams] failed, graph:%s.", root_graph->GetName().c_str());
     return status;
   }
 
@@ -614,7 +614,7 @@ Status LogicalStreamAllocator::Assign(const ComputeGraphPtr &root_graph, const G
   for (const ComputeGraphPtr &subgraph : subgraphs) {
     Status status = DoAssign(subgraph, subgraph_map, engine_confs);
     if (status != SUCCESS) {
-      GELOGE(status, "Assign streams failed.");
+      GELOGE(status, "[Assign][Streams] failed, graph:%s.", subgraph->GetName().c_str());
       return status;
     }
   }
@@ -642,7 +642,7 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
   if (iter == subgraph_map.end()) {
     REPORT_INNER_ERROR("E19999", "Graph %s not found in subgraph_map when do logical stream assign ",
                        graph->GetName().c_str());
-    GELOGE(FAILED, "Graph %s not found.", graph->GetName().c_str());
+    GELOGE(FAILED, "[Check][Param] Graph %s not found.", graph->GetName().c_str());
     return FAILED;
   }
 
@@ -652,7 +652,7 @@ Status LogicalStreamAllocator::DoAssign(const ComputeGraphPtr &graph, const Grap
   Status status = ConvertSubgraphs(subgraph_info_list, engine_confs, subgraphs);
   GE_TIMESTAMP_END(ConvertSubgraphs, "GraphBuilder::AssignStreamConvertSubgraphs");
   if (status != SUCCESS) {
-    GELOGE(status, "Create subgraphs failed.");
+    GELOGE(status, "[Convert][SubGraphs] failed.");
     return status;
   }
 
@@ -683,8 +683,8 @@ Status LogicalStreamAllocator::ConvertSubgraphs(const vector<SubGraphInfoPtr> &s
     if ((engine_conf_iter == engine_confs.end()) || (engine_conf_iter->second == nullptr)) {
       REPORT_INNER_ERROR("E19999", "Engine conf of subgraph %s not found (engine name: %s)",
                          subgraph_name.c_str(), engine_name.c_str());
-      GELOGE(INTERNAL_ERROR, "Engine conf of subgraph %s not found (engine name: %s).", subgraph_name.c_str(),
-             engine_name.c_str());
+      GELOGE(INTERNAL_ERROR, "[Check][Param] Engine conf of subgraph %s not found (engine name: %s).",
+             subgraph_name.c_str(), engine_name.c_str());
 
       return INTERNAL_ERROR;
     }
@@ -731,7 +731,7 @@ Status LogicalStreamAllocator::RunPasses(const ComputeGraphPtr &graph, const vec
       GELOGD("[Show][Status]Stream pass %s return NOT_CHANGED.", pass->GetName().c_str());
     } else {
       REPORT_CALL_ERROR("E19999", "Stream pass %s run failed.", pass->GetName().c_str());
-      GELOGE(status, "Stream pass %s failed.", pass->GetName().c_str());
+      GELOGE(status, "[Call][Run] Stream pass %s failed.", pass->GetName().c_str());
       return status;
     }
   }

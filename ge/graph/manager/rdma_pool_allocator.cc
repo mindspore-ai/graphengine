@@ -20,6 +20,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
 #include "runtime/dev.h"
+#include "graph/manager/graph_mem_manager.h"
 
 namespace {
 const size_t kAlignedSize = 512;
@@ -49,7 +50,7 @@ RdmaPoolAllocator::RdmaPoolAllocator(rtMemType_t memory_type)
       })) {}
 
 Status RdmaPoolAllocator::Initialize() {
-  memory_allocator_ = MemManager::Instance(memory_type_);
+  memory_allocator_ = &MemManager::Instance().MemInstance(memory_type_);
   if (memory_allocator_ == nullptr) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }

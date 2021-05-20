@@ -25,6 +25,7 @@
 #include "common/ge_inner_error_codes.h"
 #include "ge/ge_api_types.h"
 #include "session/inner_session.h"
+#include "runtime/base.h"
 
 namespace ge {
 using SessionPtr = std::shared_ptr<InnerSession>;
@@ -98,6 +99,19 @@ class SessionManager {
 
   ///
   /// @ingroup ge_session
+  /// @brief run a graph of the session with specific stream asynchronously
+  /// @param [in] session_id session id
+  /// @param [in] graph_id graph id
+  /// @param [in] stream specific stream
+  /// @param [in] inputs input data
+  /// @param [out] outputs output data
+  /// @return Status result of function
+  ///
+  Status RunGraphWithStreamAsync(SessionId session_id, uint32_t graph_id, rtStream_t stream,
+                                 const std::vector<Tensor> &inputs, std::vector<Tensor> &outputs);
+
+  ///
+  /// @ingroup ge_session
   /// @brief remove a graph from the session with specific session id
   /// @param [in] session_id session id
   /// @param [in] graph_id graph id
@@ -125,6 +139,8 @@ class SessionManager {
   ///
   Status BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs);
 
+  Status BuildGraph(SessionId session_id, uint32_t graph_id, const std::vector<ge::Tensor> &inputs);
+
   ///
   /// @ingroup ge_session
   /// @brief run a graph of the session with specific session id for train asynchronously
@@ -133,7 +149,7 @@ class SessionManager {
   /// @param [in] inputs input data
   /// @return Status result of function
   ///
-  Status RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<InputTensorInfo> &inputs,
+  Status RunGraphAsync(SessionId session_id, uint32_t graph_id, const std::vector<ge::Tensor> &inputs,
                        RunAsyncCallback callback);
 
   ///

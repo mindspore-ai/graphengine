@@ -94,7 +94,7 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "engine type",
         "it only support default/AIcoreEngine/VectorEngine"});
-    GELOGE(FAILED, "[Check][EngineType]value:%d not support, "
+    GELOGE(FAILED, "[Check][Param] value:%d not support, "
            "only support default/AIcoreEngine/VectorEngine now", static_cast<int>(engine_type));
     return FAILED;
   }
@@ -107,7 +107,8 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
   // set op engine name and opkernelLib. when engine support
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "CheckEngineType failed.");
+    REPORT_INNER_ERROR("E19999", "get gelib failed, as get instance failed or initflag failed.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][GELib] CheckEngineType failed, as get gelib failed.");
     return FAILED;
   }
   OpsKernelManager &ops_kernel_manager = instance_ptr->OpsKernelManagerObj();
@@ -115,7 +116,7 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
   if (op_infos.empty()) {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "optype", "it can not find"});
-    GELOGE(FAILED, "CheckEngineType: Can not get op info by op type %s", op_desc->GetType().c_str());
+    GELOGE(FAILED, "[Get][OpInfo] by op type %s failed.", op_desc->GetType().c_str());
     return FAILED;
   }
   string kernel_name;
@@ -128,7 +129,8 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
   if (kernel_name.empty()) {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "engine name" + FmtToStr(op_engine_name), "it can not find"});
-    GELOGE(FAILED, "CheckEngineType:Can not find ops kernel, engine name: %s.", op_engine_name.c_str());
+    GELOGE(FAILED, "[Check][Param] Can not find ops kernel, engine name:%s. op:%s(%s)",
+           op_engine_name.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
   auto &kernel_map = ops_kernel_manager.GetAllOpsKernelInfoStores();
@@ -144,15 +146,14 @@ static Status CheckEngineTypeSupport(const NodePtr &node, OpEngineType engine_ty
     } else {
       ErrorManager::GetInstance().ATCReportErrMessage(
         "E13002", {"optype", "opskernel", "reason"}, {op_desc->GetType(), kernel_name, unsupported_reason});
-      GELOGE(FAILED, "CheckEngineType: check support failed, Op type %s of ops kernel %s is unsupported, reason:%s",
+      GELOGE(FAILED, "[Call][CheckSupported] failed, Op type %s of ops kernel %s is unsupported, reason:%s",
              op_desc->GetType().c_str(), kernel_name.c_str(), unsupported_reason.c_str());
       return FAILED;
     }
   } else {
     ErrorManager::GetInstance().ATCReportErrMessage(
         "E13003", {"opname", "optype"}, {op_desc->GetName(), op_desc->GetType()});
-    GELOGE(FAILED,
-           "CheckEngineType:Can not find any supported ops kernel info store by kernel_name %s,"
+    GELOGE(FAILED, "[Check][Param] Can not find any supported ops kernel info store by kernel_name %s,"
            "op type is %s, op name is %s",
            kernel_name.c_str(), op_desc->GetType().c_str(), op_desc->GetName().c_str());
   }
@@ -183,34 +184,47 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
   string op_name = node->GetName() + "_in_" + std::to_string(index);
   OpDescPtr data_op = MakeShared<ge::OpDesc>(op_name, op_type);
   if (data_op == nullptr) {
+    REPORT_CALL_ERROR("E19999", "create OpDesc failed, name:%s", op_name.c_str());
+    GELOGE(FAILED, "[Create][OpDesc] failed, name:%s", op_name.c_str());
     return FAILED;
   }
   if (is_const) {
     ConstGeTensorPtr tensor_value;
     if (!AttrUtils::GetTensor(tensor, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
-      GELOGE(FAILED, "Get value failed, node name:%s.", tensor.GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "get attr %s failed, tensor:%s.",
+                        ge::ATTR_NAME_WEIGHTS.c_str(), tensor.GetName().c_str());
+      GELOGE(FAILED, "[Get][Attr] %s failed, tensor:%s.", ge::ATTR_NAME_WEIGHTS.c_str(), tensor.GetName().c_str());
       return FAILED;
     }
     if (!AttrUtils::SetTensor(data_op, ge::ATTR_NAME_WEIGHTS, tensor_value)) {
-      GELOGE(FAILED, "Set attr ATTR_NAME_WEIGHTS fail.");
+      REPORT_CALL_ERROR("E19999", "set attr %s failed, op:%s.", ge::ATTR_NAME_WEIGHTS.c_str(), op_name.c_str());
+      GELOGE(FAILED, "[Set][Attr] %s failed, op:%s.", ge::ATTR_NAME_WEIGHTS.c_str(), op_name.c_str());
       return FAILED;
     }
   }
 
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
 
-  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
-                   "[Add][InputDesc]fail for node:%s", data_op->GetName().c_str());
-  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
-                   "[Add][OutputDesc]fail for node:%s", data_op->GetName().c_str());
+  GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS,
+                   REPORT_CALL_ERROR("E19999", "AddInputDesc failed for node:%s", data_op->GetName().c_str());
+                   return FAILED, "[Add][InputDesc] fail for node:%s", data_op->GetName().c_str());
+  GE_CHK_BOOL_EXEC(data_op->AddOutputDesc(tensor) == GRAPH_SUCCESS,
+                   REPORT_CALL_ERROR("E19999", "AddOutputDesc failed for node:%s", data_op->GetName().c_str());
+                   return FAILED, "[Add][OutputDesc] fail for node:%s", data_op->GetName().c_str());
   if (attr && !is_const) {
-    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, data_index), return FAILED,
-                     "[Set][Attr:%s]fail for node:%s", ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
+    GE_CHK_BOOL_EXEC(AttrUtils::SetInt(data_op, ATTR_NAME_INDEX, data_index),
+                     REPORT_CALL_ERROR("E19999", "set attr %s failed for node:%s",
+                                       ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
+                     return FAILED,
+                     "[Set][Attr:%s] fail for node:%s", ATTR_NAME_INDEX.c_str(), data_op->GetName().c_str());
     ++data_index;
   }
 
   ge::NodePtr arg_node = graph->AddNode(data_op);
-  GE_CHK_BOOL_EXEC(arg_node != nullptr, return FAILED, "Insert Data node fail");
+  GE_CHK_BOOL_EXEC(arg_node != nullptr,
+                   REPORT_CALL_ERROR("E19999", "add node:%s to graph:%s failed", data_op->GetName().c_str(),
+                                     graph->GetName().c_str());
+                   return FAILED, "[Add][Node] Insert Data node:%s fail", data_op->GetName().c_str());
 
   GE_CHK_STATUS(GraphUtils::AddEdge(arg_node->GetOutDataAnchor(0), node->GetInDataAnchor(index)),
                 "[Add][Edge]fail from node:%s to node:%s", data_op->GetName().c_str(), node->GetName().c_str());
@@ -221,6 +235,8 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
 static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, const vector<GeTensor> &outputs) {
   OpDescPtr op_desc = MakeShared<ge::OpDesc>(graph->GetName() + "_" + NODE_NAME_NET_OUTPUT, NETOUTPUT);
   if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "create OpDesc failed, graph:%s", graph->GetName().c_str());
+    GELOGE(FAILED, "[Create][OpDesc] failed, graph:%s", graph->GetName().c_str());
     return FAILED;
   }
   (void)AttrUtils::SetBool(op_desc, "_is_single_op", true);
@@ -228,18 +244,23 @@ static Status AddOutputs(const ComputeGraphPtr &graph, const NodePtr &node, cons
   for (const auto &out_desc : outputs) {
     GeTensorDesc tensor = out_desc.GetTensorDesc();
     TensorUtils::SetInputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
-                     "[Add][InputDesc]fail for node:%s", op_desc->GetName().c_str());
+    GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(tensor) == GRAPH_SUCCESS,
+                     REPORT_CALL_ERROR("E19999", "AddInputDesc failed for node:%s", op_desc->GetName().c_str());
+                     return FAILED, "[Add][InputDesc]fail for node:%s", op_desc->GetName().c_str());
 
     TensorUtils::SetInputTensor(tensor, false);
     TensorUtils::SetOutputTensor(tensor, true);
-    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS, return FAILED,
-                     "[Add][OutputDesc]fail for node:%s", op_desc->GetName().c_str());
+    GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(tensor) == GRAPH_SUCCESS,
+                     REPORT_CALL_ERROR("E19999", "AddOutputDesc failed for node:%s", op_desc->GetName().c_str());
+                     return FAILED, "[Add][OutputDesc]fail for node:%s", op_desc->GetName().c_str());
     count++;
   }
   GE_CHECK_NOTNULL_EXEC(graph, return PARAM_INVALID);
   ge::NodePtr out_node = graph->AddNode(op_desc);
-  GE_CHK_BOOL_EXEC(out_node != nullptr, return FAILED,
+  GE_CHK_BOOL_EXEC(out_node != nullptr,
+                   REPORT_CALL_ERROR("E19999", "add node:%s to graph:%u failed.",
+                                     op_desc->GetName().c_str(), graph->GetGraphID());
+                   return FAILED,
                    "[Add][Node:%s]fail in graph:%u", op_desc->GetName().c_str(), graph->GetGraphID());
   GE_CHECK_NOTNULL_EXEC(node, return PARAM_INVALID);
   for (int32_t i = 0; i < count; ++i) {
@@ -256,7 +277,8 @@ static void GetOpsProtoPath(string &opsproto_path) {
     string path = path_env;
     string file_path = RealPath(path.c_str());
     if (file_path.empty()) {
-      GELOGE(FAILED, "File path %s is invalid.", path.c_str());
+      REPORT_CALL_ERROR("E19999", "File path %s is invalid.", path.c_str());
+      GELOGE(FAILED, "[Call][RealPath] File path %s is invalid.", path.c_str());
       return;
     }
     opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
@@ -288,7 +310,8 @@ static Status ResetTensorVecShape(const vector<GeTensor> &inputs, vector<GeTenso
       int64_t storage_format = FORMAT_NCHW;
       if (ge::AttrUtils::GetInt(desc, ge::ATTR_NAME_STORAGE_FORMAT, storage_format) &&
           !ge::AttrUtils::SetListInt(desc, ge::ATTR_NAME_STORAGE_SHAPE, dynamic_shape_dims)) {
-        GELOGE(FAILED, "Set attr ATTR_NAME_STORAGE_SHAPE fail.");
+        REPORT_CALL_ERROR("E19999", "Set attr ATTR_NAME_STORAGE_SHAPE failed to op:%s.", desc.GetName().c_str());
+        GELOGE(FAILED, "[Set][Attr] ATTR_NAME_STORAGE_SHAPE fail.");
         return FAILED;
       }
       desc.SetShape(dynamic_shape);
@@ -373,7 +396,8 @@ Status GeGenerator::Initialize(const map<string, string> &options) {
 Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &omg_context) {
   impl_ = ge::MakeShared<Impl>(omg_context);
   if (impl_ == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Make shared failed");
+    REPORT_CALL_ERROR("E19999", "create Impl failed.");
+    GELOGE(MEMALLOC_FAILED, "[Create][Impl] Make shared failed");
     return MEMALLOC_FAILED;
   }
 
@@ -388,7 +412,7 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
 
   Status ret = impl_->graph_manager_.Initialize(options);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_INIT_FAILED, "Graph manager initialize failed.");
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_INIT_FAILED, "[Call][Initialize] Graph manager initialize failed.");
     return GE_GENERATOR_GRAPH_MANAGER_INIT_FAILED;
   }
   // get ek file
@@ -430,7 +454,7 @@ Status GeGenerator::Finalize() {
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
   Status ret = impl_->graph_manager_.Finalize();
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED, "Graph manager finalize failed.");
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED, "[Call][Finalize] Graph manager finalize failed.");
     return GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED;
   }
   return SUCCESS;
@@ -454,9 +478,9 @@ Status GeGenerator::GenerateInfershapeGraph(const Graph &graph) {
 
   Status ret = impl_->GenerateInfershapeGraph(graph);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Dump infershape json failed");
+    GELOGE(ret, "[Call][GenerateInfershapeGraph] Dump infershape json failed");
     if (impl_->graph_manager_.Finalize() != SUCCESS) {
-      GELOGE(FAILED, "graph_manager finalize fail.");
+      GELOGE(FAILED, "[Call][Finalize] graph_manager finalize fail.");
     }
     return ret;
   }
@@ -653,9 +677,9 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   impl_->is_offline_ = is_offline;
   Status ret = impl_->BuildModel(graph, inputs, ge_root_model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Build model failed.");
+    GELOGE(ret, "[Build][Model] failed, ret:%d.", ret);
     if (impl_->graph_manager_.Finalize() != SUCCESS) {
-      GELOGE(FAILED, "graph_manager finalize fail.");
+      GELOGE(FAILED, "[Call][Finalize] graph_manager finalize fail.");
     }
     return ret;
   }
@@ -679,7 +703,7 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
   }
   ret = impl_->SaveRootModel(file_name_prefix, ge_root_model, model);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Save model failed");
+    GELOGE(ret, "[Save][RootModel] failed, ret:%d, file:%s", ret, file_name_prefix.c_str());
     if (impl_->graph_manager_.Finalize() != SUCCESS) {
       GELOGE(FAILED, "graph_manager finalize fail.");
     }
@@ -764,14 +788,16 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "inputs size" + FmtToStr(op_desc->GetAllInputsSize()),
         "tensor size is " + FmtToStr(inputs.size())});
-    GELOGE(PARAM_INVALID, "Tensor size: %zu, Inputs size: %zu", inputs.size(), op_desc->GetAllInputsSize());
+    GELOGE(PARAM_INVALID, "[Check][Param] Tensor size: %zu, op:%s(%s) Inputs size: %zu, not equal",
+           inputs.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), op_desc->GetAllInputsSize());
     return PARAM_INVALID;
   }
   if (!outputs.empty() && (outputs.size() != op_desc->GetOutputsSize())) {
     ErrorManager::GetInstance().ATCReportErrMessage("E14001", {"opname", "optype", "value", "reason"},
         {op_desc->GetName(), op_desc->GetType(), "outputs size" + FmtToStr(op_desc->GetOutputsSize()),
         "tensor size is " + FmtToStr(outputs.size())});
-    GELOGE(PARAM_INVALID, "Tensor size: %zu, Outputs size: %zu", outputs.size(), op_desc->GetOutputsSize());
+    GELOGE(PARAM_INVALID, "[Check][Param] Tensor size: %zu, op:%s(%s) Outputs size: %zu, not equal",
+           outputs.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), op_desc->GetOutputsSize());
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -786,7 +812,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   (void)AttrUtils::SetBool(op_desc, ATTR_SINGLE_OP_SCENE, true);
 
   if (CheckForSingleOp(op_desc, inputs, outputs) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "input param is invalid when build single op!");
+    GELOGE(PARAM_INVALID, "[Check][Param] input param is invalid when build single op:%s!",
+           op_desc->GetName().c_str());
     return PARAM_INVALID;
   }
   OmgContext &omg_context = (impl_ == nullptr) ? domi::GetContext() : impl_->omg_context_;
@@ -805,6 +832,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     fuzz_compile_flag = true;
   }
   if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, fuzz_compile_flag)) {
+    REPORT_CALL_ERROR("E19999", "set ATTR_NAME_FUZZ_BUILD failed for %s.", op_desc->GetName().c_str());
     GELOGE(FAILED, "[Set][ATTR_NAME_FUZZ_BUILD] Failed to set attr for %s.", op_desc->GetName().c_str());
     return FAILED;
   }
@@ -813,7 +841,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   // 1. Create ComputeGraph.
   string name = ge::CurrentTimeInStr() + "_" + model_file_name;
   Graph graph;
-  GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph), "make graph fail.");
+  GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph),
+                "[Build][Graph] for single op:%s fail.", op_desc->GetName().c_str());
 
   // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {
@@ -838,7 +867,8 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   GE_CHECK_NOTNULL(ge_root_model->GetRootGraph());
   map<string, GeModelPtr> name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
   if (name_to_ge_model.empty()) {
-    GELOGE(PARAM_INVALID, "GetSubgraphInstanceNameToModel is empty.");
+    REPORT_CALL_ERROR("E19999", "GetSubgraphInstanceNameToModel failed.");
+    GELOGE(PARAM_INVALID, "[Get][Name] GetSubgraphInstanceNameToModel is empty.");
     return PARAM_INVALID;
   }
   const ComputeGraphPtr root_graph = ge_root_model->GetRootGraph();
@@ -869,7 +899,11 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
     }
     if (!fuzz_build_attrs.empty()) {
       GE_CHK_BOOL_EXEC(AttrUtils::SetListNamedAttrs(ge_model, ATTR_NAME_FUZZ_BUILD_RES_ATTRS, fuzz_build_attrs),
-                       return FAILED, "Set ATTR_NAME_FUZZ_BUILD_RES_ATTRS failed.");
+                       REPORT_CALL_ERROR("E19999", "Set model:%s(id:%u) attr:%s failed.",
+                                         ge_model->GetName().c_str(), ge_model->GetModelId(),
+                                         ATTR_NAME_FUZZ_BUILD_RES_ATTRS.c_str());
+                       return FAILED, "Set model:%s(id:%u) attr:%s failed.",
+                       ge_model->GetName().c_str(), ge_model->GetModelId(), ATTR_NAME_FUZZ_BUILD_RES_ATTRS.c_str());
     }
     GE_CHK_STATUS_RET_NOLOG(impl_->SaveParams(ge_model, op_desc_tmp->GetType(), op_attrs, inputs, outputs));
   } else {
@@ -998,7 +1032,7 @@ Status GeGenerator::Impl::SaveModel(const string &file_name_prefix, GeModelPtr &
   model_helper.SetSaveMode(is_offline_);
   Status ret = model_helper.SaveToOmModel(model, save_param_, file_name_prefix, model_buff);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Save to om model failed");
+    GELOGE(ret, "[Call][SaveToOmModel] Save to om model failed");
     return ret;
   }
   return SUCCESS;
@@ -1009,12 +1043,15 @@ Status GeGenerator::Impl::SaveRootModel(const string &file_name_prefix, GeRootMo
   bool is_unknown_shape = false;
   auto ret = ge_root_model->CheckIsUnknownShape(is_unknown_shape);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "Check root model is unkonwn shape failed");
+    REPORT_CALL_ERROR("E19999", "root model(id:%u) CheckIsUnknownShape failed, ret:%d",
+                      ge_root_model->GetModelId(), ret);
+    GELOGE(FAILED, "[Check][RootModel] is unkonwn shape failed, ret:%d", ret);
     return FAILED;
   }
   GELOGD("begin save root model, cur model is unkonwn shape model ? : %d", is_unknown_shape);
-  GE_CHK_BOOL_EXEC(!ge_root_model->GetSubgraphInstanceNameToModel().empty(), return FAILED,
-                   "ge root model has no sub model")
+  GE_CHK_BOOL_EXEC(!ge_root_model->GetSubgraphInstanceNameToModel().empty(),
+                   REPORT_CALL_ERROR("E19999", "root model(id:%u) has no sub model.", ge_root_model->GetModelId());
+                   return FAILED, "[Get][SubModel] ge root model has no sub model")
   GeModelPtr model_root = nullptr;
   if (is_unknown_shape) {
     auto name_to_ge_model = ge_root_model->GetSubgraphInstanceNameToModel();
@@ -1038,7 +1075,8 @@ Status GeGenerator::Impl::SaveRootModel(const string &file_name_prefix, GeRootMo
   model_helper.SetSaveMode(is_offline_);
   ret = model_helper.SaveToOmRootModel(ge_root_model, save_param_, file_name_prefix, model_buff, is_unknown_shape);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Save to om model failed");
+    REPORT_CALL_ERROR("E19999", "SaveToOmRootModel failed, ret:%d, model id:%u", ret, ge_root_model->GetModelId());
+    GELOGE(ret, "[Call][SaveToOmRootModel] failed, ret:%d, model id:%u", ret, ge_root_model->GetModelId());
     return ret;
   }
   return SUCCESS;
@@ -1051,7 +1089,8 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   const std::map<std::string, std::string> options;
   Status ret = graph_manager_.AddGraph(graph_id, graph, options, omg_context_);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph fail, graph id: %u", graph_id);
+    REPORT_CALL_ERROR("E19999", "add graph(id:%u) failed, ret:%d", graph_id, ret);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "[Add][Graph] fail, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();
     return GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED;
   }
@@ -1075,7 +1114,8 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
 
   ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager build graph fail, graph id: %u", graph_id);
+    REPORT_CALL_ERROR("E19999", "build graph failed, graph id:%u, ret:%d", graph_id, ret);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "[Build][Graph] fail, graph id: %u", graph_id);
     ret = GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
 
@@ -1091,14 +1131,17 @@ Status GeGenerator::Impl::GenerateInfershapeGraph(const Graph &graph) {
   const std::map<std::string, std::string> options;
   Status ret = graph_manager_.AddGraph(graph_id, graph, options, omg_context_);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "GraphManager add graph failed, graph id: %u", graph_id);
+    REPORT_CALL_ERROR("E19999", "add graph failed, graph id:%u, ret:%d", graph_id, ret);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED, "[Add][Graph] failed, graph id: %u", graph_id);
     (void)graph_manager_.Finalize();
     return GE_GENERATOR_GRAPH_MANAGER_ADD_GRAPH_FAILED;
   }
 
   ret = graph_manager_.GenerateInfershapeGraph(graph_id);
   if (ret != SUCCESS) {
-    GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "GraphManager generate graph failed");
+    REPORT_CALL_ERROR("E19999", "GenerateInfershapeGraph failed, graph id:%u, ret:%d", graph_id, ret);
+    GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED,
+           "[Generate][Graph] failed, graph id:%u, ret:%d", graph_id, ret);
     return GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
 

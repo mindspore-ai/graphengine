@@ -72,6 +72,54 @@ ComputeGraphPtr BuildGraph3() {
   return builder.GetGraph();
 }
 
+ComputeGraphPtr BuildGraph5() {
+  auto builder = ut::GraphBuilder("g5");
+  auto data1 = builder.AddNode("input1", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 2, 3});
+  auto data2 = builder.AddNode("input2", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {4, 10});
+  auto add = builder.AddNode("add", ADD, 2, 1);
+  auto netoutput = builder.AddNode("netoutput", NETOUTPUT, 1, 0);
+
+  builder.AddDataEdge(data1, 0, add, 0);
+  builder.AddDataEdge(data2, 0, add, 1);
+  builder.AddDataEdge(add, 0,netoutput, 0);
+  return builder.GetGraph();
+}
+
+/*
+ *   MapIndex   Data1          subgraph1        subgraph2
+ *         \    /
+ *          Case      ===>       Data2            Data3
+ *           |
+ *       Netoutput
+ */
+ComputeGraphPtr BuildGraph4() {
+  auto builder = ut::GraphBuilder("mbatch_Case");
+
+  auto data1 = builder.AddNode("data1", DATA, 1, 1);
+  auto data_desc = data1->GetOpDesc();
+  AttrUtils::SetStr(data_desc, ATTR_ATC_USER_DEFINE_DATATYPE, "DT_FLOAT16");
+  AttrUtils::SetStr(data_desc, "mbatch-switch-name", "case1");
+  AttrUtils::SetInt(data_desc, ATTR_NAME_INDEX, 0);
+
+  auto mapindex1 = builder.AddNode("mapindex1", "MapIndex", 0, 1);
+  auto case1 = builder.AddNode("case1", CASE, 2, 1);
+  auto netoutput1 = builder.AddNode("netoutput1", NETOUTPUT, 1, 0);
+
+  builder.AddDataEdge(mapindex1, 0, case1, 0);
+  builder.AddDataEdge(data1, 0, case1, 1);
+  builder.AddDataEdge(case1, 0, netoutput1, 0);
+
+  return builder.GetGraph();
+}
+
+ComputeGraphPtr BuildGraph4_Subgraph(string graph_name) {
+  auto builder = ut::GraphBuilder(graph_name);
+  auto data1 = builder.AddNode(graph_name + "_data1", DATA, 1, 1);
+  auto data_desc = data1->GetOpDesc();
+  AttrUtils::SetInt(data_desc, ATTR_NAME_PARENT_NODE_INDEX, 1);
+  return builder.GetGraph();
+}
+
 TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
   ge::GraphPrepare graph_prepare;
   graph_prepare.compute_graph_ = BuildGraph1();
@@ -117,5 +165,62 @@ TEST_F(UtestGraphPreproces, test_update_input_output1) {
 
   Status ret = graph_prepare.UpdateInputOutputByOptions();
   EXPECT_EQ(ret, SUCCESS);
+}
+
+
+TEST_F(UtestGraphPreproces, check_ref_op_data_succ) {
+  GraphPrepare graph_preparer;
+  ComputeGraphPtr graph_test = BuildGraph5();
+  NodePtr add_node = nullptr;
+  for (auto &node : graph_test->GetAllNodes()) {
+    if (node->GetName() == "add") {
+      add_node = node;
+    }
+  }
+  EXPECT_NE(add_node, nullptr);
+  string input_name = "__input0";
+  std::set<NodePtr> ref_nodes;
+  auto ret = graph_preparer.CheckRefInputNode(add_node, input_name, ref_nodes);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestGraphPreproces, test_update_dtype_mbatch_case) {
+  ge::GraphPrepare graph_prepare;
+  graph_prepare.compute_graph_ = BuildGraph4();
+  auto parent_graph = graph_prepare.compute_graph_;
+  auto subgraph1 = BuildGraph4_Subgraph("subgraph1");
+  auto subgraph2 = BuildGraph4_Subgraph("subgraph2");
+
+  auto data1 = parent_graph->FindNode("data1");
+  auto data_desc = data1->GetOpDesc();
+
+  auto case_node = parent_graph->FindNode("case1");
+  EXPECT_NE(case_node, nullptr);
+  case_node->GetOpDesc()->AddSubgraphName("subgraph1");
+  case_node->GetOpDesc()->SetSubgraphInstanceName(0, "subgraph1");
+  subgraph1->SetParentNode(case_node);
+  subgraph1->SetParentGraph(parent_graph);
+  EXPECT_EQ(parent_graph->AddSubgraph("subgraph1", subgraph1), GRAPH_SUCCESS);
+
+  case_node->GetOpDesc()->AddSubgraphName("subgraph2");
+  case_node->GetOpDesc()->SetSubgraphInstanceName(1, "subgraph2");
+  subgraph2->SetParentNode(case_node);
+  subgraph2->SetParentGraph(parent_graph);
+  EXPECT_EQ(parent_graph->AddSubgraph("subgraph2", subgraph2), GRAPH_SUCCESS);
+
+  Status ret = graph_prepare.UpdateInputOutputByOptions();
+  EXPECT_EQ(ret, SUCCESS);
+
+  auto case_desc = case_node->GetOpDesc();
+  auto case_input = case_desc->MutableInputDesc(1);
+  EXPECT_EQ(case_input->GetDataType(), 1);
+
+  auto sub1_data1 = subgraph1->FindNode("subgraph1_data1");
+  EXPECT_NE(sub1_data1, nullptr);
+  auto data1_desc = sub1_data1->GetOpDesc();
+  auto data1_input = data1_desc->MutableInputDesc(0);
+  EXPECT_EQ(data1_input->GetDataType(), 1);
+  auto data1_output = data1_desc->MutableOutputDesc(0);
+  EXPECT_EQ(data1_output->GetDataType(), 1);
 }
 }

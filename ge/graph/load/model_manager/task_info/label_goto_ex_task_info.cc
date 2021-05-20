@@ -40,7 +40,7 @@ Status LabelGotoExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   if (op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u",
                        label_goto.op_index());
-    GELOGE(INTERNAL_ERROR, "Task op index:%u out of range!", label_goto.op_index());
+    GELOGE(INTERNAL_ERROR, "[Get][Op] Task op index:%u out of range!", label_goto.op_index());
     return INTERNAL_ERROR;
   }
 
@@ -49,8 +49,8 @@ Status LabelGotoExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
     REPORT_INNER_ERROR("E19999", "Get Attr:%s in op:%s(%s) fail",
                        ATTR_NAME_LABEL_SWITCH_INDEX.c_str(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "LabelGotoExTaskInfo: %s attr [%s] not exist.",
-           op_desc->GetName().c_str(), ATTR_NAME_LABEL_SWITCH_INDEX.c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][Attr] %s in op:%s(%s) fail.",
+           ATTR_NAME_LABEL_SWITCH_INDEX.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -63,7 +63,8 @@ Status LabelGotoExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMalloc failed for op:%s(%s), size:%lu, ret:0x%X",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), sizeof(uint64_t), rt_ret);
-    GELOGE(RT_FAILED, "Call rtMalloc failed, error: %#x", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtMalloc] failed for op:%s(%s), size:%lu, ret:0x%X",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), sizeof(uint64_t), rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
@@ -72,7 +73,8 @@ Status LabelGotoExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *da
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed for op:%s(%s), size:%lu, ret:0x%X",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), sizeof(uint64_t), rt_ret);
-    GELOGE(RT_FAILED, "Call rtMemcpy failed, error: %#x", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtMemcpy] failed for op:%s(%s), size:%lu, ret:0x%X",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), sizeof(uint64_t), rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 
@@ -86,15 +88,14 @@ Status LabelGotoExTaskInfo::Distribute() {
   GE_CHECK_NOTNULL(index_value_);
   if (args_size_ == 0) {
     REPORT_INNER_ERROR("E19999", "Param args_size_ is 0, check fail");
-    GELOGE(PARAM_INVALID, "branch max: %u, args size: %u invalid.", kGotoBranchMax, args_size_);
+    GELOGE(PARAM_INVALID, "[Check][Param] branch max:%u, args size:%u invalid.", kGotoBranchMax, args_size_);
     return PARAM_INVALID;
   }
 
   rtError_t rt_ret = rtLabelSwitchByIndex(index_value_, kGotoBranchMax, args_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtLabelSwitchByIndex failed, ret:0x%X",
-                      rt_ret);
-    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtLabelSwitchByIndex failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtLabelSwitchByIndex] failed, ret:0x%X", rt_ret);
     return RT_ERROR_TO_GE_STATUS(rt_ret);
   }
 

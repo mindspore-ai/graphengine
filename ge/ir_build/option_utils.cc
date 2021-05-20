@@ -239,7 +239,8 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
     bool is_char_valid = isdigit(c) || (c == ',') || (c == ' ') || (c == ';');
     if (!is_char_valid) {
       ErrorManager::GetInstance().ATCReportErrMessage(
-              "E10033", {"value", "reason"}, {dynamic_image_size, kDynamicImageSizeError});
+              "E10001", {"parameter", "value", "reason"}, 
+              {"dynamic_image_size", dynamic_image_size.c_str(), kDynamicImageSizeError});
       GELOGE(ge::PARAM_INVALID, "[Check][DynamicImageSizeInputShape] --dynamic_image_size:%s is invalid. reason: %s",
              dynamic_image_size.c_str(), kDynamicImageSizeError);
       return false;
@@ -846,18 +847,23 @@ Status UpdateDataOpShapeRange(const OpDescPtr &op,
       GELOGE(PARAM_INVALID, "[Check][OpDescPtr] Check shape by shape range failed for op:%s.", data_op_name.c_str());
       return PARAM_INVALID;
     }
-    for (size_t idx = 0; idx < cur_shape_range.size(); idx++) {
+    std::vector<int64_t> dims;
+    for (size_t idx = 0; idx < cur_shape_range.size(); ++idx) {
       auto left_range = cur_shape_range[idx].first;
       auto right_range = cur_shape_range[idx].second;
       if (left_range != right_range) {
-        origin_shape.SetDim(idx, UNKNOWN_DIM);
+        dims.push_back(UNKNOWN_DIM);
+      } else {
+        dims.push_back(left_range);
       }
     }
+    origin_shape = GeShape(dims);
     tensor_input->SetShape(origin_shape);
     tensor_input->SetShapeRange(cur_shape_range);
     tensor_output->SetShape(origin_shape);
     tensor_output->SetShapeRange(cur_shape_range);
-    GELOGI("Update input [%s] shape range info", data_op_name.c_str());
+    GELOGI("Update input [%s] shape range and shape [%s] info success.",
+           data_op_name.c_str(), origin_shape.ToString().c_str());
   } else {
     GELOGI("No need to update input [%s] attr because not found from input_shape_range.", data_op_name.c_str());
   }
@@ -899,18 +905,23 @@ Status UpdateDataOpShapeRange(const OpDescPtr &op,
     GELOGE(PARAM_INVALID, "[Check][OpDescPtr] Check shape by shape range failed for op:%s.", data_op_name.c_str());
     return PARAM_INVALID;
   }
+  std::vector<int64_t> dims;
   for (size_t idx = 0; idx < cur_shape_range.size(); ++idx) {
     auto left_range = cur_shape_range[idx].first;
     auto right_range = cur_shape_range[idx].second;
     if (left_range != right_range) {
-      origin_shape.SetDim(idx, UNKNOWN_DIM);
+      dims.push_back(UNKNOWN_DIM);
+    } else {
+      dims.push_back(left_range);
     }
   }
+  origin_shape = GeShape(dims);
   tensor_input->SetShape(origin_shape);
   tensor_input->SetShapeRange(cur_shape_range);
   tensor_output->SetShape(origin_shape);
   tensor_output->SetShapeRange(cur_shape_range);
-  GELOGI("Update input [%s] shape range info success.", data_op_name.c_str());
+  GELOGI("Update input [%s] shape range and shape [%s] info success.",
+         data_op_name.c_str(), origin_shape.ToString().c_str());
 
   return SUCCESS;
 }

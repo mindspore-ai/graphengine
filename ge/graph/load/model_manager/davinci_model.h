@@ -248,8 +248,6 @@ class DavinciModel {
   // get total mem size
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
 
-  const map<uint32_t, MemInfo> &P2PMemInfos() const { return runtime_param_.memory_infos; }
-
   // model name
   string Name() const { return name_; }
 
@@ -360,6 +358,8 @@ class DavinciModel {
   void GetUserDesignateShapeOrder(vector<string> &user_input_shape_order) const;
 
   void GetCurShape(vector<int64_t> &batch_info, int32_t &dynamic_type) const;
+
+  Status GetOpAttr(const std::string &op_name, const std::string &attr_name, std::string &attr_value) const;
 
   void GetModelAttr(vector<string> &dynamic_output_shape_info) const;
 
@@ -474,6 +474,8 @@ class DavinciModel {
 
   int64_t GetLoadEndTime() { return load_end_time_; }
 
+  void SaveSpecifyAttrValues(const OpDescPtr &op_desc);
+
   Status ReportProfilingData();
 
   void SaveDumpOpInfo(const RuntimeParam &model_param, const OpDescPtr &op, uint32_t task_id, uint32_t stream_id) {
@@ -582,10 +584,8 @@ class DavinciModel {
   // memory address of model
   uintptr_t fixed_mem_base_;  // Initial of mem_base_, keep forever.
   uint8_t *mem_base_;
-  uint8_t *p2p_mem_base_;
   bool is_inner_mem_base_;
   bool is_inner_weight_base_;
-  bool is_inner_p2p_mem_base_;
   // input data manager
   DataInputer *data_inputer_;
   int64_t load_begin_time_;
@@ -635,7 +635,7 @@ class DavinciModel {
   Status UpdateIoTaskArgs(const map<uint32_t, ZeroCopyOffset> &data_info, bool is_input,
                           const vector<DataBuffer> &blobs, bool is_dynamic, const string &batch_label);
 
-  Status CopyInputData(const InputData &input_data, bool device_data = false);
+  Status CopyInputData(const InputData &input_data);
 
   Status CopyOutputData(uint32_t data_id, OutputData &output_data, rtMemcpyKind_t kind);
 
@@ -664,13 +664,13 @@ class DavinciModel {
 
   uint8_t *MallocWeightsMem(size_t weights_size);
 
-  uint8_t *MallocP2PMem(size_t p2p_data_size);
+  Status MallocExMem();
 
   void FreeFeatureMapMem();
 
   void FreeWeightsMem();
 
-  void FreeP2PMem();
+  void FreeExMem();
 
   void ReleaseTask();
 
@@ -880,7 +880,7 @@ class DavinciModel {
   Status SinkTimeProfile(const InputData &current_data);
 
   Status InitOutputTensorInfo(const OpDescPtr &op_desc);
-  Status GenOutputTensorInfo(OutputData *output_data, vector<OutputTensorInfo> &outputs);
+  Status GenOutputTensorInfo(OutputData *output_data, vector<ge::Tensor> &outputs);
 
   Status InitInputDescInfo(const OpDescPtr &op_desc);
   Status InitOutputDescInfo(const OpDescPtr &op_desc, const vector<string> &out_node_name);
@@ -1096,6 +1096,9 @@ class DavinciModel {
 
   // known shape node for dump
   void *known_shape_global_step_;
+
+  // op name to attrs mapping
+  std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

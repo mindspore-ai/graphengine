@@ -50,7 +50,13 @@ class GraphExecutor {
                       std::vector<GeTensor> &output_tensor);
 
   ge::Status ExecuteGraphAsync(GraphId graph_id, const GeRootModelPtr &ge_root_model,
-                               const std::vector<InputTensorInfo> &input_tensor, const RunAsyncCallback &callback);
+                               const std::vector<ge::Tensor> &input_tensor, const RunAsyncCallback &callback);
+
+  Status ExecuteGraphWithStream(GraphId graph_id,
+                                rtStream_t stream,
+                                const GeRootModelPtr &ge_root_model,
+                                const std::vector<GeTensor> &input_tensor,
+                                std::vector<GeTensor> &output_tensor);
 
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
 
@@ -108,6 +114,9 @@ class GraphExecutor {
 
   static Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
+  static Status GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                          std::string &attr_value);
+
   static Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
   static Status GetOrigInputInfo(uint32_t model_id, uint32_t index, OriginInputInfo &orig_input_info);
@@ -122,10 +131,13 @@ class GraphExecutor {
   Status PrepareInputData(const std::vector<GeTensor> &input_tensor, InputData &graph_input_data,
                           OutputData &graph_output_data, std::vector<InputOutputDescInfo> &output_desc);
 
+  Status GetExecuteData(const std::vector<GeTensor> &input_tensor, std::vector<DataBuffer> &blobs,
+                        std::vector<GeTensorDesc> &tensor_desc);
+
   Status SyncExecuteModel(uint32_t model_id, const std::vector<GeTensor> &input_tensor,
                           std::vector<GeTensor> &output_tensor);
 
-  Status AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<InputTensorInfo> &input_tensor,
+  Status AsyncExecuteModel(const GeRootModelPtr &ge_root_model, const std::vector<ge::Tensor> &input_tensor,
                            const RunAsyncCallback &callback);
 
   void InitModelIdInfo(std::vector<uint32_t> &out_model_id_info, std::vector<SubGraphInfoPtr> &sub_graph_vec,

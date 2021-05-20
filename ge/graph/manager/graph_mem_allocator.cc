@@ -17,11 +17,9 @@
 #include "graph/manager/graph_mem_allocator.h"
 
 #include <string>
-#include "graph/manager/graph_caching_allocator.h"
-#include "graph/manager/rdma_pool_allocator.h"
-#include "graph/manager/host_mem_allocator.h"
+
 namespace ge {
-void MemoryAllocator::Initialize(uint32_t device_id) {
+Status MemoryAllocator::Initialize(uint32_t device_id) {
   GELOGI("MemoryAllocator::Initialize");
 
   // when redo Initialize free memory
@@ -31,6 +29,7 @@ void MemoryAllocator::Initialize(uint32_t device_id) {
     }
   }
   memory_base_map_.clear();
+  return SUCCESS;
 }
 
 void MemoryAllocator::Finalize(uint32_t device_id) {
@@ -151,114 +150,5 @@ uint8_t *MemoryAllocator::GetMemoryAddr(const string &memory_key, uint32_t devic
   }
 
   return it->second.memory_addr_;
-}
-
-MemManager::MemManager() {}
-
-MemManager::~MemManager() { Finalize(); }
-
-MemManager &MemManager::Instance() {
-  static MemManager mem_manager;
-  return mem_manager;
-}
-
-MemoryAllocator *MemManager::Instance(rtMemType_t memory_type) { return Instance().GetMemoryAllocator(memory_type); }
-
-Status MemManager::Initialize(const std::vector<rtMemType_t> &memory_type) {
-  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
-  MemoryAllocator *memory_allocator = nullptr;
-  for (unsigned int index : memory_type) {
-    auto it = memory_allocator_map_.find(index);
-    if (it == memory_allocator_map_.end()) {
-      memory_allocator = new (std::nothrow) MemoryAllocator(index);
-
-      if (memory_allocator != nullptr) {
-        memory_allocator_map_[index] = memory_allocator;
-        GELOGI("Create MemoryAllocator memory type[%u] success.", index);
-      } else {
-        REPORT_CALL_ERROR("E19999", "New MemoryAllocator fail, index:%u", index);
-        GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Alloc MemoryAllocator failed.");
-      }
-    } else {
-      memory_allocator = it->second;
-    }
-
-    if (memory_allocator == nullptr) {
-      GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Create MemoryAllocator failed.");
-      return ACL_ERROR_GE_MEMORY_ALLOCATION;
-    } else {
-      memory_allocator->Initialize(0);
-    }
-  }
-
-  auto ret = InitAllocator(memory_type, caching_allocator_map_);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Create CachingAllocator failed.");
-    return ret;
-  }
-
-  ret = InitAllocator(memory_type, rdma_allocator_map_);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Create RdmaAllocator failed.");
-    return ret;
-  }
-
-  ret = InitAllocator(memory_type, host_allocator_map_);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Create HostMemAllocator failed.");
-    return ret;
-  }
-  return SUCCESS;
-}
-
-template <typename T>
-void FinalizeAllocatorMap(std::map<rtMemType_t, T *> &allocate_map) {
-  for (auto &allocator : allocate_map) {
-    if (allocator.second != nullptr) {
-      allocator.second->Finalize();
-      delete allocator.second;
-      allocator.second = nullptr;
-    }
-  }
-  allocate_map.clear();
-}
-
-void MemManager::Finalize() noexcept {
-  GELOGI("Finalize.");
-  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
-  // caching and rdma allocator use memory allocator, so finalize them first
-  FinalizeAllocatorMap(caching_allocator_map_);
-  FinalizeAllocatorMap(rdma_allocator_map_);
-  FinalizeAllocatorMap(host_allocator_map_);
-  FinalizeAllocatorMap(memory_allocator_map_);
-}
-
-MemoryAllocator *MemManager::GetMemoryAllocator(rtMemType_t memory_type) {
-  std::lock_guard<std::recursive_mutex> lock(allocator_mutex_);
-  MemoryAllocator *memory_allocator = nullptr;
-  auto it = memory_allocator_map_.find(memory_type);
-  if (it != memory_allocator_map_.end()) {
-    memory_allocator = it->second;
-  }
-
-  // Usually impossible
-  if (memory_allocator == nullptr) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "GetMemoryAllocator failed, memory type is %u.", memory_type);
-    static MemoryAllocator default_memory_allocator(RT_MEMORY_RESERVED);
-    return &default_memory_allocator;
-  }
-
-  return memory_allocator;
-}
-
-CachingAllocator &MemManager::CachingInstance(rtMemType_t memory_type) {
-  return Instance().GetAllocator(memory_type, caching_allocator_map_);
-}
-
-RdmaPoolAllocator &MemManager::RdmaPoolInstance(rtMemType_t memory_type) {
-  return Instance().GetAllocator(memory_type, rdma_allocator_map_);
-}
-HostMemAllocator &MemManager::HostMemInstance(rtMemType_t memory_type) {
-  return Instance().GetAllocator(memory_type, host_allocator_map_);
 }
 }  // namespace ge

@@ -35,7 +35,7 @@ Status AssignKernel::Compute(TaskContext& context) {
   GE_CHECK_NOTNULL(value_tensor);
   if (value_tensor->GetSize() > ref_tensor->GetSize()) {
     REPORT_INNER_ERROR("E19999", "[%s] value_input_size=%zu bigger than ref_input_size=%zu. check invalid",
-           node_->GetName().c_str(), value_tensor->GetSize(), ref_tensor->GetSize());
+                       node_->GetName().c_str(), value_tensor->GetSize(), ref_tensor->GetSize());
     GELOGE(INTERNAL_ERROR, "[Check][Size][%s] value_input_size=%zu, but ref_input_size=%zu.",
            node_->GetName().c_str(), value_tensor->GetSize(), ref_tensor->GetSize());
     return INTERNAL_ERROR;

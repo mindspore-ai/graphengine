@@ -84,6 +84,8 @@ class HybridDavinciModel {
 
   bool GetOpDescInfo(uint32_t stream_id, uint32_t task_id, OpDescInfo &op_desc_info) const;
 
+  Status GetOpAttr(const std::string &op_name, const std::string &attr_name, std::string &attr_value) const;
+
  private:
   HybridDavinciModel() = default;
   class Impl;

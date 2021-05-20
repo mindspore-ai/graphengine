@@ -19,9 +19,9 @@
 #include <vector>
 #include "runtime/rt.h"
 
-#include "graph/utils/node_utils.h"
 #define protected public
 #define private public
+#include "graph/utils/node_utils.h"
 #include "hybrid/model/hybrid_model_builder.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -109,16 +109,61 @@ TEST_F(UtestGeHybrid, aicore_op_task_init_success) {
   ASSERT_EQ(aicore_task->LaunchKernel(stream), SUCCESS);
 }
 
-TEST_F(UtestGeHybrid, task_update_tiling_info) {
+TEST_F(UtestGeHybrid, aicore_op_task_init_success2) {
+  // build aicore task
   auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
   aicore_task->is_single_op_ = true;
+  domi::TaskDef task_def;
+  task_def.set_type(RT_MODEL_TASK_KERNEL);
+  domi::KernelDef *kernel = task_def.mutable_kernel();
+  kernel->set_block_dim(32);
+  kernel->set_args_size(64);
+  string args(64, '1');
+  kernel->set_args(args.data(), 64);
+  domi::KernelContext *context = kernel->mutable_context();
+  context->set_op_index(1);
+  context->set_kernel_type(2);    // ccKernelType::TE
+  uint16_t args_offset[9] = {0};
+  context->set_args_offset(args_offset, 9 * sizeof(uint16_t));
+
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  std::vector<char> kernelBin;
+  TBEKernelPtr tbe_kernel = std::make_shared<ge::OpKernelBin>("name/Add", std::move(kernelBin));
+  op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);
+  std::string kernel_name("kernel/Add");
+  AttrUtils::SetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name);
+  ASSERT_EQ(aicore_task->InitWithTaskDef(*op_desc.get(), task_def), SUCCESS);
+  rtStream_t stream = nullptr;
+  rtStreamCreate(&stream, 0);
+  ASSERT_EQ(aicore_task->LaunchKernel(stream), SUCCESS);
+  char *handle = "";
+  aicore_task->handle_ = handle;
+  aicore_task->tiling_key_ = 1;
+  ASSERT_EQ(aicore_task->LaunchKernel(stream), SUCCESS);
+}
+
+TEST_F(UtestGeHybrid, task_update_tiling_info) {
+  auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
   auto graph = make_shared<ComputeGraph>("graph");
   OpDescPtr op_desc = CreateOpDesc("Add", "Add");
   ge::AttrUtils::SetStr(op_desc, "compile_info_key", "key");
   ge::AttrUtils::SetStr(op_desc, "compile_info_json", "json");
+  ge::AttrUtils::SetBool(op_desc, "support_dynamicshape", true);
+  ge::AttrUtils::SetInt(op_desc, "op_para_size", 1);
   auto node = graph->AddNode(op_desc);
-  optiling::OpRunInfo tiling_info;
-  ASSERT_EQ(aicore_task->CalcTilingInfo(node, tiling_info), SUCCESS);
+
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphExecutionContext execution_context;
+  SubgraphContext subgraph_context(nullptr, &execution_context);
+  NodeState node_state(*node_item, &subgraph_context);
+  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  ASSERT_TRUE(task_context != nullptr);
+  ASSERT_EQ(aicore_task->InitTilingInfo(*op_desc), SUCCESS);
+  ASSERT_EQ(aicore_task->UpdateTilingInfo(*task_context), SUCCESS);
 }
 
 TEST_F(UtestGeHybrid, index_taskdefs_failed) {
@@ -202,7 +247,7 @@ TEST_F(UtestGeHybrid, data_direct_connect) {
   GeRootModelPtr ge_root_model = make_shared<GeRootModel>(root_graph);
   HybridModel hybrid_model(ge_root_model);
   HybridModelBuilder hybrid_model_builder(hybrid_model);
-  auto ret = hybrid_model_builder.IdentifyVariableOutputs(*new_node.get());
+  auto ret = hybrid_model_builder.IdentifyVariableOutputs(*new_node.get(), sub_graph);
   ASSERT_EQ(ret, SUCCESS);
 }
 
@@ -288,7 +333,7 @@ TEST_F(UtestGeHybrid, hybrid_model_executor) {
   HybridModel *model_ptr = &model;
 
   uint32_t device_id = 0;
-  rtStream_t stream;
+  rtStream_t stream = nullptr;
   HybridModelExecutor executor(model_ptr, device_id, stream);
   executor.Init();
 }
@@ -644,17 +689,58 @@ TEST_F(UtestGeHybrid, TestParseDependentInputNodesForHccl) {
   std::unique_ptr<NodeItem> node_item_1;
   NodeItem::Create(node_1, node_item_1);
   node_item_1->node_id = 1;
-
   node->GetOutControlAnchor()->LinkTo(node_1->GetInControlAnchor());
+
+  OpDescPtr op_desc_2 = CreateOpDesc("net_output", NETOUTPUT);
+  auto node_2 = compute_graph->AddNode(op_desc_2);
+  std::unique_ptr<NodeItem> node_item_2;
+  NodeItem::Create(node_2, node_item_2);
+  node_item_2->node_id = 2;
+  node_1->GetOutControlAnchor()->LinkTo(node_2->GetInControlAnchor());
 
   GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
   HybridModel model(root_model);
   model.root_graph_ = compute_graph;
   model.node_items_.emplace(node, std::move(node_item));
+  model.node_items_.emplace(node_1, std::move(node_item_1));
+  model.node_items_.emplace(node_2, std::move(node_item_2));
 
   HybridModelBuilder builder(model);
   std::vector<std::string> deps;
-  ASSERT_EQ(builder.ParseDependentInputNodes(*node_item_1, deps), SUCCESS);
-  ASSERT_TRUE(model.GetNodeItem(node)->has_observer);
-  ASSERT_EQ(node_item_1->dependents_for_execution.size(), 1);
+  ASSERT_EQ(builder.ParseDependentInputNodes(*model.node_items_[node_1], deps), SUCCESS);
+  ASSERT_EQ(builder.ParseDependentInputNodes(*model.node_items_[node_2], deps), SUCCESS);
+  ASSERT_FALSE(model.GetNodeItem(node)->has_observer);
+  ASSERT_TRUE(model.GetNodeItem(node_1)->has_observer);
+  ASSERT_EQ(model.node_items_[node_1]->dependents_for_execution.size(), 0);
+  ASSERT_EQ(model.node_items_[node_2]->dependents_for_execution.size(), 1);
+}
+
+TEST_F(UtestGeHybrid, TestParseDependencies) {
+  // make graph
+  ut::GraphBuilder graph_builder = ut::GraphBuilder("graph");
+  auto data = graph_builder.AddNode("Data", "Data", 0, 1);
+  auto netoutput = graph_builder.AddNode("Netoutput", "NetOutput", 1, 0);
+  graph_builder.AddDataEdge(data, 0, netoutput, 0);
+  auto graph = graph_builder.GetGraph();
+
+  GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(graph);
+  HybridModel model(root_model);
+  HybridModelBuilder builder(model);
+
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(netoutput, node_item);
+  std::unique_ptr<NodeItem> node_item2;
+  NodeItem::Create(data, node_item2);
+  model.node_items_.emplace(data, std::move(node_item2));
+
+  std::vector<std::string> deps;
+  deps.push_back("Data");
+  auto op_desc = netoutput->GetOpDesc();
+  op_desc->input_name_idx_["Data"] = 0;
+  auto data_desc = data->GetOpDesc();
+  auto tensor = std::make_shared<GeTensor>();
+  auto tensor_desc = data_desc->MutableInputDesc(0);
+  AttrUtils::SetTensor(tensor_desc, "_value", tensor);
+  std::set<NodePtr> dependent_for_shape_inference;
+  ASSERT_EQ(builder.ParseDependencies(*node_item, deps, dependent_for_shape_inference), SUCCESS);
 }

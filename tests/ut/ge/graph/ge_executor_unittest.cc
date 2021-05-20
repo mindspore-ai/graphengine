@@ -34,13 +34,16 @@
 #include "common/types.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
+#include "hybrid/hybrid_davinci_model.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/task_info/kernel_task_info.h"
 #include "graph/load/model_manager/task_info/kernel_ex_task_info.h"
+#include "graph/execute/graph_execute.h"
 #include "ge/common/dump/dump_properties.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/utils/graph_utils.h"
 #include "proto/ge_ir.pb.h"
+#include "graph/manager/graph_var_manager.h"
 #undef private
 #undef protected
 
@@ -73,7 +76,7 @@ class DModelListener : public ge::ModelListener {
   DModelListener() {
   };
   Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode,
-                       std::vector<ge::OutputTensorInfo> &outputs) {
+                       std::vector<ge::Tensor> &outputs) {
     GELOGI("In Call back. OnComputeDone");
     return SUCCESS;
   }
@@ -115,7 +118,7 @@ TEST_F(UtestGeExecutor, load_data_from_file) {
 
   string test_smap = "/tmp/" + std::to_string(getpid()) + "_maps";
   string self_smap = "/proc/" + std::to_string(getpid()) + "/maps";
-  string copy_smap = "cp " + self_smap + " " + test_smap;
+  string copy_smap = "cp -f " + self_smap + " " + test_smap;
   EXPECT_EQ(system(copy_smap.c_str()), 0);
 
   ModelData model_data;
@@ -189,5 +192,140 @@ TEST_F(UtestGeExecutor, kernel_ex_InitDumpTask) {
   KernelExTaskInfo kernel_ex_task_info;
   kernel_ex_task_info.davinci_model_ = &model;
   kernel_ex_task_info.InitDumpTask(nullptr, op_desc);
+}
+
+TEST_F(UtestGeExecutor, execute_graph_with_stream) {
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  map<string, string> options;
+  options[GRAPH_MEMORY_MAX_SIZE] = "1048576";
+  VarManager::Instance(0)->SetMemoryMallocSize(options);
+
+  DavinciModel model(0, nullptr);
+  ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
+
+  GeModelPtr ge_model = make_shared<GeModel>();
+  ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
+  AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, 10240);
+  AttrUtils::SetInt(ge_model, ATTR_MODEL_STREAM_NUM, 1);
+
+  shared_ptr<domi::ModelTaskDef> model_task_def = make_shared<domi::ModelTaskDef>();
+  ge_model->SetModelTaskDef(model_task_def);
+
+  GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+  TensorUtils::SetSize(tensor, 512);
+  {
+    OpDescPtr op_desc = CreateOpDesc("data", DATA);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({1024});
+    NodePtr node = graph->AddNode(op_desc);    // op_index = 0
+  }
+
+  {
+    OpDescPtr op_desc = CreateOpDesc("square", "Square");
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({1024});
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 1
+
+    domi::TaskDef *task_def = model_task_def->add_task();
+    task_def->set_stream_id(0);
+    task_def->set_type(RT_MODEL_TASK_KERNEL);
+    domi::KernelDef *kernel_def = task_def->mutable_kernel();
+    kernel_def->set_stub_func("stub_func");
+    kernel_def->set_args_size(64);
+    string args(64, '1');
+    kernel_def->set_args(args.data(), 64);
+    domi::KernelContext *context = kernel_def->mutable_context();
+    context->set_op_index(op_desc->GetId());
+    context->set_kernel_type(2);    // ccKernelType::TE
+    uint16_t args_offset[9] = {0};
+    context->set_args_offset(args_offset, 9 * sizeof(uint16_t));
+  }
+
+  {
+    OpDescPtr op_desc = CreateOpDesc("memcpy", MEMCPYASYNC);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({1024});
+    op_desc->SetOutputOffset({5120});
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 2
+
+    domi::TaskDef *task_def = model_task_def->add_task();
+    task_def->set_stream_id(0);
+    task_def->set_type(RT_MODEL_TASK_MEMCPY_ASYNC);
+    domi::MemcpyAsyncDef *memcpy_async = task_def->mutable_memcpy_async();
+    memcpy_async->set_src(1024);
+    memcpy_async->set_dst(5120);
+    memcpy_async->set_dst_max(512);
+    memcpy_async->set_count(1);
+    memcpy_async->set_kind(RT_MEMCPY_DEVICE_TO_DEVICE);
+    memcpy_async->set_op_index(op_desc->GetId());
+  }
+
+  {
+    OpDescPtr op_desc = CreateOpDesc("output", NETOUTPUT);
+    op_desc->AddInputDesc(tensor);
+    op_desc->SetInputOffset({5120});
+    op_desc->SetSrcName( { "memcpy" } );
+    op_desc->SetSrcIndex( { 0 } );
+    NodePtr node = graph->AddNode(op_desc);  // op_index = 3
+  }
+
+  EXPECT_EQ(model.Assign(ge_model), SUCCESS);
+  EXPECT_EQ(model.Init(), SUCCESS);
+
+  EXPECT_EQ(model.input_addrs_list_.size(), 1);
+  EXPECT_EQ(model.output_addrs_list_.size(), 1);
+  EXPECT_EQ(model.task_list_.size(), 2);
+
+  OutputData output_data;
+  vector<Tensor> outputs;
+  EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
+
+  GraphExecutor graph_executer;
+  graph_executer.init_flag_ = true;
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  std::vector<GeTensor> input_tensor;
+  std::vector<GeTensor> output_tensor;
+  std::vector<InputOutputDescInfo> output_desc;
+  InputOutputDescInfo desc0;
+  output_desc.push_back(desc0);
+  graph_executer.ExecuteGraphWithStream(0, nullptr, ge_root_model, input_tensor, output_tensor);
+}
+
+TEST_F(UtestGeExecutor, get_op_attr) {
+  shared_ptr<DavinciModel> model = MakeShared<DavinciModel>(1, g_label_call_back);
+  model->SetId(1);
+  model->om_name_ = "testom";
+  model->name_ = "test";
+
+  shared_ptr<hybrid::HybridDavinciModel> hybrid_model = MakeShared<hybrid::HybridDavinciModel>();
+  model->SetId(2);
+  model->om_name_ = "testom_hybrid";
+  model->name_ = "test_hybrid";
+
+  std::shared_ptr<ModelManager> model_manager = ModelManager::GetInstance();
+  model_manager->InsertModel(1, model);
+  model_manager->InsertModel(2, hybrid_model);
+
+  OpDescPtr op_desc = CreateOpDesc("test", "test");
+  std::vector<std::string> value{"test"};
+  ge::AttrUtils::SetListStr(op_desc, ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, value);
+
+  model->SaveSpecifyAttrValues(op_desc);
+
+  GeExecutor ge_executor;
+  GeExecutor::isInit_ = true;
+  std::string attr_value;
+  auto ret = ge_executor.GetOpAttr(1, "test", ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, attr_value);
+  EXPECT_EQ(ret, SUCCESS);
+  EXPECT_EQ(attr_value, "[4]test");
+  ret = ge_executor.GetOpAttr(2, "test", ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, attr_value);
+  EXPECT_EQ(ret, PARAM_INVALID);
+  ret = ge_executor.GetOpAttr(3, "test", ge::ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, attr_value);
+  EXPECT_EQ(ret, ACL_ERROR_GE_EXEC_MODEL_ID_INVALID);
 }
 }

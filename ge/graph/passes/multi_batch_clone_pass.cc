@@ -42,6 +42,7 @@ const std::string kMultiBatchConstNode = "ascend_mbatch_shape_const";
 const std::string kMultiBatchMapIndexNode = "ascend_mbatch_shape_mapindex";
 const std::string kMultiBatchNodePostfix = "_ascend_mbatch_batch_";
 const char *const kGetNextName = "IteratorV2";
+const char *const kMbatchCaseName = "mbatch-switch-name";
 }  // namespace
 
 inline bool IsGetNextType(const NodePtr &node) {
@@ -943,6 +944,12 @@ Status MultiBatchClonePass::SetMaxShapeToData(const NodePtr &node, size_t out_an
     }
   }
   (void)AttrUtils::SetListInt(node->GetOpDesc(), ATTR_MBATCH_ORIGIN_INPUT_DIMS, data_shape.GetDims());
+  if (!AttrUtils::SetStr(node->GetOpDesc(), kMbatchCaseName, case_node_->GetName())) {
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to node:%s(%s) failed",
+                      kMbatchCaseName, node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "Failed to add switchn attr on data node %s", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
 
   GeTensorDesc tensor(NodeUtils::GetOutputDesc(*node, kDataOutIndex));
   std::vector<std::string> input_dims_str;

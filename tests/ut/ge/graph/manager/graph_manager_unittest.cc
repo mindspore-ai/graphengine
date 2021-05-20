@@ -206,6 +206,52 @@ TEST_F(UtestGraphManagerTest, test_add_graph_3) {
   EXPECT_EQ(status2, ge::SUCCESS);
 }
 
+TEST_F(UtestGraphManagerTest, test_add_graph_4) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  // create graph
+  Graph graph("test_graph");
+  CreateGraph(graph);
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
+
+  std::map<std::string, std::string> options;
+  OmgContext context;
+  Status status = graph_manager.AddGraph(graph_id, graph, options, context);
+  EXPECT_NE(status, ge::SUCCESS);
+}
+
+TEST_F(UtestGraphManagerTest, test_add_graph_5) {
+  Graph graph("test_graph");
+  auto data = op::Data("Data").set_attr_index(1);
+  auto flatten = op::Flatten("Flatten").set_input_x(data, data.name_out_out());
+  std::vector<Operator> inputs{data};
+  std::vector<Operator> outputs{flatten};
+  graph.SetInputs(inputs).SetOutputs(outputs);
+
+  std::map<std::string, std::string> options = {{"ge.exec.dataInputsShapeRange", "0:[-1]"}};
+  OmgContext context;
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  EXPECT_EQ(graph_manager.AddGraph(graph_id, graph, options, context), GRAPH_PARAM_INVALID);
+}
+
+TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_1) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  
+  // create graph
+  Graph graph("test_graph");
+  CreateGraph(graph);
+  GraphNodePtr graph_node = MakeShared<GraphNode>(graph_id);
+  graph_manager.graph_map_.insert({1, graph_node});
+
+  std::map<std::string, std::string> options;
+  OmgContext context;
+  Status status = graph_manager.AddGraphWithCopy(graph_id, graph, options, context);
+  EXPECT_NE(status, ge::SUCCESS);
+}
+
 TEST_F(UtestGraphManagerTest, test_remove_graph_1) {
   GraphId graph_id = 1;
   GraphManager graph_manager;
@@ -249,7 +295,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread) {
   graph_manager.thread_run_flag_ = true;
 
   GraphId graph_id = 1;
-  std::vector<ge::InputTensorInfo> input_tensor;
+  std::vector<ge::Tensor> input_tensor;
   uint64_t session_id = 0;
   error_message::Context error_context;
   GEThreadLocalContext context;
@@ -275,7 +321,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread_2) {
   graph_manager.IncreaseGraphCount(graph_id);
   graph_manager.IncreaseGraphCount(graph_id);
   graph_node_1->SetBuildFlag(true);
-  std::vector<ge::InputTensorInfo> input_tensor;
+  std::vector<ge::Tensor> input_tensor;
   uint64_t session_id = 0;
   error_message::Context error_context;
   GEThreadLocalContext context;
@@ -350,7 +396,7 @@ TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_2) {
   ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
   GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
   GraphManager::PreRunArgs arg;
-  arg.callback = [](Status, std::vector<ge::OutputTensorInfo> &) {};
+  arg.callback = [](Status, std::vector<ge::Tensor> &) {};
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   graph_node->SetBuildFlag(true);
   graph_node->Lock();
@@ -366,7 +412,7 @@ TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_3) {
   ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
   GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
   GraphManager::PreRunArgs arg;
-  arg.callback = [](Status, std::vector<ge::OutputTensorInfo> &) {};
+  arg.callback = [](Status, std::vector<ge::Tensor> &) {};
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   graph_node->SetBuildFlag(false);
   graph_node->Lock();
@@ -403,3 +449,34 @@ TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_fail) {
   status = graph_manager.AddGraphWithCopy(graph_id, graph, options, context);
   EXPECT_NE(status, ge::SUCCESS);
 }
+
+TEST_F(UtestGraphManagerTest, ParseInputsDimsForData_success) {
+  GraphManager graph_manager;
+  std::vector<ge::Tensor> input_tensors;
+  ge::Tensor tensor;
+  input_tensors.emplace_back(tensor);
+  graph_manager.ParseInputsDimsForData(input_tensors);
+}
+
+// TEST_F(UtestGraphManagerTest, ParseInputsDimsForGetNexNosinkAndData_success) {
+//   GraphManager graph_manager;
+
+//   ge::ComputeGraphPtr graph = std::make_shared<ge::ComputeGraph>("default");
+
+//   // save1
+//   ge::OpDescPtr save_op = std::make_shared<ge::OpDesc>();
+//   save_op->SetType("Save");
+//   save_op->SetName("Save1");
+//   save_op->AddInputDesc(ge::GeTensorDesc());
+//   save_op->AddOutputDesc(ge::GeTensorDesc());
+//   AttrUtils::SetInt(save_op, ATTR_NAME_INDEX, 1);
+//   ge::NodePtr save_node = graph->AddNode(save_op);
+ 
+//   std::vector<NodePtr> nodes;
+//   nodes.emplace_back(save_node);
+//   ge::Tensor tensor;
+//   std::vector<Tensor> input_tensors;
+//   input_tensors.emplace_back(tensor);
+//   auto ret = graph_manager.ParseInputsDimsForGetNexNosinkAndData(nodes, input_tensors);
+//   EXPECT_EQ(ret, ge::SUCCESS);
+// }

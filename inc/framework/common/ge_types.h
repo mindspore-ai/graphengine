@@ -61,6 +61,9 @@ const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
 
+// dynamic execute mode
+const char *const kLazyRecompile = "lazy_recompile";
+
 // Data cache, including data address and length
 struct DataBuffer {
  public:
@@ -226,7 +229,7 @@ class GE_FUNC_VISIBILITY ModelListener {
   /// @param [in] resultCode Execution results
   ///
   virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
-                               std::vector<ge::OutputTensorInfo> &outputs) = 0;
+                               std::vector<ge::Tensor> &outputs) = 0;
 };
 
 // OMM configuration item
@@ -293,6 +296,7 @@ struct DumpConfig {
   std::string dump_mode;
   std::string dump_status;
   std::string dump_op_switch;
+  std::string dump_debug;
   std::vector<ModelDumpConfig> dump_list;
 };
 }  // namespace ge

@@ -60,7 +60,7 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
              node->GetName().c_str(), src_anchor->GetIdx(), dst_node->GetName().c_str(), dst_anchor->GetIdx());
       GE_CHECK_NOTNULL(dst_node);
       GE_CHECK_NOTNULL(dst_node->GetOpDesc());
-      auto dst_tensor = dst_node->GetOpDesc()->GetInputDescPtr(dst_anchor->GetIdx());
+      auto dst_tensor = dst_node->GetOpDesc()->MutableInputDesc(dst_anchor->GetIdx());
       GE_CHECK_NOTNULL(dst_tensor);
       bool is_dynamic = false;
       const auto &src_tensor_dims = src_tensor->GetShape().GetDims();
@@ -70,6 +70,12 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
         GELOGD("No need to insert reshape node between %s nad %s.", node->GetName().c_str(),
                dst_node->GetName().c_str());
         is_dynamic = true;
+      }
+      if (dst_node->GetType() == NETOUTPUT && is_dynamic) {
+        // NetOutput shape must be continuous when dynamic shape.
+        // Otherwise, there may be an error waiting for the shape refresh to time out during execution.
+        dst_tensor->SetShape(src_tensor->GetShape());
+        continue;
       }
       bool is_need_insert_reshape = src_tensor_dims != dst_tensor_dims &&
                                     !is_dynamic;

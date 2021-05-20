@@ -21,7 +21,7 @@
 #include <utility>
 
 #include "framework/common/debug/ge_log.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 
 namespace ge {
 const size_t bin_ranges[kNumBins] = {kRoundBlockSize * kKByteSize,
@@ -117,7 +117,7 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
     }
     free_block_bins_[i] = bin_ptr;
   }
-  memory_allocator_ = MemManager::Instance(memory_type_);
+  memory_allocator_ = &MemManager::Instance().MemInstance(memory_type_);
   if (memory_allocator_ == nullptr) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
@@ -168,7 +168,7 @@ Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
   if (it == allocated_blocks_.end()) {
     REPORT_INNER_ERROR("E19999", "Param ptr not allocated before, device_id:%u, check invalid",
                        device_id);
-    GELOGE(PARAM_INVALID, "Invalid memory pointer");
+    GELOGE(PARAM_INVALID, "Invalid memory pointer: %p", ptr);
     return ge::PARAM_INVALID;
   }
   Block *block = it->second;

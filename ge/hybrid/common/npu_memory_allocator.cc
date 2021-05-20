@@ -17,10 +17,7 @@
 #include "npu_memory_allocator.h"
 #include <mutex>
 #include "framework/common/debug/log.h"
-#include "graph/manager/graph_caching_allocator.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/rdma_pool_allocator.h"
-#include "graph/manager/host_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 
 namespace ge {
 namespace hybrid {

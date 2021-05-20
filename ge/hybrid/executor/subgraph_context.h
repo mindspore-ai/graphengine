@@ -34,6 +34,7 @@ class SubgraphContext {
   ~SubgraphContext() = default;
 
   Status Init();
+  void ResetContext(const NodePtr &node);
   NodeStatePtr GetOrCreateNodeState(const NodeItem *node_item);
 
   void OnError(Status error);

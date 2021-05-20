@@ -25,6 +25,7 @@
 #include "common/op/ge_op_utils.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
+#include "graph/ops_stub.h"
 
 using namespace std;
 using namespace testing;
@@ -55,6 +56,23 @@ class UtestModelManagerModelManager : public testing::Test {
   void SetUp() {}
 
   void TearDown() {}
+
+  void CreateGraph(Graph &graph) {
+    TensorDesc desc(ge::Shape({1, 3, 224, 224}));
+    uint32_t size = desc.GetShape().GetShapeSize();
+    desc.SetSize(size);
+    auto data = op::Data("Data").set_attr_index(0);
+    data.update_input_desc_data(desc);
+    data.update_output_desc_out(desc);
+
+    auto flatten = op::Flatten("Flatten").set_input_x(data, data.name_out_out());
+
+    std::vector<Operator> inputs{data};
+    std::vector<Operator> outputs{flatten};
+    std::vector<Operator> targets{flatten};
+    // Graph graph("test_graph");
+    graph.SetInputs(inputs).SetOutputs(outputs).SetTargets(targets);
+  }
 
   void GenUnencryptModelData(ModelData &data) {
     const int model_len = 10;
@@ -414,10 +432,34 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   mm.model_map_[1] = model;
   mm.hybrid_model_map_[1] = std::make_shared<hybrid::HybridDavinciModel>();
 
-  auto input_tensor = InputTensorInfo();
-  vector<InputTensorInfo> inputs;
+  ge::Tensor input_tensor;
+  vector<ge::Tensor> inputs;
   inputs.emplace_back(input_tensor);
   auto ret = mm.DataInputTensor(model_id,inputs);
-  EXPECT_EQ(UNSUPPORTED, ret);
+  EXPECT_EQ(PARAM_INVALID, ret);    // HybridDavinciModel::impl_ is null.
+}
+
+TEST_F(UtestModelManagerModelManager, test_init_dump_properties_with_new_session_id) {
+  ModelManager model_manager;
+  uint64_t session_id = 1;
+  model_manager.InitDumPropertiesWithNewSessionId(session_id);
+}
+
+TEST_F(UtestModelManagerModelManager, test_update_session_id) {
+  ModelManager model_manager;
+  uint32_t model_id = 0;
+  uint64_t session_id = 0;
+  GeModelPtr ge_model = MakeShared<GeModel>();
+  std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
+  model_manager.UpdateSessionId(model_id, ge_model, davinci_model, session_id);
+}
+
+TEST_F(UtestModelManagerModelManager, test_has_var_node) {
+  ModelManager model_manager;
+  uint64_t session_id = 1;
+  Graph graph("test");
+  CreateGraph(graph);
+  auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
+  model_manager.HasVarNode(compute_graph);
 }
 }  // namespace ge

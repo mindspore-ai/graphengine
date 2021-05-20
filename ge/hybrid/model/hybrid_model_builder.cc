@@ -17,6 +17,7 @@
 #include "hybrid/model/hybrid_model_builder.h"
 #include <algorithm>
 #include "common/math/math_util.h"
+#include "common/op/ge_op_utils.h"
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"
@@ -25,8 +26,7 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/host_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -42,6 +42,11 @@ const uint64_t kProfilingFpStartLogid = 1U;
 const uint64_t kProfilingBpEndLogid = 2U;
 const uint64_t kProfilingIterEndLogid = 65535U;
 const int kBytes = 8;
+const int kDecimal = 10;
+const uint8_t kStreamActiveIdx = 0;
+const uint8_t kStreamActiveNum = 1;
+const uint8_t kStreamSwitchIdx = 1;
+const uint8_t kStreamSwitchNum = 2;
 const uint32_t kStringHeadElems = 2;
 const char *const kOwnerGraphIsUnknown = "OwnerGraphIsUnknown";
 const char *const kProfilingGraph = "ProfilingGraph";
@@ -213,6 +218,7 @@ Status HybridModelBuilder::BuildNodeItem(const NodePtr &node, NodeItem &node_ite
                         "[Invoke][GetCanonicalInputIndex] failed, dst_node:[%s].", dst_node->GetName().c_str());
 
       node_item.outputs[i].emplace_back(canonical_index, dst_node_item);
+      node_item.SetDataSend(dst_node_item, dst_in_anchor->GetIdx());
     }
   }
 
@@ -253,6 +259,10 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
     return SUCCESS;
   }
 
+  if (node->GetType() == MEMCPYASYNC) { // Convert MemcpyAsync to Identity.
+    node->GetOpDesc()->SetType(IDENTITY);
+  }
+
   std::unique_ptr<NodeItem> new_node;
   GE_CHK_STATUS_RET(NodeItem::Create(node, new_node), "[Invoke][Create] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET_NOLOG(NodeExecutorManager::GetInstance().GetExecutor(*node, &new_node->node_executor));
@@ -284,6 +294,46 @@ Status HybridModelBuilder::ParseForceInfershapeNodes(const NodePtr &node, NodeIt
   return SUCCESS;
 }
 
+Status HybridModelBuilder::ParseDependencies(NodeItem &node_item, const std::vector<string> &dependencies,
+                                             std::set<NodePtr> &dependent_for_shape_inference) {
+  for (const auto &input_name : dependencies) {
+    int input_index = node_item.op_desc->GetInputIndexByName(input_name);
+    if (input_index < 0) {
+      GELOGE(INTERNAL_ERROR, "[Get][InputIndex]failed, node:[%s] inputname: %s.",
+             node_item.NodeName().c_str(), input_name.c_str());
+      REPORT_CALL_ERROR("E19999", "GetInputIndexByName failed, node:[%s] inputname: %s.",
+                        node_item.NodeName().c_str(), input_name.c_str());
+      return INTERNAL_ERROR;
+    }
+
+    const auto &in_anchor = node_item.node->GetInDataAnchor(input_index);
+    GE_CHECK_NOTNULL(in_anchor);
+    const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out_anchor);
+    const auto &src_node = peer_out_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+    auto src_node_item = MutableNodeItem(src_node);
+    GE_CHECK_NOTNULL(src_node_item);
+    if (src_node_item->NodeType() == DATA) {
+      auto op_desc = src_node_item->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto tensor = op_desc->MutableInputDesc(0);
+      if (AttrUtils::HasAttr(tensor, ATTR_NAME_VALUE)) {
+        GELOGD("Skip d2h memcpy, get hostmem from node %s.", src_node_item->NodeName().c_str());
+        continue;
+      }
+    }
+    src_node_item->to_const_output_id_list.emplace(peer_out_anchor->GetIdx());
+    dependent_for_shape_inference.emplace(src_node);
+    host_input_value_dependencies_[&node_item].emplace_back(peer_out_anchor->GetIdx(), src_node_item);
+    GELOGD("[%s] Dependent added from output of [%s:%d]",
+           node_item.NodeName().c_str(),
+           src_node_item->NodeName().c_str(),
+           peer_out_anchor->GetIdx());
+  }
+  return SUCCESS;
+}
+
 Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const std::vector<string> &dependencies) {
   std::set<NodePtr> dependent_for_shape_inference;
   std::set<NodePtr> dependent_for_execution;
@@ -300,8 +350,9 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     }
     auto src_node = peer_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(src_node);
-    auto src_node_item = MutableNodeItem(src_node);
-    GE_CHECK_NOTNULL(src_node_item);
+    NodeItem *src_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
+                      "[%s] failed to get or create node item", src_node->GetName().c_str());
 
     if (src_node_item->shape_inference_type == DEPEND_COMPUTE || is_hccl_op || src_node_item->IsHcclOp()) {
       GELOGD("[%s](%s) Add input data dependent node [%s](%s), shape inference type = %d",
@@ -323,15 +374,17 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
     }
   }
 
-  for (const auto &src_node : ge_node->GetInControlNodes()) {
-    auto src_node_item = MutableNodeItem(src_node);
-    if ((src_node_item != nullptr) && (is_hccl_op || src_node_item->IsHcclOp())) {
-      GELOGD("[%s](%s) Add input control dependent node [%s](%s)",
-             ge_node->GetName().c_str(),
-             ge_node->GetType().c_str(),
-             src_node->GetName().c_str(),
-             src_node->GetType().c_str());
-      dependent_for_execution.emplace(src_node);
+  if (node_item.node_type == NETOUTPUT) {
+    for (const auto &src_node : ge_node->GetInControlNodes()) {
+      auto src_node_item = MutableNodeItem(src_node);
+      if ((src_node_item != nullptr) && src_node_item->IsHcclOp()) {
+        GELOGD("[%s](%s) Add input control dependent node [%s](%s)",
+               ge_node->GetName().c_str(),
+               ge_node->GetType().c_str(),
+               src_node->GetName().c_str(),
+               src_node->GetType().c_str());
+        dependent_for_execution.emplace(src_node);
+      }
     }
   }
 
@@ -347,31 +400,7 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
            src_node_item->NodeName().c_str());
   }
 
-  for (const auto &input_name : dependencies) {
-    int input_index = node_item.op_desc->GetInputIndexByName(input_name);
-    if (input_index < 0) {
-      GELOGE(INTERNAL_ERROR, "[Get][InputIndex]failed, node:[%s] inputname: %s.",
-             node_item.NodeName().c_str(), input_name.c_str());
-      REPORT_CALL_ERROR("E19999", "GetInputIndexByName failed, node:[%s] inputname: %s.",
-                        node_item.NodeName().c_str(), input_name.c_str());
-      return INTERNAL_ERROR;
-    }
-
-    const auto &in_anchor = ge_node->GetInDataAnchor(input_index);
-    GE_CHECK_NOTNULL(in_anchor);
-    const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(peer_out_anchor);
-    const auto &src_node = peer_out_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(src_node);
-    auto src_node_item = MutableNodeItem(src_node);
-    src_node_item->to_const_output_id_list.emplace(peer_out_anchor->GetIdx());
-    dependent_for_shape_inference.emplace(src_node);
-    host_input_value_dependencies_[&node_item].emplace_back(peer_out_anchor->GetIdx(), src_node_item);
-    GELOGD("[%s] Dependent added from output of [%s:%d]",
-           node_item.NodeName().c_str(),
-           src_node_item->NodeName().c_str(),
-           peer_out_anchor->GetIdx());
-  }
+  GE_CHK_STATUS_RET(ParseDependencies(node_item, dependencies, dependent_for_shape_inference));
 
   GE_CHK_STATUS_RET(ParseDependentForFusedSubgraph(node_item, dependent_for_shape_inference));
   for (const auto &dep_node : dependent_for_shape_inference) {
@@ -794,6 +823,7 @@ Status HybridModelBuilder::LoadGraph() {
   }
 
   hybrid_model_.root_graph_ = root_graph;
+  GE_CHK_STATUS_RET(RelinkNextIteration(), "[%s] Relink NextIteration failed", GetGraphName());
   // Reset node id by topological order across all subgraphs
   int64_t index = 0;
   for (const auto &node : root_graph->GetAllNodes()) {
@@ -831,22 +861,24 @@ Status HybridModelBuilder::LoadGraph() {
                         "[Invoke][LoadDynamicSubgraph]Failed to load subgraph: [%s]",
                         sub_graph->GetName().c_str());
     } else {
-      GE_CHK_STATUS_RET(IdentifyVariableOutputs(*parent_node_item),
-                        "[Invoke][IdentifyVariableOutputs][%s] Failed to identify ref outputs.",
-                        parent_node_item->NodeName().c_str());
-      GE_CHK_STATUS_RET(IdentifySameInputs(*parent_node_item),
-                        "[Invoke][IdentifySameInputs][%s] Failed to identify same outputs.",
-                        parent_node_item->NodeName().c_str());
-
       // if parent is function control op. need add a virtual partitioned call
-      if (parent_node_item->IsControlOp()) {
+      if (parent_node_item->IsControlFlowV2Op()) {
         GE_CHK_STATUS_RET(LoadKnownShapedSubgraph(*sub_graph, parent_node_item),
                           "[Invoke][LoadKnownShapedSubgraph]Failed to load function control op subgraph [%s]",
                           sub_graph->GetName().c_str());
       }
     }
   }
-
+  for (auto &it : hybrid_model_.known_shape_sub_models_) {
+    auto node_item = MutableNodeItem(it.first);
+    AscendString graph_name;
+    GE_CHK_GRAPH_STATUS_RET(it.second->GetGraph().GetName(graph_name), "Failed to get subgraph name");
+    auto subgraph = hybrid_model_.GetRootGraph()->GetSubgraph(graph_name.GetString());
+    GE_CHECK_NOTNULL(subgraph);
+    GE_CHK_STATUS_RET(IdentifyVariableOutputs(*node_item, subgraph),
+                      "[Invoke][IdentifyVariableOutputs][%s] Failed to identify ref outputs.",
+                      node_item->NodeName().c_str());
+  }
   GE_CHK_STATUS_RET(ParseDependentByParallelGroup(),
                     "[Invoke][ParseDependentByParallelGroup]Failed to establish dependencies for hccl ops,"
                     "model_name_:%s.", GetGraphName());
@@ -1169,7 +1201,7 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
   auto parent_node = sub_graph.GetParentNode();
   GE_CHECK_NOTNULL(parent_node);
   auto op_type = parent_node->GetType();
-  if (IsControlOp(op_type)) {
+  if (IsControlFlowV2Op(op_type)) {
     GELOGD("Set ge_model for control op subgraph: [%s], task_size = %d",
            sub_graph.GetName().c_str(),
            ge_model->GetModelTaskDefPtr()->task_size());
@@ -1325,6 +1357,10 @@ Status HybridModelBuilder::IndexSpecialNodes() {
       }
     } else if (op_type == CONSTANTOP) {
       constant_op_nodes_.emplace(node->GetName(), node);
+    } else if (op_type == STREAMMERGE) {
+      stream_merge_op_nodes_.emplace(node->GetName(), node);
+    } else if (op_type == NEXTITERATION || op_type == REFNEXTITERATION) {
+      next_iteration_op_nodes_.emplace(node->GetName(), node);
     } else if (op_type == DATA && node->GetOwnerComputeGraph() != root_graph) {
       NodePtr src_node;
       int peer_out_index = -1;
@@ -1478,50 +1514,8 @@ Status HybridModelBuilder::InitRuntimeParams() {
   return SUCCESS;
 }
 
-Status HybridModelBuilder::IdentifySameInputs(NodeItem &node_item) {
-  GELOGD("Start to parse same inputs on net output: %s", node_item.NodeName().c_str());
-  auto subgraph = NodeUtils::GetSubgraph(*node_item.node, kSubgraphIndex);
-  GE_CHECK_NOTNULL(subgraph);
-  auto net_output_node = subgraph->FindFirstNodeMatchType(NETOUTPUT);
-  if (net_output_node == nullptr) {
-    GELOGD("Subgraph [%s] does not have net output", subgraph->GetName().c_str());
-    return SUCCESS;
-  }
-
-  auto net_output_desc = net_output_node->GetOpDesc();
-  GE_CHECK_NOTNULL(net_output_desc);
-
-  std::map<std::string, int> connected_inputs;
-  for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
-    auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();
-    if (out_data_anchor == nullptr) {
-      continue;
-    }
-    auto src_node = out_data_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(src_node);
-    auto op_desc = src_node->GetOpDesc();
-    GE_CHECK_NOTNULL(op_desc);
-
-    std::string input_key = std::to_string(op_desc->GetId()) + "_" + std::to_string(out_data_anchor->GetIdx());
-    auto it = connected_inputs.find(input_key);
-    if (it == connected_inputs.end()) {
-      connected_inputs.emplace(input_key, in_data_anchor->GetIdx());
-    } else {
-      GELOGD("[%s] output [%d] reuse output [%d] input node = %s, idx = %d.", node_item.NodeName().c_str(),
-             in_data_anchor->GetIdx(),
-             it->second,
-             src_node->GetName().c_str(),
-             out_data_anchor->GetIdx());
-      node_item.reuse_outputs.emplace(in_data_anchor->GetIdx(), it->second);
-    }
-  }
-  return SUCCESS;
-}
-
-Status HybridModelBuilder::IdentifyVariableOutputs(NodeItem &node_item) {
+Status HybridModelBuilder::IdentifyVariableOutputs(NodeItem &node_item, const ComputeGraphPtr &subgraph) {
   GELOGD("Start to parse outputs of node: %s", node_item.NodeName().c_str());
-  auto subgraph = NodeUtils::GetSubgraph(*node_item.node, kSubgraphIndex);
-  GE_CHECK_NOTNULL(subgraph);
   auto net_output_node = subgraph->FindFirstNodeMatchType(NETOUTPUT);
   if (net_output_node == nullptr) {
     GELOGD("[%s] Subgraph do not got net output", subgraph->GetName().c_str());
@@ -1530,36 +1524,13 @@ Status HybridModelBuilder::IdentifyVariableOutputs(NodeItem &node_item) {
   auto net_output_desc = net_output_node->GetOpDesc();
   GE_CHECK_NOTNULL(net_output_desc);
 
-  // constant/variable connected to net output
+  // constants connected to net output
   for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
     auto src_node = GetPeerNode(in_data_anchor);
     GE_CHECK_NOTNULL(src_node);
     auto src_op_type = src_node->GetType();
-    GELOGD("Node %s, output %d, src node = %s, src node type = %s",
-           node_item.NodeName().c_str(),
-           in_data_anchor->GetIdx(),
-           src_node->GetName().c_str(),
-           src_op_type.c_str());
-    uint32_t parent_index = 0;
-    if (GetParentNodeOutputIndex(*net_output_desc, in_data_anchor->GetIdx(), parent_index) != SUCCESS) {
-      continue;
-    }
-    GELOGD("Got parent output index = %u", parent_index);
-    if (src_op_type == DATA) {
-      int ref_i = 0;
-      (void)AttrUtils::GetInt(src_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, ref_i);
-      node_item.reuse_inputs.emplace(static_cast<int>(parent_index), ref_i);
-      GELOGD("[%s] output[%u] resues input[%d]", node_item.NodeName().c_str(), parent_index, ref_i);
-    }
-
-    if (src_op_type != CONSTANTOP && src_op_type != CONSTANT && src_op_type != VARIABLE) {
-      continue;
-    }
-
-    GE_CHECK_LE(parent_index, INT32_MAX);
-    node_item.ref_outputs.emplace(static_cast<int>(parent_index), src_node);
     if (src_op_type == CONSTANTOP || src_op_type == CONSTANT) {
-      known_subgraph_constant_output_refs_[&node_item].emplace(parent_index, src_node);
+      known_subgraph_constant_output_refs_[&node_item].emplace(in_data_anchor->GetIdx(), src_node);
     }
   }
 
@@ -1825,7 +1796,7 @@ Status HybridModelBuilder::GenerateEndProfilingTask(const OpDescPtr &op_desc, ve
   return SUCCESS;
 }
 
-Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, const NodePtr &node) {
+Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, const NodePtr &node, uint32_t &prev_num) {
   GE_CHECK_NOTNULL(node);
   const OpDescPtr &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
@@ -1871,7 +1842,7 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
   if (!node_task_map.empty()) {
     for (const auto &node_task : node_task_map) {
       NodePtr profiling_node = node_task.first;
-      vector<domi::TaskDef> task_def_lists = node_task.second;
+      const vector<domi::TaskDef> &task_def_lists = node_task.second;
       for (const auto &task_def : task_def_lists) {
         hybrid_model_.task_defs_[profiling_node].emplace_back(task_def);
       }
@@ -1886,6 +1857,7 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
       node_item->input_start = 0;
       node_item->output_start = 0;
       graph_item.node_items_.emplace_back(node_item);
+      ++prev_num;
     }
   } else {
     GELOGD("No need to create profiling node before.");
@@ -1894,7 +1866,7 @@ Status HybridModelBuilder::CreateProfilingNodeBefore(GraphItem &graph_item, cons
   return SUCCESS;
 }
 
-Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const NodePtr &node) {
+Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const NodePtr &node, uint32_t &post_num) {
   GE_CHECK_NOTNULL(node);
   const OpDescPtr &op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
@@ -1952,7 +1924,7 @@ Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const
   if (!node_task_map.empty()) {
     for (const auto &node_task : node_task_map) {
       NodePtr profiling_node = node_task.first;
-      vector<domi::TaskDef> task_def_lists = node_task.second;
+      const vector<domi::TaskDef> &task_def_lists = node_task.second;
       for (const auto &task_def : task_def_lists) {
         hybrid_model_.task_defs_[profiling_node].emplace_back(task_def);
       }
@@ -1967,6 +1939,7 @@ Status HybridModelBuilder::CreateProfilingNodeAfter(GraphItem &graph_item, const
       node_item->input_start = 0;
       node_item->output_start = 0;
       graph_item.node_items_.emplace_back(node_item);
+      ++post_num;
     }
   } else {
     GELOGD("No need to create profiling node after.");
@@ -1986,19 +1959,22 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
   int input_start = 0;
   int output_start = 0;
   std::vector<NodeItem *> data_nodes;
+  std::map<size_t, std::pair<uint32_t, uint32_t>> profiling_nodes;
   for (auto &node : graph.GetDirectNode()) {
     GE_CHECK_NOTNULL(node);
     GE_CHECK_NOTNULL(node->GetOpDesc());
     const auto &op_type = node->GetType();
-    if (op_type == NOOP) {
-      GELOGD("[%s] Skip NoOp", node->GetName().c_str());
-      continue;
-    }
 
     NodeItem *node_item = nullptr;
     GE_CHK_STATUS_RET_NOLOG(GetOrCreateNodeItem(node, &node_item));
     GE_CHK_STATUS_RET_NOLOG(BuildNodeItem(node, *node_item));
     GE_CHK_STATUS_RET_NOLOG(UpdateAnchorStatus(node)); // needed by FE generate task
+
+    GE_CHK_STATUS_RET_NOLOG(BuildControlFlowGroup(*graph_item, node, node_item));
+    if (node->GetInAllNodes().empty()) {
+      graph_item->root_items_.emplace_back(node_item);
+      GELOGD("[%s] add to root node list", node->GetName().c_str());
+    }
 
     node_item->input_start = input_start;
     node_item->output_start = output_start;
@@ -2011,9 +1987,16 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
       graph_item->output_node_ = node_item;
       GE_CHK_STATUS_RET_NOLOG(BuildOutputMapping(*graph_item, *node_item, is_root_graph));
     }
-    GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeBefore(*graph_item, node));
+
+    uint32_t prev_num = 0;
+    uint32_t post_num = 0;
+    GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeBefore(*graph_item, node, prev_num));
+    size_t node_index = graph_item->node_items_.size();
     graph_item->node_items_.emplace_back(node_item);
-    GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeAfter(*graph_item, node));
+    GE_CHK_STATUS_RET_NOLOG(CreateProfilingNodeAfter(*graph_item, node, post_num));
+    if (prev_num > 0 || post_num > 0) {
+      profiling_nodes[node_index] = { prev_num, post_num };
+    }
     // parse var outputs
     GE_CHK_STATUS_RET_NOLOG(ParseVarOutputs(*node_item));
     GELOGD("NodeItem created: %s", node_item->DebugString().c_str());
@@ -2022,6 +2005,7 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
   graph_item->total_inputs_ = input_start;
   graph_item->total_outputs_ = output_start;
   GE_CHK_STATUS_RET_NOLOG(BuildInputMapping(*graph_item, data_nodes, is_root_graph));
+  GE_CHK_STATUS_RET_NOLOG(BuildProfilingControl(*graph_item, profiling_nodes));
   if (is_root_graph) {
     graph_item->SetName("Root-Graph");
     GELOGD("Done loading dynamic subgraph: [%s]", graph_item->GetName().c_str());
@@ -2270,6 +2254,300 @@ Status HybridModelBuilder::Convert2HostTensor(const NodePtr &node, int node_id, 
 
   hybrid_model_.host_tensors_[node_id].emplace_back(output_idx, std::move(tensor));
   return SUCCESS;
+}
+
+Status HybridModelBuilder::RelinkNextIteration() {
+  for (const auto &item : stream_merge_op_nodes_) {
+    const auto &merge = item.second;
+    std::string node_name;
+    if (!AttrUtils::GetStr(merge->GetOpDesc(), ATTR_NAME_NEXT_ITERATION, node_name)) {
+      GELOGD("[%s] no attribute[%s], not in while loop", merge->GetName().c_str(), ATTR_NAME_NEXT_ITERATION.c_str());
+      continue;
+    }
+
+    const auto it = next_iteration_op_nodes_.find(node_name);
+    if (it == next_iteration_op_nodes_.end()) {
+      GELOGE(INTERNAL_ERROR, "[%s] expect NextIteration[%s] not found", merge->GetName().c_str(), node_name.c_str());
+      return INTERNAL_ERROR;
+    }
+
+    const auto &iteration = it->second;
+    if (GraphUtils::AddEdge(iteration->GetOutDataAnchor(0), merge->GetInDataAnchor(1)) != GRAPH_SUCCESS) {
+      GELOGE(INTERNAL_ERROR, "[%s] -> [%s] Add edge failed", node_name.c_str(), merge->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+  }
+
+  stream_merge_op_nodes_.clear();
+  next_iteration_op_nodes_.clear();
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::BuildProfilingControl(GraphItem &graph_item,
+                                                 const std::map<size_t, std::pair<uint32_t, uint32_t>> &nodes) {
+  const auto node_size = graph_item.node_items_.size();
+  for (const auto &item : nodes) {
+    const auto node_index = item.first;
+    GE_CHK_BOOL_RET_STATUS(node_index < node_size, FAILED, "node index invalid");
+    const auto &node_item = graph_item.node_items_[node_index];
+    if (item.second.first > 0) {
+      const auto prev_num = item.second.first;
+      if (node_index == prev_num) {
+        // Profiling Before root node.
+        for (uint32_t i = 1; i <= prev_num; ++i) {
+          GE_CHK_BOOL_RET_STATUS(node_index - i < node_size, FAILED, "prev index invalid");
+          const auto &curr_item = graph_item.node_items_[node_index - i];
+          graph_item.root_items_.emplace(graph_item.root_items_.begin(), curr_item);
+        }
+      } else {
+        GE_CHK_BOOL_RET_STATUS((node_index - prev_num) - 1 < node_size, FAILED, "prev index invalid");
+        const auto &prev_item = graph_item.node_items_[(node_index - prev_num) - 1];
+        for (uint32_t i = 1; i <= prev_num; ++i) {
+          GE_CHK_BOOL_RET_STATUS(node_index - i < node_size, FAILED, "prev index invalid");
+          const auto &curr_item = graph_item.node_items_[node_index - i];
+          prev_item->SetCtrlSend(curr_item, UINT32_MAX);
+          curr_item->SetCtrlSend(node_item, UINT32_MAX);
+        }
+      }
+    }
+
+    if (item.second.second > 0) {
+      const auto post_num = item.second.second;
+      if (node_size == node_index + post_num + 1) {
+        // Profiling After last node.
+        for (uint32_t i = 1; i <= post_num; ++i) {
+          GE_CHK_BOOL_RET_STATUS(node_index + i < node_size, FAILED, "post index invalid");
+          const auto &curr_item = graph_item.node_items_[node_index + i];
+          node_item->SetCtrlSend(curr_item, UINT32_MAX);
+        }
+      } else {
+        GE_CHK_BOOL_RET_STATUS((node_index + post_num) + 1 < node_size, FAILED, "post index invalid");
+        const auto &post_item = graph_item.node_items_[(node_index + post_num) + 1];
+        for (uint32_t i = 1; i <= post_num; ++i) {
+          GE_CHK_BOOL_RET_STATUS(node_index + i < node_size, FAILED, "post index invalid");
+          const auto &curr_item = graph_item.node_items_[node_index + i];
+          node_item->SetCtrlSend(curr_item, UINT32_MAX);
+          curr_item->SetCtrlSend(post_item, UINT32_MAX);
+        }
+      }
+    }
+  }
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::BuildControlFlowGroup(GraphItem &graph_item, const NodePtr &node, NodeItem *node_item) {
+  GELOGD("Build control flow for node %s", node->GetName().c_str());
+  using GroupBuilder = std::function<Status(HybridModelBuilder *, const NodePtr &, NodeItem *)>;
+  static const std::map<std::string, GroupBuilder> control_flow{
+    { STREAMACTIVE, &HybridModelBuilder::CreateStreamActiveGroup },
+    { STREAMSWITCH, &HybridModelBuilder::CreateStreamSwitchGroup },
+    { STREAMSWITCHN, &HybridModelBuilder::CreateStreamSwitchNGroup },
+    { NEXTITERATION, &HybridModelBuilder::CreateNextIterationGroup },
+    { REFNEXTITERATION, &HybridModelBuilder::CreateNextIterationGroup },
+    { SWITCH, &HybridModelBuilder::CreateSwitchGroup },
+    { REFSWITCH, &HybridModelBuilder::CreateSwitchGroup },
+    { LABELSET, &HybridModelBuilder::CreateLabelSetGroup },
+    { LABELGOTO, &HybridModelBuilder::CreateLabelGotoGroup },
+    { LABELGOTOEX, &HybridModelBuilder::CreateLabelGotoGroup },
+    { LABELSWITCH, &HybridModelBuilder::CreateLabelSwitchGroup },
+    { LABELSWITCHBYINDEX, &HybridModelBuilder::CreateLabelSwitchGroup }
+  };
+
+  Status ret = SUCCESS;
+  auto it = control_flow.find(node_item->node_type);
+  if (it == control_flow.end()) {
+    ret = CreateNormalNodeGroup(node, node_item);
+  } else {
+    graph_item.has_ctrl_flow_op_ = true;
+    ret = it->second(this, node, node_item);
+  }
+  GELOGD("Node: %s, control by: %zu, control for: %zu, switch group: %zu", node->GetName().c_str(),
+         node_item->ctrl_recv_.size(), node_item->ctrl_send_.size(), node_item->switch_groups_.size());
+  return ret;
+}
+
+Status HybridModelBuilder::CreateNormalNodeGroup(const NodePtr &node, NodeItem *node_item) {
+  const auto out_ctrl_anchor = node->GetOutControlAnchor();
+  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
+    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(dst_node);
+
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
+    node_item->SetCtrlSend(dst_node_item, UINT32_MAX);
+  }
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateStreamActiveGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != STREAMACTIVE) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node_item->node_type.c_str());
+    return INTERNAL_ERROR;
+  }
+
+  node_item->switch_groups_.resize(kStreamActiveNum);
+  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
+  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
+    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(dst_node);
+    if (dst_node->GetType() == STREAMMERGE) {
+      GELOGI("[%s] skip control node: %s", node->GetName().c_str(), dst_node->GetName().c_str());
+      continue;
+    }
+
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
+    node_item->SetCtrlSend(dst_node_item, kStreamActiveIdx);
+  }
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateStreamSwitchGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != STREAMSWITCH) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node_item->node_type.c_str());
+    return INTERNAL_ERROR;
+  }
+
+  // Consider as two groups, group[0] set empty for false, group[1] for true.
+  node_item->switch_groups_.resize(kStreamSwitchNum);
+  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
+  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
+    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(dst_node);
+
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
+    node_item->SetCtrlSend(dst_node_item, kStreamSwitchIdx);
+  }
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateStreamSwitchNGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != STREAMSWITCHN) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  uint32_t batch_num = 0;
+  if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_BATCH_NUM, batch_num)) {
+    GELOGE(INTERNAL_ERROR, "[%s] Get ATTR_NAME_BATCH_NUM failed", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  if (batch_num == 0) {
+    GELOGW("[%s] Got empty branch for SwitchN, Please check.", node->GetName().c_str());
+    return SUCCESS;
+  }
+
+  node_item->switch_groups_.resize(batch_num);
+  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
+  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
+    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(dst_node);
+
+    std::string batch_label;
+    if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
+      GELOGE(INTERNAL_ERROR, "[%s] Get ATTR_NAME_BATCH_LABEL failed", node->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+
+    std::string::size_type pos = batch_label.rfind("_");
+    if (pos == std::string::npos) {
+      GELOGW("[%s] Separator not found in batch label: %s.", node->GetName().c_str(), batch_label.c_str());
+      continue;
+    }
+
+    ++pos; // Skip Separator
+    uint64_t batch_index = std::strtoul(batch_label.data() + pos, nullptr, kDecimal);
+    if (batch_index >= batch_num) {
+      GELOGW("batch label: %s, batch index: %lu great than batch num: %u", batch_label.c_str(), batch_index, batch_num);
+      continue;
+    }
+
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
+    node_item->SetCtrlSend(dst_node_item, batch_index);
+  }
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateNextIterationGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != NEXTITERATION && node_item->node_type != REFNEXTITERATION) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateSwitchGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != SWITCH && node_item->node_type != REFSWITCH) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
+  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
+    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(dst_node);
+
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
+    node_item->SetCtrlSend(dst_node_item, UINT32_MAX);
+  }
+
+  // Group switch flow by out put data.
+  node_item->switch_groups_.resize(SWITCH_OUTPUT_NUM);
+  for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
+    const auto &out_anchor = node->GetOutDataAnchor(i);
+    for (const auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
+      const auto &dst_node = peer_in_anchor->GetOwnerNode();
+      GE_CHECK_NOTNULL(dst_node);
+
+      NodeItem *dst_node_item = nullptr;
+      GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                        "[%s] failed to get or create node item", dst_node->GetName().c_str());
+      node_item->SetCtrlSend(dst_node_item, i); // take switch data as ctrl.
+    }
+  }
+
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateLabelSetGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != LABELSET) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  GELOGE(UNSUPPORTED, "[%s] Not implemented.", node->GetName().c_str());
+  return UNSUPPORTED;
+}
+
+Status HybridModelBuilder::CreateLabelGotoGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != LABELGOTO && node_item->node_type != LABELGOTOEX) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  GELOGE(UNSUPPORTED, "[%s] Not implemented.", node->GetName().c_str());
+  return UNSUPPORTED;
+}
+
+Status HybridModelBuilder::CreateLabelSwitchGroup(const NodePtr &node, NodeItem *node_item) {
+  if (node_item->node_type != LABELSWITCH && node_item->node_type != LABELSWITCHBYINDEX) {
+    GELOGE(INTERNAL_ERROR, "Called by %s is invalid", node->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  GELOGE(UNSUPPORTED, "[%s] Not implemented.", node->GetName().c_str());
+  return UNSUPPORTED;
 }
 }  // namespace hybrid
 }  // namespace ge

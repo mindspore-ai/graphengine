@@ -161,3 +161,22 @@ TEST_F(UtestSingleOp, test_singleop_execute_async2) {
   EXPECT_EQ(single_op.tasks_.size(), 0);
   EXPECT_EQ(single_op.ExecuteAsync(input_buffers, output_buffers), PARAM_INVALID);
 }
+
+TEST_F(UtestSingleOp, test_set_host_mem) {
+  std::mutex stream_mu_;
+  DynamicSingleOp single_op(0, &stream_mu_, nullptr);
+  
+  vector<DataBuffer> input_buffers;
+  DataBuffer data_buffer;
+  input_buffers.emplace_back(data_buffer);
+
+  vector<GeTensorDesc> input_descs;
+  GeTensorDesc tensor_desc1;
+  input_descs.emplace_back(tensor_desc1);
+
+  vector<GeTensorDescPtr> op_input_descs;
+  auto tensor_desc2 = std::make_shared<GeTensorDesc>();
+  op_input_descs.emplace_back(tensor_desc2);
+  single_op.tensor_with_hostmem_[0] = op_input_descs;
+  EXPECT_EQ(single_op.SetHostTensorValue(input_descs, input_buffers), SUCCESS);
+}

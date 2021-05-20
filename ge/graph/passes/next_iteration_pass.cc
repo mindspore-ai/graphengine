@@ -140,6 +140,7 @@ Status NextIterationPass::FindWhileGroups() {
           GELOGE(INTERNAL_ERROR, "Get LoopCond node failed, frame_name: %s.", frame_name.c_str());
           return INTERNAL_ERROR;
         }
+        loop_group_iter.second->switch_nodes.emplace_back(switch_node);
         if (loop_group_iter.second->loop_cond == nullptr) {
           loop_group_iter.second->loop_cond = loop_cond;
         } else if (loop_group_iter.second->loop_cond != loop_cond) {
@@ -181,6 +182,12 @@ bool NextIterationPass::VerifyWhileGroup() {
                frame_name.c_str());
         return false;
       }
+
+      // Mark loop as unknown shape If any merge has unknown shape output.
+      const auto &op_desc = pair_iter.first->GetOpDesc();
+      if (IsUnknownShapeTensor(op_desc->GetOutputDesc(0))) {
+        loop_group_iter.second->is_unknown_shape = true;  // under check loop, cannot break.
+      }
     }
   }
 
@@ -194,6 +201,7 @@ bool NextIterationPass::VerifyWhileGroup() {
 ///
 Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
   for (const auto &loop_cond_iter : loop_group_map_) {
+    const LoopCondGroup &loop_group = *loop_cond_iter.second;
     const std::string &cond_name = loop_cond_iter.second->loop_cond->GetName();
     GELOGI("Handle while group, LoopCond node: %s.", cond_name.c_str());
 
@@ -215,6 +223,7 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
                enter_active->GetName().c_str());
         return INTERNAL_ERROR;
       }
+      MarkForceUnknownShape(enter_node, loop_group.is_unknown_shape);
     }
 
     for (const auto &pair : loop_cond_iter.second->merge_next_pairs) {
@@ -243,6 +252,9 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
         GELOGE(INTERNAL_ERROR, "Break NextIteration failed");
         return INTERNAL_ERROR;
       }
+
+      MarkForceUnknownShape(next_node, loop_group.is_unknown_shape);
+      MarkForceUnknownShape(merge_node, loop_group.is_unknown_shape);
     }
 
     if ((SetActiveLabelList(enter_active, {cond_name}) != SUCCESS) ||
@@ -250,9 +262,36 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
       GELOGE(INTERNAL_ERROR, "Set attr ACTIVE_LABEL_LIST failed.");
       return INTERNAL_ERROR;
     }
+
+    MarkForceUnknownShape(loop_group.loop_cond, loop_group.is_unknown_shape);
+    MarkForceUnknownShape(enter_active, loop_group.is_unknown_shape);
+    MarkForceUnknownShape(next_active, loop_group.is_unknown_shape);
+    HandleSwitchExitNodes(loop_group);
   }
 
   return SUCCESS;
+}
+
+///
+/// @brief Mark force unknown for Exit node
+/// @param [in] group of LoopCond
+/// @return void
+///
+void NextIterationPass::HandleSwitchExitNodes(const LoopCondGroup &loop_group) {
+  if (!loop_group.is_unknown_shape) {
+    return;
+  }
+
+  for (const auto &switch_node : loop_group.switch_nodes) {
+    MarkForceUnknownShape(switch_node, loop_group.is_unknown_shape);
+    for (const auto &node : switch_node->GetOutDataNodes()) {
+      std::string node_type;
+      (void)GetOriginalType(node, node_type);
+      if (node_type == EXIT || node_type == REFEXIT) {
+        MarkForceUnknownShape(node, loop_group.is_unknown_shape);
+      }
+    }
+  }
 }
 
 ///

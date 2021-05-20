@@ -185,6 +185,11 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_FUSION_KERNEL_DUMPFLAG (0x04)
 #define RT_KERNEL_CUSTOM_AICPU (0x08)
 
+// STARS topic scheduler sqe : topic_type
+#define RT_KERNEL_DEVICE_FIRST (0X10)
+#define RT_KERNEL_HOST_ONLY (0X20)
+#define RT_KERNEL_HOST_FIRST (0X30)
+
 /**
  * @ingroup rt_kernel
  * @brief kernel mode

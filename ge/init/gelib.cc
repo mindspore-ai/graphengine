@@ -39,7 +39,7 @@
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/load/model_manager/model_manager.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "runtime/kernel.h"
@@ -60,8 +60,6 @@ static std::shared_ptr<GELib> instancePtr_ = nullptr;
 
 // Initial each module of GE, if one failed, release all
 Status GELib::Initialize(const map<string, string> &options) {
-
-
   GELOGI("initial start");
   GEEVENT("[GEPERFTRACE] GE Init Start");
   // Multiple initializations are not allowed

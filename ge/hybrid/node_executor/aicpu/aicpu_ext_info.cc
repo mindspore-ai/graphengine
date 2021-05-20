@@ -24,6 +24,12 @@ namespace hybrid {
 namespace {
 // if dim count is not reach kMaxShapeDims(8), use INT64_MIN to mark dim end.
 constexpr int64_t kDimEndFlag = INT64_MIN;
+const std::map<int32_t, int32_t> kTopicTypeToRtsFlagMap {
+    {static_cast<int32_t>(aicpu::FWKAdapter::FWK_ADPT_TOPIC_DEVICE_ONLY), 0},
+    {static_cast<int32_t>(aicpu::FWKAdapter::FWK_ADPT_TOPIC_DEVICE_FIRST), RT_KERNEL_DEVICE_FIRST},
+    {static_cast<int32_t>(aicpu::FWKAdapter::FWK_ADPT_TOPIC_HOST_ONLY), RT_KERNEL_HOST_ONLY},
+    {static_cast<int32_t>(aicpu::FWKAdapter::FWK_ADPT_TOPIC_HOST_FIRST), RT_KERNEL_HOST_FIRST}
+};
 }
 
 Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
@@ -71,6 +77,9 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
         break;
       case aicpu::FWKAdapter::FWK_ADPT_EXT_UPDATE_ADDR:
         GE_CHK_STATUS_RET(ParseExtUpdateAddr(aicpu_ext_info), "[Parse][ExtUpdateAddr] failed.");
+        break;
+      case aicpu::FWKAdapter::FWK_ADPT_EXT_TOPIC_TYPE:
+        GE_CHK_STATUS_RET(ParseExtTopicType(aicpu_ext_info), "[Parse][ExtTopicType] failed.");
         break;
       default:
         GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.",
@@ -207,6 +216,45 @@ Status AicpuExtInfoHandler::ParseExtUpdateAddr(AicpuExtInfo *aicpu_ext_info) {
   return SUCCESS;
 }
 
+Status AicpuExtInfoHandler::ParseExtTopicType(AicpuExtInfo *aicpu_ext_info) {
+  if (aicpu_ext_info->infoLen != sizeof(int32_t)) {
+    REPORT_INNER_ERROR("E19999",
+                       "Node[%s] parse topic_type info failed as infoLen must be %zu but %u.",
+                       node_name_.c_str(), sizeof(int32_t), aicpu_ext_info->infoLen);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "[Check][DataLen]Node[%s] parse topic_type info failed as infoLen must be %zu but %u.",
+           node_name_.c_str(), sizeof(int32_t), aicpu_ext_info->infoLen);
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+  GE_CHECK_NOTNULL(aicpu_ext_info->infoMsg);
+  auto type_info = reinterpret_cast<int32_t *>(aicpu_ext_info->infoMsg);
+  int32_t type = *type_info;
+
+  topic_type_flag_ = TopicTypeToRtsFlag(type);
+  if (topic_type_flag_ == -1) {
+    REPORT_INNER_ERROR("E19999", "Node[%s] parse ext topic type failed as need %d %d %d %d but %d.",
+                       node_name_.c_str(),
+                       aicpu::FWKAdapter::FWK_ADPT_TOPIC_DEVICE_ONLY,
+                       aicpu::FWKAdapter::FWK_ADPT_TOPIC_DEVICE_FIRST,
+                       aicpu::FWKAdapter::FWK_ADPT_TOPIC_HOST_ONLY,
+                       aicpu::FWKAdapter::FWK_ADPT_TOPIC_HOST_FIRST,
+                       type);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "[Check][Type]Node[%s] parse ext shape type failed as need %d %d %d %d but %d.",
+           node_name_.c_str(),
+           aicpu::FWKAdapter::FWK_ADPT_TOPIC_DEVICE_ONLY,
+           aicpu::FWKAdapter::FWK_ADPT_TOPIC_DEVICE_FIRST,
+           aicpu::FWKAdapter::FWK_ADPT_TOPIC_HOST_ONLY,
+           aicpu::FWKAdapter::FWK_ADPT_TOPIC_HOST_FIRST,
+           type);
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+
+  GELOGI("Node[%s] parse ext topic type info success infoLen=%u, topic_type=%d, rts_flag=%d.",
+         node_name_.c_str(), aicpu_ext_info->infoLen, type, topic_type_flag_);
+  return SUCCESS;
+}
+
 Status AicpuExtInfoHandler::UpdateExecuteMode(bool flag) {
   if (bit_map_ == nullptr) {
     GELOGD("There is no bit_map in ext_info, no need update.");
@@ -340,6 +388,15 @@ void AicpuExtInfoHandler::GetShapeAndType(const AicpuShapeAndType *shape_and_typ
   }
   data_type = static_cast<DataType>(shape_and_type->type);
   shape = GeShape(dims);
+}
+
+int32_t AicpuExtInfoHandler::TopicTypeToRtsFlag(int32_t topic_type) {
+  auto it = kTopicTypeToRtsFlagMap.find(topic_type);
+  if (it != kTopicTypeToRtsFlagMap.end()) {
+    return it->second;
+  }
+
+  return -1;
 }
 }  // namespace hybrid
 }  // namespace ge

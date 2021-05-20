@@ -35,7 +35,8 @@ Status GeLocalEngine::Initialize(const std::map<string, string> &options) {
   if (ops_kernel_store_ == nullptr) {
     ops_kernel_store_ = MakeShared<GeLocalOpsKernelInfoStore>();
     if (ops_kernel_store_ == nullptr) {
-      GELOGE(FAILED, "Make GeLocalOpsKernelInfoStore failed.");
+      REPORT_CALL_ERROR("E19999", "create GeLocalOpsKernelInfoStore failed.");
+      GELOGE(FAILED, "[Call][MakeShared] Make GeLocalOpsKernelInfoStore failed.");
       return FAILED;
     }
   }

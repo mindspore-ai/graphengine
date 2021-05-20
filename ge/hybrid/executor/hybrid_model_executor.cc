@@ -155,9 +155,9 @@ Status HybridModelExecutor::InitExecutionContext() {
   context_.dump_properties = DumpManager::GetInstance().GetDumpProperties(context_.session_id);
   const char *profiling_level = std::getenv(kEnvProfilingLevel);
   if (profiling_level != nullptr) {
-    context_.profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
-    GELOGD("Got profiling level = %ld", context_.profiling_level);
-    if (context_.profiling_level > 0) {
+    GraphExecutionContext::profiling_level = std::strtol(profiling_level, nullptr, kIntBase);
+    GELOGD("Got profiling level = %ld", GraphExecutionContext::profiling_level);
+    if (GraphExecutionContext::profiling_level > 0) {
       context_.profiler.reset(new(std::nothrow)HybridProfiler());
       GE_CHECK_NOTNULL(context_.profiler);
     }

@@ -40,6 +40,10 @@ class GeRootModel {
   }
   uint32_t GetModelId() const { return model_id_; }
 
+  void SetIsSpecificStream(bool is_specific_stream) { is_specific_stream_ = is_specific_stream; }
+
+  bool IsSpecificStream() const { return is_specific_stream_; }
+
   void SetModelName(const std::string &model_name) { model_name_ = model_name; }
 
   const std::string &GetModelName() const { return model_name_; }
@@ -64,6 +68,7 @@ class GeRootModel {
   std::vector<uint32_t> model_ids_;
   bool train_flag_ = false;
   std::string model_name_;
+  bool is_specific_stream_ = false;
 };
 }  // namespace ge
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;

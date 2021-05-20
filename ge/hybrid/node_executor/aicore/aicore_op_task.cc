@@ -23,6 +23,7 @@
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/types.h"
 #include "single_op/task/build_task_utils.h"
+#include "single_op/task/tbe_task_builder.h"
 
 using optiling::OpRunInfo;
 
@@ -131,8 +132,8 @@ Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
     GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_ptr, GetKeyForKernelName(op_desc), kernel_name),
                     GELOGI("Get original type of kernel_name"));
     GELOGI("TBE: binfile_key=%s, kernel_name=%s", stub_name_.c_str(), kernel_name.c_str());
-    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_name_.c_str(),
-                                     stub_name_.c_str(), kernel_name.c_str(), 0));
+    auto stub_func = KernelBinRegistry::GetInstance().GetUnique(stub_name_);
+    GE_CHK_RT_RET(rtFunctionRegister(bin_handle, stub_func, stub_name_.c_str(), kernel_name.c_str(), 0));
   }
   return SUCCESS;
 }
@@ -309,7 +310,7 @@ Status AiCoreOpTask::InitWithTaskDef(const OpDesc &op_desc, const domi::TaskDef 
   auto rt_ret = ValidateTaskDef(task_def);
   if (rt_ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "op:%s(op_type:%s) failed to validate task def:%s",
-           op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
+                      op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
     GELOGE(rt_ret, "[Invoke][ValidateTaskDef]failed for op:%s(op_type:%s) to validate task def:%s",
            op_desc.GetName().c_str(), op_desc.GetType().c_str(), task_def.DebugString().c_str());
     return rt_ret;
@@ -401,9 +402,8 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   }
 
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] Start");
-  GE_CHK_RT_RET(rtMemcpy(tiling_buffer_->GetData(), tiling_buffer_->GetSize(),
-                         tiling_data_.c_str(), tiling_data_.size(),
-                         RT_MEMCPY_HOST_TO_DEVICE));
+  GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_->GetData(), tiling_buffer_->GetSize(), tiling_data_.c_str(),
+                              tiling_data_.size(), RT_MEMCPY_HOST_TO_DEVICE_EX, context.GetStream()));
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CopyTilingInfo] End");
 
   GELOGD("[%s] Done updating tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());

@@ -122,7 +122,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
   ///
   ge::Status DataInput(const InputData &input_data, OutputData &output_data);
 
-  ge::Status DataInputTensor(uint32_t model_id, const std::vector<InputTensorInfo> &inputs);
+  ge::Status DataInputTensor(uint32_t model_id, const std::vector<ge::Tensor> &inputs);
 
   ///
   /// @ingroup domi_ome
@@ -246,6 +246,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   ge::Status GetCurShape(const uint32_t model_id, std::vector<int64_t> &batch_info, int32_t &dynamic_type);
 
+  ge::Status GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                       std::string &attr_value);
+
   ge::Status GetModelAttr(uint32_t model_id, std::vector<string> &dynamic_output_shape_info);
 
   ge::Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
@@ -342,6 +345,16 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   void GenModelId(uint32_t *id);
 
+  Status InitDumPropertiesWithNewSessionId(uint64_t session_id);
+
+  bool IsDumpSeverInited(uint64_t session_id);
+
+  Status AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties);
+
+  Status UpdateSessionId(uint32_t model_id, GeModelPtr ge_model,
+                         std::shared_ptr<DavinciModel> &davinci_model, uint64_t &session_id);
+
+  bool HasVarNode(ComputeGraphPtr &compute_graph) const;
 
   std::map<uint32_t, std::shared_ptr<DavinciModel>> model_map_;
   std::map<uint32_t, std::shared_ptr<hybrid::HybridDavinciModel>> hybrid_model_map_;
@@ -358,6 +371,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
 
   static DumpProperties dump_properties_;
   bool dump_exception_flag_ = false;
+  std::map<uint64_t, bool> session_id_to_dump_server_init_flag_;
 };
 }  // namespace ge
 

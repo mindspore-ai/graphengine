@@ -26,7 +26,7 @@
 #include "graph/execute/graph_execute.h"
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/model_manager.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "single_op/single_op_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
@@ -728,6 +728,23 @@ Status GeExecutor::GetAippType(uint32_t model_id, uint32_t index, InputAippType 
     return ret;
   }
   GELOGI("Get aipp type success.");
+  return SUCCESS;
+}
+
+Status GeExecutor::GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
+                             std::string &attr_value) {
+  GELOGI("Begin to get op attr.");
+  if (!isInit_) {
+    GELOGE(ACL_ERROR_GE_EXEC_NOT_INIT, "[Init][GeExecutor]Ge executor not inited yet!");
+    REPORT_INNER_ERROR("E19999", "Ge executor not inited yet!");
+    return ACL_ERROR_GE_EXEC_NOT_INIT;
+  }
+  Status ret = GraphExecutor::GetOpAttr(model_id, op_name, attr_name, attr_value);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Get][OpAttr]Get op:%s attr:%s failed.", op_name.c_str(), attr_name.c_str());
+    REPORT_CALL_ERROR("E19999", "Get op:%s attr:%s failed.", op_name.c_str(), attr_name.c_str());
+    return ret;
+  }
   return SUCCESS;
 }
 

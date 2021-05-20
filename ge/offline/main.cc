@@ -216,10 +216,6 @@ DEFINE_string(op_bank_path, "", "Optional; op bank path");
 
 DEFINE_string(display_model_info, "0", "Optional; display model info");
 
-DEFINE_string(performance_mode, "", "Optional; express high compile performance or high execute performance."
-                                     "normal: no need to compile, used saved .o files directly;"
-                                     "high: need to recompile, high execute performance mode.");
-
 DEFINE_string(device_id, "0", "Optional; user device id");
 
 class GFlagUtils {
@@ -336,8 +332,7 @@ class GFlagUtils {
         "Default value: $HOME/atc_data\n"
         "  --op_compiler_cache_mode   Set the operator compilation cache mode."
         "Options are disable(default), enable and force(force to refresh the cache)\n"
-        "  --display_model_info     enable for display model info; 0(default): close display, 1: open display.\n"
-        "  --performance_mode       Set high performance mode of compile or execute.");
+        "  --display_model_info     enable for display model info; 0(default): close display, 1: open display.");
 
     gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
     // Using gflags to analyze input parameters
@@ -1085,7 +1080,6 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::OP_COMPILER_CACHE_MODE, FLAGS_op_compiler_cache_mode);
   options.emplace(ge::MDL_BANK_PATH_FLAG, FLAGS_mdl_bank_path);
   options.emplace(ge::OP_BANK_PATH_FLAG, FLAGS_op_bank_path);
-  options.emplace(ge::PERFORMANCE_MODE, FLAGS_performance_mode);
   options.emplace(ge::TUNE_DEVICE_IDS, FLAGS_device_id);
 }
 
@@ -1240,7 +1234,6 @@ domi::Status GenerateOmModel() {
 
   options.insert(std::pair<string, string>(string(ge::DISPLAY_MODEL_INFO), FLAGS_display_model_info));
 
-  options.insert(std::pair<string, string>(string(ge::PERFORMANCE_MODE), FLAGS_performance_mode));
   // set enable scope fusion passes
   SetEnableScopeFusionPasses(FLAGS_enable_scope_fusion_passes);
   // print atc option map
@@ -1343,6 +1336,9 @@ domi::Status ConvertPbtxtToJson() {
 
 int init(int argc, char* argv[]) {
   GFlagUtils::InitGFlag(argc, argv);
+  const char *gflag_argv = gflags::GetArgv();
+  string cmdline = gflag_argv == nullptr ? "" : gflag_argv;
+  domi::GetContext().atc_cmdline = cmdline;
   // set log level
   int ret = -1;
   const std::set<string> log_level = {"null", "debug", "info", "warning", "error"};

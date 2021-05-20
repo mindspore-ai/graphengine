@@ -19,8 +19,7 @@
 #include <mutex>
 #include <string>
 
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/graph_caching_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY SingleOpManager::~SingleOpManager() {

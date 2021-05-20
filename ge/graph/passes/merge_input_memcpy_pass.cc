@@ -15,6 +15,7 @@
  */
 
 #include "graph/passes/merge_input_memcpy_pass.h"
+
 #include "common/ge/ge_util.h"
 #include "ge/ge_api_types.h"
 #include "graph/common/omg_util.h"
@@ -22,16 +23,19 @@
 namespace ge {
 Status MergeInputMemcpyPass::Run(ComputeGraphPtr graph) {
   GELOGD("MergeInputMemcpyPass Enter");
+  std::unordered_map<NodePtr, std::vector<NodePtr>> switch_groups;
   for (const auto &node : graph->GetDirectNode()) {
     std::string type;
     GE_CHK_STATUS_RET(GetOriginalType(node, type), "Get node type failed.");
     if ((type != MERGE) && (type != REFMERGE)) {
       continue;
     }
+
     GE_CHECK_NOTNULL(node->GetOpDesc());
     GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, node, node->GetOpDesc()->HasAttr(ATTR_INSERT_BY_MBATCH)),
                       "Merge add memcpy node failed.");
   }
+
   GELOGD("MergeInputMemcpyPass Leave");
   return SUCCESS;
 }

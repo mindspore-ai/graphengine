@@ -117,6 +117,21 @@ void AlignMemSize(int64_t &mem_size, int64_t align_size);
 /// @return Status
 ///
 Status GetMemorySize(const NodePtr &node, int64_t &output_size);
+
+///
+/// @brief Check Is Unknown shape Tensor
+/// @param [in] tensor_desc
+/// @return true: Unknown / false: Known
+///
+bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc);
+
+///
+/// @brief Set Op _force_unknown_shape flag
+/// @param [in] node
+/// @param [in] force_unknown, set attribute if true
+/// @return
+///
+void MarkForceUnknownShape(const NodePtr &node, bool force_unknown);
 }  // namespace ge
 
 #endif  // GE_GRAPH_COMMON_OMG_UTIL_H_

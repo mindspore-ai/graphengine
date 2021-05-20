@@ -17,8 +17,7 @@
 #include "graph/manager/graph_var_manager.h"
 
 #include "graph/debug/ge_attr_define.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/rdma_pool_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/type_utils.h"
 
@@ -542,11 +541,7 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
     GELOGE(ge::INTERNAL_ERROR, "MemResource is invalid, memory_type = %u.", memory_type);
     return ge::INTERNAL_ERROR;
   }
-  result = mem_resource->AssignVarMem(var_name, tensor_desc_size, session_id_, mem_offset);
-  if (result != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
-    return ge::INTERNAL_ERROR;
-  }
+
   if (var_resource_ == nullptr) {
     REPORT_INNER_ERROR("E19999", "VarManager has not been init, memory_type:%d, session_id:%lu, "
                        "check invalid", memory_type, session_id_);
@@ -554,31 +549,46 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
     return ge::INTERNAL_ERROR;
   }
 
-  result = var_resource_->SaveVarAddr(
-    var_name, tensor_desc, reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
-  if (result != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
-    return ge::INTERNAL_ERROR;
-  }
-
-  result = var_resource_->GetVarAddr(
-    var_name, tensor_desc, reinterpret_cast<uint8_t **>(reinterpret_cast<uintptr_t>(&mem_offset)), memory_type);
-  if (result != SUCCESS) {
-    GELOGE(ge::INTERNAL_ERROR, "GetVarAddr by offset failed.");
-    return ge::INTERNAL_ERROR;
-  }
-
   ge::GeTensorDesc cur_tensor_desc;
+  int64_t cur_tensor_desc_size = 0;
+  result = var_resource_->GetCurVarDesc(var_name, cur_tensor_desc);
+  // reuse old format variable memory
+  if (result == SUCCESS) {
+    result = var_resource_->GetVarAddr(
+      var_name, cur_tensor_desc, reinterpret_cast<uint8_t **>(reinterpret_cast<uintptr_t>(&mem_offset)), memory_type);
+    if (result == SUCCESS) {
+      result = TensorUtils::GetSize(cur_tensor_desc, cur_tensor_desc_size);
+      GELOGD("tensor_desc_size is %ld, cur_tensor_desc_size is %ld, memoffset is %zu", tensor_desc_size,
+             cur_tensor_desc_size, mem_offset);
+    }
+  }
+
+  bool can_not_reuse_old_memory = (result != SUCCESS) || (tensor_desc_size > cur_tensor_desc_size);
+  if (can_not_reuse_old_memory) {
+    result = mem_resource->AssignVarMem(var_name, tensor_desc_size, session_id_, mem_offset);
+    if (result != SUCCESS) {
+      GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
+      return ge::INTERNAL_ERROR;
+    }
+
+    result = var_resource_->SaveVarAddr(
+      var_name, tensor_desc, reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
+    if (result != SUCCESS) {
+      GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
+      return ge::INTERNAL_ERROR;
+    }
+  }
+  // old not exist only save new tensor
   result = var_resource_->GetCurVarDesc(var_name, cur_tensor_desc);
   if (result != SUCCESS) {
     var_resource_->SetVarAddr(var_name, tensor_desc,
                               reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
     return SUCCESS;
   }
-
-  if (cur_tensor_desc.GetFormat() != tensor_desc.GetFormat() ||
-      cur_tensor_desc.GetDataType() != tensor_desc.GetDataType() ||
-      cur_tensor_desc.GetShape().GetDims() != tensor_desc.GetShape().GetDims()) {
+  bool format_changed = cur_tensor_desc.GetFormat() != tensor_desc.GetFormat() ||
+                        cur_tensor_desc.GetDataType() != tensor_desc.GetDataType() ||
+                        cur_tensor_desc.GetShape().GetDims() != tensor_desc.GetShape().GetDims();
+  if (format_changed) {
     GELOGI("var %s assigned new memory (format, data type, shape)  (%s, %s, %zu) from (%s, %s, %zu)", var_name.c_str(),
            ge::TypeUtils::DataTypeToSerialString(tensor_desc.GetDataType()).c_str(),
            ge::TypeUtils::FormatToSerialString(tensor_desc.GetFormat()).c_str(),
@@ -717,7 +727,7 @@ ge::Status VarManager::MallocVarMemory(size_t memory_size) {
   var_memory_size = (var_memory_size + kSessionMemAlignSize - 1) / kSessionMemAlignSize * kSessionMemAlignSize;
 
   const string purpose("variables and constant op memory in training network.");
-  var_mem_base = MemManager::Instance(RT_MEMORY_HBM)->MallocMemory(purpose, memory_key, var_memory_size);
+  var_mem_base = MemManager::Instance().MemInstance(RT_MEMORY_HBM).MallocMemory(purpose, memory_key, var_memory_size);
   if (var_mem_base == nullptr) {
     GELOGE(ge::INTERNAL_ERROR,
            "VarManager::MallocVarMemory failed "
@@ -734,7 +744,7 @@ uint8_t *VarManager::GetVarMemoryBase(rtMemType_t memory_type) {
     return MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).GetRdmaBaseAddr();
   }
   string memory_key = std::to_string(session_id_);
-  return MemManager::Instance(memory_type)->GetMemoryAddr(memory_key);
+  return MemManager::Instance().MemInstance(memory_type).GetMemoryAddr(memory_key);
 }
 
 uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_type) {
@@ -743,7 +753,7 @@ uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_ty
     return logic_addr;
   }
   string mem_key = std::to_string(session_id_);
-  uint8_t *mem_base = MemManager::Instance(memory_type)->GetMemoryAddr(mem_key);
+  uint8_t *mem_base = MemManager::Instance().MemInstance(memory_type).GetMemoryAddr(mem_key);
   if (mem_base == nullptr) {
     return nullptr;
   }
@@ -755,7 +765,7 @@ uint8_t *VarManager::GetVarMemoryAddr(uint8_t *logic_addr, rtMemType_t memory_ty
 ge::Status VarManager::FreeVarMemory() {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   string memory_key = std::to_string(SessionId());
-  return MemManager::Instance(RT_MEMORY_HBM)->FreeMemory(memory_key);
+  return MemManager::Instance().MemInstance(RT_MEMORY_HBM).FreeMemory(memory_key);
 }
 
 ge::Status VarManager::SetTransRoad(const std::string &var_name, const VarTransRoad &trans_road) {

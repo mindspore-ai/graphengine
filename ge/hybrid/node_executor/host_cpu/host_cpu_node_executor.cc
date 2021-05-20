@@ -18,8 +18,7 @@
 #include "hybrid/node_executor/host_cpu/kernel_factory.h"
 #include "graph/passes/folding_pass.h"
 #include "hybrid/model/hybrid_model.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/host_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
 
 namespace ge {

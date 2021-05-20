@@ -106,6 +106,7 @@ class GE_FUNC_VISIBILITY GeGenerator {
   bool CheckNoAicore(const ComputeGraphPtr &graph);
   void RemoveConst(const vector<GeTensor> &inputs, vector<GeTensor> &outputs);
   Status CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs);
+  Status InferFormatForSingleOp(OpDescPtr &op_desc);
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);

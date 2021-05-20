@@ -64,10 +64,10 @@ the same types as "x_tensors" .  It's a dynamic output.  \n
 REG_OP(Batch)
   .DYNAMIC_INPUT(x_tensors, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, \
       DT_INT16, DT_UINT16, DT_UINT8, DT_INT32, DT_INT64, DT_BOOL, DT_DOUBLE}))
-  .OUTPUT(y_index, TensorType({ DT_INT64 }))
-  .OUTPUT(y_id, TensorType({ DT_INT64 }))
   .DYNAMIC_OUTPUT(y_tensors, TensorType({DT_INT8, DT_UINT8, DT_INT16, \
       DT_UINT16, DT_INT32, DT_INT64, DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_BOOL}))
+  .OUTPUT(y_index, TensorType({ DT_INT64 }))
+  .OUTPUT(y_id, TensorType({ DT_INT64 }))
   .REQUIRED_ATTR(num_batch_threads, Int)
   .REQUIRED_ATTR(max_batch_size, Int)
   .ATTR(max_enqueued_batches, Int, 10)

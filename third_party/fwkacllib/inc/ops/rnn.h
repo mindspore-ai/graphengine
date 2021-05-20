@@ -33,6 +33,7 @@ namespace ge {
 *@li c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li w:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_Z.
 *@li b:A 1D Tensor. Must be one of the following types: float16. The format must be ND . \n
+*@li mask:A 1D Tensor. Must be one of the following types: uint8.
 
 *@par Attributes:
 *@li keep_prob:An integer identifying the keep prob in the op. Default to 1.
@@ -42,7 +43,6 @@ namespace ge {
 
 *@par Outputs:
 *seven outputs:
-*@li mask:A 1D Tensor. Must be one of the following types: uint8.
 *@li ct:A 4D Tensor. Must be one of the following types: float16, float32.
 *@li ht:A 4D Tensor. Must be one of the following types: float16.
 *@li it:A 4D Tensor. Must be one of the following types: float16, float32.
@@ -209,6 +209,7 @@ REG_OP(DynamicRNNGrad)
 *@li time_major:An bool identifying the time major in the op. Default to true.
 *@li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported.
 *@li forget_bias:An float identifying the forget bias in the op. Default to 0.
+*@li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifjo". Default to "ijfo".
 *@li is_training:An bool identifying is training in the op. Default to true . \n
 
 *@par Outputs:
@@ -253,8 +254,102 @@ REG_OP(DynamicRNN)
     .ATTR(time_major, Bool, true)
     .ATTR(activation, String, "tanh")
     .ATTR(forget_bias, Float, 0.0)
+    .ATTR(gate_order, String, "ijfo")
     .ATTR(is_training, Bool, true)
     .OP_END_FACTORY_REG(DynamicRNN)
+
+/**
+*@brief: DynamicRNNV2 calculation.
+*@par Inputs:
+*ten inputs:
+*@li x:A required 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li weight_input:A required 4D Tensor. Must be one of the following types: float16, float32.
+*The format must be FRACTAL_Z.
+*@li weight_hidden:A required 4D Tensor. Must be one of the following types: float16, float32.
+*The format must be FRACTAL_Z.
+*@li b:A required 1D Tensor. Must be one of the following types: float16, float32. The format must be ND.
+*@li seq_length:A optional 1D Tensor. Must be one of the following types: int32. The format must be ND.
+*@li init_h:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li init_c:A optional 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li wci:A 4D optional Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wcf:A 4D optional Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li wco:A 4D optional Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_ZN_LSTM.
+*@li mask:A 1D optional Tensor. Must be one of the following types: uint8. The format must be ND . \n
+
+*@par Attributes:
+*@li cell_type:An string identifying the cell type in the op. Default to "LSTM". Only LSTM is currently supported.
+*@li direction:An string identifying the direction in the op. Default to "UNIDIRECTIONAL".
+*Only UNIDIRECTIONAL is currently supported.
+*@li cell_depth:An integer identifying the cell depth in the op. Default to 1.
+*@li use_peephole:An bool identifying if use peephole in the op. Default to false.
+*@li keep_prob:An float identifying the keep prob in the op. Default to 1.
+*@li cell_clip:An float identifying the cell clip in the op. Default to -1.
+*@li num_proj:An integer identifying the num projection in the op. Default to 0.
+*@li time_major:An bool identifying the time major in the op. Default to true.
+*@li activation:An string identifying the type of activation function in the op. Default to "tanh".
+*Only tanh is currently supported.
+*@li recurrent_activation:An string identifying the type of activation function in the op. Default to "sigmoid".
+*Supprot "sigmoid" and "hard_sigmoid". In general, set "hard_sigmoid" for TF Keras LSTM.
+*@li forget_bias:An float identifying the forget bias in the op. Default to 0.
+*@li gate_order:An string identifying the type of gate order in the op. Support "ijfo" and "ifco". Default to "ijfo".
+*Set "ijfo" for TF operator LSTM, Set "ifco" for TF Keras LSTM.
+*@li stateful: An bool identifying the type of stateful in the op. Default to fasle.Only false is currently supported.
+*@li merge_mode: An string identifying the type of merge_modein the op. Default to "concat".
+*Only "concat" is currently supported
+*@li is_training:An bool identifying is training in the op. Default to true . \n
+
+*@par Outputs:
+*eight outputs:
+*@li y:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li output_h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*Return the last output_h.
+*@li output_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*Return the last output_c.
+*@li i:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li j:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li f:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li o:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@par Third-party framework compatibility:
+* Compatible with the TF operator LSTM or TF keras operator LSTM.
+*/
+
+REG_OP(DynamicRNNV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(weight_input, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(weight_hidden, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(seq_length, TensorType({DT_INT32}))
+    .OPTIONAL_INPUT(init_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(init_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wci, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wcf, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(wco, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OPTIONAL_INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_h, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(output_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(i, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(j, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(f, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(o, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(tanhc, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(cell_type, String, "LSTM")
+    .ATTR(direction, String, "UNIDIRECTIONAL")
+    .ATTR(cell_depth, Int, 1)
+    .ATTR(use_peephole, Bool, false)
+    .ATTR(keep_prob, Float, 1.0)
+    .ATTR(cell_clip, Float, -1.0)
+    .ATTR(num_proj, Int, 0)
+    .ATTR(time_major, Bool, true)
+    .ATTR(activation, String, "tanh")
+    .ATTR(recurrent_activation, String, "sigmoid")
+    .ATTR(forget_bias, Float, 0.0)
+    .ATTR(gate_order, String, "ijfo")
+    .ATTR(stateful, Bool, false)
+    .ATTR(merge_mode, String, "concat")
+    .ATTR(is_training, Bool, true)
+    .OP_END_FACTORY_REG(DynamicRNNV2)
 
 /**
 *@brief: DynamicRNNV3 calculation.

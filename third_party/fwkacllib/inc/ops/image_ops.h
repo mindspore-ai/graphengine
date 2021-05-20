@@ -1484,6 +1484,55 @@ REG_OP(CombinedNonMaxSuppression)
     .OP_END_FACTORY_REG(CombinedNonMaxSuppression)
 
 /**
+*@brief Resizes "images" with "offset" using bilinear interpolation. \n
+
+*@par Inputs:
+*@li img: input image, A 4-D tensor of shape `[n, h, w, c]`.
+*@li warp_offset: the resize offset A 4-D float tensor of shape `[n, h, w, 2]`, 2 means (x, y) for offset point.
+
+*@par Outputs:
+*warp_img: A Tensor after resize. \n
+*/
+REG_OP(IMGWarp)
+    .INPUT(img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(warp_offset, TensorType({DT_FLOAT32}))
+    .OUTPUT(warp_img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .OP_END_FACTORY_REG(IMGWarp)
+
+/**
+*@brief Resizes "images" with "offset" using bilinear interpolation. \n
+
+*@par Inputs:
+*@li img: input image, A 4-D tensor of shape `[n, h, w, c]`.
+*@li map_offset: the resize offset A 4-D float tensor of shape `[n, h, w, 2]`, 2 means (x, y) for resize point.
+
+*@par Outputs:
+*map_img: A Tensor after resize. \n
+*/
+REG_OP(Remap)
+    .INPUT(img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .INPUT(map_offset, TensorType({DT_FLOAT32}))
+    .OUTPUT(map_img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
+    .OP_END_FACTORY_REG(Remap)
+
+/**
+*@brief Resizes "images" with "offset" using bilinear interpolation. \n
+
+*@par Inputs:
+*@li img: input image, A 5-D tensor of shape `[n, 4, c, h, w]`,
+and 4 mean input[(h_top, w_left), (h_top, w_right), (h_bottom, w_left),  (h_bottom, w_right)].
+*@li warp_index: the resize offset A 4-D float tensor of shape `[n, 2, h, w]`, 2 means (x, y) for resize point.
+
+*@par Outputs:
+*remap_img: A Tensor after ResizeBilinear, A 4-D tensor of shape `[n, c, h, w]`. \n
+*/
+REG_OP(IMGWarpResize)
+    .INPUT(img, TensorType({DT_FLOAT32}))
+    .INPUT(warp_index, TensorType({DT_FLOAT32}))
+    .OUTPUT(warp_img, TensorType({DT_FLOAT32}))
+    .OP_END_FACTORY_REG(IMGWarpResize)
+
+/**
 *@brief Function spatial transformer . \n
 
 *@par Inputs:
@@ -1802,5 +1851,22 @@ REG_OP(ImageUnfold)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(padding_mode, String, "zeros")
     .OP_END_FACTORY_REG(ImageUnfold)
+	
+/**
+*@brief This operation select images to warp_images according to offsets.
+
+*@par Inputs:
+*@li images: 4-D Tensor with shape `[batch, height, width, 3]`.
+*@li offsets: 4-D Tensor with shape `[batch, 4, new_height, new_width]`.
+
+*@par Outputs:
+*warp_images: Returns 5-D Tensor with shape
+`[batch, 4, new_height, new_width, 3]` and the same dtype as `images`.
+*/
+REG_OP(IMGWarpOffsets)
+    .INPUT(images, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .INPUT(offsets, TensorType({DT_FLOAT, DT_INT32}))
+    .OUTPUT(warp_images, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(IMGWarpOffsets)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

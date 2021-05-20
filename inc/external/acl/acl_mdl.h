@@ -43,6 +43,7 @@ extern "C" {
 
 #define ACL_DYNAMIC_TENSOR_NAME "ascend_mbatch_shape_data"
 #define ACL_DYNAMIC_AIPP_NAME "ascend_dynamic_aipp_data"
+#define ACL_ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES "_datadump_original_op_names"
 
 typedef struct aclmdlDataset aclmdlDataset;
 typedef struct aclmdlDesc aclmdlDesc;
@@ -635,6 +636,18 @@ ACL_FUNC_VISIBILITY aclError aclmdlGetOutputDims(const aclmdlDesc *modelDesc, si
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclmdlGetCurOutputDims(const aclmdlDesc *modelDesc, size_t index, aclmdlIODims *dims);
+
+/**
+ * @ingroup AscendCL
+ * @brief get attr value by op name
+ *
+ * @param modelDesc [IN]   model description
+ * @param opName [IN]      op name
+ * @param attr [IN]        attr name
+ *
+ * @retval the attr value
+ */
+ACL_FUNC_VISIBILITY const char *aclmdlGetOpAttr(aclmdlDesc *modelDesc, const char *opName, const char *attr);
 
 /**
  * @ingroup AscendCL

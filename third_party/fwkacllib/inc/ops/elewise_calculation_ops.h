@@ -3468,25 +3468,6 @@ REG_OP(AxpyV2)
     .OP_END_FACTORY_REG(AxpyV2)
 
 /**
-* @brief Computes the result of x1 + x2.
-
-* @par Inputs:
-* @li x1: An ND tensor of type float16, float, int32.
-* @li x2: An ND tensor of type float16, float, int32. \n
-
-* @par Outputs:
-* @li y: An ND tensor tensor with the same type as "x1". \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator Add.
-*/
-REG_OP(PtAdd)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OP_END_FACTORY_REG(PtAdd)
-
-/**
 * @brief Computes the result of x1 * x2.
 
 * @par Inputs:

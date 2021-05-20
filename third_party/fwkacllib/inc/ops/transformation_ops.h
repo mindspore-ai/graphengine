@@ -743,6 +743,52 @@ REG_OP(Col2im)
     .OP_END_FACTORY_REG(Col2im)
 
 /**
+* @brief Performs Im2col for each batch entry. \n
+
+* @par Inputs:
+* x: A 4D Tensor with shape [batch, in_rows, in_cols, depth], Must be one of the
+*    following types:float32, int8, float16. The inputs must have data_format with
+*    one of follows:NHWC, NCHW.
+
+* @par Attributes:
+* @li ksizes: A required list or tuple. The size of the sliding window for each
+* dimension of images.
+* @li strides: A optional list or tuple. How far the centers of two consecutive
+* patches are in the images. Defaults to "{1}".
+* @li dilations: A optional list or tuple. Defaults to "{1}".
+* This is the input stride, specifying how far two consecutive patch
+* samples are in the input. Equivalent to extracting patches
+* with patch_sizes_eff = patch_sizes + (patch_sizes - 1) *
+* (dilations - 1), followed by subsampling them spatially by a factor of dilations.
+* This is equivalent to rate in dilated (a.k.a. Atrous) convolutions.
+* @li padding_mode: A optional String. The type of padding algorithm to use,
+* support "SAME", "VALID", "CALCULATED". Among the three modes, only the "CALCULATED"
+* means to use the pads below. Defaults to "CALCULATED".
+* @li pads: A optional list or tuple. The pad distance. Defaults to "{0}". \n
+
+* @par Outputs:
+* y: A 4D Tensor with shape [batch, out_rows, out_cols, ksize_rows *
+* ksize_cols * depth] containing image patches with size ksize_rows x ksize_cols
+* x depth vectorized in the "depth" dimension. Note "out_rows" and "out_cols"
+* are the dimensions of the output patches . \n
+
+* @attention Constraints:
+* "ksizes", "strides", "dilations" and "pads" are lists of integers . \n
+
+* @par Third-party framework compatibility
+* Compatible with Pytorch Im2col operator.
+*/
+REG_OP(Im2col)
+    .INPUT(x, TensorType::RealNumberType())
+    .OUTPUT(y, TensorType::RealNumberType())
+    .REQUIRED_ATTR(ksizes, ListInt)
+    .ATTR(strides, ListInt, {1})
+    .ATTR(dilations, ListInt, {1})
+    .ATTR(padding_mode, String, "CALCULATED")
+    .ATTR(pads, ListInt, {0})
+    .OP_END_FACTORY_REG(Im2col)
+
+/**
 *@brief Generates a 2D or 3D flow field (sampling grid), given a batch of affine
 matrices theta. \n
 

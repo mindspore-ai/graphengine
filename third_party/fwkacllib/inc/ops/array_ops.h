@@ -1203,6 +1203,29 @@ REG_OP(Expand)
     .OP_END_FACTORY_REG(Expand)
 
 /**
+*@Returns a tensor containing the indices of all non-zero elements of input. \n
+
+*@par Inputs:
+*@li x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+
+*@par Attributes:
+* transpose: the output tensor will be transposed if true. \n
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
+
+*@par Third-party framework compatibility
+*Compatible with the PyTorch operator NonZero.
+*/
+
+REG_OP(NonZero)
+    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+              DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_INT64}))
+    .ATTR(transpose, Bool, false)
+    .OP_END_FACTORY_REG(NonZero)
+
+/**
 * @brief Expand the input tensor to a compatible shape. \n
 
 * @par Inputs:

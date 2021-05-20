@@ -785,6 +785,31 @@ Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::
   return ge::SUCCESS;
 }
 
+Status CheckModifyMixlistParamValid(const std::map<std::string, std::string> &options) {
+  std::string precision_mode;
+  auto it = options.find(ge::PRECISION_MODE);
+  if (it != options.end()) {
+    precision_mode = it->second;
+  }
+  it = options.find(ge::MODIFY_MIXLIST);
+  if (it != options.end() && CheckModifyMixlistParamValid(precision_mode, it->second) != ge::SUCCESS) {
+    return ge::PARAM_INVALID;
+  }
+  return ge::SUCCESS;
+}
+
+Status CheckModifyMixlistParamValid(const std::string &precision_mode, const std::string &modify_mixlist) {
+  if (!modify_mixlist.empty() && precision_mode != "allow_mix_precision") {
+    REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
+                       std::vector<std::string>({ge::MODIFY_MIXLIST, modify_mixlist, kModifyMixlistError}));
+    GELOGE(ge::PARAM_INVALID, "[Check][ModifyMixlist] Failed, %s", kModifyMixlistError);
+    return ge::PARAM_INVALID;
+  }
+  GELOGI("Option set successfully, option_key=%s, option_value=%s", ge::MODIFY_MIXLIST.c_str(), modify_mixlist.c_str());
+
+  return ge::SUCCESS;
+}
+
 void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips) {
   for (auto iter = options.begin(); iter != options.end(); iter++) {
     std::string key = iter->first;

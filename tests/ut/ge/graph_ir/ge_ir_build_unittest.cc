@@ -250,6 +250,17 @@ TEST(UtestIrCommon, check_dynamic_input_param_failed) {
   EXPECT_EQ(ret, ge::PARAM_INVALID);
 }
 
+TEST(UtestIrCommon, check_modify_mixlist_param) {
+  std::string precision_mode = "allow_mix_precision";
+  std::string modify_mixlist = "/mixlist.json";
+  Status ret = CheckModifyMixlistParamValid(precision_mode, modify_mixlist);
+  EXPECT_EQ(ret, ge::SUCCESS);
+
+  precision_mode = "";
+  ret = CheckModifyMixlistParamValid(precision_mode, modify_mixlist);
+  EXPECT_EQ(ret, ge::PARAM_INVALID);
+}
+
 TEST(UtestIrCommon, check_compress_weight) {
   std::string enable_compress_weight = "true";
   std::string compress_weight_conf="./";
@@ -349,4 +360,15 @@ TEST(UtestIrBuild, check_data_attr_index_succ_no_input_range) {
   ModelBufferData model;
   graphStatus ret = aclgrphBuildModel(graph, build_options, model);
   EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+}
+
+TEST(UtestIrBuild, check_modify_mixlist_param) {
+  Graph graph = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options = {
+    {"ge.exec.modify_mixlist", "/modify.json"}
+  };
+  ModelBufferData model;
+  
+  auto ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
 }

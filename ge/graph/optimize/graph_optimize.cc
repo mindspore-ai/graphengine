@@ -144,7 +144,7 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
   }
 
   auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
-  GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
+  GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %zu.",
          graph_optimizer.size());
   string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
   GELOGD("[OptimizeOriginalGraph]: engine type will exclude: %s", exclude_core_Type.c_str());
@@ -179,7 +179,7 @@ Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_
   }
 
   auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
-  GELOGI("optimize by opskernel in original graph optimize phase. num of graph_optimizer is %lu.",
+  GELOGI("optimize by opskernel in judging insert phase. num of graph_optimizer is %zu.",
          graph_optimizer.size());
   string exclude_core_Type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
   if (graph_optimizer.size() != 0) {
@@ -259,6 +259,44 @@ Status GraphOptimize::OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_gr
       ret = iter->second->OptimizeGraphBeforeBuild(*compute_graph);
       if (ret != SUCCESS) {
         GELOGE(ret, "[OptimizeGraphBeforeBuildForRts]: graph optimize failed, ret:%u", ret);
+        return ret;
+      }
+    }
+  }
+  return ret;
+}
+
+Status GraphOptimize::OptimizeAfterStage1(ComputeGraphPtr &compute_graph) {
+  GE_CHECK_NOTNULL(compute_graph);
+  GELOGD("OptimizeAfterStage1 in");
+  if (GetContext().GetHostExecFlag()) {
+    // graph exec on host, no need OptimizeAfterStage1
+    return SUCCESS;
+  }
+
+  Status ret = SUCCESS;
+  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
+  if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
+    REPORT_INNER_ERROR("E19999", "Gelib not init before, check invalid");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "OptimizeAfterStage1 failed.");
+    return GE_CLI_GE_NOT_INITIALIZED;
+  }
+
+  auto graph_optimizer = instance_ptr->OpsKernelManagerObj().GetAllGraphOptimizerObjsByPriority();
+  GELOGI("Optimize by ops kernel in after stage1 phase, num of graph_optimizer is %zu.", graph_optimizer.size());
+  string exclude_core_type = (core_type_ == kVectorCore) ? kAicoreEngine : kVectorEngine;
+  if (graph_optimizer.size() != 0) {
+    for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
+      if (iter->first == exclude_core_type) {
+        GELOGI("[OptimizeAfterStage1]: engine type will exclude:%s.", exclude_core_type.c_str());
+        continue;
+      }
+      GELOGI("Begin to optimize graph after stage1 by engine %s.", iter->first.c_str());
+      ret = (iter->second)->OptimizeAfterStage1(*compute_graph);
+      if (ret != SUCCESS) {
+        REPORT_INNER_ERROR("E19999", "Call OptimizeAfterStage1 failed, ret:%d, engine_name:%s, "
+                           "graph_name:%s.", ret, iter->first.c_str(), compute_graph->GetName().c_str());
+        GELOGE(ret, "[OptimizeAfterStage1]: graph optimize failed, ret:%d.", ret);
         return ret;
       }
     }

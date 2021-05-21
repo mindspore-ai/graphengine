@@ -818,6 +818,7 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
     GM_RUN_AND_DUMP_PERF("OptimizeSwitchOp", stages.preparer.SwitchOpOptimize, compute_graph);
   }
   GM_RUN_AND_DUMP_PERF("Optimize1", OptimizeStage1, compute_graph);
+  GM_RUN_AND_DUMP_PERF("OptimizeAfterStage1", stages.optimizer.OptimizeAfterStage1, compute_graph);
   GM_RUN_AND_DUMP_PERF("InferShape2", compute_graph->InferShapeInNeed);
 
   PassManager graph_pass;

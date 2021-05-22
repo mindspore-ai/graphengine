@@ -715,6 +715,7 @@ set(PASS_TEST_FILES
     "graph/passes/mark_node_unknown_shape_pass_unittest.cc"
     "graph/passes/reshape_recovery_pass_unittest.cc"
     "graph/passes/cast_remove_pass_unittest.cc"
+    "graph/passes/memcpy_addr_async_unittest.cc"
 )
 
 set(KERNEL_TEST_FILES

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2019-2020 Huawei Technologies Co., Ltd
+# Copyright 2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ============================================================================
-
 set -e
 
 CLANG_FORMAT=$(which clang-format) || (echo "Please install 'clang-format' tool first"; exit 1)
@@ -25,10 +24,10 @@ if [[ "${version}" -lt "8" ]]; then
 fi
 
 CURRENT_PATH=$(pwd)
-SCRIPTS_PATH=$(dirname "$0")
+PROJECT_HOME=${PROJECT_HOME:-$(dirname "$0")/../}
 
 echo "CURRENT_PATH=$CURRENT_PATH"
-echo "SCRIPTS_PATH=$SCRIPTS_PATH"
+echo "PROJECT_HOME=$PROJECT_HOME"
 
 # print usage message
 function usage()
@@ -81,45 +80,46 @@ function checkopts()
 checkopts "$@"
 
 # switch to project root path, which contains clang-format config file '.clang-format'
-cd "${SCRIPTS_PATH}/.." || exit 1
+pushd "${CURRENT_PATH}"
+    CHECK_LIST_FILE='__checked_files_list__'
+    cd "${PROJECT_HOME}" || exit 1
 
-CHECK_LIST_FILE='__checked_files_list__'
+    if [ "X${mode}" == "Xall" ]; then
+      find src -type f -name "*" | grep "\.h$\|\.cc$" > "${CHECK_LIST_FILE}" || true
+      find inc -type f -name "*" | grep "\.h$\|\.cc$" >> "${CHECK_LIST_FILE}" || true
+    elif [ "X${mode}" == "Xchanged" ]; then
+      # --diff-filter=ACMRTUXB will ignore deleted files in commit
+      git diff --diff-filter=ACMRTUXB --name-only | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${CHECK_LIST_FILE}" || true
+    else  # "X${mode}" == "Xlastcommit"
+      git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${CHECK_LIST_FILE}" || true
+    fi
 
-if [ "X${mode}" == "Xall" ]; then
-  find src -type f -name "*" | grep "\.h$\|\.cc$" > "${CHECK_LIST_FILE}" || true
-  find inc -type f -name "*" | grep "\.h$\|\.cc$" >> "${CHECK_LIST_FILE}" || true
-elif [ "X${mode}" == "Xchanged" ]; then
-  # --diff-filter=ACMRTUXB will ignore deleted files in commit
-  git diff --diff-filter=ACMRTUXB --name-only | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${CHECK_LIST_FILE}" || true
-else  # "X${mode}" == "Xlastcommit"
-  git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${CHECK_LIST_FILE}" || true
-fi
+    CHECK_RESULT_FILE=__code_format_check_result__
+    echo "0" > "$CHECK_RESULT_FILE"
 
-CHECK_RESULT_FILE=__code_format_check_result__
-echo "0" > "$CHECK_RESULT_FILE"
+    # check format of files modified in the lastest commit 
+    while read line; do
+      BASE_NAME=$(basename "${line}")
+      TEMP_FILE="__TEMP__${BASE_NAME}"
+      cp "${line}" "${TEMP_FILE}"
+      ${CLANG_FORMAT} -i "${TEMP_FILE}"
+      set +e
+      diff "${TEMP_FILE}" "${line}"
+      ret=$?
+      set -e
+      rm "${TEMP_FILE}"
+      if [[ "${ret}" -ne 0 ]]; then
+        echo "File ${line} is not formated, please format it."
+        echo "1" > "${CHECK_RESULT_FILE}"
+        break
+      fi
+    done < "${CHECK_LIST_FILE}"
 
-# check format of files modified in the lastest commit 
-while read line; do
-  BASE_NAME=$(basename "${line}")
-  TEMP_FILE="__TEMP__${BASE_NAME}"
-  cp "${line}" "${TEMP_FILE}"
-  ${CLANG_FORMAT} -i "${TEMP_FILE}"
-  set +e
-  diff "${TEMP_FILE}" "${line}"
-  ret=$?
-  set -e
-  rm "${TEMP_FILE}"
-  if [[ "${ret}" -ne 0 ]]; then
-    echo "File ${line} is not formated, please format it."
-    echo "1" > "${CHECK_RESULT_FILE}"
-    break
-  fi
-done < "${CHECK_LIST_FILE}"
+    result=$(cat "${CHECK_RESULT_FILE}")
+    rm "${CHECK_RESULT_FILE}"
+    rm "${CHECK_LIST_FILE}"
+popd
 
-result=$(cat "${CHECK_RESULT_FILE}")
-rm "${CHECK_RESULT_FILE}"
-rm "${CHECK_LIST_FILE}"
-cd "${CURRENT_PATH}" || exit 1
 if [[ "X${result}" == "X0" ]]; then
   echo "Check PASS: specified files are well formated!"
 fi

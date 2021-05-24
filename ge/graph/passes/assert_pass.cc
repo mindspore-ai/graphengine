@@ -36,7 +36,7 @@ Status AssertPass::Run(NodePtr &node) {
   }
   if (node->GetOpDesc() == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "param [node] [opDesc] must not be null.");
+    GELOGE(PARAM_INVALID, "[Get][OpDesc] param [node] [opDesc] must not be null.");
     return PARAM_INVALID;
   }
   std::string op_type = node->GetOpDesc()->GetType();
@@ -49,7 +49,7 @@ Status AssertPass::Run(NodePtr &node) {
     // remove unused node
     Status status = RemoveUnusedNode(nodes_unused);
     if (status != SUCCESS) {
-      GELOGE(status, "remove unused node failed.");
+      GELOGE(status, "[Remove][UnusedNode] failed, ret:%d.", status);
       return status;
     }
   }
@@ -95,8 +95,10 @@ Status AssertPass::RemoveUnusedNode(std::vector<NodePtr> &nodes_unused) {
     }
 
     if (IsolateAndDeleteNode(node, assert_io_map) != SUCCESS) {
-      REPORT_INNER_ERROR("E19999", "Isolate and delete node:%s(%s) faild",
-                         node->GetName().c_str(), node->GetType().c_str());
+      REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
+                        node->GetName().c_str(), node->GetType().c_str());
+      GELOGE(FAILED, "[Call][IsolateAndDeleteNode] for node:%s(%s) failed",
+             node->GetName().c_str(), node->GetType().c_str());
       return FAILED;
     }
   }

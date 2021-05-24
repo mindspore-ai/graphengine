@@ -36,12 +36,14 @@ std::mutex check_support_cost_mutex;
 }
 Status EnginePlacer::Check() const {
   if (compute_graph_ == nullptr) {
-    GELOGE(GE_GRAPH_NULL_INPUT, "compute_graph_ is null.");
+    REPORT_INNER_ERROR("E19999", "compute_graph_ is nullptr, check invalid.");
+    GELOGE(GE_GRAPH_NULL_INPUT, "[Check][Param] compute_graph_ is nullptr.");
     return FAILED;
   }
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Run enginePlacer failed");
+    REPORT_INNER_ERROR("E19999", "GELib instance is nullptr or it is not InitFlag, check invalid.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][GELib] Run enginePlacer failed, because GELib is invalid.");
     return FAILED;
   }
   return SUCCESS;
@@ -87,13 +89,13 @@ Status EnginePlacer::Run() {
         is_check_support_success = false;
         ErrorManager::GetInstance().ATCReportErrMessage(
             "E13003", {"opname", "optype"}, {op_desc->GetName(), op_desc->GetType()});
-        GELOGE(GE_CLI_GE_NOT_INITIALIZED, "Can not find engine of op type %s",
-               node_ptr->GetOpDesc()->GetType().c_str());
+        GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] Can not find engine of op name %s type %s",
+               op_desc->GetName().c_str(), op_desc->GetType().c_str());
         continue;
       }
     }
     if (AssignEngineAndLog(node_ptr, engine_name) != SUCCESS) {
-      GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[GraphPartitioner]: AssignEngineAndLog FAILED");
+      GELOGE(GE_GRAPH_ASSIGN_ENGINE_FAILED, "[Call][AssignEngineAndLog] FAILED, node:%s", op_desc->GetName().c_str());
       return FAILED;
     }
   }
@@ -107,7 +109,8 @@ Status EnginePlacer::Run() {
 
 Status EnginePlacer::AssignEngineAndLog(ge::ConstNodePtr node_ptr, const std::string &engine_name) {
   if ((node_ptr == nullptr) || (node_ptr->GetOpDesc() == nullptr)) {
-    GELOGE(FAILED, "node_ptr is null.");
+    REPORT_INNER_ERROR("E19999", "Param node_ptr is nullptr or it's opdesc is nullptr, check invalid.");
+    GELOGE(FAILED, "[Check][Param] node_ptr is nullptr.");
     return FAILED;
   }
 

@@ -109,8 +109,8 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
       REPORT_CALL_ERROR("E19999", "Replace node:%s(%s)'s anchor by node:%s(%s) failed",
                         node->GetName().c_str(), node->GetType().c_str(),
                         iter->second->GetName().c_str(), iter->second->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "Failed to replace node %s by node %s error node %u",
-          node->GetName().c_str(), iter->second->GetName().c_str(), ret);
+      GELOGE(INTERNAL_ERROR, "[Replace][Node] %s by node %s failed, ret:%u",
+             node->GetName().c_str(), iter->second->GetName().c_str(), ret);
       return INTERNAL_ERROR;
     }
 
@@ -120,7 +120,8 @@ Status CommonSubexpressionEliminationPass::Run(ComputeGraphPtr graph) {
     if (ret != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                         node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
-      GELOGE(INTERNAL_ERROR, "Failed to remove node %s from graph", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Remove][Node] %s from graph:%s failed", node->GetName().c_str(),
+             graph->GetName().c_str());
       return INTERNAL_ERROR;
     }
 

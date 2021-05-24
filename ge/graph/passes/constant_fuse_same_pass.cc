@@ -58,7 +58,7 @@ void GetOutDataNodeToIndexMap(NodePtr &node, std::map<string, InDataAnchorPtr> &
 Status ConstantFuseSamePass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "Compute graph is null.");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] Compute graph is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
   GELOGI("ConstantFuseSamePass in.");
@@ -160,13 +160,14 @@ Status ConstantFuseSamePass::MoveOutDataEdges(NodePtr &src_node, NodePtr &dst_no
     }
     auto ret = dst_out_data_anchor->LinkTo(it->second);
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999",
-                        "Op:%s(%s) out index:0 link to op:%s(%s) in index:%d failed",
+      REPORT_CALL_ERROR("E19999", "Op:%s(%s) out index:0 link to op:%s(%s) in index:%d failed",
                         dst_node->GetName().c_str(), dst_node->GetType().c_str(),
                         it->second->GetOwnerNode()->GetName().c_str(), it->second->GetOwnerNode()->GetType().c_str(),
                         it->second->GetIdx());
-      GELOGE(FAILED, "Failed to move out data edge from %s to %s", src_node->GetName().c_str(),
-             dst_node->GetName().c_str());
+      GELOGE(FAILED, "[Add][Edge] Op:%s(%s) out index:0 link to op:%s(%s) in index:%d failed",
+             dst_node->GetName().c_str(), dst_node->GetType().c_str(),
+             it->second->GetOwnerNode()->GetName().c_str(), it->second->GetOwnerNode()->GetType().c_str(),
+             it->second->GetIdx());
       return FAILED;
     }
   }
@@ -193,7 +194,8 @@ Status ConstantFuseSamePass::FuseConstNodes(ComputeGraphPtr &graph,
       if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != SUCCESS) {
         REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                           node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
-        GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
+        GELOGE(FAILED, "[Remove][Node] %s(%s) Without Relink in graph:%s failed.",
+               node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
         return FAILED;
       }
     }

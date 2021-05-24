@@ -35,14 +35,14 @@ namespace ge {
 Status FuseDataNodesWithCommonInputPass::Run(ge::ComputeGraphPtr graph) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "Compute graph is null.");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] Compute graph is nullptr.");
     return GE_GRAPH_PARAM_NULLPTR;
   }
   GELOGD("FuseDataNodesWithCommonInputPass in.");
   // key: subgraph, value:--key: peer out anchor to parent node, --value: parent indexes to parent node
   map<ComputeGraphPtr, map<OutDataAnchorPtr, set<uint32_t>>> subgraphs_to_need_fuse_nodes_info;
   if (InitNeedFuseNodesInfo(graph, subgraphs_to_need_fuse_nodes_info) != SUCCESS) {
-    GELOGE(FAILED, "InitNeedFuseNodesInfo failed.");
+    GELOGE(FAILED, "[Init][NeedFuseNodesInfo] for graph:%s failed.", graph->GetName().c_str());
     return FAILED;
   }
   return FuseDataNodes(subgraphs_to_need_fuse_nodes_info);
@@ -116,7 +116,8 @@ Status FuseDataNodesWithCommonInputPass::FuseDataNodes(
           if (GraphUtils::RemoveNodeWithoutRelink(subgraph, node) != SUCCESS) {
             REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                               node->GetName().c_str(), node->GetType().c_str(), subgraph->GetName().c_str());
-            GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
+            GELOGE(FAILED, "[Remove][Node] %s(%s) without relink in graph:%s failed",
+                   node->GetName().c_str(), node->GetType().c_str(), subgraph->GetName().c_str());
             return FAILED;
           }
         }

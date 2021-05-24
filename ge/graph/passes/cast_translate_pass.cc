@@ -33,7 +33,7 @@
 namespace ge {
 bool CastTranslatePass::CheckInAndOutDataAnchor(NodePtr &node) const {
   if (node == nullptr) {
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] parameter node is nullptr.");
     return false;
   }
   if (node->GetOpDesc() == nullptr) {
@@ -191,7 +191,7 @@ bool CastTranslatePass::IsOpSupportedOptimize(NodePtr &cast_node, NodePtr &trans
 }
 
 bool CastTranslatePass::CheckOpSupportOptimize(NodePtr &node, bool &is_src_cast) {
-  GE_IF_BOOL_EXEC(node == nullptr, GELOGE(FAILED, "node is null."); return false);
+  GE_IF_BOOL_EXEC(node == nullptr, GELOGE(FAILED, "[Check][Param] node is nullptr."); return false);
   auto out_node = node->GetOutDataNodes().at(0);
   // N dst nodes have the same datatype and format, check the first node
   if (is_src_cast) {
@@ -249,14 +249,19 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
     GE_CHECK_NOTNULL(out_data_node);
     AddRePassNodesWithInOut(out_data_node);
     // Has checked nodes only has one in data anchor one out data anchor
-    GE_CHK_GRAPH_STATUS_RET(NodeUtils::MoveOutputEdges(out_data_node, base_node), "move out put edge failed");
+    GE_CHK_GRAPH_STATUS_RET(NodeUtils::MoveOutputEdges(out_data_node, base_node),
+                            "[Move][OutputEdges] failed, out data node:%s, index:0",
+                            base_node->GetName().c_str());
 
     // Relink in control anchor, delete in data anchor
     auto in_ctr_anchor = out_data_node->GetInControlAnchor();
     GE_CHECK_NOTNULL(in_ctr_anchor);
     for (const auto &peer_anchor : in_ctr_anchor->GetPeerOutControlAnchors()) {
       GE_CHECK_NOTNULL(base_node->GetInControlAnchor());
-      GE_CHK_GRAPH_STATUS_RET(base_node->GetInControlAnchor()->LinkFrom(peer_anchor), "link from peer anchor failed");
+      GE_CHK_GRAPH_STATUS_RET(base_node->GetInControlAnchor()->LinkFrom(peer_anchor),
+                              "[Add][Edge] between %s and %s failed",
+                              base_node->GetInControlAnchor()->GetOwnerNode()->GetName().c_str(),
+                              peer_anchor->GetOwnerNode()->GetName().c_str());
     }
     in_ctr_anchor->UnlinkAll();
     out_data_node->GetAllInDataAnchors().at(0)->UnlinkAll();
@@ -266,7 +271,8 @@ Status CastTranslatePass::FuseDstNTranslates(NodePtr &node) {
     if (GraphUtils::RemoveNodeWithoutRelink(graph, out_data_node) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                         out_data_node->GetName().c_str(), out_data_node->GetType().c_str(), graph->GetName().c_str());
-      GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", out_data_node->GetName().c_str());
+      GELOGE(FAILED, "[Remove][Node] %s(%s) without relink in graph:%s failed",
+             out_data_node->GetName().c_str(), out_data_node->GetType().c_str(), graph->GetName().c_str());
       return FAILED;
     }
     AddNodeDeleted(out_data_node);

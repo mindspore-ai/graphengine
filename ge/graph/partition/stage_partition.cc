@@ -54,12 +54,12 @@ Status StagePartitioner::Partition() {
 
   GE_DUMP(root_graph_, "BeforeStagePartition");
   if (SplitStageLevel() != SUCCESS) {
-    GELOGE(FAILED, "Split graph-stage for graph %s failed.", root_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Split][GraphStage] for graph %s failed.", root_graph_->GetName().c_str());
     return FAILED;
   }
 
   if (StagePartition() != SUCCESS) {
-    GELOGE(FAILED, "Stage partition for graph %s failed.", root_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Stage][Partition] for graph %s failed.", root_graph_->GetName().c_str());
     return FAILED;
   }
 
@@ -71,7 +71,7 @@ Status StagePartitioner::Partition() {
     return a_level < b_level;
   });
   if (root_graph_->TopologicalSorting() != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Topological sort for graph %s after stage partition failed, "
+    GELOGE(FAILED, "[Call][TopologicalSorting] for graph %s after stage partition failed, "
            "maybe stage_level was not set correctly.", root_graph_->GetName().c_str());
     return FAILED;
   }
@@ -103,7 +103,10 @@ Status StagePartitioner::SplitStageLevel() {
           continue;
         }
         if (!AttrUtils::SetInt(in_node->GetOpDesc(), ATTR_STAGE_LEVEL, cur_stage_level)) {
-          GELOGE(INTERNAL_ERROR, "Set attr ATTR_STAGE_LEVEL on node %s failed.", in_node->GetName().c_str());
+          REPORT_CALL_ERROR("E19999", "Set Attr %s on node %s failed.",
+                            ATTR_STAGE_LEVEL.c_str(), in_node->GetName().c_str());
+          GELOGE(INTERNAL_ERROR, "[Set][Attr] %s on node %s failed.",
+                 ATTR_STAGE_LEVEL.c_str(), in_node->GetName().c_str());
           return INTERNAL_ERROR;
         }
         GELOGD("Mark stage_level node %s, stage_level=%u", in_node->GetName().c_str(), cur_stage_level);
@@ -131,23 +134,26 @@ Status StagePartitioner::StagePartition() {
     std::string subgraph_name = "Subgraph_Level_" + std::to_string(stage.first);
     NodePtr graph_node = BuildSubgraphNode(subgraph_name, stage_info);
     if (graph_node == nullptr) {
-      GELOGE(FAILED, "Build PartitionedCall node for stage %u failed.", stage.first);
+      GELOGE(FAILED, "[Build][SubgraphNode] for stage %u failed, graph name:%s.", stage.first, subgraph_name.c_str());
       return FAILED;
     }
 
     ComputeGraphPtr subgraph = BuildStageGraph(graph_node, stage_info);
     if (subgraph == nullptr) {
-      GELOGE(FAILED, "Build subgraph for stage %u failed.", stage.first);
+      GELOGE(FAILED, "[Build][StageGraph] %s for stage %u failed.", graph_node->GetName().c_str(), stage.first);
       return FAILED;
     }
     if (root_graph_->AddSubgraph(subgraph) != GRAPH_SUCCESS) {
-      GELOGE(FAILED, "Add subgraph of stage %u failed.", stage.first);
+      REPORT_CALL_ERROR("E19999", "add subgraph:%s in root graph:%s of stage %u failed.",
+                        subgraph->GetName().c_str(), root_graph_->GetName().c_str(), stage.first);
+      GELOGE(FAILED, "[Add][SubGraph] %s in root graph:%s of stage %u failed.",
+             subgraph->GetName().c_str(), root_graph_->GetName().c_str(), stage.first);
       return FAILED;
     }
 
     if ((RelinkDataEdges(graph_node, stage_info) != SUCCESS) ||
         (RelinkCtrlEdges(graph_node, stage_info) != SUCCESS)) {
-      GELOGE(FAILED, "Relink edges for stage %u failed.", stage.first);
+      GELOGE(FAILED, "[ReLink][Edges] for stage %u failed, graph_node:%s.", stage.first, graph_node->GetName().c_str());
       return FAILED;
     }
 
@@ -214,7 +220,7 @@ NodePtr StagePartitioner::BuildSubgraphNode(const std::string &graph_name, const
   for (size_t i = 0; i < input_num; i++) {
     auto input_desc = stage_info.data_inputs[i].second->GetOwnerNode()->GetOpDesc();
     if (input_desc == nullptr) {
-      GELOGE(PARAM_INVALID, "op_desc is null, node: %s",
+      GELOGE(PARAM_INVALID, "[Check][Param] op_desc is null, node:%s",
              stage_info.data_inputs[i].second->GetOwnerNode()->GetName().c_str());
       return nullptr;
     }
@@ -225,7 +231,7 @@ NodePtr StagePartitioner::BuildSubgraphNode(const std::string &graph_name, const
   for (size_t i = 0; i < output_num; i++) {
     auto output_desc = stage_info.data_outputs[i].first->GetOwnerNode()->GetOpDesc();
     if (output_desc == nullptr) {
-      GELOGE(PARAM_INVALID, "op_desc is null, node: %s",
+      GELOGE(PARAM_INVALID, "[Check][Param] op_desc is null, node:%s",
              stage_info.data_outputs[i].first->GetOwnerNode()->GetName().c_str());
       return nullptr;
     }
@@ -235,7 +241,7 @@ NodePtr StagePartitioner::BuildSubgraphNode(const std::string &graph_name, const
 
   OpDescPtr op_desc = op_desc_builder.Build();
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "Create op_desc for subgraph node failed, name:%s.", graph_name.c_str());
+    GELOGE(FAILED, "[Create][OpDesc] for subgraph node failed, name:%s.", graph_name.c_str());
     return nullptr;
   }
 
@@ -243,17 +249,23 @@ NodePtr StagePartitioner::BuildSubgraphNode(const std::string &graph_name, const
   op_desc->SetSubgraphInstanceName(0, graph_name);
 
   if (!AttrUtils::SetInt(op_desc, ATTR_STAGE_LEVEL, stage_info.stage_level)) {
-    GELOGE(INTERNAL_ERROR, "Set attr ATTR_STAGE_LEVEL on node %s failed", op_desc->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "set attr %s on node %s failed", ATTR_STAGE_LEVEL.c_str(), op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Set][Attr] %s on node %s failed", ATTR_STAGE_LEVEL.c_str(), op_desc->GetName().c_str());
     return nullptr;
   }
 
   NodePtr subgraph_node = root_graph_->AddNode(op_desc);
   if (subgraph_node == nullptr) {
-    GELOGE(FAILED, "Add node %s failed.", graph_name.c_str());
+    REPORT_CALL_ERROR("E19999", "add node:%s in graph:%s failed.",
+                      op_desc->GetName().c_str(), root_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Add][Node] %s in graph:%s failed.", op_desc->GetName().c_str(), root_graph_->GetName().c_str());
     return nullptr;
   }
   if (subgraph_node->SetOwnerComputeGraph(root_graph_) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "Set owner graph for node %s failed.", subgraph_node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "SetOwnerComputeGraph for node %s failed, grpah:%s.",
+                      subgraph_node->GetName().c_str(), root_graph_->GetName().c_str());
+    GELOGE(FAILED, "[Set][OwnerGraph] for node %s failed, grpah:%s.",
+           subgraph_node->GetName().c_str(), root_graph_->GetName().c_str());
     return nullptr;
   }
 
@@ -314,11 +326,13 @@ ComputeGraphPtr StagePartitioner::BuildStageGraph(const NodePtr &subgraph_node, 
   std::string error_msg;
   ComputeGraphPtr subgraph = graph_builder.Build(error_code, error_msg);
   if (subgraph == nullptr) {
-    GELOGE(error_code, "Build subgraph %s failed: %s.", subgraph_node->GetName().c_str(), error_msg.c_str());
+    GELOGE(error_code, "[Build][Subgraph] %s failed:%s.", subgraph_node->GetName().c_str(), error_msg.c_str());
     return nullptr;
   }
   if (!AttrUtils::SetInt(subgraph, ATTR_STAGE_LEVEL, stage_info.stage_level)) {
-    GELOGE(FAILED, "Set ATTR_STAGE_LEVEL on graph %s failed.", subgraph->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "set attr %s on graph %s failed.",
+                      ATTR_STAGE_LEVEL.c_str(), subgraph->GetName().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s on graph %s failed.", ATTR_STAGE_LEVEL.c_str(), subgraph->GetName().c_str());
     return nullptr;
   }
 
@@ -329,7 +343,12 @@ Status StagePartitioner::RelinkDataEdges(const NodePtr &subgraph_node, const Sta
   // in data nodes
   for (size_t i = 0; i < stage_info.data_inputs.size(); i++) {
     if (stage_info.data_inputs[i].first->Unlink(stage_info.data_inputs[i].second) != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Remove data edge %s:%d->%s:%d failed.",
+      REPORT_CALL_ERROR("E19999", "remove data edge from %s:%d to %s:%d failed",
+                        stage_info.data_inputs[i].first->GetOwnerNode()->GetName().c_str(),
+                        stage_info.data_inputs[i].first->GetIdx(),
+                        stage_info.data_inputs[i].second->GetOwnerNode()->GetName().c_str(),
+                        stage_info.data_inputs[i].second->GetIdx());
+      GELOGE(INTERNAL_ERROR, "[Remove][DataEdge] %s:%d->%s:%d failed.",
              stage_info.data_inputs[i].first->GetOwnerNode()->GetName().c_str(),
              stage_info.data_inputs[i].first->GetIdx(),
              stage_info.data_inputs[i].second->GetOwnerNode()->GetName().c_str(),
@@ -337,7 +356,11 @@ Status StagePartitioner::RelinkDataEdges(const NodePtr &subgraph_node, const Sta
       return INTERNAL_ERROR;
     }
     if (stage_info.data_inputs[i].first->LinkTo(subgraph_node->GetInDataAnchor(i)) != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Add data edge %s:%d->%s:%zu failed.",
+      REPORT_CALL_ERROR("E19999", "add data edge from %s:%d to %s:%zu failed.",
+                        stage_info.data_inputs[i].first->GetOwnerNode()->GetName().c_str(),
+                        stage_info.data_inputs[i].first->GetIdx(),
+                        subgraph_node->GetName().c_str(), i);
+      GELOGE(INTERNAL_ERROR, "[Add][DataEdge] %s:%d->%s:%zu failed.",
              stage_info.data_inputs[i].first->GetOwnerNode()->GetName().c_str(),
              stage_info.data_inputs[i].first->GetIdx(),
              subgraph_node->GetName().c_str(), i);
@@ -350,14 +373,20 @@ Status StagePartitioner::RelinkDataEdges(const NodePtr &subgraph_node, const Sta
     GE_CHECK_NOTNULL(out_data_anchor);
     for (const auto &peer_in_anchor : stage_info.data_outputs[i].second) {
       if (stage_info.data_outputs[i].first->Unlink(peer_in_anchor) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Remove data edge %s:%d->%s:%d failed.",
+        REPORT_CALL_ERROR("E19999", "Remove data edge from %s:%d to %s:%d failed.",
+                          stage_info.data_outputs[i].first->GetOwnerNode()->GetName().c_str(),
+                          stage_info.data_outputs[i].first->GetIdx(),
+                          peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
+        GELOGE(INTERNAL_ERROR, "[Remove][DataEdge] %s:%d->%s:%d failed.",
                stage_info.data_outputs[i].first->GetOwnerNode()->GetName().c_str(),
                stage_info.data_outputs[i].first->GetIdx(),
                peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
         return INTERNAL_ERROR;
       }
       if (out_data_anchor->LinkTo(peer_in_anchor) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add data edge %s:%zu->%s:%d failed.", subgraph_node->GetName().c_str(), i,
+        REPORT_CALL_ERROR("E19999", "Add data edge from %s:%zu to %s:%d failed.", subgraph_node->GetName().c_str(), i,
+                          peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
+        GELOGE(INTERNAL_ERROR, "[Add][DataEdge] %s:%zu->%s:%d failed.", subgraph_node->GetName().c_str(), i,
                peer_in_anchor->GetOwnerNode()->GetName().c_str(), peer_in_anchor->GetIdx());
         return INTERNAL_ERROR;
       }
@@ -371,13 +400,18 @@ Status StagePartitioner::RelinkCtrlEdges(const NodePtr &subgraph_node, const Sta
   // in ctrl nodes
   for (const auto &ctrl_input : stage_info.ctrl_inputs) {
     if (ctrl_input.first->Unlink(ctrl_input.second) != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Remove ctrl edge %s->%s failed.",
+      REPORT_CALL_ERROR("E19999", "Remove ctrl edge %s->%s failed.",
+                        ctrl_input.first->GetOwnerNode()->GetName().c_str(),
+                        ctrl_input.second->GetOwnerNode()->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Remove][CtrlEdge] %s->%s failed.",
              ctrl_input.first->GetOwnerNode()->GetName().c_str(), ctrl_input.second->GetOwnerNode()->GetName().c_str());
       return INTERNAL_ERROR;
     }
     if (!ctrl_input.first->IsLinkedWith(subgraph_node->GetInControlAnchor())) {
       if (ctrl_input.first->LinkTo(subgraph_node->GetInControlAnchor()) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add ctrl edge %s->%s failed.",
+        REPORT_CALL_ERROR("E19999", "Add ctrl edge %s->%s failed.",
+                          ctrl_input.first->GetOwnerNode()->GetName().c_str(), subgraph_node->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Add][CtrlEdge] %s->%s failed.",
                ctrl_input.first->GetOwnerNode()->GetName().c_str(), subgraph_node->GetName().c_str());
         return INTERNAL_ERROR;
       }
@@ -386,14 +420,19 @@ Status StagePartitioner::RelinkCtrlEdges(const NodePtr &subgraph_node, const Sta
   // out ctrl nodes
   for (const auto &ctrl_output : stage_info.ctrl_outputs) {
     if (ctrl_output.first->Unlink(ctrl_output.second) != GRAPH_SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Remove ctrl edge %s->%s failed.",
+      REPORT_CALL_ERROR("E19999", "Remove ctrl edge %s->%s failed.",
+                        ctrl_output.first->GetOwnerNode()->GetName().c_str(),
+                        ctrl_output.second->GetOwnerNode()->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Remove][CtrlEdge] %s->%s failed.",
              ctrl_output.first->GetOwnerNode()->GetName().c_str(),
              ctrl_output.second->GetOwnerNode()->GetName().c_str());
       return INTERNAL_ERROR;
     }
     if (!subgraph_node->GetOutControlAnchor()->IsLinkedWith(ctrl_output.second)) {
       if (subgraph_node->GetOutControlAnchor()->LinkTo(ctrl_output.second) != GRAPH_SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Add ctrl edge %s->%s failed.",
+        REPORT_CALL_ERROR("E19999", "Add ctrl edge %s->%s failed.",
+                          subgraph_node->GetName().c_str(), ctrl_output.second->GetOwnerNode()->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Add][CtrlEdge] %s->%s failed.",
                subgraph_node->GetName().c_str(), ctrl_output.second->GetOwnerNode()->GetName().c_str());
         return INTERNAL_ERROR;
       }

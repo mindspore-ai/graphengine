@@ -38,7 +38,7 @@ Status EnterPass::Run(NodePtr &node) {
   // enter node has only one input
   if (node->GetInDataNodes().empty()) {
     REPORT_INNER_ERROR("E19999", "Param node in data nodes is empty, check invalid");
-    GELOGE(PARAM_INVALID, "enter_node %s has no input", node->GetName().c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] enter_node %s has no input", node->GetName().c_str());
     return PARAM_INVALID;
   }
   NodePtr in_node = node->GetInDataNodes().at(0);
@@ -62,18 +62,19 @@ Status EnterPass::Run(NodePtr &node) {
         REPORT_CALL_ERROR("E19999", "Remove control edge between op:%s(%s) and op:%s(%s) failed",
                           node->GetName().c_str(), node->GetType().c_str(),
                           out_ctrl_node->GetName().c_str(), out_ctrl_node->GetType().c_str());
-        GELOGE(FAILED, "Remove Enter ctrl output fail, %s->%s", node->GetName().c_str(),
-               out_ctrl_node->GetName().c_str());
+        GELOGE(FAILED, "[Remove][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+               node->GetName().c_str(), node->GetType().c_str(),
+               out_ctrl_node->GetName().c_str(), out_ctrl_node->GetType().c_str());
         return FAILED;
       }
     }
   } else {
     if (OptimizeEnterWithOnlyDataOut(node, in_node) != SUCCESS) {
-      GELOGE(FAILED, "Optimize enter node[%s] with only out data node failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Optimize][EnterNode] [%s] with only out data node failed.", node->GetName().c_str());
       return FAILED;
     }
     if (UnlinkCtrlEdgeBeforeConst(node) != SUCCESS) {
-      GELOGE(FAILED, "Unlink control edge before const of node[%s]'s out nodes failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Unlink][ControlEdge] before const of node[%s]'s out nodes failed.", node->GetName().c_str());
       return FAILED;
     }
   }

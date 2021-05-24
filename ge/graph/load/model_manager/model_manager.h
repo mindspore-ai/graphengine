@@ -310,7 +310,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelManager {
     std::lock_guard<std::mutex> lock(exeception_infos_mutex_);
     auto instance = ModelManager::GetInstance();
     if (instance == nullptr) {
-      GELOGE(FAILED, "Instance is nullptr");
+      GELOGE(FAILED, "[Get][Instance] failed, as ret is nullptr");
       return;
     }
     instance->AddExceptionInfo(*rt_exception_info);

@@ -34,8 +34,8 @@ uint8_t *HostMemAllocator::Malloc(size_t size) {
   std::lock_guard<std::mutex> lock(mutex_);
   std::shared_ptr<AlignedPtr> aligned_ptr = MakeShared<AlignedPtr>(size);
   if (aligned_ptr == nullptr) {
-    REPORT_INNER_ERROR("E19999", "New AlignedPtr fail");
-    GELOGE(INTERNAL_ERROR, "make shared_ptr for AlignedPtr failed");
+    REPORT_INNER_ERROR("E19999", "New AlignedPtr fail, size:%zu", size);
+    GELOGE(INTERNAL_ERROR, "[Call][MakeShared] for AlignedPtr failed, size:%zu", size);
     return nullptr;
   }
   allocated_blocks_[aligned_ptr->Get()] = { size, aligned_ptr };
@@ -46,7 +46,7 @@ uint8_t *HostMemAllocator::Malloc(size_t size) {
 Status HostMemAllocator::Free(const void *memory_addr) {
   if (memory_addr == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param memory_addr is nullptr, check invalid");
-    GELOGE(GE_GRAPH_FREE_FAILED, "Invalid memory pointer");
+    GELOGE(GE_GRAPH_FREE_FAILED, "[Check][Param] Invalid memory pointer");
     return GE_GRAPH_FREE_FAILED;
   }
 
@@ -54,7 +54,7 @@ Status HostMemAllocator::Free(const void *memory_addr) {
   auto it = allocated_blocks_.find(memory_addr);
   if (it == allocated_blocks_.end()) {
     REPORT_INNER_ERROR("E19999", "Memory_addr is not alloc before, check invalid");
-    GELOGE(PARAM_INVALID, "Invalid memory pointer");
+    GELOGE(PARAM_INVALID, "[Check][Param] Invalid memory pointer:%p", memory_addr);
     return PARAM_INVALID;
   }
   it->second.second.reset();

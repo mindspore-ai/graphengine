@@ -63,17 +63,15 @@ Status Debug::DumpDevMem(const char *file, const void *addr, int64_t size) {
   uint8_t *host_addr = nullptr;
   rtError_t ret = rtMallocHost(reinterpret_cast<void **>(&host_addr), size);
   if (ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, size:%zu, ret: 0x%X",
-                      size, ret);
-    GELOGE(FAILED, "Call rt api rtMallocHost failed, ret: 0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMallocHost failed, size:%zu, ret:0x%X", size, ret);
+    GELOGE(FAILED, "[Call][RtMallocHost] failed, size:%zu, ret:0x%X", size, ret);
     return FAILED;
   }
   GE_MAKE_GUARD_RTMEM(host_addr);
   ret = rtMemcpy(host_addr, size, addr, size, RT_MEMCPY_DEVICE_TO_HOST);
   if (ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret: 0x%X",
-                      size, ret);
-    GELOGE(FAILED, "Call rt api rtMemcpy failed, ret: 0x%X", ret);
+    REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret:0x%X", size, ret);
+    GELOGE(FAILED, "[Call][RtMemcpy] failed, size:%zu, ret:0x%X", size, ret);
     return FAILED;
   }
 

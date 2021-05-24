@@ -40,7 +40,8 @@ ge::Status VarResource::GetVarAddr(const std::string &var_name, const ge::GeTens
   if (dev_ptr == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param dev_ptr is nullptr, var_name:%s, session_id:%lu, "
                        "check invalid", var_name.c_str(), session_id_);
-    GELOGE(FAILED, "[GetVarAddr] dev_ptr is null!");
+    GELOGE(FAILED, "[Check][Param] Param dev_ptr is nullptr, var_name:%s, session_id:%lu",
+           var_name.c_str(), session_id_);
     return FAILED;
   }
   std::string var_key = VarKey(var_name, tensor_desc);
@@ -51,7 +52,8 @@ ge::Status VarResource::GetVarAddr(const std::string &var_name, const ge::GeTens
     REPORT_INNER_ERROR("E19999", "var_key:%s can't find in var_addr_mgr_map_, var_name:%s, session_id:%lu, "
                        "check invalid", var_key.c_str(), var_name.c_str(),
                        session_id_);
-    GELOGE(FAILED, "VarResource::GetVarAddr failed, var_key %s", var_key.c_str());
+    GELOGE(FAILED, "[Check][Param] var_key:%s can't find in var_addr_mgr_map_, var_name:%s, session_id:%lu",
+           var_key.c_str(), var_name.c_str(), session_id_);
     return FAILED;
   }
 
@@ -109,7 +111,8 @@ ge::Status VarResource::SaveVarAddr(const std::string &var_name, const ge::GeTen
   REPORT_INNER_ERROR("E19999", "var_key:%s conflict in var_addr_mgr_map_, var_name:%s, session_id:%lu, "
                      "check invalid", var_key.c_str(), var_name.c_str(),
                      session_id_);
-  GELOGE(FAILED, "VarResource::SaveVarAddr, var_key %s save addr conflict", var_key.c_str());
+  GELOGE(FAILED, "[Check][Param] var_key:%s conflict in var_addr_mgr_map_, var_name:%s, session_id:%lu",
+         var_key.c_str(), var_name.c_str(), session_id_);
   return FAILED;
 }
 
@@ -145,14 +148,15 @@ ge::Status VarResource::RenewCurVarDesc(const std::string &var_name, const ge::O
   if (op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param op_desc is nullptr, var_name:%s, session_id:%lu, check invalid",
                        var_name.c_str(), session_id_);
-    GELOGE(FAILED, "[RenewCurVarDesc] renew var desc fail! input opdesc is null!");
+    GELOGE(FAILED, "[Check][Param] input opdesc is nullptr, var_name:%s, session_id:%lu",
+           var_name.c_str(), session_id_);
     return FAILED;
   }
 
   ge::GeTensorDesc curr_desc;
   ge::Status ret = GetCurVarDesc(var_name, curr_desc);
   if (ret != SUCCESS) {
-    GELOGE(FAILED, "[RenewCurVarDesc] Get var desc fail!");
+    GELOGE(FAILED, "[Get][CurVarDesc] fail, var_name:%s, session_id:%lu", var_name.c_str(), session_id_);
     return FAILED;
   }
   std::string key = VarKey(var_name, curr_desc);
@@ -164,7 +168,8 @@ ge::Status VarResource::RenewCurVarDesc(const std::string &var_name, const ge::O
     REPORT_INNER_ERROR("E19999", "var_key:%s can't find in var_addr_mgr_map_, var_name:%s, session_id:%lu, op:%s(%s), "
                        "check invalid", key.c_str(), var_name.c_str(),
                        session_id_, op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "[RenewCurVarDesc] can't find ele with key [%s]", key.c_str());
+    GELOGE(FAILED, "[Check][Param] var_key:%s can't find in var_addr_mgr_map_, var_name:%s, session_id:%lu, op:%s(%s)",
+           key.c_str(), var_name.c_str(), session_id_, op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
   auto val = iter->second;
@@ -285,14 +290,15 @@ Status HbmMemResource::AssignVarMem(const std::string &var_name, uint64_t size, 
   if (total_size_ < var_mem_size_) {
     REPORT_INNER_ERROR("E19999", "VarMemMaxSize:%lu < var_mem_size_:%lu, var_size:%lu, var_name:%s, check invalid"
                        "", total_size_, var_mem_size_, size, var_name.c_str());
-    GELOGE(PARAM_INVALID, "total_size_: %lu is smaller than var_mem_size_: %lu", total_size_, var_mem_size_);
+    GELOGE(PARAM_INVALID, "[Check][Param] total_size_:%lu is smaller than var_mem_size_:%lu, var_name:%s",
+           total_size_, var_mem_size_, var_name.c_str());
     return PARAM_INVALID;
   }
   uint64_t free_size = total_size_ - var_mem_size_;
   if (free_size < (size + kSessionMemAlignSize * kSessionMemAlignUnit)) {
     REPORT_INNER_ERROR("E19999", "free_size:%lu not enough, var_align_size:%lu, var_name:%s, check invalid",
                        free_size, size, var_name.c_str());
-    GELOGE(PARAM_INVALID, "Out of memory : current var size[%lu] exceeds total var size[%lu]",
+    GELOGE(PARAM_INVALID, "[Check][Param] Out of memory: current var size[%lu] exceeds total var size[%lu]",
            size + kSessionMemAlignSize * kSessionMemAlignUnit + var_mem_size_, total_size_);
     return PARAM_INVALID;
   }
@@ -317,7 +323,7 @@ Status RdmaMemResource::AssignVarMem(const std::string &var_name, uint64_t size,
   if (buffer == nullptr) {
     REPORT_CALL_ERROR("E19999", "malloc rdma memory fail, var_size:%lu, var_name:%s",
                       size, var_name.c_str());
-    GELOGE(MEMALLOC_FAILED, "Failed to malloc rdma memory for node %s, size = %lu", var_name.c_str(), size);
+    GELOGE(MEMALLOC_FAILED, "[Malloc][RdmaMemory] for node %s failed, size = %lu", var_name.c_str(), size);
     return MEMALLOC_FAILED;
   }
   address = static_cast<size_t>(reinterpret_cast<uintptr_t>(buffer));
@@ -468,7 +474,8 @@ int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
   if (mem_resource == nullptr) {
     REPORT_INNER_ERROR("E19999", "Find no mem_resource in map, memory_type:%d, session_id:%lu",
                        memory_type, session_id_);
-    GELOGE(ge::INTERNAL_ERROR, "MemResource is invalid.");
+    GELOGE(ge::INTERNAL_ERROR, "[Check][Param] MemResource is invalid, memory_type:%d, session_id:%lu",
+           memory_type, session_id_);
     return 0;
   }
   return mem_resource->GetVarMemSize();
@@ -483,7 +490,8 @@ Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
     if (mem_resource == nullptr) {
       REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu",
                          memory_type, session_id_);
-      GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
+      GELOGE(ge::INTERNAL_ERROR, "[Alloc][MemResource] failed, memory_type:%u, session_id:%lu",
+             memory_type, session_id_);
       return ge::INTERNAL_ERROR;
     } else {
       mem_resource_map_[memory_type] = mem_resource;
@@ -495,7 +503,8 @@ Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
   if (mem_resource == nullptr) {
     REPORT_INNER_ERROR("E19999", "MemResource is invalid, memory_type:%d, session_id:%lu",
                        memory_type, session_id_);
-    GELOGE(ge::INTERNAL_ERROR, "MemResource is invalid.");
+    GELOGE(ge::INTERNAL_ERROR, "[Check][Param] MemResource is invalid, memory_type:%u, session_id:%lu",
+           memory_type, session_id_);
     return FAILED;
   }
   mem_resource->UpdateVarMemSize(mem_size);
@@ -515,7 +524,8 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   if (result != ge::SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Get size from tensor fail, var_name:%s, memory_type:%d, session_id:%lu",
                       var_name.c_str(), memory_type, session_id_);
-    GELOGE(result, "get size from TensorDesc failed");
+    GELOGE(result, "[Get][Size] from tensor fail, var_name:%s, memory_type:%u, session_id:%lu",
+           var_name.c_str(), memory_type, session_id_);
     return result;
   }
 
@@ -526,7 +536,8 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
     if (mem_resource == nullptr) {
       REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu",
                         memory_type, session_id_);
-      GELOGE(ge::INTERNAL_ERROR, "Alloc MemResource failed, memory_type = %u.", memory_type);
+      GELOGE(ge::INTERNAL_ERROR, "[Alloc][MemResource] failed, memory_type:%u, session_id:%lu.",
+             memory_type, session_id_);
       return ge::INTERNAL_ERROR;
     } else {
       mem_resource_map_[memory_type] = mem_resource;
@@ -538,7 +549,8 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   if (mem_resource == nullptr) {
     REPORT_INNER_ERROR("E19999", "MemResource is invalid, memory_type:%d, session_id:%lu",
                        memory_type, session_id_);
-    GELOGE(ge::INTERNAL_ERROR, "MemResource is invalid, memory_type = %u.", memory_type);
+    GELOGE(ge::INTERNAL_ERROR, "[Check][Param] MemResource is invalid, memory_type:%u, session_id:%lu.",
+           memory_type, session_id_);
     return ge::INTERNAL_ERROR;
   }
 
@@ -567,14 +579,15 @@ ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTen
   if (can_not_reuse_old_memory) {
     result = mem_resource->AssignVarMem(var_name, tensor_desc_size, session_id_, mem_offset);
     if (result != SUCCESS) {
-      GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
+      GELOGE(ge::INTERNAL_ERROR, "[Assign][VarMem] by offset failed, session_id:%lu.", session_id_);
       return ge::INTERNAL_ERROR;
     }
 
     result = var_resource_->SaveVarAddr(
       var_name, tensor_desc, reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(mem_offset)), memory_type);
     if (result != SUCCESS) {
-      GELOGE(ge::INTERNAL_ERROR, "AssignVarMem by offset failed.");
+      GELOGE(ge::INTERNAL_ERROR, "[Save][VarAddr] by offset failed, memory type:%u, session_id:%lu.",
+             memory_type, session_id_);
       return ge::INTERNAL_ERROR;
     }
   }
@@ -681,7 +694,8 @@ ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPt
     REPORT_INNER_ERROR("E19999", "VarManager has not been init, op:%s(%s), session_id:%lu, check invalid",
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                        session_id_);
-    GELOGE(ge::INTERNAL_ERROR, "VarManager has not been init.");
+    GELOGE(ge::INTERNAL_ERROR, "[Check][Param] VarManager has not been init, op:%s(%s), session_id:%lu",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), session_id_);
     return ge::INTERNAL_ERROR;
   }
   return var_resource_->RenewCurVarDesc(var_name, std::move(op_desc));
@@ -729,10 +743,8 @@ ge::Status VarManager::MallocVarMemory(size_t memory_size) {
   const string purpose("variables and constant op memory in training network.");
   var_mem_base = MemManager::Instance().MemInstance(RT_MEMORY_HBM).MallocMemory(purpose, memory_key, var_memory_size);
   if (var_mem_base == nullptr) {
-    GELOGE(ge::INTERNAL_ERROR,
-           "VarManager::MallocVarMemory failed "
-           "session_id = %s",
-           memory_key.c_str());
+    GELOGE(ge::INTERNAL_ERROR, "[Malloc][VarMemory] failed, size:%zu, session_id:%s",
+           var_memory_size, memory_key.c_str());
     return ge::INTERNAL_ERROR;
   }
   return SUCCESS;
@@ -812,7 +824,7 @@ Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
     string graph_memory_manager_malloc_max_size = it->second;
     ge::Status ret = ParseMemoryMallocSize(graph_memory_manager_malloc_max_size, graph_mem_max_size_);
     if (ret != SUCCESS) {
-      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "Parse graph memory manager malloc max size failed.");
+      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
     GELOGI("The max size for graph mem is set to %zu", graph_mem_max_size_);
@@ -825,7 +837,7 @@ Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
     string memory_var_manager_malloc_size = it->second;
     ge::Status ret = ParseMemoryMallocSize(memory_var_manager_malloc_size, var_mem_max_size_);
     if (ret != SUCCESS) {
-      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "Parse memory var manager malloc size failed.");
+      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
   }
@@ -834,8 +846,8 @@ Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
   if (var_mem_logic_base_ > kMaxMemorySize) {
     REPORT_INNER_ERROR("E19999", "var_login_base:%zu can not exeed limit:%zu, session_id:%lu, check invalid",
                        var_mem_logic_base_, kMaxMemorySize, session_id_);
-    GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "kMemoryVarLogicBase : %zu can not exceed max memory size : %zu.",
-           var_mem_logic_base_, kMaxMemorySize);
+    GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Check][Param] kMemoryVarLogicBase:%zu can not exceed "
+           "max memory size:%zu, session_id:%lu.", var_mem_logic_base_, kMaxMemorySize, session_id_);
     return ge::GE_GRAPH_OPTIONS_INVALID;
   }
 
@@ -843,8 +855,8 @@ Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
   if (use_max_mem_size_ > kMaxMemorySize) {
     REPORT_INNER_ERROR("E19999", "all mem_use size:%zu can not exeed limit:%zu, session_id:%lu, check invalid",
                        use_max_mem_size_, kMaxMemorySize, session_id_);
-    GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "kUseMaxMemorySize : %zu can not exceed max memory size : %zu.",
-           use_max_mem_size_, kMaxMemorySize);
+    GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Check][Param] kUseMaxMemorySize:%zu can not exceed "
+           "max memory size:%zu, session_id:%lu.", use_max_mem_size_, kMaxMemorySize, session_id_);
     return ge::GE_GRAPH_OPTIONS_INVALID;
   }
   GELOGI("Set memory malloc size successfully");
@@ -855,7 +867,7 @@ Status VarManager::ParseMemoryMallocSize(string &memory_size, size_t &result) {
   if (memory_size.empty()) {
     REPORT_INNER_ERROR("E19999", "Param memory_size is empty, session_id:%lu, check invalid",
                        session_id_);
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Memory malloc size input is empty.");
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] Memory malloc size input is empty, session_id:%lu.", session_id_);
     return GE_GRAPH_OPTIONS_INVALID;
   }
   // split string by '*'
@@ -882,7 +894,9 @@ Status VarManager::ParseMemoryMallocSize(string &memory_size, size_t &result) {
       if (!isdigit(c)) {
         REPORT_INNER_ERROR("E19999", "Param memory_size:%s contains non digit, session_id:%lu, check invalid",
                            memory_size.c_str(), session_id_);
-        GELOGE(GE_GRAPH_OPTIONS_INVALID, "Memory malloc size input contains non digit.");
+        GELOGE(GE_GRAPH_OPTIONS_INVALID,
+               "[Check][Param] Memory malloc size:%s input contains non digit, session_id:%lu.",
+               memory_size.c_str(), session_id_);
         return GE_GRAPH_OPTIONS_INVALID;
       }
     }
@@ -891,13 +905,15 @@ Status VarManager::ParseMemoryMallocSize(string &memory_size, size_t &result) {
                     REPORT_INNER_ERROR("E19999", "Param memory_size:%s will overflow after multi all, session_id:%lu, "
                                        "check invalid", memory_size.c_str(),
                                        session_id_);
-                    GELOGE(FAILED, "Input memory size is out of range.");
+                    GELOGE(FAILED, "[Check][Param] Param memory_size:%s will overflow after multi all, session_id:%lu",
+                           memory_size.c_str(), session_id_);
                     return FAILED);
     if ((num > kMaxMemorySize) || (result * static_cast<size_t>(num) > kMaxMemorySize)) {
       REPORT_INNER_ERROR("E19999", "Param memory_size:%s after multi will exceed limit:%lu, session_id:%lu, "
                          "check invalid", memory_size.c_str(), kMaxMemorySize,
                          session_id_);
-      GELOGE(FAILED, "Input memory size can not exceed max memory size : %zu.", kMaxMemorySize);
+      GELOGE(FAILED, "[Check][Param] Input memory size can not exceed max memory size:%zu, session_id:%lu.",
+             kMaxMemorySize, session_id_);
       return FAILED;
     }
     result *= static_cast<size_t>(num);
@@ -1001,10 +1017,7 @@ VarManager *VarManagerPool::GetVarManager(uint64_t session_id) {
   VarManager *var_manager = new (std::nothrow) VarManager(session_id);
   if (var_manager == nullptr) {
     REPORT_INNER_ERROR("E19999", "New VarManager fail, session_id:%lu", session_id);
-    GELOGE(INTERNAL_ERROR,
-           "VarManager::Instance find session by "
-           "session_id[%lu] failed.",
-           session_id);
+    GELOGE(INTERNAL_ERROR, "[New][VarManager] fail, session_id:%lu", session_id);
     static VarManager new_var_manager(0);
     return &new_var_manager;
   }

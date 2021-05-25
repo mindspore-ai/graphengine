@@ -270,7 +270,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
 }
 
 void KernelExTaskInfo::InitDumpTask(void *addr, const OpDescPtr &op_desc) {
-  if (davinci_model_->OpNeedDump(op_desc->GetName()) || davinci_model_->GetOpDugReg()) {
+  if (davinci_model_->OpNeedDump(op_desc->GetName())) {
     GELOGD("Op %s need dump in kernel ex task info", op_desc->GetName().c_str());
     dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = addr;

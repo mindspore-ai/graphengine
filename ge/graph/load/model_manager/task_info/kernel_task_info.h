@@ -128,7 +128,8 @@ class KernelTaskInfo : public TaskInfo {
   Status SuperKernelDistribute();
   bool IsL1FusionOp(const OpDescPtr &op_desc);
   void SetIoAddrs(const OpDescPtr &op_desc);
-  void InitDumpTask(uint32_t offset);
+  void InitDumpFlag();
+  void InitDumpArgs(uint32_t offset);
   void SetContinuousArgs(uint32_t args_size, DavinciModel *davinci_model);
   void SetNoncontinuousArgs(uint32_t args_size, DavinciModel *davinci_model);
   Status CopyNoncontinuousArgs(uint16_t offset);

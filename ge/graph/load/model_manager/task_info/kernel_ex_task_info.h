@@ -61,7 +61,8 @@ class KernelExTaskInfo : public TaskInfo {
   Status CopyTaskInfo(const domi::KernelExDef &kernel_def, const RuntimeParam &rts_param, const OpDescPtr &op_desc);
   void SetIoAddrs(const OpDescPtr &op_desc);
 
-  void InitDumpTask(void *addr, const OpDescPtr &op_desc);
+  void InitDumpFlag(const OpDescPtr &op_desc);
+  void InitDumpArgs(void *addr, const OpDescPtr &op_desc);
   Status InitTaskExtInfo(const std::string &ext_info, const OpDescPtr &op_desc);
 
   uint32_t task_id_;

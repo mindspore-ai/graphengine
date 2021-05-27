@@ -46,7 +46,7 @@ GraphNode::GraphNode(GraphId graph_id)
       sem_(1) {
   graph_run_async_listener_ = MakeShared<RunAsyncListener>();
   if (graph_run_async_listener_ == nullptr) {
-    GELOGE(MEMALLOC_FAILED, "Make shared failed");
+    GELOGE(MEMALLOC_FAILED, "[New][RunAsyncListener] failed");
   }
 }
 
@@ -82,7 +82,8 @@ SubGraphInfo::~SubGraphInfo() {
       rt_ret = rtFreeHost(buffer_addr);
       buffer_addr = nullptr;
       if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(rt_ret, "[GraphManager] subgraph free buffer failed, modelId = %u", model_id_info_.model_id);
+        GELOGE(rt_ret, "[Call][RtFreeHost] subgraph free buffer failed, modelId = %u",
+               model_id_info_.model_id);
       }
     }
   }
@@ -94,8 +95,8 @@ Status SubGraphInfo::FreeInOutBuffer() {
       rtError_t rt_ret;
       rt_ret = rtFreeHost(*iter);
       if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail");
-        GELOGE(rt_ret, "[GraphManager] subgraph free buffer failed, modelId = %u", model_id_info_.model_id);
+        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail, ret:%d", rt_ret);
+        GELOGE(rt_ret, "[Call][RtFreeHost] subgraph free buffer failed, modelId = %u", model_id_info_.model_id);
         buffer_addr_.erase(buffer_addr_.begin(), iter);
         return GE_GRAPH_FREE_FAILED;
       }
@@ -131,7 +132,7 @@ Status GraphModelListener::OnComputeDone(uint32_t model_id, uint32_t task_id, ui
 uint32_t GraphModelListener::GetResultCode() const {
   if (!is_finished_) {
     REPORT_CALL_ERROR("E19999", "Model not run finish");
-    GELOGE(INTERNAL_ERROR, "[GraphManager] model not run finish.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] model not run finish.");
     return INTERNAL_ERROR;
   }
   return result_code_;
@@ -170,7 +171,9 @@ bool HasCalcOp(const ComputeGraphPtr &graph) {
 
   for (const auto &node : graph->GetAllNodes()) {
     OpDescPtr op_desc = node->GetOpDesc();
-    GE_IF_BOOL_EXEC(op_desc == nullptr, GELOGE(FAILED, "Node GetOpDesc is nullptr"); return false);
+    GE_IF_BOOL_EXEC(op_desc == nullptr,
+                    REPORT_INNER_ERROR("E19999", "GetOpDesc failed, Node GetOpDesc is nullptr");
+                    GELOGE(FAILED, "[Get][OpDesc] failed, Node GetOpDesc is nullptr"); return false);
     if (calc_op_type.find(op_desc->GetType()) != calc_op_type.end()) {
       return true;
     }

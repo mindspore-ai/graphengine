@@ -272,19 +272,31 @@ bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc) {
 /// @brief Set Op _force_unknown_shape flag
 /// @param [in] node
 /// @param [in] force_unknown, set attribute if true
+/// @param [in] group_index, condition group index of node.
 /// @return
 ///
-void MarkForceUnknownShape(const NodePtr &node, bool force_unknown) {
-  GE_RT_VOID_CHECK_NOTNULL(node);
+void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t group_index) {
   if (!force_unknown) {
     return;
   }
 
-  GELOGD("[%s] mark as force unknown shape node", node->GetName().c_str());
-  if (!AttrUtils::SetBool(node->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, force_unknown)) {
+  GE_RT_VOID_CHECK_NOTNULL(node);
+  const auto &op_desc = node->GetOpDesc();
+  GE_RT_VOID_CHECK_NOTNULL(op_desc);
+
+  // op_desc as AttrHolderAdapter valid, Set attribute always success, just log for check.
+  GELOGD("Mark [%s] as force unknown shape node, group index: %ld", node->GetName().c_str(), group_index);
+  if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, force_unknown)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
+  }
+
+  if (!AttrUtils::SetInt(op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
+                       node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
            node->GetName().c_str(), node->GetType().c_str());
   }
 }

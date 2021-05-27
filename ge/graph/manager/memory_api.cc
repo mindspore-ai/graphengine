@@ -19,7 +19,7 @@
 #include <memory>
 
 #include "common/ge/plugin_manager.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/rdma_pool_allocator.h"
 #include "graph/utils/type_utils.h"
@@ -50,9 +50,8 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
   path.append(file_name);
   string canonical_path = RealPath(path.c_str());
   if (canonical_path.empty()) {
-    REPORT_INNER_ERROR("E19999", "canonical_path:%s is empty, check invalid",
-                       canonical_path.c_str());
-    GELOGE(FAILED, "Failed to get realpath of %s", path.c_str());
+    REPORT_INNER_ERROR("E19999", "canonical_path:%s is empty, check invalid", canonical_path.c_str());
+    GELOGE(FAILED, "[Call][RealPath] Failed to get realpath of %s", path.c_str());
     return FAILED;
   }
   GELOGI("FileName:%s, Path:%s.", file_name.c_str(), canonical_path.c_str());
@@ -69,15 +68,14 @@ Status RdmaRemoteRegister(const std::vector<HostVarInfo> &var_info, rtMemType_t 
   if (hcom_remote_mem_register == nullptr) {
     REPORT_CALL_ERROR("E19999", "Symbol HcomRegRemoteAccessMem can't find in %s, check invalid",
                       canonical_path.c_str());
-    GELOGE(FAILED, "Failed to invoke hcom_remote_mem_register function.");
+    GELOGE(FAILED, "[Check][Param] Symbol HcomRegRemoteAccessMem can't find in %s", canonical_path.c_str());
     return FAILED;
   }
 
   HcclResult hccl_ret = hcom_remote_mem_register(reg_addrs.get(), table_len);
   if (hccl_ret != HCCL_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Call hcom_remote_mem_register failed, ret:%d,",
-                      hccl_ret);
-    GELOGE(HCCL_E_INTERNAL, "Rdma mem register failed, ret: 0x%X", hccl_ret);
+    REPORT_CALL_ERROR("E19999", "Call hcom_remote_mem_register failed, ret:%d,", hccl_ret);
+    GELOGE(HCCL_E_INTERNAL, "[Call][HcomRemoteMemRegister] Rdma mem register failed, ret:0x%X", hccl_ret);
     return HCCL_E_INTERNAL;
   }
   return SUCCESS;
@@ -88,14 +86,14 @@ Status MallocSharedMemory(const TensorInfo &tensor_info, uint64_t &dev_addr, uin
   uint32_t type_size = 0;
   bool result = TypeUtils::GetDataTypeLength(tensor_info.data_type, type_size);
   if (!result) {
-    GELOGE(GRAPH_FAILED, "GetDataTypeLength failed, data_type=(%s).",
+    GELOGE(GRAPH_FAILED, "[Get][DataTypeLength] failed, data_type=(%s).",
            TypeUtils::DataTypeToSerialString(tensor_info.data_type).c_str());
     return GRAPH_FAILED;
   }
   memory_size = type_size;
   for (auto dim : tensor_info.dims) {
     if (dim <= 0) {
-      GELOGE(GRAPH_FAILED, "Tensor dims should be positive");
+      GELOGE(GRAPH_FAILED, "[Check][Param] Tensor dims should be positive");
       return GRAPH_FAILED;
     }
     memory_size *= dim;
@@ -103,7 +101,7 @@ Status MallocSharedMemory(const TensorInfo &tensor_info, uint64_t &dev_addr, uin
   SharedMemInfo mem_info(tensor_info.var_name, memory_size);
   Status ret = HostMemManager::Instance().MallocSharedMemory(mem_info);
   if (ret != SUCCESS) {
-    GELOGE(GRAPH_FAILED, "MallocSharedMemory failed op name [%s]", tensor_info.var_name.c_str());
+    GELOGE(GRAPH_FAILED, "[Malloc][SharedMemory] failed, op name [%s]", tensor_info.var_name.c_str());
     return GRAPH_FAILED;
   }
   dev_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(mem_info.device_address));

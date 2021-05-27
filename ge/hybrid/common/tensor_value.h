@@ -40,12 +40,22 @@ class TensorBuffer {
   TensorBuffer &operator = (const TensorBuffer &) = delete;
   ~TensorBuffer();
 
+  void* Release() {
+    auto ret = buffer_;
+    buffer_ = nullptr;
+    return ret;
+  }
+
   void *GetData() {
     return buffer_;
   }
 
   size_t GetSize() const {
     return size_;
+  }
+
+  MemStorageType GetMemType() const {
+    return mem_type_;
   }
 
  private:
@@ -69,6 +79,10 @@ class TensorValue {
 
   void Destroy();
 
+  void *Release() {
+    return buffer_->Release();
+  }
+
   bool IsEmpty() {
     return ref_buffer_ == nullptr && buffer_ == nullptr;
   }
@@ -79,6 +93,10 @@ class TensorValue {
 
   void SetName(const std::string &name) {
     name_ = name;
+  }
+  
+  MemStorageType GetMemType() const {
+    return buffer_->GetMemType();
   }
 
   void *MutableData();

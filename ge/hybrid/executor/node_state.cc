@@ -104,11 +104,47 @@ void ShapeInferenceState::UpdateInputShapeFuture(int idx, ShapeFuture &&future) 
   }
 }
 
+Status ShapeInferenceState::UpdateInputForMerge(const GraphExecutionContext &context) {
+  int merge_index = -1;
+  const auto &guard = node_item.MutexGuard("UpdateInputForMerge");
+  if (!AttrUtils::GetInt(node_item.op_desc, ATTR_NAME_MERGE_INPUT_INDEX, merge_index)) {
+    GELOGE(FAILED, "[%s] Get attr %s failed", node_item.NodeName().c_str(), ATTR_NAME_MERGE_INPUT_INDEX.c_str());
+    return FAILED;
+  }
+
+  if (merge_index < 0 || static_cast<size_t>(merge_index) >= input_tensor_desc.size()) {
+    GELOGE(FAILED, "[%s] merge index: %d invalid, should in range[0, %zu)",
+           node_item.NodeName().c_str(), merge_index, input_tensor_desc.size());
+    return FAILED;
+  }
+
+  auto dst_tensor_desc = node_item.MutableInputDesc(merge_index);
+  GE_CHECK_NOTNULL(dst_tensor_desc);
+
+  int64_t tensor_size = -1;
+  auto &tensor_desc = input_tensor_desc[merge_index];
+  (void)TensorUtils::GetSize(tensor_desc, tensor_size);
+
+  dst_tensor_desc->SetShape(tensor_desc.MutableShape());
+  dst_tensor_desc->SetOriginShape(tensor_desc.GetOriginShape());
+  (void)TensorUtils::SetSize(*dst_tensor_desc, tensor_size);
+  (void)guard;
+  GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s], tensor size = %ld",
+         node_item.NodeName().c_str(), merge_index, dst_tensor_desc->GetShape().ToString().c_str(),
+         dst_tensor_desc->GetOriginShape().ToString().c_str(), tensor_size);
+
+  return SUCCESS;
+}
+
 Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &context) {
   if (!node_item.is_dynamic) {
     return SUCCESS;
   }
   std::unique_lock<std::mutex> lk(mu_);
+  if (node_item.IsMergeOp()) {
+    return UpdateInputForMerge(context);
+  }
+
   if (num_pending_shapes_ > 0) {
     GELOGD("[%s] Await pending shape or shape future start.", node_item.NodeName().c_str());
     int try_count = 0;
@@ -169,7 +205,7 @@ Status ShapeInferenceState::AwaitShapesReady(const GraphExecutionContext &contex
 
     int64_t tensor_size = -1;
     (void) TensorUtils::GetSize(*src_tensor_desc, tensor_size);
-    GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s], index = %zu",
+    GELOGD("[%s] Update input shape [%u] with shape: [%s] and ori_shape: [%s], tensor size = %ld",
            node_item.NodeName().c_str(),
            idx,
            src_tensor_desc->GetShape().ToString().c_str(),
@@ -283,11 +319,8 @@ void NodeState::ResetContext(int group) {
   }
 
   switch_index_ = -1;
-  const auto &guard = node_item_->MutexGuard("ResetContext");
-  shape_inference_state_.InitShapeState();
   subgraph_context_->ResetContext(node_item_->node);
   GELOGD("Node[%s] in while loop, current loop: %lu, merge index: %d", GetName().c_str(), loop_count_, merge_index_);
-  (void)guard;
 }
 
 void NodeState::ResetSchedule() {

@@ -88,8 +88,8 @@ class CachingAllocator {
   ///
   /// @ingroup ge_graph
   /// @brief free memory
+  /// @param [in] memory_ptr memory address ptr
   /// @param [in] device_id device id
-  /// @param [out] memory_ptr memory address ptr
   /// @return Status result of function
   ///
   Status Free(uint8_t *memory_addr, uint32_t device_id = 0);

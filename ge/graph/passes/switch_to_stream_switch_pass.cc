@@ -369,7 +369,9 @@ NodePtr SwitchToStreamSwitchPass::CreateStreamSwitchNode(const ComputeGraphPtr &
   GE_CHK_STATUS(GraphUtils::AddEdge(peer_cond_anchor, stream_switch->GetInDataAnchor(0)),
                 "StreamSwitch node add cond edge failed.");
 
-  MarkForceUnknownShape(stream_switch, switch_node->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE));
+  int64_t group_index = -1;
+  bool force_unknown = AttrUtils::GetInt(switch_node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
+  MarkForceUnknownShape(stream_switch, force_unknown, group_index);
   return stream_switch;
 }
 
@@ -488,11 +490,12 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
         return FAILED;
       }
 
-      std::function<bool(const NodePtr &)> callback = [](const NodePtr &n) {
-        return n->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
+      int64_t group_index = -1;
+      std::function<bool(const NodePtr &)> callback = [&group_index](const NodePtr &n) {
+        return AttrUtils::GetInt(n->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
       };
       bool is_unknown_shape = std::any_of(same_cond_switch.begin(), same_cond_switch.end(), callback);
-      MarkForceUnknownShape(active_node, is_unknown_shape);
+      MarkForceUnknownShape(active_node, is_unknown_shape, group_index);
 
       const std::string &cond_group = cond_node->GetName();
       for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
@@ -522,7 +525,7 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
         GE_CHK_STATUS(GraphUtils::AddEdge(cast_node->GetOutDataAnchor(0), stream_switch->GetInDataAnchor(0)),
                       "Cast add data edge failed.");
 
-        MarkForceUnknownShape(stream_switch, is_unknown_shape);
+        MarkForceUnknownShape(stream_switch, is_unknown_shape, group_index);
         for (const NodePtr &node : switch_list) {
           GE_IF_BOOL_EXEC(node != stream_switch, {
             GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, node->GetInDataAnchor(0)),

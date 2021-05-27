@@ -26,8 +26,7 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
-#include "graph/manager/graph_mem_allocator.h"
-#include "graph/manager/host_mem_allocator.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -258,6 +257,10 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
   if (it != node_items.end()) {
     *node_item = it->second.get();
     return SUCCESS;
+  }
+
+  if (node->GetType() == MEMCPYASYNC) { // Convert MemcpyAsync to Identity.
+    node->GetOpDesc()->SetType(IDENTITY);
   }
 
   std::unique_ptr<NodeItem> new_node;
@@ -1002,14 +1005,18 @@ Status HybridModelBuilder::InitConstantOps() {
       // Tensors return by api GetWeights share data with proto, whose addr is not confirmed to be aligned
       GeTensor aligned_tensor = ge_tensor->Clone();
       GELOGD("Init tensor with host constant %s size = %zu", var_name.c_str(), aligned_tensor.MutableData().GetSize());
-      if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(aligned_tensor.GetAlignedPtr(),
-                                                                       aligned_tensor.GetData().size()) == nullptr) {
-        GELOGE(MEMALLOC_FAILED, "[Malloc][HostMemory] for an existed GeTensor failed, model_name_:%s.",
-               GetGraphName());
-        return MEMALLOC_FAILED;
+      if (aligned_tensor.GetData().size() > 0) {
+        if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(aligned_tensor.GetAlignedPtr(),
+                                                                         aligned_tensor.GetData().size()) == nullptr) {
+          GELOGE(MEMALLOC_FAILED, "[Malloc][HostMemory] for an existed GeTensor failed, model_name_:%s.",
+                 GetGraphName());
+          return MEMALLOC_FAILED;
+        }
+        var_tensor.reset(new(std::nothrow)TensorValue(aligned_tensor.MutableData().data(),
+                                                      aligned_tensor.GetData().size()));
+      } else {
+        var_tensor.reset(new(std::nothrow)TensorValue(nullptr, 0));
       }
-      var_tensor.reset(new(std::nothrow)TensorValue(aligned_tensor.MutableData().data(),
-                                                    aligned_tensor.GetData().size()));
     } else {
       GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
       GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());

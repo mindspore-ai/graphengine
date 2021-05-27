@@ -300,7 +300,7 @@ Status NodeDoneCallback::OnNodeDone() {
     GE_CHK_STATUS_RET(SaveDumpOpInfo(), "[Save][DumpOpInfo] Failed to dump op info.");
   }
 
-  if (ProfilingManager::Instance().ProfilingModelExecuteOn()) {
+  if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
     GE_CHK_STATUS_RET(ProfilingReport(), "[Report][Profiling] of node[%s] failed.", node_item.NodeName().c_str());
   }
 

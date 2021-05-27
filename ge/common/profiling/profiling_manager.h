@@ -81,7 +81,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   Status ProfModelUnsubscribe(void *model);
   void StopProfiling();
   bool ProfilingTrainingTraceOn() const { return is_training_trace_; }
+  // report model load profiling data flag, data contain task desc info, step info, model load fusion op info
   bool ProfilingModelLoadOn() const { return is_load_profiling_; }
+  // report model execute profiling data flag, data contain model execute time info
   bool ProfilingModelExecuteOn() const;
   // is_execute_profiling_ only used by ge option and env
   bool ProfilingOn() const { return is_load_profiling_ && is_execute_profiling_; }

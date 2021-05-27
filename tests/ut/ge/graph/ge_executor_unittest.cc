@@ -43,6 +43,7 @@
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/utils/graph_utils.h"
 #include "proto/ge_ir.pb.h"
+#include "graph/manager/graph_var_manager.h"
 #undef private
 #undef protected
 
@@ -156,7 +157,7 @@ TEST_F(UtestGeExecutor, InitFeatureMapAndP2PMem_failed) {
   EXPECT_EQ(model.InitFeatureMapAndP2PMem(nullptr, 0), PARAM_INVALID);
 }
 
-TEST_F(UtestGeExecutor, kernel_InitDumpTask) {
+TEST_F(UtestGeExecutor, kernel_InitDumpArgs) {
   DavinciModel model(0, g_label_call_back);
   model.om_name_ = "testom";
   model.name_ = "test";
@@ -172,10 +173,10 @@ TEST_F(UtestGeExecutor, kernel_InitDumpTask) {
   KernelTaskInfo kernel_task_info;
   kernel_task_info.davinci_model_ = &model;
   kernel_task_info.op_desc_ = op_desc;
-  kernel_task_info.InitDumpTask(0);
+  kernel_task_info.InitDumpArgs(0);
 }
 
-TEST_F(UtestGeExecutor, kernel_ex_InitDumpTask) {
+TEST_F(UtestGeExecutor, kernel_ex_InitDumpArgs) {
   DavinciModel model(0, g_label_call_back);
   model.om_name_ = "testom";
   model.name_ = "test";
@@ -190,10 +191,33 @@ TEST_F(UtestGeExecutor, kernel_ex_InitDumpTask) {
 
   KernelExTaskInfo kernel_ex_task_info;
   kernel_ex_task_info.davinci_model_ = &model;
-  kernel_ex_task_info.InitDumpTask(nullptr, op_desc);
+  kernel_ex_task_info.InitDumpArgs(nullptr, op_desc);
+}
+
+TEST_F(UtestGeExecutor, kernel_ex_InitDumpFlag) {
+  DavinciModel model(0, g_label_call_back);
+  model.om_name_ = "testom";
+  model.name_ = "test";
+  OpDescPtr op_desc = CreateOpDesc("test", "test");
+
+  std::map<std::string, std::set<std::string>> model_dump_properties_map;
+  std::set<std::string> s;
+  model_dump_properties_map[DUMP_ALL_MODEL] = s;
+  DumpProperties dp;
+  dp.model_dump_properties_map_ = model_dump_properties_map;
+  model.SetDumpProperties(dp);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  kernel_ex_task_info.davinci_model_ = &model;
+  kernel_ex_task_info.InitDumpFlag(op_desc);
 }
 
 TEST_F(UtestGeExecutor, execute_graph_with_stream) {
+  VarManager::Instance(0)->Init(0, 0, 0, 0);
+  map<string, string> options;
+  options[GRAPH_MEMORY_MAX_SIZE] = "1048576";
+  VarManager::Instance(0)->SetMemoryMallocSize(options);
+
   DavinciModel model(0, nullptr);
   ComputeGraphPtr graph = make_shared<ComputeGraph>("default");
 
@@ -278,7 +302,6 @@ TEST_F(UtestGeExecutor, execute_graph_with_stream) {
   OutputData output_data;
   vector<Tensor> outputs;
   EXPECT_EQ(model.GenOutputTensorInfo(&output_data, outputs), SUCCESS);
-  
 
   GraphExecutor graph_executer;
   graph_executer.init_flag_ = true;

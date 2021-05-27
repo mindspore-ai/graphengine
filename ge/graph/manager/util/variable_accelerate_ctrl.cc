@@ -54,7 +54,7 @@ void VarAccelerateCtrl::SetVarChanged(const std::string &var_name) {
 void VarAccelerateCtrl::AddGraph(uint32_t graph_id, const ComputeGraphPtr &compute_graph) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (compute_graph == nullptr) {
-    GELOGE(PARAM_INVALID, "Failed to add graph %u, the compute graph is null", graph_id);
+    GELOGE(PARAM_INVALID, "[Check][Param] Failed to add graph %u, the compute graph is null", graph_id);
     return;
   }
   auto &var_names = graph_ids_to_var_names_[graph_id];

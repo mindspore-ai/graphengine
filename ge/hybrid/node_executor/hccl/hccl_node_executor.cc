@@ -314,21 +314,26 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
     return SUCCESS;
   }
 
+  rtEvent_t evt = nullptr;
+  if (context.GetExecutionContext()->hccl_stream != nullptr) {
+    GE_CHK_RT_RET(rtEventCreateWithFlag(&evt, 0x01));
+    GE_CHK_RT_RET(rtStreamWaitEvent(context.GetExecutionContext()->hccl_stream, evt));
+  }
   TaskContext *p_ctx = &context;
-  auto callback = [p_ctx, done_callback](HcclResult status) {
+  auto callback = [p_ctx, done_callback, evt](HcclResult status) {
     if (status != HCCL_SUCCESS) {
       GELOGE(HCCL_E_INTERNAL, "[Call][HcomExcutorInitialize] failed for node:%s(%s), ret: 0x%X",
              p_ctx->GetNodeName(), p_ctx->GetNodeItem().NodeType().c_str(), status);
       p_ctx->SetStatus(FAILED);
     }
     done_callback();
+    if (evt != nullptr) {
+      GE_CHK_RT_RET(rtEventRecord(evt, nullptr));
+      GE_CHK_RT_RET(rtEventDestroy(evt));
+    }
     GELOGI("rdma callback success.");
   };
 
-  std::string executor_type = context.GetNodeItem().NodeType();
-  if (kRdmaScatterTypes.count(context.GetNodeItem().NodeType()) > 0) {
-    executor_type = context.GetNodeItem().NodeType() == HCOMREMOTEREFREAD ? HCOMREMOTEREAD : HCOMREMOTEWRITE;
-  }
   HcclResult hccl_ret = HcomExecEnqueueRemoteAccess(context.GetNodeItem().NodeType(), addr_infos, callback);
   if (hccl_ret != HCCL_SUCCESS) {
     GELOGE(HCCL_E_INTERNAL, "[Call][HcomExecEnqueueRemoteAccess] failed for node:%s(%s), ret: 0x%X",

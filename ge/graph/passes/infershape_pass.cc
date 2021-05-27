@@ -21,6 +21,8 @@
 #include "framework/common/util.h"
 #include "graph/shape_refiner.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/node_utils.h"
+#include "graph/common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "utils/tensor_utils.h"
 #include "utils/type_utils.h"
@@ -117,7 +119,9 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
   const auto RePassNode = [&](const std::set<std::string> &re_pass_types) {
     for (auto &n : node->GetOutDataNodes()) {
       GE_CHECK_NOTNULL(n);
-      if (re_pass_types.count(n->GetType()) > 0) {
+      std::string node_type;
+      GE_CHK_STATUS_RET(GetOriginalType(n, node_type), "Get original node type failed.");
+      if (re_pass_types.count(node_type) > 0) {
         AddImmediateRePassNode(n);
         (void)AttrUtils::SetBool(n->GetOpDesc(), ATTR_NAME_NEED_INFER_AGAIN, false);
         GELOGD("Node %s need repass immediately after %s.", n->GetName().c_str(), node->GetName().c_str());
@@ -126,15 +130,42 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
     return SUCCESS;
   };
 
-  if (node->GetType() == NEXTITERATION || node->GetType() == REFNEXTITERATION) {
-    return RePassNode({MERGE, REFMERGE}); // Re-Pass Merge
-  }
-
-  if (node->GetType() == MERGE || node->GetType() == REFMERGE) {
-    if (node->GetOpDesc()->HasAttr(ATTR_NAME_NEED_INFER_AGAIN)) {
-      node->GetOpDesc()->DelAttr(ATTR_NAME_NEED_INFER_AGAIN);
+  const auto ExProcNode = [&](const std::set<std::string> &proc_types,
+                              const std::function<void(InferShapePass *, NodePtr)> &proc_func,
+                              const std::string &info) {
+    for (auto &n : node->GetOutDataNodes()) {
+      GE_CHECK_NOTNULL(n);
+      std::string node_type;
+      GE_CHK_STATUS_RET(GetOriginalType(n, node_type), "Get original node type failed.");
+      if (proc_types.count(node_type) > 0) {
+        proc_func(this, n);
+        GELOGD("Node %s %s after %s.", n->GetName().c_str(), info.c_str(), node->GetName().c_str());
+      }
     }
     return SUCCESS;
+  };
+
+  std::string node_type;
+  GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original node type failed.");
+  if (kNextIterationOpTypes.count(node_type) > 0) {
+    return RePassNode(kMergeOpTypes); // Re-Pass Merge
+  }
+
+  if (kMergeOpTypes.count(node_type) > 0) {
+    if (node->GetOpDesc()->HasAttr(ATTR_NAME_NEED_INFER_AGAIN)) {
+      node->GetOpDesc()->DelAttr(ATTR_NAME_NEED_INFER_AGAIN);
+      return RePassNode(kSwitchOpTypes); // Re-Pass Switch
+    }
+    return SUCCESS;
+  }
+
+  if (kSwitchOpTypes.count(node_type) > 0) {
+    if (node->GetOpDesc()->HasAttr(ATTR_NAME_NEED_INFER_AGAIN)) {
+      node->GetOpDesc()->DelAttr(ATTR_NAME_NEED_INFER_AGAIN);
+      return ExProcNode(kExitOpTypes, &InferShapePass::AddNodeResume, "need resume"); // Resume Exit
+    } else {
+      return ExProcNode(kExitOpTypes, &InferShapePass::AddNodeSuspend, "need suspend"); // Suspend Exit
+    }
   }
 
   return SUCCESS;

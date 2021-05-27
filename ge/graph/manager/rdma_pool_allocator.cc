@@ -20,6 +20,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
 #include "runtime/dev.h"
+#include "graph/manager/graph_mem_manager.h"
 
 namespace {
 const size_t kAlignedSize = 512;
@@ -49,7 +50,7 @@ RdmaPoolAllocator::RdmaPoolAllocator(rtMemType_t memory_type)
       })) {}
 
 Status RdmaPoolAllocator::Initialize() {
-  memory_allocator_ = MemManager::Instance(memory_type_);
+  memory_allocator_ = &MemManager::Instance().MemInstance(memory_type_);
   if (memory_allocator_ == nullptr) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
@@ -81,8 +82,8 @@ Status RdmaPoolAllocator::InitMemory(size_t mem_size) {
   auto device_id = GetContext().DeviceId();
   GELOGD("Init Rdma Memory with size [%zu] for devid:[%u]", mem_size, device_id);
   if (rdma_base_addr_ != nullptr) {
-    REPORT_INNER_ERROR("E19999", "Param rdma_base_addr_ is nullptr, check invalid");
-    GELOGE(GE_MULTI_INIT, "Rdma pool has been malloced");
+    REPORT_INNER_ERROR("E19999", "Param rdma_base_addr_ is not nullptr, devid:%u, check invalid", device_id);
+    GELOGE(GE_MULTI_INIT, "[Check][Param] Rdma pool has been malloced, devid:%u", device_id);
     return GE_MULTI_INIT;
   }
   const std::string purpose = "Memory for rdma pool.";
@@ -94,15 +95,15 @@ Status RdmaPoolAllocator::InitMemory(size_t mem_size) {
 
   rdma_base_addr_ = memory_allocator_->MallocMemory(purpose, mem_size, device_id);
   if (rdma_base_addr_ == nullptr) {
-    GELOGE(GE_GRAPH_MALLOC_FAILED, "Rdma pool memory malloc failed");
+    GELOGE(GE_GRAPH_MALLOC_FAILED, "[Malloc][Memory] failed, size:%zu, device_id:%u", mem_size, device_id);
     return GE_GRAPH_MALLOC_FAILED;
   }
   rdma_mem_size_ = mem_size;
   // Init with a base block.
   auto *base_block = new (std::nothrow) Block(device_id, mem_size, rdma_base_addr_);
   if (base_block == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New Block failed, device_id:%u", device_id);
-    GELOGE(GE_GRAPH_MALLOC_FAILED, "Block malloc failed");
+    REPORT_CALL_ERROR("E19999", "New Block failed, size:%zu, device_id:%u", mem_size, device_id);
+    GELOGE(GE_GRAPH_MALLOC_FAILED, "[New][Block] failed, size:%zu, device_id:%u", mem_size, device_id);
     return GE_GRAPH_MALLOC_FAILED;
   }
   block_bin_.insert(base_block);
@@ -122,7 +123,7 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
     if (block->ptr == nullptr) {
       REPORT_INNER_ERROR("E19999", "Rdmapool memory address is nullptr, device_id:%u, check invalid",
                          device_id);
-      GELOGE(INTERNAL_ERROR, "Rdmapool memory address is nullptr.");
+      GELOGE(INTERNAL_ERROR, "[Check][Param] Rdmapool memory address is nullptr, device_id:%u", device_id);
       return nullptr;
     }
     allocated_blocks_.emplace(block->ptr, block);
@@ -154,9 +155,8 @@ uint8_t *RdmaPoolAllocator::Malloc(size_t size, uint32_t device_id) {
 Status RdmaPoolAllocator::Free(uint8_t *memory_addr, uint32_t device_id) {
   GELOGI("Free rdma memory, device id = %u", device_id);
   if (memory_addr == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Param memory_addr is nullptr, device_id:%u, check invalid",
-                       device_id);
-    GELOGE(GE_GRAPH_FREE_FAILED, "Invalid memory pointer");
+    REPORT_INNER_ERROR("E19999", "Param memory_addr is nullptr, device_id:%u, check invalid", device_id);
+    GELOGE(GE_GRAPH_FREE_FAILED, "[Check][Param] Invalid memory pointer, device id:%u", device_id);
     return GE_GRAPH_FREE_FAILED;
   }
 
@@ -165,7 +165,7 @@ Status RdmaPoolAllocator::Free(uint8_t *memory_addr, uint32_t device_id) {
   if (it == allocated_blocks_.end()) {
     REPORT_INNER_ERROR("E19999", "Param memory_addr is not allocated before, device_id:%u, "
                        "check invalid", device_id);
-    GELOGE(PARAM_INVALID, "Invalid memory pointer");
+    GELOGE(PARAM_INVALID, "[Check][Param] Invalid memory pointer, device id:%u", device_id);
     return PARAM_INVALID;
   }
 
@@ -208,7 +208,7 @@ void RdmaPoolAllocator::MergeBlocks(Block *dst, Block *src) {
 Status RdmaPoolAllocator::GetBaseAddr(uint64_t &base_addr, uint64_t &mem_size) {
   if (rdma_base_addr_ == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param rdma_base_addr_ is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "Rdma base addr is nullptr.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Rdma base addr is nullptr.");
     return INTERNAL_ERROR;
   }
   base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(rdma_base_addr_));

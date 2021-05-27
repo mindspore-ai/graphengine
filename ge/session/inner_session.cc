@@ -32,6 +32,7 @@
 #include "graph/common/local_context.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/tensor_adapter.h"
 #include "runtime/mem.h"
 
@@ -155,6 +156,11 @@ Status InnerSession::Finalize() {
   // release var memory
   GELOGI("VarManager free var memory.");
   (void)VarManager::Instance(session_id_)->FreeVarMemory();
+
+  for (auto memory_type : MemManager::Instance().GetAllMemoryType()) {
+    (void)MemManager::Instance().SessionScopeMemInstance(memory_type).Free(session_id_);
+  }
+
   // release analyzer saved info(Session Level)
   Analyzer::GetInstance()->DestroySessionJsonObject(session_id_);
 

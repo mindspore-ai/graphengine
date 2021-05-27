@@ -45,7 +45,7 @@ Status EventManager::Init(size_t event_num) {
 void EventManager::Release() noexcept {
   for (size_t i = 0; i < this->event_list_.size(); ++i) {
     rtError_t rt_ret = rtEventDestroy(this->event_list_[i]);
-    RETURN_IF_COND_NOT_MET(rt_ret == RT_ERROR_NONE, "Destroy event failed, idx is %zu, ret is 0x%x.", i, rt_ret);
+    RETURN_IF_COND_NOT_MET(rt_ret == RT_ERROR_NONE, "[Destroy][Event] failed, idx is %zu, ret is 0x%x.", i, rt_ret);
   }
   this->event_list_.clear();
 

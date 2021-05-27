@@ -67,6 +67,8 @@ struct ShapeInferenceState {
   const NodeItem &node_item;
 
  private:
+  Status UpdateInputForMerge(const GraphExecutionContext &context);
+
   friend struct NodeState;
   std::vector<std::pair<int, ShapeFuture>> shape_futures;
   // do not directly update op_desc, in case race condition across pipelines

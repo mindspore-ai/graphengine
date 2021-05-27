@@ -61,6 +61,9 @@ const std::string kTaskTypeAicore = "AI_CORE";
 const std::string kTaskTypeAicpu = "AI_CPU";
 const std::string kTaskTypeInvalid = "TASK_TYPE_INVALID";
 
+// dynamic execute mode
+const char *const kLazyRecompile = "lazy_recompile";
+
 // Data cache, including data address and length
 struct DataBuffer {
  public:

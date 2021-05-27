@@ -184,7 +184,10 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     if (options.find(kTrainingTrace) == std::string::npos) {
       return ge::SUCCESS;
     }
-    const std::string training_trace = prof_options[kTrainingTrace];
+    std::string training_trace;
+    if (prof_options.contains(kTrainingTrace)) {
+      training_trace = prof_options[kTrainingTrace];
+    }
     if (training_trace.empty()) {
       GELOGI("Training trace will not take effect.");
       return ge::SUCCESS;
@@ -196,8 +199,12 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
       REPORT_INNER_ERROR("E19999", "Training trace param:%s is invalid.", training_trace.c_str());
       return ge::PARAM_INVALID;
     }
-    fp_point_ = prof_options[kFpPoint];
-    bp_point_ = prof_options[kBpPoint];
+    if (prof_options.contains(kFpPoint)) {
+      fp_point_ = prof_options[kFpPoint];
+    }
+    if (prof_options.contains(kBpPoint)) {
+      bp_point_ = prof_options[kBpPoint];
+    }
     if (!fp_point_.empty() && !bp_point_.empty()) {
       GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
     }
@@ -1014,10 +1021,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   if (is_profiling_valid) {
     try {
       Json prof_options = Json::parse(profiling_options);
-
-      fp_point_ = prof_options[kFpPoint];
-      bp_point_ = prof_options[kBpPoint];
-
+      if (prof_options.contains(kFpPoint)) {
+        fp_point_ = prof_options[kFpPoint];
+      }
+      if (prof_options.contains(kBpPoint)) {
+        bp_point_ = prof_options[kBpPoint];
+      }
       fp_point = fp_point_;
       bp_point = bp_point_;
       if (!fp_point_.empty() && !bp_point_.empty()) {

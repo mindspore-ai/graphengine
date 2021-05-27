@@ -42,16 +42,14 @@ class HybridMemAssigner : public MemAssigner {
 
   Status Assign() override;
 
-  size_t GetMemOffset() const { return mem_offset_; }
-  size_t GetP2PMemOffset() const { return p2p_mem_offset_; }
+  const std::map<uint64_t, size_t> &GetMemOffsets() const { return mem_offsets_; }
 
   BlockMemAssignerPtr GetPriorityAssinger() const { return priority_assigner_; }
 
  private:
   Status AssignMemory(std::unique_ptr<BlockMemAssigner> &block_assigner, size_t &mem_size);
 
-  size_t mem_offset_;
-  size_t p2p_mem_offset_;
+  std::map<uint64_t, size_t> mem_offsets_;
 
   ge::ComputeGraphPtr compute_graph_;
 

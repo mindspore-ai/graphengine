@@ -144,6 +144,17 @@ REG_OP(Data)
                            DT_UINT64, DT_BOOL, DT_DOUBLE}))
     .OP_END_FACTORY_REG(GuaranteeConst)
 
+    REG_OP(MatMulV2)
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .ATTR(transpose_x1, Bool, false)
+    .ATTR(transpose_x2, Bool, false)
+    .ATTR(offset_x, Int, 0)
+    .OP_END_FACTORY_REG(MatMulV2)
+
         IMPLEMT_INFERFUNC(GuaranteeConst, GuaranteeConstInfer) {
   TensorDesc tensorDesc = op.GetInputDesc("x");
   (void)op.UpdateOutputDesc("y", tensorDesc);

@@ -65,7 +65,6 @@
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/merge_input_memcpy_pass.h"
 #include "graph/passes/merge_to_stream_merge_pass.h"
-#include "graph/passes/mark_force_unknown_for_cond_pass.h"
 #include "graph/passes/multi_batch_pass.h"
 #include "graph/passes/next_iteration_pass.h"
 #include "graph/passes/permute_pass.h"
@@ -108,6 +107,7 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "register/custom_pass_helper.h"
 #include "external/graph/types.h"
+#include "common/util/error_manager/error_manager.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -149,7 +149,8 @@ ge::Status CheckFpCeilingMode() {
   if (ret == ge::GRAPH_SUCCESS) {
     if (kValidFpCeilingMode.count(mode) == 0) {
       REPORT_INNER_ERROR("E19999", "Option ge.fpCeilingMode is invalid, value:%s", mode.c_str());
-      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "The fp_ceiling_mode %s is invalid, options are 0, 1, and 2.", mode.c_str());
+      GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Get][Option] The fp_ceiling_mode %s is invalid, options are 0, 1, and 2.",
+             mode.c_str());
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
     GELOGI("The parameter fp_ceiling_mode is set to %s.", mode.c_str());
@@ -178,33 +179,33 @@ Status GraphManager::Initialize(const std::map<string, string> &options) {
   graph_run_listener_ = MakeShared<GraphModelListener>(sync_run_mutex_, condition_);
   if (graph_run_listener_ == nullptr) {
     REPORT_CALL_ERROR("E19999", "New GraphModelListener fail");
-    GELOGE(MEMALLOC_FAILED, "Make shared failed");
+    GELOGE(MEMALLOC_FAILED, "[New][GraphModelListener] failed");
     return MEMALLOC_FAILED;
   }
   // graph context
   graph_context_ = MakeShared<GraphContext>();
   if (graph_context_ == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New GraphModelListener fail");
-    GELOGE(MEMALLOC_FAILED, "Make shared failed.");
+    REPORT_CALL_ERROR("E19999", "New GraphContext fail");
+    GELOGE(MEMALLOC_FAILED, "[New][GraphContext] failed.");
     return MEMALLOC_FAILED;
   }
 
   // parse option parameters
   Status ret = ParseOptions(options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Initialize] parse options failed.");
+    GELOGE(ret, "[Parse][Options] failed.");
     return ret;
   }
 
   ret = CheckFpCeilingMode();
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Initialize] Check fp-ceiling-mode options failed.");
+    GELOGE(ret, "[Check][FpCeilingMode] failed.");
     return ret;
   }
 
   ret = graph_context_->Initialize(options);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Initialize] GraphContext initialize failed.");
+    GELOGE(ret, "[Initialize][GraphContext] failed.");
     return ret;
   }
 
@@ -302,7 +303,7 @@ Status GraphManager::Finalize() {
   if (graph_context_ != nullptr) {
     Status ret_final = graph_context_->Finalize();
     if (ret_final != SUCCESS) {
-      GELOGE(ret_final, "[GraphManager] graph context Finalize failed!");
+      GELOGE(ret_final, "[Finalize][GraphContext] failed!");
       unload_model_ret = ret_final;
     }
   }
@@ -321,9 +322,8 @@ Status GraphManager::InitDynamicParams(ComputeGraphPtr &compute_graph) {
     std::string op_type;
     auto ret = GetOriginalType(node, op_type);
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "GetOriginalType from op:%s fail",
-                        node->GetName().c_str());
-      GELOGE(FAILED, "Failed to get node %s original type.", node->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "GetOriginalType from op:%s fail", node->GetName().c_str());
+      GELOGE(FAILED, "[Get][OriginalType] from op:%s failed.", node->GetName().c_str());
       return FAILED;
     }
     if ((op_desc->GetType() == DATA) || (op_type == kGetNextName)) {
@@ -335,7 +335,7 @@ Status GraphManager::InitDynamicParams(ComputeGraphPtr &compute_graph) {
   if (!options_.input_shape.empty() && !options_.dynamic_dims.empty()) {
     if (!ge::ParseInputShape(options_.input_shape, GetLocalOmgContext().input_dims,
                              GetLocalOmgContext().user_input_dims, true)) {
-      GELOGE(GRAPH_PARAM_INVALID, "Failed to parse input shape: %s.", options_.input_shape.c_str());
+      GELOGE(GRAPH_PARAM_INVALID, "[Parse][InputShape] %s failed.", options_.input_shape.c_str());
       return GRAPH_PARAM_INVALID;
     }
     GetLocalOmgContext().dynamic_dims = options_.dynamic_dims;
@@ -380,7 +380,7 @@ void GraphManager::RemoveAddGraphCondition(GraphId graph_id) {
 Status GraphManager::CheckRepeatAdd(uint32_t graph_id, bool &is_added) {
   uint32_t count = 0;
   if (GetGraphCount(graph_id, count) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Get graph [id:%u] count failed, graph might have not been added.", graph_id);
+    GELOGE(INTERNAL_ERROR, "[Get][GraphCount] failed, graph[id:%u] might have not been added.", graph_id);
     return INTERNAL_ERROR;
   }
   // previous thread owns same graph_id has been in the middle of the AddGraph procession
@@ -393,7 +393,7 @@ Status GraphManager::CheckRepeatAdd(uint32_t graph_id, bool &is_added) {
     GraphNodePtr graph_node;
     Status ret = GetGraphNode(graph_id, graph_node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "[AddGraph] GetGraphNode failed, graph_id = %u.", graph_id);
+      GELOGE(ret, "[Get][GraphNode] failed, graph_id = %u.", graph_id);
       return ret;
     }
     is_added = true;
@@ -418,7 +418,7 @@ void GraphManager::SetSessionGraphId(ComputeGraphPtr compute_graph, uint32_t gra
 Status GraphManager::NotifyWaittingGraph(uint32_t graph_id) {
   uint32_t count = 0;
   if (GetGraphCount(graph_id, count) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Get graph [id:%u] count failed, graph might have not been added.", graph_id);
+    GELOGE(INTERNAL_ERROR, "[Get][GraphCount] failed, graph[id:%u] might have not been added.", graph_id);
     return INTERNAL_ERROR;
   }
   GELOGD("Add graph finished, graph_id:%u", graph_id);
@@ -433,15 +433,13 @@ Status GraphManager::CreateGraphNode(uint32_t graph_id, const Graph &graph,
                                      const std::map<std::string, std::string> &options) {
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   GE_IF_BOOL_EXEC(graph_node == nullptr,
-                  REPORT_CALL_ERROR("E19999", "New GraphNode fail, graph_id:%u",
-                                    graph_id);
-                  GELOGE(FAILED, "GraphNode make shared failed");
+                  REPORT_CALL_ERROR("E19999", "New GraphNode fail, graph_id:%u", graph_id);
+                  GELOGE(FAILED, "[New][GraphNode] fail, graph_id:%u", graph_id);
                   return FAILED);
   std::shared_ptr<Graph> graph_ptr = MakeShared<ge::Graph>(graph);
   GE_IF_BOOL_EXEC(graph_ptr == nullptr,
-                  REPORT_CALL_ERROR("E19999", "New Graph fail, graph_id:%u",
-                                    graph_id);
-                  GELOGE(FAILED, "GraphPtr make shared failed");
+                  REPORT_CALL_ERROR("E19999", "New Graph fail, graph_id:%u", graph_id);
+                  GELOGE(FAILED, "[New][Graph] fail, graph_id:%u", graph_id);
                   return FAILED);
   // update option about tuning graph
   ParseOption(options, BUILD_MODE, options_.build_mode);
@@ -459,10 +457,52 @@ Status GraphManager::SetStagesOptions(uint32_t graph_id, const GraphManagerOptio
   stages.preparer.SetOptions(options_);
   Status status = stages.optimizer.SetOptions(options_);
   if (status != SUCCESS) {
-    GELOGE(status, "Graph optimizer set options failed.");
+    GELOGE(status, "[Set][Options] for Graph optimizer failed, graph id:%u.", graph_id);
     return status;
   }
   stages.builder.SetOptions(options_);
+  return SUCCESS;
+}
+
+Status GraphManager::ModifyDataIndex(const Graph &graph, const std::map<std::string, std::string> &graph_option) {
+  vector<OpDescPtr> data_desc;
+  set<int64_t> indexes;
+  auto compute_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(compute_graph);
+  for (auto &input_node : compute_graph->GetDirectNode()) {
+    GE_CHECK_NOTNULL(input_node);
+    auto op = input_node->GetOpDesc();
+    GE_CHECK_NOTNULL(op);
+    if (op->GetType() == DATA) {
+      int64_t index = 0;
+      (void) AttrUtils::GetInt(op, ATTR_NAME_INDEX, index);
+      indexes.insert(index);
+      data_desc.emplace_back(op);
+    }
+  }
+  if (!indexes.empty()) {
+    auto first_iter = indexes.begin();
+    auto end_iter = indexes.end();
+    --end_iter;
+    auto data_size = static_cast<int64_t>(data_desc.size());
+    // The valid index starts with 0 and increases by 1, and num is equal to data_node.
+    if (indexes.size() != data_desc.size() || *first_iter != 0 || *end_iter != data_size - 1) {
+      auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
+      if (iter != graph_option.end() && !iter->second.empty()) {
+        // If data inputs shape range is set, user must set valid data index.
+        std::string failed_reason = "Data index must be set continuous from 0 when data shape range enabled!";
+        REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+                           std::vector<std::string>({"--data_index", "-", failed_reason}));
+        GELOGE(GRAPH_PARAM_INVALID, "[COMP][AddGraph]Input data index is invalid when data shape range enabled.");
+        return GRAPH_PARAM_INVALID;
+      }
+      GELOGI("Graph[%s] input data index is invalid, set data index by topo order.", compute_graph->GetName().c_str());
+      int64_t index = 0;
+      for (auto &op : data_desc) {
+        (void) AttrUtils::SetInt(op, ATTR_NAME_INDEX, index++);
+      }
+    }
+  }
   return SUCCESS;
 }
 
@@ -475,7 +515,8 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   if (GetAddGraphCondition(graph_id) == kDoneAdded) {
     GraphNodePtr graph_node;
     if (GetGraphNode(graph_id, graph_node) != SUCCESS) {
-      GELOGE(GE_GRAPH_GRAPH_NOT_EXIST, "Graph not exist while done adding previously, graph_id = %u.", graph_id);
+      GELOGE(GE_GRAPH_GRAPH_NOT_EXIST, "[Get][GraphNode] failed, Graph not exist while done adding previously, "
+             "graph_id = %u.", graph_id);
       return GE_GRAPH_GRAPH_NOT_EXIST;
     }
     graph_node->IncreaseLoadCount();
@@ -486,7 +527,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   // done adding graph of the former graph, avoiding repeatively adding same graph.
   bool is_added = false;
   if (CheckRepeatAdd(graph_id, is_added) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "CheckRepeatAdd for graph[id:%u] failed.", graph_id);
+    GELOGE(INTERNAL_ERROR, "[Check][RepeatAdd] for graph[id:%u] failed.", graph_id);
     return INTERNAL_ERROR;
   }
   // The former graph (from different thread) owns same graph id has been successfully added.
@@ -496,16 +537,17 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   // Do add graph
   SetAddGraphCondition(graph_id, kStartAdd);
   if (CheckGraphAdded(graph_id, graph) != SUCCESS) {
-    GELOGE(FAILED, "AddGraph failed.");
+    GELOGE(FAILED, "[Check][GraphAdded] failed, graph id:%u.", graph_id);
     return FAILED;
   }
+  GE_CHK_STATUS_RET(ModifyDataIndex(graph, options));
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GE_CHECK_NOTNULL(compute_graph);
   (void)AttrUtils::SetBool(*compute_graph, ATTR_NAME_GRAPH_HAS_BEEN_ADDED, true);
   SetSessionGraphId(compute_graph, graph_id);
 
   if (CreateGraphNode(graph_id, graph, options) != SUCCESS) {
-    GELOGE(FAILED, "Failed to create graph_node.");
+    GELOGE(FAILED, "[Create][GraphNode] failed, graph id:%u.", graph_id);
     return FAILED;
   }
 
@@ -514,12 +556,12 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
     GetLocalOmgContext().output_type = options_.output_datatype;
   }
   if (InitDynamicParams(compute_graph) != SUCCESS) {
-    GELOGE(GRAPH_PARAM_INVALID, "Failed to init params when online infer is dynamic.");
+    GELOGE(GRAPH_PARAM_INVALID, "[Init][Params] failed, when online infer is dynamic, graph id:%u.", graph_id);
     return GRAPH_PARAM_INVALID;
   }
 
   if (SetStagesOptions(graph_id, options_) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Set stage options failed.");
+    GELOGE(INTERNAL_ERROR, "[Set][StagesOptions] failed, graph id:%u.", graph_id);
     return INTERNAL_ERROR;
   }
 
@@ -527,7 +569,7 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
   SetAddGraphCondition(graph_id, kDoneAdded);
   // There are threads waitting for adding same graph
   if (NotifyWaittingGraph(graph_id) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "NotifyWaittingGraph failed.");
+    GELOGE(INTERNAL_ERROR, "[Notify][WaittingGraph] failed, graph id:%u.", graph_id);
     return INTERNAL_ERROR;
   }
   return SUCCESS;
@@ -542,14 +584,13 @@ Status GraphManager::CheckGraphAdded(const GraphId &graph_id, const Graph &graph
         && graph_has_been_added) {
       REPORT_INNER_ERROR("E19999", "Get Attr:%s from graph:%u fail.",
                          ATTR_NAME_GRAPH_HAS_BEEN_ADDED.c_str(), graph_id);
-      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST,
-             "[GraphManager] same graph object can not be added again, graph_id = %u.", graph_id);
+      GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST,  "[Get][Attr] %s from graph:%u fail.",
+             ATTR_NAME_GRAPH_HAS_BEEN_ADDED.c_str(), graph_id);
       return GE_GRAPH_GRAPH_ALREADY_EXIST;
     }
   } else {
-    REPORT_INNER_ERROR("E19999", "compute_graph from graph:%u is nullptr, check invalid",
-                       graph_id);
-    GELOGE(FAILED, "compute graph is null");
+    REPORT_INNER_ERROR("E19999", "compute_graph from graph:%u is nullptr, check invalid", graph_id);
+    GELOGE(FAILED, "[Get][ComputeGraph] failed, compute graph from graph:%u is nullptr", graph_id);
     return FAILED;
   }
   return SUCCESS;
@@ -559,11 +600,11 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
                                       const std::map<std::string, std::string> &options,
                                       const OmgContext &omg_context) {
   if (HasGraphNode(graph_id)) {
-    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[GraphManager] graph exists, graph_id = %u", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_ALREADY_EXIST, "[Has][GraphNode] graph exists, graph_id = %u", graph_id);
     return GE_GRAPH_GRAPH_ALREADY_EXIST;
   }
   if (CheckGraphAdded(graph_id, graph) != SUCCESS) {
-    GELOGE(FAILED, "AddGraphWithCopy failed.");
+    GELOGE(FAILED, "[Check][GraphAdded] failed, graph_id = %u", graph_id);
     return FAILED;
   }
   IncreaseGraphCount(graph_id);
@@ -577,7 +618,7 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
   SetSessionGraphId(new_compute_graph, graph_id);
   std::shared_ptr<Graph> new_graph_ptr = GraphUtils::CreateGraphPtrFromComputeGraph(new_compute_graph);
   if (CreateGraphNode(graph_id, *new_graph_ptr, options) != SUCCESS) {
-    GELOGE(FAILED, "Failed to create graph_node.");
+    GELOGE(FAILED, "[Create][GraphNode] failed, graph_id = %u", graph_id);
     return FAILED;
   }
 
@@ -586,12 +627,12 @@ Status GraphManager::AddGraphWithCopy(const GraphId &graph_id, const Graph &grap
     GetLocalOmgContext().output_type = options_.output_datatype;
   }
   if (InitDynamicParams(new_compute_graph) != SUCCESS) {
-    GELOGE(GRAPH_PARAM_INVALID, "Failed to init params when online infer is dynamic.");
+    GELOGE(GRAPH_PARAM_INVALID, "[Init][Params] failed, when online infer is dynamic, graph_id = %u", graph_id);
     return GRAPH_PARAM_INVALID;
   }
 
   if (SetStagesOptions(graph_id, options_) != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "Set stage options failed.");
+    GELOGE(INTERNAL_ERROR, "[Set][StagesOptions] failed, graph_id = %u", graph_id);
     return INTERNAL_ERROR;
   }
 
@@ -612,9 +653,9 @@ Status GraphManager::MergeSubGraph(ComputeGraphPtr &compute_graph, const ge::Com
 
     Status ret_topo = compute_graph->TopologicalSorting();
     if (ret_topo != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "TopologicalSorting fail, graph_id:%u",
-                        compute_graph->GetGraphID());
-      GELOGE(ret_topo, "[GraphManager]: TopologicalSorting the merged graph failed.");
+      REPORT_CALL_ERROR("E19999", "TopologicalSorting fail, graph_id:%u", compute_graph->GetGraphID());
+      GELOGE(ret_topo, "[Call][TopologicalSorting] for the merged graph failed, graph_id:%u",
+             compute_graph->GetGraphID());
       return ret_topo;
     }
   } else {
@@ -649,16 +690,16 @@ Status GraphManager::CopySubGraphAndMarkFusion(const ComputeGraphPtr &compute_gr
     std::vector<NodePtr> output_nodes;
     ComputeGraphPtr new_compute_graph = GraphUtils::CloneGraph(old_compute_graph, "", input_nodes, output_nodes);
     if (new_compute_graph == nullptr) {
-      REPORT_CALL_ERROR("E19999", "CloneGraph fail, graph_id:%u",
-                        compute_graph->GetGraphID());
-      GELOGE(INTERNAL_ERROR, "Clone graph failed.");
+      REPORT_CALL_ERROR("E19999", "CloneGraph fail, graph_id:%u", compute_graph->GetGraphID());
+      GELOGE(INTERNAL_ERROR, "[Clone][Graph] failed, graph_id:%u", compute_graph->GetGraphID());
       return INTERNAL_ERROR;
     }
     copy_graphs.emplace(old_compute_graph->GetName(), new_compute_graph);
     if (!AttrUtils::SetBool(old_compute_graph, ATTR_NAME_NEED_LX_FUSION, true)) {
       REPORT_INNER_ERROR("E19999", "Set Attr:%s to graph:%u fail",
                          ATTR_NAME_NEED_LX_FUSION.c_str(), old_compute_graph->GetGraphID());
-      GELOGE(INTERNAL_ERROR, "Set attr lx_fusion to graph failed.");
+      GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to graph:%u failed.",
+             ATTR_NAME_NEED_LX_FUSION.c_str(), old_compute_graph->GetGraphID());
       return INTERNAL_ERROR;
     }
   }
@@ -696,7 +737,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
                                             ErrorManager::GetInstance().GetErrorManagerContext(),
                                             GetThreadLocalContext());
     if (!f.valid()) {
-      GELOGE(FAILED, "Future is invalid");
+      GELOGE(FAILED, "[Call][Commit] failed, Future is invalid, session_id:%lu", session_id);
       return FAILED;
     }
     vector_future.emplace_back(std::move(f));
@@ -713,7 +754,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
                                               ErrorManager::GetInstance().GetErrorManagerContext(),
                                               GetThreadLocalContext());
       if (!f.valid()) {
-        GELOGE(FAILED, "Future is invalid");
+        GELOGE(FAILED, "[Call][Commit] failed, Future is invalid, session_id:%lu", session_id);
         return FAILED;
       }
       vector_future.emplace_back(std::move(f));
@@ -724,7 +765,7 @@ Status GraphManager::OptimizeSubGraphWithMultiThreads(ComputeGraphPtr compute_gr
     Status ret_status = vector_future[i].get();
     if (ret_status != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "subgraph %zu optimize failed", i);
-      GELOGE(ret_status, "subgraph %zu optimize failed", i);
+      GELOGE(ret_status, "[Check][Param] subgraph %zu optimize failed", i);
       return ret_status;
     }
   }
@@ -735,7 +776,7 @@ bool GraphManager::CheckAllFusionOptimizeSuccess(const ComputeGraphPtr &compute_
                                                  Graph2SubGraphInfoList &sub_graph_map) {
   if (compute_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "Input param compute_graph is nullptr.");
+    GELOGE(PARAM_INVALID, "[Check][Param] Input param compute_graph is nullptr.");
     return false;
   }
 
@@ -776,7 +817,8 @@ Status GraphManager::ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_
     if (iter == copy_graphs.end()) {
       REPORT_INNER_ERROR("E19999", "Can not find subgraph:%s in copy graphs, check invalid",
                          subgraph->GetSubGraph()->GetName().c_str());
-      GELOGE(FAILED, "Can not find subgraph:%s in copy graphs.", subgraph->GetSubGraph()->GetName().c_str());
+      GELOGE(FAILED, "[Check][Param] Can not find subgraph:%s in copy graphs.",
+             subgraph->GetSubGraph()->GetName().c_str());
       return FAILED;
     }
     subgraph->SetSubGraph(iter->second);
@@ -789,7 +831,8 @@ Status GraphManager::ReplaceSubgraphWithOriGraph(const ComputeGraphPtr &compute_
       if (iter == copy_graphs.end()) {
         REPORT_INNER_ERROR("E19999", "Can not find subgraph:%s in copy graphs, check invalid",
                            subgraph->GetSubGraph()->GetName().c_str());
-        GELOGE(FAILED, "Can not find subgraph:%s in copy graphs.", subgraph->GetSubGraph()->GetName().c_str());
+        GELOGE(FAILED, "[Check][Param] Can not find subgraph:%s in copy graphs.",
+               subgraph->GetSubGraph()->GetName().c_str());
         return FAILED;
       }
       subgraph->SetSubGraph(iter->second);
@@ -807,7 +850,7 @@ Status GraphManager::SetSubgraph(uint64_t session_id, ComputeGraphPtr compute_gr
          options_.build_step.c_str());
   Status ret = OptimizeSubGraphWithMultiThreads(compute_graph, sub_graph_map, session_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Multiply optimize subgraph failed");
+    GELOGE(ret, "[Call][OptimizeSubGraphWithMultiThreads] failed, ret:%d, session_id:%lu", ret, session_id);
     return ret;
   }
   return SUCCESS;
@@ -849,7 +892,8 @@ Status GraphManager::PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node,
   GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::CtrlEdgeTransferPass", new (std::nothrow) CtrlEdgeTransferPass))
   GE_CHK_STATUS_RET(graph_pass.Run(compute_graph));
 
-  GE_CHK_STATUS_RET(stages.optimizer.IdentifyReference(compute_graph), "Identify reference failed.");
+  GE_CHK_STATUS_RET(stages.optimizer.IdentifyReference(compute_graph),
+                    "[Identify][Reference] failed, graph:%s.", compute_graph->GetName().c_str());
   GELOGD("PreRun:PreRunOptimizeOriginalGraph success.");
   return SUCCESS;
 }
@@ -887,9 +931,8 @@ Status GraphManager::PreRunAfterOptimizeSubGraph(const GraphNodePtr &graph_node,
 
   Status ret = compute_graph->TopologicalSorting();
   if (ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "TopologicalSorting fail, graph_id:%u",
-                      compute_graph->GetGraphID());
-    GELOGE(ret, "Graph topological sort failed, ret:%d.", ret);
+    REPORT_CALL_ERROR("E19999", "TopologicalSorting fail, graph_id:%u", compute_graph->GetGraphID());
+    GELOGE(ret, "[Call][TopologicalSorting] fail, graph_id:%u", compute_graph->GetGraphID());
     return ret;
   }
 
@@ -906,14 +949,14 @@ Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtCtxCreate faileded, session_id:%lu, graph_id:%u, mode:%d",
                       session_id, graph_id, mode);
-    GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    GELOGE(FAILED, "[Call][RtCtxCreate] faileded, session_id:%lu, graph_id:%u, mode:%d", session_id, graph_id, mode);
     return FAILED;
   }
   rt_ret = rtCtxSetCurrent(rt_context);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtCtxSetCurrent failed, session_id:%lu, graph_id:%u, mode:%d",
                       session_id, graph_id, mode);
-    GELOGE(FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    GELOGE(FAILED, "[Call][RtCtxSetCurrent] failed, session_id:%lu, graph_id:%u, mode:%d", session_id, graph_id, mode);
     return FAILED;
   }
   RtContextUtil::GetInstance().AddRtContext(session_id, graph_id, rt_context);
@@ -927,7 +970,7 @@ Status GraphManager::RunCustomPass(const GraphNodePtr &graph_node) {
 
   GE_TIMESTAMP_START(RunCustomPass);
   GraphPtr graph = std::const_pointer_cast<Graph>(const_graph);
-  GE_CHK_STATUS_RET(CustomPassHelper::Instance().Run(graph), "Graph[%s] run custom pass fail.",
+  GE_CHK_STATUS_RET(CustomPassHelper::Instance().Run(graph), "[Call][Run] for Graph[%s] fail.",
                     comp_graph->GetName().c_str());
   GE_TIMESTAMP_END(RunCustomPass, "GraphBuilder::RunCustomPass");
   return SUCCESS;
@@ -943,7 +986,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   compute_graph->SetSessionID(session_id);
   auto analyzer_instance = Analyzer::GetInstance();
   GE_CHK_STATUS_RET(analyzer_instance->BuildJsonObject(session_id, compute_graph->GetGraphID()),
-                    "BuildJsonObject Failed")
+                    "[Build][JsonObject] Failed, session_id:%lu", session_id)
 
   GEEVENT("PreRun start: graph node size %zu, session id %lu, graph id %u, graph name %s.",
           compute_graph->GetDirectNodesSize(), session_id, compute_graph->GetGraphID(),
@@ -952,7 +995,7 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   // rtContext_t
   Status ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE, session_id, compute_graph->GetGraphID());
   if (ret != SUCCESS) {
-    GELOGE(ret, "Set rt context failed.");
+    GELOGE(ret, "[Set][RtContext] failed, session_id:%lu, graph_id:%u.", session_id, compute_graph->GetGraphID());
     return ret;
   }
 
@@ -966,17 +1009,20 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   if (run_optimize_original_graph) {
     Status ret = PreRunOptimizeOriginalGraph(graph_node, inputs, compute_graph, session_id);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Run PreRunOptimizeOriginalGraph failed for graph:%s.", compute_graph->GetName().c_str());
+      GELOGE(ret, "[Run][PreRunOptimizeOriginalGraph] failed for graph:%s, session_id:%lu",
+             compute_graph->GetName().c_str(), session_id);
       return ret;
     }
   }
 
   ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kSubGraphOptimize);
   // set fuzz compile flag after origin graph optimize
-  GE_CHK_STATUS_RET(SetFuzzCompileFlag(compute_graph), "Set fuzz compile flag failed.");
+  GE_CHK_STATUS_RET(SetFuzzCompileFlag(compute_graph),
+                    "[Set][FuzzCompileFlag] failed for graph:%s.", compute_graph->GetName().c_str());
   ret = PreRunOptimizeSubGraph(graph_node, compute_graph, session_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Run PreRunOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
+    GELOGE(ret, "[Run][PreRunOptimizeSubGraph] failed for graph:%s, session_id:%lu.",
+           compute_graph->GetName().c_str(), session_id);
     return ret;
   }
 
@@ -990,7 +1036,8 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   if (run_after_optimize_subgraph) {
     ret = PreRunAfterOptimizeSubGraph(graph_node, compute_graph, ge_root_model, session_id);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Run PreRunAfterOptimizeSubGraph failed for graph:%s.", compute_graph->GetName().c_str());
+      GELOGE(ret, "[Run][PreRunAfterOptimizeSubGraph] failed for graph:%s, session_id:%lu.",
+             compute_graph->GetName().c_str(), session_id);
       return ret;
     }
   }
@@ -1015,7 +1062,7 @@ Status GraphManager::SetFuzzCompileFlag(ComputeGraphPtr &compute_graph) {
     GE_CHECK_NOTNULL(op_desc);
     GELOGD("Fuzz compile flag is %d.", GetLocalOmgContext().fuzz_compile_flag);
     if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, GetLocalOmgContext().fuzz_compile_flag)) {
-      GELOGE(FAILED, "[Set][ATTR_NAME_FUZZ_BUILD]Failed to set fuzz build attr to %s.", op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Set][ATTR] %s to %s failed.", ATTR_NAME_FUZZ_BUILD.c_str(), op_desc->GetName().c_str());
       return FAILED;
     }
   }
@@ -1031,7 +1078,7 @@ Status GraphManager::SubexpressionMigration(ComputeGraphPtr &compute_graph) {
   auto ret = pass_manager.Run(compute_graph);
   GE_TIMESTAMP_END(SubexpressionMigrationPass, "GraphManager::SubexpressionMigration");
   if (ret != SUCCESS && ret != NOT_CHANGED) {
-    GELOGE(ret, "Run SubexpressionMigrationPass failed, ret:%u.", ret);
+    GELOGE(ret, "[Run][SubexpressionMigrationPass] failed, ret:%u.", ret);
     return ret;
   }
 
@@ -1048,7 +1095,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
       REPORT_INNER_ERROR("E19999", "Graph:%u has not build before, can't run directly, "
                          "check invalid", graph_node->GetGraphId());
       GELOGE(PARAM_INVALID,
-             "The graph %u need to re-build, you should remove it from GE "
+             "[Get][BuildFlag] The graph %u need to re-build, you should remove it from GE "
              "first, then AddGraph again and rebuild it.",
              graph_node->GetGraphId());
       return PARAM_INVALID;
@@ -1061,7 +1108,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
       // release rts generate context
       RtContextUtil::GetInstance().DestroyRtContexts(session_id, graph_node->GetGraphId());
       if (ret != SUCCESS) {
-        GELOGE(ret, "PreRun Failed, graph_id:%u.", graph_node->GetGraphId());
+        GELOGE(ret, "[Call][PreRun] Failed, graph_id:%u, session_id:%lu.", graph_node->GetGraphId(), session_id);
         return ret;
       }
     }
@@ -1072,7 +1119,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
       ret = LoadGraphAsync(ge_root_model, graph_node);
     }
     if (ret != SUCCESS) {
-      GELOGE(ret, "LoadGraph Failed.");
+      GELOGE(ret, "[Load][Graph] Failed, graph_id:%u.", graph_node->GetGraphId());
       return ret;
     }
     graph_node->SetBuildFlag(true);
@@ -1086,7 +1133,7 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
       ret = LoadGraphAsync(ge_root_model_ptr, graph_node);
     }
     if (ret != SUCCESS) {
-      GELOGE(ret, "LoadGraph Failed.");
+      GELOGE(ret, "[Load][Graph] Failed, graph_id:%u.", graph_node->GetGraphId());
       return ret;
     }
   }
@@ -1117,7 +1164,7 @@ Status GraphManager::LoadGraph(const GeRootModelPtr &ge_root_model, const GraphN
     Status ret = GraphLoader::LoadModelOnline(model_id_info.model_id, ge_root_model, model_listener);
     GE_TIMESTAMP_EVENT_END(LoadGraph, "GraphManager::LoadGraph");
     if (ret != SUCCESS) {
-      GELOGE(ret, "[StartForRunGraph] LoadGraph Failed");
+      GELOGE(ret, "[Load][Model] failed, ret:%d", ret);
       graph_node->SetRunFlag(false);
       return ret;
     }
@@ -1217,7 +1264,7 @@ Status GraphManager::InnerRunGraph(GraphNodePtr &graph_node, const GraphId &grap
                                    const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) {
   Status ret = graph_executor_.SetCondition(&sync_run_mutex_, &condition_, graph_run_listener_);
   if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_RUNGRAPH_FAILED, "[RunGraph] set condition failed, graph_id = %u.", graph_id);
+    GELOGE(GE_GRAPH_RUNGRAPH_FAILED, "[Set][Condition] failed, graph_id = %u.", graph_id);
     graph_node->SetRunFlag(false);
     return GE_GRAPH_RUNGRAPH_FAILED;
   }
@@ -1230,7 +1277,7 @@ Status GraphManager::InnerRunGraph(GraphNodePtr &graph_node, const GraphId &grap
 
   graph_node->SetRunFlag(false);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[RunGraph] execute graph failed, graph_id = %u.", graph_id);
+    GELOGE(ret, "[Execute][Graph] failed, graph_id = %u.", graph_id);
     return ret;
   }
   return SUCCESS;
@@ -1240,8 +1287,7 @@ Status GraphManager::InnerRunGraphWithStream(GraphNodePtr &graph_node, const Gra
                                              const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) {
   auto ret = graph_executor_.SetCondition(&sync_run_mutex_, &condition_, graph_run_listener_);
   if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_RUNGRAPH_FAILED, "[Run][GraphWithStreamAsync] set condition failed, "
-           "graph id = %u, stream = %p.", graph_id, stream);
+    GELOGE(GE_GRAPH_RUNGRAPH_FAILED, "[Set][Condition] failed, graph id = %u, stream = %p.", graph_id, stream);
     graph_node->SetRunFlag(false);
     return GE_GRAPH_RUNGRAPH_FAILED;
   }
@@ -1250,7 +1296,7 @@ Status GraphManager::InnerRunGraphWithStream(GraphNodePtr &graph_node, const Gra
   graph_node->SetRunFlag(false);
   graph_node->SetIsSpecificStream(false);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Run][GraphWithStreamAsync] execute graph failed, graph id = %u, stream = %p.", graph_id, stream);
+    GELOGE(ret, "[Execute][Graph] With Stream failed, graph id = %u, stream = %p.", graph_id, stream);
     return ret;
   }
   GELOGI("[Run][GraphWithStreamAsync] run graph success, graph id = %u, stream = %p.", graph_id, stream);
@@ -1272,18 +1318,20 @@ Status GraphManager::RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS) {
     REPORT_INNER_ERROR("E19999", "graph id = %u not exist in graph_map, check invalid.", graph_id);
-    GELOGE(ret, "Run graph with stream async graph not exist, graph id = %u.", graph_id);
+    GELOGE(ret, "[Get][GraphNode] failed, Run graph with stream async, graph not exist, graph id = %u.", graph_id);
     return ret;
   }
   if (graph_node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph id = %u, check invalid.", graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "Run graph with stream async graph node is NULL, graph id = %u.", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Check][Param] Run graph with stream async, graph node is NULL, "
+           "graph id = %u.", graph_id);
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
   if (graph_node->GetRunFlag()) {
     REPORT_INNER_ERROR("E19999", "Graph is already running, can't be run again, graph id = %u, "
                        "check invalid.", graph_id);
-    GELOGE(GE_GRAPH_ALREADY_RUNNING, "Run graph with stream async graph already running, graph id = %u.", graph_id);
+    GELOGE(GE_GRAPH_ALREADY_RUNNING, "[Get][RunFlag] Run graph with stream async graph already running, "
+           "graph id = %u.", graph_id);
     return GE_GRAPH_ALREADY_RUNNING;
   }
 
@@ -1301,7 +1349,7 @@ Status GraphManager::RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t
   GeRootModelPtr ge_root_model = nullptr;
   ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Run][GraphWithStreamAsync] StartForRunGraph failed!");
+    GELOGE(ret, "[Call][StartForRunGraph] failed, session_id:%lu", session_id);
     graph_node->SetRunFlag(false);
     return ret;
   }
@@ -1322,23 +1370,20 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
   GraphNodePtr graph_node = nullptr;
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid",
-                       graph_id);
-    GELOGE(ret, "[RunGraph] graph not exist, graph_id = %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(ret, "[Get][GraphNode] failed, graph not exist, graph_id = %u.", graph_id);
     return ret;
   }
 
   if (graph_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] graph node is NULL, graph_id = %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Check][Param] graph node is NULL, graph_id = %u.", graph_id);
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
 
   if (graph_node->GetRunFlag()) {
-    REPORT_INNER_ERROR("E19999", "Graph is already running, can't be run again, graph_id:%u, "
-                       "check invalid", graph_id);
-    GELOGE(GE_GRAPH_ALREADY_RUNNING, "[RunGraph] graph already running, graph id = %u", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph is already running, can't be run again, graph_id:%u, check invalid", graph_id);
+    GELOGE(GE_GRAPH_ALREADY_RUNNING, "[Get][RunFlag] graph already running, graph id = %u", graph_id);
     return GE_GRAPH_ALREADY_RUNNING;
   }
 
@@ -1352,8 +1397,8 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
                   GE_IF_BOOL_EXEC(compute_graph_tmp == nullptr,
                                   REPORT_CALL_ERROR("E19999", "compute_graph is nullptr in graph_node, graph_id:%u, "
                                                     "check invalid", graph_id);
-                                  GELOGE(GE_GRAPH_GRAPH_NODE_NULL,
-                                         "[RunGraph] compute_graph_tmp is NULL, graph id = %u.", graph_id);
+                                  GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Get][ComputeGraph] failed, "
+                                         "compute_graph_tmp is NULL, graph id = %u.", graph_id);
                                   return GE_GRAPH_GRAPH_NODE_NULL;))
 
   // when set incre build, add cache helper map
@@ -1366,7 +1411,7 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
   GeRootModelPtr ge_root_model = nullptr;
   ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[RunGraph] StartForRunGraph failed!");
+    GELOGE(ret, "[Call][StartForRunGraph] failed, session_id:%lu", session_id);
     graph_node->SetRunFlag(false);
     return ret;
   }
@@ -1382,7 +1427,7 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
     if (compute_graph_tmp->IsSummaryGraph()) {
       ret = SummaryHandle(graph_id, outputs);
       if (ret != SUCCESS) {
-        GELOGE(ret, "[RunGraph] SummaryHandle failed!");
+        GELOGE(ret, "[Call][SummaryHandle] failed, graph_id:%u", graph_id);
       }
     }
 
@@ -1393,7 +1438,7 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
       if (IsCheckpointGraph(checkPointGraph)) {
         ret = CheckpointHandle(graph_id, checkPointGraph, outputs);
         if (ret != SUCCESS) {
-          GELOGE(ret, "[RunGraph] CheckpointHandle failed!");
+          GELOGE(ret, "[Check][PointHandle] failed, graph_id:%u", graph_id);
         }
       }
     }
@@ -1409,9 +1454,8 @@ Status GraphManager::GenerateInfershapeGraph(GraphId &graph_id) {
   GraphNodePtr graph_node = nullptr;
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid",
-                       graph_id);
-    GELOGE(ret, "[BuildGraph] graph not exist, graph_id = %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(ret, "[Get][GraphNode] failed, graph not exist, graph_id = %u.", graph_id);
     return ret;
   }
 
@@ -1447,9 +1491,8 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
   }
 
   if (graph_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[BuildGraph] graph node is NULL, graphId = %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Check][Param] graph node is NULL, graphId = %u.", graph_id);
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
 
@@ -1469,9 +1512,8 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
 
       auto instance_ptr = ge::GELib::GetInstance();
       if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
-        REPORT_INNER_ERROR("E19999", "GELib is not init before, graph_id:%u, check invalid",
-                           graph_id);
-        GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
+        REPORT_INNER_ERROR("E19999", "GELib is not init before, graph_id:%u, check invalid", graph_id);
+        GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Get][GELib] GELib is not init before, graph_id:%u", graph_id);
         return GE_CLI_GE_NOT_INITIALIZED;
       }
 
@@ -1481,7 +1523,9 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
         REPORT_INNER_ERROR("E19999", "GetOpsKernelInfoStore fail for op:%s(%s), kernel_lib_name:%s, graph_id:%u, "
                            "check invalid", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                            op_desc->GetOpKernelLibName().c_str(), graph_id);
-        GELOGE(FAILED, "Get op kernel info store failed");
+        GELOGE(FAILED, "[Get][OpsKernelInfoStore] fail for op:%s(%s), kernel_lib_name:%s, graph_id:%u",
+               op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+               op_desc->GetOpKernelLibName().c_str(), graph_id);
         return FAILED;
       }
 
@@ -1490,8 +1534,7 @@ Status GraphManager::BuildGraphForUnregisteredOp(const GraphId &graph_id, const 
         REPORT_CALL_ERROR("E19999", "Call CompileOp fail for op:%s(%s), kernel_lib_name:%s, graph_id:%u, "
                           "check invalid", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                           op_desc->GetOpKernelLibName().c_str(), graph_id);
-        GELOGE(FAILED, "Get op kernel info store failed");
-        GELOGE(ret, "Compile op failed, op = %s, graph_id = %u.", op_desc->GetName().c_str(), graph_id);
+        GELOGE(ret, "[Compile][Op] failed, op = %s, graph_id = %u.", op_desc->GetName().c_str(), graph_id);
         return ret;
      }
     }
@@ -1514,23 +1557,21 @@ Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTen
   GraphNodePtr graph_node = nullptr;
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid",
-                       graph_id);
-    GELOGE(ret, "[BuildGraph] graph not exist, graph_id = %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(ret, "[Get][GraphNode] failed, graph not exist, graph_id = %u.", graph_id);
     return ret;
   }
 
   if (graph_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[BuildGraph] graph node is NULL, graphId = %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Check][Param] graph node is NULL, graphId = %u.", graph_id);
     return GE_GRAPH_GRAPH_NODE_NULL;
   }
 
   if (graph_node->GetRunFlag()) {
     REPORT_INNER_ERROR("E19999", "Graph is already running, can't be run again, graph_id:%u, "
                        "check invalid", graph_id);
-    GELOGE(GE_GRAPH_ALREADY_RUNNING, "[BuildGraph] graph already running, graph id = %u", graph_node->GetGraphId());
+    GELOGE(GE_GRAPH_ALREADY_RUNNING, "[Get][RunFlag] graph already running, graph id = %u", graph_node->GetGraphId());
     return GE_GRAPH_ALREADY_RUNNING;
   }
 
@@ -1543,7 +1584,7 @@ Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTen
   ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
   graph_node->SetRunFlag(false);
   if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_PRERUN_FAILED, "[BuildGraph] StartForRunGraph failed! graph_id:%u.", graph_id);
+    GELOGE(GE_GRAPH_PRERUN_FAILED, "[Call][StartForRunGraph] failed! graph_id:%u.", graph_id);
     return GE_GRAPH_PRERUN_FAILED;
   }
 
@@ -1563,18 +1604,18 @@ Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTen
 ///
 Status GraphManager::SaveParams(ge::GeModel &model, const std::string &type, const std::map<string, GeAttrValue> &attrs,
                                 const std::vector<GeTensor> &inputs, const std::vector<GeTensor> &outputs) {
-  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetStr(&model, "ATTR_MODEL_OP_TYPE", type), return FAILED, "Set Op[%s] type fail",
-                   type.c_str());
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetStr(&model, "ATTR_MODEL_OP_TYPE", type), return FAILED,
+                   "[Set][Str] model type[%s] fail", type.c_str());
 
   for (const auto &it : attrs) {
     GE_CHK_BOOL_EXEC(model.SetAttr("ATTR_MODEL_" + it.first, it.second) == GRAPH_SUCCESS, return FAILED,
-                     "Set OpDesc attribute[%s] fail", it.first.c_str());
+                     "[Set][Attr] OpDesc attribute[%s] fail", it.first.c_str());
   }
 
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListTensor(&model, "ATTR_MODEL_TENSOR_INPUTS", inputs), return FAILED,
-                   "Set Inputs tensor list fail");
+                   "[Set][InputsTensor] list fail");
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListTensor(&model, "ATTR_MODEL_TENSOR_OUTPUTS", outputs), return FAILED,
-                   "Set Outputs tensor list fail");
+                   "[Set][OutputsTensor] list fail");
 
   return SUCCESS;
 }
@@ -1601,9 +1642,8 @@ Status GraphManager::RemoveGraph(const GraphId &graph_id) {
   GraphNodePtr graph_node = nullptr;
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS || graph_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid when GraphManager %s",
-                       graph_id, __FUNCTION__);
-    GELOGE(GE_GRAPH_GRAPH_NOT_EXIST, "[GraphManager] Id %u does not exists.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NOT_EXIST, "[Get][GraphNode] Id %u does not exists.", graph_id);
     return GE_GRAPH_GRAPH_NOT_EXIST;
   }
   if (graph_node->GetRunFlag()) {
@@ -1628,7 +1668,7 @@ Status GraphManager::RemoveGraph(const GraphId &graph_id) {
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, graph_id:%u",
                         GetContext().DeviceId(), graph_id);
-      GELOGE(RT_FAILED, "[GraphManager:] rtSetDevice failed, modelId=%u, graphId=%u.", ge_root_model->GetModelId(),
+      GELOGE(RT_FAILED, "[Call][RtSetDevice] failed, modelId=%u, graphId=%u.", ge_root_model->GetModelId(),
              graph_id);
       return FAILED;
     }
@@ -1636,16 +1676,15 @@ Status GraphManager::RemoveGraph(const GraphId &graph_id) {
     // unload them respectively.
     middle_ret = UnloadModel(ge_root_model, graph_id);
     if (middle_ret != SUCCESS) {
-      REPORT_INNER_ERROR("E19999", "UnloadModel for graph:%u failed, check unload detail in GraphLoader %s",
-                         graph_id, __FUNCTION__);
-      GELOGE(middle_ret, "[GraphManager:] unload model failed, graph_id=%u.", graph_id);
+      REPORT_INNER_ERROR("E19999", "UnloadModel for graph:%u failed, check invalid", graph_id);
+      GELOGE(middle_ret, "[Unload][Model] model failed, graph_id=%u.", graph_id);
       ret = middle_ret;
     }
     rt_ret = rtDeviceReset(GetContext().DeviceId());
     if (rt_ret != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, graph_id:%u, when GraphManager %s",
-                          GetContext().DeviceId(), graph_id, __FUNCTION__);
-      GELOGE(RT_FAILED, "[GraphManager:] rtDeviceReset failed, graphId=%u.", graph_id);
+      REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, graph_id:%u",
+                        GetContext().DeviceId(), graph_id);
+      GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, graph_id:%u", GetContext().DeviceId(), graph_id);
       ret = FAILED;
     }
   }
@@ -1654,7 +1693,7 @@ Status GraphManager::RemoveGraph(const GraphId &graph_id) {
   RemoveGraphCount(graph_id);
   RemoveAddGraphCondition(graph_id);
 
-  GE_CHK_STATUS_RET(ret, "[GraphManager:] Remove graph failed, graph_id=%u.", graph_id);
+  GE_CHK_STATUS_RET(ret, "[Remove][Graph] failed, graph_id=%u.", graph_id);
   GELOGI("[GraphManager] remove graph success, graph_id=%u.", graph_id);
   return SUCCESS;
 }
@@ -1667,8 +1706,7 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   ret = ParseOption(options, STREAM_MAX_PARALLEL_NUM, options_.stream_max_parallel_num);
   if (ret != SUCCESS) {
     GELOGE(GE_GRAPH_OPTIONS_INVALID,
-           "parse Key:%s value failed, it must be same format as "
-           "DNN_V100:2,DNN_HCCL:3",
+           "[Parse][Option] %s value failed, it must be same format as DNN_V100:2,DNN_HCCL:3",
            STREAM_MAX_PARALLEL_NUM.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   }
@@ -1676,23 +1714,23 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   // get stream num
   ret = ParseOption(options, STREAM_NUM, options_.stream_num);
   if ((ret != SUCCESS) || (options_.stream_num == 0)) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.stream_num, its value %d is invalid, must be not equal zero.",
-           options_.stream_num);
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.stream_num, its value %d is invalid, "
+           "must be not equal zero.", options_.stream_num);
     return GE_GRAPH_OPTIONS_INVALID;
   }
 
   // get perf level, its value please see enum PerfLevel
   ret = ParseOption(options, PERF_LEVEL, options_.perf_level);
   if ((ret != SUCCESS) || IsPerfLevelInvalid(options_.perf_level)) {
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.perfLevel, its value %d is invalid, must be enum PerfLevel type.",
-           options_.perf_level);
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.perfLevel, its value %d is invalid, "
+           "must be enum PerfLevel type.", options_.perf_level);
     return GE_GRAPH_OPTIONS_INVALID;
   }
 
   // get encrypt mode
   ret = ParseOption(options, ENCRYPT_MODE, options_.encrypt_mode);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.encryptMode value invalid.");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.encryptMode value invalid.");
                   return GE_GRAPH_OPTIONS_INVALID);
 
   // get ek file
@@ -1732,7 +1770,8 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   // get weight compress flag
   ret = ParseOption(options, COMPRESS_FLAG, options_.compress_flag);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.compressFlag value is invalid, must be 0 or 1.");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.compressFlag value is invalid, "
+                         "must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
   // Set Build model and step
   ParseOption(options, BUILD_MODE, options_.build_mode);
@@ -1743,21 +1782,22 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   options_.run_graph_flag = true;
   ret = ParseOption(options, RUN_FLAG, options_.run_graph_flag);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid, must be 0 or 1.");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.runFlag value is invalid, must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
 
   // ge.graphType
   ret =
     ParseTrainGraphFlag(options_.run_graph_flag, options_.train_graph_flag);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.runFlag value is invalid");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][TrainGraphFlag] Key:ge.runFlag value is invalid");
                   return GE_GRAPH_OPTIONS_INVALID);
 
   // parse FmkOp
   options_.local_fmk_op_flag = false;
   ret = ParseOption(options, LOCAL_FMKOP_FLAG, options_.local_fmk_op_flag);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.localFmkopFlag value is invalid, must be 0 or 1.");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.localFmkopFlag value is invalid, "
+                         "must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
   options_.enable_print_op_pass = true;
   ret = ParseOption(options, ENABLE_PRINT_OP_PASS, options_.enable_print_op_pass);
@@ -1765,13 +1805,15 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
   options_.is_single_op = false;
   ret = ParseOption(options, SINGLE_OP_FLAG, options_.is_single_op);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.enablePrintOpPass value is invalid, must be 0 or 1.");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.enablePrintOpPass value is invalid, "
+                         "must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
   // parse hcom parallel
   options_.hcom_parallel = false;
   ret = ParseOption(options, HCOM_PARALLEL, options_.hcom_parallel);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
-                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:ge.hcomParallel value is invalid, must be 0 or 1.");
+                  GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][Option] Key:ge.hcomParallel value is invalid, "
+                         "must be 0 or 1.");
                   return GE_GRAPH_OPTIONS_INVALID);
   // net output node dataType
   ParseOption(options, OUTPUT_DATATYPE, options_.output_datatype);
@@ -1831,10 +1873,9 @@ Status GraphManager::ParseOption(const std::map<std::string, std::string> &optio
     } else if (flag == "1") {
       option = true;
     } else {
-      REPORT_INNER_ERROR("E19999", "Option:%s value:%s must be 0 or 1, check invalid",
-                         key.c_str(), flag.c_str());
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:%s, its value %s is invalid, it must be 0 or 1.", key.c_str(),
-             flag.c_str());
+      REPORT_INNER_ERROR("E19999", "Option:%s value:%s must be 0 or 1, check invalid", key.c_str(), flag.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] Key:%s, its value %s is invalid, it must be 0 or 1.",
+             key.c_str(), flag.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
   }
@@ -1851,8 +1892,8 @@ Status GraphManager::ParseOption(const std::map<std::string, std::string> &optio
     if (ptr != nullptr && *ptr != '\0') {
       REPORT_INNER_ERROR("E19999", "Option:%s value:%s must be int32_t type, check invalid",
                          key.c_str(), iter->second.c_str());
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "Key:%s, its value %s is invalid, must be int32_t type.", key.c_str(),
-             iter->second.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] Key:%s, its value %s is invalid, must be int32_t type.",
+             key.c_str(), iter->second.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
   }
@@ -1896,10 +1937,8 @@ Status GraphManager::ParseOption(const std::map<std::string, std::string> &optio
     if (pos == string::npos) {
       REPORT_INNER_ERROR("E19999", "Option:%s, value:%s, engine and num must be connected by :, check invalid",
                          key.c_str(), engine_parallel.c_str());
-      GELOGE(GE_GRAPH_OPTIONS_INVALID,
-             "engine and num must be connected by :, "
-             "while your input is %s",
-             engine_parallel.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] engine and num must be connected by :, "
+             "while your input is %s", engine_parallel.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
     std::string engine_name = engine_parallel.substr(0, pos);
@@ -1909,14 +1948,14 @@ Status GraphManager::ParseOption(const std::map<std::string, std::string> &optio
 
     Status ret = CheckEngineName(engine_name, key, option);
     if (ret != SUCCESS) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "check engine name : %s failed, ", engine_name.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][EngineName] %s failed", engine_name.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
 
     int num = 0;
     ret = ParseParallelNum(parallel_num, key, num);
     if (ret != SUCCESS) {
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "parse parallel num failed");
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][ParallelNum] %s failed", parallel_num.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
 
@@ -1931,7 +1970,7 @@ Status GraphManager::CheckEngineName(const std::string &engine_name, const std::
   if (engine_name.empty()) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param engine_name:%s is empty, check invalid",
                        key.c_str(), engine_name.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "engine name of %s is empty", key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] engine name of %s is empty", key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   }
   // judge whether exist in engine list
@@ -1943,7 +1982,7 @@ Status GraphManager::CheckEngineName(const std::string &engine_name, const std::
   if (it_stream_repeat != option.end()) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param engine_name:%s is repeated, check invalid",
                        key.c_str(), engine_name.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "engine : %s of %s is repeated", engine_name.c_str(), key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] engine:%s of %s is repeated", engine_name.c_str(), key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   }
   return SUCCESS;
@@ -1953,14 +1992,15 @@ Status GraphManager::ParseParallelNum(const std::string &parallel_num, const std
   if (parallel_num.empty()) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param parallel num:%s is empty, check invalid",
                        key.c_str(), parallel_num.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "parallel num of %s is empty", key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] parallel num of %s is empty", key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   }
   for (char c : parallel_num) {
     if (!isdigit(c)) {
       REPORT_INNER_ERROR("E19999", "Option:%s, param parallel num:%s is not digit, check invalid",
                          key.c_str(), parallel_num.c_str());
-      GELOGE(GE_GRAPH_OPTIONS_INVALID, "%s input is invalid ", key.c_str());
+      GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] Option:%s, param parallel num:%s is not digit, check invalid",
+             key.c_str(), parallel_num.c_str());
       return GE_GRAPH_OPTIONS_INVALID;
     }
   }
@@ -1970,24 +2010,28 @@ Status GraphManager::ParseParallelNum(const std::string &parallel_num, const std
   } catch (std::invalid_argument &) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param parallel num:%s is invalid argument, check",
                        key.c_str(), parallel_num.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "parallel num : %s of %s is invalid argument", parallel_num.c_str(), key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] parallel num:%s of %s is invalid argument",
+           parallel_num.c_str(), key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   } catch (std::out_of_range &) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param parallel num:%s is out of range, check",
                        key.c_str(), parallel_num.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "parallel num : %s of %s is out of range", parallel_num.c_str(), key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] parallel num:%s of %s is out of range",
+           parallel_num.c_str(), key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   } catch (...) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param parallel num:%s is invalid argument, check",
                        key.c_str(), parallel_num.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "parallel num : %s of %s is invalid argument", parallel_num.c_str(), key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] parallel num:%s of %s is invalid argument",
+           parallel_num.c_str(), key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   }
 
   if (num < 1) {
     REPORT_INNER_ERROR("E19999", "Option:%s, param parallel num:%s < 1, check invalid",
                        key.c_str(), parallel_num.c_str());
-    GELOGE(GE_GRAPH_OPTIONS_INVALID, "parallel num : %s of %s must bigger than 0", parallel_num.c_str(), key.c_str());
+    GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Check][Param] parallel num:%s of %s must bigger than 0",
+           parallel_num.c_str(), key.c_str());
     return GE_GRAPH_OPTIONS_INVALID;
   }
   return SUCCESS;
@@ -2014,9 +2058,8 @@ Status GraphManager::GetGraphNode(const GraphId &graph_id, GraphNodePtr &out) {
   auto iter = graph_map_.find(graph_id);
   if (iter == graph_map_.end()) {
     out = nullptr;
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid",
-                       graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NOT_EXIST, "[GraphManager] graph not exist, graph_id= %u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NOT_EXIST, "[Check][Param] graph not exist, graph_id= %u.", graph_id);
     return GE_GRAPH_GRAPH_NOT_EXIST;
   }
   out = iter->second;
@@ -2037,7 +2080,7 @@ Status GraphManager::SummaryHandle(const GraphId &graph_id, std::vector<GeTensor
       GetCompilerStages(graph_id).optimizer.GetSummaryOutputIndexes();
   if (whole_summary_output_indexes.find(graph_id) == whole_summary_output_indexes.end()) {
     REPORT_INNER_ERROR("E19999", "Graph:%u not exist in whole_summary_output_indexes, check invalid", graph_id);
-    GELOGE(FAILED, "No Summary graph found in map.");
+    GELOGE(FAILED, "[Check][Param] Graph:%u not exist in whole_summary_output_indexes", graph_id);
     return FAILED;
   }
   const std::map<string, size_t> &summary_output_indexes = whole_summary_output_indexes.at(graph_id);
@@ -2082,9 +2125,8 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const ComputeGrap
     }
   }
   if (netoutput == nullptr) {
-    REPORT_INNER_ERROR("E19999", "No netoutput node in graph:%u, check invalid",
-                       graph_id);
-    GELOGE(FAILED, "Netoutput is null.");
+    REPORT_INNER_ERROR("E19999", "No netoutput node in graph:%u, check invalid", graph_id);
+    GELOGE(FAILED, "[Check][Param] No netoutput node in graph:%u", graph_id);
     return FAILED;
   }
   for (const auto &in : netoutput->GetAllInDataAnchors()) {
@@ -2092,9 +2134,9 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const ComputeGrap
     auto out_anchor = in->GetPeerOutAnchor();
     if (out_anchor == nullptr) {
       REPORT_INNER_ERROR("E19999", "Peer anchor of op:%s(%s), in_index:%u is nullptr, graph_id:%u, check invalid",
-                         netoutput->GetName().c_str(), netoutput->GetType().c_str(),
-                         in->GetIdx(), graph_id);
-      GELOGE(FAILED, "out_anchor is null.");
+                         netoutput->GetName().c_str(), netoutput->GetType().c_str(), in->GetIdx(), graph_id);
+      GELOGE(FAILED, "[Get][PeerOutAnchor] Peer anchor of op:%s(%s), in_index:%u is nullptr, graph_id:%u",
+             netoutput->GetName().c_str(), netoutput->GetType().c_str(), in->GetIdx(), graph_id);
       return FAILED;
     }
     ge::NodePtr peer_node = out_anchor->GetOwnerNode();
@@ -2103,7 +2145,8 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const ComputeGrap
       if (peer_node->GetAllInDataAnchors().size() != 1) {
         REPORT_INNER_ERROR("E19999", "More than one prior nodes of peer_node:%s(%s) in checkpoint Graph:%u, "
                            "check invalid", peer_node->GetName().c_str(), peer_node->GetType().c_str(), graph_id);
-        GELOGE(FAILED, "More than one prior nodes of peer_node %s in checkpoint Graph.", peer_node->GetName().c_str());
+        GELOGE(FAILED, "[Check][Param] More than one prior nodes of peer_node:%s(%s) in checkpoint Graph:%u.",
+               peer_node->GetName().c_str(), peer_node->GetType().c_str(), graph_id);
         return FAILED;
       }
       auto peer_node_in = peer_node->GetAllInDataAnchors().at(0);
@@ -2117,9 +2160,9 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const ComputeGrap
     }
     if (peer_node == nullptr) {
       REPORT_INNER_ERROR("E19999", "Peer anchor node of op:%s(%s), in_index:%u is nullptr, graph_id:%u, check invalid",
-                         netoutput->GetName().c_str(), netoutput->GetType().c_str(),
-                         in->GetIdx(), graph_id);
-      GELOGE(FAILED, "No variable op found in one branch, checkpoint graph illegal.");
+                         netoutput->GetName().c_str(), netoutput->GetType().c_str(), in->GetIdx(), graph_id);
+      GELOGE(FAILED, "[Check][Param] Peer anchor node of op:%s(%s), in_index:%u is nullptr, graph_id:%u",
+             netoutput->GetName().c_str(), netoutput->GetType().c_str(), in->GetIdx(), graph_id);
       return FAILED;
     }
     desc_name = peer_node->GetName();
@@ -2128,7 +2171,8 @@ Status GraphManager::CheckpointHandle(const GraphId &graph_id, const ComputeGrap
       REPORT_INNER_ERROR("E19999", "in index:%u of op:%s(%s) is out of outputs.size:%zu range, graph_id:%u, "
                          "check invalid", in->GetIdx(), netoutput->GetName().c_str(),
                          netoutput->GetType().c_str(), outputs.size(), graph_id);
-      GELOGE(FAILED, "variable index out of range.");
+      GELOGE(FAILED, "[Check][Param] in index:%u of op:%s(%s) is out of outputs.size:%zu range, graph_id:%u",
+             in->GetIdx(), netoutput->GetName().c_str(), netoutput->GetType().c_str(), outputs.size(), graph_id);
       return FAILED;
     }
     save_results.emplace(desc_name, TensorAdapter::AsTensor(outputs.at(in->GetIdx())));
@@ -2174,9 +2218,8 @@ Status GraphManager::PushSummaryData2ME(const GraphId &graph_id,
       }
       return iter->second(graph_id, tmp_summary_data);
     }
-    REPORT_INNER_ERROR("E19999", "No summary callback found, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(FAILED, "[GraphManager] PushSummaryData2ME failed, not found summary callback.");
+    REPORT_INNER_ERROR("E19999", "No summary callback found, graph_id:%u, check invalid", graph_id);
+    GELOGE(FAILED, "[Check][Param] No summary callback found, graph_id:%u", graph_id);
     return FAILED;
   }
   return itr->second(graph_id, summary_data);
@@ -2196,9 +2239,8 @@ Status GraphManager::PushSaveData2ME(const GraphId &graph_id, const std::map<std
       }
       return iter->second(graph_id, tmp_save_data);
     }
-    REPORT_INNER_ERROR("E19999", "No checkpoint callback found, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(FAILED, "[GraphManager] PushSaveData2ME failed, not found checkpoint callback.");
+    REPORT_INNER_ERROR("E19999", "No checkpoint callback found, graph_id:%u, check invalid", graph_id);
+    GELOGE(FAILED, "[Check][Param] No checkpoint callback found, graph_id:%u", graph_id);
     return FAILED;
   }
   return itr->second(graph_id, save_data);
@@ -2228,7 +2270,8 @@ bool GraphManager::CheckVariableForCheckpointGraph(NodePtr &node) {
   if (out == nullptr) {
     REPORT_INNER_ERROR("E19999", "anchor index:0 of op:%s(%s) is nullptr, check invalid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "out is nullptr.");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Get][OutDataAnchor] anchor index:0 of op:%s(%s) is nullptr",
+           node->GetName().c_str(), node->GetType().c_str());
     return false;
   }
   auto peer_out = out->GetPeerInDataAnchors();
@@ -2261,7 +2304,7 @@ static inline bool CheckConstanOpForCheckpointGraph(NodePtr &node) { return node
 bool GraphManager::IsCheckpointGraph(ComputeGraphPtr &compute_graph) {
   if (compute_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[IsCheckpointGraph] computeGraph is nullptr.");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] computeGraph is nullptr.");
     return false;
   }
   for (auto &node : compute_graph->GetAllNodes()) {
@@ -2395,9 +2438,8 @@ Status GraphManager::RemoveIsolatedConstInThisGraph(ge::ComputeGraphPtr &compute
       if (n->GetOutAllNodes().empty() && n->GetInAllNodes().empty()) {
         // it is an isolated constant, just remove it
         if (GraphUtils::RemoveJustNode(compute_graph, n) != GRAPH_SUCCESS) {
-          REPORT_CALL_ERROR("E19999", "Remove constant op:%s(%s) failed",
-                            n->GetName().c_str(), n->GetType().c_str());
-          GELOGE(FAILED, "remove constant %s failed.", n->GetName().c_str());
+          REPORT_CALL_ERROR("E19999", "Remove constant op:%s(%s) failed", n->GetName().c_str(), n->GetType().c_str());
+          GELOGE(FAILED, "[Call][RemoveJustNode] remove constant %s failed.", n->GetName().c_str());
           return FAILED;
         }
       }
@@ -2476,7 +2518,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   auto ret = after_merge_passes.Run(compute_graph);
   GE_TIMESTAMP_END(after_merge_passes, "GraphManager::OptimizeStage1_1");
   if (ret != SUCCESS && ret != NOT_CHANGED) {
-    GELOGE(ret, "Run passes when OptimizeStage1_1 failed, ret:%u.", ret);
+    GELOGE(ret, "[Run][Passes] when OptimizeStage1_1 failed, ret:%u.", ret);
     return ret;
   }
 
@@ -2515,7 +2557,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "GraphManager::OptimizeStage1_2");
   if (ret != SUCCESS) {
-    GELOGE(ret, "Run passes when OptimizeStage1_2 failed, ret:%u.", ret);
+    GELOGE(ret, "[Run][Passes] when OptimizeStage1_2 failed, ret:%u.", ret);
     return ret;
   }
   // Calculate Op/Fe constantfolding cost
@@ -2538,8 +2580,6 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::Migration", new (std::nothrow) SubgraphConstMigrationPass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ArgsClean", new (std::nothrow) UnusedArgsCleanPass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::PrunePass", new (std::nothrow) PrunePass));
-  auto mark_force_unknown_pass = new (std::nothrow) MarkForceUnknownForCondPass;
-  GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::MarkForceUnknownForCondPass", mark_force_unknown_pass));
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::NextIterationPass", new (std::nothrow) NextIterationPass))
   GE_CHK_STATUS_RET(graph_pass.AddPass("OptimizeStage1_3::ControlTriggerPass", new (std::nothrow) ControlTriggerPass))
   GE_CHK_STATUS_RET(
@@ -2573,7 +2613,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   ret = graph_pass.Run(compute_graph);
   GE_TIMESTAMP_END(graph_pass, "GraphManager::OptimizeStage1_3");
   if (ret != SUCCESS && ret != NOT_CHANGED) {
-    GELOGE(ret, "Run passes when OptimizeStage1_3 failed, ret:%u.", ret);
+    GELOGE(ret, "[Run][Passes] when OptimizeStage1_3 failed, ret:%u.", ret);
     return ret;
   }
   NamesToPass node_pass;
@@ -2583,7 +2623,7 @@ Status GraphManager::OptimizeStage1(ge::ComputeGraphPtr &compute_graph) {
   ret = GEPass(compute_graph).Run(node_pass);
   GE_TIMESTAMP_END(node_pass, "GraphPrepare::node_pass");
   if (ret != SUCCESS) {
-    GELOGE(ret, "Run identity remove pass for preprocess failed, ret:%u.", ret);
+    GELOGE(ret, "[Run][Identity] remove pass for preprocess failed, ret:%u.", ret);
     return ret;
   }
   return SUCCESS;
@@ -2603,7 +2643,7 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   auto ret = after_merge_passes.Run(compute_graph);
   GE_TIMESTAMP_END(after_merge_passes, "OptimizeStage2::AfterMergePasses");
   if (ret != SUCCESS && ret != NOT_CHANGED) {
-    GELOGE(ret, "Run passes after merge sub graph failed, ret:%d.", ret);
+    GELOGE(ret, "[Run][Passes] after merge sub graph failed, ret:%d.", ret);
     return ret;
   }
   SetAttrForHcomBroadCastOp(compute_graph);
@@ -2627,13 +2667,13 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   ret = GEPass(compute_graph).Run(names_to_passes);
   GE_TIMESTAMP_END(names_to_passes, "OptimizeStage2::MergedGraphNameToPasses");
   if (ret != SUCCESS) {
-    GELOGE(ret, "Run ge_passes optimize for OptimizeAfterMergeSubGraph failed, ret:%d.", ret);
+    GELOGE(ret, "[Run][GEPasses] optimize for OptimizeAfterMergeSubGraph failed, ret:%d.", ret);
     return ret;
   }
 
   ret = RemoveIsolatedConst(compute_graph);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Remove isolated Constant failed, ret:%d.", ret);
+    GELOGE(ret, "[Remove][IsolatedConst] failed, ret:%d.", ret);
     return ret;
   }
 
@@ -2684,32 +2724,33 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   ret = pass_for_control_attr_optimize.Run(compute_graph);
   GE_TIMESTAMP_END(pass_for_control_attr_optimize, "OptimizeStage2::ControlAttrOptimize");
   if (ret != SUCCESS && ret != NOT_CHANGED) {
-    GELOGE(ret, "Run passes when optimize stage 2 failed");
+    GELOGE(ret, "[Run][Passes] when optimize stage 2 failed");
     return ret;
   }
 
   // Assign functional op labels.
   GE_TIMESTAMP_START(AssignFunctionalLabels);
   LabelAllocator label_allocator(compute_graph);
-  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(), "Assign label failed.");
+  GE_CHK_STATUS_RET(label_allocator.AssignFunctionalLabels(), "[Assign][Label] failed.");
   GE_TIMESTAMP_END(AssignFunctionalLabels, "ModelBuilder::AssignFunctionalLabels");
 
   // Add memcpy addr asynchronous node.
   GE_TIMESTAMP_START(AddMemcpyAddrAsyncNode);
   MemcpyAddrAsyncPass memcpy_addr;
-  GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph), "Add memcpy_addr_async node failed.");
+  GE_CHK_STATUS_RET(memcpy_addr.Run(compute_graph), "[Call][Run] Add memcpy_addr_async node failed.");
   GE_TIMESTAMP_END(AddMemcpyAddrAsyncNode, "MemcpyAddrAsyncPass::Run.");
 
   // Process offset and dependency for buffer pool memory assigner.
   GE_TIMESTAMP_START(BufferPoolMemoryPass);
   BufferPoolMemoryPass buffer_pool_mem_pass;
-  GE_CHK_STATUS_RET(buffer_pool_mem_pass.Run(compute_graph), "Failed to process for buffer pool allocator.");
+  GE_CHK_STATUS_RET(buffer_pool_mem_pass.Run(compute_graph),
+                    "[Call][Run] Failed to process for buffer pool allocator.");
   GE_TIMESTAMP_END(BufferPoolMemoryPass, "BufferPoolMemoryPass::Run.");
 
   // Handle parallel group .
   GE_TIMESTAMP_START(ParallelGroup);
   ParallelGroupPass parallel_group_pass;
-  GE_CHK_STATUS_RET(parallel_group_pass.Run(compute_graph), "Handle parallel group failed.");
+  GE_CHK_STATUS_RET(parallel_group_pass.Run(compute_graph), "[Handle][ParallelGroup] failed.");
   GE_TIMESTAMP_END(ParallelGroup, "ParallelGroupPass::Run.");
 
   // After while sub graph handle, mark all node rw type
@@ -2762,7 +2803,7 @@ Status GraphManager::LoadGraphAsync(const GeRootModelPtr &ge_root_model, const G
     Status ret = GraphLoader::LoadModelOnline(model_id_info.model_id, ge_root_model, listener);
     GE_TIMESTAMP_EVENT_END(LoadGraph, "GraphManager::LoadGraphAsync");
     if (ret != SUCCESS) {
-      GELOGE(ret, "[LoadGraphAsync] LoadGraphAsync Failed");
+      GELOGE(ret, "[Load][ModelOnline] Failed, model_id:%u", model_id_info.model_id);
       graph_node->SetRunFlag(false);
       return ret;
     }
@@ -2777,9 +2818,8 @@ void GraphManager::ReleaseMemory(const GeModelPtr &ge_model, GraphNodePtr &graph
                                  const std::vector<uint32_t> &model_ids, uint32_t graph_id, uint64_t session_id) {
   rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, when GraphManager %s",
-                      GetContext().DeviceId(), __FUNCTION__);
-    GELOGE(RT_FAILED, "[GraphManager:] rtSetDevice failed, graphId=%u.", graph_id);
+    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u", GetContext().DeviceId());
+    GELOGE(RT_FAILED, "[Call][RtSetDevice] failed, device_id=%u.", GetContext().DeviceId());
     return;
   }
   for (auto model_id : model_ids) {
@@ -2821,9 +2861,8 @@ void GraphManager::ReleaseMemory(const GeModelPtr &ge_model, GraphNodePtr &graph
   ge_root_model->ClearAllModelId();
   rt_ret = rtDeviceReset(GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, when GraphManager %s",
-                      GetContext().DeviceId(), __FUNCTION__);
-    GELOGE(RT_FAILED, "[GraphManager:] rtDeviceReset failed, graphId=%u.", graph_id);
+    REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u", GetContext().DeviceId());
+    GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u.", GetContext().DeviceId());
     return;
   }
 }
@@ -2851,7 +2890,8 @@ Status GraphManager::CheckAndReleaseMemory(const GeModelPtr &ge_model, const Gra
   if (ge::CheckInt64AddOverflow(memory_size, weight_size) != SUCCESS) {
     REPORT_INNER_ERROR("E19999", "memory_size:%ld and weight_size:%ld will overflow after add, check invalid",
                        memory_size, weight_size);
-    GELOGE(INTERNAL_ERROR, "The sum of Memory size and weight size exceeds INT64_MAX");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] memory_size:%ld and weight_size:%ld will overflow after add",
+           memory_size, weight_size);
     return INTERNAL_ERROR;
   }
   if (free_memory >= (memory_size + weight_size)) {
@@ -2911,23 +2951,25 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
     GE_DUMP(compute_graph_tmp, "OptimizeSubGraphBefore");
     GE_CHECK_NOTNULL(compute_graph_tmp);
     if (!AttrUtils::SetInt(*compute_graph_tmp, ATTR_NAME_ROOT_GRAPH_ID, root_graph_id)) {
-      REPORT_CALL_ERROR("E19999", "Set Attr:%s to graph:%u", ATTR_NAME_ROOT_GRAPH_ID.c_str(),
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to graph:%u failed", ATTR_NAME_ROOT_GRAPH_ID.c_str(),
                         compute_graph_tmp->GetGraphID());
-      GELOGE(FAILED, "Failed to set attr ATTR_NAME_ROOT_GRAPH_ID for subgraph, graph_id: %u.", root_graph_id);
+      GELOGE(FAILED, "[Set][Attr] %s to graph:%u failed", ATTR_NAME_ROOT_GRAPH_ID.c_str(),
+             compute_graph_tmp->GetGraphID());
       return FAILED;
     }
     if (!AttrUtils::SetStr(*compute_graph_tmp, ATTR_NAME_ROOT_GRAPH_NAME, root_graph_name)) {
-      REPORT_CALL_ERROR("E19999", "Set Attr:%s to graph:%u", ATTR_NAME_ROOT_GRAPH_NAME.c_str(),
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to graph:%u failed", ATTR_NAME_ROOT_GRAPH_NAME.c_str(),
                         compute_graph_tmp->GetGraphID());
-      GELOGE(FAILED, "Failed to set attr ATTR_NAME_ROOT_GRAPH_NAME for subgraph, \
-             root_graph_name: %s.", root_graph_name.c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to graph:%u failed", ATTR_NAME_ROOT_GRAPH_NAME.c_str(),
+             compute_graph_tmp->GetGraphID());
       return FAILED;
     }
     compute_graph_tmp->SetSessionID(session_id);
     Status ret = graph_manager->GetCompilerStages(root_graph_id).optimizer.OptimizeSubGraph(compute_graph_tmp,
                                                                                             engine_name);
     if (ret != SUCCESS) {
-      GELOGE(ret, "SubGraph optimize Failed %s", engine_name.c_str());
+      GELOGE(ret, "[Optimize][SubGraph] Failed, engine:%s, graph:%s",
+             engine_name.c_str(), compute_graph_tmp->GetName().c_str());
       return ret;
     } else {
       GELOGD("SubGraph optimize success %s", engine_name.c_str());
@@ -2939,7 +2981,7 @@ Status GraphManager::ProcessSubGraphWithMultiThreads(GraphManager *graph_manager
            pthread_self());
   } else {
     REPORT_INNER_ERROR("E19999", "Param sub_graph_info_ptr or graph_manager is nullptr");
-    GELOGE(FAILED, "graph_manager or sub_graph_info_ptr is nullptr");
+    GELOGE(FAILED, "[Check][Param] graph_manager or sub_graph_info_ptr is nullptr");
     return FAILED;
   }
 
@@ -2956,7 +2998,7 @@ Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge
     ErrorManager::GetInstance().GetErrorManagerContext(),
     GetThreadLocalContext(), callback}));
   if (!ret) {
-    GELOGE(FAILED, "[GraphManager] Run graph async failed, graph_id=%u.", graph_id);
+    GELOGE(FAILED, "[Call][Push] failed, graph_id:%u.", graph_id);
     return FAILED;
   }
 
@@ -3030,7 +3072,6 @@ Status GraphManager::CheckIncreBuildAndPreRun(GraphManager *graph_manager, const
                 "The graph " + std::to_string(graph_node->GetGraphId()) +
                 " need to re-build, you should remove it"
                 " from GE first, then AddGraph again and rebuild it.");
-    graph_node->Unlock();
     return PARAM_INVALID;
   }
   // check need incre build.
@@ -3084,7 +3125,7 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     // more than one graph owns same graph_id
     uint32_t count = 0;
     if (graph_manager->GetGraphCount(args.graph_id, count) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Get graph [id:%u] count failed.", args.graph_id);
+      GELOGE(INTERNAL_ERROR, "[Get][GraphCount] failed, graph id:%u.", args.graph_id);
       return;
     }
     // Avoid repeatively prerun for graphs owns same graph_id in online inference concurrency
@@ -3135,12 +3176,11 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     if (ret != SUCCESS) {
       graph_node->SetRunFlag(false);
       if (!ge::Analyzer::GetInstance()->IsEnableNetAnalyzeDebug()) {
-        ReturnError(graph_manager, args.callback, ret, "CheckIncreBuildAndPreRun Failed, thread exit..");
+        GELOGE(ret, "CheckIncreBuildAndPreRun Failed, thread exit..");
         graph_node->Unlock();
         return;
       } else {
-        ReturnError(graph_manager, graph_node, args.callback, ret,
-                    "CheckIncreBuildAndPreRun Failed, keep geop continue!");
+        GELOGE(ret, "CheckIncreBuildAndPreRun Failed, keep geop continue!");
         graph_node->Unlock();
         continue;
       }
@@ -3174,7 +3214,8 @@ Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr>
     if (!(AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, index))) {
       REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) fail", ATTR_NAME_INDEX.c_str(),
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(PARAM_INVALID, "Get index from attr failed");
+      GELOGE(PARAM_INVALID, "[Get][Attr] %s from op:%s(%s) fail", ATTR_NAME_INDEX.c_str(),
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
       return PARAM_INVALID;
     }
     if (static_cast<size_t>(index) > input_tensor.size()) {
@@ -3182,7 +3223,9 @@ Status GraphManager::ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr>
                          "check invalid", ATTR_NAME_INDEX.c_str(),
                          op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                          index, input_tensor.size());
-      GELOGE(PARAM_INVALID, "The count of input tensor should be equal to the count of data.");
+      GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s in op:%s(%s) value:%ld > param input_tensor.size:%zu",
+             ATTR_NAME_INDEX.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+             index, input_tensor.size());
       return PARAM_INVALID;
     }
 
@@ -3212,7 +3255,7 @@ Status GraphManager::ParseInputsDims(const std::vector<ge::Tensor> &input_tensor
       } else {
         // data+getnext_nosink, but only need to get shape_dims of data
         if (ParseInputsDimsForGetNexNosinkAndData(data_nodes, input_tensor) != SUCCESS) {
-          GELOGE(PARAM_INVALID, "Failed to parse dims from data, when data coexist with getnext nosink.");
+          GELOGE(PARAM_INVALID, "[Parse][Dims] from data failed, when data coexist with getnext nosink.");
           return PARAM_INVALID;
         }
       }
@@ -3228,7 +3271,7 @@ Status GraphManager::ParseInputsDims(const std::vector<ge::Tensor> &input_tensor
         } else {
           // getnext_nosink + data, but only need to get shape_dims of getnext_nosink
           if (ParseInputsDimsForGetNexNosinkAndData(getnext_nosink_nodes, input_tensor) != SUCCESS) {
-            GELOGE(PARAM_INVALID, "Failed to parse dims from getnext nosink, when data coexist with getnext nosink");
+            GELOGE(PARAM_INVALID, "[Parse][Dims] from getnext nosink failed, when data coexist with getnext nosink");
             return PARAM_INVALID;
           }
         }
@@ -3335,9 +3378,8 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
   std::vector<ge::Tensor> outputs;
   auto compute_graph = GraphUtils::GetComputeGraph(*graph_node->GetGraph());
   if (graph_manager == nullptr || compute_graph == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Param graph_manager or compute_graph in graph_node is nullptr, "
-                       "check invalid");
-    GELOGE(GRAPH_FAILED, "[Analyze Mode] compute graph is null!");
+    REPORT_INNER_ERROR("E19999", "Param graph_manager or compute_graph in graph_node is nullptr, check invalid");
+    GELOGE(GRAPH_FAILED, "[Check][Param] compute graph or graph manager is nullptr");
     callback(GRAPH_FAILED, outputs);
     return;
   }
@@ -3360,7 +3402,8 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
         REPORT_INNER_ERROR("E19999", "InputIndex:%zu ShapeSize:%ld of op:%s(%s) < 0, unknown shape is not support, "
                            "check invalid", i, len,
                            node->GetName().c_str(), node->GetType().c_str());
-        GELOGE(GRAPH_FAILED, "Analyze Mode does not support GEOP output unknown shape!");
+        GELOGE(GRAPH_FAILED, "[Check][Param] InputIndex:%zu ShapeSize:%ld of op:%s(%s) < 0, "
+               "unknown shape is not support", i, len, node->GetName().c_str(), node->GetType().c_str());
         callback(GRAPH_FAILED, outputs);
         return;
       } else if (len == 0) {
@@ -3370,8 +3413,8 @@ void GraphManager::ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_
       auto length = GetSizeInBytes(len, input_desc->GetDataType());
       auto aligned_ptr = MakeShared<AlignedPtr>(length, kAlignment);
       if (aligned_ptr == nullptr) {
-        REPORT_INNER_ERROR("E19999", "Aligned_ptr is nullptr");
-        GELOGE(GRAPH_FAILED, "[Analyze Mode] Aligned_ptr is nullptr");
+        REPORT_CALL_ERROR("E19999", "New AlignedPtr failed, len:%ld", length);
+        GELOGE(GRAPH_FAILED, "[Create][AlignedPtr] failed, len:%ld", length);
         return;
       }
       ge_tensor.SetData(aligned_ptr, length);
@@ -3393,16 +3436,14 @@ bool GraphManager::IsGraphNeedRebuild(uint32_t graph_id) {
   GraphNodePtr graph_node = nullptr;
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid",
-                       graph_id);
-    GELOGE(ret, "[RunGraph] graph not exist, graph_id=%u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(ret, "[Get][GraphNode] failed, graph not exist, graph_id:%u.", graph_id);
     return true;
   }
 
   if (graph_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] graph node is NULL, graphId=%u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Check][Param] graph node is NULL, graph_id:%u.", graph_id);
     return true;
   }
 
@@ -3416,16 +3457,14 @@ const map<std::string, std::string> *GraphManager::GetGraphOptions(uint32_t grap
   GraphNodePtr graph_node = nullptr;
   Status ret = GetGraphNode(graph_id, graph_node);
   if (ret != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid",
-                       graph_id);
-    GELOGE(ret, "[RunGraph] graph not exist, graph_id=%u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph:%u not exist in graph_map, check invalid", graph_id);
+    GELOGE(ret, "[Get][GraphNode] failed, graph not exist, graph_id:%u.", graph_id);
     return nullptr;
   }
 
   if (!graph_node) {
-    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid",
-                       graph_id);
-    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[RunGraph] graph node is NULL, graph_id=%u.", graph_id);
+    REPORT_INNER_ERROR("E19999", "Graph node is nullptr in graph_map, graph_id:%u, check invalid", graph_id);
+    GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Check][Param] graph node is NULL, graph_id:%u.", graph_id);
     return nullptr;
   }
   return &(graph_node->GetOptions());
@@ -3441,7 +3480,7 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
   StagePartitioner stage_partitioner(compute_graph);
   auto ret = stage_partitioner.Partition();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Graph partition by stage Failed");
+    GELOGE(ret, "[Call][Partition] for Graph:%s by stage Failed", compute_graph->GetName().c_str());
     return ret;
   }
   GE_TIMESTAMP_EVENT_END(StagePartition, "OptimizeSubgraph::StagePartition");
@@ -3450,14 +3489,16 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
   DynamicShapePartitioner dynamic_shape_partitioner(compute_graph);
   ret = dynamic_shape_partitioner.Partition();
   if (ret != SUCCESS) {
-    GELOGE(ret, "Graph partition by dynamic shape Failed");
+    GELOGE(ret, "[Call][Partition] for Graph:%s by dynamic shape Failed", compute_graph->GetName().c_str());
     return ret;
   }
   bool dynamic_shape_partitioned = false;
   if (!AttrUtils::GetBool(*compute_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, dynamic_shape_partitioned)) {
-    REPORT_INNER_ERROR("E19999", "Get Attr:%s from graph:%u fail",
-                       ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED.c_str(), compute_graph->GetGraphID());
-    GELOGE(FAILED, "failed get dynamic shape partitioned flag on partitioned graph.");
+    REPORT_INNER_ERROR("E19999", "Get Attr:%s from graph:%s(id:%u) fail",
+                       ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED.c_str(), compute_graph->GetName().c_str(),
+                       compute_graph->GetGraphID());
+    GELOGE(FAILED, "[Get][Attr] %s from graph:%u failed",
+           ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED.c_str(), compute_graph->GetGraphID());
     return FAILED;
   }
   GE_TIMESTAMP_EVENT_END(GraphPartitionDynamicShape, "OptimizeSubgraph::GraphPartitionDynamicShape");
@@ -3466,14 +3507,14 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
   GraphPartitioner &partitioner = GetCompilerStages(graph_node->GetGraphId()).partitioner;
   ret = partitioner.Partition(compute_graph, GraphPartitioner::kPartitioning);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Graph partition Failed");
+    GELOGE(ret, "[Call][Partition] for Graph:%s Failed", compute_graph->GetName().c_str());
     return ret;
   }
   GE_TIMESTAMP_EVENT_END(GraphPartition, "OptimizeSubgraph::Partition1");
   GE_TIMESTAMP_START(SetSubgraph);
   ret = SetSubgraph(session_id, compute_graph, partitioner);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Graph set subgraph Failed");
+    GELOGE(ret, "[Set][Subgraph] failed for graph:%s, session_id:%lu", compute_graph->GetName().c_str(), session_id);
     return ret;
   }
   GE_TIMESTAMP_EVENT_END(SetSubgraph, "OptimizeSubgraph::SetSubGraph");
@@ -3486,7 +3527,7 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     Status ret = ConvertGraphToFile(compute_graph, partitioner, tuning_path,
                                     (options_.build_step == BUILD_STEP_AFTER_BUILDER));
     if (ret != SUCCESS) {
-      GELOGE(ret, "Convert graph[%s] to file failed", compute_graph->GetName().c_str());
+      GELOGE(ret, "[Convert][Graph] [%s] to file failed", compute_graph->GetName().c_str());
       return ret;
     }
     GE_TIMESTAMP_EVENT_END(ConvertGraphToFile, "OptimizeSubgraph::ConvertGraphToFile");
@@ -3499,7 +3540,8 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
   GE_TIMESTAMP_START(MergeSubgraph);
   ret = MergeSubGraph(merged_compute_graph, compute_graph, graph_node->GetGraphId());
   if (ret != SUCCESS) {
-    GELOGE(ret, "Merge SubGraph Failed");
+    GELOGE(ret, "[Merge][SubGraph] Failed, graph:%s(id:%u)",
+           compute_graph->GetName().c_str(), graph_node->GetGraphId());
     return ret;
   }
   GE_CHECK_NOTNULL(merged_compute_graph);
@@ -3516,8 +3558,8 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     if (!AttrUtils::SetBool(merged_compute_graph, ATTR_NAME_OFF_SUPERKERNEL_ATTR, off_superkernel)) {
       REPORT_INNER_ERROR("E19999", "Set Attr:%s to graph:%u fail",
                          ATTR_NAME_OFF_SUPERKERNEL_ATTR.c_str(), compute_graph->GetGraphID());
-      GELOGE(FAILED, "Compute graph %s set superkernel flag %d failed", merged_compute_graph->GetName().c_str(),
-             off_superkernel);
+      GELOGE(FAILED, "[Set][Attr] %s to graph:%u fail",
+             ATTR_NAME_OFF_SUPERKERNEL_ATTR.c_str(), compute_graph->GetGraphID());
       return FAILED;
     }
   }
@@ -3527,7 +3569,8 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
   if (!AttrUtils::SetBool(*compute_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, dynamic_shape_partitioned)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s to graph:%u fail",
                        ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED.c_str(), compute_graph->GetGraphID());
-    GELOGE(FAILED, "failed set dynamic shape partitioned flag on partitioned graph.");
+    GELOGE(FAILED, "[Set][Attr] %s to graph:%u fail",
+           ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED.c_str(), compute_graph->GetGraphID());
     return FAILED;
   }
   return SUCCESS;
@@ -3587,7 +3630,7 @@ Status GraphManager::Build(const GraphNodePtr &graph_node, ComputeGraphPtr &comp
 
   auto ret = GetCompilerStages(graph_node->GetGraphId()).builder.Build(compute_graph, ge_root_model, session_id);
   if (ret != SUCCESS) {
-    GELOGE(ret, "SubGraph build Failed.");
+    GELOGE(ret, "[Call][Build] failed, session_id:%lu.", session_id);
     return ret;
   }
 
@@ -3625,7 +3668,7 @@ Status GraphManager::GenCheckPointGraph(const std::map<std::string, GeTensorDesc
     GE_CHK_GRAPH_STATUS_RET(var_desc->AddOutputDesc(iter->second));
     NodePtr var_node = compute_graph->AddNode(var_desc);
     GE_CHK_STATUS(GraphUtils::AddEdge(var_node->GetOutDataAnchor(0), save_node->GetInDataAnchor(index)),
-                  "Add edge[%s->%s] fail.", var_node->GetName().c_str(), save_node->GetName().c_str());
+                  "[Add][Edge][%s->%s] fail.", var_node->GetName().c_str(), save_node->GetName().c_str());
     index++;
   }
   compute_graph->Dump();
@@ -3636,13 +3679,12 @@ Status GraphManager::GenCheckPointGraph(const std::map<std::string, GeTensorDesc
 Status GraphManager::SaveVariables(const Graph &graph, const std::vector<std::string> &var_names,
                                    const std::vector<Tensor> &outputs, std::vector<Tensor> &var_values) {
   map<string, Tensor> var_results;
-  GE_CHK_STATUS_RET(SaveCheckPointResult(graph, outputs, var_results), "Save check point result failed.");
+  GE_CHK_STATUS_RET(SaveCheckPointResult(graph, outputs, var_results), "[Save][CheckPointResult] failed.");
   if (!var_names.empty()) {
     for (const auto &var_name : var_names) {
       if (var_results.count(var_name) == 0) {
-        REPORT_INNER_ERROR("E19999", "Fetch Var:%s result value fail",
-                           var_name.c_str());
-        GELOGE(FAILED, "Fetch var[%s] value failed.", var_name.c_str());
+        REPORT_INNER_ERROR("E19999", "Fetch Var:%s result value fail", var_name.c_str());
+        GELOGE(FAILED, "[Check][Param] Fetch var[%s] value failed.", var_name.c_str());
         return FAILED;
       } else {
         auto var_tensor = var_results[var_name].GetTensorDesc();
@@ -3683,7 +3725,8 @@ Status GraphManager::SaveCheckPointResult(const Graph &graph, const std::vector<
         REPORT_INNER_ERROR("E19999", "peer node:%s(%s) of netoutput has more than 1 input in checkpoint Graph, "
                            "check invalid",
                            peer_node->GetName().c_str(), peer_node->GetType().c_str());
-        GELOGE(FAILED, "peer_node [%s] has more than 1 input in checkpoint Graph.", peer_node->GetName().c_str());
+        GELOGE(FAILED, "[Check][Param] peer_node [%s] has more than 1 input in checkpoint Graph.",
+               peer_node->GetName().c_str());
         return FAILED;
       }
       auto peer_node_in_anchor = peer_node->GetAllInDataAnchors().at(0);
@@ -3699,7 +3742,7 @@ Status GraphManager::SaveCheckPointResult(const Graph &graph, const std::vector<
       REPORT_INNER_ERROR("E19999", "peer node:%s(%s) of netoutput is not variable in checkpoint Graph, "
                          "check invalid",
                          peer_node->GetName().c_str(), peer_node->GetType().c_str());
-      GELOGE(FAILED, " peer_node %s is not variable in checkpoint Graph.", peer_node->GetName().c_str());
+      GELOGE(FAILED, "[Check][Param] peer_node %s is not variable in checkpoint Graph.", peer_node->GetName().c_str());
       return FAILED;
     }
     auto var_name = peer_node->GetName();
@@ -3707,7 +3750,7 @@ Status GraphManager::SaveCheckPointResult(const Graph &graph, const std::vector<
     if (in->GetIdx() >= static_cast<int>(outputs.size())) {
       REPORT_INNER_ERROR("E19999", "In index:%u of netoutput is out of outputs.size:%zu range in checkpoint Graph, "
                          "check invalid", in->GetIdx(), outputs.size());
-      GELOGE(FAILED, "variable index[%d] out of range[%zu].", in->GetIdx(), outputs.size());
+      GELOGE(FAILED, "[Check][Param] variable index[%d] out of range[%zu].", in->GetIdx(), outputs.size());
       return FAILED;
     }
     var_results.emplace(var_name, outputs.at(in->GetIdx()));

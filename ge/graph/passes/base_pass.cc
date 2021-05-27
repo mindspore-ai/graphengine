@@ -36,6 +36,8 @@ struct DuringPassNodeSets {
   std::unordered_set<NodePtr> nodes_re_pass;
   std::unordered_set<NodePtr> nodes_re_pass_immediately;
   std::unordered_set<NodePtr> nodes_last;
+  std::unordered_set<NodePtr> nodes_suspend;
+  std::unordered_set<NodePtr> nodes_resume;
 };
 
 void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::deque<NodePtr> &input_edge_nodes,
@@ -55,8 +57,15 @@ void GetAllNodesNoInputEdge(const ComputeGraphPtr &graph, std::deque<NodePtr> &i
   }
 }
 
+bool IsAllInNodesAlive(const Node::Vistor<NodePtr> &nodes, const std::unordered_set<NodePtr> &nodes_suspend) {
+  return !std::any_of(nodes.begin(), nodes.end(), [&](const NodePtr &n) { return nodes_suspend.count(n) > 0; });
+}
+
 void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::deque<NodePtr> &nodes_to_pass,
-                      std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_last) {
+                      DuringPassNodeSets &during_pass_node_set) {
+  auto &nodes_seen = during_pass_node_set.nodes_seen;
+  const auto &nodes_last = during_pass_node_set.nodes_last;
+  const auto &nodes_suspend = during_pass_node_set.nodes_suspend;
   for (auto &node : nodes) {
     if (node == nullptr) {
       continue;
@@ -64,16 +73,57 @@ void AddNextIterNodes(const Node::Vistor<NodePtr> &nodes, std::deque<NodePtr> &n
     if (nodes_last.count(node) != 0) {
       continue;
     }
+    if (nodes_suspend.count(node) > 0) {
+      GELOGD("The node %s has suspend by pass, skip it.", node->GetName().c_str());
+      continue;
+    }
 
+    bool all_in_nodes_alive = IsAllInNodesAlive(node->GetInAllNodes(), nodes_suspend);
     bool all_in_nodes_seen = node->IsAllInNodesSeen(nodes_seen);
-    if (all_in_nodes_seen && nodes_seen.insert(node.get()).second) {
+    if (all_in_nodes_seen && all_in_nodes_alive && nodes_seen.insert(node.get()).second) {
       nodes_to_pass.push_back(node);
     }
   }
 }
 
+void AddRepassNodes(DuringPassNodeSets &during_pass_node_set, std::deque<NodePtr> &nodes) {
+  for (const auto &node : during_pass_node_set.nodes_re_pass_immediately) {
+    GELOGD("The node %s will be re-pass immediately.", node->GetName().c_str());
+    nodes.push_front(node);
+  }
+  during_pass_node_set.nodes_re_pass_immediately.clear();
+}
+
+void AddResumeNodes(DuringPassNodeSets &during_pass_node_set, std::deque<NodePtr> &nodes) {
+  for (auto &node : during_pass_node_set.nodes_resume) {
+    const auto &it = during_pass_node_set.nodes_suspend.find(node);
+    if (it != during_pass_node_set.nodes_suspend.end()) {
+      during_pass_node_set.nodes_suspend.erase(node);
+      GELOGD("The node %s resumed by pass.", node->GetName().c_str());
+      nodes.push_back(node);
+    } else {
+      GELOGW("The node %s not suspend, drop from resumed", node->GetName().c_str());
+    }
+  }
+  during_pass_node_set.nodes_resume.clear();
+}
+
+void PushToSuspendNodes(DuringPassNodeSets &during_pass_node_set, const std::string &pass_name,
+                        const std::unordered_set<NodePtr> &nodes_suspend,
+                        const std::unordered_set<NodePtr> &nodes_resume) {
+  for (const auto &node : nodes_suspend) {
+    GELOGD("The iteration suspend of node %s has been set by pass %s", node->GetName().c_str(), pass_name.c_str());
+    during_pass_node_set.nodes_suspend.emplace(node);
+  }
+
+  for (const auto &node : nodes_resume) {
+    GELOGD("The iteration suspend of node %s has been resumed by pass %s", node->GetName().c_str(), pass_name.c_str());
+    during_pass_node_set.nodes_resume.emplace(node);
+  }
+}
+
 void PushToRePassIfSeen(NodePtr &node, const std::pair<std::string, BaseNodePass *> &name_to_pass,
-                        std::unordered_set<Node *> &nodes_seen, std::unordered_set<NodePtr> &nodes_to_re_pass,
+                        std::unordered_set<Node *> &nodes_seen, const std::unordered_set<NodePtr> &nodes_to_re_pass,
                         std::unordered_set<NodePtr> &nodes_re_pass) {
   for (const auto &node_to_re_pass : nodes_to_re_pass) {
     if (node_to_re_pass == nullptr) {
@@ -113,15 +163,18 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, DuringPassNo
       return result;
     }
 
-    auto nodes_to_re_pass = name_to_pass.second->GetNodesNeedRePass();
+    const auto &nodes_to_re_pass = name_to_pass.second->GetNodesNeedRePass();
     PushToRePassIfSeen(node, name_to_pass, during_pass_node_set.nodes_seen, nodes_to_re_pass,
                        during_pass_node_set.nodes_re_pass);
 
-    auto nodes_to_re_pass_immediately = name_to_pass.second->GetNodesNeedRePassImmediately();
+    const auto &nodes_to_re_pass_immediately = name_to_pass.second->GetNodesNeedRePassImmediately();
     PushToRePassIfSeen(node, name_to_pass, during_pass_node_set.nodes_seen, nodes_to_re_pass_immediately,
                        during_pass_node_set.nodes_re_pass_immediately);
 
-    auto nodes_deleted_by_pass = name_to_pass.second->GetNodesDeleted();
+    PushToSuspendNodes(during_pass_node_set, name_to_pass.first,
+                       name_to_pass.second->GetNodesSuspend(), name_to_pass.second->GetNodesResume());
+
+    const auto &nodes_deleted_by_pass = name_to_pass.second->GetNodesDeleted();
     during_pass_node_set.nodes_deleted.insert(nodes_deleted_by_pass.begin(), nodes_deleted_by_pass.end());
     if (nodes_deleted_by_pass.count(node) > 0) {
       GELOGD("The node %s was deleted by pass %s, stop the remain passes", node->GetName().c_str(),
@@ -221,8 +274,13 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         GELOGD("The node %s was deleted before, skip it.", node->GetName().c_str());
         continue;
       }
+      if (during_pass_node_set.nodes_suspend.count(node) > 0) {
+        GELOGD("The node %s has been added to suspend-iteration nodes list, the iteration of it will be suspend.",
+               node->GetName().c_str());
+        continue;
+      }
 
-      AddNextIterNodes(node->GetOutNodes(), nodes, during_pass_node_set.nodes_seen, during_pass_node_set.nodes_last);
+      AddNextIterNodes(node->GetOutNodes(), nodes, during_pass_node_set);
 
       auto ret = RunPasses(node, names_to_passes, during_pass_node_set);
       if (ret != SUCCESS) {
@@ -253,11 +311,9 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         // should be called each time at the begin of the iteration
         ClearOption(names_to_passes);
       }
-      for (const auto &node : during_pass_node_set.nodes_re_pass_immediately) {
-        GELOGD("The node %s will be re-pass immediately.", node->GetName().c_str());
-        nodes.push_front(node);
-      }
-      during_pass_node_set.nodes_re_pass_immediately.clear();
+
+      AddRepassNodes(during_pass_node_set, nodes);
+      AddResumeNodes(during_pass_node_set, nodes);
     }
 
     for (auto &node : during_pass_node_set.nodes_last) {

@@ -23,6 +23,7 @@
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/operator_factory_impl.h"
 #include "../graph/passes/graph_builder_utils.h"
 #include "../graph/manager/graph_manager.h"
 #include "all_ops.h"
@@ -79,6 +80,27 @@ TEST_F(UtestGeGenerator, test_build_single_op_offline) {
   EXPECT_EQ(generator.BuildSingleOpModel(op_desc, inputs, outputs, "offline_"), GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
 }
 */
+graphStatus TestFunc(Operator &op) { return 0; }
+graphStatus TestFunc1(Operator &op) { return 1; }
+TEST_F(UtestGeGenerator, test_infer_format_for_single_op) {
+  OperatorFactoryImpl::RegisterInferFormatFunc("Add", TestFunc);
+  shared_ptr<OpDesc> op_desc = make_shared<OpDesc>("add", "add");
+  GeGenerator generator;
+  EXPECT_EQ(generator.InferFormatForSingleOp(op_desc), SUCCESS);
+  shared_ptr<OpDesc> op_desc1 = make_shared<OpDesc>("Add", "Add");
+  EXPECT_EQ(generator.InferFormatForSingleOp(op_desc1), SUCCESS);
+  OperatorFactoryImpl::RegisterInferFormatFunc("MatMulV2", TestFunc1);
+  shared_ptr<OpDesc> op_desc2 = make_shared<OpDesc>("MatMulV2", "MatMulV2");
+  GeTensorDesc tensor_desc;
+  EXPECT_EQ(op_desc2->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc2->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc2->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc2->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc2->AddInputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc2->AddOutputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc2->AddOutputDesc(tensor_desc), GRAPH_SUCCESS);
+  EXPECT_EQ(generator.InferFormatForSingleOp(op_desc2), FAILED);
+}
 
 TEST_F(UtestGeGenerator, test_build_single_op_online) {
   GeTensorDesc tensor_desc;

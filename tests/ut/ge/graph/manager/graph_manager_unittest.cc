@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 #include <memory>
+#include <stdlib.h>
 #define protected public
 #define private public
 #include "graph/manager/graph_manager.h"
@@ -115,6 +116,7 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "register/custom_pass_helper.h"
 #include "graph/ops_stub.h"
+#include "ge_attr_value.h"
 
 using namespace std;
 using namespace testing;
@@ -219,6 +221,21 @@ TEST_F(UtestGraphManagerTest, test_add_graph_4) {
   OmgContext context;
   Status status = graph_manager.AddGraph(graph_id, graph, options, context);
   EXPECT_NE(status, ge::SUCCESS);
+}
+
+TEST_F(UtestGraphManagerTest, test_add_graph_5) {
+  Graph graph("test_graph");
+  auto data = op::Data("Data").set_attr_index(1);
+  auto flatten = op::Flatten("Flatten").set_input_x(data, data.name_out_out());
+  std::vector<Operator> inputs{data};
+  std::vector<Operator> outputs{flatten};
+  graph.SetInputs(inputs).SetOutputs(outputs);
+
+  std::map<std::string, std::string> options = {{"ge.exec.dataInputsShapeRange", "0:[-1]"}};
+  OmgContext context;
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  EXPECT_EQ(graph_manager.AddGraph(graph_id, graph, options, context), GRAPH_PARAM_INVALID);
 }
 
 TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_1) {
@@ -443,6 +460,82 @@ TEST_F(UtestGraphManagerTest, ParseInputsDimsForData_success) {
   graph_manager.ParseInputsDimsForData(input_tensors);
 }
 
+TEST_F(UtestGraphManagerTest, test_prerunthread_failed_1) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  graph_manager.thread_run_flag_ = true;
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
+  GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
+  GraphManager::PreRunArgs args;
+  error_message::Context error_ctx{1, "1st_stage", "2nd_stage", "log_header"};
+  Status st = 0;
+  args.callback = [&st](Status st_return, std::vector<ge::Tensor> &) { st = st_return; };
+  args.graph_id = graph_id;
+  args.session_id = 1;
+  args.error_context = error_ctx;
+  args.context = GetThreadLocalContext();
+  // create graph
+  Graph graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+  std::shared_ptr<Graph> graph_ptr = MakeShared<ge::Graph>(graph);
+  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
+  graph_node->SetGraph(graph_ptr);
+
+  graph_manager.options_.local_fmk_op_flag = false;
+  // need build while buildflag is true, var format changed
+  graph_node->SetBuildFlag(true);
+  graph_manager.var_acc_ctrl_.graph_ids_need_rebuild_.insert(graph_id);
+
+  graph_manager.graph_map_.insert({graph_id, graph_node});
+  graph_manager.graph_count_.insert({graph_id, 1});
+  graph_node->SetRunFlag(false);
+  // function return.
+  graph_manager.prerun_args_q_.Push(args);
+  auto t1 = std::thread(GraphManager::PreRunThread, &graph_manager);
+  if (t1.joinable()) {
+    t1.join();
+  }
+  EXPECT_EQ(st, ge::PARAM_INVALID);
+}
+
+TEST_F(UtestGraphManagerTest, test_prerunthread_failed_2) {
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  graph_manager.thread_run_flag_ = true;
+  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
+  GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
+  GraphManager::PreRunArgs args;
+  error_message::Context error_ctx{1, "1st_stage", "2nd_stage", "log_header"};
+  Status st;
+  args.callback = [&st, &graph_manager](Status st_return, std::vector<ge::Tensor> &) { st = st_return; 
+      graph_manager.thread_run_flag_ = false;};
+  args.graph_id = graph_id;
+  args.session_id = 1;
+  args.error_context = error_ctx;
+  args.context = GetThreadLocalContext();
+  // create graph
+  Graph graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
+  std::shared_ptr<Graph> graph_ptr = MakeShared<ge::Graph>(graph);
+  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
+  graph_node->SetGraph(graph_ptr);
+
+  graph_manager.options_.local_fmk_op_flag = false;
+  // need build while buildflag is true, var format changed
+  graph_node->SetBuildFlag(true);
+  graph_manager.var_acc_ctrl_.graph_ids_need_rebuild_.insert(graph_id);
+
+  graph_manager.graph_map_.insert({graph_id, graph_node});
+  graph_manager.graph_count_.insert({graph_id, 1});
+  graph_node->SetRunFlag(false);
+  // function continue
+  int ret = setenv("ENABLE_NETWORK_ANALYSIS_DEBUG", "1", 1);
+  EXPECT_EQ(ret, 0);
+  graph_manager.prerun_args_q_.Push(args);
+  auto t1 = std::thread(GraphManager::PreRunThread, &graph_manager);
+  if (t1.joinable()) {
+    t1.join();
+  }
+  EXPECT_EQ(st, ge::PARAM_INVALID);
+}
 // TEST_F(UtestGraphManagerTest, ParseInputsDimsForGetNexNosinkAndData_success) {
 //   GraphManager graph_manager;
 

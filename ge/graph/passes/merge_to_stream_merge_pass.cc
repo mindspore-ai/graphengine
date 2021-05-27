@@ -84,8 +84,9 @@ Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, cons
   GE_CHK_BOOL_EXEC(node != nullptr,
                    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
                    return FAILED, "Param of pre node is null.");
-  bool force_unknown = node->GetOpDesc()->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
-  MarkForceUnknownShape(node, force_unknown);
+  int64_t group_index = -1;
+  bool force_unknown = AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
+  MarkForceUnknownShape(node, force_unknown, group_index);
   for (const InDataAnchorPtr &in_data_anchor : node->GetAllInDataAnchors()) {
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
@@ -102,7 +103,7 @@ Status MergeToStreamMergePass::AddActiveNodes(const ComputeGraphPtr &graph, cons
       GELOGE(FAILED, "SetActiveLabelList for node %s failed.", active_node->GetName().c_str());
       return FAILED;
     }
-    MarkForceUnknownShape(active_node, force_unknown);
+    MarkForceUnknownShape(active_node, force_unknown, group_index);
   }
 
   return SUCCESS;

@@ -47,6 +47,7 @@
 #include "omg/version.h"
 #include "register/op_registry.h"
 #include "graph/passes/set_input_output_offset_pass.h"
+#include "graph/build/memory/block_mem_assigner.h"
 
 using std::map;
 using std::set;
@@ -398,9 +399,21 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
                    REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_MEMORY_SIZE.c_str());
                    GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_MEMORY_SIZE.c_str());
                    return FAILED);
+  auto mem_type_session_scope = (kSessionScopeMemory | RT_MEMORY_HBM);
+  size_t session_scope_mem_offset = 0;
+  auto it = mem_type_to_mem_offset_.find(mem_type_session_scope);
+  if (it != mem_type_to_mem_offset_.end()) {
+    session_scope_mem_offset = it->second;
+  }
   if (mem_type_to_mem_offset_.find(RT_MEMORY_P2P_DDR) != mem_type_to_mem_offset_.end()) {
     p2p_mem_offset_ = mem_type_to_mem_offset_[RT_MEMORY_P2P_DDR];
   }
+  GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_SESSION_SCOPE_MEMORY_SIZE, session_scope_mem_offset),
+                   REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed",
+                                      ATTR_MODEL_SESSION_SCOPE_MEMORY_SIZE.c_str());
+  GELOGE(FAILED, "SetInt of ATTR_NAME_SESSION_SCOPE_MEMORY_SIZE failed.");
+  return FAILED);
+
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetInt(&model, ATTR_MODEL_P2P_MEMORY_SIZE, p2p_mem_offset_),
                    REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_P2P_MEMORY_SIZE.c_str());
                    GELOGE(FAILED, "[Set][Attr] %s in model failed", ATTR_MODEL_P2P_MEMORY_SIZE.c_str());
@@ -434,8 +447,8 @@ Status ModelBuilder::BuildModelDef(ge::Model &model) {
                    REPORT_INNER_ERROR("E19999", "Set Attr:%s in model failed", ATTR_MODEL_OUT_NODES_NAME.c_str());
                    GELOGE(FAILED, "[Set][Str] %s in model failed.", ATTR_MODEL_OUT_NODES_NAME.c_str());
                    return FAILED);
-  GELOGI("For model, max_mem_offset_: %zu, p2p_mem_size: %zu, zero_copy_mem_size_: %zu", max_mem_offset_,
-         p2p_mem_offset_, zero_copy_mem_size_);
+  GELOGI("For model, max_mem_offset: %zu, p2p_mem_size: %zu, zero_copy_mem_size: %zu, session_scope_mem_size: %zu",
+         max_mem_offset_, p2p_mem_offset_, zero_copy_mem_size_, session_scope_mem_offset);
   string fp_ceiling_mode;
   if (ge::GetContext().GetOption("ge.fpCeilingMode", fp_ceiling_mode) == SUCCESS) {
     if (!ge::AttrUtils::SetStr(&model, ATTR_FP_CEILING_MODE, fp_ceiling_mode)) {

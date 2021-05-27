@@ -905,6 +905,7 @@ Status StreamAllocator::SplitStreams(vector<set<int64_t>> &split_streams) {
       added_stream_num_vec[stream_id]++;
       new_stream_id_vec[stream_id] = last_stream_id;
       split_streams[stream_id].emplace(last_stream_id);
+      split_ori_stream_map_[last_stream_id] = stream_id;
       node_split_stream_map_[cur_node] = last_stream_id;
 
       // Add the send/recv event to the first and last nodes of the split stream.
@@ -1104,7 +1105,7 @@ Status StreamAllocator::UpdateActiveStreamsForActiveNode(const vector<set<int64_
   return SUCCESS;
 }
 
-Status StreamAllocator::UpdateActiveStreamsForSubgraphs() const {
+Status StreamAllocator::UpdateActiveStreamsForSubgraphs() {
   // Update active stream list for active nodes
   for (auto &node_stream_pair : node_split_stream_map_) {
     auto node = node_stream_pair.first;
@@ -1134,6 +1135,7 @@ Status StreamAllocator::UpdateActiveStreamsForSubgraphs() const {
     if (IsActivated(new_split_stream)) {
       continue;
     }
+    specific_activated_streams_.emplace(new_split_stream);
     new_active_streams.emplace(static_cast<uint32_t>(new_split_stream));
     active_streams.assign(new_active_streams.begin(), new_active_streams.end());
     if (!AttrUtils::SetListInt(active_op, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
@@ -1148,13 +1150,21 @@ Status StreamAllocator::UpdateActiveStreamsForSubgraphs() const {
 }
 
 bool StreamAllocator::IsActivated(int64_t stream_id) const {
+  const auto &iter = split_ori_stream_map_.find(stream_id);
+  if (iter == split_ori_stream_map_.end()) {
+    REPORT_INNER_ERROR("E19999", "Find original stream_id failed, split_stream_id=%ld", stream_id);
+    GELOGE(INTERNAL_ERROR, "[CheckActivated][Check] Find original stream_id failed, split_stream_id=%ld", stream_id);
+    return false;
+  }
+  int64_t ori_stream_id = iter->second;
   for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     auto op_desc = node->GetOpDesc();
     vector<uint32_t> active_streams;
     if (op_desc == nullptr || !AttrUtils::GetListInt(op_desc, ATTR_NAME_ACTIVE_STREAM_LIST, active_streams)) {
       continue;
     }
-    if (std::find(active_streams.begin(), active_streams.end(), stream_id) != active_streams.end()) {
+    if (std::find(active_streams.begin(), active_streams.end(), stream_id) != active_streams.end() ||
+        std::find(active_streams.begin(), active_streams.end(), ori_stream_id) != active_streams.end()) {
       return true;
     }
   }

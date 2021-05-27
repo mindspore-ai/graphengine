@@ -74,6 +74,7 @@
 #include "graph/passes/unused_const_pass.h"
 #include "graph/passes/var_is_initialized_op_pass.h"
 #include "graph/passes/variable_prepare_op_pass.h"
+#include "graph/passes/mark_force_unknown_for_cond_pass.h"
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
@@ -1675,11 +1676,23 @@ Status GraphPrepare::PrepareDynShape(const GraphNodePtr &graph_node, const std::
   PP_RUN_AND_DUMP("InsertAipp", TryDoAipp);
   PP_RUN_AND_DUMP("ProcessBeforeInfershape", ProcessBeforeInfershape);
   PP_RUN_AND_DUMP("InferFormatAndShape", FormatAndShapeProcess);
+  PP_RUN_AND_DUMP("CtrlFlowPreProcess", CtrlFlowPreProcess);
   PP_RUN_AND_DUMP("GetDynamicOutputShape", multibatch::GetDynamicOutputShape, compute_graph_);
   PP_RUN_AND_DUMP("ProcessAippStage2", InsertNewOpUtil::Instance().UpdateDataNodeByAipp, compute_graph_);
   PP_RUN("SaveOriginalGraphToOmModel", SaveOriginalGraphToOmModel);
   PP_RUN_AND_DUMP("PrepareOptimize", PrepareOptimize);
 
+  return SUCCESS;
+}
+
+Status GraphPrepare::CtrlFlowPreProcess() {
+  PassManager graph_pass;
+
+  // After InferShape Mark v1 control flow for unknown shape.
+  auto mark_force_unknown_pass = new (std::nothrow) MarkForceUnknownForCondPass;
+  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::MarkForceUnknownForCondPass", mark_force_unknown_pass));
+
+  GE_CHK_STATUS_RET(graph_pass.Run(compute_graph_));
   return SUCCESS;
 }
 

@@ -28,6 +28,8 @@ set(SRC_LIST
     "../graph/manager/graph_var_manager.cc"
     "../graph/manager/graph_mem_allocator.cc"
     "../graph/manager/graph_caching_allocator.cc"
+    "../graph/manager/session_scope_mem_allocator.cc"
+    "../graph/manager/graph_mem_manager.cc"
     "../graph/manager/trans_var_data_utils.cc"
     "../graph/manager/util/debug.cc"
     "../graph/manager/rdma_pool_allocator.cc"

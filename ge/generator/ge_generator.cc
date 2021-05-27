@@ -31,6 +31,7 @@
 #include "graph/ge_context.h"
 #include "graph/manager/graph_manager.h"
 #include "graph/manager/util/rt_context_util.h"
+#include "graph/operator_factory_impl.h"
 #include "graph/opsproto_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
@@ -803,6 +804,41 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
   return SUCCESS;
 }
 
+Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc) {
+  GE_CHECK_NOTNULL(op_desc);
+  if (OperatorFactoryImpl::GetInferFormatFunc(op_desc->GetType()) != nullptr) {
+    auto node_op = ge::OperatorFactoryImpl::CreateOperator("node_op", op_desc->GetType());
+    if (node_op.IsEmpty()) {
+      GELOGW("get op from OperatorFactory fail. op type: %s", op_desc->GetType().c_str());
+    } else {
+      GELOGD("get op from OperatorFactory success. op type: %s", op_desc->GetType().c_str());
+      auto temp_op_desc = ge::OpDescUtils::GetOpDescFromOperator(node_op);
+      if (temp_op_desc == nullptr) {
+        REPORT_INNER_ERROR("E19999", "GetOpDescFromOperator failed, as return nullptr, type:%s",
+                           op_desc->GetType().c_str());
+        GELOGE(FAILED, "[Get][OpDesc] temp op desc is null, type:%s", op_desc->GetType().c_str());
+        return FAILED;
+      }
+      if (!op_desc->UpdateInputName(temp_op_desc->GetAllInputName())) {
+        GELOGW("InferFormatForSingleOp UpdateInputName failed");
+      }
+      if (!op_desc->UpdateOutputName(temp_op_desc->GetAllOutputName())) {
+        GELOGW("InferFormatForSingleOp UpdateOutputName failed");
+      }
+    }
+    node_op.BreakConnect();
+  }
+  auto op = OpDescUtils::CreateOperatorFromOpDesc(op_desc);
+  auto ret = op_desc->CallInferFormatFunc(op);
+  if (ret != GRAPH_SUCCESS) {
+    REPORT_INNER_ERROR("E19999", "call InferFormatFunc for single op:%s fail",
+                       op_desc->GetName().c_str());
+    GELOGE(FAILED, "[Call][InferFormatFunc] for single op:%s fail.", op_desc->GetName().c_str());
+    return FAILED;
+  }
+  return SUCCESS;
+}
+
 Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
                                   const string &model_file_name, OpEngineType engine_type, ModelBufferData &model_buff,
                                   bool is_offline, int32_t compile_flag) {
@@ -843,6 +879,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   Graph graph;
   GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph),
                 "[Build][Graph] for single op:%s fail.", op_desc->GetName().c_str());
+  GE_CHK_STATUS_RET_NOLOG(InferFormatForSingleOp(op_desc));
 
   // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {

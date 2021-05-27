@@ -434,6 +434,8 @@ rtError_t rtGetRtCapability(rtFeatureType_t featureType, int32_t featureInfo, in
 
 rtError_t rtGetMaxStreamAndTask(uint32_t streamType, uint32_t *maxStrCount, uint32_t *maxTaskCount)
 {
+  *maxStrCount = 1024;
+  *maxTaskCount = 1024;
   return RT_ERROR_NONE;
 }
 

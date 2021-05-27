@@ -27,6 +27,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/ge_local_context.h"
 
 using namespace std;
 using namespace testing;
@@ -68,6 +69,15 @@ static NodePtr CreateNode(ComputeGraph &graph, const string &name, const string 
   op_desc->SetOpKernelLibName("DNN_VM_RTS_OP_STORE");
 
   return graph.AddNode(op_desc);
+}
+
+static NodePtr CreateConstantNode(const ComputeGraphPtr &graph, const string &name, size_t size) {
+  OpDescPtr op_desc = std::make_shared<OpDesc>(name, CONSTANTOP);
+  op_desc->AddOutputDesc(GeTensorDesc());
+  GeTensorPtr value = std::make_shared<GeTensor>(GeTensorDesc(), size);
+  (void)AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, value);
+
+  return graph->AddNode(op_desc);
 }
 
 TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
@@ -229,5 +239,24 @@ TEST_F(UtestHybridModelBuilder, stream_switch_n_group) {
   batch_num = 3;
   AttrUtils::SetInt(switch_n->GetOpDesc(), ATTR_NAME_BATCH_NUM, batch_num);
   ASSERT_EQ(hybrid_model_builder.CreateStreamSwitchNGroup(switch_n, &node_item), SUCCESS);
+}
+
+TEST_F(UtestHybridModelBuilder, init_constant_op_host_) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  HybridModel hybrid_model(ge_root_model);
+  HybridModelBuilder hybrid_model_builder(hybrid_model);
+
+  auto const_1 = CreateConstantNode(graph, "const_1", 0);
+  hybrid_model_builder.constant_op_nodes_.emplace(const_1->GetName(), const_1);
+  auto const_2 = CreateConstantNode(graph, "const_2", 10);
+  hybrid_model_builder.constant_op_nodes_.emplace(const_2->GetName(), const_2);
+
+  std::map<std::string, string> options;
+  options["ge.exec.placement"] = "HOST";
+  GetThreadLocalContext().SetGraphOption(options);
+
+  EXPECT_EQ(hybrid_model_builder.InitConstantOps(), SUCCESS);
+  EXPECT_EQ(hybrid_model_builder.hybrid_model_.variable_tensors_.size(), 2);
 }
 } // namespace ge

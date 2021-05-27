@@ -62,6 +62,7 @@ struct GraphExecutionContext {
   const HybridModel *model = nullptr;
   const GEThreadLocalContext *ge_context = nullptr;
   rtStream_t stream = nullptr;
+  rtStream_t hccl_stream = nullptr;
   rtContext_t rt_context = nullptr;
   rtContext_t rt_gen_context = nullptr;
   std::unique_ptr<CallbackManager> callback_manager = nullptr;

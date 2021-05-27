@@ -784,6 +784,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/ge_auth_file_saver_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
+    "graph/build/stream_allocator_unittest.cc"
     "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
     "graph/build/task_generator_unittest.cc"
@@ -792,6 +793,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
+    "graph/manager/host_mem_allocator_unittest.cc"
     "graph/manager/session_scope_mem_allocator_unittest.cc"
     "graph/manager/run_graph_unittest.cc"
     "graph/partition/dynamic_shape_partition_unittest.cc"
@@ -831,6 +833,7 @@ set(HYBRID_TEST_FILES
     "hybrid/model/hybrid_model_builder_unittest.cc"
     "hybrid/node_executor/rts/rts_node_task_unittest.cc"
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
+    "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
 )
 

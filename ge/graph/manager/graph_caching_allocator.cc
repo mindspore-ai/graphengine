@@ -137,6 +137,7 @@ uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device
   uint8_t *ptr = nullptr;
   Block *block = FindFreeBlock(size, org_ptr, device_id);
   if (block == nullptr) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (ge::SUCCESS == TryExtendCache(size, device_id)) {
       block = FindFreeBlock(size, org_ptr, device_id);
       if (block != nullptr) {

@@ -18,7 +18,7 @@
 #define GE_HYBRID_EXECUTOR_ITERATION_CONTEXT_H_
 
 #include <vector>
-
+#include "mmpa/mmpa_api.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/node_state.h"
@@ -31,10 +31,11 @@ namespace hybrid {
 class SubgraphContext {
  public:
   explicit SubgraphContext(const GraphItem *graph_item, const GraphExecutionContext *execution_context);
-  ~SubgraphContext() = default;
+  ~SubgraphContext();
 
   Status Init();
   void ResetContext(const NodePtr &node);
+  void Reset();
   NodeStatePtr GetOrCreateNodeState(const NodeItem *node_item);
 
   void OnError(Status error);
@@ -52,7 +53,7 @@ class SubgraphContext {
   friend class TaskContext;
   const GraphItem *graph_item_;
   const GraphExecutionContext *execution_context_;
-  std::mutex mu_;
+  mmRWLock_t rw_lock_;
   std::vector<TensorValue> all_inputs_;
   std::vector<TensorValue> all_outputs_;
   NodeDoneManager node_done_manager_;

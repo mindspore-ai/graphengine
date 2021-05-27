@@ -242,6 +242,90 @@ INT32 mmRealPath(const CHAR *path, CHAR *realPath, INT32 realPathLen)
   return ret;
 }
 
+INT32 mmRWLockInit(mmRWLock_t *rwLock)
+{
+  if (rwLock == NULL) {
+    return EN_INVALID_PARAM;
+  }
+
+  INT32 ret = pthread_rwlock_init(rwLock, NULL);
+  if (ret != MMPA_ZERO) {
+    return EN_ERROR;
+  }
+
+  return EN_OK;
+}
+
+INT32 mmRWLockRDLock(mmRWLock_t *rwLock)
+{
+  if (rwLock == NULL) {
+    return EN_INVALID_PARAM;
+  }
+
+  INT32 ret = pthread_rwlock_rdlock(rwLock);
+  if (ret != MMPA_ZERO) {
+    return EN_ERROR;
+  }
+
+  return EN_OK;
+}
+
+INT32 mmRWLockWRLock(mmRWLock_t *rwLock)
+{
+  if (rwLock == NULL) {
+    return EN_INVALID_PARAM;
+  }
+
+  INT32 ret = pthread_rwlock_wrlock(rwLock);
+  if (ret != MMPA_ZERO) {
+    return EN_ERROR;
+  }
+
+  return EN_OK;
+}
+
+INT32 mmRDLockUnLock(mmRWLock_t *rwLock)
+{
+  if (rwLock == NULL) {
+    return EN_INVALID_PARAM;
+  }
+
+  INT32 ret = pthread_rwlock_unlock(rwLock);
+  if (ret != MMPA_ZERO) {
+    return EN_ERROR;
+  }
+
+  return EN_OK;
+}
+
+INT32 mmWRLockUnLock(mmRWLock_t *rwLock)
+{
+  if (rwLock == NULL) {
+    return EN_INVALID_PARAM;
+  }
+
+  INT32 ret = pthread_rwlock_unlock(rwLock);
+  if (ret != MMPA_ZERO) {
+    return EN_ERROR;
+  }
+
+  return EN_OK;
+}
+
+INT32 mmRWLockDestroy(mmRWLock_t *rwLock)
+{
+  if (rwLock == NULL) {
+    return EN_INVALID_PARAM;
+  }
+
+  INT32 ret = pthread_rwlock_destroy(rwLock);
+  if (ret != MMPA_ZERO) {
+    return EN_ERROR;
+  }
+
+  return EN_OK;
+}
+
 INT32 mmGetErrorCode()
 {
   return 0;

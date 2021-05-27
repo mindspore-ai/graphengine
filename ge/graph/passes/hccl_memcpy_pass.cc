@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,15 @@
 #include "common/ge/ge_util.h"
 #include "framework/common/types.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/op_desc_utils.h"
 
 namespace {
 const int32_t kAnchorSize = 1;
-const int kAnchorNum = 0;
 const int32_t kAnchorAssignRefIndex = 0;
 const int32_t kAnchorAssignValueIndex = 1;
-const char *const kInputMutable = "_input_mutable";
+const int32_t kAnchorIdentityIndex = 0;
+// attr _input_mutable = true means hccl node will modify its input in runtime
+const char *const kModifyInput = "_input_mutable";
 }  // namespace
 namespace ge {
 Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
@@ -58,24 +60,13 @@ Status HcclMemcpyPass::Run(ge::ComputeGraphPtr graph) {
 // need to inset memcpy node between.
 // also works on situation that input is variable or const.
 Status HcclMemcpyPass::MutableInputProcess(const ComputeGraphPtr &graph, const NodePtr node) {
-  auto op_desc = node->GetOpDesc();
-
   bool node_input_mutable = false;
-  if (!AttrUtils::HasAttr(op_desc, kInputMutable)) {
-    return SUCCESS;
-  }
-
-  if (!AttrUtils::GetBool(op_desc, kInputMutable, node_input_mutable)) {
-    REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", kInputMutable,
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "node:%s get attr:_input_mutable failed.", node->GetName().c_str());
-    return FAILED;
-  }
+  (void)AttrUtils::GetBool(node->GetOpDesc(), kModifyInput, node_input_mutable);
   if (!node_input_mutable) {
     return SUCCESS;
   }
 
-  GELOGI("input mutable hcom op is:%s.", op_desc->GetName().c_str());
+  GELOGI("input mutable hcom op is:%s.", node->GetName().c_str());
   for (auto &hccl_in_anchor : node->GetAllInDataAnchors()) {
     if (hccl_in_anchor == nullptr) {
       continue;
@@ -127,41 +118,23 @@ NodePtr HcclMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &graph, const O
 
   std::string node_name = pre_node->GetName() + "_" + IDENTITY;
   node_name = CheckDuplicateName(node_name);
-  OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), IDENTITY);
-  if (op_desc == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(INTERNAL_ERROR, "Create Identity op: MakeShared op_desc fail.");
-    return nullptr;
-  }
-  GELOGI("Create Identity op:%s.", op_desc->GetName().c_str());
-
-  graphStatus ret = op_desc->AddInputDesc("x", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
-  if (ret != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:x",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Create Identity op: add input desc fail.");
-    return nullptr;
-  }
-
-  ret = op_desc->AddOutputDesc("y", pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx()));
-  if (ret != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed, name:y",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Create Identity op: add output desc fail.");
+  OpDescBuilder op_desc_builder(node_name, IDENTITY);
+  auto data_desc = pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx());
+  auto identity_op_desc = op_desc_builder.AddInput("x", data_desc).AddOutput("y", data_desc).Build();
+  if (identity_op_desc == nullptr) {
     return nullptr;
   }
   // because history reason ,this pass can not do work after constant fold so mark it
-  (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
+  (void)AttrUtils::SetBool(identity_op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
 
-  NodePtr memcpy_node = graph->AddNode(op_desc);
-  if (memcpy_node == nullptr) {
+  NodePtr identity_node = graph->AddNode(identity_op_desc);
+  if (identity_node == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
+                      identity_node->GetName().c_str(), identity_node->GetType().c_str(), graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "Insert Identity node fail.");
     return nullptr;
   }
-
-  return memcpy_node;
+  return identity_node;
 }
 
 ///
@@ -220,49 +193,24 @@ Status HcclMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &graph, const 
 ///
 Status HcclMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr &graph, const OutDataAnchorPtr &src_out_anchor,
                                                 const InDataAnchorPtr &hccl_in_anchor) {
-  GELOGI("Between op %s and op %s need insert memcpy async op.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
+  GELOGI("Between op %s and op %s need insert identity op.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
          hccl_in_anchor->GetOwnerNode()->GetName().c_str());
-  NodePtr memcpy_node = CreateIdentityNode(graph, src_out_anchor);
-  GE_CHECK_NOTNULL(memcpy_node);
+  NodePtr identity_node = CreateIdentityNode(graph, src_out_anchor);
+  GE_CHECK_NOTNULL(identity_node);
 
-  Status ret1 = src_out_anchor->Unlink(hccl_in_anchor);
-  if (ret1 != SUCCESS) {
+  auto ret = GraphUtils::InsertNodeBefore(hccl_in_anchor, identity_node, kAnchorIdentityIndex, kAnchorIdentityIndex);
+  if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999",
-                      "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
-                      src_out_anchor->GetOwnerNode()->GetName().c_str(),
-                      src_out_anchor->GetOwnerNode()->GetType().c_str(), src_out_anchor->GetIdx(),
-                      hccl_in_anchor->GetOwnerNode()->GetName().c_str(),
-                      hccl_in_anchor->GetOwnerNode()->GetType().c_str(), hccl_in_anchor->GetIdx());
-    GELOGE(INTERNAL_ERROR, "The op %s Unlink anchor %s fail.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
-           hccl_in_anchor->GetOwnerNode()->GetName().c_str());
-    return FAILED;
-  }
-  auto out_data_anchor_0 = memcpy_node->GetOutDataAnchor(kAnchorNum);
-  GE_CHECK_NOTNULL(out_data_anchor_0);
-  ret1 = out_data_anchor_0->LinkTo(hccl_in_anchor);
-  if (ret1 != SUCCESS) {
-    REPORT_CALL_ERROR("E19999",
-                      "Op:%s(%s) out index:%d link to op:%s(%s) in index:%d failed",
-                      out_data_anchor_0->GetOwnerNode()->GetName().c_str(),
-                      out_data_anchor_0->GetOwnerNode()->GetType().c_str(), out_data_anchor_0->GetIdx(),
+                      "Op:Fail to insert %s(%s) before %s(%s) on index:%d input anchor.",
+                      identity_node->GetName().c_str(), identity_node->GetType().c_str(),
                       hccl_in_anchor->GetOwnerNode()->GetName().c_str(),
                       hccl_in_anchor->GetOwnerNode()->GetType().c_str(),
                       hccl_in_anchor->GetIdx());
-    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s  fail.", memcpy_node->GetName().c_str(),
-           hccl_in_anchor->GetOwnerNode()->GetName().c_str());
-    return FAILED;
-  }
-
-  Status ret = src_out_anchor->LinkTo(memcpy_node->GetInDataAnchor(kAnchorNum));
-  if (ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999",
-                      "Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
-                      src_out_anchor->GetOwnerNode()->GetName().c_str(),
-                      src_out_anchor->GetOwnerNode()->GetType().c_str(), src_out_anchor->GetIdx(),
-                      memcpy_node->GetName().c_str(), memcpy_node->GetType().c_str(),
-                      kAnchorNum);
-    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", src_out_anchor->GetOwnerNode()->GetName().c_str(),
-           memcpy_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "Fail to insert %s(%s) before %s(%s) on index:%d input anchor.",
+           identity_node->GetName().c_str(), identity_node->GetType().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetName().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetType().c_str(),
+           hccl_in_anchor->GetIdx());
     return FAILED;
   }
   return SUCCESS;

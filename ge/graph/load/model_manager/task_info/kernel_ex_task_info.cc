@@ -195,7 +195,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
     SetIoAddrs(op_desc);
-    InitDumpTask(input_output_addr, op_desc);
+    InitDumpFlag(op_desc);
+    InitDumpArgs(input_output_addr, op_desc);
     GELOGI("KernelExTaskInfo knonw node Init Success.");
     return SUCCESS;
   }
@@ -237,7 +238,8 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
                     GELOGE(RT_FAILED, "[Call][RtMemcpy] failed, ret:0x%X, size:%lu", rt_ret, addrs_size);
                     return RT_ERROR_TO_GE_STATUS(rt_ret);)
 
-    InitDumpTask(input_output_addr_, op_desc);
+    InitDumpFlag(op_desc);
+    InitDumpArgs(input_output_addr_, op_desc);
   }
 
   uint64_t input_output_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(input_output_addr_));
@@ -269,10 +271,16 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   return SUCCESS;
 }
 
-void KernelExTaskInfo::InitDumpTask(void *addr, const OpDescPtr &op_desc) {
+void KernelExTaskInfo::InitDumpFlag(const OpDescPtr &op_desc) {
+  if (davinci_model_->OpNeedDump(op_desc->GetName())) {
+    GELOGD("Op %s need init dump flag in kernel ex task info", op_desc->GetName().c_str());
+    dump_flag_ = RT_KERNEL_DUMPFLAG;
+  }
+}
+
+void KernelExTaskInfo::InitDumpArgs(void *addr, const OpDescPtr &op_desc) {
   if (davinci_model_->OpNeedDump(op_desc->GetName())) {
     GELOGD("Op %s need dump in kernel ex task info", op_desc->GetName().c_str());
-    dump_flag_ = RT_KERNEL_DUMPFLAG;
     dump_args_ = addr;
   }
   if (davinci_model_->GetOpDugReg()) {

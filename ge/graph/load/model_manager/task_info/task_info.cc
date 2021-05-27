@@ -26,7 +26,7 @@ Status TaskInfo::SetStream(uint32_t stream_id, const std::vector<rtStream_t> &st
     stream_ = stream_list[stream_id];
   } else {
   	REPORT_INNER_ERROR("E19999", "stream_id:%u >= stream_list.size(): %zu, check invalid",
-                       stream_id, stream_list.size());
+                      stream_id, stream_list.size());
     GELOGE(FAILED, "[Check][Param] index:%u >= stream_list.size():%zu.", stream_id, stream_list.size());
     return FAILED;
   }

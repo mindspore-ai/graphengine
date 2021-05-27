@@ -335,9 +335,9 @@ Status DeleteIdentityInsertByAdapter(ComputeGraphPtr &graph) {
           GE_IF_BOOL_EXEC(peer_in_anchor == nullptr, continue);
           auto dst_node = peer_in_anchor->GetOwnerNode();
           GE_IF_BOOL_EXEC(dst_node == nullptr, continue);
-          if (dst_node->GetType() == IDENTITY) {
+          if (dst_node->GetType() == IDENTITY && dst_node->GetAllOutDataAnchors().empty()) {
             GELOGI("Need to remove %s.", dst_node->GetName().c_str());
-            if (ge::GraphUtils::RemoveNodeWithoutRelink(graph, dst_node) != GRAPH_SUCCESS) {
+            if (GraphUtils::RemoveNodeWithoutRelink(graph, dst_node) != GRAPH_SUCCESS) {
               REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) from graph:%s failed",
                                 dst_node->GetName().c_str(), dst_node->GetType().c_str(), graph->GetName().c_str());
               GELOGE(FAILED, "Remove Identity node %s failed.", dst_node->GetName().c_str());

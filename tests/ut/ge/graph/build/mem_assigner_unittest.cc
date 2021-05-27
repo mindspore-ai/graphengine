@@ -503,6 +503,24 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_set_input_offset) {
   EXPECT_EQ(memoryAssigner.CheckOffset(), GRAPH_SUCCESS);
 }
 
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_check_inner_offset) {
+  ge::ComputeGraphPtr graph = MakeRefNodeGraph();
+  auto assign = graph->FindNode("assgin");
+  auto op_desc = assign->GetOpDesc();
+  int64_t inner_offset = 0;
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset), false);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(1), ATTR_NAME_INNER_OFFSET, inner_offset), false);
+  GraphMemoryAssigner memoryAssigner(graph);
+  MemoryOffset memory_offset(RT_MEMORY_HBM, 0);
+  memoryAssigner.memory_offset_.emplace(RT_MEMORY_HBM, memory_offset);
+  EXPECT_EQ(memoryAssigner.SetInputOffset(), GRAPH_SUCCESS);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset), true);
+  EXPECT_EQ(inner_offset, 100);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableOutputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset), true);
+  EXPECT_EQ(inner_offset, 100);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(1), ATTR_NAME_INNER_OFFSET, inner_offset), false);
+}
+
 TEST_F(UtestMemoryAssignerTest, graph_memory_assign_update_ref_op_offset_reverse) {
     ge::ut::GraphBuilder builder("graph");
     auto data_input = builder.AddNode("data", "Data", 1, 1);

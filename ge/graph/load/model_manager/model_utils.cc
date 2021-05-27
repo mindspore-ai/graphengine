@@ -342,7 +342,7 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
 
     int64_t input_offset = v_input_offset[non_const_index];
     non_const_index++;
-    int64_t inner_offset;
+    int64_t inner_offset = 0;
     (void)ge::AttrUtils::GetInt(op_desc->MutableInputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
     GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset - inner_offset),
                     uint8_t *variable_addr = nullptr;
@@ -454,7 +454,7 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       GELOGD("%s is an optional output, the address don't need to be saved.", tensor_desc->GetName().c_str());
       continue;
     }
-    int64_t inner_offset;
+    int64_t inner_offset = 0;
     (void)ge::AttrUtils::GetInt(op_desc->MutableOutputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
     GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i] - inner_offset),
                     uint8_t *variable_addr = nullptr;

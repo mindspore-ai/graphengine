@@ -1514,7 +1514,7 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
     output_list = last_peer_out_op_desc->GetOutputOffset();
     auto out_index = static_cast<unsigned long>(peer_out_anchor->GetIdx());
     if (output_list.size() > static_cast<size_t>(out_index)) {
-      int64_t peer_out_inner_offset;
+      int64_t peer_out_inner_offset = 0;
       if (ge::AttrUtils::GetInt(last_peer_out_op_desc->MutableOutputDesc(out_index), ATTR_NAME_INNER_OFFSET,
                                 peer_out_inner_offset)) {
         (void)ge::AttrUtils::SetInt(tmp_op_desc->MutableInputDesc(anchor->GetIdx()), ATTR_NAME_INNER_OFFSET,
@@ -1534,7 +1534,7 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
             GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
           return ge::FAILED;
         }
-        int64_t inner_offset;
+        int64_t inner_offset = 0;
         (void)ge::AttrUtils::GetInt(tmp_op_desc->MutableInputDesc(anchor->GetIdx()), ATTR_NAME_INNER_OFFSET,
                                     inner_offset);
         GELOGD("Node[%s] input[%d] has origin offset[%ld] origin_inner_offset[%ld]", tmp_op_desc->GetName().c_str(),
@@ -1575,7 +1575,7 @@ ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, con
                                                         const int ref_in, const int64_t input_offset) const {
   auto opdesc = node->GetOpDesc();
   GE_CHECK_NOTNULL(opdesc);
-  int64_t inner_offset;
+  int64_t inner_offset = 0;
   bool has_inner_offset = ge::AttrUtils::GetInt(opdesc->MutableInputDesc(ref_in), ATTR_NAME_INNER_OFFSET, inner_offset);
   for (const auto &out2in : out2ins) {
     auto out_i = out2in.first;
@@ -1591,7 +1591,7 @@ ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, con
       origin_output_list[out_i] = input_offset;
       opdesc->SetOutputOffset(origin_output_list);
       if (has_inner_offset) {
-        (void)ge::AttrUtils::SetInt(opdesc->MutableOutputDesc(out_i), ATTR_NAME_INNER_OFFSET,inner_offset);
+        (void)ge::AttrUtils::SetInt(opdesc->MutableOutputDesc(out_i), ATTR_NAME_INNER_OFFSET, inner_offset);
       }
       GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld], inner_offset[%ld]", opdesc->GetName().c_str(),
              out_i, ref_in, input_offset, inner_offset);

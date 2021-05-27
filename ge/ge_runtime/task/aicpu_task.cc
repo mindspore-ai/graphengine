@@ -83,7 +83,7 @@ bool AicpuTask::Distribute() {
       return false;
     }
 
-    GELOGI("ext info size:", ext_size);
+    GELOGI("ext info size: %u", ext_size);
     aicpu_param_head.extInfoLength = ext_size;
     aicpu_param_head.extInfoAddr = reinterpret_cast<uintptr_t>(ext_info_);
   }

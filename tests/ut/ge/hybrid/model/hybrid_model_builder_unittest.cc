@@ -28,6 +28,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_local_context.h"
+#include "graph/common/omg_util.h"
 
 using namespace std;
 using namespace testing;
@@ -157,7 +158,7 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   GraphUtils::AddEdge(next1->GetOutControlAnchor(), active3->GetInControlAnchor());
 
   GraphUtils::AddEdge(exit1->GetOutDataAnchor(0), output1->GetInDataAnchor(0));
-  AttrUtils::SetStr(merge1->GetOpDesc(), ATTR_NAME_NEXT_ITERATION, next1->GetName());
+  SetNextIteration(merge1, next1);
 
   AttrUtils::SetBool(enter1->GetOpDesc(), ATTR_NAME_INSERT_FP_PROFILILNG_TASK, true);
   AttrUtils::SetBool(output1->GetOpDesc(), ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);

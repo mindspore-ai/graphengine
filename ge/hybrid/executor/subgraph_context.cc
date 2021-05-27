@@ -46,6 +46,10 @@ Status SubgraphContext::Init() {
   return SUCCESS;
 }
 
+void SubgraphContext::SetGroup(int group) {
+  group_ = group;
+}
+
 void SubgraphContext::ResetContext(const NodePtr &node) {
   node_done_manager_.Reset(node);
 }
@@ -85,6 +89,7 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
   if (node_state == nullptr) {
     const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
     node_state.reset(new(std::nothrow)NodeState(*node_item, this));
+    node_state->SetGroup(group_);
     (void)guard;
   }
   GELOGD("[%s] unlock for write", node_item->NodeName().c_str());

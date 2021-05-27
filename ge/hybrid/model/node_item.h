@@ -98,6 +98,8 @@ struct NodeItem {
 
   void SetDataSend(NodeItem *node_item, int anchor_index);
   void SetCtrlSend(NodeItem *node_item, uint32_t switch_index);
+  void SetMergeCtrl(NodeItem *node_item, uint32_t merge_index);
+  size_t GetMergeCtrl(uint32_t merge_index) const;
 
   OptionalMutexGuard MutexGuard(const std::string &name) const {
     return OptionalMutexGuard(copy_mu_.get(), name + "_" + node_name);
@@ -140,6 +142,7 @@ struct NodeItem {
   std::set<const NodeItem *> ctrl_send_;  // Send ctrl notify to
   std::set<const NodeItem *> ctrl_recv_;  // Recv ctrl notify from
   std::vector<std::vector<const NodeItem *>> switch_groups_;  // Send ctrl notify to
+  std::set<int> enter_inside_;  // Enter feed loop inside Node, Not cross Merge.
 
   std::shared_ptr<NodeTask> kernel_task;
   std::unique_ptr<FusedSubgraph> fused_subgraph;

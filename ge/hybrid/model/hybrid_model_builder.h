@@ -99,6 +99,8 @@ class HybridModelBuilder {
   Status BuildProfilingControl(GraphItem &graph_item, const std::map<size_t, std::pair<uint32_t, uint32_t>> &nodes);
   Status BuildControlFlowGroup(GraphItem &graph_item, const NodePtr &node, NodeItem *node_item);
   Status CreateNormalNodeGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateMergeEnterGroup(const NodePtr &node, NodeItem *node_item);
+  Status CreateMergeIterationGroup(const NodePtr &node, NodeItem *node_item);
   Status CreateStreamActiveGroup(const NodePtr &node, NodeItem *node_item);
   Status CreateStreamSwitchGroup(const NodePtr &node, NodeItem *node_item);
   Status CreateStreamSwitchNGroup(const NodePtr &node, NodeItem *node_item);

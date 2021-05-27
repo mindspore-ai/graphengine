@@ -96,11 +96,11 @@ Status SetCyclicDependenceFlag(const ge::NodePtr &node);
 
 ///
 /// @brief set op next_iteration name
-/// @param [in] node
-/// @param [in] next
+/// @param [in] Merge Node
+/// @param [in] NextIteration Node
 /// @return Status
 ///
-Status SetNextIteration(const ge::NodePtr &node, const std::string &next);
+Status SetNextIteration(const NodePtr &node, const NodePtr &next);
 
 ///
 /// @brief Align the memory

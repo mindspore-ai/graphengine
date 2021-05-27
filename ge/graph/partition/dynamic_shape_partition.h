@@ -80,6 +80,10 @@ class DynamicShapePartitioner {
     Status BuildPartitionSubgraph();
     // Clear resource and break circular dependency
     void Clear();
+    bool IsAdjoinNodes(const std::shared_ptr<Cluster> &other) const {
+      const auto &out_clusters = other->out_clusters_;
+      return std::find(out_clusters.begin(), out_clusters.end(), shared_from_this()) != out_clusters.end();
+    }
 
    private:
     static thread_local size_t unique_id_;

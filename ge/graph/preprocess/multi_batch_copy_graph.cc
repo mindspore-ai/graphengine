@@ -1266,8 +1266,8 @@ Status MultiBatchGraphCopyer::LinkNodeToMerge(const NodePtr &node, int out_index
     auto ret = GraphUtils::AddEdge(src_node->GetOutDataAnchor(out_index), merge->GetInDataAnchor(i));
     if (ret != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%zu) failed",
-                         src_node->GetName().c_str(), src_node->GetType().c_str(), out_index,
-                         merge->GetName().c_str(), merge->GetType().c_str(), i);
+                        src_node->GetName().c_str(), src_node->GetType().c_str(), out_index,
+                        merge->GetName().c_str(), merge->GetType().c_str(), i);
       GELOGE(INTERNAL_ERROR,
              "Failed to add edge between copyed node %s(%d) to inserted merge node %s(%zu), error-code %u",
              copyed_nodes[i]->GetName().c_str(), out_index, merge->GetName().c_str(), i, ret);

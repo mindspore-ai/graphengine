@@ -44,23 +44,20 @@ Status CheckArgsForFracZToNhwc(const TransArgs &args) {
     GELOGE(ACL_ERROR_GE_DATATYPE_INVALID, "[Check][DataType]Failed, "
            "shape from FORMAT_FRACTAL_Z to NCHW, invalid data type %s",
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
-    REPORT_INNER_ERROR("E19999", "Failed to trans shape from FORMAT_FRACTAL_Z to NCHW, "
-                       "invalid data type %s",
+    REPORT_INNER_ERROR("E19999", "Failed to trans shape from FORMAT_FRACTAL_Z to NCHW, invalid data type %s",
                        TypeUtils::DataTypeToSerialString(args.src_data_type).c_str());
     return ACL_ERROR_GE_DATATYPE_INVALID;
   }
   if (!CheckShapeValid(src_shape, kFracZDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
            ShapeToString(src_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
-                      ShapeToString(src_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid", ShapeToString(src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kNhwcDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
            ShapeToString(dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid",
-                      ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
@@ -138,7 +135,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, int size
                    "[Operate][Memory]Failed to copy data from FracZ offset %ld to "
                    "NCHW[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                    src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret);
-            REPORT_CALL_ERROR("E19999","Failed to copy data from FracZ offset %ld to "
+            REPORT_CALL_ERROR("E19999", "Failed to copy data from FracZ offset %ld to "
                               "NCHW[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                               src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
@@ -185,7 +182,7 @@ Status FormatTransferFracZNhwc::TransFormat(const TransArgs &args, TransResult &
            ShapeToString(args.src_shape).c_str(),
            TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),
            ShapeToString(args.dst_shape).c_str(), total_size, ret);
-    REPORT_CALL_ERROR("E19999","Failed to get data after trans, src shape %s, data type %s, "
+    REPORT_CALL_ERROR("E19999", "Failed to get data after trans, src shape %s, data type %s, "
                       "dst shape %s, memory size %ld, error_code %u",
                       ShapeToString(args.src_shape).c_str(),
                       TypeUtils::DataTypeToSerialString(args.src_data_type).c_str(),

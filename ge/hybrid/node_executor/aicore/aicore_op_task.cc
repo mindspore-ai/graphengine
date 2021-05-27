@@ -420,9 +420,8 @@ Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info)
 }
 
 Status AiCoreOpTask::UpdateArgs(TaskContext &task_context) {
-  size_t expected_arg_count = task_context.NumInputs() + task_context.NumOutputs() +
-                              task_context.NumWorkspaces()
-                              - output_indices_to_skip_.size();
+  size_t expected_arg_count = task_context.NumInputs() + task_context.NumOutputs() + task_context.NumWorkspaces() -
+                              output_indices_to_skip_.size();
   if (tiling_buffer_ != nullptr) {
     ++expected_arg_count;
   }

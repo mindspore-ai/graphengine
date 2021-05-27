@@ -51,7 +51,7 @@ std::vector<std::pair<NodePtr, InDataAnchorPtr>> GetOutDataNodesByIndex(const No
   auto out_anchor = node->GetOutDataAnchor(index);
   if (out_anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d out data anchor, check invalid",
-                      node->GetName().c_str(), node->GetType().c_str(), index);
+                       node->GetName().c_str(), node->GetType().c_str(), index);
     GELOGE(PARAM_INVALID, "Failed to get out data nodes of index %d from node %s, the anchor does not exists", index,
            node->GetName().c_str());
     return {};

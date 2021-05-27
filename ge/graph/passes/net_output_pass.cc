@@ -73,7 +73,7 @@ Status NetOutputPass::GetRetvalOutputInfo(const ge::NodePtr &node,
   if (iter != targets_.end()) {
     targets_.erase(iter);
     targets_.insert(src_node_ptr);
-    GELOGI("node [%s] is in user def targets, do not output result to user!", node->GetName().c_str());
+    GELOGI("Node [%s] is in user def targets, do not output result to user!", node->GetName().c_str());
   }
   is_include_special_node_ = true;
   return SUCCESS;
@@ -105,7 +105,7 @@ Status NetOutputPass::GetOutputNode(const ge::ComputeGraphPtr &graph, std::vecto
   for (auto &ele : graph->GetGraphOutNodesInfo()) {
     auto iter = targets_.find(ele.first);
     if (iter != targets_.end()) {
-      GELOGI("user set out node [%s] is found in user def targets, out node is prio!", ele.first->GetName().c_str());
+      GELOGI("User set out node [%s] is found in user def targets, out node is prior!", ele.first->GetName().c_str());
       targets_.erase(iter);
     }
 
@@ -213,7 +213,7 @@ Status NetOutputPass::UpdateNetOutputDesc(const ge::NodePtr &net_output) {
   std::vector<bool> is_input_const;
   for (const auto &in_anchor : net_output->GetAllInDataAnchors()) {
     GE_CHECK_NOTNULL(in_anchor);
-    uint32_t index = static_cast<uint32_t>(in_anchor->GetIdx());
+    auto index = static_cast<uint32_t>(in_anchor->GetIdx());
     if (index >= net_output_desc->GetAllInputsDesc().size()) {
       REPORT_INNER_ERROR("E19999", "Node:%s(%s) has in_anchor index:%u >= its input desc num:%zu, check invalid",
                          net_output_desc->GetName().c_str(), net_output_desc->GetType().c_str(), index,
@@ -369,10 +369,9 @@ Status NetOutputPass::UnLinkDataAnchorOfNetoutput(const ge::ComputeGraphPtr &gra
       if (!CheckNodeIsInOutputNodes(graph, node)) {
         ret = in_data_anchor->Unlink(peer_out_anchor);
         if (ret != SUCCESS) {
-          REPORT_CALL_ERROR("E19999",
-                        "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
-                        net_out_node->GetName().c_str(), net_out_node->GetType().c_str(), in_data_anchor->GetIdx(),
-                        node->GetName().c_str(), node->GetType().c_str(), peer_out_anchor->GetIdx());
+          REPORT_CALL_ERROR("E19999", "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
+                            net_out_node->GetName().c_str(), net_out_node->GetType().c_str(), in_data_anchor->GetIdx(),
+                            node->GetName().c_str(), node->GetType().c_str(), peer_out_anchor->GetIdx());
           GELOGE(INTERNAL_ERROR, "Unlink peer_out_anchor fail!");
           return ret;
         }
@@ -565,7 +564,7 @@ Status NetOutputPass::AddNetOutputNodeToGraph(const ge::ComputeGraphPtr &graph, 
     GELOGI("[NETOUTPUT PASS] Add net output node succeed");
     return SUCCESS;
   }
-  GELOGI("[NETOUTPUT PASS] Output node size:%lu.", output_nodes_info.size());
+  GELOGI("[NETOUTPUT PASS] Output node size:%zu.", output_nodes_info.size());
   if (output_nodes_info.empty()) {
     // because retval node is contained by output_nodes_info, here means targets is non-empty
     output_node = graph->AddNode(net_output_desc);

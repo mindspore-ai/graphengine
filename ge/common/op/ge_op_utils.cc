@@ -444,17 +444,16 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims) {
   if (tensor == nullptr) {
     GELOGE(PARAM_INVALID, "[Check][Param]Input tensor is nullptr");
-    REPORT_INNER_ERROR("E19999","Input tensor is nullptr");
+    REPORT_INNER_ERROR("E19999", "Input tensor is nullptr");
     return PARAM_INVALID;
   }
 
   // If the tensor data is a vector, the shape dimension must be 1
   if (tensor->GetTensorDesc().GetShape().GetDims().size() > 1) {
-    GELOGE(PARAM_INVALID, "[Check][Param]The dimension of the input tensor shape "
-           "cannot be more than 1, it is %zu",
+    GELOGE(PARAM_INVALID, "[Check][Param]The dimension of the input tensor shape cannot be more than 1, it is %zu",
            tensor->GetTensorDesc().GetShape().GetDims().size());
-    REPORT_CALL_ERROR("E19999", "The dimension of the input tensor shape %zu invalid, "
-                      "more than 1", tensor->GetTensorDesc().GetShape().GetDims().size());
+    REPORT_CALL_ERROR("E19999", "The dimension of the input tensor shape %zu invalid, more than 1",
+                      tensor->GetTensorDesc().GetShape().GetDims().size());
     return PARAM_INVALID;
   }
 
@@ -473,8 +472,8 @@ OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType ty
       dims.push_back(shape_data[i]);
     }
   } else {
-    GELOGE(PARAM_INVALID, "[Check][DataType]Invalid, type only can be DT_INT32 or DT_INT64, "
-           "type is %s", TypeUtils::DataTypeToSerialString(type).c_str());
+    GELOGE(PARAM_INVALID, "[Check][DataType]Invalid, type only can be DT_INT32 or DT_INT64, type is %s",
+           TypeUtils::DataTypeToSerialString(type).c_str());
     REPORT_INNER_ERROR("E19999", "Data type %s check invalid, only can be DT_INT32 or DT_INT64",
                        TypeUtils::DataTypeToSerialString(type).c_str());
     return PARAM_INVALID;

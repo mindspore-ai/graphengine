@@ -79,7 +79,8 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
 Status ModelHelper::SaveSizeToModelDef(const GeModelPtr &ge_model) {
   vector<int64_t> om_info;
   auto ge_model_weight = ge_model->GetWeight();
-  GELOGD("SaveSizeToModelDef weight_data_size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
+  GELOGD("SaveSizeToModelDef weight_data_size is %zu, ge_model_weight data is %p", ge_model_weight.GetSize(),
+         ge_model_weight.GetData());
   om_info.push_back(ge_model_weight.GetSize());
 
   TBEKernelStore tbe_kernel_store = ge_model->GetTBEKernelStore();
@@ -284,7 +285,7 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
   if (SaveModelWeights(om_file_save_helper, ge_model, model_index) != SUCCESS) {
     GELOGE(FAILED, "[Save][ModelWeights]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
-    REPORT_CALL_ERROR("E19999","ModelHelper save mode weights failed, model %s, model index %zu",
+    REPORT_CALL_ERROR("E19999", "ModelHelper save mode weights failed, model %s, model index %zu",
                       ge_model->GetName().c_str(), model_index);
     return FAILED;
   }
@@ -441,7 +442,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
       GELOGE(INTERNAL_ERROR, "[Save][AllModelPartition]Failed, model name %s, cur_index %zu",
              model_name.c_str(), cur_index);
       REPORT_CALL_ERROR("E19999", "Save all model %s partition failed, cur_index %zu",
-                         model_name.c_str(), cur_index);
+                        model_name.c_str(), cur_index);
       return INTERNAL_ERROR;
     }
   }
@@ -459,7 +460,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
     GELOGE(FAILED, "[Save][Model]OmFileSaveHelper save model eturn fail, output_file %s",
            output_file.c_str());
     REPORT_CALL_ERROR("E19999", "OmFileSaveHelper save model return fail, output_file %s",
-                       output_file.c_str());
+                      output_file.c_str());
     return FAILED;
   }
   return SUCCESS;
@@ -601,7 +602,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "[Load][RootModel] "
-           "Model_data is nullptr or model_data_size is 0");
+           "Model_data is nullptr or model data is empty.");
     REPORT_INNER_ERROR("E19999", "Load root model failed, model_data is nullptr or its size is 0");
     return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;
   }
@@ -628,7 +629,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
   //model verison 1.0 file header does not have model_num member
   is_unknown_shape_model_ = file_header_->version >= ge::MODEL_VERSION &&
                             file_header_->model_num > kStatiOmFileModelNum;
-  GELOGD("cur om model is ge root model or no %d, model version %u", is_unknown_shape_model_, file_header_->version);
+  GELOGD("Cur om model is ge root model or no %d, model version %u", is_unknown_shape_model_, file_header_->version);
 
   OmFileLoadHelper om_load_helper;
   if (is_unknown_shape_model_) {
@@ -650,7 +651,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootMod
     GELOGE(status, "[Generate][GERootModel]Failed");
     return status;
   }
-  GELOGD("in ModelHelper::LoadRootModel, is_assign_model_ is setted to true!");
+  GELOGD("In ModelHelper::LoadRootModel, is_assign_model_ is setted to true!");
   is_assign_model_ = true;
   return SUCCESS;
 }
@@ -790,7 +791,7 @@ Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper) {
   if (om_load_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition) != SUCCESS) {
     GELOGE(FAILED, "[Get][ModelWeightPartition]Failed, GetWeight size:%u", partition.size);
     REPORT_CALL_ERROR("E19999", "[Get][ModelPartition]Failed, GetWeight size:%u",
-                       partition.size);
+                      partition.size);
     return FAILED;
   }
   ge::Buffer weight = ge::Buffer::CopyFrom(partition.data, partition.size);
@@ -805,7 +806,7 @@ Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cu
   if (om_load_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition, mode_index) != SUCCESS) {
     GELOGE(FAILED, "[Get][ModelPartition]Failed, GetWeight size:%u", partition.size);
     REPORT_CALL_ERROR("E19999", "[Get][ModelPartition]Failed, GetWeight size:%u",
-                       partition.size);
+                      partition.size);
     return FAILED;
   }
   ge::Buffer weight = ge::Buffer::CopyFrom(partition.data, partition.size);

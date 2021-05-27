@@ -61,6 +61,6 @@ class RtsTaskFactory {
     REGISTER_RTS_TASK_CREATOR_UNIQ_HELPER(__COUNTER__, task_type, task_clazz)
 
 #define REGISTER_RTS_TASK_CREATOR_UNIQ_HELPER(ctr, type, clazz) \
-  RtsTaskFactory::RtsTaskRegistrar g_##type##_Creator##ctr(type, []()-> RtsNodeTaskPtr { return MakeShared<clazz>(); })
+  RtsTaskFactory::RtsTaskRegistrar g_##type##_Creator##ctr(type, []()->RtsNodeTaskPtr { return MakeShared<clazz>(); })
 
 #endif // GE_HYBRID_NODE_EXECUTOR_RTS_TASK_FACTORY_H_

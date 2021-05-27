@@ -340,13 +340,13 @@ Status HcclMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeGraphPtr &g
     }
     ret = assign_out_control_anchor->LinkTo(in_data_anchor->GetOwnerNode()->GetInControlAnchor());
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999",
-                      "Op:%s(%s) out index:%d link to op:%s(%s) in index:%d failed",
-                      assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
-                      assign_out_control_anchor->GetOwnerNode()->GetType().c_str(), assign_out_control_anchor->GetIdx(),
-                      in_data_anchor->GetOwnerNode()->GetName().c_str(),
-                      in_data_anchor->GetOwnerNode()->GetType().c_str(),
-                      in_data_anchor->GetIdx());
+      REPORT_CALL_ERROR("E19999", "Op:%s(%s) out index:%d link to op:%s(%s) in index:%d failed",
+                        assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+                        assign_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+                        assign_out_control_anchor->GetIdx(),
+                        in_data_anchor->GetOwnerNode()->GetName().c_str(),
+                        in_data_anchor->GetOwnerNode()->GetType().c_str(),
+                        in_data_anchor->GetIdx());
       GELOGE(INTERNAL_ERROR, "The op %s link control anchor %s fail.",
              assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
              in_data_anchor->GetOwnerNode()->GetName().c_str());

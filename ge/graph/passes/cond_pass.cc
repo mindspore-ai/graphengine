@@ -166,7 +166,7 @@ Status CondPass::GetCondInfoForWhile(const NodePtr &node, ComputeGraphPtr &graph
   if (iter == subgraph_names_to_index.end()) {
     REPORT_INNER_ERROR("E19999", "subgraph name:%s not exist in SubgraphNameIndexes map of op:%s(%s), "
                        "check invalid", ATTR_NAME_WHILE_COND.c_str(),
-                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(FAILED, "Get cond_graph index failed, while_node:%s.", node->GetName().c_str());
     return FAILED;
   }

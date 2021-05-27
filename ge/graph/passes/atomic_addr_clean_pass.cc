@@ -451,7 +451,7 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
     GE_TIMESTAMP_ADD(UnknownGraphCompileOp);
     if (ret != ge::SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Call CompileOp failed, kernel_lib_name:%s, ret:%d",
-                         kernel_lib_name.c_str(), ret);
+                        kernel_lib_name.c_str(), ret);
       GELOGE(ret, "Compile atomic op failed, kernel lib name is %s", kernel_lib_name.c_str());
       return ret;
     }

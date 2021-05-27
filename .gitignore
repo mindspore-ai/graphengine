@@ -3,8 +3,17 @@
 /output
 /prebuilts
 /cov
+/deps
+.autotools
+.project
+.cproject
+.settings/
+/tests/frm/
 *.ir
 *.out
+*.DS_Store
+.DS_Store
+server_config.sh
 
 # Dynamic libraries
 # *.so

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2019-2020 Huawei Technologies Co., Ltd
+# Copyright 2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,11 +24,12 @@ if [[ "${version}" -lt "8" ]]; then
   exit 1
 fi
 
+
 CURRENT_PATH=$(pwd)
-SCRIPTS_PATH=$(dirname "$0")
+PROJECT_HOME=${PROJECT_HOME:-$(dirname "$0")/../../}
 
 echo "CURRENT_PATH=${CURRENT_PATH}"
-echo "SCRIPTS_PATH=${SCRIPTS_PATH}"
+echo "PROJECT_HOME=${PROJECT_HOME}"
 
 # print usage message
 function usage()
@@ -81,27 +82,28 @@ function checkopts()
 checkopts "$@"
 
 # switch to project root path, which contains clang-format config file '.clang-format'
-cd "${SCRIPTS_PATH}/.." || exit 1
 
-FMT_FILE_LIST='__format_files_list__'
+pushd "${CURRENT_PATH}"
+    cd "${PROJECT_HOME}" || exit 1
+    FMT_FILE_LIST='__format_files_list__'
 
-if [[ "X${mode}" == "Xall" ]]; then
-  find src -type f -name "*" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
-  find inc -type f -name "*" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
-elif [[ "X${mode}" == "Xchanged" ]]; then
-  # --diff-filter=ACMRTUXB will ignore deleted files in commit
-  git diff --diff-filter=ACMRTUXB --name-only | grep "^inc\|^src" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
-else  # "X${mode}" == "Xlastcommit"
-  git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
-fi
+    if [[ "X${mode}" == "Xall" ]]; then
+      find src -type f -name "*" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
+      find inc -type f -name "*" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
+    elif [[ "X${mode}" == "Xchanged" ]]; then
+      # --diff-filter=ACMRTUXB will ignore deleted files in commit
+      git diff --diff-filter=ACMRTUXB --name-only | grep "^inc\|^src" | grep "\.h$\|\.cc$" >> "${FMT_FILE_LIST}" || true
+    else  # "X${mode}" == "Xlastcommit"
+      git diff --diff-filter=ACMRTUXB --name-only HEAD~ HEAD | grep "^inc\|^src" | grep "\.h$\|\.cc$" > "${FMT_FILE_LIST}" || true
+    fi
 
-while read line; do
-  if [ -f "${line}" ]; then
-    ${CLANG_FORMAT} -i "${line}"
-  fi
-done < "${FMT_FILE_LIST}"
+    while read line; do
+      if [ -f "${line}" ]; then
+        ${CLANG_FORMAT} -i "${line}"
+      fi
+    done < "${FMT_FILE_LIST}"
 
-rm "${FMT_FILE_LIST}"
-cd "${CURRENT_PATH}" || exit 1
+    rm "${FMT_FILE_LIST}"
+popd 
 
 echo "Specified cpp source files have been format successfully."

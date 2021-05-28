@@ -78,8 +78,6 @@ Status InplaceSupportCheckPass::Run(NodePtr &node) {
     AddRePassNode(node);
     break;
   }
-
-  GELOGD("InplaceSupportCheckPass success");
   return SUCCESS;
 }
 }  // namespace ge

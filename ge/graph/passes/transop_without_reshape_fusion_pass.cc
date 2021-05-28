@@ -1077,9 +1077,9 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
            peer_in_anchor->GetOwnerNode()->GetName().c_str());
     if (GraphUtils::AddEdge(new_trans_nodes.back()->GetOutControlAnchor(), peer_in_anchor) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
-                       new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
-                       peer_in_anchor->GetOwnerNode()->GetName().c_str(),
-                       peer_in_anchor->GetOwnerNode()->GetType().c_str());
+                        new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -1103,9 +1103,9 @@ graphStatus TransOpWithoutReshapeFusionPass::RelinkControlEdge(const int index, 
            peer_in_anchor->GetOwnerNode()->GetName().c_str());
     if (GraphUtils::AddEdge(new_trans_nodes.back()->GetOutControlAnchor(), peer_in_anchor) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
-                       new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
-                       peer_in_anchor->GetOwnerNode()->GetName().c_str(),
-                       peer_in_anchor->GetOwnerNode()->GetType().c_str());
+                        new_trans_nodes.back()->GetName().c_str(), new_trans_nodes.back()->GetType().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                        peer_in_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
   }

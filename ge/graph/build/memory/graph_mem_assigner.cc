@@ -684,7 +684,8 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
     if (is_allocated_first_input) {
       std::map<int32_t, int32_t> out2ins;
-      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
+      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s",
+                        node->GetName().c_str());
       // output is beginning offset, set offset for input; only support this case now
       if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
         auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());

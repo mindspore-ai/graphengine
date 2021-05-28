@@ -304,7 +304,7 @@ std::string DNNEngineManager::GetHostCpuEngineName(const std::vector<OpInfo> &op
   GELOGE(FAILED, "[Get][HostCpuEngineName]Failed, HostCpuEngine not support [%s, %s]",
          op_desc->GetName().c_str(), op_desc->GetType().c_str());
   REPORT_INNER_ERROR("E19999", "Get HostCpuEngineName failed, HostCpuEngine not support [%s, %s]",
-                    op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return "";
 }
 
@@ -436,7 +436,7 @@ Status DNNEngineManager::ParserEngineMessage(const json engines_json, const std:
           GELOGE(FAILED, "[Check][Param]There are the same engine %s message in the json file",
                  engine_id.c_str());
           REPORT_INNER_ERROR("E19999", "There are the same engine %s message in the json file",
-                            engine_id.c_str());
+                             engine_id.c_str());
           return FAILED;
         }
         engines.emplace(engine_id, engine_conf_ptr);

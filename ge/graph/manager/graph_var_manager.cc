@@ -489,7 +489,7 @@ Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
     mem_resource = MemResource::BuildMemResourceFromType(memory_type);
     if (mem_resource == nullptr) {
       REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu",
-                         memory_type, session_id_);
+                        memory_type, session_id_);
       GELOGE(ge::INTERNAL_ERROR, "[Alloc][MemResource] failed, memory_type:%u, session_id:%lu",
              memory_type, session_id_);
       return ge::INTERNAL_ERROR;

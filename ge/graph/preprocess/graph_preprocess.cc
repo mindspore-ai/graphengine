@@ -241,7 +241,7 @@ NodePtr CreateTransNode(const std::string &name, const std::string &node_type, c
     ret = op_desc->AddInputDesc(shape_desc->GetOutputDesc(0));
     if (ret != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add input desc into op:%s(%s) failed",
-                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Failed to add the first input for reshape %s", name.c_str());
       return nullptr;
     }
@@ -837,7 +837,7 @@ Status ProcessInputNC1HWC0DynShape(NodePtr &node_ptr, bool &is_dynamic_batch, No
       old_shape = switchn_output->GetShape();
       if (ModifyFormatAndShapeForSingleTensor(switchn_output) != SUCCESS) {
         REPORT_CALL_ERROR("E19999", "Modify format and shape of output:%u in op:%s(%s) failed", i,
-                        switchn_op_desc->GetName().c_str(), switchn_op_desc->GetType().c_str());
+                          switchn_op_desc->GetName().c_str(), switchn_op_desc->GetType().c_str());
         GELOGE(INTERNAL_ERROR, "modify format and shape failed");
         return FAILED;
       }

@@ -170,7 +170,7 @@ Status PassUtils::SetOutNodeWeight(const OutDataAnchorPtr &out_data_anchor, cons
     // restore control inputs to dynamically added constant ops, if any
     for (const auto &src_out_control_anchor : src_out_control_anchors) {
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(src_out_control_anchor, dynamic_const_node->GetInControlAnchor()),
-                        "add edge failed");
+                              "add edge failed");
     }
   }
 

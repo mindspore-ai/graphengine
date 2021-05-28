@@ -37,6 +37,9 @@ const size_t kMaxNDDimNum = 4;
 const size_t kMinNDDimNum = 1;
 const size_t kSquareBracketsSize = 2;
 const size_t kRangePairSize = 2;
+const size_t kShapeRangeSize = 2;
+const size_t kShapeRangeStrIndex = 2;
+const size_t kShapeRangeStrSize = 3;
 // datatype/formats from user to GE, Unified to util interface file later
 const std::map<std::string, ge::DataType> kOutputTypeSupportDatatype = {
     {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
@@ -434,7 +437,7 @@ Status ParseInputShapeRange(const std::string &shape_range,
                             std::vector<std::vector<std::pair<int64_t, int64_t>>> &range) {
   GELOGD("Input shape range %s", shape_range.c_str());
 
-  if (shape_range.size() < 2) {
+  if (shape_range.size() < kShapeRangeSize) {
     REPORT_INPUT_ERROR("E10048", std::vector<std::string>({"shape_range", "reason", "sample"}),
                        std::vector<std::string>({shape_range, kInputShapeRangeSizeInvalid, kInputShapeRangeSample4}));
     GELOGE(PARAM_INVALID, "[Parse][ShapeRange] str:%s invalid, reason: %s, correct sample is %s.",
@@ -451,7 +454,7 @@ Status ParseInputShapeRange(const std::string &shape_range,
     return PARAM_INVALID;
   }
   for (auto &shape_range_str : shape_range_set) {
-    if (shape_range_str.size() < 3) {
+    if (shape_range_str.size() < kShapeRangeStrSize) {
       // shape_range_str should be "[2~3,1"
       // or ",[2~3,1". because we should trim '[' or ',['
       // so shape_range_str.size() < 3 is invalid
@@ -462,7 +465,7 @@ Status ParseInputShapeRange(const std::string &shape_range,
       shape_range_str = shape_range_str.substr(1, shape_range_str.size());
     }
     if (ge::StringUtils::StartWith(shape_range_str, ",")) {
-      shape_range_str = shape_range_str.substr(2, shape_range_str.size());
+      shape_range_str = shape_range_str.substr(kShapeRangeStrIndex, shape_range_str.size());
     }
 
     // parse shape_range of single input. eg. "1~20,3,3~6,-1"

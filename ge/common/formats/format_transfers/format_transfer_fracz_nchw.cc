@@ -72,8 +72,7 @@ Status CheckArgsForFracZToNchw(const TransArgs &args) {
   if (src_shape.at(kFracZHWC1) != dst_shape.at(kNchwH) * dst_shape.at(kNchwW) * c1 ||
       src_shape.at(kFracZC0) != c0 || src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID,
-           "[Check][Shape]Failed to check relationship between src and dst shape, "
-           "src shape %s, dst shape %s",
+           "[Check][Shape]Failed to check relationship between src and dst shape, src shape %s, dst shape %s",
            ShapeToString(src_shape).c_str(), ShapeToString(dst_shape).c_str());
     REPORT_INNER_ERROR("E19999", "Failed to check relationship between src and dst shape, "
                        "src shape %s, dst shape %s",
@@ -138,9 +137,9 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
                    "[Operate][Memory]Failed to copy data from FracZ offset %ld to "
                    "NCHW[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
                    src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret);
-            REPORT_CALL_ERROR("E19999","Failed to copy data from FracZ offset %ld to "
+            REPORT_CALL_ERROR("E19999", "Failed to copy data from FracZ offset %ld to "
                               "NCHW[%ld, %ld, %ld, %ld] offset %ld, err-code %d",
-                              src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret );
+                              src_offset, n_idx, c_idx, h_idx, w_idx, dst_offset, ret);
             return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
           }
         }

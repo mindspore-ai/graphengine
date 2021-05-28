@@ -704,7 +704,7 @@ Status GraphExecutor::GetCurShape(const uint32_t model_id, std::vector<int64_t> 
 }
 
 Status GraphExecutor::GetOpAttr(uint32_t model_id, const std::string &op_name, const std::string &attr_name,
-                                   std::string &attr_value) {
+                                std::string &attr_value) {
   auto model_manager = ge::ModelManager::GetInstance();
   GE_CHECK_NOTNULL(model_manager);
   Status ret = model_manager->GetOpAttr(model_id, op_name, attr_name, attr_value);

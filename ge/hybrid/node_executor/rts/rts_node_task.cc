@@ -20,6 +20,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/utils/node_utils.h"
 #include "common/ge/ge_util.h"
 #include "common/op/ge_op_utils.h"
 
@@ -200,6 +201,13 @@ Status PassThroughNodeTask::ExecuteAsync(TaskContext &task_context, std::functio
   const auto in_x = task_context.GetInput(0); // x
   GE_CHECK_NOTNULL(in_x);
   GE_CHK_STATUS_RET_NOLOG(task_context.SetOutput(0, *in_x)); // y
+
+  const auto &node_state = task_context.GetNodeState();
+  if (kNextIterationOpTypes.count(node_state->GetType()) > 0) {
+    node_state->RunLoopNext();
+  } else if (kExitOpTypes.count(node_state->GetType()) > 0) {
+    node_state->RunLoopExit();
+  }
 
   if (done_callback) {
     GE_CHK_STATUS_RET(task_context.RegisterCallback(done_callback));

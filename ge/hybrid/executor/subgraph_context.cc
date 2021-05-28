@@ -84,7 +84,7 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
   auto &node_state = node_states_[node_item];
   if (node_state == nullptr) {
     const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
-    node_state = std::move(std::unique_ptr<NodeState>(new(std::nothrow)NodeState(*node_item, this)));
+    node_state.reset(new(std::nothrow)NodeState(*node_item, this));
     (void)guard;
   }
   GELOGD("[%s] unlock for write", node_item->NodeName().c_str());

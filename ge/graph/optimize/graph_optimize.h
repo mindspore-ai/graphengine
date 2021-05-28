@@ -58,6 +58,9 @@ class GraphOptimize {
   // for rts optimize before build to add attr and insert memcpy op
   Status OptimizeGraphBeforeBuildForRts(ComputeGraphPtr &compute_graph);
 
+  // optimize whole graph, using after stage1
+  Status OptimizeAfterStage1(ComputeGraphPtr &graph);
+
   // set options
   Status SetOptions(const GraphManagerOptions &options);
 

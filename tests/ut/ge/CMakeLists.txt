@@ -838,6 +838,7 @@ set(HYBRID_TEST_FILES
     "hybrid/executor/worker/execution_engine_unittest.cc"
     "hybrid/model/hybrid_model_builder_unittest.cc"
     "hybrid/node_executor/rts/rts_node_task_unittest.cc"
+    "hybrid/node_executor/ge_local/ge_local_node_executor_unittest.cc"
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
     "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"

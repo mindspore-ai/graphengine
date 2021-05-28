@@ -80,6 +80,14 @@ class ConstantNodeTask : public NodeTask {
   const TensorValue *tensor_;
 };
 
+class NoOpNodeTask : public NodeTask {
+ public:
+  explicit NoOpNodeTask() = default;
+  ~NoOpNodeTask() = default;
+  Status UpdateArgs(TaskContext &context) override;
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+};
+
 class GeLocalNodeExecutor : public NodeExecutor {
  public:
 

@@ -26,12 +26,15 @@
 #include "common/math/math_util.h"
 
 namespace {
-#define CREATE_OUTPUT_CASE(DTYPE, TYPE)                                                                                \
+#define CREATE_OUTPUT_CASE(DTYPE)                                                                                      \
   case (DTYPE): {                                                                                                      \
     GeTensorPtr ge_tensor = nullptr;                                                                                   \
     if (need_create_flag) {                                                                                            \
-      uint64_t size = data_num * sizeof(TYPE);                                                                         \
-      ge_tensor = MakeShared<GeTensor>(out_desc, size);                                                                \
+      int64_t size = ge::GetSizeInBytes(static_cast<int64_t>(data_num), DTYPE);                                        \
+      if (size < 0) {                                                                                                  \
+        return INTERNAL_ERROR;                                                                                         \
+      }                                                                                                                \
+      ge_tensor = MakeShared<GeTensor>(out_desc, static_cast<size_t>(size));                                           \
       GE_CHECK_NOTNULL(ge_tensor);                                                                                     \
       GELOGD("node:%s allocate output %zu success, size=%ld", op_desc->GetName().c_str(), i, size);                    \
       ge_tensor->MutableTensorDesc().SetDataType(out_desc.GetDataType());                                              \
@@ -180,18 +183,19 @@ Status HostCpuEngine::PrepareOutputs(const ge::ConstOpDescPtr &op_desc,
       }
     }
     switch (out_desc.GetDataType()) {
-      CREATE_OUTPUT_CASE(DT_BOOL, bool)
-      CREATE_OUTPUT_CASE(DT_INT8, int8_t)
-      CREATE_OUTPUT_CASE(DT_INT16, int16_t)
-      CREATE_OUTPUT_CASE(DT_INT32, int32_t)
-      CREATE_OUTPUT_CASE(DT_INT64, int64_t)
-      CREATE_OUTPUT_CASE(DT_UINT8, uint8_t)
-      CREATE_OUTPUT_CASE(DT_UINT16, uint16_t)
-      CREATE_OUTPUT_CASE(DT_UINT32, uint32_t)
-      CREATE_OUTPUT_CASE(DT_UINT64, uint64_t)
-      CREATE_OUTPUT_CASE(DT_FLOAT16, fp16_t)
-      CREATE_OUTPUT_CASE(DT_FLOAT, float)
-      CREATE_OUTPUT_CASE(DT_DOUBLE, double)
+      CREATE_OUTPUT_CASE(DT_BOOL)
+      CREATE_OUTPUT_CASE(DT_INT8)
+      CREATE_OUTPUT_CASE(DT_INT16)
+      CREATE_OUTPUT_CASE(DT_INT32)
+      CREATE_OUTPUT_CASE(DT_INT64)
+      CREATE_OUTPUT_CASE(DT_UINT8)
+      CREATE_OUTPUT_CASE(DT_UINT16)
+      CREATE_OUTPUT_CASE(DT_UINT32)
+      CREATE_OUTPUT_CASE(DT_UINT64)
+      CREATE_OUTPUT_CASE(DT_FLOAT16)
+      CREATE_OUTPUT_CASE(DT_FLOAT)
+      CREATE_OUTPUT_CASE(DT_DOUBLE)
+      CREATE_OUTPUT_CASE(DT_INT4)
       default:
         GELOGW("data type %s not support.",
                TypeUtils::DataTypeToSerialString(out_desc.GetDataType()).c_str());

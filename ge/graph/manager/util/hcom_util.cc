@@ -275,7 +275,8 @@ Status HcomOmeUtil::GetHcclOperationType(const ge::ConstOpDescPtr &op_desc, Hccl
                          "check invalid", ATTR_HOROVOD_ATTR_REDUCE_TYPE.c_str(),
                          op_desc->GetName().c_str(), op_desc->GetType().c_str(), horovod_op_type);
       GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s in Op:%s(%s), horovod_op_type value:%ld is not support now",
-             ATTR_HOROVOD_ATTR_REDUCE_TYPE.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), horovod_op_type);
+             ATTR_HOROVOD_ATTR_REDUCE_TYPE.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+             horovod_op_type);
       return PARAM_INVALID;
     }
     op_type = iter->second;

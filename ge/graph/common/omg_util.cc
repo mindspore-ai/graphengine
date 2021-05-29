@@ -193,23 +193,29 @@ Status SetCyclicDependenceFlag(const ge::NodePtr &node) {
 
 ///
 /// @brief set op next_iteration name
-/// @param [in] node
-/// @param [in] next
+/// @param [in] Merge Node
+/// @param [in] NextIteration Node
 /// @return Status
 ///
-Status SetNextIteration(const ge::NodePtr &node, const std::string &next) {
+Status SetNextIteration(const NodePtr &node, const NodePtr &next) {
   GE_CHECK_NOTNULL(node);
-  OpDescPtr tmp_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(tmp_desc);
+  GE_CHECK_NOTNULL(next);
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  GE_CHECK_NOTNULL(next->GetOpDesc());
 
-  if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_NEXT_ITERATION, next)) {
-    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
-                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
-    return FAILED;
-  }
+  const auto SetIterationName = [](const OpDescPtr &op_desc, const std::string &name) {
+    if (!AttrUtils::SetStr(op_desc, ATTR_NAME_NEXT_ITERATION, name)) {
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
+      return FAILED;
+    }
+    return SUCCESS;
+  };
 
+  GE_CHK_STATUS_RET_NOLOG(SetIterationName(node->GetOpDesc(), next->GetName()));
+  GE_CHK_STATUS_RET_NOLOG(SetIterationName(next->GetOpDesc(), node->GetName()));
   return SUCCESS;
 }
 

@@ -242,7 +242,6 @@ Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
 
   auto node_state = subgraph_context_->GetOrCreateNodeState(&node_item);
   GE_CHECK_NOTNULL(node_state);
-  node_state->ResetContext(group);
   auto p_node_state = node_state.get();
 
   if (node_item.node_type == NETOUTPUT) {
@@ -367,7 +366,6 @@ Status SubgraphExecutor::NodeScheduled(NodeState *node_state) {
     };
 
     GE_CHK_STATUS_RET_NOLOG(node_state->NodeScheduled(callback));
-    node_state->ResetSchedule();
     RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] End");
     return SUCCESS;
   });
@@ -539,6 +537,7 @@ Status SubgraphExecutor::LaunchTasks() {
 
 Status SubgraphExecutor::ScheduleTasks(int group) {
   GELOGD("[%s] Start to schedule prepare workers.", graph_item_->GetName().c_str());
+  subgraph_context_->SetGroup(group);
   auto prepare_future = std::async(std::launch::async, [&]() -> Status {
     GetContext().SetSessionId(context_->session_id);
     GetContext().SetContextId(context_->context_id);

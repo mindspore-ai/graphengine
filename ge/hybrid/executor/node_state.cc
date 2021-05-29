@@ -306,28 +306,15 @@ std::shared_ptr<TaskContext> NodeState::GetTaskContext() {
   return task_context_;
 }
 
-void NodeState::ResetContext(int group) {
-  SetGroup(group);
-  if (loop_count_ == 0) {
-    ++loop_count_;
-    return;
-  }
-
-  ++loop_count_;
-  if (loop_count_ == UINT64_MAX) {
-    loop_count_ = 1;
-  }
+void NodeState::ResetContext(uint64_t loop_count) {
+  loop_count_ = loop_count;
 
   switch_index_ = -1;
   subgraph_context_->ResetContext(node_item_->node);
-  GELOGD("Node[%s] in while loop, current loop: %lu, merge index: %d", GetName().c_str(), loop_count_, merge_index_);
-}
-
-void NodeState::ResetSchedule() {
-  std::lock_guard<std::mutex> lk(mu_);
   data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size());
   ctrl_scheduled_ = static_cast<uint32_t>(node_item_->root_ctrl_.size());
-  GELOGD("[%s] set schedule for root nodes, data: %u, ctrl: %u", GetName().c_str(), data_scheduled_, ctrl_scheduled_);
+  GELOGD("[%s] in while loop, loop count: %lu, data scheduled: %u, ctrl scheduled: %u, merge index: %d",
+         GetName().c_str(), loop_count_, data_scheduled_, ctrl_scheduled_, merge_index_);
 }
 
 Status NodeState::NodeScheduled(const std::function<void(const NodeItem *)> &ready) const {
@@ -335,14 +322,14 @@ Status NodeState::NodeScheduled(const std::function<void(const NodeItem *)> &rea
   for (const auto &node : node_item_->data_send_) {
     const auto &dst_node_state = subgraph_context_->GetOrCreateNodeState(node);
     GE_CHECK_NOTNULL(dst_node_state);
-    dst_node_state->SetDataSchedule(node_item_, ready);
+    dst_node_state->SetDataSchedule(*this, ready);
   }
 
   // Schedule ctrl output.
   for (const auto &node : node_item_->ctrl_send_) {
     const auto &dst_node_state = subgraph_context_->GetOrCreateNodeState(node);
     GE_CHECK_NOTNULL(dst_node_state);
-    dst_node_state->SetCtrlSchedule(node_item_, ready);
+    dst_node_state->SetCtrlSchedule(*this, ready);
   }
 
   // Schedule switch group.
@@ -351,7 +338,7 @@ Status NodeState::NodeScheduled(const std::function<void(const NodeItem *)> &rea
     for (const auto &node : node_item_->switch_groups_[switch_index_]) {
       const auto &dst_node_state = subgraph_context_->GetOrCreateNodeState(node);
       GE_CHECK_NOTNULL(dst_node_state);
-      dst_node_state->SetCtrlSchedule(node_item_, ready);
+      dst_node_state->SetCtrlSchedule(*this, ready);
     }
   }
 
@@ -359,36 +346,44 @@ Status NodeState::NodeScheduled(const std::function<void(const NodeItem *)> &rea
 }
 
 bool NodeState::IsScheduleReady() const {
-  GELOGD("[%s] data[input: %zu, scheduled: %u], ctrl[input: %zu, scheduled: %u]", GetName().c_str(),
-         node_item_->data_recv_.size(), data_scheduled_, node_item_->ctrl_recv_.size(), ctrl_scheduled_);
-  if (ctrl_scheduled_ != node_item_->ctrl_recv_.size()) {
-    return false;
+  GELOGD("[%s] loop[%lu] data[input: %zu, scheduled: %u], ctrl[input: %zu+%zu, scheduled: %u]",
+         GetName().c_str(), loop_count_, node_item_->data_recv_.size(), data_scheduled_,
+         node_item_->ctrl_recv_.size(), node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
+  if (node_item_->IsMergeOp()) {
+    if (ctrl_scheduled_ != node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1) + node_item_->ctrl_recv_.size()) {
+      return false;
+    }
+
+    return data_scheduled_ > 0;
   }
 
-  if (node_item_->IsMergeOp()) {
-    return data_scheduled_ > 0;
+  if (ctrl_scheduled_ != node_item_->ctrl_recv_.size()) {
+    return false;
   }
 
   // Exit may feed loop times...
   return data_scheduled_ >= node_item_->data_recv_.size();
 }
 
-void NodeState::SetDataSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready) {
-  GELOGD("[%s] data schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu, current scheduled: %u",
-         node_item->node_name.c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
-         node_item_->ctrl_recv_.size(), ctrl_scheduled_);
+void NodeState::SetDataSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready) {
+  GELOGD("[%s] data schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu+%zu, current scheduled: %u",
+         node_state.GetName().c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
+         node_item_->ctrl_recv_.size(), node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
 
   std::lock_guard<std::mutex> lk(mu_);
+  if (loop_count_ != node_state.loop_count_) {
+    ResetContext(node_state.loop_count_);
+  }
   ++data_scheduled_;
 
   if (node_item_->IsMergeOp()) {
-    const auto it = node_item_->data_recv_.find(node_item);
+    const auto it = node_item_->data_recv_.find(node_state.node_item_);
     if (it != node_item_->data_recv_.end()) {
       merge_index_ = it->second;
       (void)AttrUtils::SetInt(node_item_->node->GetOpDesc(), ATTR_NAME_MERGE_INPUT_INDEX, it->second);
-      GELOGD("[%s] scheduled, [%s] set merge index: %d", node_item->node_name.c_str(), GetName().c_str(), it->second);
+      GELOGD("[%s] scheduled, [%s] set merge index: %d", node_state.GetName().c_str(), GetName().c_str(), it->second);
     } else {
-      GELOGW("[%s] scheduled, [%s] not followed", node_item->node_name.c_str(), GetName().c_str());
+      GELOGW("[%s] scheduled, [%s] not followed", node_state.GetName().c_str(), GetName().c_str());
     }
   }
 
@@ -397,17 +392,35 @@ void NodeState::SetDataSchedule(const NodeItem *node_item, const std::function<v
   }
 }
 
-void NodeState::SetCtrlSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready) {
-  GELOGD("[%s] ctrl schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu, current scheduled: %u",
-         node_item->node_name.c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
-         node_item_->ctrl_recv_.size(), ctrl_scheduled_);
+void NodeState::SetCtrlSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready) {
+  GELOGD("[%s] ctrl schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu+%zu, current scheduled: %u",
+         node_state.GetName().c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
+         node_item_->ctrl_recv_.size(), node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
 
   std::lock_guard<std::mutex> lk(mu_);
+  if (loop_count_ != node_state.loop_count_) {
+    ResetContext(node_state.loop_count_);
+  }
   ++ctrl_scheduled_;
 
   if (IsScheduleReady()) {
     ready(node_item_);
   }
+}
+
+void NodeState::RunLoopNext() {
+  GELOGD("Node[%s] run in loop, current count: %lu", GetName().c_str(), loop_count_);
+  std::lock_guard<std::mutex> lk(mu_);
+  ++loop_count_;
+  if (loop_count_ == UINT64_MAX) {
+    loop_count_ = 1;
+  }
+}
+
+void NodeState::RunLoopExit() {
+  GELOGD("Node[%s] run in loop, current count: %lu", GetName().c_str(), loop_count_);
+  std::lock_guard<std::mutex> lk(mu_);
+  loop_count_ = 0;
 }
 
 void NodeState::SetScheduleFuture(std::future<Status> &&future) {

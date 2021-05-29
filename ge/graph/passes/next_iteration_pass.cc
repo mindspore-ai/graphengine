@@ -354,7 +354,7 @@ Status NextIterationPass::BreakNextIteration(const NodePtr &next_node, NodePtr &
              merge_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    if (SetNextIteration(merge_node, next_node->GetName()) != SUCCESS) {
+    if (SetNextIteration(merge_node, next_node) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Set attr NEXT_ITERATION value:%s to node:%s(%s) failed",
                         next_node->GetName().c_str(), merge_node->GetName().c_str(), merge_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR, "Set attr NEXT_ITERATION for node %s failed.", merge_node->GetName().c_str());

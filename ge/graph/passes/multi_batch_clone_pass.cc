@@ -1020,7 +1020,7 @@ Status MultiBatchClonePass::SetShapeToData(const std::vector<int64_t> &shapes, c
   if (!IsGetNextType(data)) {
     if (NodeUtils::UpdateInputShape(*data, kDataInIndex, data_shape) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Update input desc shape to op:%s(%s) failed, index:%u",
-                      data->GetName().c_str(), data->GetType().c_str(), kDataInIndex);
+                        data->GetName().c_str(), data->GetType().c_str(), kDataInIndex);
       GELOGE(INTERNAL_ERROR, "Failed to update input shape for data %s", data->GetName().c_str());
       return INTERNAL_ERROR;
     }

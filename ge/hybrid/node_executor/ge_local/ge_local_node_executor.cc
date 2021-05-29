@@ -37,7 +37,7 @@ const std::map<std::string, std::vector<uint32_t>>
                                           {BROADCASTGRADIENTARGS, {}}
                                          };
 
-const std::set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE, NOOP};
+const std::set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE};
 
 Status RefInputTask::UpdateArgs(TaskContext &) {
   // no need update args
@@ -252,9 +252,16 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
       GELOGE(INTERNAL_ERROR, "[Get][Tensor] failed for name: %s", node->GetName().c_str());
       return INTERNAL_ERROR;
     }
-
     task = MakeShared<ConstantNodeTask>(tensor);
     GE_CHECK_NOTNULL(task);
+  } else if (node_type == NOOP) {
+    GELOGI("node %s type %s , use NoOpNodeTask.", node->GetName().c_str(), node_type.c_str());
+    task = MakeShared<NoOpNodeTask>();
+    if (task == nullptr) {
+      REPORT_CALL_ERROR("E19999", "Create NoOpNodeTask failed for NoOp node %s.", node->GetName().c_str());
+      GELOGE(MEMALLOC_FAILED, "[Create][NoOpNodeTask]failed for NoOp node %s.", node->GetName().c_str());
+      return MEMALLOC_FAILED;
+    }
   } else {
     GELOGE(UNSUPPORTED, "node %s type %s is not support in GeLocalNodeExecutor now.",
         node->GetName().c_str(), node_type.c_str());
@@ -277,6 +284,18 @@ Status ConstantNodeTask::ExecuteAsync(TaskContext &context, std::function<void()
     done_callback();
   }
 
+  GELOGD("[%s] Done execute successfully.", context.GetNodeName());
+  return SUCCESS;
+}
+
+Status NoOpNodeTask::UpdateArgs(TaskContext &context) {
+  // no need to update args
+  return SUCCESS;
+}
+
+Status NoOpNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  GELOGD("[%s] Start execute.", context.GetNodeName());
+  GE_CHK_STATUS_RET(context.TryExecuteCallback(done_callback));
   GELOGD("[%s] Done execute successfully.", context.GetNodeName());
   return SUCCESS;
 }

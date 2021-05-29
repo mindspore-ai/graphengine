@@ -65,13 +65,13 @@ Status CtrlEdgeTransferPass::Run(ge::ComputeGraphPtr graph) {
       for (auto &in_control_node : n->GetInControlNodes()) {
         GE_CHECK_NOTNULL(in_control_node);
         GE_CHK_GRAPH_STATUS_RET(ge::GraphUtils::RemoveEdge(in_control_node->GetOutControlAnchor(),
-                                                     n->GetInControlAnchor()), "remove edge failed");
+                                                           n->GetInControlAnchor()), "remove edge failed");
         for (auto &out_node : n->GetOutNodes()) {
           if (out_node == nullptr) {
             continue;
           }
           GE_CHK_GRAPH_STATUS_RET(ge::GraphUtils::AddEdge(in_control_node->GetOutControlAnchor(),
-                                                    out_node->GetInControlAnchor()), "add edge failed.");
+                                                          out_node->GetInControlAnchor()), "add edge failed.");
         }
       }
     }

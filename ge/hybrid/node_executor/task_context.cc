@@ -489,6 +489,11 @@ void TaskContext::ReleaseInputsAndOutputs() {
 }
 
 void TaskContext::ReleaseInput(int index) {
+  if (node_item_->enter_inside_.count(index) > 0) {
+    GELOGD("[%s] Tensor of input[%d] is enter, keep it", GetNodeName(), index);
+    return;
+  }
+
   auto input_tensor = MutableInput(index);
   if (input_tensor != nullptr) {
     input_tensor->Destroy();

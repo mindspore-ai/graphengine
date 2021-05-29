@@ -759,7 +759,7 @@ Status MultiBatchPass::AttachStreamLabel(uint32_t batch_idx, const std::string &
     GELOGD("Attach stream_label %s to node %s.", stream_label.c_str(), cur_desc->GetName().c_str());
     if (SetStreamLabel(cur_node, stream_label) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Set stream_label:%s to op:%s(%s) failed",
-                       stream_label.c_str(), cur_node->GetName().c_str(), cur_node->GetType().c_str());
+                        stream_label.c_str(), cur_node->GetName().c_str(), cur_node->GetType().c_str());
       GELOGE(FAILED, "Set stream_label failed, node:%s.", cur_node->GetName().c_str());
       return FAILED;
     }

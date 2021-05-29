@@ -34,6 +34,7 @@ class SubgraphContext {
   ~SubgraphContext();
 
   Status Init();
+  void SetGroup(int group);
   void ResetContext(const NodePtr &node);
   void Reset();
   NodeStatePtr GetOrCreateNodeState(const NodeItem *node_item);
@@ -58,6 +59,7 @@ class SubgraphContext {
   std::vector<TensorValue> all_outputs_;
   NodeDoneManager node_done_manager_;
   std::unordered_map<const NodeItem *, NodeStatePtr> node_states_;
+  int group_ = -1;
 };
 }  // namespace hybrid
 }  // namespace ge

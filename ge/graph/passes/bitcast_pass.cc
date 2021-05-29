@@ -62,7 +62,7 @@ Status BitcastPass::CheckDstDataType(const OpDescPtr op_desc, ge::DataType &dst_
 
   if (!ge::AttrUtils::GetDataType(op_desc, kAttrNameType, dst_data_type)) {
     REPORT_CALL_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed",
-                       kAttrNameType, op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                      kAttrNameType, op_desc->GetName().c_str(), op_desc->GetType().c_str());
     GELOGE(PARAM_INVALID, "Node failed to get attribute type.");
     return PARAM_INVALID;
   }

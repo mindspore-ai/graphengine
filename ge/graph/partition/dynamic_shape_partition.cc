@@ -387,6 +387,9 @@ void DynamicShapePartitioner::MergeClustersUnknownShape() {
       if (!in_cluster->IsUnknownShape()) {
         continue;
       }
+      if (!cluster->IsAdjoinNodes(in_cluster)) {
+        continue;
+      }
       auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);
       GELOGD("Merge all path cluster from %lu to %lu %s.", in_cluster->Id(), cluster->Id(),
              ToString(merged_clusters).c_str());

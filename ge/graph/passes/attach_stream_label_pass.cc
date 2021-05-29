@@ -29,7 +29,8 @@ Status AttachStreamLabelPass::Run(ComputeGraphPtr graph) {
   std::map<NodePtr, NodePtr> branch_head_nodes;
   FindNodes(graph, need_label_nodes, enter_nodes, branch_head_nodes);
   for (const auto &node : need_label_nodes) {
-    GE_CHK_STATUS_RET(UpdateCondBranch(node, branch_head_nodes), "Update cond branch failed, start node:%s.", node->GetName().c_str());
+    GE_CHK_STATUS_RET(UpdateCondBranch(node, branch_head_nodes), "Update cond branch failed, start node:%s.",
+                      node->GetName().c_str());
   }
   GE_CHK_STATUS_RET(UpdateEnterNode(enter_nodes), "UpdateEnterNode failed.");
 

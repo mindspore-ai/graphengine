@@ -1545,7 +1545,7 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
           input_offset = origin_input_list[valid_input_index];
         } else {
           // hbm input_offset = original input_offset + output_offset
-          if (origin_input_list[valid_input_index] != 0 && tmp_op_desc->GetSubgraphInstanceNames().size() > 0) {
+          if ((origin_input_list[valid_input_index] != 0) && (!tmp_op_desc->GetSubgraphInstanceNames().empty())) {
             std::string error = "Node" + FmtToStr(tmp_op_desc->GetName()) +
                                 +" has subgraphs which is conflict with has origin_input_list" +
                                 FmtToStr(origin_input_list[valid_input_index]);

@@ -1545,6 +1545,13 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
           input_offset = origin_input_list[valid_input_index];
         } else {
           // hbm input_offset = original input_offset + output_offset
+          if (origin_input_list[valid_input_index] != 0 && tmp_op_desc->GetSubgraphInstanceNames().size() > 0) {
+            std::string error = "Node" + FmtToStr(tmp_op_desc->GetName()) +
+                                +" has subgraphs which is conflict with has origin_input_list" +
+                                FmtToStr(origin_input_list[valid_input_index]);
+            GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+            return ge::FAILED;
+          }
           input_offset = origin_input_list[valid_input_index] + output_list.at(out_index);
           (void)ge::AttrUtils::SetInt(tmp_op_desc->MutableInputDesc(anchor->GetIdx()), ATTR_NAME_INNER_OFFSET,
                                       origin_input_list[valid_input_index] + inner_offset);

@@ -187,33 +187,61 @@ Status TaskGenerator::AddModelTaskToModel(const ModelTaskDef &model_task_def, ui
 }
 
 Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t session_id) {
-  vector<int64_t> input_offsets = op_desc->GetInputOffset();
   GELOGD("Update is var attr, node[name:%s(%s), id:%ld, stream_id:%ld].", op_desc->GetName().c_str(),
          op_desc->GetType().c_str(), op_desc->GetId(), op_desc->GetStreamId());
+  // input
+  vector<int64_t> input_offsets = op_desc->GetInputOffset();
   if (!(input_offsets.empty())) {
     vector<bool> input_var;
-    for (int64_t input : input_offsets) {
-      input_var.push_back(VarManager::Instance(session_id)->IsVarAddr(input));
+    int64_t valid_input_index = 0;
+    for (uint32_t i = 0; i < op_desc->GetAllInputsSize(); i++) {
+      vector<int64_t> output_list;
+      auto input_tensor_desc = op_desc->MutableInputDesc(i);
+      if (input_tensor_desc == nullptr) {
+        continue;
+      }
+      if (valid_input_index >= input_offsets.size()) {
+        break;
+      }
+      int64_t inner_offset = 0;
+      (void)ge::AttrUtils::GetInt(input_tensor_desc, ATTR_NAME_INNER_OFFSET, inner_offset);
+      GELOGD("Node[%s] input[%u] has inner_offset[%ld]", op_desc->GetName().c_str(), i, inner_offset);
+      input_var.push_back(VarManager::Instance(session_id)->IsVarAddr(input_offsets[valid_input_index] - inner_offset));
+      valid_input_index++;
     }
     GE_CHK_BOOL_EXEC(AttrUtils::SetListBool(op_desc, kIsInputVar, input_var),
                      REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", kIsInputVar,
                                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                     GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", kIsInputVar,
-                            op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                     GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", kIsInputVar, op_desc->GetName().c_str(),
+                            op_desc->GetType().c_str());
                      return FAILED);
   }
-
+  // output
   vector<int64_t> output_offsets = op_desc->GetOutputOffset();
   if (!(output_offsets.empty())) {
     vector<bool> output_var;
-    for (int64_t output : output_offsets) {
-      output_var.push_back(VarManager::Instance(session_id)->IsVarAddr(output));
+    int64_t valid_output_index = 0;
+    for (uint32_t i = 0; i < op_desc->GetAllOutputsDescSize(); i++) {
+      vector<int64_t> output_list;
+      auto output_tensor_desc = op_desc->MutableOutputDesc(i);
+      if (output_tensor_desc == nullptr) {
+        continue;
+      }
+      if (valid_output_index >= output_offsets.size()) {
+        break;
+      }
+      int64_t inner_offset = 0;
+      (void)ge::AttrUtils::GetInt(output_tensor_desc, ATTR_NAME_INNER_OFFSET, inner_offset);
+      GELOGD("Node[%s] output[%u] has inner_offset[%ld]", op_desc->GetName().c_str(), i, inner_offset);
+      output_var.push_back(
+        VarManager::Instance(session_id)->IsVarAddr(output_offsets[valid_output_index] - inner_offset));
+      valid_output_index++;
     }
     GE_CHK_BOOL_EXEC(AttrUtils::SetListBool(op_desc, kIsOutputVar, output_var),
                      REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", kIsOutputVar,
                                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                     GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", kIsOutputVar,
-                            op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                     GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", kIsOutputVar, op_desc->GetName().c_str(),
+                            op_desc->GetType().c_str());
                      return FAILED);
   }
   return SUCCESS;

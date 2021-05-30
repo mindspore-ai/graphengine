@@ -156,6 +156,12 @@ RTS_API rtError_t rtProfilerTrace(uint64_t id, bool notify, uint32_t flags, rtSt
 
 /**
  * @ingroup profiling_base
+ * @brief ts send keypoint for step info.
+ */
+RTS_API rtError_t rtProfilerTraceEx(uint64_t id, uint64_t modelId, uint16_t tagId, rtStream_t stream);
+
+/**
+ * @ingroup profiling_base
  * @brief ts set profiling reporter callback.
  */
 RTS_API rtError_t rtSetMsprofReporterCallback(MsprofReporterCallback callback);

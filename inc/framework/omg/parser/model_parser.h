@@ -37,6 +37,9 @@ using Status = domi::Status;
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
   const google::protobuf::Message *root_proto, const std::string &graph)>;
+
+using GetGraphCallbackV2 = std::function<std::string(const std::string &subgraph_name)>;
+
 class GE_FUNC_VISIBILITY ModelParser {
  public:
   ModelParser() {}
@@ -117,6 +120,30 @@ class GE_FUNC_VISIBILITY ModelParser {
   virtual ge::DataType ConvertToGeDataType(const uint32_t type) = 0;
 
   virtual Status ParseAllGraph(const google::protobuf::Message *root_proto, ge::ComputeGraphPtr &root_graph) = 0;
+
+  /**
+   * @ingroup domi_omg
+   * @brief Analyze network model data
+   * @param [in] proto  serialized network model
+   * @param [in|out]  graph Save the network information after analysis
+   * @return SUCCESS
+   * @return Others failed
+   */
+  virtual Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) { return UNSUPPORTED; }
+
+  /**
+   * @ingroup domi_omg
+   * @brief Analyze callback model data in subgraph
+   * @param [in] proto serialized network model
+   * @param [in] callback callback of subgraph
+   * @param [in|out] graph Save the network information after analysis
+   * @return SUCCESS
+   * @return Others failed
+   */
+  virtual Status ParseProtoWithSubgraph(const std::string &serialized_proto, GetGraphCallbackV2 callback,
+                                        ge::ComputeGraphPtr &graph) {
+    return UNSUPPORTED;
+  }
 };
 }  // namespace domi
 

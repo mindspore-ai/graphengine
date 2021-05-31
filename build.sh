@@ -166,7 +166,7 @@ build_graphengine()
     echo "execute command: cmake ${CMAKE_ARGS} .. failed."
     return 1
   fi
-  COMMON_TARGET="ge_local_engine ge_local_opskernel_builder host_cpu_engine host_cpu_opskernel_builder ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register engine_conf.json optimizer_priority.pbtxt "
+  COMMON_TARGET="ge_local_engine ge_local_opskernel_builder ge_common engine fmk_parser parser_common _caffe_parser fmk_onnx_parser graph register engine_conf.json optimizer_priority.pbtxt "
   TARGET=${COMMON_TARGET}
   if [ "x${PLATFORM}" = "xtrain" ]
   then
@@ -253,7 +253,7 @@ generate_package()
   ACL_LIB=("libge_common.so" "libgraph.so" "libregister.so" "liberror_manager.so" "libge_executor.so")
   ATC_LIB=("libc_sec.so" "libge_common.so" "libge_compiler.so" "libgraph.so" "libregister.so" "liberror_manager.so")
   FWK_LIB=("libge_common.so" "libge_runner.so" "libgraph.so" "libregister.so" "liberror_manager.so")
-  PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "libhost_cpu_engine.so" "libhost_cpu_opskernel_builder.so" "optimizer_priority.pbtxt")
+  PLUGIN_OPSKERNEL=("libge_local_engine.so" "libge_local_opskernel_builder.so" "optimizer_priority.pbtxt")
   PARSER_LIB=("lib_caffe_parser.so" "libfmk_onnx_parser.so" "libfmk_parser.so" "libparser_common.so")
 
   rm -rf ${OUTPUT_PATH:?}/${FWK_PATH}/

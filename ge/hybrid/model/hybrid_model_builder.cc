@@ -1278,7 +1278,8 @@ Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const
 }
 
 Status HybridModelBuilder::IndexTaskDefs() {
-  const auto &root_graph = ge_root_model_->GetRootGraph();
+  const auto root_graph = ge_root_model_->GetRootGraph();
+  const auto &root_graph_name = root_graph->GetName();
   if (SetOutputNameAttr(*root_graph) != SUCCESS) {
     GELOGW("Set output name attr failed.");
   }
@@ -1288,62 +1289,22 @@ Status HybridModelBuilder::IndexTaskDefs() {
     auto &ge_model = it.second;
     GE_CHECK_NOTNULL(ge_model);
 
-    const auto &sub_graph = root_graph->GetSubgraph(name);
-    if (sub_graph == nullptr) {
-      continue;
-    }
-
-    bool is_unknown_shape = sub_graph->GetGraphUnknownFlag();
-    if (!is_unknown_shape) {
-      GE_CHK_STATUS_RET_NOLOG(LoadGeModel(*sub_graph, ge_model));
-      continue;
-    }
-
-    // index task defs
-    GELOGD("To index tasks for subgraph: %s", name.c_str());
-    std::unordered_map<int64_t, NodePtr> node_map;
-    for (const auto &node : sub_graph->GetDirectNode()) {
-      GE_CHECK_NOTNULL(node);
-      GE_CHECK_NOTNULL(node->GetOpDesc());
-      auto node_id = node->GetOpDesc()->GetId();
-      GELOGD("op_index = %ld, node_name = %s", node_id, node->GetName().c_str());
-      node_map.emplace(node_id, node);
-    }
-
-    auto tasks = ge_model->GetModelTaskDefPtr()->task();
-    for (int i = 0; i < tasks.size(); ++i) {
-      const domi::TaskDef &task_def = tasks[i];
-      GELOGI("Task id = %d, task type = %d", i, task_def.type());
-      auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-      uint32_t op_index = -1;
-      if (task_type == RT_MODEL_TASK_KERNEL) {
-        op_index = task_def.kernel().context().op_index();
-      } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
-        op_index = task_def.kernel_ex().op_index();
-      } else if (task_type == RT_MODEL_TASK_HCCL) {
-        op_index = task_def.kernel_hccl().op_index();
-      } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
-        op_index = task_def.kernel_with_handle().context().op_index();
-      } else {
-        GELOGD("Skip task type: %d", static_cast<int>(task_type));
+    auto sub_graph = root_graph->GetSubgraph(name);
+    if (name != root_graph_name) {
+      if (sub_graph == nullptr) {
         continue;
       }
 
-      auto iter = node_map.find(op_index);
-      if (iter == node_map.end()) {
-        GELOGE(INTERNAL_ERROR, "[Find][Node]Failed to get node by index = %u.", op_index);
-        REPORT_INNER_ERROR("E19999", "Failed to get node by index = %u.", op_index);
-        return INTERNAL_ERROR;
+      bool is_unknown_shape = sub_graph->GetGraphUnknownFlag();
+      if (!is_unknown_shape) {
+        GE_CHK_STATUS_RET_NOLOG(LoadGeModel(*sub_graph, ge_model));
+        continue;
       }
-
-      auto &node = iter->second;
-      if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
-        ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
-      }
-
-      GELOGD("Task loaded for node: %s, task type = %d, op_index = %u", node->GetName().c_str(), task_type, op_index);
-      hybrid_model_.task_defs_[node].emplace_back(task_def);
+    } else {
+      sub_graph = root_graph;
     }
+
+    GE_CHK_STATUS_RET_NOLOG(IndexTaskDefs(sub_graph, ge_model));
   }
 
   return SUCCESS;

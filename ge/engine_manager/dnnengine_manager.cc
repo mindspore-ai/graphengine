@@ -31,6 +31,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "init/gelib.h"
+#include "framework/common/types.h"
 
 namespace {
 const char *const kSchedulerUnits = "schedule_units";
@@ -50,6 +51,15 @@ const char *const kHostCpuOpKernelLibName = "DNN_VM_HOST_CPU_OP_STORE";
 }  // namespace
 
 namespace ge {
+namespace {
+const std::set<std::string> kNotCpuOp = {DATA, CONSTANT, CONSTANTOP, VARIABLE, NETOUTPUT};
+
+bool ExecOnHostCpu(const OpDescPtr &op_desc) {
+  bool is_host_cpu_op = (kNotCpuOp.find(op_desc->GetType()) == kNotCpuOp.end());
+  return ge::GetContext().GetHostExecFlag() && is_host_cpu_op;
+}
+}  // namespace
+
 DNNEngineManager::DNNEngineManager() : init_flag_(false) {}
 DNNEngineManager::~DNNEngineManager() {
   engines_attrs_map_.clear();
@@ -206,7 +216,7 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
     GELOGI("DNNEngineManager: Can not get op info by op type %s", op_desc->GetType().c_str());
     return "";
   }
-  GE_IF_BOOL_EXEC(ge::GetContext().GetHostExecFlag(), return GetHostCpuEngineName(op_infos, op_desc));
+  GE_IF_BOOL_EXEC(ExecOnHostCpu(op_desc), return GetHostCpuEngineName(op_infos, op_desc));
   std::string ge_core_type;
   Status ret = ge::GetContext().GetOption(ge::CORE_TYPE, ge_core_type);
   GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGD("get the option CORE_TYPE fail, set it to default value VECTOR_ENGINE"));

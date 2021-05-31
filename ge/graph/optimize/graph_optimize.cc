@@ -140,10 +140,6 @@ Status GraphOptimize::OptimizeSubGraph(ComputeGraphPtr &compute_graph, const std
 }
 
 Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
-  if (GetContext().GetHostExecFlag()) {
-    // graph exec on host, no need OptimizeOriginalGraph
-    return SUCCESS;
-  }
   if (compute_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid");
     GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[Check][Param] compute_graph is nullptr.");
@@ -186,10 +182,6 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
 
 Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_graph) {
   GELOGD("OptimizeOriginalGraphJudgeInsert in");
-  if (GetContext().GetHostExecFlag()) {
-    // graph exec on host, no need OptimizeOriginalGraphJudgeInsert
-    return SUCCESS;
-  }
 
   GE_CHECK_NOTNULL(compute_graph);
   Status ret = SUCCESS;

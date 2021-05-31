@@ -54,6 +54,8 @@ class GE_FUNC_VISIBILITY HostCpuEngine {
 
   ge::Status Run(NodePtr &node, const vector<ConstGeTensorPtr> &inputs, std::vector<GeTensorPtr> &outputs);
 
+  void *GetConstantFoldingHandle() const { return constant_folding_handle_; }
+
  private:
   HostCpuEngine() = default;
 
@@ -85,6 +87,7 @@ class GE_FUNC_VISIBILITY HostCpuEngine {
 
   std::mutex mu_;
   std::vector<void *> lib_handles_;
+  void *constant_folding_handle_ = nullptr;
   bool initialized_ = false;
 };
 }  // namespace ge

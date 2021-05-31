@@ -1,23 +1,3 @@
-set(PROTO_LIST
-    "${METADEF_DIR}/proto/om.proto"
-    "${METADEF_DIR}/proto/ge_ir.proto"
-    "${METADEF_DIR}/proto/insert_op.proto"
-    "${METADEF_DIR}/proto/task.proto"
-    "${METADEF_DIR}/proto/tensorflow/attr_value.proto"
-    "${METADEF_DIR}/proto/tensorflow/function.proto"
-    "${METADEF_DIR}/proto/tensorflow/graph.proto"
-    "${METADEF_DIR}/proto/tensorflow/node_def.proto"
-    "${METADEF_DIR}/proto/tensorflow/op_def.proto"
-    "${METADEF_DIR}/proto/tensorflow/resource_handle.proto"
-    "${METADEF_DIR}/proto/tensorflow/tensor.proto"
-    "${METADEF_DIR}/proto/tensorflow/tensor_shape.proto"
-    "${METADEF_DIR}/proto/tensorflow/types.proto"
-    "${METADEF_DIR}/proto/tensorflow/versions.proto"
-)
-
-protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
-
 set(SRC_LIST
     "context/ctx.cc"
     "model_saver.cc"
@@ -67,7 +47,12 @@ set(SRC_LIST
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL)
 ############ libge_common.so ############
-add_library(ge_common SHARED ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_common SHARED ${SRC_LIST})
+
+add_dependencies(ge_common
+    graphengine_protos
+)
+
 target_compile_definitions(ge_common PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     HOST_VISIBILITY
@@ -97,7 +82,7 @@ target_include_directories(ge_common PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_DEPEND_DIR}/inc
     ${GE_DEPEND_DIR}/inc/cce
@@ -128,7 +113,12 @@ target_link_libraries(ge_common PRIVATE
 )
 
 ############ libge_common.a ############
-add_library(ge_common_static STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
+add_library(ge_common_static STATIC ${SRC_LIST})
+
+add_dependencies(ge_common_static
+    graphengine_protos
+)
+
 target_compile_definitions(ge_common_static PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     HOST_VISIBILITY
@@ -159,7 +149,7 @@ target_include_directories(ge_common_static PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge_static
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_DEPEND_DIR}/inc
     ${GE_DEPEND_DIR}/inc/cce
@@ -180,7 +170,12 @@ target_link_libraries(ge_common_static PRIVATE
 
 else ()
 ############ libge_common.so w/static protobuf ############
-add_library(ge_common SHARED ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_common SHARED ${SRC_LIST})
+
+add_dependencies(ge_common
+    graphengine_protos
+)
+
 target_compile_definitions(ge_common PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
     HOST_VISIBILITY
@@ -211,7 +206,7 @@ target_include_directories(ge_common PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )

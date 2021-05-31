@@ -366,9 +366,10 @@ bool NodeState::IsScheduleReady() const {
 }
 
 void NodeState::SetDataSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready) {
-  GELOGD("[%s] data schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu+%zu, current scheduled: %u",
-         node_state.GetName().c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
-         node_item_->ctrl_recv_.size(), node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
+  GELOGD("[%s] schedule [%s], loop[%lu -> %lu], data[num: %zu, scheduled: %u], ctrl[num: %zu+%zu, scheduled: %u]",
+         node_state.GetName().c_str(), GetName().c_str(), loop_count_, node_state.loop_count_,
+         node_item_->data_recv_.size(), data_scheduled_, node_item_->ctrl_recv_.size(),
+         node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
 
   std::lock_guard<std::mutex> lk(mu_);
   if (loop_count_ != node_state.loop_count_) {
@@ -393,9 +394,10 @@ void NodeState::SetDataSchedule(const NodeState &node_state, const std::function
 }
 
 void NodeState::SetCtrlSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready) {
-  GELOGD("[%s] ctrl schedule node[%s], data num: %zu, current scheduled: %u, ctrl num: %zu+%zu, current scheduled: %u",
-         node_state.GetName().c_str(), GetName().c_str(), node_item_->data_recv_.size(), data_scheduled_,
-         node_item_->ctrl_recv_.size(), node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
+  GELOGD("[%s] schedule [%s], loop[%lu -> %lu], data[num: %zu, scheduled: %u], ctrl[num: %zu+%zu, scheduled: %u]",
+         node_state.GetName().c_str(), GetName().c_str(), loop_count_, node_state.loop_count_,
+         node_item_->data_recv_.size(), data_scheduled_, node_item_->ctrl_recv_.size(),
+         node_item_->GetMergeCtrl(loop_count_ == 0 ? 0 : 1), ctrl_scheduled_);
 
   std::lock_guard<std::mutex> lk(mu_);
   if (loop_count_ != node_state.loop_count_) {
@@ -415,6 +417,8 @@ void NodeState::RunLoopNext() {
   if (loop_count_ == UINT64_MAX) {
     loop_count_ = 1;
   }
+
+  ResetContext(loop_count_);
 }
 
 void NodeState::RunLoopExit() {

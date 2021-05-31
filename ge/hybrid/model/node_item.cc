@@ -443,7 +443,7 @@ void NodeItem::SetMergeCtrl(NodeItem *node_item, uint32_t merge_index) {
 }
 
 size_t NodeItem::GetMergeCtrl(uint32_t merge_index) const {
-  return (merge_index < switch_groups_.size()) ? switch_groups_[merge_index].size() : 0;
+  return ((node_type == STREAMMERGE) && (merge_index < switch_groups_.size())) ? switch_groups_[merge_index].size() : 0;
 }
 
 OptionalMutexGuard::OptionalMutexGuard(std::mutex *mutex, const string &name) : mu_(mutex), name_(name) {

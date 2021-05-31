@@ -34,6 +34,7 @@
 #include "common/ge/tbe_plugin_manager.h"
 #include "common/util/error_manager/error_manager.h"
 #include "toolchain/plog.h"
+#include "ir_build/option_utils.h"
 
 using domi::OpRegistry;
 using std::map;
@@ -77,6 +78,11 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
                          std::to_string(kMaxStrLen)}));
       return FAILED;
     }
+  }
+
+  // check modify_mixlist is valid
+  if (ge::CheckModifyMixlistParamValid(options) != ge::SUCCESS) {
+    return FAILED;
   }
 
   return SUCCESS;

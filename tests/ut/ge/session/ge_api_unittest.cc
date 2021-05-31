@@ -63,4 +63,12 @@ TEST_F(UtestGeApi, build_graph_success) {
   auto ret = session.BuildGraph(1, inputs);
   ASSERT_NE(ret, SUCCESS);
 }
+
+TEST_F(UtestGeApi, ge_initialize) {
+  std::map<std::string, std::string> options = {
+    {ge::MODIFY_MIXLIST, "/mixlist.json"}
+  };
+  auto ret = GEInitialize(options);
+  ASSERT_NE(ret, SUCCESS);
+}
 }  // namespace ge

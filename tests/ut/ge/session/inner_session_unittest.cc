@@ -44,4 +44,13 @@ TEST_F(Utest_Inner_session, build_graph_success) {
   EXPECT_NE(ret, ge::SUCCESS);
 }
 
+TEST_F(Utest_Inner_session, initialize) {
+  std::map<std::string, std::string> options = {
+    {ge::MODIFY_MIXLIST, "/modify.json"}
+  };
+  uint64_t session_id = 1;
+  InnerSession inner_session(session_id, options);
+  auto ret = inner_session.Initialize();
+  EXPECT_NE(ret, ge::SUCCESS);
+}
 }  // namespace ge

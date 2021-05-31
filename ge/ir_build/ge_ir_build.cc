@@ -133,6 +133,15 @@ static graphStatus CheckGlobalOptions(std::map<std::string, std::string> &global
                                ? "force_fp16"
                                : global_options[ge::ir_option::PRECISION_MODE];
   global_options[ge::ir_option::PRECISION_MODE] = precision_mode;
+  // check modify_mixlist
+  std::string modify_mixlist = global_options.find(ge::ir_option::MODIFY_MIXLIST) ==
+                               global_options.end()
+                               ? ""
+                               : global_options[ge::ir_option::MODIFY_MIXLIST];
+  if (ge::CheckModifyMixlistParamValid(precision_mode, modify_mixlist) != ge::SUCCESS) {
+    return ge::GRAPH_PARAM_INVALID;
+  }
+  global_options[ge::ir_option::MODIFY_MIXLIST] = modify_mixlist;
 
   return GRAPH_SUCCESS;
 }
@@ -254,6 +263,8 @@ class Impl {
     omg_context_.user_attr_index_valid = false;
   };
   ~Impl() { (void)generator_.Finalize(); };
+  graphStatus GetSupportedOptions(const std::map<std::string, std::string> &in,
+                                  std::map<std::string, std::string> &out);
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
   graphStatus CreateInputsForIRBuild(const ge::Graph &graph, vector<ge::GeTensor> &inputs);
   graphStatus UpdateDataOpAttr(const Graph &graph);
@@ -440,19 +451,29 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
   return GRAPH_SUCCESS;
 }
 
-graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options) {
-  for (auto &ele : options) {
+graphStatus Impl::GetSupportedOptions(const std::map<std::string, std::string> &in,
+                                      std::map<std::string, std::string> &out) {
+  for (auto &ele : in) {
     auto it = ge::ir_option::ir_builder_suppported_options.find(ele.first);
     if (it == ge::ir_option::ir_builder_suppported_options.end()) {
       auto it_lx_fusion = ir_builder_supported_options_for_lx_fusion.find(ele.first);
       if (it_lx_fusion == ir_builder_supported_options_for_lx_fusion.end()) {
         GELOGE(GRAPH_PARAM_INVALID, "[Check][Options] unsupported option(%s), Please check!",
-            ele.first.c_str());
+               ele.first.c_str());
         return GRAPH_PARAM_INVALID;
       }
     }
-    options_.insert(ele);
+    out.insert(ele);
   }
+  return GRAPH_SUCCESS;
+}
+
+graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options) {
+  auto ret = GetSupportedOptions(options, options_);
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
+  }
+
   // Check options build_mode and build_step.
   std::string build_mode;
   auto it = options_.find(BUILD_MODE);
@@ -478,6 +499,10 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   // Check option EXEC_DISABLE_REUSED_MEMORY
   it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
   if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
+    return GRAPH_PARAM_INVALID;
+  }
+  // Check option modify_mixlist
+  if (ge::CheckModifyMixlistParamValid(options_) != GRAPH_SUCCESS) {
     return GRAPH_PARAM_INVALID;
   }
   // Check Input Format

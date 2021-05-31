@@ -27,14 +27,14 @@ Status AddNPass::Run(NodePtr &node) {
   GELOGD("AddNPass running");
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "param [node] must not be null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] param [node] must not be null.");
     return PARAM_INVALID;
   }
 
   if (node->GetType() == ADDN) {
     if (node->GetOpDesc() == nullptr) {
       REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
-      GELOGE(PARAM_INVALID, "Param [node] op desc is null.");
+      GELOGE(PARAM_INVALID, "[Get][OpDesc] Param [node] op desc is null.");
       return PARAM_INVALID;
     }
     // AddN with single input can be optimized

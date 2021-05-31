@@ -36,19 +36,20 @@ Status GuaranteeConstPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Get original type for node:%s failed",
-                      node->GetName().c_str());
-    GELOGE(status_ret, "GuaranteeConstPass get original type fail.");
+    REPORT_CALL_ERROR("E19999", "Get original type for node:%s failed", node->GetName().c_str());
+    GELOGE(status_ret, "[Get][OriginalType] for node:%s failed", node->GetName().c_str());
     return status_ret;
   }
   if (type != GUARANTEECONST) {
     return SUCCESS;
   }
   if (node->GetOpDesc()->GetAllInputsDesc().size() != kGuaranteeConstInputsSize) {
-    REPORT_CALL_ERROR("E19999", "Num:%zu of input desc node:%s(%s) not equal to %u, "
+    REPORT_CALL_ERROR("E19999", "Num:%zu of input desc in node:%s(%s) not equal to %u, "
                       "check invalid", node->GetOpDesc()->GetAllInputsDesc().size(),
                       node->GetName().c_str(), node->GetType().c_str(), kGuaranteeConstInputsSize);
-    GELOGE(PARAM_INVALID, "input size error. Input size:%zu", node->GetOpDesc()->GetAllInputsDesc().size());
+    GELOGE(PARAM_INVALID, "[Check][Param] Num:%zu of input desc in node:%s(%s) not equal to %u",
+           node->GetOpDesc()->GetAllInputsDesc().size(),
+           node->GetName().c_str(), node->GetType().c_str(), kGuaranteeConstInputsSize);
     return PARAM_INVALID;
   }
   // [Cascade pointer]
@@ -57,12 +58,13 @@ Status GuaranteeConstPass::Run(NodePtr &node) {
   // Input tensor cannot be a resource variable handle.
   const DataType &input_dtype = in_desc->GetDataType();
   if (input_dtype == DT_RESOURCE) {
-    REPORT_CALL_ERROR("E19999",
-                      "Data type:%s of op:%s(%s) input0 tensor not equal to %s, check invalid",
+    REPORT_CALL_ERROR("E19999", "Data type:%s of op:%s(%s) input0 tensor not equal to %s, check invalid",
                       TypeUtils::DataTypeToSerialString(input_dtype).c_str(),
                       node->GetName().c_str(), node->GetType().c_str(),
                       TypeUtils::DataTypeToSerialString(DT_RESOURCE).c_str());
-    GELOGE(FAILED, "Input tensor cannot be a resource variable handle in [%s].", node->GetName().c_str());
+    GELOGE(FAILED, "[Check][Param] Data type:%s of op:%s(%s) input0 tensor not equal to %s",
+           TypeUtils::DataTypeToSerialString(input_dtype).c_str(),
+           node->GetName().c_str(), node->GetType().c_str(), TypeUtils::DataTypeToSerialString(DT_RESOURCE).c_str());
     return FAILED;
   }
 

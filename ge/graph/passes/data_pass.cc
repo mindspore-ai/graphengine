@@ -32,7 +32,8 @@ Status MappingSubgraphInput(const ComputeGraphPtr &graph, const std::function<in
     if (!AttrUtils::GetInt(node->GetOpDesc(), "index", index)) {
       REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", "index",
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "Failed to get index from data[%s]", node->GetName().c_str());
+      GELOGE(FAILED, "[Get][Attr] index from op:%s(%s) failed",
+             node->GetName().c_str(), node->GetType().c_str());
       return FAILED;
     }
 
@@ -42,7 +43,8 @@ Status MappingSubgraphInput(const ComputeGraphPtr &graph, const std::function<in
     if (!AttrUtils::SetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "Failed to set parent index for node %s", node->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+             node->GetName().c_str(), node->GetType().c_str());
       return FAILED;
     }
   }
@@ -72,7 +74,8 @@ Status MappingSubgraphOutput(const ComputeGraphPtr &graph, const std::function<i
       REPORT_CALL_ERROR("E19999", "Set Attr:%s to tensor of op:%s(%s) input:%zu failed",
                         ATTR_NAME_PARENT_NODE_INDEX.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                         index);
-      GELOGE(FAILED, "Failed to set parent index for graph %s", graph->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to tensor of op:%s(%s) input:%zu failed",
+             ATTR_NAME_PARENT_NODE_INDEX.c_str(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), index);
       return FAILED;
     }
   }
@@ -87,12 +90,12 @@ Status MappingSubgraphIndex(const ComputeGraphPtr &graph,
   GE_CHECK_NOTNULL(input);
   GE_CHECK_NOTNULL(output);
   if (MappingSubgraphInput(graph, input) != SUCCESS) {
-    GELOGE(FAILED, "Failed to mapping subgraph input for graph: %s", graph->GetName().c_str());
+    GELOGE(FAILED, "[Call][MappingSubgraphInput] for graph:%s failed", graph->GetName().c_str());
     return FAILED;
   }
 
   if (MappingSubgraphOutput(graph, output) != SUCCESS) {
-    GELOGE(FAILED, "Failed to mapping subgraph output for graph: %s", graph->GetName().c_str());
+    GELOGE(FAILED, "[Call][MappingSubgraphOutput] for graph:%s failed", graph->GetName().c_str());
     return FAILED;
   }
 
@@ -149,7 +152,7 @@ Status DataPass::PostParseSubgraph(const ComputeGraphPtr &graph, const string &i
   if (post_func_it == subgraph_handle.end()) {
     REPORT_INNER_ERROR("E19999", "The subgraph post func for node %s type %s is null, check invalid",
                        parent_node->GetName().c_str(), parent_node->GetType().c_str());
-    GELOGE(FAILED, "The subgraph post func for node %s type %s is null.",
+    GELOGE(FAILED, "[Check][Param] The subgraph post func for node %s type %s is null.",
            parent_node->GetName().c_str(), parent_node->GetType().c_str());
     return FAILED;
   }
@@ -157,7 +160,7 @@ Status DataPass::PostParseSubgraph(const ComputeGraphPtr &graph, const string &i
   if (post_func_it->second(ir_name, graph) != SUCCESS) {
     REPORT_INNER_ERROR("E19999", "Post process subgraph %s on node %s type %s failed",
                        graph->GetName().c_str(), parent_node->GetName().c_str(), parent_node->GetType().c_str());
-    GELOGE(FAILED, "Failed to post process subgraph %s on node %s type %s",
+    GELOGE(FAILED, "[Call][PostFunc] Failed to post process subgraph %s on node %s type %s",
            graph->GetName().c_str(), parent_node->GetName().c_str(), parent_node->GetType().c_str());
     return FAILED;
   }
@@ -188,7 +191,7 @@ Status DataPass::Run(ComputeGraphPtr compute_graph) {
   GE_CHECK_NOTNULL(parent_node->GetOpDesc());
   auto func_desc = parent_node->GetOpDesc();
   GE_CHK_STATUS_RET(func_desc->GetSubgraphNameByInstanceName(compute_graph->GetName(), subgraph_name),
-                    "Subgraph: %s get subgraph name failed.", compute_graph->GetName().c_str());
+                    "[Get][SubGraphName] for Graph:%s failed.", compute_graph->GetName().c_str());
 
   GELOGI("Post process for subgraph %s, Subgraph name: %s, Parent name: %s, Parent type: %s.",
          compute_graph->GetName().c_str(), subgraph_name.c_str(), parent_node->GetName().c_str(),

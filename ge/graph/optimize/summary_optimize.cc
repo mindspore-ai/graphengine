@@ -32,15 +32,18 @@ namespace ge {
 Status GraphOptimize::HandleSummaryOp(ComputeGraphPtr &compute_graph) {
   GELOGI("[HandleSummaryOp] HandleSummaryOp start!");
   if (summary_output_indexes_.size() >= kMaxMapSize) {
-    GELOGE(FAILED, "Map size out of range.");
+    REPORT_INNER_ERROR("E19999", "Map size:%zu out of range:%d, check invalid.",
+                       summary_output_indexes_.size(), kMaxMapSize);
+    GELOGE(FAILED, "[Check][Param] Map size:%zu out of range:%d.", summary_output_indexes_.size(), kMaxMapSize);
     return FAILED;
+  }
+  if (compute_graph == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param compute_graph is nullptr, check invalid.");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] compute_graph is nullptr.");
+    return GE_GRAPH_PARAM_NULLPTR;
   }
   if (summary_output_indexes_.find(compute_graph->GetGraphID()) != summary_output_indexes_.end()) {
     return SUCCESS;
-  }
-  if (compute_graph == nullptr) {
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "compute_graph is nullptr.");
-    return GE_GRAPH_PARAM_NULLPTR;
   }
   vector<NodePtr> del_nodes;
   vector<NodePtr> front_nodes;
@@ -56,12 +59,18 @@ Status GraphOptimize::HandleSummaryOp(ComputeGraphPtr &compute_graph) {
       compute_graph->SetSummaryFlag(true);
       auto in = node_ptr->GetInDataAnchor(0);
       if (in == nullptr) {
-        GELOGE(GE_GRAPH_PARAM_NULLPTR, "in is nullptr.");
+        REPORT_INNER_ERROR("E19999", "In data anchor(index:0) of node:%s is nullptr", node_ptr->GetName().c_str());
+        GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Get][InDataAnchor] of node:%s is nullptr, index:0",
+               node_ptr->GetName().c_str());
         return GE_GRAPH_PARAM_NULLPTR;
       }
 
       auto peerin = in->GetPeerOutAnchor();
-      GE_IF_BOOL_EXEC(peerin == nullptr, GELOGE(GE_GRAPH_PARAM_NULLPTR, "peerin is nullptr.");
+      GE_IF_BOOL_EXEC(peerin == nullptr,
+                      REPORT_INNER_ERROR("E19999", "peer out anchor is nullptr, node:%s, in anchor index:0",
+                                         node_ptr->GetName().c_str());
+                      GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Get][PeerOutAnchor] of node:%s is nullptr, in anchor index:0",
+                             node_ptr->GetName().c_str());
                       return GE_GRAPH_PARAM_NULLPTR);
 
       auto ret = GraphUtils::RemoveEdge(peerin, in);
@@ -94,7 +103,10 @@ Status GraphOptimize::HandleSummaryOp(ComputeGraphPtr &compute_graph) {
   for (auto &node_ptr : del_nodes) {
     auto ret = GraphUtils::RemoveNodeWithoutRelink(compute_graph, node_ptr);
     if (ret != SUCCESS) {
-      GELOGE(ret, "GraphUtils::RemoveNodeWithoutRelink failed.");
+      REPORT_CALL_ERROR("E19999", "Call RemoveNodeWithoutRelink failed, node:%s, graph:%s",
+                        node_ptr->GetName().c_str(), compute_graph->GetName().c_str());
+      GELOGE(ret, "[Call][RemoveNodeWithoutRelink] failed, node:%s, graph:%s",
+             node_ptr->GetName().c_str(), compute_graph->GetName().c_str());
       return ret;
     }
     // update Target list

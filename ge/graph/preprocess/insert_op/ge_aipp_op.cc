@@ -116,7 +116,8 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
                                TypeUtils::FormatToSerialString(format),
                                "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and "
                                  + TypeUtils::FormatToSerialString(FORMAT_NHWC) + " supported"}));
-        GELOGE(PARAM_INVALID, "Not support data format: %s", TypeUtils::FormatToSerialString(format).c_str());
+        GELOGE(PARAM_INVALID, "[Check][Param] Not support data format:%s, node:%s",
+               TypeUtils::FormatToSerialString(format).c_str(), data_node->GetName().c_str());
         return PARAM_INVALID;
     }
   }
@@ -125,7 +126,8 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
   ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
                                                   {data_node->GetName() + " shape size",
                                                   to_string(shape.size()), errormsg});
-  GELOGE(PARAM_INVALID, "The shape size of this node [%s] which linked dynamic aipp must be in range[3, 4], but is %zu",
+  GELOGE(PARAM_INVALID, "[Check][Param] The shape size of this node [%s] "
+         "which linked dynamic aipp must be in range[3, 4], but is %zu",
          data_node->GetName().c_str(), shape.size());
   return PARAM_INVALID;
 }
@@ -153,7 +155,8 @@ Format GetAndCheckFormat() {
     case domi::DOMI_TENSOR_NHWC:
       return FORMAT_NHWC;
     default:
-      GELOGE(PARAM_INVALID, "Unexpected format found %d", static_cast<int>(GetLocalOmgContext().format));
+      GELOGE(PARAM_INVALID, "[Check][Param] Unexpected format found %d",
+             static_cast<int>(GetLocalOmgContext().format));
       return FORMAT_ND;
   }
 }
@@ -163,6 +166,7 @@ Status AippOp::Init(domi::AippOpParams *aipp_params) {
   aipp_params_ = new (std::nothrow) domi::AippOpParams();
   if (aipp_params_ == nullptr) {
     REPORT_CALL_ERROR("E19999", "New AippOpParams failed");
+    GELOGE(FAILED, "[New][AippOpParams] failed");
     return FAILED;
   }
   aipp_params_->CopyFrom(*aipp_params);
@@ -182,10 +186,10 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
   std::vector<std::pair<OutDataAnchorPtr, InDataAnchorPtr>> target_edges;
 
   if (this->ConvertRelatedInputNameToRank() != SUCCESS) {
-    GELOGE(FAILED, "AippOp: convert related input name to rank failed.");
+    GELOGE(FAILED, "[Call][ConvertRelatedInputNameToRank] failed.");
     return FAILED;
   }
-  GE_CHK_STATUS_RET(this->GetTargetPosition(graph, target_input, target_edges), "Get data nodes position failed");
+  GE_CHK_STATUS_RET(this->GetTargetPosition(graph, target_input, target_edges), "[Get][TargetPosition] failed");
 
   std::map<OutDataAnchorPtr, NodePtr> out_anchors_to_aipp;
   for (auto &out_in_anchors : target_edges) {
@@ -203,7 +207,12 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
                           out_in_anchors.first->GetOwnerNode()->GetType().c_str(),
                           out_in_anchors.second->GetOwnerNode()->GetName().c_str(),
                           out_in_anchors.second->GetOwnerNode()->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to link edges for aipp node %s", aipp->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Insert][Node] %s(%s) between op:%s(%s) and op:%s:%s failed",
+               aipp->GetName().c_str(), aipp->GetType().c_str(),
+               out_in_anchors.first->GetOwnerNode()->GetName().c_str(),
+               out_in_anchors.first->GetOwnerNode()->GetType().c_str(),
+               out_in_anchors.second->GetOwnerNode()->GetName().c_str(),
+               out_in_anchors.second->GetOwnerNode()->GetType().c_str());
         return INTERNAL_ERROR;
       }
 
@@ -211,7 +220,7 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
       if (GetAippMode() == domi::AippOpParams::dynamic) {
         ret = CreateAippData(aipp);
         if (ret != SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Failed to create aipp data for aipp %s data %s", aipp->GetName().c_str(),
+          GELOGE(INTERNAL_ERROR, "[Create][AippData] for aipp %s data %s failed", aipp->GetName().c_str(),
                  out_in_anchors.first->GetOwnerNode()->GetName().c_str());
           return INTERNAL_ERROR;
         }
@@ -226,7 +235,7 @@ Status AippOp::InsertAippToGraph(ComputeGraphPtr &graph, std::string &aippConfig
                           aipp->GetName().c_str(), aipp->GetType().c_str(),
                           out_in_anchors.second->GetOwnerNode()->GetName().c_str(),
                           out_in_anchors.second->GetOwnerNode()->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to link aipp %s to the peer node %s", aipp->GetName().c_str(),
+        GELOGE(INTERNAL_ERROR, "[Call][LinkFrom] Failed to link aipp %s to the peer node %s", aipp->GetName().c_str(),
                out_in_anchors.second->GetOwnerNode()->GetName().c_str());
         return INTERNAL_ERROR;
       }
@@ -242,7 +251,7 @@ NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor,
   auto aipp_opdesc_ptr = MakeShared<OpDesc>(current_name, AIPP);
   if (aipp_opdesc_ptr == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(OUT_OF_MEMORY, "Failed to alloc aipp desc, name %s", current_name.c_str());
+    GELOGE(OUT_OF_MEMORY, "[New][OpDesc] failed, name %s", current_name.c_str());
     return nullptr;
   }
 
@@ -271,8 +280,8 @@ NodePtr AippOp::CreateAipp(const OutDataAnchorPtr &out_anchor,
     REPORT_CALL_ERROR("E19999", "Update the output desc from node:%s(%s) to aipp:%s(%s) failed",
                       node_desc->GetName().c_str(), node_desc->GetType().c_str(),
                       aipp_opdesc_ptr->GetName().c_str(), aipp_opdesc_ptr->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Failed to update the output desc from node %s to aipp %s", node_desc->GetName().c_str(),
-           aipp_opdesc_ptr->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Call][UpdateInputDesc] Failed to update the output desc from node %s to aipp %s",
+           node_desc->GetName().c_str(), aipp_opdesc_ptr->GetName().c_str());
     return nullptr;
   }
 
@@ -283,25 +292,33 @@ Status AippOp::AddAippAttrbutes(const OpDescPtr &op_desc, const std::string &aip
   GeAttrValue::NAMED_ATTRS aipp_attr;
   ConvertParamToAttr(aipp_attr);
   GE_CHK_BOOL_RET_STATUS(AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attr),
-                         INTERNAL_ERROR, "Set name attrs for aipp node failed");
+                         INTERNAL_ERROR, "[Set][NamedAttrs] %s for aipp node:%s failed", ATTR_NAME_AIPP.c_str(),
+                         op_desc->GetName().c_str());
 
   GE_CHK_BOOL_RET_STATUS(AttrUtils::SetStr(op_desc, kAippConfigPath, aipp_cfg_path),
-                         INTERNAL_ERROR, "Set config file path attr for aipp node failed");
+                         INTERNAL_ERROR, "[Set][Attr] config file path for aipp node:%s failed",
+                         op_desc->GetName().c_str());
 
   std::vector<std::string> empty_names;
   GE_CHK_BOOL_RET_STATUS(AttrUtils::SetListStr(op_desc, ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES, empty_names),
-                         INTERNAL_ERROR, "Set ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES attr for aipp node failed");
+                         INTERNAL_ERROR, "[Set][Attr] %s for aipp node:%s failed",
+                         ATTR_NAME_DATA_DUMP_ORIGIN_OP_NAMES.c_str(), op_desc->GetName().c_str());
 
   GE_CHK_BOOL_RET_STATUS(AttrUtils::SetInt(op_desc, kCurrentAippIndex, index),
-                         INTERNAL_ERROR, "Set kCurrentAippIndex attr for aipp node failed");
+                         INTERNAL_ERROR, "[Set][Attr] %s for aipp node:%s failed", kCurrentAippIndex,
+                         op_desc->GetName().c_str());
   // add input/output desc
   GeTensorDesc tensor;
-  GE_CHK_GRAPH_STATUS_RET(op_desc->AddInputDesc("images", tensor), "Failed to add input images for aipp node");
+  GE_CHK_GRAPH_STATUS_RET(op_desc->AddInputDesc("images", tensor),
+                          "[Add][InputDesc] images for aipp node:%s failed", op_desc->GetName().c_str());
 
   if (GetAippMode() == domi::AippOpParams::dynamic) {
-    GE_CHK_GRAPH_STATUS_RET(op_desc->AddOptionalInputDesc("params", tensor), "Failed to add params for aipp node");
+    GE_CHK_GRAPH_STATUS_RET(op_desc->AddOptionalInputDesc("params", tensor),
+                            "[Call][AddOptionalInputDesc] Failed to add params for aipp node:%s",
+                            op_desc->GetName().c_str());
   }
-  GE_CHK_GRAPH_STATUS_RET(op_desc->AddOutputDesc("features", tensor), "Failed to add output features for aipp node");
+  GE_CHK_GRAPH_STATUS_RET(op_desc->AddOutputDesc("features", tensor),
+                          "[Add][OutputDesc] features for aipp node:%s failed", op_desc->GetName().c_str());
 
   return SUCCESS;
 }
@@ -335,7 +352,7 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
                                  std::set<uint32_t> &edge_indexes) {
   auto data_node = FindDataByIndex(graph, rank);
   if (data_node == nullptr) {
-    GELOGE(PARAM_INVALID, "Get target input node for rank %d failed", rank);
+    GELOGE(PARAM_INVALID, "[Call][FindDataByIndex] Get target input node for rank %d failed", rank);
     return PARAM_INVALID;
   }
   data_node_linked_aipp = data_node;
@@ -345,7 +362,7 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   if (ge::AttrUtils::GetStr(data_opdesc, ATTR_ATC_USER_DEFINE_DATATYPE, set_dt_str)) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10034", {"opname"}, {data_opdesc->GetName()});
     GELOGE(INTERNAL_ERROR,
-           "This input op [%s] is linked to aipp, can not be set to fp16, "
+           "[Get][Attr] This input op [%s] is linked to aipp, can not be set to fp16, "
            "please check your atc parameter --insert_op_conf, --input_fp16_nodes.",
            data_opdesc->GetName().c_str());
     return PARAM_INVALID;
@@ -364,7 +381,8 @@ Status AippOp::GetAndCheckTarget(const ComputeGraphPtr &graph, int rank, NodePtr
   if (!AttrUtils::SetNamedAttrs(data_opdesc, ATTR_NAME_AIPP, aipp_attr)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s for op:%s(%s) failed", ATTR_NAME_AIPP.c_str(),
                        data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Set name attrs for Data node failed. id: %d", rank);
+    GELOGE(INTERNAL_ERROR, "[Set][Attr] %s for op:%s(%s) failed", ATTR_NAME_AIPP.c_str(),
+           data_opdesc->GetName().c_str(), data_opdesc->GetType().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -397,15 +415,15 @@ Status AippOp::GetStaticTargetNode(const ComputeGraphPtr &graph, NodePtr &data_n
       REPORT_INNER_ERROR("E19999", "The data node %s has switchn node flag, but the value of attr:%s is empty, "
                          "check invalid", data_node->GetName().c_str(),
                          kMbatchSwitchnName);
-      GELOGE(INTERNAL_ERROR, "The data node %s has switchn node flag, but the value is empty",
-             data_node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Check][Param] The data node %s has switchn node flag, but the value of attr:%s is empty",
+             data_node->GetName().c_str(), kMbatchSwitchnName);
       return INTERNAL_ERROR;
     }
     auto switchn = graph->FindNode(related_node_name);
     if (switchn == nullptr) {
       REPORT_INNER_ERROR("E19999", "The data node %s has switchn node %s, but can not find it on the graph, "
                          "check invalid", data_node->GetName().c_str(), related_node_name.c_str());
-      GELOGE(INTERNAL_ERROR, "The data node %s has switchn node %s, but can not find it on the graph",
+      GELOGE(INTERNAL_ERROR, "[Check][Param] The data node %s has switchn node %s, but can not find it on the graph",
              data_node->GetName().c_str(), related_node_name.c_str());
       return INTERNAL_ERROR;
     }
@@ -474,7 +492,7 @@ Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
   const uint32_t related_input_rank = aipp_params_->related_input_rank();
   auto ret = GetAndCheckTarget(graph, related_input_rank, target_input, edge_indexes);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Get target input node for rank %u failed", related_input_rank);
+    GELOGE(ret, "[Get][TargetInputNode] for rank %u failed", related_input_rank);
     return ret;
   }
 
@@ -497,13 +515,14 @@ Status AippOp::GetTargetPosition(ComputeGraphPtr graph, NodePtr &target_input,
         REPORT_INNER_ERROR("E19999", "Subgraph:%s of op:%s(%s) not find in graph:%s, check invalid",
                            name.c_str(), func_desc->GetName().c_str(), func_desc->GetType().c_str(),
                            graph->GetName().c_str());
-        GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
+        GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "[Get][Subgraph] failed, Subgraph:%s of op:%s(%s) not find in graph:%s",
+               name.c_str(), func_desc->GetName().c_str(), func_desc->GetType().c_str(), graph->GetName().c_str());
         return GE_GRAPH_EMPTY_SUBGRAPH;
       }
 
       auto data_node = FindDataByIndex(subgraph, related_input_rank);
       if (data_node == nullptr) {
-        GELOGE(PARAM_INVALID, "Get target input node for rank %d failed", related_input_rank);
+        GELOGE(PARAM_INVALID, "[Get][TargetInputNode] for rank %d failed", related_input_rank);
         return PARAM_INVALID;
       }
 
@@ -699,14 +718,16 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
       (op_desc->AddInputDesc(GeTensorDesc()) != GRAPH_SUCCESS)) {
     REPORT_CALL_ERROR("E19999", "Add input desc into op:%s(%s) failed",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "failed to add input desc");
+    GELOGE(FAILED, "[Add][InputDesc] into op:%s(%s) failed",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
 
   if (op_desc->AddOutputDesc(GeTensorDesc()) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add output desc into op:%s(%s) failed",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "add output desc failed.");
+    GELOGE(FAILED, "[Add][OutputDesc] into op:%s(%s) failed",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
   GeAttrValue::NAMED_ATTRS aipp_attrs;
@@ -715,7 +736,8 @@ Status AippOp::GenerateOpDesc(OpDescPtr op_desc) {
   GE_IF_BOOL_EXEC(!AttrUtils::SetNamedAttrs(op_desc, ATTR_NAME_AIPP, aipp_attrs),
                   REPORT_INNER_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_AIPP.c_str(),
                                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                  GELOGE(FAILED, "failed to set ATTR_NAME_AIPP");
+                  GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_AIPP.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
                   return FAILED);
 
   return SUCCESS;
@@ -791,7 +813,7 @@ Status AippOp::CreateAippData(const NodePtr &aipp_node) {
   auto ori_data_format = GetAndCheckFormat();
   if (ori_data_format != FORMAT_NCHW && ori_data_format != FORMAT_NHWC) {
     string format_str = TypeUtils::FormatToSerialString(ori_data_format);
-    GELOGE(PARAM_INVALID, "when dynamic aipp, input_format must be NCHW or NHWC, but [%s] format is %s",
+    GELOGE(PARAM_INVALID, "[Check][Param] when dynamic aipp, input_format must be NCHW or NHWC, but [%s] format is %s",
            data_node->GetName().c_str(), format_str.c_str());
     string reason = "format must be NCHW or NHWC in dynamic aipp process";
     ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
@@ -897,7 +919,8 @@ Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp
   if (stat1 != GRAPH_SUCCESS || stat2 != GRAPH_SUCCESS || stat3 != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add and Update InputDesc to op:%s(%s) failed, index:%d",
                       aipp_node->GetName().c_str(), aipp_node->GetType().c_str(), kAippParamsInputIndex);
-    GELOGE(INTERNAL_ERROR, "node process desc failed!");
+    GELOGE(INTERNAL_ERROR, "[Update][InputDesc] to op:%s(%s) failed, index:%d",
+           aipp_node->GetName().c_str(), aipp_node->GetType().c_str(), kAippParamsInputIndex);
     return INTERNAL_ERROR;
   }
   // aipp_node should have two input data but now tbe only one input
@@ -907,7 +930,10 @@ Status AippOp::AddNodeToGraph(const NodePtr &aipp_node, int64_t max_dynamic_aipp
                        aipp_data_node_ptr->GetName().c_str(), aipp_data_node_ptr->GetType().c_str(),
                        kAippDataOutputIndex, aipp_node->GetName().c_str(), aipp_node->GetType().c_str(),
                        kAippParamsInputIndex);
-    GELOGE(INTERNAL_ERROR, "Add Anchor anchor between aipp data node and aipp failed!");
+    GELOGE(INTERNAL_ERROR, "[Add][Edge] between op:%s(%s)(out_index:%u) and op:%s(%s)(in_index:%u) failed",
+           aipp_data_node_ptr->GetName().c_str(), aipp_data_node_ptr->GetType().c_str(),
+           kAippDataOutputIndex, aipp_node->GetName().c_str(), aipp_node->GetType().c_str(),
+           kAippParamsInputIndex);
     return INTERNAL_ERROR;
   }
   return SUCCESS;

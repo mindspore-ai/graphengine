@@ -41,7 +41,7 @@ Status DimensionComputePass::Run(ge::NodePtr &node) {
     } else {
       REPORT_CALL_ERROR("E19999", "kernel compute for op:%s(%s) failed",
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(ret, "DimensionComputePass Compute failed");
+      GELOGE(ret, "[Call][Compute] for op:%s(%s) failed", node->GetName().c_str(), node->GetType().c_str());
       return ret;
     }
   }
@@ -49,10 +49,8 @@ Status DimensionComputePass::Run(ge::NodePtr &node) {
   if (outputs.empty()) {
     REPORT_INNER_ERROR("E19999", "After compute for node %s(%s), output weight is empty, check invalid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR,
-           "Failed to compute dims for node %s,"
-           " no output weight",
-           node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] After compute for node %s(%s), output weight is empty",
+           node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
   }
 

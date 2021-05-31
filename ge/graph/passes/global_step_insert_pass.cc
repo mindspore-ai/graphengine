@@ -41,7 +41,7 @@ NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name, node_type);
   GE_IF_BOOL_EXEC(op_desc == nullptr,
                   REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-                  GELOGE(FAILED,"Make OpDesc failed");
+                  GELOGE(FAILED,"[New][OpDesc] failed");
                   return nullptr);
 
   for (auto &input_desc : input_list) {
@@ -49,7 +49,8 @@ NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
     if (graph_status != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "Add node:%s intput desc failed, error=%u.", node_name.c_str(), graph_status);
+      GELOGE(FAILED, "[Add][InputDesc] to op:%s(%s) failed",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
       return nullptr;
     }
   }
@@ -59,17 +60,19 @@ NodePtr GlobalStepInsertPass::InsertOp(ComputeGraphPtr &compute_graph,
     if (graph_status != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "Add node:%s output desc failed, error=%u.", node_name.c_str(), graph_status);
+      GELOGE(FAILED, "[Add][OutputDesc] to op:%s(%s) failed, ret:%u.",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph_status);
       return nullptr;
     }
   }
 
-  GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED,"compute_graph is nullptr"); return nullptr);
+  GE_IF_BOOL_EXEC(compute_graph == nullptr, GELOGE(FAILED,"[Check][Param] compute_graph is nullptr"); return nullptr);
   NodePtr node = compute_graph->AddNode(op_desc);
   GE_IF_BOOL_EXEC(node == nullptr,
     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), compute_graph->GetName().c_str());
-    GELOGE(FAILED, "add node failed, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
+    GELOGE(FAILED, "[Add][Node] %s(%s) to graph:%s failed",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), compute_graph->GetName().c_str());
     return nullptr);
 
   GELOGI("Insert op success, name:%s, type:%s.", node_name.c_str(), node_type.c_str());
@@ -107,7 +110,7 @@ Status GlobalStepInsertPass::Run(ComputeGraphPtr compute_graph) {
   NodePtr global_step = InsertOp(compute_graph, VARIABLE, NODE_NAME_GLOBAL_STEP,
                                  input_desc_list, output_desc_list);
   if (global_step == nullptr) {
-    GELOGE(FAILED, "Add global_step node failed, global_step is null.");
+    GELOGE(FAILED, "[Insert][Op] to graph:%s failed.", compute_graph->GetName().c_str());
     return FAILED;
   }
 
@@ -117,7 +120,9 @@ Status GlobalStepInsertPass::Run(ComputeGraphPtr compute_graph) {
     REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
                       global_step->GetName().c_str(), global_step->GetType().c_str(),
                       output_node->GetName().c_str(), output_node->GetType().c_str());
-    GELOGE(FAILED, "Add global_step to netoutput edge failed, add_ret=%u.", add_ret);
+    GELOGE(FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+           global_step->GetName().c_str(), global_step->GetType().c_str(),
+           output_node->GetName().c_str(), output_node->GetType().c_str());
     return FAILED;
   }
   GELOGD("Add global_step to netoutput edge in graph %u success", compute_graph->GetGraphID());

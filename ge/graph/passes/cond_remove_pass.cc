@@ -41,7 +41,7 @@ Status CondRemovePass::Run(NodePtr &node) {
   if (ret == NOT_CHANGED) {
     return SUCCESS;
   } else if (ret != SUCCESS) {
-    GELOGE(FAILED, "Get cond_info for node %s failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[Get][CondInfo] for node %s failed.", node->GetName().c_str());
     return FAILED;
   }
   int32_t cond_index = 0;
@@ -90,7 +90,7 @@ Status CondRemovePass::RemoveDeadCondLink(const int32_t index, const NodePtr &no
                       peerout_anchor->GetOwnerNode()->GetType().c_str(), peerout_anchor->GetIdx(),
                       in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
                       in_anchor->GetIdx());
-    GELOGE(FAILED, "Remove edge from node %s index %d to node %s index %d.",
+    GELOGE(FAILED, "[Remove][Edge] from node %s index %d to node %s index %d.",
            peerout_anchor->GetOwnerNode()->GetName().c_str(), peerout_anchor->GetIdx(),
            in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetIdx());
     return FAILED;
@@ -105,7 +105,7 @@ Status CondRemovePass::GetCaseChosenBranch(const NodePtr &node, const uint32_t c
   if (subgraph_names_size == 0) {
     REPORT_INNER_ERROR("E19999", "subgraph size of op:%s(%s) is 0, check invavlid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Node %s has none subgraph.", node->GetName().c_str());
+    GELOGE(FAILED, "[Check][Param] Node %s has none subgraph.", node->GetName().c_str());
     return ge::FAILED;
   }
   // If cond index is over the maimum subgraph number, choose the last subgraph
@@ -116,7 +116,7 @@ Status CondRemovePass::GetCaseChosenBranch(const NodePtr &node, const uint32_t c
   if (chosen_branch_name.empty()) {
     REPORT_INNER_ERROR("E19999", "Get subgraph name from op:%s(%s) by index:%u failed",
                        node->GetName().c_str(), node->GetType().c_str(), cond_index_new);
-    GELOGE(FAILED, "Node %s has no subgraph, index is %u.", node->GetName().c_str(), cond_index_new);
+    GELOGE(FAILED, "[Get][SubGraph] Node %s has no subgraph, index is %u.", node->GetName().c_str(), cond_index_new);
     return ge::FAILED;
   }
   auto chosen_graph = GraphUtils::FindRootGraph(node->GetOwnerComputeGraph())->GetSubgraph(chosen_branch_name);
@@ -132,7 +132,7 @@ Status CondRemovePass::GetIfChosenBranch(const NodePtr &node, const uint32_t con
   if (subgraph_names_size == 0) {
     REPORT_INNER_ERROR("E19999", "subgraph size of op:%s(%s) is 0, check invavlid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Node %s has none subgraph.", node->GetName().c_str());
+    GELOGE(FAILED, "[Check][Param] Node %s has none subgraph.", node->GetName().c_str());
     return ge::FAILED;
   }
   // If cond is false, else branch
@@ -143,7 +143,7 @@ Status CondRemovePass::GetIfChosenBranch(const NodePtr &node, const uint32_t con
   if (chosen_branch_name.empty()) {
     REPORT_INNER_ERROR("E19999", "Get subgraph name from op:%s(%s) by index:%u failed",
                        node->GetName().c_str(), node->GetType().c_str(), cond_index_new);
-    GELOGE(FAILED, "Node %s has no subgraph, index is %u.", node->GetName().c_str(), cond_index_new);
+    GELOGE(FAILED, "[Get][SubGraph] Node %s has no subgraph, index is %u.", node->GetName().c_str(), cond_index_new);
     return ge::FAILED;
   }
   auto chosen_graph = GraphUtils::FindRootGraph(node->GetOwnerComputeGraph())->GetSubgraph(chosen_branch_name);
@@ -151,7 +151,7 @@ Status CondRemovePass::GetIfChosenBranch(const NodePtr &node, const uint32_t con
     REPORT_INNER_ERROR("E19999",
                        "Find subgraph by name:%s from node:%s(%s)'s root_graph failed",
                        chosen_branch_name.c_str(), node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Can not find branch %s in node %s's parent graph %s.", chosen_branch_name.c_str(),
+    GELOGE(FAILED, "[Check][Param] Can not find branch %s in node %s's parent graph %s.", chosen_branch_name.c_str(),
            node->GetName().c_str(), node->GetOwnerComputeGraph()->GetName().c_str());
     return ge::FAILED;
   }
@@ -263,7 +263,7 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
                           peerout_anchor->GetOwnerNode()->GetType().c_str(), peerout_anchor->GetIdx(),
                           partitioncall_node->GetName().c_str(),
                           partitioncall_node->GetType().c_str(), input_anchor->GetIdx());
-        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
+        GELOGE(FAILED, "[Add][Edge] failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                peerout_anchor->GetOwnerNode()->GetName().c_str(), peerout_anchor->GetIdx(),
                partitioncall_node->GetName().c_str(), input_anchor->GetIdx(), input_desc_size,
                output_desc_size);
@@ -280,7 +280,7 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
                           node->GetName().c_str(), node->GetType().c_str(), output_anchor->GetIdx(),
                           peerin_anchor->GetOwnerNode()->GetName().c_str(),
                           peerin_anchor->GetOwnerNode()->GetType().c_str(), peerin_anchor->GetIdx());
-        GELOGE(FAILED, "Remove edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
+        GELOGE(FAILED, "[Remove][Edge] failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                node->GetName().c_str(), output_anchor->GetIdx(), peerin_anchor->GetOwnerNode()->GetName().c_str(),
                peerin_anchor->GetIdx(), input_desc_size, output_desc_size);
         return FAILED;
@@ -292,7 +292,7 @@ Status CondRemovePass::ReplaceIfCaseNodeWithPartitioncall(const NodePtr &node, c
                           partitioncall_node->GetType().c_str(), output_anchor->GetIdx(),
                           peerin_anchor->GetOwnerNode()->GetName().c_str(),
                           peerin_anchor->GetOwnerNode()->GetType().c_str(), peerin_anchor->GetIdx());
-        GELOGE(FAILED, "Add edge failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
+        GELOGE(FAILED, "[Add][Edge] failed, from node:%s idx:%d to node:%s idx:%d, input num:%zu, output num:%zu",
                partitioncall_node->GetName().c_str(), output_anchor->GetIdx(),
                peerin_anchor->GetOwnerNode()->GetName().c_str(), peerin_anchor->GetIdx(), input_desc_size,
                output_desc_size);
@@ -370,7 +370,7 @@ Status CondRemovePass::GetCondInfo(const NodePtr &node, ComputeGraphPtr &graph, 
   std::string type = node->GetType();
   if ((kIfOpTypes.count(type) != 0) || (kCaseOpTypes.count(type) != 0)) {
     if (GetCondInfoForIfCase(node, graph, cond_out_anchor, cond_in_anchor) != SUCCESS) {
-      GELOGE(FAILED, "Get cond_info for if/case node failed.");
+      GELOGE(FAILED, "[Get][CondInfo] for if/case node:%s failed.", node->GetName().c_str());
       return FAILED;
     }
   } else {

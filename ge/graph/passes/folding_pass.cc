@@ -36,7 +36,7 @@ namespace folding_pass {
 shared_ptr<Kernel> GetKernelByType(const NodePtr &node) {
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] parameter node is nullptr.");
     return nullptr;
   }
   KernelFactory &factory = KernelFactory::Instance();
@@ -84,7 +84,7 @@ NodePtr AddConstNodeToGraph(GeTensorPtr &tensor, ComputeGraphPtr &graph) {
   auto const_desc = OpDescUtils::CreateConstOp(tensor);
   if (const_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "Create Const op failed");
-    GELOGE(OUT_OF_MEMORY, "Failed to get const desc from tensor");
+    GELOGE(OUT_OF_MEMORY, "[Create][ConstOp] failed");
     return nullptr;
   }
 
@@ -96,14 +96,14 @@ NodePtr AddConstNodeToGraph(GeTensorPtr &tensor, ComputeGraphPtr &graph) {
 NodePtr AddIdentityNodeToGraph(const std::string &name, const GeTensorDesc &tensor, ComputeGraphPtr &graph) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "Compute graph ptr is null in creating identity node.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Compute graph ptr is null in creating identity node.");
     return nullptr;
   }
 
   OpDescPtr desc = MakeShared<OpDesc>("", "");
   if (desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(MEMALLOC_FAILED, "Failed to create op desc.");
+    GELOGE(MEMALLOC_FAILED, "[New][OpDesc] failed.");
     return nullptr;
   }
 
@@ -114,7 +114,8 @@ NodePtr AddIdentityNodeToGraph(const std::string &name, const GeTensorDesc &tens
   if ((ret != GRAPH_SUCCESS) || (ret2 != GRAPH_SUCCESS)) {
     REPORT_CALL_ERROR("E19999", "Add input or output desc to op:%s(%s) failed",
                       desc->GetName().c_str(), desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Failed to add input/output desc in creating Identity.");
+    GELOGE(INTERNAL_ERROR, "[Add][GeTensorDesc] to op:%s(%s) failed",
+           desc->GetName().c_str(), desc->GetType().c_str());
     return nullptr;
   }
 
@@ -146,9 +147,9 @@ Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
   auto in_data_nodes = node->GetInDataNodes();
   std::unordered_set<NodePtr> in_data_nodes_set(in_data_nodes.begin(), in_data_nodes.end());
   if (IsolateAndDeleteNode(node, {}) != SUCCESS) {
-    REPORT_INNER_ERROR("E19999", "Isolate and delete node:%s(%s) faild",
+    REPORT_INNER_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Failed to isolate and delete node %s, type %s.",
+    GELOGE(INTERNAL_ERROR, "[IsolateAndDelete][Node] %s(%s) failed.",
            node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
   }
@@ -160,9 +161,9 @@ Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
         continue;
       }
       if (IsolateAndDeleteNode(pre_node, {}) != SUCCESS) {
-        REPORT_INNER_ERROR("E19999", "Isolate and delete node:%s(%s) faild",
+        REPORT_INNER_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
                            pre_node->GetName().c_str(), pre_node->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to isolate and delete in data node %s, type %s.",
+        GELOGE(INTERNAL_ERROR, "[IsolateAndDelete][Node] %s(%s) failed.",
                pre_node->GetName().c_str(), pre_node->GetType().c_str());
         return INTERNAL_ERROR;
       }
@@ -190,11 +191,10 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
       GELOGI("The in_node name is %s, and node type is %s.", in_node->GetName().c_str(), in_node->GetType().c_str());
       auto ret = in_node_anchor->Unlink(in_data_anchor);
       if (ret != SUCCESS) {
-        REPORT_CALL_ERROR("E19999",
-                          "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
+        REPORT_CALL_ERROR("E19999", "Op:%s(%s) out index:%d unlink from op:%s(%s) in index:%d failed",
                           in_node->GetName().c_str(), in_node->GetType().c_str(), in_node_anchor->GetIdx(),
                           node->GetName().c_str(), node->GetType().c_str(), in_data_anchor->GetIdx());
-        GELOGE(INTERNAL_ERROR, "Failed to unlink anchor between const node %s to constant-folding-node %s, type %s.",
+        GELOGE(INTERNAL_ERROR, "[Unlink][Anchor] between const node:%s and constant-folding-node:%s(%s) failed.",
                in_node->GetName().c_str(), node->GetName().c_str(), node->GetType().c_str());
         return INTERNAL_ERROR;
       }
@@ -204,16 +204,18 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
       auto identity =
           AddIdentityNodeToGraph(identity_name, node->GetOpDesc()->GetInputDesc(in_data_anchor->GetIdx()), graph);
       if (identity == nullptr) {
-        GELOGE(INTERNAL_ERROR, "Failed to add identity node to graph.");
+        GELOGE(INTERNAL_ERROR, "[Add][IdentityNode] %s to graph:%s failed.",
+               identity_name.c_str(), graph->GetName().c_str());
         return INTERNAL_ERROR;
       }
       ret = GraphUtils::AddEdge(in_node_anchor, identity->GetInDataAnchor(0));
       if (ret != GRAPH_SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(inde:0) failed",
+        REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
                           in_node->GetName().c_str(), in_node->GetType().c_str(), in_node_anchor->GetIdx(),
                           identity->GetName().c_str(), identity->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to add edge, from node %s to node %s.", in_node->GetName().c_str(),
-               identity->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
+               in_node->GetName().c_str(), in_node->GetType().c_str(), in_node_anchor->GetIdx(),
+               identity->GetName().c_str(), identity->GetType().c_str());
         return INTERNAL_ERROR;
       }
       GELOGI("Create new identity node success.");
@@ -222,8 +224,9 @@ Status FoldingPass::DealWithInNodes(NodePtr &node) {
         REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
                           identity->GetName().c_str(), identity->GetType().c_str(),
                           node->GetName().c_str(), node->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to add edge, from node %s to node %s.", in_node->GetName().c_str(),
-               node->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+               identity->GetName().c_str(), identity->GetType().c_str(),
+               node->GetName().c_str(), node->GetType().c_str());
         return INTERNAL_ERROR;
       }
     }
@@ -236,7 +239,7 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
                                  std::vector<GeTensorPtr> &v_weight) {
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "node is null");
+    GELOGE(PARAM_INVALID, "[Check][Param] node is nullptr");
     return FAILED;
   }
   auto graph = node->GetOwnerComputeGraph();
@@ -245,24 +248,23 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
     if (index >= v_weight.size()) {
       REPORT_INNER_ERROR("E19999", "Index:%lu in param index_to_anchors >= param v_weight.size:%zu, "
                          "check invalid", index, v_weight.size());
-      GELOGE(INTERNAL_ERROR,
-             "Failed to constant fold on node %s type %s, "
+      GELOGE(INTERNAL_ERROR, "[Check][Param] Failed to constant fold on node %s type %s, "
              "the out nodes num %lu calculated is less than the node out anchor index %zu",
              node->GetName().c_str(), node->GetType().c_str(), v_weight.size(), index);
       return INTERNAL_ERROR;
     }
     GeTensorPtr weight = v_weight[index];
     if (weight == nullptr) {
-      REPORT_INNER_ERROR("E19999", "Index:%lu in param v_weight is nullptr check invalid",
-                         index);
-      GELOGE(INTERNAL_ERROR, "Failed to constant fold on node %s type %s, the %lust node calculated is null",
+      REPORT_INNER_ERROR("E19999", "Index:%lu in param v_weight is nullptr check invalid", index);
+      GELOGE(INTERNAL_ERROR,
+             "[Check][Param] Failed to constant fold on node %s type %s, the %lust node calculated is null",
              node->GetName().c_str(), node->GetType().c_str(), index);
       return INTERNAL_ERROR;
     }
 
     auto const_node = AddConstNodeToGraph(weight, graph);
     if (const_node == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Failed to add dynamic const node, node name:%s, index:%zu.",
+      GELOGE(INTERNAL_ERROR, "[Add][ConstNode] To Graph failed, node name:%s, index:%zu.",
              node->GetName().c_str(), index);
       return INTERNAL_ERROR;
     }
@@ -273,7 +275,8 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
       if (in_anchor == nullptr) {
         REPORT_INNER_ERROR("E19999", "Index:%lu in param index_to_anchors has nullptr member in_anchor, "
                            "check invalid", index);
-        GELOGE(INTERNAL_ERROR, "In anchor is nullptr.");
+        GELOGE(INTERNAL_ERROR,
+               "[Check][Param] Index:%lu in param index_to_anchors has nullptr member in_anchor", index);
         return INTERNAL_ERROR;
       }
       auto ret = ConnectNodeToInAnchor(in_anchor, const_node, 0);
@@ -287,7 +290,7 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
       REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
                         node->GetName().c_str(), node->GetType().c_str(),
                         const_node->GetName().c_str(), const_node->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "Failed to add control edge, from node %s to const node %s.", node->GetName().c_str(),
+      GELOGE(INTERNAL_ERROR, "[Add][ControlEdge] failed, from node %s to const node %s.", node->GetName().c_str(),
              const_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
@@ -296,11 +299,10 @@ Status FoldingPass::AddConstNode(NodePtr &node, IndexsToAnchors indexes_to_ancho
     if (AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
       GE_CHECK_NOTNULL(const_node->GetOpDesc());
       if (!AttrUtils::SetStr(const_node->GetOpDesc(), ATTR_NAME_STREAM_LABEL, stream_label)) {
-        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                          ATTR_NAME_STREAM_LABEL.c_str(),
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_STREAM_LABEL.c_str(),
                           const_node->GetName().c_str(), const_node->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to set stream label on dynamic const node %s, with stream label:%s.",
-               const_node->GetName().c_str(), stream_label.c_str());
+        GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_STREAM_LABEL.c_str(),
+               const_node->GetName().c_str(), const_node->GetType().c_str());
         return INTERNAL_ERROR;
       }
     }
@@ -317,7 +319,7 @@ Status FoldingPass::RemoveNodeKeepingCtrlEdges(NodePtr &node) {
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Isolate node:%s(%s) in graph failed",
                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Failed to isolate the folding-node %s type %s", node->GetName().c_str(),
+    GELOGE(INTERNAL_ERROR, "[Isolate][Node] %s type %s failed", node->GetName().c_str(),
            node->GetType().c_str());
     return INTERNAL_ERROR;
   }
@@ -327,7 +329,8 @@ Status FoldingPass::RemoveNodeKeepingCtrlEdges(NodePtr &node) {
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                       node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Failed to remove node %s from graph", node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Remove][Node] %s(%s) without relink in graph:%s failed",
+           node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
     return INTERNAL_ERROR;
   }
   AddNodeDeleted(node);
@@ -338,7 +341,7 @@ Status FoldingPass::ConnectNodeToInAnchor(InDataAnchorPtr &in_anchor, NodePtr &n
   // the origin edge must be removed before add
   if (in_anchor == nullptr || node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node or in_anchor is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "in anchor or node is null");
+    GELOGE(PARAM_INVALID, "[Check][Param] in anchor or node is null");
     return PARAM_INVALID;
   }
   auto peer_out_anchor = in_anchor->GetPeerOutAnchor();
@@ -352,8 +355,7 @@ Status FoldingPass::ConnectNodeToInAnchor(InDataAnchorPtr &in_anchor, NodePtr &n
   if (new_out_anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param out index:%d data anchor of node:%s(%s) is nullptr, check invalid",
                        node_index, node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR,
-           "Failed to add node to in anchor,"
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Failed to add node to in anchor,"
            " the index %d for node %s, type %s is invalid",
            node_index, node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
@@ -363,10 +365,10 @@ Status FoldingPass::ConnectNodeToInAnchor(InDataAnchorPtr &in_anchor, NodePtr &n
                       node->GetName().c_str(), node->GetType().c_str(), node_index,
                       in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
                       in_anchor->GetIdx());
-    GELOGE(INTERNAL_ERROR,
-           "Failed to add edge between anchors,"
-           " new node %s, type %s",
-           node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+           node->GetName().c_str(), node->GetType().c_str(), node_index,
+           in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
+           in_anchor->GetIdx());
     return INTERNAL_ERROR;
   }
   AddRePassNodesWithInOut(node);

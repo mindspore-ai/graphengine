@@ -291,14 +291,7 @@ void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t grou
   GE_RT_VOID_CHECK_NOTNULL(op_desc);
 
   // op_desc as AttrHolderAdapter valid, Set attribute always success, just log for check.
-  GELOGD("Mark [%s] as force unknown shape node, group index: %ld", node->GetName().c_str(), group_index);
-  if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FORCE_UNKNOWN_SHAPE, force_unknown)) {
-    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
-                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
-  }
-
+  GELOGD("[%s] Set control flow group index: %ld", node->GetName().c_str(), group_index);
   if (!AttrUtils::SetInt(op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());

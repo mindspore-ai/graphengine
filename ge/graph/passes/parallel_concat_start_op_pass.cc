@@ -46,15 +46,15 @@ Status ParallelConcatStartOpPass::Run(NodePtr &node) {
     REPORT_INNER_ERROR("E19999", "Output tensor num:%zu of node:%s(%s) != %zu, check invalid",
                        node_op_desc->GetOutputsSize(), node_op_desc->GetName().c_str(),
                        node_op_desc->GetType().c_str(), kParallelConcatStartOutputSize);
-    GELOGE(PARAM_INVALID, "Node[%s] output size is unexpected, the value is %zu.", node_name.c_str(),
-           node_op_desc->GetOutputsSize());
+    GELOGE(PARAM_INVALID, "[Check][Param] Node[%s] output size is unexpected, the value is %zu, expected valude:%zu.",
+           node_name.c_str(), node_op_desc->GetOutputsSize(), kParallelConcatStartOutputSize);
     return PARAM_INVALID;
   }
   auto output_tensor_desc = node_op_desc->GetOutputDesc(kParallelConcatStartOutputDataIndex);
   GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
   if (output_ptr == nullptr) {
     REPORT_CALL_ERROR("E19999", "New GeTensor failed");
-    GELOGE(MEMALLOC_FAILED, "Malloc GeTensor failed, node name %s.", node_name.c_str());
+    GELOGE(MEMALLOC_FAILED, "[New][GeTensor] failed");
     return FAILED;
   }
 
@@ -62,7 +62,8 @@ Status ParallelConcatStartOpPass::Run(NodePtr &node) {
   if (!ge::AttrUtils::GetDataType(node_op_desc, kAttrDtype, attr_dtype)) {
     REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", kAttrDtype,
                       node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "Node:%s failed to get attribute dtype.", node_name.c_str());
+    GELOGE(PARAM_INVALID, "[Get][Attr] %s from op:%s(%s) failed", kAttrDtype,
+           node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
   output_ptr->MutableTensorDesc().SetDataType(attr_dtype);
@@ -71,7 +72,8 @@ Status ParallelConcatStartOpPass::Run(NodePtr &node) {
   if (!ge::AttrUtils::GetListInt(node_op_desc, kAttrShape, attr_shape_list)) {
     REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", kAttrShape,
                       node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "Node:%s failed to get attribute shape.", node_name.c_str());
+    GELOGE(PARAM_INVALID, "[Get][Attr] %s from op:%s(%s) failed", kAttrShape,
+           node_op_desc->GetName().c_str(), node_op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
   output_ptr->MutableTensorDesc().SetShape(GeShape(attr_shape_list));

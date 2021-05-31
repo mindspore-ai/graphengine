@@ -28,7 +28,7 @@ Status SetInputOutputOffsetPass::Run(ComputeGraphPtr graph) {
     if (!connect_input.empty()) {
       Status ret = SetInputOffset(node, connect_input);
       if (ret != SUCCESS) {
-        GELOGE(ret, "SetInputOffset failed.");
+        GELOGE(ret, "[Set][InputOffset] for node:%s failed.", node->GetName().c_str());
         return ret;
       }
     }
@@ -37,7 +37,7 @@ Status SetInputOutputOffsetPass::Run(ComputeGraphPtr graph) {
     if (!connect_output.empty()) {
       Status ret = SetOutputOffset(node, connect_output);
       if (ret != SUCCESS) {
-        GELOGE(ret, "SetOutputOffset failed.");
+        GELOGE(ret, "[Set][OutputOffset] for node:%s failed.", node->GetName().c_str());
         return ret;
       }
     }
@@ -56,7 +56,8 @@ Status SetInputOutputOffsetPass::SetInputOffsetForFusion(const std::vector<int64
       if (input_offset_of_node.size() < i) {
         REPORT_INNER_ERROR("E19999", "Input offsets size:%zu of node:%s(%s) < index:%zu, check invalid",
                            input_offset_of_node.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), i);
-        GELOGE(PARAM_INVALID, "not get input_offset of %zu", i);
+        GELOGE(PARAM_INVALID, "[Check][Param] Input offsets size:%zu of node:%s(%s) < index:%zu",
+               input_offset_of_node.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str(), i);
         return PARAM_INVALID;
       }
       int64_t input_offset = input_offset_of_node.at(i);
@@ -82,14 +83,17 @@ Status SetInputOutputOffsetPass::SetInputOffsetForFusion(const std::vector<int64
                        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                          ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
                                          data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
-                       GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
+                       GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                              data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
                        return FAILED);
-      GE_CHK_BOOL_EXEC(
-          ge::AttrUtils::SetListInt(data_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
-          REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
-                            data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
-          GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
-          return FAILED);
+      GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(data_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET,
+                                                 zero_copy_relative_offset),
+                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                         ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                                         data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
+                       GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                              data_op_desc->GetName().c_str(), data_op_desc->GetType().c_str());
+                       return FAILED);
     }
   }
   return SUCCESS;
@@ -125,14 +129,17 @@ Status SetInputOutputOffsetPass::SetInputOffsetForHcom(const ge::NodePtr &node, 
                          REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                            ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
                                            in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
-                         GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
+                         GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                                in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
                          return FAILED);
-        GE_CHK_BOOL_EXEC(
-            ge::AttrUtils::SetListInt(in_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
-            REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
-                              in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
-            GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
-            return FAILED);
+        GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(in_op_desc,
+                                                   ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
+                         REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
+                                           ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                                           in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
+                         GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                                in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
+                         return FAILED);
       }
     }
   }
@@ -147,7 +154,7 @@ Status SetInputOutputOffsetPass::SetInputOffset(const NodePtr &node, const vecto
   if (!memory_type.empty()) {
     Status ret = SetInputOffsetForFusion(memory_type, node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "SetInputOffsetForFusion failed.");
+      GELOGE(ret, "[Set][InputOffset] For Fusion failed, node:%s.", node->GetName().c_str());
       return ret;
     }
   }
@@ -157,7 +164,7 @@ Status SetInputOutputOffsetPass::SetInputOffset(const NodePtr &node, const vecto
   if (is_input_continuous) {
     Status ret = SetInputOffsetForHcom(node, connect_input);
     if (ret != SUCCESS) {
-      GELOGE(ret, "SetInputOffsetForHcom failed.");
+      GELOGE(ret, "[Set][InputOffset] For Hcom failed, node:%s.", node->GetName().c_str());
       return ret;
     }
   }
@@ -174,7 +181,8 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForConcat(const NodePtr &node) {
                   REPORT_INNER_ERROR("E19999", "Output offsets size:%zu of node:%s(%s) not equal to 1, check invalid",
                                      output_offset_of_concat.size(),
                                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                  GELOGE(PARAM_INVALID, "%s should has one output.", node->GetName().c_str());
+                  GELOGE(PARAM_INVALID, "[Check][Param] Output offsets size:%zu of node:%s(%s) not equal to 1.",
+                         output_offset_of_concat.size(), op_desc->GetName().c_str(), op_desc->GetType().c_str());
                   return PARAM_INVALID);
   NodePtr net_output = node->GetOutDataNodes().at(0);
   auto out_op_desc = net_output->GetOpDesc();
@@ -203,13 +211,15 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForConcat(const NodePtr &node) {
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset),
                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
                                      out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
-                   GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
+                   GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                          out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                      ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
                                      out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
-                   GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
+                   GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                          out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    return FAILED);
   return SUCCESS;
 }
@@ -254,13 +264,15 @@ Status SetInputOutputOffsetPass::SetOutputOffsetForHcom(const NodePtr &node, con
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_BASIC_OFFSET, zero_copy_basic_offset),
                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
                                      out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
-                   GELOGE(FAILED, "SetListInt of zero_copy_basic_offset failed.");
+                   GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_BASIC_OFFSET.c_str(),
+                          out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    return FAILED);
   GE_CHK_BOOL_EXEC(ge::AttrUtils::SetListInt(out_op_desc, ATTR_ZERO_COPY_RELATIVE_OFFSET, zero_copy_relative_offset),
                    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                      ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
                                      out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
-                   GELOGE(FAILED, "SetListInt of zero_copy_relative_offset failed.");
+                   GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_ZERO_COPY_RELATIVE_OFFSET.c_str(),
+                          out_op_desc->GetName().c_str(), out_op_desc->GetType().c_str());
                    return FAILED);
   return SUCCESS;
 }
@@ -277,7 +289,7 @@ Status SetInputOutputOffsetPass::SetOutputOffset(const NodePtr &node, const vect
     if (is_input_continuous || buffer_fusion) {
       Status ret = SetOutputOffsetForConcat(node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "SetOutputOffsetForConcat failed.");
+        GELOGE(ret, "[Set][OutputOffset] For Concat failed, node:%s.", node->GetName().c_str());
         return ret;
       }
     }
@@ -288,7 +300,7 @@ Status SetInputOutputOffsetPass::SetOutputOffset(const NodePtr &node, const vect
   if (is_output_continuous) {
     Status ret = SetOutputOffsetForHcom(node, connect_output);
     if (ret != SUCCESS) {
-      GELOGE(ret, "SetOutputOffsetForHcom failed.");
+      GELOGE(ret, "[Set][OutputOffset] For Hcom failed, node:%s.", node->GetName().c_str());
       return ret;
     }
   }

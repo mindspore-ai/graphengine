@@ -469,10 +469,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) {
   if (output_file.empty()) {
-    GELOGE(FAILED, "[Save][Model]Received invalid file name prefix, output_file %s",
-           output_file.c_str());
-    REPORT_INNER_ERROR("E19999", "Save model received invalid file name prefix, output_file %s",
-                      output_file.c_str());
+    GELOGE(FAILED, "[Save][Model]Received invalid file name prefix, output_file %s", output_file.c_str());
+    REPORT_INNER_ERROR("E19999", "Save model received invalid file name prefix, output_file %s", output_file.c_str());
     return FAILED;
   }
   // Get computegraph from graph

@@ -86,14 +86,15 @@ Status InferShapePass::Run(NodePtr &node) {
     auto root_graph = ge::GraphUtils::FindRootGraph(graph);
     GE_CHECK_NOTNULL(root_graph);
     analyzer::DataInfo analyze_info{root_graph->GetSessionID(), root_graph->GetGraphID(),
-                                  analyzer::INFER_SHAPE, node, "InferShapeFailed!"};
+                                    analyzer::INFER_SHAPE, node, "InferShapeFailed!"};
     (void)Analyzer::GetInstance()->DoAnalyze(analyze_info);
     (void)Analyzer::GetInstance()->SaveAnalyzerDataToFile(root_graph->GetSessionID(),
                                                           root_graph->GetGraphID());
 
     REPORT_CALL_ERROR("E19999", "Call InferShapeAndType for node:%s(%s) failed, input_tensor:%s",
                       node->GetName().c_str(), node->GetType().c_str(), GetInTensorInfoWithString(node).c_str());
-    GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "infershape failed. node: %s", node->GetName().c_str());
+    GELOGE(GE_GRAPH_INFERSHAPE_FAILED, "[Call][InferShapeAndType] for node:%s(%s) failed, input_tensor:%s",
+           node->GetName().c_str(), node->GetType().c_str(), GetInTensorInfoWithString(node).c_str());
     return GE_GRAPH_INFERSHAPE_FAILED;
   }
 
@@ -120,7 +121,7 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
     for (auto &n : node->GetOutDataNodes()) {
       GE_CHECK_NOTNULL(n);
       std::string node_type;
-      GE_CHK_STATUS_RET(GetOriginalType(n, node_type), "Get original node type failed.");
+      GE_CHK_STATUS_RET(GetOriginalType(n, node_type), "[Get][OriginalType] of node:%s failed.", n->GetName().c_str());
       if (re_pass_types.count(node_type) > 0) {
         AddImmediateRePassNode(n);
         (void)AttrUtils::SetBool(n->GetOpDesc(), ATTR_NAME_NEED_INFER_AGAIN, false);
@@ -136,7 +137,7 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
     for (auto &n : node->GetOutDataNodes()) {
       GE_CHECK_NOTNULL(n);
       std::string node_type;
-      GE_CHK_STATUS_RET(GetOriginalType(n, node_type), "Get original node type failed.");
+      GE_CHK_STATUS_RET(GetOriginalType(n, node_type), "[Get][OriginalType] of node:%s failed.", n->GetName().c_str());
       if (proc_types.count(node_type) > 0) {
         proc_func(this, n);
         GELOGD("Node %s %s after %s.", n->GetName().c_str(), info.c_str(), node->GetName().c_str());
@@ -146,7 +147,8 @@ Status InferShapePass::RePassLoopNode(const NodePtr &node) {
   };
 
   std::string node_type;
-  GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original node type failed.");
+  GE_CHK_STATUS_RET(GetOriginalType(node, node_type),
+                    "[Get][OriginalType] of node:%s failed.", node->GetName().c_str());
   if (kNextIterationOpTypes.count(node_type) > 0) {
     return RePassNode(kMergeOpTypes); // Re-Pass Merge
   }

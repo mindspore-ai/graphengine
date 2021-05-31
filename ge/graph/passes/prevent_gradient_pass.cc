@@ -27,7 +27,7 @@ Status PreventGradientPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
-    GELOGE(status_ret, "PreventGradientPass get original type fail.");
+    GELOGE(status_ret, "[Get][OriginalType] of node:%s failed.", node->GetName().c_str());
     return status_ret;
   }
   if (type == PREVENTGRADIENT) {

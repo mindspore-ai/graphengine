@@ -32,7 +32,7 @@ Status TransOpNearbyAllreduceFusionPass::Run(NodePtr &node) {
     GELOGI("found allreduce op %s", node->GetName().c_str());
     Status ret = RemoveNearbyPairedTransOps(node);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "failed to remove paired transop for allreduce op %s", node->GetName().c_str());
+      GELOGE(FAILED, "[Remove][PairedTransOp] for allreduce op:%s", node->GetName().c_str());
       return FAILED;
     }
     GELOGI("successfully remove paired transop for allreduce op (%s)", node->GetName().c_str());
@@ -102,7 +102,7 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
     REPORT_INNER_ERROR("E19999", "In data anchors size:%zu not equal to out data anchors size:%zu in node:%s(%s), "
                        "check invalid", in_data_anchors.size(), out_data_anchors.size(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "in and out data anchor size are not equal, node=%s, in_size=%zu, out_size=%zu",
+    GELOGE(FAILED, "[Check][Param] in and out data anchor size are not equal, node=%s, in_size=%zu, out_size=%zu",
            node->GetName().c_str(), in_data_anchors.size(), out_data_anchors.size());
     return FAILED;
   }
@@ -148,7 +148,7 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
     if (IsolateAndDeleteNode(in_node, {0}) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
                         in_node->GetName().c_str(), in_node->GetType().c_str());
-      GELOGE(FAILED, "remove node %s failed", in_node->GetName().c_str());
+      GELOGE(FAILED, "[Remove][Node] %s failed", in_node->GetName().c_str());
       return FAILED;
     }
     removed_node_count++;
@@ -157,7 +157,7 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
     if (IsolateAndDeleteNode(out_node, {0}) != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
                         out_node->GetName().c_str(), out_node->GetType().c_str());
-      GELOGE(FAILED, "remove node %s failed", out_node->GetName().c_str());
+      GELOGE(FAILED, "[Remove][Node] %s failed", out_node->GetName().c_str());
       return FAILED;
     }
     removed_node_count++;
@@ -171,12 +171,14 @@ Status TransOpNearbyAllreduceFusionPass::RemoveNearbyPairedTransOps(const NodePt
     if (node->GetOpDesc()->UpdateInputDesc(static_cast<uint32_t>(i), input_desc) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Update input:%zu desc in op:%s(%s) failed",
                         i, node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "UpdateInputDesc fail.");
+      GELOGE(FAILED, "[Update][InputDesc] in op:%s(%s) failed, input index:%zu",
+             node->GetName().c_str(), node->GetType().c_str(), i);
     }
     if (node->GetOpDesc()->UpdateOutputDesc(static_cast<uint32_t>(i), output_desc) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Update output:%zu desc in op:%s(%s) failed",
                         i, node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "UpdateOutputDesc");
+      GELOGE(FAILED, "[Update][OutputDesc] in op:%s(%s) failed, input index:%zu",
+             node->GetName().c_str(), node->GetType().c_str(), i);
     }
     GELOGI("successfully remove paired transop (%s and %s) for node %s",
            in_node->GetName().c_str(), out_node->GetName().c_str(), node->GetName().c_str());

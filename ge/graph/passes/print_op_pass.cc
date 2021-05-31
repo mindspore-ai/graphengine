@@ -22,13 +22,13 @@ Status PrintOpPass::Run(ge::NodePtr &node) {
   GELOGD("PrintOpPass running");
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "param [node] must not be null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] param [node] must not be null.");
     return PARAM_INVALID;
   }
   string type;
   Status ret = GetOriginalType(node, type);
   if (ret != SUCCESS) {
-    GELOGE(ret, "PrintOpPass: Get node type fail");
+    GELOGE(ret, "[Get][OriginalType] of node:%s failed", node->GetName().c_str());
     return ret;
   }
   if (type == "Print") {

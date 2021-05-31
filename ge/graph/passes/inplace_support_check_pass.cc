@@ -72,7 +72,9 @@ Status InplaceSupportCheckPass::Run(NodePtr &node) {
       REPORT_CALL_ERROR("E19999", "Set Attr:%s to output:%u tensor of op:%s(%s) failed",
                         INPLACE_SUPPORT_INPUT_INDEX.c_str(), kInplaceSupportOutputIndex,
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(FAILED, "Set attr INPLACE_SUPPORT_INPUT_INDEX on node %s failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to output:%u tensor of op:%s(%s) failed",
+             INPLACE_SUPPORT_INPUT_INDEX.c_str(), kInplaceSupportOutputIndex,
+             node->GetName().c_str(), node->GetType().c_str());
       return FAILED;
     }
     AddRePassNode(node);

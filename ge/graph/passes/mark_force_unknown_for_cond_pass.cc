@@ -45,7 +45,8 @@ Status MarkForceUnknownForCondPass::Run(ComputeGraphPtr graph) {
   std::map<NodePtr, std::vector<NodePtr>> switch_groups;
   for (const auto &node : graph->GetDirectNode()) {
     std::string node_type;
-    GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original type failed.");
+    GE_CHK_STATUS_RET(GetOriginalType(node, node_type),
+                      "[Get][OriginalType] of node in graph:%s failed.", graph->GetName().c_str());
     if (kMergeOpTypes.count(node_type) == 0) {
       continue;
     }

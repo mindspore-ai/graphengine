@@ -49,7 +49,7 @@ struct RuntimeParam {
        << ", label_num:" << label_num << ", logic_mem_base:" << logic_mem_base
        << ", logic_weight_base:" << logic_weight_base << ", logic_var_base:" << logic_var_base
        << ", memory_size:" << mem_size << ", weight_size:" << weight_size << ", var_size:" << var_size
-       << ", ex_memory_info:";
+       << ", zero_copy_size:" << zero_copy_size << ", ex_memory_info:";
     for (auto it : memory_infos) {
       ss << "[memory_type:" << it.first << ", memory_size:" << it.second.memory_size << "]";
     }
@@ -65,6 +65,7 @@ struct RuntimeParam {
   uint64_t var_size = 0;
   uint64_t logic_var_base = 0;
   uint8_t *var_base = nullptr;
+  int64_t zero_copy_size = 0;
   std::map<uint64_t, MemInfo> memory_infos;
   uint32_t batch_num = 0;
   uint32_t stream_num = 0;

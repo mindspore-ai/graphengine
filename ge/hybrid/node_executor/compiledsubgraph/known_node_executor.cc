@@ -101,18 +101,20 @@ Status KnownNodeTask::Init(TaskContext &context) {
   GE_CHK_STATUS_RET(context.AllocateOutputs(), "[Allocate][Outputs] failed for %s.", context.GetNodeName());
   // allocate mem base
   void *buffer = nullptr;
-  if (davinci_model_->TotalMemSize() != 0) {
+  int64_t total_useful_size = 0;
+  GE_CHK_STATUS_RET(davinci_model_->GetTotalMemSizeExcludeZeroCopy(total_useful_size),
+                    "[Get][TotalMemSizeExcludeZeroCopy] failed.");
+  if (total_useful_size != 0) {
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(),
                            "[KnownNodeTask_AllocateWorkspace] Start");
-    GE_CHK_STATUS_RET(context.AllocateWorkspace(davinci_model_->TotalMemSize(), &buffer,
-                                                davinci_model_->GetRuntimeParam().mem_base),
+    GE_CHK_STATUS_RET(context.AllocateWorkspace(total_useful_size, &buffer, davinci_model_->GetRuntimeParam().mem_base),
                       "[Allocate][Workspace] failed for %s.", context.GetNodeName());
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(),
-                           "[KnownNodeTask_AllocateWorkspace] End, size %zu", davinci_model_->TotalMemSize());
+                           "[KnownNodeTask_AllocateWorkspace] End, size %ld", total_useful_size);
     // update mem base
     davinci_model_->UpdateMemBase(static_cast<uint8_t *>(buffer));
-    GELOGI("KnownNodeTask::Init mem base is %p, size %lu.",
-           davinci_model_->GetRuntimeParam().mem_base, davinci_model_->GetRuntimeParam().mem_size);
+    GELOGI("KnownNodeTask::Init mem base is %p, size %ld.",
+           davinci_model_->GetRuntimeParam().mem_base, total_useful_size);
   }
   GE_CHK_STATUS_RET(ModelManager::GetInstance()->DestroyAicpuKernel(davinci_model_->GetSessionId(),
                                                                     davinci_model_->Id(),
@@ -154,8 +156,8 @@ Status KnownNodeTask::InitDavinciModel(const HybridModel &model, TensorBuffer *w
     weight_size = weight_buffer->GetSize();
   }
   GELOGD("Start to init davinci model, weight size = %zu", weight_size);
-  GE_CHK_STATUS_RET(DoInitDavinciModel(weight, weight_size), "[Init][Model] Failed to init davinci model.");
-  GELOGD("[Init][Model] success");
+  GE_CHK_STATUS_RET(DoInitDavinciModel(weight, weight_size), "[Init][DavinciModel] Failed to init davinci model.");
+  GELOGD("[Init][DavinciModel] success");
   return SUCCESS;
 }
 

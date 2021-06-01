@@ -3979,7 +3979,6 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
   is_dynamic_ = input_data.is_dynamic_batch;
 
   bool profiling_model_execute_on = ProfilingManager::Instance().ProfilingModelExecuteOn();
-  bool profiling_model_load_on = ProfilingManager::Instance().ProfilingModelLoadOn();
   GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_PRE_PROC_START));
   Status ret = CopyModelData(input_data, output_data, is_dynamic_);
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ret,
@@ -3993,10 +3992,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
     uint64_t model_id = static_cast<uint64_t>(model_id_);
     int32_t device_id = static_cast<int32_t>(device_id_);
     // tag_id 0 means step begin, 1 meas step end.
-    if (profiling_model_load_on) {
-      GE_CHK_STATUS_RET_NOLOG(
-        ProfilingManager::Instance().ProfileStepInfo(index_id, model_id, 0, rt_model_stream_, device_id));
-    }
+    GE_CHK_STATUS_RET_NOLOG(
+      ProfilingManager::Instance().ProfileStepInfo(index_id, model_id, 0, rt_model_stream_, device_id));
 
     GELOGD("rtModelExecute do");
     GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_INFER_START));
@@ -4005,10 +4002,8 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
     GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_INFER_END));
     GELOGD("rtModelExecute end");
 
-    if (profiling_model_load_on) {
-      GE_CHK_STATUS_RET_NOLOG(
-        ProfilingManager::Instance().ProfileStepInfo(index_id, model_id, 1, rt_model_stream_, device_id));
-    }
+    GE_CHK_STATUS_RET_NOLOG(
+      ProfilingManager::Instance().ProfileStepInfo(index_id, model_id, 1, rt_model_stream_, device_id));
     iterator_count_++;
   }
 

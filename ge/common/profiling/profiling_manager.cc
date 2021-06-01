@@ -323,11 +323,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfileStepInfo(
   uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
-  rtError_t rt_ret = RT_ERROR_NONE;
-#ifndef ONLY_COMPILE_OPEN_SRC
+  if (!is_load_profiling_ && subscribe_count_ == 0) {
+    GELOGD("Profiling is not turned on, no need to profile step info.");
+    return SUCCESS;
+  }
+
   GELOGD("Profiling Step Info TraceTask execute async start, index_id = %lu, model_id = %lu, tag_id = %u",
          index_id, model_id, tag_id);
-  rt_ret = rtProfilerTraceEx(index_id, model_id, tag_id, stream);
+  rtError_t rt_ret = rtProfilerTraceEx(index_id, model_id, tag_id, stream);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[Call][rtProfilerTraceEx]Failed, ret 0x%X", rt_ret);
     REPORT_CALL_ERROR("E19999", "Call rtProfilerTraceEx failed, ret 0x%X", rt_ret);
@@ -335,7 +338,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Profil
   }
   GELOGD("Profiling Step Info TraceTask execute async success, index_id = %lu, model_id = %lu, tag_id = %u",
          index_id, model_id, tag_id);
-#endif
 
   mmTimespec timespec = mmGetTickCount();
   // 1000 ^ 3 converts second to nanosecond

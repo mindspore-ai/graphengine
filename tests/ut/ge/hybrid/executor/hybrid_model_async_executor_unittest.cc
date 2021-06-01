@@ -86,4 +86,22 @@ TEST_F(UtestHybridModelAsyncExecutor, BuildDeviceTensor) {
   auto size = tensor.GetSize();
   ASSERT_EQ(size, 100);
 }
+
+TEST_F(UtestHybridModelAsyncExecutor, Test_execute_internal) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  ge_root_model->SetModelName("test_name");
+  HybridModel hybrid_model(ge_root_model);
+
+  HybridModelExecutor executor(&hybrid_model, 0, nullptr);
+  ASSERT_EQ(executor.Init(), SUCCESS);
+  auto &context = executor.context_;
+  GraphItem graph_item;
+  SubgraphExecutor subgraph_executor(&graph_item, &context);
+  HybridModelExecutor::ExecuteArgs args;
+  std::pair<rtEvent_t, std::pair<rtCallback_t, void *>> eof_entry;
+  eof_entry.first = nullptr;
+  context.callback_manager->callback_queue_.Push(eof_entry);
+  ASSERT_EQ(executor.ExecuteGraphInternal(subgraph_executor, args), SUCCESS);
+}
 } // namespace ge

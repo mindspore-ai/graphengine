@@ -248,6 +248,14 @@ class DavinciModel {
   // get total mem size
   size_t TotalMemSize() const { return runtime_param_.mem_size; }
 
+  ///
+  /// @ingroup ge
+  /// @brief Get total useful size, in known subgraph, no need to allocate zero copy memory during initialization.
+  /// @param [in] total_useful_size: total mem size - zero copy size.
+  /// @return Status
+  ///
+  Status GetTotalMemSizeExcludeZeroCopy(int64_t &total_useful_size);
+
   // model name
   string Name() const { return name_; }
 

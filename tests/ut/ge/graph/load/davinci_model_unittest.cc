@@ -1048,4 +1048,15 @@ TEST_F(UtestDavinciModel, update_io_addr_success) {
   vector<void *> io_addr = {nullptr, nullptr};
   model.UpdateOpIOAddrs(task_id, stream_id, io_addr);
 }
+TEST_F(UtestDavinciModel, get_total_memsize_exclude_zero_copy) {
+  DavinciModel model(0, nullptr);
+  model.runtime_param_.mem_size = 1024;
+  model.runtime_param_.zero_copy_size = 2048;
+  int64_t total_useful_size = 0;
+  EXPECT_EQ(model.GetTotalMemSizeExcludeZeroCopy(total_useful_size), FAILED);
+  EXPECT_EQ(total_useful_size, 0);
+  model.runtime_param_.zero_copy_size = 512;
+  EXPECT_EQ(model.GetTotalMemSizeExcludeZeroCopy(total_useful_size), SUCCESS);
+  EXPECT_EQ(total_useful_size, 512);
+}
 }  // namespace ge

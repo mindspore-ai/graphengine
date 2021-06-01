@@ -488,6 +488,8 @@ void DavinciModel::InitRuntimeParams() {
   session_scope_mem_info.memory_size = static_cast<size_t>(ret ? value : 0);
   runtime_param_.memory_infos[kSessionScopeMemory | RT_MEMORY_HBM] = std::move(session_scope_mem_info);
 
+  ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_ZERO_COPY_MEMORY_SIZE, value);
+  runtime_param_.zero_copy_size = ret ? value : 0;
   GELOGI("InitRuntimeParams(), %s.", runtime_param_.ToString().c_str());
 }
 
@@ -4504,5 +4506,23 @@ void DavinciModel::UpdateOpIOAddrs(uint32_t task_id, uint32_t stream_id, const s
   op_desc_info->input_addrs = input_addrs;
   op_desc_info->output_addrs = output_addrs;
   GELOGD("[Update][OpIOAddrs] Op [%s] update input output addr success.", op_desc_info->op_name.c_str());
+}
+
+///
+/// @ingroup ge
+/// @brief Get total useful size, in known subgraph, no need to allocate zero copy memory during initialization.
+/// @param [in] total_useful_size: total mem size - zero copy size.
+/// @return Status
+///
+Status DavinciModel::GetTotalMemSizeExcludeZeroCopy(int64_t &total_useful_size) {
+  if (runtime_param_.mem_size < static_cast<uint64_t>(runtime_param_.zero_copy_size)) {
+    REPORT_CALL_ERROR("E19999", "total mem size[%lu] is less than zero copy size[%ld] ", runtime_param_.mem_size,
+                      runtime_param_.zero_copy_size);
+    GELOGE(FAILED, "[Check][TotalMemSizeExcludeZeroCopy] failed, total mem size[%lu] is less than zero copy size[%ld]",
+           runtime_param_.mem_size, runtime_param_.zero_copy_size);
+    return FAILED;
+  }
+  total_useful_size = runtime_param_.mem_size - runtime_param_.zero_copy_size;
+  return SUCCESS;
 }
 }  // namespace ge

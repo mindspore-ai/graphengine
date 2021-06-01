@@ -39,6 +39,10 @@ const std::map<std::string, std::vector<uint32_t>>
 
 const std::set<std::string> DependInputShapeTask::depend_input_shape_ops_ = {SHAPE, SHAPEN, RANK, SIZE};
 
+const std::set<std::string> ConstantNodeTask::constant_like_task_ops_ = {CONSTANT, CONSTANTOP, VARIABLE};
+
+const std::set<std::string> NoOpNodeTask::control_only_task_ops_ = {NOOP, CONTROLTRIGGER};
+
 Status RefInputTask::UpdateArgs(TaskContext &) {
   // no need update args
   return SUCCESS;
@@ -244,7 +248,7 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
              node->GetName().c_str(), node_type.c_str());
       return MEMALLOC_FAILED;
     }
-  } else if (node_type == CONSTANT || node_type == CONSTANTOP || node_type == VARIABLE) {
+  } else if (ConstantNodeTask::IsBelong(node_type)) {
     GELOGI("node %s type %s, use ConstantNodeTask.", node->GetName().c_str(), node_type.c_str());
     auto tensor = model.GetTensor(node);
     if (tensor == nullptr) {
@@ -254,7 +258,7 @@ Status GeLocalNodeExecutor::LoadTask(const HybridModel &model,
     }
     task = MakeShared<ConstantNodeTask>(tensor);
     GE_CHECK_NOTNULL(task);
-  } else if (node_type == NOOP) {
+  } else if (NoOpNodeTask::IsBelong(node_type)) {
     GELOGI("node %s type %s , use NoOpNodeTask.", node->GetName().c_str(), node_type.c_str());
     task = MakeShared<NoOpNodeTask>();
     if (task == nullptr) {
@@ -288,6 +292,10 @@ Status ConstantNodeTask::ExecuteAsync(TaskContext &context, std::function<void()
   return SUCCESS;
 }
 
+bool ConstantNodeTask::IsBelong(const std::string &op_type) {
+  return constant_like_task_ops_.count(op_type) > 0;
+}
+
 Status NoOpNodeTask::UpdateArgs(TaskContext &context) {
   // no need to update args
   return SUCCESS;
@@ -298,6 +306,10 @@ Status NoOpNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   GE_CHK_STATUS_RET(context.TryExecuteCallback(done_callback));
   GELOGD("[%s] Done execute successfully.", context.GetNodeName());
   return SUCCESS;
+}
+
+bool NoOpNodeTask::IsBelong(const std::string &op_type) {
+  return control_only_task_ops_.count(op_type) > 0;
 }
 }  // namespace hybrid
 }  // namespace ge

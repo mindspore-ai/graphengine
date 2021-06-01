@@ -75,8 +75,10 @@ class ConstantNodeTask : public NodeTask {
   Status UpdateArgs(TaskContext &context) override;
 
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+  static bool IsBelong(const std::string &op_type);
 
  private:
+  static const std::set<std::string> constant_like_task_ops_;
   const TensorValue *tensor_;
 };
 
@@ -86,6 +88,10 @@ class NoOpNodeTask : public NodeTask {
   ~NoOpNodeTask() = default;
   Status UpdateArgs(TaskContext &context) override;
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+  static bool IsBelong(const std::string &op_type);
+
+ private:
+  static const std::set<std::string> control_only_task_ops_;
 };
 
 class GeLocalNodeExecutor : public NodeExecutor {

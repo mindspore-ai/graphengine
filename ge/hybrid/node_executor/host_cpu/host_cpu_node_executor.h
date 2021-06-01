@@ -27,7 +27,7 @@ namespace hybrid {
 class HostAicpuNodeTask : public AicpuNodeTask {
  public:
   HostAicpuNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def)
-     : AicpuNodeTask(node_item, task_def) {}
+      : AicpuNodeTask(node_item, task_def) {}
   ~HostAicpuNodeTask() override = default;
 
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;

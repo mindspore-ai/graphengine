@@ -92,7 +92,7 @@ Status HostAicpuNodeTask::Execute(TaskContext &context) {
   } else {
     REPORT_CALL_ERROR("E19999", "Run cpu kernel failed node:%s, cpu kernel is not initialized.", node_name_.c_str());
     GELOGE(INTERNAL_ERROR,
-           "[Run][Kernel]Run cpu kernel failed node:%s, cpu kernel is not initialized.",node_name_.c_str());
+           "[Run][Kernel]Run cpu kernel failed node:%s, cpu kernel is not initialized.", node_name_.c_str());
     return INTERNAL_ERROR;
   }
 
@@ -127,7 +127,7 @@ Status HostCpuNodeExecutor::ValidateTaskDef(const domi::TaskDef &task_def) {
     return INTERNAL_ERROR;
   }
   auto kernel_type = static_cast<ccKernelType>(task_def.kernel().context().kernel_type());
-  if (kernel_type != ccKernelType::AI_CPU) {
+  if (kernel_type != ccKernelType::HOST_CPU) {
     REPORT_INNER_ERROR("E19999", "Invalid kernel type(%d) in host cpu excutor.",
                        static_cast<int>(kernel_type));
     GELOGE(INTERNAL_ERROR,

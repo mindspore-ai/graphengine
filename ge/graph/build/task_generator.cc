@@ -193,7 +193,7 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
   vector<int64_t> input_offsets = op_desc->GetInputOffset();
   if (!(input_offsets.empty())) {
     vector<bool> input_var;
-    int64_t valid_input_index = 0;
+    size_t valid_input_index = 0;
     for (uint32_t i = 0; i < op_desc->GetAllInputsSize(); i++) {
       vector<int64_t> output_list;
       auto input_tensor_desc = op_desc->MutableInputDesc(i);
@@ -220,7 +220,7 @@ Status TaskGenerator::UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t sessi
   vector<int64_t> output_offsets = op_desc->GetOutputOffset();
   if (!(output_offsets.empty())) {
     vector<bool> output_var;
-    int64_t valid_output_index = 0;
+    size_t valid_output_index = 0;
     for (uint32_t i = 0; i < op_desc->GetAllOutputsDescSize(); i++) {
       vector<int64_t> output_list;
       auto output_tensor_desc = op_desc->MutableOutputDesc(i);

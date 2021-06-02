@@ -543,7 +543,6 @@ Status GraphMemoryAssigner::UpdateRefOpOffsetReverse(const NodePtr &node) {
 }
 
 Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
-  Status ret;
   // Stored nodes which need assign continuous input memory in `reverse topo order`
   std::vector<NodePtr> nodes_stack;
   std::map<NodePtr, uint32_t> node_2_continuous_type;

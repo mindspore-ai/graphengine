@@ -2394,6 +2394,10 @@ Status HybridModelBuilder::CreateMergeEnterGroup(const NodePtr &node, NodeItem *
   // Enter --> StreamActive --> StreamMerge
   for (const auto &dst_node : node->GetOutControlNodes()) {
     GE_CHECK_NOTNULL(dst_node);
+    if (dst_node->GetType() != STREAMMERGE) {
+      GELOGI("[%s] Skip Not StreamMerge node [%s]", node->GetName().c_str(), dst_node->GetName().c_str());
+      continue;
+    }
     NodeItem *dst_node_item = nullptr;
     GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
                       "[%s] failed to get or create node item", dst_node->GetName().c_str());
@@ -2459,7 +2463,7 @@ Status HybridModelBuilder::CreateStreamActiveGroup(const NodePtr &node, NodeItem
   if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsEnterNode)) {
     // Enter --> StreamActive --> StreamMerge
     return CreateMergeEnterGroup(node, node_item);
-  } else if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsIterationNode))  {
+  } else if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsIterationNode)) {
     // NextIteration --> StreamActive {-->} StreamMerge
     return CreateMergeIterationGroup(node, node_item);
   }

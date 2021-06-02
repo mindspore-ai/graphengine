@@ -565,13 +565,6 @@ NodePtr SwitchToStreamSwitchPass::CreateActiveNode(const ComputeGraphPtr &graph,
                                      op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
                    return nullptr, "Create StreamActive node failed.");
 
-  GE_IF_BOOL_EXEC(GraphUtils::AddEdge(node->GetOutControlAnchor(), active_node->GetInControlAnchor()) != SUCCESS,
-                  REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
-                                    node->GetName().c_str(), node->GetType().c_str(),
-                                    active_node->GetName().c_str(), active_node->GetType().c_str());
-                  GELOGE(INTERNAL_ERROR, "add edge failed");
-                  return nullptr);
-
   GE_IF_BOOL_EXEC(SetSwitchBranchNodeLabel(active_node, node_name) != SUCCESS,
                   REPORT_CALL_ERROR("E19999", "Set switch branch node label:%s to node:%s(%s) failed",
                                     node_name.c_str(), active_node->GetName().c_str(), active_node->GetType().c_str());

@@ -121,8 +121,8 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   add1->GetOpDesc()->SetOpKernelLibName("AIcoreEngine");
   auto next1 = CreateNode(*graph, "next", NEXTITERATION, 1, 1);
   auto exit1 = CreateNode(*graph, "exit", EXIT, 1, 1);
-  auto value0 = CreateNode(*graph, "const", CONSTANT, 0, 1);
-  auto value1 = CreateNode(*graph, "const", CONSTANT, 0, 1);
+  auto value0 = CreateNode(*graph, "const1", CONSTANT, 0, 1);
+  auto value1 = CreateNode(*graph, "const2", CONSTANT, 0, 1);
   auto active1 = CreateNode(*graph, "active1", STREAMACTIVE, 0, 0);
   auto active2 = CreateNode(*graph, "active2", STREAMACTIVE, 0, 0);
   auto active3 = CreateNode(*graph, "active3", STREAMACTIVE, 0, 0);
@@ -151,14 +151,17 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   GraphUtils::AddEdge(enter1->GetOutControlAnchor(), active1->GetInControlAnchor());
   GraphUtils::AddEdge(active1->GetOutControlAnchor(), merge1->GetInControlAnchor());
 
+  GraphUtils::AddEdge(next1->GetOutControlAnchor(), active3->GetInControlAnchor());
+  //GraphUtils::AddEdge(active3->GetOutControlAnchor(), merge1->GetInControlAnchor());
+  SetNextIteration(merge1, next1);
+
+  GraphUtils::AddEdge(active1->GetOutControlAnchor(), switch_t->GetInControlAnchor());  // Test for not merge.
+
   GraphUtils::AddEdge(loop1->GetOutControlAnchor(), active2->GetInControlAnchor());
   GraphUtils::AddEdge(active2->GetOutControlAnchor(), switch_f->GetInControlAnchor());
   GraphUtils::AddEdge(active2->GetOutControlAnchor(), switch_t->GetInControlAnchor());
 
-  GraphUtils::AddEdge(next1->GetOutControlAnchor(), active3->GetInControlAnchor());
-
   GraphUtils::AddEdge(exit1->GetOutDataAnchor(0), output1->GetInDataAnchor(0));
-  SetNextIteration(merge1, next1);
 
   AttrUtils::SetBool(enter1->GetOpDesc(), ATTR_NAME_INSERT_FP_PROFILILNG_TASK, true);
   AttrUtils::SetBool(output1->GetOpDesc(), ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);

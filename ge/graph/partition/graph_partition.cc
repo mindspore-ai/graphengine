@@ -427,7 +427,7 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   const string pld_name = kPlaceHolderType + std::to_string(graph_info_.num_of_pld_end_);
   auto pld_op_desc = MakeShared<OpDesc>(pld_graph->GetName() + "_" + pld_name, PLACEHOLDER);
   GE_CHECK_NOTNULL(pld_op_desc);
-  
+
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "peerIndex", graph_info_.num_of_pld_end_),
                   GELOGW("SetInt peerIndex failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "_peerNodeName", new_end_node->GetName()),

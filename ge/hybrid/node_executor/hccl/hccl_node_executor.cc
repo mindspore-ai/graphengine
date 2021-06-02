@@ -20,6 +20,7 @@
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/util/hcom_util.h"
+#include "graph/runtime_inference_context.h"
 #include "graph/utils/type_utils.h"
 #include "graph/types.h"
 #include "hccl/hcom.h"
@@ -176,69 +177,6 @@ Status RdmaNodeTask::Init(TaskContext &context) {
   return SUCCESS;
 }
 
-Status RdmaNodeTask::SetAddrInfo(TaskContext &context, RuntimeInferenceContext *ctx, uint64_t *data, int64_t row_num,
-                                 vector<HcomRemoteAccessAddrInfo> &addr_infos) {
-  TensorValue *tv;
-  if (kRdmaReadTypes.count(context.GetNodeItem().NodeType()) > 0) {
-    tv = context.MutableOutput(local_index_);
-  } else {
-    tv = context.MutableInput(local_index_);
-  }
-  GE_CHECK_NOTNULL(tv);
-  addr_infos.resize(row_num);
-  if (skip_flag_) {
-    int32_t offset_idx = context.GetNodeItem().op_desc->GetInputIndexByName("local_offset");
-    GE_CHECK_NOTNULL(context.GetNodeItem().op_desc->GetInputDescPtr(offset_idx));
-    auto data_type = context.GetNodeItem().op_desc->GetInputDesc(offset_idx).GetDataType();
-
-    Tensor offset_tensor;
-    GE_CHK_STATUS_RET(ctx->GetTensor(offset_index_.first, offset_index_.second, offset_tensor))
-    if (static_cast<int64_t>(offset_tensor.GetSize() / GetSizeByDataType(data_type)) != row_num) {
-      REPORT_INNER_ERROR("E19999", "num of offset and remote addr mismatch, check invalid"
-                         "offset size=%zu, remote_addr size=%ld, dtype=%s", offset_tensor.GetSize(), row_num,
-                         TypeUtils::DataTypeToSerialString(data_type).c_str());
-      GELOGE(PARAM_INVALID, "[Check][Size]num of offset and remote addr mismatch,"
-             "offset size=%zu, remote_addr size=%ld, dtype=%s",
-             offset_tensor.GetSize(), row_num, TypeUtils::DataTypeToSerialString(data_type).c_str());
-      return PARAM_INVALID;
-    }
-
-    auto addr_offset = reinterpret_cast<uint64_t *>(offset_tensor.GetData());
-    GE_CHECK_NOTNULL(addr_offset);
-    auto base_addr = reinterpret_cast<float *>(tv->MutableData());
-    GE_CHECK_NOTNULL(base_addr);
-
-    for (auto idx = 0; idx < row_num; idx++) {
-      FMK_INT64_MULCHECK(idx, kVarTableRowCnt)
-      auto line_idx = idx * kVarTableRowCnt;
-      addr_infos[idx] = { static_cast<uint32_t>(data[line_idx]),
-                          data[line_idx + kVarTableIdxAddr],
-                          reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(base_addr + addr_offset[idx])),
-                          data[line_idx + kVarTableIdxLen] };
-    }
-  } else {
-    auto local_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(tv->MutableData()));
-    auto device_len = tv->GetSize() / row_num;
-    if (device_len <= 0 || device_len > data[kVarTableIdxLen]) {
-      REPORT_INNER_ERROR("E19999", "Local embedding length is out of range, expect %ld, but %ld exactly.",
-                         data[kVarTableIdxLen], device_len);
-      GELOGE(FAILED, "[Check][Size]Local embedding length is out of range, expect %ld, but %ld exactly.",
-             data[kVarTableIdxLen], device_len);
-      return FAILED;
-    }
-
-    for (auto idx = 0; idx < row_num; ++idx) {
-      FMK_INT64_MULCHECK(idx, kVarTableRowCnt)
-      auto line_idx = idx * kVarTableRowCnt;
-      addr_infos[idx] = { static_cast<uint32_t>(data[line_idx]), data[line_idx + kVarTableIdxAddr], local_addr,
-                          device_len };
-      local_addr += device_len;
-    }
-  }
-
-  return SUCCESS;
-}
-
 Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccessAddrInfo> &addr_infos) {
   RuntimeInferenceContext *ctx = nullptr;
   GE_CHK_STATUS_RET(
@@ -294,8 +232,66 @@ Status RdmaNodeTask::ExtractTensor(TaskContext &context, vector<HcomRemoteAccess
     GE_CHK_STATUS_RET(context.AllocateOutputs(&attr))
   }
 
+  TensorValue *tv;
+  if (kRdmaReadTypes.count(context.GetNodeItem().NodeType()) > 0) {
+    tv = context.MutableOutput(local_index_);
+  } else {
+    tv = context.MutableInput(local_index_);
+  }
+  GE_CHECK_NOTNULL(tv);
   auto row_num = dims.front();
-  return SetAddrInfo(context, ctx, data, row_num, addr_infos);
+  addr_infos.resize(row_num);
+  if (skip_flag_) {
+    int32_t offset_idx = context.GetNodeItem().op_desc->GetInputIndexByName("local_offset");
+    GE_CHECK_NOTNULL(context.GetNodeItem().op_desc->GetInputDescPtr(offset_idx));
+    auto data_type = context.GetNodeItem().op_desc->GetInputDesc(offset_idx).GetDataType();
+
+    Tensor offset_tensor;
+    GE_CHK_STATUS_RET(ctx->GetTensor(offset_index_.first, offset_index_.second, offset_tensor))
+    if (static_cast<int64_t>(offset_tensor.GetSize() / GetSizeByDataType(data_type)) != row_num) {
+      REPORT_INNER_ERROR("E19999", "num of offset and remote addr mismatch, check invalid"
+                         "offset size=%zu, remote_addr size=%ld, dtype=%s", offset_tensor.GetSize(), row_num,
+                         TypeUtils::DataTypeToSerialString(data_type).c_str());
+      GELOGE(PARAM_INVALID, "[Check][Size]num of offset and remote addr mismatch,"
+             "offset size=%zu, remote_addr size=%ld, dtype=%s",
+             offset_tensor.GetSize(), row_num, TypeUtils::DataTypeToSerialString(data_type).c_str());
+      return PARAM_INVALID;
+    }
+
+    auto addr_offset = reinterpret_cast<uint64_t *>(offset_tensor.GetData());
+    GE_CHECK_NOTNULL(addr_offset);
+    auto base_addr = reinterpret_cast<float *>(tv->MutableData());
+    GE_CHECK_NOTNULL(base_addr);
+
+    for (auto idx = 0; idx < row_num; idx++) {
+      FMK_INT64_MULCHECK(idx, kVarTableRowCnt)
+      auto line_idx = idx * kVarTableRowCnt;
+      addr_infos[idx] = { static_cast<uint32_t>(data[line_idx]),
+                          data[line_idx + kVarTableIdxAddr],
+                          reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(base_addr + addr_offset[idx])),
+                          data[line_idx + kVarTableIdxLen] };
+    }
+  } else {
+    auto local_addr = reinterpret_cast<uint64_t>(reinterpret_cast<uintptr_t>(tv->MutableData()));
+    auto device_len = tv->GetSize() / row_num;
+    if (device_len <= 0 || device_len > data[kVarTableIdxLen]) {
+      REPORT_INNER_ERROR("E19999", "Local embedding length is out of range, expect %ld, but %ld exactly.",
+                         data[kVarTableIdxLen], device_len);
+      GELOGE(FAILED, "[Check][Size]Local embedding length is out of range, expect %ld, but %ld exactly.",
+             data[kVarTableIdxLen], device_len);
+      return FAILED;
+    }
+
+    for (auto idx = 0; idx < row_num; ++idx) {
+      FMK_INT64_MULCHECK(idx, kVarTableRowCnt)
+      auto line_idx = idx * kVarTableRowCnt;
+      addr_infos[idx] = { static_cast<uint32_t>(data[line_idx]), data[line_idx + kVarTableIdxAddr], local_addr,
+                          device_len };
+      local_addr += device_len;
+    }
+  }
+
+  return SUCCESS;
 }
 
 Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {

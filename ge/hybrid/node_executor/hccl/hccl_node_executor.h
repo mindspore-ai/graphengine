@@ -18,7 +18,6 @@
 #define HYBRID_HCCL_NODE_EXECUTOR_H_
 #include "common/opskernel/ge_task_info.h"
 #include "graph/op_desc.h"
-#include "graph/runtime_inference_context.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/node_executor/node_executor.h"
 
@@ -54,8 +53,6 @@ class RdmaNodeTask : public NodeTask {
   Status Init(TaskContext &context) override;
 
  private:
-  Status SetAddrInfo(TaskContext &context, RuntimeInferenceContext *ctx, uint64_t *data, int64_t row_num,
-                     vector<HcomRemoteAccessAddrInfo> &addr_infos);
   Status ExtractTensor(TaskContext &context, vector<HcomRemoteAccessAddrInfo> &addr_infos);
   std::pair<int64_t, int64_t> remote_index_;
   std::pair<int64_t, int64_t> offset_index_;

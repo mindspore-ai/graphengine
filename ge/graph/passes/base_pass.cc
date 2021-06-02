@@ -333,11 +333,8 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
     during_pass_node_set.nodes_last.clear();
   } while ((!during_pass_node_set.nodes_re_pass.empty() || !nodes.empty()) && ++re_pass_times < kMaxRePassTimes);
 
-  if (re_pass_times == kMaxRePassTimes) {
-    GELOGW("re_pass_times should not come to %d", kMaxRePassTimes);
-  }
+  GE_IF_BOOL_EXEC(re_pass_times == kMaxRePassTimes, GELOGW("re_pass_times should not come to %d", kMaxRePassTimes));
   GELOGD("All passes runs end");
-
   return SUCCESS;
 }
 Status GEPass::RunPassesOnSubGraph(const NodePtr &node, const NamesToPass &names_to_passes, bool &has_sub_graph) {

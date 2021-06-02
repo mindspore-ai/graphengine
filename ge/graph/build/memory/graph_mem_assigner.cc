@@ -579,11 +579,8 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
     if (continuous_output) {
       GE_CHK_STATUS_RET(GetNodeMemoryType(node, memory_type, "output"),
                         "[Get][MemType]fail for node:%s", node->GetName().c_str());
-      ret = AssignContinuousOutputMemory(node, memory_type, continuous_type);
-      if (ret != ge::SUCCESS) {
-        GELOGE(ret, "[Assign][Memory:Continuous:Ouput]fail for node:%s", node->GetName().c_str());
-        return ret;
-      }
+      GE_CHK_STATUS_RET(AssignContinuousOutputMemory(node, memory_type, continuous_type),
+                        "[Assign][Memory:Continuous:Output]fail for node:%s", node->GetName().c_str());
     }
   }
   // Assign continuous input memory in `reverse topo order` which stored before

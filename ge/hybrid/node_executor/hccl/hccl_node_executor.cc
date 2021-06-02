@@ -95,8 +95,8 @@ Status HcclNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   }
   op_info.dataType = iter->second;
   HcclReduceOp op_type = HCCL_REDUCE_SUM;
-  if (op_desc->GetType() == HCOMALLREDUCE || op_desc->GetType() == HCOMREDUCESCATTER ||
-      op_desc->GetType() == HVDCALLBACKALLREDUCE || op_desc->GetType() == HCOMREDUCE) {
+  std::set<std::string> hccl_types = { HCOMALLREDUCE, HCOMREDUCESCATTER, HVDCALLBACKALLREDUCE, HCOMREDUCE };
+  if (hccl_types.count(op_desc->GetType()) > 0) {
     GE_CHK_STATUS_RET(HcomOmeUtil::GetHcclOperationType(op_desc, op_type),
                       "[Get][HcclOperationType] failed for %s type:%s", op_desc->GetName().c_str(),
                       op_desc->GetType().c_str());

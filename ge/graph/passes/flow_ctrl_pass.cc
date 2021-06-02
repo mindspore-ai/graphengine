@@ -41,9 +41,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   bool graph_change = false;
   // 1. Add FP/BP flow ctrl (big cycle)
   for (auto &node : compute_graph->GetDirectNode()) {
-    if (node == nullptr) {
-      continue;
-    }
+    GE_IF_BOOL_EXEC(node == nullptr, continue);
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
     uint32_t true_stream_id = 0;
     bool is_found = AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_TRUE_BRANCH_STREAM, true_stream_id);
@@ -65,9 +63,7 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
   // 2. Add special node flow ctrl. eg, IteratorGetNext. (small cycle)
   //    NOTE: Small cycle share the variables with big cycle.
   for (auto &node : compute_graph->GetDirectNode()) {
-    if (node == nullptr) {
-      continue;
-    }
+    GE_IF_BOOL_EXEC(node == nullptr, continue);
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
     bool need_cycle_flag = false;
     bool is_found = AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_STREAM_CYCLE_EVENT_FLAG, need_cycle_flag);

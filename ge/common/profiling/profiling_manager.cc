@@ -961,9 +961,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInp
   std::vector<DataType> input_data_type;
   for (size_t i = 0; i < op->GetAllInputsSize(); ++i) {
     GeTensorDescPtr input_tensor_desc = op->MutableInputDesc(i);
-    if (input_tensor_desc == nullptr) {
-      continue;
-    }
+    GE_IF_BOOL_EXEC(input_tensor_desc == nullptr, continue);
+
     input_format.emplace_back(input_tensor_desc->GetFormat());
     input_shape.emplace_back(input_tensor_desc->GetShape().GetDims());
     input_data_type.emplace_back(input_tensor_desc->GetDataType());
@@ -973,9 +972,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInp
   std::vector<DataType> output_data_type;
   for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
     GeTensorDescPtr output_tensor_desc = op->MutableOutputDesc(j);
-    if (output_tensor_desc == nullptr) {
-      continue;
-    }
+    GE_IF_BOOL_EXEC(output_tensor_desc == nullptr, continue);
+
     output_format.emplace_back(output_tensor_desc->GetFormat());
     output_shape.emplace_back(output_tensor_desc->GetShape().GetDims());
     output_data_type.emplace_back(output_tensor_desc->GetDataType());

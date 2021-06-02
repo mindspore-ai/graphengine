@@ -71,15 +71,13 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
     GELOGW("The number of input for slice must be %zu.", kSliceInputSize);
     return NOT_CHANGED;
   }
-
   ConstGeTensorPtr x_ = input[kSliceInputIndexX];
   ConstGeTensorPtr begin = input[kSliceInputIndexBegin];
   ConstGeTensorPtr size = input[kSliceInputIndexSize];
-  if (x_ == nullptr || begin == nullptr || size == nullptr) {
-    GELOGW("input tensor is nullptr.");
-    return NOT_CHANGED;
+  Status ret = CheckInput(x_, begin, size);
+  if (ret != SUCCESS) {
+    return ret;
   }
-
   // data type in input_x
   auto data_type = x_->GetTensorDesc().GetDataType();
   // check supported
@@ -92,11 +90,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   if (!is_success) {
     return NOT_CHANGED;
   }
-  // check data type of begin and size
-  if (begin->GetTensorDesc().GetDataType() != DT_INT32 || size->GetTensorDesc().GetDataType() != DT_INT32) {
-    GELOGW("Data type of begin and size for slice are not DT_INT32.");
-    return NOT_CHANGED;
-  }
+
 
   void *data = reinterpret_cast<void *>(const_cast<uint8_t *>(x_->GetData().data()));
   int32_t *begin_data = const_cast<int32_t *>(reinterpret_cast<const int32_t *>(begin->GetData().GetData()));
@@ -145,7 +139,7 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
     return NOT_CHANGED;
   }
 
-  Status ret = CheckOutputDims(output_dims, attr);
+  ret = CheckOutputDims(output_dims, attr);
   if (ret != SUCCESS) {
     return ret;
   }
@@ -158,6 +152,19 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   }
   v_output.push_back(output_ptr);
   GELOGI("SliceKernel success.");
+  return SUCCESS;
+}
+
+Status SliceKernel::CheckInput(const ConstGeTensorPtr x_, const ConstGeTensorPtr begin, const ConstGeTensorPtr size) {
+  if (x_ == nullptr || begin == nullptr || size == nullptr) {
+    GELOGW("input tensor is nullptr.");
+    return NOT_CHANGED;
+  }
+  // check data type of begin and size
+  if (begin->GetTensorDesc().GetDataType() != DT_INT32 || size->GetTensorDesc().GetDataType() != DT_INT32) {
+    GELOGW("Data type of begin and size for slice are not DT_INT32.");
+    return NOT_CHANGED;
+  }
   return SUCCESS;
 }
 

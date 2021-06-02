@@ -1668,42 +1668,23 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   };
   GE_MAKE_GUARD(release, callback);
   // malloc sysOpInfoList in SysOpCheckInfo
-  status = rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X", op_nums * sizeof(SysOpInfo), status);
-    GELOGE(RT_FAILED, "[Call][RtMalloc] fail, size:%zu, ret = 0x%X", op_nums * sizeof(SysOpInfo), status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
+  GE_CHK_RT_RET(rtMalloc(&d_req_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM));
   allocated_mem.push_back(d_req_op_list);
 
   // malloc sysOpInfoList in SysOpCheckResp
-  status = rtMalloc(&d_res_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X", op_nums * sizeof(SysOpInfo), status);
-    GELOGE(RT_FAILED, "[Call][RtMalloc] fail, size:%zu, ret = 0x%X", op_nums * sizeof(SysOpInfo), status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
+  GE_CHK_RT_RET(rtMalloc(&d_res_op_list, op_nums * sizeof(SysOpInfo), RT_MEMORY_HBM));
   allocated_mem.push_back(d_res_op_list);
 
   // malloc returnCodeList in SysOpCheckResp
-  status = rtMalloc(&d_ret_code_list, op_nums * sizeof(ReturnCode), RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%zu, ret = 0x%X", op_nums * sizeof(ReturnCode), status);
-    GELOGE(RT_FAILED, "[Call][RtMalloc] fail, size:%zu, ret = 0x%X", op_nums * sizeof(ReturnCode), status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
+  GE_CHK_RT_RET(rtMalloc(&d_ret_code_list, op_nums * sizeof(ReturnCode), RT_MEMORY_HBM));
   allocated_mem.push_back(d_ret_code_list);
 
   for (const auto &op_type : aicpu_optype_list) {
     SysOpInfo op_info;
     // malloc op_type name in SysOpInfo
     void *d_op_type_name = nullptr;
-    status = rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM);
-    if (status != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%lu, ret = 0x%X", op_type.length(), status);
-      GELOGE(RT_FAILED, "[Call][RtMalloc] fail, size:%lu, ret = 0x%X", op_type.length(), status);
-      return RT_ERROR_TO_GE_STATUS(status);
-    }
+    GE_CHK_RT_RET(rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM));
+
     allocated_mem.push_back(d_op_type_name);
     GE_CHK_RT(rtMemcpy(d_op_type_name, op_type.length(), op_type.c_str(), op_type.length(), RT_MEMCPY_HOST_TO_DEVICE));
     op_info.opType = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_op_type_name));
@@ -1716,12 +1697,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
     SysOpInfo op_info;
     // malloc op_type name in SysOpInfo
     void *d_op_type_name = nullptr;
-    status = rtMalloc(&d_op_type_name, op_type.size(), RT_MEMORY_HBM);
-    if (status != RT_ERROR_NONE) {
-      REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%lu, ret = 0x%X", op_type.length(), status);
-      GELOGE(RT_FAILED, "[Call][RtMalloc] fail, size:%lu, ret = 0x%X", op_type.size(), status);
-      return RT_ERROR_TO_GE_STATUS(status);
-    }
+    GE_CHK_RT_RET(rtMalloc(&d_op_type_name, op_type.length(), RT_MEMORY_HBM));
+
     allocated_mem.push_back(d_op_type_name);
     GE_CHK_RT(rtMemcpy(d_op_type_name, op_type.size(), op_type.c_str(), op_type.size(), RT_MEMCPY_HOST_TO_DEVICE));
     op_info.opType = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_op_type_name));
@@ -1745,12 +1722,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
   op_check_info_res.sysOpInfoList = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(d_res_op_list));
 
   uint32_t args_size = sizeof(SysOpCheckInfo) + sizeof(SysOpCheckResp);
-  status = rtMalloc(&args, args_size, RT_MEMORY_HBM);
-  if (status != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtMalloc fail, size:%u, ret = 0x%X", args_size, status);
-    GELOGE(RT_FAILED, "[Call][RtMalloc] fail, size:%u, ret = 0x%X", args_size, status);
-    return RT_ERROR_TO_GE_STATUS(status);
-  }
+  GE_CHK_RT_RET(rtMalloc(&args, args_size, RT_MEMORY_HBM));
+
   allocated_mem.push_back(args);
   GE_CHK_RT(rtMemcpy(args, sizeof(SysOpCheckInfo), reinterpret_cast<void *>(&op_check_info_req), sizeof(SysOpCheckInfo),
                      RT_MEMCPY_HOST_TO_DEVICE));

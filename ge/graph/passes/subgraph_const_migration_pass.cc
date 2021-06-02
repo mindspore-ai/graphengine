@@ -164,9 +164,10 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
 
         data_nodes[parent_index] = node;
         GELOGD("%s, index: %u, Data: %s", subgraph->GetName().c_str(), parent_index, node->GetName().c_str());
-      } else if ((node->GetType() == CONSTANT) && (node->GetOutDataAnchor(kZeroIndex) != nullptr)) {
+      } else if (node->GetType() == CONSTANT) {
         set<string> peer_name_list;
         const auto &out_anchor = node->GetOutDataAnchor(kZeroIndex);
+        GE_IF_BOOL_EXEC(out_anchor == nullptr, continue);
         for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
           const auto &peer_node = in_anchor->GetOwnerNode();
           // Trim subgraph node name prefix.

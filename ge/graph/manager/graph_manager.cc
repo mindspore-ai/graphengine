@@ -3532,9 +3532,8 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     return ret;
   }
   GE_TIMESTAMP_EVENT_END(SetSubgraph, "OptimizeSubgraph::SetSubGraph");
-  if ((options_.build_mode == BUILD_MODE_TUNING) &&
-      (options_.build_step == BUILD_STEP_BEFORE_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_BUILDER ||
-       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB)) {
+  std::set<string> build_steps = {BUILD_STEP_BEFORE_UB_MATCH, BUILD_STEP_AFTER_BUILDER, BUILD_STEP_AFTER_BUILDER_SUB};
+  if ((options_.build_mode == BUILD_MODE_TUNING) && (build_steps.count(options_.build_step) > 0)) {
     GE_TIMESTAMP_START(ConvertGraphToFile);
     std::string tuning_path;
     (void) GetContext().GetOption(TUNING_PATH, tuning_path);

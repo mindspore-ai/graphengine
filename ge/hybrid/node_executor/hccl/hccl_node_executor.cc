@@ -195,10 +195,10 @@ Status RdmaNodeTask::SetAddrInfo(TaskContext &context, RuntimeInferenceContext *
     GE_CHK_STATUS_RET(ctx->GetTensor(offset_index_.first, offset_index_.second, offset_tensor))
     if (static_cast<int64_t>(offset_tensor.GetSize() / GetSizeByDataType(data_type)) != row_num) {
       REPORT_INNER_ERROR("E19999", "num of offset and remote addr mismatch, check invalid"
-                                   "offset size=%zu, remote_addr size=%ld, dtype=%s", offset_tensor.GetSize(), row_num,
+                         "offset size=%zu, remote_addr size=%ld, dtype=%s", offset_tensor.GetSize(), row_num,
                          TypeUtils::DataTypeToSerialString(data_type).c_str());
       GELOGE(PARAM_INVALID, "[Check][Size]num of offset and remote addr mismatch,"
-                            "offset size=%zu, remote_addr size=%ld, dtype=%s",
+             "offset size=%zu, remote_addr size=%ld, dtype=%s",
              offset_tensor.GetSize(), row_num, TypeUtils::DataTypeToSerialString(data_type).c_str());
       return PARAM_INVALID;
     }

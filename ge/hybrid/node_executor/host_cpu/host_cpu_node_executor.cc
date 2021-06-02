@@ -170,7 +170,7 @@ Status HostCpuNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &no
     GELOGE(INTERNAL_ERROR, "[Get][Handle]Get constant folding handle failed.");
     return INTERNAL_ERROR;
   }
-  auto run_cpu_kernel = (uint32_t (*)(void *))mmDlsym(handle, "RunCpuKernel");
+  auto run_cpu_kernel = (uint32_t (*)(void *))mmDlsym(handle, "RunHostCpuKernel");
   if (run_cpu_kernel != nullptr) {
     host_aicpu_task->SetRunKernel(run_cpu_kernel);
   } else {

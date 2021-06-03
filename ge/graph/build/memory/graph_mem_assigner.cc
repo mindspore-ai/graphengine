@@ -1601,8 +1601,8 @@ ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, con
       if (has_inner_offset) {
         (void)ge::AttrUtils::SetInt(opdesc->MutableOutputDesc(out_i), ATTR_NAME_INNER_OFFSET, inner_offset);
       }
-      GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld], inner_offset[%ld]", opdesc->GetName().c_str(),
-             out_i, ref_in, input_offset, inner_offset);
+      GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld], inner_offset[%ld]",
+             opdesc->GetName().c_str(), out_i, ref_in, input_offset, inner_offset);
     }
   }
   return ge::SUCCESS;

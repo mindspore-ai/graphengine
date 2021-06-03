@@ -380,6 +380,7 @@ set(TRAIN_SRC_LIST
     "single_op/task/tbe_task_builder.cc"
     "single_op/task/aicpu_task_builder.cc"
     "single_op/task/aicpu_kernel_task_builder.cc"
+    "single_op/task/rts_kernel_task_builder.cc"
     "hybrid/common/tensor_value.cc"
     "hybrid/common/npu_memory_allocator.cc"
     "hybrid/executor/rt_callback_manager.cc"

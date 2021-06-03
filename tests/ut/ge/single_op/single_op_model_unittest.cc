@@ -25,6 +25,11 @@
 #define private public
 #include "single_op/single_op_model.h"
 #include "single_op/task/tbe_task_builder.h"
+#include "single_op/task/rts_kernel_task_builder.h"
+#include "single_op/task/op_task.h"
+#include "framework/common/helper/model_helper.h"
+#include "single_op/single_op.h"
+#include "single_op/stream_resource.h"
 #undef private
 #undef protected
 #include "graph/passes/graph_builder_utils.h"
@@ -239,4 +244,46 @@ TEST_F(UtestSingleOpModel, test_host_mem) {
   std::mutex stream_mu_;
   DynamicSingleOp single_op(0, &stream_mu_, nullptr);
   ASSERT_EQ(model.SetHostMemTensor(single_op), SUCCESS);
+}
+
+TEST_F(UtestSingleOpModel, BuildTaskList) {
+  ComputeGraphPtr graph = make_shared<ComputeGraph>("single_op");
+  GeModelPtr ge_model = make_shared<GeModel>();
+  ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
+  shared_ptr<domi::ModelTaskDef> model_task_def = make_shared<domi::ModelTaskDef>();
+  ge_model->SetModelTaskDef(model_task_def);
+  NodePtr node = nullptr;
+  {
+    auto op_desc = std::make_shared<ge::OpDesc>("memcpy", MEMCPYASYNC);
+    GeTensorDesc tensor(GeShape(), FORMAT_NCHW, DT_FLOAT);
+    op_desc->AddInputDesc(tensor);
+    op_desc->AddOutputDesc(tensor);
+    op_desc->SetInputOffset({0});
+    op_desc->SetOutputOffset({0});
+    node = graph->AddNode(op_desc); 
+
+    domi::TaskDef *task_def = model_task_def->add_task();
+    task_def->set_stream_id(0);
+    task_def->set_type(RT_MODEL_TASK_MEMCPY_ASYNC);
+    domi::MemcpyAsyncDef *memcpy_async = task_def->mutable_memcpy_async();
+    memcpy_async->set_src(0);
+    memcpy_async->set_dst(0);
+    memcpy_async->set_dst_max(512);
+    memcpy_async->set_count(1);
+    memcpy_async->set_kind(RT_MEMCPY_DEVICE_TO_DEVICE);
+    memcpy_async->set_op_index(0);
+  }
+
+  string model_data_str = "123456789";
+  SingleOpModel model("model", model_data_str.c_str(), model_data_str.size());
+  StreamResource *res = new (std::nothrow) StreamResource(1);
+  std::mutex stream_mu;
+  rtStream_t stream = nullptr;
+  rtStreamCreate(&stream, 0);
+  SingleOp single_op(res, &stream_mu, stream);
+  model.model_helper_.model_ = ge_model;
+  model.op_list_.emplace(0, node);
+  ASSERT_EQ(model.BuildTaskList(res, single_op), SUCCESS);
+  MemcpyAsyncTask mem_task;
+  ASSERT_EQ(mem_task.LaunchKernel(0), SUCCESS);
 }

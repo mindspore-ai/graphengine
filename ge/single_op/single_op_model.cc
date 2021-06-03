@@ -30,6 +30,7 @@
 #include "runtime/rt.h"
 #include "task/aicpu_task_builder.h"
 #include "task/aicpu_kernel_task_builder.h"
+#include "task/rts_kernel_task_builder.h"
 #include "task/tbe_task_builder.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/node_executor/node_executor.h"
@@ -266,7 +267,9 @@ Status SingleOpModel::ParseInputsAndOutputs() {
   for (auto &op_desc : data_ops_) {
     GE_CHK_STATUS_RET_NOLOG(ParseInputNode(op_desc));
   }
-  ParseOutputNode(netoutput_op_);
+  if (netoutput_op_ != nullptr) {
+    ParseOutputNode(netoutput_op_);
+  }
   return SUCCESS;
 }
 
@@ -323,10 +326,7 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
         OpTask *task = nullptr;
         uint64_t singleop_kernel_id = aicpu_kernel_id++;
         GELOGI("Build singleOp CCTask, kernel_id = %lu", singleop_kernel_id);
-        auto ret = BuildCpuKernelTask(task_def.kernel(), &task, singleop_kernel_id);
-        if (ret != SUCCESS) {
-          return ret;
-        }
+        GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task, singleop_kernel_id));
         task->SetModelArgs(model_name_, model_id_);
         ParseArgTable(task, single_op);
         single_op.tasks_.emplace_back(task);
@@ -345,13 +345,22 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
       bool depend_compute_flag = false;
       uint64_t singleop_kernel_id = aicpu_kernel_id++;
       GELOGI("Build singleOp TfTask, kernel_id = %lu", singleop_kernel_id);
-      auto ret = BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_kernel_id);
-      if (ret != SUCCESS) {
-        return ret;
-      }
+      GE_CHK_STATUS_RET_NOLOG(
+          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_kernel_id));
       aicpu_task->SetModelArgs(model_name_, model_id_);
       ParseArgTable(aicpu_task, single_op);
       single_op.tasks_.emplace_back(aicpu_task);
+    } else if ((task_type == RT_MODEL_TASK_MEMCPY_ASYNC) || (task_type == RT_MODEL_TASK_MEMCPY_ADDR_ASYNC)) {
+      auto kernel_def = task_def.memcpy_async();
+      auto node = op_list_[kernel_def.op_index()];
+      GE_CHECK_NOTNULL(node);
+      auto op_desc = node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      std::unique_ptr<MemcpyAsyncTask> task;
+      GE_CHK_STATUS_RET_NOLOG(RtsKernelTaskBuilder::BuildMemcpyAsyncTask(op_desc, kernel_def, model_params_, task));
+      task->SetModelArgs(model_name_, model_id_);
+      ParseArgTable(task.get(), single_op);
+      single_op.tasks_.emplace_back(task.release());
     } else {
       // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));

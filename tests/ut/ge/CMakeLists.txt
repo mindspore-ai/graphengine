@@ -585,6 +585,7 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/single_op/single_op_manager.cc"
     "${GE_CODE_DIR}/ge/single_op/task/aicpu_task_builder.cc"
     "${GE_CODE_DIR}/ge/single_op/task/aicpu_kernel_task_builder.cc"
+    "${GE_CODE_DIR}/ge/single_op/task/rts_kernel_task_builder.cc"
     "${GE_CODE_DIR}/ge/hybrid/common/tensor_value.cc"
     "${GE_CODE_DIR}/ge/hybrid/common/npu_memory_allocator.cc"
     "${GE_CODE_DIR}/ge/hybrid/executor/rt_callback_manager.cc"

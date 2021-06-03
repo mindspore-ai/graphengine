@@ -44,6 +44,9 @@ class OpTask {
   virtual Status UpdateArgTable(const SingleOpModelParam &param);
   void SetModelArgs(std::string model_name, uint32_t model_id);
   Status GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id);
+  void SetOpDesc(const OpDescPtr &op_desc) {
+    op_desc_ = op_desc;
+  }
   const OpDescPtr &GetOpdesc() const {return op_desc_;}
   Status OpenDump(rtStream_t stream);
   virtual void GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) = 0;
@@ -243,6 +246,22 @@ private:
   uint32_t dump_flag_ = RT_KERNEL_DEFAULT;
   std::string op_type_;
   uint64_t kernel_id_ = 0;
+};
+
+class MemcpyAsyncTask : public OpTask {
+ public:
+  Status LaunchKernel(rtStream_t stream) override;
+  void GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) override;
+
+ private:
+  friend class SingleOpModel;
+  friend class RtsKernelTaskBuilder;
+
+  uintptr_t addresses_[2];
+  size_t dst_max_;
+  size_t count_;
+  rtMemcpyKind_t kind_;
+  NodePtr node_;
 };
 }  // namespace ge
 

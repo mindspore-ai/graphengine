@@ -538,8 +538,8 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   GE_CHK_BOOL_RET_STATUS_NOLOG(ge::CheckLogParamValidAndSetLogLevel(log) == 0, GRAPH_PARAM_INVALID);
   options_[ge::ir_option::LOG_LEVEL] = log;
 
-  string input_shape = GetParam("input_shape");
-  string input_format = GetParam("input_format");
+  string input_shape = GetParam(ge::ir_option::INPUT_SHAPE);
+  string input_format = GetParam(ge::ir_option::INPUT_FORMAT);
   string net_format = GetParam("net_format");
 
   string dynamic_batch_size = GetParam(ge::ir_option::DYNAMIC_BATCH_SIZE);

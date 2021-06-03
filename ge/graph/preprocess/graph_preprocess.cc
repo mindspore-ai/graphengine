@@ -1430,12 +1430,12 @@ Status GraphPrepare::CheckInternalFormat(const NodePtr &input_node, const GeTens
   if (need_check_internal_format) {
     bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
     if (is_internal) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"},
-                                                      {"Input format[" +  TypeUtils::FormatToSerialString(format) + "] or origin_format[" +
-                                                       TypeUtils::FormatToSerialString(origin_format) + "]", "it is not support"});
+      ErrorManager::GetInstance().ATCReportErrMessage("E19025", {"situation", "reason"}, {"Input format[" +
+                                                      TypeUtils::FormatToSerialString(format) + "] or origin_format[" +
+                                                      TypeUtils::FormatToSerialString(origin_format) + "]",
+                                                      "it is not support"});
       GELOGE(PARAM_INVALID, "[Check][Param] Input format %s or origin_format %s is not support.",
-             TypeUtils::FormatToSerialString(format).c_str(),
-             TypeUtils::FormatToSerialString(origin_format).c_str());
+             TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::FormatToSerialString(origin_format).c_str());
       return FAILED;
     }
   }

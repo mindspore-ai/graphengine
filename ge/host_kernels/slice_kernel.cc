@@ -155,7 +155,8 @@ Status SliceKernel::Compute(const OpDescPtr attr, const std::vector<ConstGeTenso
   return SUCCESS;
 }
 
-Status SliceKernel::CheckInput(const ConstGeTensorPtr x_, const ConstGeTensorPtr begin, const ConstGeTensorPtr size) {
+Status SliceKernel::CheckInput(const ConstGeTensorPtr &x_, const ConstGeTensorPtr &begin,
+                               const ConstGeTensorPtr &size) {
   if (x_ == nullptr || begin == nullptr || size == nullptr) {
     GELOGW("input tensor is nullptr.");
     return NOT_CHANGED;

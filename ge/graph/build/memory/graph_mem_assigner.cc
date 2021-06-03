@@ -608,8 +608,8 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
   return ge::SUCCESS;
 }
 
-Status GraphMemoryAssigner::SetMemOffset(const ge::NodePtr &node, InDataAnchorPtr in_data_anchor, bool reverse_refresh,
-                                         int64_t &mem_offset, int64_t &continuous_mem_start) {
+Status GraphMemoryAssigner::SetMemOffset(const ge::NodePtr &node, const InDataAnchorPtr &in_data_anchor,
+                                         bool reverse_refresh, int64_t &mem_offset, int64_t &continuous_mem_start) {
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
   vector<int64_t> output_list_this = op_desc->GetOutputOffset();

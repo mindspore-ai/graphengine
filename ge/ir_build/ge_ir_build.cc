@@ -272,8 +272,7 @@ class Impl {
   graphStatus Init(const Graph &graph, const std::map<std::string, std::string> &options);
   graphStatus BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                          ModelBufferData &ge_models);
-  graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
-                                 bool is_dynamic_input);
+  graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, bool is_dynamic_input);
   graphStatus GetInputShapeRange(const string &input_shape_range,
                                  std::map<string, std::vector<std::pair<int64_t, int64_t>>> &name_shape_range_map,
                                  std::vector<std::vector<std::pair<int64_t, int64_t>>> &index_shape_range_map);
@@ -540,7 +539,6 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
 
   string input_shape = GetParam(ge::ir_option::INPUT_SHAPE);
   string input_format = GetParam(ge::ir_option::INPUT_FORMAT);
-  string net_format = GetParam("net_format");
 
   string dynamic_batch_size = GetParam(ge::ir_option::DYNAMIC_BATCH_SIZE);
   string dynamic_image_size = GetParam(ge::ir_option::DYNAMIC_IMAGE_SIZE);
@@ -588,7 +586,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
     return ret;
   }
   // 4.parse and init Context with input shape format and net format info
-  return this->InitDomiOmgContext(input_shape, input_format, net_format, is_dynamic_input_);
+  return this->InitDomiOmgContext(input_shape, input_format, is_dynamic_input_);
 }
 
 void Impl::SetRtSocVersion() {
@@ -687,8 +685,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
 
   return GRAPH_SUCCESS;
 }
-graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
-                                     bool is_dynamic_input) {
+graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &input_format, bool is_dynamic_input) {
   // Clear omgcontext data first
   omg_context_.input_dims.clear();
   omg_context_.user_input_dims.clear();

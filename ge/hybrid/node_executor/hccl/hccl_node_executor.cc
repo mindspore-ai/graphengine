@@ -178,7 +178,7 @@ Status RdmaNodeTask::Init(TaskContext &context) {
 
 Status RdmaNodeTask::SetAddrInfo(TaskContext &context, RuntimeInferenceContext *ctx, uint64_t *data, int64_t row_num,
                                  vector<HcomRemoteAccessAddrInfo> &addr_infos) {
-  TensorValue *tv;
+  TensorValue *tv = nullptr;
   if (kRdmaReadTypes.count(context.GetNodeItem().NodeType()) > 0) {
     tv = context.MutableOutput(local_index_);
   } else {

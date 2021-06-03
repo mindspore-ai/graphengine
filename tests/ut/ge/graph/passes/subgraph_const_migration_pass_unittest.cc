@@ -115,11 +115,11 @@ class UtestSubgraphConstMigrationPass : public testing::Test {
   }
 };
 
-TEST_F(UtestSubgraphConstMigrationPass, graph_nullptr) {
+TEST_F(UtestSubgraphConstMigrationPass, subgraph_const_migration) {
   PassManager pass_manager;
   pass_manager.AddPass("SubgraphConstMigrationPass", new (std::nothrow) SubgraphConstMigrationPass);
   ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test_graph");
   make_multibatch_graph(graph);
-  pass_manager.Run(graph);
+  EXPECT_EQ(pass_manager.Run(graph), SUCCESS);
 }
 }  // namespace ge

@@ -3725,6 +3725,8 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF;
       } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICUBE") {
+        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICUBE;
       } else {
         REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
                            TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),

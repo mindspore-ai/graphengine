@@ -1074,21 +1074,25 @@ Status HybridModelBuilder::InitVariableTensors() {
       GELOGE(INTERNAL_ERROR, "[Calculate][TensorMemSize] failed, node name:%s", it.first.c_str());
       return INTERNAL_ERROR;
     }
-    SharedMemInfo mem_info(it.first, tensor_size);
-    if (HostMemManager::Instance().MallocSharedMemory(mem_info) != SUCCESS) {
-      GELOGE(GE_GRAPH_MALLOC_FAILED, "[Malloc][SharedMemory] failed, Host variable [%s].", it.first.c_str());
-      return GE_GRAPH_MALLOC_FAILED;
+
+    // Host variable will be assigned to allocated shared memory first.
+    SharedMemInfo mem_info;
+    void *mem_addr = nullptr;
+    if (HostMemManager::Instance().QueryVarMemInfo(it.first, mem_info)) {
+      mem_addr = const_cast<void *>(MemManager::Instance().HostMemInstance(RT_MEMORY_HBM)
+                                      .Malloc(mem_info.host_aligned_ptr, tensor_size));
+    } else {
+      mem_addr = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(tensor_size);
     }
-    if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(mem_info.host_aligned_ptr,
-                                                                     tensor_size) == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "[Malloc][HostMem] for an existed GeTensor failed, Host variable [%s].",
-             it.first.c_str());
+
+    if (mem_addr == nullptr) {
+      REPORT_INNER_ERROR("E19999", "[Malloc][HostMem] for variable [%s] failed.", it.first.c_str());
+      GELOGE(MEMALLOC_FAILED, "[Malloc][HostMem] for variable [%s] failed.", it.first.c_str());
       return MEMALLOC_FAILED;
     }
     GELOGD("Host variable [%s] malloc success, size=%ld.", it.first.c_str(), tensor_size);
 
-    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_aligned_ptr->MutableGet(),
-                                                                       tensor_size));
+    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_addr, tensor_size));
     GE_CHECK_NOTNULL(tensor);
     hybrid_model_.variable_tensors_.emplace(it.first, std::move(tensor));
   }

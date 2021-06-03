@@ -66,7 +66,7 @@ class HostMemManager {
   Status Initialize();
   void Finalize() noexcept;
   Status MallocSharedMemory(SharedMemInfo &mem_nfo);
-  Status QueryVarMemInfo(const string &op_name, uint64_t &base_addr, uint64_t &data_size);
+  bool QueryVarMemInfo(const string &op_name, SharedMemInfo &mem_info);
 
  private:
   static string OpNameToShmName(const string &op_name);

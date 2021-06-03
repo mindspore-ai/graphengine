@@ -23,6 +23,7 @@
 #define protected public
 #include "hybrid/model/hybrid_model_builder.h"
 #include "hybrid/node_executor/node_executor.h"
+#include "graph/manager/host_mem_manager.h"
 
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/graph_utils.h"
@@ -259,5 +260,60 @@ TEST_F(UtestHybridModelBuilder, init_constant_op_host_) {
 
   EXPECT_EQ(hybrid_model_builder.InitConstantOps(), SUCCESS);
   EXPECT_EQ(hybrid_model_builder.hybrid_model_.variable_tensors_.size(), 2);
+}
+
+TEST_F(UtestHybridModelBuilder, init_host_var_with_host_mem) {
+ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+HybridModel hybrid_model(ge_root_model);
+HybridModelBuilder hybrid_model_builder(hybrid_model);
+
+OpDescPtr op_desc = std::make_shared<OpDesc>("host_params", VARIABLE);
+GeTensorDesc tensor_desc(GeShape(),FORMAT_NHWC,DT_FLOAT);
+TensorUtils::SetSize(tensor_desc, 512);
+op_desc->AddOutputDesc(tensor_desc);
+auto host_var = graph->AddNode(op_desc);
+
+hybrid_model.host_variable_nodes_.emplace("host_params", host_var);
+std::map<std::string, string> options;
+options["ge.exec.placement"] = "HOST";
+GetThreadLocalContext().SetGraphOption(options);
+
+EXPECT_EQ(hybrid_model_builder.InitVariableTensors(), SUCCESS);
+EXPECT_EQ(hybrid_model_builder.hybrid_model_.variable_tensors_.size(), 1);
+}
+
+TEST_F(UtestHybridModelBuilder, init_host_var_with_host_shared_mem) {
+ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+HybridModel hybrid_model(ge_root_model);
+HybridModelBuilder hybrid_model_builder(hybrid_model);
+
+OpDescPtr op_desc = std::make_shared<OpDesc>("host_params", VARIABLE);
+GeTensorDesc tensor_desc(GeShape(),FORMAT_NHWC,DT_FLOAT);
+TensorUtils::SetSize(tensor_desc, 512);
+op_desc->AddOutputDesc(tensor_desc);
+auto host_var = graph->AddNode(op_desc);
+
+hybrid_model.host_variable_nodes_.emplace("host_params", host_var);
+std::map<std::string, string> options;
+options["ge.exec.placement"] = "HOST";
+GetThreadLocalContext().SetGraphOption(options);
+
+SharedMemInfo info;
+uint8_t tmp(0);
+info.device_address = &tmp;
+std::shared_ptr<AlignedPtr> aligned_ptr = std::make_shared<AlignedPtr>(512, 16);
+info.host_aligned_ptr = aligned_ptr;
+info.fd=0;
+info.mem_size = 100;
+info.op_name = "host_params";
+HostMemManager::Instance().var_memory_base_map_["host_params"] = info;
+
+
+
+EXPECT_EQ(hybrid_model_builder.InitVariableTensors(), SUCCESS);
+EXPECT_EQ(hybrid_model_builder.hybrid_model_.variable_tensors_.size(), 1);
+HostMemManager::Instance().var_memory_base_map_.clear();
 }
 } // namespace ge

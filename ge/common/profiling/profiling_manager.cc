@@ -954,29 +954,18 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMs
       static_cast<void *>(&reporter_data), sizeof(ReporterData));
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInputOutputInfo(
-    const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
+void ProfilingManager::GetOpInputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
   std::vector<Format> input_format;
   std::vector<std::vector<int64_t>> input_shape;
   std::vector<DataType> input_data_type;
   for (size_t i = 0; i < op->GetAllInputsSize(); ++i) {
     GeTensorDescPtr input_tensor_desc = op->MutableInputDesc(i);
-    GE_IF_BOOL_EXEC(input_tensor_desc == nullptr, continue);
-
+    if (input_tensor_desc == nullptr) {
+      continue;
+    }
     input_format.emplace_back(input_tensor_desc->GetFormat());
     input_shape.emplace_back(input_tensor_desc->GetShape().GetDims());
     input_data_type.emplace_back(input_tensor_desc->GetDataType());
-  }
-  std::vector<Format> output_format;
-  std::vector<std::vector<int64_t>> output_shape;
-  std::vector<DataType> output_data_type;
-  for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
-    GeTensorDescPtr output_tensor_desc = op->MutableOutputDesc(j);
-    GE_IF_BOOL_EXEC(output_tensor_desc == nullptr, continue);
-
-    output_format.emplace_back(output_tensor_desc->GetFormat());
-    output_shape.emplace_back(output_tensor_desc->GetShape().GetDims());
-    output_data_type.emplace_back(output_tensor_desc->GetDataType());
   }
 
   std::vector<Format> format_default =  { FORMAT_NULL };
@@ -985,9 +974,34 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInp
   task_desc_info.input_format = input_format.empty() ? format_default : input_format;
   task_desc_info.input_shape = input_shape.empty() ? shape_default : input_shape;
   task_desc_info.input_data_type = input_data_type.empty() ? data_type_default : input_data_type;
+}
+
+void ProfilingManager::GetOpOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
+  std::vector<Format> output_format;
+  std::vector<std::vector<int64_t>> output_shape;
+  std::vector<DataType> output_data_type;
+  for (size_t j = 0; j < op->GetOutputsSize(); ++j) {
+    GeTensorDescPtr output_tensor_desc = op->MutableOutputDesc(j);
+    if (output_tensor_desc == nullptr) {
+      continue;
+    }
+    output_format.emplace_back(output_tensor_desc->GetFormat());
+    output_shape.emplace_back(output_tensor_desc->GetShape().GetDims());
+    output_data_type.emplace_back(output_tensor_desc->GetDataType());
+  }
+
+  std::vector<Format> format_default =  { FORMAT_NULL };
+  std::vector<std::vector<int64_t>> shape_default = { {0} };
+  std::vector<DataType> data_type_default = { DT_UNDEFINED };
   task_desc_info.output_format = output_format.empty() ? format_default : output_format;
   task_desc_info.output_shape = output_shape.empty() ? shape_default : output_shape;
   task_desc_info.output_data_type = output_data_type.empty() ? data_type_default : output_data_type;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInputOutputInfo(
+    const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
+  GetOpInputInfo(op, task_desc_info);
+  GetOpOutputInfo(op, task_desc_info);
 }
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpPoint(

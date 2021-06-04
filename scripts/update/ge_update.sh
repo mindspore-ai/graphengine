@@ -34,6 +34,19 @@ function extract_deps_so()
     ./${DEV_TOOLS_PACKAGE}/${FWKACL_RUN_NAME} --noexec --extract=${DEP_TMP_DIR}/fwkacllib
 }
 
+function extract_deps_so_community()
+{
+    echo "begin to extract .run file ........."
+    chmod +x ./${DRIVER_RUN_NAME_C}
+    chmod +X ./${PACKAGE_NAME_C}
+    [ -n "${DEP_TMP_DIR}" ] && rm -rf "${DEP_TMP_DIR}"
+    ./${DRIVER_RUN_NAME_C} --noexec --extract=${DEP_TMP_DIR}/driver
+    ./${PACKAGE_NAME_C} --noexec --extract=${DEP_TMP_DIR}/Packages_tmp
+    ${DEP_TMP_DIR}/Packages_tmp/run_package/${ATC_RUN_NAME_C} --noexec --extract=${DEP_TMP_DIR}/atc
+    ${DEP_TMP_DIR}/Packages_tmp/run_package/${ACL_RUN_NAME_C} --noexec --extract=${DEP_TMP_DIR}/acllib
+    ${DEP_TMP_DIR}/Packages_tmp/run_package/${FWKACL_RUN_NAME_C} --noexec --extract=${DEP_TMP_DIR}/fwkacllib
+}
+
 function copy_so_to_target_dir()
 {
     mkdir -p $DEP_LIB_DIR
@@ -59,7 +72,19 @@ function download_runs()
         wget --user=${DEP_USER} --password=${DEP_PASSWORD}  ${DRIVER_URL}
         wget --user=${DEP_USER} --password=${DEP_PASSWORD}  ${DEV_TOOLS_URL}
     popd >/dev/null
+}
 
+function download_runs_from_community
+{
+    source scripts/update/deps_config_community.sh
+    echo "begin to download .run file from community........."
+    clear_libs
+    mkdir -p ./ ${DOWNLOAD_PATH}
+    pushd "${DOWNLOAD_PATH}" >/dev/null
+        cd ${DOWNLOAD_PATH} 
+        wget ${DRIVER_URL_C}
+        wget ${PACKAGE_URL_C}
+    popd >/dev/null
 }
 
 function install_deps()
@@ -73,6 +98,17 @@ function install_deps()
     popd >/dev/null
 }
 
+function install_deps_community()
+{
+    source scripts/update/deps_config_community.sh
+    mkdir -p ./ ${DOWNLOAD_PATH}
+    pushd "${DOWNLOAD_PATH}" >/dev/null
+        cd ${DOWNLOAD_PATH}
+        extract_deps_so_community
+        copy_so_to_target_dir
+    popd >/dev/null
+}
+
 
 function help(){
     cat <<-EOF
@@ -81,6 +117,7 @@ Usage: ge update [OPTIONS]
 update dependencies of build and test
 
 Options:
+    -p, --public       Download dependencies from community
     -d, --download     Download dependencies
     -i, --install      Install dependencies
     -c, --clear        Clear dependencies 
@@ -90,20 +127,24 @@ EOF
 }
 
 function parse_args(){
-    parsed_args=$(getopt -a -o dich --long download,install,clear,help -- "$@") || {
+    parsed_args=$(getopt -a -o pdich --long public,download,install,clear,help -- "$@") || {
         help
         exit 1
     }
 
     if [ $# -lt 1 ]; then
-        download_runs
-        install_deps
+        download_runs_from_community
+        install_deps_community
         exit 1
     fi
 
     eval set -- "$parsed_args"
     while true; do
         case "$1" in
+            -p | --public)
+                download_runs_from_community
+                install_deps_community
+                ;;
             -d | --download)
                 download_runs
                 ;;

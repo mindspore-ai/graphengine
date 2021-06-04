@@ -1475,9 +1475,11 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
       GeTensorDesc desc(user_input[index].GetTensorDesc());
       // data maybe internal format [FRACTAL_NZ] at singleop process such as GEMM.
       auto tune_flag = (options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_BUILDER);
-      GE_CHK_STATUS_RET(CheckInternalFormat(input_node, desc, tune_flag), "[Check][InternalFormat] on %s failed.",
-                        op->GetName().c_str());
-
+      ret = CheckInternalFormat(input_node, desc, tune_flag);
+      if (ret != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "[Check][InternalFormat] on %s failed", op->GetName().c_str());
+        return ret;
+      }
       auto data_type = desc.GetDataType();
       uint32_t length = 1;
       bool type_ret = TypeUtils::GetDataTypeLength(data_type, length);

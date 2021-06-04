@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,26 @@ REG_OP(Dequantize)
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .ATTR(mode, String, "MIN_COMBINED")
     .OP_END_FACTORY_REG(Dequantize)
+
+/**
+*@brief Quantizes the input . \n
+*@par Inputs:
+*x:  shape and dtype of input_x. \n
+*scales: shape and dtype of input_scales. \n
+*zero_points: shape and dtype of input_zero_points \n
+*@par Attributes:
+*@li axis: the processed dim. \n
+*@par Outputs:
+*y: shape and dtype of output_y, should be same shape as input, dtype is same as the quantified type . \n
+*/
+REG_OP(Quantize)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(scales, TensorType({DT_FLOAT}))
+    .INPUT(zero_points, TensorType({DT_INT8,DT_UINT8,DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT8,DT_UINT8,DT_INT32}))
+    .REQUIRED_ATTR(dtype, String)
+    .ATTR(axis, Int, 1)
+    .OP_END_FACTORY_REG(Quantize)
 
 /**
 *@brief Quantizes the input . \n
@@ -194,7 +214,7 @@ REG_OP(AscendRequant)
 *@brief Requantizes the input of int16 . \n
 
 *@par Inputs:
-*@li x: An NC1HWC0 tensor of type int16, specifying the input.
+*@li x0: An NC1HWC0 tensor of type int16, specifying the input.
 *@li req_scale: An NC1HWC0 tensor of type uint64, specifying the scaling ratio.
 *@li x1: An NC1HWC0 tensor of type int16 . \n
 
@@ -203,17 +223,17 @@ REG_OP(AscendRequant)
 *@li relu_flag: A optional bool, specifying whether to perform ReLU, either "True" or "False". Defaults to "False" . \n
 
 *@par Outputs:
-*@li y: The dequantized output tensor of type int8 and with format NC1HWC0.
+*@li y0: The dequantized output tensor of type int8 and with format NC1HWC0.
 *@li y1: The dequantized output tensor of type int16 and with format NC1HWC0 . \n
 
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
 REG_OP(AscendRequantS16)
-  .INPUT(x, TensorType({DT_INT16}))
+  .INPUT(x0, TensorType({DT_INT16}))
   .INPUT(req_scale, TensorType({DT_UINT64}))
   .OPTIONAL_INPUT(x1, TensorType({DT_INT16}))
-  .OUTPUT(y, TensorType({DT_INT8}))
+  .OUTPUT(y0, TensorType({DT_INT8}))
   .OUTPUT(y1, TensorType({DT_INT16}))
   .ATTR(dual_output, Bool, false)
   .ATTR(relu_flag, Bool, false)

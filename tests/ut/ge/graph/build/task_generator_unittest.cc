@@ -60,10 +60,12 @@ class UtestTaskGeneratorTest : public testing::Test {
     ge::ut::GraphBuilder builder("graph");
     auto data = builder.AddNode("data", "phony", 1, 1);
     auto addn1 = builder.AddNode("addn1", "AddN", 1, 1);
-    auto netoutput = builder.AddNode("netoutput", "NetOutput", 2, 0);
-    auto op_desc = data->GetOpDesc();
-    (void)AttrUtils::SetStr(op_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, "IteratorV2");
-    op_desc->SetOpKernelLibName("GE");
+    auto netoutput = builder.AddNode("Node_Output", "NetOutput", 2, 0);
+    auto data_desc = data->GetOpDesc();
+    (void)AttrUtils::SetStr(data_desc, ATTR_NAME_FRAMEWORK_ORIGINAL_TYPE, "IteratorV2");
+    data_desc->SetOpKernelLibName("GE");
+    auto output_desc = netoutput->GetOpDesc();
+    output_desc->SetOpKernelLibName("output");
     builder.AddDataEdge(data, 0, addn1, 0);
     builder.AddControlEdge(addn1, netoutput);
     return builder.GetGraph();
@@ -112,7 +114,7 @@ TEST_F(UtestTaskGeneratorTest, AutoFindFpOpIndex) {
 TEST_F(UtestTaskGeneratorTest, FindLastBpFromBpNode) {
   auto graph = BuildGraphBpProfiling();
   TaskGenerator task_generator(nullptr, 0);
-  auto net_output = graph->FindNode("netoutput");
+  auto net_output = graph->FindNode("Node_Output");
   // netoutput has no data input, return default value 0
   EXPECT_EQ(task_generator.FindLastBpFromBpNode(graph, net_output), 0);
 }
@@ -137,4 +139,18 @@ TEST_F(UtestTaskGeneratorTest, UpdateOpIsVarAttr) {
   EXPECT_EQ(output_var[0], true);
 
   MemManager::Instance().Finalize();
+}
+
+TEST_F(UtestTaskGeneratorTest, AutoFindBpOpIndex) {
+  auto graph = BuildGraphBpProfiling();
+  TaskGenerator task_generator(nullptr, 0);
+  auto net_output = graph->FindNode("Node_Output");
+  ProfilingPoint profiling_point;
+  vector<uint32_t> all_reduce_nodes;
+  EXPECT_EQ(task_generator.AutoFindBpOpIndex(graph, profiling_point, all_reduce_nodes), SUCCESS);
+
+  auto output_desc = net_output->GetOpDesc();
+  output_desc->SetType("HcomAllReduce");
+  output_desc->SetName("hcom");
+  EXPECT_EQ(task_generator.AutoFindBpOpIndex(graph, profiling_point, all_reduce_nodes), SUCCESS);
 }

@@ -428,7 +428,7 @@ Status ExecutionEngine::ValidateInputTensors(const NodeState &node_state, const 
     }
 
     int64_t expected_size;
-    GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, expected_size));
+    (void)TensorUtils::GetSize(*tensor_desc, expected_size);
     GELOGD("[%s] Input[%d] expects [%ld] bytes.", task_context.GetNodeName(), i, expected_size);
     auto size_diff = expected_size - static_cast<int64_t>(input_tensor->GetSize());
     if (size_diff > 0) {

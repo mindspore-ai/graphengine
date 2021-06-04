@@ -47,6 +47,11 @@ Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
     return RT_FAILED;
   }
 
+  if (value == RT_CAPABILITY_NOT_SUPPORT) {
+    GELOGW("Not support zero copy, skip it.");
+    return SUCCESS;
+  }
+
   for (auto &node : graph->GetAllNodes()) {
     auto op_desc = node->GetOpDesc();
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);

@@ -114,6 +114,7 @@
 #include "graph/common/local_context.h"
 #include "graph/common/omg_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
+#include "../passes/graph_builder_utils.h"
 #include "register/custom_pass_helper.h"
 #include "graph/ops_stub.h"
 #include "ge_attr_value.h"
@@ -150,6 +151,24 @@ void CreateGraph(Graph &graph) {
   std::vector<Operator> targets{flatten};
   // Graph graph("test_graph");
   graph.SetInputs(inputs).SetOutputs(outputs).SetTargets(targets);
+}
+/*      Data
+ *       |
+ *      Relu       Const
+ *       |
+ *    Netoutput
+ */
+
+ge::ComputeGraphPtr CreateGraphWithIsolatedConst() {
+  ge::ut::GraphBuilder builder("graph");
+  auto data = builder.AddNode("data", "Data", 1, 1);
+  auto relu = builder.AddNode("addn1", "Relu", 1, 1);
+  auto netoutput = builder.AddNode("Node_Output", "NetOutput", 1, 0);
+  auto const1 = builder.AddNode("const1", "Const", 0, 1);
+
+  builder.AddDataEdge(data, 0, relu, 0);
+  builder.AddDataEdge(relu, 0, netoutput, 0);
+  return builder.GetGraph();
 }
 
 TEST_F(UtestGraphManagerTest, set_and_get_add_graph_flag) {
@@ -558,3 +577,32 @@ TEST_F(UtestGraphManagerTest, test_prerunthread_failed_2) {
 //   auto ret = graph_manager.ParseInputsDimsForGetNexNosinkAndData(nodes, input_tensors);
 //   EXPECT_EQ(ret, ge::SUCCESS);
 // }
+
+TEST_F(UtestGraphManagerTest, ChangeAndDeleteConst_success) {
+  std::map<string, string> options_map;
+  options_map.insert({ge::RUN_FLAG, "0"});
+  ge::GetThreadLocalContext().SetGraphOption(options_map);
+
+  GraphId graph_id = 1;
+  GraphManager graph_manager;
+  graph_manager.options_.train_graph_flag = true;
+
+  auto graph = CreateGraphWithIsolatedConst();
+  Status status = graph_manager.ChangeConstType(graph);
+  EXPECT_EQ(status, ge::SUCCESS);
+  auto constant1 = graph->FindFirstNodeMatchType("Constant");
+  EXPECT_EQ(constant1, nullptr);
+
+  options_map.clear();
+  options_map.insert({ge::RUN_FLAG, "1"});
+  ge::GetThreadLocalContext().SetGraphOption(options_map);
+  status = graph_manager.ChangeConstType(graph);
+  EXPECT_EQ(status, ge::SUCCESS);
+  constant1 = graph->FindFirstNodeMatchType("Constant");
+  EXPECT_NE(constant1, nullptr);
+
+  status = graph_manager.RemoveIsolatedConstInThisGraph(graph);
+  EXPECT_EQ(status, ge::SUCCESS);
+  auto all_nodes = graph->GetDirectNode();
+  EXPECT_EQ(all_nodes.size(), 3);
+}

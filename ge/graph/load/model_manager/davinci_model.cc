@@ -984,11 +984,12 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
     return SUCCESS;
   }
 
-  GELOGI("Init data node: %s.", op_desc->GetName().c_str());
   auto data_index = data_op_index++;
-  if (AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
+  const auto &index_attr = GraphUtils::FindRootGraph(graph) == graph ? ATTR_NAME_INDEX : ATTR_NAME_PARENT_NODE_INDEX;
+  if (AttrUtils::GetInt(op_desc, index_attr, data_index)) {
     GELOGD("Get new index %u, old %u", data_index, data_op_index - 1);
   }
+  GELOGI("Init data node: %s, index: %u.", op_desc->GetName().c_str(), data_index);
 
   data_by_index[data_index] = op_desc;
   if (known_node_) {
@@ -4007,13 +4008,11 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
     iterator_count_++;
   }
 
-  if (!is_async_mode_) {
-    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_START));
-    ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
-                                   "[Copy][OutputData] to user failed, ret:%d, model_id:%u.", ret, model_id_);
-    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_END));
-  }
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_START));
+  ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
+                                 "[Copy][OutputData] to user failed, ret:%d, model_id:%u.", ret, model_id_);
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_END));
 
   // report model time data
   GE_IF_BOOL_EXEC(profiling_model_execute_on, (void)SinkTimeProfile(input_data));

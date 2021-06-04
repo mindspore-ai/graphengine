@@ -743,10 +743,8 @@ Status GraphOptimize::HandleMemoryRWConflict(ComputeGraphPtr &compute_graph) {
       continue;
     }
     // ignore data / netoutput of subgraph
-    if (AttrUtils::HasAttr(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX)) {
-      if (node->GetType() == DATA || node->GetType() == NETOUTPUT) {
-        continue;
-      }
+    if (IsSubgraphInputNode(node) || IsSubgraphOutputNode(node)) {
+      continue;
     }
 
     bool identity_reserved = false;

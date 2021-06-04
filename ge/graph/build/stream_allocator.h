@@ -66,7 +66,7 @@ class StreamAllocator {
   Status UpdateActiveStreamsForSwitchNode(NodePtr &switch_node);
   Status InsertActiveNodesAfterSwitch(NodePtr &switch_nodes, std::vector<NodePtr> &switch_active_nodes);
   Status UpdateActiveStreamsForActiveNode(const std::vector<std::set<int64_t>> &split_streams, NodePtr &node);
-  Status UpdateActiveStreamsForSubgraphs() const;
+  Status UpdateActiveStreamsForSubgraphs();
   bool IsActivated(int64_t stream_id) const;
   Status SetActiveStreamsForLoop();
   Status CheckStreamActived() const;
@@ -114,6 +114,7 @@ class StreamAllocator {
   std::map<int64_t, std::set<NodePtr>> specific_activated_streams_nodes_map_;
 
   std::map<NodePtr, int64_t> node_split_stream_map_;
+  std::map<int64_t, int64_t> split_ori_stream_map_;
   std::map<ComputeGraphPtr, NodePtr> subgraph_first_active_node_map_;
 
   // send events corresponding to the node

@@ -33,7 +33,7 @@ GraphContext::GraphContext(const GraphNodePtr &graph_node) {
   if (compute_graph_ == nullptr) {
     std::shared_ptr<const ge::Graph> graph = graph_node->GetGraph();
     if (graph == nullptr) {
-      GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "compute_graph by graphNode is NULL!");
+      GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[Get][Graph] failed, compute_graph by graphNode is NULL!");
       return;
     }
 
@@ -45,7 +45,7 @@ GraphContext::GraphContext(const GraphNodePtr &graph_node) {
 Status GraphContext::SetComputeGraph(const GraphNodePtr &graph_node) {
   if (graph_node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph_node is nullptr, check invalid");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "graphNode is NULL!");
+    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] graphNode is NULL!");
     return GE_GRAPH_PARAM_NULLPTR;
   }
 
@@ -56,7 +56,7 @@ Status GraphContext::SetComputeGraph(const GraphNodePtr &graph_node) {
     std::shared_ptr<const ge::Graph> graph = graph_node->GetGraph();
     if (graph == nullptr) {
       REPORT_INNER_ERROR("E19999", "Param graph in graph_node is nullptr, check invalid");
-      GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "compute_graph by graphNode is NULL!");
+      GELOGE(GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL, "[Get][Graph] failed, compute_graph by graphNode is NULL!");
       return GE_GRAPH_OPTIMIZE_COMPUTE_GRAPH_NULL;
     }
 
@@ -73,14 +73,15 @@ Status GraphContext::Finalize() const { return SUCCESS; }
 Status GraphContext::GetVariableTensor(const std::string &var_data_name, GeTensor &returned_tensor) {
   if (var_data_name.empty()) {
     REPORT_INNER_ERROR("E19999", "Param var_data_name is empty, check invalid");
-    GELOGE(GE_GRAPH_EMPTY_STRING_NAME, "Variable data name is empty!");
+    GELOGE(GE_GRAPH_EMPTY_STRING_NAME, "[Check][Param] Variable data name is empty!");
     return GE_GRAPH_EMPTY_STRING_NAME;
   }
 
   if (GetVarNodeTensorTable().empty()) {
     REPORT_INNER_ERROR("E19999", "VarNodeTensorTable is empty, var_data_name:%s, check invalid",
                        var_data_name.c_str());
-    GELOGE(GE_GRAPH_EMPTY_VARIABLE_TENSOR_TABLE, "VarNodeTensorTable is empty!");
+    GELOGE(GE_GRAPH_EMPTY_VARIABLE_TENSOR_TABLE, "[Check][Param] VarNodeTensorTable is empty, var_data_name:%s",
+           var_data_name.c_str());
     return GE_GRAPH_EMPTY_VARIABLE_TENSOR_TABLE;
   }
   for (auto &var_record : GetVarNodeTensorTable()) {
@@ -88,9 +89,8 @@ Status GraphContext::GetVariableTensor(const std::string &var_data_name, GeTenso
       returned_tensor.SetTensorDesc(var_record.second.GetTensorDesc());
       auto ret = returned_tensor.SetData(var_record.second.GetData());
       if (ret != SUCCESS) {
-        REPORT_INNER_ERROR("E19999", "SetData to tensor fail, var_data_name:%s",
-                           var_data_name.c_str());
-        GELOGE(ret, "Set Tensor data failed!");
+        REPORT_INNER_ERROR("E19999", "SetData to tensor fail, var_data_name:%s", var_data_name.c_str());
+        GELOGE(ret, "[Set][Data] to Tensor failed, var_data_name:%s", var_data_name.c_str());
         return ret;
       }
 
@@ -100,7 +100,8 @@ Status GraphContext::GetVariableTensor(const std::string &var_data_name, GeTenso
 
   REPORT_INNER_ERROR("E19999", "VarRecord with data_name:%s does not exist, check invalid",
                      var_data_name.c_str());
-  GELOGE(GE_GRAPH_VARIABLE_DOES_NOT_EXIST, "VarRecord with data_name %s does NOT exist!", var_data_name.c_str());
+  GELOGE(GE_GRAPH_VARIABLE_DOES_NOT_EXIST, "[Check][Param] VarRecord with data_name %s does NOT exist!",
+         var_data_name.c_str());
 
   return GE_GRAPH_VARIABLE_DOES_NOT_EXIST;
 }

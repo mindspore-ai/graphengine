@@ -30,13 +30,18 @@
 #define protected public
 #define private public
 #include "graph/build/task_generator.h"
+#include "graph/manager/graph_mem_manager.h"
+#include "graph/manager/graph_var_manager.h"
 #undef protected
 #undef private
 
 using namespace std;
 using namespace testing;
 using namespace ge;
-
+namespace {
+const char *const kIsInputVar = "INPUT_IS_VAR";
+const char *const kIsOutputVar = "OUTPUT_IS_VAR";
+}
 class UtestTaskGeneratorTest : public testing::Test {
  public:
   ge::ComputeGraphPtr BuildGraphFpProfiling() {
@@ -63,6 +68,31 @@ class UtestTaskGeneratorTest : public testing::Test {
     builder.AddControlEdge(addn1, netoutput);
     return builder.GetGraph();
   }
+  ge::ComputeGraphPtr BuildGraphWithVar(int64_t session_id) {
+    // init
+    MemManager::Instance().Initialize(std::vector<rtMemType_t>({RT_MEMORY_HBM}));
+    VarManager::Instance(session_id)->Init(0, 0, 0, 0);
+    ge::ut::GraphBuilder builder("graph");
+    auto var_input = builder.AddNode("var", "Variable", 1, 1);
+    auto const_input = builder.AddNode("const", "Const", 1, 1);
+    auto assign = builder.AddNode("assgin", "Assign", 2, 1);
+    // add link
+    builder.AddDataEdge(var_input, 0, assign, 0);
+    builder.AddDataEdge(const_input, 0, assign, 1);
+    // set offset
+    var_input->GetOpDesc()->SetOutputOffset({10000});
+    const_input->GetOpDesc()->SetOutputOffset({1000});
+    assign->GetOpDesc()->SetInputOffset({10100, 1000});
+    assign->GetOpDesc()->SetOutputOffset({10100});
+    // set inner offset
+    int64_t inner_offset = 100;
+    ge::AttrUtils::SetInt(assign->GetOpDesc()->MutableInputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset);
+    ge::AttrUtils::SetInt(assign->GetOpDesc()->MutableOutputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset);
+    // add var addr
+    VarManager::Instance(session_id)->var_resource_->var_offset_map_.emplace(10000, RT_MEMORY_HBM);
+
+    return builder.GetGraph();
+  }
 
  protected:
   void SetUp() {}
@@ -85,4 +115,26 @@ TEST_F(UtestTaskGeneratorTest, FindLastBpFromBpNode) {
   auto net_output = graph->FindNode("netoutput");
   // netoutput has no data input, return default value 0
   EXPECT_EQ(task_generator.FindLastBpFromBpNode(graph, net_output), 0);
+}
+
+TEST_F(UtestTaskGeneratorTest, UpdateOpIsVarAttr) {
+  int64_t session_id = 0;
+  ge::ComputeGraphPtr graph = BuildGraphWithVar(session_id);
+  graph->SetSessionID(session_id);
+  TaskGenerator task_generator(nullptr, 0);
+  auto assign = graph->FindNode("assgin");
+  task_generator.UpdateOpIsVarAttr(assign->GetOpDesc(), session_id);
+  // input
+  vector<bool> input_var;
+  AttrUtils::GetListBool(assign->GetOpDesc(), kIsInputVar, input_var);
+  EXPECT_EQ(input_var.size(), 2);
+  EXPECT_EQ(input_var[0], true);
+  EXPECT_EQ(input_var[1], false);
+  // output
+  vector<bool> output_var;
+  AttrUtils::GetListBool(assign->GetOpDesc(), kIsOutputVar, output_var);
+  EXPECT_EQ(output_var.size(), 1);
+  EXPECT_EQ(output_var[0], true);
+
+  MemManager::Instance().Finalize();
 }

@@ -34,6 +34,7 @@
 #include "common/ge/tbe_plugin_manager.h"
 #include "common/util/error_manager/error_manager.h"
 #include "toolchain/plog.h"
+#include "ir_build/option_utils.h"
 
 using domi::OpRegistry;
 using std::map;
@@ -69,14 +70,19 @@ Status CheckOptionsValid(const std::map<string, string> &options) {
   auto job_id_iter = options.find(OPTION_EXEC_JOB_ID);
   if (job_id_iter != options.end()) {
     if (job_id_iter->second.length() > kMaxStrLen) {
-      GELOGE(PARAM_INVALID,"[Check][JobId]Failed,"
+      GELOGE(PARAM_INVALID, "[Check][JobId]Failed,"
              "the job_id [%s] string length: %zu > max string length: %d",
              job_id_iter->second.c_str(), job_id_iter->second.length(), kMaxStrLen);
-      REPORT_INPUT_ERROR("E10051", std::vector<std::string>({"id","length"}),
+      REPORT_INPUT_ERROR("E10051", std::vector<std::string>({"id", "length"}),
                          std::vector<std::string>({job_id_iter->second,
                          std::to_string(kMaxStrLen)}));
       return FAILED;
     }
+  }
+
+  // check modify_mixlist is valid
+  if (ge::CheckModifyMixlistParamValid(options) != ge::SUCCESS) {
+    return FAILED;
   }
 
   return SUCCESS;
@@ -244,7 +250,7 @@ std::string GEGetWarningMsg() {
 // Initialize session，which calls innerSession
 Session::Session(const std::map<string, string> &options) {
   ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
-  GELOGT(TRACE_INIT, "Session Constructor start");
+  GELOGT(TRACE_INIT, "Start to construct session.");
 
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
   // check init status
@@ -332,7 +338,7 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
 // session destructor
 Session::~Session() {
   ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
-  GELOGT(TRACE_INIT, "Session Destructor start");
+  GELOGT(TRACE_INIT, "Start to destruct session.");
   // 0.check init status
   if (!g_ge_initialized) {
     GELOGW("GE is not yet initialized or is finalized.");
@@ -602,16 +608,16 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
 Status Session::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const std::vector<Tensor> &inputs,
                                         std::vector<Tensor> &outputs) {
   ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
-  GELOGT(TRACE_INIT, "Session run graph with stream async start");
+  GELOGT(TRACE_INIT, "Start to run graph with stream async.");
 
   ErrorManager::GetInstance().GenWorkStreamIdBySessionGraph(sessionId_, graph_id);
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED,
-           "[Run][Graph]Run graph with stream asyn failed, the GELib instance is nullptr,"
+           "[Run][Graph]Run graph with stream async failed, the GELib instance is nullptr,"
            "session id = %lu, graph id = %u, stream = %p.", sessionId_, graph_id, stream);
     REPORT_INNER_ERROR("E19999",
-                       "Run graph with stream asyn failed, the GELib instance is nullptr"
+                       "Run graph with stream async failed, the GELib instance is nullptr"
                        "session id = %lu, graph id = %u, stream = %p.", sessionId_, graph_id, stream);
     return FAILED;
   }

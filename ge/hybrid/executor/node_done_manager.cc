@@ -121,5 +121,10 @@ void NodeDoneManager::Reset(const NodePtr &node) {
     GELOGD("[%s] Node reset.", node->GetName().c_str());
   }
 }
+
+void NodeDoneManager::Reset() {
+  subjects_.clear();
+  destroyed_ = false;
+}
 }  // namespace hybrid
 }  // namespace ge

@@ -15,14 +15,19 @@
  */
 
 #include "subgraph_context.h"
-
-#include "common/debug/log.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 
 namespace ge {
 namespace hybrid {
 SubgraphContext::SubgraphContext(const GraphItem *graph_item, const GraphExecutionContext *execution_context)
     : graph_item_(graph_item), execution_context_(execution_context) {
+}
+
+SubgraphContext::~SubgraphContext() {
+  if (mmRWLockDestroy(&rw_lock_) != EN_OK) {
+    REPORT_CALL_ERROR("E19999", "Destroy rw_lock failed");
+    GELOGE(INTERNAL_ERROR, "[RWLock][Destroy] Destroy rw_lock failed");
+  }
 }
 
 Status SubgraphContext::Init() {
@@ -33,8 +38,16 @@ Status SubgraphContext::Init() {
          graph_item_->TotalOutputs());
   all_inputs_.resize(static_cast<unsigned long>(graph_item_->TotalInputs()));
   all_outputs_.resize(static_cast<unsigned long>(graph_item_->TotalOutputs()));
-
+  if (mmRWLockInit(&rw_lock_) != EN_OK) {
+    REPORT_CALL_ERROR("E19999", "Init rw_lock failed");
+    GELOGE(INTERNAL_ERROR, "[RWLock][Init] Init rw_lock failed");
+    return INTERNAL_ERROR;
+  }
   return SUCCESS;
+}
+
+void SubgraphContext::SetGroup(int group) {
+  group_ = group;
 }
 
 void SubgraphContext::ResetContext(const NodePtr &node) {
@@ -42,12 +55,48 @@ void SubgraphContext::ResetContext(const NodePtr &node) {
 }
 
 NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
-  std::lock_guard<std::mutex> lk(mu_);
+  GELOGD("[%s] lock for read", node_item->NodeName().c_str());
+  if (mmRWLockRDLock(&rw_lock_) != EN_OK) {
+    REPORT_CALL_ERROR("E19999", "[Node:%s] Lock for read failed", node_item->NodeName().c_str());
+    GELOGE(INTERNAL_ERROR, "[RWLock][Lock][Node:%s] Lock for read failed", node_item->NodeName().c_str());
+    return nullptr;
+  }
+  const auto &iter = node_states_.find(node_item);
+  if (iter != node_states_.end()) {
+    auto state = iter->second;
+    GELOGD("[%s] unlock for read", node_item->NodeName().c_str());
+    if (mmRDLockUnLock(&rw_lock_) != EN_OK) {
+      REPORT_CALL_ERROR("E19999", "[Node:%s] Unlock for read failed", node_item->NodeName().c_str());
+      GELOGE(INTERNAL_ERROR, "[RWLock][Unlock][Node:%s] Unlock for read failed", node_item->NodeName().c_str());
+      return nullptr;
+    }
+    return state;
+  }
+  GELOGD("[%s] unlock for read", node_item->NodeName().c_str());
+  if (mmRDLockUnLock(&rw_lock_) != EN_OK) {
+    REPORT_CALL_ERROR("E19999", "[Node:%s] Unlock for read failed", node_item->NodeName().c_str());
+    GELOGE(INTERNAL_ERROR, "[RWLock][Unlock][Node:%s] Unlock for read failed", node_item->NodeName().c_str());
+    return nullptr;
+  }
+
+  GELOGD("[%s] lock for write", node_item->NodeName().c_str());
+  if (mmRWLockWRLock(&rw_lock_) != EN_OK) {
+    REPORT_CALL_ERROR("E19999", "[Node:%s] Lock for write failed", node_item->NodeName().c_str());
+    GELOGE(INTERNAL_ERROR, "[RWLock][Lock][Node:%s] Lock for write failed", node_item->NodeName().c_str());
+    return nullptr;
+  }
   auto &node_state = node_states_[node_item];
   if (node_state == nullptr) {
     const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
     node_state.reset(new(std::nothrow)NodeState(*node_item, this));
+    node_state->SetGroup(group_);
     (void)guard;
+  }
+  GELOGD("[%s] unlock for write", node_item->NodeName().c_str());
+  if (mmWRLockUnLock(&rw_lock_) != EN_OK) {
+    REPORT_CALL_ERROR("E19999", "[Node:%s] Unlock for write failed", node_item->NodeName().c_str());
+    GELOGE(INTERNAL_ERROR, "[RWLock][Unlock][Node:%s] Unlock for write failed", node_item->NodeName().c_str());
+    return nullptr;
   }
 
   return node_state;
@@ -143,6 +192,14 @@ void SubgraphContext::OnError(Status error) {
 
 void SubgraphContext::NodeDone(const NodePtr &node) {
   node_done_manager_.NodeDone(node);
+}
+
+void SubgraphContext::Reset() {
+  node_done_manager_.Reset();
+  if (mmRWLockWRLock(&rw_lock_) == EN_OK) {
+    node_states_.clear();
+    (void)mmWRLockUnLock(&rw_lock_);
+  }
 }
 }  // namespace hybrid
 }  // namespace ge

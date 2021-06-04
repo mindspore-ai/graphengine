@@ -438,28 +438,4 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   auto ret = mm.DataInputTensor(model_id,inputs);
   EXPECT_EQ(PARAM_INVALID, ret);    // HybridDavinciModel::impl_ is null.
 }
-
-TEST_F(UtestModelManagerModelManager, test_init_dump_properties_with_new_session_id) {
-  ModelManager model_manager;
-  uint64_t session_id = 1;
-  model_manager.InitDumPropertiesWithNewSessionId(session_id);
-}
-
-TEST_F(UtestModelManagerModelManager, test_update_session_id) {
-  ModelManager model_manager;
-  uint32_t model_id = 0;
-  uint64_t session_id = 0;
-  GeModelPtr ge_model = MakeShared<GeModel>();
-  std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
-  model_manager.UpdateSessionId(model_id, ge_model, davinci_model, session_id);
-}
-
-TEST_F(UtestModelManagerModelManager, test_has_var_node) {
-  ModelManager model_manager;
-  uint64_t session_id = 1;
-  Graph graph("test");
-  CreateGraph(graph);
-  auto compute_graph = ge::GraphUtils::GetComputeGraph(graph);
-  model_manager.HasVarNode(compute_graph);
-}
 }  // namespace ge

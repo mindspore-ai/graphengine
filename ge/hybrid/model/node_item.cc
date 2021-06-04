@@ -34,8 +34,8 @@ const std::set<std::string> kControlOpTypes{
 };
 
 const std::set<std::string> kControlFlowOpTypes{
-    STREAMACTIVE, STREAMSWITCH, STREAMSWITCHN, LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX,
-    NEXTITERATION, REFNEXTITERATION
+    STREAMACTIVE, STREAMSWITCH, STREAMSWITCHN, NEXTITERATION, REFNEXTITERATION, EXIT, REFEXIT,
+    LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX
 };
 
 const std::set<std::string> kMergeOpTypes{
@@ -401,6 +401,11 @@ void NodeItem::SetDataSend(NodeItem *node_item, int anchor_index) {
   if (is_root_node_) {
     node_item->root_data_.emplace(this);
   }
+  // If Enter feed Not Merge, take as root Node.
+  if ((kEnterOpTypes.count(node_type) > 0) && (node_item->node_type != STREAMMERGE)) {
+    node_item->root_data_.emplace(this);
+    node_item->enter_inside_.emplace(anchor_index);
+  }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
 }
 
@@ -416,8 +421,29 @@ void NodeItem::SetCtrlSend(NodeItem *node_item, uint32_t switch_index) {
   if (is_root_node_) {
     node_item->root_ctrl_.emplace(this);
   }
-
+  // If Enter feed control signal, take as root Node.
+  if (kEnterOpTypes.count(node_type) > 0) {
+    node_item->root_ctrl_.emplace(this);
+  }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
+}
+
+void NodeItem::SetMergeCtrl(NodeItem *node_item, uint32_t merge_index) {
+  if (merge_index >= switch_groups_.size()) {
+    GELOGE(FAILED, "[%s] group size: %zu, merge index: %u", NodeName().c_str(), switch_groups_.size(), merge_index);
+    return;
+  }
+
+  // this is StreamMerge node, node_item is StreamActive node.
+  std::vector<const NodeItem *> &switch_group = switch_groups_[merge_index];
+  switch_group.emplace_back(node_item);
+
+  node_item->ctrl_send_.emplace(this);
+  GELOGI("Node[%s] will control node[%s]", node_item->NodeName().c_str(), NodeName().c_str());
+}
+
+size_t NodeItem::GetMergeCtrl(uint32_t merge_index) const {
+  return ((node_type == STREAMMERGE) && (merge_index < switch_groups_.size())) ? switch_groups_[merge_index].size() : 0;
 }
 
 OptionalMutexGuard::OptionalMutexGuard(std::mutex *mutex, const string &name) : mu_(mutex), name_(name) {

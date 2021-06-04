@@ -82,6 +82,7 @@ set(SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
     "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
     "${GE_CODE_DIR}/metadef/graph/tensor.cc"
+    "${GE_CODE_DIR}/metadef/graph/types.cc"
     "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
     "${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
     "${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
@@ -115,7 +116,7 @@ target_compile_definitions(ut_libgraph PRIVATE
     google=ascend_private
 )
 
-target_link_libraries(ut_libgraph 
+target_link_libraries(ut_libgraph
     $<BUILD_INTERFACE:intf_pub>
     gtest
     gtest_main

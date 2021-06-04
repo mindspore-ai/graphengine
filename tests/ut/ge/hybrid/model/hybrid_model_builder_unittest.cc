@@ -27,6 +27,8 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/ge_local_context.h"
+#include "graph/common/omg_util.h"
 
 using namespace std;
 using namespace testing;
@@ -70,6 +72,15 @@ static NodePtr CreateNode(ComputeGraph &graph, const string &name, const string 
   return graph.AddNode(op_desc);
 }
 
+static NodePtr CreateConstantNode(const ComputeGraphPtr &graph, const string &name, size_t size) {
+  OpDescPtr op_desc = std::make_shared<OpDesc>(name, CONSTANTOP);
+  op_desc->AddOutputDesc(GeTensorDesc());
+  GeTensorPtr value = std::make_shared<GeTensor>(GeTensorDesc(), size);
+  (void)AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, value);
+
+  return graph->AddNode(op_desc);
+}
+
 TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
 /*******************************************************************************
  *      Exit         Identify
@@ -110,8 +121,8 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   add1->GetOpDesc()->SetOpKernelLibName("AIcoreEngine");
   auto next1 = CreateNode(*graph, "next", NEXTITERATION, 1, 1);
   auto exit1 = CreateNode(*graph, "exit", EXIT, 1, 1);
-  auto value0 = CreateNode(*graph, "const", CONSTANT, 0, 1);
-  auto value1 = CreateNode(*graph, "const", CONSTANT, 0, 1);
+  auto value0 = CreateNode(*graph, "const1", CONSTANT, 0, 1);
+  auto value1 = CreateNode(*graph, "const2", CONSTANT, 0, 1);
   auto active1 = CreateNode(*graph, "active1", STREAMACTIVE, 0, 0);
   auto active2 = CreateNode(*graph, "active2", STREAMACTIVE, 0, 0);
   auto active3 = CreateNode(*graph, "active3", STREAMACTIVE, 0, 0);
@@ -140,14 +151,17 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   GraphUtils::AddEdge(enter1->GetOutControlAnchor(), active1->GetInControlAnchor());
   GraphUtils::AddEdge(active1->GetOutControlAnchor(), merge1->GetInControlAnchor());
 
+  GraphUtils::AddEdge(next1->GetOutControlAnchor(), active3->GetInControlAnchor());
+  //GraphUtils::AddEdge(active3->GetOutControlAnchor(), merge1->GetInControlAnchor());
+  SetNextIteration(merge1, next1);
+
+  GraphUtils::AddEdge(active1->GetOutControlAnchor(), switch_t->GetInControlAnchor());  // Test for not merge.
+
   GraphUtils::AddEdge(loop1->GetOutControlAnchor(), active2->GetInControlAnchor());
   GraphUtils::AddEdge(active2->GetOutControlAnchor(), switch_f->GetInControlAnchor());
   GraphUtils::AddEdge(active2->GetOutControlAnchor(), switch_t->GetInControlAnchor());
 
-  GraphUtils::AddEdge(next1->GetOutControlAnchor(), active3->GetInControlAnchor());
-
   GraphUtils::AddEdge(exit1->GetOutDataAnchor(0), output1->GetInDataAnchor(0));
-  AttrUtils::SetStr(merge1->GetOpDesc(), ATTR_NAME_NEXT_ITERATION, next1->GetName());
 
   AttrUtils::SetBool(enter1->GetOpDesc(), ATTR_NAME_INSERT_FP_PROFILILNG_TASK, true);
   AttrUtils::SetBool(output1->GetOpDesc(), ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
@@ -229,5 +243,24 @@ TEST_F(UtestHybridModelBuilder, stream_switch_n_group) {
   batch_num = 3;
   AttrUtils::SetInt(switch_n->GetOpDesc(), ATTR_NAME_BATCH_NUM, batch_num);
   ASSERT_EQ(hybrid_model_builder.CreateStreamSwitchNGroup(switch_n, &node_item), SUCCESS);
+}
+
+TEST_F(UtestHybridModelBuilder, init_constant_op_host_) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  HybridModel hybrid_model(ge_root_model);
+  HybridModelBuilder hybrid_model_builder(hybrid_model);
+
+  auto const_1 = CreateConstantNode(graph, "const_1", 0);
+  hybrid_model_builder.constant_op_nodes_.emplace(const_1->GetName(), const_1);
+  auto const_2 = CreateConstantNode(graph, "const_2", 10);
+  hybrid_model_builder.constant_op_nodes_.emplace(const_2->GetName(), const_2);
+
+  std::map<std::string, string> options;
+  options["ge.exec.placement"] = "HOST";
+  GetThreadLocalContext().SetGraphOption(options);
+
+  EXPECT_EQ(hybrid_model_builder.InitConstantOps(), SUCCESS);
+  EXPECT_EQ(hybrid_model_builder.hybrid_model_.variable_tensors_.size(), 2);
 }
 } // namespace ge

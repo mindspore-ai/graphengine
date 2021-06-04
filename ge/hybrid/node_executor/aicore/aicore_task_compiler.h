@@ -34,6 +34,7 @@ class AiCoreTaskCompiler : public TaskCompiler {
   Status DoCompileOp(const NodePtr &node) const;
   Status DoGenerateTask(const Node &node, std::vector<domi::TaskDef> &tasks);
   OpsKernelInfoStorePtr aic_kernel_store_;
+  bool is_initialized_ = false;
   static std::mutex mu_;
 };
 }  // namespace hybrid

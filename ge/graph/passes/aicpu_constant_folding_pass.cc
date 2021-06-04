@@ -123,7 +123,7 @@ Status AicpuConstantFoldingPass::GetInputAddrs(const vector<ConstGeTensorPtr> &w
                                                vector<AddrAndType> &input_addrs) {
   if (weight_vec.empty()) {
     REPORT_INNER_ERROR("E19999", "Param weight_vec is empty, check invalid");
-    GELOGE(FAILED, "Weight is null");
+    GELOGE(FAILED, "[Check][Param] Weight is null");
     return FAILED;
   }
   for (const ConstGeTensorPtr &weight : weight_vec) {
@@ -135,7 +135,7 @@ Status AicpuConstantFoldingPass::GetInputAddrs(const vector<ConstGeTensorPtr> &w
     if (rt_ret != RT_ERROR_NONE) {
       REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret = 0x%X",
                         weight->GetData().size(), rt_ret);
-      GELOGE(rt_ret, "rtMemcpy error");
+      GELOGE(rt_ret, "[Call][RtMemcpy] failed, size:%zu, ret = 0x%X", weight->GetData().size(), rt_ret);
       GE_CHK_RT(rtFree(input_addr));
       return FAILED;
     }
@@ -150,7 +150,8 @@ Status AicpuConstantFoldingPass::GetOutputAddrs(const OpDescPtr &node_desc, vect
   if (node_desc->GetOutputsSize() == 0) {
     REPORT_INNER_ERROR("E19999", "Ouput desc size of op:%s(%s) is 0, check invalid",
                        node_desc->GetName().c_str(), node_desc->GetType().c_str());
-    GELOGE(FAILED, "Output size is 0 ");
+    GELOGE(FAILED, "[Get][OutputsSize] Ouput desc size of op:%s(%s) is 0",
+           node_desc->GetName().c_str(), node_desc->GetType().c_str());
     return FAILED;
   }
   for (size_t i = 0; i < node_desc->GetOutputsSize(); ++i) {
@@ -178,7 +179,7 @@ Status AicpuConstantFoldingPass::GenerateDataPtrInfo(const vector<uint64_t> &out
       if (rt_ret != RT_ERROR_NONE) {
         REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%lu, ret = 0x%X",
                           result_summary.shape_data_size, rt_ret);
-        GELOGE(rt_ret, "rtMalloc error");
+        GELOGE(rt_ret, "[Call][RtMalloc] failed, size:%lu, ret = 0x%X", result_summary.shape_data_size, rt_ret);
         GE_CHK_RT(rtFree(raw_data_addr));
         return FAILED;
       }
@@ -208,7 +209,7 @@ Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_
   // Update the workspace_addr
   if (task_info.empty()) {
     REPORT_INNER_ERROR("E19999", "Param task_info is empty, check invalid");
-    GELOGE(FAILED, "task_info is empty ");
+    GELOGE(FAILED, "[Check][Param] task_info is empty ");
     return FAILED;
   }
   void *workspace_addr = nullptr;
@@ -218,7 +219,7 @@ Status AicpuConstantFoldingPass::UpdateWorkSpaceAddr(string &task_info, STR_FWK_
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret = 0x%X",
                       task_info.size(), rt_ret);
-    GELOGE(rt_ret, "rtMemcpy error");
+    GELOGE(rt_ret, "[Call][RtMemcpy] failed, size:%zu, ret = 0x%X", task_info.size(), rt_ret);
     GE_CHK_RT(rtFree(workspace_addr));
     return FAILED;
   }
@@ -232,7 +233,7 @@ Status AicpuConstantFoldingPass::UpdateInputAndOutputAddr(const vector<uint64_t>
   auto addrs_size = sizeof(uint64_t) * (io_addrs.size());
   if (addrs_size <= 0) {
     REPORT_INNER_ERROR("E19999", "Param io_addrs size is 0, check invalid");
-    GELOGE(FAILED, "addrs_size is less than 1 ");
+    GELOGE(FAILED, "[Check][Param] addrs_size is less than 1 ");
     return FAILED;
   }
   void *input_output_addr = nullptr;
@@ -241,7 +242,7 @@ Status AicpuConstantFoldingPass::UpdateInputAndOutputAddr(const vector<uint64_t>
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret = 0x%X",
                       addrs_size, rt_ret);
-    GELOGE(rt_ret, "rtMemcpy error");
+    GELOGE(rt_ret, "[Call][RtMemcpy] failed, size:%zu, ret = 0x%X", addrs_size, rt_ret);
     GE_CHK_RT(rtFree(input_output_addr));
     return FAILED;
   }
@@ -264,12 +265,12 @@ Status AicpuConstantFoldingPass::UpdateSingleOpAddr(string &task_info, const vec
 
   Status ret = UpdateInputAndOutputAddr(io_addrs, task);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UpdateInputAndOutputAddr error");
+    GELOGE(ret, "[Update][InputAndOutputAddr] failed, ret:%d", ret);
     return ret;
   }
   ret = UpdateWorkSpaceAddr(task_info, task);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UpdateWorkSpaceAddr error");
+    GELOGE(ret, "[Update][WorkSpaceAddr] failed, ret:%d", ret);
     return ret;
   }
   return SUCCESS;
@@ -299,7 +300,7 @@ Status AicpuConstantFoldingPass::UpdateMemCopyAddr(string &task_info, const vect
       if (rt_ret != RT_ERROR_NONE) {
         REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret = 0x%X",
                           data_size, rt_ret);
-        GELOGE(rt_ret, "rtMemcpy error");
+        GELOGE(rt_ret, "[Call][RtMemcpy] failed, size:%zu, ret = 0x%X", data_size, rt_ret);
         GE_CHK_RT(rtFree(input_addr_ptr));
         return FAILED;
       }
@@ -311,12 +312,12 @@ Status AicpuConstantFoldingPass::UpdateMemCopyAddr(string &task_info, const vect
 
   Status ret = UpdateInputAndOutputAddr(io_addrs, task);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UpdateInputAndOutputAddr error");
+    GELOGE(ret, "[Update][InputAndOutputAddr] failed, ret:%d", ret);
     return ret;
   }
   ret = UpdateWorkSpaceAddr(task_info, task);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UpdateWorkSpaceAddr error");
+    GELOGE(ret, "[Update][WorkSpaceAddr] failed, ret:%d", ret);
     return ret;
   }
   return SUCCESS;
@@ -328,14 +329,14 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     REPORT_INNER_ERROR("E19999", "GeLib is not init before, check invalid");
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] GE is not initialized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
   auto kernel_builder = OpsKernelBuilderManager::Instance().GetOpsKernelBuilder(kKernelLibName);
   if (kernel_builder == nullptr) {
     REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
                        kKernelLibName);
-    GELOGE(FAILED, "Get op kernel info store failed");
+    GELOGE(FAILED, "[Get][OpsKernelBuilder] by name:%s failed", kKernelLibName);
     return FAILED;
   }
   STR_FWK_OP_KERNEL aicpu_task;
@@ -364,17 +365,17 @@ Status AicpuConstantFoldingPass::LaunchSingleOpRunTask(const NodePtr &node, cons
 
   ret = UpdateSingleOpAddr(task_info, input_addrs, output_addrs, aicpu_task);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UpdateSingleOpAddr error");
+    GELOGE(ret, "[Update][SingleOpAddr] failed, ret:%d", ret);
     return ret;
   }
   ret = GenerateTaskForLaunch(aicpu_task, task_buf);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GenerateTaskForLaunch error");
+    GELOGE(ret, "[Generate][Task] For Launch failed, ret:%d", ret);
     return ret;
   }
   ret = KernelLaunch(task_buf);
   if (ret != SUCCESS) {
-    GELOGE(ret, "KernelLaunch error");
+    GELOGE(ret, "[Call][KernelLaunch] failed, ret:%d", ret);
     return ret;
   }
 
@@ -386,14 +387,14 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     REPORT_INNER_ERROR("E19999", "GeLib is not init before, check invalid");
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] GE is not initialized");
     return GE_CLI_GE_NOT_INITIALIZED;
   }
   auto kernel_builder = OpsKernelBuilderManager::Instance().GetOpsKernelBuilder(kKernelLibName);
   if (kernel_builder == nullptr) {
     REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
                        kKernelLibName);
-    GELOGE(FAILED, "Get op kernel info store failed");
+    GELOGE(FAILED, "[Get][OpsKernelBuilder] by name:%s failed", kKernelLibName);
     return FAILED;
   }
   STR_FWK_OP_KERNEL aicpu_task;
@@ -427,17 +428,17 @@ Status AicpuConstantFoldingPass::LaunchMemCopyTask(const vector<uint64_t> &data_
 
   ret = UpdateMemCopyAddr(task_info, data_infos, internal_addrs, aicpu_task);
   if (ret != SUCCESS) {
-    GELOGE(ret, "UpdateMemCopyAddr error");
+    GELOGE(ret, "[Update][MemCopyAddr] failed, ret:%d", ret);
     return ret;
   }
   ret = GenerateTaskForLaunch(aicpu_task, task_buf);
   if (ret != SUCCESS) {
-    GELOGE(ret, "GenerateTaskForLaunch error");
+    GELOGE(ret, "[Generate][Task] For Launch failed, ret:%d", ret);
     return ret;
   }
   ret = KernelLaunch(task_buf);
   if (ret != SUCCESS) {
-    GELOGE(ret, "KernelLaunch error");
+    GELOGE(ret, "[Call][KernelLaunch] failed, ret:%d", ret);
     return ret;
   }
   return SUCCESS;
@@ -451,7 +452,7 @@ Status AicpuConstantFoldingPass::GenerateTaskForLaunch(STR_FWK_OP_KERNEL &aicpu_
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemcpy failed, size:%zu, ret = 0x%X",
                       sizeof(STR_FWK_OP_KERNEL), rt_ret);
-    GELOGE(rt_ret, "rtMemcpy error");
+    GELOGE(rt_ret, "[Call][RtMemcpy] failed, size:%zu, ret = 0x%X", sizeof(STR_FWK_OP_KERNEL), rt_ret);
     GE_CHK_RT(rtFree(task_buf));
     return FAILED;
   }
@@ -482,56 +483,56 @@ Status AicpuConstantFoldingPass::KernelLaunch(void *task_buf) {
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtModelCreate failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "create model failed.");
+    GELOGE(rt_ret, "[Create][Model] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtStreamCreate(&stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtStreamCreate failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "create stream failed.");
+    GELOGE(rt_ret, "[Create][Stream] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtModelBindStream(model, stream, 0);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtModelBindStream failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "rtModelBindStream failed.");
+    GELOGE(rt_ret, "[Call][RtModelBindStream] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtKernelLaunchEx(task_buf, sizeof(STR_FWK_OP_KERNEL), 0, stream);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtModelBindStream failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "rtKernelLaunchEx failed.");
+    GELOGE(rt_ret, "[Call][RtModelBindStream] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtModelLoadComplete(model);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtModelLoadComplete failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "rtModelLoadComplete failed.");
+    GELOGE(rt_ret, "[Call][RtModelLoadComplete] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtStreamCreate(&stream_run, 0);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtStreamCreate failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "create run stream failed.");
+    GELOGE(rt_ret, "[Call][RtStreamCreate] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtModelExecute(model, stream_run, 0);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtModelExecute failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "rtModelExecute failed.");
+    GELOGE(rt_ret, "[Call][RtModelExecute] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   rt_ret = rtStreamSynchronize(stream_run);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtStreamSynchronize failed, ret = 0x%X",
                       rt_ret);
-    GELOGE(rt_ret, "rtStreamSynchronize failed.");
+    GELOGE(rt_ret, "[Call][RtStreamSynchronize] failed, ret = 0x%X", rt_ret);
     return FAILED;
   }
   return SUCCESS;
@@ -543,7 +544,8 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
     REPORT_INNER_ERROR("E19999", "Output desc size:%zu of op:%s(%s), after multi 2, not equal to data_vec.size:%zu, "
                        "check invalid", node_desc->GetOutputsSize(),
                        node_desc->GetName().c_str(), node_desc->GetType().c_str(), data_vec.size());
-    GELOGE(FAILED, "node[%s] something wrong with output size", node_desc->GetName().c_str());
+    GELOGE(FAILED, "[Check][Param] Output desc size:%zu of op:%s(%s), after multi 2, not equal to data_vec.size:%zu",
+           node_desc->GetOutputsSize(), node_desc->GetName().c_str(), node_desc->GetType().c_str(), data_vec.size());
     return FAILED;
   }
 
@@ -552,7 +554,7 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
     GeTensorPtr output_ptr = MakeShared<GeTensor>(output_tensor_desc);
     if (output_ptr == nullptr) {
       REPORT_CALL_ERROR("E19999", "New GeTensor failed");
-      GELOGE(FAILED, "node[%s] something wrong with construct GeTensor", node_desc->GetName().c_str());
+      GELOGE(FAILED, "[New][GeTensor] failed");
       return FAILED;
     }
     const DataPtrInfo &raw_data_info = data_vec.at(i * kDouble);
@@ -561,14 +563,14 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
     if (data_addr == nullptr) {
       REPORT_CALL_ERROR("E19999", "New Buffer failed, size:%lu",
                         raw_data_size);
-      GELOGE(MEMALLOC_FAILED, "new data_addr failed");
+      GELOGE(MEMALLOC_FAILED, "[New][Buffer] failed, size:%lu", raw_data_size);
       return INTERNAL_ERROR;
     }
     GE_CHK_RT_RET(rtMemcpy(data_addr.get(), raw_data_size,
                            reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(raw_data_info.dst_ptr)), raw_data_size,
                            RT_MEMCPY_DEVICE_TO_HOST));
     GE_IF_BOOL_EXEC(output_ptr->SetData(data_addr.get(), raw_data_size) != GRAPH_SUCCESS,
-                    GELOGE(FAILED, "set data failed");
+                    GELOGE(FAILED, "[Set][Data] for node:%s output[%zu] failed", node_desc->GetName().c_str(), i);
                     return FAILED);
     GELOGD("GenerateGeTensor: raw_data_size %lu", raw_data_size);
 
@@ -586,7 +588,7 @@ Status AicpuConstantFoldingPass::GenerateGeTensor(const OpDescPtr &node_desc, co
     if (shape_addr == nullptr) {
       REPORT_CALL_ERROR("E19999", "New Buffer failed, size:%lu",
                         dim_num);
-      GELOGE(MEMALLOC_FAILED, "new shape_addr failed");
+      GELOGE(MEMALLOC_FAILED, "[New][Buffer] failed, size:%lu", dim_num);
       return INTERNAL_ERROR;
     }
     GE_CHK_RT_RET(rtMemcpy(shape_addr.get(), shape_data_size,
@@ -632,22 +634,23 @@ bool AicpuConstantFoldingPass::IsSkipFold(const ge::NodePtr &node) {
   auto instance_ptr = ge::GELib::GetInstance();
   if (instance_ptr == nullptr || !instance_ptr->InitFlag()) {
     REPORT_INNER_ERROR("E19999", "GeLib is not init before, check invalid");
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] GE is not initialized");
     return true;
   }
   OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
   if (kernel_info == nullptr) {
     REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
                        kKernelLibName);
-    GELOGE(FAILED, "Get op kernel info store failed");
+    GELOGE(FAILED, "[Get][OpsKernelInfoStore] by name:%s failed", kKernelLibName);
     return true;
   }
   std::string check_result;
   kernel_info->opsFlagCheck(*node, check_result);
   if (check_result.empty()) {
-    REPORT_CALL_ERROR("E19999", "Call opsFlagCheck faled, ops kernel name:%s, op:%s(%s)",
+    REPORT_CALL_ERROR("E19999", "Call opsFlagCheck failed, ops kernel name:%s, op:%s(%s)",
                       kKernelLibName, node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Get op check_result failed");
+    GELOGE(FAILED, "[Call][OpsFlagCheck] failed, ops kernel name:%s, op:%s(%s)",
+           kKernelLibName, node->GetName().c_str(), node->GetType().c_str());
     return true;
   }
   return check_result.substr(0, kOpsFlag) == kNotSupported;

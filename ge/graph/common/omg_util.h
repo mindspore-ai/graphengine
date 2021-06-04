@@ -96,11 +96,11 @@ Status SetCyclicDependenceFlag(const ge::NodePtr &node);
 
 ///
 /// @brief set op next_iteration name
-/// @param [in] node
-/// @param [in] next
+/// @param [in] Merge Node
+/// @param [in] NextIteration Node
 /// @return Status
 ///
-Status SetNextIteration(const ge::NodePtr &node, const std::string &next);
+Status SetNextIteration(const NodePtr &node, const NodePtr &next);
 
 ///
 /// @brief Align the memory
@@ -129,9 +129,10 @@ bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc);
 /// @brief Set Op _force_unknown_shape flag
 /// @param [in] node
 /// @param [in] force_unknown, set attribute if true
+/// @param [in] group_index, condition group index of node.
 /// @return
 ///
-void MarkForceUnknownShape(const NodePtr &node, bool force_unknown);
+void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t group_index);
 }  // namespace ge
 
 #endif  // GE_GRAPH_COMMON_OMG_UTIL_H_

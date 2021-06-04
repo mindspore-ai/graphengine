@@ -193,23 +193,29 @@ Status SetCyclicDependenceFlag(const ge::NodePtr &node) {
 
 ///
 /// @brief set op next_iteration name
-/// @param [in] node
-/// @param [in] next
+/// @param [in] Merge Node
+/// @param [in] NextIteration Node
 /// @return Status
 ///
-Status SetNextIteration(const ge::NodePtr &node, const std::string &next) {
+Status SetNextIteration(const NodePtr &node, const NodePtr &next) {
   GE_CHECK_NOTNULL(node);
-  OpDescPtr tmp_desc = node->GetOpDesc();
-  GE_CHECK_NOTNULL(tmp_desc);
+  GE_CHECK_NOTNULL(next);
+  GE_CHECK_NOTNULL(node->GetOpDesc());
+  GE_CHECK_NOTNULL(next->GetOpDesc());
 
-  if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_NEXT_ITERATION, next)) {
-    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
-                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
-    return FAILED;
-  }
+  const auto SetIterationName = [](const OpDescPtr &op_desc, const std::string &name) {
+    if (!AttrUtils::SetStr(op_desc, ATTR_NAME_NEXT_ITERATION, name)) {
+      REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
+      return FAILED;
+    }
+    return SUCCESS;
+  };
 
+  GE_CHK_STATUS_RET_NOLOG(SetIterationName(node->GetOpDesc(), next->GetName()));
+  GE_CHK_STATUS_RET_NOLOG(SetIterationName(next->GetOpDesc(), node->GetName()));
   return SUCCESS;
 }
 
@@ -272,19 +278,24 @@ bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc) {
 /// @brief Set Op _force_unknown_shape flag
 /// @param [in] node
 /// @param [in] force_unknown, set attribute if true
+/// @param [in] group_index, condition group index of node.
 /// @return
 ///
-void MarkForceUnknownShape(const NodePtr &node, bool force_unknown) {
-  GE_RT_VOID_CHECK_NOTNULL(node);
+void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t group_index) {
   if (!force_unknown) {
     return;
   }
 
-  GELOGD("[%s] mark as force unknown shape node", node->GetName().c_str());
-  if (!AttrUtils::SetBool(node->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, force_unknown)) {
-    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
+  GE_RT_VOID_CHECK_NOTNULL(node);
+  const auto &op_desc = node->GetOpDesc();
+  GE_RT_VOID_CHECK_NOTNULL(op_desc);
+
+  // op_desc as AttrHolderAdapter valid, Set attribute always success, just log for check.
+  GELOGD("[%s] Set control flow group index: %ld", node->GetName().c_str(), group_index);
+  if (!AttrUtils::SetInt(op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
+    REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_FORCE_UNKNOWN_SHAPE.c_str(),
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
            node->GetName().c_str(), node->GetType().c_str());
   }
 }

@@ -33,7 +33,7 @@ Status BitcastPass::Run(NodePtr &node) {
   GELOGD("Bitcast running");
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "Param [node] must not be null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] Param [node] must not be null.");
     return PARAM_INVALID;
   }
 
@@ -44,6 +44,7 @@ Status BitcastPass::Run(NodePtr &node) {
   OpDescPtr op_desc = node->GetOpDesc();
   if (op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
+    GELOGE(PARAM_INVALID, "[Get][OpDesc] failed, op_desc of node is nullptr");
     return PARAM_INVALID;
   }
   ge::DataType dst_data_type;
@@ -62,22 +63,25 @@ Status BitcastPass::CheckDstDataType(const OpDescPtr op_desc, ge::DataType &dst_
 
   if (!ge::AttrUtils::GetDataType(op_desc, kAttrNameType, dst_data_type)) {
     REPORT_CALL_ERROR("E19999", "Get Attr:%s of op:%s(%s) failed",
-                       kAttrNameType, op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "Node failed to get attribute type.");
+                      kAttrNameType, op_desc->GetName().c_str(), op_desc->GetType().c_str());
+    GELOGE(PARAM_INVALID, "[Get][Attr] %s of op:%s(%s) failed",
+           kAttrNameType, op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
   if (dst_data_type >= ge::DT_UNDEFINED) {
     REPORT_INNER_ERROR("E19999", "Param dst_data_type:%d check invalid, op:%s(%s)",
                        dst_data_type, op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "dst_data_type[%s] is not valid.",
-           TypeUtils::DataTypeToSerialString(dst_data_type).c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] dst_data_type[%s] is not valid, op:%s(%s)",
+           TypeUtils::DataTypeToSerialString(dst_data_type).c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
 
   if (op_desc->GetOutputDescPtr(0) == nullptr) {
     REPORT_INNER_ERROR("E19999", "Index 0 ouput desc of op:%s(%s) not exist, check invalid",
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "Bitcast node outputDesc is null.");
+    GELOGE(PARAM_INVALID, "[Get][OutputDescPtr] Index 0 ouput desc of op:%s(%s) not exist.",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
   if (op_desc->GetOutputDescPtr(0)->GetDataType() != dst_data_type) {
@@ -85,9 +89,10 @@ Status BitcastPass::CheckDstDataType(const OpDescPtr op_desc, ge::DataType &dst_
                        "check invalid", op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                        TypeUtils::DataTypeToSerialString(dst_data_type).c_str(),
                        TypeUtils::DataTypeToSerialString(op_desc->GetOutputDescPtr(0)->GetDataType()).c_str());
-    GELOGE(PARAM_INVALID, "dst_data_type[%s] is not equal to output_data_type[%s].",
+    GELOGE(PARAM_INVALID, "[Check][Param] dst_data_type[%s] is not equal to output_data_type[%s], op:%s(%s).",
            TypeUtils::DataTypeToSerialString(dst_data_type).c_str(),
-           TypeUtils::DataTypeToSerialString(op_desc->GetOutputDescPtr(0)->GetDataType()).c_str());
+           TypeUtils::DataTypeToSerialString(op_desc->GetOutputDescPtr(0)->GetDataType()).c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
   return SUCCESS;
@@ -99,7 +104,8 @@ Status BitcastPass::CheckOutputShape(const OpDescPtr op_desc, const ge::DataType
   if (input_tensor_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "Index 0 input desc of op:%s(%s) not exist, check invalid",
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "input_tensor_desc must not be null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] input_tensor_desc(index:0) of op:%s(%s) must not be null.",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
 
@@ -109,8 +115,9 @@ Status BitcastPass::CheckOutputShape(const OpDescPtr op_desc, const ge::DataType
     REPORT_INNER_ERROR("E19999", "ori_data_type:%d of index 0 input desc in op:%s(%s), "
                        "check invalid",
                        ori_data_type, op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "ori_data_type[%s] is not valid.",
-           TypeUtils::DataTypeToSerialString(ori_data_type).c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] ori_data_type[%s] of input desc(index 0) in op:%s(%s) is not valid.",
+           TypeUtils::DataTypeToSerialString(ori_data_type).c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return PARAM_INVALID;
   }
 
@@ -121,7 +128,7 @@ Status BitcastPass::CheckOutputShape(const OpDescPtr op_desc, const ge::DataType
 
   BitcastPass::kVecInt64 dim_vec(input_tensor_desc->GetShape().GetDims());
   if (CalcAndUpdateShape(dim_vec, ori_data_type, dst_data_type) != SUCCESS) {
-    GELOGE(PARAM_INVALID, "CalcAndUpdateShape failed.");
+    GELOGE(PARAM_INVALID, "[Call][CalcAndUpdateShape] failed.");
     return PARAM_INVALID;
   }
 
@@ -130,7 +137,9 @@ Status BitcastPass::CheckOutputShape(const OpDescPtr op_desc, const ge::DataType
                        "check invalid",
                        formats::JoinToString(output_tensor_desc->GetShape().GetDims()).c_str(),
                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), formats::JoinToString(dim_vec).c_str());
-    GELOGE(PARAM_INVALID, "out_put_shape is different from expectations.");
+    GELOGE(PARAM_INVALID, "[Check][Param] Shape:%s of index 0 output desc in op:%s(%s), different from expect shape:%s",
+           formats::JoinToString(output_tensor_desc->GetShape().GetDims()).c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), formats::JoinToString(dim_vec).c_str());
     return PARAM_INVALID;
   }
 
@@ -141,7 +150,7 @@ Status BitcastPass::CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::Data
                                        ge::DataType dst_data_type) {
   if (dim_vec.size() == 0) {
     REPORT_INNER_ERROR("E19999", "Param dim_vec is empty, check invalid");
-    GELOGE(PARAM_INVALID, "Pre node shape size is zero.");
+    GELOGE(PARAM_INVALID, "[Check][Param] Param dim_vec is empty.");
     return PARAM_INVALID;
   }
   int64_t ori_data_size = GetSizeByDataType(ori_data_type);
@@ -155,7 +164,10 @@ Status BitcastPass::CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::Data
                          "check invalid",
                          ori_data_size, TypeUtils::DataTypeToSerialString(ori_data_type).c_str(),
                          dst_data_size, TypeUtils::DataTypeToSerialString(dst_data_type).c_str());
-      GELOGE(PARAM_INVALID, "ori_data_size is not divisible by dst_data_size.");
+      GELOGE(PARAM_INVALID,
+             "[Check][Param] size:%ld of ori_data_type:%s is not divisible by size:%ld of dst_data_type:%s.",
+             ori_data_size, TypeUtils::DataTypeToSerialString(ori_data_type).c_str(),
+             dst_data_size, TypeUtils::DataTypeToSerialString(dst_data_type).c_str());
       return PARAM_INVALID;
     }
     dim_vec.push_back(ori_data_size / dst_data_size);
@@ -166,7 +178,10 @@ Status BitcastPass::CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::Data
                          "check invalid",
                          dst_data_size, TypeUtils::DataTypeToSerialString(dst_data_type).c_str(),
                          ori_data_size, TypeUtils::DataTypeToSerialString(ori_data_type).c_str());
-      GELOGE(PARAM_INVALID, "dst_data_size is not divisible by ori_data_size.");
+      GELOGE(PARAM_INVALID,
+             "[Check][Param] size:%ld of dst_data_type:%s is not divisible by size:%ld of ori_data_type:%s.",
+             dst_data_size, TypeUtils::DataTypeToSerialString(dst_data_type).c_str(),
+             ori_data_size, TypeUtils::DataTypeToSerialString(ori_data_type).c_str());
       return PARAM_INVALID;
     }
 
@@ -174,7 +189,9 @@ Status BitcastPass::CalcAndUpdateShape(BitcastPass::kVecInt64 &dim_vec, ge::Data
       REPORT_INNER_ERROR("E19999", "The last dim:%ld in param dim_vec is not equal to "
                          "dst_data_size:%ld / ori_data_size:%ld, check invalid",
                          dim_vec[dim_vec.size() - 1], dst_data_size, ori_data_size);
-      GELOGE(PARAM_INVALID, "The last dim is not equal to dst_data_size / ori_data_size.");
+      GELOGE(PARAM_INVALID, "[Check][Param] The last dim:%ld in param dim_vec is not equal to "
+             "dst_data_size:%ld / ori_data_size:%ld",
+             dim_vec[dim_vec.size() - 1], dst_data_size, ori_data_size);
       return PARAM_INVALID;
     }
     dim_vec.pop_back();

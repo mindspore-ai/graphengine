@@ -41,9 +41,6 @@ AiCoreNodeTask::AiCoreNodeTask(std::vector<std::unique_ptr<AiCoreOpTask>> &&task
 
 Status AiCoreNodeExecutor::Initialize() {
   compiler_ = TaskCompilerFactory::GetInstance().GetTaskCompiler();
-  if (compiler_ != nullptr) {
-    GE_CHK_STATUS_RET(compiler_->Initialize(), "[Init][TaskCompiler] failed.");
-  }
   return SUCCESS;
 }
 

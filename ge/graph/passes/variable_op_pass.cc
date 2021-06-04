@@ -87,10 +87,10 @@ Status ByPassTransNode(NodePtr &trans_node, NodePtr &ref_node) {
     ret = GraphUtils::AddEdge(prev_trans_node_out_anchor, ref_in_anchor);
     if (ret != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
-                      prev_trans_node_out_anchor->GetOwnerNode()->GetName().c_str(),
-                      prev_trans_node_out_anchor->GetOwnerNode()->GetType().c_str(),
-                      prev_trans_node_out_anchor->GetIdx(),
-                      ref_node->GetName().c_str(), ref_node->GetType().c_str());
+                        prev_trans_node_out_anchor->GetOwnerNode()->GetName().c_str(),
+                        prev_trans_node_out_anchor->GetOwnerNode()->GetType().c_str(),
+                        prev_trans_node_out_anchor->GetIdx(),
+                        ref_node->GetName().c_str(), ref_node->GetType().c_str());
       GELOGE(INTERNAL_ERROR,
              "Failed to add edge between ref node %s "
              "and the prev node of trans node %s",

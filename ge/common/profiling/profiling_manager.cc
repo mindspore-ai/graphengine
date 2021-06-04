@@ -184,7 +184,10 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
     if (options.find(kTrainingTrace) == std::string::npos) {
       return ge::SUCCESS;
     }
-    const std::string training_trace = prof_options[kTrainingTrace];
+    std::string training_trace;
+    if (prof_options.contains(kTrainingTrace)) {
+      training_trace = prof_options[kTrainingTrace];
+    }
     if (training_trace.empty()) {
       GELOGI("Training trace will not take effect.");
       return ge::SUCCESS;
@@ -196,8 +199,12 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
       REPORT_INNER_ERROR("E19999", "Training trace param:%s is invalid.", training_trace.c_str());
       return ge::PARAM_INVALID;
     }
-    fp_point_ = prof_options[kFpPoint];
-    bp_point_ = prof_options[kBpPoint];
+    if (prof_options.contains(kFpPoint)) {
+      fp_point_ = prof_options[kFpPoint];
+    }
+    if (prof_options.contains(kBpPoint)) {
+      bp_point_ = prof_options[kBpPoint];
+    }
     if (!fp_point_.empty() && !bp_point_.empty()) {
       GELOGI("Training trace bp fp is set, bp_point:%s, fp_point:%s.", bp_point_.c_str(), fp_point_.c_str());
     }
@@ -316,11 +323,14 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfileStepInfo(
   uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
-  rtError_t rt_ret = RT_ERROR_NONE;
-#ifndef ONLY_COMPILE_OPEN_SRC
+  if (!is_load_profiling_ && subscribe_count_ == 0) {
+    GELOGD("Profiling is not turned on, no need to profile step info.");
+    return SUCCESS;
+  }
+
   GELOGD("Profiling Step Info TraceTask execute async start, index_id = %lu, model_id = %lu, tag_id = %u",
          index_id, model_id, tag_id);
-  rt_ret = rtProfilerTraceEx(index_id, model_id, tag_id, stream);
+  rtError_t rt_ret = rtProfilerTraceEx(index_id, model_id, tag_id, stream);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "[Call][rtProfilerTraceEx]Failed, ret 0x%X", rt_ret);
     REPORT_CALL_ERROR("E19999", "Call rtProfilerTraceEx failed, ret 0x%X", rt_ret);
@@ -328,7 +338,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Profil
   }
   GELOGD("Profiling Step Info TraceTask execute async success, index_id = %lu, model_id = %lu, tag_id = %u",
          index_id, model_id, tag_id);
-#endif
 
   mmTimespec timespec = mmGetTickCount();
   // 1000 ^ 3 converts second to nanosecond
@@ -1014,10 +1023,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   if (is_profiling_valid) {
     try {
       Json prof_options = Json::parse(profiling_options);
-
-      fp_point_ = prof_options[kFpPoint];
-      bp_point_ = prof_options[kBpPoint];
-
+      if (prof_options.contains(kFpPoint)) {
+        fp_point_ = prof_options[kFpPoint];
+      }
+      if (prof_options.contains(kBpPoint)) {
+        bp_point_ = prof_options[kBpPoint];
+      }
       fp_point = fp_point_;
       bp_point = bp_point_;
       if (!fp_point_.empty() && !bp_point_.empty()) {

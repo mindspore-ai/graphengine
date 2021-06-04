@@ -36,6 +36,7 @@
 #define REQUIRE(cond, ...)                                     \
   do {                                                         \
     if (!(cond)) {                                             \
+      REPORT_INNER_ERROR("E19999", __VA_ARGS__);               \
       GELOGE(FAILED, "[Dynamic shape partition]" __VA_ARGS__); \
       return FAILED;                                           \
     }                                                          \
@@ -46,11 +47,6 @@
 #define REQUIRE_GRAPH_SUCCESS(cond, ...) REQUIRE(((cond) == GRAPH_SUCCESS), __VA_ARGS__)
 
 namespace ge {
-namespace {
-const std::set<std::string> kControlFlowOps{
-    STREAMACTIVE, STREAMSWITCH, STREAMMERGE, ENTER, REFENTER, LOOPCOND, NEXTITERATION, REFNEXTITERATION, EXIT, REFEXIT
-};
-}
 using Cluster = DynamicShapePartitioner::Cluster;
 using ClusterPtr = std::shared_ptr<Cluster>;
 
@@ -68,32 +64,32 @@ static bool IsSingleOpScene(const ComputeGraphPtr &root_graph) {
 }
 
 Status DynamicShapePartitioner::Partition() {
-  REQUIRE_NOT_NULL(root_graph_, "Graph is nullptr.");
+  REQUIRE_NOT_NULL(root_graph_, "[Check][Param] Graph is nullptr.");
   if (IsSingleOpScene(root_graph_)) {
     GELOGD("Skip dynamic shape partition as in single op scene.");
     REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
-            "Failed set dynamic shape partitioned flag on root graph.");
+            "[Set][Attr] dynamic shape partitioned flag on root graph:%s failed.", root_graph_->GetName().c_str());
     return SUCCESS;
   }
 
   GELOGD("Start dynamic shape partition graph %s.", root_graph_->GetName().c_str());
-  REQUIRE_SUCCESS(MarkUnknownShapeNodes(), "Failed mark unknown shape nodes, root grah name:%s.",
+  REQUIRE_SUCCESS(MarkUnknownShapeNodes(), "[Call][MarkUnknownShapeNodes] failed, root grah name:%s.",
                   root_graph_->GetName().c_str());
   if (unknown_shape_nodes_.empty()) {
     GELOGD("Skip dynamic shape partition of graph %s as all nodes are known shape.", root_graph_->GetName().c_str());
     REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, false),
-            "Failed set dynamic shape partitioned flag on root graph %s.", root_graph_->GetName().c_str());
+            "[Set][Attr] dynamic shape partitioned flag on root graph %s failed.", root_graph_->GetName().c_str());
     return SUCCESS;
   }
   REQUIRE(AttrUtils::SetBool(*root_graph_, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, true),
-          "Failed set dynamic shape partitioned flag on root graph %s.", root_graph_->GetName().c_str());
-  REQUIRE_SUCCESS(CtrlEdgeTransfer(), "Failed do ctrl edge transfer!");
+          "[Set][Attr] dynamic shape partitioned flag on root graph %s failed.", root_graph_->GetName().c_str());
+  REQUIRE_SUCCESS(CtrlEdgeTransfer(), "[Call][CtrlEdgeTransfer] failed, graph:%s.", root_graph_->GetName().c_str());
   DumpGraph("_Before_DSP");
   auto status = PartitionImpl();
   GELOGD("%s.", DebugString().c_str());
   if (status != SUCCESS) {
-    GELOGE(status, "Failed dynamic shape partition graph: %s, status:\n %s", root_graph_->GetName().c_str(),
-           DebugString().c_str());
+    GELOGE(status, "[Call][PartitionImpl] Failed dynamic shape partition graph:%s, ret:%s",
+           root_graph_->GetName().c_str(), DebugString().c_str());
   }
   DumpGraph("_After_DSP");
   GELOGD("Finish dynamic shape partition graph %s.", root_graph_->GetName().c_str());
@@ -128,13 +124,19 @@ Status DynamicShapePartitioner::CtrlEdgeTransfer() {
         for (auto &in_control_node : n->GetInControlNodes()) {
           GE_CHECK_NOTNULL(in_control_node);
           GE_CHK_STATUS_RET(ge::GraphUtils::RemoveEdge(in_control_node->GetOutControlAnchor(),
-                                                       n->GetInControlAnchor()), "remove edge failed");
+                                                       n->GetInControlAnchor()),
+                            "[Remove][Edge] between %s and %s failed",
+                            in_control_node->GetOutControlAnchor()->GetOwnerNode()->GetName().c_str(),
+                            n->GetName().c_str());
           for (auto &out_node : n->GetOutNodes()) {
             if (out_node == nullptr) {
               continue;
             }
             GE_CHK_STATUS_RET(ge::GraphUtils::AddEdge(in_control_node->GetOutControlAnchor(),
-                                                      out_node->GetInControlAnchor()), "add edge failed.");
+                                                      out_node->GetInControlAnchor()),
+                              "[Add][Edge] between %s and %s failed.",
+                              in_control_node->GetOutControlAnchor()->GetOwnerNode()->GetName().c_str(),
+                              out_node->GetName().c_str());
           }
         }
       }
@@ -146,13 +148,16 @@ Status DynamicShapePartitioner::CtrlEdgeTransfer() {
 }
 
 Status DynamicShapePartitioner::PartitionImpl() {
-  REQUIRE_SUCCESS(root_graph_->TopologicalSorting(), "Graph topological sort failed.");
-  REQUIRE_SUCCESS(InitClusters(), "Failed init cluster nodes.");
-  REQUIRE_SUCCESS(MergeClusters(), "Failed merge clusters.");
+  REQUIRE_SUCCESS(root_graph_->TopologicalSorting(),
+                  "[Call][TopologicalSorting] failed, graph:%s.", root_graph_->GetName().c_str());
+  REQUIRE_SUCCESS(InitClusters(), "[Init][Clusters] failed, graph:%s.", root_graph_->GetName().c_str());
+  REQUIRE_SUCCESS(MergeClusters(), "[Merge][Clusters] failed, graph:%s.", root_graph_->GetName().c_str());
   PruneUniqueClusters();
-  REQUIRE_SUCCESS(BuildPartitionFrame(), "Failed build cluster partition frame.");
-  REQUIRE_SUCCESS(CombinePartitionFrame(), "Failed combine cluster partition frame.");
-  REQUIRE_SUCCESS(BuildPartitionSubgraph(), "Failed build cluster partition subgraph.");
+  REQUIRE_SUCCESS(BuildPartitionFrame(), "[Build][PartitionFrame] failed, graph:%s.", root_graph_->GetName().c_str());
+  REQUIRE_SUCCESS(CombinePartitionFrame(),
+                  "[Combine][PartitionFrame] failed, graph:%s.", root_graph_->GetName().c_str());
+  REQUIRE_SUCCESS(BuildPartitionSubgraph(),
+                  "[Build][PartitionSubgraph] failed, graph:%s.", root_graph_->GetName().c_str());
   return SUCCESS;
 }
 
@@ -174,21 +179,21 @@ void DynamicShapePartitioner::PruneUniqueClusters() {
 
 Status DynamicShapePartitioner::BuildPartitionFrame() {
   for (const auto &cluster : sorted_unique_clusters_) {
-    REQUIRE_SUCCESS(cluster->BuildFrame(), "Failed build frame of cluster[%lu].", cluster->Id());
+    REQUIRE_SUCCESS(cluster->BuildFrame(), "[Build][Frame] of cluster[%lu] failed.", cluster->Id());
   }
   return SUCCESS;
 }
 
 Status DynamicShapePartitioner::CombinePartitionFrame() {
   for (const auto &cluster : sorted_unique_clusters_) {
-    REQUIRE_SUCCESS(cluster->CombinePartitionFrame(), "Failed combine frame of cluster[%lu].", cluster->Id());
+    REQUIRE_SUCCESS(cluster->CombinePartitionFrame(), "[Combine][Frame] of cluster[%lu] failed.", cluster->Id());
   }
   return SUCCESS;
 }
 
 Status DynamicShapePartitioner::BuildPartitionSubgraph() {
   for (const auto &cluster : sorted_unique_clusters_) {
-    REQUIRE_SUCCESS(cluster->BuildPartitionSubgraph(), "Failed build subgraph of cluster[%lu].", cluster->Id());
+    REQUIRE_SUCCESS(cluster->BuildPartitionSubgraph(), "[Build][SubGraph] of cluster[%lu] failed.", cluster->Id());
   }
   return SUCCESS;
 }
@@ -250,8 +255,8 @@ void DynamicShapePartitioner::ClearResource() {
 
 Status DynamicShapePartitioner::MarkUnknownShapeNodes() {
   for (auto &node : root_graph_->GetDirectNode()) {
-    REQUIRE_SUCCESS(CollectSpreadUnknownShapeNodes(node), "Failed collect spread unknown shape nodes %s.",
-                    node->GetName().c_str());
+    REQUIRE_SUCCESS(CollectSpreadUnknownShapeNodes(node),
+                    "[Call][CollectSpreadUnknownShapeNodes] for node:%s failed.", node->GetName().c_str());
   }
   return SUCCESS;
 }
@@ -262,7 +267,7 @@ Status DynamicShapePartitioner::InitClusters() {
   for (const auto &node : graph->GetDirectNode()) {
     Cluster::Type type = Cluster::DATA;
     bool is_input = ((node->GetType() == CONSTANT) || (node->GetType() == CONSTANTOP)) && node->GetInNodes().empty();
-    REQUIRE_NOT_NULL(node->GetOpDesc(), "op_desc is null");
+    REQUIRE_NOT_NULL(node->GetOpDesc(), "[Get][OpDesc] op_desc is null, graph:%s", graph->GetName().c_str());
     if (node->GetType() == DATA) {
       type = Cluster::DATA;
     } else if (is_input) {
@@ -277,11 +282,19 @@ Status DynamicShapePartitioner::InitClusters() {
       type = Cluster::KNOWN_SHAPE;
     }
     auto cluster = MakeShared<Cluster>(rank++, type, node, this);
-    REQUIRE_NOT_NULL(cluster, "Failed new memory for cluster.");
+    REQUIRE_NOT_NULL(cluster, "[New][Memory] for cluster failed.");
     node_2_cluster_[node] = cluster;
-    if (cluster->IsUnknownShape() && !cluster->IsControlFlow()) {
+    if (cluster->IsUnknownShape()) {
       ordered_cluster_.push_back(cluster);
     }
+
+    int64_t group_index = -1;
+    if (AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
+      GELOGD("[%s] is rts control flow Op, group index: %ld", node->GetName().c_str(), group_index);
+      auto &control_cluster = control_clusters_[group_index];
+      control_cluster.emplace_back(cluster);
+    }
+
     // Already sorted topologically, so access to the parent cluster is safe
     for (const auto &parent : node->GetInAllNodes()) {
       cluster->AddInput(node_2_cluster_[parent]);
@@ -350,14 +363,41 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
 }
 }
 
+void DynamicShapePartitioner::MergeClustersControlFlow() {
+  for (const auto &item : control_clusters_) {
+    const auto &control_cluster = item.second;
+    auto rit = control_cluster.rbegin();
+    if (rit == control_cluster.rend()) {
+      GELOGW("Invalid empty control flow cluster.");
+      continue;
+    }
+
+    const auto &cluster = *rit;
+    for (++rit; rit != control_cluster.rend(); ++rit) {
+      const auto &cluster_from = *rit;
+      auto merged_clusters = cluster->MergeAllPathFrom(cluster_from);
+      GELOGD("Merge all path cluster from %lu to %lu %s.", cluster_from->Id(), cluster->Id(),
+             ToString(merged_clusters).c_str());
+      for (const auto &merged_cluster : merged_clusters) {
+        for (const auto &node : merged_cluster->Nodes()) {
+          node_2_cluster_[node] = cluster;
+        }
+      }
+    }
+  }
+}
+
 void DynamicShapePartitioner::MergeClustersUnknownShape() {
   // Merge unknown shape clusters
   for (const auto &cluster : ordered_cluster_) {
-    if (cluster->IsIndependent() || cluster->IsControlFlow()) {
+    if (cluster->IsIndependent()) {
       continue;
     }
     for (const auto &in_cluster : cluster->Inputs()) {
-      if (!in_cluster->IsUnknownShape() || in_cluster->IsControlFlow()) {
+      if (!in_cluster->IsUnknownShape()) {
+        continue;
+      }
+      if (!cluster->IsAdjoinNodes(in_cluster)) {
         continue;
       }
       auto merged_clusters = cluster->MergeAllPathFrom(in_cluster);
@@ -419,8 +459,9 @@ void DynamicShapePartitioner::MergeClustersInputData() {
 }
 
 Status DynamicShapePartitioner::MergeClusters() {
+  MergeClustersControlFlow();
   MergeClustersUnknownShape();
-  REQUIRE_SUCCESS(TopologicalSortClusters(), "Failed topological sort clusters after merge unknown shape clusters.");
+  REQUIRE_SUCCESS(TopologicalSortClusters(), "[TopologicalSort][Clusters] after merge unknown shape clusters failed.");
   MergeClustersKnownShape();
   MergeClustersInputData();
   return SUCCESS;
@@ -446,7 +487,7 @@ Status DynamicShapePartitioner::CollectSpreadUnknownShapeNodes(NodePtr node) {
     return SUCCESS;
   }
   auto opdesc = node->GetOpDesc();
-  REQUIRE_NOT_NULL(opdesc, "Opdesc is nullptr.");
+  REQUIRE_NOT_NULL(opdesc, "[Get][OpDesc] Opdesc is nullptr.");
   // One can set 'ATTR_NAME_IS_UNKNOWN_SHAPE=true' on node so as to forcing the node flow into the unknown subgraph,
   // ignore the actual shape.
   if (JudgeUnknowShapeWithAttr(opdesc)) {
@@ -492,10 +533,11 @@ Status DynamicShapePartitioner::CollectSpreadUnknownShapeNodes(NodePtr node) {
     auto graph = root_graph_;
     for (const auto &subgraph_name : opdesc->GetSubgraphInstanceNames()) {
       auto subgraph = graph->GetSubgraph(subgraph_name);
-      REQUIRE_NOT_NULL(subgraph, "Failed get subgraph %s of node %s on root graph.", subgraph_name.c_str(),
+      REQUIRE_NOT_NULL(subgraph, "[Get][Subgraph] %s of node %s on root graph failed.", subgraph_name.c_str(),
                        node->GetName().c_str());
       bool is_graph_unknow = false;
-      REQUIRE_SUCCESS(IsUnknownShapeGraph(subgraph, is_graph_unknow), "Failed check subgraph %s shape of node %s.",
+      REQUIRE_SUCCESS(IsUnknownShapeGraph(subgraph, is_graph_unknow),
+                      "[Call][IsUnknownShapeGraph] Failed check subgraph %s shape of node %s.",
                       subgraph_name.c_str(), node->GetName().c_str());
       if (is_graph_unknow) {
         GELOGD("Collect node %s as its subgraph %s is unknown.", node->GetName().c_str(), subgraph->GetName().c_str());
@@ -526,9 +568,10 @@ Status DynamicShapePartitioner::IsUnknownShapeNode(NodePtr node, bool &is_unknow
   }
   for (auto &subgraph_name : opdesc->GetSubgraphInstanceNames()) {
     auto subgraph = graph->GetSubgraph(subgraph_name);
-    REQUIRE_NOT_NULL(subgraph, "Failed get subgraph %s of node %s on root graph.", subgraph_name.c_str(),
+    REQUIRE_NOT_NULL(subgraph, "[Get][Subgraph] %s of node %s on root graph failed.", subgraph_name.c_str(),
                      node->GetName().c_str());
-    REQUIRE_SUCCESS(IsUnknownShapeGraph(subgraph, is_unknown), "Failed check subgraph %s shape of node %s.",
+    REQUIRE_SUCCESS(IsUnknownShapeGraph(subgraph, is_unknown),
+                    "[Call][IsUnknownShapeGraph] Failed check subgraph %s shape of node %s.",
                     subgraph_name.c_str(), node->GetName().c_str());
     if (is_unknown) {
       GELOGD("Mark node %s unknown as unknown subgraph.", node->GetName().c_str());
@@ -541,7 +584,8 @@ Status DynamicShapePartitioner::IsUnknownShapeNode(NodePtr node, bool &is_unknow
 
 Status DynamicShapePartitioner::IsUnknownShapeGraph(ComputeGraphPtr graph, bool &is_unknown) {
   for (auto &node : graph->GetDirectNode()) {
-    REQUIRE_SUCCESS(IsUnknownShapeNode(node, is_unknown), "Failed check node %s shape on graph %s.",
+    REQUIRE_SUCCESS(IsUnknownShapeNode(node, is_unknown),
+                    "[Call][IsUnknownShapeNode]Failed check node %s shape on graph %s.",
                     node->GetName().c_str(), graph->GetName().c_str());
     if (is_unknown) {
       GELOGD("Mark graph %s unknown as contains unknown node %s.", graph->GetName().c_str(), node->GetName().c_str());
@@ -606,13 +650,6 @@ bool Cluster::IsRefVariable() const {
             !ref_variable_name.empty());
   }
   return false;
-}
-
-bool Cluster::IsControlFlow() const {
-  const auto &op_desc = nodes_[0]->GetOpDesc();
-  bool is_ctrl_flow = kControlFlowOps.count(op_desc->GetType()) > 0 && op_desc->HasAttr(ATTR_NAME_FORCE_UNKNOWN_SHAPE);
-  GELOGD("[%s] %s rts control flow Op ", op_desc->GetName().c_str(), is_ctrl_flow ? "Is" : "Not");
-  return is_ctrl_flow;
 }
 
 void Cluster::AddInput(ClusterPtr in) {
@@ -694,10 +731,7 @@ std::vector<ClusterPtr> Cluster::MergeAllPathFrom(ClusterPtr other) {
   if (other->IsIndependent()) {
     return path_clusters;
   }
-  if (std::find(other->out_clusters_.begin(), other->out_clusters_.end(), shared_from_this()) ==
-      other->out_clusters_.end()) {
-    return path_clusters;
-  }
+
   path_clusters.push_back(other);
   forward_reached_queue.push(other);
   backward_reached_queue.push(shared_from_this());
@@ -761,7 +795,7 @@ InControlAnchorPtr Cluster::GetFrameInControlAnchor() { return partition_node_->
 OutControlAnchorPtr Cluster::GetFrameOutControlAnchor() { return partition_node_->GetOutControlAnchor(); };
 
 Status Cluster::BuildFrame() {
-  if ((IsUnknownShape() || IsKnownShape() || IsInputNode()) && !IsControlFlow()) {
+  if (IsUnknownShape() || IsKnownShape() || IsInputNode()) {
     return BuildPartitionFrame();
   } else {
     auto node = nodes_.front();
@@ -772,7 +806,7 @@ Status Cluster::BuildFrame() {
         if (src_cluster->id_ != id_) {
           REQUIRE_GRAPH_SUCCESS(
               GraphUtils::RemoveEdge(peer_out_control_anchor, in_control_anchor),
-              "Failed remove edge from node %s index %d to node %s index %d.",
+              "[Remove][Edge] from node %s index %d to node %s failed, index %d.",
               peer_out_control_anchor->GetOwnerNode()->GetName().c_str(), AnchorUtils::GetIdx(peer_out_control_anchor),
               in_control_anchor->GetOwnerNode()->GetName().c_str(), AnchorUtils::GetIdx(in_control_anchor));
           control_inputs_.insert(src_cluster);
@@ -802,20 +836,28 @@ Status Cluster::BuildPartitionFrame() {
   string sub_graph_name_patten = (is_input ? "_input" : known_name);
   std::string sub_graph_name = graph->GetName() + "_sub_" + std::to_string(unique_id_) + sub_graph_name_patten;
   subgraph_ = MakeShared<ComputeGraph>(sub_graph_name);
-  REQUIRE_NOT_NULL(subgraph_, "Failed new memory for subgraph.");
+  REQUIRE_NOT_NULL(subgraph_, "[New][Memory] for subgraph failed, name:%s.", sub_graph_name.c_str());
   auto partition_op = MakeShared<OpDesc>("PartitionedCall_" + std::to_string(unique_id_++), "PartitionedCall");
-  REQUIRE_NOT_NULL(partition_op, "Failed new memory for partition op.");
+  REQUIRE_NOT_NULL(partition_op, "[New][Memory] for partition op failed.");
   REQUIRE(AttrUtils::SetBool(partition_op, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape),
-          "Failed set _is_unknown_shape flag on partitioned op %s.", partition_op->GetName().c_str());
-  REQUIRE_GRAPH_SUCCESS(partition_op->AddSubgraphName(subgraph_->GetName()), "Failed add subgraph name.");
+          "[Set][Attr] _is_unknown_shape flag on partitioned op %s failed.", partition_op->GetName().c_str());
+  REQUIRE_GRAPH_SUCCESS(partition_op->AddSubgraphName(subgraph_->GetName()),
+                        "[Add][SubgraphName] %s for op:%s.",
+                        subgraph_->GetName().c_str(), partition_op->GetName().c_str());
   REQUIRE_GRAPH_SUCCESS(partition_op->SetSubgraphInstanceName(0, subgraph_->GetName()),
-                        "Failed set subgraph instance name.");
+                        "[Call][SetSubgraphInstanceName] for op:%s failed, index:0, name:%s.",
+                        partition_op->GetName().c_str(), subgraph_->GetName().c_str());
   for (auto &node : nodes_) {
-    REQUIRE_NOT_NULL(subgraph_->AddNode(node), "Failed add node to subgraph.");
+    REQUIRE_NOT_NULL(subgraph_->AddNode(node),
+                     "[Add][Node] %s to subgraph:%s failed.", node->GetName().c_str(), subgraph_->GetName().c_str());
     REQUIRE(AttrUtils::SetBool(node->GetOpDesc(), ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape),
-            "Failed set shape flag.");
-    REQUIRE_GRAPH_SUCCESS(GraphUtils::RemoveJustNode(graph, node), "Failed remove root graph node.");
-    REQUIRE_GRAPH_SUCCESS(node->SetOwnerComputeGraph(subgraph_), "Failed set owner graph.");
+            "[Set][Attr] %s to op:%s failed.", ATTR_NAME_IS_UNKNOWN_SHAPE.c_str(), node->GetName().c_str());
+    REQUIRE_GRAPH_SUCCESS(GraphUtils::RemoveJustNode(graph, node),
+                          "[Remove][JustNode] failed, graph:%s, node:%s.",
+                          graph->GetName().c_str(), node->GetName().c_str());
+    REQUIRE_GRAPH_SUCCESS(node->SetOwnerComputeGraph(subgraph_),
+                          "[Set][OwnerComputeGraph] %s for node:%s failed.",
+                          subgraph_->GetName().c_str(), node->GetName().c_str());
     for (const auto &anchor : node->GetAllInDataAnchors()) {
       auto peer_out_anchor = anchor->GetPeerOutAnchor();
       if (peer_out_anchor == nullptr) {
@@ -825,7 +867,7 @@ Status Cluster::BuildPartitionFrame() {
       if (src_cluster->id_ != id_) {
         AddFrameInput(anchor);
         REQUIRE_GRAPH_SUCCESS(partition_op->AddInputDesc(node->GetOpDesc()->GetInputDesc(anchor->GetIdx())),
-                              "Failed add input desc.");
+                              "[Add][InputDesc] to op:%s failed.", partition_op->GetName().c_str());
       }
     }
     auto in_control_anchor = node->GetInControlAnchor();
@@ -838,7 +880,7 @@ Status Cluster::BuildPartitionFrame() {
         if (src_cluster->id_ != id_) {
           REQUIRE_GRAPH_SUCCESS(
               GraphUtils::RemoveEdge(peer_out_control_anchor, in_control_anchor),
-              "Failed remove edge from %s:%d to %s:%d.", peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+              "[Remove][Edge] from %s:%d to %s:%d failed.", peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
               peer_out_control_anchor->GetIdx(), node->GetName().c_str(), in_control_anchor->GetIdx());
           control_inputs_.insert(src_cluster);
           src_cluster->control_outputs_.insert(peer_out_control_anchor);
@@ -852,23 +894,28 @@ Status Cluster::BuildPartitionFrame() {
         if (src_cluster->id_ != id_) {
           AddFrameOutput(anchor);
           REQUIRE_GRAPH_SUCCESS(partition_op->AddOutputDesc(node->GetOpDesc()->GetOutputDesc(anchor->GetIdx())),
-                                "Failed add output desc.");
+                                "[Add][OutputDesc] to op:%s failed.", partition_op->GetName().c_str());
           break;
         }
       }
     }
   }
   partition_node_ = graph->AddNode(partition_op);
-  REQUIRE_NOT_NULL(partition_node_, "Failed add partition node.");
-  REQUIRE_GRAPH_SUCCESS(partition_node_->SetOwnerComputeGraph(graph), "Failed set owner graph.");
+  REQUIRE_NOT_NULL(partition_node_,
+                   "[Add][Node] %s to graph:%s failed.", partition_op->GetName().c_str(), graph->GetName().c_str());
+  REQUIRE_GRAPH_SUCCESS(partition_node_->SetOwnerComputeGraph(graph),
+                        "[Set][OwnerComputeGraph] %s for node:%s failed.",
+                        graph->GetName().c_str(), partition_op->GetName().c_str());
   subgraph_->SetParentNode(partition_node_);
   subgraph_->SetParentGraph(graph);
-  REQUIRE_GRAPH_SUCCESS(graph->AddSubgraph(subgraph_), "Failed add subgraph to root graph.");
+  REQUIRE_GRAPH_SUCCESS(graph->AddSubgraph(subgraph_),
+                        "[Add][Subgraph] %s to root graph:%s failed.",
+                        subgraph_->GetName().c_str(), graph->GetName().c_str());
   std::string session_graph_id;
   REQUIRE(AttrUtils::GetStr(*graph, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
-          "Failed get ATTR_NAME_SESSION_GRAPH_ID on root graph.");
+          "[Get][Attr] %s on root graph:%s failed.", ATTR_NAME_SESSION_GRAPH_ID.c_str(), graph->GetName().c_str());
   REQUIRE(AttrUtils::SetStr(*subgraph_, ATTR_NAME_SESSION_GRAPH_ID, session_graph_id),
-          "Failed set ATTR_NAME_SESSION_GRAPH_ID on subgraph.");
+          "[Set][Attr] %s on subgraph:%s failed.", ATTR_NAME_SESSION_GRAPH_ID.c_str(), subgraph_->GetName().c_str());
   return SUCCESS;
 }
 
@@ -878,17 +925,17 @@ Status Cluster::CombinePartitionFrame() {
     auto src_cluster = partitioner_->node_2_cluster_[peer_out_anchor->GetOwnerNode()];
     auto src_anchor = src_cluster->GetFrameOutDataAnchor(peer_out_anchor);
     auto dst_anchor = GetFrameInDataAnchor(anchor);
-    REQUIRE_GRAPH_SUCCESS(GraphUtils::RemoveEdge(peer_out_anchor, anchor), "Failed remove edge from %s:%d to %s:%d.",
+    REQUIRE_GRAPH_SUCCESS(GraphUtils::RemoveEdge(peer_out_anchor, anchor), "[Remove][Edge] from %s:%d to %s:%d fail.",
                           peer_out_anchor->GetOwnerNode()->GetName().c_str(), peer_out_anchor->GetIdx(),
                           anchor->GetOwnerNode()->GetName().c_str(), anchor->GetIdx());
-    REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(src_anchor, dst_anchor), "Failed add edge from %s:%d to %s:%d.",
+    REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(src_anchor, dst_anchor), "[Add][Edge] from %s:%d to %s:%d failed.",
                           src_anchor->GetOwnerNode()->GetName().c_str(), src_anchor->GetIdx(),
                           dst_anchor->GetOwnerNode()->GetName().c_str(), dst_anchor->GetIdx());
   }
   for (const auto &src_cluster : control_inputs_) {
     auto src_anchor = src_cluster->GetFrameOutControlAnchor();
     auto dst_anchor = GetFrameInControlAnchor();
-    REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(src_anchor, dst_anchor), "Failed add edge from %s:%d to %s:%d.",
+    REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(src_anchor, dst_anchor), "[Add][Edge] from %s:%d to %s:%d failed.",
                           src_anchor->GetOwnerNode()->GetName().c_str(), src_anchor->GetIdx(),
                           dst_anchor->GetOwnerNode()->GetName().c_str(), dst_anchor->GetIdx());
   }
@@ -896,62 +943,76 @@ Status Cluster::CombinePartitionFrame() {
 }
 
 Status Cluster::BuildPartitionSubgraph() {
-  if (IsData() || IsNetOutput() || IsIndependent() || IsControlFlow()) {
+  if (IsData() || IsNetOutput() || IsIndependent()) {
     return SUCCESS;
   }
   int64_t parent_node_index = 0;
   for (auto anchor : inputs_) {
     auto data_op =
         MakeShared<OpDesc>(subgraph_->GetName() + std::string("Data_") + std::to_string(parent_node_index), ge::DATA);
-    REQUIRE_NOT_NULL(data_op, "Failed new memory for data op.");
+    REQUIRE_NOT_NULL(data_op, "[New][Memory] for data op failed.");
     auto input_desc = anchor->GetOwnerNode()->GetOpDesc()->GetInputDesc(anchor->GetIdx());
-    REQUIRE_GRAPH_SUCCESS(data_op->AddInputDesc(input_desc), "Failed add input desc.");
-    REQUIRE_GRAPH_SUCCESS(data_op->AddOutputDesc(input_desc), "Failed add output desc.");
+    REQUIRE_GRAPH_SUCCESS(data_op->AddInputDesc(input_desc),
+                          "[Add][InputDesc] to op:%s failed.", data_op->GetName().c_str());
+    REQUIRE_GRAPH_SUCCESS(data_op->AddOutputDesc(input_desc),
+                          "[Add][OutputDesc] to op:%s failed.", data_op->GetName().c_str());
     REQUIRE(AttrUtils::SetInt(data_op, ATTR_NAME_PARENT_NODE_INDEX, parent_node_index),
-            "Failed set parent_node_index on subgraph data node.");
+            "[Set][Attr] %s on subgraph data node:%s failed.",
+            ATTR_NAME_PARENT_NODE_INDEX.c_str(), data_op->GetName().c_str());
     bool is_unknown_shape = IsUnknownShape();
     REQUIRE(AttrUtils::SetBool(data_op, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape),
-            "Failed set _is_unknown_shape flag on data op %s.", data_op->GetName().c_str());
+            "[Set][Attr] %s on data op %s failed.", ATTR_NAME_IS_UNKNOWN_SHAPE.c_str(), data_op->GetName().c_str());
     auto data_node = subgraph_->AddNode(data_op);
-    REQUIRE_NOT_NULL(data_node, "Failed add data node to subgraph.");
-    REQUIRE_GRAPH_SUCCESS(data_node->SetOwnerComputeGraph(subgraph_), "Failed set owner graph of data node.");
+    REQUIRE_NOT_NULL(data_node,
+                     "[Add][Node] %s to subgraph:%s failed.", data_op->GetName().c_str(), subgraph_->GetName().c_str());
+    REQUIRE_GRAPH_SUCCESS(data_node->SetOwnerComputeGraph(subgraph_),
+                          "[Set][OwnerGraph] %s of data node:%s failed.",
+                          subgraph_->GetName().c_str(), data_op->GetName().c_str());
     REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(data_node->GetOutDataAnchor(0), anchor),
-                          "Faile add data input edge to %s:%d", anchor->GetOwnerNode()->GetName().c_str(),
-                          anchor->GetIdx());
+                          "[Call][AddEdge] Failed add data input edge to %s:%d",
+                          anchor->GetOwnerNode()->GetName().c_str(), anchor->GetIdx());
     parent_node_index++;
   }
   if (outputs_.empty() && control_outputs_.empty()) {
     return SUCCESS;
   }
   auto net_output_op = MakeShared<OpDesc>(subgraph_->GetName() + "_" + NODE_NAME_NET_OUTPUT, ge::NETOUTPUT);
-  REQUIRE_NOT_NULL(net_output_op, "Failed new memory for netoutput op.");
+  REQUIRE_NOT_NULL(net_output_op, "[New][Memory] for netoutput op failed.");
   bool is_unknown_shape = IsUnknownShape();
   REQUIRE(AttrUtils::SetBool(net_output_op, ATTR_NAME_IS_UNKNOWN_SHAPE, is_unknown_shape),
-          "Failed set _is_unknown_shape flag on net_output_op %s.", net_output_op->GetName().c_str());
+          "[Set][Attr] %s on op:%s failed.", ATTR_NAME_IS_UNKNOWN_SHAPE.c_str(), net_output_op->GetName().c_str());
   for (size_t i = 0; i < outputs_.size(); ++i) {
     GeTensorDesc input_desc;
-    REQUIRE_GRAPH_SUCCESS(net_output_op->AddInputDesc(input_desc), "Failed add input desc.");
+    REQUIRE_GRAPH_SUCCESS(net_output_op->AddInputDesc(input_desc),
+                          "[Add][InputDesc] to op:%s failed.", net_output_op->GetName().c_str());
   }
   auto net_output_node = subgraph_->AddNode(net_output_op);
-  REQUIRE_NOT_NULL(net_output_node, "Failed add netoutput node to subgraph.");
-  REQUIRE_GRAPH_SUCCESS(net_output_node->SetOwnerComputeGraph(subgraph_), "Failed set owner graph of netoutput node.");
+  REQUIRE_NOT_NULL(net_output_node,
+                   "[Call][AddNode] Failed add netoutput node:%s to subgraph:%s.",
+                   net_output_op->GetName().c_str(), subgraph_->GetName().c_str());
+  REQUIRE_GRAPH_SUCCESS(net_output_node->SetOwnerComputeGraph(subgraph_),
+                        "[Set][OwnerGraph] %s of netoutput node:%s failed.",
+                        subgraph_->GetName().c_str(), net_output_node->GetName().c_str());
   parent_node_index = 0;
   for (const auto &anchor : outputs_) {
     auto output_desc = anchor->GetOwnerNode()->GetOpDesc()->GetOutputDesc(static_cast<uint32_t>(anchor->GetIdx()));
     REQUIRE(AttrUtils::SetInt(output_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_node_index),
-            "Failed set parent_node_index on subgraph netoutput's input.");
+            "[Set][Attr] parent_node_index on subgraph node:%s netoutput's input failed.",
+            anchor->GetOwnerNode()->GetName().c_str());
     REQUIRE_GRAPH_SUCCESS(net_output_op->UpdateInputDesc(parent_node_index, output_desc),
-                          "Failed update input desc of netoutput node.");
+                          "[Update][InputDesc] of netoutput node:%s failed.", net_output_op->GetName().c_str());
 
     REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(anchor, net_output_node->GetInDataAnchor(parent_node_index)),
-                          "Faile add edge from %s:%d to netoutput node.", anchor->GetOwnerNode()->GetName().c_str(),
-                          anchor->GetIdx());
+                          "[Add][Edge] from %s:%d to netoutput node:%s failed.",
+                          anchor->GetOwnerNode()->GetName().c_str(), anchor->GetIdx(),
+                          net_output_op->GetName().c_str());
     parent_node_index++;
   }
   for (const auto &anchor : control_outputs_) {
     REQUIRE_GRAPH_SUCCESS(GraphUtils::AddEdge(anchor, net_output_node->GetInControlAnchor()),
-                          "Faile add control edge from %s:%d to netoutput node.",
-                          anchor->GetOwnerNode()->GetName().c_str(), anchor->GetIdx());
+                          "[Add][ControlEdge] from %s:%d to netoutput node:%s failed.",
+                          anchor->GetOwnerNode()->GetName().c_str(), anchor->GetIdx(),
+                          net_output_op->GetName().c_str());
   }
   return SUCCESS;
 }

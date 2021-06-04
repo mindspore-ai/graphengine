@@ -112,6 +112,7 @@ const char *const ORIGINAL_MODEL_FILE = "ge.originalModelFile";
 const char *const INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
 const char *const OP_DEBUG_LEVEL = "ge.opDebugLevel";
 const char *const PERFORMANCE_MODE = "ge.performance_mode";
+const char *const MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -323,6 +324,8 @@ const char *const INPUT_SHAPE_RANGE = "input_shape_range";
 // high: need to recompile, high execute performance mode
 const std::string PERFORMANCE_MODE = "ge.performance_mode";
 
+const std::string MODIFY_MIXLIST = "ge.exec.modify_mixlist";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -401,6 +404,7 @@ static const char *const OP_BANK_PATH = ge::OP_BANK_PATH_FLAG.c_str();
 static const char *const OP_BANK_UPDATE = ge::OP_BANK_UPDATE_FLAG.c_str();
 static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 static const char *const PERFORMANCE_MODE = ge::PERFORMANCE_MODE.c_str();
+static const char *const MODIFY_MIXLIST = ge::MODIFY_MIXLIST.c_str();
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -427,7 +431,8 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              MDL_BANK_PATH,
                                                              OP_BANK_PATH,
                                                              OP_BANK_UPDATE,
-                                                             PERFORMANCE_MODE};
+                                                             PERFORMANCE_MODE,
+                                                             MODIFY_MIXLIST};
 
 // for interface: aclgrphParse
 const std::set<std::string> ir_parser_suppported_options = {
@@ -453,7 +458,8 @@ const std::set<std::string> global_options = {CORE_TYPE,
                                               OP_DEBUG_LEVEL,
                                               DEBUG_DIR,
                                               OP_COMPILER_CACHE_DIR,
-                                              OP_COMPILER_CACHE_MODE};
+                                              OP_COMPILER_CACHE_MODE,
+                                              MODIFY_MIXLIST};
 #endif
 }  // namespace ir_option
 }  // namespace ge

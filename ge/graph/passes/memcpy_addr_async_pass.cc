@@ -25,15 +25,15 @@
 namespace ge {
 Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
-  for (const auto &node : graph->GetAllNodes()) {
-    if (node->GetType() == STREAMSWITCH) {
-      auto sub_graph = node->GetOwnerComputeGraph();
-      if (sub_graph != nullptr && !sub_graph->GetGraphUnknownFlag()) {
-        GE_CHK_STATUS_RET(AddMemcpyAsyncNode(node), "Add memcpyasync node failed in known subgraph.");
+  if (graph->GetGraphUnknownFlag()) {
+    for (const auto &node : graph->GetAllNodes()) {
+      if (node->GetType() == STREAMSWITCH) {
+        auto sub_graph = node->GetOwnerComputeGraph();
+        if (sub_graph != nullptr && !sub_graph->GetGraphUnknownFlag()) {
+          GE_CHK_STATUS_RET(AddMemcpyAsyncNode(node), "Add memcpyasync node failed in known subgraph.");
+        }
       }
     }
-  }
-  if (graph->GetGraphUnknownFlag()) {
     GELOGD("Graph[%s] is unknown graph, skip.", graph->GetName().c_str());
     return SUCCESS;
   }

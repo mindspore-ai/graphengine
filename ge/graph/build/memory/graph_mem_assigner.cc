@@ -69,6 +69,10 @@ int64_t GetSymbolOutputOffset(const std::map<std::string, std::string> &anchor_t
   }
   return ge::kInvalidOffset;
 }
+
+bool isVariableMemoryNode(const ge::NodePtr &node) {
+  return (node->GetType() == ge::VARIABLE) || (node->GetType() == ge::CONSTANTOP);
+}
 }  // namespace
 namespace ge {
 Status VariableMemoryAssigner::Assign() {
@@ -447,22 +451,31 @@ bool IsContinuousInputConflict(const ge::NodePtr &node, const OpDescPtr &peer_op
 /// op1 -> node -> op2
 /// return true when node is ref from input, and op1 or op2 is reuse input from output
 bool GraphMemoryAssigner::IsRefFromInputOpCascade(const NodePtr &node) {
-  bool ref_from_input = false;
+  std::unordered_set<int32_t> ref_input_index;
   int32_t reuse_in_index = -1;
   for (const auto &out_anchor : node->GetAllOutDataAnchors()) {
-    ref_from_input = GraphUtils::IsRefFromInput(out_anchor, reuse_in_index);
-    if (ref_from_input) {
+    bool reuse_input = GraphUtils::IsRefFromInput(out_anchor, reuse_in_index);
+    if (reuse_input) {
       GELOGD("IsRefFromInputOpCascade: cur node:%s:%d is ref", node->GetName().c_str(), reuse_in_index);
-      break;
+      ref_input_index.insert(reuse_in_index);
     }
+  }
+  bool ref_from_input = !ref_input_index.empty();
+  if (!ref_from_input) {
+    return false;
   }
 
   for (const auto &in_anchor : node->GetAllInDataAnchors()) {
     const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
+    auto in_node = peer_out_anchor->GetOwnerNode();
+    if (isVariableMemoryNode(in_node) && (ref_input_index.count(in_anchor->GetIdx()) > 0)) {
+      GELOGD("Reuse variable memory, input node:%s, type:%s.", in_node->GetName().c_str(), in_node->GetType().c_str());
+      return false;
+    }
     if (ref_from_input && GraphUtils::IsRefFromInput(peer_out_anchor, reuse_in_index)) {
       GELOGD("IsRefFromInputOpCascade: in node[%s] is ref, reuse index is:%d",
-              peer_out_anchor->GetOwnerNode()->GetName().c_str(), reuse_in_index);
+             in_node->GetName().c_str(), reuse_in_index);
       return true;
     }
   }
@@ -500,6 +513,11 @@ Status GraphMemoryAssigner::UpdateRefOpOffsetReverse(const NodePtr &node) {
     GE_CHECK_NOTNULL(peer_out_anchor);
     auto peer_node = peer_out_anchor->GetOwnerNode();
     GE_CHECK_NOTNULL(peer_node);
+    if (isVariableMemoryNode(peer_node)) {
+      GELOGW("Peer node to update is %s, skip it. Node name:%s.",
+             peer_node->GetType().c_str(), peer_node->GetName().c_str());
+      continue;
+    }
     auto peer_op_desc = peer_node->GetOpDesc();
     GE_CHECK_NOTNULL(peer_op_desc);
     vector<int64_t> peer_output_list = peer_op_desc->GetOutputOffset();
@@ -666,7 +684,8 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
     bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
     if (is_allocated_first_input) {
       std::map<int32_t, int32_t> out2ins;
-      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s", node->GetName().c_str());
+      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s",
+                        node->GetName().c_str());
       // output is beginning offset, set offset for input; only support this case now
       if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
         auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
@@ -1496,6 +1515,12 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
     output_list = last_peer_out_op_desc->GetOutputOffset();
     auto out_index = static_cast<unsigned long>(peer_out_anchor->GetIdx());
     if (output_list.size() > static_cast<size_t>(out_index)) {
+      int64_t peer_out_inner_offset = 0;
+      if (ge::AttrUtils::GetInt(last_peer_out_op_desc->MutableOutputDesc(out_index), ATTR_NAME_INNER_OFFSET,
+                                peer_out_inner_offset)) {
+        (void)ge::AttrUtils::SetInt(tmp_op_desc->MutableInputDesc(anchor->GetIdx()), ATTR_NAME_INNER_OFFSET,
+                                    peer_out_inner_offset);
+      }
       bool is_l1_type = false;
       int64_t input_offset = output_list.at(out_index);
       if (has_mem_type_attr && !origin_input_list.empty()) {
@@ -1510,15 +1535,27 @@ ge::Status GraphMemoryAssigner::UpdateOpInputOffset(const NodePtr &node, vector<
             GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
           return ge::FAILED;
         }
-        GELOGD("Node[%s] input[%d] has origin offset[%ld]", tmp_op_desc->GetName().c_str(), anchor->GetIdx(),
-               origin_input_list[valid_input_index]);
+        int64_t inner_offset = 0;
+        (void)ge::AttrUtils::GetInt(tmp_op_desc->MutableInputDesc(anchor->GetIdx()), ATTR_NAME_INNER_OFFSET,
+                                    inner_offset);
+        GELOGD("Node[%s] input[%d] has origin offset[%ld] origin_inner_offset[%ld]", tmp_op_desc->GetName().c_str(),
+               anchor->GetIdx(), origin_input_list[valid_input_index], inner_offset);
         // L1 keep original input_offset
         is_l1_type = (memory_type[valid_input_index] == RT_MEMORY_L1);
         if (is_l1_type) {
           input_offset = origin_input_list[valid_input_index];
         } else {
           // hbm input_offset = original input_offset + output_offset
+          if ((origin_input_list[valid_input_index] != 0) && (!tmp_op_desc->GetSubgraphInstanceNames().empty())) {
+            std::string error = "Node" + FmtToStr(tmp_op_desc->GetName()) +
+                                +" has subgraphs which is conflict with has origin_input_list" +
+                                FmtToStr(origin_input_list[valid_input_index]);
+            GE_ERRORLOG_AND_ERRORMSG(ge::FAILED, error.c_str());
+            return ge::FAILED;
+          }
           input_offset = origin_input_list[valid_input_index] + output_list.at(out_index);
+          (void)ge::AttrUtils::SetInt(tmp_op_desc->MutableInputDesc(anchor->GetIdx()), ATTR_NAME_INNER_OFFSET,
+                                      origin_input_list[valid_input_index] + inner_offset);
         }
       }
       const auto &in_node = GetKnownInputNode(peer_out_anchor->GetOwnerNode());
@@ -1546,6 +1583,8 @@ ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, con
                                                         const int ref_in, const int64_t input_offset) const {
   auto opdesc = node->GetOpDesc();
   GE_CHECK_NOTNULL(opdesc);
+  int64_t inner_offset = 0;
+  bool has_inner_offset = ge::AttrUtils::GetInt(opdesc->MutableInputDesc(ref_in), ATTR_NAME_INNER_OFFSET, inner_offset);
   for (const auto &out2in : out2ins) {
     auto out_i = out2in.first;
     auto in_i = out2in.second;
@@ -1559,8 +1598,11 @@ ge::Status GraphMemoryAssigner::UpdateRefOpOutputOffset(const NodePtr &node, con
       }
       origin_output_list[out_i] = input_offset;
       opdesc->SetOutputOffset(origin_output_list);
-      GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld]", opdesc->GetName().c_str(),
-             out_i, ref_in, input_offset);
+      if (has_inner_offset) {
+        (void)ge::AttrUtils::SetInt(opdesc->MutableOutputDesc(out_i), ATTR_NAME_INNER_OFFSET, inner_offset);
+      }
+      GELOGI("Node[%s] output[%d] is updated from reuse input index[%d] to offset[%ld], inner_offset[%ld]", opdesc->GetName().c_str(),
+             out_i, ref_in, input_offset, inner_offset);
     }
   }
   return ge::SUCCESS;

@@ -47,7 +47,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Shape]Failed, input data is null "
            "or shape size not euqal to 0, src_shape %s",
            ShapeToString(args.src_shape).c_str());
-    REPORT_CALL_ERROR("E19999","Failed to check shape, input data is null "
+    REPORT_CALL_ERROR("E19999", "Failed to check shape, input data is null "
                       "or shape size not equal to 0, src_shape %s",
                       ShapeToString(args.src_shape).c_str());
     return ACL_ERROR_GE_PARAM_INVALID;

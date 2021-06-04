@@ -35,6 +35,7 @@
 #include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/tensor_adapter.h"
 #include "runtime/mem.h"
+#include "ir_build/option_utils.h"
 
 namespace ge {
 namespace {
@@ -79,6 +80,11 @@ Status InnerSession::Initialize() {
     GELOGE(ret, "[CheckReuse][MemoryOption] failed, [InnerSession:%lu].", session_id_);
     REPORT_CALL_ERROR("E19999", "CheckReuseMemoryOption failed, InnerSession=%lu.", session_id_);
     return ret;
+  }
+
+  // Check option modify_mixlist
+  if (ge::CheckModifyMixlistParamValid(all_options) != ge::SUCCESS) {
+    return FAILED;
   }
 
   UpdateThreadContext(std::map<std::string, std::string>{});

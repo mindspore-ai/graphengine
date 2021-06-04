@@ -35,6 +35,8 @@ class NodeDoneManager {
 
   void Destroy();
 
+  void Reset();
+
  private:
   class Cond {
    public:

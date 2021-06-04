@@ -6,6 +6,10 @@ set(SRC_LIST
 ############ libengine.so ############
 add_library(engine SHARED ${SRC_LIST})
 
+add_dependencies(engine
+    graphengine_protos
+)
+
 target_compile_options(engine PRIVATE
     -Werror
     -fno-common
@@ -27,7 +31,7 @@ target_include_directories(engine PRIVATE
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####

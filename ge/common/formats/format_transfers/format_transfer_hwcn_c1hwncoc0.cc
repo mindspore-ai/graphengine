@@ -112,11 +112,10 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
            total_size, ShapeToString(args.dst_shape).c_str(),
            TypeUtils::FormatToSerialString(args.src_format).c_str(),
            TypeUtils::FormatToSerialString(args.dst_format).c_str());
-    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, "
-                       "shape %s when trans format from %s to %s",
-                       total_size, ShapeToString(args.dst_shape).c_str(),
-                       TypeUtils::FormatToSerialString(args.src_format).c_str(),
-                       TypeUtils::FormatToSerialString(args.dst_format).c_str());
+    REPORT_CALL_ERROR("E19999", "Failed to alloc the memory for dst buf %ld, shape %s when trans format from %s to %s",
+                      total_size, ShapeToString(args.dst_shape).c_str(),
+                      TypeUtils::FormatToSerialString(args.src_format).c_str(),
+                      TypeUtils::FormatToSerialString(args.dst_format).c_str());
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 

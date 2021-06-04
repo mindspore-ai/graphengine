@@ -62,7 +62,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
 
   char *data = new (std::nothrow) char[len];
   if (data == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "Load model From file failed, bad memory allocation occur. (need:%u)", len);
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Load][ModelFromFile]Failed, "
            "bad memory allocation occur(need %u), file %s", len, model_path);
     REPORT_CALL_ERROR("E19999", "Load model from file %s failed, "
@@ -90,33 +89,45 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
   GE_CHECK_NOTNULL(model.model_data);
 
   // Model length too small
-  GE_CHK_BOOL_RET_STATUS(model.model_len >= sizeof(ModelFileHeader), ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
-                         "Invalid model. Model data size %u must be greater than or equal to %zu.", model.model_len,
-                         sizeof(ModelFileHeader));
+  GE_CHK_BOOL_EXEC(model.model_len >= sizeof(ModelFileHeader),
+                   REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+                                      std::vector<std::string>({"om", model.om_name.c_str(), "invalid om file"}));
+                   GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
+                          "[Check][Param] Invalid model. Model data size %u must be greater than or equal to %zu.",
+                          model.model_len, sizeof(ModelFileHeader));
+                   return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;);
   // Get file header
   auto file_header = reinterpret_cast<ModelFileHeader *>(model.model_data);
   // Determine whether the file length and magic number match
-  GE_CHK_BOOL_RET_STATUS(
-    file_header->length == model.model_len - sizeof(ModelFileHeader) && file_header->magic == MODEL_FILE_MAGIC_NUM,
-    ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
-    "Invalid model. file_header->length[%u] + sizeof(ModelFileHeader)[%zu] != model->model_len[%u] || "
-    "MODEL_FILE_MAGIC_NUM[%u] != file_header->magic[%u]",
-    file_header->length, sizeof(ModelFileHeader), model.model_len, MODEL_FILE_MAGIC_NUM, file_header->magic);
-
+  GE_CHK_BOOL_EXEC(file_header->length == model.model_len - sizeof(ModelFileHeader) &&
+                   file_header->magic == MODEL_FILE_MAGIC_NUM,
+                   REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+                                      std::vector<std::string>({"om", model.om_name.c_str(), "invalid om file"}));
+                   GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
+                          "[Check][Param] Invalid model, file_header->length[%u] + sizeof(ModelFileHeader)[%zu] != "
+                          "model->model_len[%u] || MODEL_FILE_MAGIC_NUM[%u] != file_header->magic[%u]",
+                          file_header->length, sizeof(ModelFileHeader), model.model_len,
+                          MODEL_FILE_MAGIC_NUM, file_header->magic);
+                   return ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID;);
   Status res = SUCCESS;
 
   // Get data address
   uint8_t *data = reinterpret_cast<uint8_t *>(model.model_data) + sizeof(ModelFileHeader);
   if (file_header->is_encrypt == ModelEncryptType::UNENCRYPTED) {  // Unencrypted model
-    GE_CHK_BOOL_RET_STATUS(model.key.empty(), ACL_ERROR_GE_PARAM_INVALID,
-                           "Invalid param. model is unencrypted, but key is not empty.");
-
+    if (!model.key.empty()) {
+      REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+                         std::vector<std::string>({"om", model.om_name.c_str(), "invalid om file"}));
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+             "[Check][Param] Invalid param, model is unencrypted, but key is not empty.");
+      return ACL_ERROR_GE_PARAM_INVALID;
+    }
     model_data = data;
     model_len = file_header->length;
     GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
   } else {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param]Invalid, model encrypt type not supported");
-    REPORT_CALL_ERROR("E19999","Invalid model, encrypt type not supported");
+    REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+                       std::vector<std::string>({"om", model.om_name.c_str(), "invalid om file"}));
     res = ACL_ERROR_GE_PARAM_INVALID;
   }
 

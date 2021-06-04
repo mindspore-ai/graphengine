@@ -29,6 +29,8 @@
 #include "graph/preprocess/multi_batch_options.h"
 
 namespace ge {
+const char *const kModifyMixlistError = "modify_mixlist is assigned, please ensure that "
+                                        "precision_mode is assigned to 'allow_mix_precision'";
 static std::set<std::string> caffe_support_input_format = {"NCHW", "ND"};
 static std::set<std::string> tf_support_input_format = {"NCHW", "NHWC", "ND", "NCDHW", "NDHWC"};
 static std::set<std::string> onnx_support_input_format = {"NCHW", "ND", "NCDHW"};
@@ -77,6 +79,8 @@ Status CheckInsertOpConfParamValid(const std::string insert_op_conf);
 Status CheckDisableReuseMemoryParamValid(const std::string disable_reuse_memory);
 Status CheckEnableSingleStreamParamValid(const std::string enable_single_stream);
 Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::string &op_select_implmode);
+Status CheckModifyMixlistParamValid(const std::map<std::string, std::string> &options);
+Status CheckModifyMixlistParamValid(const std::string &precision_mode, const std::string &modify_mixlist);
 Status CheckInputFormat(const string &input_format);
 Status CheckKeepTypeParamValid(const std::string &keep_dtype);
 void PrintOptionMap(std::map<std::string, std::string> &options, std::string tips);

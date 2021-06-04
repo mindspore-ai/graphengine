@@ -63,6 +63,7 @@ class StageExecutor {
   StageExecutor *next_executor_ = nullptr;
 
   rtStream_t stream_ = nullptr;
+  rtStream_t hccl_stream_ = nullptr;
 };
 
 class HybridModelPipelineExecutor {

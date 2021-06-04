@@ -1,15 +1,3 @@
-set(PROTO_LIST
-    "${METADEF_DIR}/proto/om.proto"
-    "${METADEF_DIR}/proto/ge_ir.proto"
-    "${METADEF_DIR}/proto/insert_op.proto"
-    "${METADEF_DIR}/proto/task.proto"
-    "${METADEF_DIR}/proto/op_mapping.proto"
-    "${METADEF_DIR}/proto/dump_task.proto"
-)
-
-protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-protobuf_generate(ge_static PROTO_STATIC_SRCS PROTO_STATIC_HDRS ${PROTO_LIST})
-
 set(SRC_LIST
     "ge_executor.cc"
     "../common/profiling/profiling_manager.cc"
@@ -19,7 +7,6 @@ set(SRC_LIST
     "../common/dump/exception_dumper.cc"
     "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
-    "../common/dump/dump_server.cc"
     "../common/dump/opdebug_register.cc"
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
@@ -168,7 +155,11 @@ set(SRC_LIST
 )
 
 ######## libge_executor.a ########
-add_library(ge_executor STATIC ${SRC_LIST} ${PROTO_STATIC_HDRS})
+add_library(ge_executor STATIC ${SRC_LIST})
+
+add_dependencies(ge_executor
+    graphengine_protos
+)
 
 target_compile_options(ge_executor PRIVATE
     $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
@@ -198,7 +189,7 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge_static
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/cce
@@ -217,7 +208,11 @@ target_link_libraries(ge_executor PRIVATE
 )
 
 ######## libge_executor.so ########
-add_library(ge_executor_shared SHARED ${SRC_LIST} ${PROTO_HDRS})
+add_library(ge_executor_shared SHARED ${SRC_LIST})
+
+add_dependencies(ge_executor_shared
+    graphengine_protos
+)
 
 target_compile_options(ge_executor_shared PRIVATE
     -fno-common
@@ -245,13 +240,12 @@ target_include_directories(ge_executor_shared PRIVATE
     ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/cce
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
 )
 
 target_link_options(ge_executor_shared PRIVATE

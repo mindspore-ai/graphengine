@@ -30,14 +30,14 @@ const int kRemoveInputIndex = 1;
 Status DimensionAdjustPass::Run(ge::NodePtr &node) {
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "node is nullptr.");
+    GELOGE(PARAM_INVALID, "[Check][Param] node is nullptr.");
     return PARAM_INVALID;
   }
 
   OpDescPtr op_desc_ptr = node->GetOpDesc();
   if (op_desc_ptr == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param op_desc of node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "GetOpDesc return nullptr.");
+    GELOGE(PARAM_INVALID, "[Get][OpDesc] return nullptr.");
     return PARAM_INVALID;
   }
 
@@ -46,7 +46,7 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Get OriginalType of op:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(ret, "DimensionAdjustPass get originnal type fail.");
+    GELOGE(ret, "[Get][OriginalType] of op:%s(%s) failed", node->GetName().c_str(), node->GetType().c_str());
     return ret;
   }
 
@@ -75,7 +75,7 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     }
     REPORT_CALL_ERROR("E19999", "kernel compute for op:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(ret, "DimensionAdjustPass compute failed");
+    GELOGE(ret, "[Call][Compute] for op:%s(%s) failed", node->GetName().c_str(), node->GetType().c_str());
     return ret;
   }
   // Need to handle axis_input of node like ExpandDims
@@ -88,21 +88,22 @@ Status DimensionAdjustPass::Run(ge::NodePtr &node) {
     if (ret != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Unlink op:%s(%s) data input:%u with control edge copy failed",
                         node->GetName().c_str(), node->GetType().c_str(), kRemoveInputIndex);
-      GELOGE(ret, "DimensionAdjustPass unlink node with control copy fail.");
+      GELOGE(ret, "[Unlink][Op] %s(%s) data input:%u with control edge copy failed",
+             node->GetName().c_str(), node->GetType().c_str(), kRemoveInputIndex);
       return ret;
     }
     // 2.Remove const axis node without any output
     if ((axis_node->GetType() == CONSTANT || axis_node->GetType() == CONSTANTOP) &&
         axis_node->GetOutDataNodesSize() == 0) {
       ret = IsolateAndDeleteNode(axis_node, {});
-      GE_CHK_GRAPH_STATUS_RET(ret, "Fail to remove node %s.", axis_node->GetName().c_str());
+      GE_CHK_GRAPH_STATUS_RET(ret, "[Remove][Node] %s failed.", axis_node->GetName().c_str());
       GELOGI("Remove useless axis input const %s", axis_node->GetName().c_str());
     }
   }
 
   ret = DealWithInNodes(node);
   if (ret != SUCCESS) {
-    GELOGE(ret, "DealWithInNodes of %s failed.", node->GetName().c_str());
+    GELOGE(ret, "[DealWith][InNodes] of node:%s failed.", node->GetName().c_str());
     return ret;
   }
 
@@ -147,14 +148,14 @@ NodePtr DimensionAdjustPass::AddIdentityNodeToGraph(const string &name, const Ge
                                                     ComputeGraphPtr &graph) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "Comput graph ptr is null in creating identity node.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Comput graph ptr is nullptr in creating identity node.");
     return nullptr;
   }
 
   OpDescPtr desc = MakeShared<OpDesc>("", "");
   if (desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(MEMALLOC_FAILED, "Failed to create op desc.");
+    GELOGE(MEMALLOC_FAILED, "[New][OpDesc] failed.");
     return nullptr;
   }
 
@@ -165,7 +166,8 @@ NodePtr DimensionAdjustPass::AddIdentityNodeToGraph(const string &name, const Ge
   if ((ret != GRAPH_SUCCESS) || (ret2 != GRAPH_SUCCESS)) {
     REPORT_CALL_ERROR("E19999", "Add input or ouput desc to op:%s(%s) failed",
                       desc->GetName().c_str(), desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Failed to add input/output desc in creating identity.");
+    GELOGE(INTERNAL_ERROR, "[Add][GeTensorDesc] to op:%s(%s) failed",
+           desc->GetName().c_str(), desc->GetType().c_str());
     return nullptr;
   }
 

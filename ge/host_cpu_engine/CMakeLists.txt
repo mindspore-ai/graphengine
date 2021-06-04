@@ -1,10 +1,3 @@
-set(PROTO_LIST
-    "${METADEF_DIR}/proto/task.proto"
-)
-
-protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-protobuf_generate(ge_atcstub PROTO_ATCSTUB_SRCS PROTO_ATCSTUB_HDRS ${PROTO_LIST})
-
 set(SRC_LIST
     "engine/host_cpu_engine.cc"
     "ops_kernel_store/host_cpu_ops_kernel_info.cc"
@@ -17,7 +10,11 @@ set(CPU_OPS_KERNEL_LIST
 )
 
 ############ libhost_cpu_engine.so ############
-add_library(host_cpu_engine SHARED ${SRC_LIST} ${PROTO_HDRS})
+add_library(host_cpu_engine SHARED ${SRC_LIST})
+
+add_dependencies(host_cpu_engine
+    graphengine_protos
+)
 
 target_compile_options(host_cpu_engine PRIVATE
     -Werror
@@ -40,7 +37,7 @@ target_include_directories(host_cpu_engine PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
@@ -62,7 +59,11 @@ target_link_libraries(host_cpu_engine PRIVATE
 )
 
 ############ atcstub/libhost_cpu_engine.so ############
-add_library(atc_host_cpu_engine SHARED ${SRC_LIST} ${PROTO_ATCSTUB_HDRS})
+add_library(atc_host_cpu_engine SHARED ${SRC_LIST})
+
+add_dependencies(atc_host_cpu_engine
+    graphengine_protos
+)
 
 target_compile_options(atc_host_cpu_engine PRIVATE
     -Werror
@@ -85,7 +86,7 @@ target_include_directories(atc_host_cpu_engine PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge_atcstub
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
@@ -114,6 +115,10 @@ set_target_properties(atc_host_cpu_engine PROPERTIES
 ############ libhost_cpu_opskernel_builder.so ############
 add_library(host_cpu_opskernel_builder SHARED ${CPU_OPS_KERNEL_LIST})
 
+add_dependencies(host_cpu_opskernel_builder
+    graphengine_protos
+)
+
 target_compile_options(host_cpu_opskernel_builder PRIVATE
     -Werror
     -fno-common
@@ -135,7 +140,7 @@ target_include_directories(host_cpu_opskernel_builder PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
@@ -160,6 +165,10 @@ target_link_libraries(host_cpu_opskernel_builder PRIVATE
 ############ atclib/libhost_cpu_opskernel_builder.so ############
 add_library(atc_host_cpu_opskernel_builder SHARED ${CPU_OPS_KERNEL_LIST})
 
+add_dependencies(atc_host_cpu_opskernel_builder
+    graphengine_protos
+)
+
 target_compile_options(atc_host_cpu_opskernel_builder PRIVATE
     -Werror
     -fno-common
@@ -181,7 +190,7 @@ target_include_directories(atc_host_cpu_opskernel_builder PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####
@@ -211,6 +220,10 @@ set_target_properties(atc_host_cpu_opskernel_builder PROPERTIES
 ############ libhost_cpu_opskernel_builder.a ############
 add_library(host_cpu_opskernel_builder_static STATIC ${CPU_OPS_KERNEL_LIST})
 
+add_dependencies(host_cpu_opskernel_builder_static
+    graphengine_protos
+)
+
 target_compile_options(host_cpu_opskernel_builder_static PRIVATE
     -Werror
     -fno-common
@@ -233,7 +246,7 @@ target_include_directories(host_cpu_opskernel_builder_static PRIVATE
     ${METADEF_DIR}/inc/external
     ${METADEF_DIR}/inc/external/graph
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     #### blue zone ####

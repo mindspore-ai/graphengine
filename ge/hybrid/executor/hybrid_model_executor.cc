@@ -50,7 +50,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   auto root_graph_item = model_->GetRootGraphItem();
   GE_CHECK_NOTNULL(root_graph_item);
 
-  if (root_graph_item->IsDynamic()) {
+  if (root_graph_item->IsDynamic() && !model_->IsSingleOp()) {
     GE_CHK_STATUS_RET(CheckInputShapeByShapeRange(root_graph_item, args),
                       "[%s] check input node shape by shape range failed.",
                       root_graph_item->GetName().c_str());
@@ -90,7 +90,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   int32_t device_id = static_cast<int32_t>(device_id_);
   auto &prof_mgr = ProfilingManager::Instance();
   // tag_id 0 means step begin, 1 meas step end.
-  if (!model_->IsSingleOp() && prof_mgr.ProfilingModelLoadOn()) {
+  if (!model_->IsSingleOp()) {
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 0, stream_, device_id));
   }
 
@@ -98,7 +98,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
                         "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
 
-  if (!model_->IsSingleOp() && prof_mgr.ProfilingModelLoadOn()) {
+  if (!model_->IsSingleOp()) {
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 1, stream_, device_id));
   }
 

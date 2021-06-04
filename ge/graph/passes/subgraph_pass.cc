@@ -464,8 +464,8 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
   GE_CHECK_NOTNULL(out_anchor);
   NodePtr in_node = out_anchor->GetOwnerNode();
   OpDescBuilder op_desc_builder(name, IDENTITY);
-  OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(0))
-                                     .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(0))
+  OpDescPtr op_desc = op_desc_builder.AddInput("x", in_node->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx()))
+                                     .AddOutput("y", in_node->GetOpDesc()->GetOutputDesc(out_anchor->GetIdx()))
                                      .Build();
   (void)AttrUtils::SetBool(op_desc, ATTR_NO_NEED_CONSTANT_FOLDING, false);
   (void)AttrUtils::SetBool(op_desc, ATTR_NAME_CANNOT_BE_DELETED, true);

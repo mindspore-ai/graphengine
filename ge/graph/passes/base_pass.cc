@@ -142,13 +142,14 @@ void PushToRePassIfSeen(NodePtr &node, const std::pair<std::string, BaseNodePass
 
 Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, DuringPassNodeSets &during_pass_node_set) {
   if (node == nullptr) {
-    GELOGE(FAILED, "parameter is null.");
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid.");
+    GELOGE(FAILED, "[Check][Param] parameter node is nullptr.");
     return FAILED;
   }
   GELOGD("Begin to run pass for node %s", node->GetName().c_str());
   for (const auto &name_to_pass : names_to_passes) {
     if (name_to_pass.second == nullptr) {
-      GELOGE(INTERNAL_ERROR, "There is null pointer in passes(%s), skip it", name_to_pass.first.c_str());
+      GELOGE(INTERNAL_ERROR, "[Check][Param] There is null pointer in passes(%s), skip it", name_to_pass.first.c_str());
       continue;
     }
 
@@ -156,8 +157,9 @@ Status RunPasses(NodePtr &node, const NamesToPass &names_to_passes, DuringPassNo
     name_to_pass.second->init();
     auto result = name_to_pass.second->Run(node);
     if (result != SUCCESS) {
-      GELOGE(INTERNAL_ERROR,
-             "Failed to process pass %s on node %s, result "
+      REPORT_CALL_ERROR("E19999", "process pass %s on node:%s failed, ret:%u",
+                        name_to_pass.first.c_str(), node->GetName().c_str(), result);
+      GELOGE(INTERNAL_ERROR, "[Process][Pass] %s on node %s failed, result "
              "%u, the passes will be terminated immediately.",
              name_to_pass.first.c_str(), node->GetName().c_str(), result);
       return result;
@@ -201,26 +203,31 @@ void ClearOption(NamesToPass names_to_pass) {
 
 Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> &io_map) {
   if (node == nullptr) {
-    GELOGE(FAILED, "parameter is null.");
+    REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid.");
+    GELOGE(FAILED, "[Check][Param] parameter node is nullptr.");
     return FAILED;
   }
   GELOGI("Prepare to isolate and delete node, name:%s, type:%s.", node->GetName().c_str(),
          node->GetType().c_str());
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   if (graph == nullptr) {
-    GELOGE(FAILED, "[%s] The owner graph must not be null.", node->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "The owner graph of node:%s must not be null.", node->GetName().c_str());
+    GELOGE(FAILED, "[Get][OwnerComputeGraph] failed, The owner graph of node:%s must not be null.",
+           node->GetName().c_str());
     return FAILED;
   }
 
   AddRePassNodesWithInOut(node);
 
   if (GraphUtils::IsolateNode(node, io_map) != GRAPH_SUCCESS) {
-    GELOGE(FAILED, "[%s] IsolateNode failed.", node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Isolate Node:%s failed", node->GetName().c_str());
+    GELOGE(FAILED, "[Isolate][Node] %s failed.", node->GetName().c_str());
     return FAILED;
   }
 
   if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != SUCCESS) {
-    GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "call RemoveNodeWithoutRelink for node:%s failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[Call][RemoveNodeWithoutRelink] for node:%s failed.", node->GetName().c_str());
     return FAILED;
   }
 
@@ -230,7 +237,8 @@ Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> 
 
 Status GEPass::Run(const NamesToPass &names_to_passes) {
   if (graph_ == nullptr) {
-    GELOGE(INTERNAL_ERROR, "The graph is null");
+    REPORT_INNER_ERROR("E19999", "graph_ is nullptr, check invalid.");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] The graph is nullptr");
     return INTERNAL_ERROR;
   }
   if (names_to_passes.empty()) {
@@ -240,7 +248,7 @@ Status GEPass::Run(const NamesToPass &names_to_passes) {
 
   if (depth_ > kMaxRecursiveDepth) {
     GELOGE(PARAM_INVALID,
-        "The pass for root graph %s will be terminated because too many nesting"
+        "[Check][Param] The pass for root graph %s will be terminated because too many nesting"
         " levels(%d) of subgraphs, last subgraph is %s",
         root_graph_->GetName().c_str(), depth_, graph_->GetName().c_str());
     return PARAM_INVALID;
@@ -284,7 +292,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
 
       auto ret = RunPasses(node, names_to_passes, during_pass_node_set);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
+        GELOGE(ret, "[Process][Passes] on node %s type %s failed, error code:%u",
                node->GetName().c_str(), node->GetType().c_str(), ret);
         return ret;
       }
@@ -292,7 +300,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
       bool has_sub_graph = false;
       ret = RunPassesOnSubGraph(node, names_to_passes, has_sub_graph);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Failed to run passes on the sub graph of node %s", node->GetName().c_str());
+        GELOGE(ret, "[Run][Passes] on the sub graph of node %s failed", node->GetName().c_str());
         return ret;
       }
 
@@ -301,7 +309,7 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
         SetFlagOption(kOptimizeAfterSubGraph, names_to_passes);
         ret = RunPasses(node, names_to_passes, during_pass_node_set);
         if (ret != SUCCESS) {
-          GELOGE(ret, "Failed to process passes on node %s type %s, error code: %u",
+          GELOGE(ret, "[Process][Passes] on node %s type %s failed, error code: %u",
                  node->GetName().c_str(), node->GetType().c_str(), ret);
           return ret;
         }
@@ -347,7 +355,7 @@ Status GEPass::RunPassesOnSubGraph(const NodePtr &node, const NamesToPass &names
     GEPass pass(graph, root_graph_, depth_ + 1);
     auto ret = pass.Run(names_to_passes);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Failed to run passes for sub graph %s from node %s", name.c_str(), node->GetName().c_str());
+      GELOGE(ret, "[Run][Passes] for sub graph:%s from node:%s failed", name.c_str(), node->GetName().c_str());
       return ret;
     }
   }

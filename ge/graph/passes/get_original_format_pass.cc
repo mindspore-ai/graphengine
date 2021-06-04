@@ -37,7 +37,8 @@ using domi::SUCCESS;
 namespace ge {
 Status GetOriginalFormatPass::Run(ge::ComputeGraphPtr graph) {
   GE_CHECK_NOTNULL(graph);
-  GE_RETURN_WITH_LOG_IF_ERROR(SetOriginalFormat(graph), "SetOriginalFormat failed");
+  GE_RETURN_WITH_LOG_IF_ERROR(SetOriginalFormat(graph),
+                              "[Set][OriginalFormat] for graph:%s failed", graph->GetName().c_str());
 
   return SUCCESS;
 }
@@ -54,7 +55,8 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
                     REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                       ATTR_NAME_INFERRED_FORMAT.c_str(),
                                       node_ptr->GetName().c_str(), node_ptr->GetType().c_str());
-                    GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
+                    GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_INFERRED_FORMAT.c_str(),
+                           node_ptr->GetName().c_str(), node_ptr->GetType().c_str());
                     return FAILED);
   }
 
@@ -70,13 +72,15 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                         ATTR_NAME_FORMAT.c_str(),
                                         desc_ptr->GetName().c_str(), desc_ptr->GetType().c_str());
-                      GELOGE(FAILED, "set ATTR_NAME_FORMAT failed");
+                      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_FORMAT.c_str(),
+                             desc_ptr->GetName().c_str(), desc_ptr->GetType().c_str());
                       return FAILED);
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(desc_ptr, ATTR_NAME_INFERRED_FORMAT, ori_format),
                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                         ATTR_NAME_INFERRED_FORMAT.c_str(),
                                         desc_ptr->GetName().c_str(), desc_ptr->GetType().c_str());
-                      GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
+                      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_INFERRED_FORMAT.c_str(),
+                             desc_ptr->GetName().c_str(), desc_ptr->GetType().c_str());
                       return FAILED);
       continue;
     }
@@ -142,7 +146,8 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                         ATTR_NAME_IGNORE_PRED_FORMAT.c_str(),
                                         tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
-                      GELOGE(FAILED, "remove edge failed");
+                      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_IGNORE_PRED_FORMAT.c_str(),
+                             tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
                       return FAILED);
     }
 
@@ -152,23 +157,27 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                         ATTR_NAME_FORMAT.c_str(),
                                         tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
-                      GELOGE(FAILED, "set ATTR_NAME_FORMAT failed");
+                      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_FORMAT.c_str(),
+                             tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
                       return FAILED);
       GE_IF_BOOL_EXEC(!AttrUtils::SetInt(tmp_op_ptr, ATTR_NAME_INFERRED_FORMAT, ori_format),
                       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                                         ATTR_NAME_INFERRED_FORMAT.c_str(),
                                         tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
-                      GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
+                      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_INFERRED_FORMAT.c_str(),
+                             tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
                       return FAILED);
     } else {
       int64_t existingFormat = 0;
       GE_RETURN_WITH_LOG_IF_FALSE(AttrUtils::GetInt(tmp_op_ptr, ATTR_NAME_FORMAT, existingFormat),
-                                  "Get existing_format attr failed");
+                                  "[Get][Attr] %s from op:%s(%s) failed", ATTR_NAME_FORMAT.c_str(),
+                                  tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
       if (!AttrUtils::SetInt(tmp_op_ptr, ATTR_NAME_INFERRED_FORMAT, existingFormat)) {
         REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
                           ATTR_NAME_INFERRED_FORMAT.c_str(),
                           tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
-        GELOGE(FAILED, "set ATTR_NAME_INFERRED_FORMAT failed");
+        GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_INFERRED_FORMAT.c_str(),
+               tmp_op_ptr->GetName().c_str(), tmp_op_ptr->GetType().c_str());
         return FAILED;
       }
     }
@@ -177,7 +186,7 @@ Status GetOriginalFormatPass::SetOriginalFormat(const ge::ComputeGraphPtr &graph
 }
 
 bool GetOriginalFormatPass::IsFormatTranspose(const ge::OpDescPtr op_ptr, int32_t ori_format) {
-  GE_CHK_BOOL_EXEC(op_ptr != nullptr, return false, "opdef is nullptr");
+  GE_CHK_BOOL_EXEC(op_ptr != nullptr, return false, "[Check][Param] op_ptr is nullptr");
   if (op_ptr->GetType() == PERMUTE) {
     vector<int32_t> index_list;
     GE_IF_BOOL_EXEC(!AttrUtils::GetListInt(op_ptr, PERMUTE_ATTR_ORDER, index_list), return false);

@@ -242,7 +242,6 @@ Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
 
   auto node_state = subgraph_context_->GetOrCreateNodeState(&node_item);
   GE_CHECK_NOTNULL(node_state);
-  node_state->ResetContext(group);
   auto p_node_state = node_state.get();
 
   if (node_item.node_type == NETOUTPUT) {
@@ -367,7 +366,6 @@ Status SubgraphExecutor::NodeScheduled(NodeState *node_state) {
     };
 
     GE_CHK_STATUS_RET_NOLOG(node_state->NodeScheduled(callback));
-    node_state->ResetSchedule();
     RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] End");
     return SUCCESS;
   });
@@ -539,6 +537,7 @@ Status SubgraphExecutor::LaunchTasks() {
 
 Status SubgraphExecutor::ScheduleTasks(int group) {
   GELOGD("[%s] Start to schedule prepare workers.", graph_item_->GetName().c_str());
+  subgraph_context_->SetGroup(group);
   auto prepare_future = std::async(std::launch::async, [&]() -> Status {
     GetContext().SetSessionId(context_->session_id);
     GetContext().SetContextId(context_->context_id);
@@ -704,7 +703,21 @@ Status SubgraphExecutor::PartialExecuteAsync(int task_group) {
 
 Status SubgraphExecutor::InitForPartialExecution(const vector<TensorValue> &inputs,
                                                  const vector<ConstGeTensorDescPtr> &input_desc) {
-  return Init(inputs, input_desc);
+  if (subgraph_context_ == nullptr) {
+    return Init(inputs, input_desc);
+  }
+  subgraph_context_->Reset();
+  if (graph_item_->IsDynamic()) {
+    GE_CHK_STATUS_RET(InitInputsForUnknownShape(inputs, input_desc),
+                      "[%s] Failed to set inputs.",
+                      graph_item_->GetName().c_str());
+  } else {
+    GE_CHK_STATUS_RET(InitInputsForKnownShape(inputs),
+                      "[Invoke][InitInputsForKnownShape][%s] Failed to init subgraph executor for known shape subgraph",
+                      graph_item_->GetName().c_str());
+  }
+
+  return SUCCESS;
 }
 }  // namespace hybrid
 }  // namespace ge

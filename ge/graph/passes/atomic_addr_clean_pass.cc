@@ -159,7 +159,8 @@ Status AtomicAddrCleanPass::HandleLoopGraph(ComputeGraphPtr &graph, const vector
     // Insert atomic clean op
     NodePtr clean_addr_node = InsertAtomicAddrCleanNode(graph);
     if (clean_addr_node == nullptr) {
-      GELOGE(FAILED, "Insert AtomicAddrClean node failed. Ignore atomicAddrClean pass.");
+      GELOGE(FAILED, "[Insert][AtomicAddrCleanNode] to graph:%s failed. Ignore atomicAddrClean pass.",
+             graph->GetName().c_str());
       return FAILED;
     }
 
@@ -173,7 +174,9 @@ Status AtomicAddrCleanPass::HandleLoopGraph(ComputeGraphPtr &graph, const vector
 
     auto ret = LinkToAtomicNode(node, clean_addr_node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Link control anchor failed from atomic node to atomic_addr_clean node.");
+      GELOGE(ret,
+             "[Call][LinkToAtomicNode] Link control anchor failed from atomic node:%s to atomic_addr_clean:%s node.",
+             node->GetName().c_str(), clean_addr_node->GetName().c_str());
       return ret;
     }
     index++;
@@ -188,7 +191,7 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
   vector<NodePtr> dispersed_atomic_nodes;
   auto ret = HandleDispersedAtomicNodes(graph, atomic_node_vec, common_atomic_nodes, dispersed_atomic_nodes);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Handle dispersed atomic nodes failed, graph name is %s.", graph->GetName().c_str());
+    GELOGE(ret, "[Call][HandleDispersedAtomicNodes] failed, graph name is %s.", graph->GetName().c_str());
     return ret;
   }
 
@@ -200,13 +203,15 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
   // not loop graph , insert only one clean node in graph
   NodePtr clean_addr_node = InsertAtomicAddrCleanNode(graph);
   if (clean_addr_node == nullptr) {
-    GELOGE(FAILED, "Insert AtomicAddrClean node failed. Ignore atomicAddrClean pass.");
+    GELOGE(FAILED, "[Insert][AtomicAddrCleanNode] in graph:%s failed. Ignore atomicAddrClean pass.",
+           graph->GetName().c_str());
     return FAILED;
   }
   for (const auto &node : common_atomic_nodes) {
     ret = LinkToAtomicNode(node, clean_addr_node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Link control anchor failed from atomic node to atomic_addr_clean node.");
+      GELOGE(ret, "[Link][ControlAnchor] failed from atomic node:%s to atomic_addr_clean node:%s.",
+             node->GetName().c_str(), clean_addr_node->GetName().c_str());
       return ret;
     }
   }
@@ -218,7 +223,8 @@ Status AtomicAddrCleanPass::HandleNormalGraph(ComputeGraphPtr &graph, const vect
       NodePtr peer_in_node = in_anchor->GetPeerOutAnchor()->GetOwnerNode();
       ret = LinkToAtomicNode(peer_in_node, clean_addr_node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Link failed, %s : %s", peer_in_node->GetName().c_str(), clean_addr_node->GetName().c_str());
+        GELOGE(ret, "[Link][ControlAnchor] from node:%s to node:%s failed",
+               peer_in_node->GetName().c_str(), clean_addr_node->GetName().c_str());
         return ret;
       }
     }
@@ -276,7 +282,8 @@ Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
     if (!node_anchors_connect_netoutput.empty()) {
       NodePtr dispersed_clean_addr_node = InsertAtomicAddrCleanNode(graph);
       if (dispersed_clean_addr_node == nullptr) {
-        GELOGE(FAILED, "Insert AtomicAddrClean node failed. Ignore atomicAddrClean pass.");
+        GELOGE(FAILED, "[Insert][AtomicAddrCleanNode] in graph:%s failed. Ignore atomicAddrClean pass.",
+               graph->GetName().c_str());
         return FAILED;
       }
 
@@ -291,7 +298,7 @@ Status AtomicAddrCleanPass::HandleDispersedAtomicNodes(ComputeGraphPtr &graph,
       ++index;
       Status ret = LinkToAtomicNode(node, dispersed_clean_addr_node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Link control anchor failed from atomic node: %s to atomic_addr_clean node: %s.",
+        GELOGE(ret, "[Link][ControlAnchor] failed from atomic node:%s to atomic_addr_clean node:%s.",
                node->GetName().c_str(), dispersed_clean_addr_node->GetName().c_str());
         return ret;
       }
@@ -308,7 +315,7 @@ NodePtr AtomicAddrCleanPass::InsertAtomicAddrCleanNode(ComputeGraphPtr &graph) {
   OpDescPtr op_desc = MakeShared<OpDesc>(NODE_NAME_ATOMIC_ADDR_CLEAN, ATOMICADDRCLEAN);
   if (op_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(INTERNAL_ERROR, "Make shared atomic addr clean op failed.");
+    GELOGE(INTERNAL_ERROR, "[New][OpDesc] failed.");
     return nullptr;
   }
   string session_graph_id;
@@ -336,7 +343,7 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
   GE_IF_BOOL_EXEC(atomic_node == nullptr || atomic_clean_node == nullptr,
                   REPORT_INNER_ERROR("E19999", "Param atomic_node or atomic_clean_node is nullptr, "
                                      "check invalid");
-                  DOMI_LOGE("param [atomic_node][atomic_clean_node] must not be null.");
+                  DOMI_LOGE("[Check][Param] param [atomic_node][atomic_clean_node] must not be null.");
                   return PARAM_INVALID);
   InControlAnchorPtr in_ctrl_anchor = atomic_node->GetInControlAnchor();
   OutControlAnchorPtr out_ctrl_anchor = atomic_clean_node->GetOutControlAnchor();
@@ -345,9 +352,9 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
                        "check invalid",
                        atomic_node->GetName().c_str(), atomic_node->GetType().c_str(),
                        atomic_clean_node->GetName().c_str(), atomic_clean_node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR,
-           "Get control anchor faild, dst node: %s.",
-           atomic_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] in_ctrl_anchor of op:%s(%s) or out_ctrl_anchor of op:%s(%s) is nullptr.",
+           atomic_node->GetName().c_str(), atomic_node->GetType().c_str(),
+           atomic_clean_node->GetName().c_str(), atomic_clean_node->GetType().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -358,9 +365,9 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
                       out_ctrl_anchor->GetOwnerNode()->GetType().c_str(),
                       in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
                       in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
-    GELOGE(INTERNAL_ERROR,
-           "Graph add cleanAddrNode op out ctrl edge fail, dst node: %s.",
-           atomic_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+           out_ctrl_anchor->GetOwnerNode()->GetName().c_str(), out_ctrl_anchor->GetOwnerNode()->GetType().c_str(),
+           in_ctrl_anchor->GetOwnerNode()->GetName().c_str(), in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
     return INTERNAL_ERROR;
   }
   GELOGD("Graph add cleanAddrNode op out ctrl edge, dst node: %s.", atomic_node->GetName().c_str());
@@ -375,7 +382,7 @@ Status AtomicAddrCleanPass::LinkToAtomicNode(const NodePtr &atomic_node, NodePtr
 }
 
 bool AtomicAddrCleanPass::IsAtomicOp(const NodePtr &node) {
-  GE_IF_BOOL_EXEC(node == nullptr, GELOGE(FAILED, "node is null."); return false);
+  GE_IF_BOOL_EXEC(node == nullptr, GELOGE(FAILED, "[Check][Param] node is nullptr."); return false);
   OpDescPtr op_desc = node->GetOpDesc();
   if (op_desc == nullptr) {
     return false;
@@ -416,7 +423,7 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
   std::shared_ptr<GELib> instance = ge::GELib::GetInstance();
   if ((instance == nullptr) || !instance->InitFlag()) {
     REPORT_INNER_ERROR("E19999", "GeLib is not init before, check invalid");
-    GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "CompileSingleOp failed.");
+    GELOGE(ge::GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] GeLib is not init before.");
     return ge::GE_CLI_GE_NOT_INITIALIZED;
   }
 
@@ -428,10 +435,10 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
     }
     string kernel_lib_name = op_desc->GetOpKernelLibName();
     if (kernel_lib_name.empty()) {
-      REPORT_INNER_ERROR("E19999", "Find ops kernel by name:%s failed",
-                         kernel_lib_name.c_str());
-      GELOGE(ge::INTERNAL_ERROR, "Get atomic node:%s(%s) kernel lib failed.", atomic_node->GetName().c_str(),
-             atomic_node->GetType().c_str());
+      REPORT_INNER_ERROR("E19999", "Find ops kernel by name of op:%s(%s) failed",
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
+      GELOGE(ge::INTERNAL_ERROR, "[Get][OpKernelLibName] of op:%s(%s) failed.", op_desc->GetName().c_str(),
+             op_desc->GetType().c_str());
       return ge::INTERNAL_ERROR;
     }
 
@@ -451,8 +458,8 @@ Status AtomicAddrCleanPass::CompileUnknownGraphOp(const vector<NodePtr> &atomic_
     GE_TIMESTAMP_ADD(UnknownGraphCompileOp);
     if (ret != ge::SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Call CompileOp failed, kernel_lib_name:%s, ret:%d",
-                         kernel_lib_name.c_str(), ret);
-      GELOGE(ret, "Compile atomic op failed, kernel lib name is %s", kernel_lib_name.c_str());
+                        kernel_lib_name.c_str(), ret);
+      GELOGE(ret, "[Compile][AtomicOp] failed, kernel lib name is %s", kernel_lib_name.c_str());
       return ret;
     }
   }

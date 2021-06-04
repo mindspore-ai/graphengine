@@ -115,7 +115,7 @@ class ModelUtils {
   /// @return Status
   ///
   static Status GetVarAddr(const RuntimeParam &model_param, const ConstOpDescPtr &op_desc, int64_t offset,
-                           uint8_t *&var_addr);
+                           int64_t tensor_size, uint8_t *&var_addr);
 };
 }  // namespace ge
 

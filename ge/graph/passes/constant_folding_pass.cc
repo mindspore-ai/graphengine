@@ -33,12 +33,12 @@ Status RunOpKernelWithCheck(NodePtr &node,
                             std::vector<GeTensorPtr> &outputs) {
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
-    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "GE is not initialized or is finalized.");
+    GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] GE is not initialized or is finalized.");
     return UNSUPPORTED;
   }
   OpsKernelInfoStorePtr kernel_info = instance_ptr->OpsKernelManagerObj().GetOpsKernelInfoStore(kKernelLibName);
   if (kernel_info == nullptr) {
-    GELOGE(FAILED, "Get op kernel info store %s failed", kKernelLibName.c_str());
+    GELOGE(FAILED, "[Get][OpsKernelInfoStore] %s failed", kKernelLibName.c_str());
     return UNSUPPORTED;
   }
 
@@ -110,7 +110,7 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
       }
       REPORT_CALL_ERROR("E19999", "Calculate for node %s(%s) failed",
                         node->GetName().c_str(), node->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "Calculate for node %s failed in constant folding", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Call][Calculate] for node %s failed in constant folding", node->GetName().c_str());
       return ret;
     }
     GELOGI("Node %s type %s, constant folding compute success.", node->GetName().c_str(), node->GetType().c_str());
@@ -129,10 +129,8 @@ Status ConstantFoldingPass::Run(ge::NodePtr &node) {
   if (outputs.empty()) {
     REPORT_INNER_ERROR("E19999", "After calculate for node %s(%s), output weight is empty, check invalid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR,
-           "Failed to constant folding on node %s,"
-           " no output weight",
-           node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] After calculate for node %s(%s), output weight is empty",
+           node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
   }
 

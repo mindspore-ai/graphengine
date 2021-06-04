@@ -22,16 +22,25 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/types.h"
 #include "graph/build/memory/block_mem_assigner.h"
+#include "common/math/math_util.h"
 
-#define VALIDATE_MEM_RANGE(OP, SIZE, OFFSET)                                                                 \
-  do {                                                                                                       \
-    if (SIZE <= static_cast<uint64_t>(OFFSET)) {                                                             \
-      REPORT_INNER_ERROR("E19999",                                                                           \
-                         "Node:%s(%s) offset:%ld out of range size:%lu, check invalid",                      \
-                         OP->GetName().c_str(), OP->GetType().c_str(), OFFSET, SIZE);                        \
-      GELOGE(OUT_OF_MEMORY, "Node: %s, memory out of range[%lu: %ld]", OP->GetName().c_str(), SIZE, OFFSET); \
-      return {};                                                                                             \
-    }                                                                                                        \
+#define VALIDATE_MEM_RANGE(OP, TOTAL_SIZE, OFFSET, SIZE)                                                    \
+  do {                                                                                                      \
+    if (ge::CheckInt64AddOverflow((OFFSET), (SIZE)) != SUCCESS) {                                           \
+      GELOGE(PARAM_INVALID, "Int64 %ld and %ld addition can result in overflow!",                           \
+             static_cast<int64_t>(OFFSET), static_cast<int64_t>(SIZE));                                     \
+      return {};                                                                                            \
+    }                                                                                                       \
+    int64_t range = (OFFSET) + (SIZE);                                                                      \
+    if ((TOTAL_SIZE) < static_cast<uint64_t>(range)) {                                                      \
+      REPORT_INNER_ERROR("E19999",                                                                          \
+                         "Node:%s(%s) memory out of range, offset:%ld, size:%ld, exceed total size:%lu.",   \
+                         OP->GetName().c_str(), OP->GetType().c_str(), (OFFSET), (SIZE), (TOTAL_SIZE));     \
+      GELOGE(OUT_OF_MEMORY,                                                                                 \
+             "[Check][Param]Node:%s(%s) memory out of range, offset:%ld, size:%ld, exceed total size:%lu.", \
+             OP->GetName().c_str(), OP->GetType().c_str(), (OFFSET), (SIZE), (TOTAL_SIZE));                 \
+      return {};                                                                                            \
+    }                                                                                                       \
   } while (0)
 
 namespace ge {
@@ -312,27 +321,30 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     REPORT_INNER_ERROR("E19999", "Attr:%s, memory_type.size:%zu != input_desc.size:%zu, op:%s(%s), check invalid",
                        ATTR_NAME_INPUT_MEM_TYPE_LIST.c_str(), v_memory_type.size(), inputs_size,
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID, "Fusion: check input size failed, op: %s, input v_memory_type size: %zu input numbers: %zu",
-           op_desc->GetName().c_str(), v_memory_type.size(), inputs_size);
+    GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s, memory_type.size:%zu != input_desc.size:%zu, op:%s(%s)",
+           ATTR_NAME_INPUT_MEM_TYPE_LIST.c_str(), v_memory_type.size(), inputs_size,
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return v_input_data_addr;
   }
   for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
     const GeTensorDescPtr tensor_desc = op_desc->MutableInputDesc(static_cast<uint32_t>(i));
     GE_IF_BOOL_EXEC(tensor_desc == nullptr, GELOGD("Op: %s, Index: %zu, has no input", op_desc->GetName().c_str(), i);
                     continue;)
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS_EXEC(TensorUtils::GetSize(*tensor_desc, tensor_size), return {});
     if ((i < v_is_input_const.size()) && v_is_input_const[i]) {
-      // TBE: add weights address to input
-      int64_t tensor_size = 0;
-      GE_CHK_STATUS(TensorUtils::GetSize(*tensor_desc, tensor_size));
-      if (tensor_size) {
-        int64_t data_offset = 0;
-        GE_CHK_STATUS(TensorUtils::GetDataOffset(*tensor_desc, data_offset));
-        VALIDATE_MEM_RANGE(op_desc, model_param.weight_size, data_offset);
-        uint8_t *weight_addr = model_param.weight_base + data_offset;
-        v_input_data_addr.push_back(weight_addr);
-        GELOGI("[IMAS]GetInputDataAddrs graph_%u type[C] name[%s] input[%zu] memaddr[%p]", model_param.graph_id,
-               op_desc->GetName().c_str(), i, weight_addr);
-      }
+      // Add weights address to input
+      int64_t data_offset = 0;
+      GE_CHK_STATUS(TensorUtils::GetDataOffset(*tensor_desc, data_offset));
+      int64_t weight_size = 0;
+      // The reason why GetTensorSizeInBytes is used here is that the weight is allocated based on the size of
+      // TensorData in function AdjustConstWeightSize. and the size is zero when the tensor is empty.
+      GE_CHK_STATUS(TensorUtils::GetTensorSizeInBytes(*tensor_desc, weight_size));
+      VALIDATE_MEM_RANGE(op_desc, model_param.weight_size, data_offset, weight_size);
+      uint8_t *weight_addr = model_param.weight_base + data_offset;
+      v_input_data_addr.push_back(weight_addr);
+      GELOGI("[IMAS]GetInputDataAddrs graph_%u type[C] name[%s] input[%zu] memaddr[%p]", model_param.graph_id,
+             op_desc->GetName().c_str(), i, weight_addr);
       non_const_index++;
       continue;
     }
@@ -341,9 +353,13 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
 
     int64_t input_offset = v_input_offset[non_const_index];
     non_const_index++;
-    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset),
+    int64_t inner_offset = 0;
+    (void)ge::AttrUtils::GetInt(op_desc->MutableInputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
+    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset - inner_offset),
                     uint8_t *variable_addr = nullptr;
-                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, input_offset, variable_addr), return {});
+                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, input_offset - inner_offset,
+                                                  tensor_size + inner_offset, variable_addr), return {});
+                    variable_addr += inner_offset;
                     v_input_data_addr.push_back(variable_addr);
                     GELOGI("[IMAS]GetInputDataAddrs graph_%u type[V] name[%s] input[%lu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
@@ -357,9 +373,8 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
       mem_addr = reinterpret_cast<uint8_t *>(static_cast<intptr_t>(input_offset));
       v_input_data_addr.push_back(mem_addr);
     } else if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_TS_4G) {
-      int64_t tensor_size = 0;
-      GE_CHK_STATUS_EXEC(TensorUtils::GetSize(*tensor_desc, tensor_size), return {});
-      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset);
+      // The input size and peer output size may be not consecutive, therefore, the tensor_size is not been checked.
+      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset, static_cast<int64_t>(0));
       mem_addr = model_param.ts_mem_mall->Acquire(input_offset, static_cast<uint64_t>(tensor_size));
       v_input_data_addr.push_back(mem_addr);
     } else if (tensor_has_mem_type && mem_type == RT_MEMORY_P2P_DDR) {
@@ -369,7 +384,8 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
              op_desc->GetName().c_str(), i, p2p_mem_addr);
       continue;
     } else {
-      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset);
+      // The input size and peer output size may be not consecutive, therefore, the tensor_size is not been checked.
+      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, input_offset, static_cast<int64_t>(0));
       mem_addr = model_param.mem_base + input_offset;
       v_input_data_addr.push_back(mem_addr);
     }
@@ -386,26 +402,25 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
 /// @return Status
 ///
 Status ModelUtils::GetVarAddr(const RuntimeParam &model_param, const ConstOpDescPtr &op_desc, int64_t offset,
-                              uint8_t *&var_addr) {
+                              int64_t tensor_size, uint8_t *&var_addr) {
   rtMemType_t mem_type = ge::VarManager::Instance(model_param.session_id)->GetVarMemType(offset);
   switch (mem_type) {
     case RT_MEMORY_RDMA_HBM:
       if (offset < 0) {
         REPORT_INNER_ERROR("E19999", "Param offset:%ld < 0, check invalid", offset);
-        GELOGE(PARAM_INVALID, "rdma var addr is invalid, addr=%p",
-               reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset)));
+        GELOGE(PARAM_INVALID, "[Check][Param] Param offset:%ld cannot be negative", offset);
         return PARAM_INVALID;
       }
       var_addr = reinterpret_cast<uint8_t *>(static_cast<uintptr_t>(offset));
       break;
     case RT_MEMORY_HBM:
-      VALIDATE_MEM_RANGE(op_desc, model_param.var_size, offset - model_param.logic_var_base);
+      VALIDATE_MEM_RANGE(op_desc, model_param.var_size, offset - model_param.logic_var_base, tensor_size);
       var_addr = model_param.var_base + offset - model_param.logic_var_base;
       break;
     default:
-      REPORT_INNER_ERROR("E19999", "Get mem_type:%d for offset:%ld is unsupported, check invalid",
-                         mem_type, offset);
-      GELOGE(PARAM_INVALID, "unsupported memory type %u", mem_type);
+      REPORT_INNER_ERROR("E19999", "Get mem_type:%d for offset:%ld is unsupported, check invalid", mem_type, offset);
+      GELOGE(PARAM_INVALID, "[Check][Param] Get mem_type:%d for offset:%ld is unsupported, check invalid",
+             mem_type, offset);
       return PARAM_INVALID;
   }
   GE_CHECK_NOTNULL(var_addr);
@@ -433,9 +448,9 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
     REPORT_INNER_ERROR("E19999", "Attr:%s, memory_type.size:%zu != output_desc.size:%zu, op:%s(%s), check invalid",
                        ATTR_NAME_OUTPUT_MEM_TYPE_LIST.c_str(), v_memory_type.size(), outputs_size,
                        op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(PARAM_INVALID,
-           "Fusion: check output size failed, op: %s, output v_memory_type size: %lu output numbers: %zu",
-           op_desc->GetName().c_str(), v_memory_type.size(), outputs_size);
+    GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s, memory_type.size:%zu != output_desc.size:%zu, op:%s(%s)",
+           ATTR_NAME_OUTPUT_MEM_TYPE_LIST.c_str(), v_memory_type.size(), outputs_size,
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return v_output_data_addr;
   }
   for (size_t i = 0; i < outputs_size; ++i) {
@@ -451,9 +466,15 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       GELOGD("%s is an optional output, the address don't need to be saved.", tensor_desc->GetName().c_str());
       continue;
     }
-    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i]),
+    int64_t inner_offset = 0;
+    (void)ge::AttrUtils::GetInt(op_desc->MutableOutputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
+    int64_t tensor_size = 0;
+    GE_CHK_STATUS_EXEC(TensorUtils::GetSize(*tensor_desc, tensor_size), return {});
+    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i] - inner_offset),
                     uint8_t *variable_addr = nullptr;
-                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i], variable_addr), return {});
+                    GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i] - inner_offset,
+                                                  tensor_size + inner_offset, variable_addr), return {});
+                    variable_addr += inner_offset;
                     v_output_data_addr.push_back(variable_addr);
                     GELOGI("[IMAS]GetOutputDataAddrs graph_%u type[V] name[%s] output[%zu] memaddr[%p]",
                            model_param.graph_id, op_desc->GetName().c_str(), i, variable_addr);
@@ -467,11 +488,7 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
       mem_addr = reinterpret_cast<uint8_t *>(static_cast<intptr_t>(v_output_offset[i]));
       v_output_data_addr.push_back(mem_addr);
     } else if (has_mem_type_attr && v_memory_type[i] == RT_MEMORY_TS_4G) {
-      const GeTensorDescPtr tensor_desc = op_desc->MutableOutputDesc(i);
-      GE_CHECK_NOTNULL_EXEC(tensor_desc, return {});
-      int64_t tensor_size = 0;
-      GE_CHK_STATUS_EXEC(TensorUtils::GetSize(*tensor_desc, tensor_size), return {});
-      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i]);
+      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i], tensor_size);
       mem_addr = model_param.ts_mem_mall->Acquire(v_output_offset[i], static_cast<uint64_t>(tensor_size));
       v_output_data_addr.push_back(mem_addr);
     } else if (tensor_has_mem_type && mem_type == RT_MEMORY_P2P_DDR) {
@@ -481,7 +498,7 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
              op_desc->GetName().c_str(), i, p2p_mem_addr);
       continue;
     } else {
-      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i]);
+      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_output_offset[i], tensor_size);
       mem_addr = static_cast<uint8_t *>(model_param.mem_base + v_output_offset[i]);
       v_output_data_addr.push_back(mem_addr);
     }
@@ -554,7 +571,7 @@ vector<void *> ModelUtils::GetWorkspaceDataAddrs(const RuntimeParam &model_param
       GELOGI("[IMAS]GetWorkspaceDataAddrs graph_%u type[F] name[%s] workspace[%zu] offset[%ld] bytes[%ld] Null addr",
              model_param.graph_id, op_desc->GetName().c_str(), i, v_workspace_offset[i], v_workspace_bytes[i]);
     } else {
-      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_workspace_offset[i]);
+      VALIDATE_MEM_RANGE(op_desc, model_param.mem_size, v_workspace_offset[i], v_workspace_bytes[i]);
       uint8_t *mem_addr = nullptr;
       bool session_scope_memory = (has_workspace_no_reuse_scope) && (i < workspace_no_reuse_scope.size());
       if (session_scope_memory) {
@@ -594,7 +611,7 @@ Status ModelUtils::GetRtAddress(const RuntimeParam &param, uintptr_t logic_addr,
   } else if (logic_addr != 0) {
     mem_addr = nullptr;
     REPORT_INNER_ERROR("E19999", "Check param logic addr:0x%lx abnormal", logic_addr);
-    GELOGE(PARAM_INVALID, "The logic addr:0x%lx is abnormal", logic_addr);
+    GELOGE(PARAM_INVALID, "[Check][Param] The logic addr:0x%lx is abnormal", logic_addr);
     return PARAM_INVALID;
   }
 

@@ -21,6 +21,7 @@
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/common/omg_util.h"
 #include "graph/load/model_manager/model_utils.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
@@ -43,8 +44,9 @@ const uint64_t kProfilingBpEndLogid = 2U;
 const uint64_t kProfilingIterEndLogid = 65535U;
 const int kBytes = 8;
 const int kDecimal = 10;
-const uint8_t kStreamActiveIdx = 0;
-const uint8_t kStreamActiveNum = 1;
+const uint8_t kLoopEnterIdx = 0;
+const uint8_t kLoopIterationIdx = 1;
+const uint8_t kLoopMergeSize = 2;
 const uint8_t kStreamSwitchIdx = 1;
 const uint8_t kStreamSwitchNum = 2;
 const uint32_t kStringHeadElems = 2;
@@ -56,6 +58,10 @@ const char *const kProfilingEndNode = "ProfilingEndNode";
 const char *const kProfilingArNode = "ProfilingAllReduceNode";
 const char *const kEngineNameRts = "DNN_VM_RTS_OP_STORE";
 const char *const kForceInfershape = "_force_infershape_when_running";
+
+const std::set<std::string> kExecutionDependentTypes{ IF, STATELESSIF, CASE, STREAMSWITCH };
+const std::set<std::string> kMergeInputSkipTypes{ STREAMACTIVE, STREAMSWITCH, CONSTANT, CONSTANTOP };
+const std::set<std::string> kStreamActiveTypes{ ENTER, REFENTER, NEXTITERATION, REFNEXTITERATION };
 
 Status SetOutputNameAttr(ComputeGraph &graph) {
   vector<string> output_names;
@@ -389,7 +395,7 @@ Status HybridModelBuilder::ParseDependentInputNodes(NodeItem &node_item, const s
   }
 
   // cond or branch need to be prepared before the execution of IF or CASE
-  if (node_item.node_type == IF || node_item.node_type == STATELESSIF || node_item.node_type == CASE) {
+  if (kExecutionDependentTypes.count(node_item.node_type) > 0) {
     auto src_node = NodeUtils::GetInDataNodeByIndex(*ge_node, 0); // cond input
     GE_CHECK_NOTNULL(src_node);
     auto src_node_item = MutableNodeItem(src_node);
@@ -575,7 +581,7 @@ Status HybridModelBuilder::MergeInputNodes(ComputeGraph &graph) {
     auto in_nodes = root_node->GetInAllNodes();
     std::set<NodePtr> in_node_set(in_nodes.begin(), in_nodes.end());
     for (auto &in_control_node : wrapped_node->GetInControlNodes()) {
-      if (in_node_set.count(in_control_node) == 0) {
+      if (in_node_set.count(in_control_node) == 0 && kMergeInputSkipTypes.count(root_node->GetType()) == 0) {
         GELOGD("[%s] Restore control edge to [%s]", in_control_node->GetName().c_str(), root_node->GetName().c_str());
         GE_CHECK_NOTNULL(in_control_node->GetOutControlAnchor());
         (void) in_control_node->GetOutControlAnchor()->LinkTo(root_node->GetInControlAnchor());
@@ -1005,14 +1011,18 @@ Status HybridModelBuilder::InitConstantOps() {
       // Tensors return by api GetWeights share data with proto, whose addr is not confirmed to be aligned
       GeTensor aligned_tensor = ge_tensor->Clone();
       GELOGD("Init tensor with host constant %s size = %zu", var_name.c_str(), aligned_tensor.MutableData().GetSize());
-      if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(aligned_tensor.GetAlignedPtr(),
-                                                                       aligned_tensor.GetData().size()) == nullptr) {
-        GELOGE(MEMALLOC_FAILED, "[Malloc][HostMemory] for an existed GeTensor failed, model_name_:%s.",
-               GetGraphName());
-        return MEMALLOC_FAILED;
+      if (aligned_tensor.GetData().size() > 0) {
+        if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(aligned_tensor.GetAlignedPtr(),
+                                                                         aligned_tensor.GetData().size()) == nullptr) {
+          GELOGE(MEMALLOC_FAILED, "[Malloc][HostMemory] for an existed GeTensor failed, model_name_:%s.",
+                 GetGraphName());
+          return MEMALLOC_FAILED;
+        }
+        var_tensor.reset(new(std::nothrow)TensorValue(aligned_tensor.MutableData().data(),
+                                                      aligned_tensor.GetData().size()));
+      } else {
+        var_tensor.reset(new(std::nothrow)TensorValue(nullptr, 0));
       }
-      var_tensor.reset(new(std::nothrow)TensorValue(aligned_tensor.MutableData().data(),
-                                                    aligned_tensor.GetData().size()));
     } else {
       GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
       GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());
@@ -2278,8 +2288,6 @@ Status HybridModelBuilder::RelinkNextIteration() {
     }
   }
 
-  stream_merge_op_nodes_.clear();
-  next_iteration_op_nodes_.clear();
   return SUCCESS;
 }
 
@@ -2367,15 +2375,68 @@ Status HybridModelBuilder::BuildControlFlowGroup(GraphItem &graph_item, const No
 }
 
 Status HybridModelBuilder::CreateNormalNodeGroup(const NodePtr &node, NodeItem *node_item) {
-  const auto out_ctrl_anchor = node->GetOutControlAnchor();
-  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+  for (const auto &dst_node : node->GetOutControlNodes()) {
     GE_CHECK_NOTNULL(dst_node);
+    if ((dst_node->GetType() == STREAMACTIVE) && (kStreamActiveTypes.count(node->GetType()) == 0)) {
+      GELOGI("[%s] ignore control to [%s]", node->GetName().c_str(), dst_node->GetName().c_str());
+      continue;
+    }
 
     NodeItem *dst_node_item = nullptr;
     GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
                       "[%s] failed to get or create node item", dst_node->GetName().c_str());
     node_item->SetCtrlSend(dst_node_item, UINT32_MAX);
+  }
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateMergeEnterGroup(const NodePtr &node, NodeItem *node_item) {
+  // Enter --> StreamActive --> StreamMerge
+  for (const auto &dst_node : node->GetOutControlNodes()) {
+    GE_CHECK_NOTNULL(dst_node);
+    if (dst_node->GetType() != STREAMMERGE) {
+      GELOGI("[%s] Skip Not StreamMerge node [%s]", node->GetName().c_str(), dst_node->GetName().c_str());
+      continue;
+    }
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
+                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
+    // Set Enter Control to StreamMerge as Group 0.
+    dst_node_item->switch_groups_.resize(kLoopMergeSize);
+    dst_node_item->SetMergeCtrl(node_item, kLoopEnterIdx);
+  }
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CreateMergeIterationGroup(const NodePtr &node, NodeItem *node_item) {
+  // NextIteration --> StreamActive {-->} StreamMerge
+  std::string node_name;
+  for (const auto &src_node : node->GetInControlNodes()) {
+    GE_CHECK_NOTNULL(src_node);
+    if (kNextIterationOpTypes.count(src_node->GetType()) == 0) {
+      GELOGI("[%s] Skip Not NextIteration node [%s]", node->GetName().c_str(), src_node->GetName().c_str());
+      continue;
+    }
+
+    if (!AttrUtils::GetStr(src_node->GetOpDesc(), ATTR_NAME_NEXT_ITERATION, node_name)) {
+      GELOGE(INTERNAL_ERROR, "[%s] input node [%s] expect attribute[%s] not found",
+             node->GetName().c_str(), src_node->GetName().c_str(), ATTR_NAME_NEXT_ITERATION.c_str());
+      return INTERNAL_ERROR;
+    }
+
+    const auto it = stream_merge_op_nodes_.find(node_name);
+    if (it == stream_merge_op_nodes_.end()) {
+      GELOGE(INTERNAL_ERROR, "[%s] expect StreamMerge[%s] not found", node->GetName().c_str(), node_name.c_str());
+      return INTERNAL_ERROR;
+    }
+
+    const auto &dst_node = it->second;
+    GE_CHECK_NOTNULL(dst_node);
+    NodeItem *dst_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item), "[%s] failed to get or create node item",
+                      dst_node->GetName().c_str());
+    // Set NextIteration Control to StreamMerge as Group 1.
+    dst_node_item->SetMergeCtrl(node_item, kLoopIterationIdx);
   }
   return SUCCESS;
 }
@@ -2386,21 +2447,27 @@ Status HybridModelBuilder::CreateStreamActiveGroup(const NodePtr &node, NodeItem
     return INTERNAL_ERROR;
   }
 
-  node_item->switch_groups_.resize(kStreamActiveNum);
-  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
-  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    const auto &dst_node = peer_in_anchor->GetOwnerNode();
-    GE_CHECK_NOTNULL(dst_node);
-    if (dst_node->GetType() == STREAMMERGE) {
-      GELOGI("[%s] skip control node: %s", node->GetName().c_str(), dst_node->GetName().c_str());
-      continue;
-    }
-
-    NodeItem *dst_node_item = nullptr;
-    GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
-                      "[%s] failed to get or create node item", dst_node->GetName().c_str());
-    node_item->SetCtrlSend(dst_node_item, kStreamActiveIdx);
+  const auto ctrl_nodes = node->GetInControlNodes();
+  if (ctrl_nodes.empty()) {
+    GELOGW("Skip no in control node: %s", node->GetName().c_str());
+    return SUCCESS;
   }
+
+  const auto IsEnterNode = [](const NodePtr &n) {
+    return kEnterOpTypes.count(n->GetType()) > 0;
+  };
+  const auto IsIterationNode = [](const NodePtr &n) {
+    return kNextIterationOpTypes.count(n->GetType()) > 0;
+  };
+
+  if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsEnterNode)) {
+    // Enter --> StreamActive --> StreamMerge
+    return CreateMergeEnterGroup(node, node_item);
+  } else if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsIterationNode)) {
+    // NextIteration --> StreamActive {-->} StreamMerge
+    return CreateMergeIterationGroup(node, node_item);
+  }
+
   return SUCCESS;
 }
 
@@ -2412,11 +2479,8 @@ Status HybridModelBuilder::CreateStreamSwitchGroup(const NodePtr &node, NodeItem
 
   // Consider as two groups, group[0] set empty for false, group[1] for true.
   node_item->switch_groups_.resize(kStreamSwitchNum);
-  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
-  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+  for (const auto &dst_node : node->GetOutControlNodes()) {
     GE_CHECK_NOTNULL(dst_node);
-
     NodeItem *dst_node_item = nullptr;
     GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
                       "[%s] failed to get or create node item", dst_node->GetName().c_str());
@@ -2443,20 +2507,17 @@ Status HybridModelBuilder::CreateStreamSwitchNGroup(const NodePtr &node, NodeIte
   }
 
   node_item->switch_groups_.resize(batch_num);
-  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
-  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+  for (const auto &dst_node : node->GetOutControlNodes()) {
     GE_CHECK_NOTNULL(dst_node);
-
     std::string batch_label;
-    if (!AttrUtils::GetStr(node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
-      GELOGE(INTERNAL_ERROR, "[%s] Get ATTR_NAME_BATCH_LABEL failed", node->GetName().c_str());
+    if (!AttrUtils::GetStr(dst_node->GetOpDesc(), ATTR_NAME_BATCH_LABEL, batch_label)) {
+      GELOGE(INTERNAL_ERROR, "[%s] Get ATTR_NAME_BATCH_LABEL failed", dst_node->GetName().c_str());
       return INTERNAL_ERROR;
     }
 
     std::string::size_type pos = batch_label.rfind("_");
     if (pos == std::string::npos) {
-      GELOGW("[%s] Separator not found in batch label: %s.", node->GetName().c_str(), batch_label.c_str());
+      GELOGW("[%s] Separator not found in batch label: %s.", dst_node->GetName().c_str(), batch_label.c_str());
       continue;
     }
 
@@ -2482,7 +2543,7 @@ Status HybridModelBuilder::CreateNextIterationGroup(const NodePtr &node, NodeIte
     return INTERNAL_ERROR;
   }
 
-  return SUCCESS;
+  return CreateNormalNodeGroup(node, node_item);
 }
 
 Status HybridModelBuilder::CreateSwitchGroup(const NodePtr &node, NodeItem *node_item) {
@@ -2491,11 +2552,8 @@ Status HybridModelBuilder::CreateSwitchGroup(const NodePtr &node, NodeItem *node
     return INTERNAL_ERROR;
   }
 
-  const auto &out_ctrl_anchor = node->GetOutControlAnchor();
-  for (const auto &peer_in_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
-    const auto &dst_node = peer_in_anchor->GetOwnerNode();
+  for (const auto &dst_node : node->GetOutControlNodes()) {
     GE_CHECK_NOTNULL(dst_node);
-
     NodeItem *dst_node_item = nullptr;
     GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
                       "[%s] failed to get or create node item", dst_node->GetName().c_str());
@@ -2505,11 +2563,8 @@ Status HybridModelBuilder::CreateSwitchGroup(const NodePtr &node, NodeItem *node
   // Group switch flow by out put data.
   node_item->switch_groups_.resize(SWITCH_OUTPUT_NUM);
   for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
-    const auto &out_anchor = node->GetOutDataAnchor(i);
-    for (const auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
-      const auto &dst_node = peer_in_anchor->GetOwnerNode();
+    for (const auto &dst_node : node->GetOutDataNodes()) {
       GE_CHECK_NOTNULL(dst_node);
-
       NodeItem *dst_node_item = nullptr;
       GE_CHK_STATUS_RET(GetOrCreateNodeItem(dst_node, &dst_node_item),
                         "[%s] failed to get or create node item", dst_node->GetName().c_str());

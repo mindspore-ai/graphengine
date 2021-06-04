@@ -66,21 +66,21 @@ void DumpOp::SetDynamicModelInfo(const string &dynamic_model_name, const string 
 static void SetOpMappingLoopAddr(uintptr_t step_id, uintptr_t loop_per_iter, uintptr_t loop_cond,
                                  toolkit::aicpu::dump::OpMappingInfo &op_mapping_info) {
   if (step_id != 0) {
-    GELOGI("step_id exists.");
+    GELOGI("Exists step_id.");
     op_mapping_info.set_step_id_addr(static_cast<uint64_t>(step_id));
   } else {
     GELOGI("step_id is null.");
   }
 
   if (loop_per_iter != 0) {
-    GELOGI("loop_per_iter exists.");
+    GELOGI("Exists loop_per_iter.");
     op_mapping_info.set_iterations_per_loop_addr(static_cast<uint64_t>(loop_per_iter));
   } else {
     GELOGI("loop_per_iter is null.");
   }
 
   if (loop_cond != 0) {
-    GELOGI("loop_cond exists.");
+    GELOGI("Exists loop_cond.");
     op_mapping_info.set_loop_cond_addr(static_cast<uint64_t>(loop_cond));
   } else {
     GELOGI("loop_cond is null.");
@@ -253,7 +253,7 @@ Status DumpOp::LaunchDumpOp() {
   }
   if (device_id < 0) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][DeviceId]Failed, device_id %d", device_id);
-    REPORT_INNER_ERROR("E19999","Check device_id %d failed", device_id);
+    REPORT_INNER_ERROR("E19999", "Check device_id %d failed", device_id);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
   toolkit::aicpu::dump::OpMappingInfo op_mapping_info;

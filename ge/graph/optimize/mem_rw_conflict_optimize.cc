@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2021 Huawei Technologies Co., Ltd
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include "graph/optimize/graph_optimize.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
+#include "graph/utils/op_desc_utils.h"
 
 namespace {
 using namespace ge;
@@ -32,12 +33,14 @@ const int kCaseReadOnly = 0;
 const int kCaseScopeWriteable = 2;
 const int kCaseWriteable = 3;
 const int kCaseInvalidRWType = 5;
+// attr _input_mutable = true means node will modify its input in runtime
+const char *const kModifyInput = "_input_mutable";
 
 // rw type of input.
 enum class InputRWType {
   kReadOnly,        // Normal op input only read
   kWriteable,       // Op like Assign/ApplyMomentum
-  kScopeWriteable,  // Op like hcom_allreduce, it will modify input ,but not expect take effect on pre ouput
+  kScopeWriteable,  // Op like hcom_allreduce/while, it will modify input ,but not expect take effect on pre ouput
   kInvalidRWType
 };
 // rw type of output
@@ -154,38 +157,31 @@ bool IsSubgraphOutputNode(const NodePtr &node) {
   return true;
 }
 
-NodePtr CreateIdentityAfterSrcNode(const Node &src_node, int out_anchor_idx) {
+NodePtr AddIdentityToGraph(const Node &src_node, int out_anchor_idx) {
   if (src_node.GetOpDesc() == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Param src_node is invalid, which has no opdesc");
+    GELOGE(GRAPH_PARAM_INVALID, "[Get][OpDesc] failed, Param src_node opdesc is nullptr.");
     return nullptr;
   }
   static std::atomic_long identity_num(0);
   auto next_num = identity_num.fetch_add(1);
   // 1. create new identity op desc
   string identity_name = src_node.GetName() + "_" + IDENTITY + std::to_string(next_num);
-  auto identity_opdesc = MakeShared<OpDesc>(identity_name, IDENTITY);
-  if (identity_opdesc == nullptr) {
-    GELOGE(OUT_OF_MEMORY, "Failed to insert identity node, name %s", identity_name.c_str());
-    return nullptr;
-  }
+  OpDescBuilder op_desc_builder(identity_name, IDENTITY);
   auto data_desc = src_node.GetOpDesc()->GetOutputDesc(out_anchor_idx);
-  // 2. add input_desc & output_desc for new identity
-  Status ret = identity_opdesc->AddInputDesc("x", data_desc);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Add Input desc failed for new identity %s.", identity_name.c_str());
-    return nullptr;
-  }
-  ret = identity_opdesc->AddOutputDesc("y", data_desc);
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Add Output desc failed for new Identity %s.", identity_name.c_str());
-    return nullptr;
-  }
+  auto identity_op_desc = op_desc_builder.AddInput("x", data_desc)
+                         .AddOutput("y", data_desc)
+                         .Build();
+
   GELOGI("Insert new Identity node %s.", identity_name.c_str());
   auto graph = src_node.GetOwnerComputeGraph();
   if (graph == nullptr) {
-    GELOGE(GRAPH_PARAM_INVALID, "Node %s owner compute graph is null.", src_node.GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Node %s owner compute graph is nullptr.", src_node.GetName().c_str());
+    GELOGE(GRAPH_PARAM_INVALID, "[Get][OwnerComputeGraph] failed, as Node %s owner compute graph is nullptr.",
+           src_node.GetName().c_str());
     return nullptr;
   }
-  return graph->AddNode(identity_opdesc);
+  return graph->AddNode(identity_op_desc);
 }
 
 OutputRWType GetOutputRWTypeByIndex(const Node &node, uint32_t index) {
@@ -274,8 +270,6 @@ InputRWType GetInputRWTypeByIndex(const Node &node, uint32_t index) {
     // single node without sub graph
     return GetSingleNodeInputRWTypeByIndex(node, index);
   } else {
-    // node with sub graph
-    std::set<int> node_rw_type_set;
     auto data_node_vec = NodeUtils::GetSubgraphDataNodesByIndex(node, index);
     // get all input data node in subgraph
     std::set<int> anchor_rw_type_set;
@@ -345,12 +339,24 @@ Status MarkRWTypeForSubgraph(const ComputeGraphPtr &sub_graph) {
         auto parent_node = sub_graph->GetParentNode();
         if (pre_output_rw_type == OutputRWType::kWriteable && parent_node->GetType() != PARTITIONEDCALL) {
           // insert identity
-          auto identity_node = CreateIdentityAfterSrcNode(*pre_node, pre_out_anchor->GetIdx());
+          auto identity_node = AddIdentityToGraph(*pre_node, pre_out_anchor->GetIdx());
           GE_CHECK_NOTNULL(identity_node);
-          auto ret = GraphUtils::InsertNodeBetweenDataAnchors(pre_out_anchor, in_data_anchor, identity_node);
-          if (ret != SUCCESS) {
-            GELOGE(ret, "Fail to insert identity");
-            return ret;
+          if (GraphUtils::InsertNodeAfter(pre_out_anchor, {in_data_anchor}, identity_node) != GRAPH_SUCCESS) {
+            REPORT_CALL_ERROR("E19999", "Insert Identity node %s(%s) between %s(%s) -> %s(%s) failed.",
+                              identity_node->GetName().c_str(),
+                              identity_node->GetType().c_str(),
+                              pre_node->GetName().c_str(),
+                              pre_node->GetType().c_str(),
+                              node->GetName().c_str(),
+                              node->GetType().c_str());
+            GELOGE(FAILED, "[Insert][IdentityNode] %s(%s) between %s(%s) -> %s(%s) failed.",
+                   identity_node->GetName().c_str(),
+                   identity_node->GetType().c_str(),
+                   pre_node->GetName().c_str(),
+                   pre_node->GetType().c_str(),
+                   node->GetName().c_str(),
+                   node->GetType().c_str());
+            return FAILED;
           }
           GELOGI("InsertNode %s between %s and %s successfully.", identity_node->GetName().c_str(),
                  pre_node->GetName().c_str(), node->GetName().c_str());
@@ -484,12 +490,14 @@ Status RemoveNoUseIdentity(const NodePtr &node) {
   GELOGI("No need insert Identity. Node %s need to remove.", node->GetName().c_str());
   auto ret = GraphUtils::IsolateNode(node, {0});
   if (ret != SUCCESS) {
-    GELOGE(ret, "Fail to isolate node %s.", node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Isolate Node:%s failed", node->GetName().c_str());
+    GELOGE(ret, "[Isolate][Node] %s failed.", node->GetName().c_str());
     return ret;
   }
   ret = GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Fail to isolate node %s.", node->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Call RemoveNodeWithoutRelink failed, node:%s", node->GetName().c_str());
+    GELOGE(ret, "[Call][RemoveNodeWithoutRelink] failed for node %s.", node->GetName().c_str());
     return ret;
   }
   GELOGI("Pre node is %s and %dth output rw type is %s. Isolate and remove Identity node %s.",
@@ -505,34 +513,24 @@ Status SplitIdentityAlongAnchor(const OutDataAnchorPtr &out_data_anchor, const I
   auto peer_in_data_node = peer_in_data_anchor->GetOwnerNode();
   GE_CHECK_NOTNULL(peer_in_data_node);
   auto input_rw_type = GetInputRWTypeByIndex(*peer_in_data_node, peer_in_data_anchor->GetIdx());
-  auto ret = out_data_anchor->Unlink(peer_in_data_anchor);
   auto old_identity = out_data_anchor->GetOwnerNode();
-  if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to unlink from %s %dth out to %s.", old_identity->GetName().c_str(), out_data_anchor->GetIdx(),
-           peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
-    return ret;
-  }
   if (input_rw_type == InputRWType::kScopeWriteable || input_rw_type == InputRWType::kWriteable) {
-    auto new_identity = CreateIdentityAfterSrcNode(*pre_node, pre_out_data_anchor->GetIdx());
+    auto new_identity = AddIdentityToGraph(*pre_node, pre_out_data_anchor->GetIdx());
     GE_CHECK_NOTNULL(new_identity);
-    if (GraphUtils::AddEdge(pre_out_data_anchor, new_identity->GetInDataAnchor(kIdentityAnchorIndex)) != SUCCESS
-        || GraphUtils::AddEdge(new_identity->GetOutDataAnchor(kIdentityAnchorIndex), peer_in_data_anchor) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to insert Identity between node %s and %s",
-             pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
-             peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
-      return INTERNAL_ERROR;
-    }
-
-    // 2. copy in-control-edge from dst to Identity
-    if (GraphUtils::CopyInCtrlEdges(peer_in_data_node, new_identity) != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "Failed to copy in_control edges from node %s to %s", peer_in_data_node->GetName().c_str(),
-             new_identity->GetName().c_str());
-      return INTERNAL_ERROR;
+    auto ret = GraphUtils::InsertNodeBefore(peer_in_data_anchor, new_identity, kIdentityAnchorIndex,
+                                            kIdentityAnchorIndex);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "[Insert][Identity] %s before %s %dth input failed.",
+             new_identity->GetName().c_str(),
+             peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
+             peer_in_data_anchor->GetIdx());
+      return ret;
     }
     GELOGI("Node %s intput rw type is %s. Insert Identity between %s and %s.", peer_in_data_node->GetName().c_str(),
            InputRWTypeToSerialString(input_rw_type).c_str(), pre_out_data_anchor->GetOwnerNode()->GetName().c_str(),
            peer_in_data_anchor->GetOwnerNode()->GetName().c_str());
   } else {
+    (void) out_data_anchor->Unlink(peer_in_data_anchor);
     // copy control edge to pre and peer node
     if (GraphUtils::CopyInCtrlEdges(old_identity, peer_in_data_node) != SUCCESS
         || GraphUtils::CopyOutCtrlEdges(old_identity, pre_node) != SUCCESS) {
@@ -568,7 +566,8 @@ Status SplitIdentity(const NodePtr &node) {
   for (const auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
     Status ret = SplitIdentityAlongAnchor(out_data_anchor, peer_in_data_anchor, pre_out_data_anchor, pre_node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Split identity node along anchor failed.");
+      GELOGE(ret, "[Call][SplitIdentityAlongAnchor] failed, ret:%d, node:%s, pre_node:%s.",
+             ret, node->GetName().c_str(), pre_node->GetName().c_str());
       return ret;
     }
   }
@@ -576,12 +575,15 @@ Status SplitIdentity(const NodePtr &node) {
   if (node->GetOutDataNodesSize() == 0) {
     Status ret = GraphUtils::IsolateNode(node, {});
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "IsolateAndDelete identity node %s.", node->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "IsolateNode %s failed, ret:%d", node->GetName().c_str(), ret);
+      GELOGE(FAILED, "[Isolate][Node] %s failed, ret:%d", node->GetName().c_str(), ret);
       return FAILED;
     }
     ret = GraphUtils::RemoveNodeWithoutRelink(node->GetOwnerComputeGraph(), node);
     if (ret != SUCCESS) {
-      GELOGE(FAILED, "IsolateAndDelete identity node %s.", node->GetName().c_str());
+      REPORT_CALL_ERROR("E19999", "Call RemoveNodeWithoutRelink failed, node:%s", node->GetName().c_str());
+      GELOGE(FAILED, "[Call][RemoveNodeWithoutRelink] IsolateAndDelete identity node %s failed.",
+             node->GetName().c_str());
       return FAILED;
     }
     GELOGI("IsolateAndDelete identity node %s.", node->GetName().c_str());
@@ -613,16 +615,14 @@ Status InsertIdentityAsNeeded(const NodePtr &node) {
           GELOGD("No need insert Identity.");
           continue;
         case INSERT_IDENTITY:
-          auto identity_node = CreateIdentityAfterSrcNode(*node, out_data_anchor->GetIdx());
-          if (identity_node == nullptr) {
-            GELOGE(FAILED, "Create identity node failed.");
-            return FAILED;
-          }
-          auto ret = GraphUtils::InsertNodeBetweenDataAnchors(out_data_anchor, peer_in_data_anchor, identity_node);
-          if (ret != GRAPH_SUCCESS) {
-            GELOGE(INTERNAL_ERROR, "Failed to insert reshape between node %s and %s", node->GetName().c_str(),
-                   peer_in_node->GetName().c_str());
-            return INTERNAL_ERROR;
+          auto identity_node = AddIdentityToGraph(*node, out_data_anchor->GetIdx());
+          GE_CHECK_NOTNULL(identity_node);
+          auto ret = GraphUtils::InsertNodeBefore(peer_in_data_anchor, identity_node, kIdentityAnchorIndex,
+                                                  kIdentityAnchorIndex);
+          if (ret != SUCCESS) {
+            GELOGE(ret, "[Insert][Node] %s before %s %dth input failed.", identity_node->GetName().c_str(),
+                   peer_in_data_anchor->GetOwnerNode()->GetName().c_str(), peer_in_data_anchor->GetIdx());
+            return ret;
           }
           GELOGI("Insert Identity between %s and %s to handle memory conflict.", node->GetName().c_str(),
                  peer_in_node->GetName().c_str());
@@ -633,28 +633,35 @@ Status InsertIdentityAsNeeded(const NodePtr &node) {
   return SUCCESS;
 }
 Status HandleAllreduceDuplicateInput(ComputeGraphPtr &compute_graph) {
-   for (const auto &node : compute_graph->GetDirectNode()) {
-     if (node->GetType() == HCOMALLREDUCE) {
-       std::set<OutDataAnchorPtr> pre_out_anchor_set;
-       for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
-         auto pre_out_anchor = in_data_anchor->GetPeerOutAnchor();
-         GE_CHECK_NOTNULL(pre_out_anchor);
-         if (pre_out_anchor_set.find(pre_out_anchor) == pre_out_anchor_set.end()) {
-           pre_out_anchor_set.emplace(pre_out_anchor);
-           continue;
-         }
-         // need insert identity
-         auto pre_node = pre_out_anchor->GetOwnerNode();
-         auto identity_node = CreateIdentityAfterSrcNode(*pre_node, pre_out_anchor->GetIdx());
-         GE_CHECK_NOTNULL(identity_node);
-         auto ret = GraphUtils::InsertNodeBetweenDataAnchors(pre_out_anchor, in_data_anchor, identity_node);
-         GE_CHK_STATUS_RET(ret, "Fail to insert identity.");
-         GELOGI("InsertNode %s between %s and %s successfully.", identity_node->GetName().c_str(),
-                pre_node->GetName().c_str(), node->GetName().c_str());
-       }
-     }
-   }
-   return SUCCESS;
+  for (const auto &node : compute_graph->GetDirectNode()) {
+    bool mutable_input_flag = false;
+    (void)AttrUtils::GetBool(node->GetOpDesc(), kModifyInput, mutable_input_flag);
+    if (!mutable_input_flag) {
+      continue;
+    }
+    std::set<OutDataAnchorPtr> pre_out_anchor_set;
+    for (const auto &in_data_anchor : node->GetAllInDataAnchors()) {
+      auto pre_out_anchor = in_data_anchor->GetPeerOutAnchor();
+      GE_CHECK_NOTNULL(pre_out_anchor);
+      if (pre_out_anchor_set.insert(pre_out_anchor).second) {
+        continue;
+      }
+      // need insert identity
+      auto pre_node = pre_out_anchor->GetOwnerNode();
+      auto identity_node = AddIdentityToGraph(*pre_node, pre_out_anchor->GetIdx());
+      GE_CHECK_NOTNULL(identity_node);
+      auto ret =
+        GraphUtils::InsertNodeBefore(in_data_anchor, identity_node, kIdentityAnchorIndex, kIdentityAnchorIndex);
+      if (ret != SUCCESS) {
+        GELOGE(ret, "[Insert][Node] %s before %s %dth input failed.", identity_node->GetName().c_str(),
+               node->GetName().c_str(), in_data_anchor->GetIdx());
+        return ret;
+      }
+      GELOGI("InsertNode %s between %s and %s successfully.", identity_node->GetName().c_str(),
+             pre_node->GetName().c_str(), node->GetName().c_str());
+    }
+  }
+  return SUCCESS;
 }
 }  // namespace
 
@@ -669,7 +676,7 @@ Status GraphOptimize::CheckRWConflict(ComputeGraphPtr &compute_graph, bool &has_
   // 1.loop all subgraph, mark rw type from inside to outside
   Status ret = MarkRWTypeForAllSubgraph(sub_graph_vec);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Fail to mark rw type for subgraph.");
+    GELOGE(ret, "[Call][MarkRWTypeForAllSubgraph] failed for %s.", compute_graph->GetName().c_str());
     return ret;
   }
   has_conflict = false;
@@ -725,7 +732,7 @@ Status GraphOptimize::HandleMemoryRWConflict(ComputeGraphPtr &compute_graph) {
   // 1.loop all subgraph, mark rw type from inside to outside
   Status ret = MarkRWTypeForAllSubgraph(sub_graph_vec);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Fail to mark rw type for subgraph.");
+    GELOGE(ret, "[Call][MarkRWTypeForAllSubgraph] failed for %s.", compute_graph->GetName().c_str());
     return ret;
   }
   // 2.loop all node, including node in subgraph and handle memory rw conflict
@@ -752,20 +759,20 @@ Status GraphOptimize::HandleMemoryRWConflict(ComputeGraphPtr &compute_graph) {
       // split identity
       ret = SplitIdentity(node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Fail to split identity node %s.", node->GetName().c_str());
+        GELOGE(ret, "[Split][Identity] %s failed.", node->GetName().c_str());
         return ret;
       }
       // remove no use identity
       ret = RemoveNoUseIdentity(node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "Fail to remove useless identity node %s.", node->GetName().c_str());
+        GELOGE(ret, "[Remove][Identity] %s failed.", node->GetName().c_str());
         return ret;
       }
     }
     // insert Identity
     ret = InsertIdentityAsNeeded(node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Fail to insert Identity node.");
+      GELOGE(ret, "[Insert][Identity] %s failed.", node->GetName().c_str());
       return ret;
     }
   }

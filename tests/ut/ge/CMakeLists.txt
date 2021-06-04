@@ -372,6 +372,7 @@ set(COMMON_FORMAT_SRC_FILES
 set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/optimize/graph_optimize.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
+    "${GE_CODE_DIR}/ge/graph/optimize/mem_rw_conflict_optimize.cc"
 )
 
 
@@ -669,7 +670,7 @@ set(PASS_TEST_FILES
     "graph/passes/permute_pass_unittest.cc"
     "graph/passes/print_op_pass_unittest.cc"
     "graph/passes/shape_operate_op_remove_pass_unittest.cc"
-        "graph/passes/variable_op_pass_unittest.cc"
+    "graph/passes/variable_op_pass_unittest.cc"
     "graph/passes/base_pass_unittest.cc"
     "graph/passes/addn_pass_unittest.cc"
     "graph/passes/save_pass_unittest.cc"
@@ -678,6 +679,7 @@ set(PASS_TEST_FILES
     "graph/passes/cond_branch_v1_unittest.cc"
     "graph/passes/loop_branch_v1_unittest.cc"
     "graph/passes/switch_dead_branch_elimination_unittest.cc"
+    "graph/passes/subgraph_pass_unittest.cc"
     "graph/passes/assert_pass_unittest.cc"
     "graph/passes/dropout_pass_unittest.cc"
     "graph/passes/unused_const_pass_unittest.cc"
@@ -714,6 +716,10 @@ set(PASS_TEST_FILES
     "graph/passes/mark_node_unknown_shape_pass_unittest.cc"
     "graph/passes/reshape_recovery_pass_unittest.cc"
     "graph/passes/cast_remove_pass_unittest.cc"
+	"graph/passes/memcpy_addr_async_unittest.cc"
+    "graph/passes/hccl_continuous_pass_unittest.cc"
+    "graph/passes/hccl_memcpy_pass_unittest.cc"
+		
 )
 
 set(KERNEL_TEST_FILES
@@ -782,6 +788,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/ge_auth_file_saver_unittest.cc"
     "graph/variable_accelerate_ctrl_unittest.cc"
     "graph/build/logical_stream_allocator_unittest.cc"
+    "graph/build/stream_allocator_unittest.cc"
     "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
     "graph/build/task_generator_unittest.cc"
@@ -790,14 +797,18 @@ set(MULTI_PARTS_TEST_FILES
     "graph/preprocess/graph_preprocess_unittest.cc"
     "graph/manager/hcom_util_unittest.cc"
     "graph/manager/graph_caching_allocator_unittest.cc"
+    "graph/manager/host_mem_allocator_unittest.cc"
     "graph/manager/session_scope_mem_allocator_unittest.cc"
     "graph/manager/run_graph_unittest.cc"
     "graph/partition/dynamic_shape_partition_unittest.cc"
     "graph/manager/graph_manager_unittest.cc"
+    "graph/optimize/mem_rw_conflict_optimize_unittest.cc"
+    "graph/optimize/graph_optimize_unittest.cc"
     "session/omg_omg_unittest.cc"
     "session/ge_api_unittest.cc"
     "session/inner_session_unittest.cc"
     "session/session_manager_unittest.cc"
+    "common/host_cpu_engine_unittest.cc"
 )
 
 set(GENERATOR_TEST_FILES
@@ -823,12 +834,15 @@ set(PROFILING_MNG_TEST_FILES
 set(HYBRID_TEST_FILES
     "hybrid/ge_hybrid_unittest.cc"
     "hybrid/known_node_executor_unittest.cc"
-    "hybrid/executor/worker/execution_engine_unittest.cc"
+    "hybrid/executor/node_state_unittest.cc"
     "hybrid/executor/subgraph_executor_unittest.cc"
     "hybrid/executor/worker/execution_engine_unittest.cc"
     "hybrid/model/hybrid_model_builder_unittest.cc"
     "hybrid/node_executor/rts/rts_node_task_unittest.cc"
+    "hybrid/node_executor/ge_local/ge_local_node_executor_unittest.cc"
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
+    "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
+    "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
 )
 
 set(OTHERS_TEST_FILES

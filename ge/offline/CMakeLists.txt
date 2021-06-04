@@ -1,12 +1,3 @@
-set(PROTO_LIST
-    "${METADEF_DIR}/proto/om.proto"
-    "${METADEF_DIR}/proto/ge_ir.proto"
-    "${METADEF_DIR}/proto/insert_op.proto"
-    "${METADEF_DIR}/proto/task.proto"
-)
-
-protobuf_generate(ge PROTO_SRCS PROTO_HDRS ${PROTO_LIST})
-
 set(SRC_LIST
     "main.cc"
     "single_op_parser.cc"
@@ -15,7 +6,11 @@ set(SRC_LIST
 )
 
 ############ atc_atc.bin ############
-add_executable(atc_atc.bin ${SRC_LIST} ${PROTO_HDRS})
+add_executable(atc_atc.bin ${SRC_LIST})
+
+add_dependencies(atc_atc.bin
+    graphengine_protos
+)
 
 target_compile_options(atc_atc.bin PRIVATE
     -Werror
@@ -50,7 +45,7 @@ target_include_directories(atc_atc.bin PRIVATE
     ${METADEF_DIR}/inc/external/register
     ${PARSER_DIR}
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/common
@@ -88,7 +83,11 @@ set_target_properties(atc_atc.bin PROPERTIES
 )
 
 ############ fwk_atc.bin ############
-add_executable(fwk_atc.bin ${SRC_LIST} ${PROTO_HDRS})
+add_executable(fwk_atc.bin ${SRC_LIST})
+
+add_dependencies(fwk_atc.bin
+    graphengine_protos
+)
 
 target_compile_options(fwk_atc.bin PRIVATE
     -Werror
@@ -123,7 +122,7 @@ target_include_directories(fwk_atc.bin PRIVATE
     ${METADEF_DIR}/inc/external/register
     ${PARSER_DIR}
     ${CMAKE_BINARY_DIR}
-    ${CMAKE_BINARY_DIR}/proto/ge
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../inc/common

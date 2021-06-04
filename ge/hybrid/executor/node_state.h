@@ -67,6 +67,8 @@ struct ShapeInferenceState {
   const NodeItem &node_item;
 
  private:
+  Status UpdateInputForMerge(const GraphExecutionContext &context);
+
   friend struct NodeState;
   std::vector<std::pair<int, ShapeFuture>> shape_futures;
   // do not directly update op_desc, in case race condition across pipelines
@@ -110,9 +112,8 @@ struct NodeState {
     return node_item_->IsControlFlowOp() || node_item_->shape_inference_type >= DEPEND_SHAPE_RANGE;
   }
 
-  void ResetContext(int group);
-
-  void ResetSchedule();
+  void RunLoopNext();
+  void RunLoopExit();
 
   Status NodeScheduled(const std::function<void(const NodeItem *)> &ready) const;
 
@@ -164,8 +165,9 @@ struct NodeState {
 
  private:
   bool IsScheduleReady() const;
-  void SetDataSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready);
-  void SetCtrlSchedule(const NodeItem *node_item, const std::function<void(const NodeItem *)> &ready);
+  void SetDataSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
+  void SetCtrlSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
+  void ResetContext(uint64_t loop_count);
 
   const NodeItem *node_item_ = nullptr;
   std::shared_ptr<NodeTask> kernel_task_ = nullptr;

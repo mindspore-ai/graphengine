@@ -116,7 +116,7 @@ DEFINE_string(out_nodes, "",
 
 DEFINE_string(precision_mode, "force_fp16",
               "Optional; precision mode."
-              "Support force_fp16, allow_mix_precision, allow_fp32_to_fp16, must_keep_origin_dtype.");
+              "Support force_fp16, force_fp32, allow_mix_precision, allow_fp32_to_fp16, must_keep_origin_dtype.");
 
 DEFINE_string(keep_dtype, "",
               "Optional; config file to specify the precision used by the operator during compilation.");
@@ -218,6 +218,8 @@ DEFINE_string(display_model_info, "0", "Optional; display model info");
 
 DEFINE_string(device_id, "0", "Optional; user device id");
 
+DEFINE_string(modify_mixlist, "", "Optional; operator mixed precision configuration file path");
+
 class GFlagUtils {
  public:
   /**
@@ -304,7 +306,7 @@ class GFlagUtils {
         "\"l1_optimize\", \"off_optimize\"\n"
 	"  --mdl_bank_path           Set the path of the custom repository generated after model tuning.\n"
         "\n[Operator Tuning]\n"
-        "  --precision_mode        precision mode, support force_fp16(default), allow_mix_precision, "
+        "  --precision_mode        precision mode, support force_fp16(default), force_fp32, allow_mix_precision, "
         "allow_fp32_to_fp16, must_keep_origin_dtype.\n"
         "  --keep_dtype            Retains the precision of certain operators in inference "
         "scenarios by using a configuration file.\n"
@@ -321,6 +323,7 @@ class GFlagUtils {
         "                          2: Enable TBE pipe_all, generate the operator CCE file and Python-CCE mapping file "
         "(.json), and enable the CCE compiler -O0-g.\n"
         "                          3: Disable debug, and keep generating kernel file (.o and .json)\n"
+        "  --modify_mixlist        Set the path of operator mixed precision configuration file.\n"
         "\n[Debug]\n"
         "  --save_original_model   Control whether to output original model. E.g.: true: output original model\n"
         "  --log                   Generate log with level. Support debug, info, warning, error, null\n"
@@ -369,6 +372,14 @@ class GFlagUtils {
         ge::CheckImplmodeParamValid(FLAGS_optypelist_for_implmode,
                                     FLAGS_op_select_implmode) != ge::SUCCESS,
         ret = ge::FAILED, "[Check][ImplMode]check optypelist_for_implmode and op_select_implmode failed!");
+
+    if (ge::CheckModifyMixlistParamValid(FLAGS_precision_mode, FLAGS_modify_mixlist) != ge::SUCCESS) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                      {"modify_mixlist", FLAGS_modify_mixlist.c_str(),
+                                                      ge::kModifyMixlistError});
+      ret = ge::FAILED;
+    }
+
     // No output file information passed in
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
         FLAGS_mode == GEN_OM_MODEL && FLAGS_output == "",
@@ -1081,6 +1092,7 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::MDL_BANK_PATH_FLAG, FLAGS_mdl_bank_path);
   options.emplace(ge::OP_BANK_PATH_FLAG, FLAGS_op_bank_path);
   options.emplace(ge::TUNE_DEVICE_IDS, FLAGS_device_id);
+  options.emplace(ge::MODIFY_MIXLIST, FLAGS_modify_mixlist);
 }
 
 domi::Status GenerateSingleOp(const std::string& json_file_path) {
@@ -1093,9 +1105,18 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
       ge::CheckImplmodeParamValid(FLAGS_optypelist_for_implmode, FLAGS_op_select_implmode) != ge::SUCCESS,
       return ge::FAILED, "[Check][ImplmodeParam] fail for input optypelist_for_implmode and op_select_implmode.");
 
+  if (ge::CheckModifyMixlistParamValid(FLAGS_precision_mode, FLAGS_modify_mixlist) != ge::SUCCESS) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {"modify_mixlist", FLAGS_modify_mixlist.c_str(),
+                                                     ge::kModifyMixlistError});
+    return ge::FAILED;
+  }
+
   std::map<string, string> options;
   // need to be changed when ge.ini plan is done
   SetEnvForSingleOp(options);
+  // print single op option map
+  ge::PrintOptionMap(options, "single op option");
 
   auto ret = ge::GELib::Initialize(options);
   if (ret != ge::SUCCESS) {
@@ -1233,6 +1254,8 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::OP_BANK_PATH_FLAG), FLAGS_op_bank_path));
 
   options.insert(std::pair<string, string>(string(ge::DISPLAY_MODEL_INFO), FLAGS_display_model_info));
+
+  options.insert(std::pair<string, string>(string(ge::MODIFY_MIXLIST), FLAGS_modify_mixlist));
 
   // set enable scope fusion passes
   SetEnableScopeFusionPasses(FLAGS_enable_scope_fusion_passes);

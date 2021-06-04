@@ -503,6 +503,24 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_set_input_offset) {
   EXPECT_EQ(memoryAssigner.CheckOffset(), GRAPH_SUCCESS);
 }
 
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_check_inner_offset) {
+  ge::ComputeGraphPtr graph = MakeRefNodeGraph();
+  auto assign = graph->FindNode("assgin");
+  auto op_desc = assign->GetOpDesc();
+  int64_t inner_offset = 0;
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset), false);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(1), ATTR_NAME_INNER_OFFSET, inner_offset), false);
+  GraphMemoryAssigner memoryAssigner(graph);
+  MemoryOffset memory_offset(RT_MEMORY_HBM, 0);
+  memoryAssigner.memory_offset_.emplace(RT_MEMORY_HBM, memory_offset);
+  EXPECT_EQ(memoryAssigner.SetInputOffset(), GRAPH_SUCCESS);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset), true);
+  EXPECT_EQ(inner_offset, 100);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableOutputDesc(0), ATTR_NAME_INNER_OFFSET, inner_offset), true);
+  EXPECT_EQ(inner_offset, 100);
+  EXPECT_EQ(ge::AttrUtils::GetInt(op_desc->MutableInputDesc(1), ATTR_NAME_INNER_OFFSET, inner_offset), false);
+}
+
 TEST_F(UtestMemoryAssignerTest, graph_memory_assign_update_ref_op_offset_reverse) {
     ge::ut::GraphBuilder builder("graph");
     auto data_input = builder.AddNode("data", "Data", 1, 1);
@@ -523,6 +541,34 @@ TEST_F(UtestMemoryAssignerTest, graph_memory_assign_update_ref_op_offset_reverse
 
     GraphMemoryAssigner memoryAssigner(graph);
     EXPECT_EQ(memoryAssigner.UpdateRefOpOffsetReverse(add), SUCCESS);
+}
+
+TEST_F(UtestMemoryAssignerTest, graph_memory_assign_var_input_ref_cascade_false) {
+  ge::ut::GraphBuilder builder("graph");
+  auto var = builder.AddNode("var", VARIABLE, 1, 1);
+  auto broadcast = builder.AddNode("broadcast", HCOMBROADCAST, 1, 1);
+  auto assign = builder.AddNode("assign", "Assign", 2, 1);
+  // add link
+  builder.AddDataEdge(var, 0, assign, 0);
+  builder.AddDataEdge(var, 0, broadcast, 0);
+  builder.AddDataEdge(broadcast, 0, assign, 1);
+
+  int reuse_input_index = 0;
+  auto broadcast_desc = broadcast->GetOpDesc()->MutableOutputDesc(0);
+  ge::TensorUtils::SetReuseInput(*broadcast_desc, true);
+  ge::TensorUtils::SetReuseInputIndex(*broadcast_desc, reuse_input_index);
+
+  ge::ComputeGraphPtr graph = builder.GetGraph();
+
+  GraphMemoryAssigner memory_assigner(graph);
+  bool ref_cascade = memory_assigner.IsRefFromInputOpCascade(broadcast);
+  EXPECT_EQ(ref_cascade, false);
+  ref_cascade = memory_assigner.IsRefFromInputOpCascade(assign);
+  EXPECT_EQ(ref_cascade, false);
+  auto ret = memory_assigner.UpdateRefOpOffsetReverse(broadcast);
+  EXPECT_EQ(ret, SUCCESS);
+  ret = memory_assigner.UpdateRefOpOffsetReverse(assign);
+  EXPECT_EQ(ret, SUCCESS);
 }
 
 TEST_F(UtestMemoryAssignerTest, graph_memory_assign_atomic_output_and_workspace) {

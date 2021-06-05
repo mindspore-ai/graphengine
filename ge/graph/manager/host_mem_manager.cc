@@ -107,16 +107,15 @@ Status HostMemManager::MallocSharedMemory(SharedMemInfo &mem_info) {
   return SUCCESS;
 }
 
-Status HostMemManager::QueryVarMemInfo(const string &op_name, uint64_t &base_addr, uint64_t &data_size) {
+bool HostMemManager::QueryVarMemInfo(const string &op_name, SharedMemInfo &mem_info) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (var_memory_base_map_.find(op_name) == var_memory_base_map_.end()) {
-    REPORT_INNER_ERROR("E19999", "MemInfo.op_name:%s can't find in var_memory_base_map_", op_name.c_str());
-    GELOGE(INTERNAL_ERROR, "[Check][Param] Find host base base_addr failed, node name:%s!", op_name.c_str());
-    return INTERNAL_ERROR;
+  auto it = var_memory_base_map_.find(op_name);
+  if (it == var_memory_base_map_.end()) {
+    GELOGW("Host memory for node [%s] not found.", op_name.c_str());
+    return false;
   }
-  base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(var_memory_base_map_[op_name].device_address));
-  data_size = var_memory_base_map_[op_name].mem_size;
-  return SUCCESS;
+  mem_info = it->second;
+  return true;
 }
 
 string HostMemManager::OpNameToShmName(const string &op_name) {

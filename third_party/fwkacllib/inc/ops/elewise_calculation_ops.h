@@ -1039,7 +1039,7 @@ REG_OP(BesselI1e)
 * y = log_base(shift + scale * x), with "base" > 0. \n
 
 * @par Inputs:
-* @li x: A Tensor of type complex64, complex128, float16, float32 or double. \n
+* x: A Tensor of type complex64, complex128, float16, float32 or double. \n
 
 * @par Attributes:
 * @li base: An optional float32, specifying the base "e". Defaults to "-1.0"
@@ -1084,7 +1084,7 @@ REG_OP(Log)
 * uint8, int8, uint16, int16, int32, int64, complex64, complex128. \n
 
 * @attention Constraints:
-* @li "x1" and "x2" have incompatible shapes or types. \n
+* "x1" and "x2" have incompatible shapes or types. \n
 
 * @par Third-party framework compatibility
 * Compatible with the TensorFlow operator Multiply.
@@ -3415,7 +3415,7 @@ REG_OP(Addcdiv)
     .INPUT(input_data, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT}))
     .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(value, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT32 }))
+    .INPUT(value, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(Addcdiv)
 
@@ -3466,25 +3466,6 @@ REG_OP(AxpyV2)
     .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OP_END_FACTORY_REG(AxpyV2)
-
-/**
-* @brief Computes the result of x1 * x2.
-
-* @par Inputs:
-* @li x1: An ND tensor of type float16, float32, int32.
-* @li x2: An ND tensor of type float16, float32, int32. \n
-
-* @par Outputs:
-* @li y: Same shape and type as the largest ND tensor in x1 x2. \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator muls.
-*/
-REG_OP(PtMuls)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OP_END_FACTORY_REG(PtMuls)
 
 /**
 * @brief Computes the result of x1 - x2.

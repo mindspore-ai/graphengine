@@ -528,6 +528,60 @@ REG_OP(LSTMInputGrad)
     .OP_END_FACTORY_REG(LSTMInputGrad)
 
 
+
+/**
+*@brief: Dynamic LSTM Cell grad calculation.Calculate the gradient of gates and cell state.
+*@par Inputs:
+*twelve inputs:
+*@li init_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li dy:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li dh:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li dc:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li i:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li j:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li f:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li o:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li tanhct:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li mask:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li t_state:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ . \n
+
+*@par Attributes:
+*@li forget_bias:An integer identifying the forget bias in the op. Default to 1.
+*@li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported . \n
+*@li direction:An string that marks the calculation sequence of the operator. Default to "Forward".
+*@li gate_order:An string mark the order of output 4 gate. Default to "ijfo".
+
+*@par Outputs:
+*two outputs:
+*@li dgate:A 4D Tensor. Must be one of the following types: float16.
+*@li dct_1:A 4D Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(DynamicLSTMGradCell)
+  .INPUT(init_c, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(c, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(dh, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(dc, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(i, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(j, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(f, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(o, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(tanhct, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(mask, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .INPUT(t_state, TensorType({DT_INT32, DT_INT32}))
+  .OUTPUT(dgate, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(dct_1, TensorType({DT_FLOAT16, DT_FLOAT}))
+  .ATTR(forget_bias, Float, 1)
+  .ATTR(activation, String, "")
+  .ATTR(direction, String, "Forward")
+  .ATTR(gate_order, String, "ijfo")
+  .OP_END_FACTORY_REG(DynamicLSTMGradCell)
+
+
 /**
 *@brief: Basic LSTM Cell backward calculation.Calculate the gradient of input and hidden state.
 *@par Inputs:

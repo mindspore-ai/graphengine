@@ -269,39 +269,42 @@ REG_OP(PadV3)
     .ATTR(paddings_contiguous, Bool, true)
     .OP_END_FACTORY_REG(PadV3)
 
-/**
-*@brief Pads a tensor.
+  /**
+  *@brief Pads a tensor.
 
-*@par Inputs:
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li paddings: A Tensor. Must be int32 type 
-*     paddings is a required input tensor.
+  *@par Inputs:
+  *x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int32.
 
-*@par Attributes:
-* @li constant_values: An optional int value for pad.
-* @li mode: An optional string, Defaults to "constant", indicates paddings mode,
-*     support "constant", "reflect", "edge"
-* @li paddings_contiguous: An optional bool value, Defaults to true.
-*     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
-*     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
+  *@par Attributes:
+  * @li paddings: An required "vector<vector<int>>".
+  *     For each dimension D of input, paddings[D, 0] indicates how many
+  *     values to add before the contents of tensor in that dimension,
+  *     and paddings[D, 1] indicates how many values to add after the
+  *     contents of tensor in that dimension.
+  * @li constant_values: An optional int value for pad.
+  * @li mode: An optional string, Defaults to "constant", indicates paddings mode,
+  *     support "constant", "reflect", "edge"
+  * @li paddings_contiguous: An optional bool value, Defaults to true.
+  *     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
+  *     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
 
-*@par Outputs:
-*y: A Tensor of the same type as "x".
+  *@par Outputs:
+  *y: A Tensor of the same type as "x".
 
-*@par Third-party framework compatibility:
-* Compatible with ONNX operator Pad.
+  *@par Third-party framework compatibility:
+  * Compatible with ONNX operator Pad.
 
-* @par Restrictions:
-* Warning: THIS FUNCTION IS DEPRECATED. Please use PadV3 instead.
-*/
-REG_OP(PadV3D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(paddings, TensorType({DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .ATTR(constant_values, Int, 0)
-    .ATTR(mode, String, "constant")
-    .ATTR(paddings_contiguous, Bool, true)
-    .OP_END_FACTORY_REG(PadV3D)
+  * @par Restrictions:
+  * Warning: THIS FUNCTION IS DEPRECATED. Please use PadV3 instead.
+  */
+  REG_OP(PadV3D)
+      .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
+      .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_UINT8}))
+      .REQUIRED_ATTR(paddings, ListListInt)
+      .ATTR(constant_values, Int, 0)
+      .ATTR(mode, String, "constant")
+      .ATTR(paddings_contiguous, Bool, true)
+      .OP_END_FACTORY_REG(PadV3D)
 
 /**
 *@brief Create a diagonal tensor
@@ -396,6 +399,36 @@ REG_OP(EmbeddingRankId)
     .ATTR(row_memory, Int, 320)
     .ATTR(mode, String, "mod")
     .OP_END_FACTORY_REG(EmbeddingRankId)
+
+/**
+*@brief EmbeddingLocalIndex, Sort statistics index according to rank_id \n
+
+*@par Inputs:
+* @li addr_table: A 2D tensor which last dimension must be 3.
+* @li index: A tensor with data type int32, int64, uint32, uint64.
+
+*@par Attributes:
+* @li row_memory: The size of Embedding vector in a row, the default is 320.
+* @li mode: String type, currently there are two options: 'mod' and 'order'
+
+*@par Outputs:
+* @li local_idx:Index on each server.
+* @li nums:The number of local_idx found on each server.
+* @li recover_idx:The sorted local_idx element is at the position corresponding
+* to the original input index.
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator Diag.
+*/
+REG_OP(EmbeddingLocalIndex)
+    .INPUT(addr_table, TensorType({DT_UINT64}))
+    .INPUT(index, TensorType({DT_INT64,DT_INT32,DT_UINT32,DT_UINT64}))
+    .OUTPUT(local_idx, TensorType({DT_INT64,DT_INT32,DT_UINT32,DT_UINT64}))
+    .OUTPUT(nums, TensorType({DT_INT64,DT_INT32,DT_UINT32,DT_UINT64}))
+    .OUTPUT(recover_idx, TensorType({DT_INT64,DT_INT32,DT_UINT32,DT_UINT64}))
+    .ATTR(row_memory, Int, 320)
+    .ATTR(mode, String, "mod")
+    .OP_END_FACTORY_REG(EmbeddingLocalIndex)
 
 /**
 * @brief Fill the value to a tensor has the specified shape.

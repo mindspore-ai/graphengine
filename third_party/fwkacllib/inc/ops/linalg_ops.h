@@ -340,9 +340,9 @@ form square matrices.   \n
 */
 
 REG_OP(SelfAdjointEig)
-    .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT }))
-    .OUTPUT(eigen_value, TensorType({ DT_DOUBLE, DT_FLOAT }))
-    .OUTPUT(eigen_vector, TensorType({ DT_DOUBLE, DT_FLOAT }))
+    .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(eigen_value, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(eigen_vector, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
     .ATTR(compute_v, Bool, true)
     .OP_END_FACTORY_REG(SelfAdjointEig)
 

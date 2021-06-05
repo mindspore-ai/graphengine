@@ -784,16 +784,14 @@ REG_OP(Conv2DBackpropFilterD)
     | Tensor    | x       | filter  | bias    | y
     ------------|---------|---------|---------|--------
     | Data Type | float16 | float16 | float16 | float16
-    |           |---------|---------|---------|--------
     |           | float32 | float32 | float32 | float32
-    |           |---------|---------|---------|--------
     |           | int8    | int8    | int32   | int32
     ------------|---------|---------|---------|--------
     | Format    | NCHW    | NCHW    | ND      | NCHW
     |           | NHWC    | HWCN    |         | NHWC
 @endverbatim
 * For float32 type, the actual calculation on the chip is based on
-* float16. For int8, a dequant or requant operator must be followed.
+* float16.
 *\n
 *
 *@par Attributes:

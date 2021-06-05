@@ -238,7 +238,6 @@ REG_OP(AscendRequantS16)
   .ATTR(dual_output, Bool, false)
   .ATTR(relu_flag, Bool, false)
   .OP_END_FACTORY_REG(AscendRequantS16)
-
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_QUANTIZE_OPS_H_

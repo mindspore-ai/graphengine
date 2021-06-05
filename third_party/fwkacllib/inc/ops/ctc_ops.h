@@ -137,6 +137,87 @@ REG_OP(CTCBeamSearchDecoder)
     .OUTPUT(log_probability, TensorType({DT_FLOAT, DT_DOUBLE}))
     .OP_END_FACTORY_REG(CTCBeamSearchDecoder)
 
+/**
+*@brief The Connectionist Temporal Classification loss.
+
+*@par Inputs:
+*@li log_probs: Tensor of size (T, N, C), where T =input length, N =batch size,
+                and C = number of classes (including blank).
+                It represent the logarithmized probabilities of the outputs.
+*@li targets: Tensor of size (N, S), where S= max target length.
+             It represent the target sequences.
+*@li input_lengths: Tuple or tensor of size (N). It represent the lengths of the inputs.
+*@li target_lengths: Tuple or tensor of size (N). It represent lengths of the targets.
+
+*@par Outputs:
+*@li neg_log_likelihood: A loss value which is differentiable with respect to each input node.
+*@li log_alpha: The probability of possible trace of input to target.
+
+*@par Attributes:
+*@li blank : Blank label. Default 0.
+*@li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
+*@li zero_infinity : Whether to zero infinite losses and the associated gradients.
+
+*@par Third-party framework compatibility
+* Compatible with Pytorch CTCLoss operator.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(CTCLossV2)
+    .INPUT(log_probs, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(targets, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(input_lengths, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(target_lengths, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(neg_log_likelihood, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(log_alpha, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(blank, Int, 0)
+    .ATTR(reduction, String, "mean")
+    .ATTR(zero_infinity, Bool, false)
+    .OP_END_FACTORY_REG(CTCLossV2)
+
+/**
+*@brief The Connectionist Temporal Classification loss grad.
+
+*@par Inputs:
+*@li grad_out: Gradient renewal coefficient. Tensor of size (N), where N = batch size.
+*@li log_probs: Tensor of size (T, N, C), where T =input length, N =batch size,
+                and C = number of classes (including blank).
+                It represent the logarithmized probabilities of the outputs.
+*@li targets: Tensor of size (N, S), where S= max target length.
+             It represent the target sequences.
+*@li input_lengths: Tuple or tensor of size (N). It represent the lengths of the inputs.
+*@li target_lengths: Tuple or tensor of size (N). It represent lengths of the targets.
+*@li neg_log_likelihood: A loss value which is differentiable with respect to each input node.
+*@li log_alpha: The probability of possible trace of input to target.
+
+*@par Outputs:
+*@li grad: Tensor of size (T, N, C), The grad of Connectionist Temporal Classification loss.
+
+*@par Attributes:
+*@li blank : Blank label. Default 0.
+*@li reduction: Specifies the reduction to apply to the output. Default: 'mean'.
+*@li zero_infinity : Whether to zero infinite losses and the associated gradients.
+
+*@par Third-party framework compatibility
+* Compatible with Pytorch CTCLoss operator.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(CTCLossV2Grad)
+    .INPUT(grad_out, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(log_probs, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(targets, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(input_lengths, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(target_lengths, TensorType({DT_INT32, DT_INT64}))
+    .INPUT(neg_log_likelihood, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(log_alpha, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(grad, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(blank, Int, 0)
+    .ATTR(reduction, String, "mean")
+    .ATTR(zero_infinity, Bool, false)
+    .OP_END_FACTORY_REG(CTCLossV2Grad)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_CTC_OPS_H_

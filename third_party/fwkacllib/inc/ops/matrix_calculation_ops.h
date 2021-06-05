@@ -456,6 +456,34 @@ REG_OP(TensorScatterUpdate)
     .OP_END_FACTORY_REG(TensorScatterUpdate)
 
 /**
+*@brief Uses "updates" to update tensor "data" by "indices". \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li data: An ND Tensor . \n
+*Must be one of the following types: float16, float32, int32, int8, uint8
+*@li indices: An ND Tensor of type int32 or int64
+*@li updates: An Tensor. Same shape as indices. format:NCHW, NHWC . \n
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Attributes:
+*@li axis: An optional attribute. Defaults to 0.
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "data" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the ONNX operator ScatterElements.
+*/
+REG_OP(ScatterElements)
+    .INPUT(data, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .ATTR(axis, Int, 0)
+    .OP_END_FACTORY_REG(ScatterElements)
+
+/**
 *@brief Adds sparse "updates" to a variable reference . \n
 
 *@par Inputs:
@@ -1140,24 +1168,24 @@ REG_OP(Tril)
 
 *@par Attributes:
 *equation: The subscripts for the Einstein summation. \n
-*tensor_size: tensor size of input \n
+*N: tensor size of input \n
 
 *@par Outputs:
 *@li y: Sums the product of the elements of the input operands along dimensions specified
  using a notation based on the Einstein summation convention. \n
 
 *@attention Constraints:
-*Input tensor_size must be Int. \n
+*Input N must be Int. \n
 
 *@par Third-party framework compatibility
 *Compatible with Pytorch einsum operator.
 */
-REG_OP(EinSum)
+REG_OP(Einsum)
     .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .REQUIRED_ATTR(equation, String)
-    .REQUIRED_ATTR(tensor_size, Int)
-    .OP_END_FACTORY_REG(EinSum)
+    .REQUIRED_ATTR(N, Int)
+    .OP_END_FACTORY_REG(Einsum)
 
 /**
 *@brief Returns a 2-D tensor with ones on the diagonal and zeros elsewhere. \n

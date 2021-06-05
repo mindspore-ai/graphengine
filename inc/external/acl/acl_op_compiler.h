@@ -24,22 +24,28 @@
 extern "C" {
 #endif
 
-typedef enum aclCompileType { ACL_COMPILE_SYS, ACL_COMPILE_UNREGISTERED } aclopCompileType;
+typedef enum aclCompileType {
+    ACL_COMPILE_SYS,
+    ACL_COMPILE_UNREGISTERED
+} aclopCompileType;
 
 typedef enum {
-  ACL_PRECISION_MODE,
-  ACL_AICORE_NUM,
-  ACL_AUTO_TUNE_MODE,
-  ACL_OP_SELECT_IMPL_MODE,
-  ACL_OPTYPELIST_FOR_IMPLMODE,
-  ACL_OP_DEBUG_LEVEL,
-  ACL_DEBUG_DIR,
-  ACL_OP_COMPILER_CACHE_MODE,
-  ACL_OP_COMPILER_CACHE_DIR,
-  ACL_OP_PERFORMANCE_MODE
+    ACL_PRECISION_MODE,
+    ACL_AICORE_NUM,
+    ACL_AUTO_TUNE_MODE,
+    ACL_OP_SELECT_IMPL_MODE,
+    ACL_OPTYPELIST_FOR_IMPLMODE,
+    ACL_OP_DEBUG_LEVEL,
+    ACL_DEBUG_DIR,
+    ACL_OP_COMPILER_CACHE_MODE,
+    ACL_OP_COMPILER_CACHE_DIR,
+    ACL_OP_PERFORMANCE_MODE
 } aclCompileOpt;
 
-typedef enum aclCompileFlag { ACL_OP_COMPILE_DEFAULT, ACL_OP_COMPILE_FUZZ } aclOpCompileFlag;
+typedef enum aclCompileFlag {
+    ACL_OP_COMPILE_DEFAULT,
+    ACL_OP_COMPILE_FUZZ
+} aclOpCompileFlag;
 
 /**
  * @ingroup AscendCL
@@ -59,10 +65,15 @@ typedef enum aclCompileFlag { ACL_OP_COMPILE_DEFAULT, ACL_OP_COMPILE_FUZZ } aclO
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType, int numInputs, const aclTensorDesc *const inputDesc[],
-                                          int numOutputs, const aclTensorDesc *const outputDesc[],
-                                          const aclopAttr *attr, aclopEngineType engineType,
-                                          aclopCompileType compileFlag, const char *opPath);
+ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType,
+                                          int numInputs,
+                                          const aclTensorDesc *const inputDesc[],
+                                          int numOutputs,
+                                          const aclTensorDesc *const outputDesc[],
+                                          const aclopAttr *attr,
+                                          aclopEngineType engineType,
+                                          aclopCompileType compileFlag,
+                                          const char *opPath);
 
 /**
  * @ingroup AscendCL
@@ -85,10 +96,11 @@ ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType, int numInputs, con
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure
  */
-ACL_FUNC_VISIBILITY aclError aclopCompileAndExecute(
-  const char *opType, int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
-  int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[], const aclopAttr *attr,
-  aclopEngineType engineType, aclopCompileType compileFlag, const char *opPath, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclopCompileAndExecute(const char *opType,
+    int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
+    int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[],
+    const aclopAttr *attr, aclopEngineType engineType, aclopCompileType compileFlag,
+    const char *opPath, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -118,4 +130,4 @@ ACL_FUNC_VISIBILITY aclError aclopSetCompileFlag(aclOpCompileFlag flag);
 }
 #endif
 
-#endif  // INC_EXTERNAL_ACL_ACL_OP_COMPILER_H_
+#endif // INC_EXTERNAL_ACL_ACL_OP_COMPILER_H_

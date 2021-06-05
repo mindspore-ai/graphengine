@@ -299,8 +299,6 @@ REG_OP(GatherElements)
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
 
-*@attention Constraints:
-
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSlice.
 */
@@ -350,8 +348,6 @@ REG_OP(StridedSlice)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
-
-*@attention Constraints:
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSlice.
@@ -409,8 +405,6 @@ REG_OP(StridedSliceD)
 *@par Outputs:
 *output: A Tensor. Has the same type as "dy" . \n
 
-*@attention Constraints:
-
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSliceGradD.
 
@@ -467,8 +461,6 @@ REG_OP(StridedSliceGradD)
 
 *@par Outputs:
 *output: A Tensor has the same type as "dy" . \n
-
-*@attention Constraints:
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSliceGrad.
@@ -2107,19 +2099,19 @@ REG_OP(InplaceIndexAdd)
 * @brief Replace the value of X with value according to mask.
 * @par Inputs:
 * three inputs, including:
-*  @li x: A Tensor of dtype is float16 or float32 or int32 or int8.
-*  @li mask: A Tensor of dtype float16 or float32 or int32 or int8.
-*  @li value: A Tensor or scalar of dtype float16 or float32 or int32 or int8. \n
+*  @li x: A Tensor of dtype is float16 or float32 or int64 or int32 or int8.
+*  @li mask: A Tensor of dtype bool.
+*  @li value: A Tensor of dtype float16 or float32 or int64 or int32 or int8.
 
 * @par Outputs:
 *  @li y: A tensor. Must be one of the following dtypes:
-*   float16, float32, int32, int8.
+*   float16, float32, int64, int32, int8.
 */
 REG_OP(MaskedFill)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
     .INPUT(mask, TensorType({DT_BOOL}))
-    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(MaskedFill)
 
 /**

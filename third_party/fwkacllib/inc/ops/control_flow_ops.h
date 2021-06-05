@@ -387,12 +387,12 @@ REG_OP(ControlTrigger)
 
 *@par Inputs:
 * Three inputs, including:
-*@li x: One dimensional tensore of type int32, specifying queried shape, max size is 8.
-*@li data_seq: One dimensional tensore of type int32, specifying the mapped table is queried.
-*@li level_index: One dimensional tensore of type int32, specifying secondary index. \n
+*@li x: One dimensional tensor of type int32, specifying queried shape, max size is 128.
+*@li data_seq: One dimensional tensor of type int32, specifying the mapped table is queried.
+*@li level_index: One dimensional tensor of type int32, specifying secondary index. \n
 
 *@par Outputs:
-*@li y: A Tensor with shape [batch, 8], of type int32, specifying index of shape in the map.
+*@li y: A Tensor with shape [8], of type int32, specifying index of shape in the map.
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */

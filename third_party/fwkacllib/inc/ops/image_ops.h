@@ -1868,5 +1868,73 @@ REG_OP(IMGWarpOffsets)
     .INPUT(offsets, TensorType({DT_FLOAT, DT_INT32}))
     .OUTPUT(warp_images, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(IMGWarpOffsets)
+
+/**
+*@brief This operation samples 3d input x by using interpolation based on flow field grid,
+ which is usually gennerated by affine_grid.
+
+*@par Inputs:
+*@li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
+*@li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
+
+*@par Attributes:
+*@li interpolation_mode: An optional string specifying the interpolation method.
+*@li padding_mode: An optional string specifying the pad method.
+*@li align_corners: An optional bool. If "true", the centers of the corner
+ pixels of the input and output tensors are aligned. Defaults to "false" .
+
+*@par Outputs:
+*y: Returns 5-D Tensor with the same dtype as `x`.
+
+*@par Third-party framework compatibility
+*Compatible with pytorch GridSampler3D operator.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GridSampler3D)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(interpolation_mode, String, "bilinear")
+    .ATTR(padding_mode, String, "zeros")
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(GridSampler3D)
+
+/**
+*@brief Computes the gradients of GridSampler3D.
+
+*@par Inputs:
+*@li grad: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
+*@li x: 5-D Tensor with shape `[batch, channels, depth, height, width]`.
+*@li grid: flow field grid, 5-D Tensor with shape `[batch, depth, height, width, 2]`.
+
+*@par Attributes:
+*@li interpolation_mode: An optional string specifying the interpolation method.
+*@li padding_mode: An optional string specifying the pad method.
+*@li align_corners: An optional bool. If "true", the centers of the corner
+ pixels of the input and output tensors are aligned. Defaults to "false" .
+
+*@par Outputs:
+*dx: Returns 5-D Tensor with the same dtype and shape as `x`.
+*dgrid: Returns 5-D Tensor with the same dtype and shape as `grid`.
+
+*@par Third-party framework compatibility
+*Compatible with pytorch GridSampler3DGrad operator.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GridSampler3DGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(dgrid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(interpolation_mode, String, "bilinear")
+    .ATTR(padding_mode, String, "zeros")
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(GridSampler3DGrad)
+
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

@@ -72,7 +72,7 @@ bool LabelGotoTask::Distribute() {
     return false;
   }
 
-  rt_ret = rtLabelListCpy(label_list.data(), label_list.size(), label_info_, label_info_size);
+  rt_ret = rtLabelListCpy((void**)label_list.data(), label_list.size(), label_info_, label_info_size);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: %#x", rt_ret);
     return false;

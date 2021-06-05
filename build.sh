@@ -177,6 +177,9 @@ build_graphengine()
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
+  elif [ "X$ENABLE_GE_ST" = "Xon" ]
+  then
+    TARGET="graph_engine_test"
   elif [ "X$MINDSPORE_MODE" = "Xon" ]
   then
     TARGET="ge_common graph"
@@ -232,6 +235,29 @@ if [[ "X$ENABLE_GE_UT" = "Xon" || "X$ENABLE_GE_COV" = "Xon" ]]; then
     lcov -r cov/tmp.info '*/output/*' '*/build/opensrc/*' '*/build/proto/*' '*/third_party/*' '*/tests/*' '/usr/local/*' '/usr/include/*' '*/metadef/*' '*/parser/*' -o cov/coverage.info
     cd ${BASEPATH}/cov
     genhtml coverage.info
+fi
+
+if [[ "X$ENABLE_GE_ST" = "Xon" ]]; then
+    #prepare engine & opskernel so
+    mkdir -p ${OUTPUT_PATH}/plugin/nnengine
+    mkdir -p ${OUTPUT_PATH}/plugin/nnengine/ge_config
+    mkdir -p ${OUTPUT_PATH}/plugin/opskernel
+    cp ${BUILD_PATH}/tests/st/libnnengine.so ${OUTPUT_PATH}/plugin/nnengine
+    cp ${BUILD_PATH}/engine_conf.json ${OUTPUT_PATH}/plugin/nnengine/ge_config
+    cp ${BUILD_PATH}/tests/st/libhost_cpu_engine.so ${OUTPUT_PATH}/plugin/opskernel
+    cp ${BUILD_PATH}/tests/st/libge_local_engine.so ${OUTPUT_PATH}/plugin/opskernel
+    cp ${BUILD_PATH}/tests/st/framework/libfe.so ${OUTPUT_PATH}/plugin/opskernel
+    #prepare st execution bin
+    cp ${BUILD_PATH}/tests/st/testcase/graph_engine_test ${OUTPUT_PATH}
+    #execute st testcase
+    RUN_TEST_CASE=${OUTPUT_PATH}/graph_engine_test && ${RUN_TEST_CASE}
+    if [[ "$?" -ne 0 ]]; then
+        echo "!!! ST FAILED, PLEASE CHECK YOUR CHANGES !!!"
+        echo -e "\033[31m${RUN_TEST_CASE}\033[0m"
+        exit 1;
+    fi
+    # remove plugin
+    rm -rf ${OUTPUT_PATH}/plugin
 fi
 
 # generate output package in tar form, including ut/st libraries/executables
@@ -337,7 +363,7 @@ generate_package()
   fi
 }
 
-if [[ "X$ENABLE_GE_UT" = "Xoff" && "X$MINDSPORE_MODE" = "Xoff" ]]; then
+if [[ "X$ENABLE_GE_UT" = "Xoff" && "X$ENABLE_GE_ST" = "Xoff" && "X$MINDSPORE_MODE" = "Xoff" ]]; then
   generate_package
 elif [ "X$MINDSPORE_MODE" = "Xon" ]
 then

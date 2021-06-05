@@ -25,6 +25,7 @@
 #include "framework/common/op/op_parser_util.h"
 #include "graph/types.h"
 #include "task/task_factory.h"
+#include "ge/common/math/math_util.h"
 
 namespace ge {
 namespace model_runner {
@@ -500,7 +501,7 @@ bool RuntimeModel::InitConstantInfo(std::shared_ptr<DavinciModel> &davinci_model
       }
       uint64_t *buff = reinterpret_cast<uint64_t *>(const_cast<char *>(constant->weight_data.data()));
       uint32_t head_len = kOffsetUnit * kStringHeadElems;
-      if (ge::CheckInt64Uint32MulOverflow(elem_num, head_len) != SUCCESS) {
+      if (CheckInt64Uint32MulOverflow(elem_num, head_len) != SUCCESS) {
         GELOGE(FAILED, "Shape size is invalid");
         return false;
       }

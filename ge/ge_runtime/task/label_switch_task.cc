@@ -69,7 +69,7 @@ bool LabelSwitchTask::Distribute() {
       return false;
     }
     label_list[i] = all_label_resource_[label_index];
-    GELOGI("Case %zu: label id %zu.", i, label_index);
+    GELOGI("Case %zu: label id %zu.", i, (size_t)label_index);
   }
 
   uint32_t label_info_size = sizeof(rtLabelDevInfo) * task_info_->label_size();

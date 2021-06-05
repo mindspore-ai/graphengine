@@ -130,7 +130,7 @@ bool HcclTask::SetSecondaryStream() {
   Status ret;
   std::lock_guard<std::mutex> lock(model_stream_mapping_mutex_);
   if (model_stream_mapping_.find(rt_model_handle_) == model_stream_mapping_.end()) {
-    GELOGI("Need to create map for rt_model_handle_:%p with new mainstream %ld.", rt_model_handle_, master_stream_id);
+    GELOGI("Need to create map for rt_model_handle_:%p with new mainstream %u.", rt_model_handle_, master_stream_id);
     ret = CreateStream(hccl_secondary_stream_num, master_stream_id);
     if (!ret) {
       GELOGE(RT_FAILED, "Create hccl stream failed.");
@@ -189,7 +189,7 @@ bool HcclTask::SetSecondaryStream() {
     }
     GELOGI("Initialize hccl secondary stream success, hccl_secondary_stream_num =%ld", hccl_secondary_stream_num);
   } else {
-    GELOGI("Need to create secondary stream for %s with new mainstream %ld.", task_info_->op_name().c_str(),
+    GELOGI("Need to create secondary stream for %s with new mainstream %u.", task_info_->op_name().c_str(),
            master_stream_id);
     ret = CreateStream(hccl_secondary_stream_num, master_stream_id);
     if (!ret) {

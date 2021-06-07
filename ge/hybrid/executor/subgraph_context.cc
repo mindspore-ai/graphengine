@@ -89,6 +89,7 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
   if (node_state == nullptr) {
     const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
     node_state.reset(new(std::nothrow)NodeState(*node_item, this));
+    node_state->SetFrameState(GetOrCreateFrameState(*node_item));
     node_state->SetGroup(group_);
     (void)guard;
   }
@@ -100,6 +101,18 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
   }
 
   return node_state;
+}
+
+FrameStatePtr SubgraphContext::GetOrCreateFrameState(const NodeItem &node_item) {
+  auto &frame_state = frame_states_[node_item.frame_index_];
+  if (frame_state == nullptr) {
+    frame_state.reset(new(std::nothrow)FrameState(node_item.frame_index_));
+    if (node_item.frame_index_ != -1) {  // -1 is root frame.
+      frame_state->parent_frame_ = frame_states_[node_item.parent_frame_];
+    }
+  }
+
+  return frame_state;
 }
 
 Status SubgraphContext::SetInput(int index, const TensorValue &tensor) {

@@ -24,7 +24,6 @@ struct LoopCondGroup {
   std::vector<ge::NodePtr> enter_nodes;                               // Enter nodes
   std::vector<std::pair<ge::NodePtr, ge::NodePtr>> merge_next_pairs;  // <Merge, NextIteration>
   std::vector<ge::NodePtr> switch_nodes;                              // Switch nodes
-  bool is_unknown_shape{false};
 };
 using LoopCondGroupPtr = std::shared_ptr<LoopCondGroup>;
 

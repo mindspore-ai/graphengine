@@ -166,6 +166,10 @@ TEST_F(UtestRtsNodeTask, test_stream_active_task) {
   std::function<void()> done = []() {};
   ASSERT_EQ(node_state->GetSwitchIndex(), -1);
   ASSERT_EQ(task->ExecuteAsync(*node_state->GetTaskContext(), done), SUCCESS);
+  ASSERT_EQ(node_state->GetSwitchIndex(), -1);
+
+  node_item->ctrl_send_.emplace(nullptr);
+  ASSERT_EQ(task->ExecuteAsync(*node_state->GetTaskContext(), done), SUCCESS);
   ASSERT_EQ(node_state->GetSwitchIndex(), 0);
 }
 

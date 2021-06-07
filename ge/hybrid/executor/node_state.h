@@ -33,8 +33,10 @@ struct GraphExecutionContext;
 class SubgraphContext;
 class TaskContext;
 struct NodeState;
+struct FrameState;
 
 using NodeStatePtr = std::shared_ptr<NodeState>;
+using FrameStatePtr = std::shared_ptr<FrameState>;
 
 class ShapeFuture {
  public:
@@ -80,6 +82,18 @@ struct ShapeInferenceState {
   std::mutex mu_;
 };
 
+struct FrameState {
+ public:
+  FrameState(int64_t id) : frame_id_(id) {}
+  ~FrameState() = default;
+
+  int64_t frame_id_{0};
+  uint64_t active_count_{0};
+  uint64_t iteration_count_{0};
+
+  std::shared_ptr<FrameState> parent_frame_;
+};
+
 // saving sth. dynamic during execution
 struct NodeState {
  public:
@@ -112,8 +126,8 @@ struct NodeState {
     return node_item_->IsControlFlowOp() || node_item_->shape_inference_type >= DEPEND_SHAPE_RANGE;
   }
 
-  void RunLoopNext();
-  void RunLoopExit();
+  void RunStreamActive();
+  void RunNextIteration();
 
   Status NodeScheduled(const std::function<void(const NodeItem *)> &ready) const;
 
@@ -144,6 +158,10 @@ struct NodeState {
     return group_;
   }
 
+  void SetFrameState(const shared_ptr<FrameState> &frame_state) {
+    frame_state_ = frame_state;
+  }
+
   const shared_ptr<NodeTask> &GetKernelTask() const {
     return kernel_task_;
   }
@@ -167,7 +185,8 @@ struct NodeState {
   bool IsScheduleReady() const;
   void SetDataSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
   void SetCtrlSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
-  void ResetContext(uint64_t loop_count);
+  void ResetContext(uint64_t iteration);
+  void ScheduleContext(const NodeState &node_state);
 
   const NodeItem *node_item_ = nullptr;
   std::shared_ptr<NodeTask> kernel_task_ = nullptr;
@@ -179,7 +198,9 @@ struct NodeState {
   std::mutex mu_;
 
   std::future<Status> schedule_future_;
-  uint64_t loop_count_ = 0;
+  std::shared_ptr<FrameState> frame_state_;
+  uint64_t active_count_ = 0;
+  uint64_t iteration_count_ = 0;
   uint32_t ctrl_scheduled_ = 0;
   uint32_t data_scheduled_ = 0;
   int merge_index_ = -1; // Use for Execute (Reset after Executed).

@@ -2358,13 +2358,15 @@ Status HybridModelBuilder::BuildFrameGroupIndex(NodeItem &node_item) {
   int64_t ctrl_flow_group = -1;
   if (node_item.IsEnterOp() && AttrUtils::GetInt(node_item.op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, ctrl_flow_group)) {
     node_item.frame_index_ = ctrl_flow_group;
-    if (node_item.IsEnterOp()) {
-      const auto src_node = node_item.node->GetInDataNodes().at(0);
+    for (const auto src_node : node_item.node->GetInDataNodes()) {
       NodeItem *src_node_item = nullptr;
       GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
                         "[%s] failed to get or create node item", src_node->GetName().c_str());
       if (!src_node_item->is_root_node_) {
+        GELOGD("[%s] frame index: %ld, from [%s] get parent frame index: %ld", node_item.node_name.c_str(),
+               node_item.frame_index_, src_node_item->node_name.c_str(), src_node_item->frame_index_);
         parent_frame_group_[node_item.frame_index_] = src_node_item->frame_index_;
+        break;
       }
     }
 
@@ -2390,7 +2392,7 @@ Status HybridModelBuilder::BuildFrameGroupIndex(NodeItem &node_item) {
       node_item.frame_index_ = src_node_item->frame_index_;
     }
 
-    const auto it = parent_frame_group_.find(src_node_item->frame_index_);
+    const auto it = parent_frame_group_.find(node_item.frame_index_);
     node_item.parent_frame_ = (it != parent_frame_group_.end()) ? it->second : -1;
     GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
            node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);

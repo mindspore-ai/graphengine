@@ -106,6 +106,8 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
 FrameStatePtr SubgraphContext::GetOrCreateFrameState(const NodeItem &node_item) {
   auto &frame_state = frame_states_[node_item.frame_index_];
   if (frame_state == nullptr) {
+    GELOGD("[%s] Create FrameState, frame index: %ld, parent frame index: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
     frame_state.reset(new(std::nothrow)FrameState(node_item.frame_index_));
     if (node_item.frame_index_ != -1) {  // -1 is root frame.
       frame_state->parent_frame_ = frame_states_[node_item.parent_frame_];

@@ -1113,6 +1113,10 @@ Status UpdateDynamicInputShapeRange(const ge::GeAttrValue::INT index,
                                     GeTensorDesc &desc) {
   auto origin_shape = desc.GetShape();
   auto current_shape_range_vec = range_vec.at(index);
+  if (origin_shape.IsScalar()) {
+    GELOGI("Cur input %ld is scalar, no need set shape range.", index);
+    return SUCCESS;
+  }
   if (current_shape_range_vec.size() != origin_shape.GetDimNum()) {
     REPORT_INNER_ERROR("E19999", "Given shape_range dim num is %zu, current dim:%s num is %zu, not match, "
                        "check invalid", current_shape_range_vec.size(), origin_shape.ToString().c_str(),

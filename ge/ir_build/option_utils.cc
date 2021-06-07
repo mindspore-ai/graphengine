@@ -39,7 +39,7 @@ const size_t kSquareBracketsSize = 2;
 const size_t kRangePairSize = 2;
 const size_t kShapeRangeSize = 2;
 const size_t kShapeRangeStrIndex = 2;
-const size_t kShapeRangeStrSize = 3;
+const size_t kShapeRangeStrSize = 1;
 // datatype/formats from user to GE, Unified to util interface file later
 const std::map<std::string, ge::DataType> kOutputTypeSupportDatatype = {
     {"FP32", ge::DT_FLOAT}, {"FP16", ge::DT_FLOAT16}, {"UINT8", ge::DT_UINT8}};
@@ -456,8 +456,9 @@ Status ParseInputShapeRange(const std::string &shape_range,
   for (auto &shape_range_str : shape_range_set) {
     if (shape_range_str.size() < kShapeRangeStrSize) {
       // shape_range_str should be "[2~3,1"
-      // or ",[2~3,1". because we should trim '[' or ',['
-      // so shape_range_str.size() < 3 is invalid
+      // or ",[2~3,1". because we should trim '[' or ',['.
+      // For scaler input, shape range should be "[]"
+      // so shape_range_str.size() < 1 is invalid
       continue;
     }
     // trim start bytes, after that, single input should be "1~20,3,3~6,-1"
@@ -472,6 +473,11 @@ Status ParseInputShapeRange(const std::string &shape_range,
     std::vector<std::pair<int64_t, int64_t>> range_of_single_input;
     vector<string> dim_range_set = ge::StringUtils::Split(shape_range_str, ',');
     for (const auto &range_pair_str : dim_range_set) {
+      if (range_pair_str.empty()) {
+        // for scaler input ,range is empty. use [0,0] as scaler range.
+        range_of_single_input.emplace_back(std::make_pair(0, 0));
+        continue;
+      }
       vector<string> range_pair_set = ge::StringUtils::Split(range_pair_str, '~');
       pair<int64_t, int64_t> range_pair;
       if (!ParseShapeRangePair(shape_range_str, range_pair_set, range_pair)) {

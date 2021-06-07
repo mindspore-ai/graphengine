@@ -120,29 +120,63 @@ ComputeGraphPtr BuildGraph4_Subgraph(string graph_name) {
   return builder.GetGraph();
 }
 
+ComputeGraphPtr BuildGraph6() {
+  auto builder = ut::GraphBuilder("g6");
+  auto data1 = builder.AddNode("input1", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {3, -1, -1, 5});
+  auto data2 = builder.AddNode("input2", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {});
+  AttrUtils::SetInt(data1->GetOpDesc(), ATTR_NAME_INDEX, 0);
+  AttrUtils::SetInt(data2->GetOpDesc(), ATTR_NAME_INDEX, 1);
+  auto add = builder.AddNode("add", ADD, 2, 1);
+  auto netoutput = builder.AddNode("netoutput", NETOUTPUT, 1, 0);
+
+  builder.AddDataEdge(data1, 0, add, 0);
+  builder.AddDataEdge(data2, 0, add, 1);
+  builder.AddDataEdge(add, 0,netoutput, 0);
+  return builder.GetGraph();
+}
+
 TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
   ge::GraphPrepare graph_prepare;
-  graph_prepare.compute_graph_ = BuildGraph1();
+  graph_prepare.compute_graph_ = BuildGraph6();
   // prepare user_input & graph option
   ge::GeTensorDesc tensor1;
   tensor1.SetFormat(ge::FORMAT_NCHW);
   tensor1.SetShape(ge::GeShape({3, 12, 5, 5}));
   tensor1.SetDataType(ge::DT_FLOAT);
   GeTensor input1(tensor1);
-  std::vector<GeTensor> user_input = {input1};
+  ge::GeTensorDesc tensor2;
+  tensor2.SetFormat(ge::FORMAT_NCHW);
+  tensor2.SetShape(ge::GeShape());
+  tensor2.SetDataType(ge::DT_FLOAT);
+  GeTensor input2(tensor2);
+  std::vector<GeTensor> user_input = {input1, input2};
   std::map<string,string> graph_option = {{"ge.exec.dynamicGraphExecuteMode","dynamic_execute"},
-                                          {"ge.exec.dataInputsShapeRange","[3,1~20,2~10,5]"}};
+                                          {"ge.exec.dataInputsShapeRange","[3,1~20,2~10,5],[]"}};
   auto ret = graph_prepare.UpdateInput(user_input, graph_option);
   EXPECT_EQ(ret, ge::SUCCESS);
-  // check data node output shape_range and shape
-  auto data_node = graph_prepare.compute_graph_->FindNode("data1");
+  // check data1 node output shape_range and shape
+  auto data_node = graph_prepare.compute_graph_->FindNode("input1");
   auto data_output_desc = data_node->GetOpDesc()->GetOutputDescPtr(0);
-  vector<int64_t> expect_shape = {3,-1,-1,5};
-  auto result_shape = data_output_desc->GetShape();
-  EXPECT_EQ(result_shape.GetDimNum(), expect_shape.size());
-  for(size_t i =0; i< expect_shape.size(); ++i){
-      EXPECT_EQ(result_shape.GetDim(i), expect_shape.at(i));
+  vector<int64_t> input1_expect_shape = {3,-1,-1,5};
+  vector<std::pair<int64_t, int64_t>> intpu1_expect_shape_range = {{3,3},{1,20},{2,10},{5,5}};
+  auto input1_result_shape = data_output_desc->GetShape();
+  vector<std::pair<int64_t, int64_t>> input1_result_shape_range;
+  data_output_desc->GetShapeRange(input1_result_shape_range);
+  EXPECT_EQ(input1_result_shape.GetDimNum(), input1_expect_shape.size());
+  EXPECT_EQ(input1_result_shape_range.size(), input1_expect_shape.size());
+  for(size_t i =0; i< input1_expect_shape.size(); ++i){
+      EXPECT_EQ(input1_result_shape.GetDim(i), input1_expect_shape.at(i));
   }
+  for(size_t i =0; i< intpu1_expect_shape_range.size(); ++i){
+     EXPECT_EQ(input1_result_shape_range.at(i).first, intpu1_expect_shape_range.at(i).first);
+     EXPECT_EQ(input1_result_shape_range.at(i).second, intpu1_expect_shape_range.at(i).second);
+  }
+  // check data2 node output shape_range and shape
+  auto data_node_2 = graph_prepare.compute_graph_->FindNode("input2");
+  auto data_output_desc_2 = data_node_2->GetOpDesc()->GetOutputDescPtr(0);
+  vector<std::pair<int64_t, int64_t>> intput2_result_shape_range;
+  data_output_desc_2->GetShapeRange(intput2_result_shape_range);
+  EXPECT_EQ(intput2_result_shape_range.size(), 0);
 }
 
 TEST_F(UtestGraphPreproces, test_check_user_input) {

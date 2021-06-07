@@ -2358,7 +2358,7 @@ Status HybridModelBuilder::BuildFrameGroupIndex(NodeItem &node_item) {
   int64_t ctrl_flow_group = -1;
   if (node_item.IsEnterOp() && AttrUtils::GetInt(node_item.op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, ctrl_flow_group)) {
     node_item.frame_index_ = ctrl_flow_group;
-    for (const auto src_node : node_item.node->GetInDataNodes()) {
+    for (const auto src_node : node_item.node->GetInAllNodes()) {
       NodeItem *src_node_item = nullptr;
       GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
                         "[%s] failed to get or create node item", src_node->GetName().c_str());

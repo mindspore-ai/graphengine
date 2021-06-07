@@ -2363,7 +2363,7 @@ Status HybridModelBuilder::BuildFrameGroupIndex(NodeItem &node_item) {
       GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
                         "[%s] failed to get or create node item", src_node->GetName().c_str());
       if (!src_node_item->is_root_node_) {
-        GELOGD("[%s] frame index: %ld, from [%s] get parent frame index: %ld", node_item.node_name.c_str(),
+        GELOGD("[%s] frame index: %ld, [%s] parent frame index: %ld", node_item.node_name.c_str(),
                node_item.frame_index_, src_node_item->node_name.c_str(), src_node_item->frame_index_);
         parent_frame_group_[node_item.frame_index_] = src_node_item->frame_index_;
         break;

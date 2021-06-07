@@ -26,6 +26,7 @@ namespace {
 const char *const kVectorCore = "VectorCore";
 const char *const kVectorEngine = "VectorEngine";
 const char *const kAicoreEngine = "AIcoreEngine";
+const char *const kHostCpuEngine = "DNN_VM_HOST_CPU";
 }  // namespace
 
 namespace ge {
@@ -166,6 +167,10 @@ Status GraphOptimize::OptimizeOriginalGraph(ComputeGraphPtr &compute_graph) {
       if (iter->first == exclude_core_Type) {
         continue;
       }
+      if (GetContext().GetHostExecFlag() && iter->first != kHostCpuEngine) {
+        // graph exec on host, no need OptimizeOriginalGraph for other engine.
+        continue;
+      }
       ret = (iter->second)->OptimizeOriginalGraph(*compute_graph);
       if (ret != SUCCESS) {
         REPORT_INNER_ERROR("E19999", "Call OptimizeOriginalGraph failed, ret:%d, engine_name:%s, "
@@ -202,6 +207,10 @@ Status GraphOptimize::OptimizeOriginalGraphJudgeInsert(ComputeGraphPtr &compute_
     for (auto iter = graph_optimizer.begin(); iter != graph_optimizer.end(); ++iter) {
       if (iter->first == exclude_core_Type) {
         GELOGI("[OptimizeOriginalGraphJudgeInsert]: engine type will exclude: %s", exclude_core_Type.c_str());
+        continue;
+      }
+      if (GetContext().GetHostExecFlag() && iter->first != kHostCpuEngine) {
+        // graph exec on host, no need OptimizeOriginalGraphJudgeInsert for other engine.
         continue;
       }
       GELOGI("Begin to refine running format by engine %s", iter->first.c_str());

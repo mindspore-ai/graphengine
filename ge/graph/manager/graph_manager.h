@@ -375,7 +375,7 @@ class GraphManager {
   static void ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback,
                           Status ret, const string &log);
 
-  void ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph);
+  Status ChangeConstType(const ComputeGraphPtr &compute_graph);
 
   Status PreRunOptimizeOriginalGraph(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs,
                                      ge::ComputeGraphPtr &compute_graph, uint64_t session_id);

@@ -771,6 +771,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   GELOGI("Start AutoFindBpOpIndex");
   NodePtr bp_node = nullptr;
   uint32_t current_idx = 0;
+  uint32_t netoutput_idx = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
@@ -788,6 +789,7 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
     if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
       if (bp_node == nullptr) {
         bp_node = node;
+        netoutput_idx = current_idx - 1;
       }
     }
     if (graph->GetNeedIteration()) {
@@ -812,9 +814,13 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   if (bp_node == nullptr) {
     GELOGW("not find bp_node.");
     return SUCCESS;
+  } else if (bp_node->GetName() == NODE_NAME_NET_OUTPUT) {
+    profiling_point.bp_index = netoutput_idx;
+    GELOGI("First bp name %s, idx %u", bp_node->GetName().c_str(), netoutput_idx);
+  } else {
+    profiling_point.bp_index = FindLastBpFromBpNode(graph, bp_node);
   }
 
-  profiling_point.bp_index = FindLastBpFromBpNode(graph, bp_node);
   return SUCCESS;
 }
 

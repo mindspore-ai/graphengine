@@ -203,16 +203,11 @@ void SetAttrValue(const Json &j, SingleOpAttr &attr) {
   // when attr type is "data_type", we support two kinds of attr value.
   // 1. value: "DT_FLOAT", "DT_INT32", "DT_INT8" ...
   // 2. value: 1, 3 ...
-  if (j.at(kKeyType).get<string>() == "data_type") {
-    if (AttrValueIsString(j, kKeyValue)) {
-      string type_str = j.at(kKeyValue).get<string>();
-      DataType dtype = GetValue(kDataTypeStringToEnum, type_str, DT_UNDEFINED);
-      attr.value.SetValue<DataType>(dtype);
-      return;
-    } else {
-      attr.value.SetValue<T>(j.at(kKeyValue).get<T>());
-      return;
-    }
+  if (j.at(kKeyType).get<string>() == "data_type" && AttrValueIsString(j, kKeyValue)) {
+    string type_str = j.at(kKeyValue).get<string>();
+    DataType dtype = GetValue(kDataTypeStringToEnum, type_str, DT_UNDEFINED);
+    attr.value.SetValue<DataType>(dtype);
+    return;
   }
   attr.value.SetValue<T>(j.at(kKeyValue).get<T>());
 }

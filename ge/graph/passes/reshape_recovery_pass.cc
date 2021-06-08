@@ -24,24 +24,31 @@ NodePtr CreateReshape(const ConstGeTensorDescPtr &src, const ConstGeTensorDescPt
   auto reshape = MakeShared<OpDesc>("Reshape_ReshapeRecoveryPass_" + std::to_string(next_num), RESHAPE);
   if (reshape == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
+    GELOGE(FAILED, "[New][OpDesc] failed");
     return nullptr;
   }
   auto ret = reshape->AddInputDesc("x", *src);
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:x",
                       reshape->GetName().c_str(), reshape->GetType().c_str());
+    GELOGE(FAILED, "[Add][InputDesc] to op:%s(%s) failed, name:x",
+           reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
   ret = reshape->AddInputDesc("shape", GeTensorDesc(GeShape(), Format(), DT_INT32));
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:shape",
                       reshape->GetName().c_str(), reshape->GetType().c_str());
+    GELOGE(FAILED, "[Add][InputDesc] to op:%s(%s) failed, name:shape",
+           reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
   ret = reshape->AddOutputDesc("y", *dst);
   if (ret != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:y",
+    REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed, name:y",
                       reshape->GetName().c_str(), reshape->GetType().c_str());
+    GELOGE(FAILED, "[Add][OutputDesc] to op:%s(%s) failed, name:y",
+           reshape->GetName().c_str(), reshape->GetType().c_str());
     return nullptr;
   }
 
@@ -89,8 +96,11 @@ Status InsertReshapeIfNeed(const NodePtr &node) {
                             reshape->GetName().c_str(), reshape->GetType().c_str(),
                             node->GetName().c_str(), node->GetType().c_str(), src_anchor->GetIdx(),
                             dst_node->GetName().c_str(), dst_node->GetType().c_str(), dst_anchor->GetIdx());
-          GELOGE(INTERNAL_ERROR, "Failed to insert reshape between node %s and %s",
-                 node->GetName().c_str(), dst_node->GetName().c_str());
+          GELOGE(INTERNAL_ERROR,
+                 "[Insert][Node] %s(%s) between node:%s(%s)(out_index:%d) and node:%s(%s)(out_index:%d) failed",
+                 reshape->GetName().c_str(), reshape->GetType().c_str(),
+                 node->GetName().c_str(), node->GetType().c_str(), src_anchor->GetIdx(),
+                 dst_node->GetName().c_str(), dst_node->GetType().c_str(), dst_anchor->GetIdx());
           return INTERNAL_ERROR;
         }
         GELOGI("Insert reshape between %s and %s to keep the shape continues",

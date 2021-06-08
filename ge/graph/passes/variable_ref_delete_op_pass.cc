@@ -37,13 +37,13 @@ Status VariableRefDeleteOpPass::Run(ge::ComputeGraphPtr graph) {
     if (all_var_names.count(ref_var_src_var_name) == 0) {
       REPORT_INNER_ERROR("E19999", "Can not find source variable[%s] of variable ref[%s], check invalid",
                          ref_var_src_var_name.c_str(), node->GetName().c_str());
-      GELOGE(FAILED, "Can not find source variable[%s] of variable ref[%s]", ref_var_src_var_name.c_str(),
-             node->GetName().c_str());
+      GELOGE(FAILED, "[Check][Param] Can not find source variable[%s] of variable ref[%s]",
+             ref_var_src_var_name.c_str(), node->GetName().c_str());
       return FAILED;
     }
     Status ret = DealVariableRef(graph, node, ref_var_src_var_name);
     if (ret != SUCCESS) {
-      GELOGE(ret, "variable ref [%s] delete failed", node->GetName().c_str());
+      GELOGE(ret, "[Deal][VariableRef] [%s] in graph:%s failed", node->GetName().c_str(), graph->GetName().c_str());
       return FAILED;
     }
   }
@@ -57,7 +57,7 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   if (inAnchor0 == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no input anchor, check invalid",
                        variable_ref->GetName().c_str(), variable_ref->GetType().c_str());
-    GELOGE(FAILED, "variable_ref [%s] no input", variable_ref->GetName().c_str());
+    GELOGE(FAILED, "[Get][InDataAnchor] failed, variable_ref [%s] no input", variable_ref->GetName().c_str());
     return FAILED;
   }
   GE_CHECK_NOTNULL(inAnchor0->GetPeerOutAnchor());
@@ -79,23 +79,23 @@ Status VariableRefDeleteOpPass::DealVariableRef(ge::ComputeGraphPtr &graph, ge::
   } else {
     REPORT_CALL_ERROR("E19999", "Set Attr:%s to output:%d desc of op:%s(%s) failed", REF_VAR_SRC_VAR_NAME.c_str(),
                       index, op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(FAILED, "[%s-%d]: add attr [REF_VAR_SRC_VAR_NAME: %s ] failed", peer_node->GetName().c_str(), index,
-           ref_var_src_var_name.c_str());
+    GELOGE(FAILED, "[Set][Attr] %s to output:%d desc of op:%s(%s) failed", REF_VAR_SRC_VAR_NAME.c_str(),
+           index, op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
   // remove variable_ref
   if (GraphUtils::IsolateNode(variable_ref, {0}) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Isolate node:%s(%s) failed",
                       variable_ref->GetName().c_str(), variable_ref->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", variable_ref->GetName().c_str(),
+    GELOGE(INTERNAL_ERROR, "[Isolate][Node] name:%s, type:%s failed", variable_ref->GetName().c_str(),
            variable_ref->GetType().c_str());
     return FAILED;
   }
   if (GraphUtils::RemoveNodeWithoutRelink(graph, variable_ref) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                       variable_ref->GetName().c_str(), variable_ref->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Remove node: %s, type: %s without relink failed", variable_ref->GetName().c_str(),
-           variable_ref->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Remove][Node] %s(%s) without relink in graph:%s failed",
+           variable_ref->GetName().c_str(), variable_ref->GetType().c_str(), graph->GetName().c_str());
     return FAILED;
   }
   return SUCCESS;

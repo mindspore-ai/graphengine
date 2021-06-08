@@ -46,7 +46,7 @@ Status LinkGenMaskNodesPass::Run(ComputeGraphPtr graph) {
   size_t gen_mask_group_size = gen_mask_nodes.size();
   Status status = GetGenMaskGroupSize(gen_mask_nodes, gen_mask_group_size);
   if (status != SUCCESS) {
-    GELOGE(FAILED, "Get GenMask group size failed.");
+    GELOGE(FAILED, "[Get][GenMaskGroupSize] failed.");
     return FAILED;
   }
 
@@ -73,7 +73,9 @@ Status LinkGenMaskNodesPass::Run(ComputeGraphPtr graph) {
       REPORT_CALL_ERROR("E19999", "Op:%s(%s) link control to op:%s(%s) failed",
                         src_node->GetName().c_str(), src_node->GetType().c_str(),
                         dest_node->GetName().c_str(), dest_node->GetType().c_str());
-      GELOGE(FAILED, "Link from %s to %s failed.", src_node->GetName().c_str(), dest_node->GetName().c_str());
+      GELOGE(FAILED, "[Add][Edge] Op:%s(%s) link control to op:%s(%s) failed",
+             src_node->GetName().c_str(), src_node->GetType().c_str(),
+             dest_node->GetName().c_str(), dest_node->GetType().c_str());
       return FAILED;
     }
     GELOGD("Link from %s to %s.", src_node->GetName().c_str(), dest_node->GetName().c_str());

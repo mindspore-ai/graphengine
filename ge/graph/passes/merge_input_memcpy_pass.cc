@@ -26,14 +26,16 @@ Status MergeInputMemcpyPass::Run(ComputeGraphPtr graph) {
   std::unordered_map<NodePtr, std::vector<NodePtr>> switch_groups;
   for (const auto &node : graph->GetDirectNode()) {
     std::string type;
-    GE_CHK_STATUS_RET(GetOriginalType(node, type), "Get node type failed.");
+    GE_CHK_STATUS_RET(GetOriginalType(node, type),
+                      "[Get][OriginalType] of node in graph:%s failed.", graph->GetName().c_str());
     if ((type != MERGE) && (type != REFMERGE)) {
       continue;
     }
 
     GE_CHECK_NOTNULL(node->GetOpDesc());
     GE_CHK_STATUS_RET(AddMemcpyAsyncNodes(graph, node, node->GetOpDesc()->HasAttr(ATTR_INSERT_BY_MBATCH)),
-                      "Merge add memcpy node failed.");
+                      "[Add][MemcpyAsyncNodes] failed, graph:%s, node:%s.", graph->GetName().c_str(),
+                      node->GetName().c_str());
   }
 
   GELOGD("MergeInputMemcpyPass Leave");
@@ -60,13 +62,17 @@ Status MergeInputMemcpyPass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, c
 
     const std::string &memcpy_name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx());
     NodePtr memcpy_node = CreateMemcpyAsyncNode(graph, memcpy_name, peer_out_anchor, multi_batch_flag);
-    GE_CHK_BOOL_EXEC(memcpy_node != nullptr, return FAILED, "Create MemcpyAsync node failed.");
+    GE_CHK_BOOL_EXEC(memcpy_node != nullptr, return FAILED,
+                     "[Create][MemcpyAsyncNode] failed, memcpy_name:%s.", memcpy_name.c_str());
     GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor),
-                  "MemcpyAsync node remove edge failed.");
+                  "[Remove][Edge] between %s and %s failed.", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                  node->GetName().c_str());
     GE_CHK_STATUS(GraphUtils::AddEdge(peer_out_anchor, memcpy_node->GetInDataAnchor(0)),
-                  "MemcpyAsync node add edge failed.");
+                  "[Add][Edge] between %s and %s failed.", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                  memcpy_node->GetName().c_str());
     GE_CHK_STATUS(GraphUtils::AddEdge(memcpy_node->GetOutDataAnchor(0), in_data_anchor),
-                  "MemcpyAsync node add edge failed.");
+                  "[Add][Edge] between %s and %s failed.", memcpy_node->GetName().c_str(),
+                  node->GetName().c_str());
   }
 
   return SUCCESS;
@@ -83,25 +89,30 @@ Status MergeInputMemcpyPass::AddMemcpyAsyncNodes(const ComputeGraphPtr &graph, c
 NodePtr MergeInputMemcpyPass::CreateMemcpyAsyncNode(const ComputeGraphPtr &graph, const std::string &name,
                                                     const OutDataAnchorPtr &out_data_anchor, bool multi_batch_flag) {
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
-  GE_CHK_BOOL_EXEC(pre_op_desc != nullptr, return nullptr, "OpDesc of pre node is invalid.");
+  GE_CHK_BOOL_EXEC(pre_op_desc != nullptr,
+                   REPORT_INNER_ERROR("E19999", "opdesc of pre node is nullptr, check invalid");
+                   return nullptr, "[Get][OpDesc] failed, OpDesc of pre node is invalid.");
 
   const std::string &memcpy_type = multi_batch_flag ? MEMCPYADDRASYNC : MEMCPYASYNC;
   const std::string &node_name = name + "_" + memcpy_type;
   GELOGI("Create MemcpyAsync op:%s.", node_name.c_str());
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name, memcpy_type);
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "Create op_desc failed, MemcpyAsync:%s.", node_name.c_str());
+    REPORT_CALL_ERROR("E19999", "Create OpDesc failed, node_name:%s", node_name.c_str());
+    GELOGE(FAILED, "[Create][OpDesc] failed, MemcpyAsync:%s.", node_name.c_str());
     return nullptr;
   }
 
   GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) == GRAPH_SUCCESS,
                    REPORT_CALL_ERROR("E19999", "Add input to op:%s(%s) failed",
                                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                   return nullptr, "Create MemcpyAsync op: add input desc failed.");
+                   return nullptr,
+                   "[Add][InputDesc] to op:%s(%s) failed", op_desc->GetName().c_str(), op_desc->GetType().c_str());
   GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) == GRAPH_SUCCESS,
                    REPORT_CALL_ERROR("E19999", "Add output to op:%s(%s) failed",
                                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                   return nullptr, "Create MemcpyAsync op: add output desc failed.");
+                   return nullptr,
+                   "[Add][OutputDesc] to op:%s(%s) failed", op_desc->GetName().c_str(), op_desc->GetType().c_str());
 
   return graph->AddNode(op_desc);
 }

@@ -30,7 +30,9 @@ Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
       if (node->GetType() == STREAMSWITCH) {
         auto sub_graph = node->GetOwnerComputeGraph();
         if (sub_graph != nullptr && !sub_graph->GetGraphUnknownFlag()) {
-          GE_CHK_STATUS_RET(AddMemcpyAsyncNode(node), "Add memcpyasync node failed in known subgraph.");
+          GE_CHK_STATUS_RET(AddMemcpyAsyncNode(node),
+                            "[Add][MemcpyAsyncNode] for node:%s in known subgraph:%s failed.",
+                            node->GetName().c_str(), sub_graph->GetName().c_str());
         }
       }
     }
@@ -41,9 +43,8 @@ Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
   int64_t value = 0;
   rtError_t rt_ret = rtGetRtCapability(FEATURE_TYPE_MEMCPY, MEMCPY_INFO_SUPPORT_ZEROCOPY, &value);
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtGetRtCapability failed, ret = 0x%X",
-                      rt_ret);
-    GELOGE(RT_FAILED, "rtGetRtCapability failed, error=0x%x.", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Call rtGetRtCapability failed, ret = 0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtGetRtCapability] failed, ret = 0x%x.", rt_ret);
     return RT_FAILED;
   }
 
@@ -59,7 +60,8 @@ Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
     if (op_desc->GetType() == STREAMSWITCHN || op_desc->GetType() == STREAMMERGE) {
       Status ret = AddMemcpyAddrAsyncNode(graph, node);
       if (ret != SUCCESS) {
-        GELOGE(ret, "AddMemcpyAddrAsyncNode failed.");
+        GELOGE(ret, "[Add][MemcpyAddrAsyncNode] for %s in graph:%s failed.", node->GetName().c_str(),
+               graph->GetName().c_str());
         return ret;
       }
     }
@@ -69,7 +71,8 @@ Status MemcpyAddrAsyncPass::Run(ComputeGraphPtr graph) {
       if (node->GetOwnerComputeGraph()->GetParentNode() == nullptr) {
         Status ret = InsertMemAddrAsyncNodeBeforeNetoutput(node->GetOwnerComputeGraph(), node);
         if (ret != SUCCESS) {
-          GELOGE(ret, "AddMemcpyAddrAsyncNode failed.");
+          GELOGE(ret, "[Insert][MemAddrAsyncNode] Before Netoutput for node:%s in graph:%s failed.",
+                 node->GetName().c_str(), graph->GetName().c_str());
           return ret;
         }
       }
@@ -88,12 +91,13 @@ Status MemcpyAddrAsyncPass::AddMemcpyAsyncNode(const NodePtr &node) {
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
     auto memcpy_async_node = CreateMemcpyAddrAsyncNode(sub_graph, peer_out_anchor, node);
     if (memcpy_async_node == nullptr) {
-      GELOGE(INTERNAL_ERROR, "Create memcpyasync node failed.");
+      GELOGE(INTERNAL_ERROR, "[Create][MemcpyAddrAsyncNode] for node:%s in subgraph failed.",
+             node->GetName().c_str());
       return INTERNAL_ERROR;
     }
     Status ret = InsertMemcpyAddrAsyncNode(peer_out_anchor, in_data_anchor, memcpy_async_node);
     if (ret != SUCCESS) {
-      GELOGE(ret, "Insert memcpyasync node failed.");
+      GELOGE(ret, "[Insert][MemcpyAddrAsyncNode] failed, memcpy_async_node:%s.", memcpy_async_node->GetName().c_str());
       return ret;
     }
   }
@@ -114,18 +118,23 @@ Status MemcpyAddrAsyncPass::AddMemcpyAddrAsyncNode(const ComputeGraphPtr &graph,
       if (owner_graph->GetParentGraph() == nullptr) {
         GELOGI("Need to insert MemcpyAddrAsync directly when data in parent graph.");
         NodePtr memcpy_addr_async_node = CreateMemcpyAddrAsyncNode(graph, peer_out_anchor, node);
-        GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr, GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode failed.");
+        GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr,
+                        GELOGE(INTERNAL_ERROR, "[Create][MemcpyAddrAsyncNode] failed, node:%s.",
+                               node->GetName().c_str());
                         return INTERNAL_ERROR);
 
         Status ret = InsertMemcpyAddrAsyncNode(peer_out_anchor, in_data_anchor, memcpy_addr_async_node);
-        GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode failed."); return ret);
+        GE_IF_BOOL_EXEC(ret != SUCCESS,
+                        GELOGE(ret, "[Insert][MemcpyAddrAsyncNode] failed, memcpy_addr_async_node:%s.",
+                               memcpy_addr_async_node->GetName().c_str());
+                        return ret);
       } else {
         uint32_t parent_index = 0;
         if (!AttrUtils::GetInt(in_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-          REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed",
-                            ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+          REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                             in_node->GetName().c_str(), in_node->GetType().c_str());
-          GELOGE(INTERNAL_ERROR, "Failed to get parent index of %s", in_node->GetName().c_str());
+          GELOGE(INTERNAL_ERROR, "[Get][Attr] %s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                 in_node->GetName().c_str(), in_node->GetType().c_str());
           return INTERNAL_ERROR;
         }
         // Data is in sub_graph
@@ -141,11 +150,15 @@ Status MemcpyAddrAsyncPass::AddMemcpyAddrAsyncNode(const ComputeGraphPtr &graph,
           GE_CHECK_NOTNULL(peer_out_anchor_);
           NodePtr memcpy_addr_async_node = CreateMemcpyAddrAsyncNode(graph, peer_out_anchor_, out_of_user_data_);
           GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr,
-                          GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode failed.");
+                          GELOGE(INTERNAL_ERROR, "[Create][MemcpyAddrAsyncNode] failed, out_of_user_data_:%s.",
+                                 out_of_user_data_->GetName().c_str());
                           return INTERNAL_ERROR);
 
           Status ret = InsertMemcpyAddrAsyncNode(peer_out_anchor_, in_anchor_, memcpy_addr_async_node);
-          GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode failed."); return ret);
+          GE_IF_BOOL_EXEC(ret != SUCCESS,
+                          GELOGE(ret, "[Insert][MemcpyAddrAsyncNode] failed, memcpy_addr_async_node:%s.",
+                                 memcpy_addr_async_node->GetName().c_str());
+                          return ret);
         }
         if (find_user_data_for_known_) {
           GELOGI("Insert memcpy_addr_async for known graph.");
@@ -153,12 +166,17 @@ Status MemcpyAddrAsyncPass::AddMemcpyAddrAsyncNode(const ComputeGraphPtr &graph,
           NodePtr memcpy_addr_async_node =
               CreateMemcpyAddrAsyncNode(sub_graph, peer_out_anchor_for_known_, out_of_user_data_for_known_);
           GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr,
-                          GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode for known failed.");
+                          GELOGE(INTERNAL_ERROR,
+                                 "[Create][MemcpyAddrAsyncNode] for known failed, out_of_user_data_for_known_:%s",
+                                 out_of_user_data_for_known_->GetName().c_str());
                           return INTERNAL_ERROR);
 
           Status ret =
               InsertMemcpyAddrAsyncNode(peer_out_anchor_for_known_, in_anchor_for_known_, memcpy_addr_async_node);
-          GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode for known failed."); return ret);
+          GE_IF_BOOL_EXEC(ret != SUCCESS,
+                          GELOGE(ret, "[Insert][MemcpyAddrAsyncNode] for known failed, memcpy_addr_async_node:%s.",
+                                 memcpy_addr_async_node->GetName().c_str());
+                          return ret);
         }
       }
     }
@@ -188,9 +206,9 @@ void MemcpyAddrAsyncPass::FindUserDataForNonDynamic(const ge::NodePtr &parent_no
   OutDataAnchorPtr out_anchor = in_data_anchor->GetPeerOutAnchor();
   GE_IF_BOOL_EXEC(out_anchor == nullptr,
                   REPORT_INNER_ERROR("E19999", "Index:%u in data node of op:%s(%s) not exist, check invalid",
-                                     parent_index,
-                                     parent_node->GetName().c_str(), parent_node->GetType().c_str());
-                  GELOGE(INTERNAL_ERROR, "Cannot find out_anchor of %s.", parent_node->GetName().c_str());
+                                     parent_index, parent_node->GetName().c_str(), parent_node->GetType().c_str());
+                  GELOGE(INTERNAL_ERROR, "[Get][PeerOutAnchor] Index:%u in data node of op:%s(%s) not exist",
+                         parent_index, parent_node->GetName().c_str(), parent_node->GetType().c_str());
                   return);
   NodePtr in_node = out_anchor->GetOwnerNode();
   GELOGI("in_node of parent_node is %s.", in_node->GetName().c_str());
@@ -203,10 +221,10 @@ void MemcpyAddrAsyncPass::FindUserDataForNonDynamic(const ge::NodePtr &parent_no
       in_anchor_for_known_ = in_data_anchor;
       NodePtr pre_in_node = in_node->GetOwnerComputeGraph()->GetParentNode();
       if (!AttrUtils::GetInt(in_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                          ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                           in_node->GetName().c_str(), in_node->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to refresh parent index of %s", in_node->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+               in_node->GetName().c_str(), in_node->GetType().c_str());
         return;
       }
       FindUserData(pre_in_node, parent_index);
@@ -222,10 +240,10 @@ void MemcpyAddrAsyncPass::FindUserDataForNonDynamic(const ge::NodePtr &parent_no
     }
   } else if (in_node->GetType() == IF || in_node->GetType() == WHILE || in_node->GetType() == CASE) {
     if (!AttrUtils::GetInt(parent_node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
-      REPORT_CALL_ERROR("E19999", "Get Attr:%s to op:%s(%s) failed",
-                        ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+      REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                         parent_node->GetName().c_str(), parent_node->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "Failed to refresh parent index of %s", in_node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Get][Attr] %s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+             parent_node->GetName().c_str(), parent_node->GetType().c_str());
       return;
     }
     FindUserData(in_node, parent_index);
@@ -258,7 +276,7 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
   OpDescPtr pre_op_desc = out_data_anchor->GetOwnerNode()->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_op_desc != nullptr,
                    REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-		   return nullptr, "Op_desc of pre node is invalid.");
+		               return nullptr, "[Get][OpDesc] failed, Op_desc of pre node is invalid.");
 
   OpDescPtr op_desc = nullptr;
   if (known_sub_graph_) {  // insert memcpyasync node when known sub graph
@@ -268,21 +286,21 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
     string node_name = pre_op_desc->GetName() + "_" + MEMCPYADDRASYNC + "_" + std::to_string(new_node_index++);
     op_desc = MakeShared<OpDesc>(node_name, MEMCPYADDRASYNC);
   }
-  GE_CHECK_NOTNULL_EXEC(op_desc,
-                        REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-		        return nullptr);
+  GE_CHECK_NOTNULL_EXEC(op_desc, REPORT_CALL_ERROR("E19999", "New OpDesc failed"); return nullptr);
 
   if (op_desc->AddInputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
                       pre_op_desc->GetName().c_str(), pre_op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Add memcpy_addr_async input desc failed.");
+    GELOGE(INTERNAL_ERROR, "[Add][InputDesc] to op:%s(%s) failed",
+           pre_op_desc->GetName().c_str(), pre_op_desc->GetType().c_str());
     return nullptr;
   }
 
   if (op_desc->AddOutputDesc(pre_op_desc->GetOutputDesc(out_data_anchor->GetIdx())) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
                       pre_op_desc->GetName().c_str(), pre_op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Add memcpy_addr_async output desc failed.");
+    GELOGE(INTERNAL_ERROR, "[Add][OutputDesc] to op:%s(%s) failed",
+           pre_op_desc->GetName().c_str(), pre_op_desc->GetType().c_str());
     return nullptr;
   }
 
@@ -302,19 +320,17 @@ NodePtr MemcpyAddrAsyncPass::CreateMemcpyAddrAsyncNode(const ComputeGraphPtr &gr
   (void)ge::AttrUtils::GetBool(out_of_user_data->GetOpDesc(), ATTR_NAME_NODE_CONNECT_INPUT, labeled_input);
   if (labeled_input) {
     if (!ge::AttrUtils::SetBool(out_of_user_data->GetOpDesc(), ATTR_NAME_NODE_CONNECT_INPUT, false)) {
-      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                        ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
                         out_of_user_data->GetName().c_str(), out_of_user_data->GetType().c_str());
-      GELOGE(FAILED, "Failed to unset attr %s for node %s.", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
-             out_of_user_data->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+             out_of_user_data->GetName().c_str(), out_of_user_data->GetType().c_str());
       return nullptr;
     }
     if (!ge::AttrUtils::SetBool(op_desc, ATTR_NAME_NODE_CONNECT_INPUT, true)) {
-      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                        ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "Failed to set attr %s for node %s.", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
-             op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
       return nullptr;
     }
   }
@@ -335,29 +351,30 @@ Status MemcpyAddrAsyncPass::InsertMemcpyAddrAsyncNode(const OutDataAnchorPtr &ou
   if (GraphUtils::RemoveEdge(out_anchor, in_anchor) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
                       out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
-                      out_anchor->GetIdx(),
-                      in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
-                      in_anchor->GetIdx());
-    GELOGE(INTERNAL_ERROR, "Remove edge of %s and %s failed.", out_anchor->GetOwnerNode()->GetName().c_str(),
-           in_anchor->GetOwnerNode()->GetName().c_str());
+                      out_anchor->GetIdx(), in_anchor->GetOwnerNode()->GetName().c_str(),
+                      in_anchor->GetOwnerNode()->GetType().c_str(), in_anchor->GetIdx());
+    GELOGE(INTERNAL_ERROR, "[Remove][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+           out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
+           out_anchor->GetIdx(), in_anchor->GetOwnerNode()->GetName().c_str(),
+           in_anchor->GetOwnerNode()->GetType().c_str(), in_anchor->GetIdx());
     return INTERNAL_ERROR;
   }
   if (GraphUtils::AddEdge(out_anchor, node->GetInDataAnchor(0)) != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
                       out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
-                      out_anchor->GetIdx(),
-                      node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Add edge of %s and %s failed.", out_anchor->GetOwnerNode()->GetName().c_str(),
-           node->GetName().c_str());
+                      out_anchor->GetIdx(), node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
+           out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
+           out_anchor->GetIdx(), node->GetName().c_str(), node->GetType().c_str());
     return INTERNAL_ERROR;
   }
   if (GraphUtils::AddEdge(node->GetOutDataAnchor(0), in_anchor) != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:0) and op:%s(%s)(index:%d) failed",
-                      node->GetName().c_str(), node->GetType().c_str(),
-                      in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
-                      in_anchor->GetIdx());
-    GELOGE(INTERNAL_ERROR, "Add edge of %s and %s failed.", node->GetName().c_str(),
-           in_anchor->GetOwnerNode()->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:0) and op:%s(%s)(index:%d) failed",
+                      node->GetName().c_str(), node->GetType().c_str(), in_anchor->GetOwnerNode()->GetName().c_str(),
+                      in_anchor->GetOwnerNode()->GetType().c_str(), in_anchor->GetIdx());
+    GELOGE(INTERNAL_ERROR, "[Add][Edge] between op:%s(%s)(index:0) and op:%s(%s)(index:%d) failed",
+           node->GetName().c_str(), node->GetType().c_str(), in_anchor->GetOwnerNode()->GetName().c_str(),
+           in_anchor->GetOwnerNode()->GetType().c_str(), in_anchor->GetIdx());
     return INTERNAL_ERROR;
   }
   return SUCCESS;
@@ -381,11 +398,16 @@ Status MemcpyAddrAsyncPass::InsertMemAddrAsyncNodeBeforeNetoutput(const ComputeG
     }
     GELOGI("Need to insert MemcpyAddrAsync before netoutput on parent graph.");
     NodePtr memcpy_addr_async_node = CreateMemcpyAddrAsyncNode(graph, peer_out_anchor, in_node);
-    GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr, GELOGE(INTERNAL_ERROR, "CreateMemcpyAddrAsyncNode failed.");
+    GE_IF_BOOL_EXEC(memcpy_addr_async_node == nullptr,
+                    GELOGE(INTERNAL_ERROR, "[Create][MemcpyAddrAsyncNode] failed, in_node:%s.",
+                           in_node->GetName().c_str());
                     return INTERNAL_ERROR);
 
     Status ret = InsertMemcpyAddrAsyncNode(peer_out_anchor, in_data_anchor, memcpy_addr_async_node);
-    GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "InsertMemcpyAddrAsyncNode failed."); return ret);
+    GE_IF_BOOL_EXEC(ret != SUCCESS,
+                    GELOGE(ret, "[Insert][MemcpyAddrAsyncNode] failed, memcpy_addr_async_node:%s.",
+                           memcpy_addr_async_node->GetName().c_str());
+                    return ret);
     GELOGI("Insert mem_addr_async node %s success between %s and %s.", memcpy_addr_async_node->GetName().c_str(),
            in_node->GetName().c_str(), node->GetName().c_str());
     // if src node is const, need to update attr and offset here because this pass process is after offset set.

@@ -45,7 +45,8 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Get OriginalType of op:%s(%s) failed",
                       trans_shape_node->GetName().c_str(), trans_shape_node->GetType().c_str());
-    GELOGE(FAILED, "Get node %s original type failede", trans_shape_node->GetName().c_str());
+    GELOGE(FAILED, "[Get][OriginalType] of op:%s(%s) failed",
+           trans_shape_node->GetName().c_str(), trans_shape_node->GetType().c_str());
     return FAILED;
   }
   auto src_op_desc = trans_shape_node->GetOpDesc();
@@ -55,7 +56,7 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
   auto dst_op_desc = MakeShared<OpDesc>(node_name, MEMCPYASYNC);
   if (dst_op_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(FAILED, "Make node %s opdesc failed", node_name.c_str());
+    GELOGE(FAILED, "[New][OpDesc] failed");
     return FAILED;
   }
   GELOGI("Create memcpy Op, name=%s.", node_name.c_str());
@@ -64,7 +65,8 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
     if (ret != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
                         dst_op_desc->GetName().c_str(), dst_op_desc->GetType().c_str());
-      GELOGE(FAILED, "Add input desc failed");
+      GELOGE(FAILED, "[Add][InputDesc] to op:%s(%s) failed",
+             dst_op_desc->GetName().c_str(), dst_op_desc->GetType().c_str());
       return FAILED;
     }
   }
@@ -73,7 +75,8 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
     if (ret != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
                         src_op_desc->GetName().c_str(), src_op_desc->GetType().c_str());
-      GELOGE(FAILED, "Add output desc failed");
+      GELOGE(FAILED, "[Add][OutputDesc] to op:%s(%s) failed",
+             src_op_desc->GetName().c_str(), src_op_desc->GetType().c_str());
       return FAILED;
     }
   }
@@ -84,16 +87,22 @@ Status ReplaceTransShapePass::ReplaceTransShapeNode(ComputeGraphPtr &graph, Node
     OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
     GE_IF_BOOL_EXEC(peer_out_anchor == nullptr, continue);
 
-    GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor), "Remove Memcpy data input fail.");
+    GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_out_anchor, in_data_anchor),
+                  "[Remove][Edge] between %s and %s failed.",
+                  peer_out_anchor->GetOwnerNode()->GetName().c_str(), trans_shape_node->GetName().c_str());
     GE_CHK_STATUS(GraphUtils::AddEdge(peer_out_anchor, memcpy_node->GetInDataAnchor(in_data_anchor->GetIdx())),
-                  "Memcpy node add edge fail.");
+                  "[Add][Edge] between %s and %s failed.",
+                  peer_out_anchor->GetOwnerNode()->GetName().c_str(), memcpy_node->GetName().c_str());
   }
 
   for (OutDataAnchorPtr &out_data_anchor : trans_shape_node->GetAllOutDataAnchors()) {
     for (InDataAnchorPtr &peer_in_anchor : out_data_anchor->GetPeerInDataAnchors()) {
-      GE_CHK_STATUS(GraphUtils::RemoveEdge(out_data_anchor, peer_in_anchor), "Remove Memcpy data output fail.");
+      GE_CHK_STATUS(GraphUtils::RemoveEdge(out_data_anchor, peer_in_anchor),
+                    "[Remove][Edge] between %s and %s failed.",
+                    trans_shape_node->GetName().c_str(), peer_in_anchor->GetOwnerNode()->GetName().c_str());
       GE_CHK_STATUS(GraphUtils::AddEdge(memcpy_node->GetOutDataAnchor(out_data_anchor->GetIdx()), peer_in_anchor),
-                    "Memcpy node add edge fail.");
+                    "[Add][Edge] between %s and %s failed.",
+                    memcpy_node->GetName().c_str(), peer_in_anchor->GetOwnerNode()->GetName().c_str());
     }
   }
   ReplaceControlEdges(trans_shape_node, memcpy_node);
@@ -107,14 +116,17 @@ void ReplaceTransShapePass::CopyControlEdges(NodePtr &old_node, NodePtr &new_nod
   for (NodePtr &node : old_node->GetInControlNodes()) {
     auto out_control_anchor = node->GetOutControlAnchor();
     GE_IF_BOOL_EXEC(!out_control_anchor->IsLinkedWith(new_node->GetInControlAnchor()), {
-      GE_CHK_STATUS(GraphUtils::AddEdge(out_control_anchor, new_node->GetInControlAnchor()), "Add in ctl edge fail.");
+      GE_CHK_STATUS(GraphUtils::AddEdge(out_control_anchor, new_node->GetInControlAnchor()),
+                    "[Add][ControlEdge] between %s and %s failed.",
+                    node->GetName().c_str(), new_node->GetName().c_str());
     });
   }
 
   for (NodePtr &node : old_node->GetOutControlNodes()) {
     GE_IF_BOOL_EXEC(!new_node->GetOutControlAnchor()->IsLinkedWith(node->GetInControlAnchor()), {
       GE_CHK_STATUS(GraphUtils::AddEdge(new_node->GetOutControlAnchor(), node->GetInControlAnchor()),
-                    "Add out ctl edge fail.");
+                    "[Add][ControlEdge] between %s and %s failed.",
+                    new_node->GetName().c_str(), node->GetName().c_str());
     });
   }
 }
@@ -123,19 +135,24 @@ void ReplaceTransShapePass::RemoveControlEdges(NodePtr &node) {
   GE_CHECK_NOTNULL_JUST_RETURN(node);
   for (NodePtr &in_node : node->GetInControlNodes()) {
     GE_CHK_STATUS(GraphUtils::RemoveEdge(in_node->GetOutControlAnchor(), node->GetInControlAnchor()),
-                  "Remove in ctl edge fail.");
+                  "[Remove][ControlEdge] between %s and %s failed.",
+                  in_node->GetName().c_str(), node->GetName().c_str());
   }
 
   for (auto &out_data_anchor : node->GetAllOutDataAnchors()) {
     for (auto &in_ctrl_anchor : out_data_anchor->GetPeerInControlAnchors()) {
-      GE_CHK_STATUS(GraphUtils::RemoveEdge(out_data_anchor, in_ctrl_anchor), "Remove in ctl edge fail.");
+      GE_CHK_STATUS(GraphUtils::RemoveEdge(out_data_anchor, in_ctrl_anchor),
+                    "[Remove][Edge] between %s and %s failed.",
+                    node->GetName().c_str(), in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
     }
   }
 
   auto out_control_anchor = node->GetOutControlAnchor();
   GE_CHECK_NOTNULL_JUST_RETURN(out_control_anchor);
   for (auto &peer_anchor : out_control_anchor->GetPeerAnchors()) {
-    GE_CHK_STATUS(GraphUtils::RemoveEdge(out_control_anchor, peer_anchor), "Remove out ctl edge fail.");
+    GE_CHK_STATUS(GraphUtils::RemoveEdge(out_control_anchor, peer_anchor),
+                  "[Remove][OutCtlEdge] between %s and %s failed.",
+                  node->GetName().c_str(), peer_anchor->GetOwnerNode()->GetName().c_str());
   }
 }
 

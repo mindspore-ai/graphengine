@@ -30,7 +30,7 @@ Status PrunePass::Run(ge::ComputeGraphPtr graph) {
   GELOGD("PrunePass Start, graph is [%s]", graph->GetName().c_str());
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
-    GELOGE(GE_GRAPH_ISNULL, "input compute graph is NULL.");
+    GELOGE(GE_GRAPH_ISNULL, "[Check][Param] input compute graph is NULL.");
     return GE_GRAPH_ISNULL;
   }
   std::vector<NodePtr> out_nodes;
@@ -74,7 +74,7 @@ Status PrunePass::Run(ge::ComputeGraphPtr graph) {
         REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
                           node_ptr->GetName().c_str(), node_ptr->GetType().c_str(),
                           out_nodes[0]->GetName().c_str(), out_nodes[0]->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "[PrunePass] add control edge fail between DATA node[%s] and NETOUTPUT node[%s]!",
+        GELOGE(INTERNAL_ERROR, "[add][ControlEdge] failed between DATA node[%s] and NETOUTPUT node[%s]!",
                node_ptr->GetOpDesc()->GetName().c_str(), out_nodes[0]->GetOpDesc()->GetName().c_str());
         return INTERNAL_ERROR;
       }

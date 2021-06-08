@@ -61,9 +61,10 @@ Status HcclTailingOptimizationPass::CopyControlEdgesForTransOp(NodePtr &first_tr
 
   for (auto &src_out_ctrl_anchor : src_out_ctrl_anchors) {
     if (!src_out_ctrl_anchor->IsLinkedWith(dst_in_ctrl_anchor)) {
-      GE_CHK_GRAPH_STATUS_RET(
-        GraphUtils::AddEdge(src_out_ctrl_anchor, dst_in_ctrl_anchor), "Failed to add edge between %s->%s",
-        src_out_ctrl_anchor->GetOwnerNode()->GetName().c_str(), first_trans_op->GetName().c_str());
+      GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(src_out_ctrl_anchor, dst_in_ctrl_anchor),
+                              "[Add][Edge] between %s->%s failed",
+                              src_out_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                              first_trans_op->GetName().c_str());
     }
   }
 

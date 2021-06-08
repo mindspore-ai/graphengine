@@ -39,19 +39,20 @@ Status HcclContinuousMemcpyPass::Run(ge::ComputeGraphPtr graph) {
     if (op_desc == nullptr) {
       REPORT_INNER_ERROR("E19999", "Node with nullptr op_desc exist in Param graph:%s, check invalid",
                          graph->GetName().c_str());
-      GELOGE(INTERNAL_ERROR, "node has no op_desc, node_name : %s.", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Get][OpDesc] failed, Node with nullptr op_desc exist in Param graph:%s.",
+             graph->GetName().c_str());
       return INTERNAL_ERROR;
     }
 
     Status ret = ContinuousInputProcess(graph, node);
     if (ret != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "failed ProcessBroadcastMemcpy, node_name:%s.", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Call][ContinuousInputProcess] failed, node_name:%s.", node->GetName().c_str());
       return ret;
     }
 
     ret = P2pmemInputProcess(graph, node);
     if (ret != SUCCESS) {
-      GELOGE(INTERNAL_ERROR, "failed P2pmemInputProcess, node_name:%s.", node->GetName().c_str());
+      GELOGE(INTERNAL_ERROR, "[Call][P2pmemInputProcess] failed, node_name:%s.", node->GetName().c_str());
       return ret;
     }
 
@@ -82,14 +83,16 @@ Status HcclContinuousMemcpyPass::ContinuousInputProcess(const ComputeGraphPtr &g
         REPORT_INNER_ERROR("E19999", "Node:%s(%s) input:%d anchor, peer anchor is nullptr, check invalid",
                            node->GetName().c_str(), node->GetType().c_str(),
                            hccl_in_anchor->GetIdx());
-        GELOGE(INTERNAL_ERROR, "hcom op input has no peer anchor, node_name:%s", node->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Get][PeerOutAnchor] failed, Node:%s(%s) input:%d anchor, peer anchor is nullptr",
+               node->GetName().c_str(), node->GetType().c_str(), hccl_in_anchor->GetIdx());
         return INTERNAL_ERROR;
       }
 
       if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
         Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
         if (ret != SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+          GELOGE(INTERNAL_ERROR, "[Modify][EdgeConnection] between %s and %s failed.",
+                 src_out_anchor->GetOwnerNode()->GetName().c_str(), node->GetName().c_str());
           return ret;
         }
       }
@@ -122,16 +125,17 @@ Status HcclContinuousMemcpyPass::P2pmemInputProcess(const ComputeGraphPtr &graph
     auto src_out_anchor = hccl_in_anchor->GetPeerOutAnchor();
     if (src_out_anchor == nullptr) {
       REPORT_INNER_ERROR("E19999", "Node:%s(%s) input:%u anchor, peer anchor is nullptr, check invalid",
-                         node->GetName().c_str(), node->GetType().c_str(),
-                         index);
-      GELOGE(INTERNAL_ERROR, "hcom op input has no peer anchor, node_name:%s", node->GetName().c_str());
+                         node->GetName().c_str(), node->GetType().c_str(), index);
+      GELOGE(INTERNAL_ERROR, "[Get][PeerOutAnchor] failed, Node:%s(%s) input:%u anchor, peer anchor is nullptr",
+             node->GetName().c_str(), node->GetType().c_str(), index);
       return INTERNAL_ERROR;
     }
 
     if (IsDataNode(src_out_anchor->GetOwnerNode()->GetType())) {
       Status ret = ModifyEdgeConnection(graph, src_out_anchor, hccl_in_anchor);
       if (ret != SUCCESS) {
-        GELOGE(INTERNAL_ERROR, "Failed to modify the connection.");
+        GELOGE(INTERNAL_ERROR, "[Modify][EdgeConnection] between %s and %s failed.",
+               src_out_anchor->GetOwnerNode()->GetName().c_str(), node->GetName().c_str());
         return ret;
       }
     }
@@ -156,7 +160,7 @@ NodePtr HcclContinuousMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &grap
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
   if (pre_op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "OpDesc of pre node is invalid.");
+    GELOGE(INTERNAL_ERROR, "[Get][OpDesc] failed, OpDesc of pre node is invalid.");
     return nullptr;
   }
 
@@ -175,7 +179,8 @@ NodePtr HcclContinuousMemcpyPass::CreateIdentityNode(const ComputeGraphPtr &grap
   if (identity_node == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
                       identity_node->GetName().c_str(), identity_node->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Insert Identity node fail.");
+    GELOGE(INTERNAL_ERROR, "[Add][Node] %s(%s) to graph:%s failed",
+           identity_node->GetName().c_str(), identity_node->GetType().c_str(), graph->GetName().c_str());
     return nullptr;
   }
   return identity_node;
@@ -213,7 +218,7 @@ Status HcclContinuousMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &gra
 
   Status ret = InsertIdentityBeforeHccl(graph, src_out_anchor, hccl_in_anchor);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "add identity failed, var_node:%s, hccl_node:%s.",
+    GELOGE(INTERNAL_ERROR, "[Add][Identity] failed, var_node:%s, hccl_node:%s.",
            src_out_anchor->GetOwnerNode()->GetName().c_str(),
            hccl_in_anchor->GetOwnerNode()->GetName().c_str());
     return ret;
@@ -221,7 +226,7 @@ Status HcclContinuousMemcpyPass::ModifyEdgeConnection(const ComputeGraphPtr &gra
 
   ret = InsertAssignAfterBroadcastIfNeed(graph, src_out_anchor, hccl_in_anchor);
   if (ret != SUCCESS) {
-    GELOGE(INTERNAL_ERROR, "add assign failed, var_node:%s, hccl_node:%s.",
+    GELOGE(INTERNAL_ERROR, "[Add][Assign] failed, var_node:%s, hccl_node:%s.",
            src_out_anchor->GetOwnerNode()->GetName().c_str(),
            hccl_in_anchor->GetOwnerNode()->GetName().c_str());
     return ret;
@@ -246,16 +251,14 @@ Status HcclContinuousMemcpyPass::InsertIdentityBeforeHccl(const ComputeGraphPtr 
 
   auto ret = GraphUtils::InsertNodeBefore(hccl_in_anchor, identity_node, kAnchorIdentityIndex, kAnchorIdentityIndex);
   if (ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999",
-                      "Op:Fail to insert %s(%s) before %s(%s) on index:%d input anchor.",
+    REPORT_CALL_ERROR("E19999", "Op:Fail to insert %s(%s) before %s(%s) on index:%d input anchor.",
                       identity_node->GetName().c_str(), identity_node->GetType().c_str(),
                       hccl_in_anchor->GetOwnerNode()->GetName().c_str(),
                       hccl_in_anchor->GetOwnerNode()->GetType().c_str(),
                       hccl_in_anchor->GetIdx());
-    GELOGE(INTERNAL_ERROR, "Fail to insert %s(%s) before %s(%s) on index:%d input anchor.",
+    GELOGE(INTERNAL_ERROR, "[Insert][Node] %s(%s) before %s(%s) on index:%d input anchor failed.",
            identity_node->GetName().c_str(), identity_node->GetType().c_str(),
-           hccl_in_anchor->GetOwnerNode()->GetName().c_str(),
-           hccl_in_anchor->GetOwnerNode()->GetType().c_str(),
+           hccl_in_anchor->GetOwnerNode()->GetName().c_str(), hccl_in_anchor->GetOwnerNode()->GetType().c_str(),
            hccl_in_anchor->GetIdx());
     return FAILED;
   }
@@ -300,27 +303,29 @@ Status HcclContinuousMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeG
 
   Status ret = hccl_out_anchor->LinkTo(assign_node->GetInDataAnchor(kAnchorAssignValueIndex));
   if (ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999",
-                      "Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
+    REPORT_CALL_ERROR("E19999", "Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
                       hccl_out_anchor->GetOwnerNode()->GetName().c_str(),
                       hccl_out_anchor->GetOwnerNode()->GetType().c_str(), hccl_out_anchor->GetIdx(),
                       assign_node->GetName().c_str(), assign_node->GetType().c_str(),
                       kAnchorAssignValueIndex);
-    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", hccl_out_anchor->GetOwnerNode()->GetName().c_str(),
-           assign_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][Edge] Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
+           hccl_out_anchor->GetOwnerNode()->GetName().c_str(),
+           hccl_out_anchor->GetOwnerNode()->GetType().c_str(), hccl_out_anchor->GetIdx(),
+           assign_node->GetName().c_str(), assign_node->GetType().c_str(), kAnchorAssignValueIndex);
     return FAILED;
   }
 
   ret = var_out_anchor->LinkTo(assign_node->GetInDataAnchor(kAnchorAssignRefIndex));
   if (ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999",
-                      "Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
+    REPORT_CALL_ERROR("E19999", "Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
                       var_out_anchor->GetOwnerNode()->GetName().c_str(),
                       var_out_anchor->GetOwnerNode()->GetType().c_str(), var_out_anchor->GetIdx(),
                       assign_node->GetName().c_str(), assign_node->GetType().c_str(),
                       kAnchorAssignRefIndex);
-    GELOGE(INTERNAL_ERROR, "The op %s link anchor %s fail.", var_out_anchor->GetOwnerNode()->GetName().c_str(),
-           assign_node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Add][Edge] Op:%s(%s) out index:%d link to op:%s(%s) in index:%u failed",
+           var_out_anchor->GetOwnerNode()->GetName().c_str(),
+           var_out_anchor->GetOwnerNode()->GetType().c_str(), var_out_anchor->GetIdx(),
+           assign_node->GetName().c_str(), assign_node->GetType().c_str(), kAnchorAssignRefIndex);
     return FAILED;
   }
 
@@ -339,9 +344,10 @@ Status HcclContinuousMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeG
                         assign_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                         in_data_anchor->GetOwnerNode()->GetName().c_str(),
                         in_data_anchor->GetOwnerNode()->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "The op %s link control anchor %s fail.",
+      GELOGE(INTERNAL_ERROR, "[Add][Edge] Op:%s(%s) link control to op:%s(%s) failed",
              assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
-             in_data_anchor->GetOwnerNode()->GetName().c_str());
+             assign_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+             in_data_anchor->GetOwnerNode()->GetName().c_str(), in_data_anchor->GetOwnerNode()->GetType().c_str());
       return FAILED;
     }
   }
@@ -357,9 +363,11 @@ Status HcclContinuousMemcpyPass::InsertAssignAfterBroadcastIfNeed(const ComputeG
                         assign_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                         in_control_anchor->GetOwnerNode()->GetName().c_str(),
                         in_control_anchor->GetOwnerNode()->GetType().c_str());
-      GELOGE(INTERNAL_ERROR, "The op %s link control anchor %s fail.",
+      GELOGE(INTERNAL_ERROR, "[Add][Edge] Op:%s(%s) link control to op:%s(%s) failed",
              assign_out_control_anchor->GetOwnerNode()->GetName().c_str(),
-             in_control_anchor->GetOwnerNode()->GetName().c_str());
+             assign_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+             in_control_anchor->GetOwnerNode()->GetName().c_str(),
+             in_control_anchor->GetOwnerNode()->GetType().c_str());
       return FAILED;
     }
   }
@@ -379,7 +387,7 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   OpDescPtr pre_op_desc = pre_node->GetOpDesc();
   if (pre_op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "OpDesc of pre node is invalid.");
+    GELOGE(INTERNAL_ERROR, "[Get][OpDesc] failed, OpDesc of pre node is invalid.");
     return nullptr;
   }
 
@@ -388,16 +396,16 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), ASSIGN);
   if (op_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(INTERNAL_ERROR, "Create Assign op: MakeShared op_desc fail.");
+    GELOGE(INTERNAL_ERROR, "[New][OpDesc] failed.");
     return nullptr;
   }
   GELOGI("Create Assign op:%s.", op_desc->GetName().c_str());
 
   if (!AttrUtils::SetBool(op_desc, ATTR_NEED_COMPILE, true)) {
-    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                      ATTR_NEED_COMPILE.c_str(),
+    REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NEED_COMPILE.c_str(),
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Set ATTR_NEED_COMPILE Attr for node:%s fail.", op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NEED_COMPILE.c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return nullptr;
   }
 
@@ -405,7 +413,8 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:ref",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Create Assign op: add ref input desc fail.");
+    GELOGE(INTERNAL_ERROR, "[Add][InputDesc] to op:%s(%s) failed, name:ref",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return nullptr;
   }
 
@@ -413,7 +422,8 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed, name:value",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Create Assign op: add value input desc fail.");
+    GELOGE(INTERNAL_ERROR, "[Add][InputDesc] to op:%s(%s) failed, name:value",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return nullptr;
   }
 
@@ -421,7 +431,8 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   if (ret != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed, name:ref",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Create Assign op: add output desc fail.");
+    GELOGE(INTERNAL_ERROR, "[Add][OutputDesc] to op:%s(%s) failed, name:ref",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return nullptr;
   }
 
@@ -429,7 +440,8 @@ NodePtr HcclContinuousMemcpyPass::CreateAssignNode(const ComputeGraphPtr &graph,
   if (assign_node == nullptr) {
     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Insert Identity node fail.");
+    GELOGE(INTERNAL_ERROR, "[Add][Node] %s(%s) to graph:%s failed",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), graph->GetName().c_str());
     return nullptr;
   }
 

@@ -54,7 +54,7 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
     }
 
     GE_CHK_STATUS_RET(GetOriginalType(in_node, node_type),
-                      "Failed to get node type from node %s", node->GetName().c_str());
+                      "[Get][OriginalType] of node:%s failed", in_node->GetName().c_str());
     bool need_skip = (node_type != SWITCH) && (node_type != REFSWITCH) && (node_type != SWITCHN);
     if (need_skip) {
       GELOGD("skip identity %s connected to switch", node->GetName().c_str());
@@ -76,7 +76,7 @@ Status CheckIdentityUsable(const NodePtr &node, bool &usable) {
       return SUCCESS;
     }
     GE_CHK_STATUS_RET(GetOriginalType(out_node, node_type),
-                      "Failed to get node type from node %s", node->GetName().c_str());
+                      "[Get][OriginalType] of node:%s failed", out_node->GetName().c_str());
     if ((node_type != MERGE) && (node_type != REFMERGE)) {
       GELOGD("skip identity %s connected to merge", node->GetName().c_str());
       break;
@@ -99,9 +99,8 @@ Status IdentityPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Get original type for node:%s failed",
-                      node->GetName().c_str());
-    GELOGE(status_ret, "Identity pass get original type fail.");
+    REPORT_CALL_ERROR("E19999", "Get original type of node:%s failed", node->GetName().c_str());
+    GELOGE(status_ret, "[Get][OriginalType] of node:%s failed.", node->GetName().c_str());
     return status_ret;
   }
   if ((type != IDENTITY) && (type != IDENTITYN) && (type != READVARIABLEOP)) {
@@ -123,8 +122,8 @@ Status IdentityPass::Run(NodePtr &node) {
     REPORT_CALL_ERROR("E19999", "Num:%zu of input desc node:%s(%s) not equal to it's output desc num:%zu, "
                       "check invalid", node->GetOpDesc()->GetInputsSize(),
                       node->GetName().c_str(), node->GetType().c_str(), n);
-    GELOGE(PARAM_INVALID, "Identity input / output size must be equal. in size:%lu, out size:%lu",
-           node->GetOpDesc()->GetInputsSize(), n);
+    GELOGE(PARAM_INVALID, "[Check][Param] Num:%zu of input desc node:%s(%s) not equal to it's output desc num:%zu",
+           node->GetOpDesc()->GetInputsSize(), node->GetName().c_str(), node->GetType().c_str(), n);
     return PARAM_INVALID;
   }
   std::vector<int> io_map;

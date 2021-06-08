@@ -30,7 +30,10 @@ Status ShapeOperateOpRemovePass::Run(ComputeGraphPtr graph) {
     GE_IF_BOOL_EXEC(op_desc == nullptr, continue);
     bool to_be_deleted = false;
     GE_IF_BOOL_EXEC(!AttrUtils::GetBool(op_desc, ATTR_TO_BE_DELETED, to_be_deleted), to_be_deleted = false);
-    GE_IF_BOOL_EXEC(to_be_deleted, GE_CHK_STATUS_RET(graph->RemoveNode(node), "remove node failed!"));
+    GE_IF_BOOL_EXEC(to_be_deleted,
+                    GE_CHK_STATUS_RET(graph->RemoveNode(node),
+                                      "[Remove][Node] %s from graph:%s failed!", node->GetName().c_str(),
+                                      graph->GetName().c_str()));
   }
   return SUCCESS;
 }

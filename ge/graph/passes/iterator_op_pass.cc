@@ -59,7 +59,8 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
       if (status != ge::SUCCESS) {
         REPORT_CALL_ERROR("E19999", "Set cycle event to op:%s(%s) failed",
                           memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str());
-        GELOGE(status, "Set cycle event failed.");
+        GELOGE(status, "[Set][CycleEvent] to op:%s(%s) failed",
+               memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str());
         return status;
       }
 
@@ -68,7 +69,9 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
         REPORT_CALL_ERROR("E19999", "Set stream label:%s to op:%s(%s) failed",
                           memcpy_async_node->GetName().c_str(), memcpy_async_node->GetName().c_str(),
                           memcpy_async_node->GetType().c_str());
-        GELOGE(status, "set stream label failed.");
+        GELOGE(status, "[Set][StreamLabel] %s to op:%s(%s) failed",
+               memcpy_async_node->GetName().c_str(), memcpy_async_node->GetName().c_str(),
+               memcpy_async_node->GetType().c_str());
         return status;
       }
 
@@ -76,7 +79,8 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
       if (status != ge::SUCCESS) {
         REPORT_CALL_ERROR("E19999", "Set stream label:%s to op:%s(%s) failed",
                           node->GetName().c_str(), node->GetName().c_str(), node->GetType().c_str());
-        GELOGE(status, "set stream label failed.");
+        GELOGE(status, "[Set][StreamLabel] %s to op:%s(%s) failed",
+               node->GetName().c_str(), node->GetName().c_str(), node->GetType().c_str());
         return status;
       }
 
@@ -99,7 +103,10 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
       ret = SetRtContext(graph->GetSessionID(), graph->GetGraphID(), rtContext_t(), RT_CTX_GEN_MODE);
 
       // The following process will be affected if ret is not SUCCESS.
-      GE_IF_BOOL_EXEC(ret != SUCCESS, GELOGE(ret, "Set rt context RT_CTX_GEN_MODE failed."); return ret);
+      GE_IF_BOOL_EXEC(ret != SUCCESS,
+                      GELOGE(ret, "[Set][RtContext] RT_CTX_GEN_MODE failed, session_id:%lu, graph_id:%u.",
+                             graph->GetSessionID(), graph->GetGraphID());
+                      return ret);
 
       GE_IF_BOOL_EXEC(status != SUCCESS, GELOGW("Get variable value of NODE_NAME_FLOWCTRL_LOOP_PER_ITER failed.");
                       continue);
@@ -113,7 +120,9 @@ Status IteratorOpPass::Run(ge::ComputeGraphPtr graph) {
           REPORT_CALL_ERROR("E19999", "Set stream label:%s to op:%s(%s) failed",
                             end_of_sequence_node->GetName().c_str(), end_of_sequence_node->GetName().c_str(),
                             end_of_sequence_node->GetType().c_str());
-          GELOGE(status, "set stream label failed.");
+          GELOGE(status, "[Set][StreamLabel] %s to op:%s(%s) failed",
+                 end_of_sequence_node->GetName().c_str(), end_of_sequence_node->GetName().c_str(),
+                 end_of_sequence_node->GetType().c_str());
           return status;
         }
         GELOGI("Insert EndOfSequence node success.");
@@ -134,9 +143,8 @@ Status IteratorOpPass::GetVariableValue(uint64_t session_id, const ge::GeTensorD
   uint8_t *dev_ptr = nullptr;
   auto status = VarManager::Instance(session_id)->GetVarAddr(var_name, tensor_desc, &dev_ptr);
   if (status != ge::SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Get Var add by name:%s failed, session_id:%lu",
-                      var_name.c_str(), session_id);
-    GELOGE(status, "Get variable %s address failed.", var_name.c_str());
+    REPORT_CALL_ERROR("E19999", "Get Var add by name:%s failed, session_id:%lu", var_name.c_str(), session_id);
+    GELOGE(status, "[Get][VarAddr] by name:%s failed, session_id:%lu", var_name.c_str(), session_id);
     return status;
   }
   int64_t offset = static_cast<int64_t>(reinterpret_cast<intptr_t>(dev_ptr));
@@ -164,7 +172,9 @@ ge::NodePtr IteratorOpPass::InsertEndOfSequenceNode(const ge::NodePtr &pre_node,
   ge::OpDescPtr end_of_seq_op_desc = CreateEndOfSequenceOp(pre_node);
   GE_CHK_BOOL_EXEC(end_of_seq_op_desc != nullptr, GELOGW("Create EndOfSequence op fail."); return nullptr);
   ge::NodePtr end_of_seq_node = graph->AddNode(end_of_seq_op_desc);
-  GE_CHK_BOOL_EXEC(end_of_seq_node != nullptr, return nullptr, "Insert EndOfSequence node fail.");
+  GE_CHK_BOOL_EXEC(end_of_seq_node != nullptr, return nullptr,
+                   "[Add][Node] %s to graph:%s failed.", end_of_seq_op_desc->GetName().c_str(),
+                   graph->GetName().c_str());
 
   // getnext(data) --> EOS
   GE_CHK_BOOL_EXEC(pre_node->GetAllOutDataAnchorsSize() != 0, GELOGW("Pre node has no output."); return nullptr);
@@ -176,8 +186,9 @@ ge::NodePtr IteratorOpPass::InsertEndOfSequenceNode(const ge::NodePtr &pre_node,
                                      pre_node->GetName().c_str(), pre_node->GetType().c_str(),
                                      end_of_seq_node->GetName().c_str(), end_of_seq_node->GetType().c_str());
                    return nullptr,
-                   "Graph add EndOfSequence op input edge fail, dst node: %s.",
-                   end_of_seq_node->GetName().c_str());
+                   "[Add][Edge] between op:%s(%s)(index:0) and op:%s(%s)(index:0) failed",
+                   pre_node->GetName().c_str(), pre_node->GetType().c_str(),
+                   end_of_seq_node->GetName().c_str(), end_of_seq_node->GetType().c_str());
   // EOS(control) --> subsequent of memcpy
   OutControlAnchorPtr out_ctrl_anchor = end_of_seq_node->GetOutControlAnchor();
   GE_CHK_BOOL_EXEC(out_ctrl_anchor != nullptr, GELOGW("out_ctrl_anchor is null."); return nullptr);
@@ -193,8 +204,9 @@ ge::NodePtr IteratorOpPass::InsertEndOfSequenceNode(const ge::NodePtr &pre_node,
                                        end_of_seq_node->GetName().c_str(), end_of_seq_node->GetType().c_str(),
                                        out_node->GetName().c_str(), out_node->GetType().c_str());
                      return nullptr,
-                     "Graph add EndOfSequence op out ctrl edge fail, dst node: %s.",
-                     out_node->GetName().c_str());
+                     "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+                     end_of_seq_node->GetName().c_str(), end_of_seq_node->GetType().c_str(),
+                     out_node->GetName().c_str(), out_node->GetType().c_str());
     GELOGI("Graph add EndOfSequence op out ctrl edge, dst node: %s.",
            out_node->GetName().c_str());
   }
@@ -212,26 +224,26 @@ ge::OpDescPtr IteratorOpPass::CreateEndOfSequenceOp(const ge::NodePtr &pre_node)
   GELOGI("Start to create endOfSequence op.");
   GE_CHK_BOOL_EXEC(pre_node != nullptr,
                    REPORT_INNER_ERROR("E19999", "Param pre_node is nullptr, check invalid");
-                   return nullptr, "Input param invalid.");
+                   return nullptr, "[Check][Param] Input param pre_node invalid.");
 
   string node_name = pre_node->GetName() + "_EndOfSequence";
   ge::OpDescPtr op_desc = MakeShared<OpDesc>(node_name, ENDOFSEQUENCE);
   if (op_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(FAILED, "MakeShared fail.");
+    GELOGE(FAILED, "[New][OpDesc] failed.");
     return op_desc;
   }
   ge::OpDescPtr pre_node_op_desc = pre_node->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_node_op_desc != nullptr,
                    REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-                   return nullptr, "OpDesc of pre_node is invalid.");
+                   return nullptr, "[Get][OpDesc] failed, OpDesc of pre_node is invalid.");
 
   GELOGI("Create EndOfSequence op:%s.", op_desc->GetName().c_str());
   GE_CHK_BOOL_EXEC(op_desc->AddInputDesc(pre_node_op_desc->GetOutputDesc(0)) == GRAPH_SUCCESS,
                    REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
                                      op_desc->GetName().c_str(), op_desc->GetType().c_str());
                    return nullptr,
-                   "Create EndOfSequence op:add input desc fail.");
+                   "[Add][InputDesc] to op:%s(%s) failed", op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return op_desc;
 }
 
@@ -252,7 +264,9 @@ ge::NodePtr IteratorOpPass::InsertMemcpyAsyncNode(const ge::NodePtr &pre_node, c
                    REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
                                      memcpy_async_op_desc->GetName().c_str(), memcpy_async_op_desc->GetType().c_str(),
                                      graph->GetName().c_str());
-                   return nullptr, "Insert mencpy node fail.");
+                   return nullptr,
+                   "[Add][Node] %s(%s) to graph:%s failed", memcpy_async_op_desc->GetName().c_str(),
+                   memcpy_async_op_desc->GetType().c_str(), graph->GetName().c_str());
 
   // Data out
   for (auto &out_anchor : pre_node->GetAllOutDataAnchors()) {
@@ -265,37 +279,45 @@ ge::NodePtr IteratorOpPass::InsertMemcpyAsyncNode(const ge::NodePtr &pre_node, c
       GE_IF_BOOL_EXEC(peer_in_anchor == nullptr, GELOGW("peer_in_anchor is nullptr"); return nullptr);
       status = GraphUtils::RemoveEdge(out_anchor, peer_in_anchor);
       GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS,
-                       REPORT_CALL_ERROR(
-                           "E19999", "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
-                           pre_node->GetName().c_str(), pre_node->GetType().c_str(), out_anchor->GetIdx(),
-                           peer_in_anchor->GetOwnerNode()->GetName().c_str(),
-                           peer_in_anchor->GetOwnerNode()->GetType().c_str(),
-                           peer_in_anchor->GetIdx());
-                       return nullptr, "Remove edge failed, index:%d.", out_anchor->GetIdx());
+                       REPORT_CALL_ERROR("E19999",
+                                         "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                                         pre_node->GetName().c_str(),
+                                         pre_node->GetType().c_str(), out_anchor->GetIdx(),
+                                         peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                                         peer_in_anchor->GetOwnerNode()->GetType().c_str(),
+                                         peer_in_anchor->GetIdx());
+                       return nullptr,
+                       "[Remove][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                       pre_node->GetName().c_str(), pre_node->GetType().c_str(), out_anchor->GetIdx(),
+                       peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                       peer_in_anchor->GetOwnerNode()->GetType().c_str(),
+                       peer_in_anchor->GetIdx());
       status = GraphUtils::AddEdge(memcpy_async_node->GetOutDataAnchor(out_anchor->GetIdx()), peer_in_anchor);
       GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS,
-                       REPORT_CALL_ERROR(
-                           "E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
-                           memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
-                           out_anchor->GetIdx(),
-                           peer_in_anchor->GetOwnerNode()->GetName().c_str(),
-                           peer_in_anchor->GetOwnerNode()->GetType().c_str(),
-                           peer_in_anchor->GetIdx());
+                       REPORT_CALL_ERROR("E19999",
+                                         "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                                         memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
+                                         out_anchor->GetIdx(), peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                                         peer_in_anchor->GetOwnerNode()->GetType().c_str(), peer_in_anchor->GetIdx());
                        return nullptr,
-                       "Graph add memcpyAsync op out edge fail, src index:%d, dst index:%d, dst node: %s.",
-                       out_anchor->GetIdx(), peer_in_anchor->GetIdx(),
-                       peer_in_anchor->GetOwnerNode()->GetName().c_str());
+                       "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                       memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
+                       out_anchor->GetIdx(), peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+                       peer_in_anchor->GetOwnerNode()->GetType().c_str(), peer_in_anchor->GetIdx());
       GELOGI("Graph add memcpyAsync op out edge, src index:%d, dst index:%d, dst node: %s.", out_anchor->GetIdx(),
              peer_in_anchor->GetIdx(), peer_in_anchor->GetOwnerNode()->GetName().c_str());
     }
     status = GraphUtils::AddEdge(out_anchor, memcpy_async_node->GetInDataAnchor(out_anchor->GetIdx()));
     GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS,
-                     REPORT_CALL_ERROR(
-                           "E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
-                           pre_node->GetName().c_str(), pre_node->GetType().c_str(), out_anchor->GetIdx(),
-                           memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
-                           out_anchor->GetIdx());
-                     return nullptr, "Graph add memcpyAsync op in edge fail, index:%d.",
+                     REPORT_CALL_ERROR("E19999",
+                                       "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                                       pre_node->GetName().c_str(), pre_node->GetType().c_str(), out_anchor->GetIdx(),
+                                       memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
+                                       out_anchor->GetIdx());
+                     return nullptr,
+                     "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+                     pre_node->GetName().c_str(), pre_node->GetType().c_str(), out_anchor->GetIdx(),
+                     memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
                      out_anchor->GetIdx());
   }
   // Control out
@@ -304,23 +326,27 @@ ge::NodePtr IteratorOpPass::InsertMemcpyAsyncNode(const ge::NodePtr &pre_node, c
       for (auto &peer_in_ctrl_anchor : out_ctrl_anchor->GetPeerInControlAnchors()) {
     ge::graphStatus status = GraphUtils::RemoveEdge(out_ctrl_anchor, peer_in_ctrl_anchor);
     GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS,
-                     REPORT_CALL_ERROR(
-                           "E19999", "Remove control edge between op:%s(%s) and op:%s(%s) failed",
-                           pre_node->GetName().c_str(), pre_node->GetType().c_str(),
-                           peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
-                           peer_in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
-                     return nullptr, "Remove edge failed, dst node: %s.",
-                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+                     REPORT_CALL_ERROR("E19999",
+                                       "Remove control edge between op:%s(%s) and op:%s(%s) failed",
+                                       pre_node->GetName().c_str(), pre_node->GetType().c_str(),
+                                       peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                                       peer_in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
+                     return nullptr,
+                     "[Remove][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+                     pre_node->GetName().c_str(), pre_node->GetType().c_str(),
+                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                     peer_in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
     status = GraphUtils::AddEdge(memcpy_async_node->GetOutControlAnchor(), peer_in_ctrl_anchor);
     GE_CHK_BOOL_EXEC(status == GRAPH_SUCCESS,
-                     REPORT_CALL_ERROR(
-                           "E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
-                           memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
-                           peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
-                           peer_in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
+                     REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
+                                       memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
+                                       peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                                       peer_in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
                      return nullptr,
-                     "Graph add memcpyAsync op out ctrl edge fail, dst node: %s.",
-                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
+                     "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+                     memcpy_async_node->GetName().c_str(), memcpy_async_node->GetType().c_str(),
+                     peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str(),
+                     peer_in_ctrl_anchor->GetOwnerNode()->GetType().c_str());
     GELOGI("Graph add memcpyAsync op out ctrl edge, dst node: %s.",
            peer_in_ctrl_anchor->GetOwnerNode()->GetName().c_str());
   });
@@ -342,7 +368,7 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
   ge::OpDescPtr op_desc = MakeShared<OpDesc>(node_name.c_str(), MEMCPYASYNC);
   if (op_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(FAILED, "MakeShared fail.");
+    GELOGE(FAILED, "[New][OpDesc] failed");
     return op_desc;
   }
   GELOGI("Create memcpyAsync op:%s.", op_desc->GetName().c_str());
@@ -350,7 +376,7 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
   ge::OpDescPtr pre_node_op_desc = pre_node->GetOpDesc();
   GE_CHK_BOOL_EXEC(pre_node_op_desc != nullptr,
                    REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-                   return nullptr, "OpDesc of pre_node is invalid.");
+                   return nullptr, "[Get][OpDesc] failed, OpDesc of pre_node is invalid.");
 
   size_t out_size = pre_node_op_desc->GetOutputsSize();
   GELOGI("Create memcpyAsync op, pre_node out_size: %zu.", out_size);
@@ -359,12 +385,14 @@ ge::OpDescPtr IteratorOpPass::CreateMemcpyAsyncOp(const ge::NodePtr &pre_node) {
                      REPORT_CALL_ERROR("E19999", "Add input desc to op:%s(%s) failed",
                                        pre_node_op_desc->GetName().c_str(), pre_node_op_desc->GetType().c_str());
                      return nullptr,
-                     "Create memcpyAsync op:add input desc fail.");
+                     "[Add][InputDesc] to op:%s(%s) failed",
+                     pre_node_op_desc->GetName().c_str(), pre_node_op_desc->GetType().c_str());
     GE_CHK_BOOL_EXEC(op_desc->AddOutputDesc(pre_node_op_desc->GetOutputDesc(i)) == GRAPH_SUCCESS,
                      REPORT_CALL_ERROR("E19999", "Add output desc to op:%s(%s) failed",
                                        pre_node_op_desc->GetName().c_str(), pre_node_op_desc->GetType().c_str());
                      return nullptr,
-                     "Create memcpyAsync op:add output desc fail.");
+                     "[Add][OutputDesc] to op:%s(%s) failed",
+                     pre_node_op_desc->GetName().c_str(), pre_node_op_desc->GetType().c_str());
   }
 
   return op_desc;

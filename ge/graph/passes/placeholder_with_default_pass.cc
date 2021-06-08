@@ -26,7 +26,7 @@ Status PlaceholderWithDefaultPass::Run(NodePtr &node) {
   string type;
   Status status_ret = GetOriginalType(node, type);
   if (status_ret != SUCCESS) {
-    GELOGE(status_ret, "Placeholder with default pass get original type fail.");
+    GELOGE(status_ret, "[Get][OriginalType] of node:%s failed.", node->GetName().c_str());
     return status_ret;
   }
   if (type == PLACEHOLDERWITHDEFAULT) {

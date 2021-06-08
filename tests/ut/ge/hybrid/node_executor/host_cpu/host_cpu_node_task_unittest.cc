@@ -82,7 +82,7 @@ TEST_F(UtestHostCpuNodeTask, test_load) {
   host_task_def.set_type(RT_MODEL_TASK_KERNEL);
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), INTERNAL_ERROR);
   domi::KernelContext *context = host_task_def.mutable_kernel()->mutable_context();
-  context->set_kernel_type(9);    // ccKernelType::HOST_CPU
+  context->set_kernel_type(8);    // ccKernelType::HOST_CPU
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), INTERNAL_ERROR);
   HostCpuEngine::GetInstance().constant_folding_handle_ = (void *)0x01;
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), INTERNAL_ERROR);

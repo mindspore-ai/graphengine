@@ -205,7 +205,7 @@ void SetAttrValue(const Json &j, SingleOpAttr &attr) {
   // 2. value: 1, 3 ...
   if (j.at(kKeyType).get<string>() == "data_type" && AttrValueIsString(j, kKeyValue)) {
     string type_str = j.at(kKeyValue).get<string>();
-    DataType dtype = GetValue(kDataTypeStringToEnum, type_str, DT_UNDEFINED);
+    DataType dtype = TypeUtils::SerialStringToDataType(type_str);
     attr.value.SetValue<DataType>(dtype);
     return;
   }

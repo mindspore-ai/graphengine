@@ -452,7 +452,9 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
 
 Status GeGenerator::Finalize() {
   ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
-  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
+  if (impl_ == nullptr) {
+    return SUCCESS;
+  }
   Status ret = impl_->graph_manager_.Finalize();
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED, "[Call][Finalize] Graph manager finalize failed.");

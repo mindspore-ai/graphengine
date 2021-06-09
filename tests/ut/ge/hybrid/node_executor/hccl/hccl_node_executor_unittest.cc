@@ -29,6 +29,9 @@
 
 using namespace std;
 using namespace testing;
+namespace {
+const string kHcclSoPath = "../build/tests/depends/hccl/libhccl_stub.so";
+}
 namespace ge {
 using namespace hybrid;
 
@@ -105,4 +108,133 @@ TEST_F(UtestHcclNodeExecutor, test_rdmatask_extract_tensor) {
   ASSERT_EQ(task->ExtractTensor(*unique_task_context, addr_infos), PARAM_INVALID);
   RuntimeInferenceContext::DestroyContext(std::to_string(graph_context.context_id));
 }
+
+TEST_F(UtestHcclNodeExecutor, gatheralltoallv_execute) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeModelPtr ge_sub_model = std::make_shared<GeModel>();
+  GeRootModelPtr ge_root_model = std::make_shared<GeRootModel>(graph);
+  ge_root_model->SetModelName("test_name");
+  ge_root_model->SetSubgraphInstanceNameToModel("sub", ge_sub_model);
+  HybridModel hybrid_model(ge_root_model);
+
+
+  NodePtr node = CreateNode(*graph, "gatheralltoallv", HCOMGATHERALLTOALLV, 4, 2);
+
+  std::unique_ptr<NodeItem> new_node;
+  ASSERT_EQ(NodeItem::Create(node, new_node), SUCCESS);
+  NodeItem *node_item = new_node.get();
+  hybrid_model.node_items_[node] = std::move(new_node);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphItem graph_item;
+  graph_item.node_items_.emplace_back(node_item);
+  graph_item.total_inputs_ = 4;
+  graph_item.total_outputs_ = 2;
+
+  GraphExecutionContext graph_context;
+  SubgraphContext subgraph_context(&graph_item, &graph_context);
+  ASSERT_EQ(subgraph_context.Init(), SUCCESS);
+  graph_context.callback_manager = std::unique_ptr<CallbackManager>(new CallbackManager());
+
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
+  ASSERT_NE(node_state, nullptr);
+
+  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
+  ASSERT_NE(unique_task_context, nullptr);
+  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
+  node_state->SetTaskContext(shared_task_context);
+
+  for (int i=0; i<4; ++i) {
+    uint64_t value_0 = 512;
+    TensorValue in_tensor0(&value_0, sizeof(value_0));
+    subgraph_context.SetInput(*node_item, 0, in_tensor0);
+  }
+
+  uint64_t value_0 = 512;
+  TensorValue out_tensor0(&value_0, sizeof(value_0));
+  subgraph_context.SetOutput(*node_item, 0, out_tensor0);
+
+  uint64_t value_1 = 512;
+  TensorValue out_tensor1(&value_1, sizeof(value_1));
+  subgraph_context.SetOutput(*node_item, 1, out_tensor1);
+
+  NodeTaskPtr task = nullptr;
+  HcclNodeExecutor node_executor;
+  ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), SUCCESS);
+  ASSERT_NE(task, nullptr);
+
+  auto handle = dlopen(kHcclSoPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  ASSERT_NE(handle, nullptr);
+  node_state->GetTaskContext()->handle_ = handle;
+  std::function<void()> done = []() {};
+  ASSERT_EQ(task->ExecuteAsync(*node_state->GetTaskContext(), done), SUCCESS);
+
+  if (handle = nullptr) {
+    dlclose(handle);
+  }
+}
+
+TEST_F(UtestHcclNodeExecutor, alltoallv_execute) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeModelPtr ge_sub_model = std::make_shared<GeModel>();
+  GeRootModelPtr ge_root_model = std::make_shared<GeRootModel>(graph);
+  ge_root_model->SetModelName("test_name");
+  ge_root_model->SetSubgraphInstanceNameToModel("sub", ge_sub_model);
+  HybridModel hybrid_model(ge_root_model);
+
+
+  NodePtr node = CreateNode(*graph, "alltoallv", HCOMALLTOALLV, 5, 1);
+
+  std::unique_ptr<NodeItem> new_node;
+  ASSERT_EQ(NodeItem::Create(node, new_node), SUCCESS);
+  NodeItem *node_item = new_node.get();
+  hybrid_model.node_items_[node] = std::move(new_node);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphItem graph_item;
+  graph_item.node_items_.emplace_back(node_item);
+  graph_item.total_inputs_ = 5;
+  graph_item.total_outputs_ = 1;
+
+  GraphExecutionContext graph_context;
+  SubgraphContext subgraph_context(&graph_item, &graph_context);
+  ASSERT_EQ(subgraph_context.Init(), SUCCESS);
+  graph_context.callback_manager = std::unique_ptr<CallbackManager>(new CallbackManager());
+
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
+  ASSERT_NE(node_state, nullptr);
+
+  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
+  ASSERT_NE(unique_task_context, nullptr);
+  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
+  node_state->SetTaskContext(shared_task_context);
+
+  for (int i=0; i<5; ++i) {
+    uint64_t value_0 = 512;
+    TensorValue in_tensor0(&value_0, sizeof(value_0));
+    subgraph_context.SetInput(*node_item, 0, in_tensor0);
+  }
+
+  uint64_t value_1 = 512;
+  TensorValue out_tensor0(&value_1, sizeof(value_1));
+  subgraph_context.SetOutput(*node_item, 0, out_tensor0);
+  NodeTaskPtr task = nullptr;
+  HcclNodeExecutor node_executor;
+  ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), SUCCESS);
+  ASSERT_NE(task, nullptr);
+
+  auto handle = dlopen(kHcclSoPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  ASSERT_NE(handle, nullptr);
+  node_state->GetTaskContext()->handle_ = handle;
+
+  std::function<void()> done = []() {};
+  ASSERT_EQ(task->ExecuteAsync(*node_state->GetTaskContext(), done), SUCCESS);
+
+  if (handle = nullptr) {
+    dlclose(handle);
+  }
+}
 }  // namespace ge
+

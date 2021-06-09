@@ -22,8 +22,8 @@
 #include "graph/manager/util/hcom_util.h"
 #include "graph/utils/type_utils.h"
 #include "graph/types.h"
-#include "hccl/hcom.h"
 #include "hybrid/executor/hybrid_execution_context.h"
+#include "hccl/hcom.h"
 
 namespace ge {
 namespace {
@@ -31,9 +31,14 @@ constexpr size_t kVarTableDims = 2;
 constexpr size_t kVarTableRowCnt = 3;
 constexpr size_t kVarTableIdxAddr = 1;
 constexpr size_t kVarTableIdxLen = 2;
+// input anchor nums according to IR
+constexpr size_t kAllToAllVInputNums = 5;
+constexpr size_t kGatherAllToAllVInputNums = 4;
+
 const std::set<std::string> kRdmaReadTypes = { HCOMREMOTEREAD, HCOMREMOTEREFREAD };
 const std::set<std::string> kRdmaWriteTypes = { HCOMREMOTEWRITE, HCOMREMOTESCATTERWRITE };
 const std::set<std::string> kRdmaScatterTypes = { HCOMREMOTEREFREAD, HCOMREMOTESCATTERWRITE };
+const std::set<std::string> kAllToAllTypes = {HCOMALLTOALLV, HCOMGATHERALLTOALLV};
 }  // namespace
 namespace hybrid {
 
@@ -349,6 +354,121 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
   return SUCCESS;
 }
 
+Status BuildAllToAllVparams(TaskContext &context, HcomAllToAllVParams &params) {
+  void **input_addrs[kAllToAllVInputNums] = {&params.sendbuf, &params.sendcounts, &params.sdispls,
+                                             &params.recvcounts, &params.rdispls};
+  for (size_t i = 0; i < kAllToAllVInputNums; ++i) {
+    auto addr = context.MutableInput(i);
+    GE_CHECK_NOTNULL(addr);
+    *input_addrs[i] = addr->MutableData();
+  }
+  auto recv_tv = context.MutableOutput(0);
+  GE_CHECK_NOTNULL(recv_tv);
+  params.recvbuf = recv_tv->MutableData();
+
+  const NodeItem &node_item = context.GetNodeItem();
+  const OpDescPtr op_desc = node_item.GetOpDesc();
+  auto input_desc = node_item.MutableInputDesc(0);
+  GE_CHECK_NOTNULL(input_desc);
+  ge::DataType src_data_type = input_desc->GetDataType();
+  auto iter = kConstOpHcclDataType.find(static_cast<int64_t>(src_data_type));
+  if (iter == kConstOpHcclDataType.end()) {
+    REPORT_INNER_ERROR("E19999", "%s alltoallv datatype:%s not support.", op_desc->GetName().c_str(),
+                       TypeUtils::DataTypeToSerialString(src_data_type).c_str());
+    GELOGE(PARAM_INVALID, "[Find][DataType]%s alltoallv datatype:%s not support.", op_desc->GetName().c_str(),
+           TypeUtils::DataTypeToSerialString(src_data_type).c_str());
+    return PARAM_INVALID;
+  }
+  params.sendtype = iter->second;
+  params.recvtype = iter->second;
+
+  return SUCCESS;
+}
+
+Status BuildGatherAllToAllParams(TaskContext &context, HcomGatherAllToAllVParams &params) {
+  void **input_addrs[kGatherAllToAllVInputNums] = {&params.addrInfo, &params.addrInfoCountPerRank,
+                                                   &params.recvcounts, &params.rdispls};
+  for (size_t i = 0; i < kGatherAllToAllVInputNums; ++i) {
+    auto addr = context.MutableInput(i);
+    GE_CHECK_NOTNULL(addr);
+    *input_addrs[i] = addr->MutableData();
+  }
+  auto recv_tv = context.MutableOutput(0);
+  GE_CHECK_NOTNULL(recv_tv);
+  params.recvbuf = recv_tv->MutableData();
+  auto gathered_tv = context.MutableOutput(1);
+  GE_CHECK_NOTNULL(gathered_tv);
+  params.gatheredbuf = gathered_tv->MutableData();
+
+  const NodeItem &node_item = context.GetNodeItem();
+  const OpDescPtr op_desc = node_item.GetOpDesc();
+
+  ge::DataType data_type = ge::DT_FLOAT;
+  (void)ge::AttrUtils::GetDataType(op_desc, HCOM_ATTR_DATA_TYPE, data_type);
+  auto iter = kConstOpHcclDataType.find(static_cast<int64_t>(data_type));
+  if (iter == kConstOpHcclDataType.end()) {
+    REPORT_INNER_ERROR("E19999", "%s received datatype:%s not support.", op_desc->GetName().c_str(),
+                       TypeUtils::DataTypeToSerialString(data_type).c_str());
+    GELOGE(PARAM_INVALID, "[Find][DataType]%s received datatype:%s not support.", op_desc->GetName().c_str(),
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
+    return PARAM_INVALID;
+  }
+  params.recvtype = iter->second;
+
+  int64_t addr_len;
+  (void) ge::AttrUtils::GetInt(op_desc, "addr_length", addr_len);
+  params.addrLength = static_cast<int>(addr_len);
+
+  return SUCCESS;
+}
+
+Status AllToAllNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> done_callback) {
+  GELOGI("[%s] AllToAllNodeTask::ExecuteAsync in.", context.GetNodeName());
+
+  TaskContext *p_ctx = &context;
+  auto callback = [p_ctx, done_callback](HcclResult status){
+    if (status != HCCL_SUCCESS) {
+      GELOGE(HCCL_E_INTERNAL, "[%s] AllToAllNodeTask execute failed.", p_ctx->GetNodeName());
+      p_ctx->SetStatus(FAILED);
+    }
+    done_callback();
+    GELOGI("[%s] AllToAllNodeTask callback successfully.", p_ctx->GetNodeName());
+  };
+
+  if (context.GetNodeItem().NodeType() == HCOMALLTOALLV) {
+    auto HcomExecEnqueueAllToAllV = (HcclResult(*)(HcomAllToAllVParams, std::function<void(HcclResult status)>))dlsym(
+        context.handle_, "HcomExecEnqueueAllToAllV");
+    if (HcomExecEnqueueAllToAllV == nullptr) {
+      GELOGE(FAILED, "Failed to invoke function [HcomExecEnqueueAllToAllV] for node:%s.",context.GetNodeName());
+      return FAILED;
+    }
+    HcomAllToAllVParams params;
+    GE_CHK_STATUS_RET(BuildAllToAllVparams(context, params));
+    HcclResult hccl_ret = HcomExecEnqueueAllToAllV(params, callback);
+    if (hccl_ret != HCCL_SUCCESS) {
+      GELOGE(HCCL_E_INTERNAL, "AllToAllV teak enqueue failed for node [%s].", context.GetNodeName());
+      return HCCL_E_INTERNAL;
+    }
+  } else {
+    auto HcomExecEnqueueGatherAllToAllV =
+        (HcclResult(*)(HcomGatherAllToAllVParams, std::function<void(HcclResult status)>))dlsym(
+            context.handle_, "HcomExecEnqueueGatherAllToAllV");
+    if (HcomExecEnqueueGatherAllToAllV == nullptr) {
+      GELOGE(FAILED, "Failed to invoke function [HcomExecEnqueueGatherAllToAllV] for node:%s.", context.GetNodeName());
+      return FAILED;
+    }
+    HcomGatherAllToAllVParams params;
+    GE_CHK_STATUS_RET(BuildGatherAllToAllParams(context, params));
+    HcclResult hccl_ret = HcomExecEnqueueGatherAllToAllV(params, callback);
+    if (hccl_ret != HCCL_SUCCESS) {
+      GELOGE(HCCL_E_INTERNAL, "GatherAllToAllV teak enqueue failed for node [%s].", context.GetNodeName());
+      return HCCL_E_INTERNAL;
+    }
+  }
+  GELOGI("[%s] AllToAllNodeTask::ExecuteAsync success.", context.GetNodeName());
+  return SUCCESS;
+}
+
 Status HcclNodeTask::UpdateArgs(TaskContext &context) { return SUCCESS; }
 
 Status HcclNodeTask::Init(TaskContext &context) {
@@ -379,6 +499,8 @@ Status HcclNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,
   GE_CHECK_NOTNULL(node);
   if ((kRdmaReadTypes.count(node->GetType()) > 0) || (kRdmaWriteTypes.count(node->GetType()) > 0)) {
     task = MakeShared<RdmaNodeTask>();
+  } else if (kAllToAllTypes.count(node->GetType()) > 0) {
+    task = MakeShared<AllToAllNodeTask>();
   } else {
     task = MakeShared<HcclNodeTask>();
   }

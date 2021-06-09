@@ -42,3 +42,14 @@ HcclResult hcom_reduce_scatter(const char *tag, void *input_ptr, void *output_pt
                                HcclDataType data_type, HcclReduceOp op, const char *group, rtStream_t stream) {
   return HCCL_SUCCESS;
 }
+
+HcclResult HcomExecEnqueueAllToAllV(HcomAllToAllVParams params, std::function<void(HcclResult status)> callback) {
+  return HCCL_SUCCESS;
+}
+
+HcclResult HcomExecEnqueueGatherAllToAllV(HcomGatherAllToAllVParams params,
+std::function<void(HcclResult status)> callback) {
+  return HCCL_SUCCESS;
+}
+
+

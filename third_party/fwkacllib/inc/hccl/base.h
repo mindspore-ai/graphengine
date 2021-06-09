@@ -123,6 +123,30 @@ struct HcomRemoteAccessAddrInfo {
     u64 length;   // Memory Length in Bytes 
 };
 
+struct HcomAllToAllVParams {
+  void *sendbuf;
+  void *sendcounts;
+  void *sdispls;
+  HcclDataType sendtype;
+  void *recvbuf;
+  void *recvcounts;
+  void *rdispls;
+  HcclDataType recvtype;
+  const char *group;
+};
+
+struct HcomGatherAllToAllVParams {
+ void *addrInfo;
+ void *addrInfoCountPerRank;
+ void *recvbuf;
+ void *recvcounts;
+ void *rdispls;
+ void *gatheredbuf;
+ s32 addrLength;
+ HcclDataType recvtype;
+ const char *group;
+};
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -65,6 +65,22 @@ class RdmaNodeTask : public NodeTask {
   bool skip_flag_;
 };
 
+
+class AllToAllNodeTask : public NodeTask {
+ public:
+  AllToAllNodeTask() = default;
+
+  ~AllToAllNodeTask() = default;
+
+  Status UpdateArgs(TaskContext &context) override { return SUCCESS; }
+  Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
+  Status Init(TaskContext &context) override { return SUCCESS; }
+
+ private:
+  std::mutex hccl_mutex_;
+  std::condition_variable cond_;
+};
+
 class HcclNodeExecutor : public NodeExecutor {
  public:
   Status LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const;

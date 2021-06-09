@@ -89,7 +89,7 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
  *         \       /         \.
  *          Switch           Add
  *         /     |            |
- *        /      |            |
+ * Active /      |            |
  *       /       |            |
  *  LoopCond     |            |
  *      \        |            |
@@ -98,9 +98,10 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
  *       Less    |            |
  *          \    |       NextIteration
  *           \   |            |
- *            \  |            |
+ *            \  |            |   Active
  *            Merge <---------|
  *              |
+ *              |   Active
  *              |
  *            Enter
  ******************************************************************************/
@@ -110,6 +111,7 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   GeModelPtr ge_sub_model = make_shared<GeModel>();
   ge_root_model->SetSubgraphInstanceNameToModel("sub", ge_sub_model);
 
+  auto data1 = CreateNode(*graph, "data", DATA, 1, 1);
   auto enter1 = CreateNode(*graph, "enter", ENTER, 1, 1);
   auto merge1 = CreateNode(*graph, "merge", STREAMMERGE, 2, 2);
   auto less1 = CreateNode(*graph, "less", LESS, 2, 1);
@@ -129,6 +131,7 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   auto active3 = CreateNode(*graph, "active3", STREAMACTIVE, 0, 0);
   auto output1 = CreateNode(*graph, "net_output", NETOUTPUT, 1, 1);
 
+  GraphUtils::AddEdge(data1->GetOutDataAnchor(0), enter1->GetInDataAnchor(0));
   GraphUtils::AddEdge(enter1->GetOutDataAnchor(0), merge1->GetInDataAnchor(0));
   GraphUtils::AddEdge(merge1->GetOutDataAnchor(0), less1->GetInDataAnchor(0));
   GraphUtils::AddEdge(value1->GetOutDataAnchor(0), less1->GetInDataAnchor(1));
@@ -153,8 +156,7 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   GraphUtils::AddEdge(active1->GetOutControlAnchor(), merge1->GetInControlAnchor());
 
   GraphUtils::AddEdge(next1->GetOutControlAnchor(), active3->GetInControlAnchor());
-  //GraphUtils::AddEdge(active3->GetOutControlAnchor(), merge1->GetInControlAnchor());
-  SetNextIteration(merge1, next1);
+  SetNextIteration(merge1, next1);  // for relink NextIteration --> StreamMerge
 
   GraphUtils::AddEdge(active1->GetOutControlAnchor(), switch_t->GetInControlAnchor());  // Test for not merge.
 
@@ -168,6 +170,17 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   AttrUtils::SetBool(output1->GetOpDesc(), ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
   AttrUtils::SetBool(add1->GetOpDesc(), ATTR_NAME_INSERT_FP_PROFILILNG_TASK, true);
   AttrUtils::SetBool(add1->GetOpDesc(), ATTR_NAME_INSERT_BP_PROFILILNG_TASK, true);
+
+  SetControlFlowGroup(enter1, loop1->GetOpDesc()->GetId());
+  SetControlFlowGroup(active1, loop1->GetOpDesc()->GetId());
+  SetControlFlowGroup(merge1, loop1->GetOpDesc()->GetId());
+  SetControlFlowGroup(loop1, loop1->GetOpDesc()->GetId());
+  SetControlFlowGroup(active2, switch_t->GetOpDesc()->GetId());
+  SetControlFlowGroup(switch_t, switch_t->GetOpDesc()->GetId());
+  SetControlFlowGroup(switch_f, switch_t->GetOpDesc()->GetId());
+  SetControlFlowGroup(next1, loop1->GetOpDesc()->GetId());
+  SetControlFlowGroup(active3, loop1->GetOpDesc()->GetId());
+  SetControlFlowGroup(exit1, loop1->GetOpDesc()->GetId());
 
   // Build -> IndexSpecialNodes --> stream_merge_op_nodes_
   // Build -> LoadGraph -> RelinkNextIteration
@@ -190,9 +203,23 @@ TEST_F(UtestHybridModelBuilder, normal_hybrid_model_build) {
   task_executor.emplace(NodeExecutorManager::ExecutorType::RTS, std::unique_ptr<NodeExecutor>(new NodeExecutor()));
   task_executor.emplace(NodeExecutorManager::ExecutorType::HOST_CPU, std::unique_ptr<NodeExecutor>(new NodeExecutor()));
 
+  const auto control_group_index = loop1->GetOpDesc()->GetId();
   HybridModel hybrid_model(ge_root_model);
   HybridModelBuilder hybrid_model_builder(hybrid_model);
   ASSERT_EQ(hybrid_model_builder.Build(), SUCCESS);
+
+  const auto TestFrameGroup = [&hybrid_model](const NodePtr &n, int64_t index) {
+    const auto it = hybrid_model.node_items_.find(n);
+    ASSERT_NE(hybrid_model.node_items_.end(), it);
+    ASSERT_EQ(it->second->frame_index_, index);
+    ASSERT_EQ(it->second->parent_frame_, -1);
+  };
+  TestFrameGroup(enter1, control_group_index);
+  TestFrameGroup(active1, control_group_index);
+  TestFrameGroup(active2, control_group_index);
+  TestFrameGroup(active3, control_group_index);
+  TestFrameGroup(output1, -1);
+
   engine_mapping.clear();
   task_executor.clear();
 }

@@ -97,6 +97,7 @@ class HybridModelBuilder {
 
   Status RelinkNextIteration();
   Status BuildProfilingControl(GraphItem &graph_item, const std::map<size_t, std::pair<uint32_t, uint32_t>> &nodes);
+  Status BuildFrameGroupIndex(NodeItem &node_item);
   Status BuildControlFlowGroup(GraphItem &graph_item, const NodePtr &node, NodeItem *node_item);
   Status CreateNormalNodeGroup(const NodePtr &node, NodeItem *node_item);
   Status CreateMergeEnterGroup(const NodePtr &node, NodeItem *node_item);
@@ -123,6 +124,7 @@ class HybridModelBuilder {
   std::map<std::string, NodePtr> constant_op_nodes_;
   std::map<std::string, NodePtr> stream_merge_op_nodes_;
   std::map<std::string, NodePtr> next_iteration_op_nodes_;
+  std::map<int64_t, int64_t> parent_frame_group_;
   std::map<std::string, std::set<NodeItem *>> parallel_group_to_nodes_;
   std::map<NodeItem *, std::set<std::string>> node_to_parallel_groups_;
 

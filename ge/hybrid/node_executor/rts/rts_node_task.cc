@@ -90,7 +90,7 @@ Status RtsNodeTask::GetScalarIndexValue(TaskContext &task_context, uint32_t inde
 Status StreamActiveNodeTask::ExecuteAsync(TaskContext &task_context, std::function<void()> done_callback) {
   GELOGD("[%s] Start to execute.", task_context.GetNodeName());
   const auto &node_state = task_context.GetNodeState();
-  node_state->SetSwitchIndex(0);
+  node_state->RunStreamActive();
   if (done_callback) {
     GE_CHK_STATUS_RET(task_context.RegisterCallback(done_callback));
   }
@@ -204,9 +204,7 @@ Status PassThroughNodeTask::ExecuteAsync(TaskContext &task_context, std::functio
 
   const auto &node_state = task_context.GetNodeState();
   if (kNextIterationOpTypes.count(node_state->GetType()) > 0) {
-    node_state->RunLoopNext();
-  } else if (kExitOpTypes.count(node_state->GetType()) > 0) {
-    node_state->RunLoopExit();
+    node_state->RunNextIteration();
   }
 
   if (done_callback) {

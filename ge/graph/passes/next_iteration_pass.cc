@@ -186,12 +186,6 @@ bool NextIterationPass::VerifyWhileGroup() {
                frame_name.c_str());
         return false;
       }
-
-      // Mark loop as unknown shape If any merge has unknown shape output.
-      const auto &op_desc = pair_iter.first->GetOpDesc();
-      if (IsUnknownShapeTensor(op_desc->GetOutputDesc(0))) {
-        loop_group_iter.second->is_unknown_shape = true;  // under check loop, cannot break.
-      }
     }
   }
 
@@ -229,7 +223,7 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
                enter_active->GetName().c_str(), enter_active->GetType().c_str());
         return INTERNAL_ERROR;
       }
-      MarkForceUnknownShape(enter_node, loop_group.is_unknown_shape, group_index);
+      SetControlFlowGroup(enter_node, group_index);
     }
 
     for (const auto &pair : loop_cond_iter.second->merge_next_pairs) {
@@ -264,8 +258,8 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
         return INTERNAL_ERROR;
       }
 
-      MarkForceUnknownShape(next_node, loop_group.is_unknown_shape, group_index);
-      MarkForceUnknownShape(merge_node, loop_group.is_unknown_shape, group_index);
+      SetControlFlowGroup(next_node, group_index);
+      SetControlFlowGroup(merge_node, group_index);
     }
 
     if ((SetActiveLabelList(enter_active, {cond_name}) != SUCCESS) ||
@@ -274,9 +268,9 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
       return INTERNAL_ERROR;
     }
 
-    MarkForceUnknownShape(loop_group.loop_cond, loop_group.is_unknown_shape, group_index);
-    MarkForceUnknownShape(enter_active, loop_group.is_unknown_shape, group_index);
-    MarkForceUnknownShape(next_active, loop_group.is_unknown_shape, group_index);
+    SetControlFlowGroup(loop_group.loop_cond, group_index);
+    SetControlFlowGroup(enter_active, group_index);
+    SetControlFlowGroup(next_active, group_index);
     HandleSwitchExitNodes(loop_group, group_index);
   }
 
@@ -290,17 +284,13 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
 /// @return void
 ///
 void NextIterationPass::HandleSwitchExitNodes(const LoopCondGroup &loop_group, int64_t group_index) {
-  if (!loop_group.is_unknown_shape) {
-    return;
-  }
-
   for (const auto &switch_node : loop_group.switch_nodes) {
-    MarkForceUnknownShape(switch_node, loop_group.is_unknown_shape, group_index);
+    SetControlFlowGroup(switch_node, group_index);
     for (const auto &node : switch_node->GetOutDataNodes()) {
       std::string node_type;
       (void)GetOriginalType(node, node_type);
       if (kExitOpTypes.count(node_type) > 0) {
-        MarkForceUnknownShape(node, loop_group.is_unknown_shape, group_index);
+        SetControlFlowGroup(node, group_index);
       }
     }
   }

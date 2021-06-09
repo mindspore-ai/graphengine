@@ -1945,6 +1945,7 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     GE_CHK_STATUS_RET_NOLOG(BuildNodeItem(node, *node_item));
     GE_CHK_STATUS_RET_NOLOG(UpdateAnchorStatus(node)); // needed by FE generate task
 
+    GE_CHK_STATUS_RET_NOLOG(BuildFrameGroupIndex(*node_item));
     GE_CHK_STATUS_RET_NOLOG(BuildControlFlowGroup(*graph_item, node, node_item));
     if (node->GetInAllNodes().empty()) {
       graph_item->root_items_.emplace_back(node_item);
@@ -2308,6 +2309,62 @@ Status HybridModelBuilder::BuildProfilingControl(GraphItem &graph_item,
   return SUCCESS;
 }
 
+Status HybridModelBuilder::BuildFrameGroupIndex(NodeItem &node_item) {
+  if (node_item.is_root_node_) {
+    GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+    return SUCCESS;
+  }
+
+  int64_t ctrl_flow_group = -1;
+  if (node_item.IsEnterOp() && AttrUtils::GetInt(node_item.op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, ctrl_flow_group)) {
+    node_item.frame_index_ = ctrl_flow_group;
+    for (const auto src_node : node_item.node->GetInAllNodes()) {
+      NodeItem *src_node_item = nullptr;
+      GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
+                        "[%s] failed to get or create node item", src_node->GetName().c_str());
+      if (!src_node_item->is_root_node_) {
+        GELOGD("[%s] frame index: %ld, [%s] parent frame index: %ld", node_item.node_name.c_str(),
+               node_item.frame_index_, src_node_item->node_name.c_str(), src_node_item->frame_index_);
+        parent_frame_group_[node_item.frame_index_] = src_node_item->frame_index_;
+        break;
+      }
+    }
+
+    const auto it = parent_frame_group_.find(node_item.frame_index_);
+    node_item.parent_frame_ = (it != parent_frame_group_.end()) ? it->second : -1;
+    GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+    return SUCCESS;
+  }
+
+  for (const auto src_node : node_item.node->GetInAllNodes()) {
+    NodeItem *src_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
+                      "[%s] failed to get or create node item", src_node->GetName().c_str());
+    if (src_node_item->is_root_node_) {
+      continue;
+    }
+
+    if (src_node_item->IsExitOp()) {
+      const auto it = parent_frame_group_.find(src_node_item->frame_index_);
+      node_item.frame_index_ = (it != parent_frame_group_.end()) ? it->second : -1;
+    } else {
+      node_item.frame_index_ = src_node_item->frame_index_;
+    }
+
+    const auto it = parent_frame_group_.find(node_item.frame_index_);
+    node_item.parent_frame_ = (it != parent_frame_group_.end()) ? it->second : -1;
+    GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+    return SUCCESS;
+  }
+
+  GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+         node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+  return SUCCESS;
+}
+
 Status HybridModelBuilder::BuildControlFlowGroup(GraphItem &graph_item, const NodePtr &node, NodeItem *node_item) {
   GELOGD("Build control flow for node %s", node->GetName().c_str());
   using GroupBuilder = std::function<Status(HybridModelBuilder *, const NodePtr &, NodeItem *)>;
@@ -2427,6 +2484,7 @@ Status HybridModelBuilder::CreateStreamActiveGroup(const NodePtr &node, NodeItem
 
   if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsEnterNode)) {
     // Enter --> StreamActive --> StreamMerge
+    node_item->is_enter_active_ = true;
     return CreateMergeEnterGroup(node, node_item);
   } else if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsIterationNode)) {
     // NextIteration --> StreamActive {-->} StreamMerge

@@ -25,6 +25,7 @@
 #define private public
 #include "common/profiling/profiling_manager.h"
 #include "graph/ge_local_context.h"
+#include "inc/framework/common/profiling/ge_profiling.h"
 #undef protected
 #undef private
 
@@ -115,4 +116,20 @@ TEST_F(UtestGeProfilinganager, get_fp_bp_point_empty) {
   ProfilingManager::Instance().GetFpBpPoint(fp_point, bp_point);
   EXPECT_EQ(fp_point, "");
   EXPECT_EQ(bp_point, "");
+}
+
+TEST_F(UtestGeProfilinganager, set_step_info_success) {
+  uint64_t index_id = 0;
+  auto stream = (rtStream_t)0x1;
+  Status ret = ProfSetStepInfo(index_id, 0, stream);
+  EXPECT_EQ(ret, ge::SUCCESS);
+  ret = ProfSetStepInfo(index_id, 1, stream);
+  EXPECT_EQ(ret, ge::SUCCESS);
+}
+
+TEST_F(UtestGeProfilinganager, set_step_info_failed) {
+  uint64_t index_id = 0;
+  auto stream = (rtStream_t)0x1;
+  Status ret = ProfSetStepInfo(index_id, 1, stream);
+  EXPECT_EQ(ret, ge::FAILED);
 }

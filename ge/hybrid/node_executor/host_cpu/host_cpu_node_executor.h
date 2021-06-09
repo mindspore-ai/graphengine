@@ -19,39 +19,29 @@
 
 #include "hybrid/node_executor/node_executor.h"
 #include "inc/kernel.h"
+#include "hybrid/node_executor/aicpu/aicpu_node_executor.h"
 
 namespace ge {
 namespace hybrid {
-class HostNodeTaskBase : public NodeTask {
+
+class HostAicpuNodeTask : public AicpuNodeTask {
  public:
-  explicit HostNodeTaskBase(const NodePtr &node) : node_(node) {}
-  ~HostNodeTaskBase() override = default;
-  Status UpdateArgs(TaskContext &context) override;
+  HostAicpuNodeTask(const NodeItem *node_item, const domi::TaskDef &task_def)
+      : AicpuNodeTask(node_item, task_def) {}
+  ~HostAicpuNodeTask() override = default;
+
   Status ExecuteAsync(TaskContext &context, std::function<void()> done_callback) override;
 
- protected:
-  NodePtr node_;
+  Status UpdateArgs(TaskContext &context) override;
+
+  void SetRunKernel(std::function<uint32_t(void *)> run_cpu_kernel) { run_cpu_kernel_ = run_cpu_kernel; }
+
+  Status SetHostExtInfo();
 
  private:
-  virtual Status Execute(TaskContext &context) = 0;
-};
+  Status Execute(TaskContext &context);
 
-class CpuKernelNodeTask : public HostNodeTaskBase {
- public:
-  explicit CpuKernelNodeTask(const NodePtr &node) : HostNodeTaskBase(node) {}
-  ~CpuKernelNodeTask() override = default;
-
- private:
-  Status Execute(TaskContext &context) override;
-};
-
-class HostCpuNodeTask : public HostNodeTaskBase {
- public:
-  explicit HostCpuNodeTask(const NodePtr &node) : HostNodeTaskBase(node) {}
-  ~HostCpuNodeTask() override = default;
-
- private:
-  Status Execute(TaskContext &context) override;
+  std::function<uint32_t(void *)> run_cpu_kernel_ = nullptr;
 };
 
 class HostCpuNodeExecutor : public NodeExecutor {
@@ -61,6 +51,9 @@ class HostCpuNodeExecutor : public NodeExecutor {
   Status LoadTask(const HybridModel &model,
                   const NodePtr &node,
                   std::shared_ptr<NodeTask> &task) const override;
+
+ private:
+  static Status ValidateTaskDef(const domi::TaskDef &task_def);
 };
 }  // namespace hybrid
 }  // namespace ge

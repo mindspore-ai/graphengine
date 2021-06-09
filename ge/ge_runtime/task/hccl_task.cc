@@ -154,10 +154,7 @@ bool HcclTask::SetSecondaryStream() {
           return false;
         }
         stream = std::make_shared<HcclTask::StreamGuard>(rt_model_handle_, new_stream);
-        if (stream == nullptr) {
-          GELOGE(FAILED, "MakeShared failed.");
-          return false;
-        }
+        GE_RT_FALSE_CHECK_NOTNULL(stream);
         secondary_stream_vec[index] = stream;
       }
       secondary_stream_list_.push_back(stream);

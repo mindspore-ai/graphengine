@@ -543,7 +543,6 @@ Status GraphMemoryAssigner::UpdateRefOpOffsetReverse(const NodePtr &node) {
 }
 
 Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
-  Status ret;
   // Stored nodes which need assign continuous input memory in `reverse topo order`
   std::vector<NodePtr> nodes_stack;
   std::map<NodePtr, uint32_t> node_2_continuous_type;
@@ -579,11 +578,8 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
     if (continuous_output) {
       GE_CHK_STATUS_RET(GetNodeMemoryType(node, memory_type, "output"),
                         "[Get][MemType]fail for node:%s", node->GetName().c_str());
-      ret = AssignContinuousOutputMemory(node, memory_type, continuous_type);
-      if (ret != ge::SUCCESS) {
-        GELOGE(ret, "[Assign][Memory:Continuous:Ouput]fail for node:%s", node->GetName().c_str());
-        return ret;
-      }
+      GE_CHK_STATUS_RET(AssignContinuousOutputMemory(node, memory_type, continuous_type),
+                        "[Assign][Memory:Continuous:Output]fail for node:%s", node->GetName().c_str());
     }
   }
   // Assign continuous input memory in `reverse topo order` which stored before
@@ -612,6 +608,61 @@ Status GraphMemoryAssigner::ReAssignContinuousMemory(bool is_loop_graph) {
   return ge::SUCCESS;
 }
 
+Status GraphMemoryAssigner::SetMemOffset(const ge::NodePtr &node, const InDataAnchorPtr &in_data_anchor,
+                                         bool reverse_refresh, int64_t &mem_offset, int64_t &continuous_mem_start) {
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  vector<int64_t> output_list_this = op_desc->GetOutputOffset();
+  if (output_list_this.empty()) {
+    REPORT_INNER_ERROR("E19999", "No output offset in node :%s, not expected",
+                       node->GetName().c_str());
+    GELOGE(FAILED, "[Get][OutputOffset] empty is invalid, node:%s", node->GetName().c_str());
+    return FAILED;
+  }
+
+  auto peer_out_data_anchor = in_data_anchor->GetPeerOutAnchor();
+  auto peer_op_desc = peer_out_data_anchor->GetOwnerNode()->GetOpDesc();
+  vector<int64_t> output_list = peer_op_desc->GetOutputOffset();
+  if (peer_out_data_anchor->GetIdx() >= static_cast<int>(output_list.size())) {
+    std::string error = "peer node:" + FmtToStr(peer_op_desc->GetName()) +
+                        " anchor_index:" + FmtToStr(peer_out_data_anchor->GetIdx()) +
+                        " is out of range:" + FmtToStr(output_list.size());
+    GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    return FAILED;
+  }
+
+  // when continuous input has been allocated first input is beginning offset
+  bool is_continuous_input_allocated = false;
+  (void) ge::AttrUtils::GetBool(op_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, is_continuous_input_allocated);
+  bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
+  if (is_allocated_first_input) {
+    std::map<int32_t, int32_t> out2ins;
+    GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s",
+                      node->GetName().c_str());
+    // output is beginning offset, set offset for input; only support this case now
+    if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
+      auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
+      output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
+      peer_op_desc->SetOutputOffset(output_list);
+      GELOGI("[Update][Offset]Node %s out %d ref in %d input node %s, use output offset %ld update %ld",
+             node->GetName().c_str(), out2ins.begin()->first, out2ins.begin()->second,
+             peer_op_desc->GetName().c_str(), output_list_this.at(out2ins.begin()->first), peer_output_offset);
+    } else {
+      GELOGD("Node %s out %d ref in %d input node %s with total ref numbers %zu.", node->GetName().c_str(),
+             out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(), out2ins.size());
+    }
+    // first input is beginning offset
+    mem_offset = output_list.at(peer_out_data_anchor->GetIdx());
+    continuous_mem_start = output_list.at(peer_out_data_anchor->GetIdx());
+  } else {
+    // set offset for input
+    output_list.at(peer_out_data_anchor->GetIdx()) = mem_offset;
+    peer_op_desc->SetOutputOffset(output_list);
+  }
+
+  return SUCCESS;
+}
+
 Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node, int64_t &continuous_mem_start,
     int64_t &continuous_mem_size, int64_t memory_type, uint32_t continuous_type, bool reverse_refresh) {
   GELOGI("[Assign][Memory:Input:Continuous]start for Current node %s", node->GetName().c_str());
@@ -631,13 +682,6 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
   bool is_continuous_input_allocated = false;
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
-  vector<int64_t> output_list_this = op_desc->GetOutputOffset();
-  if (output_list_this.empty()) {
-    REPORT_INNER_ERROR("E19999", "No output offset in node :%s, not expected",
-                       node->GetName().c_str());
-    GELOGE(FAILED, "[Get][OutputOffset] empty is invalid, node:%s", node->GetName().c_str());
-    return FAILED;
-  }
   (void) ge::AttrUtils::GetBool(op_desc, ATTR_NAME_CONTINUOUS_INPUT_ALLOC, is_continuous_input_allocated);
   for (auto &in_data_anchor : node->GetAllInDataAnchors()) {
     GE_IF_BOOL_EXEC(in_data_anchor == nullptr, continue);
@@ -669,45 +713,12 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
         return FAILED;
       }
     }
-
-    bool is_nopadding = ((continuous_type & kTypeInputNoPadding) != 0) || lx_fusion;
-    vector<int64_t> output_list = peer_op_desc->GetOutputOffset();
-    if (peer_out_data_anchor->GetIdx() >= static_cast<int>(output_list.size())) {
-      std::string error = "peer node:" + FmtToStr(peer_op_desc->GetName()) +
-          " anchor_index:" + FmtToStr(peer_out_data_anchor->GetIdx()) +
-          " is out of range:" + FmtToStr(output_list.size());
-      GE_ERRORLOG_AND_ERRORMSG(FAILED, error.c_str());
+    if (SetMemOffset(node, in_data_anchor, reverse_refresh, mem_offset, continuous_mem_start) != ge::SUCCESS) {
       return FAILED;
     }
 
-    // when continuous input has been allocated first input is beginning offset
-    bool is_allocated_first_input = is_continuous_input_allocated && (in_data_anchor->GetIdx() == 0);
-    if (is_allocated_first_input) {
-      std::map<int32_t, int32_t> out2ins;
-      GE_CHK_STATUS_RET(TryGetNodeRefIndexes(node, out2ins), "[Get][RefIndexes]fail for node: %s",
-                        node->GetName().c_str());
-      // output is beginning offset, set offset for input; only support this case now
-      if ((out2ins.size() == 1) && (out2ins.begin()->second == 0) && (reverse_refresh)) {
-        auto peer_output_offset = output_list.at(peer_out_data_anchor->GetIdx());
-        output_list.at(peer_out_data_anchor->GetIdx()) = output_list_this.at(out2ins.begin()->first);
-        peer_op_desc->SetOutputOffset(output_list);
-        GELOGI("[Update][Offset]Node %s out %d ref in %d input node %s, use output offset %ld update %ld",
-               node->GetName().c_str(), out2ins.begin()->first, out2ins.begin()->second,
-               peer_op_desc->GetName().c_str(), output_list_this.at(out2ins.begin()->first), peer_output_offset);
-      } else {
-        GELOGD("Node %s out %d ref in %d input node %s with total ref numbers %zu.", node->GetName().c_str(),
-               out2ins.begin()->first, out2ins.begin()->second, peer_op_desc->GetName().c_str(), out2ins.size());
-      }
-      // first input is beginning offset
-      mem_offset = output_list.at(peer_out_data_anchor->GetIdx());
-      continuous_mem_start = output_list.at(peer_out_data_anchor->GetIdx());
-    } else {
-      // set offset for input
-      output_list.at(peer_out_data_anchor->GetIdx()) = mem_offset;
-      peer_op_desc->SetOutputOffset(output_list);
-    }
-
     int64_t align_size = tensor_desc_size;
+    bool is_nopadding = ((continuous_type & kTypeInputNoPadding) != 0) || lx_fusion;
     if (is_nopadding) {
       mem_offset += nopadding_size;
       extra_memory_size += (tensor_desc_size - nopadding_size);
@@ -719,7 +730,7 @@ Status GraphMemoryAssigner::AssignContinuousInputMemory(const ge::NodePtr &node,
       extra_memory_size = MEM_ALIGN_SIZE;
       real_size = tensor_desc_size;
     }
-
+    vector<int64_t> output_list = peer_op_desc->GetOutputOffset();
     GELOGI("[IMAS]Continuous input : Set %s name[%s] optype[%s] output[%d] offset to [%zu] stream_id[%ld] memtype[%ld] "
         "size[%zu] realsize[%ld] nopadding size[%d]", node->GetOwnerComputeGraph()->GetName().c_str(),
         peer_op_desc->GetName().c_str(), node->GetType().c_str(), peer_out_data_anchor->GetIdx(),

@@ -366,11 +366,8 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   // link input -> end
   string end_name = kEndType + std::to_string(graph_info_.num_of_pld_end_);
   auto end_op_desc = MakeShared<OpDesc>(end_graph->GetName() + "_" + end_name, END);
-  if (end_op_desc == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New Memory for OpDesc failed.");
-    GELOGE(GRAPH_PARAM_INVALID, "[New][Memory] for OpDesc failed, pld_op_desc is nullptr.");
-    return FAILED;
-  }
+  GE_CHECK_NOTNULL(end_op_desc);
+
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(end_op_desc, "peerIndex", graph_info_.num_of_pld_end_),
                   GELOGW("SetInt peerIndex failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(end_op_desc, "parentOpType", dst_node->GetType()),
@@ -429,11 +426,8 @@ graphStatus ge::GraphPartitioner::AddPlaceHolderEndInSrcDstGraph(const AnchorPtr
   int64_t node_id = src_node_opdesc->GetId();
   const string pld_name = kPlaceHolderType + std::to_string(graph_info_.num_of_pld_end_);
   auto pld_op_desc = MakeShared<OpDesc>(pld_graph->GetName() + "_" + pld_name, PLACEHOLDER);
-  if (pld_op_desc == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New Memory for OpDesc failed.");
-    GELOGE(GRAPH_PARAM_INVALID, "[New][Memory] for OpDesc failed.");
-    return FAILED;
-  }
+  GE_CHECK_NOTNULL(pld_op_desc);
+
   GE_IF_BOOL_EXEC(!AttrUtils::SetInt(pld_op_desc, "peerIndex", graph_info_.num_of_pld_end_),
                   GELOGW("SetInt peerIndex failed");)
   GE_IF_BOOL_EXEC(!AttrUtils::SetStr(pld_op_desc, "_peerNodeName", new_end_node->GetName()),

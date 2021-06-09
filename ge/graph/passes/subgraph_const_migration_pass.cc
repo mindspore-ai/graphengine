@@ -166,26 +166,7 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
         GELOGD("%s, index: %u, Data: %s", subgraph->GetName().c_str(), parent_index, node->GetName().c_str());
       } else if ((node->GetType() == CONSTANT) && (node->GetOutDataAnchor(kZeroIndex) != nullptr)) {
         set<string> peer_name_list;
-        const auto &out_anchor = node->GetOutDataAnchor(kZeroIndex);
-        for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
-          const auto &peer_node = in_anchor->GetOwnerNode();
-          // Trim subgraph node name prefix.
-          string node_full_name = peer_node->GetName();
-          size_t pos = node_full_name.find(kMbatchNodeNameMark);
-          if (pos == string::npos) {
-            GELOGI("Can not find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
-            continue;
-          }
-
-          string fixed_name = node_full_name.substr(0, pos);
-          pos = node_full_name.find("_", pos + kMbatchNodeNameMark.length());
-          if (pos != string::npos) {
-            fixed_name += node_full_name.substr(pos);
-          }
-
-          peer_name_list.insert(fixed_name + ":" + std::to_string(in_anchor->GetIdx()));
-        }
-
+        GetPeerNameList(node, peer_name_list);
         if (peer_name_list.empty()) {
           GELOGI("%s, Const: %s, no data output", subgraph->GetName().c_str(), node->GetName().c_str());
           const auto in_all_nodes = node->GetInAllNodes();
@@ -214,6 +195,28 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
   }
 
   return SUCCESS;
+}
+
+void SubgraphConstMigrationPass::GetPeerNameList(const NodePtr &node, set<string> &peer_name_list) {
+  const auto &out_anchor = node->GetOutDataAnchor(kZeroIndex);
+  for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
+    const auto &peer_node = in_anchor->GetOwnerNode();
+    // Trim subgraph node name prefix.
+    string node_full_name = peer_node->GetName();
+    size_t pos = node_full_name.find(kMbatchNodeNameMark);
+    if (pos == string::npos) {
+      GELOGI("Can not find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
+      continue;
+    }
+
+    string fixed_name = node_full_name.substr(0, pos);
+    pos = node_full_name.find("_", pos + kMbatchNodeNameMark.length());
+    if (pos != string::npos) {
+      fixed_name += node_full_name.substr(pos);
+    }
+
+    peer_name_list.insert(fixed_name + ":" + std::to_string(in_anchor->GetIdx()));
+  }
 }
 
 ///

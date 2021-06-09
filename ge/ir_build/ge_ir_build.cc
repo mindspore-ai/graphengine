@@ -272,8 +272,7 @@ class Impl {
   graphStatus Init(const Graph &graph, const std::map<std::string, std::string> &options);
   graphStatus BuildModel(const Graph &graph, const std::map<std::string, std::string> &options,
                          ModelBufferData &ge_models);
-  graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
-                                 bool is_dynamic_input);
+  graphStatus InitDomiOmgContext(const string &input_shape, const string &input_format, bool is_dynamic_input);
   graphStatus GetInputShapeRange(const string &input_shape_range,
                                  std::map<string, std::vector<std::pair<int64_t, int64_t>>> &name_shape_range_map,
                                  std::vector<std::vector<std::pair<int64_t, int64_t>>> &index_shape_range_map);
@@ -283,6 +282,7 @@ class Impl {
   void SetRtSocVersion();
   void UpdateThreadContext();
   void LoadOpsProto();
+  std::string GetParam(const std::string &param);
  public:
   ge::GeGenerator generator_;
   std::map<std::string, std::string> options_;
@@ -512,6 +512,10 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   return GRAPH_SUCCESS;
 }
 
+std::string Impl::GetParam(const std::string &param) {
+  return options_.find(param) == options_.end() ? "" : options_[param];
+}
+
 graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::string> &options) {
   // 1. check options
   graphStatus ret = CheckOptions(options);
@@ -533,20 +537,13 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   GE_CHK_BOOL_RET_STATUS_NOLOG(ge::CheckLogParamValidAndSetLogLevel(log) == 0, GRAPH_PARAM_INVALID);
   options_[ge::ir_option::LOG_LEVEL] = log;
 
-  string input_shape = options_.find("input_shape") == options_.end() ? "" : options_["input_shape"];
-  string input_format = options_.find("input_format") == options_.end() ? "" : options_["input_format"];
-  string net_format = options_.find("net_format") == options_.end() ? "" : options_["net_format"];
-  string dynamic_batch_size = options_.find(ge::ir_option::DYNAMIC_BATCH_SIZE) == options_.end()
-                                  ? ""
-                                  : options_[ge::ir_option::DYNAMIC_BATCH_SIZE];
-  string dynamic_image_size = options_.find(ge::ir_option::DYNAMIC_IMAGE_SIZE) == options_.end()
-                                  ? ""
-                                  : options_[ge::ir_option::DYNAMIC_IMAGE_SIZE];
-  string dynamic_dims =
-      options_.find(ge::ir_option::DYNAMIC_DIMS) == options_.end() ? "" : options_[ge::ir_option::DYNAMIC_DIMS];
-  string input_shape_range =
-    options_.find(ge::INPUT_SHAPE_RANGE) == options_.end() ? "" : options_[ge::INPUT_SHAPE_RANGE];
+  string input_shape = GetParam(ge::ir_option::INPUT_SHAPE);
+  string input_format = GetParam(ge::ir_option::INPUT_FORMAT);
 
+  string dynamic_batch_size = GetParam(ge::ir_option::DYNAMIC_BATCH_SIZE);
+  string dynamic_image_size = GetParam(ge::ir_option::DYNAMIC_IMAGE_SIZE);
+  string dynamic_dims = GetParam(ge::ir_option::DYNAMIC_DIMS);
+  string input_shape_range = GetParam(ge::INPUT_SHAPE_RANGE);
   auto status = CheckDynamicInputParamValid(dynamic_batch_size, dynamic_image_size, dynamic_dims, input_shape,
                                             input_shape_range, input_format, is_dynamic_input_);
   if (status != ge::SUCCESS) {
@@ -559,15 +556,12 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   omg_context_.dynamic_image_size = dynamic_image_size;
   omg_context_.dynamic_dims = dynamic_dims;
   // check output_type
-  std::string output_type = options_.find(ge::ir_option::OUTPUT_TYPE) == options_.end()
-                                ? ""
-                                : options_[ge::ir_option::OUTPUT_TYPE];
+  std::string output_type = GetParam(ge::ir_option::OUTPUT_TYPE);
   GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "[Check][OutputType] failed!");
   // check insert_op_conf
-  std::string insert_op_conf = options_.find(ge::ir_option::INSERT_OP_FILE) == options_.end()
-                                   ? ""
-                                   : options_[ge::ir_option::INSERT_OP_FILE];
+
+  std::string insert_op_conf = GetParam(ge::ir_option::INSERT_OP_FILE);
   GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "[Check][InsertOpConf] failed!");
 
@@ -592,7 +586,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
     return ret;
   }
   // 4.parse and init Context with input shape format and net format info
-  return this->InitDomiOmgContext(input_shape, input_format, net_format, is_dynamic_input_);
+  return this->InitDomiOmgContext(input_shape, input_format, is_dynamic_input_);
 }
 
 void Impl::SetRtSocVersion() {
@@ -691,8 +685,7 @@ graphStatus Impl::BuildModel(const Graph &graph, const std::map<std::string, std
 
   return GRAPH_SUCCESS;
 }
-graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &input_format, const string &net_format,
-                                     bool is_dynamic_input) {
+graphStatus Impl::InitDomiOmgContext(const string &input_shape, const string &input_format, bool is_dynamic_input) {
   // Clear omgcontext data first
   omg_context_.input_dims.clear();
   omg_context_.user_input_dims.clear();

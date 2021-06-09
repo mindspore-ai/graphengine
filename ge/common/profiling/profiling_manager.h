@@ -111,6 +111,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   uint64_t GetProfilingModule();
   void UpdateDeviceIdModuleMap(string prof_type, uint64_t module, const vector<int32_t> &device_list);
   void UpdateSubscribeDeviceModuleMap(std::string prof_type, uint32_t device_id, uint64_t module);
+  void GetOpInputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const;
+  void GetOpOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const;
 
   bool is_load_profiling_;
   bool is_execute_profiling_;

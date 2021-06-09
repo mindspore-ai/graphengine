@@ -70,9 +70,9 @@ Status FlowCtrlPass::Run(ComputeGraphPtr compute_graph) {
     }
     GE_IF_BOOL_EXEC(node->GetOpDesc() == nullptr, continue);
     bool need_cycle_flag = false;
-    bool is_found = AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_STREAM_CYCLE_EVENT_FLAG, need_cycle_flag);
+    (void)AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_STREAM_CYCLE_EVENT_FLAG, need_cycle_flag);
     // small cycle flag is need_stream_cycle_event == true
-    if (is_found && need_cycle_flag) {
+    if (need_cycle_flag) {
       Status ret = AddSpecialNodeIteratorCtrl(compute_graph, node);
       if (ret != SUCCESS) {
         GELOGE(ret, "[Add][SpecialNodeIteratorCtrl] failed, node:%s, graph:%s.",

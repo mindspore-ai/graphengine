@@ -1212,7 +1212,8 @@ Status StreamAllocator::SetActiveStreamsForLoop() {
   for (const auto &node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
     GE_CHECK_NOTNULL(node->GetOpDesc());
     bool is_loop_active = false;
-    if (AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, is_loop_active) && is_loop_active) {
+    (void)AttrUtils::GetBool(node->GetOpDesc(), ATTR_NAME_IS_LOOP_ACTIVE, is_loop_active);
+    if (is_loop_active) {
       vector<string> activated_label_list;
 
       NodePtr pre_switch_node = FindSwitchNodeBeforeLoopActiveNode(node);

@@ -1,4 +1,4 @@
-# Copyright 2019-2020 Huawei Technologies Co., Ltd
+# Copyright 2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,21 +13,14 @@
 # limitations under the License.
 # ============================================================================
 
-project(tests CXX C)
-find_package(Threads)
-add_subdirectory(depends/cce)
-add_subdirectory(depends/slog)
-add_subdirectory(depends/mmpa)
-add_subdirectory(depends/runtime)
-add_subdirectory(depends/hccl)
-add_subdirectory(depends/profiler)
-add_subdirectory(depends/error_manager)
+file(GLOB_RECURSE EASY_GRAPH_SRCS  src/*.cc)
 
-if (ENABLE_GE_COV OR ENABLE_GE_UT)
-    add_subdirectory(ut)
-endif()
+add_library(easy_graph STATIC ${EASY_GRAPH_SRCS})
 
-if (ENABLE_GE_ST)
-    add_subdirectory(framework)
-    add_subdirectory(st)
-endif()
+target_link_libraries(easy_graph PUBLIC
+    $<BUILD_INTERFACE:intf_pub> )
+
+set_target_properties(easy_graph PROPERTIES CXX_STANDARD 17)
+
+target_include_directories(easy_graph PUBLIC include
+                                      PRIVATE src)

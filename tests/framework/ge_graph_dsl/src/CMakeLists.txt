@@ -1,4 +1,4 @@
-# Copyright 2019-2020 Huawei Technologies Co., Ltd
+# Copyright 2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,21 +13,16 @@
 # limitations under the License.
 # ============================================================================
 
-project(tests CXX C)
-find_package(Threads)
-add_subdirectory(depends/cce)
-add_subdirectory(depends/slog)
-add_subdirectory(depends/mmpa)
-add_subdirectory(depends/runtime)
-add_subdirectory(depends/hccl)
-add_subdirectory(depends/profiler)
-add_subdirectory(depends/error_manager)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cc" "*.CC" "*.cpp" "*.CPP")
 
-if (ENABLE_GE_COV OR ENABLE_GE_UT)
-    add_subdirectory(ut)
-endif()
+add_library(ge_graph_dsl STATIC ${SOURCES})
 
-if (ENABLE_GE_ST)
-    add_subdirectory(framework)
-    add_subdirectory(st)
-endif()
+target_include_directories(ge_graph_dsl	
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(ge_graph_dsl PUBLIC
+    $<BUILD_INTERFACE:intf_pub>)
+
+set_target_properties(ge_graph_dsl PROPERTIES CXX_STANDARD 17)
+target_link_libraries(ge_graph_dsl PUBLIC ge_graph_dsl_inc easy_graph metadef_graph)

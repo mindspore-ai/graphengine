@@ -6,7 +6,7 @@ target_include_directories(graph_engine_test
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set_target_properties(graph_engine_test PROPERTIES CXX_STANDARD 11)
+set_target_properties(graph_engine_test PROPERTIES CXX_STANDARD 17)
 
 target_link_libraries(graph_engine_test PRIVATE gtest gtest_main framework)
 

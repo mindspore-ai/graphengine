@@ -38,7 +38,7 @@ Status EngineManager::RegisterEngine(const std::string &engine_name, DNNEnginePt
   if (engine_map_ == nullptr) {
     engine_map_.reset(new (std::nothrow) std::map<std::string, DNNEnginePtr>());
   }
-
+  GE_CHECK_NOTNULL(engine_map_);
   auto it = engine_map_->find(engine_name);
   if (it != engine_map_->end()) {
     GELOGW("engine %s already exist.", engine_name.c_str());

@@ -4096,7 +4096,7 @@ uint8_t *DavinciModel::MallocFeatureMapMem(size_t data_size) {
 Status DavinciModel::MallocExMem() {
   char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res_static_memory = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
-  for (auto it : runtime_param_.memory_infos) {
+  for (auto &it : runtime_param_.memory_infos) {
     auto mem_size = it.second.memory_size;
     if (mem_size == 0) {
       continue;
@@ -4167,7 +4167,7 @@ void DavinciModel::FreeFeatureMapMem() {
 void DavinciModel::FreeExMem() {
   char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res_static_memory = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
-  for (auto it : runtime_param_.memory_infos) {
+  for (auto &it : runtime_param_.memory_infos) {
     // free when session destory
     if ((kSessionScopeMemory & it.first) == kSessionScopeMemory) {
       continue;

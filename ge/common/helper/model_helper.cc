@@ -39,8 +39,6 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
                                        const uint8_t *data, size_t size, size_t model_index) {
   if (size < 1 || size > UINT32_MAX) {
     GELOGE(PARAM_INVALID, "[Add][ModelPartition]Failed, partition size %zu invalid", size);
-    REPORT_INNER_ERROR("E19999", "Add model partition failed, partition size %zu "
-                       "invalid", size);
     if (size > UINT32_MAX) {
       string item = "item";
       if (type == MODEL_DEF) {
@@ -57,6 +55,8 @@ Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_fil
       ErrorManager::GetInstance().ATCReportErrMessage("E19023", {"size", "item", "maxsize"},
         {std::to_string(size), item, std::to_string(UINT32_MAX)});
     }
+    REPORT_INNER_ERROR("E19999", "Add model partition failed, partition size %zu "
+                       "invalid", size);
     return PARAM_INVALID;
   }
   if (data == nullptr) {
@@ -1013,7 +1013,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
   ge::ModelData model;
   int32_t priority = 0;
 
-  Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+  Status ret = ModelParserBase::LoadFromFile(model_file, priority, model);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Load][ModelInfo]Failed from file %s, error_code %u", model_file, ret);
     REPORT_CALL_ERROR("E19999", "Load model info failed from file %s, error_code %u",
@@ -1033,7 +1033,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
   ret = ModelParserBase::ParseModelContent(model, model_data, model_len);
   if (ret != SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10003",
-      {"parameter", "value", "reason"}, {"om", model_file, "invalid om file"});
+      {"parameter", "value", "reason"}, {"om", model_file, "invalid om file, can't be parsed"});
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
            "[Parse][ModelContent]Failed because of invalid om file %s, please check om param",
            model_file);
@@ -1072,7 +1072,7 @@ Status ModelTool::GetModelInfoFromPbtxt(const char *model_file, ge::proto::Model
   ge::ModelData model;
   int32_t priority = 0;
 
-  Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+  Status ret = ModelParserBase::LoadFromFile(model_file, priority, model);
   auto free_model_data = [](void **ptr) -> void {
     if (ptr != nullptr && *ptr != nullptr) {
       delete[] reinterpret_cast<char *>(*ptr);

@@ -43,12 +43,11 @@ class ModelParserBase {
    * @ingroup hiai
    * @brief Parsing a model file
    * @param [in] model_file  model path
-   * @param [in] model_key   model secret key
    * @param [in] priority    modle priority
    * @param [out] model_data model data
    * @return Status  result
    */
-  static Status LoadFromFile(const char *model_file, const char *model_key, int32_t priority,
+  static Status LoadFromFile(const char *model_file, int32_t priority,
                              ge::ModelData &model_data);
 
   /**

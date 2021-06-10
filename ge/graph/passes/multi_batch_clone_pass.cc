@@ -220,8 +220,8 @@ Status MultiBatchClonePass::CheckAndParseDynamicData() {
                           GELOGE(PARAM_INVALID, "[Check][DynamicImageSizeShape] of %s failed.", data_name.c_str());
                           return PARAM_INVALID);
         } else if (!GetLocalOmgContext().dynamic_dims.empty()) {
-          ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "reason"},
-            {"--input_shape", "all dynamic data must be set in --input_shape"});
+          ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+            {"--dynamic_dims", data_name, "all dynamic node must be set in --input_shape, please check"});
           GELOGE(INTERNAL_ERROR, "[Check][Param] data:%s shape:%s must be set int --input_shape",
                  node->GetName().c_str(), data_shape.ToString().c_str());
           return INTERNAL_ERROR;

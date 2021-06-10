@@ -114,8 +114,9 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
                            std::vector<std::string>({
                                data_node->GetName() + " format",
                                TypeUtils::FormatToSerialString(format),
-                               "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and "
-                                 + TypeUtils::FormatToSerialString(FORMAT_NHWC) + " supported"}));
+                               "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and "+
+                               TypeUtils::FormatToSerialString(FORMAT_NHWC) +
+                               " supported which dynamic aipp is linked"}));
         GELOGE(PARAM_INVALID, "[Check][Param] Not support data format:%s, node:%s",
                TypeUtils::FormatToSerialString(format).c_str(), data_node->GetName().c_str());
         return PARAM_INVALID;
@@ -475,7 +476,7 @@ Status AippOp::ConvertRelatedInputNameToRank() {
     string error_msg = "Top name " + related_input_name + "convert rank failed, Please"
                        " ensure top name in aipp config is the top name of data node.";
     GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
-    REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
+    REPORT_INPUT_ERROR("E10052", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
     return PARAM_INVALID;
   }
 

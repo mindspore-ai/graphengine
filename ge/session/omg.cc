@@ -627,7 +627,7 @@ Status ParseOutNodes(const string &out_nodes) {
         // stoi: The method may throw an exception: invalid_argument/out_of_range
         if (!CheckDigitStr(key_value_v[1])) {
           ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
-                                                          {"--out_nodes", out_nodes, "is not positive integer"});
+                                                          {"--out_nodes", out_nodes, "index is not positive integer"});
           GELOGE(PARAM_INVALID, "[Parse][Param]This str must be digit string, while the actual input is %s",
                  out_nodes.c_str());
           return PARAM_INVALID;
@@ -939,7 +939,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
   int32_t priority = 0;
 
   // Load model from file
-  Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+  Status ret = ModelParserBase::LoadFromFile(model_file, priority, model);
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "LoadFromFile failed, file:%s", model_file);
     GELOGE(ret, "[Invoke][LoadFromFile] failed.");
@@ -955,7 +955,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
       OmFileLoadHelper omFileLoadHelper;
       ge::graphStatus status = omFileLoadHelper.Init(model_data, model_len);
       if (status != ge::GRAPH_SUCCESS) {
-        ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Om file init failed"});
+        REPORT_CALL_ERROR("E19999", "Om file:%s init failed", model_file);
         GELOGE(ge::FAILED, "[Invoke][Init]Om file init failed.");
         if (model.model_data != nullptr) {
           delete[] reinterpret_cast<char *>(model.model_data);
@@ -967,7 +967,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
       ModelPartition ir_part;
       status = omFileLoadHelper.GetModelPartition(MODEL_DEF, ir_part);
       if (status != ge::GRAPH_SUCCESS) {
-        ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"Get model part failed"});
+        REPORT_CALL_ERROR("E19999", "Get model part of om file:%s failed", model_file);
         GELOGE(ge::FAILED, "[Get][ModelPartition] failed.");
         if (model.model_data != nullptr) {
           delete[] reinterpret_cast<char *>(model.model_data);
@@ -993,12 +993,12 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
         }
       } else {
         ret = INTERNAL_ERROR;
-        ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ReadProtoFromArray failed"});
+        REPORT_CALL_ERROR("E19999", "ReadProtoFromArray failed for om file:%s", model_file);
         GELOGE(ret, "[Read][Proto]From Array failed.");
       }
     } else {
       ErrorManager::GetInstance().ATCReportErrMessage("E10003",
-          {"parameter", "value", "reason"}, {"om", model_file, "invalid om file"});
+          {"parameter", "value", "reason"}, {"om", model_file, "invalid om file, can't be parsed"});
       GELOGE(ACL_ERROR_GE_PARAM_INVALID,
              "[Parse][ModelContent] failed because of invalid om file. Please check --om param.");
     }
@@ -1009,8 +1009,8 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertOm(const char *model_file, const char *js
     }
     return ret;
   } catch (const std::exception &e) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"},
-        {"Convert om model to json failed, exception message[" + std::string(e.what()) + "]"});
+    REPORT_INNER_ERROR("E19999", "Convert om model to json failed, exception message:%s, model_file:%s",
+                       std::string(e.what()).c_str(), model_file);
     GELOGE(FAILED, "[Save][Model]Convert om model to json failed, exception message : %s.", e.what());
     return FAILED;
   }
@@ -1021,7 +1021,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
   // Mode 2 does not need to verify the priority, and a default value of 0 is passed
   int32_t priority = 0;
   // Load model from file
-  Status ret = ModelParserBase::LoadFromFile(model_file, "", priority, model);
+  Status ret = ModelParserBase::LoadFromFile(model_file, priority, model);
   auto free_model_data = [](void **ptr) -> void {
     if (ptr != nullptr && *ptr != nullptr) {
       delete[] reinterpret_cast<char *>(*ptr);
@@ -1042,7 +1042,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
 
     if (!flag) {
       free_model_data(&model.model_data);
-      ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ParseFromString failed"});
+      REPORT_CALL_ERROR("E19999", "ParseFromString failed for model_file:%s", model_file);
       GELOGE(FAILED, "[Invoke][ParseFromString] failed.");
       return FAILED;
     }
@@ -1060,13 +1060,13 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertPbtxtToJson(const char *model_file, const
     return SUCCESS;
   } catch (google::protobuf::FatalException &e) {
     free_model_data(&model.model_data);
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"}, {"ParseFromString failed, exception message["
-        + std::string(e.what()) + "]"});
+    REPORT_INNER_ERROR("E19999", "ParseFromString failed, exception message:%s, model_file:%s",
+                       std::string(e.what()).c_str(), model_file);
     GELOGE(FAILED, "[Invoke][ParseFromString] failed. exception message : %s", e.what());
     return FAILED;
   } catch (const std::exception &e) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19021", {"reason"},
-        {"Convert pbtxt to json failed, exception message[" + std::string(e.what()) + "]"});
+    REPORT_INNER_ERROR("E19999", "ParseFromString failed, exception message:%s, model_file:%s",
+                       std::string(e.what()).c_str(), model_file);
     GELOGE(FAILED, "[Save][pbtxt]Convert pbtxt to json failed, exception message : %s.", e.what());
     return FAILED;
   }
@@ -1086,7 +1086,7 @@ FMK_FUNC_HOST_VISIBILITY Status ConvertFwkModelToJson(const domi::FrameworkType 
 
   ErrorManager::GetInstance().ATCReportErrMessage(
       "E10001", {"parameter", "value", "reason"},
-      {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow) 5(Onnx)"});
+      {"--framework", std::to_string(framework), "only support 0(Caffe) 3(TensorFlow) 5(Onnx) when model set 1"});
   GELOGE(PARAM_INVALID, "[Check][Param]Input parameter[--framework] is mandatory "
          "and it's value must be: 0(Caffe) 3(TensorFlow) or 5(Onnx).");
   return PARAM_INVALID;

@@ -27,7 +27,7 @@ namespace {
 const size_t kMaxOpsNum = 10;
 }  // namespace
 
-void KeepDtypeReportError(const std::vector<std::string> &invalid_list) {
+void KeepDtypeReportError(const std::vector<std::string> &invalid_list, const std::string &cfg_path) {
   std::stringstream err_msg;
   size_t list_size = invalid_list.size();
   err_msg << "config file contains " << list_size;
@@ -48,8 +48,9 @@ void KeepDtypeReportError(const std::vector<std::string> &invalid_list) {
     }
   }
 
-  ErrorManager::GetInstance().ATCReportErrMessage(
-      "E10042", {"parameter", "reason"}, {"keep_dtype", err_msg.str().c_str()});
+  REPORT_INPUT_ERROR(
+      "E10003", std::vector<std::string>({"parameter", "value", "reason"}),
+      std::vector<std::string>({"keep_dtype", cfg_path, err_msg.str()}));
   GELOGE(FAILED, "%s", err_msg.str().c_str());
 }
 
@@ -95,7 +96,7 @@ graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path) {
   ifs.close();
 
   if (!invalid_list.empty()) {
-    KeepDtypeReportError(invalid_list);
+    KeepDtypeReportError(invalid_list, cfg_path);
     return GRAPH_PARAM_INVALID;
   }
 

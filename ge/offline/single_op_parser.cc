@@ -329,7 +329,7 @@ Status SingleOpParser::ReadJsonFile(const std::string &file, Json &json_obj) {
     ifs >> json_obj;
   } catch (const std::exception &e) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10025", {"realpath", "errmsg"}, {real_path, e.what()});
-    GELOGE(PARAM_INVALID, 
+    GELOGE(PARAM_INVALID,
         "[Parse][JsonFile] fail for file[%s] provided in input parameter[--singleop], exception = %s.",
         real_path.c_str(), e.what());
     return PARAM_INVALID;
@@ -349,16 +349,16 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   int index = 0;
   for (auto &tensor_desc : op_desc.input_desc) {
     if (!tensor_desc.GetValidFlag()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
-          {"intput", "datatype or format", std::to_string(index)});
-      GELOGE(PARAM_INVALID, 
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"op_name", "input", "type", "index"},
+          {op_desc.op, "input", "tensor", std::to_string(index)});
+      GELOGE(PARAM_INVALID,
           "[Check][Param] fail for Input's dataType or format is invalid when the index is %d", index);
       return false;
     }
     if ((tensor_desc.type == DT_UNDEFINED && tensor_desc.format != FORMAT_RESERVED) ||
         (tensor_desc.type != DT_UNDEFINED && tensor_desc.format == FORMAT_RESERVED)){
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
-          {"intput", "datatype or format", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"op_name", "input", "type", "index"},
+          {op_desc.op, "input", "datatype or format", std::to_string(index)});
       GELOGE(PARAM_INVALID, "[Check][Param]Input's dataType or format is invalid when the index is %d", index);
       return false;
     }
@@ -368,21 +368,21 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
   index = 0;
   for (auto &tensor_desc : op_desc.output_desc) {
     if (!tensor_desc.GetValidFlag()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
-          {"output", "datatype", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"op_name", "input", "type", "index"},
+          {op_desc.op, "output", "tensor", std::to_string(index)});
       GELOGE(PARAM_INVALID, "[Check][Param]fail for Output's dataType is invalid when the index is %d", index);
       return false;
     }
     if (tensor_desc.type == DT_UNDEFINED) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
-          {"output", "datatype", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"op_name", "input", "type", "index"},
+          {op_desc.op, "output", "datatype", std::to_string(index)});
       GELOGE(PARAM_INVALID, "[Check][Param]Output's dataType is invalid when the index is %d", index);
       return false;
     }
 
     if (tensor_desc.format == FORMAT_RESERVED) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"input", "type", "index"},
-          {"output", "format", std::to_string(index)});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10027", {"op_name", "input", "type", "index"},
+          {op_desc.op, "output", "format", std::to_string(index)});
       GELOGE(PARAM_INVALID, "[Check][Param]Output's format is invalid when the index is %d", index);
       return false;
     }
@@ -391,13 +391,13 @@ bool SingleOpParser::Validate(const SingleOpDesc &op_desc) {
 
   for (auto &attr : op_desc.attrs) {
     if (attr.name.empty()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10029");
+      ErrorManager::GetInstance().ATCReportErrMessage("E10029", {"op_name"}, {op_desc.op});
       GELOGE(PARAM_INVALID, "[Parse][Attr]attr name is empty");
       return false;
     }
 
     if (attr.value.IsEmpty()) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10030", {"attrname"}, {attr.name});
+      ErrorManager::GetInstance().ATCReportErrMessage("E10030", {"op_name", "attrname"}, {op_desc.op, attr.name});
       GELOGE(PARAM_INVALID, "[Parse][Attr] fail for vale of attr name:\"%s\" is empty. ", attr.name.c_str());
       return false;
     }
@@ -498,7 +498,7 @@ Status SingleOpParser::VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc
       string reason = "is smaller than the ir needed input size " + std::to_string(ir_opdesc_inputs_num);
       ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
           {current_op_desc.GetName(), "input size " + std::to_string(current_opdesc_inputs_num), reason});
-      GELOGE(PARAM_INVALID, 
+      GELOGE(PARAM_INVALID,
           "[Verify][OpInputOutputSize]This op:%s input size %zu is smaller than the ir needed input size %zu",
           current_op_desc.GetName().c_str(), current_opdesc_inputs_num, ir_opdesc_inputs_num);
       return PARAM_INVALID;
@@ -509,7 +509,7 @@ Status SingleOpParser::VerifyOpInputOutputSizeByIr(const OpDesc &current_op_desc
       string reason = "is smaller than the ir needed output size " + std::to_string(ir_opdesc_outputs_num);
       ErrorManager::GetInstance().ATCReportErrMessage("E19014", {"opname", "value", "reason"},
           {current_op_desc.GetName(), "output size " + std::to_string(current_opdesc_outputs_num), reason});
-      GELOGE(PARAM_INVALID, 
+      GELOGE(PARAM_INVALID,
           "[Verify][OpInputOutputSize]This op:%s output size %zu is smaller than the ir needed output size %zu",
           current_op_desc.GetName().c_str(), current_opdesc_outputs_num, ir_opdesc_outputs_num);
       return PARAM_INVALID;
@@ -530,7 +530,7 @@ Status SingleOpParser::SetShapeRange(const std::string &op_name,
                                                       {op_name,
                                                        "shape",
                                                        "has unknown rank but dim size is not one"});
-      GELOGE(PARAM_INVALID, "[Set][ShapeRange]Invalid tensor shape:%s.", 
+      GELOGE(PARAM_INVALID, "[Set][ShapeRange]Invalid tensor shape:%s.",
           ge_tensor_desc.MutableShape().ToString().c_str());
       return PARAM_INVALID;
     }
@@ -572,7 +572,7 @@ Status SingleOpParser::SetShapeRange(const std::string &op_name,
                                                         {op_name,
                                                          "shape range " + std::to_string(range_index),
                                                          reason});
-        GELOGE(PARAM_INVALID, "[Set][ShapeRange]Invalid shape range entry. index = %zu, size = %zu", 
+        GELOGE(PARAM_INVALID, "[Set][ShapeRange]Invalid shape range entry. index = %zu, size = %zu",
             range_index, range.size());
         return PARAM_INVALID;
       }
@@ -628,7 +628,7 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
       }
 
       if (!Validate(single_op_desc)) {
-        GELOGE(PARAM_INVALID, 
+        GELOGE(PARAM_INVALID,
             "[Check][OpDesc]Validate the index[%d] of op failed when read json file[%s].", index, file.c_str());
         return PARAM_INVALID;
       }
@@ -645,8 +645,8 @@ Status SingleOpParser::ParseSingleOpList(const std::string &file, std::vector<Si
       index += 1;
     }
   } catch (const nlohmann::json::exception &e) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10032", {"index", "jsonfile", "exception"},
-        {std::to_string(index), file, e.what()});
+    REPORT_INNER_ERROR("E19999", "parse singleop file:%s failed, catch exception:%s, current index:%d",
+                       file.c_str(), e.what(), index);
     GELOGE(PARAM_INVALID, "[Parse][OpList] the index:%d of op failed when read json file:%s, exception:%s",
         index, file.c_str(), e.what());
     return PARAM_INVALID;

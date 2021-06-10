@@ -945,7 +945,7 @@ Status HybridModelBuilder::VarNodeToTensor(const NodePtr &var_node, std::unique_
   }
 
   int64_t var_size = CalcVarSizeInBytes(*tensor_desc);
-  // var size is only for checking, will not allocate any memory by it
+  GE_CHECK_GE(var_size, 0);
   tensor.reset(new(std::nothrow)TensorValue(dev_mem, static_cast<size_t>(var_size)));
   GE_CHECK_NOTNULL(tensor);
   GELOGI("Get var memory addr %p for node %s, size = %ld, mem_type=%u", dev_mem, var_name.c_str(), var_size, mem_type);

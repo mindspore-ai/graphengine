@@ -420,7 +420,7 @@ Status KernelExTaskInfo::Distribute() {
   // xxxxxxxx xxxxxxxx xxxxxxxx xx10xxxx: HOST_ONLY
   // xxxxxxxx xxxxxxxx xxxxxxxx xx11xxxx: HOST_FIRST
   if (topic_type_flag_ > 0) {
-    dump_flag_ = dump_flag_ | topic_type_flag_;
+    dump_flag_ = dump_flag_ | static_cast<uint32_t>(topic_type_flag_);
   }
   rtError_t rt_ret = rtKernelLaunchEx(kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
   if (rt_ret != RT_ERROR_NONE) {

@@ -24,6 +24,7 @@ namespace ge {
 class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY GeOptInfo {
  public:
   GeOptInfo() = default;
+  ~GeOptInfo() = default;
   static Status SetOptInfo();
 };
 }  // namespace ge

@@ -1428,8 +1428,8 @@ Status GraphPrepare::CheckInternalFormat(const NodePtr &input_node, const GeTens
     bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
     if (is_internal) {
       std::string reason = "Input format[" + TypeUtils::FormatToSerialString(format) + "] or origin_format[" +
-                           TypeUtils::FormatToSerialString(origin_format) + "] of index:" + std::to_string(index) +
-                           " input tensor is not support";
+                           TypeUtils::FormatToSerialString(origin_format) + "] of op:" + input_node->GetName() +
+                           " is not support";
       REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"reason"}), std::vector<std::string>({reason}));
       GELOGE(PARAM_INVALID, "[Check][Param] Input format %s or origin_format %s is not support.",
              TypeUtils::FormatToSerialString(format).c_str(), TypeUtils::FormatToSerialString(origin_format).c_str());

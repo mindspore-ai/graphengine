@@ -247,8 +247,7 @@ Status KnownNodeExecutor::ParseAttrForAllocatingOutputs(NodeItem &node_item, Com
   GE_CHECK_NOTNULL(net_output_desc);
   std::map<std::string, int> connected_inputs;
   std::map<NodePtr, int> data_indices;
-  GE_CHK_STATUS_RET(GetDataNodes(graph, data_indices),
-                    "[%s] Failed to get data node indices",
+  GE_CHK_STATUS_RET(GetDataNodes(graph, data_indices), "[%s] Failed to get data node indices",
                     node_item.NodeName().c_str());
   for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
     auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();

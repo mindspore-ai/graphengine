@@ -144,6 +144,7 @@ Status GetDstDataAfterTrans(const TransArgs &args, TransResult &result, const in
             auto protected_size = total_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                       ? total_size - dst_offset
                                       : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+            GE_CHECK_GE(protected_size, 0);
             int64_t cIdx = c0_idx + c1_idx * c0;
             int64_t srcIdx = n_idx * chw + cIdx * hw + h_idx * w + w_idx;
             auto src_offset = srcIdx * size;

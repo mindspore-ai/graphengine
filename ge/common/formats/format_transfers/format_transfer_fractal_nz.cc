@@ -59,7 +59,7 @@ bool CheckShape(Format format, const ShapeVector &shape) {
       return CheckShapeValid(shape, kDimSize4D);
     default:
       std::string error = "Trans format between " + FmtToStr(TypeUtils::FormatToSerialString(format)) +
-          " and FORMAT_FRACTAL_NZ is not supported.";
+                          " and FORMAT_FRACTAL_NZ is not supported.";
       GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
       return false;
   }

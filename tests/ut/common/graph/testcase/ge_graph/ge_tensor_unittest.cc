@@ -25,6 +25,7 @@
 #include "graph/ge_attr_value.h"
 #include "graph/tensor.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/ge_tensor_impl.h"
 #undef private
 #undef protected
 
@@ -194,23 +195,6 @@ TEST_F(UtestGeTensor, test_shape_copy_move) {
   shape5 = std::move(shape4);
   EXPECT_EQ(shape5.GetDimNum(), 3);
   EXPECT_EQ(shape4.GetDimNum(), 3);
-}
-
-TEST_F(UtestGeTensor, test_tensor_desc_invalid_null) {
-  GeTensorDesc tensor_desc(nullptr, nullptr);
-  EXPECT_EQ(tensor_desc.GetDataType(), DT_UNDEFINED);
-  EXPECT_EQ(tensor_desc.GetFormat(), FORMAT_RESERVED);
-  EXPECT_EQ(tensor_desc.MutableShape().shape_def_.GetProtoMsg(), nullptr);
-
-  GeTensorDesc tensor_desc2;
-  EXPECT_EQ(tensor_desc2.GetDataType(), DT_FLOAT);
-  EXPECT_EQ(tensor_desc2.GetFormat(), FORMAT_ND);
-
-  tensor_desc2.SetDataType(DT_DUAL_SUB_INT8);
-  EXPECT_EQ(tensor_desc2.GetDataType(), DT_DUAL_SUB_INT8);
-
-  TensorUtils::SetWeightSize(tensor_desc, 100);
-  EXPECT_EQ(TensorUtils::GetWeightSize(tensor_desc), 0);
 }
 
 TEST_F(UtestGeTensor, test_tensor_invalid_null) {

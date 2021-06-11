@@ -30,6 +30,7 @@
 #include "graph/model_serialize.h"
 
 #include "graph/detail/model_serialize_imp.h"
+#include "graph/node_impl.h"
 #include "graph/ge_attr_value.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
@@ -1062,7 +1063,7 @@ TEST(UtestGeModelSerialize, test_model_serialize_imp_invalid_param) {
 
   auto graph = std::make_shared<ComputeGraph>("test_graph");
   auto node = graph->AddNode(std::make_shared<OpDesc>());
-  node->op_ = nullptr;
+  node->impl_->op_ = nullptr;
   ge::proto::ModelDef model_def;
   Model model;
   model.SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));

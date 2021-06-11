@@ -20,6 +20,7 @@
 #define protected public
 #include "graph/partition/dynamic_shape_partition.h"
 #include "compute_graph.h"
+#include "graph/compute_graph_impl.h"
 #include "inc/framework/common/types.h"
 #include "utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
@@ -111,9 +112,9 @@ TEST_F(UtestDynamicShapePartition, merge_control_flow_group) {
   (void)AttrUtils::SetBool(merge->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, true);
   (void)AttrUtils::SetInt(merge->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, 3);
 
-  EXPECT_EQ(graph->sub_graph_.size(), 0);
+  EXPECT_EQ(graph->impl_->sub_graph_.size(), 0);
   DynamicShapePartitioner partitioner(graph);
   EXPECT_EQ(partitioner.Partition(), SUCCESS);
-  EXPECT_EQ(graph->sub_graph_.size(), 1);
+  EXPECT_EQ(graph->impl_->sub_graph_.size(), 1);
 }
 } // namespace ge

@@ -40,6 +40,7 @@
 #include "graph/types.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/testcase/ge_graph/graph_builder_utils.h"
+#include "graph/op_desc_impl.h"
 #undef private
 #undef protected
 
@@ -736,7 +737,7 @@ TEST_F(UtestGeHybrid, TestParseDependencies) {
   std::vector<std::string> deps;
   deps.push_back("Data");
   auto op_desc = netoutput->GetOpDesc();
-  op_desc->input_name_idx_["Data"] = 0;
+  op_desc->impl_->input_name_idx_["Data"] = 0;
   auto data_desc = data->GetOpDesc();
   auto tensor = std::make_shared<GeTensor>();
   auto tensor_desc = data_desc->MutableInputDesc(0);

@@ -172,6 +172,7 @@ HybridModelPipelineExecutor::HybridModelPipelineExecutor(HybridModel *model, uin
   config_.num_executors = kNumExecutors;
   config_.num_stages = model_->GetRootGraphItem()->NumGroups();
   config_.device_id = device_id_;
+  config_.iteration_end = 0;
 }
 
 Status StageExecutor::InitExecutionContext() {

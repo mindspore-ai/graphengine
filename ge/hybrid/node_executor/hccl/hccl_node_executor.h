@@ -62,7 +62,7 @@ class RdmaNodeTask : public NodeTask {
   int32_t local_index_ = 0;
   std::mutex hccl_mutex_;
   std::condition_variable cond_;
-  bool skip_flag_;
+  bool skip_flag_ = false;
 };
 
 

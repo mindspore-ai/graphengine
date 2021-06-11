@@ -181,7 +181,7 @@ Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) cons
 }
 
 Status KnownNodeExecutor::SetDavinciModel(const HybridModel &model, const NodePtr &node,
-                                           std::shared_ptr<DavinciModel> &davinci_model) const {
+                                          std::shared_ptr<DavinciModel> &davinci_model) const {
   // set known node flag as true
   davinci_model->SetKnownNode(true);
   davinci_model->SetId(model.GetModelId());

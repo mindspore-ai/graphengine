@@ -570,6 +570,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Te
       uint32_t length = static_cast<uint32_t>(cur_dynamic_dims.size() * sizeof(int32_t));
       GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK,
                        REPORT_CALL_ERROR("E19999", "memcpy data failed, size:%u", length);
+                       delete[] reinterpret_cast<int32_t *>(data.data);
                        return INTERNAL_ERROR, "[Memcpy][Data] failed, size:%u.", length);
       data.length = length;
       input_data.blobs.push_back(data);

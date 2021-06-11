@@ -890,8 +890,7 @@ static std::string AttrTypeToSerialString(aclgrphAttrType attr_type) {
   if (it != kAttrTypeToStringMap.end()) {
     return it->second;
   } else {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19012", {"function", "reason"},
-        {"AttrTypeToSerialString", "attr_type[" + std::to_string(attr_type) + "] is not support"});
+    REPORT_INNER_ERROR("E19999", "attr_type:%u is not support", attr_type);
     GELOGE(GRAPH_FAILED, "[Check][AclgrphAttrType] attr_type not support %u", attr_type);
     return "UNDEFINED";
   }

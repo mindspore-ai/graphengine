@@ -209,7 +209,7 @@ static void InitOpsProtoManager() {
     string file_path = RealPath(path.c_str());
     if (file_path.empty()) {
       GELOGE(FAILED, "[Check][EnvPath]ASCEND_OPP_PATH path [%s] is invalid.", path.c_str());
-      REPORT_INPUT_ERROR("E68016", {"ASCEND_OPP_PATH", path}); 
+      REPORT_INPUT_ERROR("E68016", {"ASCEND_OPP_PATH", path});
       return;
     }
     opsproto_path = (path + "/op_proto/custom/" + ":") + (path + "/op_proto/built-in/");
@@ -804,9 +804,8 @@ Status GeExecutor::LoadDataFromFile(const std::string &path, ModelData &model_da
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
   GELOGI("load modelData from file: %s.", path.c_str());
-  std::string key_path;
   int32_t priority = 0;
-  Status ret = GraphLoader::LoadDataFromFile(path, key_path, priority, model_data);
+  Status ret = GraphLoader::LoadDataFromFile(path, priority, model_data);
   if (ret != SUCCESS) {
     if (model_data.model_data != nullptr) {
       delete[] static_cast<char *>(model_data.model_data);
@@ -932,8 +931,7 @@ Status GeExecutor::GetMemAndWeightSize(const std::string &path, size_t &mem_size
   }
 
   ModelData model;
-  std::string key;
-  Status ret = ge::GraphLoader::LoadDataFromFile(path, key, 0, model);
+  Status ret = ge::GraphLoader::LoadDataFromFile(path, 0, model);
   if ((ret != SUCCESS) || (model.model_data == nullptr)) {
     GELOGE(ret, "Load data from file failed. ret = %d", ret);
     return ret;

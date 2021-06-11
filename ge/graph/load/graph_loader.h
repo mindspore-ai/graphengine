@@ -48,8 +48,7 @@ class GraphLoader {
 
   static Status GetMemoryInfo(int64_t &free);
 
-  static Status LoadDataFromFile(const std::string &path, const std::string &key_path, int32_t priority,
-                                 ModelData &model_data);
+  static Status LoadDataFromFile(const std::string &path, int32_t priority, ModelData &model_data);
 
   static Status LoadModelFromData(uint32_t &model_id, const ModelData &model_data, void *dev_ptr, size_t mem_size,
                                   void *weight_ptr, size_t weight_size);

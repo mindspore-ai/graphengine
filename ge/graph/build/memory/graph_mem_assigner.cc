@@ -268,12 +268,13 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<uint64_t, siz
            total_mem_offset, VarManager::Instance(session_id)->GetGraphMemoryMaxSize(),
            compute_graph_->GetGraphID(), compute_graph_->GetName().c_str());
     for (auto iter : mem_type_to_offset) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E19022", {"memType", "size", "item", "maxsize"},
-        {std::to_string(iter.first), std::to_string(iter.second), "featuremap",
-         std::to_string(VarManager::Instance(session_id)->GetGraphMemoryMaxSize())});
       GEEVENT("[IMAS]AfterAssignMemory : %s memoffset[%zu], memtype[%ld]", compute_graph_->GetName().c_str(),
               iter.second, iter.first);
     }
+    REPORT_INPUT_ERROR(
+        "E19022", std::vector<std::string>({"size", "item", "maxsize"}),
+        std::vector<std::string>({std::to_string(total_mem_offset), "featuremap",
+                                 std::to_string(VarManager::Instance(session_id)->GetGraphMemoryMaxSize())}));
     return ge::FAILED;
   }
   return SUCCESS;
@@ -1838,17 +1839,17 @@ bool GraphMemoryAssigner::CheckContinuousMemType(vector<int64_t> mem_type_list) 
   int64_t mem_type_tmp = mem_type_list[0];
   for (auto mem_type : mem_type_list) {
     if (mem_type != mem_type_tmp) {
-      std::string error = "The memory is continuous, but the type of the input memory is inconsistent. They are " +
-          FmtToStr(mem_type_tmp) + " and " + FmtToStr(mem_type);
-      ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error});
+      REPORT_INNER_ERROR(
+          "E19999",
+          "The memory is continuous, but the type of the input memory is inconsistent. They are %s and %s",
+          FmtToStr(mem_type_tmp).c_str(), FmtToStr(mem_type).c_str());
       GELOGW("The memory is continuous, but the type of the input memory is inconsistent. They are [%ld] and [%ld].",
              mem_type_tmp, mem_type);
       return false;
     }
   }
   if (memory_offset_.find(mem_type_tmp) == memory_offset_.end()) {
-    std::string error = "Memory offset map does not have memory type" + FmtToStr(mem_type_tmp);
-    ErrorManager::GetInstance().ATCReportErrMessage("E10043", {"reason"}, {error});
+    REPORT_INNER_ERROR("E19999", "Memory offset map does not have memory type %s", FmtToStr(mem_type_tmp).c_str());
     GELOGW("Memory offset map does not have memory type[%ld].", mem_type_tmp);
     return false;
   }

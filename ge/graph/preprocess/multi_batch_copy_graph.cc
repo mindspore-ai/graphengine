@@ -764,8 +764,8 @@ Status MultiBatchGraphCopyer::CheckAndParseDynamicData(){
                                                data_name.c_str()); return PARAM_INVALID);
         } else if (dynamic_type_ == DynamicType::kDynamicDims) {
           ErrorManager::GetInstance().ATCReportErrMessage("E10001",
-                                                          {"parameter", "reason"},
-                                                          {"--input_shape",
+                                                          {"parameter", "value" "reason"},
+                                                          {"--dynamic_dims", data_name,
                                                            "all dynamic data must be set in --input_shape"});
           GELOGE(INTERNAL_ERROR, "[Check][Param] data:%s shape:%s must be set int --input_shape",
                  node->GetName().c_str(), data_shape.ToString().c_str());
@@ -1205,8 +1205,8 @@ Status MultiBatchGraphCopyer::CheckCopyResult(const std::vector<NodePtr> &start_
     }
     auto dims = NodeUtils::GetOutputDesc(*node, kDataOutIndex).GetShape().GetDims();
     if (!IsAllDimsPositive(dims)) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E15004", {"opname", "shape"},
-          {node->GetName(), formats::ShapeToString(dims)});
+      REPORT_CALL_ERROR("E19999", "Failed to copy multi batch graph, the node %s still has unknown shape %s",
+             node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       GELOGE(INTERNAL_ERROR, "[Check][Param] Failed to copy multi batch graph, the node %s still has unknown shape %s",
              node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       return INTERNAL_ERROR;

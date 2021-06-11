@@ -3436,37 +3436,39 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
 /// @param [in] is_dynamic: dynamic batch input flag.
 /// @return true if success
 ///
-bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64_t &op_size, bool is_dynamic) {
+bool DavinciModel::CheckUserAndModelSize(const int64_t &size, const int64_t &op_size,
+                                          bool is_input, bool is_dynamic) {
+  const std::string input_or_output = is_input ? "input" : "output";
   if (is_dynamic) {  // dynamic is max size.
-    GELOGI("No need to check input and model size.");
+    GELOGI("No need to check user %s and model size.", input_or_output.c_str());
     return true;
   }
 
-  if (input_size > op_size) {
+  if (size > op_size) {
     GELOGW(
-        "Input size [%ld] is bigger than om size need [%ld], "
+        "User %s size [%ld] is bigger than om size need [%ld], "
         "MAY cause inference result ERROR, please check model input",
-        input_size, op_size);
+        input_or_output.c_str(), size, op_size);
   }
 
   if (is_dynamic_aipp_) {
-    GELOGI("This is dynamic aipp model, no need to judge smaller input size");
+    GELOGI("This is dynamic aipp model, no need to judge smaller user size");
     return true;
   }
   // Judge overflow first
-  if (input_size > (INT64_MAX - kDataMemAlignSizeCompare)) {
-    GELOGI("The Input size [%ld] is smaller than model size [%ld] and is in the range of 64 bytes", input_size,
-           op_size);
+  if (size > (INT64_MAX - kDataMemAlignSizeCompare)) {
+    GELOGI("The user %s size [%ld] is smaller than model size [%ld] and is in the range of 64 bytes",
+           input_or_output.c_str(), size, op_size);
     return true;
   }
   // The input and model input size can not be exactly equal because user input is not definite.
-  if ((input_size + kDataMemAlignSizeCompare) < op_size) {
-    REPORT_INNER_ERROR("E19999", "input size:%ld from user add align:%u > input_op_size:%ld in model, model_id:%u, "
+  if ((size + kDataMemAlignSizeCompare) < op_size) {
+    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u, "
                        "check invalid",
-                       input_size, kDataMemAlignSizeCompare, op_size, model_id_);
+                       input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Check][Param] input size:%ld from user add align:%u > input_op_size:%ld in model, model_id:%u",
-           input_size, kDataMemAlignSizeCompare, op_size, model_id_);
+           "[Check][Param] %s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u",
+           input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     return false;
   }
   return true;
@@ -3544,7 +3546,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
       return ACL_ERROR_GE_PARAM_INVALID;
     }
 
-    if (!CheckInputAndModelSize(buffer.length, data.second.GetDataSize(), is_dynamic)) {
+    if (!CheckUserAndModelSize(buffer.length, data.second.GetDataSize(), is_input, is_dynamic)) {
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Call][CheckInputAndModelSize] failed, op[%s]",
              data.second.GetOpName().c_str());
       return ACL_ERROR_GE_PARAM_INVALID;

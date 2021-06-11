@@ -41,12 +41,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFi
   try {
     model_str = model.dump(kInteval, ' ', false, Json::error_handler_t::ignore);
   } catch (std::exception &e) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19007", {"exception"}, {e.what()});
+    REPORT_INNER_ERROR("E19999", "Failed to convert JSON to string, reason: %s, savefile:%s.", e.what(), file_path);
     GELOGE(FAILED, "[Convert][File]Failed to convert JSON to string, file %s, reason %s",
            file_path, e.what());
     return FAILED;
   } catch (...) {
-    ErrorManager::GetInstance().ATCReportErrMessage("E19008");
+    REPORT_INNER_ERROR("E19999", "Failed to convert JSON to string, savefile:%s.", file_path);
     GELOGE(FAILED, "[Convert][File]Failed to convert JSON to string, file %s", file_path);
     return FAILED;
   }

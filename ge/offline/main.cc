@@ -67,7 +67,7 @@ static bool is_dynamic_input = false;
 const char *const kModeSupport = "only support 0(model to framework model), "
                                  "1(framework model to json), 3(only pre-check), "
                                  "5(pbtxt to json), 6(display model info)";
-const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx)";
+const char *const kModelToJsonSupport = "only support 0(Caffe) 3(TensorFlow) 5(Onnx) when model set 1";
 const char *const kCaffeFormatSupport = "only support NCHW, ND in Caffe model";
 const char *const kTFFormatSupport = "only support NCHW, NHWC, ND, NCDHW, NDHWC in TF model";
 const char *const kONNXFormatSupport = "only support NCHW, ND, NCDHW in ONNX model";
@@ -101,14 +101,6 @@ DEFINE_string(json, "", "The output json file path&name which is converted from 
 DEFINE_int32(mode, 0,
              "Optional; run mode, 0(default): model => framework model; 1: "
              "framework model => json; 3: only pre-check; 5: txt => json.");
-
-#if !defined(__ANDROID__) && !defined(ANDROID)
-DEFINE_int32(encrypt_mode, -1, "Optional; the encrypt flag. 0: encrypt; -1(default): not encrypt");
-DEFINE_string(encrypt_key, "", "Optional; the encrypt_key file.");
-DEFINE_string(certificate, "", "Optional; the certificate file.");
-DEFINE_string(hardware_key, "", "Optional; the ISV key file.");
-DEFINE_string(private_key, "", "Optional; the private key file.");
-#endif
 
 DEFINE_string(out_nodes, "",
               "Optional; output nodes designated by users."
@@ -405,29 +397,6 @@ class GFlagUtils {
                                                          "dynamic dims function does not support aipp"});
         ret = ge::FAILED, "[Check][Param]dynamic dims function does not support aipp");
 
-#if !defined(__ANDROID__) && !defined(ANDROID)
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!CheckEncryptModeValid(FLAGS_encrypt_mode), ret = ge::FAILED,
-                                   "[Check][EncryptMode]value %d not valid!!", FLAGS_encrypt_mode);
-
-    if (FLAGS_encrypt_mode == 0) {  // Encryption mode
-      GELOGI("ge will run with encrypt!");
-
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_encrypt_key), ret = ge::FAILED,
-                                     "[Check][InputPath]encrypt_key file not found!!");
-
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_certificate), ret = ge::FAILED,
-                                     "[Check][InputPath]certificate file not found!!");
-
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_hardware_key), ret = ge::FAILED,
-                                     "[Check][InputPath]hardware_key file not found!!");
-
-      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(!ge::CheckInputPathValid(FLAGS_private_key), ret = ge::FAILED,
-                                     "[Check][InputPath]private_key file not found!!");
-    } else {  // No encryption
-      GELOGI("ge will run without encrypt!");
-    }
-#endif
-
     /**
      * Check the validity of the I / O file path
      */
@@ -486,7 +455,8 @@ class GFlagUtils {
         ret = ge::FAILED, "[Check][EnableSingleStream]failed!");
 
     GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((FLAGS_display_model_info != "0") && (FLAGS_display_model_info != "1"),
-      ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"display_model_info"});
+      REPORT_INPUT_ERROR("E10006", std::vector<std::string>({"parameter", "value"}),
+                         std::vector<std::string>({"display_model_info", FLAGS_display_model_info}));
       ret = ge::FAILED, "[Check][Parameter]Input parameter[--display_model_info]'s value must be 1 or 0.");
 
     return ret;
@@ -917,7 +887,8 @@ static Status ConvertModelToJson(int fwk_type, const string &model_file, const s
   }
 
   if (FLAGS_dump_mode != "0" && FLAGS_dump_mode != "1") {
-    ErrorManager::GetInstance().ATCReportErrMessage("E10006", {"parameter"}, {"dump_mode"});
+    REPORT_INPUT_ERROR("E10006", std::vector<std::string>({"parameter", "value"}),
+                       std::vector<std::string>({"dump_mode", FLAGS_dump_mode}));
     GELOGE(ge::FAILED, "[Convert][ModelToJson] Input parameter[--dump_mode]'s value must be 1 or 0.");
     ret = ge::FAILED;
   }
@@ -982,7 +953,8 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     ge::Model load_model = ge::Model("loadmodel", "version2");
     auto ret1 = load_model.LoadFromFile(FLAGS_model);
     if (ret1 != ge::GRAPH_SUCCESS) {
-      ErrorManager::GetInstance().ATCReportErrMessage("E10041", {"parameter"}, {FLAGS_model});
+      REPORT_INPUT_ERROR("E10041", std::vector<std::string>({"file"}), std::vector<std::string>({FLAGS_model}));
+      REPORT_CALL_ERROR("E19999", "load from model file:%s failed", FLAGS_model.c_str());
       DOMI_LOGE("Load model from %s failed, please check model file or "
           "input parameter[--framework] is correct", FLAGS_model.c_str());
       (void)ge_generator.Finalize();
@@ -1186,11 +1158,6 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::FRAMEWORK_TYPE), to_string(FLAGS_framework)));
   options.insert(std::pair<string, string>(string(ge::STREAM_NUM), to_string(f_stream_num)));
   options.insert(std::pair<string, string>(string(ge::CALIBRATION_CONF_FILE), FLAGS_cal_conf));
-  options.insert(std::pair<string, string>(string(ge::ENCRYPT_MODE), to_string(FLAGS_encrypt_mode)));
-  options.insert(std::pair<string, string>(string(ge::EK_FILE), FLAGS_encrypt_key));
-  options.insert(std::pair<string, string>(string(ge::CERT_FILE), FLAGS_certificate));
-  options.insert(std::pair<string, string>(string(ge::HW_KEY_FILE), FLAGS_hardware_key));
-  options.insert(std::pair<string, string>(string(ge::PRIVATE_KEY_FILE), FLAGS_private_key));
   options.insert(std::pair<string, string>(string(ge::OUTPUT_NODE_NAME), FLAGS_out_nodes));
   options.insert(std::pair<string, string>(string(ge::INSERT_OP_FILE), FLAGS_insert_op_conf));
   options.insert(std::pair<string, string>(string(ge::PRECISION_MODE), FLAGS_precision_mode));

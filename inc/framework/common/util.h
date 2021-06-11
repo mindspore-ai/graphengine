@@ -234,16 +234,6 @@ const int32_t DOMI_MAX_PATH_LEN = 256;
 
 ///
 /// @ingroup domi_common
-/// @brief proto file in bianary format
-/// @param [in] file path of proto file
-/// @param [out] proto memory for storing the proto file
-/// @return true success
-/// @return false fail
-///
-GE_FUNC_VISIBILITY bool ReadProtoFromBinaryFile(const char *file, Message *proto);
-
-///
-/// @ingroup domi_common
 /// @brief Reads the proto structure from an array.
 /// @param [in] data proto data to be read
 /// @param [in] size proto data size

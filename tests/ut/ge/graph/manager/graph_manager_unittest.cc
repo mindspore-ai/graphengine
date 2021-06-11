@@ -579,29 +579,16 @@ TEST_F(UtestGraphManagerTest, test_prerunthread_failed_2) {
 // }
 
 TEST_F(UtestGraphManagerTest, ChangeAndDeleteConst_success) {
-  std::map<string, string> options_map;
-  options_map.insert({ge::RUN_FLAG, "0"});
-  ge::GetThreadLocalContext().SetGraphOption(options_map);
-
   GraphId graph_id = 1;
   GraphManager graph_manager;
   graph_manager.options_.train_graph_flag = true;
 
   auto graph = CreateGraphWithIsolatedConst();
-  Status status = graph_manager.ChangeConstType(graph);
-  EXPECT_EQ(status, ge::SUCCESS);
-  auto constant1 = graph->FindFirstNodeMatchType("Constant");
-  EXPECT_EQ(constant1, nullptr);
+  graph_manager.ChangeConstTypeWhenTraining(graph);
+  auto const1 = graph->FindFirstNodeMatchType("Const");
+  EXPECT_EQ(const1, nullptr);
 
-  options_map.clear();
-  options_map.insert({ge::RUN_FLAG, "1"});
-  ge::GetThreadLocalContext().SetGraphOption(options_map);
-  status = graph_manager.ChangeConstType(graph);
-  EXPECT_EQ(status, ge::SUCCESS);
-  constant1 = graph->FindFirstNodeMatchType("Constant");
-  EXPECT_NE(constant1, nullptr);
-
-  status = graph_manager.RemoveIsolatedConstInThisGraph(graph);
+  Status status = graph_manager.RemoveIsolatedConstInThisGraph(graph);
   EXPECT_EQ(status, ge::SUCCESS);
   auto all_nodes = graph->GetDirectNode();
   EXPECT_EQ(all_nodes.size(), 3);

@@ -17,6 +17,7 @@
 #include "common/formats/format_transfers/format_transfer_fracz_hwcn.h"
 
 #include <securec.h>
+
 #include <memory>
 
 #include "common/formats/utils/formats_definitions.h"
@@ -35,8 +36,8 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
   auto dst_shape = args.dst_shape;
   if (args.src_format != FORMAT_FRACTAL_Z || args.dst_format != FORMAT_HWCN) {
     std::string error = "Dose not support trans format from " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
-        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
+                        FmtToStr(TypeUtils::FormatToSerialString(args.src_format)) + " to " +
+                        FmtToStr(TypeUtils::FormatToSerialString(args.dst_format));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_FORMAT_INVALID, error.c_str());
     return ACL_ERROR_GE_FORMAT_INVALID;
   }
@@ -52,15 +53,13 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
   if (!CheckShapeValid(src_shape, kFracZDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, src shape %s",
            ShapeToString(src_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid",
-                      ShapeToString(src_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Src shape %s check invalid", ShapeToString(src_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   if (!CheckShapeValid(dst_shape, kHwcnDimsNum)) {
     GELOGE(ACL_ERROR_GE_SHAPE_INVALID, "[Check][Shape]Value is invalid, dst shape %s",
            ShapeToString(dst_shape).c_str());
-    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid",
-                      ShapeToString(dst_shape).c_str());
+    REPORT_CALL_ERROR("E19999", "Dst shape %s check invalid", ShapeToString(dst_shape).c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }
   int64_t c0 = GetCubeSizeByDataType(args.src_data_type);
@@ -71,9 +70,8 @@ Status CheckArgsForFracZToHwcn(const TransArgs &args) {
   int64_t n0 = Ceil(dst_shape.at(kHwcnN), static_cast<int64_t>(kNiSize));
   if (src_shape.at(kFracZHWC1) != dst_shape.at(kHwcnH) * dst_shape.at(kHwcnW) * c1 || src_shape.at(kFracZC0) != c0 ||
       src_shape.at(kFracZNi) != kNiSize || src_shape.at(kFracZN0) != n0) {
-    std::string error = "Failed to check relationship between src shape" +
-        FmtToStr(ShapeToString(src_shape)) + " and dst shape" +
-        FmtToStr(ShapeToString(dst_shape));
+    std::string error = "Failed to check relationship between src shape" + FmtToStr(ShapeToString(src_shape)) +
+                        " and dst shape" + FmtToStr(ShapeToString(dst_shape));
     GE_ERRORLOG_AND_ERRORMSG(ACL_ERROR_GE_SHAPE_INVALID, error.c_str());
     return ACL_ERROR_GE_SHAPE_INVALID;
   }

@@ -1679,6 +1679,13 @@ Status ModelCacheHelper::LoadOmModelFromCache(GeModelPtr &ge_model) const {
     GELOGW("LoadOmModelFromCache: Load model from file failed. ret = %u", ret);
     return ret;
   }
+  std::function<void()> callback = [&]() {
+    if (model_data.model_data != nullptr) {
+      delete[] reinterpret_cast<char *>(model_data.model_data);
+      model_data.model_data = nullptr;
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
 
   ModelHelper model_helper;
   ret = model_helper.LoadModel(model_data);

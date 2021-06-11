@@ -260,8 +260,11 @@ Status KnownNodeExecutor::ParseAttrForAllocatingOutputs(NodeItem &node_item, Com
     GE_CHECK_NOTNULL(op_desc);
     auto src_op_type = src_node->GetType();
     auto output_index = in_data_anchor->GetIdx();
-    GELOGD("Node %s, output %d, src node = %s, src node type = %s", node_item.NodeName().c_str(), output_index,
-           src_node->GetName().c_str(), src_op_type.c_str());
+    GELOGD("Node %s, output %d, src node = %s, src node type = %s",
+           node_item.NodeName().c_str(),
+           output_index,
+           src_node->GetName().c_str(),
+           src_op_type.c_str());
     // parse reuse outputs
     std::string input_key = std::to_string(op_desc->GetId()) + "_" + std::to_string(out_data_anchor->GetIdx());
     auto it = connected_inputs.find(input_key);
@@ -282,7 +285,9 @@ Status KnownNodeExecutor::ParseAttrForAllocatingOutputs(NodeItem &node_item, Com
       GELOGD("[%s] output[%u] reuses input[%d]", node_item.NodeName().c_str(), output_index, data_index);
     } else if (src_op_type == CONSTANTOP || src_op_type == CONSTANT || src_op_type == VARIABLE) {
       node_item.ref_outputs.emplace(output_index, src_node);
-      GELOGD("[%s] output[%d] ref to node [%s]", node_item.NodeName().c_str(), output_index,
+      GELOGD("[%s] output[%d] ref to node [%s]",
+             node_item.NodeName().c_str(),
+             output_index,
              src_node->GetName().c_str());
     }
   }

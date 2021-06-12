@@ -30,7 +30,7 @@ namespace ge {
 namespace hybrid {
 class SubgraphContext {
  public:
-  explicit SubgraphContext(const GraphItem *graph_item, const GraphExecutionContext *execution_context);
+  explicit SubgraphContext(const GraphItem *graph_item, GraphExecutionContext *execution_context);
   ~SubgraphContext();
 
   Status Init();
@@ -54,7 +54,7 @@ class SubgraphContext {
   FrameStatePtr GetOrCreateFrameState(const NodeItem &node_item); // no lock
   friend class TaskContext;
   const GraphItem *graph_item_;
-  const GraphExecutionContext *execution_context_;
+  GraphExecutionContext *execution_context_;
   mmRWLock_t rw_lock_;
   std::vector<TensorValue> all_inputs_;
   std::vector<TensorValue> all_outputs_;

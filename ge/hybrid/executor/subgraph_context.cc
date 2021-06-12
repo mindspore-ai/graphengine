@@ -19,7 +19,7 @@
 
 namespace ge {
 namespace hybrid {
-SubgraphContext::SubgraphContext(const GraphItem *graph_item, const GraphExecutionContext *execution_context)
+SubgraphContext::SubgraphContext(const GraphItem *graph_item, GraphExecutionContext *execution_context)
     : graph_item_(graph_item), execution_context_(execution_context) {
 }
 

@@ -19,8 +19,9 @@
 #include "framework/common/debug/log.h"
 #include "graph/compute_graph.h"
 #include "graph/utils/tensor_utils.h"
-#include "hybrid_execution_context.h"
-#include "subgraph_context.h"
+#include "hybrid/executor/hybrid_execution_context.h"
+#include "hybrid/executor/subgraph_context.h"
+#include "hybrid/node_executor/task_context.h"
 
 #define INC_ITERATION_COUNT(iteration) \
 do {                                   \
@@ -258,6 +259,8 @@ ShapeFuture::ShapeFuture(NodeState *src_node,
 NodeState::NodeState(const NodeItem &node_item, SubgraphContext *subgraph_context)
     : node_item_(&node_item), shape_inference_state_(node_item), subgraph_context_(subgraph_context) {
   this->op_desc_ = node_item.node->GetOpDesc();
+  auto unique_task_context = TaskContext::Create(this, subgraph_context_);
+  task_context_ = std::shared_ptr<TaskContext>(unique_task_context.release());
 }
 
 Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
@@ -314,15 +317,53 @@ std::shared_ptr<TaskContext> NodeState::GetTaskContext() {
   return task_context_;
 }
 
+void NodeState::SavePersistTensor(int input_idx, const TensorValue &tensor) {
+  if (node_item_->root_data_.count(input_idx) > 0) {
+    GELOGD("[%s] Save Root input tensor: %d", GetName().c_str(), input_idx);
+    root_tensor_values_[input_idx] = tensor;
+  }
+
+  if (node_item_->enter_data_.count(input_idx) > 0) {
+    GELOGD("[%s] Save Enter input tensor: %d", GetName().c_str(), input_idx);
+    root_tensor_values_[input_idx] = tensor;
+  }
+}
+
+void NodeState::UpdatePersistTensor(int input_idx) {
+  const auto it = root_tensor_values_.find(input_idx);
+  if (it == root_tensor_values_.end()) {
+    GELOGW("[%s] Not found saved tensor: %d", GetName().c_str(), input_idx);
+    return;
+  }
+
+  auto tensor = task_context_->MutableInput(input_idx);
+  if (tensor == nullptr) {
+    GELOGW("[%s] Not found input tensor: %d", GetName().c_str(), input_idx);
+    return;
+  }
+
+  *tensor = it->second;
+  GELOGD("[%s] Update input tensor: %d", GetName().c_str(), input_idx);
+}
+
 void NodeState::ResetContext(uint64_t iteration) {
   switch_index_ = -1;
   subgraph_context_->ResetContext(node_item_->node);
-  if (iteration == 0) {
-    data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size());
-    ctrl_scheduled_ = static_cast<uint32_t>(node_item_->root_ctrl_.size());
-  } else {
-    data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size() + node_item_->enter_data_.size());
-    ctrl_scheduled_ = static_cast<uint32_t>(node_item_->root_ctrl_.size() + node_item_->enter_ctrl_.size());
+  auto unique_task_context = TaskContext::Create(this, subgraph_context_);
+  task_context_ = std::shared_ptr<TaskContext>(unique_task_context.release());
+
+  data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size());
+  ctrl_scheduled_ = static_cast<uint32_t>(node_item_->root_ctrl_.size());
+  for (auto item : node_item_->root_data_) {
+    UpdatePersistTensor(item.first);
+  }
+
+  if (iteration > 0) {
+    data_scheduled_ += static_cast<uint32_t>(node_item_->enter_data_.size());
+    ctrl_scheduled_ += static_cast<uint32_t>(node_item_->enter_ctrl_.size());
+    for (auto item : node_item_->enter_data_) {
+      UpdatePersistTensor(item.first);
+    }
   }
 
   iteration_count_ = iteration;

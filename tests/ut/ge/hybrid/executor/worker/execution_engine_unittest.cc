@@ -84,9 +84,6 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_kernel_task) {
   SubgraphContext subgraph_context(nullptr, &execution_context);
 
   NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
-  auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
-  node_state.SetTaskContext(shared_task_context);
 
   ExecutionEngine execution_engine;
   ASSERT_TRUE(node_state.GetTaskContext() != nullptr);
@@ -119,14 +116,11 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_callback_and_kernel_task) {
   SubgraphContext subgraph_context(nullptr, &execution_context);
 
   NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
   uint32_t task_id = 0;
   uint32_t stream_id = 1;
   std::string task_type = "rts";
   uint32_t block_dim = 0;
-  task_context->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim);
-  auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
-  node_state.SetTaskContext(shared_task_context);
+  node_state.GetTaskContext()->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim);
 
   ExecutionEngine execution_engine;
   ASSERT_TRUE(node_state.GetTaskContext() != nullptr);

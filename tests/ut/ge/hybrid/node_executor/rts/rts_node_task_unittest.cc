@@ -96,11 +96,6 @@ TEST_F(UtestRtsNodeTask, test_stream_switch_task) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   uint64_t value_0 = 110;
   uint64_t value_1 = 120;
   TensorValue in_tensor0(&value_0, sizeof(value_0));
@@ -153,11 +148,6 @@ TEST_F(UtestRtsNodeTask, test_stream_active_task) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   NodeTaskPtr task = nullptr;
   RtsNodeExecutor node_executor;
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), SUCCESS);
@@ -202,11 +192,6 @@ TEST_F(UtestRtsNodeTask, test_stream_merge_task) {
 
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
-
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
 
   uint64_t value_0 = 110;
   TensorValue in_tensor0(&value_0, sizeof(value_0));
@@ -271,11 +256,6 @@ TEST_F(UtestRtsNodeTask, test_memcpy_async_task) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   uint64_t value_0 = 110;
   TensorValue in_tensor0(&value_0, sizeof(value_0));
   subgraph_context.SetInput(*node_item, 0, in_tensor0);
@@ -328,11 +308,6 @@ TEST_F(UtestRtsNodeTask, test_pass_through_task) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   uint64_t value_0 = 110;
   TensorValue in_tensor0(&value_0, sizeof(value_0));
   subgraph_context.SetInput(*node_item, 0, in_tensor0);
@@ -384,11 +359,6 @@ TEST_F(UtestRtsNodeTask, test_unsupport_label_set) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   NodeTaskPtr task = nullptr;
   RtsNodeExecutor node_executor;
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), SUCCESS);
@@ -428,11 +398,6 @@ TEST_F(UtestRtsNodeTask, test_unsupport_label_goto) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   NodeTaskPtr task = nullptr;
   RtsNodeExecutor node_executor;
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), SUCCESS);
@@ -471,11 +436,6 @@ TEST_F(UtestRtsNodeTask, test_unsupport_label_switch) {
 
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
-
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
 
   NodeTaskPtr task = nullptr;
   RtsNodeExecutor node_executor;

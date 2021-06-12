@@ -43,6 +43,6 @@ GE_FUNC_VISIBILITY ge::Status RegProfCtrlCallback(MsprofCtrlCallback func);
 GE_FUNC_VISIBILITY ge::Status RegProfSetDeviceCallback(MsprofSetDeviceCallback func);
 GE_FUNC_VISIBILITY ge::Status RegProfReporterCallback(MsprofReporterCallback func);
 GE_FUNC_VISIBILITY ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t len);
-GE_FUNC_VISIBILITY ge::Status ProSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream);
+GE_FUNC_VISIBILITY ge::Status ProfSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream);
 
 #endif  // INC_FRAMEWORK_COMMON_GE_PROFILING_H_

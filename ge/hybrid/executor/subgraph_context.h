@@ -51,6 +51,7 @@ class SubgraphContext {
   void NodeDone(const NodePtr &node);
 
  private:
+  NodeStatePtr CreateNodeState(const NodeItem *node_item);
   FrameStatePtr GetOrCreateFrameState(const NodeItem &node_item); // no lock
   friend class TaskContext;
   const GraphItem *graph_item_;

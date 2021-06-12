@@ -100,6 +100,8 @@ struct NodeState {
   NodeState(const NodeItem &node_item, SubgraphContext *subgraph_context);
   ~NodeState() = default;
 
+  Status Init(int group, const shared_ptr<FrameState> &frame_state);
+
   OpDesc *GetOpDesc() const {
     return op_desc_.get();
   }
@@ -152,16 +154,8 @@ struct NodeState {
     return merge_index_;
   }
 
-  void SetGroup(int group) {
-    group_ = group;
-  }
-
   int GetGroup() const {
     return group_;
-  }
-
-  void SetFrameState(const shared_ptr<FrameState> &frame_state) {
-    frame_state_ = frame_state;
   }
 
   const shared_ptr<NodeTask> &GetKernelTask() const {

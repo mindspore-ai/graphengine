@@ -259,8 +259,16 @@ ShapeFuture::ShapeFuture(NodeState *src_node,
 NodeState::NodeState(const NodeItem &node_item, SubgraphContext *subgraph_context)
     : node_item_(&node_item), shape_inference_state_(node_item), subgraph_context_(subgraph_context) {
   this->op_desc_ = node_item.node->GetOpDesc();
+}
+
+Status NodeState::Init(int group, const shared_ptr<FrameState> &frame_state) {
+  GE_CHECK_NOTNULL(frame_state);
+  group_ = group;
+  frame_state_ = frame_state;
   auto unique_task_context = TaskContext::Create(this, subgraph_context_);
+  GE_CHECK_NOTNULL(unique_task_context);
   task_context_ = std::shared_ptr<TaskContext>(unique_task_context.release());
+  return SUCCESS;
 }
 
 Status NodeState::AwaitInputTensors(GraphExecutionContext &context) const {
@@ -350,6 +358,7 @@ void NodeState::ResetContext(uint64_t iteration) {
   switch_index_ = -1;
   subgraph_context_->ResetContext(node_item_->node);
   auto unique_task_context = TaskContext::Create(this, subgraph_context_);
+  GE_CHECK_NOTNULL_JUST_RETURN(unique_task_context);
   task_context_ = std::shared_ptr<TaskContext>(unique_task_context.release());
 
   data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size());

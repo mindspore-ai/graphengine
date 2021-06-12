@@ -79,20 +79,31 @@ NodeStatePtr SubgraphContext::GetOrCreateNodeState(const NodeItem *node_item) {
     return nullptr;
   }
 
+  return CreateNodeState(node_item);
+}
+
+NodeStatePtr SubgraphContext::CreateNodeState(const NodeItem *node_item) {
   GELOGD("[%s] lock for write", node_item->NodeName().c_str());
   if (mmRWLockWRLock(&rw_lock_) != EN_OK) {
     REPORT_CALL_ERROR("E19999", "[Node:%s] Lock for write failed", node_item->NodeName().c_str());
     GELOGE(INTERNAL_ERROR, "[RWLock][Lock][Node:%s] Lock for write failed", node_item->NodeName().c_str());
     return nullptr;
   }
+
   auto &node_state = node_states_[node_item];
-  if (node_state == nullptr) {
-    const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
-    node_state.reset(new(std::nothrow)NodeState(*node_item, this));
-    node_state->SetFrameState(GetOrCreateFrameState(*node_item));
-    node_state->SetGroup(group_);
-    (void)guard;
-  }
+  do {
+    if (node_state == nullptr) {
+      const auto &guard = node_item->MutexGuard("GetOrCreateNodeState");
+      node_state.reset(new(std::nothrow)NodeState(*node_item, this));
+      if (node_state == nullptr || node_state->Init(group_, GetOrCreateFrameState(*node_item)) != SUCCESS) {
+        GELOGE(INTERNAL_ERROR, "[Create][NodeState] failed for[%s].", node_item->NodeName().c_str());
+        REPORT_CALL_ERROR("E19999", "Create NodeState failed for %s.", node_item->NodeName().c_str());
+        break;
+      }
+      (void)guard;
+    }
+  } while (0);
+
   GELOGD("[%s] unlock for write", node_item->NodeName().c_str());
   if (mmWRLockUnLock(&rw_lock_) != EN_OK) {
     REPORT_CALL_ERROR("E19999", "[Node:%s] Unlock for write failed", node_item->NodeName().c_str());

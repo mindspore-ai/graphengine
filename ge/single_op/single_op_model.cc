@@ -44,20 +44,56 @@ using std::vector;
 namespace ge {
 namespace {
 const size_t kDataOutputNum = 1;
+const uint32_t kInputIndexOfData = 0;
 const uint32_t kOutputIndexOfData = 0;
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
+
+Status CheckHostMem(const std::vector<string> &dependencies, const NodePtr &node, bool &flag) {
+  for (const auto &input_name : dependencies) {
+    auto op_desc = node->GetOpDesc();
+    int input_index = op_desc->GetInputIndexByName(input_name);
+    if (input_index < 0) {
+      GELOGE(INTERNAL_ERROR, "[Get][InputIndex]failed, node:[%s] inputname: %s.",
+             node->GetName().c_str(), input_name.c_str());
+      REPORT_CALL_ERROR("E19999", "GetInputIndexByName failed, node:[%s] inputname: %s.",
+                        node->GetName().c_str(), input_name.c_str());
+      return INTERNAL_ERROR;
+    }
+
+    const auto &in_anchor = node->GetInDataAnchor(input_index);
+    GE_CHECK_NOTNULL(in_anchor);
+    const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
+    GE_CHECK_NOTNULL(peer_out_anchor);
+    const auto &src_node = peer_out_anchor->GetOwnerNode();
+    GE_CHECK_NOTNULL(src_node);
+    auto src_op_desc = src_node->GetOpDesc();
+    GE_CHECK_NOTNULL(src_op_desc);
+    if (src_op_desc->GetType() == DATA) {
+      auto tensor = src_op_desc->MutableInputDesc(kInputIndexOfData);
+      if (AttrUtils::HasAttr(tensor, ATTR_NAME_VALUE)) {
+        GELOGD("Get hostmem from node %s, inputname: %s.", src_node->GetName().c_str(), input_name.c_str());
+        continue;
+      }
+    }
+    flag = false;
+    return SUCCESS;
+  }
+  flag = true;
+  return SUCCESS;
+}
 
 Status IfInferDepend(GeModelPtr &ge_model, bool &flag) {
   auto comp_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
   GE_CHECK_NOTNULL(comp_graph);
   for (const auto &node : comp_graph->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     const auto &depends = op_desc->GetOpInferDepends();
     bool support_dynamic_shape = false;
     (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, support_dynamic_shape);
     if (!depends.empty() && support_dynamic_shape) {
-      flag = true;
+      CheckHostMem(depends, node, flag);
       return SUCCESS;
     }
   }

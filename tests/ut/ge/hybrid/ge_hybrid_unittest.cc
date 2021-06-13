@@ -330,6 +330,7 @@ TEST_F(UtestGeHybrid, hybrid_model_executor) {
   ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("abc");
   GeRootModelPtr root_model = MakeShared<ge::GeRootModel>(compute_graph);
   HybridModel model(root_model);
+  model.root_graph_item_.reset(new GraphItem);
   HybridModel *model_ptr = &model;
 
   uint32_t device_id = 0;

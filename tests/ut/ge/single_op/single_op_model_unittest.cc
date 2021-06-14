@@ -17,12 +17,11 @@
 #include <gtest/gtest.h>
 #include <vector>
 
+#define protected public
+#define private public
 #include "graph/load/model_manager/model_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "runtime/rt.h"
-
-#define protected public
-#define private public
 #include "single_op/single_op_model.h"
 #include "single_op/task/tbe_task_builder.h"
 #include "single_op/task/rts_kernel_task_builder.h"
@@ -30,13 +29,17 @@
 #include "framework/common/helper/model_helper.h"
 #include "single_op/single_op.h"
 #include "single_op/stream_resource.h"
+#include "graph/passes/graph_builder_utils.h"
 #undef private
 #undef protected
-#include "graph/passes/graph_builder_utils.h"
 
 using namespace std;
 using namespace testing;
 using namespace ge;
+
+namespace {
+constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
+}  // namespace
 
 class UtestSingleOpModel : public testing::Test {
  protected:
@@ -208,11 +211,27 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   model.model_helper_.model_ = ge::MakeShared<ge::GeModel>();
 
   // make graph
-  auto compute_graph = make_shared<ComputeGraph>("graph");
-  auto data_op = make_shared<OpDesc>("Data", DATA);
-  auto data_node = compute_graph->AddNode(data_op);
+  ut::GraphBuilder builder = ut::GraphBuilder("graph");
+  auto data = builder.AddNode("Data", "Data", 0, 1);
+  auto transdata = builder.AddNode("Transdata", "Transdata", 1, 1);
+  auto netoutput = builder.AddNode("Netoutput", "NetOutput", 1, 0);
+  builder.AddDataEdge(data, 0, transdata, 0);
+  builder.AddDataEdge(transdata, 0, netoutput, 0);
+  auto compute_graph = builder.GetGraph();
+
   auto graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   model.model_helper_.model_->SetGraph(graph);
+
+  auto op_desc = transdata->GetOpDesc();
+  op_desc->input_name_idx_["Data"] = 0;
+  const vector<string> depend_names = { "Data" };
+  op_desc->SetOpInferDepends(depend_names);
+  (void)AttrUtils::SetBool(op_desc, kAttrSupportDynamicShape, true);
+
+  auto tensor = std::make_shared<GeTensor>();
+  auto data_desc = data->GetOpDesc();
+  auto tensor_desc = data_desc->MutableInputDesc(0);
+  AttrUtils::SetTensor(tensor_desc, "_value", tensor);
 
   // set task_def
   auto model_task_def = make_shared<domi::ModelTaskDef>();

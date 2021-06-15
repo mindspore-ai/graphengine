@@ -16,11 +16,11 @@ if(GE_PB_PKG)
     set(REQ_URL "${GE_PB_PKG}/libs/protobuf/v3.8.0.tar.gz")
 else()
     if (ENABLE_GITEE)
-        set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
-        set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
+        set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.13.0.tar.gz")
+        set(MD5 "f4489cb88922ad9c58cbe3308d59cee5")
     else()
-        set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz")
-        set(MD5 "3d9e32700639618a4d2d342c99d4507a")
+        set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.tar.gz")
+        set(MD5 "1a6274bc4a65b55a6fa70e264d796490")
     endif ()
 endif()
 
@@ -29,8 +29,6 @@ set(protobuf_LDFLAGS "-Wl,-z,relro,-z,now,-z,noexecstack")
 set(PROTOBUF_STATIC_PKG_DIR ${CMAKE_INSTALL_PREFIX}/protobuf_static)
 ExternalProject_Add(protobuf_static_build
                     URL ${REQ_URL}
-                    #URL /home/txd/workspace/linux_cmake/pkg/protobuf-3.8.0.tar.gz
-                    #SOURCE_DIR ${METADEF_DIR}/../../third_party/protobuf/src/protobuf-3.8.0
                     TLS_VERIFY OFF
                     CONFIGURE_COMMAND ${CMAKE_COMMAND}
                     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}

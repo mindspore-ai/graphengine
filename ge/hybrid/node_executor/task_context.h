@@ -36,9 +36,7 @@ class SubgraphContext;
 
 class TaskContext {
  public:
-  static std::unique_ptr<TaskContext> Create(NodeState *node_state,
-                                             GraphExecutionContext *execution_context,
-                                             SubgraphContext *subgraph_context);
+  static std::unique_ptr<TaskContext> Create(NodeState *node_state, SubgraphContext *subgraph_context);
 
   ~TaskContext();
 

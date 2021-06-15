@@ -52,9 +52,7 @@ void TaskContext::ReleaseWorkspace() {
   }
 }
 
-std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
-                                                 GraphExecutionContext *execution_context,
-                                                 SubgraphContext *subgraph_context) {
+std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state, SubgraphContext *subgraph_context) {
   const NodeItem &node_item = *node_state->GetNodeItem();
   GELOGI("[%s] To create task context, input start = %d, num_inputs = %d, output start = %d, num_outputs = %d.",
          node_item.NodeName().c_str(),
@@ -75,7 +73,7 @@ std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
   }
 
   auto task_context = std::unique_ptr<TaskContext>(
-      new(std::nothrow)TaskContext(execution_context, node_state, subgraph_context));
+      new(std::nothrow)TaskContext(subgraph_context->execution_context_, node_state, subgraph_context));
   if (task_context == nullptr) {
     REPORT_CALL_ERROR("E19999", "Create TaskContext failed for [%s].", node_item.NodeName().c_str());
     GELOGE(MEMALLOC_FAILED, "[Create][TaskContext] failed for [%s].", node_item.NodeName().c_str());
@@ -85,7 +83,7 @@ std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
   task_context->node_item_ = &node_item;
   task_context->inputs_start_ = subgraph_context->all_inputs_.data() + node_item.input_start;
   task_context->outputs_start_ = subgraph_context->all_outputs_.data() + node_item.output_start;
-  task_context->iteration_ = execution_context->iteration;
+  task_context->iteration_ = subgraph_context->execution_context_->iteration;
   return task_context;
 }
 
@@ -460,6 +458,10 @@ Status TaskContext::PropagateOutputs() {
         subgraph_context_->all_inputs_[input_offset].SetName(
             node_item_->NodeName() + "_in_" + std::to_string(dst_input_idx));
       }
+
+      auto dst_node_state = subgraph_context_->GetOrCreateNodeState(dst_node_item);
+      GE_CHECK_NOTNULL(dst_node_state);
+      dst_node_state->SavePersistTensor(dst_input_idx, *tensor);
     }
   }
   (void)guard;
@@ -489,11 +491,6 @@ void TaskContext::ReleaseInputsAndOutputs() {
 }
 
 void TaskContext::ReleaseInput(int index) {
-  if (node_item_->enter_inside_.count(index) > 0) {
-    GELOGD("[%s] Tensor of input[%d] is enter, keep it", GetNodeName(), index);
-    return;
-  }
-
   auto input_tensor = MutableInput(index);
   if (input_tensor != nullptr) {
     input_tensor->Destroy();

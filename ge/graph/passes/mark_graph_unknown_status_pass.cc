@@ -40,6 +40,12 @@ Status MarkGraphUnknownStatusPass::Run(ComputeGraphPtr graph) {
     }
   }
 
+  const auto &node = graph->GetParentNode();
+  if (!is_unknown_shape && node != nullptr && node->GetType() == PARTITIONEDCALL) {
+    GE_CHK_GRAPH_STATUS_RET(NodeUtils::GetNodeUnknownShapeStatus(*node, is_unknown_shape),
+                            "[Get][ShapeStatus] of node[%s] failed!", node->GetName().c_str());
+  }
+
   for (const auto &node : graph->GetDirectNode()) {
     GELOGD("Set OwnerGraphIsUnknown attr to node[%s]", node->GetName().c_str());
     (void)AttrUtils::SetBool(node->GetOpDesc(), kOwnerGraphIsUnknown, is_unknown_shape);

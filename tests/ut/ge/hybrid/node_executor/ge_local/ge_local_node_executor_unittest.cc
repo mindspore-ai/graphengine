@@ -97,11 +97,6 @@ TEST_F(UtestGeLocalNodeExecutor, test_no_op_task) {
   auto node_state = subgraph_context.GetOrCreateNodeState(node_item);
   ASSERT_NE(node_state, nullptr);
 
-  auto unique_task_context = TaskContext::Create(node_state.get(), &graph_context, &subgraph_context);
-  ASSERT_NE(unique_task_context, nullptr);
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state->SetTaskContext(shared_task_context);
-
   NodeTaskPtr task = nullptr;
   GeLocalNodeExecutor node_executor;
   ASSERT_EQ(node_executor.LoadTask(hybrid_model, node, task), SUCCESS);

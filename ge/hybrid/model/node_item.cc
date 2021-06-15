@@ -398,12 +398,11 @@ void NodeItem::SetDataSend(NodeItem *node_item, int anchor_index) {
   data_send_.emplace(node_item);
   node_item->data_recv_[this] = anchor_index;
   if (is_root_node_) {
-    node_item->root_data_.emplace(this);
+    node_item->root_data_[anchor_index] = this;
   }
   // If Enter feed Not Merge, take as root Node.
   if (IsEnterOp() && (node_item->node_type != STREAMMERGE)) {
-    node_item->enter_data_.emplace(this);
-    node_item->enter_inside_.emplace(anchor_index);
+    node_item->enter_data_[anchor_index] = this;
   }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
 }

@@ -132,39 +132,17 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const NodePtr &node, std:
 /// @return
 ///
 void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const std::map<NodePtr, std::vector<NodePtr>> &switch_groups) {
-  std::function<bool(const NodePtr &)> callback = [](const NodePtr &n) {
-    return n->GetOpDesc()->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP);
-  };
-
-  for (auto it1 = switch_groups.begin(); it1 != switch_groups.end(); ++it1) {
-    const auto &op_node1 = it1->first;
-    const auto &op_desc1 = op_node1->GetOpDesc();
-    if (op_desc1->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP)) {
+  for (auto it = switch_groups.begin(); it != switch_groups.end(); ++it) {
+    const auto &op_node = it->first;
+    const auto &op_desc = op_node->GetOpDesc();
+    if (op_desc->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP)) {
       continue;
     }
 
-    if (IsUnknownShapeTensor(op_desc1->GetOutputDesc(0))) {
-      int64_t group_index = op_desc1->GetId();
-      GELOGI("Mark %s as unknown shape control flow, group index: %ld", op_desc1->GetName().c_str(), group_index);
-      MarkForceUnknownShape(op_node1, true, group_index);
-      for (const auto &n : it1->second) {
-        MarkForceUnknownShape(n, true, group_index);
-      }
-
-      for (auto it2 = switch_groups.begin(); it2 != switch_groups.end(); ++it2) {
-        const auto &op_node2 = it2->first;
-        const auto &op_desc2 = op_node2->GetOpDesc();
-        if (op_desc2->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP)) {
-          continue;
-        }
-
-        if (std::any_of(it2->second.begin(), it2->second.end(), callback)) {
-          MarkForceUnknownShape(op_node2, true, group_index);
-          for (const auto &n : it2->second) {
-            MarkForceUnknownShape(n, true, group_index);
-          }
-        }
-      }
+    int64_t group_index = op_desc->GetId();
+    SetControlFlowGroup(op_node, group_index);
+    for (const auto &n : it->second) {
+      SetControlFlowGroup(n, group_index);
     }
   }
 }

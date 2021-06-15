@@ -121,6 +121,7 @@ set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
     "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
     "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
+    "${GE_CODE_DIR}/metadef/register/op_tiling_registry_impl.cpp"
 )
 
 set(PARSER_SRC_FILES

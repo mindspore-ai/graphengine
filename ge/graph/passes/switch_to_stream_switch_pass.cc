@@ -395,8 +395,8 @@ NodePtr SwitchToStreamSwitchPass::CreateStreamSwitchNode(const ComputeGraphPtr &
                 peer_cond_anchor->GetOwnerNode()->GetName().c_str(), stream_switch->GetName().c_str());
 
   int64_t group_index = -1;
-  bool force_unknown = AttrUtils::GetInt(switch_node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
-  MarkForceUnknownShape(stream_switch, force_unknown, group_index);
+  (void)AttrUtils::GetInt(switch_node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
+  SetControlFlowGroup(stream_switch, group_index);
   return stream_switch;
 }
 
@@ -491,8 +491,8 @@ int64_t SwitchToStreamSwitchPass::GetGroupId(const NodePtr &node) {
 Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph) {
   for (auto iter = cond_node_map_.begin(); iter != cond_node_map_.end(); ++iter) {
     for (auto group_iter = iter->second.begin(); group_iter != iter->second.end(); ++group_iter) {
-      std::list<NodePtr> false_switch_list = group_iter->second[SWITCH_FALSE_OUTPUT];
-      std::list<NodePtr> true_switch_list = group_iter->second[SWITCH_TRUE_OUTPUT];
+      const std::list<NodePtr> &false_switch_list = group_iter->second[SWITCH_FALSE_OUTPUT];
+      const std::list<NodePtr> &true_switch_list = group_iter->second[SWITCH_TRUE_OUTPUT];
       std::set<NodePtr> same_cond_switch;
       same_cond_switch.insert(false_switch_list.begin(), false_switch_list.end());
       same_cond_switch.insert(true_switch_list.begin(), true_switch_list.end());
@@ -524,13 +524,13 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
       std::function<bool(const NodePtr &)> callback = [&group_index](const NodePtr &n) {
         return AttrUtils::GetInt(n->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
       };
-      bool is_unknown_shape = std::any_of(same_cond_switch.begin(), same_cond_switch.end(), callback);
-      MarkForceUnknownShape(active_node, is_unknown_shape, group_index);
+      (void)std::any_of(same_cond_switch.begin(), same_cond_switch.end(), callback);
+      SetControlFlowGroup(active_node, group_index);
 
       const std::string &cond_group = cond_node->GetName();
       for (uint32_t i = 0; i < SWITCH_OUTPUT_NUM; ++i) {
         bool true_branch_flag = (i == SWITCH_TRUE_OUTPUT);
-        std::list<NodePtr> &switch_list = (true_branch_flag ? true_switch_list : false_switch_list);
+        const std::list<NodePtr> &switch_list = (true_branch_flag ? true_switch_list : false_switch_list);
         GE_IF_BOOL_EXEC(switch_list.empty(), continue);
 
         // select first stream_switch
@@ -559,7 +559,7 @@ Status SwitchToStreamSwitchPass::CombineSwitchNode(const ComputeGraphPtr &graph)
                       "[Add][Edge] between %s and %s failed.",
                       cast_node->GetName().c_str(), stream_switch->GetName().c_str());
 
-        MarkForceUnknownShape(stream_switch, is_unknown_shape, group_index);
+        SetControlFlowGroup(stream_switch, group_index);
         for (const NodePtr &node : switch_list) {
           GE_IF_BOOL_EXEC(node != stream_switch, {
             GE_CHK_STATUS(GraphUtils::RemoveEdge(peer_cond_anchor, node->GetInDataAnchor(0)),

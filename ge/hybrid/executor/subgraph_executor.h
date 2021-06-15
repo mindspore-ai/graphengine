@@ -127,7 +127,6 @@ class SubgraphExecutor {
   ThreadPool pre_run_pool_;
   BlockingQueue<NodeState *> ready_queue_;
   std::unique_ptr<ShapeInferenceEngine> shape_inference_engine_;
-  std::shared_ptr<TaskContext> known_shape_task_context_;
 
   std::mutex mu_; // Guard for prepare_queues_.
   std::map<int, BlockingQueue<const NodeItem *>> prepare_queues_;

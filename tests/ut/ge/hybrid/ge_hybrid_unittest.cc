@@ -40,6 +40,7 @@
 #include "graph/types.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/testcase/ge_graph/graph_builder_utils.h"
+#include "graph/op_desc_impl.h"
 #undef private
 #undef protected
 
@@ -159,11 +160,9 @@ TEST_F(UtestGeHybrid, task_update_tiling_info) {
 
   GraphExecutionContext execution_context;
   SubgraphContext subgraph_context(nullptr, &execution_context);
-  NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
-  ASSERT_TRUE(task_context != nullptr);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
   ASSERT_EQ(aicore_task->InitTilingInfo(*op_desc), SUCCESS);
-  ASSERT_EQ(aicore_task->UpdateTilingInfo(*task_context), SUCCESS);
+  ASSERT_EQ(aicore_task->UpdateTilingInfo(*node_state->GetTaskContext()), SUCCESS);
 }
 
 TEST_F(UtestGeHybrid, index_taskdefs_failed) {
@@ -477,12 +476,14 @@ TEST_F(UtestGeHybrid, TestTaskContext) {
   node_item->output_start = 0;
 
   GraphExecutionContext execution_context;
-  SubgraphContext subgraph_context(nullptr, &execution_context);
+  GraphItem graph_item;
+  SubgraphContext subgraph_context(&graph_item, &execution_context);
+  ASSERT_EQ(subgraph_context.Init(), SUCCESS);
   subgraph_context.all_inputs_.resize(2);
   subgraph_context.all_outputs_.resize(1);
 
-  NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
+  auto task_context = node_state->GetTaskContext();
   ASSERT_TRUE(task_context != nullptr);
   auto desc = task_context->MutableInputDesc(2);
   ASSERT_TRUE(desc == nullptr);
@@ -522,12 +523,14 @@ TEST_F(UtestGeHybrid, hybrid_model_executor_update_args) {
   node_item->output_start = 0;
 
   GraphExecutionContext execution_context;
-  SubgraphContext subgraph_context(nullptr, &execution_context);
+  GraphItem graph_item;
+  SubgraphContext subgraph_context(&graph_item, &execution_context);
+  ASSERT_EQ(subgraph_context.Init(), SUCCESS);
   subgraph_context.all_inputs_.resize(2);
   subgraph_context.all_outputs_.resize(1);
 
-  NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
+  auto task_context = node_state->GetTaskContext();
 
   int32_t buffer[1];
   aicore_task->tiling_buffer_ = TensorBuffer::Create(buffer, sizeof(buffer));
@@ -737,7 +740,7 @@ TEST_F(UtestGeHybrid, TestParseDependencies) {
   std::vector<std::string> deps;
   deps.push_back("Data");
   auto op_desc = netoutput->GetOpDesc();
-  op_desc->input_name_idx_["Data"] = 0;
+  op_desc->impl_->input_name_idx_["Data"] = 0;
   auto data_desc = data->GetOpDesc();
   auto tensor = std::make_shared<GeTensor>();
   auto tensor_desc = data_desc->MutableInputDesc(0);

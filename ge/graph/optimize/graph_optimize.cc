@@ -336,10 +336,8 @@ Status GraphOptimize::OptimizeAfterStage1(ComputeGraphPtr &compute_graph) {
         GELOGI("[OptimizeAfterStage1]: engine type will exclude:%s.", exclude_core_type.c_str());
         continue;
       }
-#ifndef ONLY_COMPILE_OPEN_SRC
       GELOGI("Begin to optimize graph after stage1 by engine %s.", iter->first.c_str());
       ret = (iter->second)->OptimizeAfterStage1(*compute_graph);
-#endif
       if (ret != SUCCESS) {
         REPORT_INNER_ERROR("E19999", "Call OptimizeAfterStage1 failed, ret:%d, engine_name:%s, "
                            "graph_name:%s.", ret, iter->first.c_str(), compute_graph->GetName().c_str());

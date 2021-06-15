@@ -30,6 +30,7 @@
 #include "single_op/single_op.h"
 #include "single_op/stream_resource.h"
 #include "graph/passes/graph_builder_utils.h"
+#include "graph/op_desc_impl.h"
 #undef private
 #undef protected
 

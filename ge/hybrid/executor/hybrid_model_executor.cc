@@ -70,6 +70,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
     context_.profiler->Dump(std::cout);
     context_.profiler->Reset();
   }
+  root_graph_executor_->ResetContext();
 
   context_.iteration += 1;
   if (ret == END_OF_SEQUENCE) {
@@ -125,7 +126,6 @@ Status HybridModelExecutor::ExecuteGraphInternal(HybridModelExecutor::ExecuteArg
   args.outputs.clear();
   HYBRID_CHK_STATUS_RET(root_graph_executor_->GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
-  root_graph_executor_->ResetContext();
   return SUCCESS;
 }
 

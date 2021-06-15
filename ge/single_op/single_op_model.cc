@@ -556,7 +556,7 @@ Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
   GE_CHECK_NOTNULL(ge_model);
   bool infer_depend_flag = false;
   bool is_host_mem = false;
-  GE_CHK_STATUS_RET(CheckInferDepend(ge_model, infer_depend_flag, is_host_mem)), "[Check][InferDepend] failed.");
+  GE_CHK_STATUS_RET(CheckInferDepend(ge_model, infer_depend_flag, is_host_mem), "[Check][InferDepend] failed.");
   if (infer_depend_flag) {
     // construct single_op, do single op with HybridModelExecutor
     GELOGD("Init hybrid model params of single op, and will do execute with hybrid model executor.");

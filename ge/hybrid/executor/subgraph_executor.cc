@@ -103,9 +103,10 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       auto op_desc = input_node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
       auto output_desc = op_desc->MutableOutputDesc(kDataInputIndex);
-      output_desc.SetShape(tensor_desc->GetShape());
-      output_desc.SetOriginShape(tensor_desc->GetOriginShape());
-      output_desc.SetDataType(tensor_desc->GetDataType());    
+      GE_CHECK_NOTNULL(output_desc);
+      output_desc->SetShape(tensor_desc->GetShape());
+      output_desc->SetOriginShape(tensor_desc->GetOriginShape());
+      output_desc->SetDataType(tensor_desc->GetDataType());    
     }
   }
 

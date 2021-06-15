@@ -125,6 +125,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(HybridModelExecutor::ExecuteArg
   args.outputs.clear();
   HYBRID_CHK_STATUS_RET(root_graph_executor_->GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
+  root_graph_executor_->ResetContext();
   return SUCCESS;
 }
 

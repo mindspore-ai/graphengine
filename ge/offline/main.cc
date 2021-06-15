@@ -953,8 +953,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     ge::Model load_model = ge::Model("loadmodel", "version2");
     auto ret1 = load_model.LoadFromFile(FLAGS_model);
     if (ret1 != ge::GRAPH_SUCCESS) {
-      REPORT_INPUT_ERROR("E10041", std::vector<std::string>({"file"}), std::vector<std::string>({FLAGS_model}));
-      REPORT_CALL_ERROR("E19999", "load from model file:%s failed", FLAGS_model.c_str());
+      REPORT_INPUT_ERROR("E10041", std::vector<std::string>({"parameter"}), std::vector<std::string>({FLAGS_model}));
       DOMI_LOGE("Load model from %s failed, please check model file or "
           "input parameter[--framework] is correct", FLAGS_model.c_str());
       (void)ge_generator.Finalize();

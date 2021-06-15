@@ -3463,11 +3463,11 @@ bool DavinciModel::CheckUserAndModelSize(const int64_t &size, const int64_t &op_
   }
   // The input and model input size can not be exactly equal because user input is not definite.
   if ((size + kDataMemAlignSizeCompare) < op_size) {
-    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u, "
+    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < op_size:%ld in model, model_id:%u, "
                        "check invalid",
                        input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Check][Param] %s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u",
+           "[Check][Param] %s size:%ld from user add align:%u < op_size:%ld in model, model_id:%u",
            input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     return false;
   }

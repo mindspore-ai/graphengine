@@ -223,7 +223,7 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   model.model_helper_.model_->SetGraph(graph);
 
   auto op_desc = transdata->GetOpDesc();
-  op_desc->input_name_idx_["Data"] = 0;
+  op_desc->impl_->input_name_idx_["Data"] = 0;
   const vector<string> depend_names = { "Data" };
   op_desc->SetOpInferDepends(depend_names);
   (void)AttrUtils::SetBool(op_desc, kAttrSupportDynamicShape, true);

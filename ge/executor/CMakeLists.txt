@@ -37,6 +37,7 @@ set(SRC_LIST
     "../graph/load/model_manager/task_info/task_info.cc"
     "../graph/load/model_manager/task_info/event_record_task_info.cc"
     "../graph/load/model_manager/task_info/event_wait_task_info.cc"
+    "../graph/load/model_manager/task_info/ffts_task_info.cc"
     "../graph/load/model_manager/task_info/fusion_start_task_info.cc"
     "../graph/load/model_manager/task_info/fusion_stop_task_info.cc"
     "../graph/load/model_manager/task_info/kernel_ex_task_info.cc"

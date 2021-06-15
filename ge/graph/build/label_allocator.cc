@@ -86,6 +86,11 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
     return false;
   }
 
+  if (func_node->GetOpDesc() != nullptr && func_node->GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH)) {
+    GELOGD("Graph[%s] is ffts subgraph, skip label allocator.", graph->GetName().c_str());
+    return true;
+  }
+
   ComputeGraphPtr owner_graph = func_node->GetOwnerComputeGraph();
   if (owner_graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "ComputeGraph owner not set in node:%s(%s), graph:%s",

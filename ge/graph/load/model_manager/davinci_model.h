@@ -771,6 +771,12 @@ class DavinciModel {
   /// @return Status
   ///
   Status InitTbeHandle(const OpDescPtr &op_desc);
+  Status InitTbeHandleWithFfts(const OpDescPtr &op_desc);
+  Status FunctionRegister(const OpDescPtr &op_desc, string &bin_file, OpKernelBinPtr &tbe_kernel, bool is_ffts,
+                          size_t thread_index = 0);
+  Status InitBinaryMagic(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, rtDevBinary_t &binary);
+  Status InitMetaData(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, void *bin_handle);
+  Status InitKernelName(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, string &kernel_name);
 
   void StoreTbeHandle(const string &handle_key);
   void CleanTbeHandle();

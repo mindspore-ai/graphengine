@@ -49,8 +49,8 @@ const uint32_t kOutputIndexOfData = 0;
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 
 Status CheckHostMem(const std::vector<string> &dependencies, const NodePtr &node, bool &is_host_mem) {
+  auto op_desc = node->GetOpDesc();
   for (const auto &input_name : dependencies) {
-    auto op_desc = node->GetOpDesc();
     int input_index = op_desc->GetInputIndexByName(input_name);
     if (input_index < 0) {
       GELOGE(INTERNAL_ERROR, "[Get][InputIndex]failed, node:[%s] inputname: %s.",
@@ -60,11 +60,7 @@ Status CheckHostMem(const std::vector<string> &dependencies, const NodePtr &node
       return INTERNAL_ERROR;
     }
 
-    const auto &in_anchor = node->GetInDataAnchor(input_index);
-    GE_CHECK_NOTNULL(in_anchor);
-    const auto &peer_out_anchor = in_anchor->GetPeerOutAnchor();
-    GE_CHECK_NOTNULL(peer_out_anchor);
-    const auto &src_node = peer_out_anchor->GetOwnerNode();
+    const auto &src_node = NodeUtils::GetInDataNodeByIndex(*node, input_index);
     GE_CHECK_NOTNULL(src_node);
     auto src_op_desc = src_node->GetOpDesc();
     GE_CHECK_NOTNULL(src_op_desc);

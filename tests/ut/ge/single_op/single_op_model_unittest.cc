@@ -213,7 +213,7 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
 
   // make graph
   ut::GraphBuilder builder = ut::GraphBuilder("graph");
-  auto data = builder.AddNode("Data", "Data", 0, 1);
+  auto data = builder.AddNode("Data", "Data", 1, 1);
   auto transdata = builder.AddNode("Transdata", "Transdata", 1, 1);
   auto netoutput = builder.AddNode("Netoutput", "NetOutput", 1, 0);
   builder.AddDataEdge(data, 0, transdata, 0);
@@ -227,11 +227,6 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   const vector<string> depend_names = { "Data" };
   op_desc->SetOpInferDepends(depend_names);
   (void)AttrUtils::SetBool(op_desc, kAttrSupportDynamicShape, true);
-
-  auto tensor = std::make_shared<GeTensor>();
-  auto data_desc = data->GetOpDesc();
-  auto tensor_desc = data_desc->MutableInputDesc(0);
-  AttrUtils::SetTensor(tensor_desc, "_value", tensor);
 
   // set task_def
   auto model_task_def = make_shared<domi::ModelTaskDef>();
@@ -248,6 +243,12 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   model.BuildDynamicOp(res, dynamic_single_op);
 
   op_desc->impl_->input_name_idx_["Data"] = 0;
+  model.BuildDynamicOp(res, dynamic_single_op);
+
+  auto tensor = std::make_shared<GeTensor>();
+  auto data_desc = data->GetOpDesc();
+  auto tensor_desc = data_desc->MutableInputDesc(0);
+  AttrUtils::SetTensor(tensor_desc, "_value", tensor);
   model.BuildDynamicOp(res, dynamic_single_op);
 }
 

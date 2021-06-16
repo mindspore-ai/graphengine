@@ -177,6 +177,10 @@ struct NodeState {
   void SetTaskContext(std::shared_ptr<TaskContext> &task_context);
   std::shared_ptr<TaskContext> GetTaskContext();
 
+  void SetSkipInferShape(bool skip_infershape) { skip_infershape_ = skip_infershape; }
+
+  bool GetSkipInferShape() const { return skip_infershape_; }
+
  private:
   bool IsScheduleReady() const;
   void SetDataSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
@@ -204,6 +208,7 @@ struct NodeState {
   int merge_index_ = -1; // Use for Execute (Reset after Executed).
   int switch_index_ = -1; // Use for Schedule (Reset after Prepared).
   int group_ = -1;
+  bool skip_infershape_ = false;
 };
 }  // namespace hybrid
 }  // namespace ge

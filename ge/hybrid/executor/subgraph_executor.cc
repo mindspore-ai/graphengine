@@ -110,6 +110,7 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       output_desc->SetShape(tensor_desc->GetShape());
       output_desc->SetOriginShape(tensor_desc->GetOriginShape());
       output_desc->SetDataType(tensor_desc->GetDataType());
+      node_state->SetSkipInferShape(true);
     }
   }
 

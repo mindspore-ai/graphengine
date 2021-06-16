@@ -70,7 +70,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
     context_.profiler->Dump(std::cout);
     context_.profiler->Reset();
   }
-  root_graph_executor_->ResetContext();
+  root_graph_executor_->ReleaseContext();
 
   context_.iteration += 1;
   if (ret == END_OF_SEQUENCE) {

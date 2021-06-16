@@ -41,7 +41,7 @@ class SubgraphExecutor {
 
   Status PartialExecuteAsync(int task_group);
 
-  void ResetContext() { subgraph_context_.release(); }
+  void ResetContext() { subgraph_context_.reset(nullptr); }
 
   /**
    * Execute subgraph async, output tensor address(not data) and output tensor descriptions are

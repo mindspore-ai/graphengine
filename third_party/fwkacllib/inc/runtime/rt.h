@@ -27,5 +27,6 @@
 #include "mem.h"
 #include "rt_model.h"
 #include "stream.h"
+#include "rt_ffts.h"
 
 #endif  // __CCE_RUNTIME_RT_H__

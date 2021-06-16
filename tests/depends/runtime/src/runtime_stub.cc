@@ -456,6 +456,10 @@ rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, const void 
 rtError_t rtDebugUnRegisterForStream(rtStream_t stream) {
   return RT_ERROR_NONE;
 }
+
+rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream) {
+  return RT_ERROR_NONE;
+}
 #ifdef __cplusplus
 }
 #endif

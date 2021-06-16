@@ -432,7 +432,11 @@ Status StreamAllocator::SetActiveStreamsForSubgraphs() {
 
 // Insert the send/recv event id to the graph
 Status StreamAllocator::InsertSyncEvents() {
-  for (const auto &cur_node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag())) {
+  auto ffts_filter = [](const Node &node, const char *, const ComputeGraphPtr &) {
+    return !node.GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH);
+  };
+
+  for (const auto &cur_node : whole_graph_->GetNodes(whole_graph_->GetGraphUnknownFlag(), nullptr, ffts_filter)) {
     // Take the adjacent points, then judge whether need to insert the event
     for (const OutDataAnchorPtr &anchor : cur_node->GetAllOutDataAnchors()) {
       for (const InDataAnchorPtr &peer_in_anchor : anchor->GetPeerInDataAnchors()) {
@@ -531,6 +535,11 @@ Status StreamAllocator::InsertOneEventInTwoNodes(const NodePtr &cur_node, const 
 Status StreamAllocator::InsertEventsForSubgraph() {
   for (const auto &subgraph : whole_graph_->GetAllSubgraphs()) {
     GE_CHECK_NOTNULL(subgraph);
+    const auto parent_node = subgraph->GetParentNode();
+    if (parent_node != nullptr && parent_node->GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH)) {
+      GELOGD("Skip ffts subgraph, parent node is %s.", parent_node->GetName().c_str());
+      continue;
+    }
     for (const auto &node : subgraph->GetDirectNode()) {
       auto op_desc = node->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);

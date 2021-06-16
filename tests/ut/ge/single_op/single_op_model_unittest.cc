@@ -224,7 +224,6 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   model.model_helper_.model_->SetGraph(graph);
 
   auto op_desc = transdata->GetOpDesc();
-  op_desc->impl_->input_name_idx_["Data"] = 0;
   const vector<string> depend_names = { "Data" };
   op_desc->SetOpInferDepends(depend_names);
   (void)AttrUtils::SetBool(op_desc, kAttrSupportDynamicShape, true);
@@ -246,6 +245,9 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
   std::mutex stream_mu_;
   DynamicSingleOp dynamic_single_op(0, &stream_mu_, nullptr);
   StreamResource res((uintptr_t)1);
+  model.BuildDynamicOp(res, dynamic_single_op);
+
+  op_desc->impl_->input_name_idx_["Data"] = 0;
   model.BuildDynamicOp(res, dynamic_single_op);
 }
 

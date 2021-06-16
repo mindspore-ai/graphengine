@@ -179,7 +179,7 @@ struct NodeState {
 
   void SetSkipInferShape(bool skip_infershape) { skip_infershape_ = skip_infershape; }
 
-  bool SkipInferShape() const { return skip_infershape_; }
+  bool MaySkipShapeInference() const { return skip_infershape_; }
 
  private:
   bool IsScheduleReady() const;

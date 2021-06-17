@@ -103,6 +103,14 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       auto node_state = subgraph_context_->GetOrCreateNodeState(input_node);
       GE_CHECK_NOTNULL(node_state);
       node_state->GetShapeInferenceState().UpdateInputShape(0, *tensor_desc);
+      auto op_desc = input_node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto output_desc = op_desc->MutableOutputDesc(kDataInputIndex);
+      GE_CHECK_NOTNULL(output_desc);
+      output_desc->SetShape(tensor_desc->GetShape());
+      output_desc->SetOriginShape(tensor_desc->GetOriginShape());
+      output_desc->SetDataType(tensor_desc->GetDataType());
+      node_state->SetSkipInferShape(true);
     }
   }
 

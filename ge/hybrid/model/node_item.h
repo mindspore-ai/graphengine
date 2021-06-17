@@ -22,6 +22,7 @@
 #include "external/ge/ge_api_error_codes.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
+#include "graph/utils/node_utils.h"
 #include "framework/common/types.h"
 #include "hybrid/common/tensor_value.h"
 
@@ -92,6 +93,14 @@ struct NodeItem {
     return is_merge_op_;
   }
 
+  bool IsEnterOp() const {
+    return kEnterOpTypes.count(node_type) > 0;
+  }
+
+  bool IsExitOp() const {
+    return kExitOpTypes.count(node_type) > 0;
+  }
+
   bool IsHcclOp() const;
 
   void SetToDynamic();
@@ -135,8 +144,13 @@ struct NodeItem {
   bool is_ctrl_flow_v2_op_ = false;
   bool is_ctrl_flow_op_ = false;
   bool is_merge_op_ = false;
+  bool is_enter_active_ = false;
+  int64_t frame_index_ = -1;
+  int64_t parent_frame_ = -1;
   std::set<const NodeItem *> root_ctrl_;  // Recv ctrl from root node
   std::set<const NodeItem *> root_data_;  // Recv data from root node
+  std::set<const NodeItem *> enter_ctrl_; // Recv ctrl from Enter node
+  std::set<const NodeItem *> enter_data_; // Recv data from Enter node
   std::set<const NodeItem *> data_send_;  // Send data notify to
   std::map<const NodeItem *, int> data_recv_;  // Recv data notify from
   std::set<const NodeItem *> ctrl_send_;  // Send ctrl notify to

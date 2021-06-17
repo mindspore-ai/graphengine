@@ -72,7 +72,7 @@ OpDescPtr SameTransdataBreadthFusionPass::GetCastOp(const GeTensorDesc &in_desc,
   node_op.BreakConnect();
   if (cast_op == nullptr) {
     REPORT_INNER_ERROR("E19999", "Create Operator:%s(%s) failed", cast_op_name.str().c_str(), CAST);
-    GELOGE(INTERNAL_ERROR, "new fusion cast op failed!");
+    GELOGE(INTERNAL_ERROR, "[Get][OpDesc] From Operator:%s(%s) failed", cast_op_name.str().c_str(), CAST);
     return nullptr;
   }
   const int default_output_index = 0;
@@ -99,7 +99,8 @@ OpDescPtr SameTransdataBreadthFusionPass::GetCastOp(const GeTensorDesc &in_desc,
   if (!AttrUtils::SetInt(cast_op, CAST_ATTR_DST_TYPE, static_cast<int64_t>(out_desc.GetDataType()))) {
     REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", CAST_ATTR_DST_TYPE.c_str(),
                       cast_op->GetName().c_str(), cast_op->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "set dst_type attr failed");
+    GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", CAST_ATTR_DST_TYPE.c_str(),
+           cast_op->GetName().c_str(), cast_op->GetType().c_str());
     return nullptr;
   }
   return cast_op;
@@ -213,8 +214,10 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkDataOutput2PreNode(const NodeP
                           transdata_peer_in_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_anchor->GetIdx());
-        GELOGE(GRAPH_FAILED, "remove edge failed!src node:%s, dst node:%s", transdata_node->GetName().c_str(),
-               transdata_peer_in_anchor->GetOwnerNode()->GetName().c_str());
+        GELOGE(GRAPH_FAILED, "[Remove][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+               out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
+               out_anchor->GetIdx(), transdata_peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_anchor->GetOwnerNode()->GetType().c_str(), transdata_peer_in_anchor->GetIdx());
         return GRAPH_FAILED;
       }
       GELOGI("add edge.src:%s, dst:%s", pre_out_anchor->GetOwnerNode()->GetName().c_str(),
@@ -226,9 +229,10 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkDataOutput2PreNode(const NodeP
                           transdata_peer_in_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_anchor->GetIdx());
-        GELOGE(GRAPH_FAILED, "add edge failed!src node:%s, dst node:%s",
-               pre_out_anchor->GetOwnerNode()->GetName().c_str(),
-               transdata_peer_in_anchor->GetOwnerNode()->GetName().c_str());
+        GELOGE(GRAPH_FAILED, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+               pre_out_anchor->GetOwnerNode()->GetName().c_str(), pre_out_anchor->GetOwnerNode()->GetType().c_str(),
+               pre_out_anchor->GetIdx(), transdata_peer_in_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_anchor->GetOwnerNode()->GetType().c_str(), transdata_peer_in_anchor->GetIdx());
         return GRAPH_FAILED;
       }
     }
@@ -251,8 +255,10 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutDataPeerInControlNodes2PreN
                           out_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
-        GELOGE(GRAPH_FAILED, "remove edge failed!src node:%s, dst node:%s", transdata_node->GetName().c_str(),
-               transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str());
+        GELOGE(GRAPH_FAILED, "Remove control edge between op:%s(%s) and op:%s(%s) failed",
+               out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str(),
+               transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
         return GRAPH_FAILED;
       }
 
@@ -265,9 +271,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutDataPeerInControlNodes2PreN
                             pre_out_anchor->GetOwnerNode()->GetType().c_str(),
                             transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
                             transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
-          GELOGE(GRAPH_FAILED, "add edge failed!src node:%s, dst node:%s",
+          GELOGE(GRAPH_FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
                  pre_out_anchor->GetOwnerNode()->GetName().c_str(),
-                 transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str());
+                 pre_out_anchor->GetOwnerNode()->GetType().c_str(),
+                 transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
+                 transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
           return GRAPH_FAILED;
         }
       } else {
@@ -279,9 +287,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutDataPeerInControlNodes2PreN
                             transdata_peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                             transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
                             transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
-          GELOGE(GRAPH_FAILED, "add edge failed!src node:%s, dst node:%s",
-                 pre_out_anchor->GetOwnerNode()->GetName().c_str(),
-                 transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str());
+          GELOGE(GRAPH_FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+                 transdata_peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+                 transdata_peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+                 transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
+                 transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
           return GRAPH_FAILED;
         }
       }
@@ -325,7 +335,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInControlAnchors
                         out_control_anchor->GetOwnerNode()->GetType().c_str(),
                         transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
                         transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
-      GELOGE(GRAPH_FAILED, "remove transdata control edge failed!");
+      GELOGE(GRAPH_FAILED, "[Remove][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+             out_control_anchor->GetOwnerNode()->GetName().c_str(),
+             out_control_anchor->GetOwnerNode()->GetType().c_str(),
+             transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
+             transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
 
@@ -338,7 +352,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInControlAnchors
                           pre_out_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
-        GELOGE(GRAPH_FAILED, "add control edge failed!");
+        GELOGE(GRAPH_FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+               pre_out_anchor->GetOwnerNode()->GetName().c_str(),
+               pre_out_anchor->GetOwnerNode()->GetType().c_str(),
+               transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
         return GRAPH_FAILED;
       }
     } else {
@@ -350,7 +368,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInControlAnchors
                           transdata_peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
-        GELOGE(GRAPH_FAILED, "add control edge failed!");
+        GELOGE(GRAPH_FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+               transdata_peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+               transdata_peer_in_control_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_control_anchor->GetOwnerNode()->GetType().c_str());
         return GRAPH_FAILED;
       }
     }
@@ -379,7 +401,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInDataAnchors(
                         out_control_anchor->GetOwnerNode()->GetType().c_str(),
                         transdata_peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
                         transdata_peer_in_data_anchor->GetOwnerNode()->GetType().c_str());
-      GELOGE(GRAPH_FAILED, "remove transdata control edge failed!");
+      GELOGE(GRAPH_FAILED, "[Remove][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+             out_control_anchor->GetOwnerNode()->GetName().c_str(),
+             out_control_anchor->GetOwnerNode()->GetType().c_str(),
+             transdata_peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
+             transdata_peer_in_data_anchor->GetOwnerNode()->GetType().c_str());
       return GRAPH_FAILED;
     }
 
@@ -393,7 +419,12 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInDataAnchors(
                           transdata_peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_data_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_data_anchor->GetIdx());
-        GELOGE(GRAPH_FAILED, "add control edge failed!");
+        GELOGE(GRAPH_FAILED, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+               pre_out_anchor->GetOwnerNode()->GetName().c_str(),
+               pre_out_anchor->GetOwnerNode()->GetType().c_str(), pre_out_anchor->GetIdx(),
+               transdata_peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_data_anchor->GetOwnerNode()->GetType().c_str(),
+               transdata_peer_in_data_anchor->GetIdx());
         return GRAPH_FAILED;
       }
     } else {
@@ -405,7 +436,11 @@ graphStatus SameTransdataBreadthFusionPass::ReLinkOutControlPeerInDataAnchors(
                           transdata_peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                           transdata_peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
                           transdata_peer_in_data_anchor->GetOwnerNode()->GetType().c_str());
-        GELOGE(GRAPH_FAILED, "add control edge failed!");
+        GELOGE(GRAPH_FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+               transdata_peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+               transdata_peer_in_data_anchor->GetOwnerNode()->GetName().c_str(),
+               transdata_peer_in_data_anchor->GetOwnerNode()->GetType().c_str());
         return GRAPH_FAILED;
       }
     }
@@ -527,8 +562,10 @@ graphStatus SameTransdataBreadthFusionPass::RelinkRemainTransdata(const ComputeG
                       transdata_in_anchor->GetOwnerNode()->GetName().c_str(),
                       transdata_in_anchor->GetOwnerNode()->GetType().c_str(),
                       transdata_in_anchor->GetIdx());
-    GELOGE(GRAPH_FAILED, "add edge failed!out node %s, in node %s", head_node->GetName().c_str(),
-           transdata_node_keep->GetName().c_str());
+    GELOGE(GRAPH_FAILED, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+           head_node_anchor->GetOwnerNode()->GetName().c_str(), head_node_anchor->GetOwnerNode()->GetType().c_str(),
+           head_node_anchor->GetIdx(), transdata_in_anchor->GetOwnerNode()->GetName().c_str(),
+           transdata_in_anchor->GetOwnerNode()->GetType().c_str(), transdata_in_anchor->GetIdx());
     return GRAPH_FAILED;
   }
 
@@ -618,8 +655,11 @@ graphStatus SameTransdataBreadthFusionPass::ReuseNodesBeforeTransdata(int anchor
                       head_node_peer_anchor->GetOwnerNode()->GetName().c_str(),
                       head_node_peer_anchor->GetOwnerNode()->GetType().c_str(),
                       head_node_peer_anchor->GetIdx());
-    GELOGE(GRAPH_FAILED, "add edge.src:%s, dst:%s", transdata_node_keep->GetName().c_str(),
-           head_node_peer_anchor->GetOwnerNode()->GetName().c_str());
+    GELOGE(GRAPH_FAILED, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+           transdata_out_anchor->GetOwnerNode()->GetName().c_str(),
+           transdata_out_anchor->GetOwnerNode()->GetType().c_str(), transdata_out_anchor->GetIdx(),
+           head_node_peer_anchor->GetOwnerNode()->GetName().c_str(),
+           head_node_peer_anchor->GetOwnerNode()->GetType().c_str(), head_node_peer_anchor->GetIdx());
     return GRAPH_FAILED;
   }
   relink_node = head_node_peer_anchor->GetOwnerNode();
@@ -637,7 +677,8 @@ graphStatus SameTransdataBreadthFusionPass::ReuseNodesBeforeTransdata(int anchor
     if (in_op_desc->UpdateInputDesc(in_data_anchor->GetIdx(), input_desc) != GRAPH_SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Update input:%d desc in op:%s(%s) failed", in_data_anchor->GetIdx(),
                         in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
-      GELOGE(FAILED, "UpdateInputDesc fail.");
+      GELOGE(FAILED, "[Update][InputDesc] index:%d in op:%s(%s) failed", in_data_anchor->GetIdx(),
+             in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
       return FAILED;
     }
     int output_idx = sub_graph_anchors_[anchors_index][i + 1].first->GetIdx();
@@ -646,7 +687,8 @@ graphStatus SameTransdataBreadthFusionPass::ReuseNodesBeforeTransdata(int anchor
     GE_IF_BOOL_EXEC(in_op_desc->UpdateOutputDesc(output_idx, output_desc) != GRAPH_SUCCESS,
                     REPORT_CALL_ERROR("E19999", "Update output:%d desc in op:%s(%s) failed", output_idx,
                                       in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
-                    GELOGE(GRAPH_FAILED, "update input desc failed");
+                    GELOGE(GRAPH_FAILED, "[Update][OutputDesc] index:%d in op:%s(%s) failed", output_idx,
+                           in_op_desc->GetName().c_str(), in_op_desc->GetType().c_str());
                     return GRAPH_FAILED);
     // relink control edge
     if (RelinkInControlEdge(in_owner_node, transdata_node_keep) != GRAPH_SUCCESS) {
@@ -694,6 +736,11 @@ graphStatus SameTransdataBreadthFusionPass::LinkNewCastNode2RemainTransdata(
                         transdata_remove_in_anchor->GetOwnerNode()->GetName().c_str(),
                         transdata_remove_in_anchor->GetOwnerNode()->GetType().c_str(),
                         transdata_remove_in_anchor->GetIdx());
+      GELOGE(GRAPH_FAILED, "[Remove][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+             transdata_peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+             transdata_peer_out_anchor->GetOwnerNode()->GetType().c_str(), transdata_peer_out_anchor->GetIdx(),
+             transdata_remove_in_anchor->GetOwnerNode()->GetName().c_str(),
+             transdata_remove_in_anchor->GetOwnerNode()->GetType().c_str(), transdata_remove_in_anchor->GetIdx());
       return GRAPH_FAILED;
     }
 
@@ -729,7 +776,9 @@ graphStatus SameTransdataBreadthFusionPass::LinkNewCastNode2RemainTransdata(
       REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) from graph:%s failed",
                         transdata_node_remove->GetName().c_str(), transdata_node_remove->GetType().c_str(),
                         graph->GetName().c_str());
-      GELOGE(GRAPH_FAILED, "remove node %s failed!", transdata_node_remove->GetName().c_str());
+      GELOGE(GRAPH_FAILED, "[Remove][Node] %s(%s) from graph:%s failed",
+             transdata_node_remove->GetName().c_str(), transdata_node_remove->GetType().c_str(),
+             graph->GetName().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -751,8 +800,10 @@ graphStatus SameTransdataBreadthFusionPass::RelinkInControlEdge(const NodePtr &n
                         peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
                         peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                         node_src->GetName().c_str(), node_src->GetType().c_str());
-      GELOGE(GRAPH_FAILED, "remove edge faliled!src:%s, dst:%s",
-             peer_out_control_anchor->GetOwnerNode()->GetName().c_str(), node_src->GetName().c_str());
+      GELOGE(GRAPH_FAILED, "[Remove][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+             peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+             peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+             node_src->GetName().c_str(), node_src->GetType().c_str());
       return GRAPH_FAILED;
     }
     GELOGD("add edge.src:%s, dst:%s", peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
@@ -762,8 +813,10 @@ graphStatus SameTransdataBreadthFusionPass::RelinkInControlEdge(const NodePtr &n
                         peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
                         peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
                         node_dst->GetName().c_str(), node_dst->GetType().c_str());
-      GELOGE(GRAPH_FAILED, "add edge failed!src:%s, dst:%s", peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
-             node_dst->GetName().c_str());
+      GELOGE(GRAPH_FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+             peer_out_control_anchor->GetOwnerNode()->GetName().c_str(),
+             peer_out_control_anchor->GetOwnerNode()->GetType().c_str(),
+             node_dst->GetName().c_str(), node_dst->GetType().c_str());
       return GRAPH_FAILED;
     }
   }
@@ -810,6 +863,8 @@ graphStatus SameTransdataBreadthFusionPass::AddCastNode(const ComputeGraphPtr &g
     if (cast_node == nullptr) {
       REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s failed",
                         cast_op_desc->GetName().c_str(), cast_op_desc->GetType().c_str(), graph->GetName().c_str());
+      GELOGE(GRAPH_FAILED, "[Add][Node] %s(%s) to graph:%s failed",
+             cast_op_desc->GetName().c_str(), cast_op_desc->GetType().c_str(), graph->GetName().c_str());
       return GRAPH_FAILED;
     }
     GELOGD("add edge.src:%s, dst:%s", pre_out_anchor->GetOwnerNode()->GetName().c_str(), cast_node->GetName().c_str());
@@ -818,6 +873,10 @@ graphStatus SameTransdataBreadthFusionPass::AddCastNode(const ComputeGraphPtr &g
                         pre_out_anchor->GetOwnerNode()->GetName().c_str(),
                         pre_out_anchor->GetOwnerNode()->GetType().c_str(), pre_out_anchor->GetIdx(),
                         cast_node->GetName().c_str(), cast_node->GetType().c_str());
+      GELOGE(GRAPH_FAILED, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:0) failed",
+             pre_out_anchor->GetOwnerNode()->GetName().c_str(),
+             pre_out_anchor->GetOwnerNode()->GetType().c_str(), pre_out_anchor->GetIdx(),
+             cast_node->GetName().c_str(), cast_node->GetType().c_str());
       return GRAPH_FAILED;
     }
     if (i == 0) {
@@ -827,7 +886,8 @@ graphStatus SameTransdataBreadthFusionPass::AddCastNode(const ComputeGraphPtr &g
     if (!AttrUtils::SetBool(cast_op_desc, ATTR_NEED_COMPILE, true)) {
       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NEED_COMPILE.c_str(),
                         cast_op_desc->GetName().c_str(), cast_op_desc->GetType().c_str());
-      GELOGE(FAILED, "SetExtAttr fail.");
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NEED_COMPILE.c_str(),
+             cast_op_desc->GetName().c_str(), cast_op_desc->GetType().c_str());
       return FAILED;
     }
     pre_out_anchor = cast_node->GetOutDataAnchor(0);
@@ -842,7 +902,7 @@ graphStatus SameTransdataBreadthFusionPass::GetSubGraphsBetweenNormalAndTransdat
   graphStatus ret = GRAPH_SUCCESS;
   if (out_anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param out_anchor is nullptr, check invalid");
-    GELOGE(GRAPH_FAILED, "out data anchor is null!This should not happen!");
+    GELOGE(GRAPH_FAILED, "[Check][Param] out data anchor is null! This should not happen!");
     return GRAPH_FAILED;
   }
 
@@ -868,7 +928,8 @@ graphStatus SameTransdataBreadthFusionPass::GetSubGraphsBetweenNormalAndTransdat
       for (auto &peer_out_anchor : peer_in_node->GetAllOutDataAnchors()) {
         ret = GetSubGraphsBetweenNormalAndTransdataNode(peer_out_anchor, sub_graphs_out, nodes_list);
         if (ret != GRAPH_SUCCESS) {
-          GELOGE(GRAPH_FAILED, "get all transop between normal node failed!node:%s", peer_in_node->GetName().c_str());
+          GELOGE(GRAPH_FAILED, "[Get][AllTransOp] between normal node failed! node:%s",
+                 peer_in_node->GetName().c_str());
           return GRAPH_FAILED;
         }
       }

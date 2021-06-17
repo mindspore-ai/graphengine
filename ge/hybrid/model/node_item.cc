@@ -20,7 +20,6 @@
 #include "graph/common/omg_util.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/utils/node_utils.h"
 #include "hybrid/executor/worker/shape_inference_engine.h"
 #include "hybrid/node_executor/node_executor.h"
 
@@ -34,7 +33,7 @@ const std::set<std::string> kControlOpTypes{
 };
 
 const std::set<std::string> kControlFlowOpTypes{
-    STREAMACTIVE, STREAMSWITCH, STREAMSWITCHN, NEXTITERATION, REFNEXTITERATION, EXIT, REFEXIT,
+    STREAMACTIVE, STREAMSWITCH, STREAMSWITCHN, ENTER, REFENTER, NEXTITERATION, REFNEXTITERATION, EXIT, REFEXIT,
     LABELGOTO, LABELGOTOEX, LABELSWITCH, LABELSWITCHBYINDEX
 };
 
@@ -402,8 +401,8 @@ void NodeItem::SetDataSend(NodeItem *node_item, int anchor_index) {
     node_item->root_data_.emplace(this);
   }
   // If Enter feed Not Merge, take as root Node.
-  if ((kEnterOpTypes.count(node_type) > 0) && (node_item->node_type != STREAMMERGE)) {
-    node_item->root_data_.emplace(this);
+  if (IsEnterOp() && (node_item->node_type != STREAMMERGE)) {
+    node_item->enter_data_.emplace(this);
     node_item->enter_inside_.emplace(anchor_index);
   }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
@@ -422,8 +421,8 @@ void NodeItem::SetCtrlSend(NodeItem *node_item, uint32_t switch_index) {
     node_item->root_ctrl_.emplace(this);
   }
   // If Enter feed control signal, take as root Node.
-  if (kEnterOpTypes.count(node_type) > 0) {
-    node_item->root_ctrl_.emplace(this);
+  if (IsEnterOp() && (node_item->node_type != STREAMMERGE && node_item->node_type != STREAMACTIVE)) {
+    node_item->enter_ctrl_.emplace(this);
   }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
 }

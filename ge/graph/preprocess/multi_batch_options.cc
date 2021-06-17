@@ -550,10 +550,8 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
   for (size_t i = 0; i < data_shape.GetDimNum(); ++i) {
     if (data_shape.GetDim(i) < 0) {
       if (batch_shape_index >= batch_shape.size()) {
-        ErrorManager::GetInstance().ATCReportErrMessage(
-            "E19012", {"function", "reason"},
-            {"CalcShape", "the batch shape count " + std::to_string(batch_shape.size()) +
-                " does not match the data shape " + data_shape.ToString()});
+        REPORT_INNER_ERROR("E19999", "the batch shape count %zu, does not match the data shape %s",
+                           batch_shape.size(), data_shape.ToString().c_str());
         GELOGE(PARAM_INVALID, "[Check][Param] Failed to calc tensor shape, the batch shape count %zu, "
                "does not match the data shape %s", batch_shape.size(), data_shape.ToString().c_str());
         return PARAM_INVALID;
@@ -563,9 +561,8 @@ Status CalcShape(const std::vector<int64_t> &batch_shape, GeShape &data_shape) {
   }
   GELOGI("CalcShape size of batch_shape is %zu, batch_shape_index is %zu.", batch_shape.size(), batch_shape_index);
   if (batch_shape_index != batch_shape.size()) {
-    ErrorManager::GetInstance().ATCReportErrMessage(
-        "E19012", {"function", "reason"}, {"CalcShape", "the batch shape count " + std::to_string(batch_shape.size()) +
-                                                            " does not match the data shape " + data_shape.ToString()});
+    REPORT_INNER_ERROR("E19999", "the batch shape count %zu, does not match the data shape %s",
+                       batch_shape.size(), data_shape.ToString().c_str());
     GELOGE(PARAM_INVALID, "[Check][Param] Failed to calc tensor shape, the batch shape count %zu, "
            "does not match the data shape %s", batch_shape.size(), data_shape.ToString().c_str());
     return PARAM_INVALID;

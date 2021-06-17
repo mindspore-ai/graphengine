@@ -36,12 +36,12 @@ Status MergePass::Run(NodePtr &node) {
   GELOGD("MergePass running");
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "param [node] must not be null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] param [node] must not be null.");
     return PARAM_INVALID;
   }
 
   std::string op_type;
-  GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "get original type failed");
+  GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "[Get][OriginalType] of node:%s failed", node->GetName().c_str());
   if (op_type != MERGE) {
     return SUCCESS;
   }
@@ -49,7 +49,8 @@ Status MergePass::Run(NodePtr &node) {
   if (node->GetAllOutDataAnchors().empty()) {
     REPORT_INNER_ERROR("E19999", "Param node:%s(%s) all data anchor size is 0, check invalid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(PARAM_INVALID, "[%s] Merge node output anchor is empty", node->GetName().c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] Param node:%s(%s) all data anchor size is 0",
+           node->GetName().c_str(), node->GetType().c_str());
     return PARAM_INVALID;
   }
 
@@ -75,7 +76,7 @@ Status MergePass::Run(NodePtr &node) {
       if (merge_io_map[0] != -1 && IsNeedChangeIndexToConstant(node)) {
         int index = merge_io_map[0];
         if (ChangeIndexToConstant(node, index) != SUCCESS) {
-          GELOGE(FAILED, "[%s] Change value index to be Constant failed.", node->GetName().c_str());
+          GELOGE(FAILED, "[Change][Index] to be Constant failed, node:%s.", node->GetName().c_str());
           return FAILED;
         }
       }
@@ -84,7 +85,7 @@ Status MergePass::Run(NodePtr &node) {
         if (IsolateAndDeleteNode(in_node, {0}) != SUCCESS) {
           REPORT_CALL_ERROR("E19999", "Isolate and delete node:%s(%s) failed",
                             in_node->GetName().c_str(), in_node->GetType().c_str());
-          GELOGE(FAILED, "Isolate and delete node %s failed.", in_node->GetName().c_str());
+          GELOGE(FAILED, "[Remove][Node] %s failed.", in_node->GetName().c_str());
           return FAILED;
         }
       }
@@ -122,7 +123,8 @@ Status MergePass::ChangeIndexToConstant(NodePtr &node, int &value_index) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Owner graph of node:%s(%s) is nullptr, check invalid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[%s] The owner graph must not be null.", node->GetName().c_str());
+    GELOGE(FAILED, "[Get][ComputeGraph] failed, Owner graph of node:%s(%s) is nullptr.",
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -143,7 +145,9 @@ Status MergePass::ChangeIndexToConstant(NodePtr &node, int &value_index) {
     REPORT_CALL_ERROR("E19999", "Replace node:%s(%s) by node:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str(),
                       const_node->GetName().c_str(), const_node->GetType().c_str());
-    GELOGE(FAILED, "[%s] ReplaceNodeAnchors failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[Replace][Node] %s(%s) by node:%s(%s) failed",
+           node->GetName().c_str(), node->GetType().c_str(),
+           const_node->GetName().c_str(), const_node->GetType().c_str());
     return FAILED;
   }
   auto out_control_anchor = node->GetOutControlAnchor();
@@ -165,7 +169,7 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
   op_desc = MakeShared<OpDesc>(constant_name, CONSTANT);
   if (op_desc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(FAILED, "[%s] Make shared of Constant op desc failed.", constant_name.c_str());
+    GELOGE(FAILED, "[New][OpDesc] failed, name:%s.", constant_name.c_str());
     return FAILED;
   }
 
@@ -173,7 +177,7 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
   OpDescPtr original_op_desc = node->GetOpDesc();
   if (original_op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-    GELOGE(FAILED, "[%s] Op desc must not be null.", constant_name.c_str());
+    GELOGE(FAILED, "[Get][OpDesc] failed, Op desc must not be null.");
     return FAILED;
   }
   GeTensorDesc original_out_tensor_desc = original_op_desc->GetOutputDesc(1);
@@ -184,18 +188,21 @@ Status MergePass::CreateConstByValue(NodePtr &node, int value_index, OpDescPtr &
       MakeShared<GeTensor>(original_out_tensor_desc, reinterpret_cast<uint8_t *>(&value_index), sizeof(int));
   if (const_tensor_ptr == nullptr) {
     REPORT_CALL_ERROR("E19999", "New GeTensor failed");
-    GELOGE(FAILED, "[%s] Make shared of Constant tensor failed.", constant_name.c_str());
+    GELOGE(FAILED, "[New][GeTensor] failed.");
     return FAILED;
   }
 
   GE_IF_BOOL_EXEC(!AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, const_tensor_ptr),
-                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                                    ATTR_NAME_WEIGHTS.c_str(),
+                  REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_WEIGHTS.c_str(),
                                     op_desc->GetName().c_str(), op_desc->GetType().c_str());
-                  GELOGE(FAILED, "get ATTR_NAME_WEIGHTS failed"); return FAILED);
+                  GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_WEIGHTS.c_str(),
+                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
+                  return FAILED);
 
   // 4. set Constant output desc
-  GE_CHK_GRAPH_STATUS_RET(op_desc->AddOutputDesc(original_out_tensor_desc), "add out put desc failed");
+  GE_CHK_GRAPH_STATUS_RET(op_desc->AddOutputDesc(original_out_tensor_desc),
+                          "[Add][OutputDesc] to op:%s(%s) failed",
+                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return SUCCESS;
 }
 

@@ -32,7 +32,7 @@ Status TransOpBreadthFusionPass::Run(ge::ComputeGraphPtr graph) {
   Status ret_topo = graph->TopologicalSorting();
   if (ret_topo != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Topological sorting for graph:%s failed", graph->GetName().c_str());
-    GELOGE(ret_topo, "TopologicalSorting the merged graph failed.");
+    GELOGE(ret_topo, "[Call][TopologicalSorting] for graph:%s failed.", graph->GetName().c_str());
     return ret_topo;
   }
 
@@ -63,17 +63,20 @@ std::string TransOpBreadthFusionPass::GetNodeId(const int anchor_index, const No
 
   GE_IF_BOOL_EXEC(node == nullptr || node->GetOpDesc() == nullptr,
                   REPORT_INNER_ERROR("E19999", "Param node or its op_desc is nullptr, check invalid");
-                  GELOGE(FAILED, "node is null"); return "");
+                  GELOGE(FAILED, "[Check][Param] Param node or its op_desc is nullptr"); return "");
+
+  std::set<std::string> trans_shapes = { RESHAPE, EXPANDDIMS, SQUEEZE };
+  std::set<std::string> trans_shape_and_format = { TRANSPOSE, TRANSPOSED, EXPANDDIMS };
   if (node->GetType() == CAST) {
     trans_data_type = true;
-  } else if (node->GetType() == TRANSPOSE || node->GetType() == TRANSPOSED || node->GetType() == EXPANDDIMS) {
+  } else if (trans_shape_and_format.count(node->GetType()) > 0) {
     trans_format = true;
     trans_shape = true;
   } else if (node->GetType() == TRANSDATA) {
     trans_data_type = true;
     trans_format = true;
     trans_shape = true;
-  } else if (node->GetType() == RESHAPE || node->GetType() == EXPANDDIMS || node->GetType() == SQUEEZE) {
+  } else if (trans_shapes.count(node->GetType()) > 0) {
     trans_shape = true;
   } else if (node->GetType() == REFORMAT) {
     trans_format = true;

@@ -286,13 +286,23 @@ void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t grou
     return;
   }
 
+  SetControlFlowGroup(node, group_index);
+}
+
+///
+/// @brief Set Op _control_flow_group flag
+/// @param [in] node
+/// @param [in] group, condition group index of node.
+/// @return
+///
+void SetControlFlowGroup(const NodePtr &node, int64_t group) {
   GE_RT_VOID_CHECK_NOTNULL(node);
   const auto &op_desc = node->GetOpDesc();
   GE_RT_VOID_CHECK_NOTNULL(op_desc);
 
   // op_desc as AttrHolderAdapter valid, Set attribute always success, just log for check.
-  GELOGD("[%s] Set control flow group index: %ld", node->GetName().c_str(), group_index);
-  if (!AttrUtils::SetInt(op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
+  GELOGD("[%s] Set control flow group index: %ld", node->GetName().c_str(), group);
+  if (!AttrUtils::SetInt(op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, group)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
     GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),

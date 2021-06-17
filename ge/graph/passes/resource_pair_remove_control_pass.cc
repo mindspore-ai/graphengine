@@ -85,9 +85,9 @@ Status ResourcePairRemoveControlPass::Run(ComputeGraphPtr graph) {
           REPORT_CALL_ERROR("E19999", "Op:%s(%s) unlink control edge to op:%s(%s) failed",
                             from_node->GetName().c_str(), from_node->GetType().c_str(),
                             to_node->GetName().c_str(), to_node->GetType().c_str());
-          GELOGE(INTERNAL_ERROR, "unlink fail, from_node:%s, to_node:%s, from_type:%s, to_type:%s",
-                 from_node->GetName().c_str(), to_node->GetName().c_str(), resource_type_pair.first.c_str(),
-                 resource_type_pair.second.c_str());
+          GELOGE(INTERNAL_ERROR, "[Remove][Edge] Op:%s(%s) unlink control edge to op:%s(%s) failed",
+                 from_node->GetName().c_str(), from_node->GetType().c_str(),
+                 to_node->GetName().c_str(), to_node->GetType().c_str());
           return domi::PARAM_INVALID;
         }
         GELOGD("unlink success, from_node:%s, to_node:%s, from_type:%s, to_type:%s", from_node->GetName().c_str(),

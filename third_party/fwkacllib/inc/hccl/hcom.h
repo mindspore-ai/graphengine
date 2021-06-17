@@ -164,6 +164,11 @@ HcclResult HcomExecEnqueueRemoteAccess(const std::string& remoteAccessType,
                                        const std::vector<HcomRemoteAccessAddrInfo>& addrInfos,
                                        std::function<void(HcclResult status)> callback);
 
+HcclResult HcomExecEnqueueAllToAllV(HcomAllToAllVParams params, std::function<void(HcclResult status)> callback);
+
+HcclResult HcomExecEnqueueGatherAllToAllV(HcomGatherAllToAllVParams params,
+                                          std::function<void(HcclResult status)> callback);
+
 /**
  * @brief Register memories and init resources for remote access.
  *

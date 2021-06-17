@@ -452,7 +452,9 @@ Status GeGenerator::Initialize(const map<string, string> &options, OmgContext &o
 
 Status GeGenerator::Finalize() {
   ErrorManager::GetInstance().SetStage(error_message::kFinalize, error_message::kFinalize);
-  GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
+  if (impl_ == nullptr) {
+    return SUCCESS;
+  }
   Status ret = impl_->graph_manager_.Finalize();
   if (ret != SUCCESS) {
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_FINALIZE_FAILED, "[Call][Finalize] Graph manager finalize failed.");
@@ -852,7 +854,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
            op_desc->GetName().c_str());
     return PARAM_INVALID;
   }
-  OmgContext &omg_context = (impl_ == nullptr) ? domi::GetContext() : impl_->omg_context_;
+  OmgContext &omg_context = impl_->omg_context_;
   omg_context.is_dynamic_input = ContainsDynamicInpus(*op_desc);
 
   if (op_desc->HasAttr(ATTR_NAME_UNREGST_OPPATH)) {
@@ -867,11 +869,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   if (!HasShapeRange(inputs) && compile_flag == kFuzzBuildPattern) {
     fuzz_compile_flag = true;
   }
-  if (!AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, fuzz_compile_flag)) {
-    REPORT_CALL_ERROR("E19999", "set ATTR_NAME_FUZZ_BUILD failed for %s.", op_desc->GetName().c_str());
-    GELOGE(FAILED, "[Set][ATTR_NAME_FUZZ_BUILD] Failed to set attr for %s.", op_desc->GetName().c_str());
-    return FAILED;
-  }
+  (void)AttrUtils::SetBool(op_desc, ATTR_NAME_FUZZ_BUILD, fuzz_compile_flag);
   impl_->omg_context_.fuzz_compile_flag = fuzz_compile_flag;
 
   // 1. Create ComputeGraph.

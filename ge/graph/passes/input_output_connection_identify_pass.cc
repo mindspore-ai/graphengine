@@ -43,7 +43,8 @@ inline bool IsDataOp(const std::string &node_type) {
 Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
   if (graph == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param graph is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "Input param graph is null, skip identification of nodes that connect to input and output.");
+    GELOGE(PARAM_INVALID, "[Check][Param] Input param graph is nullptr, "
+           "skip identification of nodes that connect to input and output.");
     return PARAM_INVALID;
   }
 
@@ -55,16 +56,14 @@ Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
 
   GELOGD("Start to identify nodes that connect to input and output.");
   if (graph->TopologicalSorting() != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Topological Sorting graph:%s failed",
-                      graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Graph topological sort failed.");
+    REPORT_CALL_ERROR("E19999", "Topological Sorting graph:%s failed", graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Call][TopologicalSorting] for graph:%s failed.", graph->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
   if (GraphUtils::GetRefMapping(graph, symbol_to_anchors_, anchor_to_symbol_) != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Get ref mapping from graph:%s failed",
-                      graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Get ref-mapping for graph %s failed.", graph->GetName().c_str());
+    REPORT_CALL_ERROR("E19999", "Get ref mapping from graph:%s failed", graph->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][RefMapping] for graph:%s failed.", graph->GetName().c_str());
     return INTERNAL_ERROR;
   }
 
@@ -77,7 +76,7 @@ Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
       GELOGD("Find nodes that connect to root graph input node: %s.", node->GetName().c_str());
       status = ProcessInputNode(node, connect_input_node_idx_map, connect_output_node_idx_map);
       if (status != SUCCESS) {
-        GELOGE(status, "Failed to process nodes that connect to input node: %s.", node->GetName().c_str());
+        GELOGE(status, "[Process][Nodes] that connect to input node:%s failed.", node->GetName().c_str());
         return status;
       }
     }
@@ -86,7 +85,7 @@ Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
       GELOGD("Find nodes that connect to root graph output node: %s.", node->GetName().c_str());
       status = ProcessOutputNode(node, connect_input_node_idx_map, connect_output_node_idx_map);
       if (status != SUCCESS) {
-        GELOGE(status, "Failed to process nodes that connect to output node: %s.", node->GetName().c_str());
+        GELOGE(status, "[Process][Nodes] that connect to output node:%s failed.", node->GetName().c_str());
         return status;
       }
     }
@@ -94,7 +93,7 @@ Status InputOutputConnectionIdentifyPass::Run(ComputeGraphPtr graph) {
 
   status = SetNodeAttrOfConnectingInputOutput(connect_input_node_idx_map, connect_output_node_idx_map);
   if (status != SUCCESS) {
-    GELOGE(status, "Failed to set attr for nodes that connect to input and output.");
+    GELOGE(status, "[Set][Attr] for nodes that connect to input and output failed.");
     return status;
   }
 
@@ -118,7 +117,7 @@ Status InputOutputConnectionIdentifyPass::ProcessInputNode(const NodePtr &node,
     const string &symbol = anchor_iter->second;
     auto status = UpdateNodeIdxMap(symbol, connect_input_node_idx, connect_output_node_idx);
     if (status != SUCCESS) {
-      GELOGE(status, "Failed to update node anchor_index map.");
+      GELOGE(status, "[Call][UpdateNodeIdxMap] Failed to update node anchor_index map.");
       return status;
     }
   }
@@ -132,7 +131,7 @@ Status InputOutputConnectionIdentifyPass::UpdateNodeIdxMap(const string &symbol_
   if (symbol_iter == symbol_to_anchors_.end()) {
     REPORT_CALL_ERROR("E19999", "Can't find symbol:%s in symbol_to_anchors map, check invalid",
                       symbol_string.c_str());
-    GELOGE(PARAM_INVALID, "Input param symbol string: %s is invalid.", symbol_string.c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] Input param symbol string:%s is invalid.", symbol_string.c_str());
     return PARAM_INVALID;
   }
   const auto &node_index_io_list = symbol_iter->second;
@@ -164,7 +163,7 @@ Status InputOutputConnectionIdentifyPass::ProcessOutputNode(const NodePtr &node,
     const string &symbol = anchor_iter->second;
     auto status = UpdateNodeIdxMap(symbol, connect_input_node_idx, connect_output_node_idx);
     if (status != SUCCESS) {
-      GELOGE(status, "Failed to update node anchor_index map.");
+      GELOGE(status, "[Call][UpdateNodeIdxMap] Failed to update node anchor_index map.");
       return status;
     }
   }
@@ -178,11 +177,10 @@ Status InputOutputConnectionIdentifyPass::SetNodeAttrOfConnectingInputOutput(
     GE_CHECK_NOTNULL(iter.first);
     if (iter.first->GetOpDesc() != nullptr) {
       if (!AttrUtils::SetListInt(iter.first->GetOpDesc(), ATTR_NAME_NODE_CONNECT_INPUT, iter.second)) {
-        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                          ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
                           iter.first->GetName().c_str(), iter.first->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to set attr %s for node %s.", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
-               iter.first->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_INPUT.c_str(),
+               iter.first->GetName().c_str(), iter.first->GetType().c_str());
         return INTERNAL_ERROR;
       }
     }
@@ -192,11 +190,10 @@ Status InputOutputConnectionIdentifyPass::SetNodeAttrOfConnectingInputOutput(
     GE_CHECK_NOTNULL(iter.first);
     if (iter.first->GetOpDesc() != nullptr) {
       if (!AttrUtils::SetListInt(iter.first->GetOpDesc(), ATTR_NAME_NODE_CONNECT_OUTPUT, iter.second)) {
-        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed",
-                          ATTR_NAME_NODE_CONNECT_OUTPUT.c_str(),
+        REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_OUTPUT.c_str(),
                           iter.first->GetName().c_str(), iter.first->GetType().c_str());
-        GELOGE(INTERNAL_ERROR, "Failed to set attr %s for node %s.", ATTR_NAME_NODE_CONNECT_OUTPUT.c_str(),
-               iter.first->GetName().c_str());
+        GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_NODE_CONNECT_OUTPUT.c_str(),
+               iter.first->GetName().c_str(), iter.first->GetType().c_str());
         return INTERNAL_ERROR;
       }
     }

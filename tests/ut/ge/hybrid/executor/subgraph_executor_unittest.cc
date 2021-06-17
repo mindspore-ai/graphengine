@@ -127,7 +127,7 @@ static void CreateSimpleCondGraph(ComputeGraph &graph, NodePtr &switch_t, NodePt
     AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, weight);
   }
 
-  const auto less1 = CreateNode(graph, "less", EXIT, 2, 1);  // Mock for less, just pass input0.
+  const auto less1 = CreateNode(graph, "less", IDENTITY, 2, 1);  // Mock for less, just pass input0.
 
   const auto active1 = CreateNode(graph, "active1", STREAMACTIVE, 0, 0);
   switch_t = CreateNode(graph, "switch_t", STREAMSWITCH, 2, 0);
@@ -135,8 +135,8 @@ static void CreateSimpleCondGraph(ComputeGraph &graph, NodePtr &switch_t, NodePt
   AttrUtils::SetInt(switch_t->GetOpDesc(), ATTR_NAME_STREAM_SWITCH_COND, RT_EQUAL); // 101 for true.
   AttrUtils::SetInt(switch_f->GetOpDesc(), ATTR_NAME_STREAM_SWITCH_COND, RT_NOT_EQUAL);
 
-  const auto add1 = CreateNode(graph, "add", EXIT, 2, 1);  // Mock for add, just pass input0.
-  const auto sub1 = CreateNode(graph, "sub", EXIT, 2, 1);  // Mock for sub, just pass input0.
+  const auto add1 = CreateNode(graph, "add", IDENTITY, 2, 1);  // Mock for add, just pass input0.
+  const auto sub1 = CreateNode(graph, "sub", IDENTITY, 2, 1);  // Mock for sub, just pass input0.
 
   const auto merge1 = CreateNode(graph, "merge", STREAMMERGE, 2, 2);
   const auto active2 = CreateNode(graph, "active2", STREAMACTIVE, 0, 0);

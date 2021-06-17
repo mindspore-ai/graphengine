@@ -68,7 +68,7 @@ Status MarkAgnosticPass::Run(ComputeGraphPtr graph) {
 
       // Set attr for enter and nextiteration
       if (HandWhileLoop(node) != SUCCESS) {
-        GELOGE(FAILED, "Node: %s type merge handle while loop failed", node->GetName().c_str());
+        GELOGE(FAILED, "[Hand][WhileLoop] for node:%s failed.", node->GetName().c_str());
         return FAILED;
       }
       continue;

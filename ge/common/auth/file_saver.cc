@@ -290,7 +290,6 @@ FileSaver::SaveToFile(const string &file_path, const ge::ModelData &model, const
                          copy_header_ret);
 
   file_header.length = model.model_len;
-  file_header.is_encrypt = ModelEncryptType::UNENCRYPTED;
 
   const Status ret = SaveWithFileHeader(file_path, file_header, model.model_data, file_header.length);
   if (ret != SUCCESS) {
@@ -305,8 +304,6 @@ FileSaver::SaveToFile(const string &file_path, const ge::ModelData &model, const
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header, ModelPartitionTable &model_partition_table,
                       const std::vector<ModelPartition> &partition_datas) {
-  file_header.is_encrypt = ModelEncryptType::UNENCRYPTED;
-
   const Status ret = SaveWithFileHeader(file_path, file_header, model_partition_table, partition_datas);
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "save file failed, file_path:%s, file header len:%u.",
                          file_path.c_str(), file_header.length);
@@ -317,8 +314,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
 FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header,
                       vector<ModelPartitionTable *> &model_partition_tables,
                       const vector<vector<ModelPartition>> &all_partition_datas) {
-  file_header.is_encrypt = ModelEncryptType::UNENCRYPTED;
-
   const Status ret = SaveWithFileHeader(file_path, file_header, model_partition_tables, all_partition_datas);
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "save file failed, file_path:%s, file header len:%u.",
                          file_path.c_str(), file_header.length);

@@ -51,6 +51,7 @@ class SubgraphContext {
   void NodeDone(const NodePtr &node);
 
  private:
+  FrameStatePtr GetOrCreateFrameState(const NodeItem &node_item); // no lock
   friend class TaskContext;
   const GraphItem *graph_item_;
   const GraphExecutionContext *execution_context_;
@@ -59,6 +60,7 @@ class SubgraphContext {
   std::vector<TensorValue> all_outputs_;
   NodeDoneManager node_done_manager_;
   std::unordered_map<const NodeItem *, NodeStatePtr> node_states_;
+  std::unordered_map<int64_t, FrameStatePtr> frame_states_;
   int group_ = -1;
 };
 }  // namespace hybrid

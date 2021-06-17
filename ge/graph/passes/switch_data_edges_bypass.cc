@@ -52,8 +52,8 @@ std::vector<std::pair<NodePtr, InDataAnchorPtr>> GetOutDataNodesByIndex(const No
   if (out_anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d out data anchor, check invalid",
                        node->GetName().c_str(), node->GetType().c_str(), index);
-    GELOGE(PARAM_INVALID, "Failed to get out data nodes of index %d from node %s, the anchor does not exists", index,
-           node->GetName().c_str());
+    GELOGE(PARAM_INVALID, "[Get][OutDataNodes] of index %d from node %s failed, the anchor does not exists",
+           index, node->GetName().c_str());
     return {};
   }
   std::vector<std::pair<NodePtr, InDataAnchorPtr>> nodes_and_anchors;
@@ -87,24 +87,23 @@ NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
   auto node_desc = node->GetOpDesc();
   if (node_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "Failed to add identity after node %s index %d, the op desc is null",
-           node->GetName().c_str(), index);
+    GELOGE(INTERNAL_ERROR, "[Get][OpDesc] failed, the op desc is nullptr");
     return nullptr;
   }
   auto tensor = node_desc->GetOutputDescPtr(index);
   if (tensor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d output tensor, check invalid",
                        node_desc->GetName().c_str(), node_desc->GetType().c_str(), index);
-    GELOGE(INTERNAL_ERROR, "Failed to find the tensor by index %d from node %s, can not add the identity node", index,
-           node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][OutputDescPtr] failed, Node:%s(%s) has no index:%d output tensor",
+           node_desc->GetName().c_str(), node_desc->GetType().c_str(), index);
     return nullptr;
   }
   auto anchor = node->GetOutDataAnchor(index);
   if (anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d out data anchor, check invalid",
                        node->GetName().c_str(), node->GetType().c_str(), index);
-    GELOGE(OUT_OF_MEMORY, "Failed to add identity after node %s index %d, the out anchor does not exists",
-           node->GetName().c_str(), index);
+    GELOGE(OUT_OF_MEMORY, "[Get][OutDataAnchor] failed, Node:%s(%s) has no index:%d out data anchor",
+           node->GetName().c_str(), node->GetType().c_str(), index);
     return nullptr;
   }
 
@@ -112,7 +111,7 @@ NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
       MakeShared<OpDesc>("SwitchDataEdgesByPass_Identity_" + std::to_string(identity_counter), IDENTITY);
   if (identity_opdesc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(OUT_OF_MEMORY, "Failed to add identity after node %s index %d", node->GetName().c_str(), index);
+    GELOGE(OUT_OF_MEMORY, "[New][OpDesc] failed");
     return nullptr;
   }
   auto ret1 = identity_opdesc->AddInputDesc("x", *tensor);
@@ -122,7 +121,9 @@ NodePtr AddIdentityAfterNode(const NodePtr &node, int index) {
     REPORT_CALL_ERROR("E19999", "Add input ouput desc to op:%s(%s) failed or add it to graph:%s failed",
                       identity_opdesc->GetName().c_str(), identity_opdesc->GetType().c_str(),
                       node->GetOwnerComputeGraph()->GetName().c_str());
-    GELOGE(OUT_OF_MEMORY, "Failed to add identity after node %s index %d", node->GetName().c_str(), index);
+    GELOGE(OUT_OF_MEMORY, "[Check][Param] Add input ouput desc to op:%s(%s) failed or add it to graph:%s failed",
+           identity_opdesc->GetName().c_str(), identity_opdesc->GetType().c_str(),
+           node->GetOwnerComputeGraph()->GetName().c_str());
     return nullptr;
   }
   (void)anchor->LinkTo(identity->GetInDataAnchor(0));
@@ -136,31 +137,30 @@ NodePtr AddMemcpyBeforeNode(const NodePtr &node, int index) {
   auto node_desc = node->GetOpDesc();
   if (node_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "Failed to add memcpy before node %s index %d, null op desc", node->GetName().c_str(),
-           index);
+    GELOGE(INTERNAL_ERROR, "[Get][OpDesc] failed, OpDesc in node is nullptr");
     return nullptr;
   }
   auto tensor = node_desc->GetInputDescPtr(index);
   if (tensor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d input tensor, check invalid",
                        node_desc->GetName().c_str(), node_desc->GetType().c_str(), index);
-    GELOGE(INTERNAL_ERROR, "Failed to find the tensor by index %d from node %s, can not add the memcpy node", index,
-           node->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Get][InputDescPtr] failed, Node:%s(%s) has no index:%d input tensor",
+           node_desc->GetName().c_str(), node_desc->GetType().c_str(), index);
     return nullptr;
   }
   auto anchor = node->GetInDataAnchor(index);
   if (anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no index:%d in data anchor, check invalid",
                        node->GetName().c_str(), node->GetType().c_str(), index);
-    GELOGE(INTERNAL_ERROR, "Failed to add memcpy before node %s index %d, the in anchor does not exists",
-           node->GetName().c_str(), index);
+    GELOGE(INTERNAL_ERROR, "[Get][InDataAnchor] failed, Node:%s(%s) has no index:%d in data anchor",
+           node->GetName().c_str(), node->GetType().c_str(), index);
     return nullptr;
   }
 
   auto memcpy_opdesc = MakeShared<OpDesc>("SwitchDataEdgesByPass_Memcpy_" + std::to_string(counter), MEMCPYASYNC);
   if (memcpy_opdesc == nullptr) {
     REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(OUT_OF_MEMORY, "Failed to add memcpy before node %s index %d", node->GetName().c_str(), index);
+    GELOGE(OUT_OF_MEMORY, "[New][OpDesc] failed");
     return nullptr;
   }
   auto ret1 = memcpy_opdesc->AddInputDesc(*tensor);
@@ -170,7 +170,9 @@ NodePtr AddMemcpyBeforeNode(const NodePtr &node, int index) {
     REPORT_CALL_ERROR("E19999", "Add input ouput desc to op:%s(%s) failed or add it to graph:%s failed",
                       memcpy_opdesc->GetName().c_str(), memcpy_opdesc->GetType().c_str(),
                       node->GetOwnerComputeGraph()->GetName().c_str());
-    GELOGE(OUT_OF_MEMORY, "Failed to add memcpy before node %s index %d", node->GetName().c_str(), index);
+    GELOGE(OUT_OF_MEMORY, "[Check][Param] Add input ouput desc to op:%s(%s) failed or add it to graph:%s failed",
+           memcpy_opdesc->GetName().c_str(), memcpy_opdesc->GetType().c_str(),
+           node->GetOwnerComputeGraph()->GetName().c_str());
     return nullptr;
   }
   (void)memcpy_node->GetOutDataAnchor(0)->LinkTo(anchor);
@@ -221,7 +223,7 @@ Status BypassSwitchOut(const NodePtr &switch_node, int out_index) {
 Status SwitchDataEdgesBypass::Run(ComputeGraphPtr graph) {
   for (const auto &node : graph->GetDirectNode()) {
     auto ret = BypassSwitch(node);
-    GE_CHK_STATUS_RET(ret, "By pass switch node %s failed", node->GetName().c_str())
+    GE_CHK_STATUS_RET(ret, "[Bypass][Switch] node %s failed", node->GetName().c_str())
   }
   return SUCCESS;
 }
@@ -235,9 +237,9 @@ Status SwitchDataEdgesBypass::BypassSwitch(const NodePtr &node) {
   }
 
   auto ret = BypassSwitchOut(node, SWITCH_FALSE_OUTPUT);
-  GE_CHK_STATUS_RET(ret, "By pass switch node %s false output failed", node->GetName().c_str())
+  GE_CHK_STATUS_RET(ret, "[Bypass][Switch] node %s false output failed", node->GetName().c_str())
   ret = BypassSwitchOut(node, SWITCH_TRUE_OUTPUT);
-  GE_CHK_STATUS_RET(ret, "By pass switch node %s true output failed", node->GetName().c_str())
+  GE_CHK_STATUS_RET(ret, "[Bypass][Switch] node %s true output failed", node->GetName().c_str())
 
   return SUCCESS;
 }

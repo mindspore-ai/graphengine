@@ -32,7 +32,7 @@ const int kDefaultInputIndex = -1;
 bool ParsePred(const ConstGeTensorPtr &tensor) {
   if (tensor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param tensor is nullptr, check invalid");
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] parameter tensor is nullptr.");
     return false;
   }
   const uint8_t *data_ptr = tensor->GetData().data();
@@ -68,6 +68,8 @@ bool ParseOutDataAnchors(const NodePtr &node, const NodePtr &pred_node, OutDataA
   if (tensors.empty()) {
     REPORT_INNER_ERROR("E19999", "Node:%s(%s) has no weight, check invalid",
                        pred_node->GetName().c_str(), pred_node->GetType().c_str());
+    GELOGE(FAILED, "[Check][Param] Node:%s(%s) has no weight",
+           pred_node->GetName().c_str(), pred_node->GetType().c_str());
     return false;
   }
 
@@ -76,7 +78,7 @@ bool ParseOutDataAnchors(const NodePtr &node, const NodePtr &pred_node, OutDataA
 
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] parameter node is nullptr.");
     return false;
   }
   GELOGI("[%s] Inactive output index = %d", node->GetName().c_str(), inactive_output_index);
@@ -96,7 +98,7 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
                                                      const OutDataAnchorPtr &active_out_data_anchor) {
   if (node == nullptr || active_out_data_anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node or active_out_data_anchor is nullptr, check invalid");
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] parameter node or active_out_data_anchor is nullptr.");
     return FAILED;
   }
 
@@ -110,6 +112,9 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
     REPORT_CALL_ERROR("E19999", "Copy in control edge from node:%s(%s) to node:%s(%s) failed",
                       pred_node->GetName().c_str(), pred_node->GetType().c_str(),
                       node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Copy][InCtrlEdges] from node:%s(%s) to node:%s(%s) failed",
+           pred_node->GetName().c_str(), pred_node->GetType().c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
   // Remove link between pred and switch
@@ -124,7 +129,8 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
   if (out_index >= switch_io_map.size()) {
     REPORT_INNER_ERROR("E19999", "Out index:%zu of node:%s(%s) >= %zu, check invalid", out_index,
                        node->GetName().c_str(), node->GetType().c_str(), switch_io_map.size());
-    GELOGE(FAILED, "[%s] out index check failed, out_index:%zu.", node->GetName().c_str(), out_index);
+    GELOGE(FAILED, "[Check][Param] Out index:%zu of node:%s(%s) >= %zu.", out_index,
+           node->GetName().c_str(), node->GetType().c_str(), switch_io_map.size());
     return FAILED;
   }
   switch_io_map[out_index] = kDataInputIndex;
@@ -134,12 +140,13 @@ Status SwitchDeadBranchElimination::DeleteSwitchNode(NodePtr &node, NodePtr &pre
 Status SwitchDeadBranchElimination::Run(NodePtr &node) {
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "Param [node] must not be null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] Param [node] must not be null.");
     return PARAM_INVALID;
   }
 
   std::string op_type;
-  GE_CHK_STATUS_RET(GetOriginalType(node, op_type), "Get original type failed");
+  GE_CHK_STATUS_RET(GetOriginalType(node, op_type),
+                    "[Get][OriginalType] of node:%s failed", node->GetName().c_str());
   if ((op_type != SWITCH) && (op_type != REFSWITCH)) {
     return SUCCESS;
   }
@@ -181,6 +188,8 @@ Status SwitchDeadBranchElimination::Run(NodePtr &node) {
     if (ret != SUCCESS) {
       REPORT_CALL_ERROR("E19999", "Remove inactive branch from node:%s(%s) to merge failed",
                         node->GetName().c_str(), node->GetType().c_str());
+      GELOGE(FAILED, "[Remove][InactiveBranch] from node:%s(%s) to merge failed",
+             node->GetName().c_str(), node->GetType().c_str());
       return ret;
     }
 

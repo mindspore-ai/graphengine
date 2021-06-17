@@ -72,7 +72,7 @@ ACL_FUNC_VISIBILITY aclError aclrtGetVersion(int32_t *majorVersion, int32_t *min
  *
  * @retval null for failed
  * @retval OtherValues success
-*/
+ */
 ACL_FUNC_VISIBILITY const char *aclGetRecentErrMsg();
 
 #ifdef __cplusplus

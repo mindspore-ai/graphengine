@@ -110,7 +110,14 @@ Status MallocSharedMemory(const TensorInfo &tensor_info, uint64_t &dev_addr, uin
 }
 
 Status GetVarBaseAddrAndSize(const string &var_name, uint64_t &base_addr, uint64_t &var_size) {
-  GELOGD("GetVarBaseAddrAndSize in");
-  return HostMemManager::Instance().QueryVarMemInfo(var_name, base_addr, var_size);
+  GELOGD("GetVarBaseAddrAndSize in, var name:[%s]", var_name.c_str());
+  SharedMemInfo mem_info;
+  if (!HostMemManager::Instance().QueryVarMemInfo(var_name, mem_info)) {
+    GELOGE(FAILED, "Get addr and size failed, name:[%s]", var_name.c_str());
+    return FAILED;
+  }
+  base_addr = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(mem_info.host_aligned_ptr->Get()));
+  var_size = mem_info.mem_size;
+  return SUCCESS;
 }
 }  // namespace ge

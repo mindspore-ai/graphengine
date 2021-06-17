@@ -143,7 +143,8 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
     if (subgraph == nullptr) {
       REPORT_INNER_ERROR("E19999", "Get subgraph from graph:%s by name:%s failed",
                          graph->GetName().c_str(), name.c_str());
-      GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
+      GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "[Get][SubGraph] from graph:%s by name:%s failed",
+             graph->GetName().c_str(), name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
 
@@ -156,6 +157,8 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
         if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
           REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                             node->GetName().c_str(), node->GetType().c_str());
+          GELOGE(FAILED, "[Get][Attr] %s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+                 node->GetName().c_str(), node->GetType().c_str());
           return FAILED;
         }
 
@@ -163,26 +166,7 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
         GELOGD("%s, index: %u, Data: %s", subgraph->GetName().c_str(), parent_index, node->GetName().c_str());
       } else if ((node->GetType() == CONSTANT) && (node->GetOutDataAnchor(kZeroIndex) != nullptr)) {
         set<string> peer_name_list;
-        const auto &out_anchor = node->GetOutDataAnchor(kZeroIndex);
-        for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
-          const auto &peer_node = in_anchor->GetOwnerNode();
-          // Trim subgraph node name prefix.
-          string node_full_name = peer_node->GetName();
-          size_t pos = node_full_name.find(kMbatchNodeNameMark);
-          if (pos == string::npos) {
-            GELOGI("Can not find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
-            continue;
-          }
-
-          string fixed_name = node_full_name.substr(0, pos);
-          pos = node_full_name.find("_", pos + kMbatchNodeNameMark.length());
-          if (pos != string::npos) {
-            fixed_name += node_full_name.substr(pos);
-          }
-
-          peer_name_list.insert(fixed_name + ":" + std::to_string(in_anchor->GetIdx()));
-        }
-
+        GetPeerNameList(node, peer_name_list);
         if (peer_name_list.empty()) {
           GELOGI("%s, Const: %s, no data output", subgraph->GetName().c_str(), node->GetName().c_str());
           const auto in_all_nodes = node->GetInAllNodes();
@@ -205,11 +189,34 @@ Status SubgraphConstMigrationPass::ClassifyGraphNodes(const ComputeGraphPtr &gra
 
     for (auto &node : ctrl_only_const_nodes) {
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(subgraph, node),
-          "Remove node without relink failed, node: %s", node->GetName().c_str());
+                              "[Remove][Node] without relink failed, node:%s, graph:%s",
+                              node->GetName().c_str(), subgraph->GetName().c_str());
     }
   }
 
   return SUCCESS;
+}
+
+void SubgraphConstMigrationPass::GetPeerNameList(const NodePtr &node, set<string> &peer_name_list) {
+  const auto &out_anchor = node->GetOutDataAnchor(kZeroIndex);
+  for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
+    const auto &peer_node = in_anchor->GetOwnerNode();
+    // Trim subgraph node name prefix.
+    string node_full_name = peer_node->GetName();
+    size_t pos = node_full_name.find(kMbatchNodeNameMark);
+    if (pos == string::npos) {
+      GELOGI("Can not find: %s of multi-batch in node: %s", kMbatchNodeNameMark.c_str(), node_full_name.c_str());
+      continue;
+    }
+
+    string fixed_name = node_full_name.substr(0, pos);
+    pos = node_full_name.find("_", pos + kMbatchNodeNameMark.length());
+    if (pos != string::npos) {
+      fixed_name += node_full_name.substr(pos);
+    }
+
+    peer_name_list.insert(fixed_name + ":" + std::to_string(in_anchor->GetIdx()));
+  }
 }
 
 ///
@@ -331,7 +338,7 @@ Status SubgraphConstMigrationPass::AppendParallelNode(const NodePtr &func_node, 
     const auto op_desc = op_builder.AddInput("x").AddOutput("y").Build();
     if (op_desc == nullptr) {
       REPORT_CALL_ERROR("E19999", "Build op:%s(%s) failed", data_name.c_str(), DATA);
-      GELOGE(OUT_OF_MEMORY, "Create multi-batch subgraph data desc failed");
+      GELOGE(OUT_OF_MEMORY, "[Build][OpDesc] %s(%s) failed", data_name.c_str(), DATA);
       return OUT_OF_MEMORY;
     }
 
@@ -339,14 +346,16 @@ Status SubgraphConstMigrationPass::AppendParallelNode(const NodePtr &func_node, 
     if (!AttrUtils::SetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_INDEX.c_str(),
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_INDEX.c_str(),
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
       return FAILED;
     }
 
     if (!AttrUtils::SetInt(op_desc, ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
       REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                         op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "Parent index not found, name: %s", op_desc->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+             op_desc->GetName().c_str(), op_desc->GetType().c_str());
       return FAILED;
     }
 
@@ -373,22 +382,28 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &gra
   const auto &in_anchor = const_node->GetInControlAnchor();
   const auto out_anchors = in_anchor->GetPeerOutControlAnchors();
   for (const auto out_anchor : out_anchors) {
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor),
+                            "[Remove][Edge] between %s and %s failed", out_anchor->GetOwnerNode()->GetName().c_str(),
+                            const_node->GetName().c_str());
     const auto owner_node = out_anchor->GetOwnerNode();
     GELOGI("Remove Edge: %s %s", owner_node->GetName().c_str(), const_node->GetName().c_str());
     if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty() && owner_node != data_node) {
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, owner_node),
-          "Remove node without relink failed, node: %s", owner_node->GetName().c_str());
+                              "[Remove][Node] without relink failed, node:%s", owner_node->GetName().c_str());
     }
   }
 
   const auto &ctrl_anchor = const_node->GetOutControlAnchor();
   const auto ctrl_anchors = ctrl_anchor->GetPeerInControlAnchors();
   for (const auto in_anchor : ctrl_anchors) {
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(ctrl_anchor, in_anchor), "Remove edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(ctrl_anchor, in_anchor),
+                            "[Remove][ControlEdge] between %s and %s failed",
+                            const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
     GELOGI("Remove Edge: %s %s", const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
 
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(data_node->GetOutControlAnchor(), in_anchor), "Add edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(data_node->GetOutControlAnchor(), in_anchor),
+                            "[Add][ControlEdge] between %s and %s failed",
+                            data_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
     GELOGI("Add Edge: %s %s", data_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
   }
 
@@ -396,10 +411,14 @@ Status SubgraphConstMigrationPass::DetachParallelNode(const ComputeGraphPtr &gra
   const auto &out_anchor = const_node->GetOutDataAnchor(kZeroIndex);
   const auto in_anchors = out_anchor->GetPeerInDataAnchors();
   for (const auto in_anchor : in_anchors) {
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor),
+                            "[Remove][Edge] between %s and %s failed",
+                            const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
     GELOGI("Remove Edge: %s %s", const_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
 
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(data_node->GetOutDataAnchor(kZeroIndex), in_anchor), "Add edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(data_node->GetOutDataAnchor(kZeroIndex), in_anchor),
+                            "[Add][Edge] between %s and %s failed",
+                            data_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
     GELOGI("Add Edge: %s %s", data_node->GetName().c_str(), in_anchor->GetOwnerNode()->GetName().c_str());
   }
 
@@ -436,15 +455,19 @@ Status SubgraphConstMigrationPass::AttachParallelNode(const ComputeGraphPtr &gra
   const auto &in_anchor = func_node->GetInDataAnchor(parent_index);
   const auto &out_anchor = in_anchor->GetPeerOutAnchor();
   if (out_anchor != nullptr) {  // Break useless old link.
-    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor), "Remove edge failed");
+    GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, in_anchor),
+                            "[Remove][Edge] between %s and %s failed",
+                            out_anchor->GetOwnerNode()->GetName().c_str(), func_node->GetName().c_str());
     const auto owner_node = out_anchor->GetOwnerNode();
     GELOGI("Remove Edge: %s %s", owner_node->GetName().c_str(), func_node->GetName().c_str());
     if (owner_node->GetInAllNodes().empty() && owner_node->GetOutAllNodes().empty()) {
       GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(graph, owner_node),
-          "Remove node without relink failed, node: %s", owner_node->GetName().c_str());
+                              "[Remove][Node] without relink failed, node:%s", owner_node->GetName().c_str());
     }
   }
-  GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(const_node->GetOutDataAnchor(kZeroIndex), in_anchor), "Add edge failed");
+  GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(const_node->GetOutDataAnchor(kZeroIndex), in_anchor),
+                          "[Add][Edge] between %s and %s failed",
+                          const_node->GetName().c_str(), func_node->GetName().c_str());
   GELOGI("Add Edge: %s %s, index: %u", const_node->GetName().c_str(), func_node->GetName().c_str(), parent_index);
 
   (void)graph->AddNode(const_node);
@@ -471,8 +494,7 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
   if (node_key.empty() || parent_index == kInvalidParent) {
     REPORT_INNER_ERROR("E19999", "Param node_key is empty or param parent_index is 0x%X, check invalid",
                        kInvalidParent);
-    GELOGE(FAILED, "Graph: %s, node key: %s, parent index: %u invalid",
-           graph->GetName().c_str(), node_key.c_str(), parent_index);
+    GELOGE(FAILED, "[Check][Param] Param node_key is empty or param parent_index is 0x%X", kInvalidParent);
     return FAILED;
   }
 
@@ -483,7 +505,8 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
     if (it_const == item.second.end()) {
       REPORT_INNER_ERROR("E19999", "Const node name:%s not found in graph:%s, check invalid",
                          node_key.c_str(), subgraph->GetName().c_str());
-      GELOGE(FAILED, "Graph: %s, Const: %s node not found", subgraph->GetName().c_str(), node_key.c_str());
+      GELOGE(FAILED, "[Check][Param] Const node name:%s not found in graph:%s",
+             node_key.c_str(), subgraph->GetName().c_str());
       return FAILED;
     }
     move_node = it_const->second;
@@ -492,24 +515,27 @@ Status SubgraphConstMigrationPass::MoveNodeToParent(const ComputeGraphPtr &graph
     if (it_nodes == all_data_nodes.end()) {
       REPORT_INNER_ERROR("E19999", "Const node name:%s not found in graph:%s, check invalid",
                          node_key.c_str(), subgraph->GetName().c_str());
-      GELOGE(FAILED, "Graph: %s, Const: %s node not found", subgraph->GetName().c_str(), node_key.c_str());
+      GELOGE(FAILED, "[Check][Param] Const node name:%s not found in graph:%s",
+             node_key.c_str(), subgraph->GetName().c_str());
       return FAILED;
     }
     const auto it_data = it_nodes->second.find(parent_index);
     if (it_data == it_nodes->second.end()) {
       REPORT_INNER_ERROR("E19999", "Const node name:%s not found in graph:%s, check invalid",
                          node_key.c_str(), subgraph->GetName().c_str());
-      GELOGE(FAILED, "Graph: %s, Const: %s node not found", subgraph->GetName().c_str(), node_key.c_str());
+      GELOGE(FAILED, "[Check][Param] Const node name:%s not found in graph:%s",
+             node_key.c_str(), subgraph->GetName().c_str());
       return FAILED;
     }
 
     if (DetachParallelNode(subgraph, move_node, it_data->second) != SUCCESS) {
-      GELOGE(FAILED, "Data: %s not found, index: %u", move_node->GetName().c_str(), parent_index);
+      GELOGE(FAILED, "[Detach][ParallelNode] Data:%s not found, index:%u", move_node->GetName().c_str(), parent_index);
       return FAILED;
     }
 
     GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveNodeWithoutRelink(subgraph, move_node),
-        "Remove node without relink failed, node: %s", move_node->GetName().c_str());
+                            "[Remove][Node] without relink failed, node:%s, graph:%s",
+                            move_node->GetName().c_str(), subgraph->GetName().c_str());
     GELOGI("Remove Node: %s %s", subgraph->GetName().c_str(), move_node->GetName().c_str());
   }
 

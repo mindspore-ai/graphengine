@@ -68,8 +68,10 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
         int64_t permute_src_format = 0;
         GE_IF_BOOL_EXEC(!AttrUtils::GetInt(op_desc_ptr, "permute_src_format", permute_src_format), continue);
         // Get dim_index_
-        std::vector<int64_t> index_list; GE_CHK_BOOL_RET_STATUS(
-          AttrUtils::GetListInt(op_desc_ptr, PERMUTE_ATTR_ORDER, index_list), INTERNAL_ERROR, "get index list failed");
+        std::vector<int64_t> index_list;
+        GE_CHK_BOOL_RET_STATUS(AttrUtils::GetListInt(op_desc_ptr, PERMUTE_ATTR_ORDER, index_list), INTERNAL_ERROR,
+                               "[Get][Attr] %s from op:%s(%s) failed", PERMUTE_ATTR_ORDER.c_str(),
+                               op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str());
 
         size_t index_size = index_list.size(); GE_IF_BOOL_EXEC(index_size == 0, continue);
 
@@ -110,12 +112,13 @@ Status PermutePass::Run(ComputeGraphPtr graph) {
         if (!AttrUtils::SetBool(op_desc_ptr, ATTR_NAME_PRED_PERMUTE_DELETED, true)) {
           REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PRED_PERMUTE_DELETED.c_str(),
                             op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str());
-          GELOGE(INTERNAL_ERROR, "set ATTR_NAME_PRED_PERMUTE_DELETED failed");
+          GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_PRED_PERMUTE_DELETED.c_str(),
+                 op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str());
           return INTERNAL_ERROR;
         }
       }
-      GE_RETURN_WITH_LOG_IF_ERROR(graph->RemoveNode(node), "[%s]:remove permute node failed",
-                                  node->GetOpDesc()->GetName().c_str());
+      GE_RETURN_WITH_LOG_IF_ERROR(graph->RemoveNode(node), "[Remove][Node] [%s] from graph:%s failed",
+                                  node->GetOpDesc()->GetName().c_str(), graph->GetName().c_str());
     });
   return SUCCESS;
 }

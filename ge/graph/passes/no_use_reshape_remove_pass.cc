@@ -38,7 +38,7 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   OpDescPtr op_desc_ptr = node->GetOpDesc();
   if (op_desc_ptr == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node's op_desc is nullptr, check invalid");
-    GELOGE(PARAM_INVALID, "NoUseReshapeRemovePass enter. OpDesc is null.");
+    GELOGE(PARAM_INVALID, "[Check][Param] NoUseReshapeRemovePass enter. OpDesc is null.");
     return PARAM_INVALID;
   }
   if (op_desc_ptr->GetType() != RESHAPE) {
@@ -51,7 +51,7 @@ Status NoUseReshapeRemovePass::Run(ge::NodePtr &node) {
   if (op_desc_ptr->GetAllInputsDesc().empty() || op_desc_ptr->GetAllOutputsDesc().empty()) {
     REPORT_INNER_ERROR("E19999", "Input or Output desc num is zero in node:%s(%s), check invalid",
                        op_desc_ptr->GetName().c_str(), op_desc_ptr->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Input or output num is zero. node name:%s, input size:%zu, output size:%zu",
+    GELOGE(INTERNAL_ERROR, "[Check][Param] Input or output num is zero. node name:%s, input size:%zu, output size:%zu",
            op_desc_ptr->GetName().c_str(), op_desc_ptr->GetAllInputsDesc().size(),
            op_desc_ptr->GetAllOutputsDesc().size());
     return INTERNAL_ERROR;
@@ -112,14 +112,15 @@ Status NoUseReshapeRemovePass::TryRemoveConstShapeInput(ge::NodePtr &reshape_nod
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Unlink op:%s(%s) data input:%u with control edge copy failed",
                       reshape_node->GetName().c_str(), reshape_node->GetType().c_str(), kReshapeShapeIndex);
-    GELOGE(ret, "Unlink node %s with control copy failed.", shape_input->GetName().c_str());
+    GELOGE(ret, "[Unlink][Node] %s(%s) data input:%u with control edge copy failed",
+           reshape_node->GetName().c_str(), reshape_node->GetType().c_str(), kReshapeShapeIndex);
     return ret;
   }
 
   // remove const without any data_output
   if (shape_input->GetOutDataNodesSize() == 0) {
     auto ret = IsolateAndDeleteNode(shape_input, {});
-    GE_CHK_GRAPH_STATUS_RET(ret, "Fail to remove node %s", shape_input->GetName().c_str());
+    GE_CHK_GRAPH_STATUS_RET(ret, "[Remove][Node] %s failed", shape_input->GetName().c_str());
     GELOGI("Remove useless shape input const %s.", shape_input->GetName().c_str());
   }
   return SUCCESS;

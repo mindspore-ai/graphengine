@@ -27,7 +27,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelParserBase::ModelParserBas
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelParserBase::~ModelParserBase() {}
 
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFromFile(const char *model_path,
-                                                                                      const char *key, int32_t priority,
+                                                                                      int32_t priority,
                                                                                       ge::ModelData &model_data) {
   std::string real_path = RealPath(model_path);
   if (real_path.empty()) {
@@ -77,7 +77,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::LoadFro
   model_data.model_data = data;
   model_data.model_len = len;
   model_data.priority = priority;
-  model_data.key = (key == nullptr) ? "" : key;
 
   return SUCCESS;
 }
@@ -113,23 +112,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelParserBase::ParseMo
 
   // Get data address
   uint8_t *data = reinterpret_cast<uint8_t *>(model.model_data) + sizeof(ModelFileHeader);
-  if (file_header->is_encrypt == ModelEncryptType::UNENCRYPTED) {  // Unencrypted model
-    if (!model.key.empty()) {
-      REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
-                         std::vector<std::string>({"om", model.om_name.c_str(), "invalid om file"}));
-      GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-             "[Check][Param] Invalid param, model is unencrypted, but key is not empty.");
-      return ACL_ERROR_GE_PARAM_INVALID;
-    }
-    model_data = data;
-    model_len = file_header->length;
-    GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
-  } else {
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param]Invalid, model encrypt type not supported");
-    REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
-                       std::vector<std::string>({"om", model.om_name.c_str(), "invalid om file"}));
-    res = ACL_ERROR_GE_PARAM_INVALID;
-  }
+  model_data = data;
+  model_len = file_header->length;
+  GELOGD("Model_len is %u, model_file_head_len is %zu.", model_len, sizeof(ModelFileHeader));
 
   return res;
 }

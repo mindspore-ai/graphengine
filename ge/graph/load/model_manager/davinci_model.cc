@@ -984,11 +984,12 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
     return SUCCESS;
   }
 
-  GELOGI("Init data node: %s.", op_desc->GetName().c_str());
   auto data_index = data_op_index++;
-  if (AttrUtils::GetInt(op_desc, ATTR_NAME_INDEX, data_index)) {
+  const auto &index_attr = GraphUtils::FindRootGraph(graph) == graph ? ATTR_NAME_INDEX : ATTR_NAME_PARENT_NODE_INDEX;
+  if (AttrUtils::GetInt(op_desc, index_attr, data_index)) {
     GELOGD("Get new index %u, old %u", data_index, data_op_index - 1);
   }
+  GELOGI("Init data node: %s, index: %u.", op_desc->GetName().c_str(), data_index);
 
   data_by_index[data_index] = op_desc;
   if (known_node_) {
@@ -3435,37 +3436,39 @@ void DavinciModel::SetZeroCopyAddr(const OpDescPtr &op_desc, const std::vector<v
 /// @param [in] is_dynamic: dynamic batch input flag.
 /// @return true if success
 ///
-bool DavinciModel::CheckInputAndModelSize(const int64_t &input_size, const int64_t &op_size, bool is_dynamic) {
+bool DavinciModel::CheckUserAndModelSize(const int64_t &size, const int64_t &op_size,
+                                          bool is_input, bool is_dynamic) {
+  const std::string input_or_output = is_input ? "input" : "output";
   if (is_dynamic) {  // dynamic is max size.
-    GELOGI("No need to check input and model size.");
+    GELOGI("No need to check user %s and model size.", input_or_output.c_str());
     return true;
   }
 
-  if (input_size > op_size) {
+  if (size > op_size) {
     GELOGW(
-        "Input size [%ld] is bigger than om size need [%ld], "
+        "User %s size [%ld] is bigger than om size need [%ld], "
         "MAY cause inference result ERROR, please check model input",
-        input_size, op_size);
+        input_or_output.c_str(), size, op_size);
   }
 
   if (is_dynamic_aipp_) {
-    GELOGI("This is dynamic aipp model, no need to judge smaller input size");
+    GELOGI("This is dynamic aipp model, no need to judge smaller user size");
     return true;
   }
   // Judge overflow first
-  if (input_size > (INT64_MAX - kDataMemAlignSizeCompare)) {
-    GELOGI("The Input size [%ld] is smaller than model size [%ld] and is in the range of 64 bytes", input_size,
-           op_size);
+  if (size > (INT64_MAX - kDataMemAlignSizeCompare)) {
+    GELOGI("The user %s size [%ld] is smaller than model size [%ld] and is in the range of 64 bytes",
+           input_or_output.c_str(), size, op_size);
     return true;
   }
   // The input and model input size can not be exactly equal because user input is not definite.
-  if ((input_size + kDataMemAlignSizeCompare) < op_size) {
-    REPORT_INNER_ERROR("E19999", "input size:%ld from user add align:%u > input_op_size:%ld in model, model_id:%u, "
+  if ((size + kDataMemAlignSizeCompare) < op_size) {
+    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u, "
                        "check invalid",
-                       input_size, kDataMemAlignSizeCompare, op_size, model_id_);
+                       input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Check][Param] input size:%ld from user add align:%u > input_op_size:%ld in model, model_id:%u",
-           input_size, kDataMemAlignSizeCompare, op_size, model_id_);
+           "[Check][Param] %s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u",
+           input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     return false;
   }
   return true;
@@ -3543,7 +3546,7 @@ Status DavinciModel::UpdateIoTaskArgs(const std::map<uint32_t, ZeroCopyOffset> &
       return ACL_ERROR_GE_PARAM_INVALID;
     }
 
-    if (!CheckInputAndModelSize(buffer.length, data.second.GetDataSize(), is_dynamic)) {
+    if (!CheckUserAndModelSize(buffer.length, data.second.GetDataSize(), is_input, is_dynamic)) {
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Call][CheckInputAndModelSize] failed, op[%s]",
              data.second.GetOpName().c_str());
       return ACL_ERROR_GE_PARAM_INVALID;
@@ -3727,6 +3730,8 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF;
       } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
         binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICUBE") {
+        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICUBE;
       } else {
         REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
                            TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
@@ -4007,13 +4012,11 @@ Status DavinciModel::NnExecute(rtStream_t stream, bool async_mode, const InputDa
     iterator_count_++;
   }
 
-  if (!is_async_mode_) {
-    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_START));
-    ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
-    GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
-                                   "[Copy][OutputData] to user failed, ret:%d, model_id:%u.", ret, model_id_);
-    GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_END));
-  }
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_START));
+  ret = CopyOutputData(input_data.index, output_data, RT_MEMCPY_DEVICE_TO_DEVICE);
+  GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(ret != SUCCESS, return ACL_ERROR_GE_INTERNAL_ERROR,
+                                 "[Copy][OutputData] to user failed, ret:%d, model_id:%u.", ret, model_id_);
+  GE_IF_BOOL_EXEC(profiling_model_execute_on, SetProfileTime(MODEL_AFTER_PROC_END));
 
   // report model time data
   GE_IF_BOOL_EXEC(profiling_model_execute_on, (void)SinkTimeProfile(input_data));
@@ -4095,7 +4098,7 @@ uint8_t *DavinciModel::MallocFeatureMapMem(size_t data_size) {
 Status DavinciModel::MallocExMem() {
   char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res_static_memory = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
-  for (auto it : runtime_param_.memory_infos) {
+  for (auto &it : runtime_param_.memory_infos) {
     auto mem_size = it.second.memory_size;
     if (mem_size == 0) {
       continue;
@@ -4166,7 +4169,7 @@ void DavinciModel::FreeFeatureMapMem() {
 void DavinciModel::FreeExMem() {
   char ge_static_mem_env[MMPA_MAX_PATH] = {0x00};
   INT32 res_static_memory = mmGetEnv(kEnvGeuseStaticMemory, ge_static_mem_env, MMPA_MAX_PATH);
-  for (auto it : runtime_param_.memory_infos) {
+  for (auto &it : runtime_param_.memory_infos) {
     // free when session destory
     if ((kSessionScopeMemory & it.first) == kSessionScopeMemory) {
       continue;

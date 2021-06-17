@@ -56,8 +56,34 @@ bool LabelSwitchTask::Distribute() {
     return false;
   }
 
-  void *label_info = label_info_->GetLabelInfo();
-  rtError_t rt_ret = rtLabelSwitchByIndex(task_info_->cond(), task_info_->label_size(), label_info, stream_);
+  const std::vector<uint32_t> &label_index_list = task_info_->label_list();
+  std::vector<void *> label_list(task_info_->label_size(), nullptr);
+
+  for (size_t i = 0; i < task_info_->label_size(); ++i) {
+    uint32_t label_index = label_index_list[i];
+    if (label_index >= all_label_resource_.size()) {
+      GELOGE(PARAM_INVALID, "label %zu index is %u, but there are %zu labels in total.", i, label_index,
+             all_label_resource_.size());
+      return false;
+    }
+    label_list[i] = all_label_resource_[label_index];
+    GELOGI("Case %zu: label id %zu.", i, (size_t)label_index);
+  }
+
+  uint32_t label_info_size = sizeof(rtLabelDevInfo) * task_info_->label_size();
+  rtError_t rt_ret = rtMalloc(&label_info_, label_info_size, RT_MEMORY_HBM);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    return false;
+  }
+
+  rt_ret = rtLabelListCpy(label_list.data(), label_list.size(), label_info_, label_info_size);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+    return false;
+  }
+
+  rt_ret = rtLabelSwitchByIndex(task_info_->cond(), label_list.size(), label_info_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;

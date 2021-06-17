@@ -103,7 +103,8 @@ Status UnusedArgsCleanPass::ClassifyDataNodes(const ComputeGraphPtr &graph, cons
     if (subgraph == nullptr) {
       REPORT_CALL_ERROR("E19999", "Get subgraph from graph:%s by name:%s failed",
                         graph->GetName().c_str(), name.c_str());
-      GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "Subgraph not found, name: %s", name.c_str());
+      GELOGE(GE_GRAPH_EMPTY_SUBGRAPH, "[Get][SubGraph] from graph:%s by name:%s failed",
+             graph->GetName().c_str(), name.c_str());
       return GE_GRAPH_EMPTY_SUBGRAPH;
     }
 
@@ -117,7 +118,8 @@ Status UnusedArgsCleanPass::ClassifyDataNodes(const ComputeGraphPtr &graph, cons
       if (!AttrUtils::GetInt(data->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
         REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                           data->GetName().c_str(), data->GetType().c_str());
-        GELOGE(FAILED, "Parent index not found, name: %s", data->GetName().c_str());
+        GELOGE(FAILED, "[Get][Attr] %s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+               data->GetName().c_str(), data->GetType().c_str());
         return FAILED;
       }
 
@@ -154,9 +156,10 @@ Status UnusedArgsCleanPass::UpdateInputTensor(const map<ComputeGraphPtr, map<uin
     const auto data = it->second;
 
     if (!AttrUtils::SetInt(data->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, update_index)) {
-      REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+      REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                         data->GetName().c_str(), data->GetType().c_str());
-      GELOGE(FAILED, "Set parent index failed, name: %s", data->GetName().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+             data->GetName().c_str(), data->GetType().c_str());
       return FAILED;
     }
   }
@@ -170,11 +173,17 @@ Status UnusedArgsCleanPass::UpdateInputTensor(const map<ComputeGraphPtr, map<uin
   const auto &old_desc = func_desc->GetInputDesc(parent_index);
   (void)func_desc->UpdateInputDesc(update_index, old_desc);
 
-  GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_anchor, new_anchor), "Add edge failed");
+  GE_CHK_GRAPH_STATUS_RET(GraphUtils::AddEdge(out_anchor, new_anchor),
+                          "[Add][Edge] between %s(index:%d) and %s(index:%d) failed",
+                          out_node->GetName().c_str(), out_anchor->GetIdx(),
+                          func_node->GetName().c_str(), update_index);
   GELOGI("Add edge success, func node: %s, node: %s, parent index: %u, update index: %u",
          func_node->GetName().c_str(), out_node->GetName().c_str(), parent_index, update_index);
 
-  GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, old_anchor), "Remove edge failed");
+  GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, old_anchor),
+                          "[Remove][Edge] between %s(index:%d) and %s(index:%d) failed",
+                          out_node->GetName().c_str(), out_anchor->GetIdx(),
+                          func_node->GetName().c_str(), parent_index);
   GELOGI("Remove edge success, func node: %s, node: %s", func_node->GetName().c_str(), out_node->GetName().c_str());
 
   return SUCCESS;
@@ -199,7 +208,9 @@ Status UnusedArgsCleanPass::RemoveInputTensor(const map<ComputeGraphPtr, map<uin
     }
 
     const auto &data = it->second;
-    GE_CHK_GRAPH_STATUS_RET(graph->RemoveNode(data), "Remove node failed: %s", data->GetName().c_str());
+    GE_CHK_GRAPH_STATUS_RET(graph->RemoveNode(data),
+                            "[Remove][Node] %s from graph:%s failed",
+                            data->GetName().c_str(), graph->GetName().c_str());
     GELOGI("Remove Node: %s %s", graph->GetName().c_str(), data->GetName().c_str());
   }
 
@@ -207,12 +218,16 @@ Status UnusedArgsCleanPass::RemoveInputTensor(const map<ComputeGraphPtr, map<uin
   const auto &out_anchor = old_anchor->GetPeerOutAnchor();
   const auto &out_node = out_anchor->GetOwnerNode();
 
-  GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, old_anchor), "Remove edge failed");
+  GE_CHK_GRAPH_STATUS_RET(GraphUtils::RemoveEdge(out_anchor, old_anchor),
+                          "[Remove][Edge] between %s(index:%d) and %s(index:%d) failed",
+                          out_node->GetName().c_str(), out_anchor->GetIdx(),
+                          func_node->GetName().c_str(), parent_index);
   GELOGI("Remove edge: %s %s", out_node->GetName().c_str(), func_node->GetName().c_str());
 
   if (out_node->GetInDataNodes().size() == 0 && out_node->GetOutAllNodes().size() == 0) {
-    GE_CHK_GRAPH_STATUS_RET(out_node->GetOwnerComputeGraph()->RemoveNode(out_node), "Remove node failed: %s",
-                            out_node->GetName().c_str());
+    GE_CHK_GRAPH_STATUS_RET(out_node->GetOwnerComputeGraph()->RemoveNode(out_node),
+                            "[Remove][Node] %s from graph:%s failed",
+                            out_node->GetName().c_str(), out_node->GetOwnerComputeGraph()->GetName().c_str());
   }
   return SUCCESS;
 }

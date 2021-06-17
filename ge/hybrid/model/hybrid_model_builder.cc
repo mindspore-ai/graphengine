@@ -1074,21 +1074,25 @@ Status HybridModelBuilder::InitVariableTensors() {
       GELOGE(INTERNAL_ERROR, "[Calculate][TensorMemSize] failed, node name:%s", it.first.c_str());
       return INTERNAL_ERROR;
     }
-    SharedMemInfo mem_info(it.first, tensor_size);
-    if (HostMemManager::Instance().MallocSharedMemory(mem_info) != SUCCESS) {
-      GELOGE(GE_GRAPH_MALLOC_FAILED, "[Malloc][SharedMemory] failed, Host variable [%s].", it.first.c_str());
-      return GE_GRAPH_MALLOC_FAILED;
+
+    // Host variable will be assigned to allocated shared memory first.
+    SharedMemInfo mem_info;
+    void *mem_addr = nullptr;
+    if (HostMemManager::Instance().QueryVarMemInfo(it.first, mem_info)) {
+      mem_addr = const_cast<void *>(MemManager::Instance().HostMemInstance(RT_MEMORY_HBM)
+                                      .Malloc(mem_info.host_aligned_ptr, tensor_size));
+    } else {
+      mem_addr = MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(tensor_size);
     }
-    if (MemManager::Instance().HostMemInstance(RT_MEMORY_HBM).Malloc(mem_info.host_aligned_ptr,
-                                                                     tensor_size) == nullptr) {
-      GELOGE(MEMALLOC_FAILED, "[Malloc][HostMem] for an existed GeTensor failed, Host variable [%s].",
-             it.first.c_str());
+
+    if (mem_addr == nullptr) {
+      REPORT_INNER_ERROR("E19999", "[Malloc][HostMem] for variable [%s] failed.", it.first.c_str());
+      GELOGE(MEMALLOC_FAILED, "[Malloc][HostMem] for variable [%s] failed.", it.first.c_str());
       return MEMALLOC_FAILED;
     }
     GELOGD("Host variable [%s] malloc success, size=%ld.", it.first.c_str(), tensor_size);
 
-    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_info.host_aligned_ptr->MutableGet(),
-                                                                       tensor_size));
+    std::unique_ptr<TensorValue> tensor(new (std::nothrow) TensorValue(mem_addr, tensor_size));
     GE_CHECK_NOTNULL(tensor);
     hybrid_model_.variable_tensors_.emplace(it.first, std::move(tensor));
   }
@@ -1278,7 +1282,8 @@ Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const
 }
 
 Status HybridModelBuilder::IndexTaskDefs() {
-  const auto &root_graph = ge_root_model_->GetRootGraph();
+  const auto root_graph = ge_root_model_->GetRootGraph();
+  const auto &root_graph_name = root_graph->GetName();
   if (SetOutputNameAttr(*root_graph) != SUCCESS) {
     GELOGW("Set output name attr failed.");
   }
@@ -1288,62 +1293,22 @@ Status HybridModelBuilder::IndexTaskDefs() {
     auto &ge_model = it.second;
     GE_CHECK_NOTNULL(ge_model);
 
-    const auto &sub_graph = root_graph->GetSubgraph(name);
-    if (sub_graph == nullptr) {
-      continue;
-    }
-
-    bool is_unknown_shape = sub_graph->GetGraphUnknownFlag();
-    if (!is_unknown_shape) {
-      GE_CHK_STATUS_RET_NOLOG(LoadGeModel(*sub_graph, ge_model));
-      continue;
-    }
-
-    // index task defs
-    GELOGD("To index tasks for subgraph: %s", name.c_str());
-    std::unordered_map<int64_t, NodePtr> node_map;
-    for (const auto &node : sub_graph->GetDirectNode()) {
-      GE_CHECK_NOTNULL(node);
-      GE_CHECK_NOTNULL(node->GetOpDesc());
-      auto node_id = node->GetOpDesc()->GetId();
-      GELOGD("op_index = %ld, node_name = %s", node_id, node->GetName().c_str());
-      node_map.emplace(node_id, node);
-    }
-
-    auto tasks = ge_model->GetModelTaskDefPtr()->task();
-    for (int i = 0; i < tasks.size(); ++i) {
-      const domi::TaskDef &task_def = tasks[i];
-      GELOGI("Task id = %d, task type = %d", i, task_def.type());
-      auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-      uint32_t op_index = -1;
-      if (task_type == RT_MODEL_TASK_KERNEL) {
-        op_index = task_def.kernel().context().op_index();
-      } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
-        op_index = task_def.kernel_ex().op_index();
-      } else if (task_type == RT_MODEL_TASK_HCCL) {
-        op_index = task_def.kernel_hccl().op_index();
-      } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
-        op_index = task_def.kernel_with_handle().context().op_index();
-      } else {
-        GELOGD("Skip task type: %d", static_cast<int>(task_type));
+    auto sub_graph = root_graph->GetSubgraph(name);
+    if (name != root_graph_name) {
+      if (sub_graph == nullptr) {
         continue;
       }
 
-      auto iter = node_map.find(op_index);
-      if (iter == node_map.end()) {
-        GELOGE(INTERNAL_ERROR, "[Find][Node]Failed to get node by index = %u.", op_index);
-        REPORT_INNER_ERROR("E19999", "Failed to get node by index = %u.", op_index);
-        return INTERNAL_ERROR;
+      bool is_unknown_shape = sub_graph->GetGraphUnknownFlag();
+      if (!is_unknown_shape) {
+        GE_CHK_STATUS_RET_NOLOG(LoadGeModel(*sub_graph, ge_model));
+        continue;
       }
-
-      auto &node = iter->second;
-      if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
-        ge_model->GetTBEKernelStore().LoadTBEKernelBinToOpDesc(node->GetOpDesc());
-      }
-
-      GELOGD("Task loaded for node: %s, task type = %d, op_index = %u", node->GetName().c_str(), task_type, op_index);
-      hybrid_model_.task_defs_[node].emplace_back(task_def);
+    } else {
+      sub_graph = root_graph;
     }
+
+    GE_CHK_STATUS_RET_NOLOG(IndexTaskDefs(sub_graph, ge_model));
   }
 
   return SUCCESS;
@@ -1980,6 +1945,7 @@ Status HybridModelBuilder::LoadDynamicSubgraph(ComputeGraph &graph, bool is_root
     GE_CHK_STATUS_RET_NOLOG(BuildNodeItem(node, *node_item));
     GE_CHK_STATUS_RET_NOLOG(UpdateAnchorStatus(node)); // needed by FE generate task
 
+    GE_CHK_STATUS_RET_NOLOG(BuildFrameGroupIndex(*node_item));
     GE_CHK_STATUS_RET_NOLOG(BuildControlFlowGroup(*graph_item, node, node_item));
     if (node->GetInAllNodes().empty()) {
       graph_item->root_items_.emplace_back(node_item);
@@ -2343,6 +2309,62 @@ Status HybridModelBuilder::BuildProfilingControl(GraphItem &graph_item,
   return SUCCESS;
 }
 
+Status HybridModelBuilder::BuildFrameGroupIndex(NodeItem &node_item) {
+  if (node_item.is_root_node_) {
+    GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+    return SUCCESS;
+  }
+
+  int64_t ctrl_flow_group = -1;
+  if (node_item.IsEnterOp() && AttrUtils::GetInt(node_item.op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, ctrl_flow_group)) {
+    node_item.frame_index_ = ctrl_flow_group;
+    for (const auto src_node : node_item.node->GetInAllNodes()) {
+      NodeItem *src_node_item = nullptr;
+      GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
+                        "[%s] failed to get or create node item", src_node->GetName().c_str());
+      if (!src_node_item->is_root_node_) {
+        GELOGD("[%s] frame index: %ld, [%s] parent frame index: %ld", node_item.node_name.c_str(),
+               node_item.frame_index_, src_node_item->node_name.c_str(), src_node_item->frame_index_);
+        parent_frame_group_[node_item.frame_index_] = src_node_item->frame_index_;
+        break;
+      }
+    }
+
+    const auto it = parent_frame_group_.find(node_item.frame_index_);
+    node_item.parent_frame_ = (it != parent_frame_group_.end()) ? it->second : -1;
+    GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+    return SUCCESS;
+  }
+
+  for (const auto src_node : node_item.node->GetInAllNodes()) {
+    NodeItem *src_node_item = nullptr;
+    GE_CHK_STATUS_RET(GetOrCreateNodeItem(src_node, &src_node_item),
+                      "[%s] failed to get or create node item", src_node->GetName().c_str());
+    if (src_node_item->is_root_node_) {
+      continue;
+    }
+
+    if (src_node_item->IsExitOp()) {
+      const auto it = parent_frame_group_.find(src_node_item->frame_index_);
+      node_item.frame_index_ = (it != parent_frame_group_.end()) ? it->second : -1;
+    } else {
+      node_item.frame_index_ = src_node_item->frame_index_;
+    }
+
+    const auto it = parent_frame_group_.find(node_item.frame_index_);
+    node_item.parent_frame_ = (it != parent_frame_group_.end()) ? it->second : -1;
+    GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+           node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+    return SUCCESS;
+  }
+
+  GELOGD("[%s] control flow frame group: %ld, parent frame: %ld",
+         node_item.node_name.c_str(), node_item.frame_index_, node_item.parent_frame_);
+  return SUCCESS;
+}
+
 Status HybridModelBuilder::BuildControlFlowGroup(GraphItem &graph_item, const NodePtr &node, NodeItem *node_item) {
   GELOGD("Build control flow for node %s", node->GetName().c_str());
   using GroupBuilder = std::function<Status(HybridModelBuilder *, const NodePtr &, NodeItem *)>;
@@ -2462,6 +2484,7 @@ Status HybridModelBuilder::CreateStreamActiveGroup(const NodePtr &node, NodeItem
 
   if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsEnterNode)) {
     // Enter --> StreamActive --> StreamMerge
+    node_item->is_enter_active_ = true;
     return CreateMergeEnterGroup(node, node_item);
   } else if (std::any_of(ctrl_nodes.begin(), ctrl_nodes.end(), IsIterationNode)) {
     // NextIteration --> StreamActive {-->} StreamMerge

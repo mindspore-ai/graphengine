@@ -34,6 +34,7 @@
 namespace ge {
 namespace {
 constexpr int kLaunchRetryTimes = 1000;
+constexpr size_t kMemcpyArgCount = 2;
 constexpr int kSleepTime = 10;
 constexpr uint64_t kReleaseFlag = 1;
 constexpr int kCopyNum = 2;
@@ -962,5 +963,18 @@ Status AiCpuCCTask::LaunchKernel(const std::vector<GeTensorDesc> &input_desc,
 void AiCpuCCTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   arg_base = io_addr_;
   arg_count = io_addr_num_;
+}
+
+Status MemcpyAsyncTask::LaunchKernel(rtStream_t stream) {
+  auto src_addr = reinterpret_cast<void *>(addresses_[0]);
+  auto dst_addr = reinterpret_cast<void *>(addresses_[1]);
+  kind_ = (kind_ == RT_MEMCPY_ADDR_DEVICE_TO_DEVICE) ? RT_MEMCPY_DEVICE_TO_DEVICE : kind_;
+  GE_CHK_RT_RET(rtMemcpyAsync(dst_addr, dst_max_, src_addr, count_, kind_, stream));
+  return SUCCESS;
+}
+
+void MemcpyAsyncTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
+  arg_base = addresses_;
+  arg_count = kMemcpyArgCount;
 }
 }  // namespace ge

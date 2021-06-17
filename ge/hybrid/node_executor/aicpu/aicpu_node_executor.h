@@ -166,7 +166,7 @@ class AicpuNodeTask : public AicpuNodeTaskBase {
 
   Status UpdateIoAddr(TaskContext &context) override;
 
- private:
+ protected:
   // host mem
   std::unique_ptr<uint8_t[]> args_;
 

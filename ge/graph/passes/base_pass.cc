@@ -199,6 +199,24 @@ void ClearOption(NamesToPass names_to_pass) {
     name_to_pass.second->ClearOptions();
   }
 }
+
+bool CheckNode(const NodePtr &node, const DuringPassNodeSets &during_pass_node_set) {
+  if (node == nullptr) {
+    GELOGW("node is null");
+    return false;
+  }
+  if (during_pass_node_set.nodes_deleted.count(node) > 0) {
+    GELOGD("The node %s was deleted before, skip it.", node->GetName().c_str());
+    return false;
+  }
+  if (during_pass_node_set.nodes_suspend.count(node) > 0) {
+    GELOGD("The node %s has been added to suspend-iteration nodes list, the iteration of it will be suspend.",
+           node->GetName().c_str());
+    return false;
+  }
+
+  return true;
+}
 }  // namespace
 
 Status BaseNodePass::IsolateAndDeleteNode(NodePtr &node, const std::vector<int> &io_map) {
@@ -277,17 +295,9 @@ Status GEPass::RunPassesOneGraph(const NamesToPass &names_to_passes) {
       nodes.pop_front();
 
       (void)during_pass_node_set.nodes_re_pass.erase(node);
-      GE_IF_BOOL_EXEC(node == nullptr, GELOGW("node is null"); continue);
-      if (during_pass_node_set.nodes_deleted.count(node) > 0) {
-        GELOGD("The node %s was deleted before, skip it.", node->GetName().c_str());
+      if (!CheckNode(node, during_pass_node_set)) {
         continue;
       }
-      if (during_pass_node_set.nodes_suspend.count(node) > 0) {
-        GELOGD("The node %s has been added to suspend-iteration nodes list, the iteration of it will be suspend.",
-               node->GetName().c_str());
-        continue;
-      }
-
       AddNextIterNodes(node->GetOutNodes(), nodes, during_pass_node_set);
 
       auto ret = RunPasses(node, names_to_passes, during_pass_node_set);

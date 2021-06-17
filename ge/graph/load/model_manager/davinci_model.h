@@ -611,7 +611,7 @@ class DavinciModel {
   /// @param [in] is_dynamic: dynamic batch input flag.
   /// @return true if success
   ///
-  bool CheckInputAndModelSize(const int64_t &input_size, const int64_t &op_size, bool is_dynamic);
+  bool CheckUserAndModelSize(const int64_t &size, const int64_t &op_size, bool is_input, bool is_dynamic);
 
   ///
   /// @ingroup ge

@@ -98,7 +98,7 @@ EOF
 }
 
 function parse_args(){
-    parsed_args=$(getopt -a -o bperh --long build,pull,enter,resethelp -- "$@") || {
+    parsed_args=$(getopt -a -o bperh --long build,pull,enter,reset,help -- "$@") || {
         help
         exit 1
     }

@@ -216,3 +216,6 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   return ge::SUCCESS;
 }
 
+GE_FUNC_VISIBILITY ge::Status ProfSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream) {
+  return ge::SUCCESS;
+}

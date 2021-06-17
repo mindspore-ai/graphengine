@@ -133,6 +133,8 @@ class SubgraphConstMigrationPass : public GraphPass {
   ///
   Status AttachParallelNode(const ComputeGraphPtr &graph, const NodePtr &func_node,
                             const NodePtr &const_node, uint32_t parent_index);
+
+  void GetPeerNameList(const NodePtr &node, set<string> &peer_name_list);
 };
 }  // namespace ge
 #endif  // GE_COMMON_SUBGRAPH_CONST_MIGRATION_H_

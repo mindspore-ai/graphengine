@@ -36,7 +36,7 @@ Status VarIsInitializedOpPass::Run(NodePtr &node) {
   GE_CHECK_NOTNULL(node);
   auto ret = UpdateInitedVars(node);
   if (ret != SUCCESS) {
-    GELOGE(ret, "Failed to run var is init pass on node %s", node->GetName().c_str());
+    GELOGE(ret, "[Call][UpdateInitedVars] for node:%s failed", node->GetName().c_str());
     return ret;
   }
 
@@ -46,6 +46,7 @@ Status VarIsInitializedOpPass::Run(NodePtr &node) {
 
   bool inited = false;
   if (CheckSrcNode(node, inited) != SUCCESS) {
+    GELOGE(ret, "[Call][CheckSrcNode] for node:%s failed", node->GetName().c_str());
     return FAILED;
   }
   GELOGI("The variable inited status %s on node %s",
@@ -63,10 +64,8 @@ Status VarIsInitializedOpPass::CheckSrcNode(const NodePtr &node, bool &inited) c
   if (input_nodes.size() != kVarIsInitializedIOCnt) {
     REPORT_INNER_ERROR("E19999", "In data node num:%zu of node:%s(%s) not equal to %d, check invalid",
                        input_nodes.size(), node->GetName().c_str(), node->GetType().c_str(), kVarIsInitializedIOCnt);
-    GELOGE(FAILED,
-           "[%s] Node input data nodes size [%zu] is not equal 1.",
-           node->GetName().c_str(),
-           input_nodes.size());
+    GELOGE(FAILED, "[Check][Param] In data node num:%zu of node:%s(%s) not equal to %d.",
+           input_nodes.size(), node->GetName().c_str(), node->GetType().c_str(), kVarIsInitializedIOCnt);
     return FAILED;
   }
 
@@ -78,8 +77,9 @@ Status VarIsInitializedOpPass::CheckSrcNode(const NodePtr &node, bool &inited) c
     REPORT_INNER_ERROR("E19999", "Index:%d In data node of node:%s(%s), type:%s not %s, check invalid",
                        kVarIsInitVarInputIndex, node->GetName().c_str(), node->GetType().c_str(),
                        input_node_type.c_str(), VARIABLE);
-    GELOGE(FAILED, "[%s] Src node %s is not Variable, is %s.", node->GetName().c_str(), input_node_name.c_str(),
-           input_node_type.c_str());
+    GELOGE(FAILED, "[Check][Param] Index:%d In data node of node:%s(%s), type:%s not equal to %s.",
+           kVarIsInitVarInputIndex, node->GetName().c_str(), node->GetType().c_str(),
+           input_node_type.c_str(), VARIABLE);
     return FAILED;
   }
 
@@ -97,40 +97,43 @@ Status VarIsInitializedOpPass::CheckSrcNode(const NodePtr &node, bool &inited) c
 
 Status VarIsInitializedOpPass::CreateConstant(NodePtr &node, OpDescPtr &op_desc, bool inited) {
   GE_CHECK_NOTNULL(node);
-  // 1. create Constant OpDesc
-  op_desc = MakeShared<OpDesc>(node->GetName().c_str(), CONSTANT);
-  if (op_desc == nullptr) {
-    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
-    GELOGE(FAILED, "[%s] Make shared of Constant op desc failed.", node->GetName().c_str());
-    return FAILED;
-  }
-
-  // 2. get OpDesc of VarIsInitializedOp
+  // 1. get OpDesc of VarIsInitializedOp
   OpDescPtr original_op_desc = node->GetOpDesc();
   if (original_op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "OpDesc in node is nullptr, check invalid");
-    GELOGE(FAILED, "[%s] Op desc must not be null.", node->GetName().c_str());
+    GELOGE(FAILED, "[Get][OpDesc] failed, Op desc of node must not be null.");
     return FAILED;
   }
   GeTensorDesc original_desc = original_op_desc->GetOutputDesc(0);
+
+  // 2. create Constant OpDesc
+  op_desc = MakeShared<OpDesc>(node->GetName().c_str(), CONSTANT);
+  if (op_desc == nullptr) {
+    REPORT_CALL_ERROR("E19999", "New OpDesc failed");
+    GELOGE(FAILED, "[New][OpDesc] failed.");
+    return FAILED;
+  }
 
   // 3. create attr value of Constant, is a tensor
   bool val = inited;
   GeTensorPtr const_tensor_ptr = MakeShared<GeTensor>(original_desc, reinterpret_cast<uint8_t *>(&val), sizeof(bool));
   if (const_tensor_ptr == nullptr) {
     REPORT_CALL_ERROR("E19999", "New GeTensor failed");
-    GELOGE(FAILED, "[%s] Make shared of Constant tensor failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[New][GeTensor] failed.");
     return FAILED;
   }
   if (!AttrUtils::SetTensor(op_desc, ATTR_NAME_WEIGHTS, const_tensor_ptr)) {
     REPORT_CALL_ERROR("E19999", "Set Attr:%s to op:%s(%s) failed", ATTR_NAME_WEIGHTS.c_str(),
                       op_desc->GetName().c_str(), op_desc->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "get ATTR_NAME_WEIGHTS failed");
+    GELOGE(INTERNAL_ERROR, "[Set][Attr] %s to op:%s(%s) failed", ATTR_NAME_WEIGHTS.c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
     return FAILED;
   }
 
   // 4. set Constant output desc
-  GE_CHK_STATUS_RET(op_desc->AddOutputDesc(original_desc), "add out put desc failed");
+  GE_CHK_STATUS_RET(op_desc->AddOutputDesc(original_desc),
+                    "[Add][OutputDesc] to op:%s(%s) failed",
+                    op_desc->GetName().c_str(), op_desc->GetType().c_str());
   return SUCCESS;
 }
 
@@ -142,12 +145,11 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
   if ((in_anchors.size() != kVarIsInitializedIOCnt) ||
       (out_anchors.size() != kVarIsInitializedIOCnt)) {
     REPORT_INNER_ERROR("E19999", "In data anchor num:%zu and out data anchor num:%zu of node:%s(%s), "
-                       "must botch equal to %d, check invalid", in_anchors.size(), out_anchors.size(),
+                       "must be equal to %d, check invalid", in_anchors.size(), out_anchors.size(),
                        node->GetName().c_str(), node->GetType().c_str(), kVarIsInitializedIOCnt);
-    GELOGE(FAILED,
-           "[%s] Node input/output data anchors"
-           " size [%lu][%lu] is not all equal 1.",
-           node->GetName().c_str(), in_anchors.size(), out_anchors.size());
+    GELOGE(FAILED, "[Check][Param] In data anchor num:%zu and out data anchor num:%zu of node:%s(%s), "
+           "must be equal to %d.", in_anchors.size(), out_anchors.size(),
+           node->GetName().c_str(), node->GetType().c_str(), kVarIsInitializedIOCnt);
     return FAILED;
   }
 
@@ -159,10 +161,12 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
   if (GraphUtils::RemoveEdge(in_anchor, peer_out_anchor) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Remove edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
                       in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
-                      in_anchor->GetIdx(),
-                      peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+                      in_anchor->GetIdx(), peer_out_anchor->GetOwnerNode()->GetName().c_str(),
                       peer_out_anchor->GetOwnerNode()->GetType().c_str(), peer_out_anchor->GetIdx());
-    GELOGE(FAILED, "[%s] Remove in data edge failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[Remove][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%d) failed",
+           in_anchor->GetOwnerNode()->GetName().c_str(), in_anchor->GetOwnerNode()->GetType().c_str(),
+           in_anchor->GetIdx(), peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+           peer_out_anchor->GetOwnerNode()->GetType().c_str(), peer_out_anchor->GetIdx());
     return FAILED;
   }
   auto src_node = peer_out_anchor->GetOwnerNode();
@@ -170,8 +174,9 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
     REPORT_CALL_ERROR("E19999", "Add control edge between op:%s(%s) and op:%s(%s) failed",
                       src_node->GetName().c_str(), src_node->GetType().c_str(),
                       new_node->GetName().c_str(), new_node->GetType().c_str());
-    GELOGE(FAILED, "Failed to link control edges from var %s to new const %s",
-           src_node->GetName().c_str(), new_node->GetName().c_str());
+    GELOGE(FAILED, "[Add][ControlEdge] between op:%s(%s) and op:%s(%s) failed",
+           src_node->GetName().c_str(), src_node->GetType().c_str(),
+           new_node->GetName().c_str(), new_node->GetType().c_str());
     return FAILED;
   }
 
@@ -179,7 +184,9 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
     REPORT_CALL_ERROR("E19999", "Move in control edge from node:%s(%s) to node:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str(),
                       new_node->GetName().c_str(), new_node->GetType().c_str());
-    GELOGE(FAILED, "Failed to move in ctrl edges from %s to new const", node->GetName().c_str());
+    GELOGE(FAILED, "[Move][InCtrlEdges] from node:%s(%s) to node:%s(%s) failed",
+           node->GetName().c_str(), node->GetType().c_str(),
+           new_node->GetName().c_str(), new_node->GetType().c_str());
     return FAILED;
   }
 
@@ -187,7 +194,9 @@ Status VarIsInitializedOpPass::ProcessInAnchor(NodePtr &node, NodePtr &new_node)
     REPORT_CALL_ERROR("E19999", "Move out control edge from node:%s(%s) to node:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str(),
                       new_node->GetName().c_str(), new_node->GetType().c_str());
-    GELOGE(FAILED, "Failed to move out ctrl edges from %s to new const", node->GetName().c_str());
+    GELOGE(FAILED, "[Move][OutCtrlEdges] from node:%s(%s) to node:%s(%s) failed",
+           node->GetName().c_str(), node->GetType().c_str(),
+           new_node->GetName().c_str(), new_node->GetType().c_str());
     return FAILED;
   }
 
@@ -199,6 +208,7 @@ Status VarIsInitializedOpPass::ChangeNodeToConstant(NodePtr &node, bool inited) 
   ComputeGraphPtr graph = node->GetOwnerComputeGraph();
   OpDescPtr constant_op_desc = nullptr;
   if (CreateConstant(node, constant_op_desc, inited) != SUCCESS) {
+    GELOGE(FAILED, "[Create][Constant] failed, node:%s", node->GetName().c_str());
     return FAILED;
   }
 
@@ -207,10 +217,13 @@ Status VarIsInitializedOpPass::ChangeNodeToConstant(NodePtr &node, bool inited) 
     REPORT_CALL_ERROR("E19999", "Add node:%s(%s) to graph:%s front failed",
                       constant_op_desc->GetName().c_str(), constant_op_desc->GetType().c_str(),
                       graph->GetName().c_str());
+    GELOGE(FAILED, "[Add][Node] %s(%s) to graph:%s front failed",
+           constant_op_desc->GetName().c_str(), constant_op_desc->GetType().c_str(), graph->GetName().c_str());
     return FAILED;
   }
 
   if (ProcessInAnchor(node, const_node) != SUCCESS) {
+    GELOGE(FAILED, "[Process][InAnchor] failed, node:%s", node->GetName().c_str());
     return FAILED;
   }
 
@@ -218,14 +231,17 @@ Status VarIsInitializedOpPass::ChangeNodeToConstant(NodePtr &node, bool inited) 
     REPORT_CALL_ERROR("E19999", "Move out edge from node:%s(%s) to node:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str(),
                       const_node->GetName().c_str(), const_node->GetType().c_str());
-    GELOGE(FAILED, "[%s] Move output edges to new node failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[Move][OutputEdges] from node:%s(%s) to node:%s(%s) failed",
+           node->GetName().c_str(), node->GetType().c_str(),
+           const_node->GetName().c_str(), const_node->GetType().c_str());
     return FAILED;
   }
 
   if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                       node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(FAILED, "[%s] RemoveNodeWithoutRelink failed.", node->GetName().c_str());
+    GELOGE(FAILED, "[Remove][Node] %s(%s) without relink in graph:%s failed",
+           node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
     return FAILED;
   }
 
@@ -299,7 +315,7 @@ std::set<int64_t> *VarIsInitializedOpPass::CreateInitedVars() {
   std::unique_ptr<std::set<int64_t>> inited_vars_keeper(new(std::nothrow) std::set<int64_t>());
   if (inited_vars_keeper == nullptr) {
     REPORT_CALL_ERROR("E19999", "New set failed");
-    GELOGE(OUT_OF_MEMORY, "Failed to alloc set memory");
+    GELOGE(OUT_OF_MEMORY, "[New][Set] failed");
     return nullptr;
   }
   auto inited_vars = inited_vars_keeper.get();

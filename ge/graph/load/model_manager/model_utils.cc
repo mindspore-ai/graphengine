@@ -355,7 +355,8 @@ vector<void *> ModelUtils::GetInputDataAddrs(const RuntimeParam &model_param, Co
     non_const_index++;
     int64_t inner_offset = 0;
     (void)ge::AttrUtils::GetInt(op_desc->MutableInputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
-    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset - inner_offset),
+    GE_IF_BOOL_EXEC(model_param.var_size != 0
+                    && ge::VarManager::Instance(session_id)->IsVarAddr(input_offset - inner_offset),
                     uint8_t *variable_addr = nullptr;
                     GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, input_offset - inner_offset,
                                                   tensor_size + inner_offset, variable_addr), return {});
@@ -470,7 +471,8 @@ vector<void *> ModelUtils::GetOutputDataAddrs(const RuntimeParam &model_param, C
     (void)ge::AttrUtils::GetInt(op_desc->MutableOutputDesc(i), ATTR_NAME_INNER_OFFSET, inner_offset);
     int64_t tensor_size = 0;
     GE_CHK_STATUS_EXEC(TensorUtils::GetSize(*tensor_desc, tensor_size), return {});
-    GE_IF_BOOL_EXEC(model_param.var_size != 0 && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i] - inner_offset),
+    GE_IF_BOOL_EXEC(model_param.var_size != 0
+                    && ge::VarManager::Instance(session_id)->IsVarAddr(v_output_offset[i] - inner_offset),
                     uint8_t *variable_addr = nullptr;
                     GE_CHK_STATUS_EXEC(GetVarAddr(model_param, op_desc, v_output_offset[i] - inner_offset,
                                                   tensor_size + inner_offset, variable_addr), return {});

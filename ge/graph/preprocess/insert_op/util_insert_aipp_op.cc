@@ -126,14 +126,14 @@ Status InsertNewOpUtil::CheckInputNamePositionNotRepeat() {
         string error_msg = "Can not both set related_input_name and related_input_rank!"
                            " Please ensure param is the same with the first aipp config(related_input_name).";
         GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
-        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
+        REPORT_INPUT_ERROR("E10052", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
       if (item->related_input_name() == another_item->related_input_name()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_name"
                            " param is different in different aipp config.";
         GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
-        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
+        REPORT_INPUT_ERROR("E10052", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
     }
@@ -154,14 +154,14 @@ Status InsertNewOpUtil::CheckInputRankPositionNoRepeat() {
         string error_msg = "Can not both set related_input_rank and related_input_name!"
                            " Please ensure param is the same with the first aipp config(related_input_rank).";
         GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
-        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
+        REPORT_INPUT_ERROR("E10052", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
       if (item->related_input_rank() == another_item->related_input_rank()) {
         string error_msg = "Can not insert aipp to the same postion! Please ensure related_input_rank"
                           " param is different in different aipp config.";
         GELOGE(PARAM_INVALID, "[Check][InputParam]%s", error_msg.c_str());
-        REPORT_INPUT_ERROR("E19021", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
+        REPORT_INPUT_ERROR("E10052", std::vector<std::string>({"reason"}), std::vector<std::string>({error_msg}));
         return PARAM_INVALID;
       }
     }

@@ -490,9 +490,10 @@ Status GraphManager::ModifyDataIndex(const Graph &graph, const std::map<std::str
       auto iter = graph_option.find(OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE);
       if (iter != graph_option.end() && !iter->second.empty()) {
         // If data inputs shape range is set, user must set valid data index.
-        std::string failed_reason = "Data index must be set continuous from 0 when data shape range enabled!";
-        REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
-                           std::vector<std::string>({"--data_index", "-", failed_reason}));
+        std::string situation = "Data op index";
+        std::string reason = "Data index must be set continuous from 0 when data shape range enabled!";
+        REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"situation", "reason"}),
+                           std::vector<std::string>({situation, reason}));
         GELOGE(GRAPH_PARAM_INVALID, "[COMP][AddGraph]Input data index is invalid when data shape range enabled.");
         return GRAPH_PARAM_INVALID;
       }
@@ -1787,8 +1788,7 @@ Status GraphManager::ParseOptions(const std::map<std::string, std::string> &opti
                   return GE_GRAPH_OPTIONS_INVALID);
 
   // ge.graphType
-  ret =
-    ParseTrainGraphFlag(options_.run_graph_flag, options_.train_graph_flag);
+  ret = ParseTrainGraphFlag(options_.run_graph_flag, options_.train_graph_flag);
   GE_IF_BOOL_EXEC(ret != SUCCESS,
                   GELOGE(GE_GRAPH_OPTIONS_INVALID, "[Parse][TrainGraphFlag] Key:ge.runFlag value is invalid");
                   return GE_GRAPH_OPTIONS_INVALID);
@@ -2767,6 +2767,7 @@ Status GraphManager::OptimizeStage2(ge::ComputeGraphPtr &compute_graph) {
   GELOGI("End optimize after merge sub graph.");
   return SUCCESS;
 }
+
 void GraphManager::ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph) {
   // The constant for train is CONSTANTOP, and is CONSTANT for inference. They will be unified in future.
   if (options_.train_graph_flag) {
@@ -3519,9 +3520,8 @@ Status GraphManager::OptimizeSubgraph(const GraphNodePtr &graph_node, ComputeGra
     return ret;
   }
   GE_TIMESTAMP_EVENT_END(SetSubgraph, "OptimizeSubgraph::SetSubGraph");
-  if ((options_.build_mode == BUILD_MODE_TUNING) &&
-      (options_.build_step == BUILD_STEP_BEFORE_UB_MATCH || options_.build_step == BUILD_STEP_AFTER_BUILDER ||
-       options_.build_step == BUILD_STEP_AFTER_BUILDER_SUB)) {
+  std::set<string> build_steps = {BUILD_STEP_BEFORE_UB_MATCH, BUILD_STEP_AFTER_BUILDER, BUILD_STEP_AFTER_BUILDER_SUB};
+  if ((options_.build_mode == BUILD_MODE_TUNING) && (build_steps.count(options_.build_step) > 0)) {
     GE_TIMESTAMP_START(ConvertGraphToFile);
     std::string tuning_path;
     (void) GetContext().GetOption(TUNING_PATH, tuning_path);

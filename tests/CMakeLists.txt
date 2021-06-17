@@ -28,5 +28,6 @@ if (ENABLE_GE_COV OR ENABLE_GE_UT)
 endif()
 
 if (ENABLE_GE_ST)
+    add_subdirectory(framework)
     add_subdirectory(st)
 endif()

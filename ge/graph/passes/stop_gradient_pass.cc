@@ -21,7 +21,7 @@ namespace ge {
 Status StopGradientPass::Run(NodePtr &node) {
   if (node == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param node is nullptr, check invalid");
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] parameter node is nullptr.");
     return FAILED;
   }
   string type;
@@ -29,7 +29,8 @@ Status StopGradientPass::Run(NodePtr &node) {
   if (status_ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Get OriginalType of op:%s(%s) failed",
                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(status_ret, "StopGradientPass get original type failed.");
+    GELOGE(status_ret, "[Get][OriginalType] of op:%s(%s) failed",
+           node->GetName().c_str(), node->GetType().c_str());
     return status_ret;
   }
 

@@ -133,6 +133,14 @@ bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc);
 /// @return
 ///
 void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t group_index);
+
+///
+/// @brief Set Op _control_flow_group flag
+/// @param [in] node
+/// @param [in] group, condition group index of node.
+/// @return
+///
+void SetControlFlowGroup(const NodePtr &node, int64_t group);
 }  // namespace ge
 
 #endif  // GE_GRAPH_COMMON_OMG_UTIL_H_

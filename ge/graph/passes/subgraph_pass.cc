@@ -31,7 +31,8 @@ Status SubgraphPass::Run(ComputeGraphPtr graph) {
   for (const NodePtr &node : graph->GetDirectNode()) {
     if (is_sub_graph && (node->GetType() == DATA)) {
       if (SubgraphInputNode(graph, node) != SUCCESS) {
-        GELOGE(FAILED, "Handle input %s of subgraph failed.", node->GetName().c_str());
+        GELOGE(FAILED, "[Handle][Input] %s of subgraph:%s failed.",
+               node->GetName().c_str(), graph->GetName().c_str());
         return FAILED;
       }
       continue;
@@ -40,7 +41,8 @@ Status SubgraphPass::Run(ComputeGraphPtr graph) {
     // NetOutput in subgraph
     if (is_sub_graph && (node->GetType() == NETOUTPUT)) {
       if (SubgraphOutputNode(graph, node) != SUCCESS) {
-        GELOGE(FAILED, "Handle output %s of subgraph failed.", node->GetName().c_str());
+        GELOGE(FAILED, "[Handle][Output] %s of subgraph:%s failed.",
+               node->GetName().c_str(), graph->GetName().c_str());
         return FAILED;
       }
       continue;
@@ -49,12 +51,14 @@ Status SubgraphPass::Run(ComputeGraphPtr graph) {
     if (kWhileOpTypes.count(node->GetType()) > 0) {
       // Input->While and Input link to other nodes
       if (WhileInputNodes(graph, node) != SUCCESS) {
-        GELOGE(FAILED, "Handle input of while_body failed, while:%s.", node->GetName().c_str());
+        GELOGE(FAILED, "[Handle][Input] of while_body failed, while:%s, graph:%s.",
+               node->GetName().c_str(), graph->GetName().c_str());
         return FAILED;
       }
       // body subgraph of While op
       if (WhileBodySubgraph(graph, node) != SUCCESS) {
-        GELOGE(FAILED, "Handle while_body failed, while:%s.", node->GetName().c_str());
+        GELOGE(FAILED, "[Handle][WhileBody] failed, while:%s, graph:%s.",
+               node->GetName().c_str(), graph->GetName().c_str());
         return FAILED;
       }
       continue;
@@ -87,7 +91,7 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
     GELOGD("Data %s output_node required continues input.", node->GetName().c_str());
     std::string name = node->GetName() + "_output_0_Memcpy";
     if (InsertMemcpyNode(graph, out_data_anchor, in_anchors, name) != SUCCESS) {
-      GELOGE(FAILED, "Insert memcpy after %s failed.", node->GetName().c_str());
+      GELOGE(FAILED, "[Insert][Memcpy] after %s failed.", node->GetName().c_str());
       return FAILED;
     }
   }
@@ -96,7 +100,8 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
   if (!AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_PARENT_NODE_INDEX, parent_index)) {
     REPORT_CALL_ERROR("E19999", "Get Attr:%s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
                       node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "Get attr PARENT_NODE_INDEX failed, node:%s.", node->GetName().c_str());
+    GELOGE(FAILED, "[Get][Attr] %s from op:%s(%s) failed", ATTR_NAME_PARENT_NODE_INDEX.c_str(),
+           node->GetName().c_str(), node->GetType().c_str());
     return FAILED;
   }
 
@@ -119,7 +124,7 @@ Status SubgraphPass::SubgraphInputNode(const ComputeGraphPtr &graph, const NodeP
            parent_node->GetName().c_str());
     std::string name = parent_node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
     if (InsertMemcpyNode(parent_graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
-      GELOGE(FAILED, "Insert memcpy between %s and %s failed.", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
+      GELOGE(FAILED, "[Insert][Memcpy] between %s and %s failed.", peer_out_anchor->GetOwnerNode()->GetName().c_str(),
              parent_node->GetName().c_str());
       return FAILED;
     }
@@ -160,7 +165,8 @@ Status SubgraphPass::SubgraphOutputNode(const ComputeGraphPtr &graph, const Node
       GELOGD("Insert MemcpyAsync node between %s and %s.", in_node->GetName().c_str(), node->GetName().c_str());
       std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
       if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
-        GELOGE(FAILED, "Insert memcpy between %s and %s failed.", in_node->GetName().c_str(), node->GetName().c_str());
+        GELOGE(FAILED, "[Insert][Memcpy] between %s and %s failed.",
+               in_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
       }
     }
@@ -190,7 +196,8 @@ Status SubgraphPass::WhileInputNodes(const ComputeGraphPtr &graph, const NodePtr
       GELOGD("Input %s of While %s links to other nodes.", in_node->GetName().c_str(), node->GetName().c_str());
       std::string name = node->GetName() + "_input_" + std::to_string(in_data_anchor->GetIdx()) + "_Memcpy";
       if (InsertMemcpyNode(graph, peer_out_anchor, {in_data_anchor}, name) != SUCCESS) {
-        GELOGE(FAILED, "Insert memcpy between %s and %s failed.", in_node->GetName().c_str(), node->GetName().c_str());
+        GELOGE(FAILED, "[Insert][Memcpy] between %s and %s failed.",
+               in_node->GetName().c_str(), node->GetName().c_str());
         return FAILED;
       }
     }
@@ -212,7 +219,7 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
   if (while_body == nullptr) {
     REPORT_INNER_ERROR("E19999", "While_body of node:%s(%s) is nullptr, check invalid",
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "while_body of %s is NULL.", node->GetName().c_str());
+    GELOGE(FAILED, "[Get][Subgraph] failed, while_body of %s is nullptr.", node->GetName().c_str());
     return FAILED;
   }
   if (GraphUtils::IsUnknownShapeGraph(while_body)) {
@@ -230,7 +237,8 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
         cond_data_nodes.emplace_back(n);
       }
     }
-    GE_CHK_STATUS_RET(InsertInputMemcpy(while_cond, cond_data_nodes), "InsertInputMemcpy failed.");
+    GE_CHK_STATUS_RET(InsertInputMemcpy(while_cond, cond_data_nodes),
+                      "[Insert][InputMemcpy] %s failed.", while_cond->GetName().c_str());
   }
 
   std::vector<NodePtr> data_nodes;
@@ -248,7 +256,7 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
       } else {
         REPORT_INNER_ERROR("E19999", "While_body graph:%s exists multi NetOutput nodes, check invalid",
                            while_body->GetName().c_str());
-        GELOGE(FAILED, "while_body %s exists multi NetOutput nodes.", while_body->GetName().c_str());
+        GELOGE(FAILED, "[Check][Param] while_body %s exists multi NetOutput nodes.", while_body->GetName().c_str());
         return FAILED;
       }
     }
@@ -256,13 +264,13 @@ Status SubgraphPass::WhileBodySubgraph(const ComputeGraphPtr &graph, const NodeP
   if (output_node == nullptr) {
     REPORT_INNER_ERROR("E19999", "While_body graph:%s has no output, check invalid",
                        while_body->GetName().c_str());
-    GELOGE(FAILED, "while_body %s has no output.", while_body->GetName().c_str());
+    GELOGE(FAILED, "[Check][Param] while_body %s has no output.", while_body->GetName().c_str());
     return FAILED;
   }
 
   if ((InsertInputMemcpy(while_body, data_nodes) != SUCCESS) ||
       (InsertOutputMemcpy(while_body, output_node, bypass_index) != SUCCESS)) {
-    GELOGE(FAILED, "Insert memcpy node in while_body %s failed.", while_body->GetName().c_str());
+    GELOGE(FAILED, "[Insert][MemcpyNode] in while_body %s failed.", while_body->GetName().c_str());
     return FAILED;
   }
 
@@ -300,7 +308,7 @@ Status SubgraphPass::InsertInputMemcpy(const ComputeGraphPtr &graph, const std::
       in_anchors.emplace_back(peer_in_anchor);
     }
     if (InsertNodeBetween(out_data_anchor, in_anchors, in_memcpy, i, i) != SUCCESS) {
-      GELOGE(FAILED, "Insert MemcpyAsync %s in while_body %s failed.", in_name.c_str(), graph->GetName().c_str());
+      GELOGE(FAILED, "[Insert][MemcpyAsync] %s in while_body %s failed.", in_name.c_str(), graph->GetName().c_str());
       return FAILED;
     }
   }
@@ -341,7 +349,7 @@ Status SubgraphPass::InsertOutputMemcpy(const ComputeGraphPtr &graph, const Node
       InDataAnchorPtr in_data_anchor = output_node->GetInDataAnchor(i);
       OutDataAnchorPtr peer_out_anchor = in_data_anchor->GetPeerOutAnchor();
       if (InsertNodeBetween(peer_out_anchor, {in_data_anchor}, out_memcpy, cnt, cnt) != SUCCESS) {
-        GELOGE(FAILED, "Insert MemcpyAsync %s in while_body %s failed.", out_name.c_str(), graph->GetName().c_str());
+        GELOGE(FAILED, "[Insert][MemcpyAsync] %s in while_body %s failed.", out_name.c_str(), graph->GetName().c_str());
         return FAILED;
       }
       cnt++;
@@ -474,7 +482,9 @@ Status SubgraphPass::InsertMemcpyNode(const ComputeGraphPtr &graph, const OutDat
                       op_desc->GetName().c_str(), op_desc->GetType().c_str(),
                       out_anchor->GetOwnerNode()->GetName().c_str(),
                       out_anchor->GetOwnerNode()->GetType().c_str());
-    GELOGE(FAILED, "Insert IDENTITY node %s after %s failed.", name.c_str(), in_node->GetName().c_str());
+    GELOGE(FAILED, "[Insert][CastNode] %s(%s) after %s(%s) failed",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(),
+           out_anchor->GetOwnerNode()->GetName().c_str(), out_anchor->GetOwnerNode()->GetType().c_str());
     return FAILED;
   }
 
@@ -496,8 +506,9 @@ Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::v
     REPORT_CALL_ERROR("E19999", "Add edge between op:%s(%s)(index:%d) and op:%s(%s)(index:%u) failed",
                       src->GetOwnerNode()->GetName().c_str(), src->GetOwnerNode()->GetType().c_str(), src->GetIdx(),
                       insert_node->GetName().c_str(), insert_node->GetType().c_str(), input_index);
-    GELOGE(FAILED, "Add data_edge %s:%d->%s:%u failed.",
-           src->GetOwnerNode()->GetName().c_str(), src->GetIdx(), insert_node->GetName().c_str(), input_index);
+    GELOGE(FAILED, "[Add][Edge] between op:%s(%s)(index:%d) and op:%s(%s)(index:%u) failed",
+           src->GetOwnerNode()->GetName().c_str(), src->GetOwnerNode()->GetType().c_str(), src->GetIdx(),
+           insert_node->GetName().c_str(), insert_node->GetType().c_str(), input_index);
     return FAILED;
   }
   for (const auto &dst : dsts) {
@@ -511,7 +522,7 @@ Status SubgraphPass::InsertNodeBetween(const OutDataAnchorPtr &src, const std::v
                         dst->GetOwnerNode()->GetName().c_str(), dst->GetOwnerNode()->GetType().c_str(), dst->GetIdx(),
                         insert_node->GetName().c_str(), insert_node->GetType().c_str(), output_index,
                         dst->GetOwnerNode()->GetName().c_str(), dst->GetOwnerNode()->GetType().c_str(), dst->GetIdx());
-      GELOGE(FAILED, "Replace data_edge %s:%d->%s:%d by %s:%u->%s:%d failed.",
+      GELOGE(FAILED, "[Replace][DataEdge] %s:%d->%s:%d by %s:%u->%s:%d failed.",
              src->GetOwnerNode()->GetName().c_str(), src->GetIdx(),
              dst->GetOwnerNode()->GetName().c_str(), dst->GetIdx(),
              insert_node->GetName().c_str(), output_index,

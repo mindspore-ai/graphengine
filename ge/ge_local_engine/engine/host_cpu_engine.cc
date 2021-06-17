@@ -57,6 +57,7 @@ namespace ge {
 namespace {
 const char *kEnvKeyOppPath = "ASCEND_OPP_PATH";
 const char *kHostCpuLibRelativePath = "/op_impl/built-in/host_cpu";
+const std::string kConstantFoldingName = "libconstant_folding_ops.so";
 }
 
 Status GetDataNumber(const GeTensorDesc &out_desc, uint64_t &data_num) {
@@ -352,6 +353,9 @@ Status HostCpuEngine::LoadLib(const std::string &lib_path) {
   }
 
   GELOGI("Lib: %s has been opened", lib_path.c_str());
+  if (lib_path.find(kConstantFoldingName) != lib_path.npos) {
+    constant_folding_handle_ = handle;
+  }
   lib_handles_.emplace_back(handle);
   return SUCCESS;
 }

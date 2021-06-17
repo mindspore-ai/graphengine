@@ -2,7 +2,6 @@ if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
     add_subdirectory(common)
     add_subdirectory(plugin/engine)
     add_subdirectory(ge_local_engine)
-    add_subdirectory(host_cpu_engine)
     add_subdirectory(executor)
     add_subdirectory(offline)
 elseif (ENABLE_D)
@@ -380,6 +379,7 @@ set(TRAIN_SRC_LIST
     "single_op/task/tbe_task_builder.cc"
     "single_op/task/aicpu_task_builder.cc"
     "single_op/task/aicpu_kernel_task_builder.cc"
+    "single_op/task/rts_kernel_task_builder.cc"
     "hybrid/common/tensor_value.cc"
     "hybrid/common/npu_memory_allocator.cc"
     "hybrid/executor/rt_callback_manager.cc"
@@ -408,12 +408,6 @@ set(TRAIN_SRC_LIST
     "hybrid/node_executor/compiledsubgraph/known_node_executor.cc"
     "hybrid/node_executor/ge_local/ge_local_node_executor.cc"
     "hybrid/node_executor/host_cpu/host_cpu_node_executor.cc"
-    "hybrid/node_executor/host_cpu/kernel_factory.cc"
-    "hybrid/node_executor/host_cpu/kernel/no_op_kernel.cc"
-    "hybrid/node_executor/host_cpu/kernel/variable_kernel.cc"
-    "hybrid/node_executor/host_cpu/kernel/assign_kernel.cc"
-    "hybrid/node_executor/host_cpu/kernel/random_uniform_kernel.cc"
-    "hybrid/node_executor/host_cpu/kernel/data_kernel.cc"
     "hybrid/node_executor/controlop/control_op_executor.cc"
     "hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
     "hybrid/node_executor/hccl/hccl_node_executor.cc"

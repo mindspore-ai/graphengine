@@ -44,7 +44,7 @@ graphStatus TransOpDepthFusionPass::Run(ComputeGraphPtr graph) {
       GE_CHECK_NOTNULL(out_anchor);
       for (const auto &peer_in_anchor : out_anchor->GetPeerInDataAnchors()) {
         if (RecursiveInDepth(peer_in_anchor, graph) != GRAPH_SUCCESS) {
-          GELOGE(INTERNAL_ERROR, "Recursive failed, root node is: %s, type: %s", node->GetName().c_str(),
+          GELOGE(INTERNAL_ERROR, "[Call][RecursiveInDepth] failed, root node is:%s, type:%s", node->GetName().c_str(),
                  node->GetType().c_str());
         }
       }
@@ -83,7 +83,7 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
   if (dst_in_anchor == nullptr || dst_in_anchor->GetOwnerNode() == nullptr ||
       dst_in_anchor->GetOwnerNode()->GetOpDesc() == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param dst_in_anchor related node info has nullptr, check invalid");
-    GELOGE(FAILED, "parameter is null.");
+    GELOGE(FAILED, "[Check][Param] Param dst_in_anchor related node info has nullptr.");
     return GRAPH_FAILED;
   }
   auto node = dst_in_anchor->GetOwnerNode();
@@ -98,12 +98,15 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
     auto out_anchor = node->GetOutDataAnchor(0);
     GE_CHECK_NOTNULL(out_anchor);
     auto in_anchors = out_anchor->GetPeerInDataAnchors();
-    GE_CHK_STATUS_RET(RemoveNode(node, graph), "remove edge failed");
+    GE_CHK_STATUS_RET(RemoveNode(node, graph),
+                      "[Remove][Node] %s from graph:%s failed", node->GetName().c_str(), graph->GetName().c_str());
     GELOGI("remove node: %s, type: %s.", node->GetName().c_str(), node->GetType().c_str());
     for (auto &in_anchor : in_anchors) {
       GE_CHECK_NOTNULL(in_anchor);
-      GE_CHK_STATUS_RET(UpdateSrcAttr(in_anchor->GetPeerOutAnchor(), out_anchor, in_anchor), "UpdateSrcAttr failed");
-      GE_CHK_STATUS_RET(RecursiveInDepth(in_anchor, graph), "RecursiveInDepth failed");
+      GE_CHK_STATUS_RET(UpdateSrcAttr(in_anchor->GetPeerOutAnchor(), out_anchor, in_anchor),
+                        "[Update][SrcAttr] failed");
+      GE_CHK_STATUS_RET(RecursiveInDepth(in_anchor, graph),
+                        "[Call][RecursiveInDepth] failed, graph:%s", graph->GetName().c_str());
     }
   } else if (trans_op_.empty() || !DescAreSymmetry(trans_op_.top(), node)) {
     GELOGD("node: %s, type: %s can't be offset, push to trans_op_", node->GetName().c_str(), node->GetType().c_str());
@@ -112,11 +115,13 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
     auto out_anchor = node->GetOutDataAnchor(0);
     GE_CHECK_NOTNULL(out_anchor);
     for (const auto &in_anchor : out_anchor->GetPeerInDataAnchors()) {
-      GE_CHK_STATUS_RET(RecursiveInDepth(in_anchor, graph), "RecursiveInDepth failed");
+      GE_CHK_STATUS_RET(RecursiveInDepth(in_anchor, graph),
+                        "[Call][RecursiveInDepth] failed, graph:%s", graph->GetName().c_str());
     }
 
     if (node->GetOutDataNodesSize() == 0) {
-      GE_CHK_STATUS_RET(RemoveNode(node, graph), "remove node failed");
+      GE_CHK_STATUS_RET(RemoveNode(node, graph),
+                        "[Remove][Node] %s from graph:%s failed", node->GetName().c_str(), graph->GetName().c_str());
       GELOGI("backtracking, trans op: %s, type: %s will be removed", node->GetName().c_str(), node->GetType().c_str());
     }
     GELOGD("backtracking, trans_op_ fall back. pop node: %s, type: %s.", trans_op_.top()->GetName().c_str(),
@@ -136,7 +141,7 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
     auto new_out_anchor = trans_op_.top()->GetInDataAnchor(0)->GetPeerOutAnchor();
     GE_CHECK_NOTNULL(new_out_anchor);
     GE_IF_BOOL_EXEC(RelinkEdges(new_out_anchor, old_out_anchor, in_data_anchor) != GRAPH_SUCCESS,
-                    GELOGE(FAILED, "RelinkEdges fail.");
+                    GELOGE(FAILED, "[Relink][Edges] failed.");
                     return FAILED)
     auto out_anchor = node->GetOutDataAnchor(0);
     GE_CHECK_NOTNULL(out_anchor);
@@ -145,13 +150,16 @@ graphStatus TransOpDepthFusionPass::RecursiveInDepth(const InDataAnchorPtr &dst_
     GELOGD("begin offset,trans_op_ pop node: %s, type: %s.", trans_op_.top()->GetName().c_str(),
            trans_op_.top()->GetType().c_str());
     GELOGI("the offset node : %s, type: %s will be removed.", node->GetName().c_str(), node->GetType().c_str());
-    GE_CHK_STATUS_RET(RemoveNode(node, graph), "remove node failed");
+    GE_CHK_STATUS_RET(RemoveNode(node, graph),
+                      "[Remove][Node] %s from graph:%s failed", node->GetName().c_str(), graph->GetName().c_str());
     trans_op_.pop();
 
     for (const auto &in_anchor : in_anchors) {
       GE_CHECK_NOTNULL(in_anchor);
-      GE_CHK_STATUS_RET(UpdateSrcAttr(in_anchor->GetPeerOutAnchor(), out_anchor, in_anchor), "UpdateSrcAttr failed");
-      GE_CHK_STATUS_RET(RecursiveInDepth(in_anchor, graph), "RecursiveInDepth failed");
+      GE_CHK_STATUS_RET(UpdateSrcAttr(in_anchor->GetPeerOutAnchor(), out_anchor, in_anchor),
+                        "[Update][SrcAttr] failed");
+      GE_CHK_STATUS_RET(RecursiveInDepth(in_anchor, graph),
+                        "[Call][RecursiveInDepth] failed, graph:%s", graph->GetName().c_str());
     }
 
     GELOGD("backtracking, trans_op_ push node: %s, type: %s.", offset_op_.top()->GetName().c_str(),
@@ -259,17 +267,23 @@ graphStatus TransOpDepthFusionPass::RelinkEdges(const OutDataAnchorPtr &new_out_
                                                 const InDataAnchorPtr &in_data_anchor) {
   if (new_out_anchor == nullptr || old_out_anchor == nullptr || in_data_anchor == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param anchor info has nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "new_out_anchor or old_out_anchor or in_data_anchor is nullptr");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] new_out_anchor or old_out_anchor or in_data_anchor is nullptr");
     return GRAPH_FAILED;
   }
   if (new_out_anchor->GetOwnerNode() == nullptr || old_out_anchor->GetOwnerNode() == nullptr ||
       in_data_anchor->GetOwnerNode() == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param anchor info owner node has nullptr, check invalid");
-    GELOGE(INTERNAL_ERROR, "anchor's owner node is nullptr");
+    GELOGE(INTERNAL_ERROR, "[Check][Param] anchor's owner node has nullptr");
     return GRAPH_FAILED;
   }
-  GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(old_out_anchor, in_data_anchor), "remove edge failed");
-  GE_CHK_STATUS_RET(GraphUtils::AddEdge(new_out_anchor, in_data_anchor), "add edge failed");
+  GE_CHK_STATUS_RET(GraphUtils::RemoveEdge(old_out_anchor, in_data_anchor),
+                    "[Remove][Edge] between %s and %s failed",
+                    old_out_anchor->GetOwnerNode()->GetName().c_str(),
+                    in_data_anchor->GetOwnerNode()->GetName().c_str());
+  GE_CHK_STATUS_RET(GraphUtils::AddEdge(new_out_anchor, in_data_anchor),
+                    "[Add][Edge] between %s and %s failed",
+                    new_out_anchor->GetOwnerNode()->GetName().c_str(),
+                    in_data_anchor->GetOwnerNode()->GetName().c_str());
   GELOGD(
       "relink edges before remove node, remove data edge between node: %s, "
       "type: %s and node: %s, type: %s.",
@@ -292,7 +306,9 @@ graphStatus TransOpDepthFusionPass::RelinkEdges(const OutDataAnchorPtr &new_out_
   if (!src_node->GetInControlNodes().empty() && !is_linked) {
     auto out_ctrl_anchor = src_node->GetOutControlAnchor();
     auto in_ctrl_anchor = dst_node->GetInControlAnchor();
-    GE_CHK_STATUS_RET(GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor), "add edge failed");
+    GE_CHK_STATUS_RET(GraphUtils::AddEdge(out_ctrl_anchor, in_ctrl_anchor),
+                      "[Add][ControlEdge] between %s and %s failed",
+                      src_node->GetName().c_str(), dst_node->GetName().c_str());
     GELOGD(
         "relink edges before remove node, add control edge between node: %s,"
         " type: %s and node: %s, type: %s.",
@@ -309,15 +325,15 @@ graphStatus TransOpDepthFusionPass::RemoveNode(const NodePtr &node, const ge::Co
   }
   if (GraphUtils::IsolateNode(node, {0}) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Isolate node:%s(%s) failed", node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(INTERNAL_ERROR, "Isolate removed node: %s, type: %s failed", node->GetName().c_str(),
-           node->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Isolate][Node] failed, node name:%s, node type:%s",
+           node->GetName().c_str(), node->GetType().c_str());
     return GRAPH_FAILED;
   }
   if (GraphUtils::RemoveNodeWithoutRelink(graph, node) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "Remove node:%s(%s) without relink in graph:%s failed",
                       node->GetName().c_str(), node->GetType().c_str(), graph->GetName().c_str());
-    GELOGE(INTERNAL_ERROR, "Remove node: %s, type: %s without relink failed", node->GetName().c_str(),
-           node->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Remove][Node] without relink failed, node name:%s, node type:%s ",
+           node->GetName().c_str(), node->GetType().c_str());
     return GRAPH_FAILED;
   }
   return GRAPH_SUCCESS;

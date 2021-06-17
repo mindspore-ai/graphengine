@@ -41,20 +41,13 @@ $ cd ./scripts
 $ ./ge.sh env 
 ```
 
-3.配置外部依赖服务器信息
-```sh
-ge config -i=121.36.**.** -u=asc**, -p=Asc***\#@\!$     (Need add escape character \ before special charactor $、#、!)
-```
-
-4.下载和安装构建所依赖的外部库 
-
-```sh
-$ ge update 
-```
-
+3.下载和安装构建所依赖的外部库 
+    ```sh
+    $ ge update
+    ```
 （注：进入容器后，`ge`命令已经自动注册进系统，因此容器内不需要写脚本全称）
 
-5.执行测试，默认执行单元测试用例，`ge test`会自动触发构建
+4.执行测试，默认执行单元测试用例，`ge test`会自动触发构建
 
 ```sh
 $ ge test
@@ -140,7 +133,7 @@ Options:
     -p, --password     Config password
     -h, --help
 
-Example: ge config -i=121.36.**.** -u=asc**, -p=Asc***\#@\!$     (Need add escape character \ before special charactor $、#、!)
+Example: ge config -i=<ip-adress> -u=<username> -p=<password> (Need add escape character \ before special charactor $、#、!)
 ```
 
 参数详细解释：
@@ -164,6 +157,7 @@ Usage: ge update [OPTIONS]
 update dependencies of build and test
 
 Options:
+    -p, --public       Download dependencies from community
     -d, --download     Download dependencies
     -i, --install      Install dependencies
     -c, --clear        Clear dependencies
@@ -171,7 +165,7 @@ Options:
 ```
 
 参数详细解释：
-
+- `-p,  --public`   : 从社区下载安装依赖库；
 - `-d,  --download` : 下载构建需要外部依赖库；
 - `-i,  --install`  : 安装外部依赖包到对应位置；
 - `-c,  --clear`    : 清除下载的外部依赖包；
@@ -199,28 +193,6 @@ Options:
 - `-l` : 格式化上次提交的代码；
 
 默认：格式化本次修改代码。
-
-### `ge lint`
-
-使用clang-format进行代码格式化检查，具体参数如下：
-
-```sh
-$ ge lint -h
-
-Options:
-    -a Check code format of all files, default case
-    -c Check code format of the files changed compared to last commit
-    -l Check code format of the files changed in last commit
-    -h Print usage
-``` 
-
-参数详细解释：
-
-- `-a` : 检查所有代码格式；
-- `-c` : 只检查修改的代码格式；
-- `-l` : 检查上次提交的代码格式；
-
-默认：检查本次修改代码格式。
 
 ### `ge build`
 

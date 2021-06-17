@@ -1672,10 +1672,9 @@ Status ModelCacheHelper::LoadOmModelFromCache(GeModelPtr &ge_model) const {
   }
   GELOGI("load model data from file: %s", om_path.c_str());
   Status ret;
-  string key_path;
   int32_t priority = 0;
   ModelData model_data;
-  ret = ModelParserBase::LoadFromFile(om_path.c_str(), key_path.c_str(), priority, model_data);
+  ret = ModelParserBase::LoadFromFile(om_path.c_str(), priority, model_data);
   if (ret != SUCCESS) {
     GELOGW("LoadOmModelFromCache: Load model from file failed. ret = %u", ret);
     return ret;

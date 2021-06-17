@@ -123,23 +123,17 @@ Status GraphLoader::GetMaxUsedMemory(uint32_t model_id, uint64_t &max_size) {
   return SUCCESS;
 }
 
-Status GraphLoader::LoadDataFromFile(const std::string &path, const std::string &key_path, int32_t priority,
-                                     ModelData &model_data) {
-  if (!CheckInputPathValid(path)) {
+Status GraphLoader::LoadDataFromFile(const std::string &path, int32_t priority, ModelData &model_data) {
+  if (!CheckInputPathValid(path, "model_file")) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID, "[Check][Param] model path is invalid:%s", path.c_str());
     return ACL_ERROR_GE_EXEC_MODEL_PATH_INVALID;
   }
 
   GELOGI("Load model begin, model path is: %s", path.c_str());
-  if (!key_path.empty() && !CheckInputPathValid(key_path)) {
-    REPORT_INNER_ERROR("E19999", "Param key_path:%s empty or invalid", key_path.c_str());
-    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Param] decrypt_key path is invalid:%s", key_path.c_str());
-    return ACL_ERROR_GE_PARAM_INVALID;
-  }
 
-  Status ret = ModelParserBase::LoadFromFile(path.c_str(), key_path.c_str(), priority, model_data);
+  Status ret = ModelParserBase::LoadFromFile(path.c_str(), priority, model_data);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Call][LoadFromFile] failed. ret = %u, path:%s, key path:%s", ret, path.c_str(), key_path.c_str());
+    GELOGE(ret, "[Call][LoadFromFile] failed. ret = %u, path:%s", ret, path.c_str());
     if (model_data.model_data != nullptr) {
       delete[] static_cast<char *>(model_data.model_data);
       model_data.model_data = nullptr;

@@ -626,7 +626,7 @@ REG_OP(StopGradient)
 *x: A tensor. \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A tensor with the same shape and contents as input. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Identity.
@@ -666,7 +666,7 @@ REG_OP(IdentityN)
 *@li axis: The dimension index at which to expand. \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A tensor with the same data as input, with an additional dimension inserted at the index specified by axis. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ExpandDims.
@@ -713,7 +713,7 @@ REG_OP(Unsqueeze)
 *@par Outputs:
 *y: A tensor. \n
 
-*@par Attention:
+*@attention Constraints:
 *This operator cannot be directly called by the acllopExecute API. \n
 
 *@par Third-party framework compatibility

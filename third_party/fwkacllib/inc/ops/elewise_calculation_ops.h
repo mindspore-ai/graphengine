@@ -3250,7 +3250,7 @@ REG_OP(Fills)
 *value: A scale. Must be float. \n
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1". \n
+*y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator adds.

@@ -32,8 +32,8 @@ typedef struct aclfvSearchResult aclfvSearchResult;
 
 // search operation type
 enum aclfvSearchType {
-    SEARCH_1_N, // 1:N operation type
-    SEARCH_N_M  // N:M operation type
+  SEARCH_1_N,  // 1:N operation type
+  SEARCH_N_M   // N:M operation type
 };
 
 /**
@@ -104,7 +104,8 @@ ACL_FUNC_VISIBILITY aclError aclfvSetNMTopNum(aclfvInitPara *initPara, uint32_t 
  * @retval OtherValues success.
  */
 ACL_FUNC_VISIBILITY aclfvFeatureInfo *aclfvCreateFeatureInfo(uint32_t id0, uint32_t id1, uint32_t offset,
-    uint32_t featureLen, uint32_t featureCount, uint8_t *featureData, uint32_t featureDataLen);
+                                                             uint32_t featureLen, uint32_t featureCount,
+                                                             uint8_t *featureData, uint32_t featureDataLen);
 
 /**
  * @ingroup AscendCL
@@ -233,8 +234,9 @@ ACL_FUNC_VISIBILITY aclError aclfvDestroySearchInput(aclfvSearchInput *searchInp
  * @retval null for failed. OtherValues success
  */
 ACL_FUNC_VISIBILITY aclfvSearchResult *aclfvCreateSearchResult(uint32_t queryCnt, uint32_t *resultNum,
-    uint32_t resultNumDataLen, uint32_t *id0, uint32_t *id1, uint32_t *resultOffset, float *resultDistance,
-    uint32_t dataLen);
+                                                               uint32_t resultNumDataLen, uint32_t *id0, uint32_t *id1,
+                                                               uint32_t *resultOffset, float *resultDistance,
+                                                               uint32_t dataLen);
 
 /**
  * @ingroup AscendCL
@@ -285,12 +287,11 @@ ACL_FUNC_VISIBILITY aclError aclfvRelease();
  *
  * @param type [IN]          repo add type
  * @param featureInfo [IN]   add feature information
- * @param stream [IN]        stream of task execute
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure.
  */
-ACL_FUNC_VISIBILITY aclError aclfvRepoAdd(aclfvSearchType type, aclfvFeatureInfo *featureInfo, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclfvRepoAdd(aclfvSearchType type, aclfvFeatureInfo *featureInfo);
 
 /**
  * @ingroup AscendCL
@@ -298,36 +299,33 @@ ACL_FUNC_VISIBILITY aclError aclfvRepoAdd(aclfvSearchType type, aclfvFeatureInfo
  *
  * @param type [IN]       repo delete type
  * @param repoRange [IN]  repo range information
- * @param stream [IN]     stream of task execute
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure.
  */
-ACL_FUNC_VISIBILITY aclError aclfvRepoDel(aclfvSearchType type, aclfvRepoRange *repoRange, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclfvRepoDel(aclfvSearchType type, aclfvRepoRange *repoRange);
 
 /**
  * @ingroup AscendCL
  * @brief fv accurate del.
  *
  * @param featureInfo [IN]   accurate delete feature information
- * @param stream [IN]        stream of task execute
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure.
  */
-ACL_FUNC_VISIBILITY aclError aclfvDel(aclfvFeatureInfo *featureInfo, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclfvDel(aclfvFeatureInfo *featureInfo);
 
 /**
  * @ingroup AscendCL
  * @brief fv accurate modify.
  *
  * @param featureInfo [IN]  accurate modify feature information
- * @param stream [IN]  stream of task execute
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure.
  */
-ACL_FUNC_VISIBILITY aclError aclfvModify(aclfvFeatureInfo *featureInfo, aclrtStream stream);
+ACL_FUNC_VISIBILITY aclError aclfvModify(aclfvFeatureInfo *featureInfo);
 
 /**
  * @ingroup AscendCL
@@ -336,16 +334,15 @@ ACL_FUNC_VISIBILITY aclError aclfvModify(aclfvFeatureInfo *featureInfo, aclrtStr
  * @param type [IN]  search type
  * @param searchInput [IN]    search input
  * @param searchRst [OUT]     search result
- * @param stream [IN]  stream of task execute
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval OtherValues Failure.
  */
 ACL_FUNC_VISIBILITY aclError aclfvSearch(aclfvSearchType type, aclfvSearchInput *searchInput,
-                                         aclfvSearchResult *searchRst, aclrtStream stream);
+                                         aclfvSearchResult *searchRst);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_OPS_ACL_RETR_H_
+#endif  // INC_EXTERNAL_ACL_OPS_ACL_RETR_H_

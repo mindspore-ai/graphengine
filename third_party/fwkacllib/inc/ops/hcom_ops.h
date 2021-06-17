@@ -280,5 +280,77 @@ REG_OP(HcomRemoteScatterWrite)
     .OPTIONAL_INPUT(local_offset, TensorType({DT_UINT64}))
     .OP_END_FACTORY_REG(HcomRemoteScatterWrite)
 
+/**
+ * @brief All ranks send different amount of data to, and receive different
+  amount of data from, all ranks.
+ * @par Inputs:
+ * Five inputs, including:
+ * @li send_data: A tensor. the memory to send.
+ * @li send_counts: A list, where entry i specifies the number of elements in
+  send_data to send to rank i.
+ * @li send_displacements: A list, where entry i specifies the displacement
+  (offset from sendbuf) from which to send data to rank i.
+ * @li recv_counts: A list, where entry i specifies the number of 
+  elements to receive from rank i.
+ * @li recv_displacements: A list, , where entry i specifies the displacement
+  (offset from recv_data) to which data from rank i should be written.
+ * @par Outputs:
+ * recv_data: A Tensor  has same element type as send_data.
+ * @par Attributes:
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+* @attention all ranks participating in the op should be full-mesh networking
+  using the RDMA.
+ */
+REG_OP(HcomAllToAllV)
+    .INPUT(send_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .INPUT(send_counts, TensorType({DT_INT64}))
+    .INPUT(send_displacements, TensorType({DT_INT64}))
+    .INPUT(recv_counts, TensorType({DT_INT64}))
+    .INPUT(recv_displacements, TensorType({DT_INT64}))
+    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .REQUIRED_ATTR(group, String)
+    .OP_END_FACTORY_REG(HcomAllToAllV)
+
+/**
+ * @brief All ranks send different amount of data to, and receive different
+  amount of data from, all ranks. And concat all data descripting by addrinfo
+  togather into output gathered.
+ * @par Inputs:
+ * Four inputs, including:
+ * @li addrinfo: A tensor, descripting the memory info(address, length) to send.
+ * @li addrinfo_count_per_rank: A list, where entry i specifies the number of
+  elements in send_data to send to rank i.
+ * @li recv_counts: A list, where entry i specifies the number of 
+  elements to receive from rank i.
+ * @li recv_displacements: A list, , where entry i specifies the displacement 
+  (offset from recv_data) to which data from rank i should be written.
+ * @par Outputs:
+ * Two outputs, including:
+ * @li recv_data: A Tensor  has same element type as dtype.
+ * @li gathered: A Tensor  has same element type as dtype.
+ * @par Attributes:
+ * @li group: A string identifying the group name of ranks participating in
+  the op.
+ * @li dtype: Datatype of send buffer elements.
+ * @li addr_length: descripting the element memory length in the addrinfo.
+  -2: all element memory length in the addrinfo is the same, but it is unknown.
+  -1: all element memory length is unknown.
+  >0: all element memory length in the addrinfo is the same. the attr value is the memory length.
+ * @attention all ranks participating in the op should be full-mesh networking
+  using the RDMA.
+ */
+REG_OP(HcomGatherAllToAllV)
+    .INPUT(addrinfo, TensorType({DT_UINT64}))
+    .INPUT(addrinfo_count_per_rank, TensorType({DT_INT64}))
+    .INPUT(recv_counts, TensorType({DT_INT64}))
+    .INPUT(recv_displacements, TensorType({DT_INT64}))
+    .OUTPUT(recv_data, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .OUTPUT(gathered, TensorType({DT_FLOAT, DT_INT32, DT_INT8, DT_INT16, DT_FLOAT16, DT_INT64, DT_UINT64}))
+    .REQUIRED_ATTR(group, String)
+    .REQUIRED_ATTR(dtype, Type)
+    .REQUIRED_ATTR(addr_length, Int)
+    .OP_END_FACTORY_REG(HcomGatherAllToAllV)
+
 } // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_HCOM_OPS_H_

@@ -1006,6 +1006,32 @@ REG_OP(SoftMarginLossGrad)
     .OP_END_FACTORY_REG(SoftMarginLossGrad)
 
 /**
+*@brief Calculate the cross product of two tensors. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x1: A tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8, int16. \n
+* @li x2: A tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8, int16. \n
+
+*@par Attributes:
+*@li dim: the dimination of compute.Defaults to -65530. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of x1's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator cross. \n
+*/
+REG_OP(Cross)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .ATTR(dim, Int, -65530)
+    .OP_END_FACTORY_REG(Cross)
+
+/**
  *@brief Computes batched the p-norm distance between each pair of
  *the two collections of row vectors. \n
 

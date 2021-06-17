@@ -33,7 +33,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpManager &DumpManager::GetIn
 
 bool DumpManager::NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump_properties) {
   if (dump_config.dump_status.empty() && dump_config.dump_debug.empty()) {
-    dump_properties_map_.emplace(kInferSessionId, dump_properties);
+    dump_properties_map_[kInferSessionId] = dump_properties;
     GELOGI("Dump does not open");
     return false;
   }
@@ -41,7 +41,7 @@ bool DumpManager::NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump
   if ((dump_config.dump_status == kDumpoff || dump_config.dump_status == kDumpOFF) &&
        dump_config.dump_debug == kDumpoff) {
     dump_properties.ClearDumpPropertyValue();
-    dump_properties_map_.emplace(kInferSessionId, dump_properties);
+    dump_properties_map_[kInferSessionId] = dump_properties;
     return false;
   }
   if (dump_config.dump_status == kDumpOn && dump_config.dump_debug == kDumpOn) {

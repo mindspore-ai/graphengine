@@ -16,6 +16,8 @@
 
 #include <gtest/gtest.h>
 
+#define protected public
+#define private public
 #include "common/dump/dump_manager.h"
 #include "common/debug/log.h"
 #include "common/ge_inner_error_codes.h"
@@ -101,5 +103,14 @@ TEST_F(UTEST_dump_manager, is_dump_single_op_close_success) {
    DumpManager::GetInstance().AddDumpProperties(0, dump_properties);
    auto dump = DumpManager::GetInstance().GetDumpProperties(0);
    DumpManager::GetInstance().RemoveDumpProperties(0);
+ }
+
+ TEST_F(UTEST_dump_manager, not_need_do_dump) {
+   DumpConfig dump_config;
+   dump_config.dump_status = "off";
+   dump_config.dump_debug = "off";
+   DumpProperties dump_properties;
+   bool ret = DumpManager::GetInstance().NeedDoDump(dump_config, dump_properties);
+   EXPECT_EQ(ret, false);
  }
 }  // namespace ge

@@ -24,10 +24,10 @@ extern "C" {
 #endif
 
 enum acltdtTensorType {
-    ACL_TENSOR_DATA_UNDEFINED = -1,
-    ACL_TENSOR_DATA_TENSOR,
-    ACL_TENSOR_DATA_END_OF_SEQUENCE,
-    ACL_TENSOR_DATA_ABNORMAL
+  ACL_TENSOR_DATA_UNDEFINED = -1,
+  ACL_TENSOR_DATA_TENSOR,
+  ACL_TENSOR_DATA_END_OF_SEQUENCE,
+  ACL_TENSOR_DATA_ABNORMAL
 };
 
 typedef struct acltdtDataItem acltdtDataItem;
@@ -64,7 +64,7 @@ ACL_FUNC_VISIBILITY aclDataType acltdtGetDataTypeFromItem(const acltdtDataItem *
  *
  * @retval null for failed
  * @retval OtherValues success
-*/
+ */
 ACL_FUNC_VISIBILITY void *acltdtGetDataAddrFromItem(const acltdtDataItem *dataItem);
 
 /**
@@ -75,7 +75,7 @@ ACL_FUNC_VISIBILITY void *acltdtGetDataAddrFromItem(const acltdtDataItem *dataIt
  *
  * @retval 0 for failed
  * @retval OtherValues success
-*/
+ */
 ACL_FUNC_VISIBILITY size_t acltdtGetDataSizeFromItem(const acltdtDataItem *dataItem);
 
 /**
@@ -86,7 +86,7 @@ ACL_FUNC_VISIBILITY size_t acltdtGetDataSizeFromItem(const acltdtDataItem *dataI
  *
  * @retval 0 for failed
  * @retval OtherValues success
-*/
+ */
 ACL_FUNC_VISIBILITY size_t acltdtGetDimNumFromItem(const acltdtDataItem *dataItem);
 
 /**
@@ -118,12 +118,8 @@ ACL_FUNC_VISIBILITY aclError acltdtGetDimsFromItem(const acltdtDataItem *dataIte
  *
  * @see acltdtDestroyDataItem
  */
-ACL_FUNC_VISIBILITY acltdtDataItem *acltdtCreateDataItem(acltdtTensorType tdtType,
-                                                         const int64_t *dims,
-                                                         size_t dimNum,
-                                                         aclDataType dataType,
-                                                         void *data,
-                                                         size_t size);
+ACL_FUNC_VISIBILITY acltdtDataItem *acltdtCreateDataItem(acltdtTensorType tdtType, const int64_t *dims, size_t dimNum,
+                                                         aclDataType dataType, void *data, size_t size);
 
 /**
  * @ingroup AscendCL
@@ -254,8 +250,7 @@ ACL_FUNC_VISIBILITY aclError acltdtDestroyChannel(acltdtChannelHandle *handle);
  *
  * @see acltdtReceiveTensor
  */
-ACL_FUNC_VISIBILITY aclError acltdtSendTensor(const acltdtChannelHandle *handle,
-                                              const acltdtDataset *dataset,
+ACL_FUNC_VISIBILITY aclError acltdtSendTensor(const acltdtChannelHandle *handle, const acltdtDataset *dataset,
                                               int32_t timeout);
 
 /**
@@ -271,13 +266,11 @@ ACL_FUNC_VISIBILITY aclError acltdtSendTensor(const acltdtChannelHandle *handle,
  *
  * @see acltdtSendTensor
  */
-ACL_FUNC_VISIBILITY aclError acltdtReceiveTensor(const acltdtChannelHandle *handle,
-                                                 acltdtDataset *dataset,
+ACL_FUNC_VISIBILITY aclError acltdtReceiveTensor(const acltdtChannelHandle *handle, acltdtDataset *dataset,
                                                  int32_t timeout);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //INC_EXTERNAL_ACL_ACL_TDT_H_
-
+#endif  // INC_EXTERNAL_ACL_ACL_TDT_H_

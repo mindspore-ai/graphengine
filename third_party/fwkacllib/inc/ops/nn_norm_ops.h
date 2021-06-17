@@ -337,6 +337,41 @@ REG_OP(SoftmaxV2)
     .OP_END_FACTORY_REG(SoftmaxV2)
 
 /**
+*@brief Function softmax with dropoutDoMaskV3D
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A mutable Tensor. The type only support float16.
+* @li mask: A mutable Tensor. Must met all of the following rules:
+*     shape of mask should be 1D.
+*     dtype of mask should be uint8.
+*     value of shape should met the following algorithm:
+*     value = (size(x) + 128 - 1) // 128 * 128
+
+*@par Attributes:
+* @li keep_prob: A mutable Tensor. Must met all of the following rules:
+*     shape of "keep_prob" should be (1,) or [1,].
+*     Has the same type as "x" . \n
+* @li axes: A list of int. The dimension softmax would be performed on. Defaults
+*     to "[-1]" . \n
+
+*@par Outputs:
+*y1: A mutable Tensor. Has the same type as "x".
+*y2: A mutable Tensor. Has the same type as "x". \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(SoftmaxV2WithDropOutDoMaskV3D)
+    .INPUT(x, TensorType({DT_FLOAT16}))
+    .INPUT(mask, TensorType({DT_UINT8}))
+    .OUTPUT(y1, TensorType({DT_FLOAT16}))
+    .OUTPUT(y2, TensorType({DT_FLOAT16}))
+    .REQUIRED_ATTR(keep_prob, Float)
+    .ATTR(axes, ListInt, {-1})
+    .OP_END_FACTORY_REG(SoftmaxV2WithDropOutDoMaskV3D)
+
+/**
 *@brief Computes log softmax activations . \n
 
 *@par Inputs:
@@ -1150,22 +1185,23 @@ REG_OP(INInferV2D)
     .OP_END_FACTORY_REG(INInferV2D)
 
 /**
-* @brief perform instance normalization to x. \n
+* @brief InstanceNorm operator interface implementation.
 
 * @par Inputs:
 * Three inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, format is NC1HWC0.
-* @li gamma: A Tensor. Must be one of the following types: float16, float32, format is ND.
-* @li beta: A Tensor. Must be one of the following types: float16, float32, format is ND.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li beta: A Tensor. Must be one of the following types: float16, float32.
 
 * @par Attributes:
 * @li data_format: An attribute of type String \n
-* @li epsilon: An attribute of type Float, . \n
+* @li epsilon: An attribute of type Float. \n
 
 * @par Outputs:
-* @li y: A Tensor. Has the same type as "x", format is NC1HWC0. \n
-* @li mean: A Tensor. Has the same type as "x", format is NC1HWC0 and the shape is [N, C1, 1, 1, C0]. \n
-* @li variance: A Tensor. Has the same type as "x", format is NC1HWC0 and the shape is [N, C1, 1, 1, C0]. \n
+*Three outputs, including:
+* @li y: A Tensor. Has the same type as "x". \n
+* @li mean: A Tensor. Has the same type as "x". \n
+* @li variance: A Tensor. Has the same type as "x". \n
 
 * @par Third-party framework compatibility
 * Can be used by onnx InstanceNormalization
@@ -1177,9 +1213,92 @@ REG_OP(InstanceNorm)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(variance, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .REQUIRED_ATTR(data_format, String)
-    .REQUIRED_ATTR(epsilon, Float)
+    .ATTR(data_format, String, "NDHWC")
+    .ATTR(epsilon, Float, 1e-6)
     .OP_END_FACTORY_REG(InstanceNorm)
+
+/**
+*@brief InstanceNormGrad operator interface implementation.
+
+*@par Inputs:
+*Five inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Outputs:
+*Three outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(InstanceNormGrad)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(InstanceNormGrad)
+
+/**
+*@brief InstanceNormXBackprop operator interface implementation.
+
+*@par Inputs:
+*Five inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li x: A Tensor. Must be one of the following types: float16, float32.
+* @li variance: A Tensor. Must be one of the following types: float16, float32.
+* @li mean: A Tensor. Must be one of the following types: float16, float32.
+* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Outputs:
+*Two outputs, including:
+* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
+* @li res_for_gamma: A Tensor. Must be one of the following types: float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(InstanceNormXBackprop)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(InstanceNormXBackprop)
+
+/**
+*@brief InstanceNormBetaGammaBackprop operator interface implementation.
+
+*@par Inputs:
+*Two inputs, including:
+* @li dy: A Tensor. Must be one of the following types: float16, float32.
+* @li res_for_gamma: A Tensor. Must be one of the following types: float32.\n
+
+*@par Outputs:
+*Two outputs, including:
+* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
+* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(InstanceNormBetaGammaBackprop)
+    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(res_for_gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OP_END_FACTORY_REG(InstanceNormBetaGammaBackprop)
 
 /**
 * @brief Computes Kl_div_loss_grad or Kl_div_loss_backward. \n
@@ -1571,6 +1690,27 @@ REG_OP(MultilabelMarginLoss)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(MultilabelMarginLoss)
 
+/**
+*@brief Performs batch normalization . \n
+*@par Inputs:
+* Two inputs
+*@li input_x: A Tensor. Support float32. shape (n, c, d).
+*@li seq_len: A Tensor. Each batch normalize data num. Support Int32. Shape (n, ). \n
+*@par Attributes:
+*@li normalize_type: Str. Support "per_feature" or "all_features".
+*@li epsilon: An optional float32, specifying the small value added to
+variance to avoid dividing by zero. Defaults to "0.00001" . \n
+*@par Outputs:
+* One outputs
+*@li output_y: A Tensor for the normalized "x".Support float32. shape (n, c, d).\n
+*/
+REG_OP(NormalizeBatch)
+    .INPUT(input_x, TensorType({ DT_FLOAT }))
+    .INPUT(seq_len, TensorType({ DT_INT32 }))
+    .OUTPUT(output_y, TensorType({ DT_FLOAT }))
+    .REQUIRED_ATTR(normalize_type, String)
+    .ATTR(epsilon, Float, 0.00001)
+    .OP_END_FACTORY_REG(NormalizeBatch)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_NORM_OPS_H_

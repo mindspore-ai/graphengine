@@ -990,7 +990,7 @@ REG_OP(INInferV2)
 *@brief Performs reduced instance normalization . \n
 
 *@par Inputs:
-*x: A Tensor of type float16 or float32, with format NC1HWC0 . \n
+*x: A Tensor of type float16 or float32. \n
 
 *@par Outputs:
 *@li sum: A Tensor of type float32 for SUM reduced "x".
@@ -1013,19 +1013,19 @@ REG_OP(INTrainingReduceV2)
 *@par Inputs:
 * Seven inputs, including: (NC1HWC0supported)
 *@li x: A Tensor of type float16 or float32.
-*@li sum: A T [N, C1, 1, 1, C0] ensor of type float32 for the output of operator INTrainingReduceV2.
-*@li square_sum: A  [N, C1, 1, 1, C0] Tensor of type float32 for the output of operator INTrainingReduceV2.
-*@li gamma: A  [N, C1, 1, 1, C0] Tensor of type float32, for the scaling gamma.
-*@li beta: A  [N, C1, 1, 1, C0] Tensor of type float32, for the scaling beta.
-*@li mean: A  [N, C1, 1, 1, C0] Tensor of type float32, for the updated mean.
-*@li variance: A  [N, C1, 1, 1, C0] Tensor of type float32, for the updated variance . \n
+*@li sum: A Tensor of type float32 for the output of operator INTrainingReduceV2.
+*@li square_sum: A Tensor of type float32 for the output of operator INTrainingReduceV2.
+*@li gamma: A Tensor of type float32, for the scaling gamma.
+*@li beta: A Tensor of type float32, for the scaling beta.
+*@li mean: A Tensor of type float32, for the updated mean.
+*@li variance: A Tensor of type float32, for the updated variance . \n
 
 *@par Attributes:
 *@li momentum: A required float32, specifying the momentum to update mean and var.
 *@li epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero . \n
 
 *@par Outputs:
-* Three outputs, including: (NC1HWC0 supported)
+* Three outputs
 *@li y: A Tensor of type float16 or float32, for normalized "x".
 *@li batch_mean: A Tensor of type float32, for the updated mean.
 *@li batch_variance: A Tensor of type float32, for the updated variance . \n
@@ -1191,6 +1191,40 @@ REG_OP(ReduceStd)
     .ATTR(unbiased, Bool, true)
     .ATTR(keepdim, Bool, false)
     .OP_END_FACTORY_REG(ReduceStd)
+
+/**
+* @brief Calculates the standard deviation of Tensors.
+
+* @par Inputs:
+* include:
+* @li x: A Tensor. Must be one of the following types: float16, float32. \n
+* @li mean: A Tensor. It's the mean of X. Must be one of the following types: float16, float32. \n
+
+
+* @par Attributes:
+* Three Attributes, including:
+* @li dim: An optional listint, Defaults to "None". \n
+* @li unbiased: An optional bool. Defaults to "True".
+*     If "True", Use Bessel Correction.
+*     If "False", Do not use Bessel Correction. \n
+* @li keepdim: An optional bool. Defaults to "False".
+*     If "True", Keep the original tensor dimension.
+*     If "False", Do not keep the original tensor dimension. \n
+
+* @par Outputs:
+* @li y: A Tensor. It's the std of X. Has the same type as "x".
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator ReduceStdWithMean.
+*/
+REG_OP(ReduceStdWithMean)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .ATTR(dim, ListInt, {})
+    .ATTR(unbiased, Bool, true)
+    .ATTR(keepdim, Bool, false)
+    .OP_END_FACTORY_REG(ReduceStdWithMean)
 } //namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_REDUCE_OPS_H_

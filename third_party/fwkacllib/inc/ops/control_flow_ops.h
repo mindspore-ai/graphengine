@@ -96,7 +96,7 @@ REG_OP(RefMerge)
  *       Otherwise, the data is forwarded to "output_false" . \n
 
  *@par Inputs:
- *@li data: The tensor to be forwarded. \ n
+ *@li data: The tensor to be forwarded. \n
  *          Must be one of the following types: float16, float32, float64,
  *          int8, int16, int32, int64, uint8, uint16, uint32, uint64, bool.
  *@li pred: A boolean scalar. The output port that will receive data . \n

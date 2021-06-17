@@ -317,15 +317,15 @@ REG_OP(Concat)
 *     int64, uint8, uint16, uint32, uint64, float16, float32, bool . It's a dynamic input. \n
 
 *@par Attributes:
-*@li axis: A optional int, defaultvalue is 0.
+*@li axis: A optional int, default value is 0.
 *     Dimension along which to pack. The range is [-(R+1), R+1).
 *@li N: A required int. Number of tensors . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
 *@par Third-party framework compatibility
-*Compatible with the TensorFlow operator Pack.
-It's a dynamic output.
+* Compatible with the TensorFlow operator Pack.
 */
 REG_OP(Pack)
     .DYNAMIC_INPUT(x, TensorType::BasicType())

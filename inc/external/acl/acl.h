@@ -26,9 +26,9 @@ extern "C" {
 #endif
 
 // Current version is 1.0.0
-#define ACL_MAJOR_VERSION    1
-#define ACL_MINOR_VERSION    0
-#define ACL_PATCH_VERSION    0
+#define ACL_MAJOR_VERSION 1
+#define ACL_MINOR_VERSION 0
+#define ACL_PATCH_VERSION 0
 
 /**
  * @ingroup AscendCL
@@ -79,4 +79,4 @@ ACL_FUNC_VISIBILITY const char *aclGetRecentErrMsg();
 }
 #endif
 
-#endif // INC_EXTERNAL_ACL_ACL_H_
+#endif  // INC_EXTERNAL_ACL_ACL_H_

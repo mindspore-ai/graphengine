@@ -896,6 +896,45 @@ REG_OP(DecodeBase64)
     .INPUT(x, TensorType({DT_STRING}))
     .OUTPUT(y, TensorType({DT_STRING}))
     .OP_END_FACTORY_REG(DecodeBase64)
+
+/**
+*@brief StringNormalization performs string operations for basic cleaning . \n
+
+*@par Inputs:
+*@li input: only accepts [C] or [1, C] UTF-8 strings tensor . \n
+
+*@par Outputs:
+*@li output: UTF-8 strings tensor after cleaning . \n
+
+*@par Attributes:
+*@li stopwords : list of strings (default is empty).
+*List of stop words. If not set, no word would be removed from input strings
+tensor.
+
+*@li is_case_sensitive : bool (default is false).
+*Boolean. Whether the identification of stop words in input strings tensor is
+case-sensitive. Default is false.
+
+*@li case_change_action : string (default is "NONE").
+*string enum that cases output to be lowercased/uppercases/unchanged. Valid
+values are "LOWER", "UPPER", "NONE". Default is "NONE".
+
+*@li local : string (default is "en_US").
+*Environment dependent string that denotes the locale according to which output
+strings needs to be upper/lowercased.Default en_US or platform specific equivalent
+as decided by the implementation . \n
+
+*@attention Constraints:
+*@li input can be either a 1-D or 2-D tensor, the shape of 2-D tensor must be [1, C].
+*/
+REG_OP(StringNormalizer)
+    .INPUT(input, TensorType({DT_STRING}))
+    .OUTPUT(output, TensorType({DT_STRING}))
+    .ATTR(stopwords, ListString, {})
+    .ATTR(is_case_sensitive, Bool, false)
+    .ATTR(case_change_action, String, "NONE")
+    .ATTR(local, String, "en_US")
+    .OP_END_FACTORY_REG(StringNormalizer)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_STRING_OPS_H_

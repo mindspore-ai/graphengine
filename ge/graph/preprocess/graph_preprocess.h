@@ -63,7 +63,8 @@ class GraphPrepare {
   Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
-  Status CheckInternalFormat(const NodePtr &input_node, const GeTensorDesc &desc, bool tune_flag);
+  Status CheckInternalFormat(const NodePtr &input_node, const GeTensorDesc &desc);
+  Status UpdateDataInputOutputDesc(GeAttrValue::INT index, OpDescPtr &op, GeTensorDesc &desc);
   Status UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option);
   Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option);
   Status CheckConstOp();

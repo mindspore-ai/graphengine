@@ -559,8 +559,8 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   std::string output_type = GetParam(ge::ir_option::OUTPUT_TYPE);
   GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "[Check][OutputType] failed!");
-  // check insert_op_conf
 
+  // check insert_op_conf
   std::string insert_op_conf = GetParam(ge::ir_option::INSERT_OP_FILE);
   GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "[Check][InsertOpConf] failed!");

@@ -674,6 +674,12 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     GELOGD("Current ctx is null.");
     ctx = nullptr;
   }
+  std::function<void()> callback = [&]() {
+    if (ctx != nullptr) {
+      (void)rtCtxSetCurrent(ctx);
+    }
+  };
+  GE_MAKE_GUARD(restore, callback);
 
   GeRootModelPtr ge_root_model = nullptr;
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
@@ -712,11 +718,6 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     }
     return ret;
   }
-
-  if (ctx != nullptr) {
-    (void)rtCtxSetCurrent(ctx);
-  }
-
   return SUCCESS;
 }
 

@@ -128,7 +128,6 @@ else ()
                 message(STATUS "PLATFORM param is invalid, should be train or inference, you choose nothing!")
             endif()
         endif()
-
         set(METADEF_DIR ${CMAKE_CURRENT_LIST_DIR}/metadef)
         set(PARSER_DIR ${CMAKE_CURRENT_LIST_DIR}/parser)
         set(GE_DEPEND_DIR ${CMAKE_CURRENT_LIST_DIR}/..)

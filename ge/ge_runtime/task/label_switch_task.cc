@@ -24,14 +24,14 @@ LabelSwitchTask::LabelSwitchTask(const ModelContext &model_context,
     : TaskRepeater<LabelSwitchTaskInfo>(model_context, task_info),
       task_info_(task_info),
       stream_(nullptr),
-      all_label_resource_(),
       label_info_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
     return;
   }
 
-  all_label_resource_ = model_context.label_list();
+  rt_model_handle_ = model_context.rt_model_handle();
+  auto all_label_resource = model_context.label_list();
   auto stream_list = model_context.stream_list();
   uint32_t stream_id = task_info->stream_id();
   GELOGI("Stream list size:%zu, stream id:%u.", stream_list.size(), stream_id);
@@ -40,17 +40,15 @@ LabelSwitchTask::LabelSwitchTask(const ModelContext &model_context,
     return;
   }
   stream_ = stream_list[stream_id];
+  label_manager_ = LabelManager::GetInstance();
+  if (label_manager_ == nullptr) {
+    GELOGW("Get label manager instance failed.");
+    return;
+  }
+  label_info_ = label_manager_->GetLabelInfo(rt_model_handle_, task_info_->label_list(), all_label_resource);
 }
 
-LabelSwitchTask::~LabelSwitchTask() {
-  if (label_info_ != nullptr) {
-    rtError_t rt_ret = rtFree(label_info_);
-    if (rt_ret != RT_ERROR_NONE) {
-      GELOGE(RT_FAILED, "rtFree fwkOpBuf failed! ret: 0x%X.", rt_ret);
-    }
-    label_info_ = nullptr;
-  }
-}
+LabelSwitchTask::~LabelSwitchTask() {}
 
 bool LabelSwitchTask::Distribute() {
   GELOGI("LabelSwitchTask Distribute start.");
@@ -117,8 +115,8 @@ bool LabelSwitchTask::CheckParamValid() {
     return false;
   }
 
-  if (label_info_ != nullptr) {
-    GELOGE(PARAM_INVALID, "label_info_ has dirty data.");
+  if (label_info_ == nullptr) {
+    GELOGE(PARAM_INVALID, "CopyLabelList failed, label info is null.");
     return false;
   }
 
@@ -126,6 +124,5 @@ bool LabelSwitchTask::CheckParamValid() {
 }
 
 REGISTER_TASK(TaskInfoType::LABEL_SWITCH, LabelSwitchTask, LabelSwitchTaskInfo);
-
 }  // namespace model_runner
 }  // namespace ge

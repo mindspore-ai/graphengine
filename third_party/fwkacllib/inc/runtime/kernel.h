@@ -173,13 +173,7 @@ typedef void (*rtCallback_t)(void *fnData);
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aicube
  */
-#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41415247
-
-/**
- * @ingroup rt_kernel
- * @brief magic number of elf binary for aivector
- */
-#define RT_DEV_BINARY_MAGIC_ELF_AIVECTOR 0x41415248
+#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41494343
 
 /**
  * @ingroup rt_kernel_flags
@@ -192,14 +186,14 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_KERNEL_CUSTOM_AICPU (0x08)
 
 // STARS topic scheduler sqe : topic_type
-#define RT_KERNEL_DEVICE_FIRST (0X10)
-#define RT_KERNEL_HOST_ONLY (0X20)
-#define RT_KERNEL_HOST_FIRST (0X30)
+#define RT_KERNEL_DEVICE_FIRST (0x10)
+#define RT_KERNEL_HOST_ONLY (0x20)
+#define RT_KERNEL_HOST_FIRST (0x40)
 
 /**
  * @ingroup rt_kernel
  * @brief kernel mode
- */
+**/
 #define RT_DEFAULT_KERNEL_MODE (0x00)
 #define RT_NORMAL_KERNEL_MODE (0x01)
 #define RT_ALL_KERNEL_MODE (0x02)
@@ -222,7 +216,7 @@ RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **handle);
 
 /**
  * @ingroup rt_kernel
- * @brief register device binary
+ * @brief register device binary with all kernel
  * @param [in] bin   device binary description
  * @param [out] handle   device binary handle
  * @return RT_ERROR_NONE for ok
@@ -341,7 +335,7 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @ingroup rt_kernel
  * @brief launch kernel with handle to device
  * @param [in] handle   program
- * @param [in] devFunc    device function description
+ * @param [in] devFunc   device function description.
  * @param [in] blockDim   block dimentions
  * @param [in] args   argments address for kernel function
  * @param [in] argsSize   argements size
@@ -352,7 +346,7 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim, void *args, uint32_t argsSize,
-                                           rtSmDesc_t *smDesc, rtStream_t stream, const void *kernelInfo);
+                                            rtSmDesc_t *smDesc, rtStream_t stream_, const void *kernelInfo);
 
 /**
  * @ingroup rt_kernel

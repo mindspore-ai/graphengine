@@ -72,6 +72,8 @@ class AiCoreOpTask {
 
   const std::string& GetName() const;
 
+  const std::string& GetLogName() const {return log_name_;}
+
   bool GetClearAtomic() const {return clear_atomic_;}
 
   uint32_t GetBlockDim() const {return block_dim_;}

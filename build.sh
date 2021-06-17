@@ -355,13 +355,13 @@ generate_package()
 
   if [ "x${PLATFORM}" = "xtrain" ]
   then
-    tar -cf graphengine_lib.tar fwkacllib
+    tar -zcf graphengine_lib.tar fwkacllib
   elif [ "x${PLATFORM}" = "xinference" ]
   then
-    tar -cf graphengine_lib.tar acllib atc
+    tar -zcf graphengine_lib.tar acllib atc
   elif [ "x${PLATFORM}" = "xall" ]
   then
-    tar -cf graphengine_lib.tar fwkacllib acllib atc
+    tar -zcf graphengine_lib.tar fwkacllib acllib atc
   fi
 }
 
@@ -371,6 +371,6 @@ elif [ "X$MINDSPORE_MODE" = "Xon" ]
 then
   cd "${OUTPUT_PATH}"
   find ./ -name graphengine_lib.tar -exec rm {} \;
-  tar -cf graphengine_lib.tar lib
+  tar -zcf graphengine_lib.tar lib
 fi
 echo "---------------- GraphEngine package archive generated ----------------"

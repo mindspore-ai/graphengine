@@ -371,6 +371,6 @@ elif [ "X$MINDSPORE_MODE" = "Xon" ]
 then
   cd "${OUTPUT_PATH}"
   find ./ -name graphengine_lib.tar -exec rm {} \;
-  tar -cf graphengine_lib.tar lib
+  tar -zcf graphengine_lib.tar lib
 fi
 echo "---------------- GraphEngine package archive generated ----------------"

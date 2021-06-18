@@ -78,8 +78,6 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
     GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     GetContext().SetSessionId(executor_->GetContext()->session_id);
     GetContext().SetContextId(executor_->GetContext()->context_id);
-    GE_CHECK_NOTNULL(executor_->GetContext()->ge_context);
-    GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     return RunInternal();
   });
 

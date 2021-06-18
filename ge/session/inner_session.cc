@@ -109,7 +109,7 @@ Status InnerSession::Initialize() {
   GE_CHK_RT_RET(rtSetDevice(GetContext().DeviceId()));
 
   DumpProperties dump_properties;
-  dump_properties.InitByOptions();
+  GE_CHK_STATUS_RET(dump_properties.InitByOptions(), "Init dump properties failed.");
   GE_CHK_STATUS_RET(AddDumpProperties(dump_properties), "[Add][DumpProperties] failed.");
 
   ret = graph_manager_.Initialize(options_);

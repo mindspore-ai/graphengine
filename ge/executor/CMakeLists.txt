@@ -187,15 +187,18 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/cce
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc/cce>
     #### blue zone ####
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
 )
 
 target_link_libraries(ge_executor PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
     json
     ascend_protobuf_static
     c_sec
@@ -238,10 +241,10 @@ target_include_directories(ge_executor_shared PRIVATE
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/cce
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc/cce>
     #### blue zone ####
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
 )
 
 target_link_options(ge_executor_shared PRIVATE
@@ -251,6 +254,9 @@ target_link_options(ge_executor_shared PRIVATE
 
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
     -Wl,--no-as-needed
     ge_common
     runtime

@@ -224,17 +224,18 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
 Status TbeOpTask::UpdateRunInfo() {
   // invoke OpParaCalculate
   GELOGD("Start to invoke OpParaCalculate.");
-  optiling::utils::OpRunInfo run_info(0, true, 0);
-  auto ret = optiling::OpParaCalculateV2(*node_, run_info);
+  optiling::OpRunInfo run_info;
+  run_info.block_dim = 0;
+  auto ret = optiling::OpParaCalculate(*node_, run_info);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Invoke][OpParaCalculate] failed, ret = %u.", ret);
     REPORT_INNER_ERROR("E19999", "invoke OpParaCalculate failed, ret = %u.", ret);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
-  block_dim_ = run_info.GetBlockDim();
-  tiling_data_ = run_info.GetAllTilingData().str();
-  tiling_key_ = run_info.GetTilingKey();
-  run_info.GetAllWorkspaces(run_info_workspaces_);
+  block_dim_ = run_info.block_dim;
+  tiling_data_ = run_info.tiling_data.str();
+  tiling_key_ = run_info.tiling_key;
+  run_info_workspaces_ = run_info.workspaces;
   GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu, tiling_key = %u", block_dim_,
          tiling_data_.size(), tiling_key_);
   return SUCCESS;

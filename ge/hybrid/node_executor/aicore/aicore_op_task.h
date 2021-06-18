@@ -85,7 +85,7 @@ class AiCoreOpTask {
   virtual std::string GetKeyForTvmMagic() const;
   virtual std::string GetKeyForTvmMetaData() const;
   virtual std::string GetKeyForKernelName(const OpDesc &op_desc) const;
-  virtual Status CalcTilingInfo(const NodePtr &node, optiling::utils::OpRunInfo &tiling_info);
+  virtual Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info);
 
   std::unique_ptr<TensorBuffer> tiling_buffer_ = nullptr;
   std::string tiling_data_;
@@ -130,7 +130,7 @@ class AtomicAddrCleanOpTask : public AiCoreOpTask {
   std::string GetKeyForTvmMagic() const override;
   std::string GetKeyForTvmMetaData() const override;
   std::string GetKeyForKernelName(const OpDesc &op_desc) const override;
-  Status CalcTilingInfo(const NodePtr &node, optiling::utils::OpRunInfo &tiling_info) override;
+  Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info) override;
 
  private:
   Status InitAtomicAddrCleanIndices(const OpDesc &op_desc);

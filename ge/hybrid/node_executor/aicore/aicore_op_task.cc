@@ -25,7 +25,7 @@
 #include "single_op/task/build_task_utils.h"
 #include "single_op/task/tbe_task_builder.h"
 
-using optiling::utils::OpRunInfo;
+using optiling::OpRunInfo;
 
 namespace ge {
 namespace hybrid {
@@ -359,7 +359,9 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   GE_CHECK_NOTNULL(op_desc);
 
   GELOGD("[%s] Start to update tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());
-  OpRunInfo tiling_info(-1, true, 0);
+  OpRunInfo tiling_info;
+  tiling_info.block_dim = -1; // codex: Using uninitialized value
+  tiling_info.clear_atomic = true;
 
   auto execution_context = context.GetExecutionContext();
 
@@ -368,14 +370,12 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CalcTilingInfo] End");
 
   // update op args by tiling info
-  block_dim_ = tiling_info.GetBlockDim();
-  clear_atomic_ = tiling_info.GetClearAtomic();
-  std::vector<int64_t> workspaces;
-  tiling_info.GetAllWorkspaces(workspaces);
-  op_desc->SetWorkspaceBytes(workspaces);
+  block_dim_ = static_cast<uint32_t>(tiling_info.block_dim);
+  op_desc->SetWorkspaceBytes(tiling_info.workspaces);
+  clear_atomic_ = tiling_info.clear_atomic;
 
-  tiling_data_ = tiling_info.GetAllTilingData().str();
-  tiling_key_ = tiling_info.GetTilingKey();
+  tiling_data_ = tiling_info.tiling_data.str();
+  tiling_key_ = tiling_info.tiling_key;
   GELOGD("Successfully getting [tiling_key] : %u", tiling_key_);
   if (tiling_data_.empty()) {
     GELOGD("[%s] Tiling data is empty.", op_desc->GetName().c_str());
@@ -412,7 +412,7 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 
 Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpParaCalculate.", node->GetName().c_str());
-  GE_CHK_STATUS_RET(optiling::OpParaCalculateV2(*node, tiling_info),
+  GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
                     "[Invoke][OpParaCalculate]Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
@@ -633,7 +633,7 @@ std::string AtomicAddrCleanOpTask::GetKeyForKernelName(const OpDesc &op_desc) co
 
 Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpAtomicCalculate.", node->GetName().c_str());
-  GE_CHK_STATUS_RET(optiling::OpAtomicCalculateV2(*node, tiling_info),
+  GE_CHK_STATUS_RET(OpAtomicCalculate(*node, tiling_info),
                     "[Invoke][OpAtomicCalculate]Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpAtomicCalculate successfully.", node->GetName().c_str());

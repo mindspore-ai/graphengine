@@ -179,6 +179,8 @@ class NodeExecutorManager {
    */
   Status EnsureInitialized();
 
+  Status InitializeExecutors();
+
   void FinalizeExecutors();
 
   /**
@@ -194,7 +196,7 @@ class NodeExecutorManager {
    * @param executor        executor
    * @return SUCCESS on success, error code otherwise
    */
-  Status GetExecutor(Node &node, const NodeExecutor **executor);
+  Status GetExecutor(Node &node, const NodeExecutor **executor) const;
 
   /**
    * Resolve executor type by node
@@ -204,13 +206,12 @@ class NodeExecutorManager {
   ExecutorType ResolveExecutorType(Node &node) const;
 
  private:
-  Status GetOrCreateExecutor(ExecutorType executor_type, const NodeExecutor **executor);
-
   std::map<ExecutorType, std::unique_ptr<NodeExecutor>> executors_;
   std::map<ExecutorType, std::function<NodeExecutor *()>> builders_;
   std::map<std::string, NodeExecutorManager::ExecutorType> engine_mapping_;
   std::mutex mu_;
   bool initialized_ = false;
+  bool executor_initialized_ = false;
   int ref_count_ = 0;
 };
 

@@ -20,7 +20,7 @@
 #include "external/graph/types.h"
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "aicpu_ext_info.h"
+#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
 
 namespace ge {
 namespace hybrid {

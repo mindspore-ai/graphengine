@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "hccl_tailing_optimization_pass.h"
+#include "graph/passes/hccl_tailing_optimization_pass.h"
 #include "graph/common/transop_util.h"
 
 namespace ge {

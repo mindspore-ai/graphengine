@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hccl_group_pass.h"
+#include "graph/passes/hccl_group_pass.h"
 #include <deque>
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"

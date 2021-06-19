@@ -17,7 +17,7 @@
 #ifndef GE_COMMON_SUBGRAPH_CONST_MIGRATION_H_
 #define GE_COMMON_SUBGRAPH_CONST_MIGRATION_H_
 
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "inc/graph_pass.h"
 
 #include <map>

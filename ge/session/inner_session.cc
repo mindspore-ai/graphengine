@@ -24,7 +24,7 @@
 #include "adx_datadump_server.h"
 #include "common/dump/dump_properties.h"
 #include "common/dump/dump_manager.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"

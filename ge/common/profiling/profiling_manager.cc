@@ -21,7 +21,7 @@
 #include "framework/common/string_util.h"
 #include "graph/ge_context.h"
 #include "graph/utils/type_utils.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "runtime/base.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "mmpa/mmpa_api.h"

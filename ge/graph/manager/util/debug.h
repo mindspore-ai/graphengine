@@ -33,10 +33,10 @@
 #include <utility>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "mmpa/mmpa_api.h"
 #include "proto/om.pb.h"
 #include "runtime/kernel.h"

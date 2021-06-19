@@ -24,7 +24,7 @@
 #include "graph/buffer.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
@@ -36,7 +36,7 @@
 
 #include "graph/common/local_context.h"
 #include "graph/optimize/common/params.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 #include "runtime/mem.h"
 
 using std::map;

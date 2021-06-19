@@ -19,9 +19,9 @@
 #include <memory>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/attr_utils.h"

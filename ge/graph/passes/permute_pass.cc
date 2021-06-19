@@ -17,8 +17,8 @@
 #include "graph/passes/permute_pass.h"
 #include <queue>
 #include <vector>
-#include "common/debug/log.h"
-#include "common/types.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "inc/kernel.h"

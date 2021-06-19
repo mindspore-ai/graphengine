@@ -15,9 +15,9 @@
  */
 
 #include "graph/passes/shape_operate_op_remove_pass.h"
-#include "common/debug/log.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/utils/attr_utils.h"
 
 using domi::SUCCESS;

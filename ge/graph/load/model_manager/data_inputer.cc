@@ -18,9 +18,9 @@
 
 #include <securec.h>
 
-#include "common/debug/log.h"
-#include "common/scope_guard.h"
-#include "common/types.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/scope_guard.h"
+#include "framework/common/types.h"
 
 namespace ge {
 domi::Status InputDataWrapper::Init(const InputData &input, const OutputData &output) {

@@ -17,7 +17,7 @@
 #include "graph/passes/constant_folding_pass.h"
 
 #include <vector>
-#include "graph/operator_factory.h"
+#include "external/graph/operator_factory.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"

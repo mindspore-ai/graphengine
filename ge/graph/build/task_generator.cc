@@ -18,8 +18,8 @@
 #include <string>
 #include <utility>
 #include "common/profiling/profiling_manager.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 
 #include "graph/debug/ge_attr_define.h"
@@ -32,7 +32,7 @@
 #include "graph/common/ge_call_wrapper.h"
 #include "init/gelib.h"
 #include "graph/ge_local_context.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"
 
 using domi::LogTimeStampDef;

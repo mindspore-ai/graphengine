@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "task_context.h"
+#include "hybrid/node_executor/task_context.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/tensor_utils.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_executor.h"

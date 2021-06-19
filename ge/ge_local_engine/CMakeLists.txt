@@ -41,8 +41,6 @@ target_include_directories(ge_local_engine PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
@@ -91,8 +89,6 @@ target_include_directories(atc_ge_local_engine PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
@@ -146,8 +142,6 @@ target_include_directories(ge_local_opskernel_builder PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
@@ -197,8 +191,6 @@ target_include_directories(atc_ge_local_opskernel_builder PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
@@ -254,8 +246,6 @@ target_include_directories(ge_local_opskernel_builder_static PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####

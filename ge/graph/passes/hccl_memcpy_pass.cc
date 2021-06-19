@@ -18,9 +18,9 @@
 
 #include <string>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
 #include "framework/common/types.h"
 #include "graph/utils/graph_utils.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "inc/graph_pass.h"
 
 #ifndef GE_GRAPH_PASSES_MARK_SAME_ADDR_PASS_H_

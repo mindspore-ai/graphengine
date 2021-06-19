@@ -29,7 +29,7 @@
 #include "framework/common/debug/log.h"
 #include "register/op_tiling.h"
 #include "runtime/rt.h"
-#include "build_task_utils.h"
+#include "single_op/task/build_task_utils.h"
 
 namespace ge {
 namespace {

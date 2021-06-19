@@ -16,11 +16,11 @@
 
 #include "graph/load/model_manager/model_utils.h"
 #include <string>
-#include "common/debug/log.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/manager/graph_var_manager.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/build/memory/block_mem_assigner.h"
 #include "common/math/math_util.h"
 

@@ -72,20 +72,15 @@ target_compile_options(ge_common PRIVATE
 
 target_include_directories(ge_common PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/common
-    ${GE_CODE_DIR}/ge/common/op
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
-    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc/cce>
     #### blue zone ####
     $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
     $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
@@ -141,20 +136,15 @@ target_compile_options(ge_common_static PRIVATE
 
 target_include_directories(ge_common_static PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/common
-    ${GE_CODE_DIR}/ge/common/op
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
-    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc/cce>
     #### blue zone ####
     $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
     $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
@@ -200,15 +190,11 @@ target_compile_options(ge_common PRIVATE
 
 target_include_directories(ge_common PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/common
-    ${GE_CODE_DIR}/ge/common/op
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     ${GE_CODE_DIR}/third_party/fwkacllib/inc

@@ -21,8 +21,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "ge/ge_api_error_codes.h"
-#include "graph/types.h"
+#include "external/ge/ge_api_error_codes.h"
+#include "external/graph/types.h"
 #include "graph/ge_attr_value.h"
 #include "graph/op_desc.h"
 

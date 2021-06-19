@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "aicore_task_builder.h"
-#include "common/debug/log.h"
-#include "aicore_node_executor.h"
+#include "hybrid/node_executor/aicore/aicore_task_builder.h"
+#include "framework/common/debug/log.h"
+#include "hybrid/node_executor/aicore/aicore_node_executor.h"
 
 namespace ge {
 namespace hybrid {

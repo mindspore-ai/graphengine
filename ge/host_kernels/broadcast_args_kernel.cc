@@ -18,9 +18,9 @@
 
 #include <vector>
 
-#include "common/op/ge_op_utils.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/bcast.h"
 #include "graph/passes/pass_utils.h"

@@ -16,10 +16,10 @@
 
 #include "graph/manager/util/hcom_util.h"
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/math/math_util.h"
-#include "common/op/attr_value_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/attr_value_util.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 

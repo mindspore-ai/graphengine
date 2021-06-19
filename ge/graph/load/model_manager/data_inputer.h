@@ -22,8 +22,8 @@
 #include <vector>
 
 #include "common/blocking_queue.h"
-#include "common/ge_types.h"
-#include "common/types.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/types.h"
 
 namespace ge {
 ///

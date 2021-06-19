@@ -22,8 +22,8 @@
 #include <utility>
 #include <vector>
 
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/node.h"
 
 namespace ge {

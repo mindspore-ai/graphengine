@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hybrid_model_executor.h"
+#include "hybrid/executor/hybrid_model_executor.h"
 #include "graph/ge_context.h"
 #include "graph/runtime_inference_context.h"
 #include "graph/utils/tensor_utils.h"

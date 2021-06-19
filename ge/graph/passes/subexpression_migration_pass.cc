@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "subexpression_migration_pass.h"
+#include "graph/passes/subexpression_migration_pass.h"
 
 #include "graph/utils/node_utils.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"

@@ -20,7 +20,7 @@
 #include "framework/common/fmk_error_codes.h"
 #include "common/dump/dump_manager.h"
 #include "common/ge/ge_util.h"
-#include "graph/attr_value.h"
+#include "external/graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/load/model_manager/model_utils.h"

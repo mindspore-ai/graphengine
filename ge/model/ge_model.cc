@@ -16,7 +16,7 @@
 
 #include "model/ge_model.h"
 #include <utility>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/attr_utils.h"
 

@@ -20,9 +20,9 @@
 
 #include <vector>
 
-#include "common/fmk_error_codes.h"
-#include "common/fmk_types.h"
-#include "common/util.h"
+#include "framework/common/fmk_error_codes.h"
+#include "framework/common/fmk_types.h"
+#include "framework/common/util.h"
 #include "runtime/event.h"
 
 namespace ge {

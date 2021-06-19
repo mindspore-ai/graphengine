@@ -23,8 +23,8 @@
 #include "engine_manager/dnnengine_manager.h"
 #include "opskernel_manager/ops_kernel_manager.h"
 #include "session/session_manager.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 
 using std::string;
 using std::map;

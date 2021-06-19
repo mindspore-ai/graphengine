@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "ge/ge_api.h"
+#include "external/ge/ge_api.h"
 #include <iostream>
 #include <malloc.h>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/datatype_util.h"
 #include "proto/ge_api.pb.h"

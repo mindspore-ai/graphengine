@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "memory/memory_assigner.h"
+#include "framework/memory/memory_assigner.h"
 #include <memory>
 #include "framework/common/debug/ge_log.h"
 #include "graph/build/memory/graph_mem_assigner.h"

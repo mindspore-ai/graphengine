@@ -21,7 +21,7 @@
 #include "aicpu/aicpu_schedule/aicpu_op_type_list.h"
 #include "common/model_parser/model_parser.h"
 #include "common/dump/dump_manager.h"
-#include "common/l2_cache_optimize.h"
+#include "framework/common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/load/model_manager/davinci_model.h"

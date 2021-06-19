@@ -26,8 +26,8 @@
 #include <typeinfo>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
-#include "engine/dnnengine.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/engine/dnnengine.h"
 #include "framework/common/debug/ge_log.h"
 #include "mmpa/mmpa_api.h"
 

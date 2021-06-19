@@ -20,8 +20,8 @@
 #include <set>
 
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
-#include "common/types.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "host_kernels/kernel_utils.h"

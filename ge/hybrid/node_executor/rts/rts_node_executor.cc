@@ -17,9 +17,9 @@
 #include "hybrid/node_executor/rts/rts_node_executor.h"
 #include "hybrid/node_executor/rts/rts_task_factory.h"
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "graph/common/omg_util.h"
 #include "graph/utils/tensor_utils.h"
 #include "hybrid/model/hybrid_model.h"

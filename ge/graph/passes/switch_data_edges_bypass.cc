@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "switch_data_edges_bypass.h"
+#include "graph/passes/switch_data_edges_bypass.h"
 
 #include <atomic>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
-#include "common/op/ge_op_utils.h"
-#include "common/util.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/util.h"
 #include "graph/utils/node_utils.h"
 
 namespace ge {

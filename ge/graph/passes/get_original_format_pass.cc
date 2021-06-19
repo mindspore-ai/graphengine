@@ -18,9 +18,9 @@
 
 #include <vector>
 
-#include "common/debug/log.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/omg_inner_types.h"
 #include "graph/utils/attr_utils.h"

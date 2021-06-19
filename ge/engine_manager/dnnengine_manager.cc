@@ -22,7 +22,7 @@
 #include <map>
 #include <utility>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"

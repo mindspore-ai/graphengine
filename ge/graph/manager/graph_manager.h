@@ -26,10 +26,10 @@
 #include <vector>
 
 #include "common/blocking_queue.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/helper/model_cache_helper.h"
 #include "external/graph/types.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/build/graph_builder.h"
 #include "graph/execute/graph_execute.h"
 #include "graph/ge_local_context.h"

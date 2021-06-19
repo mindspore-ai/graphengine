@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "common_subexpression_elimination_pass.h"
+#include "graph/passes/common_subexpression_elimination_pass.h"
 
 #include <sstream>
 #include <string>

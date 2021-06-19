@@ -19,7 +19,7 @@
 
 #include <vector>
 #include <string>
-#include "aicore_op_task.h"
+#include "hybrid/node_executor/aicore/aicore_op_task.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/op_kernel_bin.h"

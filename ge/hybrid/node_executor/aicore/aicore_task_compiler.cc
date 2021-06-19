@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "aicore_task_compiler.h"
+#include "hybrid/node_executor/aicore/aicore_task_compiler.h"
 #include "framework/common/debug/log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "opskernel_manager/ops_kernel_builder_manager.h"

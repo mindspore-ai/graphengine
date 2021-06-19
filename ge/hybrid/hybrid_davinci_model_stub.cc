@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hybrid_davinci_model.h"
+#include "hybrid/hybrid_davinci_model.h"
 
 namespace ge {
 namespace hybrid {

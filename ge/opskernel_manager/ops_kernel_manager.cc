@@ -24,9 +24,9 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
-#include "../init/gelib.h"
+#include "init/gelib.h"
 #include "framework/common/debug/ge_log.h"
-#include "ge/ge_api.h"
+#include "external/ge/ge_api.h"
 #include "proto/optimizer_priority.pb.h"
 
 namespace {

@@ -20,7 +20,7 @@
 #include <string>
 
 #include "securec.h"
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelParserBase::ModelParserBase() {}

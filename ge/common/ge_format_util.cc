@@ -15,7 +15,7 @@
  */
 
 #include "framework/common/ge_format_util.h"
-#include "formats/formats.h"
+#include "common/formats/formats.h"
 
 namespace ge {
 GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status GeFormatUtil::TransShape(const TensorDesc &src_desc,

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "aicore_node_executor.h"
+#include "hybrid/node_executor/aicore/aicore_node_executor.h"
 #include "framework/common/taskdown_common.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "external/runtime/rt_error_codes.h"

@@ -18,7 +18,7 @@
 
 #include <string>
 #include "graph/compute_graph.h"
-#include "graph/ge_error_codes.h"
+#include "external/graph/ge_error_codes.h"
 
 namespace ge {
 bool IsOriginalOpFind(OpDescPtr &op_desc, const std::string &op_name);

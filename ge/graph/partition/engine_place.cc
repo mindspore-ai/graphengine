@@ -22,7 +22,7 @@
 #include <utility>
 #include <mutex>
 
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "common/util/error_manager/error_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"

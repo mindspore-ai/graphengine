@@ -20,7 +20,7 @@
 #include <set>
 #include <map>
 #include <vector>
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

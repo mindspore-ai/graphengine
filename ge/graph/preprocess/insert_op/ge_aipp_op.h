@@ -19,7 +19,7 @@
 
 #include <utility>
 #include <vector>
-#include "common/op/attr_value_util.h"
+#include "framework/common/op/attr_value_util.h"
 #include "graph/preprocess/insert_op/base_insert_op.h"
 #include "proto/insert_op.pb.h"
 

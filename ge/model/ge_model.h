@@ -26,7 +26,7 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/fmk_error_codes.h"
 #include "graph/buffer.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "proto/task.pb.h"
 
 namespace ge {

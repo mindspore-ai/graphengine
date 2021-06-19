@@ -22,7 +22,7 @@
 #include "graph/utils/type_utils.h"
 #include "graph/utils/node_utils.h"
 #include "common/ge/ge_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 
 namespace {
 constexpr uint8_t kSwitchPredIndex = 0;

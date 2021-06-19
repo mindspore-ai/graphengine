@@ -20,9 +20,9 @@
 #include <string>
 #include <vector>
 
-#include "common/op/attr_value_util.h"
-#include "common/op/ge_op_utils.h"
-#include "common/types.h"
+#include "framework/common/op/attr_value_util.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
 #include "graph/utils/attr_utils.h"

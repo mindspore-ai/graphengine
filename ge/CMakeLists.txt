@@ -754,22 +754,15 @@ target_compile_options(ge_runner PRIVATE
 
 target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${METADEF_DIR}
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/external
-    ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone
@@ -835,22 +828,15 @@ target_compile_options(ge_compiler PRIVATE
 
 target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${METADEF_DIR}
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/external
-    ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
@@ -1000,18 +986,14 @@ set_target_properties(atc_stub_ge_compiler PROPERTIES
 )
 
 target_include_directories(atc_stub_ge_compiler PRIVATE
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
     ${GE_CODE_DIR}/inc/external
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
+    ${METADEF_DIR}/inc
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc/cce
+    ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
@@ -1041,18 +1023,14 @@ set_target_properties(fwk_stub_ge_runner PROPERTIES
 )
 
 target_include_directories(fwk_stub_ge_runner PRIVATE
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
+    ${METADEF_DIR}/inc
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc/cce
+    ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####

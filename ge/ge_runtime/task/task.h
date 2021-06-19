@@ -23,7 +23,7 @@
 #include <string>
 #include "runtime/rt_model.h"
 #include "ge_runtime/model_context.h"
-#include "ge_runtime/task_info.h"
+#include "framework/ge_runtime/task_info.h"
 #include "external/runtime/rt_error_codes.h"
 
 namespace ge {

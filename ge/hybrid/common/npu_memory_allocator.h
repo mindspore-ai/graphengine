@@ -23,7 +23,7 @@
 #include <memory>
 #include <mutex>
 #include "external/ge/ge_api_error_codes.h"
-#include "memory/memory_api.h"
+#include "framework/memory/memory_api.h"
 
 namespace ge {
 namespace hybrid {

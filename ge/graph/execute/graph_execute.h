@@ -24,14 +24,14 @@
 #include <memory>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_types.h"
 #include "common/properties_manager.h"
-#include "common/string_util.h"
-#include "common/types.h"
-#include "common/util.h"
-#include "ge/ge_api_types.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_context.h"
 #include "graph/manager/graph_manager_utils.h"

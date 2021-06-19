@@ -17,7 +17,7 @@
 #ifndef GE_GRAPH_COMMON_LOCAL_CONTEXT_H_
 #define GE_GRAPH_COMMON_LOCAL_CONTEXT_H_
 
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 void SetLocalOmgContext(OmgContext &context);

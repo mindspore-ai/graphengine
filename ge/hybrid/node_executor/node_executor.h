@@ -20,7 +20,7 @@
 #include "external/ge/ge_api_error_codes.h"
 #include "common/opskernel/ops_kernel_builder.h"
 #include "graph/node.h"
-#include "task_context.h"
+#include "hybrid/node_executor/task_context.h"
 
 namespace ge {
 const uint32_t MEMORY_ALIGN_RATIO = 2;

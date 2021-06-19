@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 
-#include "engine/dnnengine.h"
+#include "framework/engine/dnnengine.h"
 #include "plugin/engine/engine_manage.h"
 
 namespace ge {

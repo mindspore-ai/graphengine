@@ -28,7 +28,7 @@
 #include <vector>
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
-#include "graph/operator_reg.h"
+#include "external/graph/operator_reg.h"
 #include "graph/partition/engine_place.h"
 
 namespace ge {

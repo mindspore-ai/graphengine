@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "single_op/single_op.h"
 #include "single_op/stream_resource.h"
 #include "single_op/task/op_task.h"

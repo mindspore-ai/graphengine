@@ -19,10 +19,10 @@
 #include <memory>
 #include <string>
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/constant/constant.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "ge_local_engine/common/constant/constant.h"
 #include "common/ge/ge_util.h"
-#include "ops_kernel_store/ge_local_ops_kernel_info.h"
+#include "ge_local_engine/ops_kernel_store/ge_local_ops_kernel_info.h"
 
 namespace ge {
 namespace ge_local {

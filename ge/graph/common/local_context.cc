@@ -16,9 +16,9 @@
 
 #include "graph/common/local_context.h"
 
-#include "common/ge_inner_error_codes.h"
-#include "common/debug/ge_log.h"
-#include "omg/omg_inner_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 namespace {

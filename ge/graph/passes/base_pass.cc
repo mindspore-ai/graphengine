@@ -19,7 +19,7 @@
 #include <queue>
 #include <unordered_set>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/compute_graph.h"
 #include "graph/utils/graph_utils.h"

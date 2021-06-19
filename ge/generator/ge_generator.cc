@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#include "generator/ge_generator.h"
+#include "framework/generator/ge_generator.h"
 
 #include <atomic>
 
 #include "common/ge/ge_util.h"
 #include "common/ge/plugin_manager.h"
-#include "common/helper/model_helper.h"
-#include "common/helper/om_file_helper.h"
-#include "common/util.h"
+#include "framework/common/helper/model_helper.h"
+#include "framework/common/helper/om_file_helper.h"
+#include "framework/common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
-#include "ge/ge_api.h"
+#include "external/ge/ge_api.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/manager/graph_manager.h"

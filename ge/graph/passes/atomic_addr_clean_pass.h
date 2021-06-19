@@ -19,7 +19,7 @@
 
 #include <vector>
 
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

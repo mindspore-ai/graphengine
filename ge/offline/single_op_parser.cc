@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "single_op_parser.h"
+#include "offline/single_op_parser.h"
 
 #include <vector>
 #include <algorithm>
@@ -24,7 +24,7 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "common/util/error_manager/error_manager.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"

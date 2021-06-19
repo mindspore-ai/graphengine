@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "ge_runtime/model_runner.h"
-#include "./runtime_model.h"
+#include "framework/ge_runtime/model_runner.h"
+#include "ge_runtime/runtime_model.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
-#include "ge_runtime/davinci_model.h"
+#include "framework/ge_runtime/davinci_model.h"
 #include "graph/op_desc.h"
 
 namespace ge {

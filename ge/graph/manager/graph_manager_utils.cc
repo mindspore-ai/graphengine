@@ -21,12 +21,12 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
-#include "common/string_util.h"
+#include "framework/common/string_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/compute_graph.h"
 #include "graph/op_desc.h"
 #include "graph/optimize/common/params.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 #include "runtime/mem.h"
 
 namespace ge {

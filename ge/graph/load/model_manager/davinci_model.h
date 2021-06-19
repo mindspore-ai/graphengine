@@ -24,14 +24,14 @@
 #include <thread>
 #include <vector>
 
-#include "common/ge_types.h"
-#include "common/helper/model_helper.h"
-#include "common/helper/om_file_helper.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/helper/model_helper.h"
+#include "framework/common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/properties_manager.h"
 #include "common/dump/exception_dumper.h"
 #include "common/dump/opdebug_register.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/aipp_utils.h"
@@ -43,12 +43,12 @@
 #include "graph/model.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
-#include "graph/operator.h"
+#include "external/graph/operator.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "mmpa/mmpa_api.h"
 #include "proto/task.pb.h"
-#include "task_info/task_info.h"
+#include "graph/load/model_manager/task_info/task_info.h"
 #include "graph/common/local_context.h"
 
 using std::mutex;

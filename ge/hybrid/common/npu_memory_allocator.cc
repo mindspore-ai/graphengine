@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "npu_memory_allocator.h"
+#include "hybrid/common/npu_memory_allocator.h"
 #include <mutex>
 #include "framework/common/debug/log.h"
 #include "graph/manager/graph_mem_manager.h"

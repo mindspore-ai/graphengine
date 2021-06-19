@@ -18,7 +18,7 @@
 #define GE_GRAPH_PASSES_BUFFER_POOL_MEMORY_PASS_H_
 
 #include <queue>
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

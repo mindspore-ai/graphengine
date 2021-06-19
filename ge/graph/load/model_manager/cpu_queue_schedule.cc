@@ -15,8 +15,8 @@
  */
 
 #include "graph/load/model_manager/cpu_queue_schedule.h"
-#include "common/debug/ge_log.h"
-#include "common/debug/log.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 
 namespace {
 const uint32_t kCoreDim = 1;  // for rtCpuKernelLaunch

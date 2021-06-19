@@ -20,7 +20,7 @@
 #include <mutex>
 
 #include "common/dump/dump_properties.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_types.h"
 
 namespace ge {
 class DumpManager {

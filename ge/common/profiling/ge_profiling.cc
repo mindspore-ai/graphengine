@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/profiling/ge_profiling.h"
+#include "framework/common/profiling/ge_profiling.h"
 #include "runtime/base.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"

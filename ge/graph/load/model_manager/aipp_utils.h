@@ -19,8 +19,8 @@
 
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "graph/op_desc.h"
 #include "proto/insert_op.pb.h"
 

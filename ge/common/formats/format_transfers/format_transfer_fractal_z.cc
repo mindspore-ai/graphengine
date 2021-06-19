@@ -19,7 +19,7 @@
 #include <securec.h>
 #include <memory>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"

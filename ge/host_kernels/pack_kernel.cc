@@ -18,10 +18,10 @@
 #include <memory>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
 #include "host_kernels/kernel_utils.h"

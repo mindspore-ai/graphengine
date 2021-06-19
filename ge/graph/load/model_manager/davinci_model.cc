@@ -21,14 +21,14 @@
 #include <map>
 #include <utility>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/formats/formats.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
-#include "common/scope_guard.h"
+#include "framework/common/scope_guard.h"
 #include "common/thread_pool.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
@@ -36,7 +36,7 @@
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/load/model_manager/cpu_queue_schedule.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/tbe_handle_store.h"

@@ -22,8 +22,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
-#include "ge/ge_api_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "external/ge/ge_api_types.h"
 #include "session/inner_session.h"
 #include "runtime/base.h"
 

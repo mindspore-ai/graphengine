@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "runtime/stream.h"
 #include "single_op/single_op.h"
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "attr_options.h"
+#include "ir_build/attr_options/attr_options.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>

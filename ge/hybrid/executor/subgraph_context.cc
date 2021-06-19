@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "subgraph_context.h"
+#include "hybrid/executor/subgraph_context.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 
 namespace ge {

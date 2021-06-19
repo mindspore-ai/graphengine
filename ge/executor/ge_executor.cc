@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#include "executor/ge_executor.h"
+#include "framework/executor/ge_executor.h"
 #include <cce/cce.h>
 #include <ctime>
 #include <iostream>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/dump/dump_manager.h"
 #include "graph/execute/graph_execute.h"

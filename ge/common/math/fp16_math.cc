@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "fp16_math.h"
+#include "common/math/fp16_math.h"
 #include "external/register/register_types.h"
 
 namespace ge {

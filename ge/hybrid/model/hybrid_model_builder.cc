@@ -1227,6 +1227,28 @@ Status HybridModelBuilder::LoadGeModel(ComputeGraph &sub_graph, const GeModelPtr
     hybrid_model_.known_shape_sub_models_.emplace(parent_node, ge_model);
   }
 
+  GE_CHK_STATUS_RET_NOLOG(InitHcclExecutorOnDemand(ge_model));
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::InitHcclExecutorOnDemand(const GeModelPtr &ge_model) {
+  if (NodeExecutorManager::GetInstance().IsExecutorInitialized(NodeExecutorManager::ExecutorType::HCCL)) {
+    return SUCCESS;
+  }
+
+  // HCCL tasks in known-shaped subgraph which resides in a dynamic root graph
+  // still depends on the initialization of the HcclExecutor
+  auto tasks = ge_model->GetModelTaskDefPtr()->task();
+  for (int i = 0; i < tasks.size(); ++i) {
+    const domi::TaskDef &task_def = tasks[i];
+    auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
+    if (task_type == RT_MODEL_TASK_HCCL) {
+      const NodeExecutor *unused = nullptr;
+      GE_CHK_STATUS_RET_NOLOG(NodeExecutorManager::GetInstance()
+                                  .GetOrCreateExecutor(NodeExecutorManager::ExecutorType::HCCL, &unused));
+      return SUCCESS;
+    }
+  }
   return SUCCESS;
 }
 

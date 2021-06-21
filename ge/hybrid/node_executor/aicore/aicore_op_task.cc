@@ -81,7 +81,7 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
 
 Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
   rtError_t rt_ret = rtQueryFunctionRegistered(stub_name_.c_str());
-  if (rt_ret != RT_ERROR_NONE || is_single_op_) {
+  if (rt_ret != RT_ERROR_NONE) {
     auto op_desc_ptr = MakeShared<OpDesc>(op_desc);
     GE_CHECK_NOTNULL(op_desc_ptr);
     auto tbe_kernel = op_desc_ptr->TryGetExtAttr(GetKeyForTbeKernel(), TBEKernelPtr());
@@ -194,7 +194,7 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
 Status AiCoreOpTask::InitWithKernelDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
-  stub_name_ = kernel_def.stub_func();
+  stub_name_ = is_single_op_ ? to_string(log_id_) + kernel_def.stub_func() : kernel_def.stub_func();
   GE_CHK_STATUS_RET(RegisterTbeHandle(op_desc));
   GE_CHK_RT_RET(rtGetFunctionByName(stub_name_.c_str(), &stub_func_));
   args_size_ = kernel_def.args_size();

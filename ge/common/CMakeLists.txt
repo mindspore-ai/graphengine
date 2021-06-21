@@ -43,6 +43,7 @@ set(SRC_LIST
     "op/ge_op_utils.cc"
     "thread_pool.cc"
     "ge/tbe_plugin_manager.cc"
+    "ge_opt_info.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL)
@@ -86,10 +87,12 @@ target_include_directories(ge_common PRIVATE
     #### yellow zone ####
     ${GE_DEPEND_DIR}/inc
     ${GE_DEPEND_DIR}/inc/cce
+    ${GE_DEPEND_DIR}/abl/licctrl
     #### blue zone ####
     #${GE_DEPEND_DIR}/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
 )
 
 target_link_options(ge_common PRIVATE
@@ -106,6 +109,7 @@ target_link_libraries(ge_common PRIVATE
     c_sec
     error_manager
     slog
+    opt_feature
     -Wl,--as-needed
     json
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
@@ -153,10 +157,12 @@ target_include_directories(ge_common_static PRIVATE
     #### yellow zone ####
     ${GE_DEPEND_DIR}/inc
     ${GE_DEPEND_DIR}/inc/cce
+    ${GE_DEPEND_DIR}/abl/licctrl
     #### blue zone ####
     #${GE_DEPEND_DIR}/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
 )
 
 target_link_libraries(ge_common_static PRIVATE
@@ -209,6 +215,7 @@ target_include_directories(ge_common PRIVATE
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
 )
 
 target_link_options(ge_common PRIVATE
@@ -224,6 +231,7 @@ target_link_libraries(ge_common PRIVATE
     c_sec
     error_manager
     slog
+    opt_feature
     static_mmpa
     -Wl,--as-needed
     json

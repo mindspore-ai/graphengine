@@ -34,7 +34,6 @@
 #include "graph/tuning_utils.h"
 #include "graph_builder_utils.h"
 #include "graph/ge_context.h"
-#include "graph/ge_local_context.h"
 #include "inc/pass_manager.h"
 #undef protected
 #undef private
@@ -62,13 +61,9 @@ static ComputeGraphPtr BuildGraph1() {
 
 TEST_F(UtestGlobalStepInsertPass, skip_insert) {
   auto graph = BuildGraph1();
-  std::string build_mode;
-  std::map<string, string> options_map;
-  options_map.insert({ge::RUN_FLAG, "0"});
-  ge::GetThreadLocalContext().SetGraphOption(options_map);
   GlobalStepInsertPass pass;
   Status status = pass.Run(graph);
   EXPECT_EQ(status, SUCCESS);
   NodePtr found_node = graph->FindNode(NODE_NAME_GLOBAL_STEP);
-  EXPECT_EQ(found_node, nullptr);
+  EXPECT_NE(found_node, nullptr);
 }

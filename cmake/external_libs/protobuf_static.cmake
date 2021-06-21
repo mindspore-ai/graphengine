@@ -13,7 +13,7 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
 endif()
 
 if(GE_PB_PKG)
-    set(REQ_URL "${GE_PB_PKG}/libs/protobuf/v3.8.0.tar.gz")
+    set(REQ_URL "${GE_PB_PKG}/libs/protobuf/v3.13.0.tar.gz")
 else()
     if (ENABLE_GITEE)
         set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.13.0.tar.gz")

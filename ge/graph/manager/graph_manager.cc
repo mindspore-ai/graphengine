@@ -3132,10 +3132,10 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     }
     // Avoid repeatively prerun for graphs owns same graph_id in online inference concurrency
     if (count > 1 && graph_node->GetBuildFlag()) {
+      graph_node->Lock();
       GELOGD("Avoid repeatively prerun, graph_id:%u.", args.graph_id);
       // In online inference concurrency senario, graph_node is allowed to be locked for 'count' times
       graph_node->SetSemSize(count);
-      graph_node->Lock();
       graph_manager->run_args_q_.Push(RunArgs( { graph_node, args.graph_id, args.session_id, args.error_context,
           args.input_tensor, graph_node->GetGeRootModel(), GetThreadLocalContext(), args.callback }));
       GELOGI("[PreRunThread] Loop end. Start to run with cached build model.");

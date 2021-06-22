@@ -62,7 +62,6 @@ include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain)
-include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info)
 include_directories(${GE_CODE_DIR}/tests/ut/ge)
 include_directories(${GE_CODE_DIR}/tests/ut/common)
 include_directories(${CMAKE_BINARY_DIR})
@@ -173,7 +172,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/dump/exception_dumper.cc"
     "${GE_CODE_DIR}/ge/common/dump/opdebug_register.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
-    "${GE_CODE_DIR}/ge/common/ge_opt_info.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/model/ge_root_model.cc"
     "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
@@ -770,7 +768,6 @@ set(MULTI_PARTS_TEST_FILES
     "common/dump_op_unittest.cc"
     "common/dump_exception_unittest.cc"
     "common/opdebug_register_unittest.cc"
-    "common/ge_opt_info_unittest.cc"
     "common/format_transfer_unittest.cc"
     "common/format_transfer_transpose_unittest.cc"
     "common/format_transfer_nchw_5d_unittest.cc"
@@ -864,7 +861,6 @@ list(APPEND COMMON_SHARED_LIBRARIES
     mmpa_stub
     hccl_stub
     error_manager_stub
-    opt_feature_stub
     ascend_protobuf
     json
 )

@@ -45,6 +45,7 @@ Status FillKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge
     GELOGE(PARAM_INVALID, "Parameter's invalid, Input opDescPtr is nullptr.");
     return PARAM_INVALID;
   }
+  GELOGD("FillKernel in, name: %s.", op_desc_ptr->GetName().c_str());
 
   GE_CHECK_NOTNULL(input.at(kFillDimsInputIndex));
   GE_CHECK_NOTNULL(input.at(kFillDataInputIndex));
@@ -54,6 +55,13 @@ Status FillKernel::Compute(const ge::OpDescPtr op_desc_ptr, const std::vector<ge
   // Check if the value is a scalar
   if (value->GetTensorDesc().GetShape().GetDimNum() != 0) {
     GELOGW("value must be a scalar.");
+    return NOT_CHANGED;
+  }
+
+  auto output_desc = op_desc_ptr->GetOutputDescPtr(0);
+  GE_CHECK_NOTNULL(output_desc);
+  if (output_desc->GetShape().IsUnknownShape()) {
+    GELOGD("Output is unknown shape, [%s] skip FillKernel.", op_desc_ptr->GetName().c_str());
     return NOT_CHANGED;
   }
 

@@ -249,9 +249,6 @@ TEST_F(UtestSubgraphExecutor, cond_graph_schedule_tasks) {
   graph_context.callback_manager = std::unique_ptr<CallbackManager>(new CallbackManager());
   ASSERT_EQ(graph_context.callback_manager->Init(), SUCCESS);
 
-  auto root_graph = hybrid_model.root_graph_;
-  switch_t = root_graph->FindNode("switch_t");
-  switch_f = root_graph->FindNode("switch_f");
   const auto node_it_t = hybrid_model.node_items_.find(switch_t);
   const auto node_it_f = hybrid_model.node_items_.find(switch_f);
   ASSERT_NE(hybrid_model.node_items_.end(), node_it_t);

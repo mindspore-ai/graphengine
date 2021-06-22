@@ -114,7 +114,7 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
                            std::vector<std::string>({
                                data_node->GetName() + " format",
                                TypeUtils::FormatToSerialString(format),
-                               "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and "+
+                               "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and " +
                                TypeUtils::FormatToSerialString(FORMAT_NHWC) +
                                " supported which dynamic aipp is linked"}));
         GELOGE(PARAM_INVALID, "[Check][Param] Not support data format:%s, node:%s",

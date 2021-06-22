@@ -1035,6 +1035,9 @@ TEST_F(UtestDavinciModel, NnExecute) {
   ProfilingManager::Instance().device_id_.emplace_back(0);
   model.task_list_.resize(1);
   EXPECT_EQ(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
+
+  input_data.blobs[0].length = 128;
+  EXPECT_NE(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
 }
 TEST_F(UtestDavinciModel, update_io_addr_success) {
   DavinciModel model(0, nullptr);

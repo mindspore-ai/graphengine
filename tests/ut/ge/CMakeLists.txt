@@ -764,6 +764,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph_ir/ge_ir_build_unittest.cc"
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
+    "common/util_unittest.cc"
     "common/dump_manager_unittest.cc"
     "common/dump_op_unittest.cc"
     "common/dump_exception_unittest.cc"

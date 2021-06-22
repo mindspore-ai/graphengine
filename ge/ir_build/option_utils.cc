@@ -204,7 +204,7 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
   if (!input_format.empty() && !ge::TypeUtils::IsFormatValid(input_format.c_str())) {
     GELOGE(ge::PARAM_INVALID,
         "[Check][DynamicImagesizeInputShape] input_format [%s] invalid, can not support now.", input_format.c_str());
-    REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter","value","reason"}),
+    REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
                        std::vector<std::string>({"input_format", input_format, "this format is not support"}));
     return false;
   }

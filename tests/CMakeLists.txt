@@ -22,7 +22,6 @@ add_subdirectory(depends/runtime)
 add_subdirectory(depends/hccl)
 add_subdirectory(depends/profiler)
 add_subdirectory(depends/error_manager)
-add_subdirectory(depends/opt_info)
 
 if (ENABLE_GE_COV OR ENABLE_GE_UT)
     add_subdirectory(ut)

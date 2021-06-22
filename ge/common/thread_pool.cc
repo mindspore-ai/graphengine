@@ -23,7 +23,7 @@
 #include <utility>
 #include <vector>
 
-#include "register/register_types.h"
+#include "external/register/register_types.h"
 
 namespace ge {
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ThreadPool::ThreadPool(uint32_t size) : is_stoped_(false) {

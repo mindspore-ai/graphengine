@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 
-#include "graph/types.h"
+#include "external/graph/types.h"
 
 namespace ge {
 static const int32_t kGeSizeFloat = sizeof(float);

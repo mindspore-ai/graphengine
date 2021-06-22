@@ -15,7 +15,7 @@
  */
 
 #include "framework/common/types.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 
 namespace ge {
 // dump

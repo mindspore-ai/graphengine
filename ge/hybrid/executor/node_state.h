@@ -24,7 +24,7 @@
 #include "common/blocking_queue.h"
 #include "external/ge/ge_api_error_codes.h"
 #include "hybrid/model/node_item.h"
-#include "node_done_manager.h"
+#include "hybrid/executor/node_done_manager.h"
 
 namespace ge {
 namespace hybrid {

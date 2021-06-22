@@ -21,7 +21,7 @@
 #include <unordered_set>
 #include <list>
 #include <utility>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
 
 namespace ge {

@@ -23,15 +23,15 @@
 #include <vector>
 #include <mutex>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/plugin_manager.h"
 #include "common/ge/op_tiling_manager.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/optimizer/graph_optimizer.h"
 #include "graph/optimize/graph_optimize.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "runtime/base.h"
 
 using std::string;

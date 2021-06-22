@@ -24,9 +24,9 @@
 #include <utility>
 #include <vector>
 #include <list>
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/build/memory/mem_assigner.h"
 #include "graph/compute_graph.h"
 #include "graph/utils/graph_utils.h"

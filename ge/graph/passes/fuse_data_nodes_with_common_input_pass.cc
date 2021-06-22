@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/utils/node_utils.h"

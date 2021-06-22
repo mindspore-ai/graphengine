@@ -23,17 +23,17 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "common/tbe_kernel_store.h"
 #include "common/cust_aicpu_kernel_store.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/model.h"
 #include "graph/node.h"
 #include "model/ge_model.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 class ModelBuilder {

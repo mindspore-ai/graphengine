@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "multi_batch_options.h"
+#include "graph/preprocess/multi_batch_options.h"
 
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/omg_inner_types.h"

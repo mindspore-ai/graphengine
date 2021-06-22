@@ -15,10 +15,10 @@
  */
 
 #include "host_kernels/unpack_kernel.h"
-#include "common/debug/ge_log.h"
-#include "common/op/ge_op_utils.h"
-#include "common/op/ge_op_utils.h"
-#include "common/types.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "inc/kernel_factory.h"
 

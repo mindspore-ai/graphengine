@@ -18,7 +18,7 @@
 #define GE_GRAPH_PASSES_STOP_GRADIENT_PASS_H_
 
 #include "framework/common/debug/ge_log.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/omg_util.h"
 #include "graph/passes/base_pass.h"

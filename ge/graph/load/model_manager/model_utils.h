@@ -19,8 +19,8 @@
 
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
 #include "graph/load/model_manager/task_info/task_info.h"
 #include "graph/op_desc.h"
 #include "graph/utils/tensor_adapter.h"

@@ -16,7 +16,7 @@
 #ifndef GE_GRAPH_PASSES_REMOVE_SAME_CONST_PASS_H_
 #define GE_GRAPH_PASSES_REMOVE_SAME_CONST_PASS_H_
 
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

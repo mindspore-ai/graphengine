@@ -15,7 +15,7 @@
  */
 
 #include "init/gelib.h"
-#include "ops_kernel_builder_manager.h"
+#include "opskernel_manager/ops_kernel_builder_manager.h"
 #include "register/ops_kernel_builder_registry.h"
 
 namespace ge {

@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 #include "framework/common/ge_types.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/manager/graph_manager.h"
 
 namespace ge {

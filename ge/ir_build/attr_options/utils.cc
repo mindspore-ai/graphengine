@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "attr_options.h"
+#include "ir_build/attr_options/attr_options.h"
 #include <vector>
 #include "graph/debug/ge_attr_define.h"
 #include "common/util/error_manager/error_manager.h"

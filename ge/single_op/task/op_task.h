@@ -23,7 +23,7 @@
 
 #include "common/dump/dump_op.h"
 #include "common/dump/dump_properties.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/op_kernel_bin.h"
 #include "runtime/stream.h"
 #include "graph/node.h"

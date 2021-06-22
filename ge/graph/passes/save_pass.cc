@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
 
 namespace ge {

@@ -15,7 +15,7 @@
  */
 
 #include "single_op/task/rts_kernel_task_builder.h"
-#include "build_task_utils.h"
+#include "single_op/task/build_task_utils.h"
 
 namespace ge {
 namespace {

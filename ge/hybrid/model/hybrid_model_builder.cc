@@ -17,7 +17,7 @@
 #include "hybrid/model/hybrid_model_builder.h"
 #include <algorithm>
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"

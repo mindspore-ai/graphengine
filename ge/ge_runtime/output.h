@@ -19,8 +19,8 @@
 
 #include <memory>
 #include <vector>
-#include "ge_runtime/davinci_model.h"
-#include "common/ge_types.h"
+#include "framework/ge_runtime/davinci_model.h"
+#include "framework/common/ge_types.h"
 
 namespace ge {
 namespace model_runner {

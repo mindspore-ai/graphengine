@@ -16,7 +16,7 @@
 
 #include "graph/passes/merge_to_stream_merge_pass.h"
 #include "common/ge/ge_util.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/common/omg_util.h"
 
 namespace ge {

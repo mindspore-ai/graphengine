@@ -19,11 +19,11 @@
 #include <memory>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/op/ge_op_utils.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/common/bcast.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"

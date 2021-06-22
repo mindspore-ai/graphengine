@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "unused_args_clean_pass.h"
+#include "graph/passes/unused_args_clean_pass.h"
 
 #include "graph/utils/node_utils.h"
 

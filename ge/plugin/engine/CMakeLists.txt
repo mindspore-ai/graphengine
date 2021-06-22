@@ -24,9 +24,8 @@ target_compile_definitions(engine PRIVATE
 
 target_include_directories(engine PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/inc/
+    ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
     ${GE_CODE_DIR}/inc/external
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external

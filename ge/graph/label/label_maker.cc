@@ -16,8 +16,8 @@
 
 #include "graph/label/label_maker.h"
 
-#include "common/util.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/util.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/types.h"
 #include "framework/common/op/ge_op_utils.h"
 #include "graph/debug/ge_attr_define.h"

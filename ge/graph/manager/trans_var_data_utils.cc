@@ -16,14 +16,14 @@
 
 #include "graph/manager/trans_var_data_utils.h"
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/formats/formats.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/manager/graph_var_manager.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/utils/type_utils.h"
 #include "common/thread_pool.h"
 #include <algorithm>

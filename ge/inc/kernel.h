@@ -19,9 +19,9 @@
 
 #include <vector>
 
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "graph/compute_graph.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/op_desc.h"
 
 using std::vector;

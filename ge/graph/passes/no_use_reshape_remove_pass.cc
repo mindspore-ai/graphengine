@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "external/graph/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"

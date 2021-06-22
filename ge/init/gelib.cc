@@ -33,7 +33,7 @@
 #include "framework/common/util.h"
 #include "framework/omg/ge_init.h"
 #include "analyzer/analyzer.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/ge_context.h"

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "generator/generator_api.h"
+#include "framework/generator/generator_api.h"
 #include "common/ge/ge_util.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
-#include "generator/ge_generator.h"
+#include "framework/generator/ge_generator.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"

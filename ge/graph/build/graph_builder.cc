@@ -17,7 +17,7 @@
 #include "graph/build/graph_builder.h"
 #include "graph/build/memory/graph_mem_assigner.h"
 #include "common/ge/ge_util.h"
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "graph/build/logical_stream_allocator.h"
 #include "graph/build/run_context.h"
 #include "graph/build/stream_graph_optimizer.h"

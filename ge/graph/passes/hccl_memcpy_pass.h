@@ -20,7 +20,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

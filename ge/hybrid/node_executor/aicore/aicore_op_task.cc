@@ -21,7 +21,7 @@
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "single_op/task/build_task_utils.h"
 #include "single_op/task/tbe_task_builder.h"
 

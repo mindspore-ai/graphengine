@@ -21,7 +21,7 @@
 #include <set>
 #include <string>
 
-#include "ge/ge_api_error_codes.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_var_manager.h"
 #include "model/ge_model.h"

@@ -19,7 +19,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
 #include "graph/load/model_manager/model_utils.h"
-#include "common/ge_compiler_options.h"
+#include "framework/common/ge_compiler_options.h"
 
 namespace ge {
 ZeroCopyTask::ZeroCopyTask(const string &name, uint8_t *args, size_t size)

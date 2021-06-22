@@ -16,8 +16,8 @@
 
 #include "single_op/single_op.h"
 
-#include "common/fmk_types.h"
-#include "common/ge_types.h"
+#include "framework/common/fmk_types.h"
+#include "framework/common/ge_types.h"
 #include "common/math/math_util.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"

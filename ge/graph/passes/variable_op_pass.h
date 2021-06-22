@@ -19,7 +19,7 @@
 #include <map>
 #include <set>
 #include "graph/common/transop_util.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/util/variable_accelerate_ctrl.h"
 #include "inc/graph_pass.h"

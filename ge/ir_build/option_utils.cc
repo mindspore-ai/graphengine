@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "option_utils.h"
+#include "ir_build/option_utils.h"
 #include "common/util/error_manager/error_manager.h"
 #include "external/ge/ge_api_types.h"
 #include "framework/common/string_util.h"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hybrid_model.h"
+#include "hybrid/model/hybrid_model.h"
 #include <vector>
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/model_utils.h"
@@ -25,7 +25,7 @@
 #include "hybrid/common/npu_memory_allocator.h"
 #include "hybrid/model/hybrid_model_builder.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 
 namespace ge {
 namespace hybrid {

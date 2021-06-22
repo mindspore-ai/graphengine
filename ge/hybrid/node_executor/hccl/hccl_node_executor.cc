@@ -17,11 +17,11 @@
 #include "hybrid/node_executor/hccl/hccl_node_executor.h"
 #include "common/ge/plugin_manager.h"
 #include "common/math/math_util.h"
-#include "graph/attr_value.h"
+#include "external/graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/util/hcom_util.h"
 #include "graph/utils/type_utils.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hccl/hcom.h"
 

@@ -27,7 +27,7 @@
 #include "graph/ge_context.h"
 #include "graph/utils/graph_utils.h"
 #include "init/gelib.h"
-#include "common/string_util.h"
+#include "framework/common/string_util.h"
 #include "common/util/error_manager/error_manager.h"
 
 using std::map;

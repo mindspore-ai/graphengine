@@ -29,7 +29,7 @@
 #include "proto/ge_ir.pb.h"
 #include "proto/op_mapping.pb.h"
 #include "runtime/mem.h"
-#include "task_info/task_info.h"
+#include "graph/load/model_manager/task_info/task_info.h"
 #include "framework/common/ge_types.h"
 #include "runtime/base.h"
 

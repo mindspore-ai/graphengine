@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "super_kernel_factory.h"
+#include "graph/load/model_manager/task_info/super_kernel/super_kernel_factory.h"
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {

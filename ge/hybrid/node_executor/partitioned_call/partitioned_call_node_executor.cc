@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "partitioned_call_node_executor.h"
+#include "hybrid/node_executor/partitioned_call/partitioned_call_node_executor.h"
 #include "graph/utils/node_utils.h"
 
 namespace ge {

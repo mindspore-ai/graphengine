@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "runtime/stream.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/node_executor/task_context.h"

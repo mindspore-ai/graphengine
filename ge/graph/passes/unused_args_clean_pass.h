@@ -16,7 +16,7 @@
 #ifndef GE_COMMON_CASE_ARGS_CLEAN_H_
 #define GE_COMMON_CASE_ARGS_CLEAN_H_
 
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "inc/graph_pass.h"
 
 #include <map>

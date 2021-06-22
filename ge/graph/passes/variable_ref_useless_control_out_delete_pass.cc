@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "variable_ref_useless_control_out_delete_pass.h"
+#include "graph/passes/variable_ref_useless_control_out_delete_pass.h"
 
 namespace ge {
 Status VariableRefUselessControlOutDeletePass::Run(ge::ComputeGraphPtr graph) {

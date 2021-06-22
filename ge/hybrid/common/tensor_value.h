@@ -20,7 +20,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
-#include "memory/memory_api.h"
+#include "framework/memory/memory_api.h"
 #include "framework/common/util.h"
 
 namespace ge {

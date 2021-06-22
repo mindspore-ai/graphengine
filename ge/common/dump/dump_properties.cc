@@ -20,7 +20,7 @@
 #include <string>
 
 #include "common/ge/ge_util.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_types.h"

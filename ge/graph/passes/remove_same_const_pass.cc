@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "remove_same_const_pass.h"
+#include "graph/passes/remove_same_const_pass.h"
 
 #include <sstream>
 #include <string>

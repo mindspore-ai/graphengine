@@ -23,7 +23,7 @@
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
-#include "graph/attr_value.h"
+#include "external/graph/attr_value.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "hybrid/node_executor/aicpu/aicpu_ext_info.h"

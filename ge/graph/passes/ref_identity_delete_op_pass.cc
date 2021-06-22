@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-#include "ref_identity_delete_op_pass.h"
+#include "graph/passes/ref_identity_delete_op_pass.h"
 #include <map>
 #include <stack>
 #include "graph/common/transop_util.h"

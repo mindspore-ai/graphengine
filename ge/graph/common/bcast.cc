@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "common/math_util.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 
 using domi::Status;
 

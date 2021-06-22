@@ -22,8 +22,8 @@
 #include "graph/build/memory/block_mem_assigner.h"
 #include "graph/compute_graph.h"
 
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 
 namespace ge {
 using BlockMemAssignerPtr = std::shared_ptr<BlockMemAssigner>;

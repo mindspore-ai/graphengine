@@ -15,7 +15,7 @@
  */
 
 #include "framework/common/util.h"
-#include "graph_item.h"
+#include "hybrid/model/graph_item.h"
 
 namespace ge {
 namespace hybrid {

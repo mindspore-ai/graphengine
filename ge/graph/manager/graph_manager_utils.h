@@ -27,17 +27,17 @@
 #include <vector>
 
 #include "common/blocking_queue.h"
-#include "common/ge_types.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/model.h"
 #include "model/ge_model.h"
 #include "model/ge_root_model.h"
-#include "register/register_fmk_types.h"
+#include "external/register/register_fmk_types.h"
 #include "external/ge/ge_api_types.h"
 
 namespace ge {

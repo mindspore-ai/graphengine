@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "host_cpu_engine.h"
+#include "ge_local_engine/engine/host_cpu_engine.h"
 #include "graph/common/omg_util.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_adapter.h"

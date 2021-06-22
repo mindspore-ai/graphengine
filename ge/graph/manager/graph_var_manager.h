@@ -30,7 +30,7 @@
 #include "framework/common/l2_cache_optimize.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
-#include "graph/tensor.h"
+#include "external/graph/tensor.h"
 #include "runtime/mem.h"
 
 namespace ge {

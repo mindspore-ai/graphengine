@@ -19,7 +19,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_context.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_caching_allocator.h"
 #include "graph/manager/graph_mem_allocator.h"

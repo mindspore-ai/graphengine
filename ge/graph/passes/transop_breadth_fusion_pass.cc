@@ -19,7 +19,7 @@
 #include <set>
 #include <string>
 
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "graph/common/transop_util.h"
 #include "graph/utils/node_utils.h"
 

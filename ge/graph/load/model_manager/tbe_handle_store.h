@@ -25,7 +25,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "common/fmk_types.h"
+#include "framework/common/fmk_types.h"
 #include "graph/op_kernel_bin.h"
 
 namespace ge {

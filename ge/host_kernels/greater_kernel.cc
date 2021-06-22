@@ -19,10 +19,10 @@
 #include <memory>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/fp16_t.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/common/bcast.h"

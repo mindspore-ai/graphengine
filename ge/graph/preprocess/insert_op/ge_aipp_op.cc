@@ -20,10 +20,10 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "base_insert_op.h"
+#include "graph/preprocess/insert_op/base_insert_op.h"
 #include "common/dynamic_aipp.h"
 #include "common/ge/ge_util.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "external/graph/operator_factory.h"
 #include "framework/common/debug/ge_log.h"

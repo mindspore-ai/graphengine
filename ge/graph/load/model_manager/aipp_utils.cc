@@ -18,8 +18,8 @@
 
 #include <string>
 
-#include "common/debug/log.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/attr_utils.h"

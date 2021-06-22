@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "node_item.h"
+#include "hybrid/model/node_item.h"
 #include <sstream>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "graph/common/omg_util.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"

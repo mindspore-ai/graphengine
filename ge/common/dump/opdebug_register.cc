@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "opdebug_register.h"
+#include "common/dump/opdebug_register.h"
 
 namespace {
 const size_t kOpDebugMemorySize = 2048UL;

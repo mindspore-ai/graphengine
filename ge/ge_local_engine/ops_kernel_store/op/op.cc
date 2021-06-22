@@ -16,7 +16,7 @@
 
 #include "ge_local_engine/ops_kernel_store/op/op.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/op_desc.h"
 #include "graph/utils/anchor_utils.h"
 #include "graph/utils/tensor_utils.h"

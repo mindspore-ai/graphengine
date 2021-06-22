@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef GE_COMMON_GE_OPT_INFO_H_
-#define GE_COMMON_GE_OPT_INFO_H_
+#ifndef GE_OPT_INFO_GE_OPT_INFO_H_
+#define GE_OPT_INFO_GE_OPT_INFO_H_
 
 #include "ge/ge_api_error_codes.h"
 #include "register/register_types.h"
@@ -28,4 +28,4 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY GeOptInfo {
 };
 }  // namespace ge
 
-#endif  // GE_COMMON_GE_OPT_INFO_H_
+#endif  // GE_OPT_INFO_GE_OPT_INFO_H_

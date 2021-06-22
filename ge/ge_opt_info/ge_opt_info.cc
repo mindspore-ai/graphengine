@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/ge_opt_info.h"
+#include "ge_opt_info/ge_opt_info.h"
 
 #include <string>
 #include <map>

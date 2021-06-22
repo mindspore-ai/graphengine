@@ -19,7 +19,7 @@
 
 #define protected public
 #define private public
-#include "common/ge_opt_info.h"
+#include "ge_opt_info/ge_opt_info.h"
 #include "graph/ge_local_context.h"
 #include "external/ge/ge_api_types.h"
 #undef private

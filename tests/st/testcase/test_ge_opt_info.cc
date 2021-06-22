@@ -30,7 +30,7 @@
 #include "ge_graph_dsl/op_desc/op_desc_cfg_box.h"
 #define protected public
 #define private public
-#include "common/ge_opt_info.h"
+#include "ge_opt_info/ge_opt_info.h"
 #undef private
 #undef protected
 

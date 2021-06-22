@@ -173,7 +173,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/dump/exception_dumper.cc"
     "${GE_CODE_DIR}/ge/common/dump/opdebug_register.cc"
     "${GE_CODE_DIR}/ge/common/dump/dump_op.cc"
-    "${GE_CODE_DIR}/ge/common/ge_opt_info.cc"
     "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
     "${GE_CODE_DIR}/ge/model/ge_root_model.cc"
     "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
@@ -348,6 +347,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
     "${GE_CODE_DIR}/ge/session/omg.cc"
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -378,7 +378,6 @@ set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/mem_rw_conflict_optimize.cc"
 )
-
 
 set(GRAPH_PREPARE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/preprocess/graph_preprocess.cc"
@@ -455,6 +454,7 @@ set(GRAPH_EXECUTE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/graph_manager.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/util/rt_context_util.cc"
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_context.h"
 )
 
@@ -630,6 +630,10 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/hybrid/hybrid_davinci_model.cc"
 )
 
+set(GE_OPT_INFO_SRC_FILES
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
+)
+
 # test files
 set(COMMON_TEST_FILES
     "graph/passes/graph_builder_utils.cc"
@@ -767,10 +771,9 @@ set(MULTI_PARTS_TEST_FILES
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
     "common/dump_manager_unittest.cc"
-    "common/dump_op_unittest.cc"
     "common/dump_exception_unittest.cc"
+    "common/dump_op_unittest.cc"
     "common/opdebug_register_unittest.cc"
-    "common/ge_opt_info_unittest.cc"
     "common/format_transfer_unittest.cc"
     "common/format_transfer_transpose_unittest.cc"
     "common/format_transfer_nchw_5d_unittest.cc"
@@ -813,6 +816,10 @@ set(MULTI_PARTS_TEST_FILES
     "session/inner_session_unittest.cc"
     "session/session_manager_unittest.cc"
     "common/host_cpu_engine_unittest.cc"
+)
+
+set(GE_OPT_INFO_TEST_FILES
+    "ge_opt_info/ge_opt_info_unittest.cc"
 )
 
 set(GENERATOR_TEST_FILES
@@ -1110,10 +1117,12 @@ target_link_libraries(ut_libge_multiparts_utest
 
 # libge_others_utest
 add_executable(ut_libge_others_utest
+    ${GE_OPT_INFO_SRC_FILES}
     ${COMMON_TEST_FILES}
     ${PASS_TEST_FILES}
     ${EXECUTE_TEST_FILES}
     ${OTHERS_TEST_FILES}
+    ${GE_OPT_INFO_TEST_FILES}
 )
 
 target_compile_options(ut_libge_others_utest PRIVATE

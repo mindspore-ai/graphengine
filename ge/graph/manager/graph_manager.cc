@@ -27,7 +27,7 @@
 #include "common/math/math_util.h"
 #include "common/thread_pool.h"
 #include "common/dump/dump_manager.h"
-#include "common/ge_opt_info.h"
+#include "ge_opt_info/ge_opt_info.h"
 #include "analyzer/analyzer.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/common/local_context.h"

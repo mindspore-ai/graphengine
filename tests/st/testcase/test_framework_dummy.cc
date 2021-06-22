@@ -17,9 +17,13 @@
 #include <gtest/gtest.h>
 #include <map>
 #include "external/ge/ge_api.h"
+#include "ge_running_env/fake_engine.h"
 #include "graph/debug/ge_attr_define.h"
 #include "framework/common/types.h"
+
 #include "builder/graph_builder_utils.h"
+#include "ge_running_env/ge_running_env_faker.h"
+
 #include "graph/operator_reg.h"
 #include "graph/operator.h"
 #define protected public
@@ -109,8 +113,8 @@ Graph BuildV1ControlFlowGraph() {
   for_each(data_vec.begin(), data_vec.end(), [&](int64_t &data) { dims_size *= data; });
   vector<int32_t> data_value_vec(dims_size, 1);
   GeTensorDesc data_tensor_desc(GeShape(data_vec), FORMAT_NCHW, DT_INT32);
-  GeTensorPtr data_tensor = make_shared<GeTensor>(data_tensor_desc, (uint8_t *) data_value_vec.data(),
-                                                  data_value_vec.size() * sizeof(int32_t));
+  GeTensorPtr data_tensor =
+    make_shared<GeTensor>(data_tensor_desc, (uint8_t *)data_value_vec.data(), data_value_vec.size() * sizeof(int32_t));
   OpDescUtils::SetWeights(const_5->GetOpDesc(), data_tensor);
   OpDescUtils::SetWeights(const_2->GetOpDesc(), data_tensor);
   OpDescUtils::SetWeights(const_1->GetOpDesc(), data_tensor);
@@ -120,13 +124,9 @@ Graph BuildV1ControlFlowGraph() {
 }  // namespace
 class FrameworkTest : public testing::Test {
  protected:
-  void SetUp() {
-    // ge initialize
-    map<AscendString, AscendString> options;
-    auto ret = ge::GEInitialize(options);
-    EXPECT_EQ(ret, SUCCESS);
-  }
+  void SetUp() { ge_env.InstallDefault(); }
   void TearDown() {}
+  GeRunningEnvFaker ge_env;
 };
 
 ///     data   data

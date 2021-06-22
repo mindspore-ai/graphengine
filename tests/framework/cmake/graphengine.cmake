@@ -150,7 +150,7 @@ set_target_properties(metadef_graph PROPERTIES CXX_STANDARD 11)
 
 # ---- Target : Local engine ----
 
-add_library(ge_local_engine SHARED ${LOCAL_ENGINE_SRC} ${METADEF_REGISTER_SRCS})
+add_library(ge_local_engine SHARED ${LOCAL_ENGINE_SRC})
 
 target_include_directories(ge_local_engine
         PUBLIC
@@ -169,37 +169,10 @@ target_compile_options(ge_local_engine PRIVATE
 
 target_link_libraries(ge_local_engine PUBLIC
         $<BUILD_INTERFACE:intf_pub> ${STUB_LIBS}
-        metadef_graph
         -lrt -ldl -lpthread -lgcov
         )
 
 set_target_properties(ge_local_engine PROPERTIES CXX_STANDARD 11)
-
-# ---- Target : Host engine ----
-
-add_library(host_cpu_engine SHARED ${HOST_ENGINE_SRC})
-
-target_include_directories(host_cpu_engine
-    PUBLIC 
-    "${INCLUDE_DIRECTORIES}"
-    "${GE_CODE_DIR}/ge/host_cpu_engine"
-)
-
-target_compile_definitions(host_cpu_engine PRIVATE
-    google=ascend_private
-    FMK_SUPPORT_DUMP
-)
-
-target_compile_options(host_cpu_engine PRIVATE
-    -g --coverage -fprofile-arcs -ftest-coverage
-    -Werror=format
-)
-
-target_link_libraries(host_cpu_engine PUBLIC
-    $<BUILD_INTERFACE:intf_pub> ${STUB_LIBS} metadef_graph -lrt -ldl -lpthread -lgcov
-)
-
-set_target_properties(host_cpu_engine PROPERTIES CXX_STANDARD 11)
 
 # ---- Target : engine plugin----
 #
@@ -273,4 +246,4 @@ target_link_libraries(graphengine PUBLIC
 )
 
 set_target_properties(graphengine PROPERTIES CXX_STANDARD 11)
-add_dependencies(graphengine host_cpu_engine ge_local_engine nnengine engine_conf.json optimizer_priority.pbtxt)
+add_dependencies(graphengine ge_local_engine nnengine engine_conf.json optimizer_priority.pbtxt)

@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-#include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
-#include "ge_graph_dsl/ge.h"
+#ifndef INC_5D044B8760CB41ABA108AE2E37E8EBDE
+#define INC_5D044B8760CB41ABA108AE2E37E8EBDE
 
-GE_NS_BEGIN
+#include "ge_running_env/fake_ns.h"
 
-REGISTER_OPTYPE_DEFINE(DATA, "Data");
-REGISTER_OPTYPE_DEFINE(HCOMALLGATHER, "HcomAllGather");
-REGISTER_OPTYPE_DEFINE(VARIABLE, "Variable");
-REGISTER_OPTYPE_DEFINE(CONSTANT, "Const");
-REGISTER_OPTYPE_DEFINE(CONSTANTOP, "Constant");
-REGISTER_OPTYPE_DEFINE(LESS, "Less");
-REGISTER_OPTYPE_DEFINE(MUL, "Mul");
-REGISTER_OPTYPE_DEFINE(NETOUTPUT, "NetOutput");
-REGISTER_OPTYPE_DEFINE(ADD, "Add");
-REGISTER_OPTYPE_DEFINE(WHILE, "While");
+FAKE_NS_BEGIN
 
-GE_NS_END
+struct GeRunningEnvFaker;
+
+struct GeDefaultRunningEnv {
+  static void InstallTo(GeRunningEnvFaker&);
+};
+
+FAKE_NS_END
+
+#endif

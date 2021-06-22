@@ -13,22 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef H7AEFF0EA_9FDE_487F_8562_2917A2D48EA2
+#define H7AEFF0EA_9FDE_487F_8562_2917A2D48EA2
 
-#include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
-#include "ge_graph_dsl/ge.h"
+#define FAKE_NS ge
+#define FAKE_NS_BEGIN namespace FAKE_NS {
+#define FAKE_NS_END }
+#define USING_STUB_NS using namespace FAKE_NS;
+#define FWD_DECL_STUB(type) \
+  namespace FAKE_NS {       \
+  struct type;              \
+  }
 
-GE_NS_BEGIN
-
-REGISTER_OPTYPE_DEFINE(DATA, "Data");
-REGISTER_OPTYPE_DEFINE(HCOMALLGATHER, "HcomAllGather");
-REGISTER_OPTYPE_DEFINE(VARIABLE, "Variable");
-REGISTER_OPTYPE_DEFINE(CONSTANT, "Const");
-REGISTER_OPTYPE_DEFINE(CONSTANTOP, "Constant");
-REGISTER_OPTYPE_DEFINE(LESS, "Less");
-REGISTER_OPTYPE_DEFINE(MUL, "Mul");
-REGISTER_OPTYPE_DEFINE(NETOUTPUT, "NetOutput");
-REGISTER_OPTYPE_DEFINE(ADD, "Add");
-REGISTER_OPTYPE_DEFINE(WHILE, "While");
-
-GE_NS_END
+#endif

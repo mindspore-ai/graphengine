@@ -13,24 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef DBF6CE7CD4AC4A83BA4ED4B372FC66E4
+#define DBF6CE7CD4AC4A83BA4ED4B372FC66E4
 
-#ifndef GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_OP_HOST_OP_H_
-#define GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_OP_HOST_OP_H_
+#include "ge_running_env/fake_ns.h"
+#include "graph/operator_factory.h"
 
-#include "stub_engine/ops_kernel_store/op/op.h"
+FAKE_NS_BEGIN
 
-namespace ge {
-namespace st {
-class GE_FUNC_VISIBILITY HostOp : public Op {
- public:
-  HostOp(const Node &node, RunContext &run_context) : Op(node, run_context) {}
-  ~HostOp() override = default;
-  HostOp &operator=(const HostOp &op) = delete;
-  HostOp(const HostOp &op) = delete;
-
-  Status Run() override;
+struct FakeOpRepo {
+  static void Reset();
+  static void Regist(const std::string &operator_type, const OpCreator);
+  static void Regist(const std::string &operator_type, const InferShapeFunc);
 };
-}  // namespace st
-}  // namespace ge
 
-#endif  // GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_OP_HOST_OP_H_
+FAKE_NS_END
+#endif

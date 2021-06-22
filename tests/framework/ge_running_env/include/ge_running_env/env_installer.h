@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-#include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
-#include "ge_graph_dsl/ge.h"
+#ifndef H1D9F4FDE_BB21_4DE4_AC7E_751920B45039
+#define H1D9F4FDE_BB21_4DE4_AC7E_751920B45039
 
-GE_NS_BEGIN
+#include "fake_ns.h"
+#include "opskernel_manager/ops_kernel_manager.h"
+#include "register/ops_kernel_builder_registry.h"
 
-REGISTER_OPTYPE_DEFINE(DATA, "Data");
-REGISTER_OPTYPE_DEFINE(HCOMALLGATHER, "HcomAllGather");
-REGISTER_OPTYPE_DEFINE(VARIABLE, "Variable");
-REGISTER_OPTYPE_DEFINE(CONSTANT, "Const");
-REGISTER_OPTYPE_DEFINE(CONSTANTOP, "Constant");
-REGISTER_OPTYPE_DEFINE(LESS, "Less");
-REGISTER_OPTYPE_DEFINE(MUL, "Mul");
-REGISTER_OPTYPE_DEFINE(NETOUTPUT, "NetOutput");
-REGISTER_OPTYPE_DEFINE(ADD, "Add");
-REGISTER_OPTYPE_DEFINE(WHILE, "While");
+FAKE_NS_BEGIN
 
-GE_NS_END
+struct EnvInstaller {
+  virtual void InstallTo(std::map<string, OpsKernelInfoStorePtr>&) const {}
+  virtual void InstallTo(std::map<string, GraphOptimizerPtr>&) const {}
+  virtual void InstallTo(std::map<string, OpsKernelBuilderPtr>&) const {}
+  virtual void Install() const {}
+};
+
+FAKE_NS_END
+
+#endif

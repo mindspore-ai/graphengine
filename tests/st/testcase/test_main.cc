@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-#include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
-#include "ge_graph_dsl/ge.h"
+#include <gtest/gtest.h>
 
-GE_NS_BEGIN
+#include "common/debug/log.h"
+#include "external/ge/ge_api.h"
+#include "ge_running_env/include/ge_running_env/ge_running_env_faker.h"
 
-REGISTER_OPTYPE_DEFINE(DATA, "Data");
-REGISTER_OPTYPE_DEFINE(HCOMALLGATHER, "HcomAllGather");
-REGISTER_OPTYPE_DEFINE(VARIABLE, "Variable");
-REGISTER_OPTYPE_DEFINE(CONSTANT, "Const");
-REGISTER_OPTYPE_DEFINE(CONSTANTOP, "Constant");
-REGISTER_OPTYPE_DEFINE(LESS, "Less");
-REGISTER_OPTYPE_DEFINE(MUL, "Mul");
-REGISTER_OPTYPE_DEFINE(NETOUTPUT, "NetOutput");
-REGISTER_OPTYPE_DEFINE(ADD, "Add");
-REGISTER_OPTYPE_DEFINE(WHILE, "While");
+using namespace std;
+using namespace ge;
 
-GE_NS_END
+int main(int argc, char **argv) {
+  // init the logging
+  map<AscendString, AscendString> options;
+  auto init_status = ge::GEInitialize(options);
+  if (init_status != SUCCESS) {
+    std::cout << "ge init failed , ret code:" << init_status << endl;
+  }
+  GeRunningEnvFaker::BackupEnv();
+  testing::InitGoogleTest(&argc, argv);
+  int ret = RUN_ALL_TESTS();
+  return ret;
+}

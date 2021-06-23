@@ -574,6 +574,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   options_.insert(std::pair<string, string>(string(ge::RUN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::TRAIN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::SAVE_ORIGINAL_MODEL), to_string(0)));
+  options_.insert(std::pair<string, string>(string(ge::OPTION_GRAPH_RUN_MODE), to_string(0)));
   // print ge option map
   ge::PrintOptionMap(options_, "ge option");
 

@@ -29,6 +29,7 @@
 #include "graph/build/memory/buffer_pool_mem_assigner.h"
 #include "graph/build/memory/graph_mem_assigner.h"
 #include "graph/build/stream_allocator.h"
+#include "graph/ge_local_context.h"
 #undef protected
 #undef private
 
@@ -260,6 +261,10 @@ TEST_F(UtestBufferPoolMemAssignerTest, buffer_pool_serial_graph_assign_success) 
 }
 
 TEST_F(UtestBufferPoolMemAssignerTest, buffer_pool_subgraph_with_inner_dependency_assign_success) {
+  std::string build_mode;
+  std::map<string, string> options_map;
+  options_map.insert({ge::OPTION_GRAPH_RUN_MODE, "1"});
+  ge::GetThreadLocalContext().SetGraphOption(options_map);
   ut::BufferPoolGraphBuilder builder("SubgraphWithInnerDependency");
   ge::ComputeGraphPtr graph = builder.BuildSubgraphWithInnerDependency();
   BufferPoolMemoryPass buffer_pool_mem_pass;

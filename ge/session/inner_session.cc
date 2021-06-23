@@ -82,6 +82,18 @@ Status InnerSession::Initialize() {
     return ret;
   }
 
+  //Check option OP_PRECISION_MODE
+  auto iter = all_options.find(ge::OP_PRECISION_MODE);
+  if (iter != all_options.end() && !iter->second.empty() && !ge::CheckInputPathValid(iter->second)) {
+    REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
+        std::vector<std::string>({ge::OP_PRECISION_MODE, iter->second, "path is not found"}));
+    GELOGE(PARAM_INVALID, "[Check][OP_PRECISION_MODE] %s not found", iter->second.c_str());
+    return FAILED;
+  }
+  if (iter != all_options.end()) {
+    GELOGI("Option set successfully, option_key=%s, option_value=%s",
+           ge::OP_PRECISION_MODE.c_str(), iter->second.c_str());
+  }
   // Check option modify_mixlist
   if (ge::CheckModifyMixlistParamValid(all_options) != ge::SUCCESS) {
     return FAILED;

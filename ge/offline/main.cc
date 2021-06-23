@@ -847,6 +847,7 @@ domi::Status GenerateInfershapeJson() {
   ge::Graph graph;
   std::map<string, string> atc_params;
   atc_params.insert(std::pair<string, string>("input_format", FLAGS_input_format));
+  atc_params.insert(std::pair<string, string>("check_report", FLAGS_check_report));
   ret = ParseGraph(graph, atc_params, FLAGS_om.c_str(), FLAGS_weight.c_str(), (domi::FrameworkType) FLAGS_framework,
                    "", FLAGS_target.c_str(), (ge::RunMode) FLAGS_mode, false);
   if (ret != ge::SUCCESS) {

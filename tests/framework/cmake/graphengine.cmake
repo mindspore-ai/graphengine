@@ -103,7 +103,6 @@ list(APPEND INCLUDE_DIRECTORIES
     "${GE_CODE_DIR}/third_party/fwkacllib/inc/cce"
     "${GE_CODE_DIR}/third_party/fwkacllib/inc/ops"
     "${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain"
-    "${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info"
     "${GE_CODE_DIR}/tests/ut/ge"
     "${GE_CODE_DIR}/tests/ut/common"
     "${CMAKE_BINARY_DIR}"
@@ -118,7 +117,6 @@ list(APPEND STUB_LIBS
     runtime_stub
     profiler_stub
     hccl_stub
-    opt_feature_stub
     error_manager_stub
     ascend_protobuf
     json

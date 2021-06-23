@@ -155,7 +155,7 @@ struct NodeItem {
   std::map<const NodeItem *, int> data_recv_;  // Recv data notify from
   std::set<const NodeItem *> ctrl_send_;  // Send ctrl notify to
   std::set<const NodeItem *> ctrl_recv_;  // Recv ctrl notify from
-  std::vector<std::vector<const NodeItem *>> switch_groups_;  // Send ctrl notify to
+  std::vector<std::set<const NodeItem *>> switch_groups_;  // Send ctrl notify to
 
   std::shared_ptr<NodeTask> kernel_task;
   std::unique_ptr<FusedSubgraph> fused_subgraph;

@@ -17,13 +17,9 @@
 #include "hybrid/node_executor/rts/rts_node_executor.h"
 #include "hybrid/node_executor/rts/rts_task_factory.h"
 
-#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
-#include "framework/common/types.h"
-#include "graph/common/omg_util.h"
 #include "graph/utils/tensor_utils.h"
 #include "hybrid/model/hybrid_model.h"
-#include "runtime/rt.h"
 
 namespace ge {
 namespace hybrid {
@@ -133,8 +129,7 @@ Status ProfilingTraceNodeTask::ExecuteAsync(TaskContext &context, std::function<
 Status RtsNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node, shared_ptr<NodeTask> &task) const {
   GE_CHECK_NOTNULL(node);
   GELOGD("[%s] Load for local task.", node->GetName().c_str());
-  std::string node_type;
-  GE_CHK_STATUS_RET(GetOriginalType(node, node_type), "Get original type failed.");
+  const std::string node_type = NodeUtils::GetNodeType(node);
   RtsNodeTaskPtr rts_task = RtsTaskFactory::GetInstance().Create(node_type);
   if (rts_task == nullptr) {
     GELOGE(UNSUPPORTED, "[%s] Unsupported RTS op type: %s", node->GetName().c_str(), node_type.c_str());

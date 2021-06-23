@@ -1394,17 +1394,19 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
     return SUCCESS;
   }
 
-  vector<void *> allocated_mem;
-  rtError_t status;
   rtStream_t stream = nullptr;
+  vector<void *> allocated_mem;
   std::function<void()> callback = [&]() {
     for (auto mem : allocated_mem) {
       GE_CHK_RT(rtFree(mem));
     }
-    GE_CHK_RT(rtStreamDestroy(stream));
+    if (stream != nullptr) {
+      GE_CHK_RT(rtStreamDestroy(stream));
+    }
   };
   GE_MAKE_GUARD(release, callback);
 
+  rtError_t status;
   vector<CustAicpuSoBuf> v_cust_so;
   void *args = nullptr;
 

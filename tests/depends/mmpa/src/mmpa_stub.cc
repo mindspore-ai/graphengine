@@ -220,6 +220,13 @@ VOID mmScandirFree(mmDirent **entryList, INT32 count)
 
 INT32 mmAccess2(const CHAR *pathName, INT32 mode)
 {
+  if (pathName == NULL) {
+    return EN_INVALID_PARAM;
+  }
+  INT32 ret = access(pathName, mode);
+  if (ret != EN_OK) {
+    return EN_ERROR;
+  }
   return 0;
 }
 

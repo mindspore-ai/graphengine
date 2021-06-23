@@ -368,7 +368,14 @@ TEST(UtestIrBuild, check_modify_mixlist_param) {
     {"ge.exec.modify_mixlist", "/modify.json"}
   };
   ModelBufferData model;
-  
+
   auto ret = aclgrphBuildModel(graph, build_options, model);
   EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
+}
+
+TEST(UtestIrCommon, check_dynamic_imagesize_input_shape_valid_format_empty) {
+  std::map<std::string, std::vector<int64_t>> shape_map;
+  std::string dynamic_image_size = "";
+  bool ret = CheckDynamicImagesizeInputShapeValid(shape_map, "123", dynamic_image_size);
+  EXPECT_EQ(ret, false);
 }

@@ -24,6 +24,7 @@
 #include "graph/types.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hccl/hcom.h"
+#include "runtime/event.h"
 
 namespace ge {
 namespace {
@@ -325,7 +326,7 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
 
   rtEvent_t evt = nullptr;
   if (context.GetExecutionContext()->hccl_stream != nullptr) {
-    GE_CHK_RT_RET(rtEventCreateWithFlag(&evt, 0x01));
+    GE_CHK_RT_RET(rtEventCreateWithFlag(&evt, RT_EVENT_WITH_FLAG));
     GE_CHK_RT_RET(rtStreamWaitEvent(context.GetExecutionContext()->hccl_stream, evt));
   }
   TaskContext *p_ctx = &context;

@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "host_cpu_engine.h"
-#include "graph/common/omg_util.h"
+#include "ge_local_engine/engine/host_cpu_engine.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_adapter.h"
+#include "graph/utils/node_utils.h"
+#include "graph/utils/type_utils.h"
 #include "register/op_kernel_registry.h"
 #include "register/host_cpu_context.h"
 #include "common/ge/ge_util.h"
 #include "common/ge/plugin_manager.h"
-#include "graph/utils/type_utils.h"
 #include "common/fp16_t.h"
 #include "common/math/math_util.h"
 
@@ -123,10 +123,7 @@ bool HostCpuEngine::CheckSupported(const string &op_type) {
 }
 
 Status HostCpuEngine::FindOpKernel(const ge::NodePtr &node, std::unique_ptr<HostCpuOp> &op_kernel) {
-  std::string op_type;
-  auto status = GetOriginalType(node, op_type);
-  GE_CHK_BOOL_EXEC_NOLOG(status == SUCCESS, return status);
-
+  const std::string op_type = NodeUtils::GetNodeType(node);
   auto kernel = OpKernelRegistry::GetInstance().CreateHostCpuOp(op_type);
   if (kernel == nullptr) {
     GELOGD("Op of type %s is not supported by host cpu engine", op_type.c_str());

@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#include "node_item.h"
-#include <sstream>
-#include "common/debug/log.h"
-#include "graph/common/omg_util.h"
+#include "hybrid/model/node_item.h"
+
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/worker/shape_inference_engine.h"
@@ -98,8 +96,7 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
     GE_CHECK_NOTNULL(node);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    std::string node_type;
-    GE_CHK_STATUS_RET(GetOriginalType(node, node_type));
+    const std::string node_type = NodeUtils::GetNodeType(node);
     if (node_type == DATA) {
       GE_CHK_GRAPH_STATUS_RET(ParseInputMapping(*node, *op_desc, *fused_subgraph));
     } else if (node_type == kNodeTypeRetVal) {
@@ -409,8 +406,8 @@ void NodeItem::SetDataSend(NodeItem *node_item, int anchor_index) {
 
 void NodeItem::SetCtrlSend(NodeItem *node_item, uint32_t switch_index) {
   if (switch_index < switch_groups_.size()) {
-    std::vector<const NodeItem *> &switch_group = switch_groups_[switch_index];
-    switch_group.emplace_back(node_item);
+    auto &switch_group = switch_groups_[switch_index];
+    switch_group.emplace(node_item);
   } else {
     ctrl_send_.insert(node_item);
   }
@@ -433,8 +430,8 @@ void NodeItem::SetMergeCtrl(NodeItem *node_item, uint32_t merge_index) {
   }
 
   // this is StreamMerge node, node_item is StreamActive node.
-  std::vector<const NodeItem *> &switch_group = switch_groups_[merge_index];
-  switch_group.emplace_back(node_item);
+  auto &switch_group = switch_groups_[merge_index];
+  switch_group.emplace(node_item);
 
   node_item->ctrl_send_.emplace(this);
   GELOGI("Node[%s] will control node[%s]", node_item->NodeName().c_str(), NodeName().c_str());

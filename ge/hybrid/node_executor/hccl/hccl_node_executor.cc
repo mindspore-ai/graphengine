@@ -342,6 +342,7 @@ Status RdmaNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> do
       GE_CHK_RT_RET(rtEventDestroy(evt));
     }
     GELOGI("rdma callback success.");
+    return SUCCESS;
   };
 
   HcclResult hccl_ret = HcomExecEnqueueRemoteAccess(context.GetNodeItem().NodeType(), addr_infos, callback);

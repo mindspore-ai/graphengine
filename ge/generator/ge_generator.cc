@@ -205,6 +205,7 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
   }
 
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
+  (void)AttrUtils::SetBool(data_op, ATTR_NAME_IS_ORIGINAL_INPUT, true);
 
   GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS,
                    REPORT_CALL_ERROR("E19999", "AddInputDesc failed for node:%s", data_op->GetName().c_str());

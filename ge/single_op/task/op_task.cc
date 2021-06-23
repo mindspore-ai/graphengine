@@ -621,9 +621,7 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
 AiCpuTask::~AiCpuTask() {
   FreeHbm(args_);
   FreeHbm(io_addr_);
-  if (dynamic_flag_) {
-    FreeHbm(workspace_addr_);
-  }
+  FreeHbm(workspace_addr_);
   FreeHbm(copy_workspace_buf_);
   FreeHbm(copy_ioaddr_dev_);
   FreeHbm(copy_input_release_flag_dev_);

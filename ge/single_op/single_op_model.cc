@@ -376,11 +376,10 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
       GELOGD("Building AICPU_TF task");
       AiCpuTask *aicpu_task = nullptr;
-      bool depend_compute_flag = false;
       uint64_t singleop_kernel_id = aicpu_kernel_id++;
       GELOGI("Build singleOp TfTask, kernel_id = %lu", singleop_kernel_id);
       GE_CHK_STATUS_RET_NOLOG(
-          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_kernel_id));
+          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, singleop_kernel_id));
       aicpu_task->SetModelArgs(model_name_, model_id_);
       ParseArgTable(aicpu_task, single_op);
       single_op.tasks_.emplace_back(aicpu_task);
@@ -457,8 +456,7 @@ Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask *
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id) {
+Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, uint64_t kernel_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, 
@@ -476,12 +474,11 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiC
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, kernel_id);
+  auto ret = builder.BuildTask(*aicpu_task, model_params_, kernel_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Build][Task] failed, kernel_id:%lu.", kernel_id);
     return ret;
   }
-  depend_compute_flag = (aicpu_task->GetUnknownType() == DEPEND_COMPUTE);
 
   *task = aicpu_task.release();
   return SUCCESS;
@@ -628,12 +625,10 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
       }
       GELOGD("Building AICPU_TF task");
       AiCpuTask *aicpu_task = nullptr;
-      bool depend_compute_flag = false;
       uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
       GELOGI("Build dynamic singleOp TfTask, kernel_id = %lu", dynamic_singleop_kernel_id);
-      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true,
-                                                depend_compute_flag, dynamic_singleop_kernel_id));
-      if (depend_compute_flag) {
+      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, dynamic_singleop_kernel_id));
+      if (aicpu_task->GetUnknownType() == DEPEND_COMPUTE) {
         if (i >= tasks.size() - 1) {
           GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Task]The copy task of the fourth operator was not found.");
           REPORT_INNER_ERROR("E19999", "The copy task of the fourth operator was not found.");

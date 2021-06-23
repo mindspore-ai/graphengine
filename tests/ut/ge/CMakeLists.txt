@@ -811,6 +811,7 @@ set(MULTI_PARTS_TEST_FILES
     "session/inner_session_unittest.cc"
     "session/session_manager_unittest.cc"
     "common/host_cpu_engine_unittest.cc"
+    "common/tbe_plugin_manager_unittest.cc"
 )
 
 set(GENERATOR_TEST_FILES

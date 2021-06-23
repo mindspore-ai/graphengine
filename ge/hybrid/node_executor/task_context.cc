@@ -43,6 +43,7 @@ TaskContext::~TaskContext() {
       output_tensor->Destroy();
     }
   }
+  ReleaseWorkspace();
 }
 
 void TaskContext::ReleaseWorkspace() {
@@ -50,6 +51,7 @@ void TaskContext::ReleaseWorkspace() {
   for (auto ws_addr : workspaces_) {
     execution_context_->allocator->Deallocate(ws_addr);
   }
+  workspaces_.clear();
 }
 
 std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state, SubgraphContext *subgraph_context) {

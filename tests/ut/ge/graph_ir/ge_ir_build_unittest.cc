@@ -391,6 +391,43 @@ TEST(UtestIrBuild, check_modify_mixlist_param) {
   EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
 }
 
+TEST(UtestIrBuild, check_op_precision_mode_param) {
+  Graph graph = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options = {
+    {"ge.exec.op_precision_mode", "./op_precision_mode.ini"}
+  };
+  ModelBufferData model;
+
+  auto ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
+}
+
+TEST(UtestIrBuild, check_build_model_and_build_step) {
+  Graph graph_1 = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options_1 = {
+    {"ge.buildMode", "xxx"}
+  };
+  ModelBufferData model_1;
+  auto ret_1 = aclgrphBuildModel(graph_1, build_options_1, model_1);
+  EXPECT_NE(ret_1, GRAPH_SUCCESS);
+
+  Graph graph_2 = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options_2 = {
+    {"ge.buildStep", "xxx"}
+  };
+  ModelBufferData model_2;
+  auto ret_2 = aclgrphBuildModel(graph_2, build_options_2, model_2);
+  EXPECT_NE(ret_2, GRAPH_SUCCESS);
+
+  Graph graph_3 = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options_3 = {
+    {"ge.buildMode", "tuning"}
+  };
+  ModelBufferData model_3;
+  auto ret_3 = aclgrphBuildModel(graph_3, build_options_3, model_3);
+  EXPECT_NE(ret_3, GRAPH_SUCCESS);
+}
+
 TEST(UtestIrBuild, atc_cfg_optype_param) {
   ComputeGraphPtr graph = BuildComputeGraph1();
   FILE *fp = fopen("./keep.txt", "w+");

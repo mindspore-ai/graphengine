@@ -156,6 +156,7 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
   }
   mmScandirFree(entries, ret);
   temp_depth--;
+  return;
 }
 
 void TBEPluginManager::GetPluginSoFileList(const string &path, vector<string> &file_list, string &caffe_parser_path) {

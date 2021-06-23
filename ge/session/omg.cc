@@ -220,14 +220,7 @@ static Status ParseOutputFp16NodesFormat(const string &is_output_fp16) {
   return SUCCESS;
 }
 
-void FindParserSo(const string &path, vector<string> &file_list,
-                  string &caffe_parser_path, uint32_t recursive_depth) {
-  static const uint32_t max_recursive_depth = 20; // For recursive depth protection
-
-  if (recursive_depth >= max_recursive_depth) {
-    GELOGW("Recursive depth is become %u, Please check input!", recursive_depth);
-    return;
-  }
+void FindParserSo(const string &path, vector<string> &file_list, string &caffe_parser_path) {
   // path, Change to absolute path
   string real_path = RealPath(path.c_str());
   if (real_path.empty()) {  // plugin path does not exist
@@ -264,7 +257,7 @@ void FindParserSo(const string &path, vector<string> &file_list,
       continue;
     }
 
-    FindParserSo(full_name, file_list, caffe_parser_path, recursive_depth + 1);
+    FindParserSo(full_name, file_list, caffe_parser_path);
   }
   closedir(dir);
   return;

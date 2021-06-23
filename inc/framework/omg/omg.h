@@ -91,7 +91,8 @@ GE_FUNC_VISIBILITY Status ConvertFwkModelToJson(domi::FrameworkType framework, c
 
 GE_FUNC_VISIBILITY void GetGroupName(ge::proto::ModelDef &model);
 
-GE_FUNC_VISIBILITY void FindParserSo(const string &path, vector<string> &fileList, string &caffe_parser_path);
+GE_FUNC_VISIBILITY void FindParserSo(const string &path, vector<string> &fileList, string &caffe_parser_path,
+                                     uint32_t recursive_depth = 0);
 
 GE_FUNC_VISIBILITY Status DumpInfershapeJson(const ge::Graph &graph, const char *json_file);
 

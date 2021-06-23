@@ -104,14 +104,12 @@ void TBEPluginManager::ProcessSoFullName(vector<string> &file_list, string &caff
   }
 }
 
-void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_list, string &caffe_parser_path) {
-  static uint32_t temp_depth = 0;
+void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_list,
+                                    string &caffe_parser_path, uint32_t recursive_depth) {
   static const uint32_t max_recursive_depth = 20; // For recursive depth protection
 
-  temp_depth++;
-  if (temp_depth >= max_recursive_depth) {
-    GELOGW("Recursive depth is become %u, Please check input!", temp_depth);
-    temp_depth--;
+  if (recursive_depth >= max_recursive_depth) {
+    GELOGW("Recursive depth is become %u, Please check input!", recursive_depth);
     return;
   }
 
@@ -120,14 +118,12 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
   // Plugin path does not exist
   if (real_path.empty()) {
     GELOGW("RealPath is empty.");
-    temp_depth--;
     return;
   }
   INT32 is_dir = mmIsDir(real_path.c_str());
   // Lib plugin path not exist
   if (is_dir != EN_OK) {
       GELOGW("%s is not a dir. errmsg:%s", real_path.c_str(), strerror(errno));
-      temp_depth--;
       return;
   }
 
@@ -135,7 +131,6 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
   auto ret = mmScandir(real_path.c_str(), &entries, nullptr, nullptr);
   if (ret < EN_OK) {
       GELOGW("scan dir failed. path = %s, ret = %d, errmsg = %s", real_path.c_str(), ret, strerror(errno));
-      temp_depth--;
       return;
   }
   for (int i = 0; i < ret; ++i) {
@@ -151,11 +146,10 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
           ProcessSoFullName(file_list, caffe_parser_path, full_name, caffe_parser_so_suff, aicpu_so_suff,
                             aicpu_host_so_suff);
       } else {
-          FindParserSo(full_name, file_list, caffe_parser_path);
+          FindParserSo(full_name, file_list, caffe_parser_path, recursive_depth + 1);
       }
   }
   mmScandirFree(entries, ret);
-  temp_depth--;
 }
 
 void TBEPluginManager::GetPluginSoFileList(const string &path, vector<string> &file_list, string &caffe_parser_path) {

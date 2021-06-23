@@ -220,26 +220,22 @@ static Status ParseOutputFp16NodesFormat(const string &is_output_fp16) {
   return SUCCESS;
 }
 
-void FindParserSo(const string &path, vector<string> &file_list, string &caffe_parser_path) {
-  static uint32_t temp_depth = 0;
+void FindParserSo(const string &path, vector<string> &file_list,
+                  string &caffe_parser_path, uint32_t recursive_depth) {
   static const uint32_t max_recursive_depth = 20; // For recursive depth protection
 
-  temp_depth++;
-  if (temp_depth >= max_recursive_depth) {
-    GELOGW("Recursive depth is become %u, Please check input!", temp_depth);
-    temp_depth--;
+  if (recursive_depth >= max_recursive_depth) {
+    GELOGW("Recursive depth is become %u, Please check input!", recursive_depth);
     return;
   }
   // path, Change to absolute path
   string real_path = RealPath(path.c_str());
   if (real_path.empty()) {  // plugin path does not exist
-    temp_depth--;
     return;
   }
   struct stat stat_buf;
   if ((stat(real_path.c_str(), &stat_buf) != 0) || (!S_ISDIR(stat_buf.st_mode))) {
     GELOGI("The path %s is not a directory.", real_path.c_str());
-    temp_depth--;
     return;
   }
 
@@ -248,7 +244,6 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
 
   if (nullptr == dir) {  //  plugin path does not exist
     GELOGW("Open directory %s failed.", path.c_str());
-    temp_depth--;
     return;
   }
 
@@ -269,10 +264,9 @@ void FindParserSo(const string &path, vector<string> &file_list, string &caffe_p
       continue;
     }
 
-    FindParserSo(full_name, file_list, caffe_parser_path);
+    FindParserSo(full_name, file_list, caffe_parser_path, recursive_depth + 1);
   }
   closedir(dir);
-  temp_depth--;
   return;
 }
 

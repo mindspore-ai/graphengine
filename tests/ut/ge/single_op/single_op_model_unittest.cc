@@ -310,3 +310,27 @@ TEST_F(UtestSingleOpModel, BuildTaskList) {
   MemcpyAsyncTask mem_task;
   ASSERT_EQ(mem_task.LaunchKernel(0), SUCCESS);
 }
+
+TEST_F(UtestSingleOpModel, build_aicpu_task) {
+  ComputeGraphPtr graph = make_shared<ComputeGraph>("single_op");
+  GeModelPtr ge_model = make_shared<GeModel>();
+  ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
+  shared_ptr<domi::ModelTaskDef> model_task_def = make_shared<domi::ModelTaskDef>();
+  ge_model->SetModelTaskDef(model_task_def);
+
+  domi::TaskDef *task_def = model_task_def->add_task();
+  task_def->set_type(RT_MODEL_TASK_KERNEL_EX);
+
+  string model_data_str = "123456789";
+  SingleOpModel model("model", model_data_str.c_str(), model_data_str.size());
+  std::mutex stream_mu;
+  rtStream_t stream = nullptr;
+  rtStreamCreate(&stream, 0);
+  DynamicSingleOp single_op(0, &stream_mu, stream);
+  model.model_helper_.model_ = ge_model;
+  auto op_desc = std::make_shared<ge::OpDesc>("add", "Add");
+  NodePtr node = graph->AddNode(op_desc); 
+  model.op_list_[0] = node;
+  StreamResource *res = new (std::nothrow) StreamResource(1);
+  ASSERT_EQ(model.BuildTaskListForDynamicOp(res, single_op), SUCCESS);
+}

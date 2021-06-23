@@ -192,7 +192,6 @@ class AiCpuTask : public AiCpuBaseTask {
   // host addr
   std::vector<void *> io_addr_host_;
 
-  bool dynamic_flag_ = false;
   // for copy task
   void *copy_task_args_buf_ = nullptr;
   void *copy_workspace_buf_ = nullptr;

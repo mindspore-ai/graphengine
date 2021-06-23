@@ -70,7 +70,7 @@ class SingleOpModel {
   Status BuildTaskListForDynamicOp(StreamResource *stream_resource, DynamicSingleOp &dynamic_single_op);
   Status BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask **task);
   Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                           bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id);
+                           bool& depend_compute_flag, uint64_t kernel_id);
   Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task, uint64_t kernel_id);
   Status BuildModelTaskKernel(StreamResource *stream_resource, const domi::TaskDef &task_def,
                               DynamicSingleOp &single_op);

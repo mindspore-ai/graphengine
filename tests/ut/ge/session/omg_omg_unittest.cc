@@ -48,4 +48,13 @@ TEST_F(UtestOmg, display_model_info_success) {
   attr_def->mutable_list()->add_i(4);
   PrintModelInfo(&model_def, 1);
 }
+
+TEST_F(UtestOmg, find_parser_so) {
+  string path = "";
+  vector<string> file_list = {};
+  string caffe_parser_path = "";
+  FindParserSo(path, file_list, caffe_parser_path);
+  path = "/lib64";
+  FindParserSo(path, file_list, caffe_parser_path);
+}
 }  // namespace ge

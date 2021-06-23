@@ -380,7 +380,7 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
       uint64_t singleop_kernel_id = aicpu_kernel_id++;
       GELOGI("Build singleOp TfTask, kernel_id = %lu", singleop_kernel_id);
       GE_CHK_STATUS_RET_NOLOG(
-          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_kernel_id));
+          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, depend_compute_flag, singleop_kernel_id));
       aicpu_task->SetModelArgs(model_name_, model_id_);
       ParseArgTable(aicpu_task, single_op);
       single_op.tasks_.emplace_back(aicpu_task);
@@ -458,7 +458,7 @@ Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask *
 }
 
 Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id) {
+                                        bool& depend_compute_flag, uint64_t kernel_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, 
@@ -476,7 +476,7 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiC
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, kernel_id);
+  auto ret = builder.BuildTask(*aicpu_task, model_params_, kernel_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Build][Task] failed, kernel_id:%lu.", kernel_id);
     return ret;
@@ -631,7 +631,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
       bool depend_compute_flag = false;
       uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
       GELOGI("Build dynamic singleOp TfTask, kernel_id = %lu", dynamic_singleop_kernel_id);
-      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true,
+      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task,
                                                 depend_compute_flag, dynamic_singleop_kernel_id));
       if (depend_compute_flag) {
         if (i >= tasks.size() - 1) {

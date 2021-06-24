@@ -1378,7 +1378,9 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  if (cust_aicpu_so_.size() == 0) return SUCCESS;
+  if (cust_aicpu_so_.empty()) {
+    return SUCCESS;
+  }
   // get current context
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);

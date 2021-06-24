@@ -29,12 +29,12 @@ namespace ge {
     AiCpuTaskBuilder(const OpDescPtr &op_desc, const domi::KernelExDef &kernel_def);
     ~AiCpuTaskBuilder() = default;
 
-    Status BuildTask(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag, uint64_t kernel_id);
+    Status BuildTask(AiCpuTask &task, const SingleOpModelParam &param, uint64_t kernel_id);
 
   private:
     static Status SetKernelArgs(void **args, STR_FWK_OP_KERNEL &kernel);
     Status SetFmkOpKernel(void *io_addr, void *ws_addr, STR_FWK_OP_KERNEL &kernel);
-    Status InitWorkspaceAndIO(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag);
+    Status InitWorkspaceAndIO(AiCpuTask &task, const SingleOpModelParam &param);
 
     const OpDescPtr op_desc_;
     const domi::KernelExDef &kernel_def_;

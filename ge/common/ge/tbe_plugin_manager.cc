@@ -105,11 +105,11 @@ void TBEPluginManager::ProcessSoFullName(vector<string> &file_list, string &caff
 }
 
 void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_list,
-                                    string &caffe_parser_path, uint32_t recursive_depth) {
-  static const uint32_t max_recursive_depth = 20; // For recursive depth protection
+                                    string &caffe_parser_path, int recursive_depth) {
+  static const int kMaxRecursiveDepth = 20; // For recursive depth protection
 
-  if (recursive_depth >= max_recursive_depth) {
-    GELOGW("Recursive depth is become %u, Please check input!", recursive_depth);
+  if (recursive_depth >= kMaxRecursiveDepth) {
+    GELOGW("Recursive depth is become %d, Please check input!", recursive_depth);
     return;
   }
 

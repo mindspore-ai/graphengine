@@ -80,8 +80,7 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
 
   NodePtr func_node = graph->GetParentNode();
   if (func_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Parent node not set in node:%s(%s), graph:%s",
-                       func_node->GetName().c_str(), func_node->GetType().c_str(), graph->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Parent node not set, graph:%s", graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "[Get][Node] Parent functional node not set: %s.", graph->GetName().c_str());
     return false;
   }

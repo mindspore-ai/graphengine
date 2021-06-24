@@ -265,10 +265,6 @@ Status HybridModelBuilder::GetOrCreateNodeItem(const NodePtr &node, NodeItem **n
     return SUCCESS;
   }
 
-  if (node->GetType() == MEMCPYASYNC) { // Convert MemcpyAsync to Identity.
-    node->GetOpDesc()->SetType(IDENTITY);
-  }
-
   std::unique_ptr<NodeItem> new_node;
   GE_CHK_STATUS_RET(NodeItem::Create(node, new_node), "[Invoke][Create] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET_NOLOG(NodeExecutorManager::GetInstance().GetExecutor(*node, &new_node->node_executor));

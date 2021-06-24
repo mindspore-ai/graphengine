@@ -438,4 +438,22 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   auto ret = mm.DataInputTensor(model_id,inputs);
   EXPECT_EQ(PARAM_INVALID, ret);    // HybridDavinciModel::impl_ is null.
 }
+
+TEST_F(UtestModelManagerModelManager, test_launch_kernel_cust_aicpu) {
+  ModelManager mm;
+
+  // cust_aicpu_so_ is empty.
+  EXPECT_EQ(mm.LaunchKernelCustAicpuSo("empty_cust_aicpu"), SUCCESS);
+
+  // deleteCustOp after Launch will deleted.
+  uintptr_t resource_id = 1;    // for rtCtxGetCurrent stub
+  std::vector<char> kernel_bin(256);
+  auto &cust_resource_001 = mm.cust_aicpu_so_[resource_id];
+  auto tbe_kernel  = std::shared_ptr<OpKernelBin>(new OpKernelBin("deleteCustOp", std::move(kernel_bin)));
+  auto &cust_opkernel_001 = cust_resource_001["deleteCustOp"] = tbe_kernel;
+
+  EXPECT_FALSE(mm.cust_aicpu_so_.empty());
+  EXPECT_EQ(mm.LaunchKernelCustAicpuSo("deleteCustOp"), SUCCESS);
+  EXPECT_TRUE(mm.cust_aicpu_so_.empty());
+}
 }  // namespace ge

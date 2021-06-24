@@ -60,11 +60,6 @@ class StreamMergeNodeTask : public RtsNodeTask {
   Status ExecuteAsync(TaskContext &task_context, std::function<void()> done_callback) override;
 };
 
-class MemcpyAsyncNodeTask : public RtsNodeTask {
- public:
-  Status ExecuteAsync(TaskContext &task_context, std::function<void()> done_callback) override;
-};
-
 class PassThroughNodeTask : public RtsNodeTask {
  public:
   Status ExecuteAsync(TaskContext &task_context, std::function<void()> done_callback) override;

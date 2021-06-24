@@ -29,6 +29,7 @@ REGISTER_RTS_TASK_CREATOR(IDENTITY, IdentityNodeTask);
 REGISTER_RTS_TASK_CREATOR(IDENTITYN, IdentityNNodeTask);
 REGISTER_RTS_TASK_CREATOR(READVARIABLEOP, ReadVariableOpNodeTask);
 REGISTER_RTS_TASK_CREATOR(PROFILINGTRAININGTRACE, ProfilingTraceNodeTask);
+REGISTER_RTS_TASK_CREATOR(MEMCPYASYNC, IdentityNodeTask);
 
 Status IdentityNodeTask::DoCopyTensor(TaskContext &context, int index) {
   auto input_desc = context.MutableInputDesc(index);

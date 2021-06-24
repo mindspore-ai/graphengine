@@ -64,10 +64,6 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "[Update][SessionInfoSessionId] failed, session_id:%ld.", session_id);
 
-  bool execute_mode = !aicpu_ext_handle_.IsNeedRefreshIOAddr() && !node_item_->is_dynamic;
-  GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateExecuteMode(execute_mode),
-                    "[Update][ExecuteMode] failed, node:%s.", node_name_.c_str());
-
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
                     "[Invoke][AllocTensorBuffer]Node[%s] alloc kernel_ext_info buf failed, size=%zu",

@@ -54,6 +54,7 @@
 #include "graph/passes/hccl_group_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/infershape_pass.h"
+#include "graph/passes/infer_value_range_pass.h"
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/net_output_pass.h"
 #include "graph/passes/no_use_reshape_remove_pass.h"
@@ -2016,6 +2017,8 @@ Status GraphPrepare::InferShapeForPreprocess() {
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   ConstantFoldingPass constant_folding_pass;
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
+  InferValueRangePass infer_value_pass;
+  names_to_passes.emplace_back("InferValuePass", &infer_value_pass);
 
   int32_t dev_count = 0;
   AicpuConstantFoldingPass aicpu_constant_folding_pass;

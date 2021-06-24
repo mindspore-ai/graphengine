@@ -28,6 +28,11 @@ class ConstantFoldingPass : public FoldingPass {
   Status Run(ge::NodePtr &node) override;
   const std::map<std::string, std::pair<std::uint64_t, uint64_t>> &GetGeConstantFoldingPerfStatistic() const;
   const std::map<std::string, std::pair<std::uint64_t, uint64_t>> &GetOpConstantFoldingPerfStatistic() const;
+
+  static Status RunOpKernel(NodePtr &node, const vector<ConstGeTensorPtr> &inputs, vector<GeTensorPtr> &outputs);
+  static Status RunOpKernelWithCheck(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
+                                     std::vector<GeTensorPtr> &outputs);
+
  private:
   std::map<std::string, std::pair<std::uint64_t, uint64_t>> statistic_of_op_constant_folding_;
   std::map<std::string, std::pair<std::uint64_t, uint64_t>> statistic_of_ge_constant_folding_;

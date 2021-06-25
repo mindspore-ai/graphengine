@@ -58,8 +58,8 @@ Status NodeExecutor::CompileTask(const HybridModel &model, const NodePtr &node, 
 }
 
 Status NodeExecutorManager::EnsureInitialized() {
-  GE_CHK_STATUS_RET(InitializeExecutors());
   std::lock_guard<std::mutex> lk(mu_);
+  ++ref_count_;
   if (initialized_) {
     return SUCCESS;
   }
@@ -115,17 +115,14 @@ NodeExecutorManager::ExecutorType NodeExecutorManager::ResolveExecutorType(Node 
   return it->second;
 }
 
-Status NodeExecutorManager::GetExecutor(Node &node, const NodeExecutor **executor) const {
+Status NodeExecutorManager::GetExecutor(Node &node, const NodeExecutor **executor) {
   auto executor_type = ResolveExecutorType(node);
+  GELOGD("[%s] Set node executor by type: %d.", node.GetName().c_str(), static_cast<int>(executor_type));
   const auto it = executors_.find(executor_type);
   if (it == executors_.end()) {
-    REPORT_INNER_ERROR("E19999", "Failed to get executor by type: %d.", static_cast<int>(executor_type));
-    GELOGE(INTERNAL_ERROR, "[Check][ExecutorType]Failed to get executor by type: %d.",
-           static_cast<int>(executor_type));
-    return INTERNAL_ERROR;
+    return GetOrCreateExecutor(executor_type, executor);
   }
 
-  GELOGD("[%s] Set node executor by type: %d.", node.GetName().c_str(), static_cast<int>(executor_type));
   *executor = it->second.get();
   return SUCCESS;
 }
@@ -178,51 +175,55 @@ Status NodeExecutorManager::CalcOpRunningParam(Node &node) const {
   return OpsKernelBuilderManager::Instance().CalcOpRunningParam(node);
 }
 
-Status NodeExecutorManager::InitializeExecutors() {
+bool NodeExecutorManager::IsExecutorInitialized(NodeExecutorManager::ExecutorType executor_type) {
   std::lock_guard<std::mutex> lk(mu_);
-  if (executor_initialized_) {
-    ++ref_count_;
-    GELOGI("Executor is already initialized. add ref count to [%d]", ref_count_);
+  return executors_.find(executor_type) != executors_.end();
+}
+
+Status NodeExecutorManager::GetOrCreateExecutor(ExecutorType executor_type, const NodeExecutor **out_executor) {
+  std::lock_guard<std::mutex> lk(mu_);
+  const auto executor_it = executors_.find(executor_type);
+  if (executor_it != executors_.end()) {
+    *out_executor = executor_it->second.get();
     return SUCCESS;
   }
 
-  GELOGI("Start to Initialize NodeExecutors");
-  for (auto &it : builders_) {
-    auto engine_type = it.first;
-    auto build_fn = it.second;
-    GE_CHECK_NOTNULL(build_fn);
-    auto executor = std::unique_ptr<NodeExecutor>(build_fn());
-    if (executor == nullptr) {
-      REPORT_CALL_ERROR("E19999", "Create NodeExecutor failed for engine type = %d",
-                        static_cast<int>(engine_type));
-      GELOGE(INTERNAL_ERROR, "[Create][NodeExecutor] failed for engine type = %d", static_cast<int>(engine_type));
-      return INTERNAL_ERROR;
-    }
-
-    GELOGD("Executor of engine type = %d was created successfully", static_cast<int>(engine_type));
-    auto ret = executor->Initialize();
-    if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Initialize NodeExecutor failed for type = %d", static_cast<int>(engine_type));
-      GELOGE(ret, "[Initialize][NodeExecutor] failed for type = %d", static_cast<int>(engine_type));
-      for (auto &executor_it : executors_) {
-        executor_it.second->Finalize();
-      }
-      executors_.clear();
-      return ret;
-    }
-
-    executors_.emplace(engine_type, std::move(executor));
+  GELOGI("Start to Initialize NodeExecutor, type = %d", static_cast<int>(executor_type));
+  auto it = builders_.find(executor_type);
+  if (it == builders_.end()) {
+    REPORT_CALL_ERROR("E19999", "Create NodeExecutor failed for executor type = %d",
+                      static_cast<int>(executor_type));
+    GELOGE(INTERNAL_ERROR, "[Create][NodeExecutor] failed for executor type = %d", static_cast<int>(executor_type));
+    return INTERNAL_ERROR;
   }
 
-  ++ref_count_;
-  executor_initialized_ = true;
-  GELOGI("Initializing NodeExecutors successfully.");
+  auto build_fn = it->second;
+  GE_CHECK_NOTNULL(build_fn);
+  auto executor = std::unique_ptr<NodeExecutor>(build_fn());
+  if (executor == nullptr) {
+    REPORT_CALL_ERROR("E19999", "Create NodeExecutor failed for executor type = %d",
+                      static_cast<int>(executor_type));
+    GELOGE(INTERNAL_ERROR, "[Create][NodeExecutor] failed for engine type = %d", static_cast<int>(executor_type));
+    return INTERNAL_ERROR;
+  }
+
+  GELOGD("Executor of engine type = %d was created successfully", static_cast<int>(executor_type));
+  auto ret = executor->Initialize();
+  if (ret != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Initialize NodeExecutor failed for type = %d", static_cast<int>(executor_type));
+    GELOGE(ret, "[Initialize][NodeExecutor] failed for type = %d", static_cast<int>(executor_type));
+    return ret;
+  }
+
+  *out_executor = executor.get();
+  executors_.emplace(executor_type, std::move(executor));
+  GELOGI("Initializing NodeExecutor successfully, type = %d", static_cast<int>(executor_type));
   return SUCCESS;
 }
 
 void NodeExecutorManager::FinalizeExecutors() {
   std::lock_guard<std::mutex> lk(mu_);
-  if (!executor_initialized_) {
+  if (ref_count_ <= 0) {
     GELOGD("No need for finalizing for not initialized.");
     return;
   }
@@ -237,7 +238,6 @@ void NodeExecutorManager::FinalizeExecutors() {
     it.second->Finalize();
   }
   executors_.clear();
-  executor_initialized_ = false;
   GELOGD("Done invoking Finalize successfully.");
 }
 

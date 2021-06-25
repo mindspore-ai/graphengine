@@ -16,6 +16,7 @@
 
 #include "toolchain/prof_engine.h"
 #include "toolchain/prof_mgr_core.h"
+#include "runtime/base.h"
 
 void * ProfMgrStartUp(const ProfMgrCfg *cfg)
 {
@@ -32,3 +33,10 @@ int Msprof::Engine::RegisterEngine(const std::string& module, const Msprof::Engi
   return 0;
 }
 
+rtError_t rtSetMsprofReporterCallback(MsprofReporterCallback callback) {
+  return 0;
+}
+
+rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCallback callback) {
+  return 0;
+}

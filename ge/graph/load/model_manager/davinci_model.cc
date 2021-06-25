@@ -1156,7 +1156,6 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
   }
 
   size_t num = output_data_info_.size();
-  bool fusion_flag = false;
 
   size_t input_count = input_size_list.size();
   is_getnext_sink_dynamic_ = false;
@@ -1166,6 +1165,7 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
   }
   for (size_t idx = 0; idx < input_count; ++idx) {
     ZeroCopyOffset zero_copy_offset;
+    bool fusion_flag = false;
     Status ret = zero_copy_offset.InitOutputDataInfo(input_size_list, virtual_addr_list, op_desc, idx, fusion_flag);
     GE_IF_BOOL_EXEC(ret != SUCCESS,
                     GELOGE(PARAM_INVALID, "[Init][DataInfo] of input_info %s failed.", op_desc->GetName().c_str());

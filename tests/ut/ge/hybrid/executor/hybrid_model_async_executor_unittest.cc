@@ -82,7 +82,7 @@ TEST_F(UtestHybridModelAsyncExecutor, BuildDeviceTensor) {
   GeTensorDesc ge_tensor_desc;
   int64_t output_size = 100;
   std::vector<ge::Tensor> outputs;
-  executor.BuildDeviceTensor(tensor, ge_tensor_desc, output_size, outputs);
+  auto ret = executor.BuildDeviceTensor(tensor, ge_tensor_desc, output_size, outputs);
   auto size = tensor.GetSize();
   ASSERT_EQ(size, 100);
 }

@@ -95,7 +95,8 @@ class TensorValue {
     name_ = name;
   }
   
-  MemStorageType GetMemType() const {
+  Status GetMemType(MemStorageType &mem_type) const {
+    GE_CHECK_NOTNULL(buffer_);
     return buffer_->GetMemType();
   }
 

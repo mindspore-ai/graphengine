@@ -132,6 +132,7 @@ struct NodeState {
   void RunNextIteration();
 
   void SavePersistTensor(int input_idx, const TensorValue &tensor);
+  void UpdatePersistTensor();
 
   Status NodeScheduled(const std::function<void(const NodeItem *)> &ready) const;
 

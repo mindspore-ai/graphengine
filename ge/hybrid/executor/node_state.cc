@@ -326,14 +326,34 @@ std::shared_ptr<TaskContext> NodeState::GetTaskContext() {
 }
 
 void NodeState::SavePersistTensor(int input_idx, const TensorValue &tensor) {
-  if (node_item_->root_data_.count(input_idx) > 0) {
+  const auto is_persist_tensor = [](const std::map<const NodeItem *, std::set<int>> &items, int idx) {
+    const auto is_exist = [&idx](const std::pair<const NodeItem *, std::set<int>> &items) {
+      return items.second.count(idx) > 0;
+    };
+    return std::any_of(items.begin(), items.end(), is_exist);
+  };
+
+  if (is_persist_tensor(node_item_->root_data_, input_idx)) {
     GELOGD("[%s] Save Root input tensor: %d", GetName().c_str(), input_idx);
     root_tensor_values_[input_idx] = tensor;
-  }
-
-  if (node_item_->enter_data_.count(input_idx) > 0) {
+  } else if (is_persist_tensor(node_item_->enter_data_, input_idx)) {
     GELOGD("[%s] Save Enter input tensor: %d", GetName().c_str(), input_idx);
     root_tensor_values_[input_idx] = tensor;
+  }
+}
+
+void NodeState::UpdatePersistTensor() {
+  const auto update_tensor = [&](const std::map<const NodeItem *, std::set<int>> &items) {
+    for (const auto &item : items) {
+      for (const auto idx : item.second) {
+        UpdatePersistTensor(idx);
+      }
+    }
+  };
+
+  update_tensor(node_item_->root_data_);
+  if (iteration_count_ > 0) {
+    update_tensor(node_item_->enter_data_);
   }
 }
 
@@ -363,16 +383,9 @@ void NodeState::ResetContext(uint64_t iteration) {
 
   data_scheduled_ = static_cast<uint32_t>(node_item_->root_data_.size());
   ctrl_scheduled_ = static_cast<uint32_t>(node_item_->root_ctrl_.size());
-  for (auto item : node_item_->root_data_) {
-    UpdatePersistTensor(item.first);
-  }
-
   if (iteration > 0) {
     data_scheduled_ += static_cast<uint32_t>(node_item_->enter_data_.size());
     ctrl_scheduled_ += static_cast<uint32_t>(node_item_->enter_ctrl_.size());
-    for (auto item : node_item_->enter_data_) {
-      UpdatePersistTensor(item.first);
-    }
   }
 
   iteration_count_ = iteration;

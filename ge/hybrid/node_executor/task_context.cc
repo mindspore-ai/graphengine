@@ -468,6 +468,12 @@ Status TaskContext::PropagateOutputs() {
   return SUCCESS;
 }
 
+Status TaskContext::UpdatePersistTensor() {
+  GE_CHECK_NOTNULL(node_state_);
+  node_state_->UpdatePersistTensor();
+  return SUCCESS;
+}
+
 const void *TaskContext::GetVarBaseAddr() {
   return execution_context_->model->GetVarMemBase();
 }

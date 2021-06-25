@@ -64,7 +64,7 @@ TEST_F(UtestGeApi, build_graph_success) {
   ASSERT_NE(ret, SUCCESS);
 }
 
-TEST_F(UtestGeApi, ge_initialize) {
+TEST_F(UtestGeApi, ge_initialize_modify_mixlist) {
   std::map<std::string, std::string> options = {
     {ge::MODIFY_MIXLIST, "/mixlist.json"}
   };

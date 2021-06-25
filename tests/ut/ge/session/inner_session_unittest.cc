@@ -53,4 +53,14 @@ TEST_F(Utest_Inner_session, initialize) {
   auto ret = inner_session.Initialize();
   EXPECT_NE(ret, ge::SUCCESS);
 }
+
+TEST_F(Utest_Inner_session, check_op_precision_mode) {
+  std::map<std::string, std::string> options = {
+    {ge::OP_PRECISION_MODE, "./op_precision_mode.ini"}
+  };
+  uint64_t session_id = 1;
+  InnerSession inner_session(session_id, options);
+  auto ret = inner_session.Initialize();
+  EXPECT_NE(ret, ge::SUCCESS);
+}
 }  // namespace ge

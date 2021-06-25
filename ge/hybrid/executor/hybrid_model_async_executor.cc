@@ -458,7 +458,8 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
         auto tensor = TensorAdapter::AsTensor(ge_tensor);
         outputs.emplace_back(std::move(tensor));
       } else {
-        BuildDeviceTensor(output_tensor, ge_tensor_desc, output_size, outputs);
+        GE_CHK_STATUS_RET(BuildDeviceTensor(output_tensor, ge_tensor_desc, output_size, outputs),
+                          "Build device tensor failed");
         output_data->blobs.emplace_back(output_tensor.Release(), static_cast<uint32_t>(output_size), false,
                                         static_cast<uint32_t>(kPlacementDevice));
       }
@@ -478,13 +479,15 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
   return SUCCESS;
 }
 
-void HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeTensorDesc &ge_tensor_desc,
-                                                 int64_t output_size, std::vector<ge::Tensor> &outputs) {
+Status HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeTensorDesc &ge_tensor_desc,
+                                                   int64_t output_size, std::vector<ge::Tensor> &outputs) {
   GELOGD("Start to build device tensor");
-  auto mem_type = output_tensor.GetMemType();
+  MemStorageType mem_type = HBM;
+  GE_CHK_STATUS_RET(output_tensor.GetMemType(mem_type), "[Build][DeviceTensor] Get mem type failed");
   GELOGD("Mem type is %d", static_cast<uint32_t>(mem_type));
   auto deleter = [=](uint8_t *device_data) {
     if (device_data != nullptr) {
+      GELOGD("Free device addr is %p", device_data);
       if (mem_type == RDMA_HBM) {
         MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Free(device_data, device_id_);
       } else if (mem_type == HOST_DDR) {
@@ -499,6 +502,7 @@ void HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeT
   auto tensor = TensorAdapter::AsTensor(ge_tensor);
   tensor.SetData(reinterpret_cast<uint8_t *>(output_tensor.Release()), static_cast<size_t>(output_size), deleter);
   outputs.emplace_back(std::move(tensor));
+  return SUCCESS;
 }
 
 Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,

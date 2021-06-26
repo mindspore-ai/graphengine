@@ -355,6 +355,10 @@ void NodeState::UpdatePersistTensor() {
     }
   };
 
+  if (root_tensor_values_.empty()) {
+    return;
+  }
+
   update_tensor(node_item_->root_data_);
   if (iteration_count_ > 0) {
     update_tensor(node_item_->enter_data_);

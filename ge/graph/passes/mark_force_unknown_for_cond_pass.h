@@ -34,7 +34,7 @@ class MarkForceUnknownForCondPass : public GraphPass {
   /// @param [out] Search queue
   /// @return true: Switch In while loop / false: Not in while Loop.
   ///
-  bool DealWithLoopSwitch(const NodePtr &node, uint32_t dst_span, std::queue<std::pair<NodePtr, uint32_t>> search_queue);
+  bool DealAsLoopSwitch(const NodePtr &node, uint32_t dst_span, std::queue<std::pair<NodePtr, uint32_t>> &search_queue);
 
   ///
   /// @brief Mark force unknown shape for Switch node

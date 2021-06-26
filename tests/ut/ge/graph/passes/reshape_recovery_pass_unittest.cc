@@ -31,9 +31,9 @@ class UtestReshapeRecoveryPass : public testing::Test {
 
 namespace {
 ///    netoutput1
-///     |        \
-///transdata1    \
-///    |          \
+///     |       \.
+///transdata1    \.
+///    |          \.
 ///    |   transdata2
 ///    |        /
 ///   var1   const1

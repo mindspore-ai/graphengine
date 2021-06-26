@@ -35,8 +35,8 @@ namespace {
 ///       shapeNo1
 ///        |
 ///      addnYes1
-///     /    \
-///   /       \
+///     /    \.
+///   /       \.
 /// const1   const2
 
 ComputeGraphPtr BuildGraph1() {
@@ -57,9 +57,9 @@ ComputeGraphPtr BuildGraph1() {
 
 ///
 ///          netoutput1
-///        /   \      \
-///     add1  assign1   \
-///    /   \  /     \     \
+///        /   \      \.
+///     add1  assign1   \.
+///    /   \  /     \     \.
 /// var1  var2    const1  var3
 
 ComputeGraphPtr BuildGraph2() {

@@ -28,8 +28,6 @@
 #include "inc/kernel.h"
 #include "inc/kernel_factory.h"
 #include "graph/debug/ge_attr_define.h"
-#include "ge_local_engine/engine/host_cpu_engine.h"
-
 
 namespace ge {
 namespace folding_pass {
@@ -122,12 +120,6 @@ NodePtr AddIdentityNodeToGraph(const std::string &name, const GeTensorDesc &tens
   return graph->AddNodeFront(desc);
 }
 }  // namespace
-
-Status FoldingPass::RunOpKernel(NodePtr &node,
-                                const vector<ConstGeTensorPtr> &inputs,
-                                std::vector<GeTensorPtr> &outputs) {
-  return HostCpuEngine::GetInstance().Run(node, inputs, outputs);
-}
 
 Status FoldingPass::Folding(NodePtr &node, vector<GeTensorPtr> &outputs) {
   GE_CHECK_NOTNULL(node);

@@ -54,6 +54,8 @@ std::string ShapeToString(const GeShape &shape);
 
 std::string ShapeToString(const std::vector<int64_t> &shape);
 
+std::string RangeToString(const std::vector<std::pair<int64_t, int64_t>> &ranges);
+
 int64_t GetItemNumByShape(const std::vector<int64_t> &shape);
 
 bool CheckShapeValid(const std::vector<int64_t> &shape, const int64_t expect_dims);

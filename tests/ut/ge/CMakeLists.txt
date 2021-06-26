@@ -221,7 +221,9 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/shape_operate_op_remove_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/assert_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/dropout_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/infer_base_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/infershape_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/infer_value_range_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/unused_const_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/permute_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/ctrl_edge_transfer_pass.cc"
@@ -535,7 +537,9 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/transpose_transdata_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/hccl_memcpy_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/no_use_reshape_remove_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/infer_base_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/infershape_pass.cc"
+    "${GE_CODE_DIR}/ge/graph/passes/infer_value_range_pass.cc"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
     "${GE_CODE_DIR}/ge/analyzer/analyzer.cc"
     "${GE_CODE_DIR}/ge/graph/passes/net_output_pass.cc"
@@ -662,6 +666,8 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
 )
 
 set(PASS_TEST_FILES
+    "graph/passes/infer_value_range_pass_unittest.cc"
+    "graph/passes/infer_base_pass_unittest.cc"
     "graph/passes/prune_pass_unittest.cc"
     "graph/passes/enter_pass_unittest.cc"
     "graph/passes/switch_op_pass_unittest.cc"
@@ -720,7 +726,6 @@ set(PASS_TEST_FILES
     "graph/passes/memcpy_addr_async_unittest.cc"
     "graph/passes/hccl_continuous_pass_unittest.cc"
     "graph/passes/hccl_memcpy_pass_unittest.cc"
-		
 )
 
 set(KERNEL_TEST_FILES

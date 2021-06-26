@@ -241,9 +241,6 @@ TEST_F(UtestMarkForceUnknownForCondPass, skip_while_loop_merge) {
 
   MarkForceUnknownForCondPass mark_force_unknown_pass;
   EXPECT_EQ(mark_force_unknown_pass.Run(graph), SUCCESS);   // skip LoopCond
-  setenv("DUMP_GE_GRAPH", "1", true);
-  GE_DUMP(graph, "control_group");
-  unsetenv("DUMP_GE_GRAPH");
 
   EXPECT_EQ(loop.size(), 2);
   for (const auto &node : loop) {

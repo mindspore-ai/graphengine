@@ -505,15 +505,15 @@ REG_OP(RandomChoiceWithMask)
 
 *@par Inputs:
 *Inputs including:
-* @li x: A required Tensor. Must be one of the following types:
-         float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
+* x: A required Tensor. Must be one of the following types:
+     float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
 
 *@par Attributes:
-*@li group: A required int32, specifying the number of groups to split the channel dimension into. Defaults to "1" . \n
+* group: A required int32, specifying the number of groups to split the channel dimension into. Defaults to "1" . \n
 
 *@par Outputs:
-*y: A required Tensor. Has same type and shape as "x". Must be one of the following types:
-    float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
+* y: A required Tensor. Has same type and shape as "x". Must be one of the following types:
+     float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
 
 *@attention Constraints:
 *@li "group" must be greater than 0 and must evenly divide the channel dimension size.

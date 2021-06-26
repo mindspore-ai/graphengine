@@ -585,9 +585,11 @@ REG_OP(ResizeNearestNeighborV2GradD)
 channels], The image tensor that was resized . \n
 
 *@par Attributes:
-*align_corners: An optional bool. Defaults to False. If true, the centers of
+*@li align_corners: An optional bool. Defaults to False. If true, the centers of
 the 4 corner pixels of the input and grad tensors are aligned. Defaults to
-false . \n
+false .
+*@li half_pixel_centers: indicates if the offset coordinates are normalized. Defaults
+to false . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as original_image . \n
@@ -787,9 +789,10 @@ REG_OP(SampleDistortedBoundingBoxExt2)
 The new size for the images . \n
 
 *@par Attributes:
-*align_corners: If true, the centers of the 4 corner pixels of the input and
+*@li align_corners: If true, the centers of the 4 corner pixels of the input and
 output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false . \n
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
 *y: 4-D with shape [batch, new_height, new_width, channels] . \n
@@ -1253,6 +1256,7 @@ REG_OP(KeepRatioResizeBilinear)
 No default value.
 *@li align_corners: An optional bool. If "true", the centers of the corner
 pixels of the input and output tensors are aligned. Defaults to "false" . \n
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
 *y: A Tensor with the same type and format as input "images" . \n

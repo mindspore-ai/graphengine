@@ -909,7 +909,7 @@ output shape would be [max(ngram_indexes) + 1]. If input shape is [N, C], this o
 *@li either pool_strings or pool_int64s attributes must be present but not both.
 */
 
-REG_OP(TfidVectorizer)
+REG_OP(TfIdfVectorizer)
     .INPUT(input, TensorType({DT_INT32, DT_INT64, DT_STRING}))
     .OUTPUT(output, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(max_gram_length, Int)
@@ -921,7 +921,7 @@ REG_OP(TfidVectorizer)
     .ATTR(pool_int64s, ListInt, {})
     .ATTR(pool_strings, ListString, {})
     .ATTR(weights, ListFloat, {})
-    .OP_END_FACTORY_REG(TfidVectorizer)
+    .OP_END_FACTORY_REG(TfIdfVectorizer)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_

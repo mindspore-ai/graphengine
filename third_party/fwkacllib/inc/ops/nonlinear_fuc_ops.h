@@ -28,8 +28,8 @@ namespace ge {
 *@brief Computes the for the gelu of "x" . \n
 
 *@par Inputs:
-*Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32
+*One input, including:
+*x: A Tensor. Must be one of the following types: float16, float32
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -66,8 +66,8 @@ REG_OP(GeluGrad)
 *@brief Computes the for the fast_gelu of "x" . \n
 
 *@par Inputs:
-*Two inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32
+*One input, including:
+*x: A Tensor. Must be one of the following types: float16, float32
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
@@ -83,7 +83,7 @@ REG_OP(FastGelu)
 *@brief Computes the gradient for the fast_gelu of "x" . \n
 
 *@par Inputs:
-*Three inputs, including:
+*Two inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32
 * @li x: A Tensor of the same type as "dy" . \n
 

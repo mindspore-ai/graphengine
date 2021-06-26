@@ -1968,17 +1968,14 @@ REG_OP(WriteSelect)
     .OP_END_FACTORY_REG(WriteSelect)
 
 /**
-*@brief Read data by stride . \n
+*@brief Read data by stride.
 
 *@par Inputs:
-*One input:
-*x: A Tensor. Must be one of the following types: float16, int8 . \n
+*x: A Tensor. Must be one of the following types: float16, int8. \n
 
 *@par Attributes:
-*@li axis: A required int32, specifying the index of axis to read by stride . \n
-
-*@par Attributes:
-*@li stride: A required int32, specifying the value of reading stride . \n
+*@li axis: A required int32, specifying the index of axis to read by stride. \n
+*@li stride: A required int32, specifying the value of reading stride. \n
 
 *@par Outputs:
 *y: A Tensor of the same type as "x".
@@ -1991,16 +1988,14 @@ REG_OP(StridedRead)
     .OP_END_FACTORY_REG(StridedRead)
 
 /**
-*@brief: Write data by stride . \n
+*@brief Write data by stride.
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, int8 . \n
+*x: A Tensor. Must be one of the following types: float16, int8. \n
 
 *@par Attributes:
-*@li axis: A required int32, specifying the index of axis to write by stride . \n
-
-*@par Attributes:
-*@li stride: A required int32, specifying the value of writing stride . \n
+*@li axis: A required int32, specifying the index of axis to write by stride. \n
+*@li stride: A required int32, specifying the value of writing stride. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".

@@ -100,6 +100,8 @@ struct NodeState {
   NodeState(const NodeItem &node_item, SubgraphContext *subgraph_context);
   ~NodeState() = default;
 
+  Status Init(int group, const shared_ptr<FrameState> &frame_state);
+
   OpDesc *GetOpDesc() const {
     return op_desc_.get();
   }
@@ -129,6 +131,8 @@ struct NodeState {
   void RunStreamActive();
   void RunNextIteration();
 
+  void SavePersistTensor(int input_idx, const TensorValue &tensor);
+
   Status NodeScheduled(const std::function<void(const NodeItem *)> &ready) const;
 
   void SetScheduleFuture(std::future<Status> &&future);
@@ -150,16 +154,8 @@ struct NodeState {
     return merge_index_;
   }
 
-  void SetGroup(int group) {
-    group_ = group;
-  }
-
   int GetGroup() const {
     return group_;
-  }
-
-  void SetFrameState(const shared_ptr<FrameState> &frame_state) {
-    frame_state_ = frame_state;
   }
 
   const shared_ptr<NodeTask> &GetKernelTask() const {
@@ -181,12 +177,17 @@ struct NodeState {
   void SetTaskContext(std::shared_ptr<TaskContext> &task_context);
   std::shared_ptr<TaskContext> GetTaskContext();
 
+  void SetSkipInferShape(bool skip_infershape) { skip_infershape_ = skip_infershape; }
+
+  bool MaySkipShapeInference() const { return skip_infershape_; }
+
  private:
   bool IsScheduleReady() const;
   void SetDataSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
   void SetCtrlSchedule(const NodeState &node_state, const std::function<void(const NodeItem *)> &ready);
   void ResetContext(uint64_t iteration);
   void ScheduleContext(const NodeState &node_state);
+  void UpdatePersistTensor(int input_idx);
 
   const NodeItem *node_item_ = nullptr;
   std::shared_ptr<NodeTask> kernel_task_ = nullptr;
@@ -199,6 +200,7 @@ struct NodeState {
 
   std::future<Status> schedule_future_;
   std::shared_ptr<FrameState> frame_state_;
+  std::map<int, TensorValue> root_tensor_values_;
   uint64_t active_count_ = 0;
   uint64_t iteration_count_ = 0;
   uint32_t ctrl_scheduled_ = 0;
@@ -206,6 +208,7 @@ struct NodeState {
   int merge_index_ = -1; // Use for Execute (Reset after Executed).
   int switch_index_ = -1; // Use for Schedule (Reset after Prepared).
   int group_ = -1;
+  bool skip_infershape_ = false;
 };
 }  // namespace hybrid
 }  // namespace ge

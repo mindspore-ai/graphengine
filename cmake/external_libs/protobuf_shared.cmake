@@ -11,14 +11,14 @@ if ((${CMAKE_INSTALL_PREFIX} STREQUAL /usr/local) OR
     message(STATUS "No install prefix selected, default to ${CMAKE_INSTALL_PREFIX}.")
 endif()
 if (GE_PB_PKG)
-    set(REQ_URL "${GE_PB_PKG}/libs/protobuf/v3.8.0.tar.gz")
+    set(REQ_URL "${GE_PB_PKG}/libs/protobuf/v3.13.0.tar.gz")
 else()
     if (ENABLE_GITEE)
-        set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.8.0.tar.gz")
-        set(MD5 "eba86ae9f07ba5cfbaf8af3bc4e84236")
+        set(REQ_URL "https://gitee.com/mirrors/protobuf_source/repository/archive/v3.13.0.tar.gz")
+        set(MD5 "f4489cb88922ad9c58cbe3308d59cee5")
     else()
-        set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.8.0.tar.gz")
-        set(MD5 "3d9e32700639618a4d2d342c99d4507a")
+        set(REQ_URL "https://github.com/protocolbuffers/protobuf/archive/v3.13.0.tar.gz")
+        set(MD5 "1a6274bc4a65b55a6fa70e264d796490")
     endif ()
 endif()
 
@@ -58,7 +58,7 @@ target_include_directories(ascend_protobuf INTERFACE ${PROTOBUF_SHARED_PKG_DIR}/
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)
 
-install(FILES ${PROTOBUF_SHARED_PKG_DIR}/${CMAKE_INSTALL_LIBDIR}/ascend_protobuf.so.3.8.0.0 OPTIONAL
+install(FILES ${PROTOBUF_SHARED_PKG_DIR}/${CMAKE_INSTALL_LIBDIR}/ascend_protobuf.so.3.13.0.0 OPTIONAL
         DESTINATION ${INSTALL_LIBRARY_DIR})
 install(FILES ${PROTOBUF_SHARED_PKG_DIR}/${CMAKE_INSTALL_LIBDIR}/ascend_protobuf.so OPTIONAL
         DESTINATION ${INSTALL_LIBRARY_DIR})

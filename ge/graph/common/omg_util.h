@@ -126,15 +126,6 @@ Status GetMemorySize(const NodePtr &node, int64_t &output_size);
 bool IsUnknownShapeTensor(const GeTensorDesc &tensor_desc);
 
 ///
-/// @brief Set Op _force_unknown_shape flag
-/// @param [in] node
-/// @param [in] force_unknown, set attribute if true
-/// @param [in] group_index, condition group index of node.
-/// @return
-///
-void MarkForceUnknownShape(const NodePtr &node, bool force_unknown, int64_t group_index);
-
-///
 /// @brief Set Op _control_flow_group flag
 /// @param [in] node
 /// @param [in] group, condition group index of node.

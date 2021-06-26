@@ -103,6 +103,14 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       auto node_state = subgraph_context_->GetOrCreateNodeState(input_node);
       GE_CHECK_NOTNULL(node_state);
       node_state->GetShapeInferenceState().UpdateInputShape(0, *tensor_desc);
+      auto op_desc = input_node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto output_desc = op_desc->MutableOutputDesc(kDataInputIndex);
+      GE_CHECK_NOTNULL(output_desc);
+      output_desc->SetShape(tensor_desc->GetShape());
+      output_desc->SetOriginShape(tensor_desc->GetOriginShape());
+      output_desc->SetDataType(tensor_desc->GetDataType());
+      node_state->SetSkipInferShape(true);
     }
   }
 
@@ -175,16 +183,12 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
   GE_CHECK_NOTNULL(node_state);
   node_state->SetKernelTask(node_item->kernel_task);
 
-  known_shape_task_context_ = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
-  GE_CHECK_NOTNULL(known_shape_task_context_);
-  node_state->SetTaskContext(known_shape_task_context_);
-
   std::function<void()> callback;
   GE_CHK_STATUS_RET_NOLOG(InitCallback(node_state.get(), callback));
-  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_, callback),
+  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, node_state->GetTaskContext(), *context_, callback),
                         "[%s] Failed to execute node [%s] for known subgraph.",
                         graph_item_->GetName().c_str(),
-                        known_shape_task_context_->GetNodeName());
+                        node_state->GetName().c_str());
 
   GELOGD("[%s] Done execute non-dynamic subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
@@ -271,16 +275,12 @@ Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
     } else {
       node_state->SetKernelTask(node_item.kernel_task);
     }
-    auto unique_task_context = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
-    GE_CHECK_NOTNULL(unique_task_context);
     const auto &task = node_state->GetKernelTask();
     if (task == nullptr) {
       GELOGE(INTERNAL_ERROR, "[Get][KernelTask] failed for[%s], NodeTask is null.", node_state->GetName().c_str());
       REPORT_CALL_ERROR("E19999", "GetKernelTask failed for %s, nodetask is null.", node_state->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-    node_state->SetTaskContext(shared_task_context);
     GE_CHK_STATUS_RET_NOLOG(NodeEnqueue(p_node_state));
     return AfterPrepared(p_node_state);
   }
@@ -480,19 +480,15 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
   } else {
     node_state.SetKernelTask(node_item.kernel_task);
   }
-  auto unique_task_context = TaskContext::Create(&node_state, context_, subgraph_context_.get());
-  GE_CHECK_NOTNULL(unique_task_context);
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
     GELOGE(INTERNAL_ERROR, "[Invoke][GetKernelTask] failed for[%s], NodeTask is null.", node_state.GetName().c_str());
     REPORT_CALL_ERROR("E19999", "invoke GetKernelTask failed for %s, NodeTask is null.", node_state.GetName().c_str());
     return INTERNAL_ERROR;
   }
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state.SetTaskContext(shared_task_context);
   GE_CHK_RT_RET(rtCtxSetCurrent(ctx->rt_context));
   RECORD_COMPILE_EVENT(ctx, node_item.NodeName().c_str(), "[UpdateTilingData] start");
-  GE_CHK_STATUS_RET_NOLOG(task->UpdateTilingData(*shared_task_context)); // update op_desc before alloc ws
+  GE_CHK_STATUS_RET_NOLOG(task->UpdateTilingData(*node_state.GetTaskContext())); // update op_desc before alloc ws
   RECORD_COMPILE_EVENT(ctx, node_item.NodeName().c_str(), "[UpdateTilingData] end");
   return SUCCESS;
 }

@@ -106,9 +106,13 @@ DEFINE_string(out_nodes, "",
               "Optional; output nodes designated by users."
               "Format: \"node_name1:0;node_name1:1;node_name2:0\"");
 
+DEFINE_string(op_precision_mode, "", "Optional; operator precision mode configuration file path");
+
 DEFINE_string(precision_mode, "force_fp16",
               "Optional; precision mode."
               "Support force_fp16, force_fp32, allow_mix_precision, allow_fp32_to_fp16, must_keep_origin_dtype.");
+
+DEFINE_string(modify_mixlist, "", "Optional; operator mixed precision configuration file path");
 
 DEFINE_string(keep_dtype, "",
               "Optional; config file to specify the precision used by the operator during compilation.");
@@ -192,8 +196,11 @@ DEFINE_string(log, "null", "Optional; generate atc log. Support debug, info, war
 
 DEFINE_string(dump_mode, "0", "Optional; generate infershape json,only support 1 , 0.");
 
-DEFINE_int32(op_debug_level, 0, "Optional; configure debug level of compiler. 0(default): close debug;"
-             "1: open TBE compiler, export ccec file and TBE instruction mapping file; 2: open ccec compiler");
+DEFINE_int32(op_debug_level, 0, "Optional; configure debug level of compiler. 0(default): close debug; "
+             "1: open TBE compiler, export ccec file and TBE instruction mapping file; 2: open ccec compiler; "
+             "3: disable debug, and keep generating kernel file (.o and .json); 4: disable debug, "
+             "keep generation kernel file (.o and .json) and generate the operator CCE file (.cce) "
+             "and the UB fusion computing description file (.json)");
 DEFINE_string(enable_scope_fusion_passes, "", "Optional; validate the non-general scope fusion pass,"
               "multiple names can be set and separated by ','.");
 DEFINE_string(debug_dir, "", "Optional; the path to save the intermediate files of operator compilation");
@@ -209,8 +216,6 @@ DEFINE_string(op_bank_path, "", "Optional; op bank path");
 DEFINE_string(display_model_info, "0", "Optional; display model info");
 
 DEFINE_string(device_id, "0", "Optional; user device id");
-
-DEFINE_string(modify_mixlist, "", "Optional; operator mixed precision configuration file path");
 
 class GFlagUtils {
  public:
@@ -298,8 +303,10 @@ class GFlagUtils {
         "\"l1_optimize\", \"off_optimize\"\n"
 	"  --mdl_bank_path           Set the path of the custom repository generated after model tuning.\n"
         "\n[Operator Tuning]\n"
+        "  --op_precision_mode     Set the path of operator precision mode configuration file (.ini)\n"
         "  --precision_mode        precision mode, support force_fp16(default), force_fp32, allow_mix_precision, "
         "allow_fp32_to_fp16, must_keep_origin_dtype.\n"
+        "  --modify_mixlist        Set the path of operator mixed precision configuration file.\n"
         "  --keep_dtype            Retains the precision of certain operators in inference "
         "scenarios by using a configuration file.\n"
         "  --auto_tune_mode        Set tune mode. E.g.: \"GA,RL\", support configure multiple, spit by ,\n"
@@ -315,7 +322,8 @@ class GFlagUtils {
         "                          2: Enable TBE pipe_all, generate the operator CCE file and Python-CCE mapping file "
         "(.json), and enable the CCE compiler -O0-g.\n"
         "                          3: Disable debug, and keep generating kernel file (.o and .json)\n"
-        "  --modify_mixlist        Set the path of operator mixed precision configuration file.\n"
+        "                          4: Disable debug, keep generation kernel file (.o and .json) and generate the "
+        "operator CCE file (.cce) and the UB fusion computing description file (.json)"
         "\n[Debug]\n"
         "  --save_original_model   Control whether to output original model. E.g.: true: output original model\n"
         "  --log                   Generate log with level. Support debug, info, warning, error, null\n"
@@ -364,6 +372,14 @@ class GFlagUtils {
         ge::CheckImplmodeParamValid(FLAGS_optypelist_for_implmode,
                                     FLAGS_op_select_implmode) != ge::SUCCESS,
         ret = ge::FAILED, "[Check][ImplMode]check optypelist_for_implmode and op_select_implmode failed!");
+
+    if (!FLAGS_op_precision_mode.empty() && !ge::CheckInputPathValid(FLAGS_op_precision_mode, "--op_precision_mode")) {
+      ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                      {"op_precision_mode", FLAGS_op_precision_mode.c_str(),
+                                                      "path is not found"});
+      GELOGE(ge::FAILED, "[Check][op_precision_mode] %s not found", FLAGS_op_precision_mode.c_str());
+      ret = ge::FAILED;
+    }
 
     if (ge::CheckModifyMixlistParamValid(FLAGS_precision_mode, FLAGS_modify_mixlist) != ge::SUCCESS) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
@@ -847,6 +863,7 @@ domi::Status GenerateInfershapeJson() {
   ge::Graph graph;
   std::map<string, string> atc_params;
   atc_params.insert(std::pair<string, string>("input_format", FLAGS_input_format));
+  atc_params.insert(std::pair<string, string>("check_report", FLAGS_check_report));
   ret = ParseGraph(graph, atc_params, FLAGS_om.c_str(), FLAGS_weight.c_str(), (domi::FrameworkType) FLAGS_framework,
                    "", FLAGS_target.c_str(), (ge::RunMode) FLAGS_mode, false);
   if (ret != ge::SUCCESS) {
@@ -953,8 +970,7 @@ domi::Status GenerateModel(std::map<string, string> &options, std::string output
     ge::Model load_model = ge::Model("loadmodel", "version2");
     auto ret1 = load_model.LoadFromFile(FLAGS_model);
     if (ret1 != ge::GRAPH_SUCCESS) {
-      REPORT_INPUT_ERROR("E10041", std::vector<std::string>({"file"}), std::vector<std::string>({FLAGS_model}));
-      REPORT_CALL_ERROR("E19999", "load from model file:%s failed", FLAGS_model.c_str());
+      REPORT_INPUT_ERROR("E10041", std::vector<std::string>({"parameter"}), std::vector<std::string>({FLAGS_model}));
       DOMI_LOGE("Load model from %s failed, please check model file or "
           "input parameter[--framework] is correct", FLAGS_model.c_str());
       (void)ge_generator.Finalize();
@@ -1050,6 +1066,7 @@ static void SetEnvForSingleOp(std::map<string, string> &options) {
   options.emplace(ge::RUN_FLAG, flag_off);
   options.emplace(ge::OPTION_GRAPH_RUN_MODE, flag_off);
   options.emplace(ge::SINGLE_OP_FLAG, flag_on);
+  options.emplace(ge::OP_PRECISION_MODE, FLAGS_op_precision_mode);
   options.emplace(ge::PRECISION_MODE, FLAGS_precision_mode);
   options.emplace(ge::SOC_VERSION, FLAGS_soc_version);
   options.emplace(ge::CORE_TYPE, FLAGS_core_type);
@@ -1076,6 +1093,14 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(
       ge::CheckImplmodeParamValid(FLAGS_optypelist_for_implmode, FLAGS_op_select_implmode) != ge::SUCCESS,
       return ge::FAILED, "[Check][ImplmodeParam] fail for input optypelist_for_implmode and op_select_implmode.");
+
+  if (!FLAGS_op_precision_mode.empty() && !ge::CheckInputPathValid(FLAGS_op_precision_mode, "--op_precision_mode")) {
+    ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
+                                                    {"op_precision_mode", FLAGS_op_precision_mode.c_str(),
+                                                    "path is not found"});
+    GELOGE(ge::FAILED, "[Check][op_precision_mode] %s not found", FLAGS_op_precision_mode.c_str());
+    return ge::FAILED;
+  }
 
   if (ge::CheckModifyMixlistParamValid(FLAGS_precision_mode, FLAGS_modify_mixlist) != ge::SUCCESS) {
     ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
@@ -1160,6 +1185,7 @@ domi::Status GenerateOmModel() {
   options.insert(std::pair<string, string>(string(ge::CALIBRATION_CONF_FILE), FLAGS_cal_conf));
   options.insert(std::pair<string, string>(string(ge::OUTPUT_NODE_NAME), FLAGS_out_nodes));
   options.insert(std::pair<string, string>(string(ge::INSERT_OP_FILE), FLAGS_insert_op_conf));
+  options.insert(std::pair<string, string>(string(ge::OP_PRECISION_MODE), FLAGS_op_precision_mode));
   options.insert(std::pair<string, string>(string(ge::PRECISION_MODE), FLAGS_precision_mode));
   options.insert(std::pair<string, string>(string(ge::TUNE_DEVICE_IDS), FLAGS_device_id));
 

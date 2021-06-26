@@ -21,7 +21,23 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/node_utils.h"
 
+namespace {
+const std::unordered_set<std::string> kControlFlowOps = {
+  ge::SWITCH,
+  ge::REFSWITCH,
+  ge::MERGE,
+  ge::REFMERGE,
+  ge::ENTER,
+  ge::REFENTER,
+  ge::NEXTITERATION,
+  ge::REFNEXTITERATION,
+  ge::EXIT,
+  ge::REFEXIT,
+  ge::LOOPCOND
+};
+}
 namespace ge {
 Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   GELOGD("ReplaceWithEmptyConstPass in.");
@@ -37,6 +53,10 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   }
   if (node->GetType() == CONSTANT || node->GetType() == CONSTANTOP || node->GetType() == DATA) {
     GELOGI("Node %s is const. Ignore current pass.", node->GetName().c_str());
+    return SUCCESS;
+  }
+  if (kControlFlowOps.count(NodeUtils::GetNodeType(node)) != 0) {
+    GELOGI("Node %s is control flow op. Ignore current pass.", node->GetName().c_str());
     return SUCCESS;
   }
   // Node like no op, it has no output

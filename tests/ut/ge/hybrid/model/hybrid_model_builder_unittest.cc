@@ -346,4 +346,31 @@ EXPECT_EQ(hybrid_model_builder.InitVariableTensors(), SUCCESS);
 EXPECT_EQ(hybrid_model_builder.hybrid_model_.variable_tensors_.size(), 1);
 HostMemManager::Instance().var_memory_base_map_.clear();
 }
+
+TEST_F(UtestHybridModelBuilder, TestInitHcclExecutorOnDemand) {
+  NodeExecutorManager::GetInstance().builders_.erase(NodeExecutorManager::ExecutorType::HCCL);
+  // build aicore task
+  domi::ModelTaskDef model_task_def;
+  std::shared_ptr<domi::ModelTaskDef> model_task_def_ptr = make_shared<domi::ModelTaskDef>(model_task_def);
+  GeModelPtr ge_model = make_shared<GeModel>();
+  ge_model->SetModelTaskDef(model_task_def_ptr);
+
+  // No hccl task
+  domi::TaskDef *task_def = model_task_def_ptr->add_task();
+  task_def->set_type(RT_MODEL_TASK_MEMCPY_ASYNC);
+  ASSERT_EQ(HybridModelBuilder::InitHcclExecutorOnDemand(ge_model), SUCCESS);
+
+  // get executor failed due to no builder
+  task_def = model_task_def_ptr->add_task();
+  task_def->set_type(RT_MODEL_TASK_HCCL);
+  ASSERT_EQ(HybridModelBuilder::InitHcclExecutorOnDemand(ge_model), INTERNAL_ERROR);
+
+  // get executor success
+  REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::HCCL, NodeExecutor);
+  ASSERT_EQ(HybridModelBuilder::InitHcclExecutorOnDemand(ge_model), SUCCESS);
+
+  // repeat get, do not access builder
+  NodeExecutorManager::GetInstance().builders_.erase(NodeExecutorManager::ExecutorType::HCCL);
+  ASSERT_EQ(HybridModelBuilder::InitHcclExecutorOnDemand(ge_model), SUCCESS);
+}
 } // namespace ge

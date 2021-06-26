@@ -41,6 +41,8 @@ HybridModelExecutor::~HybridModelExecutor() {
 Status HybridModelExecutor::Init() {
   GELOGD("Start to init HybridGraphEngine.");
   GE_CHK_STATUS_RET_NOLOG(InitExecutionContext());
+  root_graph_executor_.reset(new (std::nothrow) SubgraphExecutor(model_->GetRootGraphItem(), &context_));
+  GE_CHECK_NOTNULL(root_graph_executor_);
   GELOGD("HybridGraphEngine initialized successfully.");
   return SUCCESS;
 }
@@ -60,8 +62,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
     GE_CHK_RT_RET(rtMemcpyAsync(context_.global_step, sizeof(uint64_t), &context_.iteration,
                                 sizeof(uint64_t), RT_MEMCPY_HOST_TO_DEVICE_EX, context_.stream));
   }
-  SubgraphExecutor executor(model_->GetRootGraphItem(), &context_);
-  auto ret = ExecuteGraphInternal(executor, args);
+  auto ret = ExecuteGraphInternal(args);
   Cleanup();
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[Cleanup] End");
   GELOGD("Model executed successfully.");
@@ -69,6 +70,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
     context_.profiler->Dump(std::cout);
     context_.profiler->Reset();
   }
+  root_graph_executor_->ReleaseContext();
 
   context_.iteration += 1;
   if (ret == END_OF_SEQUENCE) {
@@ -79,8 +81,7 @@ Status HybridModelExecutor::Execute(HybridModelExecutor::ExecuteArgs &args) {
   return SUCCESS;
 }
 
-Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
-                                                 HybridModelExecutor::ExecuteArgs &args) {
+Status HybridModelExecutor::ExecuteGraphInternal(HybridModelExecutor::ExecuteArgs &args) {
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] Start");
   GE_CHK_STATUS_RET_NOLOG(ResetExecutionContext(context_));
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[InitContext] End");
@@ -94,7 +95,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
     GE_CHK_STATUS_RET_NOLOG(prof_mgr.ProfileStepInfo(index_id, model_id, 0, stream_, device_id));
   }
 
-  HYBRID_CHK_STATUS_RET(executor.ExecuteAsync(args.inputs, args.input_desc, args.outputs),
+  HYBRID_CHK_STATUS_RET(root_graph_executor_->ExecuteAsync(args.inputs, args.input_desc, args.outputs),
                         "Failed to execute partitioned call.");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[ExecuteAsync] End");
 
@@ -103,7 +104,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   }
 
   if (!model_->IsSingleOp()) {
-    Status ret = executor.Synchronize();
+    Status ret = root_graph_executor_->Synchronize();
     if (ret != ge::SUCCESS) {
       auto model_manager = ModelManager::GetInstance();
       GE_CHECK_NOTNULL(model_manager);
@@ -123,7 +124,7 @@ Status HybridModelExecutor::ExecuteGraphInternal(SubgraphExecutor &executor,
   }
 
   args.outputs.clear();
-  HYBRID_CHK_STATUS_RET(executor.GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
+  HYBRID_CHK_STATUS_RET(root_graph_executor_->GetOutputs(args.outputs, args.output_desc), "Failed to get outputs");
   RECORD_MODEL_EXECUTION_EVENT(&context_, "[GetOutput] End");
   return SUCCESS;
 }

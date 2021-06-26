@@ -113,6 +113,7 @@ const char *const INPUT_FP16_NODES = "ge.INPUT_NODES_SET_FP16";
 const char *const OP_DEBUG_LEVEL = "ge.opDebugLevel";
 const char *const PERFORMANCE_MODE = "ge.performance_mode";
 const char *const MODIFY_MIXLIST = "ge.exec.modify_mixlist";
+const char *const OP_PRECISION_MODE = "ge.exec.op_precision_mode";
 }  // namespace configure_option
 // Configure stream num by Session constructor options param,
 // its value should be int32_t type, default value is "1"
@@ -326,6 +327,8 @@ const std::string PERFORMANCE_MODE = "ge.performance_mode";
 
 const std::string MODIFY_MIXLIST = "ge.exec.modify_mixlist";
 
+const std::string OP_PRECISION_MODE = "ge.exec.op_precision_mode";
+
 // Graph run mode
 enum GraphRunMode { PREDICTION = 0, TRAIN };
 
@@ -405,6 +408,7 @@ static const char *const OP_BANK_UPDATE = ge::OP_BANK_UPDATE_FLAG.c_str();
 static const char *const OP_DEBUG_LEVEL = ge::OP_DEBUG_LEVEL.c_str();
 static const char *const PERFORMANCE_MODE = ge::PERFORMANCE_MODE.c_str();
 static const char *const MODIFY_MIXLIST = ge::MODIFY_MIXLIST.c_str();
+static const char *const OP_PRECISION_MODE = ge::OP_PRECISION_MODE.c_str();
 
 // for interface: aclgrphBuildModel
 #ifdef __GNUC__
@@ -416,6 +420,7 @@ const std::set<std::string> ir_builder_suppported_options = {INPUT_FORMAT,
                                                              DYNAMIC_IMAGE_SIZE,
                                                              DYNAMIC_DIMS,
                                                              INSERT_OP_FILE,
+                                                             OP_PRECISION_MODE,
                                                              PRECISION_MODE,
                                                              TUNE_DEVICE_IDS,
                                                              EXEC_DISABLE_REUSED_MEMORY,

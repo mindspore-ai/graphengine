@@ -80,6 +80,7 @@ class TaskGenerator {
   Status FindProfilingNodeIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                                 std::vector<uint32_t> &all_reduce_nodes);
  private:
+  Status UpdateAnchorStatusForFfts(const NodePtr &node);
   Status UpdateAnchorStatus(const NodePtr &node);
 
   Status UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t session_id);

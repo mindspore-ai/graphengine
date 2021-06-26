@@ -354,7 +354,10 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
   };
   GE_MAKE_GUARD(release, callback);
 
-  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
+  auto ffts_filter = [](const Node &node, const char *, const ComputeGraphPtr &) {
+    return !node.GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH);
+  };
+  for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag(), nullptr, ffts_filter)) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     node_index++;
@@ -380,10 +383,8 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
       GELOGI("Fusion node[name:%s, type:%s] do not need generate task again.", name.c_str(), type.c_str());
       continue;
     }
-    if (op_kernel_lib_name.empty()) {
-      GELOGI("Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
-      continue;
-    }
+    GE_CHK_BOOL_EXEC_INFO(!op_kernel_lib_name.empty(), continue,
+                          "Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
     auto kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
     if (kernel_info_store == nullptr) {
       REPORT_INNER_ERROR("E19999", "Get ops kernel info store failed for op:%s(%s), op_kernel_name:%s",
@@ -394,6 +395,10 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     }
     GE_CHK_STATUS_RET(UpdateAnchorStatus(node), "[Call][UpdateAnchorStatus] node:%s(%s) failed", name.c_str(),
                       type.c_str());
+    if (node->GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH)) {
+      GE_CHK_STATUS_RET(UpdateAnchorStatusForFfts(node), "[Call][UpdateAnchorStatusForFfts] node:%s(%s) failed",
+                        name.c_str(), type.c_str());
+    }
     // Profiling task
     size_t task_list_size_before = task_def_list.size();
     GE_CHK_STATUS_RET(InsertProfilingTaskBefore(op_desc, profiling_point, all_reduce_nodes, node_index, task_def_list));
@@ -571,7 +576,24 @@ Status TaskGenerator::GenerateTaskForFusionNode(FusionTaskInfo &fusion_task_info
   return ret;
 }
 
+Status TaskGenerator::UpdateAnchorStatusForFfts(const NodePtr &node) {
+  GELOGD("Start UpdateAnchorStatusForFfts for %s.", node->GetName().c_str());
+  if (!node->GetOpDesc()->GetSubgraphInstanceNames().empty()) {
+    for (size_t i = 0; i < node->GetOpDesc()->GetSubgraphInstanceNames().size(); ++i) {
+      auto sub_graph = NodeUtils::GetSubgraph(*node, i);
+      GE_CHECK_NOTNULL(sub_graph);
+      GELOGD("Start update anchor status for %s.", sub_graph->GetName().c_str());
+      for (auto &ffts_node : sub_graph->GetDirectNode()) {
+        GE_CHK_STATUS_RET(UpdateAnchorStatus(ffts_node), "[Call][UpdateAnchorStatus] node:%s(%s) failed",
+                          ffts_node->GetName().c_str(), ffts_node->GetType().c_str());
+      }
+    }
+  }
+  return SUCCESS;
+}
+
 Status TaskGenerator::UpdateAnchorStatus(const NodePtr &node) {
+  GELOGD("Start UpdateAnchorStatus for %s.", node->GetName().c_str());
   if (NodeUtils::SetAllAnchorStatus(node) != GRAPH_SUCCESS) {
     REPORT_CALL_ERROR("E19999", "SetAllAnchorStatus fail for op:%s(%s)",
                       node->GetName().c_str(), node->GetType().c_str());

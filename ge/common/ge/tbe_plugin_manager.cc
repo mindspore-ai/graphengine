@@ -104,7 +104,15 @@ void TBEPluginManager::ProcessSoFullName(vector<string> &file_list, string &caff
   }
 }
 
-void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_list, string &caffe_parser_path) {
+void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_list,
+                                    string &caffe_parser_path, int recursive_depth) {
+  static const int kMaxRecursiveDepth = 20; // For recursive depth protection
+
+  if (recursive_depth >= kMaxRecursiveDepth) {
+    GELOGW("Recursive depth is become %d, Please check input!", recursive_depth);
+    return;
+  }
+
   // Path, change to absolute path
   string real_path = RealPath(path.c_str());
   // Plugin path does not exist
@@ -138,7 +146,7 @@ void TBEPluginManager::FindParserSo(const string &path, vector<string> &file_lis
           ProcessSoFullName(file_list, caffe_parser_path, full_name, caffe_parser_so_suff, aicpu_so_suff,
                             aicpu_host_so_suff);
       } else {
-          FindParserSo(full_name, file_list, caffe_parser_path);
+          FindParserSo(full_name, file_list, caffe_parser_path, recursive_depth + 1);
       }
   }
   mmScandirFree(entries, ret);

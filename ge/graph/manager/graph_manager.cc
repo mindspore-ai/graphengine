@@ -27,6 +27,7 @@
 #include "common/math/math_util.h"
 #include "common/thread_pool.h"
 #include "common/dump/dump_manager.h"
+#include "ge_opt_info/ge_opt_info.h"
 #include "analyzer/analyzer.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/common/local_context.h"
@@ -949,7 +950,7 @@ Status GraphManager::SetRtContext(rtContext_t rt_context, rtCtxMode_t mode, uint
 
   rtError_t rt_ret = rtCtxCreate(&rt_context, mode, ge::GetContext().DeviceId());
   if (rt_ret != RT_ERROR_NONE) {
-    REPORT_CALL_ERROR("E19999", "Call rtCtxCreate faileded, session_id:%lu, graph_id:%u, mode:%d",
+    REPORT_CALL_ERROR("E19999", "Call rtCtxCreate failed, session_id:%lu, graph_id:%u, mode:%d",
                       session_id, graph_id, mode);
     GELOGE(FAILED, "[Call][RtCtxCreate] faileded, session_id:%lu, graph_id:%u, mode:%d", session_id, graph_id, mode);
     return FAILED;
@@ -998,6 +999,12 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   Status ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE, session_id, compute_graph->GetGraphID());
   if (ret != SUCCESS) {
     GELOGE(ret, "[Set][RtContext] failed, session_id:%lu, graph_id:%u.", session_id, compute_graph->GetGraphID());
+    return ret;
+  }
+
+  ret = GeOptInfo::SetOptInfo();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Set][OptInfo] Set optional information failed.");
     return ret;
   }
 

@@ -62,6 +62,7 @@ include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info)
 include_directories(${GE_CODE_DIR}/tests/ut/ge)
 include_directories(${GE_CODE_DIR}/tests/ut/common)
 include_directories(${CMAKE_BINARY_DIR})
@@ -121,6 +122,7 @@ set(GRAPH_SRC_FILES
     "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
     "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
     "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
+    "${GE_CODE_DIR}/metadef/register/op_tiling_registry_impl.cpp"
 )
 
 set(PARSER_SRC_FILES
@@ -345,6 +347,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
     "${GE_CODE_DIR}/ge/session/omg.cc"
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -375,7 +378,6 @@ set(GRAPH_OPTIMIZE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/optimize/summary_optimize.cc"
     "${GE_CODE_DIR}/ge/graph/optimize/mem_rw_conflict_optimize.cc"
 )
-
 
 set(GRAPH_PREPARE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/preprocess/graph_preprocess.cc"
@@ -436,6 +438,7 @@ set(DISTINCT_GRAPH_LOAD_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/stream_active_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/end_graph_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/model_exit_task_info.cc"
+    "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/ffts_task_info.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/super_kernel/super_kernel.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "${GE_CODE_DIR}/ge/model/ge_model.cc"
@@ -451,6 +454,7 @@ set(GRAPH_EXECUTE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/graph_manager.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/util/rt_context_util.cc"
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_context.h"
 )
 
@@ -626,6 +630,10 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/hybrid/hybrid_davinci_model.cc"
 )
 
+set(GE_OPT_INFO_SRC_FILES
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
+)
+
 # test files
 set(COMMON_TEST_FILES
     "graph/passes/graph_builder_utils.cc"
@@ -648,6 +656,7 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/hccl_task_info_unittest.cc"
     "graph/load/kernel_ex_task_info_unittest.cc"
     "graph/load/kernel_task_info_unittest.cc"
+    "graph/load/ffts_task_info_unittest.cc"
     "graph/load/memcpy_addr_async_task_info_unittest.cc"
     "graph/load/memcpy_async_task_info_unittest.cc"
     "graph/load/cpu_queue_schedule_unittest.cc"
@@ -761,9 +770,10 @@ set(MULTI_PARTS_TEST_FILES
     "graph_ir/ge_ir_build_unittest.cc"
     "graph/transop_util_unittest.cc"
     "common/datatype_transfer_unittest.cc"
+    "common/util_unittest.cc"
     "common/dump_manager_unittest.cc"
-    "common/dump_op_unittest.cc"
     "common/dump_exception_unittest.cc"
+    "common/dump_op_unittest.cc"
     "common/opdebug_register_unittest.cc"
     "common/format_transfer_unittest.cc"
     "common/format_transfer_transpose_unittest.cc"
@@ -809,6 +819,10 @@ set(MULTI_PARTS_TEST_FILES
     "common/host_cpu_engine_unittest.cc"
 )
 
+set(GE_OPT_INFO_TEST_FILES
+    "ge_opt_info/ge_opt_info_unittest.cc"
+)
+
 set(GENERATOR_TEST_FILES
     "generator/ge_generator_unittest.cc"
 )
@@ -836,6 +850,7 @@ set(HYBRID_TEST_FILES
     "hybrid/executor/subgraph_executor_unittest.cc"
     "hybrid/executor/worker/execution_engine_unittest.cc"
     "hybrid/model/hybrid_model_builder_unittest.cc"
+    "hybrid/node_executor/node_executor_unittest.cc"
     "hybrid/node_executor/rts/rts_node_task_unittest.cc"
     "hybrid/node_executor/host_cpu/host_cpu_node_task_unittest.cc"
     "hybrid/node_executor/ge_local/ge_local_node_executor_unittest.cc"
@@ -843,6 +858,7 @@ set(HYBRID_TEST_FILES
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
     "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
+
 )
 
 set(OTHERS_TEST_FILES
@@ -858,6 +874,7 @@ list(APPEND COMMON_SHARED_LIBRARIES
     mmpa_stub
     hccl_stub
     error_manager_stub
+    opt_feature_stub
     ascend_protobuf
     json
 )
@@ -1103,10 +1120,12 @@ target_link_libraries(ut_libge_multiparts_utest
 
 # libge_others_utest
 add_executable(ut_libge_others_utest
+    ${GE_OPT_INFO_SRC_FILES}
     ${COMMON_TEST_FILES}
     ${PASS_TEST_FILES}
     ${EXECUTE_TEST_FILES}
     ${OTHERS_TEST_FILES}
+    ${GE_OPT_INFO_TEST_FILES}
 )
 
 target_compile_options(ut_libge_others_utest PRIVATE

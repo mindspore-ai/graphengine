@@ -364,6 +364,7 @@ static std::string ToString(const std::vector<ClusterPtr> &clusters) {
 }
 
 void DynamicShapePartitioner::MergeClustersControlFlow() {
+  std::unordered_set<ClusterPtr> all_merged_clusters;
   for (const auto &item : control_clusters_) {
     const auto &control_cluster = item.second;
     auto rit = control_cluster.rbegin();
@@ -373,16 +374,31 @@ void DynamicShapePartitioner::MergeClustersControlFlow() {
     }
 
     const auto &cluster = *rit;
+    if (all_merged_clusters.count(cluster) > 0) {
+      continue;
+    }
+
+    bool is_unknown_cluster = cluster->IsUnknownShape();
     for (++rit; rit != control_cluster.rend(); ++rit) {
       const auto &cluster_from = *rit;
+      if (all_merged_clusters.count(cluster_from) > 0) {
+        continue;
+      }
+
       auto merged_clusters = cluster->MergeAllPathFrom(cluster_from);
       GELOGD("Merge all path cluster from %lu to %lu %s.", cluster_from->Id(), cluster->Id(),
              ToString(merged_clusters).c_str());
       for (const auto &merged_cluster : merged_clusters) {
+        all_merged_clusters.emplace(merged_cluster);
         for (const auto &node : merged_cluster->Nodes()) {
           node_2_cluster_[node] = cluster;
         }
       }
+    }
+
+    if (!is_unknown_cluster && cluster->IsUnknownShape()) {
+      GELOGD("Add to ordered cluster: %s", cluster->DebugString().c_str());
+      ordered_cluster_.push_back(cluster);
     }
   }
 }
@@ -703,7 +719,12 @@ void Cluster::Merge(ClusterPtr other) {
   if (other->min_ < min_) {
     min_ = other->min_;
   }
-};
+
+  if (!IsUnknownShape() && other->IsUnknownShape()) {
+    type_ = UNKNOWN_SHAPE;
+  }
+}
+
 bool Cluster::TryMerge(ClusterPtr other) {
   std::queue<ClusterPtr> forward_reached;
   forward_reached.push(other);

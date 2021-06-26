@@ -179,6 +179,21 @@ TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
   EXPECT_EQ(intput2_result_shape_range.size(), 0);
 }
 
+TEST_F(UtestGraphPreproces, test_update_input_fail) {
+  ge::GraphPrepare graph_prepare;
+  graph_prepare.compute_graph_ = BuildGraph1();
+
+  ge::GeTensorDesc tensor1;
+  tensor1.SetFormat(ge::FORMAT_NCHW);
+  tensor1.SetShape(ge::GeShape({3, 12, 5, 5}));
+  tensor1.SetDataType(ge::DT_UNDEFINED);
+  GeTensor input1(tensor1);
+  std::vector<GeTensor> user_input = {input1};
+  std::map<string,string> graph_option;
+  auto ret = graph_prepare.UpdateInput(user_input, graph_option);
+  EXPECT_EQ(ret, ge::FAILED);
+}
+
 TEST_F(UtestGraphPreproces, test_check_user_input) {
   ge::GraphPrepare graph_prepare;
   graph_prepare.compute_graph_ = BuildGraph1();

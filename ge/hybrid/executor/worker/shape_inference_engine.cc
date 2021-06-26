@@ -68,8 +68,9 @@ Status ShapeInferenceEngine::InferShape(NodeState &node_state) {
   }
 
   // Do shape inference
+  // Skipping infer shape of input node.
   GELOGD("[%s] Start to invoke InferShapeAndType", node_item.NodeName().c_str());
-  {
+  if (!node_state.MaySkipShapeInference()) {
     RECORD_SHAPE_INFERENCE_EVENT(execution_context_, node_item.NodeName().c_str(), "[InferShapeAndType] Start");
     GE_CHK_STATUS_RET(ShapeRefiner::InferShapeAndTypeForRunning(node_item.node, true),
         "[Invoke][InferShapeAndType] for %s failed.", node_item.NodeName().c_str());

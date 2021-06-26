@@ -451,7 +451,6 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
 
   GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateSessionInfo(ULLONG_MAX, kernel_id, false),
                     "[Update][SessionInfo] failed.");
-  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateExecuteMode(true), "[Update][ExecuteMode] failed.");
 
   GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), RT_MEMORY_HBM));
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(),
@@ -623,9 +622,7 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
 AiCpuTask::~AiCpuTask() {
   FreeHbm(args_);
   FreeHbm(io_addr_);
-  if (dynamic_flag_) {
-    FreeHbm(workspace_addr_);
-  }
+  FreeHbm(workspace_addr_);
   FreeHbm(copy_workspace_buf_);
   FreeHbm(copy_ioaddr_dev_);
   FreeHbm(copy_input_release_flag_dev_);

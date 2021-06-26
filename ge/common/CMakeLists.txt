@@ -106,6 +106,7 @@ target_link_libraries(ge_common PRIVATE
     c_sec
     error_manager
     slog
+    opt_feature
     -Wl,--as-needed
     json
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>

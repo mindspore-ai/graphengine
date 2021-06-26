@@ -57,7 +57,8 @@ class TBEPluginManager {
   static void ProcessSoFullName(vector<string> &file_list, string &caffe_parser_path, string &full_name,
                                 const string &caffe_parser_so_suff, const string &aicpu_so_suff,
                                 const string &aicpu_host_so_suff);
-  static void FindParserSo(const string &path, vector<string> &file_list, string &caffe_parser_path);
+  static void FindParserSo(const string &path, vector<string> &file_list, string &caffe_parser_path,
+                           int recursive_depth = 0);
   static void GetPluginSoFileList(const string &path, vector<string> &file_list, string &caffe_parser_path);
   static void GetCustomOpPath(std::string &customop_path);
   void LoadCustomOpLib();

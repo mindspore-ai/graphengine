@@ -174,6 +174,7 @@ set(TRAIN_SRC_LIST
     "graph/load/model_manager/task_info/model_exit_task_info.cc"
     "graph/load/model_manager/task_info/event_record_task_info.cc"
     "graph/load/model_manager/task_info/event_wait_task_info.cc"
+    "graph/load/model_manager/task_info/ffts_task_info.cc"
     "graph/load/model_manager/task_info/fusion_start_task_info.cc"
     "graph/load/model_manager/task_info/fusion_stop_task_info.cc"
     "graph/load/model_manager/task_info/hccl_task_info.cc"
@@ -433,6 +434,7 @@ set(TRAIN_SRC_LIST
     "graph/build/memory/max_block_mem_assigner.cc"
     "graph/build/memory/var_mem_assign_util.cc"
     "graph/build/memory/buffer_pool_mem_assigner.cc"
+    "ge_opt_info/ge_opt_info.cc"
 )
 
 set(INFER_SRC_LIST
@@ -662,6 +664,7 @@ set(INFER_SRC_LIST
     "graph/load/model_manager/task_info/task_info.cc"
     "graph/load/model_manager/task_info/event_record_task_info.cc"
     "graph/load/model_manager/task_info/event_wait_task_info.cc"
+    "graph/load/model_manager/task_info/ffts_task_info.cc"
     "graph/load/model_manager/task_info/fusion_start_task_info.cc"
     "graph/load/model_manager/task_info/fusion_stop_task_info.cc"
     "graph/load/model_manager/task_info/kernel_ex_task_info.cc"
@@ -709,6 +712,7 @@ set(INFER_SRC_LIST
     "graph/build/memory/max_block_mem_assigner.cc"
     "graph/build/memory/var_mem_assign_util.cc"
     "graph/build/memory/buffer_pool_mem_assigner.cc"
+    "ge_opt_info/ge_opt_info.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
@@ -770,11 +774,13 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
+    ${GE_CODE_DIR}/../abl/licctrl
     #### blue zone
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
 )
 
 target_link_options(ge_runner PRIVATE
@@ -797,6 +803,7 @@ target_link_libraries(ge_runner PRIVATE
     runtime
     error_manager
     ascend_hal_stub
+    opt_feature
     -Wl,--as-needed
     json
     -lrt
@@ -851,11 +858,13 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
+    ${GE_CODE_DIR}/../abl/licctrl
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
 )
 
 target_link_options(ge_compiler PRIVATE
@@ -875,6 +884,7 @@ target_link_libraries(ge_compiler PRIVATE
     error_manager
     slog
     runtime_compile
+    opt_feature
     -Wl,--as-needed
     json
     -lrt

@@ -161,7 +161,7 @@ class DynamicShapePartitioner {
   ge::ComputeGraphPtr root_graph_;                                        // The original graph to partition
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // Record nodes and the cluster it belongs to
   // V1 control flow cluster, need merge to one Graph.
-  std::unordered_map<int64_t, std::vector<std::shared_ptr<Cluster>>> control_clusters_;
+  std::map<int64_t, std::vector<std::shared_ptr<Cluster>>> control_clusters_;
   // topological sorted clusters, this field will change with the splitting.
   // When partitioning UNKNOWN_SHAPE cluster, it is a collection of all topological sorted UNKNOWN_SHAPE clusters
   // When partitioning KNOWN_SHAPE cluster, it is a collection of all topological sorted KNOWN_SHAPE clusters

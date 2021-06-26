@@ -83,18 +83,14 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_kernel_task) {
   execution_context.profiling_level = 1;
   SubgraphContext subgraph_context(nullptr, &execution_context);
 
-  NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
-  auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
-  node_state.SetTaskContext(shared_task_context);
-
-  ExecutionEngine execution_engine;
-  ASSERT_TRUE(node_state.GetTaskContext() != nullptr);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
+  ASSERT_TRUE(node_state->GetTaskContext() != nullptr);
 
   std::function<void()> callback;
   SubgraphExecutor executor(hybrid_model.GetRootGraphItem(), &execution_context);
-  executor.InitCallback(&node_state, callback);
-  EXPECT_EQ(execution_engine.ExecuteAsync(node_state, node_state.GetTaskContext(), execution_context, callback), INTERNAL_ERROR);
+  executor.InitCallback(node_state.get(), callback);
+  ExecutionEngine execution_engine;
+  EXPECT_EQ(execution_engine.ExecuteAsync(*node_state, node_state->GetTaskContext(), execution_context, callback), INTERNAL_ERROR);
 }
 
 TEST_F(UtestExecutionEngine, ExecuteAsync_without_callback_and_kernel_task) {
@@ -118,21 +114,18 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_callback_and_kernel_task) {
   execution_context.model = &hybrid_model;
   SubgraphContext subgraph_context(nullptr, &execution_context);
 
-  NodeState node_state(*node_item, &subgraph_context);
-  auto task_context = TaskContext::Create(&node_state, &execution_context, &subgraph_context);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
   uint32_t task_id = 0;
   uint32_t stream_id = 1;
   std::string task_type = "rts";
   uint32_t block_dim = 0;
-  task_context->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim);
-  auto shared_task_context = std::shared_ptr<TaskContext>(task_context.release());
-  node_state.SetTaskContext(shared_task_context);
+  node_state->GetTaskContext()->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim);
 
-  ExecutionEngine execution_engine;
-  ASSERT_TRUE(node_state.GetTaskContext() != nullptr);
+  ASSERT_TRUE(node_state->GetTaskContext() != nullptr);
 
   std::function<void()> callback;
   SubgraphExecutor executor(hybrid_model.GetRootGraphItem(), &execution_context);
-  executor.InitCallback(&node_state, callback);
-  EXPECT_EQ(execution_engine.ExecuteAsync(node_state, node_state.GetTaskContext(), execution_context, callback), INTERNAL_ERROR);
+  executor.InitCallback(node_state.get(), callback);
+  ExecutionEngine execution_engine;
+  EXPECT_EQ(execution_engine.ExecuteAsync(*node_state, node_state->GetTaskContext(), execution_context, callback), INTERNAL_ERROR);
 }

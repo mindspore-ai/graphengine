@@ -99,6 +99,9 @@ const uint32_t kEndOfSequenceNew = 507005;
 const int32_t kModelAbortNormal = 0x0704000e;
 const int32_t kModelAbortNormalNew = 507024;
 const uint32_t kInteval = 2;
+const uint32_t kFftsTbeHandleElementSize = 2;
+const uint32_t kNonTailBlock = 0;
+const uint32_t kTailBlock = 1;
 const char *const kModelName = "model_name";
 const char *const kModeleId = "model_id";
 const char *const kLoadStartTime = "load_start_time";
@@ -116,14 +119,15 @@ const char *const kWorkSpaceSize = "workspace_size";
 const char *const kTotalSize = "total_size";
 const char *const kTaskCount = "task_count";
 const char *const kTaskId = "task_id";
-const char* const kRequestId = "request_id";
-const char* const kThreadId = "thread_id";
-const char* const kInputBeginTime = "input_begin_time";
-const char* const kInputEndTime = "input_end_time";
-const char* const kInferBeginTime = "infer_begin_time";
-const char* const kInferEndTime = "infer_end_time";
-const char* const kOutputBeginTime = "output_start_time";
-const char* const kOutputEndTime = "output_end_time";
+const char *const kRequestId = "request_id";
+const char *const kThreadId = "thread_id";
+const char *const kInputBeginTime = "input_begin_time";
+const char *const kInputEndTime = "input_end_time";
+const char *const kInferBeginTime = "infer_begin_time";
+const char *const kInferEndTime = "infer_end_time";
+const char *const kOutputBeginTime = "output_start_time";
+const char *const kOutputEndTime = "output_end_time";
+const char *const kStubFuncName = "_register_stub_func";
 const uint32_t kStringHeadElems = 2;
 const uint32_t kPlacementHostData = 0;
 const size_t kAlignment = 64;
@@ -902,10 +906,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     SetLabelForDynamic(node);
     auto it = op_desc_handle.find(op_desc->GetType());
     if (it != op_desc_handle.end()) {
-      if ((this->*it->second)(op_desc) != SUCCESS) {
-        GELOGE(PARAM_INVALID, "[Init][Node] failed, Name:%s", op_desc->GetName().c_str());
-        return PARAM_INVALID;
-      }
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((this->*it->second)(op_desc) != SUCCESS, return PARAM_INVALID,
+                                     "[Init][Node] failed, Name:%s", op_desc->GetName().c_str());
       continue;
     }
 
@@ -935,7 +937,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
     GE_TIMESTAMP_RESTART(InitTbeHandle);
     if (IsTbeTask(op_desc)) {
-      Status status = InitTbeHandle(op_desc);
+      Status status =
+          op_desc->HasAttr(ATTR_NAME_THREAD_SCOPE_ID) ? InitTbeHandleWithFfts(op_desc) : InitTbeHandle(op_desc);
       if (status != SUCCESS) {
         GELOGE(status, "[Init][TbeHandle] failed. op:%s", op_desc->GetName().c_str());
         return status;
@@ -3463,11 +3466,11 @@ bool DavinciModel::CheckUserAndModelSize(const int64_t &size, const int64_t &op_
   }
   // The input and model input size can not be exactly equal because user input is not definite.
   if ((size + kDataMemAlignSizeCompare) < op_size) {
-    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u, "
+    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < op_size:%ld in model, model_id:%u, "
                        "check invalid",
                        input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Check][Param] %s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u",
+           "[Check][Param] %s size:%ld from user add align:%u < op_size:%ld in model, model_id:%u",
            input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     return false;
   }
@@ -3700,6 +3703,7 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
 /// @return Status
 ///
 Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
+  string bin_file = op_desc->GetName();
   auto kernel = ge_model_->GetTBEKernelStore().FindKernel(op_desc->GetName());
   auto tbe_kernel = (kernel != nullptr) ? kernel : op_desc->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
   if (tbe_kernel == nullptr) {
@@ -3708,12 +3712,61 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
     GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: %s can't find tvm bin file!", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
+  GE_CHK_STATUS_RET(FunctionRegister(op_desc, bin_file, tbe_kernel, false), "Function register of bin file: %s failed",
+                    bin_file.c_str());
+  return SUCCESS;
+}
 
-  std::string session_graph_model_id;
-  GetUniqueId(op_desc, session_graph_model_id);
-  const char *bin_file_key = GetRegisterStub(op_desc->GetName(), session_graph_model_id);  // from set, always valid.
+Status DavinciModel::InitTbeHandleWithFfts(const OpDescPtr &op_desc) {
+  std::vector<OpKernelBinPtr> tbe_kernel;
+  tbe_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_NAME_THREAD_TBE_KERNEL, tbe_kernel);
+  GELOGD("Kernel bin ptr vec size is %zu.", tbe_kernel.size());
+  if (tbe_kernel.size() != kFftsTbeHandleElementSize) {
+    REPORT_INNER_ERROR("E19999", "Get tbe_kernel for op:%s(%s) fail, model_id:%u",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
+    GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: %s can't find tvm bin file, size is %zu when ffts",
+           op_desc->GetName().c_str(), tbe_kernel.size());
+    return INTERNAL_ERROR;
+  }
+  if (tbe_kernel[0] == nullptr || tbe_kernel[1] == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Tbe kernel for op:%s is nullptr.", op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: tvm bin file of %s is nullptr when ffts.", op_desc->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  vector<string> bin_file_keys;
+  (void)AttrUtils::GetListStr(op_desc, kStubFuncName, bin_file_keys);
+  if (bin_file_keys.size() != kFftsTbeHandleElementSize) {
+    REPORT_INNER_ERROR("E19999", "Get bin_file for op:%s(%s) fail.", op_desc->GetName().c_str(),
+                       op_desc->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: %s can't find bin file keys, size is %zu when ffts",
+           op_desc->GetName().c_str(), bin_file_keys.size());
+    return INTERNAL_ERROR;
+  }
+  GE_CHK_STATUS_RET(FunctionRegister(op_desc, bin_file_keys[kNonTailBlock], tbe_kernel[kNonTailBlock], true,
+                                     kNonTailBlock),
+                    "Function register of first bin file %s failed.", bin_file_keys[kNonTailBlock].c_str());
+  GE_CHK_STATUS_RET(FunctionRegister(op_desc, bin_file_keys[kTailBlock], tbe_kernel[kTailBlock], true, kTailBlock),
+                    "Function register of second bin file %s failed.", bin_file_keys[kTailBlock].c_str());
+  return SUCCESS;
+}
+
+Status DavinciModel::FunctionRegister(const OpDescPtr &op_desc, string &bin_file, OpKernelBinPtr &tbe_kernel,
+                                      bool is_ffts, size_t thread_index) {
+  if (thread_index > 1) {
+    GELOGE(INTERNAL_ERROR, "[Check][Param] failed. Thread index: %zu should less than 1.", thread_index);
+    return INTERNAL_ERROR;
+  }
+  const char *bin_file_key;
+  if (is_ffts) {
+    bin_file_key = GetRegisterStub(bin_file, "");
+    GELOGI("Node:%s inherit func name:%s directly.", op_desc->GetName().c_str(), bin_file_key);
+  } else {
+    std::string session_graph_model_id;
+    GetUniqueId(op_desc, session_graph_model_id);
+    bin_file_key = GetRegisterStub(bin_file, session_graph_model_id);  // from set, always valid.
+  }
+
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
-
   std::lock_guard<std::mutex> lock(tvm_bin_mutex_);
   if (rtQueryFunctionRegistered(bin_file_key) != RT_ERROR_NONE) {
     void *bin_handle = nullptr;
@@ -3721,56 +3774,112 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
       GELOGD("TBE: can't find the kernel_name[%s] in HandleMap", bin_file_key);
 
       rtDevBinary_t binary;
-      std::string json_string;
-      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc, TVM_ATTR_NAME_MAGIC, json_string),
-                      GELOGD("Get original type of session_graph_id."));
-      if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICPU") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICPU;
-      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF;
-      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
-      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICUBE") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICUBE;
-      } else {
-        REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
-                           TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
-                           op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
-        GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
-               TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
-               op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
-        return PARAM_INVALID;
-      }
-
+      GE_CHK_STATUS_RET(InitBinaryMagic(op_desc, is_ffts, thread_index, binary), "Init binary magic of %s failed.",
+                        op_desc->GetName().c_str());
       binary.version = 0;
       binary.data = tbe_kernel->GetBinData();
       binary.length = tbe_kernel->GetBinDataSize();
-
       GELOGD("TBE: binary.length: %lu", binary.length);
       GE_CHK_RT_RET(rtDevBinaryRegister(&binary, &bin_handle));
 
-      std::string meta_data;
-      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc, TVM_ATTR_NAME_METADATA, meta_data),
-                      GELOGI("Get original type of json_string"));
-      GELOGD("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
-      GE_IF_BOOL_EXEC(!meta_data.empty(), GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
-
+      GE_CHK_STATUS_RET(InitMetaData(op_desc, is_ffts, thread_index, bin_handle), "Init tvm meta data of %s failed.",
+                        op_desc->GetName().c_str());
       kernel_store.StoreTBEHandle(bin_file_key, bin_handle, tbe_kernel);
     } else {
       GELOGI("TBE: find the kernel_name[%s] in HandleMap", bin_file_key);
       kernel_store.ReferTBEHandle(bin_file_key);
     }
-
     std::string kernel_name;
-    GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name),
-                    GELOGD("Get original type of kernel_name"));
+    GE_CHK_STATUS_RET(InitKernelName(op_desc, is_ffts, thread_index, kernel_name), "Init kernel name of %s failed.",
+                      op_desc->GetName().c_str());
     GE_CHK_RT_RET(rtFunctionRegister(bin_handle, bin_file_key, bin_file_key, kernel_name.c_str(), 0));
     used_tbe_handle_map_[bin_file_key] = 1;  // Init used num to 1.
     return SUCCESS;
   }
-
   // Kernel registed, Increase used num in store.
   StoreTbeHandle(bin_file_key);
+  return SUCCESS;
+}
+
+Status DavinciModel::InitBinaryMagic(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index,
+                                     rtDevBinary_t &binary) {
+  string json_string;
+  const string &tvm_magic = is_ffts ? TVM_ATTR_NAME_THREAD_MAGIC : TVM_ATTR_NAME_MAGIC;
+  const static std::map<std::string, uint32_t> binary_magics = {
+    {"RT_DEV_BINARY_MAGIC_ELF_AICPU", RT_DEV_BINARY_MAGIC_ELF_AICPU},
+    {"RT_DEV_BINARY_MAGIC_ELF", RT_DEV_BINARY_MAGIC_ELF},
+    {"RT_DEV_BINARY_MAGIC_ELF_AIVEC", RT_DEV_BINARY_MAGIC_ELF_AIVEC},
+    {"RT_DEV_BINARY_MAGIC_ELF_AICUBE", RT_DEV_BINARY_MAGIC_ELF_AICUBE}
+  };
+  if (is_ffts) {
+    vector<string> json_list;
+    (void)AttrUtils::GetListStr(op_desc, tvm_magic, json_list);
+    if (json_list.size() != kFftsTbeHandleElementSize) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed. Attr is %s, thread index is %zu, json list size is %zu.",
+             tvm_magic.c_str(), thread_index, json_list.size());
+      return INTERNAL_ERROR;
+    }
+    json_string = json_list[thread_index];
+  } else {
+    (void)AttrUtils::GetStr(op_desc, tvm_magic, json_string);
+  }
+  auto iter = binary_magics.find(json_string);
+  if (iter == binary_magics.end()) {
+    REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
+                       tvm_magic.c_str(), json_string.c_str(), op_desc->GetName().c_str(),
+                       op_desc->GetType().c_str(), model_id_);
+    GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
+           TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
+    return PARAM_INVALID;
+  }
+  binary.magic = iter->second;
+  return SUCCESS;
+}
+
+Status DavinciModel::InitMetaData(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, void *bin_handle) {
+  string meta_data;
+  const string &tvm_metadata = is_ffts ? TVM_ATTR_NAME_THREAD_METADATA : TVM_ATTR_NAME_METADATA;
+  if (is_ffts) {
+    vector<string> meta_data_list;
+    (void)AttrUtils::GetListStr(op_desc, tvm_metadata, meta_data_list);
+    if (meta_data_list.size() != kFftsTbeHandleElementSize) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed, attr is %s, thread index is %zu, meta data list size is %zu.",
+             tvm_metadata.c_str(), thread_index, meta_data_list.size());
+      return INTERNAL_ERROR;
+    }
+    meta_data = meta_data_list[thread_index];
+  } else {
+    (void)AttrUtils::GetStr(op_desc, tvm_metadata, meta_data);
+  }
+  GELOGD("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
+  if (!meta_data.empty()) {
+    GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str()));
+  }
+  return SUCCESS;
+}
+
+Status DavinciModel::InitKernelName(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, string &kernel_name) {
+  if (is_ffts) {
+    // delete prefix, eg: *sgt_graph_nodes*/loss_scale/gradient/fp32_vals/Mean_grad/Tile
+    vector<string> kernel_name_list;
+    auto pos = op_desc->GetName().find("/");
+    if (pos == std::string::npos) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed, subgraph node name: %s.", op_desc->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    string attr_kernel_name = op_desc->GetName().substr(pos + 1) + "_thread_kernelname";
+    (void)AttrUtils::GetListStr(op_desc, attr_kernel_name, kernel_name_list);
+    if (kernel_name_list.size() != kFftsTbeHandleElementSize) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed, attr is %s, thread index is %zu, kernel name list size is %zu.",
+             attr_kernel_name.c_str(), thread_index, kernel_name_list.size());
+      return INTERNAL_ERROR;
+    }
+    kernel_name = kernel_name_list[thread_index];
+  } else {
+    string attr_kernel_name = op_desc->GetName() + "_kernelname";
+    (void)AttrUtils::GetStr(op_desc, attr_kernel_name, kernel_name);
+  }
   return SUCCESS;
 }
 

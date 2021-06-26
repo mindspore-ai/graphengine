@@ -179,6 +179,7 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
     GELOGE(ret, "[Merge][SubGraph] Failed, ret:%d", ret);
   }
   GE_CHECK_NOTNULL(original_compute_graph);
+  output_merged_compute_graph->SetName(original_compute_graph->GetName());
   // partition sub graph
   for (const auto &sub_graph : original_compute_graph->GetAllSubgraphs()) {
     ComputeGraphPtr merged_sub_graph = nullptr;
@@ -188,8 +189,16 @@ Status ge::GraphPartitioner::MergeAfterSubGraphOptimization(ge::ComputeGraphPtr 
       GELOGE(ret, "[Merge][SubGraph] Failed, ret:%d", ret);
       continue;
     }
+    // this means subgraph added in optimize subgraph and without partitions, so just add to root graph
+    if (merged_sub_graph == sub_graph) {
+      GELOGI("Just add subgraph %s (parent node is %s) to root graph %s.", sub_graph->GetName().c_str(),
+             sub_graph->GetParentNode()->GetName().c_str(), output_merged_compute_graph->GetName().c_str());
+      sub_graph->SetParentGraph(sub_graph->GetParentNode()->GetOwnerComputeGraph());
+      GE_IF_BOOL_EXEC(output_merged_compute_graph->AddSubgraph(sub_graph->GetName(), merged_sub_graph) != SUCCESS,
+                      return FAILED;)
+      continue;
+    }
     // add sub graph
-    output_merged_compute_graph->SetName(original_compute_graph->GetName());
     merged_sub_graph->SetName(sub_graph->GetName());
     merged_sub_graph->SetInputSize(sub_graph->GetInputSize());
     merged_sub_graph->SetOutputSize(sub_graph->GetOutputSize());
@@ -245,12 +254,9 @@ Status ge::GraphPartitioner::MergeSubGraph(ge::ComputeGraphPtr &output_merged_co
   }
   if ((graph_2_graph_partition_info_.find(original_compute_graph) == graph_2_graph_partition_info_.end()) ||
       (graph_2_subgraph_list_.find(original_compute_graph) == graph_2_subgraph_list_.end())) {
-    REPORT_INNER_ERROR("E19999", "original_compute_graph:%s is not find in graph_2_graph_partition_info_.",
-                       original_compute_graph->GetName().c_str());
-    GELOGE(GE_GRAPH_NULL_INPUT,
-           "[Check][Param] original_compute_graph:%s is not find in graph_2_graph_partition_info_.",
-           original_compute_graph->GetName().c_str());
-    return FAILED;
+    GELOGW("[GraphPartition]: compute_graph has not found, just return original.");
+    output_merged_compute_graph = original_compute_graph;
+    return SUCCESS;
   }
   GraphPartitionInfo &subgraph_info = graph_2_graph_partition_info_[original_compute_graph];
   const auto &sub_graph_list = graph_2_subgraph_list_[original_compute_graph];
@@ -708,6 +714,7 @@ Status ge::GraphPartitioner::AddPartitionsToGraphNode(vector<ge::SubGraphInfoPtr
     }
     auto &engine_name = graph_info_.partitions_.at(sub_graph);
     (void)AttrUtils::SetStr(sub_graph, ATTR_NAME_PARENT_GRAPH_NAME, compute_graph->GetName());
+    (void)sub_graph->SetExtAttr("part_src_graph", compute_graph);
     GELOGD("set attr success. subgraph(%s) with parent graph(%s)", sub_graph->GetName().c_str(),
            compute_graph->GetName().c_str());
     GE_DUMP(sub_graph, sub_graph->GetName()  + "_" + mode_2_str_[graph_info_.mode_]);

@@ -60,10 +60,6 @@ class GeRootModel {
 
   bool GetTrainFlag() const { return train_flag_; }
 
-  int32_t GetBuildTimes() const { return hybrid_build_times_; }
-
-  void IncreaseBuildTimes() { hybrid_build_times_++; }
-
  private:
   ComputeGraphPtr root_graph_ = nullptr;
   std::map<std::string, GeModelPtr> subgraph_instance_name_to_model_;
@@ -73,7 +69,6 @@ class GeRootModel {
   bool train_flag_ = false;
   std::string model_name_;
   bool is_specific_stream_ = false;
-  int32_t hybrid_build_times_ = 0;
 };
 }  // namespace ge
 using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;

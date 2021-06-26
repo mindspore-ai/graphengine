@@ -333,6 +333,10 @@ void NodeState::SavePersistTensor(int input_idx, const TensorValue &tensor) {
     return std::any_of(items.begin(), items.end(), is_exist);
   };
 
+  if (root_tensor_values_.count(input_idx) > 0) {
+    return;
+  }
+
   if (is_persist_tensor(node_item_->root_data_, input_idx)) {
     GELOGD("[%s] Save Root input tensor: %d", GetName().c_str(), input_idx);
     root_tensor_values_[input_idx] = tensor;

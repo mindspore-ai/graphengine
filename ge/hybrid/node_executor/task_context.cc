@@ -458,19 +458,9 @@ Status TaskContext::PropagateOutputs() {
         subgraph_context_->all_inputs_[input_offset].SetName(
             node_item_->NodeName() + "_in_" + std::to_string(dst_input_idx));
       }
-
-      auto dst_node_state = subgraph_context_->GetOrCreateNodeState(dst_node_item);
-      GE_CHECK_NOTNULL(dst_node_state);
-      dst_node_state->SavePersistTensor(dst_input_idx, *tensor);
     }
   }
   (void)guard;
-  return SUCCESS;
-}
-
-Status TaskContext::UpdatePersistTensor() {
-  GE_CHECK_NOTNULL(node_state_);
-  node_state_->UpdatePersistTensor();
   return SUCCESS;
 }
 
@@ -499,6 +489,7 @@ void TaskContext::ReleaseInputsAndOutputs() {
 void TaskContext::ReleaseInput(int index) {
   auto input_tensor = MutableInput(index);
   if (input_tensor != nullptr) {
+    node_state_->SavePersistTensor(index, *input_tensor);
     input_tensor->Destroy();
     GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), index);
   }

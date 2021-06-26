@@ -375,6 +375,7 @@ Status ExecutionEngine::DoExecuteAsync(NodeState &node_state,
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PrepareTask] Start");
   GE_CHK_STATUS_RET(executor->PrepareTask(*task, task_context), "[Prepare][Task] for [%s] failed.",
                     node_state.GetName().c_str());
+  node_state.UpdatePersistTensor();
   RECORD_EXECUTION_EVENT(&context, task_context.GetNodeName(), "[PrepareTask] End");
   GELOGD("[%s] Done task preparation successfully.", node_state.GetName().c_str());
 

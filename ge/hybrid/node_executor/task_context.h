@@ -78,7 +78,6 @@ class TaskContext {
   Status AllocateOutputs(AllocationAttr *attr = nullptr);
   Status AllocateWorkspaces();
   Status AllocateWorkspace(size_t size, void **buffer, void *ori_addr = nullptr);
-  Status UpdatePersistTensor();
 
   bool IsTraceEnabled() const;
 

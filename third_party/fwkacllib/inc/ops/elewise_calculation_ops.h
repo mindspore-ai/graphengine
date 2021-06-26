@@ -3154,13 +3154,13 @@ REG_OP(FusedMulAddNL2loss)
 *@brief Tests whether the input exceeds a threshold. \n
 
 *@par Inputs:
-*@li x: A Tensor with any format. Must be one of the following types: float16, float32. \n
+* x: A Tensor with any format. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
-*@li threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
+* threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
 
 *@par Outputs:
-*@li y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
+* y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Threshold.
 */
@@ -3203,12 +3203,11 @@ REG_OP(ArgMaxWithK)
 *@brief Multiply tensor with scale. \n
 
 *@par Inputs:
-*Five inputs, including:
-* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float. \n
+*One input, including:
+*x: A Tensor. Must be one of the following types:int32,int16, float16, float32.
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1". \n
+*y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator muls.
@@ -3223,12 +3222,11 @@ REG_OP(Muls)
 *@brief Fill tensor with scale. \n
 
 *@par Inputs:
-*Five inputs, including:
-* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float. \n
+*One input, including:
+*x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1". \n
+*y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator fills.
@@ -3378,7 +3376,7 @@ REG_OP(TensorMove)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
 
 *@par Outputs:
 *output_x: A Tensor. Has the same type as "x". \n

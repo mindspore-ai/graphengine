@@ -670,7 +670,8 @@ REG_OP(Conj)
 *@li weight: A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *@li y: A Tensor dtype of float32.
@@ -700,7 +701,8 @@ REG_OP(NLLLoss)
 *@li total_weight:A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *x_grad: A Tensor. Must be the following type: float32 . \n
@@ -720,24 +722,24 @@ REG_OP(NLLLossGrad)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
-*@brief The ifmr . \n
+*@brief IFMR(Input Feature Map Reconstruction). \n
 
 *@par Inputs:
-*@li data:A Tensor of feature map
-*@li data_min:A Tensor of min value of feature map.
-*@li data_max:A Tensor of max value of feature map.
-*@li cumsum:A Tensor of cumsum bin of data . \n
+*@li data: A Tensor of feature map.
+*@li data_min: A Tensor of min value of feature map.
+*@li data_max: A Tensor of max value of feature map.
+*@li cumsum: A Tensor of cumsum bin of data . \n
 
 *@par Attributes:
-*min_percentile: min init percentile.
-*max_percentile: max init percentile.
-*search_range: search range.
-*search_step: step size of searching.
-*with_offset: whether using offset . \n
+*@li min_percentile: min init percentile.
+*@li max_percentile: max init percentile.
+*@li search_range: search range.
+*@li search_step: step size of searching.
+*@li with_offset: whether using offset . \n
 
 *@par Outputs:
-*scale: optimal scale.
-*offset: optimal offset . \n
+*@li scale: optimal scale.
+*@li offset: optimal offset . \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
@@ -758,16 +760,16 @@ REG_OP(IFMR)
   .OP_END_FACTORY_REG(IFMR)
 
 /**
-*@brief weights adaptive range quantization. \n
+*@brief Weights Adaptive Range Quantization. \n
 
 *@par Inputs:
-*@li w:A Tensor of weights. \n
-*@li w_min:A Tensor of weights reduce_min. \n
-*@li w_max:A Tensor of weights reduce_max. \n
+*@li w: A Tensor of weights. \n
+*@li w_min: A Tensor of weights reduce_min. \n
+*@li w_max: A Tensor of weights reduce_max. \n
 
 *@par Attributes:
-*num_bits: the bits num used for quantize.
-*offset_flag: whether using offset. \n
+*@li num_bits: the bits num used for quantize.
+*@li offset_flag: whether using offset. \n
 
 *@par Outputs:
 *y: fake quantized weights. \n
@@ -789,22 +791,22 @@ REG_OP(WtsARQ)
   .OP_END_FACTORY_REG(WtsARQ)
 
 /**
-*@brief The acts_ulq. \n
+*@brief Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li x:A Tensor of feature map
-*@li clamp _min:A Tensor of min clamp value of feature map.
-*@li clamp _max:A Tensor of max clamp value of feature map.
+*@li x: A Tensor of feature map.
+*@li clamp _min: A Tensor of min clamp value of feature map.
+*@li clamp _max: A Tensor of max clamp value of feature map.
 
 *@par Attributes:
-*fixed_min: fix min to zero.
-*num_bits: quant bits. \n
+*@li fixed_min: fix min to zero.
+*@li num_bits: quant bits. \n
 
 *@par Outputs:
-*y: output fake quant feature map.
-*clamp_min_mask: where x > clamp_min
-*clamp_min_mask: where x < clamp_max
-*x_clamped_loss: clamp loss. \n
+*@li y: output fake quant feature map.
+*@li clamp_min_mask: where x > clamp_min.
+*@li clamp_min_mask: where x < clamp_max.
+*@li x_clamped_loss: clamp loss. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
@@ -826,12 +828,12 @@ REG_OP(ActsULQ)
   .OP_END_FACTORY_REG(ActsULQ)
 
 /**
-*@brief The acts_ulq_input_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
-*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'
-*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'
+*@li y_grad: A Tensor of gradient.
+*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
+*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
 
 *@par Outputs:
 *x_grapd: The gradient of inpust. \n
@@ -851,10 +853,10 @@ REG_OP(ActsULQInputGrad)
   .OP_END_FACTORY_REG(ActsULQInputGrad)
 
 /**
-*@brief The act_ulq_clamp_max_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp max. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -876,10 +878,10 @@ REG_OP(ActULQClampMaxGrad)
   .OP_END_FACTORY_REG(ActULQClampMaxGrad)
 
 /**
-*@brief The act_ulq_clamp_min_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp min. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 

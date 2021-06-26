@@ -127,9 +127,10 @@ REG_OP(SoftmaxGrad)
 *@brief Computes the sigmoid cross entropy loss of "predict" and "target" . \n
 
 *@par Inputs:
-* Two inputs, including:
+* Three inputs, including:
 *@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value .
+*@li dout:A multi-dimensional Tensor of float16 or float32,specifying the gradient transferred from the upper layer. \n
 
 *@par Outputs:
 *loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
@@ -1198,13 +1199,11 @@ REG_OP(INInferV2D)
 * @li epsilon: An attribute of type Float. \n
 
 * @par Outputs:
-*Three outputs, including:
+* Three outputs, including:
 * @li y: A Tensor. Has the same type as "x". \n
 * @li mean: A Tensor. Has the same type as "x". \n
 * @li variance: A Tensor. Has the same type as "x". \n
 
-* @par Third-party framework compatibility
-* Can be used by onnx InstanceNormalization
 */
 REG_OP(InstanceNorm)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1218,24 +1217,22 @@ REG_OP(InstanceNorm)
     .OP_END_FACTORY_REG(InstanceNorm)
 
 /**
-*@brief InstanceNormGrad operator interface implementation.
+* @brief InstanceNormGrad operator interface implementation.
 
-*@par Inputs:
-*Five inputs, including:
+* @par Inputs:
+* Five inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32.
 * @li x: A Tensor. Must be one of the following types: float16, float32.
 * @li variance: A Tensor. Must be one of the following types: float16, float32.
 * @li mean: A Tensor. Must be one of the following types: float16, float32.
 * @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
 
-*@par Outputs:
-*Three outputs, including:
+* @par Outputs:
+* Three outputs, including:
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(InstanceNormGrad)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1247,58 +1244,6 @@ REG_OP(InstanceNormGrad)
     .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(InstanceNormGrad)
-
-/**
-*@brief InstanceNormXBackprop operator interface implementation.
-
-*@par Inputs:
-*Five inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li variance: A Tensor. Must be one of the following types: float16, float32.
-* @li mean: A Tensor. Must be one of the following types: float16, float32.
-* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
-
-*@par Outputs:
-*Two outputs, including:
-* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
-* @li res_for_gamma: A Tensor. Must be one of the following types: float32.
-
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
-*/
-REG_OP(InstanceNormXBackprop)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
-    .OP_END_FACTORY_REG(InstanceNormXBackprop)
-
-/**
-*@brief InstanceNormBetaGammaBackprop operator interface implementation.
-
-*@par Inputs:
-*Two inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li res_for_gamma: A Tensor. Must be one of the following types: float32.\n
-
-*@par Outputs:
-*Two outputs, including:
-* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
-* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
-
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
-*/
-REG_OP(InstanceNormBetaGammaBackprop)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(res_for_gamma, TensorType({DT_FLOAT}))
-    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OP_END_FACTORY_REG(InstanceNormBetaGammaBackprop)
 
 /**
 * @brief Computes Kl_div_loss_grad or Kl_div_loss_backward. \n

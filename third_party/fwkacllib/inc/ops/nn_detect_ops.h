@@ -417,7 +417,7 @@ REG_OP(PSROIPooling)
 *@brief Returns detection result . \n
 
 *@par Inputs:
-* Four inputs, including:
+* Five inputs, including:
 *@li rois: An NCHW tensor of type floa16 or float32, output from operator proposal_d at the preceding layer, used as the input of operator FSRDetectionOutput.
 *@li bbox_delta: An NCHWC0 tensor of type floa16 or float32, specifying the prediction offset, used to update the coordinates [x1, y1, x2, y2] of each ROI.
 *@li score: An NCHWC0 tensor of type floa16 or float32, specifying the probability of each class. Class 0 is the background class.
@@ -474,7 +474,6 @@ REG_OP(FSRDetectionOutput)
 *@li code_type: An optional int32, specify the code type. Defaults to 1(only supports 2). The corner is 1, center_size is 2, corner_size is 3
 *@li keep_top_k: An optional int32, specify the topk value after nms. Defaults to -1
 *@li confidence_threshold: An optional float32, specify the topk filter threshold. Only consider detections with confidence greater than the threshold
-*@li kernel_name: An optional string, specifying the operator name. Defaults to "ssd_detection_output".
 *@par Outputs:
 *@li out_boxnum: A tensor of type int32, specifying the number of output boxes.
 *@li y: A tensor of type float16 or float32 with shape [batch,keep_top_k, 8], describing the information of each output box.
@@ -989,26 +988,26 @@ REG_OP(SPP)
 * feature map . \n
 
 *@attention Constraints:
-*@li For the feature map input:
-(1) If pooled_h = pooled_w = 2, the feature map size must not exceed 50.
-(2) If pooled_h = pooled_w = 3, the feature map size must not exceed 60.
-(3) If pooled_h = pooled_w = 4, the feature map size must not exceed 70.
-(4) If pooled_h = pooled_w = 5, the feature map size must not exceed 70.
-(5) If pooled_h = pooled_w = 6, the feature map size must not exceed 80.
-(6) If pooled_h = pooled_w = 7, the feature map size must not exceed 80.
-(7) If pooled_h = pooled_w = 8, the feature map size must not exceed 80.
-(8) If pooled_h = pooled_w = 9, the feature map size must not exceed 70.
-(9) If pooled_h = pooled_w = 10, the feature map size must not exceed 70.
-(10) If pooled_h = pooled_w = 11, the feature map size must not exceed 70.
-(11) If pooled_h = pooled_w = 12, the feature map size must not exceed 70.
-(12) If pooled_h = pooled_w = 13, the feature map size must not exceed 70.
-(13) If pooled_h = pooled_w = 14, the feature map size must not exceed 70.
-(14) If pooled_h = pooled_w = 15, the feature map size must not exceed 70.
-(15) If pooled_h = pooled_w = 16, the feature map size must not exceed 70.
-(16) If pooled_h = pooled_w = 17, the feature map size must not exceed 50.
-(17) If pooled_h = pooled_w = 18, the feature map size must not exceed 40.
-(18) If pooled_h = pooled_w = 19, the feature map size must not exceed 40.
-(19) If pooled_h = pooled_w = 20, the feature map size must not exceed 40.
+* For the feature map input:
+*@li If pooled_h = pooled_w = 2, the feature map size must not exceed 50.
+*@li If pooled_h = pooled_w = 3, the feature map size must not exceed 60.
+*@li If pooled_h = pooled_w = 4, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 5, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 6, the feature map size must not exceed 80.
+*@li If pooled_h = pooled_w = 7, the feature map size must not exceed 80.
+*@li If pooled_h = pooled_w = 8, the feature map size must not exceed 80.
+*@li If pooled_h = pooled_w = 9, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 10, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 11, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 12, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 13, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 14, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 15, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 16, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 17, the feature map size must not exceed 50.
+*@li If pooled_h = pooled_w = 18, the feature map size must not exceed 40.
+*@li If pooled_h = pooled_w = 19, the feature map size must not exceed 40.
+*@li If pooled_h = pooled_w = 20, the feature map size must not exceed 40.
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
@@ -1429,9 +1428,9 @@ REG_OP(NormalizeBBox)
 * @li anchors: A Tensor. Must be int32.
 *
 *@par Attributes:
-* @li scales: optional, listfloat, .
+* @li scales: optional, listfloat.
 * @li decode_clip: optional, float, threahold of decode process.
-* @li reversed_boxes: optional, bool,.
+* @li reversed_boxes: optional, bool.
 *
 *@par Outputs:
 * y: A Tensor. Must have the same type as box_predictions.

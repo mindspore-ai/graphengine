@@ -181,5 +181,4 @@ RTS_API rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t st
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
-
 #endif // __CCE_RUNTIME_FFTS_H

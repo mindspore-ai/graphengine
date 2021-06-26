@@ -32,8 +32,8 @@ typedef struct aclfvSearchResult aclfvSearchResult;
 
 // search operation type
 enum aclfvSearchType {
-  SEARCH_1_N,  // 1:N operation type
-  SEARCH_N_M   // N:M operation type
+    SEARCH_1_N, // 1:N operation type
+    SEARCH_N_M  // N:M operation type
 };
 
 /**
@@ -104,8 +104,7 @@ ACL_FUNC_VISIBILITY aclError aclfvSetNMTopNum(aclfvInitPara *initPara, uint32_t 
  * @retval OtherValues success.
  */
 ACL_FUNC_VISIBILITY aclfvFeatureInfo *aclfvCreateFeatureInfo(uint32_t id0, uint32_t id1, uint32_t offset,
-                                                             uint32_t featureLen, uint32_t featureCount,
-                                                             uint8_t *featureData, uint32_t featureDataLen);
+    uint32_t featureLen, uint32_t featureCount, uint8_t *featureData, uint32_t featureDataLen);
 
 /**
  * @ingroup AscendCL
@@ -234,9 +233,8 @@ ACL_FUNC_VISIBILITY aclError aclfvDestroySearchInput(aclfvSearchInput *searchInp
  * @retval null for failed. OtherValues success
  */
 ACL_FUNC_VISIBILITY aclfvSearchResult *aclfvCreateSearchResult(uint32_t queryCnt, uint32_t *resultNum,
-                                                               uint32_t resultNumDataLen, uint32_t *id0, uint32_t *id1,
-                                                               uint32_t *resultOffset, float *resultDistance,
-                                                               uint32_t dataLen);
+    uint32_t resultNumDataLen, uint32_t *id0, uint32_t *id1, uint32_t *resultOffset, float *resultDistance,
+    uint32_t dataLen);
 
 /**
  * @ingroup AscendCL
@@ -345,4 +343,4 @@ ACL_FUNC_VISIBILITY aclError aclfvSearch(aclfvSearchType type, aclfvSearchInput 
 }
 #endif
 
-#endif  // INC_EXTERNAL_ACL_OPS_ACL_RETR_H_
+#endif // INC_EXTERNAL_ACL_OPS_ACL_RETR_H_

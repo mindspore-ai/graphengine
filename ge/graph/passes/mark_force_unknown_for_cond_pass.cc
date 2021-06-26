@@ -56,8 +56,8 @@ Status MarkForceUnknownForCondPass::Run(ComputeGraphPtr graph) {
 /// @param [out] Search queue
 /// @return true: Switch In while loop / false: Not in while Loop.
 ///
-bool MarkForceUnknownForCondPass::DealWithLoopSwitch(const NodePtr &node, uint32_t dst_span,
-                                                     std::queue<std::pair<NodePtr, uint32_t>> search_queue) {
+bool MarkForceUnknownForCondPass::DealAsLoopSwitch(const NodePtr &node, uint32_t dst_span,
+                                                   std::queue<std::pair<NodePtr, uint32_t>> &search_queue) {
   ///                 LoopCond --->\.
   ///                               \.
   /// Enter-----------+              \.
@@ -121,7 +121,7 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const NodePtr &node, std:
       GELOGD("Travel node: %s, %s node: %s, span is: %u", dst_node->GetName().c_str(), node_type.c_str(),
              in_node->GetName().c_str(), dst_span);
       if (kSwitchOpTypes.count(node_type) > 0) { // Switch input node.
-        if (DealWithLoopSwitch(in_node, dst_span, search_queue)) {
+        if (DealAsLoopSwitch(in_node, dst_span, search_queue)) {
           continue;
         }
 

@@ -345,6 +345,10 @@ INT32 mmIsDir(const CHAR *fileName)
 
 INT32 mmGetEnv(const CHAR *name, CHAR *value, UINT32 len)
 {
+  const char *env = getenv(name);
+  if (env != nullptr) {
+    strcpy(value, env);
+  }
   return 0;
 }
 

@@ -110,8 +110,8 @@ TEST_F(UtestGraphPassesMergePass, multiple_inputs) {
 }
 
 ///      Merge
-///        |  \
-///        |   \
+///        |  \.
+///        |   \.
 ///  Op1  Op2 Merge2
 ///   \    |    |
 ///    \   |   Op3
@@ -137,10 +137,10 @@ TEST_F(UtestGraphPassesMergePass, empty_input_cut_branch_meet_net_output_with_da
 }
 
 ///      Merge
-///        |  \
-///        |   \
+///        |  \.
+///        |   \.
 ///  Op1  Op2 Merge2
-///   \    |    |   \
+///   \    |    |   \.
 ///    \   |   Op3
 ///     \  |    :
 ///     NetOutput
@@ -165,8 +165,8 @@ TEST_F(UtestGraphPassesMergePass, empty_input_cut_branch_meet_net_output_with_co
 
 TEST_F(UtestGraphPassesMergePass, empty_input_cut_branch) {
   ///      Merge
-  ///        |  \
-  ///        |   \
+  ///        |  \.
+  ///        |   \.
   ///  Op1  Op2 Merge2
   ///   \    |    |
   ///    \   |   Op3
@@ -210,7 +210,7 @@ TEST_F(UtestGraphPassesMergePass, empty_input_cut_branch) {
   ///  Op1  Op2 Merge2
   ///   \         |
   ///    \       Op3
-  ///     \
+  ///     \.
   ///      Merge3
 
   ret = pass_.Run(merge_node2);
@@ -224,7 +224,7 @@ TEST_F(UtestGraphPassesMergePass, single_non_const_input) {
   ///      Op1
   ///       |
   ///     Merge
-  ///      / \
+  ///      / \.
   ///    Op2 Op3
   auto merge_node = NewNode("Merge", MERGE, 1, 2);
   auto node1 = NewNode("Op1", RELU, 1, 1);
@@ -253,7 +253,7 @@ TEST_F(UtestGraphPassesMergePass, single_const_input) {
   ///     Const
   ///       |
   ///     Merge    Pass      Const
-  ///      / \     ===>      /   \
+  ///      / \     ===>      /   \.
   ///    Op1 Op2           Op1   Op2
   auto merge_node = NewNode("Merge", MERGE, 1, 2);
   auto const_node = NewNode("Const", CONSTANT, 1, 1);
@@ -284,7 +284,7 @@ TEST_F(UtestGraphPassesMergePass, single_const_input_value_index_two_out_nodes) 
   ///     /    |       ===>      /   \(control anchor)
   ///  Op1    | \              Op1   Constant
   ///        Op2 Op3                     |
-  ///                                  /   \
+  ///                                  /   \.
   ///                                Op2   Op3
   auto merge_node = NewNode("Merge", MERGE, 1, 2);
   auto const_node = NewNode("Const", CONSTANT, 1, 1);
@@ -329,7 +329,7 @@ TEST_F(UtestGraphPassesMergePass, single_const_input_value_index_two_out_nodes1)
   ///     /    |       ===>      /   \(control anchor)
   ///  Op1    | \              Op1   Constant
   ///        Op2 Op3                     |
-  ///                                  /   \
+  ///                                  /   \.
   ///                                Op2   Op3
   auto merge_node = NewNode("Merge", MERGE, 1, 2);
   auto const_node = NewNode("Const", CONSTANT, 1, 1);
@@ -357,7 +357,7 @@ TEST_F(UtestGraphPassesMergePass, const_with_control_input) {
   ///       C
   ///       |
   ///     Merge
-  ///      / \
+  ///      / \.
   ///    Op1 Op2
   auto switch_node = NewNode("Switch", SWITCH, 1, 2);
   auto identity_node = NewNode("Identity", SWITCH, 1, 1);
@@ -381,7 +381,7 @@ TEST_F(UtestGraphPassesMergePass, const_with_control_input) {
   ///       .
   ///       .
   ///       C
-  ///      / \
+  ///      / \.
   ///    Op1  Op2
   auto ret = pass_.Run(merge_node);
   EXPECT_EQ(ret, SUCCESS);

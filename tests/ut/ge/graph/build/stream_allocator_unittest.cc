@@ -36,7 +36,7 @@ class UtestStreamAllocator : public testing::Test {
 
   ///
   ///    A
-  ///   / \
+  ///   / \.
   ///  B   C
   ///  |   |
   ///  D  400

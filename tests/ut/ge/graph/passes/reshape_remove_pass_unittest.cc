@@ -35,7 +35,7 @@ namespace {
 /// transdata1
 ///    |
 ///  reshape1
-///    |     \
+///    |     \.
 ///   var1   const1
 ut::GraphBuilder Graph1Builder() {
   ut::GraphBuilder builder = ut::GraphBuilder("g1");
@@ -55,11 +55,11 @@ ut::GraphBuilder Graph1Builder() {
 }
 
 ///    netoutput1
-///     |        \
-///transdata1    \
-///    |          \
+///     |       \.
+///transdata1    \.
+///    |          \.
 ///  reshape1    reshape2
-///    |     \    /    \
+///    |     \    /    \.
 ///   var1   const1   var2
 ut::GraphBuilder Graph2Builder() {
   ut::GraphBuilder builder = ut::GraphBuilder("g2");
@@ -83,9 +83,9 @@ ut::GraphBuilder Graph2Builder() {
 }
 
 ///    netoutput1
-///     |        \
-///transdata1    \
-///    |          \
+///     |       \.
+///transdata1    \.
+///    |          \.
 ///  reshape1    transdata2
 ///    |     \    /
 ///   var1   const1

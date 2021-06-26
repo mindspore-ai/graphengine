@@ -66,11 +66,11 @@ class UtestGraphPassesParallelGgroupPass : public testing::Test {
 
   void BuildDefaultGraph() {
     ///          input
-    ///            \
+    ///            \.
     ///           sqrt pred
     ///              \  /
     ///              cast
-    ///              /  \
+    ///              /  \.
     ///       switch_t  switch_f
     ///              |  |
     ///              F  T
@@ -118,13 +118,13 @@ class UtestGraphPassesParallelGgroupPass : public testing::Test {
 
   void BuildDefaultGraph1() {
     ///          input
-    ///            \
+    ///            \.
     ///           sqrt  pred
     ///              \  /
     ///             Switch
     ///              |  |
     ///          ----F  T----
-    ///          \   | /     \
+    ///          \   | /     \.
     ///           \  Merge1 Merge2
     ///            \_________|
     input_node_ = NewNode("input", RELU, 0, 1);
@@ -164,14 +164,14 @@ class UtestGraphPassesParallelGgroupPass : public testing::Test {
 
   void BuildDefaultGraph2() {
     ///          input      input1
-    ///            \           \
+    ///            \           \.
     ///           sqrt  pred sqrt1  pred1
     ///              \  /       \  /
     ///             Switch     Switch1
     ///              |  |  _______|
     ///              |  | /
     ///          ____F  T____
-    ///          \   | /     \
+    ///          \   | /     \.
     ///           \  Merge1 Merge2
     ///            \__________|
     input_node_ = NewNode("input", RELU, 0, 2);

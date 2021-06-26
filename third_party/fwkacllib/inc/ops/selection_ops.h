@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -240,6 +240,30 @@ REG_OP(GatherV2D)
     .OP_END_FACTORY_REG(GatherV2D)
 
 /**
+*@Gathers values along an axis specified by dim . \n
+
+*@par Inputs:
+*@li x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+*@li index: A Tensor. Must be one of the following types: int64 . \n
+
+*@par Attributes:
+* dim: the axis along which to index . \n
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "x" . \n
+
+*@par Third-party framework compatibility
+*Compatible with the PyTorch operator Gather.
+*/
+
+REG_OP(GatherElements)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
+    .INPUT(index, TensorType({DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
+    .ATTR(dim, Int, 0)
+    .OP_END_FACTORY_REG(GatherElements)
+
+/**
 *@brief Extracts a strided slice of a tensor. Roughly speaking, this op
     extracts a slice of size (end-begin)/stride from the given input tensor.
     Starting at the location specified by begin the slice continues by
@@ -274,8 +298,6 @@ REG_OP(GatherV2D)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
-
-*@attention Constraints:
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSlice.
@@ -326,8 +348,6 @@ REG_OP(StridedSlice)
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
-
-*@attention Constraints:
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSlice.
@@ -384,8 +404,6 @@ REG_OP(StridedSliceD)
 
 *@par Outputs:
 *output: A Tensor. Has the same type as "dy" . \n
-
-*@attention Constraints:
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSliceGradD.
@@ -444,8 +462,6 @@ REG_OP(StridedSliceGradD)
 *@par Outputs:
 *output: A Tensor has the same type as "dy" . \n
 
-*@attention Constraints:
-
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator StridedSliceGrad.
 */
@@ -485,6 +501,38 @@ REG_OP(UnsortedSegmentSum)
     .INPUT(num_segments, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::NumberType())
     .OP_END_FACTORY_REG(UnsortedSegmentSum)
+
+/**
+*@brief Creates a one-dimensional tensor of size steps whose values are evenly spaced from start to 
+*	end, inclusive, on a logarithmic scale with base base. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li assist: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+* @par Attributes:
+* @li start: An required float. Used to select the start. \n
+* @li end: An required float. Used to select the end. \n
+* @li steps: An optional int.Defaults to 100. \n
+* @li base: An optional float.Defaults to 10.0. \n
+* @li dtype: An optional int.Defaults to 1. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of input_x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator logspaced. \n
+*/
+REG_OP(LogSpaceD)
+    .INPUT(assist, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16}))
+    .REQUIRED_ATTR (start, Float)
+    .REQUIRED_ATTR (end, Float)
+    .ATTR(steps, Int, 100)
+    .ATTR(base, Float, 10.0)
+    .ATTR(dtype, Int, 1)
+    .OP_END_FACTORY_REG(LogSpaceD)
 
 /**
 *@brief Computes the sum along segments of a tensor . \n
@@ -797,6 +845,34 @@ REG_OP(SliceD)
     .OP_END_FACTORY_REG(SliceD)
 
 /**
+*@brief Extracts a slice from a tensor.
+*       This operation extracts a slice of size "size" from a tensor "x"
+*		starting at the location specified by "begin" . \n
+
+*@par Inputs:
+*@li x: A Tensor. Must be one of the following types:
+* float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8,
+* int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32 . \n
+
+*@par Inputs:
+*@li offsets: The starting location for the slice.
+
+*@par Attributes:
+*@li size: The tensor shape . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x". The slice extracted from the tensor.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED. Please use Slice instead.
+*/
+REG_OP(SliceDV2)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(offsets, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(size, ListInt)
+    .OP_END_FACTORY_REG(SliceDV2)
+    
+/**
 * @brief Finds values and indices of the "k" largest elements for the last
 * dimension . \n
 
@@ -829,8 +905,8 @@ REG_OP(SliceD)
 * @li sorted = true
 * @li It's unstable sorted indices on the platform of Ascend310
 
-* @par Third-party framework compatibility
-* @li Compatible with the TensorFlow operator TopK.
+* @par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use TopKV2 instead.
 */
 REG_OP(TopKD)
     .INPUT(x, TensorType::RealNumberType())
@@ -842,6 +918,44 @@ REG_OP(TopKD)
     .ATTR(dim, Int, -1)
     .ATTR(largest, Bool, true)
     .OP_END_FACTORY_REG(TopKD)
+
+/**
+* @brief Finds values and indices of the "k" largest elements for the last
+* dimension . \n
+
+* @par Inputs:
+* Two inputs, including:
+* @li x: A 1D or higher tensor of type BasicType, with the last dimension
+* at least "k".
+* @li k: A 0D Tensor of type int32.
+* Number of top elements to look for along the last dimension (along each row
+* for matrices) . \n
+
+* @par Attributes:
+* @li sorted: An optional bool. Defaults to true.
+* If true, the resulting "k" elements will be sorted by the values in descending
+* order.
+* @li dim: An optional int. Defaults to -1. For reserved use.
+* @li largest: An optional bool. Defaults to true. For reserved use. \n
+
+* @par Outputs:
+* @li values: A Tensor, specifying the sorted data. Has the same type as
+* "input".
+* @li indices: A Tensor of type int32, specifying the indices of sorted data . \n
+
+* @see TopK()
+* @par Third-party framework compatibility
+* @li Compatible with the TensorFlow operator TopKV2.
+*/
+REG_OP(TopKV2)
+    .INPUT(x, TensorType::RealNumberType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .OUTPUT(values, TensorType::RealNumberType())
+    .OUTPUT(indices, TensorType({DT_INT32}))
+    .ATTR(sorted, Bool, true)
+    .ATTR(dim, Int, -1)
+    .ATTR(largest, Bool, true)
+    .OP_END_FACTORY_REG(TopKV2)
 
 /**
 * @brief Finds values and indices of the "k" largest elements for the last
@@ -876,15 +990,17 @@ REG_OP(TopK)
     .OUTPUT(values, TensorType::RealNumberType())
     .OUTPUT(indices, TensorType({DT_INT32}))
     .ATTR(sorted, Bool, true)
+    .ATTR(largest, Bool, true)
+    .ATTR(dim, Int, -1)
     .OP_END_FACTORY_REG(TopK)
 /**
 *@brief Creates a new tensor by applying sparse "updates" to individual values or slices within a tensor (initially zero for numeric, empty for string) of the given "shape" according to "indices" . \n
 
 *@par Inputs:
 *Inputs including:
-* @li indices: A required index tensor. Must be one of the following types: float32, float16, int32, int8, uint8.
-* @li x: A required slice tensor. Must be one of the following types: float32, float16, int32, int8, uint8.
-* @li shape: A required list of int32, specifying the output shape.
+* @li indices: A required index tensor. Must be one of the following types: int32 or int64.
+* @li x: A required slice tensor. Must be one of the following types: float32, float16, int32, int8, uint8...
+* @li shape: A required list of int32 or int64, specifying the output shape.
 *@par Outputs:
 *y:A output Tensor with same datatype as "updates" . \n
 
@@ -895,7 +1011,7 @@ REG_OP(TopK)
 * Compatible with the TensorFlow operator ScatterNd.
 */
 REG_OP(ScatterNd)
-    .INPUT(indices, TensorType::BasicType())
+    .INPUT(indices, TensorType::IndexNumberType())
     .INPUT(x, TensorType::BasicType())
     .INPUT(shape, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
@@ -908,11 +1024,11 @@ REG_OP(ScatterNd)
 *@par Inputs:
 *Inputs including:
 * @li indices: A required index tensor. Must be one of the following types:
- * float, float16, int32, int16. format:ND.
+ * int32 or int64. format:ND.
 * @li x: A required slice tensor. Must be one of the following types:
- * float, float16, int32, int16. format:ND.
+ * float16, float, int32, int8, uint8. format:ND.
 *@par Attributes:
-* @li shape: A required list of int32, specifying the output shape.
+* @li shape: A required list of int32 or int64, specifying the output shape.
 *@par Outputs:
 *y: A Tensor. Has the same type as "x". format:ND . \n
 
@@ -927,8 +1043,8 @@ REG_OP(ScatterNd)
 */
 REG_OP(ScatterNdD)
     .INPUT(indices, TensorType::IndexNumberType())
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT16}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(ScatterNdD)
 
@@ -1753,6 +1869,33 @@ REG_OP(Crop)
       .OP_END_FACTORY_REG(Crop)
 
 /**
+*@brief Returns a namedtuple (values, indices) where values is the cumulative 
+* the cumulative minimum of elements of input in the dimension dim. 
+* And indices is the index location of each maximum value found in the dimension dim. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A tensor . Must be one of the following types:
+*     float16, float32, int32, uint32, int8, uint8. \n
+
+*@par Attributes:
+* @li axis: Axis along which to cummin. \n
+
+*@par Outputs:
+* y: A Tensor with the same type and shape of x's. \n
+* indices: A Tensor with the int32 type and the same shape of x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Cummin. \n
+*/
+REG_OP(Cummin)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(indices, TensorType::BasicType())
+    .REQUIRED_ATTR(axis, Int)
+    .OP_END_FACTORY_REG(Cummin)
+
+/**
 *@brief Extends the input with copies of data along a specified dimension. For example:
 *(1) If x = [[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]], with shape (2, 3, 2);
 *(2) axis = 1;
@@ -1921,6 +2064,249 @@ REG_OP(CumulativeLogsumexpD)
     .ATTR(exclusive, Bool, false)
     .ATTR(reverse, Bool, false)
     .OP_END_FACTORY_REG(CumulativeLogsumexpD)
+
+/**
+* @brief Add updates to var according to axis and indices.
+
+* @par Inputs:
+* Three inputs, including:
+* @li var: A Tensor. Must be one of the following types:
+*     float16, float32, int16, int32, int8, uint8.
+* @li indices: A Tensor of the indices, type should be int32.
+* @li updates: A Tensor of the same type as "var". \n
+
+* @par Attributes:
+* @li axis: An required int to specify the axis to perform indices add. \n
+
+* @par Outputs:
+* @li var: A Tensor. Same as input "var".
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator index_add_.
+*/
+REG_OP(InplaceIndexAdd)
+    .INPUT(var, TensorType({DT_INT16, DT_INT32, DT_INT8,
+                            DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .INPUT(updates, TensorType({DT_INT16, DT_INT32, DT_INT8,
+                                DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .OUTPUT(var, TensorType({DT_INT16, DT_INT32, DT_INT8,
+                            DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .REQUIRED_ATTR(axis, Int)
+    .OP_END_FACTORY_REG(InplaceIndexAdd)
+
+/**
+* @brief Replace the value of X with value according to mask.
+* @par Inputs:
+* three inputs, including:
+*  @li x: A Tensor of dtype is float16 or float32 or int64 or int32 or int8.
+*  @li mask: A Tensor of dtype bool.
+*  @li value: A Tensor of dtype float16 or float32 or int64 or int32 or int8.
+
+* @par Outputs:
+*  @li y: A tensor. Must be one of the following dtypes:
+*   float16, float32, int64, int32, int8.
+*/
+REG_OP(MaskedFill)
+    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .INPUT(mask, TensorType({DT_BOOL}))
+    .INPUT(value, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32, DT_INT64}))
+    .OP_END_FACTORY_REG(MaskedFill)
+
+/**
+* @brief Choose the value of X with value according to mask.
+
+* @par Inputs:
+* two inputs, including:
+*  @li x: A Tensor of dtype is float16 or float32.
+*  @li mask: A Tensor of dtype is bool. \n
+
+* @par Outputs:
+*  @li y: A tensor with the same type as x. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Numpy operator select.
+* Replaces the pytorch operator masked_select in some scenarios.\n
+*/
+REG_OP(MaskedSelectV2)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(mask, TensorType({DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(MaskedSelectV2)
+
+/**
+* @brief Slice a tensor at its last dim, e.x. a[..., begin:end:stride]. \n
+
+* @par Inputs:
+* One inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, int16, int32.
+
+* @par Attributes:
+* @li start: An  attribute of type Int, start index of last dim. \n
+* @li end: An  attribute of type Int, end index of last dim. \n
+* @li stride: An  attribute of type Int, stride of slice. \n
+
+* @par Outputs:
+* @li y: A Tensor. Has the same type as "x". \n
+
+* @par Third-party framework compatibility
+* No compatibility
+*/
+REG_OP(SliceLastDim)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(start, Int)
+    .REQUIRED_ATTR(end, Int)
+    .ATTR(stride, Int, 1)
+    .OP_END_FACTORY_REG(SliceLastDim)
+
+/**
+* @brief Extracts a strided slice of a tensor. Roughly speaking, this op \n
+*   extracts a slice of size (end-begin)/stride from the given input tensor. \n
+*   Starting at the location specified by begin the slice continues by \n
+*   adding stride to the index until all dimensions are not less than end. \n
+*
+* @par Inputs:
+* Four inputs, including:
+* @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8, \n
+*     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16, \n
+*     complex128, float16, uint32, uint64, complex64, complex128. \n
+* @li begin: A Tensor of type int32 or int64, for the index of the first value to select.
+*
+* @li end: A Tensor of type int32 or int64, for the index of the last value to select.
+*
+* @li axes: A Tensor of type int32 or int64, indicate axis to be select.
+*
+* @li strides: A Tensor of type int32 or int64, for the increment.
+*
+* @par Attributes:
+* @li begin_mask: A Tensor of type int32. \n
+*     A bitmask where a bit "i" being "1" means to ignore the begin \n
+*     value and instead use the largest interval possible.
+* @li end_mask: A Tensor of type int32. \n
+*     Analogous to "begin_mask".
+* @li ellipsis_mask: A Tensor of type int32. \n
+*     A bitmask where bit "i" being "1" means the "i"th position \n
+*     is actually an ellipsis.
+* @li new_axis_mask: A Tensor of type int32. \n
+*     A bitmask where bit "i" being "1" means the "i"th \n
+*     specification creates a new shape 1 dimension.
+* @li shrink_axis_mask: A Tensor of type int32. \n
+*     A bitmask where bit "i" implies that the "i"th \n
+*     specification should shrink the dimensionality.
+*
+* @par Outputs:
+* y: A Tensor. Has the same type as "x".
+*
+* @attention Constraints:
+*
+* @par Third-party framework compatibility
+* Compatible with the TensorFlow operator StridedSliceV2.
+*/
+REG_OP(StridedSliceV2)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(begin, TensorType::IndexNumberType())
+    .INPUT(end, TensorType::IndexNumberType())
+    .OPTIONAL_INPUT(axes, TensorType::IndexNumberType())
+    .OPTIONAL_INPUT(strides, TensorType::IndexNumberType())
+    .ATTR(begin_mask, Int, 0)
+    .ATTR(end_mask, Int, 0)
+    .ATTR(ellipsis_mask, Int, 0)
+    .ATTR(new_axis_mask, Int, 0)
+    .ATTR(shrink_axis_mask, Int, 0)
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(StridedSliceV2)
+
+/**
+*@brief Fills the elements of the input tensor with value val by selecting the indices in the order given in index. \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li x: A tensor. Must be one of the following types:
+*     float16, float32, int32. \n
+*@li assist1: A tensor. Must be one of the following types:
+*     float16, float32, int32. \n
+*@li assist2: A tensor. Must be one of the following types:
+*     float16, float32, int32. \n
+
+* @par Attributes:
+* @li dim: A required int. Used to select the dimension of this tensor. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of input_x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator IndexFill. \n
+*/
+REG_OP(IndexFillD)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(assist1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .INPUT(assist2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .REQUIRED_ATTR(dim, Int)
+    .OP_END_FACTORY_REG(IndexFillD)
+
+/**
+* @brief For each row r of this and for each column c, do (*this)(r, c) += src(j, c), \n
+*   where j ranges from indexes[r].first through indexes[r].second - 1. \n
+*   In general indexes must be >= 0 and < src.NumRows(); \n
+*   but to represent an empty range you may use the pair (-1, -1) or any pair of numbers (i, j) such that i >= j. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li x: A Tensor. Must be one of the following types:
+*     float16, float32.
+* @li indices: A Tensor of the indices, type should be int32.
+* @li src: A Tensor of the same type as "x". \n
+
+* @par Outputs:
+* @li x: A Tensor. Same as input "x".
+
+* @par Third-party framework compatibility
+* Compatible with the kaldi operator AddRowRanges.
+*/
+REG_OP(AddRowRanges)
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(src, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(indices, TensorType({DT_INT32}))
+    .OUTPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(AddRowRanges)
+
+/**
+*@brief masked fill tensor along with one axis by range.
+* boxes. It is a customized masked fill range operator . \n
+
+*@par Inputs:
+* Four inputs, including:
+*@li x: input tensor. A ND Tensor of float32/float16/int32/int8 with shapes
+* 1-D (D,), 2-D(N, D), 3-D(N, C, D)
+*@li start: masked fill start pos. A 3D Tensor of int32 with
+* shape (num, N). "num" indicates the number of loop masked fill, and the value N
+* indicates the batch of ND Tensor, if input x shape is 1-D, N = 1. \n
+*@li end: masked fill end pos. A 3D Tensor of int32 with
+* shape (num, N). "num" indicates the number of loop masked fill, and the value N
+* indicates the batch of ND Tensor. \n
+*@li value: masked fill value. A 2D Tensor of float32/float16/int32/int8 with
+* shape (num,). "num" indicates the number of loop masked fill
+
+*@par Attributes:
+*@li axis: axis with masked fill of int32. Defaults to -1.
+
+*@par Outputs:
+*y: A ND Tensor of float32/float16/int32/int8 with shapes 1-D (D,), 2-D(N, D), 3-D(N, C, D)
+
+* @par Restrictions:
+* Warning: input shape's length must not be bigger than 1024 * 1024 * 1024.
+*/
+REG_OP(MaskedFillRange)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32}))
+    .INPUT(start, TensorType({DT_INT32}))
+    .INPUT(end, TensorType({DT_INT32}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32}))
+    .REQUIRED_ATTR(axis, Int)
+    .OP_END_FACTORY_REG(MaskedFillRange)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

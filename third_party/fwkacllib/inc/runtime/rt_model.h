@@ -52,6 +52,8 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_MODEL_EXIT,
     RT_MODEL_TASK_FFTS_TASK,
     RT_MODEL_TASK_ALL_KERNEL,
+    RT_MODEL_TASK_PROFILER_TRACE_EX,
+    RT_MODEL_TASK_FFTS_TASK,
 } rtModelTaskType_t;
 
 typedef enum tagModelStreamType {
@@ -134,12 +136,13 @@ typedef struct tagAllKernelTaskInfo {
     uint16_t argsCount;
     uint16_t argsSize;
     uint16_t reserved;
-    const void *dev_func;
+    void *devfunc;
     void *handle;
     uint8_t *smDesc;
     uint8_t *args;
     uint16_t *argsOffset;
 } rtAllKernelTaskInfo_t;
+
 typedef struct tagKernelTaskInfoEx {
     uint32_t flags;
     uint32_t argsSize;
@@ -196,6 +199,13 @@ typedef struct tagProfilerTraceTaskInfo {
     uint32_t flags;
     uint32_t reserved[6];
 } rtProfilerTrace_t;
+
+typedef struct tagProfilerTraceExTaskInfo {
+    uint64_t profilerTraceId;
+    uint64_t modelId;
+    uint16_t tagId;
+    uint8_t reserved[22];
+} rtProfilerTraceEx_t;
 
 typedef struct tagrtMemcpyAsyncTaskInfo {
     void *dst;
@@ -264,7 +274,7 @@ typedef struct tagTaskInfo {
     union {
         rtKernelTaskInfoEx_t kernelTaskEx;
         rtKernelTaskInfo_t kernelTask;
-        rtAllKernelTaskInfo_t allkernelTask;
+        rtAllKernelTaskInfo_t allKernelTask;
         rtEventTaskInfo_t eventTask;
         rtStreamSwitchTaskInfo_t streamSwitchTask;
         rtStreamActiveTaskInfo_t streamActiveTask;
@@ -272,6 +282,7 @@ typedef struct tagTaskInfo {
         rtLabelSwitchTaskInfo_t labelSwitchTask;
         rtLabelGotoTaskInfo_t labelGotoTask;
         rtProfilerTrace_t profilertraceTask;
+        rtProfilerTraceEx_t profilertraceExTask;
         rtMemcpyAsyncTaskInfo_t memcpyAsyncTask;
         rtNotifyTaskInfo_t notifyTask;
         rtReduceAsyncTaskInfo_t reduceAsyncTask;

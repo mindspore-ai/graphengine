@@ -164,8 +164,22 @@ HcclResult HcomExecEnqueueRemoteAccess(const std::string& remoteAccessType,
                                        const std::vector<HcomRemoteAccessAddrInfo>& addrInfos,
                                        std::function<void(HcclResult status)> callback);
 
+/**
+ * @brief Put alltoallv communication operation into hcom executor.
+ *
+ * @param params information about alltoallv communication operation.
+ * @param callback callback after collective communication operation.
+ * @return HcclResult
+ */
 HcclResult HcomExecEnqueueAllToAllV(HcomAllToAllVParams params, std::function<void(HcclResult status)> callback);
 
+/**
+ * @brief Put agther alltoallv communication operation into hcom executor.
+ *
+ * @param params information about agther alltoallv communication operation.
+ * @param callback callback after collective communication operation.
+ * @return HcclResult
+ */
 HcclResult HcomExecEnqueueGatherAllToAllV(HcomGatherAllToAllVParams params,
                                           std::function<void(HcclResult status)> callback);
 

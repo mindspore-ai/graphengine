@@ -16,33 +16,46 @@
 
 #include "ge_runtime/task/label_goto_task.h"
 #include "ge_runtime/task/task_factory.h"
-#include "framework/common/util.h"
 
 namespace ge {
 namespace model_runner {
 LabelGotoTask::LabelGotoTask(const ModelContext &model_context, const std::shared_ptr<LabelGotoTaskInfo> &task_info)
-    : TaskRepeater<LabelGotoTaskInfo>(model_context, task_info), task_info_(task_info) {
+    : TaskRepeater<LabelGotoTaskInfo>(model_context, task_info),
+      task_info_(task_info),
+      stream_(nullptr),
+      index_value_(nullptr) {
   if (task_info_ == nullptr) {
     GELOGW("task_info_ is null!");
     return;
   }
   auto stream_list = model_context.stream_list();
   auto label_list = model_context.label_list();
+  rt_model_handle_ = model_context.rt_model_handle();
   uint32_t stream_id = task_info->stream_id();
-  uint32_t label_id = task_info->label_id();
+  label_id_ = task_info->label_id();
   GELOGI("Stream list size:%zu, stream id:%u.", stream_list.size(), stream_id);
-  GELOGI("Label list size:%zu, label id:%u.", label_list.size(), label_id);
-  if (stream_id >= stream_list.size() || label_id >= label_list.size()) {
+  GELOGI("Label list size:%zu, label id:%u.", label_list.size(), label_id_);
+  if (stream_id >= stream_list.size() || label_id_ >= label_list.size()) {
     GELOGW("Stream/Label id invalid.");
     return;
   }
   stream_ = stream_list[stream_id];
-  label_ = label_list[label_id];
+  label_manager_ = LabelManager::GetInstance();
+  if (label_manager_ == nullptr) {
+    GELOGW("Get label manager instance failed.");
+    return;
+  }
+  label_info_ = label_manager_->GetLabelInfo(rt_model_handle_, {label_id_}, label_list);
 }
 
 LabelGotoTask::~LabelGotoTask() {
-  GE_FREE_RT_LOG(label_info_);
-  GE_FREE_RT_LOG(index_value_);
+  if (index_value_ != nullptr) {
+    rtError_t rt_ret = rtFree(index_value_);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "rtFree index_value_ failed! ret: 0x%X.", rt_ret);
+    }
+    index_value_ = nullptr;
+  }
 }
 
 bool LabelGotoTask::Distribute() {
@@ -94,21 +107,34 @@ bool LabelGotoTask::CheckParamValid() {
     return false;
   }
 
-  if (label_ == nullptr) {
-    GELOGE(PARAM_INVALID, "label is null!");
+  if (label_info_ == nullptr) {
+    GELOGE(PARAM_INVALID, "label info is null!");
     return false;
   }
 
-  if (label_info_ != nullptr) {
-    GELOGE(PARAM_INVALID, "label_info_ has dirty data.");
+  if (index_value_ == nullptr) {
+    rtError_t rt_ret = rtMalloc(&index_value_, sizeof(uint64_t), RT_MEMORY_HBM);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      return false;
+    }
+
+    uint64_t index = 0;
+    rt_ret = rtMemcpy(index_value_, sizeof(uint64_t), &index, sizeof(index), RT_MEMCPY_HOST_TO_DEVICE);
+    if (rt_ret != RT_ERROR_NONE) {
+      GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
+      return false;
+    }
+  }
+
+  void *label_info = label_info_->GetLabelInfo();
+  rtError_t rt_ret = rtLabelSwitchByIndex(index_value_, 1, label_info, stream_);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(RT_FAILED, "Call rt api failed, ret: 0x%X", rt_ret);
     return false;
   }
 
-  if (index_value_ != nullptr) {
-    GELOGE(PARAM_INVALID, "index_value_ has dirty data.");
-    return false;
-  }
-
+  GELOGI("DistributeTask end.");
   return true;
 }
 

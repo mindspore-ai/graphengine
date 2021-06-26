@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -908,7 +908,7 @@ REG_OP(TensorArray)
     .OUTPUT(handle, TensorType({DT_RESOURCE}))
     .OUTPUT(flow, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(element_shape, ListInt, ge::UNKNOWN_SHAPE)
+    .ATTR(element_shape, ListInt, ge::UNKNOWN_RANK)
     .ATTR(dynamic_size, Bool, false)
     .ATTR(clear_after_read, Bool, true)
     .ATTR(identical_element_shapes, Bool, false)
@@ -963,7 +963,7 @@ REG_OP(TensorArrayConcat)
         DT_QUINT8, DT_QINT32}))
     .OUTPUT(lengths, TensorType({DT_INT64}))
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(element_shape_except0, ListInt, ge::UNKNOWN_SHAPE)
+    .ATTR(element_shape_except0, ListInt, ge::UNKNOWN_RANK)
     .OP_END_FACTORY_REG(TensorArrayConcat)
 
 /**
@@ -999,7 +999,7 @@ REG_OP(TensorArrayGather)
         DT_STRING, DT_COMPLEX64, DT_COMPLEX128, DT_QINT8,
         DT_QUINT8, DT_QINT32}))
     .REQUIRED_ATTR(dtype, Type)
-    .ATTR(element_shape, ListInt, ge::UNKNOWN_SHAPE)
+    .ATTR(element_shape, ListInt, ge::UNKNOWN_RANK)
     .OP_END_FACTORY_REG(TensorArrayGather)
 
 /**
@@ -1429,6 +1429,24 @@ REG_OP(OrderedMapClear)
     .ATTR(container, String, "")
     .ATTR(shared_name, String, "")
     .OP_END_FACTORY_REG(OrderedMapClear)
+
+/**
+*@brief FakeQueue, support tf api FixedLengthRecordReader. \n
+
+*@par Inputs:
+*Including:
+* @li resource: A Tensor of type DT_RESOURCE.
+
+*@par Outputs:
+*handle: A Tensor of type DT_STRING ref. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator FakeQueue.
+*/
+REG_OP(FakeQueue)
+    .INPUT(resource, TensorType({DT_RESOURCE}))
+    .OUTPUT(handle, TensorType({DT_STRING}))
+    .OP_END_FACTORY_REG(FakeQueue)
 
 /**
 *@brief Returns the number of incomplete elements in the underlying container. \n
@@ -2258,6 +2276,7 @@ REG_OP(LruCache)
   .ATTR(shared_name, String, "LruCache")
   .ATTR(cache_size, Int, 100000)
   .ATTR(load_factor, Float, 1)
+  .REQUIRED_ATTR(dtype, Type)
   .OP_END_FACTORY_REG(LruCache)
 
 /**
@@ -2277,9 +2296,9 @@ REG_OP(CacheAdd)
   .INPUT(cache, TensorType({DT_RESOURCE}))
   .INPUT(ids, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OUTPUT(swap_in_id, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
-  .OUTPUT(swap_in_idx, TensorType({DT_INT64}))
+  .OUTPUT(swap_in_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OUTPUT(swap_out_id, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
-  .OUTPUT(swap_out_idx, TensorType({DT_INT64}))
+  .OUTPUT(swap_out_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OP_END_FACTORY_REG(CacheAdd)
 
 /**
@@ -2295,9 +2314,65 @@ REG_OP(CacheAdd)
 REG_OP(CacheRemoteIndexToLocal)
   .INPUT(cache, TensorType({DT_RESOURCE}))
   .INPUT(ids, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
-  .OUTPUT(local_idx, TensorType({DT_INT64}))
+  .OUTPUT(local_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .OP_END_FACTORY_REG(CacheRemoteIndexToLocal)
 
+/**
+*@brief CacheAllToLocalIndex, get id in cache
+*@par Inputs:
+*cache: resource data
+*local_idx: id in cache.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(CacheAllIndexToLocal)
+  .INPUT(cache, TensorType({DT_RESOURCE}))
+  .OUTPUT(local_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
+  .REQUIRED_ATTR(dtype, Type)
+  .OP_END_FACTORY_REG(CacheAllIndexToLocal)
+
+/**
+*@brief DynamicGetNext, dynamic get next data
+*@par Inputs:
+*x: the iterator, all types are available
+*@par Outputs:
+*y: the date in iterator, all types are available
+*@par Attributes:
+*output_types: types of all outputs
+*output_shapes: shapes of all outputs
+*_dynamic_graph_execute_mode: dynamic graph execution mode,
+value is one of lazy_recompile and dynamic_execute
+*_getnext_inputs_shape_range: shape ranges of outputs,
+it works where _dynamic_graph_execute_mode is dynamic_execute
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(DynamicGetNext)
+  .INPUT(x, TensorType::ALL())
+  .DYNAMIC_OUTPUT(y, TensorType::ALL())
+  .ATTR(output_types, ListType, {})
+  .ATTR(output_shapes, ListListInt, {{}, {}})
+  .ATTR(_dynamic_graph_execute_mode, String, "lazy_recompile")
+  .ATTR(_getnext_inputs_shape_range, String, "")
+  .OP_END_FACTORY_REG(DynamicGetNext)
+
+/**
+*@brief AdpGetNext
+*@par Outputs:
+*y: the data in iterator, all types are available
+*@par Attributes:
+*output_types: types of all outputs
+*output_shapes: shapes of all outputs
+*queue_name: cdqm queue name
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(AdpGetNext)
+  .DYNAMIC_OUTPUT(y, TensorType::ALL())
+  .ATTR(output_types, ListType, {})
+  .ATTR(output_shapes, ListListInt, {{}, {}})
+  .ATTR(queue_name, String, "")
+  .OP_END_FACTORY_REG(AdpGetNext)
 }   // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_DATA_FLOW_OPS_H_

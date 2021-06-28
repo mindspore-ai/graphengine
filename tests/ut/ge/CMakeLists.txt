@@ -158,6 +158,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_builder_manager.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_manager.cc"
     "${GE_CODE_DIR}/ge/common/profiling/profiling_manager.cc"
+    "${GE_CODE_DIR}/ge/common/profiling/ge_profiling.cc"
     "${GE_CODE_DIR}/ge/graph/manager/host_mem_manager.cc"
 	"${GE_CODE_DIR}/ge/graph/manager/memory_api.cc"
     "${GE_CODE_DIR}/ge/session/inner_session.cc"

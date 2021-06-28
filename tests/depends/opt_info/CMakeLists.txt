@@ -1,4 +1,4 @@
-# Copyright 2019-2020 Huawei Technologies Co., Ltd
+# Copyright 2021 Huawei Technologies Co., Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,22 +13,25 @@
 # limitations under the License.
 # ============================================================================
 
-project(tests CXX C)
-find_package(Threads)
-add_subdirectory(depends/cce)
-add_subdirectory(depends/slog)
-add_subdirectory(depends/mmpa)
-add_subdirectory(depends/runtime)
-add_subdirectory(depends/hccl)
-add_subdirectory(depends/profiler)
-add_subdirectory(depends/error_manager)
-add_subdirectory(depends/opt_info)
+#cmake_minimum_required(VERSION 2.8)
 
-if (ENABLE_GE_COV OR ENABLE_GE_UT)
-    add_subdirectory(ut)
-endif()
+project(opt_feature_stub)
 
-if (ENABLE_GE_ST)
-    add_subdirectory(framework)
-    add_subdirectory(st)
-endif()
+file(GLOB_RECURSE SRCS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+        "src/opt_info_stub.cc"
+)
+
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info)
+
+add_library(opt_feature_stub SHARED ${SRCS})
+
+target_compile_options(opt_feature_stub PRIVATE
+    -g
+)
+
+target_link_libraries(opt_feature_stub PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    c_sec
+)
+
+target_include_directories(opt_feature_stub INTERFACE ${CMAKE_CURRENT_LIST_DIR}/src)

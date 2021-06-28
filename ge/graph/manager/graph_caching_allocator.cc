@@ -20,7 +20,6 @@
 #include <string>
 #include <utility>
 
-#include "framework/common/debug/ge_log.h"
 #include "graph/manager/graph_mem_manager.h"
 
 namespace ge {
@@ -94,7 +93,8 @@ void IncreaseCount(std::map<size_t, size_t> &count, size_t size) {
   }
 }
 
-CachingAllocator::CachingAllocator(rtMemType_t memory_type) : memory_type_(memory_type), memory_allocator_(nullptr) {
+CachingAllocator::CachingAllocator(rtMemType_t memory_type)
+    : memory_type_(memory_type), memory_allocator_(nullptr), called_malloc_counts_(0), called_free_counts_(0) {
   for (uint32_t i = 0; i < kNumBins; i++) {
     free_block_bins_[i] = nullptr;
   }
@@ -121,6 +121,8 @@ Status CachingAllocator::Initialize(uint32_t device_id) {
   if (memory_allocator_ == nullptr) {
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
+  called_malloc_counts_ = 0;
+  called_free_counts_ = 0;
   return ge::SUCCESS;
 }
 
@@ -133,6 +135,7 @@ void CachingAllocator::Finalize(uint32_t device_id) {
 
 uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device_id) {
   GELOGI("Start malloc pool memory, size = %zu, device id = %u", size, device_id);
+  called_malloc_counts_++;
   size = GetBlockSize(size);
   uint8_t *ptr = nullptr;
   Block *block = FindFreeBlock(size, org_ptr, device_id);
@@ -156,6 +159,7 @@ uint8_t *CachingAllocator::Malloc(size_t size, uint8_t *org_ptr, uint32_t device
 
 Status CachingAllocator::Free(uint8_t *ptr, uint32_t device_id) {
   GELOGI("Free device id = %u", device_id);
+  called_free_counts_++;
   if (ptr == nullptr) {
     REPORT_INNER_ERROR("E19999", "Param ptr is nullptr, device_id:%u, check invalid", device_id);
     GELOGE(PARAM_INVALID, "[Check][Param] Invalid memory pointer, device_id:%u", device_id);
@@ -283,6 +287,7 @@ Status CachingAllocator::TryExtendCache(size_t size, uint32_t device_id) {
     if (memory_addr == nullptr) {
       GELOGE(ge::FAILED, "[Malloc][Memory] failed, no enough memory for size = %zu, device_id = %u", memory_size,
              device_id);
+      PrintStatics(DLOG_ERROR);
       return ge::FAILED;
     }
     GELOGT(TRACE_RUNNING, "Try to free cached memory size:%zu and malloc memory size:%zu success.",
@@ -385,14 +390,14 @@ void CachingAllocator::FreeBlockBins() {
 }
 
 void PrintCount(std::map<size_t, size_t> &count, const std::string &name, size_t total_size, size_t total_count) {
-  GELOGI("%6s total[size:%10zu count:%10zu].", name.c_str(), total_size, total_count);
+  GEEVENT("%6s total[size:%11zu count:%11zu].", name.c_str(), total_size, total_count);
   for (auto &it : count) {
-    GELOGI("    |- block[size:%10zu count:%10zu].", it.first, it.second);
+    GEEVENT("    |- block[size:%11zu count:%11zu].", it.first, it.second);
   }
 }
 
-void CachingAllocator::PrintStatics() {
-  if (!IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {
+void CachingAllocator::PrintStatics(int32_t level) {
+  if (!IsLogEnable(GE_MODULE_NAME, level)) {
     return;
   }
   size_t total_using_size = 0;
@@ -435,6 +440,7 @@ void CachingAllocator::PrintStatics() {
     }
   } while (0);
 
+  GEEVENT("Called counts[malloc:%11zu free:%11zu].", called_malloc_counts_.load(), called_free_counts_.load());
   PrintCount(malloc_block_stat, "Malloc", total_malloc_size, total_malloc_count);
   PrintCount(using_block_stat, "Using", total_using_size, total_using_count);
   PrintCount(free_block_stat, "Free", total_free_size, total_free_count);

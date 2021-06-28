@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 #include "graph/manager/block_memory.h"
@@ -192,9 +193,10 @@ class CachingAllocator {
   ///
   /// @ingroup ge_graph
   /// @brief print the memory info in pool
+  /// @param [in] log level
   /// @return void
   ///
-  void PrintStatics();
+  void PrintStatics(int32_t level = DLOG_INFO);
 
  private:
   rtMemType_t memory_type_;
@@ -213,6 +215,12 @@ class CachingAllocator {
 
   // malloced memorys from device
   std::map<size_t, size_t> malloced_memory_;
+
+  //user call Malloc total counts
+  std::atomic<size_t> called_malloc_counts_;
+
+  //user call Free total counts
+  std::atomic<size_t> called_free_counts_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_MANAGER_GRAPH_CACHING_ALLOCATOR_H_

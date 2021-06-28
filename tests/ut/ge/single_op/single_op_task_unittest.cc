@@ -91,8 +91,9 @@ TEST_F(UtestSingleOpTask, test_build_kernel_task) {
   TbeOpTask task_tmp;
   TbeOpTask *task = &task_tmp;
   ASSERT_EQ(model.BuildKernelTask(task_def, &task), SUCCESS);
+  ge::DataBuffer data_buffer;
   vector<GeTensorDesc> input_desc;
-  vector<DataBuffer> input_buffers;
+  vector<DataBuffer> input_buffers = { data_buffer };
   vector<GeTensorDesc> output_desc;
   vector<DataBuffer> output_buffers;
   task->node_ = node;
@@ -110,8 +111,36 @@ TEST_F(UtestSingleOpTask, test_build_kernel_task) {
   task->args_.reset(&task_args);
 
   ASSERT_EQ(task->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_), SUCCESS);
-  char handle_tmp = '0';
-  char *handle = &handle_tmp;
+  char *handle = "00";
   task->SetHandle(handle);
   ASSERT_EQ(task->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_), SUCCESS);
 }
+
+TEST_F(UtestSingleOpTask, test_update_ioaddr) {
+  auto graph = make_shared<ComputeGraph>("graph");
+  auto op_desc = make_shared<OpDesc>("Add", "Add");
+
+  GeTensorDesc desc;
+  op_desc->AddInputDesc(desc);
+  op_desc->AddInputDesc(desc);
+  op_desc->AddOutputDesc(desc);
+  vector<bool> is_input_const = { true, false };
+  op_desc->SetIsInputConst(is_input_const);
+  auto node = graph->AddNode(op_desc);
+
+  TbeOpTask task;
+  task.op_desc_ = op_desc;
+  task.args_.reset(new (std::nothrow) uint8_t[sizeof(void *) * 3]);
+
+  vector<void *> args;
+  vector<DataBuffer> inputs;
+  vector<DataBuffer> outputs;
+  ASSERT_EQ(task.UpdateIoAddr(args, inputs, outputs), ACL_ERROR_GE_PARAM_INVALID);
+  task.arg_size_ = sizeof(void *) * 3;
+  ASSERT_EQ(task.UpdateIoAddr(args, inputs, outputs), ACL_ERROR_GE_PARAM_INVALID);
+
+  ge::DataBuffer data_buffer;
+  inputs = { data_buffer };
+  ASSERT_EQ(task.UpdateIoAddr(args, inputs, outputs), SUCCESS);
+}
+

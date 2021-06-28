@@ -101,6 +101,8 @@ class TbeOpTask : public OpTask {
                            const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
   Status DoLaunchKernel(rtStream_t stream);
+  Status UpdateIoAddr(std::vector<void *> &args, const std::vector<DataBuffer> &inputs,
+                      const std::vector<DataBuffer> &outputs);
 
   const void *stub_func_ = nullptr;
   std::unique_ptr<uint8_t[]> args_;

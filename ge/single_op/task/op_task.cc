@@ -345,6 +345,53 @@ Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
   return SUCCESS;
 }
 
+Status TbeOpTask::UpdateIoAddr(std::vector<void *> &args, const std::vector<DataBuffer> &inputs,
+                               const std::vector<DataBuffer> &outputs) {
+  uintptr_t *arg_base = nullptr;
+  size_t arg_num = 0;
+  GetIoAddr(arg_base, arg_num);
+
+  const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
+  size_t non_const_index = 0;
+  for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {
+    const GeTensorDescPtr tensor_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(i));
+    if (tensor_desc == nullptr) {
+      GELOGD("SingleOp: %s, Index: %zu, has no input", op_desc_->GetName().c_str(), i);
+      continue;
+    }
+    if (i < v_is_input_const.size() && v_is_input_const[i]) {
+      if (i >= arg_num) {
+        GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size] Args size is %zu, but get index is %zu.", arg_num, i);
+        REPORT_INNER_ERROR("E19999", "[Check][Size] Args size is %zu, but get index is %zu.", arg_num, i);
+        return ACL_ERROR_GE_PARAM_INVALID;
+      }
+      auto addr = reinterpret_cast<void *>(arg_base[i]);
+      GELOGD("SingleOp: %s, Index: %zu, input is const, addr = %p", op_desc_->GetName().c_str(), i, addr);
+      args.emplace_back(addr);
+      continue;
+    }
+    if (non_const_index >= inputs.size()) {
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size] Input size is %zu, but get non_const_index is %zu",
+             inputs.size(), non_const_index);
+      REPORT_INNER_ERROR("E19999", "[Check][Size] Input size is %zu, but get non_const_index is %zu",
+                         inputs.size(), non_const_index);
+      return ACL_ERROR_GE_PARAM_INVALID;
+    }
+    auto addr = inputs[non_const_index].data;
+    GELOGD("SingleOp: %s, input[%zu], addr = %p", op_desc_->GetName().c_str(), i, addr);
+    args.emplace_back(addr);
+    non_const_index++;
+  }
+
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    auto addr = outputs[i].data;
+    GELOGD("SingleOp: %s, output[%zu] addr = %p", op_desc_->GetName().c_str(), i, addr);
+    args.emplace_back(addr);
+  }
+
+  return SUCCESS;
+}
+
 Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
                                const vector<DataBuffer> &input_buffers,
                                vector<GeTensorDesc> &output_desc,
@@ -355,12 +402,7 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo());
   GE_CHK_STATUS_RET(AllocateWorkspaces(run_info_workspaces_), "[Allocate][Workspaces] failed.");
   std::vector<void *> args;
-  for (auto &buffer : input_buffers) {
-    args.emplace_back(buffer.data);
-  }
-  for (auto &buffer : output_buffers) {
-    args.emplace_back(buffer.data);
-  }
+  GE_CHK_STATUS_RET(UpdateIoAddr(args, input_buffers, output_buffers), "[Update][IoAddr] failed.");
   for (auto &buffer : workspaces_) {
     args.emplace_back(buffer);
   }

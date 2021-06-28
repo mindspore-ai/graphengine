@@ -84,9 +84,8 @@ Status InferBasePass::Run(NodePtr &node) {
 
 bool InferBasePass::NeedInfer(const NodePtr &node) const { return true; }
 void InferBasePass::AddChangedNodesImmediateRepass(const std::set<NodePtr> &changed_nodes) {
-  for (const auto &node_ele : changed_nodes) {
-    AddImmediateRePassNode(node_ele);
-  }
+// need passed_nodes set to solve the problem that multi-input operators do repass in advance.
+// when there is passed_nodes set, wo should call AddImmediateRePassNode for all nodes in changed_nodes.
 }
 
 graphStatus InferBasePass::InferAndUpdate(NodePtr &node, bool before_subgraph, std::set<NodePtr> &changed_nodes) {

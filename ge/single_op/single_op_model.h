@@ -78,6 +78,12 @@ class SingleOpModel {
   void ParseArgTable(OpTask *task, SingleOp &op);
   Status InitHybridModelExecutor(const StreamResource &resource, const GeModelPtr &ge_model, SingleOp &single_op);
   Status SetHostMemTensor(DynamicSingleOp &single_op);
+  Status NeedHybridModel(GeModelPtr &ge_model, bool &flag);
+  Status ParseTasks();
+
+  std::vector<domi::TaskDef> tbe_tasks_;
+  std::vector<domi::TaskDef> atomic_tasks_;
+  std::vector<domi::TaskDef> aicpu_tasks_;
 
   std::string model_name_;
   uint32_t model_id_ = 0;

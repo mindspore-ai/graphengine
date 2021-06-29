@@ -26,16 +26,32 @@ EG_NS_BEGIN
 
 ////////////////////////////////////////////////////////////////
 namespace detail {
-template<typename GRAPH_BUILDER>
+template <typename GRAPH_BUILDER>
 Graph BuildGraph(const char *name, GRAPH_BUILDER builderInDSL) {
   GraphBuilder builder(name);
   builderInDSL(builder);
   return std::move(*builder);
 }
+
+struct GraphDefiner {
+  GraphDefiner(const char *defaultName, const char *specifiedName = nullptr) {
+    name = specifiedName ? specifiedName : defaultName;
+  }
+
+  template <typename USER_BUILDER>
+  auto operator|(USER_BUILDER &&userBuilder) {
+    GraphBuilder graphBuilder{name};
+    std::forward<USER_BUILDER>(userBuilder)(graphBuilder);
+    return *graphBuilder;
+  }
+
+ private:
+  const char *name;
+};
+
 }  // namespace detail
 
-#define HAS_NAME(...) NOT_EMPTY_SELECT(__VA_ARGS__)
-#define DEF_GRAPH(G, ...)       ::EG_NS::Graph G = ::EG_NS::detail::BuildGraph(HAS_NAME(__VA_ARGS__)(__VA_ARGS__, #G), [&](::EG_NS::GraphBuilder& BUILDER)
+#define DEF_GRAPH(G, ...) ::EG_NS::Graph G = ::EG_NS::detail::GraphDefiner(#G, ##__VA_ARGS__) | [&](auto &&BUILDER)
 #define DATA_CHAIN(...) ::EG_NS::ChainBuilder(BUILDER, ::EG_NS::EdgeType::DATA)->__VA_ARGS__
 #define CTRL_CHAIN(...) ::EG_NS::ChainBuilder(BUILDER, ::EG_NS::EdgeType::CTRL)->__VA_ARGS__
 #define CHAIN(...) DATA_CHAIN(__VA_ARGS__)

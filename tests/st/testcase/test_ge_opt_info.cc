@@ -15,24 +15,12 @@
  */
 
 #include <gtest/gtest.h>
-#include "easy_graph/graph/box.h"
-#include "easy_graph/graph/node.h"
+#include "external/ge/ge_api.h"
 #include "easy_graph/builder/graph_dsl.h"
-#include "easy_graph/builder/box_builder.h"
-#include "easy_graph/layout/graph_layout.h"
-#include "easy_graph/layout/engines/graph_easy/graph_easy_option.h"
-#include "easy_graph/layout/engines/graph_easy/graph_easy_executor.h"
-#include "graph/graph.h"
 #include "graph/compute_graph.h"
 #include "framework/common/types.h"
-#include "graph/debug/ge_attr_define.h"
+#include "graph/ge_local_context.h"
 #include "ge_graph_dsl/graph_dsl.h"
-#include "ge_graph_dsl/op_desc/op_desc_cfg_box.h"
-#define protected public
-#define private public
-#include "ge_opt_info/ge_opt_info.h"
-#undef private
-#undef protected
 
 namespace ge {
 class STEST_opt_info : public testing::Test {
@@ -52,7 +40,7 @@ TEST_F(STEST_opt_info, get_opt_info_all) {
   DEF_GRAPH(g1) {
     CHAIN(NODE("data1", DATA)->NODE("add", ADD));
     CHAIN(NODE("data2", DATA)->NODE("add"));
-  });
+  };
 
   auto graph = ToGeGraph(g1);
 
@@ -95,7 +83,7 @@ TEST_F(STEST_opt_info, get_opt_info_success) {
   DEF_GRAPH(g1) {
     CHAIN(NODE("data1", DATA)->NODE("add", ADD));
     CHAIN(NODE("data2", DATA)->NODE("add"));
-  });
+  };
 
   auto graph = ToGeGraph(g1);
 

@@ -17,16 +17,3 @@ include(cmake/graphengine.cmake)
 add_subdirectory(easy_graph)
 add_subdirectory(ge_graph_dsl)
 add_subdirectory(ge_running_env)
-
-file(GLOB_RECURSE UTILS_SRC CONFIGURE_DEPENDS
-        "utils/*.cc"
-        )
-
-add_library(framework STATIC ${UTILS_SRC})
-
-target_include_directories(framework
-    PUBLIC utils/
-)
-
-set_target_properties(framework PROPERTIES CXX_STANDARD 11)
-target_link_libraries(framework PUBLIC ge_graph_dsl ge_with_env)

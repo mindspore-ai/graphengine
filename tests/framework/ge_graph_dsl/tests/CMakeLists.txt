@@ -26,7 +26,7 @@ target_compile_options(ge_graph_dsl_test PRIVATE
 )
 set_target_properties(ge_graph_dsl_test PROPERTIES CXX_STANDARD 17)
 
-target_link_libraries(ge_graph_dsl_test PUBLIC gtest gtest_main ge_graph_dsl)
+target_link_libraries(ge_graph_dsl_test PUBLIC gtest ge_graph_dsl)
 
 include(CTest)
 enable_testing()

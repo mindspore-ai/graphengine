@@ -23,15 +23,22 @@ GE_NS_BEGIN
 
 namespace {
 
-#define OP_CFG(optype, ...)                                                                                            \
-  {                                                                                                                    \
-    optype, OpDescCfg {                                                                                                \
-      optype, __VA_ARGS__                                                                                              \
-    }                                                                                                                  \
+#define OP_CFG(optype, ...)                   \
+  {                                           \
+    optype, OpDescCfg { optype, __VA_ARGS__ } \
   }
 
 static std::map<OpType, OpDescCfg> cfg_repo{OP_CFG(DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
                                             OP_CFG(ADD, 2, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(ENTER, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(MERGE, 2, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(CONSTANT, 0, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(LESS, 2, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(LOOPCOND, 1, 1, FORMAT_NCHW, DT_BOOL, {1, 1, 224, 224}),
+                                            OP_CFG(SWITCH, 2, 2, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(EXIT, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(NEXTITERATION, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
+                                            OP_CFG(NETOUTPUT, 2, 2, FORMAT_NCHW, DT_FLOAT, {1, 1, 224, 224}),
                                             OP_CFG(VARIABLE, 1, 1)};
 }  // namespace
 

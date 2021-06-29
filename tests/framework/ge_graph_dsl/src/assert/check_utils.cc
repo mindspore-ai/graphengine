@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-#include "external/ge/ge_api.h"
 #include "ge_graph_dsl/assert/check_utils.h"
-#include "ge_running_env/include/ge_running_env/ge_running_env_faker.h"
+#include "graph/utils/dumper/ge_graph_dumper.h"
+#include "ge_graph_default_checker.h"
+#include "ge_graph_check_dumper.h"
 
-using namespace std;
-using namespace ge;
+GE_NS_BEGIN
 
-int main(int argc, char **argv) {
-  // init the logging
-  map<AscendString, AscendString> options;
-  auto init_status = ge::GEInitialize(options);
-  if (init_status != SUCCESS) {
-    std::cout << "ge init failed , ret code:" << init_status << endl;
-  }
-  GeRunningEnvFaker::BackupEnv();
-  CheckUtils::init();
-  testing::InitGoogleTest(&argc, argv);
-  int ret = RUN_ALL_TESTS();
-  return ret;
+bool CheckUtils::CheckGraph(const std::string &phase_id, const GraphCheckFun &fun) {
+  auto &dumper = dynamic_cast<GeGraphCheckDumper &>(GraphDumperRegistry::GetDumper());
+  return dumper.CheckFor(GeGraphDefaultChecker(phase_id, fun));
 }
+
+void CheckUtils::init() {
+  static GeGraphCheckDumper checkDumper;
+  GraphDumperRegistry::Register(checkDumper);
+}
+
+GE_NS_END

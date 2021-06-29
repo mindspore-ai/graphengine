@@ -19,6 +19,4 @@
 
 USING_GE_NS
 
-OpDescPtr OpDescPtrBox::Build(const ::EG_NS::NodeId &id) const {
-  return op_;
-}
+OpDescPtr OpDescPtrBox::Build(const ::EG_NS::NodeId &id) const { return op_; }

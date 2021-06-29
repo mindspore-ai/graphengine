@@ -36,17 +36,11 @@ GE_NS_BEGIN
 
 GeGraphVisitor::GeGraphVisitor() : build_graph_(std::make_shared<ComputeGraph>("")) {}
 
-void GeGraphVisitor::reset(const ComputeGraphPtr &graph) {
-  build_graph_ = graph;
-}
+void GeGraphVisitor::reset(const ComputeGraphPtr &graph) { build_graph_ = graph; }
 
-Graph GeGraphVisitor::BuildGeGraph() const {
-  return GraphUtils::CreateGraphFromComputeGraph(build_graph_);
-}
+Graph GeGraphVisitor::BuildGeGraph() const { return GraphUtils::CreateGraphFromComputeGraph(build_graph_); }
 
-ComputeGraphPtr GeGraphVisitor::BuildComputeGraph() const {
-  return build_graph_;
-}
+ComputeGraphPtr GeGraphVisitor::BuildComputeGraph() const { return build_graph_; }
 
 Status GeGraphVisitor::Visit(const ::EG_NS::Graph &graph) {
   build_graph_->SetName(graph.GetName());

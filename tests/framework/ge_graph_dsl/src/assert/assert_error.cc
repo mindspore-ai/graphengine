@@ -13,25 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "ge_graph_dsl/assert/assert_error.h"
 
-#include <gtest/gtest.h>
-#include "external/ge/ge_api.h"
-#include "ge_graph_dsl/assert/check_utils.h"
-#include "ge_running_env/include/ge_running_env/ge_running_env_faker.h"
+GE_NS_BEGIN
 
-using namespace std;
-using namespace ge;
-
-int main(int argc, char **argv) {
-  // init the logging
-  map<AscendString, AscendString> options;
-  auto init_status = ge::GEInitialize(options);
-  if (init_status != SUCCESS) {
-    std::cout << "ge init failed , ret code:" << init_status << endl;
-  }
-  GeRunningEnvFaker::BackupEnv();
-  CheckUtils::init();
-  testing::InitGoogleTest(&argc, argv);
-  int ret = RUN_ALL_TESTS();
-  return ret;
+AssertError::AssertError(const char *file, int line, const std::string &info) {
+  this->info = std::string(file) + ":" + std::to_string(line) + "\n" + info;
 }
+
+const char *AssertError::what() const noexcept { return info.c_str(); }
+
+GE_NS_END

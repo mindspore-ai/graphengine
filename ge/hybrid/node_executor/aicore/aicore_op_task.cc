@@ -33,6 +33,7 @@ namespace {
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 constexpr char const *kAttrOpParamSize = "op_para_size";
 constexpr char const *kAttrAtomicOpParamSize = "atomic_op_para_size";
+const string kAtomicOpType = "DynamicAtomicAddrClean";
 std::atomic<std::uint64_t> log_id(0);
 }  // namespace
 
@@ -51,6 +52,7 @@ bool TbeHandleRegistry::AddHandle(std::unique_ptr<TbeHandleHolder> &&holder) {
 }
 
 Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) {
+  op_type_ = op_desc.GetType();
   log_name_ = op_desc.GetName() + "_tvmbin";
   log_id_ = log_id++;
   auto op_desc_ptr = MakeShared<OpDesc>(op_desc);
@@ -538,6 +540,10 @@ const std::string &AiCoreOpTask::GetName() const {
   return stub_name_;
 }
 
+const std::string &AiCoreOpTask::GetOpType() const {
+  return op_type_;
+}
+
 std::string AiCoreOpTask::GetKeyForOpParamSize() const {
   return kAttrOpParamSize;
 }
@@ -629,6 +635,10 @@ std::string AtomicAddrCleanOpTask::GetKeyForTvmMetaData() const {
 
 std::string AtomicAddrCleanOpTask::GetKeyForKernelName(const OpDesc &op_desc) const {
   return op_desc.GetName() + "_atomic_kernelname";
+}
+
+const std::string &AtomicAddrCleanOpTask::GetOpType() const {
+  return kAtomicOpType;
 }
 
 Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {

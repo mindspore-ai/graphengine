@@ -207,7 +207,7 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
   context.SetTaskId(task_id);
   context.SetStreamId(stream_id);
   GELOGD("Aicpu node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
-  (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicpu, 0);
+  (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicpu, 0, node_type_);
   auto callback = [=, &context]() {
     GELOGD("Node[%s] callback start.", node_name_.c_str());
     RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[TaskCallback] Start");

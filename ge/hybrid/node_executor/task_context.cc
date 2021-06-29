@@ -574,8 +574,8 @@ Status TaskContext::Synchronize() {
   return execution_context_->Synchronize(GetStream());
 }
 
-Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id,
-                                              const std::string &task_type, uint32_t block_dim) {
+Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id, const std::string &task_type,
+                                              uint32_t block_dim, const std::string &op_type) {
   if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
@@ -589,7 +589,7 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream
     TaskDescInfo tmp_task_desc_info;
     tmp_task_desc_info.model_name = dynamic_model_name;
     tmp_task_desc_info.op_name = op_desc->GetName();
-    tmp_task_desc_info.op_type = op_desc->GetType();
+    tmp_task_desc_info.op_type = op_type;
     tmp_task_desc_info.block_dim = block_dim;
     tmp_task_desc_info.task_type = task_type;
     tmp_task_desc_info.task_id = task_id;

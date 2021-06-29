@@ -78,6 +78,8 @@ class AiCoreOpTask {
 
   void SetSingleOp(bool is_single_op) {is_single_op_ = is_single_op;};
 
+  virtual const std::string& GetOpType() const;
+
  protected:
   Status UpdateTilingInfo(TaskContext &context);
   virtual std::string GetKeyForOpParamSize() const;
@@ -117,12 +119,14 @@ class AiCoreOpTask {
   uint64_t log_id_ = 0;
   std::string log_name_;
   uint32_t offset_ = 0;
+  std::string op_type_;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {
  public:
   Status Init(const OpDesc &op_desc, const domi::TaskDef &task_def) override;
   Status UpdateArgs(TaskContext &task_context) override;
+  const std::string& GetOpType() const override;
 
  protected:
   std::string GetKeyForOpParamSize() const override;

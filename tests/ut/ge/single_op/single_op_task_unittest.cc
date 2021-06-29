@@ -134,6 +134,8 @@ TEST_F(UtestSingleOpTask, test_update_ioaddr) {
   task.arg_size_ = sizeof(void *) * 4;
   task.args_.reset(new (std::nothrow) uint8_t[task.arg_size_]);
   task.arg_index_ = {0};
+  task.input_num_ = 2;
+  task.output_num_ = 1;
 
   vector<void *> args;
   vector<DataBuffer> inputs;

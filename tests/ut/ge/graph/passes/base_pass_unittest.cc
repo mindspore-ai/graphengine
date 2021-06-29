@@ -130,7 +130,7 @@ class UTESTGraphPassesBasePass : public testing::Test {
 ///      reshape1
 ///        |
 ///       add1
-///     /     \
+///     /     \.
 ///    |      |
 ///  data1  const1
 ComputeGraphPtr BuildGraph1() {
@@ -148,9 +148,9 @@ ComputeGraphPtr BuildGraph1() {
 }
 
 ///               sum1
-///             /     \
-///            /       \
-///          /          \
+///             /     \.
+///            /       \.
+///          /          \.
 ///      reshape1      addn1
 ///        |      c      |
 ///       add1  <---  shape1
@@ -217,7 +217,7 @@ void CheckIterOrder(UtestTestPass *pass, std::vector<std::unordered_set<std::str
 ///      Op1
 ///       |
 ///     Merge
-///      / \
+///      / \.
 ///    Op2 Op3
 TEST_F(UTESTGraphPassesBasePass, del_isolate_fail) {
   auto builder = ut::GraphBuilder("g1");
@@ -245,7 +245,7 @@ TEST_F(UTESTGraphPassesBasePass, del_isolate_fail) {
 ///      Op1
 ///       |
 ///     Merge
-///      / \
+///      / \.
 ///    Op2 Op3
 TEST_F(UTESTGraphPassesBasePass, del_isolate_success) {
   auto builder = ut::GraphBuilder("g1");
@@ -459,7 +459,7 @@ TEST_F(UTESTGraphPassesBasePass, while_loop) {
 ///     data1  const
 ///        \ /
 ///       while
-///     /     \
+///     /     \.
 ///    |      |
 ///   cast1   cast2
 ComputeGraphPtr BuildWhileGraph1() {

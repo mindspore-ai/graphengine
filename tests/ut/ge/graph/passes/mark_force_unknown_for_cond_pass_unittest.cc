@@ -69,62 +69,100 @@ static NodePtr CreateNode(ComputeGraph &graph, const string &name, const string 
   return graph.AddNode(op_desc);
 }
 
-static void CreateLoopGraph(ComputeGraphPtr &graph, NodePtr &merge) {
+static void CreateLoopGraph(ComputeGraphPtr &graph, NodePtr &merge, vector<NodePtr> &loop, vector<NodePtr> &cond) {
 /*******************************************************************************
- *      Exit         Identify
- *        \         /       \.
- *         \       /         \.
- *          Switch           Add
- *         /     |            |
- *        /      |            |
- *       /       |            |
- *  LoopCond     |            |
- *      \        |            |
- *       \       |            |
- *        \      |            |
- *       Less    |            |
- *          \    |       NextIteration
- *           \   |            |
- *            \  |            |
- *            Merge <---------|
- *              |
- *              |
- *            Enter
+ *                                     |
+ *            +--------------------- Merge ----------------------+
+ *           /                                                   |
+ *          /                                                    |
+ *         /                                                     |
+ *        /                                                      |
+ *      Exit         Identify                                    |
+ *        \         /       \.                                   |
+ *         \       /         \.                                  |
+ *          Switch           Add                                Add
+ *         /     |            |                                  |
+ *        /      |            |                                  |
+ *       /       |            |                                  |
+ *  LoopCond     |            |                                  |
+ *      \        |            |                                  |
+ *       \       |            |                                  |
+ *        \      |            |                                  |
+ *       Less    |            |                                  |
+ *          \    |       NextIteration                           |
+ *           \   |            |                                  |
+ *            \  |            |                                  |
+ *            Merge <---------|                                  |
+ *              |                                                |
+ *              |                                                |
+ *            Enter                                              |
+ *              \                                                |
+ *               \                                               |
+ *               Switch                                       Switch
+ *                  |                                            |
+ *                  +-----------------Equal----------------------+
+ *                                      |
  ******************************************************************************/
-  auto data1 = CreateNode(*graph, "data", DATA, 1, 1);
+  auto data1 = CreateNode(*graph, "data1", DATA, 1, 1);
+  auto data2 = CreateNode(*graph, "data2", DATA, 1, 1);
+
+  auto equal1 = CreateNode(*graph, "equal1", EQUAL, 2, 1);
+  auto switch1 = CreateNode(*graph, "switch1", SWITCH, 2, 2);
+  auto switch2 = CreateNode(*graph, "switch2", SWITCH, 2, 2);
+
   auto enter1 = CreateNode(*graph, "enter", ENTER, 1, 1);
-  auto merge1 = CreateNode(*graph, "merge", MERGE, 2, 2);
-  auto less1 = CreateNode(*graph, "less", LESS, 2, 1);
+  auto merge1 = CreateNode(*graph, "merge1", MERGE, 2, 2);
+  auto less1 = CreateNode(*graph, "less1", LESS, 2, 1);
   auto loop1 = CreateNode(*graph, "loopcond", LOOPCOND, 1, 1);
-  auto switch1 = CreateNode(*graph, "switch", SWITCH, 2, 2);
+  auto switch3 = CreateNode(*graph, "switch3", SWITCH, 2, 2);
   auto ident1 = CreateNode(*graph, "identity", IDENTITY, 1, 1);
-  auto add1 = CreateNode(*graph, "add", ADD, 2, 1);
+  auto add1 = CreateNode(*graph, "add1", ADD, 2, 1);
   auto next1 = CreateNode(*graph, "next", NEXTITERATION, 1, 1);
   auto exit1 = CreateNode(*graph, "exit", EXIT, 1, 1);
-  auto value0 = CreateNode(*graph, "const", CONSTANT, 0, 1);
-  auto value1 = CreateNode(*graph, "const", CONSTANT, 0, 1);
+  auto value1 = CreateNode(*graph, "const1", CONSTANT, 0, 1);
+
+  auto value2 = CreateNode(*graph, "const2", CONSTANT, 0, 1);
+  auto add2 = CreateNode(*graph, "add2", ADD, 2, 1);
+  auto merge2 = CreateNode(*graph, "merge2", MERGE, 2, 2);
   auto output1 = CreateNode(*graph, "net_output", NETOUTPUT, 1, 1);
 
-  GraphUtils::AddEdge(data1->GetOutDataAnchor(0), enter1->GetInDataAnchor(0));
+  GraphUtils::AddEdge(data1->GetOutDataAnchor(0), equal1->GetInDataAnchor(0));
+  GraphUtils::AddEdge(data2->GetOutDataAnchor(0), equal1->GetInDataAnchor(1));
+  GraphUtils::AddEdge(data1->GetOutDataAnchor(0), switch1->GetInDataAnchor(0));
+  GraphUtils::AddEdge(data2->GetOutDataAnchor(0), switch2->GetInDataAnchor(0));
+  GraphUtils::AddEdge(equal1->GetOutDataAnchor(0), switch1->GetInDataAnchor(1));
+  GraphUtils::AddEdge(equal1->GetOutDataAnchor(0), switch2->GetInDataAnchor(1));
+  cond.emplace_back(switch1);
+  cond.emplace_back(switch2);
+
+  GraphUtils::AddEdge(switch1->GetOutDataAnchor(0), enter1->GetInDataAnchor(0));  // false
   GraphUtils::AddEdge(enter1->GetOutDataAnchor(0), merge1->GetInDataAnchor(0));
   GraphUtils::AddEdge(merge1->GetOutDataAnchor(0), less1->GetInDataAnchor(0));
   GraphUtils::AddEdge(value1->GetOutDataAnchor(0), less1->GetInDataAnchor(1));
   GraphUtils::AddEdge(less1->GetOutDataAnchor(0), loop1->GetInDataAnchor(0));
 
-  GraphUtils::AddEdge(loop1->GetOutDataAnchor(0), switch1->GetInDataAnchor(0));
-  GraphUtils::AddEdge(merge1->GetOutDataAnchor(0), switch1->GetInDataAnchor(1));
+  GraphUtils::AddEdge(loop1->GetOutDataAnchor(0), switch3->GetInDataAnchor(0));
+  GraphUtils::AddEdge(merge1->GetOutDataAnchor(0), switch3->GetInDataAnchor(1));
+  loop.emplace_back(merge1);
 
-  GraphUtils::AddEdge(switch1->GetOutDataAnchor(0), exit1->GetInDataAnchor(0));
-  GraphUtils::AddEdge(switch1->GetOutDataAnchor(1), ident1->GetInDataAnchor(0));
+  GraphUtils::AddEdge(switch3->GetOutDataAnchor(0), exit1->GetInDataAnchor(0)); // false
+  GraphUtils::AddEdge(switch3->GetOutDataAnchor(1), ident1->GetInDataAnchor(0)); // true
+  loop.emplace_back(switch3);
 
   GraphUtils::AddEdge(ident1->GetOutDataAnchor(0), add1->GetInDataAnchor(0));
   GraphUtils::AddEdge(value1->GetOutDataAnchor(0), add1->GetInDataAnchor(1));
   GraphUtils::AddEdge(add1->GetOutDataAnchor(0), next1->GetInDataAnchor(0));
-
   GraphUtils::AddEdge(next1->GetOutDataAnchor(0), merge1->GetInDataAnchor(1));
-  GraphUtils::AddEdge(exit1->GetOutDataAnchor(0), output1->GetInDataAnchor(0));
 
-  merge = merge1;
+  GraphUtils::AddEdge(switch2->GetOutDataAnchor(1), add2->GetInDataAnchor(1));  // true
+  GraphUtils::AddEdge(value2->GetOutDataAnchor(0), add2->GetInDataAnchor(0));
+
+  GraphUtils::AddEdge(exit1->GetOutDataAnchor(0), merge2->GetInDataAnchor(0));
+  GraphUtils::AddEdge(add2->GetOutDataAnchor(0), merge2->GetInDataAnchor(1));
+  GraphUtils::AddEdge(merge2->GetOutDataAnchor(0), output1->GetInDataAnchor(0));
+
+  cond.emplace_back(merge2);
+  merge = merge2;
 }
 
 static void CreateCondGraph(ComputeGraphPtr &graph, NodePtr &merge) {
@@ -197,12 +235,24 @@ static void CreateCondGraph(ComputeGraphPtr &graph, NodePtr &merge) {
 TEST_F(UtestMarkForceUnknownForCondPass, skip_while_loop_merge) {
   auto graph = std::make_shared<ComputeGraph>("test_graph");
   NodePtr merge;
-  CreateLoopGraph(graph, merge);
-
-  AttrUtils::SetBool(merge->GetOpDesc(), ATTR_NAME_FORCE_UNKNOWN_SHAPE, true);
+  vector<NodePtr> loop;
+  vector<NodePtr> cond;
+  CreateLoopGraph(graph, merge, loop, cond);
 
   MarkForceUnknownForCondPass mark_force_unknown_pass;
   EXPECT_EQ(mark_force_unknown_pass.Run(graph), SUCCESS);   // skip LoopCond
+
+  EXPECT_EQ(loop.size(), 2);
+  for (const auto &node : loop) {
+    EXPECT_FALSE(node->GetOpDesc()->HasAttr(ATTR_NAME_CONTROL_FLOW_GROUP));
+  }
+
+  EXPECT_EQ(cond.size(), 3);
+  for (const auto &node : cond) {
+    int64_t group_index = -1;
+    EXPECT_TRUE(AttrUtils::GetInt(node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index));
+    EXPECT_EQ(group_index, merge->GetOpDesc()->GetId());
+  }
 }
 
 TEST_F(UtestMarkForceUnknownForCondPass, skip_known_shape_merge) {

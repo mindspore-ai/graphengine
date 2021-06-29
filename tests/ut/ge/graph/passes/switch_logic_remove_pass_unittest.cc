@@ -63,9 +63,9 @@ ComputeGraphPtr BuildGraph1() {
 ///       netoutput1
 ///           |
 ///         merge1
-///        /     \
+///        /     \.
 ///      /      add1
-///    /        F|   \
+///    /        F|   \.
 /// addn1    swtich2    var3
 ///   \F   T/   |
 ///   switch1  |
@@ -101,9 +101,9 @@ ComputeGraphPtr BuildGraph2() {
 ///     add1
 ///    /   \T
 /// var3    swtich2
-///       T/    \
-///   switch1    \
-///  /       \    \
+///       T/    \.
+///   switch1    \.
+///  /       \    \.
 /// var1     var2  var4
 ComputeGraphPtr BuildGraph3() {
   auto builder = ut::GraphBuilder("g3");
@@ -129,7 +129,7 @@ ComputeGraphPtr BuildGraph3() {
 ///       netoutput1
 ///          |
 ///        merge1
-///        /    \
+///        /    \.
 ///     add1     addn1
 ///    /   \T   F/
 /// var3    swtich2

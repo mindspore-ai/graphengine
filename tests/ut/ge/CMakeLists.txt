@@ -866,7 +866,6 @@ set(HYBRID_TEST_FILES
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
     "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
-
 )
 
 set(OTHERS_TEST_FILES
@@ -894,6 +893,7 @@ add_library(ge_ut_graph STATIC
 
 target_compile_definitions(ge_ut_graph PRIVATE
     google=ascend_private
+    FMK_SUPPORT_DUMP
 )
 
 target_compile_options(ge_ut_graph PRIVATE

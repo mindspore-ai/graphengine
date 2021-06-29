@@ -55,7 +55,7 @@ class UtestGraphPassesAssertPass : public Test {
 };
 
 ///             D      E
-///           |   \  |  \
+///           |   \  |  \.
 ///          F     C     G
 ///             :  |  :
 ///            H    A   I
@@ -134,8 +134,8 @@ TEST_F(UtestGraphPassesAssertPass, assert_pass_test2) {
   EXPECT_EQ(graph->FindNode("D"), nullptr);
 }
 
-///      E         F
-///    | \       | \
+///     E         F
+///    | \       | \.
 ///   H    C ->  D   G
 ///        \   |   :
 ///           A      I

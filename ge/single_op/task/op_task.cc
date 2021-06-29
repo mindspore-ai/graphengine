@@ -89,6 +89,7 @@ Status OpTask::OpenDump(rtStream_t stream) {
 void TbeOpTask::SetStubFunc(const std::string &name, const void *stub_func) {
   this->stub_name_ = name;
   this->stub_func_ = stub_func;
+  this->task_name_ = name;
 }
 
 void TbeOpTask::SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,

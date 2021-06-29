@@ -70,7 +70,9 @@ std::vector<void *> BuildTaskUtils::GetKernelArgs(const OpDescPtr &op_desc,
   return JoinAddresses(addresses);
 }
 
-std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
+std::string BuildTaskUtils::InnerGetTaskInfo(const OpDescPtr &op_desc,
+                                             const std::vector<const void *> &input_addrs,
+                                             const std::vector<const void *> &output_addrs) {
   std::stringstream ss;
   if (op_desc != nullptr) {
     auto op_type = op_desc->GetType();
@@ -87,7 +89,10 @@ std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
       }
       ss << TypeUtils::DataTypeToSerialString(input->GetDataType()) << " ";
       ss << TypeUtils::FormatToSerialString(input->GetFormat());
-      ss << VectorToString(input->GetShape().GetDims());
+      ss << VectorToString(input->GetShape().GetDims()) << " ";
+      if (idx < input_addrs.size()) {
+        ss << input_addrs[idx];
+      }
       if (idx < op_desc->GetInputsSize() - 1) {
         ss << ",";
       }
@@ -101,7 +106,10 @@ std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
       const GeShape &out_shape = output->GetShape();
       const auto &dims = out_shape.GetDims();
       ss << TypeUtils::FormatToSerialString(out_format);
-      ss << VectorToString(dims);
+      ss << VectorToString(dims) << " ";
+      if (idx < output_addrs.size()) {
+        ss << output_addrs[idx];
+      }
       if (idx < op_desc->GetOutputsSize() - 1) {
         ss << ",";
       }
@@ -109,5 +117,45 @@ std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
     ss << "]\n";
   }
   return ss.str();
+}
+
+std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc) {
+  vector<const void *> input_addrs;
+  vector<const void *> output_addrs;
+  return InnerGetTaskInfo(op_desc, input_addrs, output_addrs);
+}
+
+std::string BuildTaskUtils::GetTaskInfo(const OpDescPtr &op_desc,
+                                        const std::vector<DataBuffer> &inputs,
+                                        const std::vector<DataBuffer> &outputs) {
+  vector<const void *> input_addrs;
+  vector<const void *> output_addrs;
+  GE_CHECK_NOTNULL_EXEC(op_desc, return "");
+  if (op_desc->GetAllInputsSize() == inputs.size()) {
+    std::for_each(inputs.begin(), inputs.end(), [&](const DataBuffer &db) { input_addrs.push_back(db.data); });
+  }
+  if (op_desc->GetOutputsSize() == outputs.size()) {
+    std::for_each(outputs.begin(), outputs.end(), [&](const DataBuffer &db) { output_addrs.push_back(db.data); });
+  }
+  return InnerGetTaskInfo(op_desc, input_addrs, output_addrs);
+}
+
+std::string BuildTaskUtils::GetTaskInfo(const hybrid::TaskContext &task_context) {
+  auto &node_item = task_context.GetNodeItem();
+  auto op_desc = node_item.GetOpDesc();
+  GE_CHECK_NOTNULL_EXEC(op_desc, return "");
+  vector<const void *> input_addrs;
+  vector<const void *> output_addrs;
+  if (op_desc->GetAllInputsSize() == static_cast<uint32_t>(task_context.NumInputs())) {
+    for (size_t i = 0; i < op_desc->GetAllInputsSize(); ++i) {
+      input_addrs.push_back(task_context.GetInput(i)->GetData());
+    }
+  }
+  if (op_desc->GetOutputsSize() == static_cast<uint32_t>(task_context.NumOutputs())) {
+    for (size_t i = 0; i < op_desc->GetOutputsSize(); ++i) {
+      output_addrs.push_back(task_context.GetOutput(i)->GetData());
+    }
+  }
+  return InnerGetTaskInfo(op_desc, input_addrs, output_addrs);
 }
 }  // namespace ge

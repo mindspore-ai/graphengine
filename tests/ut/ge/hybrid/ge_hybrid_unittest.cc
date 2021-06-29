@@ -34,12 +34,14 @@
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
+#include "hybrid/node_executor/aicore/aicore_node_executor.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "graph/types.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/testcase/ge_graph/graph_builder_utils.h"
+#include "single_op/task/build_task_utils.h"
 #include "graph/op_desc_impl.h"
 #undef private
 #undef protected
@@ -747,4 +749,33 @@ TEST_F(UtestGeHybrid, TestParseDependencies) {
   AttrUtils::SetTensor(tensor_desc, "_value", tensor);
   std::set<NodePtr> dependent_for_shape_inference;
   ASSERT_EQ(builder.ParseDependencies(*node_item, deps, dependent_for_shape_inference), SUCCESS);
+}
+
+TEST_F(UtestGeHybrid, TestTaskExecuteAsync) {
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  GeShape shape({2, 16});
+  GeTensorDesc tensor_desc(shape);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
+  auto node = graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphExecutionContext execution_context;
+  GraphItem graph_item;
+  SubgraphContext subgraph_context(&graph_item, &execution_context);
+  ASSERT_EQ(subgraph_context.Init(), SUCCESS);
+  subgraph_context.all_inputs_.resize(2);
+  subgraph_context.all_outputs_.resize(1);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
+  auto task_context = *node_state->GetTaskContext();
+  ASSERT_NE(BuildTaskUtils::GetTaskInfo(task_context), "");
+  std::unique_ptr<AiCoreOpTask> task1(new AiCoreOpTask());
+  std::vector<std::unique_ptr<AiCoreOpTask>> tasks;
+  AiCoreNodeTask node_task(std::move(tasks));
+  ASSERT_EQ(node_task.ExecuteAsync(task_context, nullptr), SUCCESS);
 }

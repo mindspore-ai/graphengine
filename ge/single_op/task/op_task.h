@@ -44,6 +44,7 @@ class OpTask {
   virtual Status UpdateArgTable(const SingleOpModelParam &param);
   void SetModelArgs(std::string model_name, uint32_t model_id);
   Status GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id);
+  const std::string &GetTaskName() const {return task_name_;}
   void SetOpDesc(const OpDescPtr &op_desc) {
     op_desc_ = op_desc;
   }
@@ -66,6 +67,7 @@ class OpTask {
   std::string model_name_;
   uint32_t model_id_ = 0;
   uint32_t block_dim_ = 1;
+  std::string task_name_;
 };
 
 class TbeOpTask : public OpTask {

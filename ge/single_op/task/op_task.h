@@ -87,6 +87,7 @@ class TbeOpTask : public OpTask {
                                const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
 
   Status UpdateRunInfo() override;
+  Status SetArgIndex();
 
   const void *GetArgs() const;
   size_t GetArgSize() const;
@@ -102,7 +103,9 @@ class TbeOpTask : public OpTask {
   Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
                            const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
+  Status UpdateTilingArgs(rtStream_t stream);
   Status DoLaunchKernel(rtStream_t stream);
+  Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs);
 
   const void *stub_func_ = nullptr;
   std::unique_ptr<uint8_t[]> args_;
@@ -122,6 +125,9 @@ class TbeOpTask : public OpTask {
   void* handle_ = nullptr;
   std::string original_kernel_key_;
   std::string node_info_;
+  std::vector<size_t> arg_index_; // data index in args
+  size_t input_num_; // include const input
+  size_t output_num_;
 };
 
 class AiCpuBaseTask : public OpTask {

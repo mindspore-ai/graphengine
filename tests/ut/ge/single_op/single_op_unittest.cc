@@ -104,7 +104,7 @@ TEST_F(UtestSingleOp, test_dynamic_singleop_execute_async1) {
   EXPECT_EQ(desc_ptr->AddInputDesc("x", GeTensorDesc(GeShape({2}), FORMAT_NCHW)), GRAPH_SUCCESS);
   dynamic_single_op.op_task_->op_desc_ = desc_ptr;
   // UpdateRunInfo failed
-  EXPECT_EQ(dynamic_single_op.ExecuteAsync(input_desc, input_buffers, output_desc, output_buffers), PARAM_INVALID);
+  EXPECT_EQ(dynamic_single_op.ExecuteAsync(input_desc, input_buffers, output_desc, output_buffers), ACL_ERROR_GE_PARAM_INVALID);
 }
 
 

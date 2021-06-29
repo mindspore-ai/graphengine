@@ -13,20 +13,21 @@
 # limitations under the License.
 # ============================================================================
 
-include(cmake/graphengine.cmake)
-add_subdirectory(easy_graph)
-add_subdirectory(ge_graph_dsl)
-add_subdirectory(ge_running_env)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cc" "*.CC" "*.cpp" "*.CPP")
 
-file(GLOB_RECURSE UTILS_SRC CONFIGURE_DEPENDS
-        "utils/*.cc"
-        )
+add_executable(ge_running_env_test ${SOURCES})
 
-add_library(framework STATIC ${UTILS_SRC})
-
-target_include_directories(framework
-    PUBLIC utils/
+target_include_directories(ge_running_env_test
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set_target_properties(framework PROPERTIES CXX_STANDARD 11)
-target_link_libraries(framework PUBLIC ge_graph_dsl ge_with_env)
+target_compile_options(ge_running_env_test PRIVATE
+    -g
+)
+set_target_properties(ge_running_env_test PROPERTIES CXX_STANDARD 17)
+
+target_link_libraries(ge_running_env_test PUBLIC gtest ge_with_env)
+
+include(CTest)
+enable_testing()
+add_test(NAME test COMMAND ge_running_env_test)

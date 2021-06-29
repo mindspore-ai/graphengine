@@ -21,6 +21,7 @@
 #include "ge_graph_dsl/ge.h"
 #include "ge_graph_dsl/op_desc/op_box.h"
 #include "ge_graph_dsl/op_desc/op_desc_cfg.h"
+#include "graph/ge_attr_value.h"
 #include "graph/op_desc.h"
 
 GE_NS_BEGIN
@@ -29,19 +30,32 @@ struct OpDescCfgBox : OpBox, private OpDescCfg {
   OpDescCfgBox(const OpType &opType);
   OpDescCfgBox &InCnt(int in_cnt);
   OpDescCfgBox &OutCnt(int out_cnt);
+  OpDescCfgBox &ParentNodeIndex(int node_index);
   OpDescCfgBox &TensorDesc(Format format = FORMAT_NCHW, DataType data_type = DT_FLOAT,
-                              std::vector<int64_t> shape = {1, 1, 224, 224});
-	template<typename Type>
-	OpDescCfgBox& Attr(const std::string &name, Type value) {
-	  auto attrvalue = ge::GeAttrValue::CreateFrom<Type>(value);
-	  attrs_.emplace(std::make_pair(name, attrvalue));
-	  return *this;
-	 }
+                           std::vector<int64_t> shape = {1, 1, 224, 224});
+  OpDescCfgBox &Weight(GeTensorPtr &);
+
+  template <typename Type>
+  OpDescCfgBox &Attr(const std::string &name, Type &&value) {
+    auto attrvalue = ge::GeAttrValue::CreateFrom<Type>(std::forward<Type>(value));
+    attrs_.emplace(std::make_pair(name, attrvalue));
+    return *this;
+  }
+
+  template <typename Type>
+  OpDescCfgBox &Attr(const std::string &name, Type &value) {
+    auto attrvalue = ge::GeAttrValue::CreateFrom<Type>(value);
+    attrs_.emplace(std::make_pair(name, attrvalue));
+    return *this;
+  }
+
+  OpDescCfgBox &Attr(const std::string &name, int value);
+  OpDescCfgBox &Attr(const std::string &name, const char *value);
+  OpDescPtr Build(const ::EG_NS::NodeId &id) const override;
 
  private:
-  OpDescPtr Build(const ::EG_NS::NodeId &id) const override;
-	void UpdateAttrs(OpDescPtr&) const;
-	std::map<std::string, GeAttrValue> attrs_;
+  void UpdateAttrs(OpDescPtr &) const;
+  std::map<std::string, GeAttrValue> attrs_;
 };
 
 #define OP_CFG(optype) ::GE_NS::OpDescCfgBox(optype)

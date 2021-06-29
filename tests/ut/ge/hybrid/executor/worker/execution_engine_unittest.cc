@@ -119,7 +119,7 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_callback_and_kernel_task) {
   uint32_t stream_id = 1;
   std::string task_type = "rts";
   uint32_t block_dim = 0;
-  node_state->GetTaskContext()->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim);
+  node_state->GetTaskContext()->SaveProfilingTaskDescInfo(task_id, stream_id, task_type, block_dim, op_desc->GetType());
 
   ASSERT_TRUE(node_state->GetTaskContext() != nullptr);
 

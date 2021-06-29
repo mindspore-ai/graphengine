@@ -118,8 +118,8 @@ class TaskContext {
   void *handle_ = nullptr;
 
   const std::vector<TaskDescInfo>& GetProfilingTaskDescInfo() const { return task_desc_info; }
-  Status SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t stream_id,
-                                   const std::string &task_type, uint32_t block_dim);
+  Status SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t stream_id, const std::string &task_type,
+                                   uint32_t block_dim, const std::string &op_type);
   void ClearProfilingTaskDescInfo() { task_desc_info.clear(); }
 
  private:

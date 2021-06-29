@@ -214,7 +214,7 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     context.SetTaskId(task_id);
     context.SetStreamId(stream_id);
     GELOGD("Aicore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
-    (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicore, (*it)->GetBlockDim());
+    (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicore, (*it)->GetBlockDim(), (*it)->GetOpType());
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }

@@ -102,7 +102,7 @@ TEST_F(UtestGeHybrid, aicore_op_task_init_success) {
   op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);
   std::string kernel_name("kernel/Add");
   AttrUtils::SetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name);
-  ASSERT_EQ(aicore_task->InitWithTaskDef(*op_desc.get(), task_def), SUCCESS);
+  ASSERT_EQ(aicore_task->Init(*op_desc.get(), task_def), SUCCESS);
   rtStream_t stream = nullptr;
   rtStreamCreate(&stream, 0);
   ASSERT_EQ(aicore_task->LaunchKernel(stream), SUCCESS);
@@ -676,6 +676,15 @@ TEST_F(UtestGeHybrid, test_key_for_kernel_bin) {
   EXPECT_EQ(atomic_task->GetKeyForTvmMagic(), ATOMIC_ATTR_TVM_MAGIC);
   EXPECT_EQ(atomic_task->GetKeyForTvmMetaData(), ATOMIC_ATTR_TVM_METADATA);
   EXPECT_EQ(atomic_task->GetKeyForKernelName(op_desc), "Sum_atomic_kernelname");
+}
+
+TEST_F(UtestGeHybrid, test_op_type) {
+  auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
+  aicore_task->op_type_ = "Add";
+  EXPECT_EQ(aicore_task->GetOpType(), "Add");
+
+  auto atomic_task = std::unique_ptr<hybrid::AtomicAddrCleanOpTask>(new(std::nothrow)hybrid::AtomicAddrCleanOpTask());
+  EXPECT_EQ(atomic_task->GetOpType(), "DynamicAtomicAddrClean");
 }
 
 TEST_F(UtestGeHybrid, TestParseDependentInputNodesForHccl) {

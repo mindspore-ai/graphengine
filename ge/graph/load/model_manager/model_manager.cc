@@ -1397,6 +1397,14 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   vector<void *> allocated_mem;
   rtError_t status;
   rtStream_t stream = nullptr;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+    GE_CHK_RT(rtStreamDestroy(stream));
+  };
+  GE_MAKE_GUARD(release, callback);
+
   vector<CustAicpuSoBuf> v_cust_so;
   void *args = nullptr;
 
@@ -1471,13 +1479,6 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
     GELOGE(RT_FAILED, "[Call][RtStreamSynchronize] fail, ret = 0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
-  std::function<void()> callback = [&]() {
-    for (auto mem : allocated_mem) {
-      GE_CHK_RT(rtFree(mem));
-    }
-    GE_CHK_RT(rtStreamDestroy(stream));
-  };
-  GE_MAKE_GUARD(release, callback);
   GELOGI("Cpu kernel launch task success.");
   return SUCCESS;
 }

@@ -301,12 +301,26 @@ graphStatus InferValueRangePass::ConstructData(const GeTensorDesc &tensor_desc, 
                                                GeTensorPtr &output_ptr) {
   std::vector<std::pair<int64_t, int64_t>> value_range;
   (void)tensor_desc.GetValueRange(value_range);
-  if (static_cast<int64_t>(value_range.size()) != tensor_desc.GetShape().GetShapeSize()) {
-    GELOGW("Value range of input %s is invalid.", tensor_desc.GetName().c_str());
+  size_t value_range_data_num = value_range.size();
+  auto tensor_shape = tensor_desc.GetShape();
+  bool value_range_and_tensor_shape_matched = true;
+  if (tensor_shape.IsScalar()){
+    // scalar tensor has only one value_range pair
+    if (value_range_data_num != 1) {
+      value_range_and_tensor_shape_matched = false;
+    }
+  } else {
+    // normal tensor, value_range size is equal to tensor shape size.
+    if (static_cast<int64_t>(value_range_data_num) != tensor_shape.GetShapeSize()) {
+      value_range_and_tensor_shape_matched = false;
+    }
+  }
+  if (!value_range_and_tensor_shape_matched) {
+    GELOGW("Input %s value range and tensor shape do not match. Value range size is %zu, tensor shape is %s.",
+           tensor_desc.GetName().c_str(), value_range_data_num, formats::ShapeToString(tensor_shape).c_str());
     return GRAPH_PARAM_INVALID;
   }
 
-  size_t value_range_data_num = value_range.size();
   unique_ptr<T[]> buf(new (std::nothrow) T[value_range_data_num]());
   if (buf == nullptr) {
     REPORT_INNER_ERROR("E19999", "New buf failed");
@@ -494,10 +508,16 @@ void InferValueRangePass::ConstructValueRange(const GeTensorPtr &left_tensor, co
     GELOGI("Output tensor of cpu kernel does not have data, no way to set value range.");
     return;
   }
-  for (auto j = 0; j < left_tensor->GetTensorDesc().GetShape().GetShapeSize(); ++j) {
+  auto left_tensor_shape = left_tensor->GetTensorDesc().GetShape();
+  for (auto j = 0; j < left_tensor_shape.GetShapeSize(); ++j) {
     auto left = static_cast<int64_t>(*(x + j));
     auto right = static_cast<int64_t>(*(y + j));
-    value_range.emplace_back(std::make_pair(left, right));
+    value_range.emplace_back(left, right);
+  }
+
+  if (left_tensor_shape.IsScalar()) {
+    GELOGD("When inferring value range, output tensors of cpu kernel are scalar tensors.");
+    value_range.emplace_back(static_cast<int64_t>(*x), static_cast<int64_t>(*y));
   }
 }
 }  // namespace ge

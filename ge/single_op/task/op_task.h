@@ -123,7 +123,9 @@ class TbeOpTask : public OpTask {
   void* handle_ = nullptr;
   std::string original_kernel_key_;
   std::string node_info_;
-  std::vector<size_t> arg_index_;
+  std::vector<size_t> arg_index_; // data index in args
+  size_t input_num_; // Include const input
+  size_t output_num_;
 };
 
 class AiCpuBaseTask : public OpTask {

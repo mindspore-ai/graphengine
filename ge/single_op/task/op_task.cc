@@ -346,7 +346,7 @@ Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
 }
 
 Status TbeOpTask::UpdateTilingArgs(rtStream_t stream) {
-  size_t args_size = op_desc_->GetInputsSize() + op_desc_->GetOutputsSize() + workspaces_.size();
+  size_t args_size = input_num_ + output_num_ + workspaces_.size();
   if (tiling_buffer_ != nullptr) {
     args_size++;
   }
@@ -361,12 +361,12 @@ Status TbeOpTask::UpdateTilingArgs(rtStream_t stream) {
       return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
     }
 
-    args_.reset(args.release());
+    args_ = std::move(args);
     arg_size_ = temp_size;
   }
 
   uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
-  size_t arg_index = op_desc_->GetInputsSize() + op_desc_->GetOutputsSize();
+  size_t arg_index = input_num_ + output_num_;
   for (size_t i = 0; i < workspaces_.size(); ++i) {
     arg_base[arg_index++] = reinterpret_cast<uintptr_t>(workspaces_[i]);
   }
@@ -382,7 +382,6 @@ Status TbeOpTask::UpdateTilingArgs(rtStream_t stream) {
 }
 
 Status TbeOpTask::SetArgIndex() {
-  arg_index_.clear();
   const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
   size_t input_index = 0;
   for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {
@@ -416,9 +415,8 @@ Status TbeOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<Da
     arg_base[arg_index_[i]] = reinterpret_cast<uintptr_t>(inputs[i].data);
   }
 
-  size_t input_size = op_desc_->GetInputsSize();
   for (size_t i = 0; i < op_desc_->GetOutputsSize(); ++i) {
-    arg_base[input_size + i] = reinterpret_cast<uintptr_t>(outputs[i].data);
+    arg_base[input_num_ + i] = reinterpret_cast<uintptr_t>(outputs[i].data);
   }
 
   return SUCCESS;

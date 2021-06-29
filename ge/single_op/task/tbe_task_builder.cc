@@ -387,6 +387,7 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
     }
     task.SetStubFunc(stub_name_, stub_func);
   }
+  GE_CHK_STATUS_RET(task.SetArgIndex(), "[Set][ArgTable] failed.");
 
   return SUCCESS;
 }

@@ -95,7 +95,7 @@ TEST_F(UtestSingleOpTask, test_build_kernel_task) {
   vector<GeTensorDesc> input_desc;
   vector<DataBuffer> input_buffers = { data_buffer };
   vector<GeTensorDesc> output_desc;
-  vector<DataBuffer> output_buffers;
+  vector<DataBuffer> output_buffers = { data_buffer };
   task->node_ = node;
   OpTilingFunc op_tiling_func = [](const TeOpParas &, const OpCompileInfo &, OpRunInfo &) -> bool {return true;};
   OpTilingRegistryInterf("Add", op_tiling_func);
@@ -107,8 +107,7 @@ TEST_F(UtestSingleOpTask, test_build_kernel_task) {
   task->max_tiling_size_ = 64;
   task->tiling_data_ = "tiling_data";
   task->arg_size_ = 64;
-  uint8_t task_args{0};
-  task->args_.reset(&task_args);
+  task->args_.reset(new (std::nothrow) uint8_t[sizeof(void *) * 3]);
 
   ASSERT_EQ(task->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_), SUCCESS);
   char *handle = "00";
@@ -130,17 +129,25 @@ TEST_F(UtestSingleOpTask, test_update_ioaddr) {
 
   TbeOpTask task;
   task.op_desc_ = op_desc;
-  task.args_.reset(new (std::nothrow) uint8_t[sizeof(void *) * 3]);
+  task.node_ = node;
+  ASSERT_EQ(task.SetArgIndex(), SUCCESS);
+  task.arg_size_ = sizeof(void *) * 4;
+  task.args_.reset(new (std::nothrow) uint8_t[task.arg_size_]);
+  task.arg_index_ = {0};
 
   vector<void *> args;
   vector<DataBuffer> inputs;
   vector<DataBuffer> outputs;
-  ASSERT_EQ(task.UpdateIoAddr(args, inputs, outputs), ACL_ERROR_GE_PARAM_INVALID);
-  task.arg_size_ = sizeof(void *) * 3;
-  ASSERT_EQ(task.UpdateIoAddr(args, inputs, outputs), ACL_ERROR_GE_PARAM_INVALID);
+  ASSERT_EQ(task.UpdateIoAddr(inputs, outputs), ACL_ERROR_GE_PARAM_INVALID);
 
   ge::DataBuffer data_buffer;
   inputs = { data_buffer };
-  ASSERT_EQ(task.UpdateIoAddr(args, inputs, outputs), SUCCESS);
+  outputs = { data_buffer };
+  ASSERT_EQ(task.UpdateIoAddr(inputs, outputs), SUCCESS);
+
+  task.tiling_buffer_ = (void *)0x0001;
+  task.workspaces_ = { (void *)0x0002 };
+  ASSERT_EQ(task.UpdateTilingArgs(nullptr), SUCCESS);
+  task.tiling_buffer_ = nullptr;
 }
 

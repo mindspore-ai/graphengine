@@ -345,14 +345,46 @@ Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
   return SUCCESS;
 }
 
-Status TbeOpTask::UpdateIoAddr(std::vector<void *> &args, const std::vector<DataBuffer> &inputs,
-                               const std::vector<DataBuffer> &outputs) {
-  uintptr_t *arg_base = nullptr;
-  size_t arg_num = 0;
-  GetIoAddr(arg_base, arg_num);
+Status TbeOpTask::UpdateTilingArgs(rtStream_t stream) {
+  size_t args_size = op_desc_->GetInputsSize() + op_desc_->GetOutputsSize() + workspaces_.size();
+  if (tiling_buffer_ != nullptr) {
+    args_size++;
+  }
+  size_t temp_size = args_size * sizeof(void *);
+  if (arg_size_ < temp_size) {
+    GELOGD("Need to reset size of args_ from %zu to %zu.", arg_size_, temp_size);
+    std::unique_ptr<uint8_t[]> args(new (std::nothrow) uint8_t[temp_size]());
+    GE_CHECK_NOTNULL(args);
+    if (memcpy_s(args.get(), temp_size, args_.get(), arg_size_) != EOK) {
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][KernelArgs] failed for [%s].", node_->GetName().c_str());
+      REPORT_INNER_ERROR("E19999", "update kernel args failed for %s.", node_->GetName().c_str());
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
+    }
 
+    args_.reset(args.release());
+    arg_size_ = temp_size;
+  }
+
+  uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  size_t arg_index = op_desc_->GetInputsSize() + op_desc_->GetOutputsSize();
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    arg_base[arg_index++] = reinterpret_cast<uintptr_t>(workspaces_[i]);
+  }
+
+  if (tiling_buffer_ != nullptr) {
+    GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
+    GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_, max_tiling_size_, tiling_data_.data(), tiling_data_.size(),
+                                RT_MEMCPY_HOST_TO_DEVICE_EX, stream));
+    arg_base[arg_index] = reinterpret_cast<uintptr_t>(tiling_buffer_);
+  }
+
+  return SUCCESS;
+}
+
+Status TbeOpTask::SetArgIndex() {
+  arg_index_.clear();
   const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
-  size_t non_const_index = 0;
+  size_t input_index = 0;
   for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {
     const GeTensorDescPtr tensor_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(i));
     if (tensor_desc == nullptr) {
@@ -360,33 +392,33 @@ Status TbeOpTask::UpdateIoAddr(std::vector<void *> &args, const std::vector<Data
       continue;
     }
     if (i < v_is_input_const.size() && v_is_input_const[i]) {
-      if (i >= arg_num) {
-        GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size] Args size is %zu, but get index is %zu.", arg_num, i);
-        REPORT_INNER_ERROR("E19999", "[Check][Size] Args size is %zu, but get index is %zu.", arg_num, i);
-        return ACL_ERROR_GE_PARAM_INVALID;
-      }
-      auto addr = reinterpret_cast<void *>(arg_base[i]);
-      GELOGD("SingleOp: %s, Index: %zu, input is const, addr = %p", op_desc_->GetName().c_str(), i, addr);
-      args.emplace_back(addr);
+      GELOGD("SingleOp: %s, Index: %zu, input is const", op_desc_->GetName().c_str(), i);
+      input_index++;
       continue;
     }
-    if (non_const_index >= inputs.size()) {
-      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size] Input size is %zu, but get non_const_index is %zu",
-             inputs.size(), non_const_index);
-      REPORT_INNER_ERROR("E19999", "[Check][Size] Input size is %zu, but get non_const_index is %zu",
-                         inputs.size(), non_const_index);
-      return ACL_ERROR_GE_PARAM_INVALID;
-    }
-    auto addr = inputs[non_const_index].data;
-    GELOGD("SingleOp: %s, input[%zu], addr = %p", op_desc_->GetName().c_str(), i, addr);
-    args.emplace_back(addr);
-    non_const_index++;
+    arg_index_.emplace_back(input_index);
+    input_index++;
+  }
+  return SUCCESS;
+}
+
+Status TbeOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+  if (arg_index_.size() != inputs.size()) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size] Args size is %zu, but get input size is %zu.",
+           arg_index_.size(), inputs.size());
+    REPORT_INNER_ERROR("E19999", "[Check][Size] Args size is %zu, but get input size is %zu.",
+                       arg_index_.size(), inputs.size());
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
 
-  for (size_t i = 0; i < outputs.size(); ++i) {
-    auto addr = outputs[i].data;
-    GELOGD("SingleOp: %s, output[%zu] addr = %p", op_desc_->GetName().c_str(), i, addr);
-    args.emplace_back(addr);
+  uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  for (size_t i = 0; i < arg_index_.size(); ++i) {
+    arg_base[arg_index_[i]] = reinterpret_cast<uintptr_t>(inputs[i].data);
+  }
+
+  size_t input_size = op_desc_->GetInputsSize();
+  for (size_t i = 0; i < op_desc_->GetOutputsSize(); ++i) {
+    arg_base[input_size + i] = reinterpret_cast<uintptr_t>(outputs[i].data);
   }
 
   return SUCCESS;
@@ -398,37 +430,11 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
                                vector<DataBuffer> &output_buffers,
                                rtStream_t stream) {
   GELOGD("[%s] Start to launch kernel", node_->GetName().c_str());
+  GE_CHK_STATUS_RET(UpdateIoAddr(input_buffers, output_buffers), "[Update][IoAddr] failed.");
   GE_CHK_STATUS_RET_NOLOG(UpdateNodeByShape(input_desc, output_desc));
   GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo());
   GE_CHK_STATUS_RET(AllocateWorkspaces(run_info_workspaces_), "[Allocate][Workspaces] failed.");
-  std::vector<void *> args;
-  GE_CHK_STATUS_RET(UpdateIoAddr(args, input_buffers, output_buffers), "[Update][IoAddr] failed.");
-  for (auto &buffer : workspaces_) {
-    args.emplace_back(buffer);
-  }
-
-  if (tiling_buffer_ != nullptr) {
-    GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
-    GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_, max_tiling_size_, tiling_data_.data(), tiling_data_.size(),
-                                RT_MEMCPY_HOST_TO_DEVICE_EX, stream));
-
-    args.emplace_back(tiling_buffer_);
-  }
-
-  GELOGD("Dst size is %zu, src size is %zu.", arg_size_, args.size() * sizeof(void *));
-  // node with workspace: build can not get size of workspace, need to update arg_size_ when execute
-  if (arg_size_ < (args.size() * sizeof(void *))) {
-    size_t temp_size = args.size() * sizeof(void *);
-    GELOGD("Need to reset size of args_ from %zu to %zu.", arg_size_, temp_size);
-    args_.reset(new(std::nothrow) uint8_t[temp_size]());
-    GE_CHECK_NOTNULL(args_);
-    arg_size_ = temp_size;
-  }
-  if (memcpy_s(args_.get(), arg_size_, args.data(), args.size() * sizeof(void *)) != EOK) {
-    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][KernelArgs] failed for [%s].", node_->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "update kernel args failed for %s.", node_->GetName().c_str());
-    return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
-  }
+  GE_CHK_STATUS_RET(UpdateTilingArgs(stream), "[Update][TilingArgs] failed.");
 
   GELOGD("[%s] Start to invoke rtKernelLaunch", node_->GetName().c_str());
   GE_CHK_STATUS_RET(DoLaunchKernel(stream), "Failed to do launch kernel.");

@@ -46,6 +46,12 @@ typedef enum tagRtChipType {
     CHIP_END,
 } rtChipType_t;
 
+typedef enum tagRtAicpuScheType {
+    SCHEDULE_SOFTWARE = 0, /* Software Schedule */
+    SCHEDULE_SOFTWARE_OPT,
+    SCHEDULE_HARDWARE, /* HWTS Schedule */
+} rtAicpuScheType;
+
 typedef enum tagRtVersion {
     VER_BEGIN = 0,
     VER_NA = VER_BEGIN,
@@ -65,6 +71,7 @@ typedef enum tagRtPlatformType {
     PLATFORM_LHISI_CS,
     PLATFORM_DC,
     PLATFORM_CLOUD_V2,
+    PLATFORM_LHISI_SD3403,
     PLATFORM_END,
 } rtPlatformType_t;
 
@@ -126,6 +133,11 @@ typedef struct tagRtPlatformConfig {
     uint32_t platformConfig;
 } rtPlatformConfig_t;
 
+typedef enum tagRTTaskTimeoutType {
+    RT_TIMEOUT_TYPE_OP_WAIT = 0,
+    RT_TIMEOUT_TYPE_OP_EXECUTE,
+} rtTaskTimeoutType_t;
+
 /**
  * @ingroup
  * @brief get AI core count
@@ -183,6 +195,37 @@ RTS_API rtError_t rtMemGetL2Info(rtStream_t stream, void **ptr, uint32_t *size);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtGetRuntimeVersion(uint32_t *runtimeVersion);
+
+
+/**
+ * @ingroup
+ * @brief get device feature ability by device id, such as task schedule ability.
+ * @param [in] deviceId
+ * @param [in] moduleType
+ * @param [in] featureType
+ * @param [out] value
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetDeviceCapability(int32_t deviceId, int32_t moduleType, int32_t featureType, int32_t *value);
+
+/**
+ * @ingroup
+ * @brief set event wait task timeout time.
+ * @param [in] timeout
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetOpWaitTimeOut(uint32_t timeout);
+
+/**
+ * @ingroup
+ * @brief set op execute task timeout time.
+ * @param [in] timeout
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetOpExecuteTimeOut(uint32_t timeout);
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }

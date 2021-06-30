@@ -104,7 +104,7 @@ Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bi
   binary.version = 0;
   binary.data = kernel_bin.GetBinData();
   binary.length = kernel_bin.GetBinDataSize();
-  binary.magic = param.core_type == 0 ? RT_DEV_BINARY_MAGIC_ELF : RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+  GE_CHK_STATUS_RET_NOLOG(GetMagic(binary.magic));
   Status ret = 0;
   if (task_def_.type() == RT_MODEL_TASK_ALL_KERNEL) {
     ret = rtRegisterAllKernel(&binary, bin_handle);
@@ -416,4 +416,27 @@ Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
   task.EnableDynamicSupport(node_, tiling_buffer, static_cast<uint32_t>(max_size));
   return SUCCESS;
 }
+
+Status TbeTaskBuilder::GetMagic(uint32_t &magic) const {
+  std::string json_string;
+  GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_, TVM_ATTR_NAME_MAGIC, json_string),
+                  GELOGD("Get original type of session_graph_id."));
+  if (json_string == "RT_DEV_BINARY_MAGIC_ELF") {
+    magic = RT_DEV_BINARY_MAGIC_ELF;
+  } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
+    magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+  } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICUBE") {
+    magic = RT_DEV_BINARY_MAGIC_ELF_AICUBE;
+  } else {
+    REPORT_INNER_ERROR("E19999", "Attr:%s in op:%s(%s), value:%s check invalid",
+                       TVM_ATTR_NAME_MAGIC.c_str(), op_desc_->GetName().c_str(),
+                       op_desc_->GetType().c_str(), json_string.c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s in op:%s(%s), value:%s check invalid",
+           TVM_ATTR_NAME_MAGIC.c_str(), op_desc_->GetName().c_str(),
+           op_desc_->GetType().c_str(), json_string.c_str());
+    return PARAM_INVALID;
+  }
+  return SUCCESS;
+}
+
 }  // namespace ge

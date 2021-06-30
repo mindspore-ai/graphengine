@@ -338,6 +338,7 @@ TEST_F(UtestSingleOpModel, build_dynamic_task) {
   DynamicSingleOp single_op(0, &stream_mu, stream);
   model.model_helper_.model_ = ge_model;
   auto op_desc = std::make_shared<ge::OpDesc>("add", "Add");
+  AttrUtils::SetStr(op_desc, TVM_ATTR_NAME_MAGIC, "RT_DEV_BINARY_MAGIC_ELF");
   std::vector<char> kernelBin;
   TBEKernelPtr tbe_kernel = std::make_shared<ge::OpKernelBin>("name/Add", std::move(kernelBin));
   op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);

@@ -116,7 +116,7 @@ class TaskGenerator {
   Status AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point) const;
   Status AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                            vector<uint32_t> &all_reduce_nodes) const;
-  uint32_t FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node) const;
+  Status FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node, uint32_t &bp_index) const;
 
   Status FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,
                      ProfilingPoint &profiling_point) const;

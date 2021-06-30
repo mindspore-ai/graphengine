@@ -793,7 +793,6 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   GELOGI("Start AutoFindBpOpIndex");
   NodePtr bp_node = nullptr;
   uint32_t current_idx = 0;
-  uint32_t netoutput_idx = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
     OpDescPtr op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
@@ -811,7 +810,6 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
     if (op_desc->GetName() == NODE_NAME_NET_OUTPUT) {
       if (bp_node == nullptr) {
         bp_node = node;
-        netoutput_idx = current_idx - 1;
       }
     }
     if (graph->GetNeedIteration()) {
@@ -836,34 +834,30 @@ Status TaskGenerator::AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingP
   if (bp_node == nullptr) {
     GELOGW("not find bp_node.");
     return SUCCESS;
-  } else if (bp_node->GetName() == NODE_NAME_NET_OUTPUT) {
-    profiling_point.bp_index = netoutput_idx;
-    GELOGI("First bp name %s, idx %u", bp_node->GetName().c_str(), netoutput_idx);
-  } else {
-    profiling_point.bp_index = FindLastBpFromBpNode(graph, bp_node);
   }
 
-  return SUCCESS;
+  return FindLastBpFromBpNode(graph, bp_node, profiling_point.bp_index);
 }
 
-uint32_t TaskGenerator::FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node) const {
-  uint32_t last_bp = 0;
+Status TaskGenerator::FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &target_node,
+                                           uint32_t &bp_index) const {
+  bp_index = 0;
+  auto target_desc = target_node->GetOpDesc();
+  GE_CHECK_NOTNULL(target_desc);
   OpDescPtr bp_op_desc = nullptr;
-  for (auto &in_anchor : bp_node->GetAllInDataAnchors()) {
-    auto out_anchor = in_anchor->GetPeerOutAnchor();
-    if (out_anchor == nullptr || out_anchor->GetOwnerNode() == nullptr) {
-      continue;
+  for (auto &in_node : target_node->GetInAllNodes()) {
+    GE_CHECK_NOTNULL(in_node);
+    auto in_node_desc = in_node->GetOpDesc();
+    GE_CHECK_NOTNULL(in_node_desc);
+    if ((bp_op_desc == nullptr || (in_node_desc->GetId() > bp_op_desc->GetId())) &&
+        (in_node_desc->GetStreamId() == target_desc->GetStreamId())){
+      bp_op_desc = in_node_desc;
     }
-    auto out_node_desc = out_anchor->GetOwnerNode()->GetOpDesc();
-    GE_CHECK_NOTNULL(out_node_desc);
-    if (bp_op_desc == nullptr || ((out_node_desc->GetId()) > (bp_op_desc->GetId()))) {
-      bp_op_desc = out_node_desc;
-    }
-    GELOGI("bp_op_desc is %s, id is %ld", bp_op_desc->GetName().c_str(), bp_op_desc->GetId());
   }
 
   if (bp_op_desc == nullptr) {
-    return last_bp;
+    GELOGI("Did not find bp node.");
+    return SUCCESS;
   }
   uint32_t current_idx = 0;
   for (auto &node : graph->GetNodes(graph->GetGraphUnknownFlag())) {
@@ -871,12 +865,14 @@ uint32_t TaskGenerator::FindLastBpFromBpNode(const ComputeGraphPtr &graph, const
     GE_CHECK_NOTNULL(op_desc);
     current_idx++;
     if (op_desc->GetName() == bp_op_desc->GetName()) {
-      last_bp = current_idx;
-      GELOGI("First bp name %s, idx %u", op_desc->GetName().c_str(), last_bp);
+      bp_index = current_idx;
+      GELOGI("Find bp name %s, idx %u", op_desc->GetName().c_str(), bp_index);
       break;
     }
   }
-  return last_bp;
+  GELOGI("Last bp node[%s], type[%s], index[%u], stream id[%ld]", bp_op_desc->GetName().c_str(),
+         bp_op_desc->GetType().c_str(), bp_index, bp_op_desc->GetStreamId());
+  return SUCCESS;
 }
 
 Status TaskGenerator::FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,

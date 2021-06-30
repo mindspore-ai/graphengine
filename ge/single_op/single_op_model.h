@@ -82,7 +82,6 @@ class SingleOpModel {
   Status ParseTasks();
 
   std::vector<domi::TaskDef> tbe_tasks_;
-  std::vector<domi::TaskDef> atomic_tasks_;
   std::vector<domi::TaskDef> aicpu_tasks_;
 
   std::string model_name_;

@@ -311,7 +311,7 @@ TEST_F(UtestSingleOpModel, BuildTaskList) {
   ASSERT_EQ(mem_task.LaunchKernel(0), SUCCESS);
 }
 
-TEST_F(UtestSingleOpModel, build_aicpu_task) {
+TEST_F(UtestSingleOpModel, build_dynamic_task) {
   ComputeGraphPtr graph = make_shared<ComputeGraph>("single_op");
   GeModelPtr ge_model = make_shared<GeModel>();
   ge_model->SetGraph(GraphUtils::CreateGraphFromComputeGraph(graph));
@@ -321,6 +321,15 @@ TEST_F(UtestSingleOpModel, build_aicpu_task) {
   domi::TaskDef *task_def = model_task_def->add_task();
   task_def->set_type(RT_MODEL_TASK_KERNEL_EX);
 
+  domi::TaskDef *task_def2 = model_task_def->add_task();
+  task_def2->set_type(RT_MODEL_TASK_KERNEL);
+  domi::KernelDef *kernel_def = task_def2->mutable_kernel();
+  domi::KernelContext *context = kernel_def->mutable_context();
+  context->set_kernel_type(6);    // ccKernelType::AI_CPU
+
+  domi::TaskDef *task_def3 = model_task_def->add_task();
+  task_def3->set_type(RT_MODEL_TASK_ALL_KERNEL);
+
   string model_data_str = "123456789";
   SingleOpModel model("model", model_data_str.c_str(), model_data_str.size());
   std::mutex stream_mu;
@@ -329,8 +338,17 @@ TEST_F(UtestSingleOpModel, build_aicpu_task) {
   DynamicSingleOp single_op(0, &stream_mu, stream);
   model.model_helper_.model_ = ge_model;
   auto op_desc = std::make_shared<ge::OpDesc>("add", "Add");
+  std::vector<char> kernelBin;
+  TBEKernelPtr tbe_kernel = std::make_shared<ge::OpKernelBin>("name/Add", std::move(kernelBin));
+  op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);
   NodePtr node = graph->AddNode(op_desc); 
   model.op_list_[0] = node;
   StreamResource *res = new (std::nothrow) StreamResource(1);
+
+  ASSERT_EQ(model.ParseTasks(), SUCCESS);
   ASSERT_EQ(model.BuildTaskListForDynamicOp(res, single_op), SUCCESS);
+  model.tbe_tasks_.clear();
+  ASSERT_EQ(model.BuildTaskListForDynamicOp(res, single_op), SUCCESS);
+  model.aicpu_tasks_[0] = *task_def2;
+  model.BuildTaskListForDynamicOp(res, single_op);
 }

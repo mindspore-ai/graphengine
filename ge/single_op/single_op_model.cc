@@ -536,7 +536,6 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
   auto compute_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
   GE_CHECK_NOTNULL(compute_graph);
   single_op.compute_graph_ = compute_graph;
-
   if (tbe_tasks_.size() > 0) {
     const auto &task_def = tbe_tasks_[0];
     GELOGD("Building TBE task.");
@@ -566,7 +565,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
       GELOGI("Build dynamic singleOp TfTask, kernel_id = %lu", dynamic_singleop_kernel_id);
       GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, dynamic_singleop_kernel_id));
       if (aicpu_task->GetUnknownType() == DEPEND_COMPUTE) {
-         if (aicpu_tasks_.size() < 2) {
+        if (aicpu_tasks_.size() < 2) {
           GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Task]The copy task of the fourth operator was not found.");
           REPORT_INNER_ERROR("E19999", "The copy task of the fourth operator was not found.");
           return ACL_ERROR_GE_PARAM_INVALID;

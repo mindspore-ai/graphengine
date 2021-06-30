@@ -103,4 +103,32 @@ TEST_F(UtestHybridModelAsyncExecutor, Test_execute) {
   context.callback_manager->callback_queue_.Push(eof_entry);
   ASSERT_EQ(executor.Execute(args), SUCCESS);
 }
+
+TEST_F(UtestHybridModelAsyncExecutor, test_PrepareInputs) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  ge_root_model->SetModelName("test_name");
+  GeModelPtr ge_sub_model = make_shared<GeModel>();
+  HybridModel hybrid_model(ge_root_model);
+  HybridModelAsyncExecutor executor(&hybrid_model);
+  GeTensorDescPtr tensor_desc = make_shared<GeTensorDesc>(GeShape({-1, 16, 16, 3}));
+  tensor_desc->SetShapeRange({{1, 256}, {16, 16}, {16, 16}, {3, 3}});
+  executor.input_tensor_desc_.insert({0, tensor_desc});
+  executor.device_id_ = 0;
+  executor.input_sizes_.insert({0, -1});
+  executor.is_input_dynamic_.push_back(true);
+
+  unique_ptr<uint8_t[]> data_buf(new (std::nothrow)uint8_t[3072]);
+  InputData input_data;
+  input_data.blobs.push_back(DataBuffer(data_buf.get(), 3072, false));
+  input_data.shapes.push_back({1, 16, 16, 3});
+  HybridModelExecutor::ExecuteArgs args;
+
+  auto ret = executor.PrepareInputs(input_data, args);
+  ASSERT_EQ(ret, SUCCESS);
+  ASSERT_EQ(args.input_desc[0]->GetShape().ToString(), GeShape({1, 16, 16, 3}).ToString());
+  int64_t tensor_size = 0;
+  TensorUtils::GetSize(*(args.input_desc[0]), tensor_size);
+  ASSERT_EQ(tensor_size, 3104);
+}
 } // namespace ge

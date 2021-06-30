@@ -71,13 +71,16 @@ class SingleOpModel {
   Status BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask **task);
   Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, uint64_t kernel_id);
   Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task, uint64_t kernel_id);
-  Status BuildModelTaskKernel(StreamResource *stream_resource, const domi::TaskDef &task_def,
-                              DynamicSingleOp &single_op);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(OpTask *task, SingleOp &op);
   Status InitHybridModelExecutor(const StreamResource &resource, const GeModelPtr &ge_model, SingleOp &single_op);
   Status SetHostMemTensor(DynamicSingleOp &single_op);
+  Status NeedHybridModel(GeModelPtr &ge_model, bool &flag);
+  Status ParseTasks();
+
+  std::vector<domi::TaskDef> tbe_tasks_;
+  std::vector<domi::TaskDef> aicpu_tasks_;
 
   std::string model_name_;
   uint32_t model_id_ = 0;

@@ -54,6 +54,7 @@ TEST_F(UtestSingleOpTask, test_build_kernel_task) {
 
   auto graph = make_shared<ComputeGraph>("graph");
   auto op_desc = make_shared<OpDesc>("Add", "Add");
+  AttrUtils::SetStr(op_desc, TVM_ATTR_NAME_MAGIC, "RT_DEV_BINARY_MAGIC_ELF");
   std::vector<char> kernelBin;
   TBEKernelPtr tbe_kernel = std::make_shared<ge::OpKernelBin>("name/Add", std::move(kernelBin));
   op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);

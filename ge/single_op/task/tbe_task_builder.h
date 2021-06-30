@@ -105,6 +105,7 @@ class TbeTaskBuilder {
                           const SingleOpModelParam &param);
   Status DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle, const SingleOpModelParam &param) const;
   Status DoRegisterMeta(void *bin_handle);
+  Status GetMagic(uint32_t &magic) const;
 
   static Status DoRegisterFunction(void *bin_handle, const char *stub_name, const char *kernel_name);
 

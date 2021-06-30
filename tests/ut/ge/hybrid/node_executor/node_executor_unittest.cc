@@ -87,6 +87,7 @@ TEST_F(NodeExecutorTest, TestGetOrCreateExecutor) {
 TEST_F(NodeExecutorTest, TestInitAndFinalize) {
   auto &manager = NodeExecutorManager::GetInstance();
   manager.FinalizeExecutors();
+  manager.FinalizeExecutors();
   manager.EnsureInitialized();
   manager.EnsureInitialized();
   const NodeExecutor *executor = nullptr;

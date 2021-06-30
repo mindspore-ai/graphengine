@@ -112,6 +112,16 @@ typedef struct rtKernelInfo {
 } *rtKernelInfo_t;
 
 /**
+ * @ingroup rt_kernel
+ * @brief op name
+ */
+typedef struct rtKernelLaunchNames {
+    const char *soName;      // defined for so name
+    const char *kernelName;  // defined for kernel type name
+    const char *opName;      // defined for operator name
+} rtKernelLaunchNames_t;
+
+/**
  * @ingroup rt_KernelConfigDump
  * @brief device dump type
  */
@@ -173,13 +183,7 @@ typedef void (*rtCallback_t)(void *fnData);
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aicube
  */
-#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41415247
-
-/**
- * @ingroup rt_kernel
- * @brief magic number of elf binary for aivector
- */
-#define RT_DEV_BINARY_MAGIC_ELF_AIVECTOR 0x41415248
+#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41494343
 
 /**
  * @ingroup rt_kernel_flags
@@ -192,14 +196,14 @@ typedef void (*rtCallback_t)(void *fnData);
 #define RT_KERNEL_CUSTOM_AICPU (0x08)
 
 // STARS topic scheduler sqe : topic_type
-#define RT_KERNEL_DEVICE_FIRST (0X10)
-#define RT_KERNEL_HOST_ONLY (0X20)
-#define RT_KERNEL_HOST_FIRST (0X30)
+#define RT_KERNEL_DEVICE_FIRST (0x10)
+#define RT_KERNEL_HOST_ONLY (0x20)
+#define RT_KERNEL_HOST_FIRST (0x40)
 
 /**
  * @ingroup rt_kernel
  * @brief kernel mode
- */
+**/
 #define RT_DEFAULT_KERNEL_MODE (0x00)
 #define RT_NORMAL_KERNEL_MODE (0x01)
 #define RT_ALL_KERNEL_MODE (0x02)
@@ -222,7 +226,7 @@ RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **handle);
 
 /**
  * @ingroup rt_kernel
- * @brief register device binary
+ * @brief register device binary with all kernel
  * @param [in] bin   device binary description
  * @param [out] handle   device binary handle
  * @return RT_ERROR_NONE for ok
@@ -341,7 +345,7 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @ingroup rt_kernel
  * @brief launch kernel with handle to device
  * @param [in] handle   program
- * @param [in] devFunc    device function description
+ * @param [in] devFunc   device function description.
  * @param [in] blockDim   block dimentions
  * @param [in] args   argments address for kernel function
  * @param [in] argsSize   argements size
@@ -352,7 +356,7 @@ RTS_API rtError_t rtKernelLaunch(const void *stubFunc, uint32_t blockDim, void *
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithHandle(void *handle, const void *devFunc, uint32_t blockDim, void *args, uint32_t argsSize,
-                                           rtSmDesc_t *smDesc, rtStream_t stream, const void *kernelInfo);
+                                            rtSmDesc_t *smDesc, rtStream_t stream_, const void *kernelInfo);
 
 /**
  * @ingroup rt_kernel
@@ -371,7 +375,7 @@ RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim
                                          rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
 
 /**
- * @ingroup rt_kernel
+ * @ingroup rt_kernel(abandoned)
  * @brief launch kernel to device
  * @param [in] args       argments address for kernel function
  * @param [in] argsSize   argements size
@@ -383,7 +387,21 @@ RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim
 RTS_API rtError_t rtKernelLaunchEx(void *args, uint32_t argsSize, uint32_t flags, rtStream_t stream);
 
 /**
- * @ingroup rt_kernel
+ * @ingroup rt_kernel(in use)
+ * @brief launch kernel to device
+ * @param [in] opName     opkernel name
+ * @param [in] args       argments address for kernel function
+ * @param [in] argsSize   argements size
+ * @param [in] flags      launch flags
+ * @param [in] stream     associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchFwk(const char *opName, void *args, uint32_t argsSize, uint32_t flags,
+                                    rtStream_t rtStream);
+
+/**
+ * @ingroup rt_kernel(abandoned)
  * @brief launch cpu kernel to device
  * @param [in] soName        so name
  * @param [in] kernelName    kernel name
@@ -399,7 +417,22 @@ RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, 
                                     uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream);
 
 /**
- * @ingroup rt_kernel
+ * @ingroup rt_kernel(in use)
+ * @brief launch cpu kernel to device
+ * @param [in] launchNames   names for kernel launch
+ * @param [in] blockDim      block dimentions
+ * @param [in] args          argments address for kernel function
+ * @param [in] argsSize      argments size
+ * @param [in] smDesc        shared memory description
+ * @param [in] stream        associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames,
+    uint32_t blockDim, const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream);
+
+/**
+ * @ingroup rt_kernel(abandoned)
  * @brief launch cpu kernel to device  with dump identifier
  * @param [in] soName        so name
  * @param [in] kernelName    kernel name
@@ -415,6 +448,22 @@ RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, 
 RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kernelName, uint32_t blockDim,
                                             const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream,
                                             uint32_t flags);
+
+/**
+ * @ingroup rt_kernel(in use)
+ * @brief launch cpu kernel to device  with dump identifier
+ * @param [in] launchNames   names for kernel launch
+ * @param [in] blockDim      block dimentions
+ * @param [in] args          argments address for kernel function
+ * @param [in] argsSize      argments size
+ * @param [in] smDesc        shared memory description
+ * @param [in] stream        associated stream
+ * @param [in] flag          dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim,
+    const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
 
 /**
  * @ingroup rt_kernel

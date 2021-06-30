@@ -63,8 +63,8 @@ namespace {
 ///      shapeNo1
 ///       |
 ///     addnNo1
-///    /    \
-///  /       \
+///    /    \.
+///  /       \.
 /// const1   const2
 ComputeGraphPtr BuildGraph8() {
   auto builder = ut::GraphBuilder("test");
@@ -87,8 +87,8 @@ ComputeGraphPtr BuildGraph8() {
 ///      shapeNo1
 ///       |
 ///     addnYes1
-///      /    \
-///  /       \
+///      /    \.
+///     /      \.
 ///const1   data1
 ComputeGraphPtr BuildGraph9() {
   auto builder = ut::GraphBuilder("test");

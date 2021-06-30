@@ -14,40 +14,25 @@
  * limitations under the License.
  */
 
-#include "stub_ops_kernel_builder.h"
-#include <memory>
+#include "ge_running_env/fake_ops_kernel_builder.h"
+#include "graph/utils/node_utils.h"
 #include "common/ge_inner_error_codes.h"
 #include "ge/ge_api_types.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include <securec.h>
 #include "framework/common/debug/ge_log.h"
-#include "host_cpu_engine/common/constant/constant.h"
-#include "register/ops_kernel_builder_registry.h"
-#include "inc/st_types.h"
+FAKE_NS_BEGIN
 
-namespace ge {
-namespace st {
-REGISTER_OPS_KERNEL_BUILDER(kAicoreLibName, StubOpsKernelBuilder);
-REGISTER_OPS_KERNEL_BUILDER(kVectorLibName, StubOpsKernelBuilder);
-REGISTER_OPS_KERNEL_BUILDER(kAicpuLibName, StubOpsKernelBuilder);
-REGISTER_OPS_KERNEL_BUILDER(kAicpuAscendLibName, StubOpsKernelBuilder);
-REGISTER_OPS_KERNEL_BUILDER(kHcclLibName, StubOpsKernelBuilder);
-REGISTER_OPS_KERNEL_BUILDER(kRTSLibName, StubOpsKernelBuilder);
+FakeOpsKernelBuilder::FakeOpsKernelBuilder(const std::string &info_store_name) : InfoStoreHolder(info_store_name) {}
+FakeOpsKernelBuilder::FakeOpsKernelBuilder() : InfoStoreHolder() {}
 
-Status StubOpsKernelBuilder::Finalize() {
-  return SUCCESS;
-}
-Status StubOpsKernelBuilder::Initialize(const map<std::string, std::string> &options) {
-  return SUCCESS;
-}
+Status FakeOpsKernelBuilder::Finalize() { return SUCCESS; }
+Status FakeOpsKernelBuilder::Initialize(const map<std::string, std::string> &options) { return SUCCESS; }
 
-Status StubOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
+Status FakeOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
   OpDescPtr op_desc = ge_node.GetOpDesc();
   if (op_desc == nullptr) {
-    GELOGE(FAILED, "[Get][OpDesc]CalcOpRunningParam failed, as op desc is null");
-    REPORT_INNER_ERROR("E19999", "GetOpDesc failed.");
     return FAILED;
   }
 
@@ -86,9 +71,9 @@ Status StubOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
              name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
              TypeUtils::DataTypeToSerialString(data_type).c_str());
       REPORT_CALL_ERROR(
-          "E19999", "CalcTensorMemSize failed for op[%s:%s] out[%zu] mem size, mem_size=%ld, format=%s, data_type=%s.",
-          name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
-          TypeUtils::DataTypeToSerialString(data_type).c_str());
+        "E19999", "CalcTensorMemSize failed for op[%s:%s] out[%zu] mem size, mem_size=%ld, format=%s, data_type=%s.",
+        name.c_str(), type.c_str(), i, output_mem_size, TypeUtils::FormatToSerialString(format).c_str(),
+        TypeUtils::DataTypeToSerialString(data_type).c_str());
       return FAILED;
     }
     GELOGI("Calc op[%s:%s] out[%zu] mem size is %ld, format=%s, data_type=%s.", name.c_str(), type.c_str(), i,
@@ -111,9 +96,9 @@ Status StubOpsKernelBuilder::CalcOpRunningParam(Node &ge_node) {
   return SUCCESS;
 }
 
-Status StubOpsKernelBuilder::GenerateTask(const Node &node, RunContext &context, vector<domi::TaskDef> &tasks) {
+Status FakeOpsKernelBuilder::GenerateTask(const Node &node, RunContext &context, vector<domi::TaskDef> &tasks) {
   // no need to generate device task
   return SUCCESS;
 }
-}  // namespace st
-}  // namespace ge
+
+FAKE_NS_END

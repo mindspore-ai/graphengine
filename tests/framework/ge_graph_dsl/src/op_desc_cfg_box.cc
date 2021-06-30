@@ -17,8 +17,8 @@
 #include "ge_graph_dsl/op_desc/op_desc_cfg_box.h"
 #include "easy_graph/infra/status.h"
 #include "ge_graph_dsl/op_desc/op_desc_cfg_repo.h"
-#include "ge_graph_dsl/op_desc/op_desc_cfg.h"
 #include "external/graph/gnode.h"
+#include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"
 
 using ::EG_NS::Status;
@@ -44,6 +44,26 @@ OpDescCfgBox &OpDescCfgBox::OutCnt(int out_cnt) {
   return *this;
 }
 
+OpDescCfgBox &OpDescCfgBox::ParentNodeIndex(int node_index) {
+  this->Attr(ATTR_NAME_PARENT_NODE_INDEX, node_index);
+  return *this;
+}
+
+OpDescCfgBox &OpDescCfgBox::Attr(const std::string &name, int value) {
+  this->Attr(name, (int64_t)value);
+  return *this;
+}
+
+OpDescCfgBox &OpDescCfgBox::Attr(const std::string &name, const char *value) {
+  this->Attr(name, std::string(value));
+  return *this;
+}
+
+OpDescCfgBox &OpDescCfgBox::Weight(GeTensorPtr &tensor_ptr) {
+  this->Attr<GeAttrValue::TENSOR>(ATTR_NAME_WEIGHTS, tensor_ptr);
+  return *this;
+}
+
 OpDescCfgBox &OpDescCfgBox::TensorDesc(Format format, DataType data_type, std::vector<int64_t> shape) {
   default_tensor_.format_ = format;
   default_tensor_.data_type_ = data_type;
@@ -51,10 +71,9 @@ OpDescCfgBox &OpDescCfgBox::TensorDesc(Format format, DataType data_type, std::v
   return *this;
 }
 
-void OpDescCfgBox::UpdateAttrs(OpDescPtr& op_desc) const {
-	std::for_each(attrs_.begin(), attrs_.end(), [&op_desc](const auto &attr){
-		op_desc->SetAttr(attr.first, attr.second);
-	});
+void OpDescCfgBox::UpdateAttrs(OpDescPtr &op_desc) const {
+  std::for_each(attrs_.begin(), attrs_.end(),
+                [&op_desc](const auto &attr) { op_desc->SetAttr(attr.first, attr.second); });
 }
 
 OpDescPtr OpDescCfgBox::Build(const ::EG_NS::NodeId &id) const {

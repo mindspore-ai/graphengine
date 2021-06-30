@@ -44,6 +44,7 @@ class OpTask {
   virtual Status UpdateArgTable(const SingleOpModelParam &param);
   void SetModelArgs(std::string model_name, uint32_t model_id);
   Status GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id);
+  const std::string &GetTaskName() const {return task_name_;}
   void SetOpDesc(const OpDescPtr &op_desc) {
     op_desc_ = op_desc;
   }
@@ -66,6 +67,7 @@ class OpTask {
   std::string model_name_;
   uint32_t model_id_ = 0;
   uint32_t block_dim_ = 1;
+  std::string task_name_;
 };
 
 class TbeOpTask : public OpTask {
@@ -85,6 +87,7 @@ class TbeOpTask : public OpTask {
                                const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
 
   Status UpdateRunInfo() override;
+  Status SetArgIndex();
 
   const void *GetArgs() const;
   size_t GetArgSize() const;
@@ -100,7 +103,9 @@ class TbeOpTask : public OpTask {
   Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
                            const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
+  Status UpdateTilingArgs(rtStream_t stream);
   Status DoLaunchKernel(rtStream_t stream);
+  Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs);
 
   const void *stub_func_ = nullptr;
   std::unique_ptr<uint8_t[]> args_;
@@ -120,6 +125,9 @@ class TbeOpTask : public OpTask {
   void* handle_ = nullptr;
   std::string original_kernel_key_;
   std::string node_info_;
+  std::vector<size_t> arg_index_; // data index in args
+  size_t input_num_; // include const input
+  size_t output_num_;
 };
 
 class AiCpuBaseTask : public OpTask {

@@ -62,6 +62,7 @@ include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/cce)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/ops)
 include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain)
+include_directories(${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info)
 include_directories(${GE_CODE_DIR}/tests/ut/ge)
 include_directories(${GE_CODE_DIR}/tests/ut/common)
 include_directories(${CMAKE_BINARY_DIR})
@@ -349,6 +350,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
     "${GE_CODE_DIR}/ge/ge_local_engine/engine/host_cpu_engine.cc"
     "${GE_CODE_DIR}/ge/session/omg.cc"
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
 )
 
 set(COMMON_FORMAT_SRC_FILES
@@ -456,6 +458,7 @@ set(GRAPH_EXECUTE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/manager/graph_manager.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_context.cc"
     "${GE_CODE_DIR}/ge/graph/manager/util/rt_context_util.cc"
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
     "${GE_CODE_DIR}/ge/graph/manager/graph_context.h"
 )
 
@@ -633,6 +636,10 @@ set(SINGLE_OP_SRC_FILES
     "${GE_CODE_DIR}/ge/hybrid/hybrid_davinci_model.cc"
 )
 
+set(GE_OPT_INFO_SRC_FILES
+    "${GE_CODE_DIR}/ge/ge_opt_info/ge_opt_info.cc"
+)
+
 # test files
 set(COMMON_TEST_FILES
     "graph/passes/graph_builder_utils.cc"
@@ -773,6 +780,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/util_unittest.cc"
     "common/dump_manager_unittest.cc"
     "common/dump_op_unittest.cc"
+    "common/dump_properties_unittest.cc"
     "common/dump_exception_unittest.cc"
     "common/opdebug_register_unittest.cc"
     "common/format_transfer_unittest.cc"
@@ -820,6 +828,10 @@ set(MULTI_PARTS_TEST_FILES
     "common/tbe_plugin_manager_unittest.cc"
 )
 
+set(GE_OPT_INFO_TEST_FILES
+    "ge_opt_info/ge_opt_info_unittest.cc"
+)
+
 set(GENERATOR_TEST_FILES
     "generator/ge_generator_unittest.cc"
 )
@@ -855,7 +867,6 @@ set(HYBRID_TEST_FILES
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
     "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
-
 )
 
 set(OTHERS_TEST_FILES
@@ -871,6 +882,7 @@ list(APPEND COMMON_SHARED_LIBRARIES
     mmpa_stub
     hccl_stub
     error_manager_stub
+    opt_feature_stub
     ascend_protobuf
     json
 )
@@ -882,6 +894,7 @@ add_library(ge_ut_graph STATIC
 
 target_compile_definitions(ge_ut_graph PRIVATE
     google=ascend_private
+    FMK_SUPPORT_DUMP
 )
 
 target_compile_options(ge_ut_graph PRIVATE
@@ -1116,10 +1129,12 @@ target_link_libraries(ut_libge_multiparts_utest
 
 # libge_others_utest
 add_executable(ut_libge_others_utest
+    ${GE_OPT_INFO_SRC_FILES}
     ${COMMON_TEST_FILES}
     ${PASS_TEST_FILES}
     ${EXECUTE_TEST_FILES}
     ${OTHERS_TEST_FILES}
+    ${GE_OPT_INFO_TEST_FILES}
 )
 
 target_compile_options(ut_libge_others_utest PRIVATE

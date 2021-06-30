@@ -13,33 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef H7992249B_058D_40A1_94EA_52BBCB76434E
+#define H7992249B_058D_40A1_94EA_52BBCB76434E
 
-#ifndef GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_OP_OP_H_
-#define GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_OP_OP_H_
-
-#include <climits>
-#include <string>
-#include <vector>
-#include "common/ge_inner_error_codes.h"
+#include "fake_ns.h"
 #include "common/opskernel/ops_kernel_info_types.h"
-#include "graph/node.h"
 
-namespace ge {
-namespace st {
-/**
- * The base class for all op.
- */
-class GE_FUNC_VISIBILITY Op {
- public:
-  Op(const Node &node, RunContext &run_context) : run_context_(run_context), node_(node) {}
-  virtual ~Op() = default;
-  virtual Status Run() = 0;
+FAKE_NS_BEGIN
+
+struct InfoStoreHolder {
+  InfoStoreHolder();
+  InfoStoreHolder(const std::string&);
+  void EngineName(std::string engine_name);
+  void RegistOp(std::string op_type);
+  std::string GetLibName();
 
  protected:
-  const RunContext &run_context_;
-  const Node &node_;
+  std::map<std::string, ge::OpInfo> op_info_map_;
+  std::string kernel_lib_name_;
+  std::string engine_name_;
 };
-}  // namespace st
-}  // namespace ge
 
-#endif  // GE_HOST_CPU_ENGINE_OPS_KERNEL_STORE_OP_OP_H_
+FAKE_NS_END
+
+#endif

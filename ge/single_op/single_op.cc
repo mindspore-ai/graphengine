@@ -297,6 +297,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
 
   for (auto &task : tasks_) {
     ret = task->LaunchKernel(stream_);
+    GELOGD("[DEBUG_TASK_INFO : Static Task] %s %s",
+           task->GetTaskName().c_str(),
+           BuildTaskUtils::GetTaskInfo(task->GetOpdesc(), inputs, outputs).c_str());
     if (ret != SUCCESS) {
       return ret;
     }
@@ -447,6 +450,8 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   } else {
     GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
   }
+  GELOGD("[DEBUG_TASK_INFO : Dynamic Task] %s",
+         BuildTaskUtils::GetTaskInfo(op_task_->GetOpdesc(), input_buffers, output_buffers).c_str());
   GE_CHK_STATUS_RET_NOLOG(op_task_->OpenDump(stream_));
   GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;

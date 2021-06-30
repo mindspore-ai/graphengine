@@ -144,7 +144,6 @@ build_graphengine()
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_UT=ON"
   fi
 
-
   if [[ "X$ENABLE_GE_ST" = "Xon" ]]; then
     CMAKE_ARGS="${CMAKE_ARGS} -DENABLE_GE_ST=ON"
   fi
@@ -176,7 +175,7 @@ build_graphengine()
     TARGET="ge_compiler atc_atc.bin ge_executor_shared ${TARGET}"
   elif [ "X$ENABLE_GE_ST" = "Xon" ]
   then
-    TARGET="ge_graph_dsl_test graph_engine_test"
+    TARGET="ge_graph_dsl_test ge_running_env_test graph_engine_test"
   elif [ "X$ENABLE_GE_UT" = "Xon" ]
   then
     TARGET="ut_libgraph ut_libge_multiparts_utest ut_libge_others_utest ut_libge_kernel_utest ut_libge_distinct_load_utest"
@@ -244,13 +243,13 @@ if [[ "X$ENABLE_GE_ST" = "Xon" ]]; then
     mkdir -p ${OUTPUT_PATH}/plugin/opskernel
     cp ${BUILD_PATH}/tests/framework/libnnengine.so ${OUTPUT_PATH}/plugin/nnengine
     cp ${BUILD_PATH}/engine_conf.json ${OUTPUT_PATH}/plugin/nnengine/ge_config
-    cp ${BUILD_PATH}/tests/framework/libhost_cpu_engine.so ${OUTPUT_PATH}/plugin/opskernel
     cp ${BUILD_PATH}/tests/framework/libge_local_engine.so ${OUTPUT_PATH}/plugin/opskernel
-    cp ${BUILD_PATH}/tests/framework/stub_engine/libfe.so ${OUTPUT_PATH}/plugin/opskernel
     #prepare st execution bin
     cp ${BUILD_PATH}/tests/st/testcase/graph_engine_test ${OUTPUT_PATH}
+    cp ${BUILD_PATH}/tests/framework/ge_running_env/tests/ge_running_env_test ${OUTPUT_PATH}
     cp ${BUILD_PATH}/tests/framework/ge_graph_dsl/tests/ge_graph_dsl_test ${OUTPUT_PATH}
     #execute st testcase
+    RUN_TEST_CASE=${OUTPUT_PATH}/ge_running_env_test && ${RUN_TEST_CASE}
     RUN_TEST_CASE=${OUTPUT_PATH}/graph_engine_test && ${RUN_TEST_CASE}
     RUN_TEST_CASE=${OUTPUT_PATH}/ge_graph_dsl_test && ${RUN_TEST_CASE}
     if [[ "$?" -ne 0 ]]; then

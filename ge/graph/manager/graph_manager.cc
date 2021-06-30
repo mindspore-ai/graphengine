@@ -27,6 +27,7 @@
 #include "common/math/math_util.h"
 #include "common/thread_pool.h"
 #include "common/dump/dump_manager.h"
+#include "ge_opt_info/ge_opt_info.h"
 #include "analyzer/analyzer.h"
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/common/local_context.h"
@@ -999,6 +1000,12 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
   Status ret = SetRtContext(rtContext_t(), RT_CTX_GEN_MODE, session_id, compute_graph->GetGraphID());
   if (ret != SUCCESS) {
     GELOGE(ret, "[Set][RtContext] failed, session_id:%lu, graph_id:%u.", session_id, compute_graph->GetGraphID());
+    return ret;
+  }
+
+  ret = GeOptInfo::SetOptInfo();
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Set][OptInfo] Set optional information failed.");
     return ret;
   }
 
@@ -3131,10 +3138,10 @@ void GraphManager::PreRunThread(GraphManager *graph_manager) {
     }
     // Avoid repeatively prerun for graphs owns same graph_id in online inference concurrency
     if (count > 1 && graph_node->GetBuildFlag()) {
-      graph_node->Lock();
       GELOGD("Avoid repeatively prerun, graph_id:%u.", args.graph_id);
       // In online inference concurrency senario, graph_node is allowed to be locked for 'count' times
       graph_node->SetSemSize(count);
+      graph_node->Lock();
       graph_manager->run_args_q_.Push(RunArgs( { graph_node, args.graph_id, args.session_id, args.error_context,
           args.input_tensor, graph_node->GetGeRootModel(), GetThreadLocalContext(), args.callback }));
       GELOGI("[PreRunThread] Loop end. Start to run with cached build model.");

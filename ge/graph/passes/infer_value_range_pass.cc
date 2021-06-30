@@ -286,6 +286,9 @@ graphStatus InferValueRangePass::GenerateWorstValueRange(NodePtr &node) {
     }
 
     std::vector<std::pair<int64_t, int64_t>> output_i_value_range(output_i_shape_size, {1, -1});
+    if (output_i_shape.IsScalar()) {
+      output_i_value_range.emplace_back(1, -1);
+    }
     output_desc->SetValueRange(output_i_value_range);
     GELOGD("Node %s output %zu shape is %s, the generated worst value range is %s.", node->GetName().c_str(), i,
            formats::ShapeToString(output_i_shape).c_str(), formats::RangeToString(output_i_value_range).c_str());

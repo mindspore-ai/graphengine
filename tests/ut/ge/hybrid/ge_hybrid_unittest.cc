@@ -34,12 +34,14 @@
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
+#include "hybrid/node_executor/aicore/aicore_node_executor.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "hybrid/common/npu_memory_allocator.h"
 #include "graph/types.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/testcase/ge_graph/graph_builder_utils.h"
+#include "single_op/task/build_task_utils.h"
 #include "graph/op_desc_impl.h"
 #undef private
 #undef protected
@@ -100,7 +102,7 @@ TEST_F(UtestGeHybrid, aicore_op_task_init_success) {
   op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);
   std::string kernel_name("kernel/Add");
   AttrUtils::SetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name);
-  ASSERT_EQ(aicore_task->InitWithTaskDef(*op_desc.get(), task_def), SUCCESS);
+  ASSERT_EQ(aicore_task->Init(*op_desc.get(), task_def), SUCCESS);
   rtStream_t stream = nullptr;
   rtStreamCreate(&stream, 0);
   ASSERT_EQ(aicore_task->LaunchKernel(stream), SUCCESS);
@@ -676,6 +678,15 @@ TEST_F(UtestGeHybrid, test_key_for_kernel_bin) {
   EXPECT_EQ(atomic_task->GetKeyForKernelName(op_desc), "Sum_atomic_kernelname");
 }
 
+TEST_F(UtestGeHybrid, test_op_type) {
+  auto aicore_task = std::unique_ptr<hybrid::AiCoreOpTask>(new(std::nothrow)hybrid::AiCoreOpTask());
+  aicore_task->op_type_ = "Add";
+  EXPECT_EQ(aicore_task->GetOpType(), "Add");
+
+  auto atomic_task = std::unique_ptr<hybrid::AtomicAddrCleanOpTask>(new(std::nothrow)hybrid::AtomicAddrCleanOpTask());
+  EXPECT_EQ(atomic_task->GetOpType(), "DynamicAtomicAddrClean");
+}
+
 TEST_F(UtestGeHybrid, TestParseDependentInputNodesForHccl) {
   NodeExecutorManager::GetInstance().engine_mapping_.emplace("ops_kernel_info_hccl",
                                                              NodeExecutorManager::ExecutorType::HCCL);
@@ -747,4 +758,33 @@ TEST_F(UtestGeHybrid, TestParseDependencies) {
   AttrUtils::SetTensor(tensor_desc, "_value", tensor);
   std::set<NodePtr> dependent_for_shape_inference;
   ASSERT_EQ(builder.ParseDependencies(*node_item, deps, dependent_for_shape_inference), SUCCESS);
+}
+
+TEST_F(UtestGeHybrid, TestTaskExecuteAsync) {
+  auto graph = make_shared<ComputeGraph>("graph");
+  OpDescPtr op_desc = CreateOpDesc("Add", "Add");
+  GeShape shape({2, 16});
+  GeTensorDesc tensor_desc(shape);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddInputDesc(tensor_desc);
+  op_desc->AddOutputDesc(tensor_desc);
+  auto node = graph->AddNode(op_desc);
+  std::unique_ptr<NodeItem> node_item;
+  NodeItem::Create(node, node_item);
+  node_item->input_start = 0;
+  node_item->output_start = 0;
+
+  GraphExecutionContext execution_context;
+  GraphItem graph_item;
+  SubgraphContext subgraph_context(&graph_item, &execution_context);
+  ASSERT_EQ(subgraph_context.Init(), SUCCESS);
+  subgraph_context.all_inputs_.resize(2);
+  subgraph_context.all_outputs_.resize(1);
+  auto node_state = subgraph_context.GetOrCreateNodeState(node_item.get());
+  auto task_context = *node_state->GetTaskContext();
+  ASSERT_NE(BuildTaskUtils::GetTaskInfo(task_context), "");
+  std::unique_ptr<AiCoreOpTask> task1(new AiCoreOpTask());
+  std::vector<std::unique_ptr<AiCoreOpTask>> tasks;
+  AiCoreNodeTask node_task(std::move(tasks));
+  ASSERT_EQ(node_task.ExecuteAsync(task_context, nullptr), SUCCESS);
 }

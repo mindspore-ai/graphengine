@@ -120,7 +120,7 @@ TEST_F(UtestFuseDataNodesWithCommonInputPass, graph_with_subgraph1) {
 
 /// graph with subgraph
 ///            const
-///          /       \
+///          /       \.
 ///        cast1  cast1
 ///          \      /
 ///             case

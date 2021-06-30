@@ -18,6 +18,7 @@
 #include "framework/common/taskdown_common.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "external/runtime/rt_error_codes.h"
+#include "single_op/task/build_task_utils.h"
 
 namespace ge {
 namespace hybrid {
@@ -196,6 +197,11 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] Start");
     GE_CHK_STATUS_RET_NOLOG((*it)->LaunchKernel(context.GetStream()));
     GE_CHK_STATUS_RET_NOLOG(CheckOverflow(context));
+    GE_CHECK_NOTNULL(context.GetExecutionContext()->model);
+    GELOGD("[DEBUG_TASK_INFO : Executor Task] %s/%s %s",
+           context.GetExecutionContext()->model->GetModelName().c_str(),
+           (*it)->GetName().empty() ? (*it)->GetLogName().c_str() : (*it)->GetName().c_str(),
+           BuildTaskUtils::GetTaskInfo(context).c_str());
     // save profiling data
     uint32_t task_id = 0;
     uint32_t stream_id = 0;
@@ -208,7 +214,7 @@ Status AiCoreNodeTask::ExecuteAsync(TaskContext &context, std::function<void()> 
     context.SetTaskId(task_id);
     context.SetStreamId(stream_id);
     GELOGD("Aicore node[%s] task_id: %u, stream_id: %u.", context.GetNodeName(), task_id, stream_id);
-    (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicore, (*it)->GetBlockDim());
+    (void)context.SaveProfilingTaskDescInfo(task_id, stream_id, kTaskTypeAicore, (*it)->GetBlockDim(), (*it)->GetOpType());
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
     RECORD_EXECUTION_EVENT(context.GetExecutionContext(), context.GetNodeName(), "[AiCoreNodeLaunchKernel] End");
   }

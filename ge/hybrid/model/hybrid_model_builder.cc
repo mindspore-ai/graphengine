@@ -147,6 +147,7 @@ Status HybridModelBuilder::Build() {
   GE_CHK_STATUS_RET(ValidateParams(), "[Invoke][ValidateParams] failed, model_name_:[%s]", GetGraphName());
   hybrid_model_.model_name_ = ge_root_model_->GetModelName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
+  GE_CHK_STATUS_RET(CopyGraph(), "[Invoke][CopyGraph] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET(InitRuntimeParams(), "[Invoke][InitRuntimeParams] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET(RecoverGraphUnknownFlag(),
                     "[Invoke][RecoverGraphUnknownFlag] failed, model_name_:[%s]", GetGraphName());
@@ -171,11 +172,12 @@ Status HybridModelBuilder::Build() {
 
 Status HybridModelBuilder::BuildForSingleOp() {
   GE_CHK_STATUS_RET(ValidateParams(), "[Invoke][ValidateParams] failed, model_name_:[%s]", GetGraphName());
+  hybrid_model_.root_graph_ = ge_root_model_->GetRootGraph();
   hybrid_model_.model_name_ = ge_root_model_->GetRootGraph()->GetName();
   GELOGI("[%s] Start to build hybrid model.", GetGraphName());
   auto ret = ge_root_model_->GetSubgraphInstanceNameToModel();
-  const GeModelPtr ge_model = ret[ge_root_model_->GetRootGraph()->GetName()];
-  GE_CHK_STATUS_RET(IndexTaskDefs(ge_root_model_->GetRootGraph(), ge_model),
+  const GeModelPtr ge_model = ret[hybrid_model_.root_graph_->GetName()];
+  GE_CHK_STATUS_RET(IndexTaskDefs(hybrid_model_.root_graph_, ge_model),
                     "[Invoke][IndexTaskDefs] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET(LoadGraph(), "[Invoke][LoadGraph] failed, model_name_:[%s]", GetGraphName());
   GE_CHK_STATUS_RET(InitWeights(), "[Invoke][InitWeights] failed, model_name_:[%s]", GetGraphName());
@@ -187,6 +189,27 @@ Status HybridModelBuilder::BuildForSingleOp() {
 Status HybridModelBuilder::ValidateParams() {
   GE_CHECK_NOTNULL(ge_root_model_);
   GE_CHECK_NOTNULL(ge_root_model_->GetRootGraph());
+  return SUCCESS;
+}
+
+Status HybridModelBuilder::CopyGraph() {
+  GELOGD("Copy compute graph begin.");
+  auto root_graph = ge_root_model_->GetRootGraph();
+
+  std::string new_graph_name = ge_root_model_->GetRootGraph()->GetName();
+  ComputeGraphPtr new_root_graph = MakeShared<ComputeGraph>(new_graph_name);
+  GE_CHECK_NOTNULL(new_root_graph);
+  int32_t depth = 0;
+  std::map<ConstNodePtr, NodePtr> node_old_2_new;
+  std::map<ConstOpDescPtr, OpDescPtr> op_desc_old_2_new;
+  graphStatus ret = GraphUtils::CopyComputeGraph(root_graph, new_root_graph, node_old_2_new, op_desc_old_2_new, depth);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(GRAPH_FAILED, "Copy compute graph failed.");
+    return GRAPH_FAILED;
+  }
+  hybrid_model_.root_graph_ = new_root_graph;
+
+  GELOGD("Copy compute graph[%s] success.", new_graph_name.c_str());
   return SUCCESS;
 }
 
@@ -814,12 +837,13 @@ Status HybridModelBuilder::BuildOutputMapping(GraphItem &graph_item,
 }
 
 Status HybridModelBuilder::LoadGraph() {
-  auto root_graph = ge_root_model_->GetRootGraph();
+  auto root_graph = hybrid_model_.root_graph_;
   if (!GetContext().GetHostExecFlag()) {
     std::shared_ptr<ComputeGraph> merged_graph;
     GELOGI("Before merging subgraphs DirectNodesSize = %zu, GetAllNodesSize = %zu",
            root_graph->GetDirectNodesSize(),
            root_graph->GetAllNodesSize());
+    hybrid_model_.orig_root_graph_ = root_graph;
     GE_CHK_GRAPH_STATUS_RET(UnfoldSubgraphs(root_graph, merged_graph),
                             "[Invoke][UnfoldSubgraphs]Failed to unfold subgraphs, model_name_:%s.", GetGraphName());
     root_graph = std::move(merged_graph);
@@ -877,6 +901,7 @@ Status HybridModelBuilder::LoadGraph() {
   }
   for (auto &it : hybrid_model_.known_shape_sub_models_) {
     auto node_item = MutableNodeItem(it.first);
+    GE_CHECK_NOTNULL(node_item);
     AscendString graph_name;
     GE_CHK_GRAPH_STATUS_RET(it.second->GetGraph().GetName(graph_name), "Failed to get subgraph name");
     auto subgraph = hybrid_model_.GetRootGraph()->GetSubgraph(graph_name.GetString());
@@ -1125,7 +1150,9 @@ Status HybridModelBuilder::InitWeights() {
            sub_weight_buffer->GetSize());
     auto subgraph = GraphUtils::GetComputeGraph(subgraph_model.second->GetGraph());
     if (subgraph != ge_root_model_->GetRootGraph()) {
-      subgraph = ge_root_model_->GetRootGraph()->GetSubgraph(subgraph_model.first);
+      subgraph = hybrid_model_.root_graph_->GetSubgraph(subgraph_model.first);
+    } else {
+      subgraph = hybrid_model_.root_graph_;
     }
     GE_CHECK_NOTNULL(subgraph);
     hybrid_model_.weight_buffer_map_.emplace(subgraph->GetName(), std::move(sub_weight_buffer));
@@ -1304,7 +1331,7 @@ Status HybridModelBuilder::IndexTaskDefs(const ComputeGraphPtr &sub_graph, const
 }
 
 Status HybridModelBuilder::IndexTaskDefs() {
-  const auto root_graph = ge_root_model_->GetRootGraph();
+  const auto &root_graph = hybrid_model_.root_graph_;
   const auto &root_graph_name = root_graph->GetName();
   if (SetOutputNameAttr(*root_graph) != SUCCESS) {
     GELOGW("Set output name attr failed.");
@@ -1338,7 +1365,7 @@ Status HybridModelBuilder::IndexTaskDefs() {
 
 Status HybridModelBuilder::IndexSpecialNodes() {
   GELOGD("Start to index special nodes");
-  const auto &root_graph = ge_root_model_->GetRootGraph();
+  const auto &root_graph = hybrid_model_.root_graph_;
   for (auto &node : root_graph->GetAllNodes()) {
     GE_CHECK_NOTNULL(node);
     GE_CHECK_NOTNULL(node->GetOpDesc());
@@ -1493,7 +1520,7 @@ Status HybridModelBuilder::InitRuntimeParams() {
   runtime_param_.session_id = ret ? static_cast<uint64_t>(value) : 0;
   ret = ge::AttrUtils::GetInt(first_model, ATTR_MODEL_TASK_GEN_VAR_ADDR, value);
   runtime_param_.logic_var_base = ret ? static_cast<uint64_t>(value) : 0;
-  runtime_param_.graph_id = ge_root_model_->GetRootGraph()->GetGraphID();
+  runtime_param_.graph_id = hybrid_model_.root_graph_->GetGraphID();
   value = 0;
   for (auto &it : ge_root_model_->GetSubgraphInstanceNameToModel()) {
     (void) ge::AttrUtils::GetInt(it.second, ATTR_MODEL_VAR_SIZE, value);
@@ -1630,7 +1657,7 @@ Status HybridModelBuilder::TransAllVarData() {
 }
 
 Status HybridModelBuilder::CopyVarData() {
-  GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(ge_root_model_->GetRootGraph(),
+  GE_CHK_STATUS_RET(TransVarDataUtils::CopyVarData(hybrid_model_.root_graph_,
                                                    runtime_param_.session_id,
                                                    hybrid_model_.device_id_),
                     "[Invoke][CopyVarData] failed.");
@@ -1713,7 +1740,7 @@ Status HybridModelBuilder::LoadKnownShapedSubgraph(ComputeGraph &graph, NodeItem
 }
 
 Status HybridModelBuilder::RecoverGraphUnknownFlag() {
-  const auto &root_graph = ge_root_model_->GetRootGraph();
+  const auto &root_graph = hybrid_model_.root_graph_;
   for (auto &sub_graph : root_graph->GetAllSubgraphs()) {
     GE_CHECK_NOTNULL(sub_graph);
     for (const auto &node : sub_graph->GetDirectNode()) {

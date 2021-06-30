@@ -529,44 +529,14 @@ Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
   return BuildTaskList(&resource, single_op);
 }
 
-Status SingleOpModel::BuildModelTaskKernel(StreamResource *stream_resource, const TaskDef &task_def,
-                                           DynamicSingleOp &single_op) {
-  auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-  const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
-                                                            task_def.kernel_with_handle().context();
-
-  auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
-  if (kernel_type == ccKernelType::TE) {
-    GELOGD("Building TBE task.");
-    TbeOpTask *tbe_task = nullptr;
-    GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def, &tbe_task));
-    tbe_task->SetModelArgs(model_name_, model_id_);
-    if (tbe_task->tiling_buffer_ != nullptr) {
-      GELOGD("tiling buffer is not nullptr.");
-      tbe_task->stream_resource_ = stream_resource;
-    }
-    single_op.op_task_.reset(tbe_task);
-  } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
-    GELOGD("Building AICPU_CC task");
-    OpTask *task = nullptr;
-    uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
-    GELOGI("Build dynamic singleOp CCTask, kernel_id = %lu", dynamic_singleop_kernel_id);
-    GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task, dynamic_singleop_kernel_id));
-    task->SetModelArgs(model_name_, model_id_);
-    single_op.op_task_.reset(task);
-  } else {
-    GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
-        "[Check][Param:TaskDef]Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", 
-        context.kernel_type());
-    REPORT_INNER_ERROR("E19999", 
-        "BuildModelTaskKernel fail for got:%u not supported, Only TBE, AI_CPU, CUST_AI_CPU kernel are supported.",
-        context.kernel_type());
-    return ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID;
-  }
-  return SUCCESS;
-}
-
 Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource, DynamicSingleOp &single_op) {
+  auto ge_model = model_helper_.GetGeModel();
+  GE_CHECK_NOTNULL(ge_model);
+
+  auto compute_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
+  GE_CHECK_NOTNULL(compute_graph);
+  single_op.compute_graph_ = compute_graph;
+
   if (tbe_tasks_.size() > 0) {
     const auto &task_def = tbe_tasks_[0];
     GELOGD("Building TBE task.");

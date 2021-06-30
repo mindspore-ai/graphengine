@@ -92,6 +92,7 @@ class DynamicSingleOp {
   rtStream_t stream_ = nullptr;
   size_t num_inputs_ = 0;
   size_t num_outputs_ = 0;
+  ComputeGraphPtr compute_graph_;
 };
 }  // namespace ge
 #endif  // GE_SINGLE_OP_SINGLE_OP_H_

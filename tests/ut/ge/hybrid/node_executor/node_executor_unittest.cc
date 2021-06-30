@@ -87,6 +87,7 @@ TEST_F(NodeExecutorTest, TestGetOrCreateExecutor) {
 TEST_F(NodeExecutorTest, TestInitAndFinalize) {
   auto &manager = NodeExecutorManager::GetInstance();
   manager.FinalizeExecutors();
+  manager.FinalizeExecutors();
   manager.EnsureInitialized();
   manager.EnsureInitialized();
   const NodeExecutor *executor = nullptr;
@@ -97,7 +98,7 @@ TEST_F(NodeExecutorTest, TestInitAndFinalize) {
   manager.FinalizeExecutors();
   ASSERT_FALSE(manager.executors_.empty());
   manager.FinalizeExecutors();
-  // ASSERT_TRUE(manager.executors_.empty());
-  // ASSERT_TRUE(finalized);
+  ASSERT_TRUE(manager.executors_.empty());
+  ASSERT_TRUE(finalized);
 }
 } // namespace ge

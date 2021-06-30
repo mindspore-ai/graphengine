@@ -295,13 +295,15 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         }
       }
       tensor_desc->SetShape(shape);
-      args.input_desc[input_index] = tensor_desc;
-      GELOGD("Update shape of input[%zu] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
+      GELOGD("Update shape[%s] of input[%zu] to [%s]",
+             shape.ToString().c_str(), input_index, tensor_desc->MutableShape().ToString().c_str());
       GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, tensor_size),
                               "[Invoke][GetTensorMemorySizeInBytes]Failed to calc tensor size,"
                               "index = %zu, shape = [%s], model_id = %u.",
                               input_index, tensor_desc->GetShape().ToString().c_str(), model_id_);
-      GELOGD("Input tensor[%zu] size = %zu", input_index, tensor_size);
+      GELOGD("Input tensor[%zu] size = %ld", input_index, tensor_size);
+      TensorUtils::SetSize(*tensor_desc, tensor_size);
+      args.input_desc[input_index] = tensor_desc;
     }
 
     GE_CHECK_GE(tensor_size, 0);

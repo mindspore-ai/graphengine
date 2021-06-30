@@ -33,6 +33,10 @@
 #include "register/op_tiling.h"
 
 namespace ge {
+namespace {
+const int kAddressNum = 2;
+}  // namespace
+
 class StreamResource;
 struct SingleOpModelParam;
 class OpTask {
@@ -264,7 +268,7 @@ class MemcpyAsyncTask : public OpTask {
   friend class SingleOpModel;
   friend class RtsKernelTaskBuilder;
 
-  uintptr_t addresses_[2];
+  uintptr_t addresses_[kAddressNum];
   size_t dst_max_;
   size_t count_;
   rtMemcpyKind_t kind_;

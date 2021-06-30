@@ -143,7 +143,8 @@ DEFINE_string(output_type, "",
 
 DEFINE_string(op_select_implmode, "",
               "Optional; op select implmode! "
-              "Support high_precision, high_performance.");
+              "Support high_precision, high_performance, "
+              "high_precision_for_all, high_performance_for_all.");
 
 DEFINE_string(optypelist_for_implmode, "",
               "Optional; Nodes need use implmode selected in op_select_implmode "
@@ -311,8 +312,8 @@ class GFlagUtils {
         "scenarios by using a configuration file.\n"
         "  --auto_tune_mode        Set tune mode. E.g.: \"GA,RL\", support configure multiple, spit by ,\n"
         "  --op_bank_path          Set the path of the custom repository generated after operator tuning with Auto Tune.\n"
-	"  --op_select_implmode    Set op select implmode. Support high_precision, high_performance. "
-        "default: high_performance\n"
+	"  --op_select_implmode    Set op select implmode. Support high_precision, high_performance, "
+        "high_precision_for_all, high_performance_for_all. default: high_performance\n"
         "  --optypelist_for_implmode    Appoint which op to select implmode, cooperated with op_select_implmode.\n"
         "                               Separate multiple nodes with commas (,). Use double quotation marks (\") "
         "to enclose each argument. E.g.: \"node_name1,node_name2\"\n"

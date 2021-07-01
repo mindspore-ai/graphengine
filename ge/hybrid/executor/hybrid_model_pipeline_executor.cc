@@ -191,7 +191,6 @@ HybridModelPipelineExecutor::HybridModelPipelineExecutor(HybridModel *model, uin
 }
 
 Status StageExecutor::InitExecutionContext() {
-  GE_CHK_RT_RET(rtCtxCreate(&context_.rt_gen_context, RT_CTX_GEN_MODE, 0));
   GE_CHK_RT_RET(rtCtxSetCurrent(context_.rt_context));
 
   context_.model = model_;

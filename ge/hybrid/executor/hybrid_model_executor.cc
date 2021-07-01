@@ -33,9 +33,6 @@ HybridModelExecutor::HybridModelExecutor(HybridModel *model, uint32_t device_id,
 }
 
 HybridModelExecutor::~HybridModelExecutor() {
-  if (context_.rt_gen_context != nullptr) {
-    (void) rtCtxDestroy(context_.rt_gen_context);
-  }
 }
 
 Status HybridModelExecutor::Init() {
@@ -139,7 +136,6 @@ Status HybridModelExecutor::Cleanup() {
 
 Status HybridModelExecutor::InitExecutionContext() {
   GE_CHK_RT_RET(rtCtxGetCurrent(&context_.rt_context));
-  GE_CHK_RT_RET(rtCtxCreate(&context_.rt_gen_context, RT_CTX_GEN_MODE, 0));
   GE_CHK_RT_RET(rtCtxSetCurrent(context_.rt_context));
 
   context_.global_step = model_->GetGlobalStep();

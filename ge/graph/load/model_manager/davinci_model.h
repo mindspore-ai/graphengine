@@ -300,6 +300,7 @@ class DavinciModel {
     return op_list_.at(index);
   }
 
+  void SetGlobalStep(void *global_step) { global_step_addr_ = global_step; }
   void *GetGlobalStep() const { return global_step_addr_; }
 
   // get task info for profiling

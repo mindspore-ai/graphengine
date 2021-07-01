@@ -27,6 +27,7 @@
 #undef protected
 #include "graph/manager/graph_mem_allocator.h"
 #include "../graph/passes/graph_builder_utils.h"
+#include "../inc/graph/utils/graph_utils.h"
 
 using namespace std;
 using namespace testing;
@@ -46,6 +47,34 @@ class KnownNodeTaskMock : public KnownNodeTask {
   ~KnownNodeTaskMock() override = default;
   MOCK_METHOD2(DoInitDavinciModel, Status(void *, size_t));
 };
+}
+
+static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {
+  auto op_desc = std::make_shared<ge::OpDesc>(name, type);
+  op_desc->SetStreamId(0);
+  op_desc->SetId(0);
+
+  op_desc->SetWorkspace({});
+  ;
+  op_desc->SetWorkspaceBytes({});
+  op_desc->SetInputOffset({});
+  op_desc->SetOutputOffset({});
+
+  ge::AttrUtils::SetStr(op_desc, ge::TVM_ATTR_NAME_MAGIC, "RT_DEV_BINARY_MAGIC_ELF_AIVEC");
+  bool support_dynamic = true;
+  ge::AttrUtils::GetBool(op_desc, "support_dynamicshape", support_dynamic);
+  return op_desc;
+}
+
+static ComputeGraphPtr BuildDataDirectConnectGraph() {
+  const char *kRefIndex = "_parent_node_index";
+  ge::ut::GraphBuilder builder("subgraph");
+  auto data = builder.AddNode("Data", "Data", 1, 1);
+  auto netoutput = builder.AddNode("NetOutput", "NetOutput", 1, 1);
+  (void)AttrUtils::SetInt(netoutput->GetOpDesc()->MutableInputDesc(0), kRefIndex, 0);
+
+  builder.AddDataEdge(data, 0, netoutput, 0);
+  return builder.GetGraph();
 }
 
 TEST_F(UnknownNodeExecutorTest, test_init_davinci_model) {
@@ -88,4 +117,30 @@ TEST_F(UnknownNodeExecutorTest, TestParseAttrForAllocatingOutputs) {
   ASSERT_EQ(node_item.ref_outputs[1], const_node);
   ASSERT_EQ(node_item.reuse_inputs.size(), 1);
   ASSERT_EQ(node_item.reuse_inputs[0], 0);
+}
+
+TEST_F(UnknownNodeExecutorTest, TestSetGlobalStep) {
+  OpDescPtr op_desc = CreateOpDesc("PartitionedCall", "PartitionedCall");
+  auto root_graph = make_shared<ComputeGraph>("root_graph");
+  auto node = root_graph->AddNode(op_desc);
+  node->SetOwnerComputeGraph(root_graph);
+  auto sub_graph = BuildDataDirectConnectGraph();
+  sub_graph->SetParentGraph(root_graph);
+  sub_graph->SetParentNode(node);
+  node->GetOpDesc()->AddSubgraphName("subgraph");
+  node->GetOpDesc()->SetSubgraphInstanceName(0, "subgraph");
+  root_graph->AddSubgraph("subgraph", sub_graph);
+
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(root_graph);
+  HybridModel hybrid_model(ge_root_model);
+  auto *step_id = new int64_t[1];
+  step_id[0] = 520;
+  std::unique_ptr<TensorValue> tensor_value;
+  tensor_value.reset(new(std::nothrow)TensorValue((void*)step_id, sizeof(step_id)));
+  hybrid_model.variable_tensors_.insert({"ge_global_step", std::move(tensor_value)});
+
+  KnownNodeExecutor known_node_executor;
+  std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
+  known_node_executor.SettingDaviciModel(hybrid, node, davinci_model);
+  EXPECT_EQ(davinci_model->global_step_addr_, 520);
 }

@@ -32,7 +32,6 @@
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
 #include "external/graph/ge_error_codes.h"
-#include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/optimize/common/params.h"
 #include "external/graph/types.h"

@@ -27,6 +27,7 @@
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/executor/worker/execution_engine.h"
 #include "hybrid/executor/subgraph_executor.h"
+#include "hybrid/executor/worker/task_compile_engine.h"
 #undef private
 #undef protected
 
@@ -45,7 +46,14 @@ class UtestExecutionEngine : public testing::Test {
 };
 namespace {
 const int kIntBase = 10;
+class CompileNodeExecutor : public NodeExecutor {
+ public:
+  Status CompileTask(const HybridModel &model, const NodePtr &node, std::shared_ptr<NodeTask> &task) const override {
+    return SUCCESS;
+  }
+};
 }
+
 static ge::OpDescPtr CreateOpDesc(string name = "", string type = "") {
   auto op_desc = std::make_shared<ge::OpDesc>(name, type);
   op_desc->SetStreamId(0);
@@ -128,4 +136,8 @@ TEST_F(UtestExecutionEngine, ExecuteAsync_without_callback_and_kernel_task) {
   executor.InitCallback(node_state.get(), callback);
   ExecutionEngine execution_engine;
   EXPECT_EQ(execution_engine.ExecuteAsync(*node_state, node_state->GetTaskContext(), execution_context, callback), INTERNAL_ERROR);
+  
+  CompileNodeExecutor node_executor;
+  node_item->node_executor = &node_executor; 
+  EXPECT_EQ(TaskCompileEngine::Compile(*node_state, &execution_context), SUCCESS);
 }

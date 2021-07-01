@@ -161,6 +161,7 @@ Status ExceptionDumper::DumpExceptionInfo(const std::vector<rtExceptionInfo> &ex
 
       uint64_t proto_size = dump_data.ByteSizeLong();
       std::unique_ptr<char[]> proto_msg(new (std::nothrow) char[proto_size]);
+      GE_CHECK_NOTNULL(proto_msg);
       bool ret = dump_data.SerializeToArray(proto_msg.get(), proto_size);
       if (!ret || proto_size == 0) {
         REPORT_INNER_ERROR("E19999", "Serialize proto to string fail");

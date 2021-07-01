@@ -194,35 +194,6 @@ ge::Status VarResource::GetBroadCastInfo(uint32_t graph_id, const string &var_na
   return SUCCESS;
 }
 
-ge::Status VarResource::SyncVarData2BroadCast(uint32_t graph_id, const std::string &var_name,
-                                              const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  GE_CHECK_NOTNULL(base_ptr);
-  GELOGI("SyncVarData2BroadCast graph_id: %u, var_name: %s.", graph_id, var_name.c_str());
-
-  VarBroadCastInfo var_broadcast_info = var_broad_cast_info_[graph_id][var_name];
-  uint8_t *dst_addr = base_ptr + var_broadcast_info.input_offset;
-
-  return ge::TransVarDataUtils::SyncVarData2BroadCast(var_name, var_tensor_desc, dst_addr,
-                                                      var_broadcast_info.input_size, session_id_);
-}
-
-ge::Status VarResource::SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                              const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  GELOGI("SyncBroadCastData2Var var_name: %s", var_name.c_str());
-
-  VarBroadCastInfo var_broadcast_info = var_broad_cast_info_[graph_id][var_name];
-  // subgraph base_ptr could be nullptr, task it as base 0
-  uint8_t *dst_addr = base_ptr + var_broadcast_info.output_offset;
-
-  return ge::TransVarDataUtils::SyncBroadCastData2Var(dst_addr, var_broadcast_info.output_size, var_name,
-                                                      var_tensor_desc, session_id_);
-}
-
-ge::Status VarResource::SyncVarData(uint32_t graph_id, const std::string &var_name,
-                                    const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  return SyncVarData2BroadCast(graph_id, var_name, var_tensor_desc, base_ptr);
-}
-
 bool VarResource::IsVarAddr(const int64_t &offset) { return var_offset_map_.count(offset) > 0; }
 
 rtMemType_t VarResource::GetVarMemType(const int64_t &offset) {
@@ -638,16 +609,6 @@ bool VarManager::IsVarExist(const std::string &var_name) {
   return var_resource_->IsVarExist(var_name);
 }
 
-ge::Status VarManager::SyncVarData(uint32_t graph_id, const std::string &var_name, const GeTensorDesc &var_tensor_desc,
-                                   uint8_t *base_ptr) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
-  }
-  return var_resource_->SyncVarData(graph_id, var_name, var_tensor_desc, base_ptr);
-}
-
 ge::Status VarManager::GetCurVarDesc(const std::string &var_name, ge::GeTensorDesc &tensor_desc) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   GELOGI("VarManager::GetCurVarDesc var_name = %s.", var_name.c_str());
@@ -699,16 +660,6 @@ ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPt
     return ge::INTERNAL_ERROR;
   }
   return var_resource_->RenewCurVarDesc(var_name, std::move(op_desc));
-}
-
-ge::Status VarManager::SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                             const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
-  }
-  return var_resource_->SyncBroadCastData2Var(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
 bool VarManager::IsVarAddr(const int64_t &offset) {

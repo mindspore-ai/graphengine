@@ -90,6 +90,7 @@ set(SRC_FILES
     "${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
+    "${GE_CODE_DIR}/metadef/graph/utils/dumper/ge_graph_dumper.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/node_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
     "${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"

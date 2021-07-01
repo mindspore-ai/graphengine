@@ -33,14 +33,12 @@ struct OpDescCfg {
     std::vector<int64_t> shape_;
   };
 
-  OpDescCfg(const OpType &type, int in_cnt = 0, int out_cnt = 0, Format format = FORMAT_NCHW,
+  OpDescCfg(const OpType &type, int in_cnt = 1, int out_cnt = 1, Format format = FORMAT_NCHW,
             DataType data_type = DT_FLOAT, std::vector<int64_t> shape = {1, 1, 224, 224})
       : type_(type), in_cnt_(in_cnt), out_cnt_(out_cnt), default_tensor_(format, data_type, shape) {}
 
  protected:
-  OpType GetType() const {
-    return type_;
-  }
+  OpType GetType() const { return type_; }
   OpType type_;
   int in_cnt_;
   int out_cnt_;

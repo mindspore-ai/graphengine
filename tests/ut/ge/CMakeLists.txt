@@ -780,6 +780,7 @@ set(MULTI_PARTS_TEST_FILES
     "common/util_unittest.cc"
     "common/dump_manager_unittest.cc"
     "common/dump_op_unittest.cc"
+    "common/dump_properties_unittest.cc"
     "common/dump_exception_unittest.cc"
     "common/opdebug_register_unittest.cc"
     "common/format_transfer_unittest.cc"

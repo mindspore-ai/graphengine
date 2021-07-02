@@ -116,7 +116,9 @@ TEST_F(UtestTaskGeneratorTest, FindLastBpFromBpNode) {
   TaskGenerator task_generator(nullptr, 0);
   auto net_output = graph->FindNode("Node_Output");
   // netoutput has no data input, return default value 0
-  EXPECT_EQ(task_generator.FindLastBpFromBpNode(graph, net_output), 0);
+  uint32_t bp_index = 0;
+  EXPECT_EQ(task_generator.FindLastBpFromBpNode(graph, net_output, bp_index), 0);
+  EXPECT_EQ(bp_index, 2);
 }
 
 TEST_F(UtestTaskGeneratorTest, UpdateOpIsVarAttr) {

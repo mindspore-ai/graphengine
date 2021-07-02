@@ -38,7 +38,7 @@ function extract_deps_so_community()
 {
     echo "begin to extract .run file ........."
     chmod +x ./${DRIVER_RUN_NAME_C}
-    chmod +X ./${PACKAGE_NAME_C}
+    chmod +x ./${PACKAGE_NAME_C}
     [ -n "${DEP_TMP_DIR}" ] && rm -rf "${DEP_TMP_DIR}"
     ./${DRIVER_RUN_NAME_C} --noexec --extract=${DEP_TMP_DIR}/driver
     ./${PACKAGE_NAME_C} --noexec --extract=${DEP_TMP_DIR}/Packages_tmp

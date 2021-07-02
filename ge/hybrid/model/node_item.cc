@@ -47,7 +47,7 @@ bool IsEnterFeedNode(NodePtr node) {
   // For: Enter -> TransData -> Cast -> node
   for (uint8_t i = 0; i < kMaxTransCount; ++i) {
     if (kEnterOpTypes.count(NodeUtils::GetNodeType(node)) > 0) {
-      GELOGD("Node[%u] is Enter feed node.", node->GetName().c_str());
+      GELOGD("Node[%s] is Enter feed node.", node->GetName().c_str());
       return true;
     }
 

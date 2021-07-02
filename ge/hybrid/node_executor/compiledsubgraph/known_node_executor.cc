@@ -188,7 +188,7 @@ void KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr &
   davinci_model->SetDumpModelName(model.GetModelName());
   davinci_model->SetOmName(model.GetOmName());
   TensorValue *global_step_var = model.GetVariable(NODE_NAME_GLOBAL_STEP);
-  GE_CHECK_NOTNULL(global_step_var);
+  GE_CHK_BOOL_EXEC(global_step_var != nullptr, return);
   davinci_model->SetGlobalStep(global_step_var->MutableData());
   // set model id as root node's node id
   davinci_model->SetSubModelId(node->GetOpDesc()->GetId());

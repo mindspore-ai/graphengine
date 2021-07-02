@@ -1048,6 +1048,7 @@ Status HybridModelBuilder::InitConstantOps() {
       } else {
         var_tensor.reset(new(std::nothrow)TensorValue(nullptr, 0));
       }
+      GE_CHECK_NOTNULL(var_tensor);
     } else {
       GE_CHK_STATUS_RET_NOLOG(VarNodeToTensor(var_node, var_tensor));
       GELOGD("Init const op tensor. name = %s, size = %ld", var_name.c_str(), var_tensor->GetSize());

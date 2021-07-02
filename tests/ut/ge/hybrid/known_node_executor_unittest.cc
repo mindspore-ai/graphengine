@@ -141,6 +141,6 @@ TEST_F(UnknownNodeExecutorTest, TestSetGlobalStep) {
 
   KnownNodeExecutor known_node_executor;
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
-  known_node_executor.SettingDaviciModel(hybrid_model, node, davinci_model);
+  known_node_executor.SetDaviciModel(hybrid_model, node, davinci_model);
   EXPECT_EQ(*(static_cast<int64_t*>(davinci_model->global_step_addr_)), 520);
 }

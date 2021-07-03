@@ -4372,7 +4372,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
   data_dumper_.SetDeviceId(device_id);
 
   if (known_node_) {
-    data_dumper_.SetLoopAddr(global_step_addr, nullptr, nullptr);
+    data_dumper_.SetLoopAddr(global_step_addr_, nullptr, nullptr);
   } else {
     // set loop count addr
     auto get_var_addr = [&](const string &name) -> void *{

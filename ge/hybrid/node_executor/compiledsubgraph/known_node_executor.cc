@@ -146,7 +146,7 @@ Status KnownNodeTask::InitDavinciModel(const HybridModel &model, TensorBuffer *w
   if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
     davinci_model_->SetDumpProperties(dump_properties);
     void *global_step = model.GetGlobalStep();
-    davinci_model_->SetKnownShapeGlobalStep();
+    davinci_model_->SetKnownShapeGlobalStep(global_step);
   }
 
   void *weight = nullptr;

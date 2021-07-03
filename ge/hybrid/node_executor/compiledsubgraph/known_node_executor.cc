@@ -145,8 +145,6 @@ Status KnownNodeTask::InitDavinciModel(const HybridModel &model, TensorBuffer *w
   auto dump_properties = DumpManager::GetInstance().GetDumpProperties(model.GetSessionId());
   if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
     davinci_model_->SetDumpProperties(dump_properties);
-    void *global_step = model.GetGlobalStep();
-    davinci_model_->SetKnownShapeGlobalStep(global_step);
   }
 
   void *weight = nullptr;
@@ -189,9 +187,8 @@ Status KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr
   davinci_model->SetId(model.GetModelId());
   davinci_model->SetDumpModelName(model.GetModelName());
   davinci_model->SetOmName(model.GetOmName());
-  TensorValue *global_step_var = model.GetVariable(NODE_NAME_GLOBAL_STEP);
-  GE_CHECK_NOTNULL(global_step_var);
-  davinci_model->SetGlobalStep(global_step_var->MutableData(), global_step_var->GetSize());
+  void *global_step = model.GetGlobalStep();
+  davinci_model->SetGlobalStep(global_step, sizeof(int64_t));
   // set model id as root node's node id
   davinci_model->SetSubModelId(node->GetOpDesc()->GetId());
   return SUCCESS;

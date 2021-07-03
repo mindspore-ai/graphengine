@@ -34,18 +34,6 @@
 
 在训练/推理过程中，上述过程会自动执行，通过上述图操作，GE可以将前端下发的图转换为一种可以在昇腾AI处理器上高效运行的图模式。
 
-<!-- TOC -->
-
-- [安装说明](#安装说明)
-    - [安装GE](#安装ge)
-    - [源码安装](#源码安装)
-    - [社区](#社区)
-    - [贡献](#贡献)
-    - [Release Notes](#release-notes)
-    - [License](#license)
-
-<!-- /TOC -->
-
 # 安装说明
 
 ## 安装GE
@@ -54,45 +42,8 @@ GE内嵌在MindSpore安装包中，MindSpore安装完毕后，GE以三个动态�
 
 ## 源码安装
 
-GE也支持由源码编译，进行源码编译前，首先确保你有昇腾910 AI处理器的环境，同时系统满足以下要求：
-
-- GCC >= 7.3.0
-- CMake >= 3.14.0
-- Autoconf >= 2.64
-- Libtool >= 2.4.6
-- Automake >= 1.15.1
-
-编译完成后会生成几个动态库，他们会链接到MindSpore中执行，无法单独运行。
-
-1. 下载GE源码。
-
-    GE源码托管在码云平台，可由此下载。
-    ```
-    git clone https://gitee.com/mindspore/graphengine.git
-    cd graphengine
-    ```
-
-2. 在GE根目录下执行下列命令即可进行编译。
-
-    ```
-    bash build.sh
-    ```
-    
-    > - 开始编译之前，请确保正确设置相关的环境变量。
-    > - 在`build.sh`的脚本中，会进行`git clone`操作，请确保网络连接正常且git配置正确。
-    > - 在`build.sh`的脚本中，默认会8线程编译，如果机器性能较差，可能会编译失败。可以通过`-j{线程数}`来控制线程数，如`bash build.sh –j4`。
-
-3. 完成编译后，相应的动态库文件会生成在output文件夹中。
-
-更多指令帮助，可以使用：
-```
-bash build.sh –h
-```
-如果想清除历史编译记录，可以如下操作：
-```
-rm -rf build/ output/
-bash build.sh
-```
+GE也支持由源码编译，请参考以下链接完成：
+[个人开发工具链](https://gitee.com/mindspore/graphengine/blob/master/scripts/readme.md)
 
 ## 社区
 

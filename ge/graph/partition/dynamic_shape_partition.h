@@ -111,6 +111,8 @@ class DynamicShapePartitioner {
 
   Status Partition();
 
+  using OrderedFilter = std::function<bool(const std::shared_ptr<Cluster> &cluster)>;
+
  private:
   Status PartitionImpl();
   // Collect nodes that satisfy the unknowshape rules:
@@ -138,7 +140,7 @@ class DynamicShapePartitioner {
   // Merge clusters step3
   void MergeClustersInputData();
   // Topological sort clusters after merge unknown shape clusters.
-  Status TopologicalSortClusters();
+  Status TopologicalSortClusters(const OrderedFilter &ordered_filter);
   // Deduplicate merged clusters
   void PruneUniqueClusters();
   // Establish the input-output anchors for each partition of the cluster and record links to other clusters

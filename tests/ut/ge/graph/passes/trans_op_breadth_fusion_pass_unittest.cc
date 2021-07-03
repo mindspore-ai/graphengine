@@ -402,7 +402,7 @@ TEST_F(UtestGraphPassesTransOpBreadthFusionPass, test_multi_anchor_case) {
 }
 
 ///           ----> netoutput1
-///         /        |       \
+///         /        |       \.
 /// transdata1    transdata2  transdata3
 ///          \   /             |
 ///           var1--------------
@@ -432,7 +432,7 @@ static ComputeGraphPtr BuildGraph1() {
 }
 
 ///           --------->   netoutput1
-///         /              |       \
+///         /              |       \.
 /// transdata1  transdata2(l1)  transdata3(l1)
 ///          \   /                  |
 ///           var1------------------

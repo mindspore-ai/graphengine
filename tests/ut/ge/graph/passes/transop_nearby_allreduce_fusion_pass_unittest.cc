@@ -180,7 +180,7 @@ ComputeGraphPtr GetGraph7(size_t symmetric_transdata_num, size_t asymmetric_tran
   ///     TransData   TransData     ...       MatMul      ...
   ///          \         |           /       /           /
   ///                HcomAllReduce
-  ///          /         |           \       \           \
+  ///          /         |           \       \           \.
  ///     TransData   TransData     ...       RealDiv     ...
   ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
   NodePtr allreduce =
@@ -340,7 +340,7 @@ TEST(UtestTransopNearbyAllreduceFusionPass, test7_all_reduce_with_multiple_trans
   ///    TransData   TransData     ...       MatMul      ...
   ///        \         |           /       /           /
   ///              HcomAllReduce
-  ///         /         |           \       \           \
+  ///         /         |           \       \           \.
   ///    TransData   TransData     ...       RealDiv     ...
   size_t symmetric_transdata_num = 20;
   size_t asymmetric_transdata_num = 20;

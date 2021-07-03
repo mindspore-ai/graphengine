@@ -34,11 +34,11 @@ namespace {
 ///    net_output
 ///         |
 ///       merge
-///       /   \
+///       /   \.
 /// square     add
-///   F|   T/   T\
+///   F|   T/   T\.
 ///   switch1     switch2
-///  /       \   /       \
+///  /       \   /       \.
 /// var1     var2       var3
 ///
 ComputeGraphPtr BuildGraph1() {

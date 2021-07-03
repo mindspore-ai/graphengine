@@ -148,14 +148,14 @@ struct NodeItem {
   int64_t frame_index_ = -1;
   int64_t parent_frame_ = -1;
   std::set<const NodeItem *> root_ctrl_;  // Recv ctrl from root node
-  std::map<int, const NodeItem *> root_data_;  // Recv data from root node
+  std::map<const NodeItem *, std::set<int>> root_data_;  // Recv data from root node
   std::set<const NodeItem *> enter_ctrl_; // Recv ctrl from Enter node
-  std::map<int, const NodeItem *> enter_data_; // Recv data from Enter node
+  std::map<const NodeItem *, std::set<int>> enter_data_; // Recv data from Enter node
   std::set<const NodeItem *> data_send_;  // Send data notify to
   std::map<const NodeItem *, int> data_recv_;  // Recv data notify from
   std::set<const NodeItem *> ctrl_send_;  // Send ctrl notify to
   std::set<const NodeItem *> ctrl_recv_;  // Recv ctrl notify from
-  std::vector<std::vector<const NodeItem *>> switch_groups_;  // Send ctrl notify to
+  std::vector<std::set<const NodeItem *>> switch_groups_;  // Send ctrl notify to
 
   std::shared_ptr<NodeTask> kernel_task;
   std::unique_ptr<FusedSubgraph> fused_subgraph;

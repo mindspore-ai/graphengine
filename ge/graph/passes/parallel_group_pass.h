@@ -48,6 +48,7 @@ class ParallelGroupPass : public GraphPass {
 
   bool IsBigSmallLoopStreamSwitch(OpDescPtr switch_op_desc);
   bool IsWhileStreamSwitch(OpDescPtr switch_op_desc);
+  bool IsIndirectConnect(const NodePtr &node_a, const NodePtr &node_b);
 };
 }  // namespace ge
 #endif // GE_GRAPH_PASSES_PARALLEL_GROUP_PASS_H

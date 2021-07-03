@@ -182,7 +182,7 @@ Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) cons
   return SUCCESS;
 }
 
-void KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr &node,
+Status KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr &node,
                                            std::shared_ptr<DavinciModel> &davinci_model) const {
   // set known node flag as true
   davinci_model->SetKnownNode(true);
@@ -190,10 +190,11 @@ void KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr &
   davinci_model->SetDumpModelName(model.GetModelName());
   davinci_model->SetOmName(model.GetOmName());
   TensorValue *global_step_var = model.GetVariable(NODE_NAME_GLOBAL_STEP);
-  GE_CHK_BOOL_EXEC(global_step_var != nullptr, return);
-  davinci_model->SetGlobalStep(global_step_var->MutableData());
+  GE_CHECK_NOTNULL(global_step_var);
+  davinci_model->SetGlobalStep(global_step_var->MutableData(), global_step_var->GetSize());
   // set model id as root node's node id
   davinci_model->SetSubModelId(node->GetOpDesc()->GetId());
+  return SUCCESS;
 }
 
 Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,
@@ -213,7 +214,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
   GE_CHECK_NOTNULL(davinci_model);
 
-  SetDaviciModel(model, node, davinci_model);
+  GE_CHK_STATUS_RET_NOLOG(SetDaviciModel(model, node, davinci_model));
   GELOGD("KnownNodeExecutor::LoadTask node id %ld.", node->GetOpDesc()->GetId());
 
   GE_CHK_STATUS_RET(davinci_model->Assign(ge_model),

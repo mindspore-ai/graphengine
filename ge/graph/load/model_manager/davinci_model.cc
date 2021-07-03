@@ -1480,6 +1480,11 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   return SUCCESS;
 }
 
+void DavinciModel::SetGlobalStep(void *global_step, uint64_t global_step_size) {
+  global_step_addr_ = global_step;
+  global_step_size_ = global_step_size;
+}
+
 /// @ingroup ge
 /// @brief LabelSet Op Initialize.
 /// @param [in] op_desc: LabelSet Op descriptor.

@@ -188,6 +188,7 @@ Status KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr
   davinci_model->SetDumpModelName(model.GetModelName());
   davinci_model->SetOmName(model.GetOmName());
   void *global_step = model.GetGlobalStep();
+  GE_CHECK_NOTNULL(global_step);
   davinci_model->SetGlobalStep(global_step, sizeof(int64_t));
   // set model id as root node's node id
   davinci_model->SetSubModelId(node->GetOpDesc()->GetId());

@@ -596,7 +596,7 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
       const auto &atomic_task_def = task_defs.front();
       AtomicOpTask *atomic_task = nullptr;
       GE_CHK_STATUS_RET_NOLOG(BuildAtomicTask(atomic_task_def, &atomic_task));
-      atomic_task->InitAtomicAddrCleanIndices();
+      GE_CHK_STATUS_RET_NOLOG(atomic_task->InitAtomicAddrCleanIndices());
       tbe_task->SetAtomicTask(atomic_task);
     }
     single_op.op_task_.reset(tbe_task);

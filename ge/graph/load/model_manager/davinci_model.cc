@@ -1480,6 +1480,11 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   return SUCCESS;
 }
 
+void DavinciModel::SetGlobalStep(void *global_step, uint64_t global_step_size) {
+  global_step_addr_ = global_step;
+  global_step_size_ = global_step_size;
+}
+
 /// @ingroup ge
 /// @brief LabelSet Op Initialize.
 /// @param [in] op_desc: LabelSet Op descriptor.
@@ -1542,14 +1547,16 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
 }
 
 Status DavinciModel::InitVariable(const OpDescPtr &op_desc, map<string, OpDescPtr> &variable_by_name) {
-  if (op_desc->GetName() == NODE_NAME_GLOBAL_STEP) {
-    const auto output_sizes = ModelUtils::GetOutputSize(op_desc);
-    if (!output_sizes.empty()) {
-      global_step_size_ = output_sizes[0];
-    }
-    const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
-    if (!output_addrs.empty()) {
-      global_step_addr_ = output_addrs[0];
+  if (!known_node_) {
+    if (op_desc->GetName() == NODE_NAME_GLOBAL_STEP) {
+      const auto output_sizes = ModelUtils::GetOutputSize(op_desc);
+      if (!output_sizes.empty()) {
+        global_step_size_ = output_sizes[0];
+      }
+      const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
+      if (!output_addrs.empty()) {
+        global_step_addr_ = output_addrs[0];
+      }
     }
   }
 
@@ -4365,7 +4372,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
   data_dumper_.SetDeviceId(device_id);
 
   if (known_node_) {
-    data_dumper_.SetLoopAddr(known_shape_global_step_, nullptr, nullptr);
+    data_dumper_.SetLoopAddr(global_step_addr_, nullptr, nullptr);
   } else {
     // set loop count addr
     auto get_var_addr = [&](const string &name) -> void *{

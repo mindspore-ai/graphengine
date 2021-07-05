@@ -1150,9 +1150,9 @@ domi::Status GenerateSingleOp(const std::string& json_file_path) {
     if (ret != SUCCESS) {
       DOMI_LOGE("Compile op failed. ge ret = %u, op index = %d", ret, index);
       ret = domi::FAILED;
-      break;
+    } else {
+      GELOGI("Compile op success. op index = %d, output = %s", index, output_path.c_str());
     }
-    GELOGI("Compile op success. op index = %d, output = %s", index, output_path.c_str());
     index += 1;
   }
 

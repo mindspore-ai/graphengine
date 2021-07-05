@@ -300,6 +300,7 @@ class DavinciModel {
     return op_list_.at(index);
   }
 
+  void SetGlobalStep(void *global_step, uint64_t global_step_size);
   void *GetGlobalStep() const { return global_step_addr_; }
 
   // get task info for profiling
@@ -496,10 +497,6 @@ class DavinciModel {
 
   Status DumpExceptionInfo(const std::vector<rtExceptionInfo> &exception_infos) const {
     return exception_dumper_.DumpExceptionInfo(exception_infos);
-  }
-
-  void SetKnownShapeGlobalStep(void *global_step) {
-    known_shape_global_step_ = global_step;
   }
 
   void DumperShrink() {
@@ -1107,9 +1104,6 @@ class DavinciModel {
   vector<uint32_t> input_formats_;
   vector<InputOutputDescInfo> output_descs_;
   vector<uint32_t> output_formats_;
-
-  // known shape node for dump
-  void *known_shape_global_step_;
 
   // op name to attrs mapping
   std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;

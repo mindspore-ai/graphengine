@@ -59,6 +59,8 @@ class KnownNodeExecutor : public NodeExecutor {
                                  const NodePtr &node,
                                  GeModelPtr &ge_model,
                                  ComputeGraphPtr &graph);
+  Status SetDaviciModel(const HybridModel &model, const NodePtr &node,
+                        std::shared_ptr<DavinciModel> &davinci_model) const;
 };
 }  // namespace hybrid
 }  // namespace ge

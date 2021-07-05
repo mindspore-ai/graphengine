@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,8 +62,8 @@ REG_OP(Split)
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
-*@li split_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to split. No default value.
-*@li num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value . \n
+*@li split_dim: A required int32. Specifies the dimension along which to split. No default value.
+*@li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
 *@par Outputs:
 *y:Dynamic output. A list of output tensors. Has the same type and format as "x" . \n
@@ -94,12 +94,12 @@ REG_OP(SplitD)
 *@par Inputs:
 * Three inputs, including:
 *@li x: An ND Tensor.
-*Must be one of the following types:
-*@li size_splits: A list of int8, int16, int32, or int64. Specifies a list containing the sizes of each output tensor along the split dimension.
-*@li split_dim: An int8, int16, int32, or int64. Specifies the dimension along which to split . \n
+*Must be one of the types:float16, float32, double, int64, int32, uint8, uint16, uint32, uint64, int8, int16, complex64, complex128, qint8, quint8, qint16, quint16, qint32.
+*@li size_splits: Must be one of the types:int32, int64. Specifies a list containing the sizes of each output tensor along the split dimension.
+*@li split_dim: Must be the following type:int32. Specifies the dimension along which to split . \n
 
 *@par Attributes:
-*num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value . \n
+*num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
 *@par Outputs:
 *y:  Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
@@ -129,9 +129,9 @@ REG_OP(SplitV)
 *Must be one of the following types: float16, float32, int32, int8, int16, int64, uint8, uint16, uint32, uint64
 
 *@par Attributes:
-*@li size_splits: A required list of int8, int16, int32, or int64. Specifies a list containing the sizes of each output tensor along the split dimension.
-*@li split_dim: A required int8, int16, int32, or int64. Specifies the dimension along which to split. No default value.
-*@li num_split: A required int8, int16, int32, or int64. Specifies the number of output tensors. No default value . \n
+*@li size_splits: A required list of int32. Specifies a list containing the sizes of each output tensor along the split dimension.
+*@li split_dim: A required int32. Specifies the dimension along which to split. No default value.
+*@li num_split: A required int32. Specifies the number of output tensors. No default value . \n
 
 *@par Outputs:
 *y: Dynamic output.A list of output tensors. Has the same type and format as "x" . \n
@@ -161,14 +161,11 @@ REG_OP(SplitVD)
 /**
 *@brief Concatenates a list of N tensors along the first dimension.
 *@par Inputs:
-* Two inputs, including:
-* @li values: A list of Tensors. Must be one of the following types: int8, int16, int32,
+* One input, including:
+* values: A list of Tensors. Must be one of the following types: int8, int16, int32,
 *     int64, uint8, uint16, uint32, uint64, float16, float32.
 *     Tensors to be concatenated. All must have size 1 in the first dimension and same shape.
-*     It's a dynamic input.
-* @li shape: A Tensor of the same type as "x".
-* The final shape of the result. Should be equal to the shapes of any input
-* but with the number of input values in the first dimension . \n
+*     It's a dynamic input. \n
 
 *@par Attributes:
 * @li shape: A required list of ints.
@@ -317,15 +314,15 @@ REG_OP(Concat)
 *     int64, uint8, uint16, uint32, uint64, float16, float32, bool . It's a dynamic input. \n
 
 *@par Attributes:
-*@li axis: A optional int, defaultvalue is 0.
+*@li axis: A optional int, default value is 0.
 *     Dimension along which to pack. The range is [-(R+1), R+1).
 *@li N: A required int. Number of tensors . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x".
+
 *@par Third-party framework compatibility
-*Compatible with the TensorFlow operator Pack.
-It's a dynamic output.
+* Compatible with the TensorFlow operator Pack.
 */
 REG_OP(Pack)
     .DYNAMIC_INPUT(x, TensorType::BasicType())

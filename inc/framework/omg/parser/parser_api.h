@@ -28,4 +28,4 @@ GE_FUNC_VISIBILITY Status ParserInitialize(const std::map<std::string, std::stri
 // Finalize parser, release all resources
 GE_FUNC_VISIBILITY Status ParserFinalize();
 }  // namespace ge
-#endif // INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_
+#endif  // INC_FRAMEWORK_OMG_PARSER_PARSER_API_H_

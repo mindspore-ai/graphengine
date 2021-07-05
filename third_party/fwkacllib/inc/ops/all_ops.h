@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@
 #include "image_ops.h"
 #include "internal_ops.h"
 #include "linalg_ops.h"
+#include "list_ops.h"
 #include "logging_ops.h"
 #include "lookup_ops.h"
 #include "math_ops.h"

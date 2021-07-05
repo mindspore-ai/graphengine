@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,6 +223,24 @@ REG_OP(Bucketize)
     .OP_END_FACTORY_REG(Bucketize)
 
 /**
+*@brief Returns a new tensor with the truncated integer values of the elements of input. \n
+
+*@par Inputs:
+*One inputs, including:
+*   @li input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
+
+*@par Outputs:
+*y: A tensor with the same type and shape of input_x \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Trunc. \n
+*/
+REG_OP(Trunc)
+    .INPUT(input_x, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OUTPUT(output_y, TensorType({DT_FLOAT16,DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8}))
+    .OP_END_FACTORY_REG(Trunc)
+	
+/**
 *@brief Computes the sum along sparse segments of a tensor . \n
 
 *@par Inputs:
@@ -366,6 +384,27 @@ REG_OP(GetNext)
     .OP_END_FACTORY_REG(GetNext)
 
 /**
+*@brief Get dynamic dims after GetNext. \n
+
+*@par Inputs:
+*input: A nested structure of Tensor objects, from GetNext's output. \n
+
+*@par Attributes:
+*@li shape_info: GE shape_info for each inputs, -1 means unknow dim.
+*@li N: Inputs number. \n
+
+*@par Outputs:
+*dims: GE unknow dims, a vector of int64. \n
+*/
+
+REG_OP(GetDynamicDims)
+    .DYNAMIC_INPUT(input, TensorType({DT_INT32, DT_INT64}))
+    .OUTPUT(dims, TensorType({DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(shape_info, ListInt)
+    .REQUIRED_ATTR(N, Int)
+    .OP_END_FACTORY_REG(GetDynamicDims)
+
+/**
 *@brief End of sequence . \n
 
 *@par Inputs:
@@ -495,6 +534,29 @@ REG_OP(NextAfter)
     .OP_END_FACTORY_REG(NextAfter)
 
 /**
+*@brief Calculate the P-norm distance between vectors  function. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li input_x: A tensor. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+*@li  p: An optional float.Defaults to 2. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of input_x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Pdist. \n
+*/
+REG_OP(Pdist)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(Pdist)
+
+/**
  *@brief Compute element-wise finiteness, return a boolean tensor.
 
  *@par Inputs:
@@ -608,7 +670,8 @@ REG_OP(Conj)
 *@li weight: A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *@li y: A Tensor dtype of float32.
@@ -624,6 +687,7 @@ REG_OP(NLLLoss)
     .OUTPUT(y, TensorType({DT_FLOAT}))
     .OUTPUT(total_weight, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLoss)
 
 /**
@@ -637,7 +701,8 @@ REG_OP(NLLLoss)
 *@li total_weight:A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *x_grad: A Tensor. Must be the following type: float32 . \n
@@ -653,27 +718,28 @@ REG_OP(NLLLossGrad)
     .INPUT(total_weight, TensorType({DT_FLOAT}))
     .OUTPUT(x_grad, TensorType({DT_FLOAT}))
     .ATTR(reduction, String, "mean")
+    .ATTR(ignore_index, Int, -100)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
-*@brief The ifmr . \n
+*@brief IFMR(Input Feature Map Reconstruction). \n
 
 *@par Inputs:
-*@li data:A Tensor of feature map
-*@li data_min:A Tensor of min value of feature map.
-*@li data_max:A Tensor of max value of feature map.
-*@li cumsum:A Tensor of cumsum bin of data . \n
+*@li data: A Tensor of feature map.
+*@li data_min: A Tensor of min value of feature map.
+*@li data_max: A Tensor of max value of feature map.
+*@li cumsum: A Tensor of cumsum bin of data . \n
 
 *@par Attributes:
-*min_percentile: min init percentile.
-*max_percentile: max init percentile.
-*search_range: search range.
-*search_step: step size of searching.
-*with_offset: whether using offset . \n
+*@li min_percentile: min init percentile.
+*@li max_percentile: max init percentile.
+*@li search_range: search range.
+*@li search_step: step size of searching.
+*@li with_offset: whether using offset . \n
 
 *@par Outputs:
-*scale: optimal scale.
-*offset: optimal offset . \n
+*@li scale: optimal scale.
+*@li offset: optimal offset . \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
@@ -694,22 +760,25 @@ REG_OP(IFMR)
   .OP_END_FACTORY_REG(IFMR)
 
 /**
-*@brief weights adaptive range quantization. \n
+*@brief Weights Adaptive Range Quantization. \n
 
 *@par Inputs:
-*@li w:A Tensor of weights. \n
-*@li w_min:A Tensor of weights reduce_min. \n
-*@li w_max:A Tensor of weights reduce_max. \n
+*@li w: A Tensor of weights. \n
+*@li w_min: A Tensor of weights reduce_min. \n
+*@li w_max: A Tensor of weights reduce_max. \n
 
 *@par Attributes:
-*num_bits: the bits num used for quantize.
-*offset_flag: whether using offset. \n
+*@li num_bits: the bits num used for quantize.
+*@li offset_flag: whether using offset. \n
 
 *@par Outputs:
 *y: fake quantized weights. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(WtsARQ)
@@ -722,25 +791,28 @@ REG_OP(WtsARQ)
   .OP_END_FACTORY_REG(WtsARQ)
 
 /**
-*@brief The acts_ulq. \n
+*@brief Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li x:A Tensor of feature map
-*@li clamp _min:A Tensor of min clamp value of feature map.
-*@li clamp _max:A Tensor of max clamp value of feature map.
+*@li x: A Tensor of feature map.
+*@li clamp _min: A Tensor of min clamp value of feature map.
+*@li clamp _max: A Tensor of max clamp value of feature map.
 
 *@par Attributes:
-*fixed_min: fix min to zero.
-*num_bits: quant bits. \n
+*@li fixed_min: fix min to zero.
+*@li num_bits: quant bits. \n
 
 *@par Outputs:
-*y: output fake quant feature map.
-*clamp_min_mask: where x > clamp_min
-*clamp_min_mask: where x < clamp_max
-*x_clamped_loss: clamp loss. \n
+*@li y: output fake quant feature map.
+*@li clamp_min_mask: where x > clamp_min.
+*@li clamp_min_mask: where x < clamp_max.
+*@li x_clamped_loss: clamp loss. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQ)
@@ -748,40 +820,43 @@ REG_OP(ActsULQ)
   .INPUT(clamp_min, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(clamp_max, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .OUTPUT(clamp_min_mask, TensorType({DT_BOOL}))
-  .OUTPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .OUTPUT(clamp_min_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
+  .OUTPUT(clamp_max_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .ATTR(fixed_min, Bool, false)
   .ATTR(num_bits, Int, 8)
   .OP_END_FACTORY_REG(ActsULQ)
 
 /**
-*@brief The acts_ulq_input_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
-*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'
-*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'
+*@li y_grad: A Tensor of gradient.
+*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
+*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
 
 *@par Outputs:
 *x_grapd: The gradient of inpust. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActsULQInputGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(clamp_min_mask, TensorType({DT_BOOL}))
-  .INPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_min_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
+  .INPUT(clamp_max_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(x_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActsULQInputGrad)
 
 /**
-*@brief The act_ulq_clamp_max_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp max. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -790,20 +865,23 @@ REG_OP(ActsULQInputGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMaxGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(clamp_max_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_max_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(clamp_max_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActULQClampMaxGrad)
 
 /**
-*@brief The act_ulq_clamp_min_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp min. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -812,14 +890,207 @@ REG_OP(ActULQClampMaxGrad)
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 
 REG_OP(ActULQClampMinGrad)
   .INPUT(y_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(clamp_min_mask, TensorType({DT_BOOL}))
+  .INPUT(clamp_min_mask, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT}))
   .INPUT(x_clamped_loss, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(clamp_min_grad, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OP_END_FACTORY_REG(ActULQClampMinGrad)
+
+/**
+* @brief Computes Lp norm.
+
+* @par Inputs:
+* @li x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* @li y: An ND tensor of type float16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNorm.
+*/
+REG_OP(LpNorm)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNorm)
+
+/**
+* @brief get complex.
+
+* @par Inputs:
+* @li real: An ND tensor of type  float32. double
+* @li imag: An ND tensor of type  float32. double \n
+*
+* @par Outputs:
+* @li out: An ND tensor of type complex64, complex128 \n
+*/
+REG_OP(Complex)
+    .INPUT(real, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .INPUT(imag, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(out, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .ATTR(Tout, Type, DT_COMPLEX64)
+    .OP_END_FACTORY_REG(Complex)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Imag)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Imag)
+
+/**
+* @brief  deal complex.
+
+* @par Inputs:
+* @li input: An ND tensor of type complex64, complex128 \n
+*
+* @par Outputs:
+* @li output: An ND tensor of type float32. double \n
+*/
+REG_OP(Angle)
+    .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
+    .OUTPUT(output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(Tout, Type, DT_FLOAT)
+    .OP_END_FACTORY_REG(Angle)
+
+/**
+*@brief Computes the gradient of SoftMarginLossGrad. \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li predict: A tensor. Must be one of the following types:
+*     float16, float32. \n
+* @li label: A tensor with same shape of predict. Must be one of the following types:
+*     float16, float32. \n
+* @li dout: A tensor with same shpae of predcit. Must be one of the following types:
+*     float16, float32. \n
+
+*@par Attributes:
+* @li reduction: Specifies the reduction to apply to the output:
+*     'none' | 'mean' | 'sum'. Default: 'mean'. \n
+
+*@par Outputs:
+* gradient: A Tensor with the same type of predict. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator SoftMarginLoss Backward. \n
+*/
+REG_OP(SoftMarginLossGrad)
+    .INPUT(predict, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(label, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(dout, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(gradient, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(reduction, String, "mean")
+    .OP_END_FACTORY_REG(SoftMarginLossGrad)
+
+/**
+*@brief Calculate the cross product of two tensors. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x1: A tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8, int16. \n
+* @li x2: A tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8, int16. \n
+
+*@par Attributes:
+*@li dim: the dimination of compute.Defaults to -65530. \n
+
+*@par Outputs:
+*y: A Tensor with the same type and shape of x1's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator cross. \n
+*/
+REG_OP(Cross)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8, DT_INT16}))
+    .ATTR(dim, Int, -65530)
+    .OP_END_FACTORY_REG(Cross)
+
+/**
+ *@brief Computes batched the p-norm distance between each pair of
+ *the two collections of row vectors. \n
+
+ *@par Inputs:
+ *Two inputs, including:
+ * @li x1: A tensor with shpae: BxPXM. Must be one of the following types:
+ *     float16, float32. \n
+ * @li x2: A tensor with shpae: BxRxM. Must be one of the following types:
+ *     float16, float32. \n
+
+ *@par Attributes:
+ * @li p: An optional float >= 0 or inf. Defaults to 2.0. \n
+
+ *@par Outputs:
+ * y: A Tensor with the same type of x1's and with shape BxPxR. \n
+
+ *@par Third-party framework compatibility
+ *Compatible with the Pytorch operator Cdist. \n
+ */
+REG_OP(Cdist)
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(Cdist)
+
+/**
+*@brief  Computes the grad of x1 in cdist. \n
+
+*@par Inputs:
+*Four inputs, including:
+ * @li grad: Grad with shape BxPxR. Must be one of the following types:
+*     float16, float32. \n
+* @li x1: A tensor with shpae: BxPXM. Must be one of the following types:
+*     float16, float32. \n
+* @li x2: A tensor with shpae: BxRxM. Must be one of the following types:
+*     float16, float32. \n
+* @li cdist: Output tensor of cdist forward with shpae: BxPXR.
+*     Must be one of the following types: float16, float32. \n
+
+*@par Attributes:
+* @li p: An optional float >= 0 or inf. Defaults to 2.0. \n
+
+*@par Outputs:
+* y: A Tensor with the same type and shape of x1's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Cdist Backward. \n
+*/
+REG_OP(CdistGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x1, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x2, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(cdist, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(CdistGrad)
 
 }  // namespace ge
 

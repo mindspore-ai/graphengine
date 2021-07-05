@@ -108,7 +108,18 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_ACL_ENV = 0,           // start profiling with acl env
     MSPROF_CTRL_INIT_ACL_JSON,              // start profiling with acl.json
     MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
-    MSPROF_CTRL_FINALIZE                    // stop profiling
+    MSPROF_CTRL_FINALIZE,                   // stop profiling
+    MSPROF_CTRL_REPORT_FUN_P,               // for report callback
+    MSPROF_CTRL_PROF_SWITCH                 // for prof switch
+};
+
+#define MSPROF_MAX_DEV_NUM (64)
+
+struct MsprofCommandHandle {
+    uint64_t profSwitch;
+    uint32_t devNums; // length of device id list
+    uint32_t devIdList[MSPROF_MAX_DEV_NUM];
+    uint32_t modelId;
 };
 
 /**
@@ -129,6 +140,23 @@ typedef int32_t (*MsprofCtrlCallback)(uint32_t type, void *data, uint32_t len);
  */
 typedef void (*MsprofSetDeviceCallback)(uint32_t devId, bool isOpenDevice);
 
+/*
+ * @name  MsprofInit
+ * @brief Profiling module init
+ * @param [in] dataType: profiling type: ACL Env/ACL Json/GE Option
+ * @param [in] data: profiling switch data
+ * @param [in] dataLen: Length of data
+ * @return 0:SUCCESS, >0:FAILED
+ */
+int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
+
+/*
+ * @name AscendCL
+ * @brief Finishing Profiling
+ * @param NULL
+ * @return 0:SUCCESS, >0:FAILED
+ */
+int32_t MsprofFinalize();
 #ifdef __cplusplus
 }
 #endif

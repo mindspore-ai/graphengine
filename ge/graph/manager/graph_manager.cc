@@ -129,8 +129,6 @@ const uint32_t kInitGraphCount = 1;
 const uint32_t kNotAdded = 0;
 const uint32_t kStartAdd = 1;
 const uint32_t kDoneAdded = 2;
-const uint32_t kNeverLoaded = 0;
-const size_t kAlignment = 64;
 
 bool IsTailingOptimization() {
   string is_tailing_optimization_option;

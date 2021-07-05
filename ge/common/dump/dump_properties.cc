@@ -204,7 +204,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &DumpProperties:
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpProperties::SetDumpOptions() {
   if (enable_dump_ == kEnableFlag) {
     std::string dump_step;
-    if (GetContext().GetOption(OPTION_EXEC_DUMP_STEP, dump_step) == GRAPH_SUCCESS) {
+    if (GetContext().GetOption(OPTION_EXEC_DUMP_STEP, dump_step) == GRAPH_SUCCESS && !dump_step.empty()) {
       GE_CHK_STATUS_RET(CheckDumpStep(dump_step), "[Check][dump_step] failed.");
       GELOGI("Get dump step %s successfully", dump_step.c_str());
       SetDumpStep(dump_step);
@@ -441,16 +441,10 @@ Status DumpProperties::SetDumpDebugOptions() {
   if (enable_dump_debug_ == kEnableFlag) {
     std::string dump_debug_mode;
     if (GetContext().GetOption(OPTION_EXEC_DUMP_DEBUG_MODE, dump_debug_mode) == GRAPH_SUCCESS) {
-      GELOGD("Get dump debug mode %s successfully", dump_debug_mode.c_str());
+      GELOGD("Get ge.exec.dumpDebugMode %s successfully", dump_debug_mode.c_str());
     } else {
-      REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
-                         std::vector<std::string>({
-                         "ge.exec.dumpDebugMode",
-                         dump_debug_mode,
-                         "ge.exec.dumpDebugMode is not set."}));
-      GELOGE(PARAM_INVALID, "[Check][dump_debug_mode] failed. Dump debug mode is not set.");
-
-      return PARAM_INVALID;
+      GELOGW("ge.exec.dumpDebugMode is not set.");
+      return SUCCESS;
     }
 
     if (dump_debug_mode == OP_DEBUG_AICORE) {

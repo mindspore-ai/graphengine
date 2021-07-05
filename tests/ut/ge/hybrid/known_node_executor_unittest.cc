@@ -135,7 +135,7 @@ TEST_F(UnknownNodeExecutorTest, TestSetGlobalStep) {
   HybridModel hybrid_model(ge_root_model);
   auto *step_id = new int64_t[1];
   step_id[0] = 520;
-  std::unique_ptr<TensorValue> tensor_buf;
+  std::unique_ptr<TensorBuffer> tensor_buf;
   tensor_buf = tensor_buf->Create((void *)step_id, sizeof(int64_t));
   hybrid_model.global_step_ = std::move(tensor_buf);
   KnownNodeExecutor known_node_executor;

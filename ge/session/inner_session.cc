@@ -124,7 +124,7 @@ Status InnerSession::Initialize() {
   GE_CHK_STATUS_RET(dump_properties.InitByOptions(), "Init dump properties failed.");
   GE_CHK_STATUS_RET(AddDumpProperties(dump_properties), "[Add][DumpProperties] failed.");
 
-  ret = graph_manager_.Initialize(options_);
+  ret = InnerInitialize();
   if (ret != SUCCESS) {
     GELOGE(ret, "[Init][GraphManager] failed, InnerSession:%lu.", session_id_);
     REPORT_CALL_ERROR("E19999", "GraphManager initialize failed, InnerSession:%lu.", session_id_);
@@ -136,7 +136,7 @@ Status InnerSession::Initialize() {
   if (ret != SUCCESS) {
     GELOGE(ret, "[Set][MemoryMallocSize] failed.");
     REPORT_CALL_ERROR("E19999", "VarManager SetMemoryMallocSize failed, InnerSession:%lu.", session_id_);
-    (void)graph_manager_.Finalize();
+    (void)InnerFinalize();
     GE_CHK_STATUS(RemoveDumpProperties(), "[Remove][DumpProperties] failed.");
     GE_CHK_RT(rtDeviceReset(static_cast<int32_t>(GetContext().DeviceId())));
     return ret;
@@ -162,7 +162,7 @@ Status InnerSession::Finalize() {
     return SUCCESS;
   }
   UpdateThreadContext(std::map<std::string, std::string>{});
-  Status ret = graph_manager_.Finalize();
+  Status ret = InnerFinalize();
   if (ret != SUCCESS) {
     // Subsequent code execution is required, so no return is required
     GELOGE(ret, "[Finalize][GraphManager] failed, InnerSession:%lu.", session_id_);
@@ -186,6 +186,44 @@ Status InnerSession::Finalize() {
   GE_CHK_STATUS_RET(RemoveDumpProperties(), "[Remove][DumpProperties] failed.");
 
   return ret;
+}
+
+Status InnerSession::InnerInitialize() {
+  Status ret = model_executor_.Initialize(options_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Init][GraphExecutor] failed, InnerSession:%lu.", session_id_);
+    REPORT_CALL_ERROR("E19999", "GraphExecutor initialize failed, InnerSession:%lu.", session_id_);
+    GE_CHK_STATUS(RemoveDumpProperties(), "[Remove][DumpProperties] failed.");
+    return ret;
+  }
+
+  ret = graph_manager_.Initialize(options_, &model_executor_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Init][GraphManager] failed, InnerSession:%lu.", session_id_);
+    REPORT_CALL_ERROR("E19999", "GraphManager initialize failed, InnerSession:%lu.", session_id_);
+    GE_CHK_STATUS(RemoveDumpProperties(), "[Remove][DumpProperties] failed.");
+    return ret;
+  }
+
+  return SUCCESS;
+}
+
+Status InnerSession::InnerFinalize() {
+  Status ret = graph_manager_.Finalize();
+  if (ret != SUCCESS) {
+    // Subsequent code execution is required, so no return is required
+    GELOGE(ret, "[Finalize][GraphManager] failed, InnerSession:%lu.", session_id_);
+    REPORT_CALL_ERROR("E19999", "GraphManager Finalize failed, InnerSession:%lu.", session_id_);
+  }
+
+  ret = model_executor_.Finalize();
+  if (ret != SUCCESS) {
+    // Subsequent code execution is required, so no return is required
+    GELOGE(ret, "[Finalize][GraphExecutor] failed, InnerSession:%lu.", session_id_);
+    REPORT_CALL_ERROR("E19999", "GraphExecutor Finalize failed, InnerSession:%lu.", session_id_);
+  }
+
+  return SUCCESS;
 }
 
 Status InnerSession::GetVariable(const std::string &name, Tensor &val) {

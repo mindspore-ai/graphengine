@@ -33,6 +33,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
+#include "graph/common/local_context.h"
 #include "external/graph/graph.h"
 #include "graph/model.h"
 #include "model/ge_model.h"
@@ -154,6 +155,9 @@ class GraphNode {
   bool GetRunFlag() const { return run_flag_; }
   void SetRunFlag(bool flag) { run_flag_ = flag; }
 
+  void SetOmeContext(const OmeContext &context) { context_ = context; }
+  OmeContext &GetOmeContext() { return context_; }
+
   bool IsAsync() const { return async_; }
   void SetAsync(bool flag) { async_ = flag; }
 
@@ -195,6 +199,8 @@ class GraphNode {
   std::map<std::string, std::string> options_;
   bool run_flag_;
   std::vector<SubGraphInfoPtr> subgraph_ptr_list_;
+
+  OmeContext context_;
 
   GraphPtr graph_;
   ComputeGraphPtr compute_graph_;

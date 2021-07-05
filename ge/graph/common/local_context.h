@@ -22,5 +22,22 @@
 namespace ge {
 void SetLocalOmgContext(OmgContext &context);
 OmgContext &GetLocalOmgContext();
+
+
+struct OmeContext {
+  bool need_multi_batch = false;
+  std::string dynamic_node_type;
+  std::vector<NodePtr> data_nodes;
+  std::vector<NodePtr> getnext_nosink_nodes;
+  std::vector<std::string> dynamic_shape_dims;
+  std::vector<std::pair<std::string, std::vector<int64_t>>> user_input_dims;
+  std::vector<std::vector<int64_t>> user_real_input_dims;
+};
+
+GE_FUNC_VISIBILITY
+void SetLocalOmeContext(OmeContext &context);
+
+GE_FUNC_VISIBILITY
+OmeContext &GetLocalOmeContext();
 }  // namespace ge
 #endif  // GE_GRAPH_COMMON_LOCAL_CONTEXT_H_

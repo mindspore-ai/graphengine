@@ -268,7 +268,7 @@ class MemcpyAsyncTask : public OpTask {
   friend class SingleOpModel;
   friend class RtsKernelTaskBuilder;
 
-  uintptr_t addresses_[kAddressNum];
+  uintptr_t addresses_[kAddressNum] = {0};
   size_t dst_max_;
   size_t count_;
   rtMemcpyKind_t kind_;

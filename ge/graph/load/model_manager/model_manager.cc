@@ -513,8 +513,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
   }
   GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims).c_str());
   bool cur_dynamic_dims_valid = false;
-  std::vector<std::string> shape_strs = ge::StringUtils::Split(GetLocalOmgContext().dynamic_dims, ';');
-  for (auto dynamic_dim : shape_strs) {
+  for (auto dynamic_dim : GetLocalOmeContext().dynamic_shape_dims) {
     if (dynamic_dim == formats::JoinToString(cur_dynamic_dims)) {
       cur_dynamic_dims_valid = true;
       break;
@@ -556,10 +555,10 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Te
     input_data.shapes.emplace_back(tensor_desc.GetShape().GetDims());
     input_data.blobs.push_back(data);
   }
-  if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
+  if (!GetLocalOmeContext().user_input_dims.empty() && GetLocalOmeContext().need_multi_batch) {
     std::vector<int32_t> cur_dynamic_dims;
-    if (!GetLocalOmgContext().user_real_input_dims.empty()) {
-      if (GetCurDynamicDims(GetLocalOmgContext().user_real_input_dims, GetLocalOmgContext().user_input_dims,
+    if (!GetLocalOmeContext().user_real_input_dims.empty()) {
+      if (GetCurDynamicDims(GetLocalOmeContext().user_real_input_dims, GetLocalOmeContext().user_input_dims,
                             cur_dynamic_dims) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "[Get][CurDynamicDims] [Train_Dynamic] Failed to Parse real_dynamic_dims.");
         return INTERNAL_ERROR;

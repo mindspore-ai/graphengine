@@ -204,7 +204,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpProperties &DumpProperties:
 FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpProperties::SetDumpOptions() {
   if (enable_dump_ == kEnableFlag) {
     std::string dump_step;
-    if (GetContext().GetOption(OPTION_EXEC_DUMP_STEP, dump_step) == GRAPH_SUCCESS) {
+    if (GetContext().GetOption(OPTION_EXEC_DUMP_STEP, dump_step) == GRAPH_SUCCESS && !dump_step.empty()) {
       GE_CHK_STATUS_RET(CheckDumpStep(dump_step), "[Check][dump_step] failed.");
       GELOGI("Get dump step %s successfully", dump_step.c_str());
       SetDumpStep(dump_step);

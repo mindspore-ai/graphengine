@@ -395,8 +395,9 @@ NodePtr SwitchToStreamSwitchPass::CreateStreamSwitchNode(const ComputeGraphPtr &
                 peer_cond_anchor->GetOwnerNode()->GetName().c_str(), stream_switch->GetName().c_str());
 
   int64_t group_index = -1;
-  (void)AttrUtils::GetInt(switch_node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index);
-  SetControlFlowGroup(stream_switch, group_index);
+  if (AttrUtils::GetInt(switch_node->GetOpDesc(), ATTR_NAME_CONTROL_FLOW_GROUP, group_index)) {
+    SetControlFlowGroup(stream_switch, group_index);
+  }
   return stream_switch;
 }
 

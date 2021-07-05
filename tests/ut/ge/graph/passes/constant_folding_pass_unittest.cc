@@ -173,8 +173,8 @@ namespace {
 ///      shapeNo1
 ///       |
 ///     addnYes1
-///    /    \
-///  /       \
+///    /    \.
+///  /       \.
 /// const1   const2
 ComputeGraphPtr BuildGraph1() {
   auto builder = ut::GraphBuilder("test");
@@ -223,8 +223,8 @@ ComputeGraphPtr BuildGraph2() {
 ///      shapeNo1
 ///       |         c
 ///     addnYes1  <-----  dataNo1
-///    /    \
-///  /       \
+///    /    \.
+///  /       \.
 /// const1   const2
 ComputeGraphPtr BuildGraph3() {
   auto builder = ut::GraphBuilder("test");
@@ -249,8 +249,8 @@ ComputeGraphPtr BuildGraph3() {
 ///      shapeNo1
 ///       |         c
 ///     addnYes1  <---------
-///    /    \               \
-///  /       \         c     \
+///    /    \               \.
+///  /       \         c     \.
 /// const1   const2  <-----  dataNo1
 ComputeGraphPtr BuildGraph4() {
   auto builder = ut::GraphBuilder("test");
@@ -276,7 +276,7 @@ ComputeGraphPtr BuildGraph4() {
 ///      shapeNo1
 ///       |         c
 ///     addnYes1  <-----  dataNo1
-///    /    \
+///    /    \.
 ///  /       \        c
 /// const1   const2  <-----  dataNo2
 ComputeGraphPtr BuildGraph5() {
@@ -306,8 +306,8 @@ ComputeGraphPtr BuildGraph5() {
 ///     addYes1  <---- const3
 ///        |
 ///     addnYes1 <-
-///    /    \      \
-///  /       \      \
+///    /    \      \.
+///  /       \      \.
 /// const1   const2  const4
 ComputeGraphPtr BuildGraph6() {
   auto builder = ut::GraphBuilder("test");
@@ -332,12 +332,12 @@ ComputeGraphPtr BuildGraph6() {
 }
 
 ///         netoutput1
-///          /       \
+///          /       \.
 ///    shapeNo1     ShpaeNo2
 ///         \      /
 ///      huberLoss1
-///    /      |    \
-///  /       |      \
+///    /      |    \.
+///  /       |      \.
 /// const1  const2  const3
 ComputeGraphPtr BuildGraph7() {
   auto builder = ut::GraphBuilder("test");
@@ -365,8 +365,8 @@ ComputeGraphPtr BuildGraph7() {
 ///      shapeNo1
 ///       |
 ///     addnNo1
-///    /    \
-///  /       \
+///    /    \.
+///  /       \.
 /// const1   const2
 ComputeGraphPtr BuildGraph8() {
   auto builder = ut::GraphBuilder("test");
@@ -389,8 +389,8 @@ ComputeGraphPtr BuildGraph8() {
 ///      shapeNo1
 ///       |
 ///     addnYes1
-///    /    \
-///  /       \
+///    /    \.
+///  /       \.
 /// const1   data1
 ComputeGraphPtr BuildGraph9() {
   auto builder = ut::GraphBuilder("test");
@@ -409,12 +409,12 @@ ComputeGraphPtr BuildGraph9() {
 }
 
 ///    netoutput1
-///     /      \
+///     /      \.
 ///  addDim   sqrt1
 ///     \      /
 ///     switch1
-///     /    \
-///    /      \
+///     /    \.
+///    /      \.
 ///  const1  const2
 ComputeGraphPtr BuildGraph10() {
   auto builder = ut::GraphBuilder("test");

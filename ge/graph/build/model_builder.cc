@@ -707,7 +707,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
       if (!kernel_name.empty() && (kernel_buffer.GetSize() > 0)) {
         GE_CHECK_NOTNULL(kernel_buffer.GetData());
         std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
-        tbe_kernel = std::make_shared<OpKernelBin>(kernel_name, std::move(data));
+        tbe_kernel = MakeShared<OpKernelBin>(kernel_name, std::move(data));
         GE_CHECK_NOTNULL(tbe_kernel);
         GELOGI("Node [%s][%s] start recovery extra attr %s from %s", node_op_desc->GetName().c_str(),
                node_op_desc->GetType().c_str(), ge::OP_EXTATTR_NAME_TBE_KERNEL, ATTR_NAME_TBE_KERNEL_NAME.c_str());

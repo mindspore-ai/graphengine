@@ -1206,7 +1206,7 @@ Status MultiBatchGraphCopyer::CheckCopyResult(const std::vector<NodePtr> &start_
     auto dims = NodeUtils::GetOutputDesc(*node, kDataOutIndex).GetShape().GetDims();
     if (!IsAllDimsPositive(dims)) {
       REPORT_CALL_ERROR("E19999", "Failed to copy multi batch graph, the node %s still has unknown shape %s",
-             node->GetName().c_str(), formats::ShapeToString(dims).c_str());
+                        node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       GELOGE(INTERNAL_ERROR, "[Check][Param] Failed to copy multi batch graph, the node %s still has unknown shape %s",
              node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       return INTERNAL_ERROR;

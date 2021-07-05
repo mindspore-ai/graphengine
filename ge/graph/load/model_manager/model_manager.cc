@@ -1378,7 +1378,9 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  if (cust_aicpu_so_.size() == 0) return SUCCESS;
+  if (cust_aicpu_so_.empty()) {
+    return SUCCESS;
+  }
   // get current context
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
@@ -1394,9 +1396,19 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
     return SUCCESS;
   }
 
-  vector<void *> allocated_mem;
-  rtError_t status;
   rtStream_t stream = nullptr;
+  vector<void *> allocated_mem;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+    if (stream != nullptr) {
+      GE_CHK_RT(rtStreamDestroy(stream));
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
+
+  rtError_t status;
   vector<CustAicpuSoBuf> v_cust_so;
   void *args = nullptr;
 
@@ -1471,13 +1483,6 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
     GELOGE(RT_FAILED, "[Call][RtStreamSynchronize] fail, ret = 0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
-  std::function<void()> callback = [&]() {
-    for (auto mem : allocated_mem) {
-      GE_CHK_RT(rtFree(mem));
-    }
-    GE_CHK_RT(rtStreamDestroy(stream));
-  };
-  GE_MAKE_GUARD(release, callback);
   GELOGI("Cpu kernel launch task success.");
   return SUCCESS;
 }

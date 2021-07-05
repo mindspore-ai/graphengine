@@ -158,6 +158,7 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/opskernel_manager/ops_kernel_builder_manager.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/model_manager.cc"
     "${GE_CODE_DIR}/ge/common/profiling/profiling_manager.cc"
+    "${GE_CODE_DIR}/ge/common/profiling/ge_profiling.cc"
     "${GE_CODE_DIR}/ge/graph/manager/host_mem_manager.cc"
 	"${GE_CODE_DIR}/ge/graph/manager/memory_api.cc"
     "${GE_CODE_DIR}/ge/session/inner_session.cc"
@@ -725,7 +726,6 @@ set(PASS_TEST_FILES
     "graph/passes/memcpy_addr_async_unittest.cc"
     "graph/passes/hccl_continuous_pass_unittest.cc"
     "graph/passes/hccl_memcpy_pass_unittest.cc"
-		
 )
 
 set(KERNEL_TEST_FILES
@@ -858,7 +858,6 @@ set(HYBRID_TEST_FILES
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
     "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"
-
 )
 
 set(OTHERS_TEST_FILES
@@ -886,6 +885,7 @@ add_library(ge_ut_graph STATIC
 
 target_compile_definitions(ge_ut_graph PRIVATE
     google=ascend_private
+    FMK_SUPPORT_DUMP
 )
 
 target_compile_options(ge_ut_graph PRIVATE

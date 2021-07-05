@@ -56,6 +56,7 @@ class HybridModelBuilder {
   Status BuildOutputMapping(GraphItem &partitioned_call, const NodeItem &node_item, bool is_root_graph);
   Status ValidateParams();
   Status LoadGraph();
+  Status CopyGraph();
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
   static Status InitHcclExecutorOnDemand(const GeModelPtr &ge_model);
   Status LoadTask(NodeItem &node_item);

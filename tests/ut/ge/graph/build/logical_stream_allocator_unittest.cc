@@ -349,7 +349,7 @@ class UtestLogicalStreamAllocator : public testing::Test {
   ///                   B --> C(AllReduce) --- D
   ///                  /
   ///  stream id:  0  A
-  ///                  \
+  ///                  \.
   ///                   E --> F(AllReduce) --- G
   ///  stream id:       2     2                2
   ///
@@ -599,7 +599,7 @@ TEST_F(UtestLogicalStreamAllocator, test_label_not_reusable2) {
 
 /// case of multi-output, then unuse stream
 ///      sub1
-///    /  |   \
+///    /  |   \.
 /// sub2 sub3 sub4
 TEST_F(UtestLogicalStreamAllocator, test_multiOut_new_stream) {
   SubGraphInfoPtr data = CreateDataSubgraph();
@@ -624,7 +624,7 @@ TEST_F(UtestLogicalStreamAllocator, test_multiOut_new_stream) {
 
 /// if paralle id 1, then use stream
 ///        sub1
-///    /   |   |   \
+///    /   |   |   \.
 /// sub2 sub3 sub4 sub5
 TEST_F(UtestLogicalStreamAllocator, test_parallel_one) {
   SubGraphInfoPtr data = CreateDataSubgraph();
@@ -653,7 +653,7 @@ TEST_F(UtestLogicalStreamAllocator, test_parallel_one) {
 
 /// if the param of engine independent is true, then set independent stream
 ///        sub1
-///    /   |   |   \
+///    /   |   |   \.
 /// sub2 sub3 sub4 sub5
 TEST_F(UtestLogicalStreamAllocator, test_independent) {
   SubGraphInfoPtr data = CreateDataSubgraph();
@@ -692,7 +692,7 @@ TEST_F(UtestLogicalStreamAllocator, test_independent) {
 
 /// set stream based on stream label, and then based on independent
 ///        sub1
-///    /   |   |   \
+///    /   |   |   \.
 /// sub2 sub3 sub4 sub5
 TEST_F(UtestLogicalStreamAllocator, test_independent_switch_label) {
   SubGraphInfoPtr data = CreateDataSubgraph();

@@ -151,7 +151,7 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const std::map<NodePtr, s
   // Merge3{id=5, group=} => {Switch4{id=6, group=}, Switch5{id=7, group=}}
   // Merge4{id=8, group=} => {Switch1{id=1, group=}, Switch5{id=7, group=}}
   std::map<int64_t, int64_t> unique_groups;
-  const auto GetGroupIndex = [&unique_groups](const NodePtr &merge, const std::vector<NodePtr> &switch_group) {
+  const auto get_group_index = [&unique_groups](const NodePtr &merge, const std::vector<NodePtr> &switch_group) {
     int64_t group_index = merge->GetOpDesc()->GetId();
     std::set<int64_t> group_ids{group_index};
     for (const auto &node : switch_group) {
@@ -173,7 +173,7 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const std::map<NodePtr, s
     return group_index;
   };
 
-  const auto SetGroupIndex = [](const NodePtr &merge, const std::vector<NodePtr> &switch_group, int64_t group_index) {
+  const auto set_group_index = [](const NodePtr &merge, const std::vector<NodePtr> &switch_group, int64_t group_index) {
     SetControlFlowGroup(merge, group_index);
     for (const auto &node : switch_group) {
       SetControlFlowGroup(node, group_index);
@@ -186,8 +186,8 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const std::map<NodePtr, s
   // Merge3{id=5, group=5} => {Switch4{id=6, group=5}, Switch5{id=7, group=5}}
   // Merge4{id=8, group=0} => {Switch1{id=1, group=0}, Switch5{id=7, group=0}}
   for (const auto group : switch_groups) {
-    int64_t group_index = GetGroupIndex(group.first, group.second);
-    SetGroupIndex(group.first, group.second, group_index);
+    int64_t group_index = get_group_index(group.first, group.second);
+    set_group_index(group.first, group.second, group_index);
   }
 
   // Step 2: Adjust crossed merge group for unique group.
@@ -201,7 +201,7 @@ void MarkForceUnknownForCondPass::MarkUnknownForSwitch(const std::map<NodePtr, s
 
     const auto it = unique_groups.find(group_index);
     if (it != unique_groups.end() && it->first != it->second) {
-      SetGroupIndex(group.first, group.second, it->second);
+      set_group_index(group.first, group.second, it->second);
     }
   }
 }

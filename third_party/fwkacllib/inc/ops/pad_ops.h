@@ -213,11 +213,11 @@ REG_OP(PadV2)
 *@brief Pads a tensor . \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
-*constant_values: A Tensor. Must have the same type as input.
+*@li x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
+*@li constant_values: A Tensor. Must have the same type as input.
 
 *@par Attributes:
-*paddings: An optional "vector<vector<int>>". Defaults to "{}".
+*paddings: A required Attribute.
 *     For each dimension D of input, paddings[D, 0] indicates how many
 *     values to add before the contents of tensor in that dimension,
 *     and paddings[D, 1] indicates how many values to add after the

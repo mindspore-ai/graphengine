@@ -1154,18 +1154,17 @@ REG_OP(EditDistance)
     .OP_END_FACTORY_REG(EditDistance)
 
 /**
-* @brief sort_v2.
+* @brief sort the input tensor without returning the value of index.
 
 * @par Inputs:
-* @li x: An ND tensor of type float16.
+* x: An ND tensor of type float16.
 
 * @par Attributes:
-
 * @li axis: An optional int. The dimension to sort along. This value defaults to -1.
 * @li descending: An optional bool. Controls the sorting order (ascending or descending). This value defaults to False.
 
 * @par Outputs:
-* @li y: An ND tensor of type float16.
+* y: An ND tensor of type float16.
 
 * @attention Constraints:
 * @li Axis should select the last dim.

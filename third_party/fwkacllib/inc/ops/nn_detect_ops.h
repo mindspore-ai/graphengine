@@ -1445,16 +1445,16 @@ REG_OP(DecodeBboxV2)
     .OP_END_FACTORY_REG(DecodeBboxV2)
 
 /**
-*@brief Computes sort function.
+*@brief sort the input tensor and return the value of index.
 *
 *@par Inputs:
 *Inputs include:
-* x: A Tensor. Dtype support: flaot16, flaot, int16, int8,
+* x: A Tensor. Dtype support: float16, float, int16, int8,
                           uint8, int32, int64.
 *
 *@par Attributes:
-* @li axis: optional, int.
-* @li descending: optional,bool.
+* @li axis: An optional attribute indicates the sorting axis.
+* @li descending: An optional attribute indicates desending sort or not.
 *
 *@par Outputs:
 * @li y1: A Tensor. Must have the same type as x.
@@ -1515,10 +1515,10 @@ whether boxes overlap too much with respect to IOU.
 deciding when to remove boxes based on score . \n
 
 *@par Attributes:
-*center_point_box:Integer indicate the format of the box data. 
-The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
-where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
-of box corners and the coordinates can be provided as normalized 
+*center_point_box:Integer indicate the format of the box data.
+The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2]
+where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair
+of box corners and the coordinates can be provided as normalized
 (i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
 1 - the box data is supplied as [x_center, y_center, width, height].
  Mostly used for Pytorch models. \n
@@ -1567,16 +1567,18 @@ deciding when to remove boxes based on score . \n
 the last dim representing (batch_id,class_id,index_id)  . \n
 
 *@par Attributes:
-*center_point_box:Integer indicate the format of the box data. 
-The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
-where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
-of box corners and the coordinates can be provided as normalized 
+*@li center_point_box:Integer indicate the format of the box data.
+The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2]
+where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair
+of box corners and the coordinates can be provided as normalized
 (i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
 1 - the box data is supplied as [x_center, y_center, width, height].
- Mostly used for Pytorch models. \n
+ Mostly used for Pytorch models.
+*@li max_boxes_size: An optional attribute integer representing the real maximum
+*number of boxes to be selected by non max suppression . \n
 
 *@par Outputs:
-*@li selected_indices: A 2-D integer tensor of shape [M] representing the
+*selected_indices: A 2-D integer tensor of shape [M] representing the
 selected indices from the boxes tensor, where M <= max_output_size. \n
 
 *@attention Constraints:
@@ -1602,7 +1604,7 @@ REG_OP(NonMaxSuppressionV7)
 *@brief Obtains the ROI feature matrix from the feature map list. It is a customized fused operator for mmdetection. \n
 
 *@par Inputs:
-* Three inputs, including:
+* Two inputs, including:
 *@li features: A 5HD Tensor list of type float32 or float16.
 *@li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
 * the value "5" indicates the indexes of images where the ROIs are located, "x0", "y0", "x1", and "y1".
@@ -1818,4 +1820,3 @@ REG_OP(GridAssignPositive)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_
-

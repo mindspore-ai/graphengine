@@ -182,14 +182,14 @@ REG_OP(Permute)
 * int8, uint8, int16, uint16, int32, uint32, int64,uint64, float16, float32.
 
 *@par Outputs:
-* y: A 2D flattened Tensor with the contents of the input tensor, with input dimensions up to axis flattened 
+* y: A 2D flattened Tensor with the contents of the input tensor, with input dimensions up to axis flattened
 * to the outer dimension of the output and remaining input dimensions flattened into the inner dimension of the output.
 * Must be one of the following data types: int8, uint8, int16, uint16, int32, uint32, int64,uint64, float16, float32 .
 
 *@par Attributes:
-* axis: A optional int32, default value is 1. Indicate up to which input dimensions (exclusive) should be flattened 
-* to the outer dimension of the output. The value for axis must be in the range [-r, r], where r is the rank of 
-* the input tensor. Negative value means counting dimensions from the back. When axis = 0, the shape of 
+* axis: A optional int32, default value is 1. Indicate up to which input dimensions (exclusive) should be flattened
+* to the outer dimension of the output. The value for axis must be in the range [-r, r], where r is the rank of
+* the input tensor. Negative value means counting dimensions from the back. When axis = 0, the shape of
 * the output tensor is (1, (d_0 X d_1 ... d_n), where the shape of the input tensor is (d_0, d_1, ... d_n).
 
 *@par Third-party framework compatibility
@@ -723,11 +723,13 @@ REG_OP(CompressFcOp)
 *@brief Performs Col2im for each batch entry. \n
 
 *@par Inputs:
-*@li input_x: The Col Tensor. 5-D, shape: `(n, c1, kernel_h*kernel_w, ho*wo, c0)`. 
-where ho/wo is do = (output_d + 2*padding_d - dilation_d*(kernel_d - 1) - 1)//stride_d + 1     \n
+*@li x: The Col Tensor. 4-D, shape: `(n, c, kernel_h*kernel_w, ho*wo)`.
+where ho/wo is do = (output_d + 2*padding_d - dilation_d*(kernel_d - 1) - 1)//stride_d + 1.
+*@li output_size: The img shape Tensor. 1-D, shape:`(2)`, value: (output_h, output_w).  \n
 
 *@par Outputs:
-*@li output_y: The img Tensor. 5-D, shape: `(n, c1, output_h, output_w, c0)`. \n
+*y: The img Tensor. 4-D, shape: `(n, c, output_h, output_w)`. \n
+
 
 *@par Attributes:
 *@li kernel_shape: ListInt, value: `(kernel_h, kernel_w)`, the shape of kernel in convolution.
@@ -837,7 +839,7 @@ REG_OP(AffineGrid)
 *@par Inputs:
 *Four inputs, including:
 *@li x: The input tensor.
-*@li size: The shape of output tensor. 
+*@li size: The shape of output tensor.
 *@li stride: The stride of output tensor.
 *@li storage_offset: The offset in the underlying storage of the output tensor. \n
 

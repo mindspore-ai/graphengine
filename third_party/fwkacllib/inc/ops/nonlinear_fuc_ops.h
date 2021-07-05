@@ -224,22 +224,22 @@ REG_OP(Relu6Grad)
     .OUTPUT(backprops, TensorType::RealNumberType())
     .OP_END_FACTORY_REG(Relu6Grad)
 /**
-*@brief Calculate the elu_grad_v2 function. 
+*@brief Calculate the elu_grad_v2 function.
 *Applies the element-wise function:
 * Computes the backward for the elu: if x>0, 1; otherwise elu() + alpha .
 *@par Inputs:
 *One inputs, including:
 * @li grads: A tensor. Must be one of the following types:
-*     float16, float32. 
+*     float16, float32.
 * @li activations: A tensor. Must be one of the following types:
-*     float16, float32. 
+*     float16, float32.
 *
 *@par Outputs:
 *y: A Tensor with the same type and shape of grads's.
-* 
+*
 *@par Attributes:
 *@li alpha: scalar parameter, default value = 1.0
-*/	
+*/
 REG_OP(EluGradV2)
     .INPUT(grads, TensorType({DT_FLOAT, DT_FLOAT16}))
     .INPUT(activations, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -539,24 +539,20 @@ REG_OP(Elu)
 *x: A float16, float32, for the input data type . \n
 
 *@par Attributes:
-*alpha1: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
-
-*@par Attributes:
-*alpha2: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" . \n
-
-*@par Attributes:
-*alpha3: A float32. Defines at which positive value the ELU saturates. Defaults to "1.0" . \n
+*@li alpha1: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
+*@li alpha2: A float32. Defines at which negative value the ELU saturates. Defaults to "1.0" .
+*@li alpha3: A float32. Defines at which positive value the ELU saturates. Defaults to "1.0" . \n
 
 *@par Outputs:
 *y: A float16, float32, for the normalized result . \n
 
 *@attention Constraints:
-*@li The input is of type float16 or float32 . \n
+*The input is of type float16 or float32 . \n
 
 *@par Multiple batches supported or not
 *Supported
 *@par Third-party framework compatibility
-*@li Compatible with ONNX's Celu operator
+*Compatible with ONNX's Celu operator
 */
 REG_OP(Celu)
     .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16}))
@@ -808,15 +804,15 @@ REG_OP(SoftplusV2Grad)
 /**
  * @brief ThresholdedRelu takes one input data (Tensor) and produces one output data (Tensor)
  *  where the rectified linear function, y = x for x > alpha, y = 0 otherwise, is applied to the tensor elementwise.
- * 
+ *
  * @par inputs
  * one input including:
  * @li x: input A Tensor. Must be one of the following types: float32, float16
- * 
+ *
  * @par output
  * one output including:
  * @li y:A Tensor of the same type as x
- * 
+ *
  */
 REG_OP(ThresholdedRelu)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -892,7 +888,7 @@ REG_OP(HardShrink)
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Hardsigmoid. \n
-*/    
+*/
 REG_OP(HardSigmoid)
     .INPUT(input_x, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .OUTPUT(output_y, TensorType({DT_FLOAT, DT_FLOAT16}))

@@ -568,7 +568,7 @@ REG_OP(LayerNorm)
     .OP_END_FACTORY_REG(LayerNorm)
 
 /**
-*@brief Returns a tensor where each sub-tensor of input along dimension 
+*@brief Returns a tensor where each sub-tensor of input along dimension
 *       dim is normalized such that the p-norm of the sub-tensor is lower than the value maxnorm. \n
 
 *@par Inputs:
@@ -576,7 +576,7 @@ REG_OP(LayerNorm)
 * @li x: A Tensor. Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
-* @li p: Specify L_p norm, the type is float. 
+* @li p: Specify L_p norm, the type is float.
 * @li dim: The processed dim, the type is int.
 * @li maxnorm: Threshold for comparison, the type is float.  \n
 
@@ -1543,14 +1543,14 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
     .ATTR(reduction, String, "mean")
     .OP_END_FACTORY_REG(SigmoidCrossEntropyWithLogitsGradV2)
 /**
- * @brief Calculate the PoissonNllLoss function. 
+ * @brief Calculate the PoissonNllLoss function.
  *        target∼Poisson(input)loss(input,target)=input−target∗log(input)+log(target!) \n
 
  * @par Inputs:
  * Two inputs, including:
  * @li input_x: A tensor. Must be one of the following types:
  *     float16, float32. \n
- * 
+ *
  * @par Inputs:
  * @li target: A tensor. Must be one of the following types:
  *     float16, float32. \n
@@ -1558,13 +1558,13 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
  * @par Attributes:
  * four Attributes, including:
  * @li log_input: An optional bool. Defaults to "True" \n
- * 
+ *
  *  @par Attributes:
  * @li full: An optional bool. Defaults to "False" \n
- * 
+ *
  *  @par Attributes:
  * @li eps: An optional float. Defaults to "1e-8" \n
- * 
+ *
  *  @par Attributes:
  * @li reduction: An optional string. Defaults to "mean" \n
 
@@ -1592,7 +1592,7 @@ REG_OP(PoissonNllLoss)
  * @li num_step: A required int.\n
  * @li hidden_size: A required int. \n
  *
- * 
+ *
  * @par Output:
  * y: A mutable Tensor of type float16, with the shape of [num_step, batch_size, hidden_size]. \n
  *
@@ -1605,24 +1605,22 @@ REG_OP(RnnGenMask)
     .OP_END_FACTORY_REG(RnnGenMask)
 
 /**
-* @brief Creates a criterion that optimizes a multi-class multi-classification hinge loss (margin-based loss) 
+* @brief Creates a criterion that optimizes a multi-class multi-classification hinge loss (margin-based loss)
 *        between input x (a 2D mini-batch Tensor) and output y (which is a 2D Tensor of target class indices) \n
- 
+
 * @par Inputs:
 * Two inputs, including:
 * @li x: A tensor. Must be one of the following types:
-*     float16, float32. \n
-* 
-* @par Inputs:
+*     float16, float32.
 * @li target: A tensor. Must be the following types:
 *     int32. \n
 
 * @par Attributes:
-* @li reduction: An optional string. Defaults to "mean" \n
+* reduction: An optional string. Defaults to "mean" \n
 
 * @par Outputs:
-* y: A Tensor has same element type as input x. \n
-* is_target: A Tensor has same element type as input target. \n
+* @li y: A Tensor has same element type as input x. \n
+* @li is_target: A Tensor has same element type as input target. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator MultiLabelMarginLoss. \n

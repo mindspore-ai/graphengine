@@ -1512,6 +1512,9 @@ REG_OP(IMGWarp)
 
 *@par Outputs:
 *map_img: A Tensor after resize. \n
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(Remap)
     .INPUT(img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
@@ -1848,6 +1851,9 @@ REG_OP(GridUnnormal)
 
 *@par Outputs:
 *y: Returns 4-D Tensor with the same dtype as `x`.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ImageUnfold)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1940,5 +1946,151 @@ REG_OP(GridSampler3DGrad)
     .ATTR(align_corners, Bool, false)
     .OP_END_FACTORY_REG(GridSampler3DGrad)
 
+/**
+*@brief Upsample the 3-D data with the nearest neighbor ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float32, float64. \n
+
+*@par Attributes:
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: output_depth, output_height, output_width. The number of elements of 'output_size'
+    should be the same as the rank of input 'x'. Only one of 'scales' and 'output_size' can be specified. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width. 
+    The number of elements of 'scales' should be the same as the rank of input 'x'. One of 'scales' and
+    'output_size' MUST be specified and it is an error if both are specified. \n
+
+*@par Outputs:
+*y: A 5-D tensor. Has the same type as input x, shape depends on x and output_size/scales. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+
+REG_OP(UpsampleNearest3d)
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .OP_END_FACTORY_REG(UpsampleNearest3d)
+
+/**
+*@brief Upsample the 3-D data with the trilinear ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li x: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float32, float64. \n
+
+*@par Attributes:
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: output_depth, output_height, output_width. The number of elements of 'output_size' should
+    be the same as the rank of input 'x'. Only one of 'scales' and 'output_size' can be specified. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width.
+    The number of elements of 'scales' should be the same as the rank of input 'x'.
+    One of 'scales' and 'output_size' MUST be specified and it is an error if both are specified. \n
+*@li align_corners: An optional bool. Defaults to false.
+    If true, the input and output tensors are aligned by the center points of their corner pixels, preserving the
+    values at the corner pixels. If false, the input and output tensors are aligned by the corner points of their
+    corner pixels, and the interpolation use edge value padding for out of boundary values. \n
+
+*@par Outputs:
+*y: A 5-D tensor. Has the same type as input x, shape depends on x and output_size/scales. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+
+REG_OP(UpsampleTrilinear3d)
+    .INPUT(x, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(UpsampleTrilinear3d)
+
+/**
+*@brief Upsample the 3-D gradient data  with the nearest neighbor ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li grad_output: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float32, float64. \n
+
+*@par Attributes:
+*@li input_size: An required listInt.
+    contain 5 elements: [min_batch, channels, depth, height, width]. Must:
+      input_size[0] == grad_output_tensor_size[0]
+      input_size[1] == grad_output_tensor_size[1]. \n
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: depth, height, width. The number of elements of 'output_size' should
+    be the same as the rank of input 'grad_output'. Only one of 'scales' and 'output_size' can be specified. Must:
+      grad_output_tensor_size[2] == floor(input_size[2] * scales[0]) == output_size[0]
+      grad_output_tensor_size[3] == floor(input_size[3] * scales[1]) == output_size[1]
+      grad_output_tensor_size[4] == floor(input_size[4] * scales[2]) == output_size[2]. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width. 
+    The number of elements of 'scales' should be the same as the rank of input 'grad_output'.
+    One of 'scales' and 'output_size' MUST be specified and it is an error if both are specified. \n
+
+*@par Outputs:
+*y: A 5-D tensor. Has the same type as input grad_output, shape depends on Attributes:input_size. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(UpsampleNearest3dGrad)
+    .INPUT(grad_output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .OP_END_FACTORY_REG(UpsampleNearest3dGrad)
+
+/**
+*@brief Upsample the 3-D gradient data  trilinear ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+* @li grad_output: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float32, float64. \n
+
+*@par Attributes:
+*@li input_size: An required listInt.
+    contain 5 elements: [min_batch, channels, depth, height, width]. Must:
+      input_size[0] == grad_output_tensor_size[0]
+      input_size[1] == grad_output_tensor_size[1]. \n
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: depth, height, width. The number of elements of 'output_size' should
+    be the same as the rank of input 'grad_output'. Only one of 'scales' and 'output_size' can be specified. Must:
+      grad_output_tensor_size[2] == floor(input_size[2] * scales[0]) == output_size[0]
+      grad_output_tensor_size[3] == floor(input_size[3] * scales[1]) == output_size[1]
+      grad_output_tensor_size[4] == floor(input_size[4] * scales[2]) == output_size[2]. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width. 
+    The number of elements of 'scales' should be the same as the rank of input 'grad_output'.
+    One of 'scales' and 'output_size' MUST be specified and it is an error if both are specified. \n
+
+*@par Outputs:
+*y: A Tensor with shape depends on intput_size and output_size/scales. Must be one of the following
+    types: float16, float32. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(UpsampleTrilinear3dGrad)
+    .INPUT(grad_output, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(UpsampleTrilinear3dGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

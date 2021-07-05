@@ -1120,11 +1120,12 @@ REG_OP(IndexAdd)
 *@brief: Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input \n
 
 *@par Inputs:
-* Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
-*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
-*@li diagonal:(int, optional) – the diagonal to consider。\n
+*x: A Tensor. Must be one of the following types:
+*float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
+
+*@par Attributes:
+*diagonal: An optional attribute indicates the diagonal to consider. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
@@ -1142,11 +1143,12 @@ REG_OP(Triu)
 *@brief: Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input \n
 
 *@par Inputs:
-* Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
-*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
-*@li diagonal:(int, optional) – the diagonal to consider。\n
+*x: A Tensor. Must be one of the following types:
+*float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
+
+*@par Attributes:
+*diagonal: An optional attribute indicates the diagonal to consider. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n

@@ -624,9 +624,9 @@ REG_OP(Log1p)
 
 *@attention Constraints:
 *@li x2: The input data does not support 0
-*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the 
+*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the
 *requirement of double thousandths in the mini form
-*@li Due to different architectures, the calculation results of this operator 
+*@li Due to different architectures, the calculation results of this operator
 *on NPU and CPU may be inconsistent
 *@li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
 
@@ -2066,9 +2066,9 @@ REG_OP(FloorDiv)
 
 *@attention Constraints:
 *@li x2: The input data does not support 0
-*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the 
+*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the
 *requirement of double thousandths in the mini form
-*@li Due to different architectures, the calculation results of this operator 
+*@li Due to different architectures, the calculation results of this operator
 *on NPU and CPU may be inconsistent
 *@li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
 
@@ -2200,9 +2200,9 @@ REG_OP(Tan)
 
 *@attention Constraints:
 *@li x2: The input data does not support 0
-*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the 
+*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the
 *requirement of double thousandths in the mini form
-*@li Due to different architectures, the calculation results of this operator 
+*@li Due to different architectures, the calculation results of this operator
 *on NPU and CPU may be inconsistent
 *@li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
 
@@ -3395,7 +3395,7 @@ REG_OP(TensorRedirect)
 * multiply the result by the scalar value and add it to tensor x1
 
 * @par Inputs:
-* Three inputs, including:
+* Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
 *     float16, float32.
 * @li x1: A mutable input Tensor of the same type as x1.
@@ -3404,7 +3404,7 @@ REG_OP(TensorRedirect)
 *     float16, float32, int32. \n
 
 * @par Outputs:
-* @li y: A mutable Tensor. Has the same type as "x1". \n
+* y: A mutable Tensor. Has the same type as "x1". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Addcdiv.
@@ -3418,12 +3418,12 @@ REG_OP(Addcdiv)
     .OP_END_FACTORY_REG(Addcdiv)
 
 /**
-* @brief Performs the element-wise multiplication of tensor x2 by tensor x3, 
-* multiply the result by the scalar value and add it to tensor input_data 
+* @brief Performs the element-wise multiplication of tensor x2 by tensor x3,
+* multiply the result by the scalar value and add it to tensor input_data
 
 
 * @par Inputs:
-* Three inputs, including:
+* Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
 *     float16, float32, int8, int32, uint8.
 * @li x1: A mutable input Tensor of the same type as x1.
@@ -3431,7 +3431,7 @@ REG_OP(Addcdiv)
 * @li value: A tensor which includes only one element of the same type as x1. \n
 
 * @par Outputs:
-* @li y: A mutable output Tensor. Has the same type as "x1". \n
+* y: A mutable output Tensor. Has the same type as "x1". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Addcmul.
@@ -3453,7 +3453,7 @@ REG_OP(Addcmul)
 * @li alpha: A scalar tensor of type float16, float32. \n
 
 * @par Outputs:
-* @li y: An ND tensor tensor with the same shape and type as "x1". \n
+* y: An ND tensor tensor with the same shape and type as "x1". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Axpy.
@@ -3533,21 +3533,21 @@ REG_OP(TensorEqual)
     .OP_END_FACTORY_REG(TensorEqual)
 
 /**
- * @brief Element-wise min of each of the input tensors (with Numpy-style broadcasting support). 
- * All inputs and outputs must have the same data type. This operator supports multidirectional 
+ * @brief Element-wise min of each of the input tensors (with Numpy-style broadcasting support).
+ * All inputs and outputs must have the same data type. This operator supports multidirectional
  * (i.e., Numpy-style) broadcasting
- * 
- * @par inputs
+ *
+ * @par Inputs:
  * one input including:
- * @li x: dynamic input A Tensor. Must be one of the following types: float32, float16, double, int32, int64
- * 
- * @par output
+ * x: dynamic input A Tensor. Must be one of the following types: float32, float16, double, int32, int64
+ *
+ * @par Outputs:
  * one output including:
- * @li y:A Tensor of the same type as x
- * 
+ * y:A Tensor of the same type as x
+ *
  */
 REG_OP(MaxN)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64})) 
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(MaxN)
 
@@ -3632,16 +3632,16 @@ REG_OP(DataCompare)
 *which Hardmax will be performed.The output tensor has the same shape and contains the Hardmax values of the
 *corresponding input.
 *
-*@par inputs
+*@par Inputs:
 *one input including:
-*@li x: input A Tensor.Must be one of the following types:float32,float16
+*x: input A Tensor.Must be one of the following types:float32,float16
 *
 *@par Attributes:
-*@li axis:A required int attribute that decides which dimension will be used to cal the hard_max
+*axis:A required int attribute that decides which dimension will be used to cal the hard_max
 *
-*@par output:
+*@par Outputs:
 *one output including:
-*@li y:A Tensor of the same type as x
+*y:A Tensor of the same type as x
 *
 */
 REG_OP(HardMax)
@@ -3669,7 +3669,7 @@ REG_OP(Dot)
     .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
     .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
     .OP_END_FACTORY_REG(Dot)
-	
+
 /**
 *@brief Returns a new tensor with boolean elements representing \n
 *if each element of input is “close” to the corresponding element of other \n
@@ -3717,7 +3717,7 @@ REG_OP(IsClose)
 *
 *@attention Constraints:
 *@li indices: only support int32,and shape same to "updates"
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". 
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
 *@li y:A Tensor, the type and shape is same to "var" \n
 
 *@par Third-party framework compatibility
@@ -3752,7 +3752,7 @@ REG_OP(ArgMaxGrad)
 
 *@attention Constraints:
 *@li indices: only support int32,and shape same to "updates"
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". 
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
 *@li y:A Tensor, the type and shape is same to "var" \n
 
 *@par Third-party framework compatibility

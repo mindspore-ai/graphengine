@@ -584,6 +584,30 @@ REG_OP(DropoutV2)
     .OUTPUT(seed, TensorType({ DT_FLOAT }))
     .REQUIRED_ATTR(p, Float)
     .OP_END_FACTORY_REG(DropoutV2)
+
+/**
+* @brief The Bernoulli distribution with probability . \n
+
+* @par Inputs:
+* @li x: A ND Tensor. Must be one of the following data types: 
+         int8, uint8, int16, int32, int64, bool, float32, float64 . 
+* @li p: A ND Tensor. The probability of an element to be zeroed. 
+        Must be one of the following data types: float32, float64. \n
+
+* @par Attributes:
+* seed: An Integer, the seed of the random generator. Default value -1 
+    to use current timestamp, otherwise it should be a positive integer.
+
+* @par Outputs:
+* y: A tensor with the same shape and type as "x".
+*/
+
+REG_OP(Bernoulli)
+    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(p, TensorType({ DT_FLOAT, DT_DOUBLE }))
+    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(seed, Int, -1)
+    .OP_END_FACTORY_REG(Bernoulli)
 }   // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

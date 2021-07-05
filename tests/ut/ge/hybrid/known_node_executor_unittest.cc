@@ -135,10 +135,9 @@ TEST_F(UnknownNodeExecutorTest, TestSetGlobalStep) {
   HybridModel hybrid_model(ge_root_model);
   auto *step_id = new int64_t[1];
   step_id[0] = 520;
-  std::unique_ptr<TensorValue> tensor_value;
-  tensor_value.reset(new(std::nothrow)TensorValue((void*)step_id, sizeof(step_id)));
-  hybrid_model.variable_tensors_.insert({"ge_global_step", std::move(tensor_value)});
-
+  std::unique_ptr<TensorValue> tensor_buf;
+  tensor_buf = tensor_buf->Create((void *)step_id, sizeof(int64_t));
+  hybrid_model.global_step_ = std::move(tensor_buf);
   KnownNodeExecutor known_node_executor;
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
   known_node_executor.SetDaviciModel(hybrid_model, node, davinci_model);

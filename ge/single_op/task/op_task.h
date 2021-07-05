@@ -89,6 +89,7 @@ class TbeOpTask : public OpTask {
   void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim, const OpDescPtr &op_desc);
   void SetKernelWithHandleArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
                                const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
+  void SetAtomicTask(OpTask *task) { atomic_task_.reset(task); }
 
   Status UpdateRunInfo() override;
   Status SetArgIndex();
@@ -100,6 +101,14 @@ class TbeOpTask : public OpTask {
   const std::string &GetTaskType() const override;
   void SetHandle(void *handle);
 
+ protected:
+  NodePtr node_;
+  std::unique_ptr<uint8_t[]> args_;
+  size_t arg_size_ = 0;
+  void *tiling_buffer_ = nullptr;
+  uint32_t max_tiling_size_ = 0;
+  std::string tiling_data_;
+
  private:
   friend class SingleOpModel;
   friend class TbeTaskBuilder;
@@ -107,31 +116,46 @@ class TbeOpTask : public OpTask {
   Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
                            const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
-  Status UpdateTilingArgs(rtStream_t stream);
   Status DoLaunchKernel(rtStream_t stream);
-  Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs);
+  Status CheckAndExecuteAtomic(const vector<GeTensorDesc> &input_desc,
+                               const vector<DataBuffer> &input_buffers,
+                               vector<GeTensorDesc> &output_desc,
+                               vector<DataBuffer> &output_buffers,
+                               rtStream_t stream);
+  virtual Status UpdateTilingArgs(rtStream_t stream);
+  virtual Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs);
+  virtual Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info);
 
   const void *stub_func_ = nullptr;
-  std::unique_ptr<uint8_t[]> args_;
-  size_t arg_size_ = 0;
   void *sm_desc_ = nullptr;
   std::string stub_name_;
-
   StreamResource *stream_resource_ = nullptr;
-  void *tiling_buffer_ = nullptr;
-  uint32_t max_tiling_size_ = 0;
-  std::string tiling_data_;
+
   std::vector<int64_t> run_info_workspaces_;
   std::vector<void *> workspaces_;
-  NodePtr node_;
 
   uint32_t tiling_key_ = 0;
+  bool clear_atomic_ = false;
   void* handle_ = nullptr;
   std::string original_kernel_key_;
   std::string node_info_;
   std::vector<size_t> arg_index_; // data index in args
   size_t input_num_; // include const input
   size_t output_num_;
+
+  std::unique_ptr<OpTask> atomic_task_;
+};
+
+class AtomicOpTask : public TbeOpTask {
+ public:
+  Status InitAtomicAddrCleanIndices();
+
+ private:
+  Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) override;
+  Status UpdateTilingArgs(rtStream_t stream) override;
+  Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info) override;
+  std::vector<int> atomic_output_indices_;
+
 };
 
 class AiCpuBaseTask : public OpTask {

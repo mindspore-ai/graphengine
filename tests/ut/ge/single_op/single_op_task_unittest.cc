@@ -154,3 +154,30 @@ TEST_F(UtestSingleOpTask, test_update_ioaddr) {
   task.tiling_buffer_ = nullptr;
 }
 
+TEST_F(UtestSingleOpTask, test_atomic_exec) {
+  auto graph = make_shared<ComputeGraph>("graph");
+  auto op_desc = make_shared<OpDesc>("Add", "Add");
+  auto node = graph->AddNode(op_desc);
+
+  AtomicOpTask task;
+  task.op_desc_ = op_desc;
+  task.node_ = node;
+
+  vector<DataBuffer> inputs;
+  vector<DataBuffer> outputs;
+  task.atomic_output_indices_ = { 0 };
+  task.arg_size_ = sizeof(void *) * 2;
+  task.args_.reset(new (std::nothrow) uint8_t[task.arg_size_]);
+  ASSERT_EQ(task.UpdateIoAddr(inputs, outputs), ACL_ERROR_GE_PARAM_INVALID);
+
+  ge::DataBuffer data_buffer;
+  outputs = { data_buffer };
+  ASSERT_EQ(task.UpdateIoAddr(inputs, outputs), SUCCESS);
+
+  task.tiling_buffer_ = (void *)0x0001;
+  ASSERT_EQ(task.UpdateTilingArgs(nullptr), SUCCESS);
+  task.tiling_buffer_ = nullptr;
+
+  optiling::utils::OpRunInfo run_info(0, true, 0);
+  task.CalcTilingInfo(run_info);
+}

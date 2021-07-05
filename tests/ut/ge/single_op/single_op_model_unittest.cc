@@ -40,6 +40,9 @@ using namespace ge;
 
 namespace {
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
+const char *const kEngineNameAiCore = "AIcoreEngine";
+const char *const kEngineNameAiCpu = "aicpu_ascend_kernel";
+const char *const kEngineNameAiCpuTf = "aicpu_tf_kernel";
 }  // namespace
 
 class UtestSingleOpModel : public testing::Test {
@@ -222,6 +225,7 @@ TEST_F(UtestSingleOpModel, test_build_dynamic_op) {
 
   auto graph = GraphUtils::CreateGraphFromComputeGraph(compute_graph);
   model.model_helper_.model_->SetGraph(graph);
+  model.op_list_[0] = transdata;
 
   auto op_desc = transdata->GetOpDesc();
   const vector<string> depend_names = { "Data" };
@@ -330,7 +334,10 @@ TEST_F(UtestSingleOpModel, build_dynamic_task) {
   domi::TaskDef *task_def3 = model_task_def->add_task();
   task_def3->set_type(RT_MODEL_TASK_ALL_KERNEL);
 
-  string model_data_str = "123456789";
+  domi::TaskDef *task_def4 = model_task_def->add_task();
+  task_def4->set_type(RT_MODEL_TASK_KERNEL);
+
+  string model_data_str = "dynamic_model";
   SingleOpModel model("model", model_data_str.c_str(), model_data_str.size());
   std::mutex stream_mu;
   rtStream_t stream = nullptr;
@@ -339,6 +346,7 @@ TEST_F(UtestSingleOpModel, build_dynamic_task) {
   model.model_helper_.model_ = ge_model;
   auto op_desc = std::make_shared<ge::OpDesc>("add", "Add");
   AttrUtils::SetStr(op_desc, TVM_ATTR_NAME_MAGIC, "RT_DEV_BINARY_MAGIC_ELF");
+  AttrUtils::SetBool(op_desc, kAttrSupportDynamicShape, true);
   std::vector<char> kernelBin;
   TBEKernelPtr tbe_kernel = std::make_shared<ge::OpKernelBin>("name/Add", std::move(kernelBin));
   op_desc->SetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel);
@@ -347,9 +355,15 @@ TEST_F(UtestSingleOpModel, build_dynamic_task) {
   StreamResource *res = new (std::nothrow) StreamResource(1);
 
   ASSERT_EQ(model.ParseTasks(), SUCCESS);
+  model.node_tasks_[node] = { *task_def3, *task_def4 };
+  op_desc->SetOpKernelLibName(kEngineNameAiCore);
+  model.BuildTaskListForDynamicOp(res, single_op);
+
+  model.node_tasks_[node] = { *task_def };
+  op_desc->SetOpKernelLibName(kEngineNameAiCpuTf);
   ASSERT_EQ(model.BuildTaskListForDynamicOp(res, single_op), SUCCESS);
-  model.tbe_tasks_.clear();
-  ASSERT_EQ(model.BuildTaskListForDynamicOp(res, single_op), SUCCESS);
-  model.aicpu_tasks_[0] = *task_def2;
+
+  model.node_tasks_[node] = { *task_def2 };
+  op_desc->SetOpKernelLibName(kEngineNameAiCpu);
   model.BuildTaskListForDynamicOp(res, single_op);
 }

@@ -90,9 +90,16 @@ class HandleRegistry {
 class TbeTaskBuilder {
  public:
   TbeTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::TaskDef &task_def);
-  ~TbeTaskBuilder() = default;
+  virtual ~TbeTaskBuilder() = default;
 
   Status BuildTask(TbeOpTask &task, const SingleOpModelParam &param);
+
+ protected:
+  virtual std::string GetKeyForOpParamSize() const;
+  virtual std::string GetKeyForTvmMetaData() const;
+  virtual TBEKernelPtr GetTbeKernel(const OpDescPtr &op_desc) const;
+  virtual void GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) const;
+  virtual Status InitKernelArgs(void *args_addr, size_t arg_size, const SingleOpModelParam &param);
 
  private:
   Status InitTilingInfo(TbeOpTask &task);
@@ -114,8 +121,23 @@ class TbeTaskBuilder {
   const domi::TaskDef &task_def_;
   const domi::KernelDef &kernel_def_;
   const domi::KernelDefWithHandle &kernel_def_with_handle_;
-  const std::string stub_name_;
+  const std::string model_name_;
+  std::string stub_name_;
   void *handle_ = nullptr;
+};
+
+class AtomicTaskBuilder : public TbeTaskBuilder {
+ public:
+  AtomicTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::TaskDef &task_def)
+      : TbeTaskBuilder(model_name, node, task_def) {}
+  ~AtomicTaskBuilder() override = default;
+
+ protected:
+  std::string GetKeyForOpParamSize() const override;
+  std::string GetKeyForTvmMetaData() const override;
+  TBEKernelPtr GetTbeKernel(const OpDescPtr &op_desc) const override;
+  void GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) const override;
+  Status InitKernelArgs(void *args_addr, size_t arg_size, const SingleOpModelParam &param) override;
 };
 }  // namespace ge
 

@@ -145,8 +145,6 @@ Status KnownNodeTask::InitDavinciModel(const HybridModel &model, TensorBuffer *w
   auto dump_properties = DumpManager::GetInstance().GetDumpProperties(model.GetSessionId());
   if (dump_properties.IsDumpOpen() || dump_properties.IsOpDebugOpen()) {
     davinci_model_->SetDumpProperties(dump_properties);
-    void *global_step = model.GetGlobalStep();
-    davinci_model_->SetKnownShapeGlobalStep(global_step);
   }
 
   void *weight = nullptr;
@@ -182,6 +180,21 @@ Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) cons
   return SUCCESS;
 }
 
+Status KnownNodeExecutor::SetDavinciModel(const HybridModel &model, const NodePtr &node,
+                                           std::shared_ptr<DavinciModel> &davinci_model) const {
+  // set known node flag as true
+  davinci_model->SetKnownNode(true);
+  davinci_model->SetId(model.GetModelId());
+  davinci_model->SetDumpModelName(model.GetModelName());
+  davinci_model->SetOmName(model.GetOmName());
+  void *global_step = model.GetGlobalStep();
+  GE_CHECK_NOTNULL(global_step);
+  davinci_model->SetGlobalStep(global_step, sizeof(int64_t));
+  // set model id as root node's node id
+  davinci_model->SetSubModelId(node->GetOpDesc()->GetId());
+  return SUCCESS;
+}
+
 Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node,
                                    shared_ptr<NodeTask> &task) const {
   GELOGI("[%s] KnownNodeExecutor::LoadTask in.", node->GetName().c_str());
@@ -199,13 +212,7 @@ Status KnownNodeExecutor::LoadTask(const HybridModel &model, const NodePtr &node
   std::shared_ptr<DavinciModel> davinci_model = MakeShared<DavinciModel>(0, nullptr);
   GE_CHECK_NOTNULL(davinci_model);
 
-  // set known node flag as true
-  davinci_model->SetKnownNode(true);
-  davinci_model->SetId(model.GetModelId());
-  davinci_model->SetDumpModelName(model.GetModelName());
-  davinci_model->SetOmName(model.GetOmName());
-  // set model id as root node's node id
-  davinci_model->SetSubModelId(node->GetOpDesc()->GetId());
+  GE_CHK_STATUS_RET_NOLOG(SetDavinciModel(model, node, davinci_model));
   GELOGD("KnownNodeExecutor::LoadTask node id %ld.", node->GetOpDesc()->GetId());
 
   GE_CHK_STATUS_RET(davinci_model->Assign(ge_model),

@@ -27,7 +27,6 @@
 #include "common/formats/formats.h"
 #include "common/math/math_util.h"
 #include "framework/common/debug/log.h"
-#include "register/op_tiling.h"
 #include "runtime/rt.h"
 #include "single_op/task/build_task_utils.h"
 
@@ -222,19 +221,26 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   return SUCCESS;
 }
 
-Status TbeOpTask::UpdateRunInfo() {
-  // invoke OpParaCalculate
-  GELOGD("Start to invoke OpParaCalculate.");
-  optiling::utils::OpRunInfo run_info(0, true, 0);
+Status TbeOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
   auto ret = optiling::OpParaCalculateV2(*node_, run_info);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Invoke][OpParaCalculate] failed, ret = %u.", ret);
     REPORT_INNER_ERROR("E19999", "invoke OpParaCalculate failed, ret = %u.", ret);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
+  return SUCCESS;
+}
+
+Status TbeOpTask::UpdateRunInfo() {
+  // invoke OpParaCalculate
+  GELOGD("Start to invoke OpParaCalculate.");
+  optiling::utils::OpRunInfo run_info(0, true, 0);
+  GE_CHK_STATUS_RET(CalcTilingInfo(run_info), "[Calc][TilingInfo]failed.");
+
   block_dim_ = run_info.GetBlockDim();
   tiling_data_ = run_info.GetAllTilingData().str();
   tiling_key_ = run_info.GetTilingKey();
+  clear_atomic_ = run_info.GetClearAtomic();
   run_info.GetAllWorkspaces(run_info_workspaces_);
   GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu, tiling_key = %u", block_dim_,
          tiling_data_.size(), tiling_key_);
@@ -262,7 +268,6 @@ Status TbeOpTask::UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc 
     dst_tensor.SetShape(GeShape(std::move(storage_shape)));
     dst_tensor.SetOriginShape(src_tensor.GetShape());
   }
-
   return SUCCESS;
 }
 
@@ -343,6 +348,17 @@ Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
     workspaces_.emplace_back(ws_base + ws_offset);
   }
 
+  return SUCCESS;
+}
+
+Status TbeOpTask::CheckAndExecuteAtomic(const vector<GeTensorDesc> &input_desc,
+                                        const vector<DataBuffer> &input_buffers,
+                                        vector<GeTensorDesc> &output_desc,
+                                        vector<DataBuffer> &output_buffers,
+                                        rtStream_t stream) {
+  if (clear_atomic_ && atomic_task_ != nullptr) {
+    return atomic_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream);
+  }
   return SUCCESS;
 }
 
@@ -433,6 +449,8 @@ Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
   GE_CHK_STATUS_RET_NOLOG(UpdateNodeByShape(input_desc, output_desc));
   GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo());
   GE_CHK_STATUS_RET(AllocateWorkspaces(run_info_workspaces_), "[Allocate][Workspaces] failed.");
+  GE_CHK_STATUS_RET(CheckAndExecuteAtomic(input_desc, input_buffers, output_desc, output_buffers, stream),
+                    "[Execute][AtomicTask] failed.");
   GE_CHK_STATUS_RET(UpdateTilingArgs(stream), "[Update][TilingArgs] failed.");
 
   GELOGD("[%s] Start to invoke rtKernelLaunch", node_->GetName().c_str());
@@ -461,6 +479,85 @@ void TbeOpTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   if (tiling_buffer_ != nullptr) {
     --arg_count;
   }
+}
+
+Status AtomicAddrCleanOpTask::UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                                                const vector<GeTensorDesc> &output_desc) {
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+  uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  for (auto atomic_output_index : atomic_output_indices_) {
+    if (atomic_output_index >= static_cast<int>(outputs.size())) {
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Update][Args] failed, atomic index must smaller then data size.");
+      REPORT_INNER_ERROR("E19999", "[Update][Args] failed, atomic index must smaller then data size.");
+      return ACL_ERROR_GE_PARAM_INVALID;
+    }
+    auto &output_buffer = outputs[atomic_output_index];
+    *arg_base++ = reinterpret_cast<uintptr_t>(output_buffer.data);
+
+    auto tensor_desc = op_desc_->MutableOutputDesc(atomic_output_index);
+    int64_t size = 0;
+    graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, size);
+    if (graph_status != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed!");
+      GELOGE(graph_status, "[Get][TensorMemorySize] In Bytes failed!");
+      return FAILED;
+    }
+    TensorUtils::SetSize(*tensor_desc, size);
+  }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::UpdateTilingArgs(rtStream_t stream) {
+  if (tiling_buffer_ != nullptr) {
+    GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
+    GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_, max_tiling_size_, tiling_data_.data(), tiling_data_.size(),
+                                RT_MEMCPY_HOST_TO_DEVICE_EX, stream));
+    uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+    size_t idx = atomic_output_indices_.size();
+    arg_base[idx] = reinterpret_cast<uintptr_t>(tiling_buffer_);
+  }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
+  auto ret = optiling::OpAtomicCalculateV2(*node_, run_info);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Invoke][OpAtomicCalculate] failed, ret = %u.", ret);
+    REPORT_INNER_ERROR("E19999", "invoke OpAtomicCalculate failed, ret = %u.", ret);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
+  }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices() {
+  GELOGD("[%s] Start to setup AtomicAddrClean task.", op_desc_->GetName().c_str());
+  std::vector<int64_t> atomic_output_indices;
+  (void) ge::AttrUtils::GetListInt(op_desc_, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_indices);
+  if (atomic_output_indices.empty()) {
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] atomic_output_indices must not be empty.", op_desc_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] atomic_output_indices must not be empty.", op_desc_->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  size_t max_arg_size = tiling_buffer_ == nullptr ? arg_size_ : arg_size_ - 1;
+  if (atomic_output_indices.size() > max_arg_size) {
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] atomic_output_indices invalid. atomic_output_indices size is %zu,"
+           "arg size is %zu.", op_desc_->GetName().c_str(), atomic_output_indices.size(), arg_size_);
+    REPORT_INNER_ERROR("E19999", "[%s] atomic_output_indices invalid. atomic_output_indices size is %zu,"
+                       "arg size is %zu.", op_desc_->GetName().c_str(), atomic_output_indices.size(), arg_size_);
+    return INTERNAL_ERROR;
+  }
+
+  for (auto output_index : atomic_output_indices) {
+    GELOGD("[%s] Adding output index [%ld]", op_desc_->GetName().c_str(), output_index);
+    GE_CHECK_GE(output_index, 0);
+    GE_CHECK_LE(output_index, INT32_MAX);
+    atomic_output_indices_.emplace_back(static_cast<int>(output_index));
+  }
+  return SUCCESS;
 }
 
 AiCpuBaseTask::~AiCpuBaseTask() {

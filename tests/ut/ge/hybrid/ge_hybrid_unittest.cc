@@ -153,7 +153,6 @@ TEST_F(UtestGeHybrid, task_update_tiling_info) {
   ge::AttrUtils::SetStr(op_desc, "compile_info_json", "json");
   ge::AttrUtils::SetBool(op_desc, "support_dynamicshape", true);
   ge::AttrUtils::SetInt(op_desc, "op_para_size", 1);
-  ge::AttrUtils::SetStr(op_desc, TVM_ATTR_NAME_MAGIC, "RT_DEV_BINARY_MAGIC_ELF");
   auto node = graph->AddNode(op_desc);
 
   std::unique_ptr<NodeItem> node_item;

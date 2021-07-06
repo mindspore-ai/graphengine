@@ -16,13 +16,12 @@
 
 #include "graph/common/local_context.h"
 
-#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
-#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 namespace {
 thread_local OmgContext *omg_context = nullptr;
+thread_local OmeContext *ome_context = nullptr;
 }
 
 void SetLocalOmgContext(OmgContext &context) {
@@ -36,5 +35,19 @@ OmgContext &GetLocalOmgContext() {
     GELOGW("omg_context is nullptr.");
     return domi::GetContext();
   }
+}
+
+void SetLocalOmeContext(OmeContext &context) {
+  ome_context = &context;
+}
+
+OmeContext &GetLocalOmeContext() {
+  if (ome_context != nullptr) {
+    return *ome_context;
+  }
+
+  GELOGW("ome_context is nullptr.");
+  static OmeContext context;
+  return context;
 }
 }

@@ -60,8 +60,6 @@ class GraphExecutor {
 
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
 
-  Status SetGraphContext(GraphContextPtr graph_context_ptr);
-
   static Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
 
   void SetTrainFlag(bool is_train_graph);
@@ -159,8 +157,6 @@ class GraphExecutor {
 
   // Run graph asynchronous call back listener
   std::shared_ptr<GraphModelListener> graph_run_listener_;
-
-  GraphContextPtr graph_context_;
 
   std::vector<InputOutputDescInfo> outputs_desc_;
   GraphId last_graph_id_;

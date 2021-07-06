@@ -15,20 +15,9 @@
  */
 
 #include <gtest/gtest.h>
+
 #include <memory>
 #include <stdlib.h>
-#define protected public
-#define private public
-#include "graph/manager/graph_manager.h"
-#include "graph/load/model_manager/model_manager.h"
-#include "graph/load/model_manager/davinci_model.h"
-#define const
-#include "common/helper/model_cache_helper.h"
-#undef const
-#include "init/gelib.h"
-#undef private
-#undef public
-
 #include <pthread.h>
 #include <algorithm>
 #include <future>
@@ -37,6 +26,14 @@
 #include <string>
 #include <thread>
 #include <future>
+
+#define protected public
+#define private public
+#include "graph/manager/graph_manager.h"
+#define const
+#include "common/helper/model_cache_helper.h"
+#undef const
+#include "init/gelib.h"
 
 #include "common/math/math_util.h"
 #include "common/thread_pool.h"
@@ -121,7 +118,6 @@
 
 using namespace std;
 using namespace testing;
-using namespace ge;
 using namespace domi;
 
 namespace {
@@ -129,11 +125,38 @@ const uint32_t kNotAdded = 0;
 const uint32_t kStartAdd = 1;
 const uint32_t kDoneAdded = 2;
 }
+
+namespace ge {
 class UtestGraphManagerTest : public testing::Test {
  protected:
   void SetUp() {}
 
   void TearDown() {}
+};
+
+class StubExecutor : public Executor {
+ public:
+  Status LoadGraph(const GeRootModelPtr &ge_root_model, const GraphNodePtr &graph_node) {
+    return SUCCESS;
+  }
+
+  Status UnloadGraph(const GeRootModelPtr &ge_root_model, uint32_t graph_id) {
+    return SUCCESS;
+  }
+
+  Status PushGraph(const RunArgs &args) {
+    return SUCCESS;
+  }
+
+  Status RunGraph(const GraphNodePtr &graph_node, GraphId graph_id,
+                  const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs) {
+    return SUCCESS;
+  }
+
+  Status RunGraphWithStream(const GraphNodePtr &graph_node, GraphId graph_id, rtStream_t stream,
+                            const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs){
+    return SUCCESS;
+  }
 };
 
 void CreateGraph(Graph &graph) {
@@ -288,26 +311,20 @@ TEST_F(UtestGraphManagerTest, test_remove_graph_1) {
 TEST_F(UtestGraphManagerTest, test_remove_graph_2) {
   GraphId graph_id = 1;
   GraphManager graph_manager;
+  StubExecutor stub_executor;
+  graph_manager.executor_ = &stub_executor;
+
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   Graph graph("test_graph");
   CreateGraph(graph);
   auto compute_graph = GraphUtils::GetComputeGraph(graph);
   GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
-  auto model_manager = ModelManager::GetInstance();
-  auto listener = MakeShared<RunAsyncListener>();
-  shared_ptr<DavinciModel> davinci_model1 = MakeShared<DavinciModel>(1, listener);
-  davinci_model1->SetId(1);
-  shared_ptr<DavinciModel> davinci_model2 = MakeShared<DavinciModel>(2, listener);
-  davinci_model1->SetId(2);
-  model_manager->InsertModel(1, davinci_model1);
-  model_manager->InsertModel(2, davinci_model2);
   ge_root_model->SetModelId(1);
   ge_root_model->SetModelId(2);
   graph_node->SetGeRootModel(ge_root_model);
   graph_node->SetLoadFlag(true);
   graph_manager.AddGraphNode(graph_id, graph_node);
-  Status status = graph_manager.RemoveGraph(graph_id);
-  EXPECT_EQ(status, ge::SUCCESS);
+  EXPECT_EQ(graph_manager.RemoveGraph(graph_id), SUCCESS);
 }
 
 TEST_F(UtestGraphManagerTest, test_pre_run_thread) {
@@ -327,7 +344,7 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread) {
 
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   graph_manager.AddGraphNode(graph_id, graph_node);
-  graph_manager.PreRunThread(&graph_manager);
+  graph_manager.PreRunThread();
   // end with failed
 }
 
@@ -355,46 +372,8 @@ TEST_F(UtestGraphManagerTest, test_pre_run_thread_2) {
   graph_manager.AddGraphNode(graph_id, graph_node_2);
   ret = graph_manager.prerun_args_q_.Push({graph_id, input_tensor, session_id, error_context, context, callback});
   EXPECT_EQ(ret, true);
-  graph_manager.PreRunThread(&graph_manager);
+  graph_manager.PreRunThread();
   // end with failed
-}
-
-TEST_F(UtestGraphManagerTest, test_check_and_release_memory) {
-  
-  GraphManager graph_manager;
-  GeModelPtr ge_model = make_shared<GeModel>();
-  int64_t memory_size = 25 * 1024UL * 1024UL * 1024UL;
-  int64_t weight_size = 25 * 1024UL * 1024UL * 1024UL;
-  uint64_t session_id = 0;
-  ge::AttrUtils::SetInt(ge_model, ATTR_MODEL_MEMORY_SIZE, memory_size);
-  ge::AttrUtils::SetInt(ge_model, ATTR_MODEL_WEIGHT_SIZE, weight_size);
-  ge::AttrUtils::SetInt(ge_model, MODEL_ATTR_SESSION_ID, session_id);
-
-  
-  GraphId graph_id = 1;
-  GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
-  graph_manager.AddGraphNode(graph_id, graph_node);
-  graph_manager.IncreaseGraphCount(graph_id);
-  graph_manager.IncreaseGraphCount(graph_id);
-
-  auto model_manager = ModelManager::GetInstance();
-  auto listener = MakeShared<RunAsyncListener>();
-  shared_ptr<DavinciModel> davinci_model1 = MakeShared<DavinciModel>(1, listener);
-  davinci_model1->SetId(1);
-  shared_ptr<DavinciModel> davinci_model2 = MakeShared<DavinciModel>(2, listener);
-  davinci_model1->SetId(2);
-  model_manager->InsertModel(1, davinci_model1);
-  model_manager->InsertModel(2, davinci_model2);
-  ComputeGraphPtr compute_graph = MakeShared<ComputeGraph>("test_graph");
-  bool is_dynamic_shape = false;
-  (void)AttrUtils::GetBool(compute_graph, ATTR_NAME_DYNAMIC_SHAPE_PARTITIONED, is_dynamic_shape);
-  GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
-  ge_root_model->SetModelId(1);
-  ge_root_model->SetModelId(2);
-  graph_node->SetGeRootModel(ge_root_model);
-  graph_node->SetLoadFlag(true);
-  Status status = graph_manager.CheckAndReleaseMemory(ge_model, graph_node);
-  EXPECT_EQ(status, ge::SUCCESS);
 }
 
 TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_1) {
@@ -406,7 +385,7 @@ TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_1) {
   GraphManager::PreRunArgs arg;
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   graph_node->SetBuildFlag(true);
-  Status status = graph_manager.CheckIncreBuildAndPreRun(&graph_manager, arg, graph_node, ge_root_model);
+  Status status = graph_manager.CheckIncreBuildAndPreRun(arg, graph_node, ge_root_model);
   EXPECT_EQ(status, ge::SUCCESS);
 }
 
@@ -422,7 +401,7 @@ TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_2) {
   graph_node->SetBuildFlag(true);
   graph_node->Lock();
   graph_manager.var_acc_ctrl_.graph_ids_need_rebuild_.insert(graph_id);
-  Status status = graph_manager.CheckIncreBuildAndPreRun(&graph_manager, arg, graph_node, ge_root_model);
+  Status status = graph_manager.CheckIncreBuildAndPreRun(arg, graph_node, ge_root_model);
   EXPECT_EQ(status, ge::PARAM_INVALID);
 }
 
@@ -437,7 +416,7 @@ TEST_F(UtestGraphManagerTest, test_check_incre_build_and_pre_run_3) {
   GraphNodePtr graph_node = MakeShared<ge::GraphNode>(graph_id);
   graph_node->SetBuildFlag(false);
   graph_node->Lock();
-  Status status = graph_manager.CheckIncreBuildAndPreRun(&graph_manager, arg, graph_node, ge_root_model);
+  Status status = graph_manager.CheckIncreBuildAndPreRun(arg, graph_node, ge_root_model);
   EXPECT_NE(status, ge::SUCCESS);
 }
 
@@ -471,14 +450,6 @@ TEST_F(UtestGraphManagerTest, test_add_graph_with_copy_fail) {
   EXPECT_NE(status, ge::SUCCESS);
 }
 
-TEST_F(UtestGraphManagerTest, ParseInputsDimsForData_success) {
-  GraphManager graph_manager;
-  std::vector<ge::Tensor> input_tensors;
-  ge::Tensor tensor;
-  input_tensors.emplace_back(tensor);
-  graph_manager.ParseInputsDimsForData(input_tensors);
-}
-
 TEST_F(UtestGraphManagerTest, test_prerunthread_failed_1) {
   GraphId graph_id = 1;
   GraphManager graph_manager;
@@ -509,7 +480,7 @@ TEST_F(UtestGraphManagerTest, test_prerunthread_failed_1) {
   graph_node->SetRunFlag(false);
   // function return.
   graph_manager.prerun_args_q_.Push(args);
-  auto t1 = std::thread(GraphManager::PreRunThread, &graph_manager);
+  auto t1 = std::thread(&GraphManager::PreRunThread, &graph_manager);
   if (t1.joinable()) {
     t1.join();
   }
@@ -549,7 +520,7 @@ TEST_F(UtestGraphManagerTest, test_prerunthread_failed_2) {
   int ret = setenv("ENABLE_NETWORK_ANALYSIS_DEBUG", "1", 1);
   EXPECT_EQ(ret, 0);
   graph_manager.prerun_args_q_.Push(args);
-  auto t1 = std::thread(GraphManager::PreRunThread, &graph_manager);
+  auto t1 = std::thread(&GraphManager::PreRunThread, &graph_manager);
   if (t1.joinable()) {
     t1.join();
   }
@@ -593,3 +564,4 @@ TEST_F(UtestGraphManagerTest, ChangeAndDeleteConst_success) {
   auto all_nodes = graph->GetDirectNode();
   EXPECT_EQ(all_nodes.size(), 3);
 }
+} // namespace ge

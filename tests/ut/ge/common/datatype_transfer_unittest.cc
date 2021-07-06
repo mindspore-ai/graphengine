@@ -47,7 +47,7 @@ TEST_F(UtestDataTypeTransfer, fp16_fp32) {
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
   bool is_equal = true;
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     if (abs((reinterpret_cast<float *>(result.data.get()))[i] - ret[i]) > 1.0e-6) {
       is_equal = false;
       break;
@@ -60,7 +60,7 @@ TEST_F(UtestDataTypeTransfer, fp16_fp32) {
   CastArgs args2{reinterpret_cast<uint8_t *>(ret), sizeof(ret) / sizeof(ret[0]), DT_FLOAT, DT_FLOAT16};
   EXPECT_EQ(transfer2.TransDataType(args2, result2), SUCCESS);
   EXPECT_EQ(result2.length, sizeof(data));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_FLOAT_EQ((reinterpret_cast<fp16_t *>(result2.data.get()))[i].val, data[i].val);
   }
   EXPECT_EQ(TransDataType(args2, result2), SUCCESS);
@@ -81,7 +81,7 @@ TEST_F(UtestDataTypeTransfer, int32_fp16) {
   CastArgs args{reinterpret_cast<uint8_t *>(data), sizeof(ret) / sizeof(ret[0]), DT_INT32, DT_FLOAT16};
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_FLOAT_EQ((reinterpret_cast<fp16_t *>(result.data.get()))[i].val, ret[i].val);
   }
 
@@ -91,7 +91,7 @@ TEST_F(UtestDataTypeTransfer, int32_fp16) {
   EXPECT_EQ(transfer2.TransDataType(args2, result2), SUCCESS);
   EXPECT_EQ(result2.length, sizeof(data));
   bool is_equal = true;
-  for (int i = 0; i < sizeof(data) / sizeof(data[0]); ++i) {
+  for (size_t i = 0; i < sizeof(data) / sizeof(data[0]); ++i) {
     if (abs((reinterpret_cast<int32_t *>(result2.data.get()))[i] - data[i]) / abs(data[i]) > 0.05) {
       is_equal = false;
       break;
@@ -154,7 +154,7 @@ TEST_F(UtestDataTypeTransfer, fp32_fp16) {
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
   bool is_equal = true;
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     if (abs((reinterpret_cast<float *>(result.data.get()))[i] - ret[i]) > 1.0e-6) {
       is_equal = false;
       break;
@@ -167,7 +167,7 @@ TEST_F(UtestDataTypeTransfer, fp32_fp16) {
   CastArgs args2{reinterpret_cast<uint8_t *>(ret), sizeof(data) / sizeof(data[0]), DT_FLOAT, DT_FLOAT16};
   EXPECT_EQ(transfer2.TransDataType(args2, result2), SUCCESS);
   EXPECT_EQ(result2.length, sizeof(data));
-  for (int i = 0; i < sizeof(data) / sizeof(data[0]); ++i) {
+  for (size_t i = 0; i < sizeof(data) / sizeof(data[0]); ++i) {
     EXPECT_FLOAT_EQ((reinterpret_cast<fp16_t *>(result2.data.get()))[i].val, data[i].val);
   }
 }
@@ -238,7 +238,7 @@ TEST_F(UtestDataTypeTransfer, uint8_fp32) {
   DataTypeTransfer transfer;
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_EQ((reinterpret_cast<float *>(result.data.get()))[i], ret[i]);
   }
 }
@@ -259,7 +259,7 @@ TEST_F(UtestDataTypeTransfer, uint8_int32) {
   DataTypeTransfer transfer;
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_EQ((reinterpret_cast<int32_t *>(result.data.get()))[i], ret[i]);
   }
 }
@@ -282,7 +282,7 @@ TEST_F(UtestDataTypeTransfer, fp32_int32) {
   DataTypeTransfer transfer;
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_FLOAT_EQ((reinterpret_cast<int32_t *>(result.data.get()))[i], ret[i]);
   }
 }
@@ -304,7 +304,7 @@ TEST_F(UtestDataTypeTransfer, int32_fp32) {
   DataTypeTransfer transfer;
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_FLOAT_EQ((reinterpret_cast<float *>(result.data.get()))[i], ret[i]);
   }
 }
@@ -329,7 +329,7 @@ TEST_F(UtestDataTypeTransfer, int32_uint8) {
   DataTypeTransfer transfer;
   EXPECT_EQ(transfer.TransDataType(args, result), SUCCESS);
   EXPECT_EQ(result.length, sizeof(ret));
-  for (int i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
+  for (size_t i = 0; i < sizeof(ret) / sizeof(ret[0]); ++i) {
     EXPECT_FLOAT_EQ((reinterpret_cast<uint8_t *>(result.data.get()))[i], ret[i]);
   }
 }

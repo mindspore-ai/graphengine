@@ -92,7 +92,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis0VersionA) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -139,7 +139,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis0VersionB) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {3, 3};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -186,7 +186,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT64Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   int64_t *data_buf = (int64_t *)tensor_out->GetData().data();
   vector<int64_t> expect_out = {3, 3};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -233,7 +233,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {11, 12, 13, 14, 15, 16, 17, 18, 19, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -279,7 +279,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis0And1) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {11, 12, 13, 14, 15, 16, 17, 18, 19, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -327,7 +327,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis1) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {4, 5, 6, 4, 5, 6, 14, 15, 16, 14, 15, 16};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -374,7 +374,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis2) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {1, 1, 4, 4, 7, 7, 11, 11, 14, 14, 17, 17};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -422,7 +422,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT32Axis3) {
   GeTensorPtr tensor_out = outputs[0];
   int32_t *data_buf = (int32_t *)tensor_out->GetData().data();
   vector<int32_t> expect_out = {1, 2, 4, 5, 7, 8, 11, 12, 14, 15, 17, 18, 1, 2, 4, 5, 7, 8, 11, 12, 14, 15, 17, 18};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -470,7 +470,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT8Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   int8_t *data_buf = (int8_t *)tensor_out->GetData().data();
   vector<int8_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -517,7 +517,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, INT16Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   int16_t *data_buf = (int16_t *)tensor_out->GetData().data();
   vector<int16_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -564,7 +564,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, UINT8Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   uint8_t *data_buf = (uint8_t *)tensor_out->GetData().data();
   vector<uint8_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -611,7 +611,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, UINT16Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   uint16_t *data_buf = (uint16_t *)tensor_out->GetData().data();
   vector<uint16_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -658,7 +658,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, UINT32Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   uint32_t *data_buf = (uint32_t *)tensor_out->GetData().data();
   vector<uint32_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -705,7 +705,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, UINT64Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   uint64_t *data_buf = (uint64_t *)tensor_out->GetData().data();
   vector<uint64_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     EXPECT_EQ(*(data_buf + i), expect_out[i]);
   }
 }
@@ -753,7 +753,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, DoubleAxis0) {
   GeTensorPtr tensor_out = outputs[0];
   double *data_buf = (double *)tensor_out->GetData().data();
   vector<double> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     double diff = *(data_buf + i) - expect_out[i];
     bool is_same = fabs(diff) < 0.0001 ? true : false;
     EXPECT_EQ(is_same, true);
@@ -802,7 +802,7 @@ TEST_F(UtestGraphPassesFoldingKernelGatherV2Kernel, Float16Axis0) {
   GeTensorPtr tensor_out = outputs[0];
   fp16_t *data_buf = (fp16_t *)tensor_out->GetData().data();
   vector<fp16_t> expect_out = {2, 2};
-  for (int i = 0; i < expect_out.size(); i++) {
+  for (size_t i = 0; i < expect_out.size(); i++) {
     double diff = (double)*(data_buf + i) - (double)expect_out[i];
     bool is_same = fabs(diff) < 0.0001 ? true : false;
     EXPECT_EQ(is_same, true);

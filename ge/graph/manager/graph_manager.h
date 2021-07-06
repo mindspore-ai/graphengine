@@ -31,7 +31,6 @@
 #include "external/graph/types.h"
 #include "external/ge/ge_api_types.h"
 #include "graph/build/graph_builder.h"
-#include "graph/execute/graph_execute.h"
 #include "graph/ge_local_context.h"
 #include "graph/load/graph_loader.h"
 #include "graph/manager/graph_manager_utils.h"
@@ -41,11 +40,12 @@
 #include "graph/preprocess/graph_preprocess.h"
 #include "graph/tuning_utils.h"
 #include "model/ge_model.h"
+#include "common/executor.h"
 
 namespace ge {
 class GraphManager {
  public:
-  GraphManager();
+  GraphManager() = default;
   ~GraphManager() = default;
 
   ///
@@ -54,7 +54,7 @@ class GraphManager {
   /// @param [in] options user config params
   /// @return Status result of function
   ///
-  Status Initialize(const std::map<string, string> &options);
+  Status Initialize(const std::map<string, string> &options, Executor *executor = nullptr);
 
   ///
   /// @ingroup ge_graph
@@ -113,7 +113,7 @@ class GraphManager {
   /// @param [out] outputs output data
   /// @return Status result of function
   ///
-  Status RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t stream, uint64_t session_id, 
+  Status RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t stream, uint64_t session_id,
                                  const std::vector<GeTensor> &inputs, std::vector<GeTensor> &outputs);
 
   ///
@@ -227,23 +227,10 @@ class GraphManager {
     RunAsyncCallback callback;
   };
 
-  struct RunArgs {
-    GraphNodePtr graph_node;
-    GraphId graph_id;
-    uint64_t session_id;
-    struct error_message::Context error_context;
-    std::vector<ge::Tensor> input_tensor;
-    GeRootModelPtr ge_root_model;
-    GEThreadLocalContext context;
-    RunAsyncCallback callback;
-  };
-
   void AddGraphNode(GraphId graph_id, const GraphNodePtr &graph_node);
   void RemoveGraphNode(GraphId graph_id);
   bool HasGraphNode(GraphId graph_id);
   Status GetGraphNode(const GraphId &graph_id, GraphNodePtr &out);
-
-  std::shared_ptr<GraphModelListener> GetModelListener() const { return graph_run_listener_; }
 
   static Status ProcessSubGraphWithMultiThreads(GraphManager *graph_manager, GraphId root_graph_id,
                                                 const SubGraphInfoPtr &sub_graph_info_ptr,
@@ -251,10 +238,7 @@ class GraphManager {
                                                 uint64_t session_id,
                                                 const struct error_message::Context &error_context,
                                                 const GEThreadLocalContext &ge_context);
-  Status ParseInputsDims(const std::vector<ge::Tensor> &input_tensor);
-  void ParseInputsDimsForData(const std::vector<ge::Tensor> &input_tensor);
-  Status ParseInputsDimsForGetNexNosinkAndData(const vector<NodePtr> &dynamic_nodes,
-                                               const std::vector<ge::Tensor> &input_tensor);
+
   Status RunCustomPass(const GraphNodePtr &graph_node);
   Status PreRun(const GraphNodePtr &graph_node, const std::vector<GeTensor> &inputs, GeRootModelPtr &ge_root_model,
                 uint64_t session_id = INVALID_SESSION_ID);
@@ -350,10 +334,6 @@ class GraphManager {
 
   Status SubexpressionMigration(ComputeGraphPtr &compute_graph);
 
-  Status LoadGraphAsync(const GeRootModelPtr &ge_root_model, const GraphNodePtr &graph_node);
-
-  Status CheckAndReleaseMemory(const GeModelPtr &ge_model, const GraphNodePtr &graph_node);
-
   bool CheckModelLoad(const GeRootModelPtr &ge_model, bool load_flag);
 
   Status LoadGraph(const GeRootModelPtr &ge_root_model, const GraphNodePtr &graph_node);
@@ -368,12 +348,12 @@ class GraphManager {
   void RemoveModelCacheHelper(const GraphId &graph_id);
   ModelCacheHelperPtr FindModelCacheHelper(GraphId graph_id);
 
-  static void PreRunThread(GraphManager *graph_manager);
-  static void RunThread(GraphManager *graph_manager);
-  static void StopQueue(GraphManager *graph_manager);
-  static void ReturnError(GraphManager *graph_manager, RunAsyncCallback callback, Status ret, const string &log);
-  static void ReturnError(GraphManager *graph_manager, GraphNodePtr &graph_node, RunAsyncCallback callback,
-                          Status ret, const string &log);
+  void SetRunContext(const GraphNodePtr &graph_node);
+  void PushGraph(const RunArgs &args);
+
+  void PreRunThread();
+  void StopQueue();
+  void ReturnError(RunAsyncCallback callback, Status ret, const string &log);
 
   void ChangeConstTypeWhenTraining(const ComputeGraphPtr &compute_graph);
 
@@ -409,11 +389,7 @@ class GraphManager {
   CompilerStages &GetCompilerStages(GraphId graph_id);
   void RemoveCompilerStages(GraphId graph_id);
 
-  static Status CheckIncreBuildAndPreRun(GraphManager *graph_manager, const PreRunArgs &args, GraphNodePtr &graph_node,
-                                         GeRootModelPtr &ge_root_model);
-
-  void ReleaseMemory(const GeModelPtr &ge_model, GraphNodePtr &graph_node, const std::vector<uint32_t> &model_ids,
-                     uint32_t graph_id, uint64_t session_id);
+  Status CheckIncreBuildAndPreRun(const PreRunArgs &args, GraphNodePtr &graph_node, GeRootModelPtr &ge_root_model);
 
   Status CheckRepeatAdd(uint32_t graph_id, bool &is_added);
 
@@ -431,34 +407,25 @@ class GraphManager {
 
   static Status CheckGraphAdded(const GraphId &graph_id, const Graph &graph);
 
-  std::atomic_bool thread_run_flag_;
+  std::atomic_bool thread_run_flag_{false};
   BlockingQueue<PreRunArgs> prerun_args_q_{};
-  BlockingQueue<RunArgs> run_args_q_{};
   std::thread prerun_thread_;
-  std::thread run_thread_;
   ComputeGraphPtr compute_graph_;
   std::map<GraphId, GraphNodePtr> graph_map_;
   std::map<GraphId, ModelCacheHelperPtr> cache_helper_map_;
-
-  // for run graph synchronous return
-  std::mutex sync_run_mutex_;
-  std::condition_variable condition_;
-  // run graph synchronization call back listener
-  std::shared_ptr<GraphModelListener> graph_run_listener_;
 
   // summary and checkpoint callback function list for ME, key is summary or checkpoint
   std::map<std::string, std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)>> me_callback_map_;
 
   std::map<std::string, std::function<Status(uint32_t, const std::map<AscendString, ge::Tensor> &)>> callback_map_;
 
-  bool init_flag_;
-
+  bool init_flag_{false};
   GraphManagerOptions options_;
   GraphContextPtr graph_context_ = nullptr;
   map<GraphId, OmgContext> omg_contexts_;
 
   map<GraphId, CompilerStages> compiler_stages_;
-  GraphExecutor graph_executor_;
+  Executor *executor_{nullptr};
 
   VarAccelerateCtrl var_acc_ctrl_;
 

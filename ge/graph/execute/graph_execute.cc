@@ -31,7 +31,6 @@ GraphExecutor::GraphExecutor()
       sync_run_mutex_(nullptr),
       condition_(nullptr),
       graph_run_listener_(nullptr),
-      graph_context_(nullptr),
       last_graph_id_(UINT32_MAX),
       malloc_flag_(false) {}
 
@@ -76,16 +75,6 @@ Status GraphExecutor::SetCondition(std::mutex *mutex, std::condition_variable *c
 
   init_flag_ = true;
 
-  return SUCCESS;
-}
-
-Status GraphExecutor::SetGraphContext(GraphContextPtr graph_context_ptr) {
-  if (graph_context_ptr == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check param graph_context_ptr nullptr");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] input param graph_context_ptr is nullptr");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-  graph_context_ = graph_context_ptr;
   return SUCCESS;
 }
 

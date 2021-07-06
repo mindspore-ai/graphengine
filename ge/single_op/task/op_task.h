@@ -89,7 +89,7 @@ class TbeOpTask : public OpTask {
   void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim, const OpDescPtr &op_desc);
   void SetKernelWithHandleArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
                                const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
-  void SetAtomicTask(OpTask *task) { atomic_task_.reset(task); }
+  void SetAtomicAddrCleanTask(OpTask *task) { atomic_task_.reset(task); }
 
   Status UpdateRunInfo() override;
   Status SetArgIndex();
@@ -108,13 +108,13 @@ class TbeOpTask : public OpTask {
   void *tiling_buffer_ = nullptr;
   uint32_t max_tiling_size_ = 0;
   std::string tiling_data_;
+  size_t input_num_; // include const input
+  size_t output_num_;
 
  private:
   friend class SingleOpModel;
   friend class TbeTaskBuilder;
   static Status UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc &dst_tensor);
-  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
-                           const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
   Status DoLaunchKernel(rtStream_t stream);
   Status CheckAndExecuteAtomic(const vector<GeTensorDesc> &input_desc,
@@ -122,6 +122,8 @@ class TbeOpTask : public OpTask {
                                vector<GeTensorDesc> &output_desc,
                                vector<DataBuffer> &output_buffers,
                                rtStream_t stream);
+  virtual Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                                   const vector<GeTensorDesc> &output_desc);
   virtual Status UpdateTilingArgs(rtStream_t stream);
   virtual Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs);
   virtual Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info);
@@ -140,17 +142,17 @@ class TbeOpTask : public OpTask {
   std::string original_kernel_key_;
   std::string node_info_;
   std::vector<size_t> arg_index_; // data index in args
-  size_t input_num_; // include const input
-  size_t output_num_;
 
   std::unique_ptr<OpTask> atomic_task_;
 };
 
-class AtomicOpTask : public TbeOpTask {
+class AtomicAddrCleanOpTask : public TbeOpTask {
  public:
   Status InitAtomicAddrCleanIndices();
 
  private:
+  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                           const vector<GeTensorDesc> &output_desc) override;
   Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) override;
   Status UpdateTilingArgs(rtStream_t stream) override;
   Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info) override;

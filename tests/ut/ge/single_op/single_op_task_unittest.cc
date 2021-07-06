@@ -157,8 +157,11 @@ TEST_F(UtestSingleOpTask, test_update_ioaddr) {
 TEST_F(UtestSingleOpTask, test_atomic_exec) {
   auto graph = make_shared<ComputeGraph>("graph");
   auto op_desc = make_shared<OpDesc>("Add", "Add");
+  GeTensorDesc desc;
+  op_desc->AddInputDesc(desc);
+  op_desc->AddOutputDesc(desc);
   auto node = graph->AddNode(op_desc);
-  AtomicOpTask task;
+  AtomicAddrCleanOpTask task;
   task.op_desc_ = op_desc;
   task.node_ = node;
 

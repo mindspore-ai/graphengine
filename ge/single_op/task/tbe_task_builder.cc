@@ -459,23 +459,23 @@ std::string TbeTaskBuilder::GetKeyForTvmMetaData() const {
   return TVM_ATTR_NAME_METADATA;
 }
 
-Status AtomicTaskBuilder::InitKernelArgs(void *args_addr, size_t arg_size, const SingleOpModelParam &param) {
+Status AtomicAddrCleanTaskBuilder::InitKernelArgs(void *args_addr, size_t arg_size, const SingleOpModelParam &param) {
   return SUCCESS;
 }
 
-std::string AtomicTaskBuilder::GetKeyForOpParamSize() const {
+std::string AtomicAddrCleanTaskBuilder::GetKeyForOpParamSize() const {
   return kAttrAtomicOpParamSize;
 }
 
-std::string AtomicTaskBuilder::GetKeyForTvmMetaData() const {
+std::string AtomicAddrCleanTaskBuilder::GetKeyForTvmMetaData() const {
   return ATOMIC_ATTR_TVM_METADATA;
 }
 
-void AtomicTaskBuilder::GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) const {
+void AtomicAddrCleanTaskBuilder::GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) const {
   (void)AttrUtils::GetStr(op_desc, op_desc->GetName() + "_atomic_kernelname", kernel_name);
 }
 
-TBEKernelPtr AtomicTaskBuilder::GetTbeKernel(const OpDescPtr &op_desc)  const {
+TBEKernelPtr AtomicAddrCleanTaskBuilder::GetTbeKernel(const OpDescPtr &op_desc)  const {
   return op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_TBE_KERNEL, TBEKernelPtr());
 }
 

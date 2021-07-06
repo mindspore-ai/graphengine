@@ -126,11 +126,11 @@ class TbeTaskBuilder {
   void *handle_ = nullptr;
 };
 
-class AtomicTaskBuilder : public TbeTaskBuilder {
+class AtomicAddrCleanTaskBuilder : public TbeTaskBuilder {
  public:
-  AtomicTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::TaskDef &task_def)
+  AtomicAddrCleanTaskBuilder(const std::string &model_name, const NodePtr &node, const domi::TaskDef &task_def)
       : TbeTaskBuilder(model_name, node, task_def) {}
-  ~AtomicTaskBuilder() override = default;
+  ~AtomicAddrCleanTaskBuilder() override = default;
 
  protected:
   std::string GetKeyForOpParamSize() const override;

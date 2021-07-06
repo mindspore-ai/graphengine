@@ -432,7 +432,7 @@ Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask *
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildAtomicTask(const domi::TaskDef &task_def, AtomicOpTask **task) {
+Status SingleOpModel::BuildAtomicTask(const domi::TaskDef &task_def, AtomicAddrCleanOpTask **task) {
   GE_CHECK_NOTNULL(task);
   const auto &context = task_def.kernel().context();
   auto iter = op_list_.find(context.op_index());
@@ -442,18 +442,18 @@ Status SingleOpModel::BuildAtomicTask(const domi::TaskDef &task_def, AtomicOpTas
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
-  std::unique_ptr<AtomicOpTask> atomic_task(new (std::nothrow) AtomicOpTask());
+  std::unique_ptr<AtomicAddrCleanOpTask> atomic_task(new (std::nothrow) AtomicAddrCleanOpTask());
   if (atomic_task == nullptr) {
-    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Create][AtomicOpTask]failed.");
-    REPORT_INNER_ERROR("E19999", "BuildKernelTask fail for new AtomicOpTask.");
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Create][AtomicAddrCleanOpTask]failed.");
+    REPORT_INNER_ERROR("E19999", "BuildKernelTask fail for new AtomicAddrCleanOpTask.");
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
 
-  auto builder = AtomicTaskBuilder(model_name_, iter->second, task_def);
+  auto builder = AtomicAddrCleanTaskBuilder(model_name_, iter->second, task_def);
   auto ret = builder.BuildTask(*atomic_task, model_params_);
   if (ret != SUCCESS) {
-    GELOGE(ret, "[Build][AtomicOpTask]failed.");
-    REPORT_INNER_ERROR("E19999", "[Build][AtomicOpTask]failed.");
+    GELOGE(ret, "[Build][AtomicAddrCleanOpTask]failed.");
+    REPORT_INNER_ERROR("E19999", "[Build][AtomicAddrCleanOpTask]failed.");
     return ret;
   }
 
@@ -571,13 +571,21 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
   GE_CHECK_NOTNULL(compute_graph);
   single_op.compute_graph_ = compute_graph;
 
-  GE_CHK_BOOL_RET_STATUS(node_tasks_.size() == 1, ACL_ERROR_GE_PARAM_INVALID,
-                        "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+  if (node_tasks_.size() != 1) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+    REPORT_INNER_ERROR("E19999", "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+
   auto iter = node_tasks_.begin();
   auto node = iter->first;
-  auto task_defs = iter->second;
-  GE_CHK_BOOL_RET_STATUS(task_defs.size() > 0 && task_defs.size() <= kNumTaskWithAtomicAddrCleanTask,
-      ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]task_defs size must be 1 or 2, but get %zu.", task_defs.size());
+  const auto &task_defs = iter->second;
+  if (task_defs.size() <= 0 || task_defs.size() > kNumTaskWithAtomicAddrCleanTask) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+    REPORT_INNER_ERROR("E19999", "[Check][Size]task_defs size must be 1 or 2, but get %zu.", task_defs.size());
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+      
   GE_CHECK_NOTNULL(node);
   auto op_desc = node->GetOpDesc();
   GE_CHECK_NOTNULL(op_desc);
@@ -594,10 +602,10 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
     }
     if (task_defs.size() == kNumTaskWithAtomicAddrCleanTask) {
       const auto &atomic_task_def = task_defs.front();
-      AtomicOpTask *atomic_task = nullptr;
+      AtomicAddrCleanOpTask *atomic_task = nullptr;
       GE_CHK_STATUS_RET_NOLOG(BuildAtomicTask(atomic_task_def, &atomic_task));
       GE_CHK_STATUS_RET_NOLOG(atomic_task->InitAtomicAddrCleanIndices());
-      tbe_task->SetAtomicTask(atomic_task);
+      tbe_task->SetAtomicAddrCleanTask(atomic_task);
     }
     single_op.op_task_.reset(tbe_task);
   } else if (lib_name == kEngineNameAiCpu) {

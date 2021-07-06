@@ -268,15 +268,6 @@ Status TbeOpTask::UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc 
     dst_tensor.SetShape(GeShape(std::move(storage_shape)));
     dst_tensor.SetOriginShape(src_tensor.GetShape());
   }
-
-  int64_t size = 0;
-  graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(dst_tensor, size);
-  if (graph_status != GRAPH_SUCCESS) {
-    REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed!");
-    GELOGE(graph_status, "[Get][TensorMemorySize] In Bytes failed!");
-    return FAILED;
-  }
-  TensorUtils::SetSize(dst_tensor, size);
   return SUCCESS;
 }
 
@@ -490,7 +481,12 @@ void TbeOpTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   }
 }
 
-Status AtomicOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+Status AtomicAddrCleanOpTask::UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                                                const vector<GeTensorDesc> &output_desc) {
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
   uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
   for (auto atomic_output_index : atomic_output_indices_) {
     if (atomic_output_index >= static_cast<int>(outputs.size())) {
@@ -500,11 +496,21 @@ Status AtomicOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector
     }
     auto &output_buffer = outputs[atomic_output_index];
     *arg_base++ = reinterpret_cast<uintptr_t>(output_buffer.data);
+
+    auto tensor_desc = op_desc_->MutableOutputDesc(atomic_output_index);
+    int64_t size = 0;
+    graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, size);
+    if (graph_status != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed!");
+      GELOGE(graph_status, "[Get][TensorMemorySize] In Bytes failed!");
+      return FAILED;
+    }
+    TensorUtils::SetSize(*tensor_desc, size);
   }
   return SUCCESS;
 }
 
-Status AtomicOpTask::UpdateTilingArgs(rtStream_t stream) {
+Status AtomicAddrCleanOpTask::UpdateTilingArgs(rtStream_t stream) {
   if (tiling_buffer_ != nullptr) {
     GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
     GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_, max_tiling_size_, tiling_data_.data(), tiling_data_.size(),
@@ -516,7 +522,7 @@ Status AtomicOpTask::UpdateTilingArgs(rtStream_t stream) {
   return SUCCESS;
 }
 
-Status AtomicOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
+Status AtomicAddrCleanOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
   auto ret = optiling::OpAtomicCalculateV2(*node_, run_info);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Invoke][OpAtomicCalculate] failed, ret = %u.", ret);
@@ -526,7 +532,7 @@ Status AtomicOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
   return SUCCESS;
 }
 
-Status AtomicOpTask::InitAtomicAddrCleanIndices() {
+Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices() {
   GELOGD("[%s] Start to setup AtomicAddrClean task.", op_desc_->GetName().c_str());
   std::vector<int64_t> atomic_output_indices;
   (void) ge::AttrUtils::GetListInt(op_desc_, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_indices);

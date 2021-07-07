@@ -415,16 +415,16 @@ Status UpdateVarFormats(const NodePtr &var, const GeTensorDesc &tensor_desc) {
 
 Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
   GE_CHECK_NOTNULL(var);
-  int index = 0;
+  static std::atomic_int index(0);
   NodePtr last_node = var;
   for (auto iter = road.rbegin(); iter != road.rend(); ++iter) {
     auto trans_name = var->GetName() + "_trans_" + std::to_string(index++);
     auto ret = RecoverOneTransNodeForVar(trans_name, *iter, last_node, last_node);
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %d, type %s",
-                        var->GetName().c_str(), index, iter->node_type.c_str());
-      GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s, index %d, type %s", var->GetName().c_str(),
-             index, iter->node_type.c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %s, type %s",
+                        var->GetName().c_str(), std::to_string(index).c_str(), iter->node_type.c_str());
+      GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s, index %s, type %s", var->GetName().c_str(),
+             std::to_string(index).c_str(), iter->node_type.c_str());
       return INTERNAL_ERROR;
     }
     // set stream_label
@@ -460,17 +460,17 @@ Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
 Status RecoverTransRoadForVarRef(const std::set<NodePtr> &nodes, const VarTransRoad &road) {
   for (auto &var : nodes) {
     GE_CHECK_NOTNULL(var);
-    int index = 0;
+    static std::atomic_int index(0);
     NodePtr last_node = var;
     GELOGI("Recover trans nodes for variable ref %s", var->GetName().c_str());
     for (auto iter = road.rbegin(); iter != road.rend(); ++iter) {
       auto trans_name = var->GetName() + "_trans_" + std::to_string(index++);
       auto ret = RecoverOneTransNodeForVarRef(trans_name, *iter, last_node, last_node);
       if (ret != SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %d, type %s",
-                          var->GetName().c_str(), index, iter->node_type.c_str());
-        GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s failed, index %d, type %s",
-               var->GetName().c_str(), index, iter->node_type.c_str());
+        REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %s, type %s",
+                          var->GetName().c_str(), std::to_string(index).c_str(), iter->node_type.c_str());
+        GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s failed, index %s, type %s",
+               var->GetName().c_str(), std::to_string(index).c_str(), iter->node_type.c_str());
         return INTERNAL_ERROR;
       }
       // set stream_label

@@ -136,8 +136,7 @@ Status KnownNodeTask::Init(TaskContext &context) {
 Status KnownNodeTask::InitDavinciModel(const HybridModel &model, TensorBuffer *weight_buffer) {
   GELOGD("[Init][DavinciModel] start");
   davinci_model_->InitRuntimeParams();
-  GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(),
-                    "[Init][VariableMem] failed");
+  GE_CHK_STATUS_RET(davinci_model_->InitVariableMem(), "[Init][VariableMem] failed");
   int32_t device_id = 0;
   GE_CHK_RT_RET(rtGetDevice(&device_id));
   davinci_model_->SetDeviceId(static_cast<uint32_t>(device_id));
@@ -181,7 +180,7 @@ Status KnownNodeExecutor::PrepareTask(NodeTask &task, TaskContext &context) cons
 }
 
 Status KnownNodeExecutor::SetDaviciModel(const HybridModel &model, const NodePtr &node,
-                                           std::shared_ptr<DavinciModel> &davinci_model) const {
+                                         std::shared_ptr<DavinciModel> &davinci_model) const {
   // set known node flag as true
   davinci_model->SetKnownNode(true);
   davinci_model->SetId(model.GetModelId());
@@ -248,8 +247,7 @@ Status KnownNodeExecutor::ParseAttrForAllocatingOutputs(NodeItem &node_item, Com
   GE_CHECK_NOTNULL(net_output_desc);
   std::map<std::string, int> connected_inputs;
   std::map<NodePtr, int> data_indices;
-  GE_CHK_STATUS_RET(GetDataNodes(graph, data_indices),
-                    "[%s] Failed to get data node indices",
+  GE_CHK_STATUS_RET(GetDataNodes(graph, data_indices), "[%s] Failed to get data node indices",
                     node_item.NodeName().c_str());
   for (const auto &in_data_anchor : net_output_node->GetAllInDataAnchors()) {
     auto out_data_anchor = in_data_anchor->GetPeerOutAnchor();

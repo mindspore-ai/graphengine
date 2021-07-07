@@ -2939,7 +2939,9 @@ void GraphManager::ReturnError(RunAsyncCallback callback, Status ret, const stri
   StopQueue();
   GELOGE(ret, "%s.", log.c_str());
   std::vector<ge::Tensor> outputs;
-  callback(ret, outputs);
+  if (callback != nullptr) {
+    callback(ret, outputs);
+  }
 }
 
 bool GraphManager::IsGraphNeedRebuild(uint32_t graph_id) {

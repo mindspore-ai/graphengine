@@ -178,7 +178,9 @@ void ModelExecutor::ReturnError(RunAsyncCallback callback, Status ret, const str
   StopQueue();
   GELOGE(ret, "%s.", log.c_str());
   std::vector<ge::Tensor> outputs;
-  callback(ret, outputs);
+  if (callback != nullptr) {
+    callback(ret, outputs);
+  }
 }
 
 void ModelExecutor::UpdateLocalOmeContext(const GraphNodePtr &graph_node) {

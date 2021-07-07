@@ -15,7 +15,7 @@
 
 project(tests CXX C)
 find_package(Threads)
-add_subdirectory(depends/cce)
+
 add_subdirectory(depends/slog)
 add_subdirectory(depends/mmpa)
 add_subdirectory(depends/runtime)

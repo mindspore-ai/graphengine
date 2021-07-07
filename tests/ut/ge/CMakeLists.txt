@@ -20,6 +20,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(PROTO_LIST
     "${GE_CODE_DIR}/metadef/proto/om.proto"
     "${GE_CODE_DIR}/metadef/proto/ge_ir.proto"
+    "${GE_CODE_DIR}/metadef/proto/task.proto"
     "${GE_CODE_DIR}/metadef/proto/ge_api.proto"
     "${GE_CODE_DIR}/metadef/proto/insert_op.proto"
     "${GE_CODE_DIR}/metadef/proto/dump_task.proto"
@@ -69,62 +70,19 @@ include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_BINARY_DIR}/proto/ge)
 include_directories(${CMAKE_BINARY_DIR}/proto/ge/proto)
 
-set(GRAPH_SRC_FILES
-    "${GE_CODE_DIR}/metadef/graph/option/ge_local_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/option/ge_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
-    "${GE_CODE_DIR}/metadef/graph/anchor.cc"
-    "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
-    "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
-    "${GE_CODE_DIR}/metadef/graph/buffer.cc"
-    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
-    "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
-    "${GE_CODE_DIR}/metadef/graph/graph.cc"
-    "${GE_CODE_DIR}/metadef/graph/gnode.cc"
-    "${GE_CODE_DIR}/metadef/graph/ascend_string.cc"
-    "${GE_CODE_DIR}/metadef/graph/inference_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
-    "${GE_CODE_DIR}/metadef/graph/model.cc"
-    "${GE_CODE_DIR}/metadef/graph/model_serialize.cc"
-    "${GE_CODE_DIR}/metadef/graph/node.cc"
-    "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/expand_dimension.cc"
-    "${GE_CODE_DIR}/metadef/graph/operator.cc"
-    "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
-    "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
-    "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
-    "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
-    "${GE_CODE_DIR}/metadef/graph/tensor.cc"
-    "${GE_CODE_DIR}/metadef/graph/types.cc"
-    "${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/dumper/ge_graph_dumper.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/ge_ir_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/node_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/tensor_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/transformer_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/debug/graph_debug.cc"
-    "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
-    "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
-    "${GE_CODE_DIR}/metadef/register/register.cpp"
-    "${GE_CODE_DIR}/metadef/register/register_pass.cpp"
-    "${GE_CODE_DIR}/metadef/register/op_kernel_registry.cpp"
-    "${GE_CODE_DIR}/metadef/register/auto_mapping_util.cpp"
-    "${GE_CODE_DIR}/metadef/register/tensor_assign.cpp"
-    "${GE_CODE_DIR}/metadef/register/register_format_transfer.cc"
-    "${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
-    "${GE_CODE_DIR}/metadef/register/ops_kernel_builder_registry.cc"
-    "${GE_CODE_DIR}/metadef/register/op_tiling.cpp"
-    "${GE_CODE_DIR}/metadef/graph/utils/tuning_utils.cc"
-    "${GE_CODE_DIR}/metadef/register/op_tiling_registry.cpp"
-    "${GE_CODE_DIR}/metadef/register/op_tiling_registry_impl.cpp"
-)
+
+#### GRAPH_SRC_FILES ####
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph GRAPH_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph/debug GRAPH_DEBUG_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph/detail GRAPH_DETAIL_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph/opsproto GRAPH_OPSPROTO_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph/option GRAPH_OPTION_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph/utils GRAPH_UTILS_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/graph/utils/dumper GRAPH_DUMPER_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/ops GRAPH_OPS_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/register GRAPH_REGISTER_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/third_party/transformer/src TRANSFORMER_SRC_FILES)
+
 
 set(PARSER_SRC_FILES
     "${GE_CODE_DIR}/parser/parser/common/op_map.cc"
@@ -259,7 +217,6 @@ set(GRAPH_PREPARE_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/preprocess/insert_op/util_insert_aipp_op.cc"
     "${GE_CODE_DIR}/ge/graph/preprocess/insert_op/ge_aipp_op.cc"
     "${GE_CODE_DIR}/ge/graph/preprocess/multi_batch_options.cc"
-    #"${GE_CODE_DIR}/ge/graph/preprocess/insert_op/base_insert_op.cc"
 )
 
 set(GRAPH_DAVINCI_MODEL_SRC_FILES
@@ -360,7 +317,6 @@ set(GRAPH_PASS_COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/passes/compile_nodes_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/flow_ctrl_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/parallel_group_pass.cc"
-    #"${GE_CODE_DIR}/ge/graph/optimize/optimizer/allreduce_fusion_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/folding_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/variable_op_pass.cc"
     "${GE_CODE_DIR}/ge/graph/passes/transpose_transdata_pass.cc"
@@ -570,7 +526,6 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     #"graph/load/new_model_manager_data_inputer_unittest.cc"
     #"graph/load/new_model_manager_davinci_model_unittest.cc"
     "graph/load/model_manager_unittest.cc"
-    #"graph/load/new_model_manager_task_build_unittest.cc"
     "graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
     "graph/load/new_model_manager_event_manager_unittest.cc"
@@ -795,7 +750,6 @@ set(OTHERS_TEST_FILES
 list(APPEND COMMON_SHARED_LIBRARIES
     c_sec
     slog_stub
-    cce_ge_stub
     runtime_stub
     profiler_stub
     mmpa_stub
@@ -808,7 +762,17 @@ list(APPEND COMMON_SHARED_LIBRARIES
 
 # build graph
 add_library(ge_ut_graph STATIC
-    ${GRAPH_SRC_FILES} ${PARSER_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS}
+    ${GRAPH_SRC_FILES}
+    ${GRAPH_DEBUG_SRC_FILES}
+    ${GRAPH_DETAIL_SRC_FILES}
+    ${GRAPH_OPSPROTO_SRC_FILES}
+    ${GRAPH_OPTION_SRC_FILES}
+    ${GRAPH_UTILS_SRC_FILES}
+    ${GRAPH_DUMPER_SRC_FILES}
+    ${GRAPH_OPS_SRC_FILES}
+    ${GRAPH_REGISTER_SRC_FILES}
+    ${TRANSFORMER_SRC_FILES}
+    ${PARSER_SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS}
 )
 
 target_compile_definitions(ge_ut_graph PRIVATE

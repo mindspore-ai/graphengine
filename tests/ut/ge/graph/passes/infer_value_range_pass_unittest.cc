@@ -365,6 +365,35 @@ TEST_F(UtestGraphInferValueRangePass, CallRun_NoSubgraph_UseCpuKernel_InputsHave
   EXPECT_EQ(unknown_target_value_range, output_value_range);
 }
 
+TEST_F(UtestGraphInferValueRangePass, CallRun_NoSubgraph_UseCpuKernel_InputsHaveZeroInValueRange) {
+  // shape --- add --- sqrt
+  auto graph = std::make_shared<ComputeGraph>("test_graph");
+  GeTensorDesc shape_tensor_desc(GeShape({2}), ge::FORMAT_NCHW, ge::DT_INT64);
+  std::vector<std::pair<int64_t, int64_t>> unknown_value_range = {make_pair(1, -1), make_pair(0, 240)};
+  shape_tensor_desc.SetValueRange(unknown_value_range);
+  auto shape_op_desc = std::make_shared<OpDesc>("Shape", "Shape");
+  shape_op_desc->AddOutputDesc(shape_tensor_desc);
+  auto shape_node = graph->AddNode(shape_op_desc);
+
+  GeTensorDesc add_tensor_desc(GeShape({2}), ge::FORMAT_NCHW, ge::DT_INT64);
+  auto add_op_desc = std::make_shared<OpDesc>("Add", "Add");
+  add_op_desc->AddInputDesc(shape_tensor_desc);
+  add_op_desc->AddInputDesc(shape_tensor_desc);
+  add_op_desc->AddOutputDesc(add_tensor_desc);
+  auto add_node = graph->AddNode(add_op_desc);
+
+  ge::GraphUtils::AddEdge(shape_node->GetOutDataAnchor(0), add_node->GetInDataAnchor(0));
+  ge::GraphUtils::AddEdge(shape_node->GetOutDataAnchor(0), add_node->GetInDataAnchor(1));
+
+  // test unknown value range
+  InferValueRangePass infer_pass;
+  EXPECT_EQ(infer_pass.Run(add_node), SUCCESS);
+  auto output_0_desc = add_node->GetOpDesc()->GetOutputDesc(0);
+  std::vector<std::pair<int64_t, int64_t>> out_value_range;
+  output_0_desc.GetValueRange(out_value_range);
+  EXPECT_EQ(out_value_range.size(), 0);
+}
+
 TEST_F(UtestGraphInferValueRangePass, CallRun_NoSubgraph_UseCpuKernel_InputsHaveUnKnownValueRange_ScalarOutput) {
   // shape --- add --- sqrt
   // constant /

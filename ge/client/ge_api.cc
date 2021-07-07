@@ -47,6 +47,7 @@ const int32_t kMaxStrLen = 128;
 
 static bool g_ge_initialized = false;
 static std::mutex g_ge_release_mutex;  // GEFinalize and ~Session use
+static std::shared_ptr<ge::SessionManager> g_session_manager;
 
 namespace ge {
 void GetOpsProtoPath(std::string &opsproto_path) {
@@ -148,6 +149,22 @@ Status GEInitializeImpl(const std::map<string, string> &options) {
     return FAILED;
   }
 
+  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
+  GELOGI("sessionManager initial.");
+  GE_TIMESTAMP_START(SessionManagerInitialize);
+  g_session_manager = MakeShared<ge::SessionManager>();
+  if (g_session_manager == nullptr) {
+    GELOGE(GE_CLI_INIT_FAILED, "[Init][Create]SessionManager failed");
+    return FAILED;
+  }
+  ret = g_session_manager->Initialize(options);
+  GE_TIMESTAMP_END(SessionManagerInitialize, "InnerInitialize::SessionManagerInitialize");
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Init][SessionManager] GE session manager initial failed.");
+    REPORT_CALL_ERROR("E19999", "SessionManager initialize failed.");
+    return ret;
+  }
+
   // 7.check return status, return
   if (!g_ge_initialized) {
     // Initialize success, first time calling initialize
@@ -217,6 +234,12 @@ Status GEFinalize() {
       ret = middle_ret;
     }
   }
+
+  GELOGI("SessionManager finalization.");
+  if (g_session_manager != nullptr) {
+    (void)g_session_manager->Finalize();  // always success.
+  }
+
   middle_ret = TBEPluginManager::Instance().Finalize();
   if (middle_ret != SUCCESS) {
     ret = middle_ret;
@@ -272,7 +295,7 @@ Session::Session(const std::map<string, string> &options) {
 
   GELOGT(TRACE_RUNNING, "Creating session");
   uint64_t session_id = 0;
-  Status ret = instance_ptr->SessionManagerObj().CreateSession(options, session_id);
+  Status ret = g_session_manager->CreateSession(options, session_id);
   GELOGT(TRACE_RUNNING, "Session id is %lu", session_id);
 
   // check return status, return, update session id if success
@@ -321,7 +344,7 @@ Session::Session(const std::map<AscendString, AscendString> &options) {
     str_options[key] = val;
   }
   uint64_t session_id = 0;
-  Status ret = instance_ptr->SessionManagerObj().CreateSession(str_options, session_id);
+  Status ret = g_session_manager->CreateSession(str_options, session_id);
   GELOGT(TRACE_RUNNING, "Session id is %lu", session_id);
 
   // check return status, return, update session id if success
@@ -359,7 +382,7 @@ Session::~Session() {
 
     GELOGT(TRACE_RUNNING, "Destroying session");
 
-    ret = instance_ptr->SessionManagerObj().DestroySession(session_id);
+    ret = g_session_manager->DestroySession(session_id);
   } catch (google::protobuf::FatalException &e) {
     GELOGE(GE_CLI_SESS_DESTROY_FAILED, "[Destruct][Session]Failed "
            "because get fatalException.");
@@ -397,7 +420,7 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph, const std::map<s
     return FAILED;
   }
   GELOGD("Adding graph to session");
-  Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph, options);
+  Status ret = g_session_manager->AddGraph(sessionId_, graph_id, graph, options);
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
@@ -435,7 +458,7 @@ Status Session::AddGraph(uint32_t graph_id, const Graph &graph,
     std::string val = option.second.GetString();
     str_options[key] = val;
   }
-  Status ret = instance_ptr->SessionManagerObj().AddGraph(sessionId_, graph_id, graph, str_options);
+  Status ret = g_session_manager->AddGraph(sessionId_, graph_id, graph, str_options);
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
@@ -472,7 +495,7 @@ Status Session::AddGraphWithCopy(uint32_t graph_id, const Graph &graph,
     str_options.insert({it->first.GetString(), it->second.GetString()});
   }
   GELOGD("Adding graph to session");
-  Status ret = instance_ptr->SessionManagerObj().AddGraphWithCopy(sessionId_, graph_id, graph, str_options);
+  Status ret = g_session_manager->AddGraphWithCopy(sessionId_, graph_id, graph, str_options);
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Add][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
@@ -502,7 +525,7 @@ Status Session::RemoveGraph(uint32_t graph_id) {
   }
 
   GELOGT(TRACE_RUNNING, "Removing Graph from session");
-  Status ret = instance_ptr->SessionManagerObj().RemoveGraph(sessionId_, graph_id);
+  Status ret = g_session_manager->RemoveGraph(sessionId_, graph_id);
   // check return status, return
   if (ret != SUCCESS) {
     GELOGE(ret,
@@ -583,7 +606,7 @@ Status Session::RunGraph(uint32_t graph_id, const std::vector<Tensor> &inputs, s
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Running Graph");
-  Status ret = instance_ptr->SessionManagerObj().RunGraph(sessionId_, graph_id, graph_inputs, outputs);
+  Status ret = g_session_manager->RunGraph(sessionId_, graph_id, graph_inputs, outputs);
   // check return status
   if (ret != SUCCESS) {
     GELOGE(ret,
@@ -631,7 +654,7 @@ Status Session::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const s
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Run Graph Run graph with stream asyn.");
-  Status ret = instance_ptr->SessionManagerObj().RunGraphWithStreamAsync(sessionId_, graph_id, stream, inputs,
+  Status ret = g_session_manager->RunGraphWithStreamAsync(sessionId_, graph_id, stream, inputs,
                                                                          outputs);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Run][Graph]Run graph with stream asyn Failed,"
@@ -648,7 +671,7 @@ Status Session::RunGraphWithStreamAsync(uint32_t graph_id, void *stream, const s
 // Register Call Back
 Status Session::RegisterCallBackFunc(const std::string &key, const pCallBackFunc &callback) {
   ErrorManager::GetInstance().GenWorkStreamIdDefault();
-  return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, key, callback);
+  return g_session_manager->RegisterCallBackFunc(sessionId_, key, callback);
 }
 
 Status Session::RegisterCallBackFunc(const char *key, const session::pCallBackFunc &callback) {
@@ -657,7 +680,7 @@ Status Session::RegisterCallBackFunc(const char *key, const session::pCallBackFu
   if (key != nullptr) {
     str_key = key;
   }
-  return ge::GELib::GetInstance()->SessionManagerObj().RegisterCallBackFunc(sessionId_, str_key, callback);
+  return g_session_manager->RegisterCallBackFunc(sessionId_, str_key, callback);
 }
 
 // Build Graph
@@ -675,7 +698,7 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<InputTensorInfo>
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Building Graph");
-  Status ret = instance_ptr->SessionManagerObj().BuildGraph(sessionId_, graph_id, inputs);
+  Status ret = g_session_manager->BuildGraph(sessionId_, graph_id, inputs);
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Build][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
@@ -702,7 +725,7 @@ Status Session::BuildGraph(uint32_t graph_id, const std::vector<ge::Tensor> &inp
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Building Graph");
-  Status ret = instance_ptr->SessionManagerObj().BuildGraph(sessionId_, graph_id, inputs);
+  Status ret = g_session_manager->BuildGraph(sessionId_, graph_id, inputs);
   if (ret != SUCCESS) {
     GELOGE(ret,
            "[Build][Graph]Failed, error code:%u, session_id:%lu, graph_id:%u.",
@@ -733,7 +756,7 @@ Status Session::RunGraphAsync(uint32_t graph_id, const std::vector<ge::Tensor> &
   GELOGW(
       "The callback function will not be checked. Please ensure that the implementation of the function is trusted.");
 
-  Status ret = ge::GELib::GetInstance()->SessionManagerObj().RunGraphAsync(sessionId_, graph_id, inputs, callback);
+  Status ret = g_session_manager->RunGraphAsync(sessionId_, graph_id, inputs, callback);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Run][Graph]RunGraphAsync Failed, error code:%u, session_id:%lu, graph_id:%u.",
            ret, sessionId_, graph_id);
@@ -757,7 +780,7 @@ Status Session::GetVariables(const std::vector<std::string> &var_names, std::vec
     return FAILED;
   }
   GELOGT(TRACE_RUNNING, "Get Variables");
-  Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, var_names, var_values);
+  Status ret = g_session_manager->GetVariables(sessionId_, var_names, var_values);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu.", ret, sessionId_);
     return FAILED;
@@ -787,7 +810,7 @@ Status Session::GetVariables(const std::vector<AscendString> &var_names, std::ve
     }
     str_var_names.emplace_back(var_name.GetString());
   }
-  Status ret = ge::GELib::GetInstance()->SessionManagerObj().GetVariables(sessionId_, str_var_names, var_values);
+  Status ret = g_session_manager->GetVariables(sessionId_, str_var_names, var_values);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Get][Variables]Failed, error code:%u, session_id:%lu.", ret, sessionId_);
     REPORT_CALL_ERROR("E19999", "Get variables failed, error code:%u, session_id:%lu.",
@@ -798,6 +821,6 @@ Status Session::GetVariables(const std::vector<AscendString> &var_names, std::ve
 }
 
 bool Session::IsGraphNeedRebuild(uint32_t graph_id) {
-  return ge::GELib::GetInstance()->SessionManagerObj().IsGraphNeedRebuild(sessionId_, graph_id);
+  return g_session_manager->IsGraphNeedRebuild(sessionId_, graph_id);
 }
 }  // namespace ge

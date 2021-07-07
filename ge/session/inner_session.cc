@@ -30,7 +30,6 @@
 #include "graph/ge_global_options.h"
 #include "graph/ge_local_context.h"
 #include "graph/common/local_context.h"
-#include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/tensor_adapter.h"
@@ -169,7 +168,6 @@ Status InnerSession::Finalize() {
     REPORT_CALL_ERROR("E19999", "GraphManager Finalize failed, InnerSession:%lu.", session_id_);
   }
 
-  ModelManager::GetInstance()->DestroyAicpuSession(session_id_);
   init_flag_ = false;
   // release var memory
   GELOGI("VarManager free var memory.");
@@ -189,7 +187,7 @@ Status InnerSession::Finalize() {
 }
 
 Status InnerSession::InnerInitialize() {
-  Status ret = model_executor_.Initialize(options_);
+  Status ret = model_executor_.Initialize(options_, session_id_);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Init][GraphExecutor] failed, InnerSession:%lu.", session_id_);
     REPORT_CALL_ERROR("E19999", "GraphExecutor initialize failed, InnerSession:%lu.", session_id_);

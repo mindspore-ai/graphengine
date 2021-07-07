@@ -20,7 +20,6 @@
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/ge_context.h"
-#include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/util/rt_context_util.h"
 
 using std::map;
@@ -103,10 +102,6 @@ Status SessionManager::DestroySession(SessionId session_id) {
   std::map<SessionId, SessionPtr>::iterator it = session_manager_map_.find(session_id);
   if (it == session_manager_map_.end()) {
     return GE_SESSION_NOT_EXIST;
-  }
-
-  if (ModelManager::GetInstance() != nullptr) {
-    ModelManager::GetInstance()->DestroyAicpuSession(session_id);
   }
 
   // Unified destruct rt_context

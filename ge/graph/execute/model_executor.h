@@ -30,7 +30,7 @@ class ModelExecutor : public Executor {
   /// @param [in] options user config params
   /// @return Status result of function
   ///
-  Status Initialize(const map<string, string> &options);
+  Status Initialize(const map<string, string> &options, uint64_t session_id);
 
   ///
   /// @ingroup ge
@@ -120,6 +120,7 @@ class ModelExecutor : public Executor {
 
   bool init_flag_{false};
   bool train_graph_flag_{false};
+  uint64_t session_id_{0};
   GraphExecutor graph_executor_;
 
   std::mutex mutex_;

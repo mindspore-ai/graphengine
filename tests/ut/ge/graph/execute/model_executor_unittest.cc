@@ -63,7 +63,7 @@ static NodePtr CreateNode(ComputeGraph &graph, const string &name, const string 
 
 TEST_F(UtestModelExecutorTest, test_load_graph_sync) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   auto compute_graph = MakeShared<ComputeGraph>("test_graph");
   GeRootModelPtr ge_root_model = MakeShared<GeRootModel>(compute_graph);
@@ -86,7 +86,7 @@ TEST_F(UtestModelExecutorTest, test_load_graph_sync) {
 
 TEST_F(UtestModelExecutorTest, test_load_graph_async) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   Graph graph("test_graph");
   auto compute_graph = MakeShared<ComputeGraph>("test_graph");
@@ -111,7 +111,7 @@ TEST_F(UtestModelExecutorTest, test_load_graph_async) {
 
 TEST_F(UtestModelExecutorTest, test_load_graph_failed) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   Graph graph("test_graph");
   auto compute_graph = MakeShared<ComputeGraph>("test_graph");
@@ -144,7 +144,7 @@ TEST_F(UtestModelExecutorTest, test_check_and_release_memory) {
   }
 
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   GeModelPtr ge_model = make_shared<GeModel>();
   int64_t memory_size = 25 * 1024UL * 1024UL * 1024UL;
@@ -171,7 +171,7 @@ TEST_F(UtestModelExecutorTest, test_check_and_release_memory) {
 
 TEST_F(UtestModelExecutorTest, parse_inputs_dims_data) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   OmeContext context;
   SetLocalOmeContext(context);
@@ -195,7 +195,7 @@ TEST_F(UtestModelExecutorTest, parse_inputs_dims_data) {
 
 TEST_F(UtestModelExecutorTest, parse_inputs_dims_getnext) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   OmeContext context;
   SetLocalOmeContext(context);
@@ -223,7 +223,7 @@ TEST_F(UtestModelExecutorTest, parse_inputs_dims_getnext) {
 
 TEST_F(UtestModelExecutorTest, test_run_thread) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   GraphId graph_id = 1;
   uint64_t session_id = 0;
@@ -281,7 +281,7 @@ static void test_run_graph(ModelExecutor &model_executor) {
 TEST_F(UtestModelExecutorTest, test_run_graph_train) {
   GetThreadLocalContext().SetGlobalOption({{OPTION_GRAPH_RUN_MODE, "1"}});
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
   test_run_graph(model_executor);
   EXPECT_EQ(model_executor.Finalize(), SUCCESS);
 }
@@ -291,14 +291,14 @@ TEST_F(UtestModelExecutorTest, test_run_graph_infer) {
   GetThreadLocalContext().SetSessionOption({});
   GetThreadLocalContext().SetGraphOption({});
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
   test_run_graph(model_executor);
   EXPECT_EQ(model_executor.Finalize(), SUCCESS);
 }
 
 TEST_F(UtestModelExecutorTest, test_run_graph_with_stream) {
   ModelExecutor model_executor;
-  EXPECT_EQ(model_executor.Initialize({}), SUCCESS);
+  EXPECT_EQ(model_executor.Initialize({}, 0), SUCCESS);
 
   GraphId graph_id = 1;
   auto compute_graph = MakeShared<ComputeGraph>("test_graph");

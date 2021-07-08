@@ -160,18 +160,6 @@ Status GELib::InnerInitialize(const map<string, string> &options) {
     return initOpsBuilderStatus;
   }
 
-  ErrorManager::GetInstance().SetStage(error_message::kInitialize, error_message::kOther);
-  GELOGI("sessionManager initial.");
-  GE_TIMESTAMP_START(SessionManagerInitialize);
-  Status initSmStatus = sessionManager_.Initialize(options);
-  GE_TIMESTAMP_END(SessionManagerInitialize, "InnerInitialize::SessionManagerInitialize");
-  if (initSmStatus != SUCCESS) {
-    GELOGE(initSmStatus, "[Init][SessionManager] GE session manager initial failed.");
-    REPORT_CALL_ERROR("E19999", "SessionManager initialize failed.");
-    RollbackInit();
-    return initSmStatus;
-  }
-
   GELOGI("Start to initialize HostCpuEngine");
   GE_TIMESTAMP_START(HostCpuEngineInitialize);
   Status initHostCpuEngineStatus = HostCpuEngine::GetInstance().Initialize();
@@ -454,12 +442,6 @@ Status GELib::Finalize() {
     GELOGW("engineManager finalize failed");
     final_state = mid_state;
   }
-  GELOGI("sessionManager finalization.");
-  mid_state = sessionManager_.Finalize();
-  if (mid_state != SUCCESS) {
-    GELOGW("sessionManager finalize failed");
-    final_state = mid_state;
-  }
 
   GELOGI("opsBuilderManager finalization.");
   mid_state = OpsKernelBuilderManager::Instance().Finalize();
@@ -538,9 +520,6 @@ void GELib::RollbackInit() {
   }
   if (opsManager_.init_flag_) {
     (void)opsManager_.Finalize();
-  }
-  if (sessionManager_.init_flag_) {
-    (void)sessionManager_.Finalize();
   }
   MemManager::Instance().Finalize();
   HostMemManager::Instance().Finalize();

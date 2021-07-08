@@ -23,6 +23,7 @@
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_adapter.h"
 #include "graph/load/graph_loader.h"
+#include "graph/load/model_manager/model_manager.h"
 #include "common/math/math_util.h"
 #include "common/formats/utils/formats_trans_utils.h"
 
@@ -38,7 +39,7 @@ namespace ge {
 /// @param [in] options user config params
 /// @return Status result of function
 ///
-Status ModelExecutor::Initialize(const map<string, string> &options) {
+Status ModelExecutor::Initialize(const map<string, string> &options, uint64_t session_id) {
   graph_run_listener_ = MakeShared<GraphModelListener>(sync_run_mutex_, condition_);
   if (graph_run_listener_ == nullptr) {
     REPORT_CALL_ERROR("E19999", "New GraphModelListener fail");
@@ -46,6 +47,7 @@ Status ModelExecutor::Initialize(const map<string, string> &options) {
     return MEMALLOC_FAILED;
   }
 
+  session_id_ = session_id;
   train_graph_flag_ = ParseTrainGraphFlag();
   thread_run_flag_.store(true);
   run_thread_ = std::thread(&ModelExecutor::RunThread, this);
@@ -74,6 +76,7 @@ Status ModelExecutor::Finalize() {
     GELOGW("Graph executor FreeExecuteMemory failed, resources may not be released correctly.");
   }
 
+  ModelManager::GetInstance()->DestroyAicpuSession(session_id_);
   return SUCCESS;
 }
 
@@ -168,7 +171,9 @@ void ModelExecutor::ReturnError(RunAsyncCallback callback, Status ret, const str
   StopQueue();
   GELOGE(ret, "%s.", log.c_str());
   std::vector<ge::Tensor> outputs;
-  callback(ret, outputs);
+  if (callback != nullptr) {
+    callback(ret, outputs);
+  }
 }
 
 void ModelExecutor::UpdateLocalOmeContext(const GraphNodePtr &graph_node) {

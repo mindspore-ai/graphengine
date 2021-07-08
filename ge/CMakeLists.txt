@@ -474,9 +474,6 @@ set(INFER_SRC_LIST
     "common/ge/plugin_manager.cc"
     "common/ge/op_tiling_manager.cc"
     "init/gelib.cc"
-    "session/inner_session.cc"
-    "session/session_manager.cc"
-    "graph/execute/model_executor.cc"
     "engine_manager/dnnengine_manager.cc"
     "opskernel_manager/ops_kernel_manager.cc"
     "opskernel_manager/ops_kernel_builder_manager.cc"
@@ -719,6 +716,12 @@ set(INFER_SRC_LIST
     "graph/build/memory/var_mem_assign_util.cc"
     "graph/build/memory/buffer_pool_mem_assigner.cc"
     "ge_opt_info/ge_opt_info.cc"
+)
+
+set(RUNNER_SRC_LIST
+    "client/ge_api.cc"
+    "session/inner_session.cc"
+    "session/session_manager.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)

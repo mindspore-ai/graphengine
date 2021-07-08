@@ -25,7 +25,7 @@ namespace ge {
 namespace hybrid {
 namespace {
 const uint8_t kMaxTransCount = 3;
-const uint32_t kTransOpIoSize = 1;
+const uint8_t kTransOpIoSize = 1;
 const char *const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
 const char *const kNodeTypeRetVal = "_RetVal";
 const std::set<std::string> kControlOpTypes{
@@ -47,7 +47,7 @@ bool IsEnterFeedNode(NodePtr node) {
   // For: Enter -> TransData -> Cast -> node
   for (uint8_t i = 0; i < kMaxTransCount; ++i) {
     if (kEnterOpTypes.count(NodeUtils::GetNodeType(node)) > 0) {
-      GELOGD("Node[%u] is Enter feed node.", node->GetName().c_str());
+      GELOGD("Node[%s] is Enter feed node.", node->GetName().c_str());
       return true;
     }
 

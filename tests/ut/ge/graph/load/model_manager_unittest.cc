@@ -78,7 +78,7 @@ class UtestModelManagerModelManager : public testing::Test {
     const int model_len = 10;
     data.model_len = sizeof(ModelFileHeader) + model_len;
     data.model_data = new uint8_t[data.model_len];
-    memset((uint8_t *)data.model_data + sizeof(ModelFileHeader), 10, model_len);
+    memset((uint8_t *)data.model_data + sizeof(ModelFileHeader), 0, model_len);
 
     ModelFileHeader *header = (ModelFileHeader *)data.model_data;
     header->magic = MODEL_FILE_MAGIC_NUM;
@@ -93,7 +93,7 @@ class UtestModelManagerModelManager : public testing::Test {
     data.key = ENC_KEY;
     data.model_data = new uint8_t[data.model_len];
     uint8_t data_ori[model_len];
-    memset(data_ori, 10, model_len);
+    memset(data_ori, 0, model_len);
     ModelFileHeader *header = (ModelFileHeader *)data.model_data;
     header->magic = MODEL_FILE_MAGIC_NUM;
     header->version = MODEL_VERSION;
@@ -224,6 +224,7 @@ TEST_F(UtestModelManagerModelManager, case_load_model_encypt_type_unsupported) {
   ModelFileHeader *header = (ModelFileHeader *)data.model_data;
   header->is_encrypt = 255;
   uint32_t model_id = 1;
+  // Error for: LoadModelPartitionTable: Invalid partition_table->num:0
   EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_PARAM_INVALID);
   delete[](uint8_t *) data.model_data;
 }

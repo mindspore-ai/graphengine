@@ -47,13 +47,6 @@ Status ModelExecutor::Initialize(const map<string, string> &options, uint64_t se
     return MEMALLOC_FAILED;
   }
 
-  auto model_manager = ModelManager::GetInstance();
-  GE_CHECK_NOTNULL(model_manager);
-  GE_IF_BOOL_EXEC(model_manager->EnableExceptionDump(options) != SUCCESS,
-                  REPORT_CALL_ERROR("E19999", "ModelManager EnableExceptionDump failed.");
-                  GELOGE(FAILED, "[Enable][ExceptionDump] failed.");
-                  return FAILED);
-
   session_id_ = session_id;
   train_graph_flag_ = ParseTrainGraphFlag();
   thread_run_flag_.store(true);

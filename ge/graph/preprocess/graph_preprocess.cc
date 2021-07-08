@@ -1755,8 +1755,8 @@ Status GraphPrepare::CtrlFlowPreProcess() {
   PassManager graph_pass;
 
   // After InferShape Mark v1 control flow for unknown shape.
-  auto mark_force_unknown_pass = new (std::nothrow) MarkForceUnknownForCondPass;
-  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::MarkForceUnknownForCondPass", mark_force_unknown_pass));
+  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::MarkForceUnknownForCondPass",
+                                       new (std::nothrow) MarkForceUnknownForCondPass));
 
   GE_CHK_STATUS_RET(graph_pass.Run(compute_graph_));
   return SUCCESS;

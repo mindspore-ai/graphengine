@@ -47,7 +47,7 @@ class MemcpyAsyncTaskInfo : public TaskInfo {
   uint64_t count_;
   uint32_t kind_;
   vector<void *> io_addrs_;
-  int64_t fixed_addr_offset_;
+  int64_t fixed_addr_offset_ = 0;
   DavinciModel *davinci_model_ = nullptr;
   uint32_t args_offset_ = 0;
 };

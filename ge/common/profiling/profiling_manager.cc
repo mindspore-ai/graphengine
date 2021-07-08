@@ -69,6 +69,7 @@ ProfilingManager::ProfilingManager()
     : is_load_profiling_(false), is_execute_profiling_(false), is_training_trace_(false), subscribe_count_(0) {
   prof_cb_.msprofCtrlCallback = nullptr;
   prof_cb_.msprofReporterCallback = nullptr;
+  index_id_ = UINT64_MAX;
 }
 
 ProfilingManager::~ProfilingManager() {}
@@ -604,6 +605,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   is_load_profiling_ = false;
   is_training_trace_ = false;
   is_execute_profiling_ = false;
+  index_id_ = UINT64_MAX;
 
   // profiling plugin uninit
   PluginUnInit();

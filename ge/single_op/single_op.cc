@@ -58,7 +58,7 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
          tmp_task_desc_info.op_name.c_str(), tmp_task_desc_info.model_name.c_str());
 
   tmp_task_desc_info.shape_type = shape_type;
-  tmp_task_desc_info.cur_iter_num = 0;
+  tmp_task_desc_info.cur_iter_num = ProfilingManager::Instance().GetStepInfoIndex();
   tmp_task_desc_info.task_type = op_task->GetTaskType();
 
   std::vector<TaskDescInfo> task_desc_info;

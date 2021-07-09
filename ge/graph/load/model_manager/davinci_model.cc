@@ -387,8 +387,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    REPORT_INNER_ERROR("E19999", "Call InitFeatureMapMem more than once, model_id:%u, check invalid", model_id_);
-    GELOGE(PARAM_INVALID, "[Check][Param] call InitFeatureMapMem more than once, model_id:%u", model_id_);
+    REPORT_INNER_ERROR("E19999", "InitFeatureMapMem is called more than once, model_id:%u, check invalid", model_id_);
+    GELOGE(PARAM_INVALID, "[Check][Param] InitFeatureMapMem is called more than once, model_id:%u", model_id_);
     return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
@@ -456,8 +456,7 @@ Status DavinciModel::InitVariableMem() {
 
 void DavinciModel::InitRuntimeParams() {
   int64_t value = 0;
-  bool ret;
-  ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_MEMORY_SIZE, value);
+  bool ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_MEMORY_SIZE, value);
   runtime_param_.mem_size = ret ? (uint64_t)value : 0;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_WEIGHT_SIZE, value);
   runtime_param_.weight_size = ret ? (uint64_t)value : 0;
@@ -983,7 +982,7 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
   // op_desc Checked by Init: Data, valid.
   auto op_desc = node->GetOpDesc();
   if (node->GetOwnerComputeGraph() != graph) {
-    GELOGI("Skip subgraph Data node: %s.", op_desc->GetName().c_str());
+    GELOGI("Skip Data node: %s in subgraph.", op_desc->GetName().c_str());
     return SUCCESS;
   }
 
@@ -1195,7 +1194,7 @@ Status DavinciModel::InitRealSizeAndShapeInfo(const ComputeGraphPtr &compute_gra
     GELOGD("No need to get size and shape of netoutput in subgraph.");
     return SUCCESS;
   }
-  GELOGD("Start init real size and shape info of %s.", node->GetName().c_str());
+  GELOGD("Start to initialize real size and shape info of %s.", node->GetName().c_str());
   GetAllGearsInfo(node);
   if (is_getnext_sink_dynamic_) {
     GE_IF_BOOL_EXEC(GetGetDynamicDimsNodeInfo(node) != SUCCESS,
@@ -1238,7 +1237,7 @@ void DavinciModel::GetAllGearsInfo(const NodePtr &node) {
       }
       if (!gear_info.empty()) {
         all_gears_info_.emplace_back(gear_info);
-        GELOGD("Init all gears info from %s, gaer info is %s", node->GetName().c_str(),
+        GELOGD("Init all gears info from %s, gear info is %s", node->GetName().c_str(),
                formats::JoinToString(gear_info).c_str());
       }
     }
@@ -1318,7 +1317,7 @@ Status DavinciModel::GetGearAndRealOutSizeInfo(const ComputeGraphPtr &graph, con
 
 Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_t input_index,
                                              const NodePtr &case_node) {
-  GELOGD("Start get output size of %s, which is %zu input to netoutput", case_node->GetName().c_str(), input_index);
+  GELOGD("Start to get output size of %s, which is %zu input to netoutput", case_node->GetName().c_str(), input_index);
   const auto &func_desc = case_node->GetOpDesc();
   GE_CHECK_NOTNULL(func_desc);
   std::map<vector<int32_t>, int64_t> gear_and_real_out_size_info;
@@ -2227,10 +2226,10 @@ void DavinciModel::CreateOutput(uint32_t index, const OpDescPtr &op_desc, InputO
       dims[i] = shape.GetDim(i);
     }
   } else {                                                                    // FOR FORMAT_NHWC or FORMAT_NCHW
-    dims[0] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N);  // 0: first dim
-    dims[1] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C);  // 1: second dim
-    dims[2] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H);  // 2: third dim
-    dims[3] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W);  // 3: forth dim
+    dims[0] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_N : NCHW_DIM_N);  // 0: first dim
+    dims[1] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_C : NCHW_DIM_C);  // 1: second dim
+    dims[2] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_H : NCHW_DIM_H);  // 2: third dim
+    dims[3] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_W : NCHW_DIM_W);  // 3: forth dim
   }
   output.shape_info.num = dims[0];      // 0: first dim
   output.shape_info.channel = dims[1];  // 1: second dim
@@ -2741,7 +2740,7 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
   }
 
   if (!has_output_node_) {
-    GELOGW("Output tensor list is empty, model id: %u", model_id_);
+    GELOGW("The tensor list of output is empty, model id: %u", model_id_);
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, INTERNAL_ERROR, outputs),
                   "[Call][OnComputeDone] failed, model_id:%u, data_id:%u.", model_id_, data_id);
     return INTERNAL_ERROR;
@@ -3071,7 +3070,7 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
     GELOGI("output %zu, v addr %p, r addr %p, p addr %p", i, addr_list[i], addr, outputs[i]);
   }
 
-  GELOGI("success, known input data info size: %zu, known output data info size: %zu",
+  GELOGI("create map for zero copy success, known input data info size: %zu, known output data info size: %zu",
          known_input_data_info_.size(), known_output_data_info_.size());
   return SUCCESS;
 }
@@ -3106,12 +3105,12 @@ Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, boo
       total_io_addrs[i] = known_output_data_info_.at(total_io_addrs[i]);
     }
   }
-  GELOGI("success, total io addrs size: %zu", total_io_addrs.size());
+  GELOGI("update known zero copy addr success, total io addrs size: %zu", total_io_addrs.size());
   return SUCCESS;
 }
 
 Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs) {
-  GELOGI("DavinciModel::UpdateKnownNodeArgs in");
+  GELOGI("DavinciModel::UpdateKnownNodeArgs begin");
   GE_CHK_STATUS_RET(CreateKnownZeroCopyMap(inputs, outputs),
                     "[Call][CreateKnownZeroCopyMap] failed, model_id:%u.", model_id_);
   total_io_addrs_.clear();
@@ -3683,6 +3682,7 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
       elem_num = 1;
     }
     uint64_t *buff = reinterpret_cast<uint64_t *>(tensor->MutableData().data());
+    GE_CHECK_NOTNULL(buff);
     if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) != SUCCESS) {
       GELOGE(FAILED, "[Call][CheckInt64Uint32MulOverflow] Shape size:%ld is invalid", elem_num);
       return FAILED;

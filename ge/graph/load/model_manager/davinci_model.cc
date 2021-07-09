@@ -62,6 +62,7 @@
 #include "graph/common/omg_util.h"
 #include "graph/build/memory/block_mem_assigner.h"
 #include "graph/manager/session_scope_mem_allocator.h"
+#include "framework/omg/omg_inner_types.h"
 
 // create std::thread, catch exceptions using try/catch
 #define CREATE_STD_THREAD(thread_id, func, args)                                                  \
@@ -763,8 +764,16 @@ void DavinciModel::SaveSpecifyAttrValues(const OpDescPtr &op_desc) {
 }
 
 Status DavinciModel::ReportProfilingData() {
-  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo());
-  GE_CHK_STATUS(SinkModelProfile(), "[Sink][ModelProfile] failed, model_id:%u.", model_id_);
+  bool is_train = domi::GetContext().train_flag;
+  auto model_id = model_id_;
+  auto &profiling_manager = ProfilingManager::Instance();
+  auto graph_id = runtime_param_.graph_id;
+  if (is_train) {
+    GELOGD("Replace model_id:%u with graph_id:%u, when training.", model_id, graph_id);
+    model_id = graph_id;
+  }
+  profiling_manager.ReportProfilingData(model_id, GetTaskDescInfo());
+  GE_CHK_STATUS(SinkModelProfile(), "[Sink][ModelProfile] failed, model_id:%u.", model_id);
 
   return SUCCESS;
 }

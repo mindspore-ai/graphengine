@@ -35,6 +35,7 @@
 #include "graph/utils/tensor_adapter.h"
 #include "runtime/mem.h"
 #include "ir_build/option_utils.h"
+#include "common/profiling/profiling_manager.h"
 
 namespace ge {
 namespace {
@@ -231,6 +232,9 @@ Status InnerSession::GetVariable(const std::string &name, Tensor &val) {
 
 Status InnerSession::AddGraph(uint32_t graph_id, const Graph &graph) {
   std::map<std::string, std::string> options;
+  auto device_id = GetContext().DeviceId();
+  GELOGD("Device id is %u", device_id);
+  ProfilingManager::Instance().SetGraphIdToDeviceMap(graph_id, device_id);
   return AddGraph(graph_id, graph, options);
 }
 

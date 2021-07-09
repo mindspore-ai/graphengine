@@ -17,6 +17,8 @@
 #include <gtest/gtest.h>
 #include <memory>
 
+#include "common/profiling/profiling_manager.h"
+
 #define protected public
 #define private public
 #include "graph/execute/graph_execute.h"
@@ -124,5 +126,47 @@ TEST_F(UtestGraphExecuteTest, test_set_callback) {
   model_manager->InsertModel(1, davinci_model1);
   auto status = executor.SetCallback(1, ge_root_model, callback);
   EXPECT_EQ(status, SUCCESS);
+}
+
+TEST_F(UtestGraphExecuteTest, test_without_subscribe) {
+  GraphExecutor executor;
+  auto ret = executor.ModelSubscribe(1);
+  EXPECT_EQ(ret, SUCCESS);
+}
+
+TEST_F(UtestGraphExecuteTest, test_with_subscribe_failed1) {
+  GraphExecutor executor;
+  uint32_t graph_id = 1;
+  auto &profiling_manager = ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, 1, true);
+  auto ret = executor.ModelSubscribe(graph_id);
+  profiling_manager.CleanSubscribeInfo();
+  EXPECT_NE(ret, SUCCESS);
+}
+
+TEST_F(UtestGraphExecuteTest, test_with_subscribe_failed2) {
+  GraphExecutor executor;
+  uint32_t graph_id = 1;
+  uint32_t model_id = 1;
+  auto &profiling_manager = ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, 1, true);
+  profiling_manager.SetGraphIdToModelMap(2, model_id);
+  auto ret = executor.ModelSubscribe(graph_id);
+  profiling_manager.CleanSubscribeInfo();
+  EXPECT_NE(ret, SUCCESS);
+}
+
+TEST_F(UtestGraphExecuteTest, test_with_subscribe_success) {
+  GraphExecutor executor;
+  uint32_t graph_id = 1;
+  uint32_t model_id = 1;
+  GraphNodePtr graph_node = std::make_shared<GraphNode>(graph_id);
+  DavinciModel model(model_id, nullptr);
+  auto &profiling_manager = ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, 1, true);
+  profiling_manager.SetGraphIdToModelMap(graph_id, model_id);
+  auto ret = executor.ModelSubscribe(graph_id);
+  profiling_manager.CleanSubscribeInfo();
+  EXPECT_EQ(ret, SUCCESS);
 }
 }  // namespace ge

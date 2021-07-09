@@ -193,7 +193,7 @@ Status ModelExecutor::PushGraph(const RunArgs &args) {
 
 void ModelExecutor::RunThread() {
   ErrorManager::GetInstance().SetStage(error_message::kModelExecute, error_message::kModelExecute);
-  if (prctl(PR_SET_NAME, ("GE_Run")) != 0) {
+  if (mmSetCurrentThreadName("GE_Run") != EN_OK) {
     GELOGW("Set thread name failed.");
   }
 

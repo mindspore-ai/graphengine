@@ -329,7 +329,7 @@ void HcclTaskInfo::GetPrivateDefByTaskDef(const domi::TaskDef &task) {
   // Get privateDef and opsKernelStorePtr from taskDef and save them in taskInfo
   GELOGI("get custom info in modelTaskDef.");
   ops_kernel_store_ = nullptr;
-  void *ops_kernel_store_name_temp = reinterpret_cast<void *>(task.ops_kernel_store_ptr());
+  void *ops_kernel_store_name_temp = reinterpret_cast<void *>(static_cast<uintptr_t>(task.ops_kernel_store_ptr()));
   if (ops_kernel_store_name_temp != nullptr) {
     ops_kernel_store_ = std::move(ops_kernel_store_name_temp);
     std::string private_def_temp = task.private_def();

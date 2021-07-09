@@ -569,6 +569,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Te
       uint32_t length = static_cast<uint32_t>(cur_dynamic_dims.size() * sizeof(int32_t));
       GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK,
                        REPORT_CALL_ERROR("E19999", "memcpy data failed, size:%u", length);
+                       delete[] reinterpret_cast<int32_t *>(data.data);
                        return INTERNAL_ERROR, "[Memcpy][Data] failed, size:%u.", length);
       data.length = length;
       input_data.blobs.push_back(data);
@@ -1790,7 +1791,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
       std::vector<char> op_name;
       op_name.clear();
       op_name.resize(kOpNameMaxSize);
-      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen, reinterpret_cast<void *>(aicpu_info.opType),
+      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen,
+                         reinterpret_cast<void *>(static_cast<uintptr_t>(aicpu_info.opType)),
                          aicpu_info.opLen, RT_MEMCPY_DEVICE_TO_HOST));
       std::string kernel_type =
           (static_cast<OpKernelType>(aicpu_info.kernelsType) == TF_KERNEL) ? "TF_KERNEL" : "CPU_KERNEL";

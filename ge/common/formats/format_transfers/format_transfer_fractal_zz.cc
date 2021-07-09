@@ -193,6 +193,7 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                   ? dst_size - dst_offset
                                   : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+          GE_CHECK_GE(protected_size, 0);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
@@ -213,6 +214,7 @@ Status TransFormatFromNdToFracZz(const TransArgs &args, TransResult &result, con
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                   ? dst_size - dst_offset
                                   : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+          GE_CHECK_GE(protected_size, 0);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {
@@ -284,6 +286,7 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                   ? dst_size - dst_offset
                                   : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+          GE_CHECK_GE(protected_size, 0);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size * w0));
           if (ret != EOK) {
@@ -304,6 +307,7 @@ Status TransFormatFromFracZzToNd(const TransArgs &args, TransResult &result, con
           auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                   ? dst_size - dst_offset
                                   : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+          GE_CHECK_GE(protected_size, 0);
           auto ret = memcpy_s(dst.get() + dst_offset, static_cast<size_t>(protected_size), args.data + src_offset,
                               static_cast<size_t>(size));
           if (ret != EOK) {

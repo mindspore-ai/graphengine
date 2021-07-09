@@ -171,6 +171,7 @@ Status Transpose(const uint8_t *src, const std::vector<int64_t> &src_shape, Data
     auto protected_size = dst_size - dst_offset_bytes < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                               ? dst_size - dst_offset_bytes
                               : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+    GE_CHECK_GE(protected_size, 0);
     auto ret = memcpy_s(dst.get() + dst_offset_bytes, static_cast<size_t>(protected_size), src + src_offset,
                         static_cast<size_t>(data_size));
     if (ret != EOK) {

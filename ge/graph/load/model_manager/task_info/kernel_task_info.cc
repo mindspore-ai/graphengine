@@ -436,7 +436,7 @@ Status KernelTaskInfo::Distribute() {
       // xxxxxxxx xxxxxxxx xxxxxxxx xx01xxxx: DEVICE_FIRST
       // xxxxxxxx xxxxxxxx xxxxxxxx xx10xxxx: HOST_ONLY
       // xxxxxxxx xxxxxxxx xxxxxxxx xx11xxxx: HOST_FIRST
-      dump_flag_ = dump_flag_ | topic_type_flag_;
+      dump_flag_ = dump_flag_ | static_cast<uint32_t>(topic_type_flag_);
     }
     GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
     // blockDim is reserved parameter, set to 1

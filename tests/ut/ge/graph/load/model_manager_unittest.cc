@@ -54,31 +54,13 @@ class UtestModelManagerModelManager : public testing::Test {
   }
 
   void SetUp() {}
-
   void TearDown() {}
-
-  void CreateGraph(Graph &graph) {
-    TensorDesc desc(ge::Shape({1, 3, 224, 224}));
-    uint32_t size = desc.GetShape().GetShapeSize();
-    desc.SetSize(size);
-    auto data = op::Data("Data").set_attr_index(0);
-    data.update_input_desc_data(desc);
-    data.update_output_desc_out(desc);
-
-    auto flatten = op::Flatten("Flatten").set_input_x(data, data.name_out_out());
-
-    std::vector<Operator> inputs{data};
-    std::vector<Operator> outputs{flatten};
-    std::vector<Operator> targets{flatten};
-    // Graph graph("test_graph");
-    graph.SetInputs(inputs).SetOutputs(outputs).SetTargets(targets);
-  }
 
   void GenUnencryptModelData(ModelData &data) {
     const int model_len = 10;
     data.model_len = sizeof(ModelFileHeader) + model_len;
     data.model_data = new uint8_t[data.model_len];
-    memset((uint8_t *)data.model_data + sizeof(ModelFileHeader), 0, model_len);
+    memset(data.model_data, 0, data.model_len);
 
     ModelFileHeader *header = (ModelFileHeader *)data.model_data;
     header->magic = MODEL_FILE_MAGIC_NUM;
@@ -86,19 +68,6 @@ class UtestModelManagerModelManager : public testing::Test {
     header->is_encrypt = ModelEncryptType::UNENCRYPTED;
     header->length = model_len;
     header->is_checksum = ModelCheckType::CHECK;
-  }
-
-  void GenEncryptModelData(ModelData &data) {
-    const int model_len = 10;
-    data.key = ENC_KEY;
-    data.model_data = new uint8_t[data.model_len];
-    uint8_t data_ori[model_len];
-    memset(data_ori, 0, model_len);
-    ModelFileHeader *header = (ModelFileHeader *)data.model_data;
-    header->magic = MODEL_FILE_MAGIC_NUM;
-    header->version = MODEL_VERSION;
-    header->is_encrypt = ModelEncryptType::ENCRYPTED;
-    header->length = 10;  // encrypt_len;
   }
 
   void LoadStandardModelData(ModelData &data) {

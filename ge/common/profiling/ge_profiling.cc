@@ -230,21 +230,15 @@ ge::Status ProfSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream
     REPORT_CALL_ERROR("E19999", "Get logic device id failed, ret 0x%X", rt_ret);
     return ge::FAILED;
   }
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  profiling_manager.SetStepInfoIndex(index_id);
   if (is_first_run && tag_id == kStepStart) {
-    GE_CHK_STATUS_RET_NOLOG(ge::ProfilingManager::Instance().ProfileStepInfo(index_id,
-                                                                             kModelId,
-                                                                             tag_id,
-                                                                             stream,
-                                                                             device_id));
+    GE_CHK_STATUS_RET_NOLOG(profiling_manager.ProfileStepInfo(index_id, kModelId, tag_id, stream, device_id));
     is_first_run = false;
     return ge::SUCCESS;
   }
   if (!is_first_run && tag_id == kStepEnd) {
-    GE_CHK_STATUS_RET_NOLOG(ge::ProfilingManager::Instance().ProfileStepInfo(index_id,
-                                                                             kModelId,
-                                                                             tag_id,
-                                                                             stream,
-                                                                             device_id));
+    GE_CHK_STATUS_RET_NOLOG(profiling_manager.ProfileStepInfo(index_id, kModelId, tag_id, stream, device_id));
     is_first_run = true;
     return ge::SUCCESS;
   }

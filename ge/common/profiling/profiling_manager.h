@@ -101,6 +101,8 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void GetOpInputOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const;
   void ReportData(const int32_t &device_id, const std::string &data, const std::string &tag_name);
   Status ProfileStepInfo(uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id);
+  void SetStepInfoIndex(uint64_t index_id) { index_id_ = index_id; }
+  uint64_t GetStepInfoIndex() { return index_id_; }
  private:
   Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
   Status ParseOptions(const std::string &options);
@@ -127,6 +129,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   std::string fp_point_;
   std::string bp_point_;
   uint32_t reporter_max_len_ = 0;
+  uint64_t index_id_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

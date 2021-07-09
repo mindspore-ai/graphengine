@@ -115,12 +115,12 @@ TEST_F(UTEST_dump_properties, init_by_options_success_2) {
   EXPECT_EQ(st, SUCCESS);
 }
 
-TEST_F(UTEST_dump_properties, init_by_options_failed) {
+TEST_F(UTEST_dump_properties, init_by_options_success_3) {
   DumpProperties dp;
   std::map<std::string, std::string> options {{OPTION_EXEC_ENABLE_DUMP_DEBUG, "1"},
                                               {OPTION_EXEC_DUMP_PATH, "/tmp/"}};
   GetThreadLocalContext().SetGlobalOption(options);
   Status st = dp.InitByOptions();
-  EXPECT_NE(st, SUCCESS);
+  EXPECT_EQ(st, SUCCESS);
 }
 }  // namespace ge

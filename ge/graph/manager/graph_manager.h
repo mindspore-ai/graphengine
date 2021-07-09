@@ -32,7 +32,6 @@
 #include "external/ge/ge_api_types.h"
 #include "graph/build/graph_builder.h"
 #include "graph/ge_local_context.h"
-#include "graph/load/graph_loader.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/manager/util/variable_accelerate_ctrl.h"
 #include "graph/optimize/graph_optimize.h"

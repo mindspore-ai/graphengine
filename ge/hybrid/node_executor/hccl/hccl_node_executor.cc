@@ -417,7 +417,7 @@ Status BuildGatherAllToAllParams(TaskContext &context, HcomGatherAllToAllVParams
   }
   params.recvtype = iter->second;
 
-  int64_t addr_len;
+  int64_t addr_len = 0;
   (void) ge::AttrUtils::GetInt(op_desc, "addr_length", addr_len);
   params.addrLength = static_cast<int>(addr_len);
 
@@ -460,6 +460,7 @@ Status AllToAllNodeTask::ExecuteAsync(TaskContext &context, std::function<void()
       return FAILED;
     }
     HcomGatherAllToAllVParams params;
+    params.group = nullptr;
     GE_CHK_STATUS_RET(BuildGatherAllToAllParams(context, params));
     HcclResult hccl_ret = HcomExecEnqueueGatherAllToAllV(params, callback);
     if (hccl_ret != HCCL_SUCCESS) {

@@ -381,3 +381,8 @@ INT32 mmGetPid()
 {
   return (INT32)getpid();
 }
+
+INT32 mmSetCurrentThreadName(const CHAR *name)
+{
+  return EN_OK;
+}

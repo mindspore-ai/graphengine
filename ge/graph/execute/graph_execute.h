@@ -38,6 +38,7 @@
 #include "graph/model.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/load/model_manager/davinci_model.h"
 
 namespace ge {
 class GraphExecutor {
@@ -147,6 +148,10 @@ class GraphExecutor {
 
   static Status SetCallback(uint32_t model_id, const GeRootModelPtr &ge_root_model,
                             const RunAsyncCallback &callback);
+
+  Status ModelSubscribe(uint32_t graph_id);
+
+  Status GetModelByID(uint32_t model_id, std::shared_ptr<DavinciModel> &davinci_model);
 
   bool init_flag_;
 

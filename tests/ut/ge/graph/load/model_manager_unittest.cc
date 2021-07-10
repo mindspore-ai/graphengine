@@ -26,6 +26,7 @@
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "graph/ops_stub.h"
+#include "common/profiling/profiling_manager.h"
 
 using namespace std;
 using namespace testing;
@@ -135,7 +136,8 @@ class UtestModelManagerModelManager : public testing::Test {
 class DModelListener : public ModelListener {
  public:
   DModelListener(){};
-  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode) { return 0; }
+  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index,
+                         uint32_t resultCode, std::vector<ge::Tensor> &outputs) { return 0; }
 };
 
 TEST_F(UtestModelManagerModelManager, case_is_need_hybrid_load) {
@@ -425,5 +427,31 @@ TEST_F(UtestModelManagerModelManager, test_launch_kernel_cust_aicpu) {
   EXPECT_FALSE(mm.cust_aicpu_so_.empty());
   EXPECT_EQ(mm.LaunchKernelCustAicpuSo("deleteCustOp"), SUCCESS);
   EXPECT_TRUE(mm.cust_aicpu_so_.empty());
+}
+
+shared_ptr<ModelListener> listerner(new DModelListener());
+TEST_F(UtestModelManagerModelManager, test_load_model_online) {
+  ModelManager mm;
+  uint32_t model_id = 1;
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, model_id, true);
+  Status ret = mm.LoadModelOnline(model_id, ge_root_model, listerner);
+  profiling_manager.CleanSubscribeInfo();
+}
+
+TEST_F(UtestModelManagerModelManager, command_profiling) {
+  ModelManager manager;
+  uint32_t model_id = 1;
+  Command cmd;
+  auto model = std::make_shared<DavinciModel>(1, listerner);
+  model->SetId(model_id);
+  cmd.cmd_params.push_back("modelId");
+  cmd.cmd_params.push_back(to_string(model_id));
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, model_id, true);
+  Status ret = manager.HandleProfModelUnsubscribeCommand(cmd);
+  profiling_manager.CleanSubscribeInfo();
 }
 }  // namespace ge

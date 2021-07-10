@@ -109,6 +109,7 @@
 #include "register/custom_pass_helper.h"
 #include "external/graph/types.h"
 #include "common/util/error_manager/error_manager.h"
+#include "common/profiling/profiling_manager.h"
 
 namespace {
 const char *const kSummary = "Summary";
@@ -462,6 +463,9 @@ Status GraphManager::AddGraph(const GraphId &graph_id, const Graph &graph,
                               const std::map<std::string, std::string> &options,
                               const OmgContext &omg_context) {
   IncreaseGraphCount(graph_id);
+  auto device_id = GetContext().DeviceId();
+  GELOGD("Device id is %u", device_id);
+  ProfilingManager::Instance().SetGraphIdToDeviceMap(graph_id, device_id);
   // validation for adding graphs of same graph_id in multi-thread secenario
   // 1.previous thread owns same graph_id has finished the AddGraph procession
   if (GetAddGraphCondition(graph_id) == kDoneAdded) {
@@ -1715,6 +1719,7 @@ Status GraphManager::ParseTrainGraphFlag(bool &train_flag) {
       train_flag = true;
     }
   }
+  domi::GetContext().train_flag = train_flag;
   GELOGI("Is train flag: %d.", train_flag);
   return SUCCESS;
 }

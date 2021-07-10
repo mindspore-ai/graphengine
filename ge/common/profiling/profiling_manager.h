@@ -62,6 +62,12 @@ struct DeviceSubsInfo {
   uint32_t subscribe_count;
 };
 
+struct ProfSubscribeInfo {
+  bool is_subscribe;
+  uint64_t prof_switch;
+  uint32_t graph_id;
+};
+
 struct MsprofCallback {
   MsprofCtrlCallback msprofCtrlCallback;
   MsprofReporterCallback msprofReporterCallback;
@@ -102,7 +108,15 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   void ReportData(const int32_t &device_id, const std::string &data, const std::string &tag_name);
   Status ProfileStepInfo(uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id);
   void SetStepInfoIndex(uint64_t index_id) { index_id_ = index_id; }
-  uint64_t GetStepInfoIndex() { return index_id_; }
+  uint64_t GetStepInfoIndex() const { return index_id_; }
+  void SetGraphIdToDeviceMap(uint32_t graph_id, uint32_t device_id) { device_id_map_[graph_id] = device_id; }
+  Status GetDeviceIdFromGraph(uint32_t graph_id, uint32_t &device_id);
+  void SetSubscribeInfo(uint64_t prof_switch, uint32_t model_id, bool is_subscribe);
+  const ProfSubscribeInfo &GetSubscribeInfo() const { return subscribe_info_; }
+  void CleanSubscribeInfo();
+  void SetGraphIdToModelMap(uint32_t graph_id, uint32_t model_id) { model_id_map_[graph_id] = model_id; }
+  Status GetModelIdFromGraph(uint32_t graph_id, uint32_t &model_id);
+
  private:
   Status InitFromOptions(const Options &options, MsprofGeOptions &prof_conf);
   Status ParseOptions(const std::string &options);
@@ -130,6 +144,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
   std::string bp_point_;
   uint32_t reporter_max_len_ = 0;
   uint64_t index_id_;
+  std::map<uint32_t, uint32_t> device_id_map_; // key: graph_id, value: device_id
+  std::map<uint32_t, uint32_t> model_id_map_; // key: graph_id, value: model_id
+  ProfSubscribeInfo subscribe_info_;
 };
 }  // namespace ge
 #endif  // GE_COMMON_PROFILING_PROFILING_MANAGER_H_

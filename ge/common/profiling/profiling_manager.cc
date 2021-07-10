@@ -66,10 +66,13 @@ const std::string kIdx = "idx";
 
 namespace ge {
 ProfilingManager::ProfilingManager()
-    : is_load_profiling_(false), is_execute_profiling_(false), is_training_trace_(false), subscribe_count_(0) {
-  prof_cb_.msprofCtrlCallback = nullptr;
-  prof_cb_.msprofReporterCallback = nullptr;
-  index_id_ = UINT64_MAX;
+    : is_load_profiling_(false),
+      is_execute_profiling_(false),
+      is_training_trace_(false),
+      subscribe_count_(0),
+      prof_cb_({nullptr, nullptr}),
+      index_id_(UINT64_MAX),
+      subscribe_info_({false, 0, 0}) {
 }
 
 ProfilingManager::~ProfilingManager() {}
@@ -610,6 +613,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   // profiling plugin uninit
   PluginUnInit();
 
+  CleanSubscribeInfo();
+
   int32_t dev_num = -1;
   rtError_t rt_ret = rtProfilerStop(PROF_MODEL_LOAD_MASK, dev_num, nullptr);
   if (rt_ret != RT_ERROR_NONE) {
@@ -632,6 +637,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFi
   }
   device_id_module_map_.clear();
   device_id_.clear();
+  device_id_map_.clear();
+  model_id_map_.clear();
   GELOGI("Prof finalize success.");
 #endif
   return SUCCESS;
@@ -1057,4 +1064,40 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   return;
 }
 
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::GetDeviceIdFromGraph(
+    uint32_t graph_id, uint32_t &device_id) {
+  auto iter = device_id_map_.find(graph_id);
+  if (iter != device_id_map_.end()) {
+    device_id = iter->second;
+    return SUCCESS;
+  }
+  REPORT_CALL_ERROR("E19999", "graph_id:%u does not exist!", graph_id);
+  GELOGE(PARAM_INVALID, "[Check][GraphId]graph_id:%u does not exist!", graph_id);
+  return FAILED;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::SetSubscribeInfo(
+    uint64_t prof_switch, uint32_t model_id, bool is_subscribe) {
+  subscribe_info_.is_subscribe = is_subscribe;
+  subscribe_info_.prof_switch = prof_switch;
+  subscribe_info_.graph_id = model_id;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::CleanSubscribeInfo() {
+  subscribe_info_.is_subscribe = false;
+  subscribe_info_.prof_switch = 0;
+  subscribe_info_.graph_id = 0;
+}
+
+FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::GetModelIdFromGraph(
+    uint32_t graph_id, uint32_t &model_id) {
+  auto iter = model_id_map_.find(graph_id);
+  if (iter != model_id_map_.end()) {
+    model_id = iter->second;
+    return SUCCESS;
+  }
+  REPORT_CALL_ERROR("E19999", "graph_id:%u does not exist!", graph_id);
+  GELOGE(PARAM_INVALID, "[Check][GraphId]graph_id:%u does not exist!", graph_id);
+  return FAILED;
+}
 }  // namespace ge

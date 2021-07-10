@@ -368,7 +368,17 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
   } while (0);
-
+  auto &profiling_manager = ProfilingManager::Instance();
+  const auto &subcribe_info = profiling_manager.GetSubscribeInfo();
+  if (subcribe_info.is_subscribe) {
+    auto graph_id = davinci_model->GetRuntimeParam().graph_id;
+    if(subcribe_info.graph_id == graph_id) {
+      profiling_manager.SetGraphIdToModelMap(graph_id, model_id);
+    }
+    else {
+      GELOGW("graph_id:%u is not in subcribe info.", graph_id);
+    }
+  }
   return ret;
 }
 
@@ -758,12 +768,15 @@ Status ModelManager::HandleProfModelUnsubscribeCommand(const Command &command) {
   if (ret != SUCCESS) {
     return ret;
   }
-
-  if (ProfilingManager::Instance().ProfModelUnsubscribe(static_cast<void *>(davinci_model.get())) != SUCCESS) {
+  auto &profiling_manager = ProfilingManager::Instance();
+  if (profiling_manager.ProfModelUnsubscribe(static_cast<void *>(davinci_model.get())) != SUCCESS) {
     GELOGE(FAILED, "[Handle][ProfModelUnsubscribe] failed.");
     return FAILED;
   }
-
+  auto is_subscribe = profiling_manager.GetSubscribeInfo().is_subscribe;
+  if (is_subscribe) {
+    profiling_manager.CleanSubscribeInfo();
+  }
   return SUCCESS;
 }
 
@@ -1826,5 +1839,4 @@ Status ModelManager::CheckAicpuOpList(GeModelPtr ge_model) {
                     "[Call][LaunchKernelCheckAicpuOp] failed.");
   return SUCCESS;
 }
-
 }  // namespace ge

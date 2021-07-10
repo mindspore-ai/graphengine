@@ -66,6 +66,9 @@ TEST_F(UtestStreamResource, test_build_op) {
   res.op_map_[0].reset(single_op);
   res.dynamic_op_map_[1].reset(dynamic_single_op);
 
+  ThreadPool *thread_pool = nullptr;
+  EXPECT_EQ(res.GetThreadPool(&thread_pool), SUCCESS);
+
   EXPECT_EQ(res.GetOperator(0), nullptr);
   EXPECT_EQ(res.GetDynamicOperator(1), nullptr);
   EXPECT_EQ(res.BuildOperator(model_data, &single_op, 0), SUCCESS);

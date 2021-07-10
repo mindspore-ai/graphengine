@@ -713,7 +713,9 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
                                                                                          device_id,
                                                                                          resource.GetStream()));
     GE_CHECK_NOTNULL(single_op.hybrid_model_executor_);
-    GE_CHK_STATUS_RET(single_op.hybrid_model_executor_->Init(), "[Init][HybridModelExecutor]Failed.");
+    ThreadPool *thread_pool = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(resource.GetThreadPool(&thread_pool));
+    GE_CHK_STATUS_RET(single_op.hybrid_model_executor_->Init(thread_pool), "[Init][HybridModelExecutor]Failed.");
     return SUCCESS;
   }
   return BuildTaskListForDynamicOp(&resource, single_op);

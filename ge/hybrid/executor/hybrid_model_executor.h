@@ -39,7 +39,7 @@ class HybridModelExecutor {
 
   ~HybridModelExecutor();
 
-  Status Init();
+  Status Init(ThreadPool *thread_pool = nullptr);
 
   const GraphExecutionContext* GetContext() const {
     return &context_;

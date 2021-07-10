@@ -28,20 +28,30 @@ constexpr int kDefaultQueueSize = 16;
 constexpr int kDataInputIndex = 0;
 }
 
-SubgraphExecutor::SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape)
+SubgraphExecutor::SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape,
+                                   ThreadPool *pre_run_pool)
     : graph_item_(graph_item),
       context_(context),
       force_infer_shape_(force_infer_shape),
-      pre_run_pool_(kDefaultThreadNum),
+      pre_run_pool_(pre_run_pool),
+      own_thread_pool_(false),
       ready_queue_(kDefaultQueueSize) {
 }
 
 SubgraphExecutor::~SubgraphExecutor() {
+  if (own_thread_pool_ && pre_run_pool_ != nullptr) {
+    delete pre_run_pool_;
+  }
   GELOGD("[%s] SubgraphExecutor destroyed.", graph_item_->GetName().c_str());
 }
 
 Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                               const std::vector<ConstGeTensorDescPtr> &input_desc) {
+  if (pre_run_pool_ == nullptr) {
+    pre_run_pool_ = new (std::nothrow) ThreadPool(kDefaultThreadNum);
+    GE_CHECK_NOTNULL(pre_run_pool_);
+    own_thread_pool_ = true;
+  }
   subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_, context_));
   GE_CHECK_NOTNULL(subgraph_context_);
   GE_CHK_STATUS_RET(subgraph_context_->Init(),
@@ -254,7 +264,8 @@ Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
 
   // only do shape inference and compilation for nodes with dynamic shapes.
   if (node_item.is_dynamic) {
-    auto prepare_future = pre_run_pool_.commit([this, p_node_state]() -> Status {
+    GE_CHECK_NOTNULL(pre_run_pool_);
+    auto prepare_future = pre_run_pool_->commit([this, p_node_state]() -> Status {
       GetContext().SetSessionId(context_->session_id);
       GetContext().SetContextId(context_->context_id);
       GE_CHK_STATUS_RET_NOLOG(InferShape(shape_inference_engine_.get(), *p_node_state));
@@ -349,7 +360,8 @@ Status SubgraphExecutor::NodeScheduled(NodeState *node_state) {
          node_state->GetNodeItem()->data_send_.size(), node_state->GetNodeItem()->ctrl_send_.size(),
          node_state->GetSwitchIndex(), node_state->GetMergeIndex());
 
-  auto future = pre_run_pool_.commit([this, node_state]() -> Status {
+  GE_CHECK_NOTNULL(pre_run_pool_);
+  auto future = pre_run_pool_->commit([this, node_state]() -> Status {
     RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] Start");
     std::function<void(const NodeItem *)> callback = [&](const NodeItem *node_item) {
       const auto &node_name = node_item->node_name;

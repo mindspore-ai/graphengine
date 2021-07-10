@@ -35,10 +35,11 @@ HybridModelExecutor::HybridModelExecutor(HybridModel *model, uint32_t device_id,
 HybridModelExecutor::~HybridModelExecutor() {
 }
 
-Status HybridModelExecutor::Init() {
+Status HybridModelExecutor::Init(ThreadPool *thread_pool) {
   GELOGD("Start to init HybridGraphEngine.");
   GE_CHK_STATUS_RET_NOLOG(InitExecutionContext());
-  root_graph_executor_.reset(new (std::nothrow) SubgraphExecutor(model_->GetRootGraphItem(), &context_));
+  root_graph_executor_.reset(
+    new (std::nothrow) SubgraphExecutor(model_->GetRootGraphItem(), &context_, false, thread_pool));
   GE_CHECK_NOTNULL(root_graph_executor_);
   GELOGD("HybridGraphEngine initialized successfully.");
   return SUCCESS;

@@ -33,7 +33,8 @@ namespace hybrid {
 // Executor for executing a subgraph
 class SubgraphExecutor {
  public:
-  SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape = false);
+  SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape = false,
+                   ThreadPool *pre_run_pool = nullptr);
   ~SubgraphExecutor();
 
   Status InitForPartialExecution(const std::vector<TensorValue> &inputs,
@@ -124,7 +125,8 @@ class SubgraphExecutor {
   GraphExecutionContext *context_;
   std::unique_ptr<SubgraphContext> subgraph_context_;
   bool force_infer_shape_;
-  ThreadPool pre_run_pool_;
+  ThreadPool *pre_run_pool_;
+  bool own_thread_pool_;
   BlockingQueue<NodeState *> ready_queue_;
   std::unique_ptr<ShapeInferenceEngine> shape_inference_engine_;
 

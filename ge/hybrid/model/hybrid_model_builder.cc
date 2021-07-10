@@ -588,7 +588,10 @@ Status HybridModelBuilder::MergeInputNodes(ComputeGraph &graph) {
       for (auto &peer_in_data_anchor : out_data_anchor->GetPeerInDataAnchors()) {
         auto dst_node = peer_in_data_anchor->GetOwnerNode();
         GE_CHECK_NOTNULL(dst_node);
-        root_nodes.emplace(dst_node);
+        const auto in_nodes = dst_node->GetInDataNodes();
+        if (std::all_of(in_nodes.begin(), in_nodes.end(), [](const NodePtr &n) { return n->GetType() == DATA; })) {
+          root_nodes.emplace(dst_node);
+        }
         GE_CHK_STATUS_RET_NOLOG(DoUnlinkDataAnchors(out_data_anchor, peer_in_data_anchor));
         GE_CHK_STATUS_RET_NOLOG(DoLinkDataAnchors(src_out_anchor, peer_in_data_anchor));
       }

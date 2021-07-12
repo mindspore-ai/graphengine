@@ -16,7 +16,6 @@
 
 #include "engine_manager/dnnengine_manager.h"
 
-#include <unistd.h>
 #include <cstdio>
 #include <fstream>
 #include <map>

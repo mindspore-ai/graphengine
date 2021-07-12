@@ -85,8 +85,16 @@ graphStatus InferValueRangePass::Infer(NodePtr &node) {
     return GRAPH_SUCCESS;
   }
 
-  // if input value range has -1, cpu kernel cannot calculate correctly, so set {1:-1}
-  if (InputHasUnknownValueRange(node)) {
+  // Deal with scenes with unknown value range
+  bool has_unknown_value_range = false;
+  bool has_zero_in_value_range = false;
+  CheckInputValueRange(node, has_unknown_value_range, has_zero_in_value_range);
+  if (has_unknown_value_range) {
+    if (has_zero_in_value_range) {
+      // When there is zero in input value range, it is unreasonable to always set output value range {1:-1}.
+      GELOGW("Node %s has -1 and 0 in value range, skip setting value range.", node->GetName().c_str());
+      return GRAPH_NOT_CHANGED;
+    }
     GELOGI("Node %s has unknown value range in input tensors, set value range {1:-1}, and skip cpu kernel.",
            node->GetName().c_str());
     return GenerateWorstValueRange(node);
@@ -188,14 +196,21 @@ bool InferValueRangePass::InputIsConstOrHasValueRange(const NodePtr &node) const
   return input_is_const_or_has_value_range;
 }
 
-bool InferValueRangePass::InputHasUnknownValueRange(const NodePtr &node) const {
-  bool has_unknown_value_range = false;
+void InferValueRangePass::CheckInputValueRange(const NodePtr &node, bool &has_unknown_value_range,
+                                               bool &has_zero_in_value_range) const {
+  has_unknown_value_range = false;
+  has_zero_in_value_range = false;
   auto cur_op_desc = node->GetOpDesc();
   for (const auto &input_desc : cur_op_desc->GetAllInputsDescPtr()) {
     std::vector<std::pair<int64_t, int64_t>> input_desc_value_range;
     input_desc->GetValueRange(input_desc_value_range);
     if (!input_desc_value_range.empty()) {
       for (const auto &range : input_desc_value_range) {
+        if (range.first == 0 || range.second == 0) {
+          GELOGD("Node %s input tensors have zero in value range %s.", node->GetName().c_str(),
+                 formats::RangeToString(input_desc_value_range).c_str());
+          has_zero_in_value_range = true;
+        }
         if (range.first == -1 || range.second == -1) {
           GELOGD("Node %s input tensors have unknown value range, value range is %s.", node->GetName().c_str(),
                  formats::RangeToString(input_desc_value_range).c_str());
@@ -204,7 +219,6 @@ bool InferValueRangePass::InputHasUnknownValueRange(const NodePtr &node) const {
       }
     }
   }
-  return has_unknown_value_range;
 }
 
 graphStatus InferValueRangePass::UpdateTensorDesc(const GeTensorDescPtr &src, GeTensorDescPtr &dst, bool &changed) {

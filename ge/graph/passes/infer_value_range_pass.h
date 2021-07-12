@@ -34,7 +34,7 @@ class InferValueRangePass : public InferBasePass {
 
   bool InputIsDynamic(const NodePtr &node) const;
   bool InputIsConstOrHasValueRange(const NodePtr &node) const;
-  bool InputHasUnknownValueRange(const NodePtr &node) const;
+  void CheckInputValueRange(const NodePtr &node, bool &has_unknown_value_range, bool &has_zero_in_value_range) const;
   graphStatus GenerateWorstValueRange(NodePtr &node);
   template <typename T>
   graphStatus ConstructData(const GeTensorDesc &tensor_desc, bool use_floor_value, GeTensorPtr &output_ptr);

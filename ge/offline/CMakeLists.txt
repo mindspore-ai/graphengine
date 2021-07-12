@@ -62,7 +62,8 @@ target_link_libraries(atc_atc.bin PRIVATE
     parser_common
     gflags
     json
-    runtime_compile
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime>>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:$<BUILD_INTERFACE:runtime_compile>>
     slog
     static_mmpa
     -lrt

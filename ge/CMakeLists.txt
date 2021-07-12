@@ -786,12 +786,12 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/../abl/licctrl
     ${GE_CODE_DIR}/../ace/comop/inc
     ${GE_CODE_DIR}/../ace/comop/inc/external
-    #### blue zone
+    #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info>
 )
 
 target_link_options(ge_runner PRIVATE
@@ -800,6 +800,11 @@ target_link_options(ge_runner PRIVATE
 
 target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
     adump_server
     static_mmpa
     ge_proto_common
@@ -869,9 +874,9 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info>
 )
 
 target_link_options(ge_compiler PRIVATE
@@ -880,6 +885,11 @@ target_link_options(ge_compiler PRIVATE
 
 target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
     static_mmpa
     ge_proto_common
     -Wl,--no-as-needed
@@ -890,7 +900,8 @@ target_link_libraries(ge_compiler PRIVATE
     c_sec
     error_manager
     slog
-    runtime_compile
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime>>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:$<BUILD_INTERFACE:runtime_compile>>
     opt_feature
     -Wl,--as-needed
     json

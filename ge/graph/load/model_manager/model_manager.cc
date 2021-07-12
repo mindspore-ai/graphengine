@@ -1792,7 +1792,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
       std::vector<char> op_name;
       op_name.clear();
       op_name.resize(kOpNameMaxSize);
-      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen, reinterpret_cast<void *>(aicpu_info.opType),
+      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen,
+                         reinterpret_cast<void *>(static_cast<uintptr_t>(aicpu_info.opType)),
                          aicpu_info.opLen, RT_MEMCPY_DEVICE_TO_HOST));
       std::string kernel_type =
           (static_cast<OpKernelType>(aicpu_info.kernelsType) == TF_KERNEL) ? "TF_KERNEL" : "CPU_KERNEL";

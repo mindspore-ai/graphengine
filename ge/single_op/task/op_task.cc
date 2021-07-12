@@ -746,16 +746,24 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
     GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), ACL_ERROR_GE_PARAM_INVALID,
         "[Check][Size] Input size is %zu, but get non_const_index is %zu", inputs.size(), non_const_index);
     auto addr = inputs[non_const_index].data;
-    GE_CHECK_NOTNULL(addr);
-    GELOGD("AICpuTask input[%zu] addr = %p", input_index, addr);
+    uint64_t length = inputs[non_const_index].length;
+    if (length != 0 && addr == nullptr) {
+      GELOGE(PARAM_INVALID, "[Check][Addr]AiCpuTask input[%zu] addr is nullptr, length = %lu", input_index, length);
+      return PARAM_INVALID;
+    }
+    GELOGD("AICpuTask input[%zu] addr = %p, length = %lu.", input_index, addr, length);
     *arg_base++ = reinterpret_cast<uintptr_t>(addr);
     non_const_index++;
   }
 
   for (size_t i = 0; i < outputs.size(); ++i) {
     auto addr = outputs[i].data;
-    GE_CHECK_NOTNULL(addr);
-    GELOGD("AICpuTask output[%zu] addr = %p", i, addr);
+    uint64_t length = outputs[i].length;
+    if (length != 0 && addr == nullptr) {
+      GELOGE(PARAM_INVALID, "[Check][Addr]AiCpuTask output[%zu] addr is nullptr, length = %lu", i, length);
+      return PARAM_INVALID;
+    }
+    GELOGD("AICpuTask output[%zu] addr = %p, length = %lu.", i, addr, length);
     *arg_base++ = reinterpret_cast<uintptr_t>(addr);
   }
 

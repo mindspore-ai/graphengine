@@ -189,3 +189,51 @@ TEST_F(UtestSingleOpTask, test_atomic_exec) {
   optiling::utils::OpRunInfo run_info(0, true, 0);
   task.CalcTilingInfo(run_info);
 }
+
+TEST_F(UtestSingleOpTask, test_aicpu_task_update_io_addr) {
+  AiCpuCCTask task;
+  task.num_inputs_ = 2;
+  task.num_outputs_ = 1;
+  task.input_is_const_ = {true, false};
+  int total_addr = 3;
+  uint32_t* addrs[total_addr] = {nullptr, nullptr, nullptr};
+  task.io_addr_ = reinterpret_cast<uintptr_t*>(addrs);
+  task.io_addr_num_ = total_addr;
+
+  {
+    vector<DataBuffer> inputs(1, DataBuffer());
+    vector<DataBuffer> outputs(1, DataBuffer());
+    auto ret = task.UpdateIoAddr(inputs, outputs);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(addrs[0], nullptr);
+    ASSERT_EQ(addrs[1], nullptr);
+    ASSERT_EQ(addrs[2], nullptr);
+  }
+
+  {
+    uint32_t data_buf[2];
+    vector<DataBuffer> inputs{DataBuffer(&data_buf[0], 4, false)};
+    vector<DataBuffer> outputs{DataBuffer(&data_buf[1], 4, false)};
+    auto ret = task.UpdateIoAddr(inputs, outputs);
+    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_EQ(addrs[0], nullptr);
+    ASSERT_EQ(addrs[1], &data_buf[0]);
+    ASSERT_EQ(addrs[2], &data_buf[1]);
+  }
+
+  {
+    uint32_t data_buf[2];
+    vector<DataBuffer> inputs{DataBuffer(nullptr, 4, false)};
+    vector<DataBuffer> outputs{DataBuffer(&data_buf[1], 4, false)};
+    auto ret = task.UpdateIoAddr(inputs, outputs);
+    ASSERT_EQ(ret, PARAM_INVALID);
+  }
+
+  {
+    uint32_t data_buf[2];
+    vector<DataBuffer> inputs{DataBuffer(&data_buf[0], 4, false)};
+    vector<DataBuffer> outputs{DataBuffer(nullptr, 4, false)};
+    auto ret = task.UpdateIoAddr(inputs, outputs);
+    ASSERT_EQ(ret, PARAM_INVALID);
+  }
+}

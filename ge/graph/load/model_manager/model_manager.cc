@@ -372,7 +372,7 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
   const auto &subcribe_info = profiling_manager.GetSubscribeInfo();
   if (subcribe_info.is_subscribe) {
     auto graph_id = davinci_model->GetRuntimeParam().graph_id;
-    if(subcribe_info.graph_id == graph_id) {
+    if (subcribe_info.graph_id == graph_id) {
       profiling_manager.SetGraphIdToModelMap(graph_id, model_id);
     }
     else {

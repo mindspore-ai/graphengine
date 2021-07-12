@@ -50,6 +50,22 @@ const std::map<ProfCommandHandleType, std::string> kProfCommandTypeMap = {
 const uint64_t kModelId = ge::INVALID_MODEL_ID;
 const uint16_t kStepStart = 0;
 const uint16_t kStepEnd = 1;
+
+ge::Status NeedUnsubscribe(ProfCommandHandleType type, bool is_subscribe,
+                           uint32_t graph_id, vector<string> &prof_params) {
+  if (type == kProfCommandhandleModelUnsubscribe && is_subscribe) {
+    prof_params.clear();
+    prof_params.emplace_back(kPofilingModelId);
+    uint32_t model_id = 0;
+    auto ret = ge::ProfilingManager::Instance().GetModelIdFromGraph(graph_id, model_id);
+    if (ret != ge::SUCCESS) {
+      GELOGE(ret, "graph_id:%u not not found", graph_id);
+      return ret;
+    }
+    prof_params.emplace_back(std::to_string(model_id));
+  }
+  return ge::SUCCESS;
+}
 }  // namespace
 
 bool TransProfConfigToParam(const ProfCommandHandleData &profCommand, vector<string> &prof_config_params) {
@@ -205,23 +221,16 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
     return ge::SUCCESS;
   }
   auto is_subscribe = profiling_manager.GetSubscribeInfo().is_subscribe;
-  if (type == kProfCommandhandleModelUnsubscribe && is_subscribe) {
-    prof_params.clear();
-    prof_params.emplace_back(kPofilingModelId);
-    uint32_t model_id = 0;
-    // GraphId is actually stored in prof_config_param
-    uint32_t graph_id = prof_config_param->modelId;
-    auto ret = profiling_manager.GetModelIdFromGraph(graph_id, model_id);
-    if (ret != ge::SUCCESS) {
-      GELOGE(ret, "graph_id:%u not not found", graph_id);
-      REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"value", "parameter", "reason"}),
-                         std::vector<std::string>({std::to_string(graph_id),
-                                                   "GraphToModelMap",
-                                                   "graph_id does not exist!"}));
-      return ge::FAILED;
-    }
-
-    prof_params.emplace_back(std::to_string(model_id));
+  // GraphId is actually stored in prof_config_param
+  auto graph_id = prof_config_param->modelId;
+  ge::Status ret = NeedUnsubscribe(type, is_subscribe, graph_id, prof_params);
+  if (ret != ge::SUCCESS) {
+    GELOGE(ret, "graph_id:%u not not found", graph_id);
+    REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"value", "parameter", "reason"}),
+                       std::vector<std::string>({std::to_string(graph_id),
+                                                 "GraphToModelMap",
+                                                 "graph_id does not exist!"}));
+    return ge::FAILED;
   }
   ge::GraphLoader graph_loader;
   ge::Command command;
@@ -236,7 +245,7 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   if (type == kProfCommandhandleStart || type == kProfCommandhandleStop) {
     GELOGI("Profiling device nums:%s , deviceID:[%s]", prof_params[0].c_str(), prof_params[kDeviceListIndex].c_str());
   }
-  ge::Status ret = graph_loader.CommandHandle(command);
+  ret = graph_loader.CommandHandle(command);
   if (ret != ge::SUCCESS) {
     GELOGE(ret, "[Handle][Command]Handle profiling command failed, command type %s, error_code %u",
            iter->second.c_str(), ret);

@@ -786,6 +786,9 @@ target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/../abl/licctrl
     ${GE_CODE_DIR}/../ace/comop/inc
     ${GE_CODE_DIR}/../ace/comop/inc/external
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:runtime_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:cce_headers,INTERFACE_INCLUDE_DIRECTORIES>>
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
@@ -872,6 +875,9 @@ target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/../abl/licctrl
     ${GE_CODE_DIR}/../ace/comop/inc
     ${GE_CODE_DIR}/../ace/comop/inc/external
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:runtime_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:cce_headers,INTERFACE_INCLUDE_DIRECTORIES>>
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include

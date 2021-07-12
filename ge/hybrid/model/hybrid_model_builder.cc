@@ -900,6 +900,7 @@ Status HybridModelBuilder::LoadGraph() {
     GE_CHECK_NOTNULL(node_item);
     AscendString graph_name;
     GE_CHK_GRAPH_STATUS_RET(it.second->GetGraph().GetName(graph_name), "Failed to get subgraph name");
+    GE_CHECK_NOTNULL(graph_name.GetString());
     auto subgraph = hybrid_model_.GetRootGraph()->GetSubgraph(graph_name.GetString());
     GE_CHECK_NOTNULL(subgraph);
     GE_CHK_STATUS_RET(IdentifyVariableOutputs(*node_item, subgraph),
@@ -967,6 +968,7 @@ Status HybridModelBuilder::HandleDtString(const GeTensor &tensor, void *var_addr
 
     auto &mutable_tensor = const_cast<GeTensor &>(tensor);
     uint64_t *buff = reinterpret_cast<uint64_t *>(mutable_tensor.MutableData().data());
+    GE_CHECK_NOTNULL(buff);
     GE_CHK_BOOL_RET_STATUS(ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) == SUCCESS, FAILED,
                            "[Invoke][CheckInt64Uint32MulOverflow] failed because Shape size is invalid.");
     auto offset = static_cast<uint64_t>(elem_num * kBytes * kStringHeadElems);

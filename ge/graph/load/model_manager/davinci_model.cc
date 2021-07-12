@@ -3683,6 +3683,7 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
       elem_num = 1;
     }
     uint64_t *buff = reinterpret_cast<uint64_t *>(tensor->MutableData().data());
+    GE_CHECK_NOTNULL(buff);
     if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) != SUCCESS) {
       GELOGE(FAILED, "[Call][CheckInt64Uint32MulOverflow] Shape size:%ld is invalid", elem_num);
       return FAILED;

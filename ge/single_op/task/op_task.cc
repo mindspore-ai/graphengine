@@ -57,7 +57,7 @@ Status OpTask::OpenDump(rtStream_t stream) {
     size_t arg_num = 0;
     GetIoAddr(arg_base, arg_num);
     if (arg_num < input_size + output_size) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, 
+      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
           "[Check][Size]io_addrs_for_dump_ size %zu is not equal input and output size %zu",
           arg_num, input_size + output_size);
       REPORT_INNER_ERROR("E19999", "io_addrs_for_dump_ size %zu is not equal input and output size %zu",
@@ -149,7 +149,7 @@ Status OpTask::DoUpdateArgTable(const SingleOpModelParam &param, bool keep_works
   size_t arg_num = 0;
   GetIoAddr(arg_base, arg_num);
   if (arg_num < all_addresses.size()) {
-    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, 
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR,
         "[Check][Size][%s] arg number mismatches, expect at least = %zu, but got = %zu.",
         op_desc_->GetName().c_str(), all_addresses.size(), arg_num);
     REPORT_INNER_ERROR("E19999", "%s arg number mismatches, expect at least = %zu, but got = %zu.",
@@ -443,7 +443,7 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   Status ret = aicpu_ext_handle_->Parse(kernel_ext_info);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Parse][Param:kernel_ext_info] failed, kernel_ext_info_size=%zu.", kernel_ext_info.size());
-    REPORT_INNER_ERROR("E19999", 
+    REPORT_INNER_ERROR("E19999",
         "Parse Param:kernel_ext_info failed, kernel_ext_info_size=%zu.", kernel_ext_info.size());
     return ret;
   }
@@ -512,12 +512,12 @@ Status AiCpuBaseTask::UpdateExtInfo(const std::vector<GeTensorDesc> &input_desc,
 
   if (unknown_type_ != DEPEND_COMPUTE) {
     for (size_t j = 0; j < num_outputs_; ++j) {
-      GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]), 
+      GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateOutputShapeAndType(j, output_desc[j]),
           "[Update][OutputShapeAndType] failed, Output:%zu.", j);
       if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
         GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(j, output_desc[j]),
                           "AiCpuTask Update [%zu]th output desc failed.",j);
-    }                  
+    }
     }
   }
 
@@ -546,7 +546,7 @@ Status AiCpuBaseTask::UpdateOutputShape(vector<GeTensorDesc> &output_desc) {
     GeShape shape;
     DataType data_type;
     aicpu_ext_handle_->GetOutputShapeAndType(i, shape, data_type);
-    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]), 
+    GE_CHK_STATUS_RET(UpdateShapeToOutputDesc(shape, output_desc[i]),
         "[Update][ShapeToOutputDesc] failed, output:%zu.", i);
     if (DumpManager::GetInstance().GetDumpProperties(kInferSessionId).IsSingleOpNeedDump()) {
       GE_CHK_STATUS_RET(op_desc_->UpdateOutputDesc(i, output_desc[i]), "[Update][OutputDesc] failed, output:%zu.", i);

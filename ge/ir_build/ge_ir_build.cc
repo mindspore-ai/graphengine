@@ -866,6 +866,7 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
 graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<TensorDesc> &inputs,
                                  const vector<TensorDesc> &outputs, Graph &graph) {
   ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
+  GE_CHECK_NOTNULL(op_type.GetString());
   auto op_type_str = std::string(op_type.GetString());
   auto op_name = op_type_str + "_" + std::to_string(ge::GetCurrentTimestamp());
   auto op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type_str);

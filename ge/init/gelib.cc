@@ -16,7 +16,6 @@
 
 #include "init/gelib.h"
 
-#include <dlfcn.h>
 #include <cstdlib>
 #include <mutex>
 #include <set>

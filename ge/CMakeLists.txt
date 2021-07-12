@@ -109,7 +109,7 @@ endif ()
 
 ##################################################################
 set(EXECUTOR_SRC_LIST
-    #"analyzer/analyzer.cc"
+    "analyzer/analyzer.cc"
     #"client/ge_api.cc"
     "common/dump/dump_manager.cc"
     "common/dump/dump_op.cc"
@@ -141,7 +141,7 @@ set(EXECUTOR_SRC_LIST
     "common/profiling/ge_profiling.cc"
     #"common/profiling/ge_runner_profiling.cc"
     "common/profiling/profiling_manager.cc"
-    #"engine_manager/dnnengine_manager.cc"
+    "engine_manager/dnnengine_manager.cc"
     "executor/ge_executor.cc"
     "ge_local_engine/engine/host_cpu_engine.cc"
     #"ge_opt_info/ge_opt_info.cc"
@@ -401,7 +401,7 @@ set(EXECUTOR_SRC_LIST
     "hybrid/node_executor/aicore/aicore_node_executor.cc"
     "hybrid/node_executor/aicore/aicore_op_task.cc"
     "hybrid/node_executor/aicore/aicore_task_builder.cc"
-    #"hybrid/node_executor/aicore/aicore_task_compiler.cc"
+    "hybrid/node_executor/aicore/aicore_task_compiler.cc"
     "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
     "hybrid/node_executor/aicpu/aicpu_node_executor.cc"
     "hybrid/node_executor/compiledsubgraph/known_node_executor.cc"
@@ -415,7 +415,7 @@ set(EXECUTOR_SRC_LIST
     "hybrid/node_executor/rts/rts_node_task.cc"
     "hybrid/node_executor/rts/rts_task_factory.cc"
     "hybrid/node_executor/task_context.cc"
-    #"init/gelib.cc"
+    "init/gelib.cc"
     #"ir_build/attr_options/keep_dtype_option.cc"
     #"ir_build/attr_options/utils.cc"
     #"ir_build/attr_options/weight_compress_option.cc"
@@ -424,7 +424,7 @@ set(EXECUTOR_SRC_LIST
     "model/ge_model.cc"
     "model/ge_root_model.cc"
     "opskernel_manager/ops_kernel_builder_manager.cc"
-    #"opskernel_manager/ops_kernel_manager.cc"
+    "opskernel_manager/ops_kernel_manager.cc"
     #"session/inner_session.cc"
     #"session/session_manager.cc"
     "single_op/single_op.cc"
@@ -445,7 +445,7 @@ set(COMPILER_SRC_LIST
     "common/dump/dump_manager.cc"
     "common/dump/dump_op.cc"
     "common/dump/dump_properties.cc"
-    "common/dump/dump_server.cc"
+    #"common/dump/dump_server.cc"
     "common/dump/exception_dumper.cc"
     "common/dump/opdebug_register.cc"
     "common/formats/format_transfers/datatype_transfer.cc"
@@ -828,6 +828,7 @@ target_link_libraries(ge_runner PRIVATE
 
 ############ libge_compiler.so ############
 add_library(ge_compiler SHARED
+    "common/dump/dump_server.cc"
     "hybrid/hybrid_davinci_model_stub.cc"
     ${COMPILER_SRC_LIST}
 )
@@ -962,6 +963,7 @@ target_link_libraries(ge_executor PRIVATE
     $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
     $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
     json
+    ge_proto_client
     ascend_protobuf_static
     c_sec
     $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
@@ -1024,6 +1026,7 @@ target_link_libraries(ge_executor_shared PRIVATE
     $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
     -Wl,--no-as-needed
     ge_common
+    ge_proto_client
     runtime
     slog
     graph

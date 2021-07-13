@@ -440,9 +440,10 @@ Status KernelTaskInfo::Distribute() {
     }
     GELOGI("distribute task info kernel_type %d, flag %d", kernel_type_, dump_flag_);
     // blockDim is reserved parameter, set to 1
-    rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name_.c_str()),
-                                       reinterpret_cast<const void *>(kernel_name_.c_str()), 1, args_, args_size_,
-                                       nullptr, stream_, dump_flag_);
+    std::string op_name = op_desc_->GetName();
+    rtKernelLaunchNames_t launch_name = {so_name_.c_str(), kernel_name_.c_str(), op_name.c_str()};
+    rt_ret = rtAicpuKernelLaunchWithFlag(&launch_name, 1, args_, args_size_,
+                                         nullptr, stream_, dump_flag_);
     call_save_dump_ = true;
   } else {
     /* default: not skt launch */

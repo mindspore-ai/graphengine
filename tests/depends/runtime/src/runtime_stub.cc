@@ -460,6 +460,21 @@ rtError_t rtDebugUnRegisterForStream(rtStream_t stream) {
 rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream) {
   return RT_ERROR_NONE;
 }
+
+rtError_t rtKernelLaunchFwk(const char *opName, void *args, uint32_t argSize, uint32_t flags, rtStream_t rtStream) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim, const void *args,
+                                      uint32_t argSize, rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim, const void *args,
+                              uint32_t argSize, rtSmDesc_t *smDesc, rtStream_t stream) {
+  return RT_ERROR_NONE;
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -25,7 +25,7 @@
 #include "graph/node.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/model/node_item.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 
 namespace ge {
 class VarManager;

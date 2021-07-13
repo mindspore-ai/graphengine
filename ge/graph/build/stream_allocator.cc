@@ -22,7 +22,7 @@
 #include "framework/common/fmk_error_codes.h"
 #include "framework/common/types.h"
 #include "graph/build/logical_stream_allocator.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/utils/graph_utils.h"

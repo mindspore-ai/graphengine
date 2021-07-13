@@ -18,8 +18,8 @@
 
 #include "graph/ge_context.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/common/ge_call_wrapper.h"
-#include "graph/common/local_context.h"
+#include "common/ge_call_wrapper.h"
+#include "common/local_context.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/utils/tensor_adapter.h"
 #include "graph/load/graph_loader.h"

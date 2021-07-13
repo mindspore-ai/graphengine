@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#include "graph/common/bcast.h"
+#include "common/bcast.h"
 
 #include <vector>
 
 #include "common/math_util.h"
-#include "framework/common/util.h"
+#include "common/util.h"
 
 using domi::Status;
 

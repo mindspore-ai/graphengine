@@ -73,7 +73,7 @@ struct MsprofCallback {
   MsprofReporterCallback msprofReporterCallback;
 };
 
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager {
+class ProfilingManager {
  public:
   ProfilingManager();
   virtual ~ProfilingManager();

@@ -22,7 +22,7 @@
 
 #include "inc/pass_manager.h"
 #include "graph/utils/tensor_utils.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/passes/multi_batch_pass.h"
 #include "graph/preprocess/multi_batch_copy_graph.h"
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"

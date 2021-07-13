@@ -29,7 +29,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_local_context.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 using namespace std;
 using namespace testing;

@@ -37,7 +37,7 @@
 namespace ge {
 using ThreadTask = std::function<void()>;
 
-class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ThreadPool {
+class ThreadPool {
  public:
   explicit ThreadPool(uint32_t size = 4);
   ~ThreadPool();

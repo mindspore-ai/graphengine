@@ -31,7 +31,7 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 #define REQUIRE(cond, ...)                                     \
   do {                                                         \

@@ -23,7 +23,7 @@
 #include "graph/ge_context.h"
 #include "init/gelib.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "framework/omg/omg_inner_types.h"
 
 namespace {

@@ -70,7 +70,7 @@ static bool ReadProtoFromCodedInputStream(CodedInputStream &coded_stream, Messag
   return proto->ParseFromCodedStream(&coded_stream);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromArray(const void *data, int size, Message *proto) {
+bool ReadProtoFromArray(const void *data, int size, Message *proto) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((proto == nullptr || data == nullptr || size == 0), return false,
                                  "incorrect parameter. proto is nullptr || data is nullptr || size is 0");
 
@@ -112,8 +112,7 @@ long GetFileLength(const std::string &input_file) {
  *  @return false fail
  *  @return true success
  */
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name, char **buffer,
-                                                                              int &length) {
+bool ReadBytesFromBinaryFile(const char *file_name, char **buffer, int &length) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_name == nullptr), return false, "incorrect parameter. file is nullptr");
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((buffer == nullptr), return false, "incorrect parameter. buffer is nullptr");
 
@@ -141,8 +140,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
   return true;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(const char *file_name,
-                                                                              std::vector<char> &buffer) {
+bool ReadBytesFromBinaryFile(const char *file_name, std::vector<char> &buffer) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file_name == nullptr), return false, "incorrect parameter. file path is null");
 
   std::string real_path = RealPath(file_name);
@@ -177,7 +175,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadBytesFromBinaryFile(co
  *  @return -1 fail
  *  @return 0 success
  */
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::string &directory_path) {
+int CreateDirectory(const std::string &directory_path) {
   GE_CHK_BOOL_EXEC(!directory_path.empty(), return -1, "directory path is empty.");
   auto dir_path_len = directory_path.length();
   if (dir_path_len >= MMPA_MAX_PATH) {
@@ -219,7 +217,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int CreateDirectory(const std::
   return 0;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string CurrentTimeInStr() {
+std::string CurrentTimeInStr() {
   std::time_t now = std::time(nullptr);
   std::tm *ptm = std::localtime(&now);
   if (ptm == nullptr) {
@@ -235,8 +233,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string CurrentTimeInStr() 
   return std::string(buffer);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const char *file,
-                                                                        google::protobuf::Message *message) {
+bool ReadProtoFromText(const char *file, google::protobuf::Message *message) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((file == nullptr || message == nullptr), return false,
                                  "incorrect parameter. nullptr == file || nullptr == message");
 
@@ -266,8 +263,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromText(const ch
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const char *data, int size,
-                                                                       google::protobuf::Message *message) {
+bool ReadProtoFromMem(const char *data, int size, google::protobuf::Message *message) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((data == nullptr || message == nullptr), return false,
                                  "incorrect parameter. data is nullptr || message is nullptr");
   std::string str(data, static_cast<size_t>(size));
@@ -281,7 +277,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ReadProtoFromMem(const cha
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() {
+uint64_t GetCurrentTimestamp() {
   mmTimeval tv{};
   int ret = mmGetTimeOfDay(&tv, nullptr);
   GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed, ret:%d, errmsg:%s", ret, strerror(errno));
@@ -289,7 +285,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t GetCurrentTimestamp() 
   return static_cast<uint64_t>(total_use_time);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t GetCurrentSecondTimestap() {
+uint32_t GetCurrentSecondTimestap() {
   mmTimeval tv{};
   int ret = mmGetTimeOfDay(&tv, nullptr);
   GE_LOGE_IF(ret != EN_OK, "Func gettimeofday may failed, ret:%d, errmsg:%s", ret, strerror(errno));
@@ -297,7 +293,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t GetCurrentSecondTimest
   return static_cast<uint32_t>(total_use_time);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInt64MulOverflow(int64_t a, int64_t b) {
+bool CheckInt64MulOverflow(int64_t a, int64_t b) {
   if (a > 0) {
     if (b > 0) {
       if (a > (INT64_MAX / b)) {
@@ -322,7 +318,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInt64MulOverflow(int6
   return true;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string RealPath(const char *path) {
+std::string RealPath(const char *path) {
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(path == nullptr, return "", "path pointer is NULL.");
   GE_CHK_BOOL_TRUE_EXEC_WITH_LOG(strlen(path) >= MMPA_MAX_PATH,
                                  ErrorManager::GetInstance().ATCReportErrMessage("E19002", {"filepath", "size"},
@@ -349,8 +345,7 @@ void PathValidErrReport(const std::string &file_path, const std::string &atc_par
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const std::string &file_path,
-                                                                          const std::string &atc_param) {
+bool CheckInputPathValid(const std::string &file_path, const std::string &atc_param) {
   // The specified path is empty
   std::map<std::string, std::string> args_map;
   if (file_path.empty()) {
@@ -395,8 +390,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckInputPathValid(const 
   return true;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool CheckOutputPathValid(const std::string &file_path,
-                                                                           const std::string &atc_param) {
+bool CheckOutputPathValid(const std::string &file_path, const std::string &atc_param) {
   // The specified path is empty
   if (file_path.empty()) {
     if (!atc_param.empty()) {
@@ -552,7 +546,7 @@ FMK_FUNC_HOST_VISIBILITY bool IsValidFile(const char *file_path) {
   return true;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status CheckPath(const char *path, size_t length) {
+Status CheckPath(const char *path, size_t length) {
   if (path == nullptr) {
     GELOGE(PARAM_INVALID, "[Check][Param]Config path is invalid");
     REPORT_CALL_ERROR("E19999", "Config path is invalid");

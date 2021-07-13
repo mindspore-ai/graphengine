@@ -27,7 +27,7 @@
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/model/node_item.h"
 #include "hybrid/model/graph_item.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 
 namespace ge {
 namespace hybrid {

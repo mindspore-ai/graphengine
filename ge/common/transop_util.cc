@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 
-#include "framework/common/types.h"
+#include "common/types.h"
 #include "graph/utils/type_utils.h"
 #include "framework/common/debug/ge_log.h"
 

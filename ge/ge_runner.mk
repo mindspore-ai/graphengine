@@ -43,10 +43,10 @@ LIBGE_LOCAL_SRC_FILES := \
     graph/build/stream_allocator.cc \
     graph/build/stream_graph_optimizer.cc \
     graph/build/task_generator.cc \
-    graph/common/bcast.cc \
-    graph/common/local_context.cc \
-    graph/common/omg_util.cc \
-    graph/common/transop_util.cc \
+    common/bcast.cc \
+    common/local_context.cc \
+    common/omg_util.cc \
+    common/transop_util.cc \
     graph/execute/graph_execute.cc \
     graph/label/case_label_maker.cc \
     graph/label/if_label_maker.cc \

@@ -115,8 +115,7 @@ const int NORMAL_TENSOR_SIZE = 4;
 
 #define AIPP_CONVERT_LIST_FLOAT(KEY, REQUIRED) AIPP_CONVERT_LIST_FORMAT(KEY, float, REQUIRED, GeAttrValue::FLOAT)
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::ConvertAippParams(const GeAttrValue::NAMED_ATTRS &aipp_attr, domi::AippOpParams *aipp_params) {
+Status OpUtils::ConvertAippParams(const GeAttrValue::NAMED_ATTRS &aipp_attr, domi::AippOpParams *aipp_params) {
   GE_CHECK_NOTNULL(aipp_params);
   AIPP_CONVERT_FORMAT_EX(aipp_mode, domi::AippOpParams::AippMode, int32_t, GeAttrValue::INT);
   AIPP_CONVERT_INT(related_input_rank);
@@ -178,8 +177,7 @@ OpUtils::ConvertAippParams(const GeAttrValue::NAMED_ATTRS &aipp_attr, domi::Aipp
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::TransferDim(const std::vector<int64_t> &dim,
-                                                                             std::vector<int64_t> &dim_vector) {
+Status OpUtils::TransferDim(const std::vector<int64_t> &dim, std::vector<int64_t> &dim_vector) {
   size_t input_shape_size = dim.size();
   std::list<uint32_t> new_dim_list;
   for (auto dim_temp : dim) {
@@ -301,9 +299,9 @@ Status OpUtils::SetOutputSliceDataByDataType(void *data, int64_t data_size, cons
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetOutputSliceData(
-  void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims, std::vector<int64_t> &begin,
-  std::vector<int64_t> &output_dims, GeTensor *output, std::vector<int64_t> &stride) {
+Status OpUtils::SetOutputSliceData(void *data, int64_t data_size, int32_t data_type, std::vector<int64_t> &input_dims,
+                                   std::vector<int64_t> &begin, std::vector<int64_t> &output_dims, GeTensor *output,
+                                   std::vector<int64_t> &stride) {
   if (data == nullptr || output == nullptr) {
     GELOGE(PARAM_INVALID, "[Check][Param]Input param is nullptr");
     REPORT_INNER_ERROR("E19999", "Input param is nullptr");
@@ -352,9 +350,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetOutputSliceD
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataHWCK2KCHW(const void *input, int64_t h,
-                                                                                  int64_t w, int64_t c, int64_t k,
-                                                                                  void **output) {
+void OpUtils::TransDataHWCK2KCHW(const void *input, int64_t h, int64_t w, int64_t c, int64_t k, void **output) {
   if (input == nullptr) {
     return;
   }
@@ -386,9 +382,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataHWCK2KCH
   *output = buf;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataKCHW2HWCK(const void *input, int64_t k,
-                                                                                  int64_t c, int64_t h, int64_t w,
-                                                                                  void *output) {
+void OpUtils::TransDataKCHW2HWCK(const void *input, int64_t k, int64_t c, int64_t h, int64_t w, void *output) {
   if ((input == nullptr) || (output == nullptr)) {
     GELOGD("%s[%d]: input param is nullptr.", __FILE__, __LINE__);
     return;
@@ -417,31 +411,22 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void OpUtils::TransDataKCHW2HWC
 
 vector<ConstGeTensorPtr> OpUtils::GetWeights(const ge::Node &node) { return OpDescUtils::GetWeights(node); }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY vector<ConstGeTensorPtr> OpUtils::GetWeights(ge::ConstNodePtr node) {
-  return OpDescUtils::GetWeights(node);
-}
+vector<ConstGeTensorPtr> OpUtils::GetWeights(ge::ConstNodePtr node) { return OpDescUtils::GetWeights(node); }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY vector<GeTensorPtr> OpUtils::MutableWeights(const ge::Node &node) {
-  return OpDescUtils::MutableWeights(node);
-}
+vector<GeTensorPtr> OpUtils::MutableWeights(const ge::Node &node) { return OpDescUtils::MutableWeights(node); }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY vector<GeTensorPtr> OpUtils::MutableWeights(const ge::NodePtr node) {
-  return OpDescUtils::MutableWeights(node);
-}
+vector<GeTensorPtr> OpUtils::MutableWeights(const ge::NodePtr node) { return OpDescUtils::MutableWeights(node); }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetWeights(ge::Node &node,
-                                                                            const vector<ge::GeTensorPtr> &weights) {
+Status OpUtils::SetWeights(ge::Node &node, const vector<ge::GeTensorPtr> &weights) {
   return OpDescUtils::SetWeights(node, weights);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OpUtils::SetWeights(ge::NodePtr node,
-                                                                            const vector<ge::GeTensorPtr> &weights) {
+Status OpUtils::SetWeights(ge::NodePtr node, const vector<ge::GeTensorPtr> &weights) {
   return OpDescUtils::SetWeights(node, weights);
 }
 
 // The caller guarantees that the input sensor is constant
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims) {
+Status OpUtils::GetShapeDataFromConstTensor(const ConstGeTensorPtr &tensor, DataType type, std::vector<int64_t> &dims) {
   if (tensor == nullptr) {
     GELOGE(PARAM_INVALID, "[Check][Param]Input tensor is nullptr");
     REPORT_INNER_ERROR("E19999", "Input tensor is nullptr");

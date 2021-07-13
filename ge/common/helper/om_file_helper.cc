@@ -18,10 +18,11 @@
 
 #include <string>
 #include <vector>
-#include "common/math/math_util.h"
+
 #include "common/auth/file_saver.h"
-#include "framework/common/debug/log.h"
+#include "common/math/math_util.h"
 #include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/util.h"
 
@@ -32,7 +33,7 @@ const int32_t kOptionalNum = 2;
 }
 namespace ge {
 // For Load
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(const ge::ModelData &model) {
+Status OmFileLoadHelper::Init(const ge::ModelData &model) {
   if (CheckModelValid(model) != SUCCESS) {
     return FAILED;
   }
@@ -42,8 +43,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(c
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(uint8_t *model_data,
-                                                                               const uint32_t model_data_size) {
+Status OmFileLoadHelper::Init(uint8_t *model_data, const uint32_t model_data_size) {
   Status status = LoadModelPartitionTable(model_data, model_data_size);
   if (status != SUCCESS) {
     return status;
@@ -52,9 +52,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(u
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(uint8_t *model_data,
-                                                                               uint32_t model_data_size,
-                                                                               uint32_t model_num) {
+Status OmFileLoadHelper::Init(uint8_t *model_data, uint32_t model_data_size, uint32_t model_num) {
   Status status = LoadModelPartitionTable(model_data, model_data_size, model_num);
   if (status != SUCCESS) {
     return status;
@@ -64,8 +62,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::Init(u
 }
 
 // Use both
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type,
-                                                                                            ModelPartition &partition) {
+Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type, ModelPartition &partition) {
   if (!is_inited_) {
     GELOGE(PARAM_INVALID, "OmFileLoadHelper has not been initialized!");
     return PARAM_INVALID;
@@ -90,9 +87,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetMod
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type,
-                                                                                            ModelPartition &partition,
-                                                                                            size_t model_index) {
+Status OmFileLoadHelper::GetModelPartition(ModelPartitionType type, ModelPartition &partition, size_t model_index) {
   if (!is_inited_) {
     GELOGE(PARAM_INVALID, "OmFileLoadHelper has not been initialized!");
     return PARAM_INVALID;
@@ -248,12 +243,11 @@ Status OmFileLoadHelper::LoadModelPartitionTable(uint8_t *model_data, uint32_t m
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const std::vector<ModelPartition>
-  &OmFileSaveHelper::GetModelPartitions() const {
+const std::vector<ModelPartition> &OmFileSaveHelper::GetModelPartitions() const {
   return context_.partition_datas_;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSaveHelper::GetPartitionTable() {
+ModelPartitionTable *OmFileSaveHelper::GetPartitionTable() {
   auto partition_size = static_cast<uint32_t>(context_.partition_datas_.size());
   // Build ModelPartitionTable, flex array
   context_.partition_table_.clear();
@@ -272,8 +266,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSave
   return partition_table;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSaveHelper::GetPartitionTable(
-    size_t cur_ctx_index) {
+ModelPartitionTable *OmFileSaveHelper::GetPartitionTable(size_t cur_ctx_index) {
   auto &cur_ctx = model_contexts_[cur_ctx_index];
   auto partition_size = static_cast<uint32_t>(cur_ctx.partition_datas_.size());
   // Build ModelPartitionTable, flex array
@@ -293,8 +286,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelPartitionTable *OmFileSave
   return partition_table;
 }
 
-
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status OmFileSaveHelper::AddPartition(ModelPartition &partition) {
+Status OmFileSaveHelper::AddPartition(ModelPartition &partition) {
   if (ge::CheckUint32AddOverflow(context_.model_data_len_, partition.size) != SUCCESS) {
     GELOGE(FAILED, "UINT32 %u and %u addition can result in overflow!", context_.model_data_len_, partition.size);
     return FAILED;
@@ -379,8 +371,8 @@ Status OmFileSaveHelper::SaveModelToFile(const char *output_file, ModelBufferDat
 #endif
 }
 
-Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char *output_file,
-                                       ModelBufferData &model, bool is_offline) {
+Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char *output_file, ModelBufferData &model,
+                                       bool is_offline) {
   (void)save_param.cert_file;
   (void)save_param.ek_file;
   (void)save_param.encode_mode;
@@ -409,8 +401,8 @@ Status OmFileSaveHelper::SaveRootModel(const SaveParam &save_param, const char *
     model_header_.length += size_of_table + cur_model_data_len;
     model_partition_tabels.push_back(tmp_table);
     all_model_partitions.push_back(cur_ctx.partition_datas_);
-    GELOGD("sizeof(ModelPartitionTable):%u, cur_model_data_len:%u, cur_context_index:%zu",
-           size_of_table, cur_model_data_len, ctx_index);
+    GELOGD("sizeof(ModelPartitionTable):%u, cur_model_data_len:%u, cur_context_index:%zu", size_of_table,
+           cur_model_data_len, ctx_index);
   }
   Status ret;
   if (is_offline) {

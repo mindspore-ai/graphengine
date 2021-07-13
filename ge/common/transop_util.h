@@ -23,7 +23,7 @@
 #include "graph/node.h"
 
 namespace ge {
-class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY TransOpUtil {
+class TransOpUtil {
  public:
   static bool IsTransOp(const NodePtr &node);
 

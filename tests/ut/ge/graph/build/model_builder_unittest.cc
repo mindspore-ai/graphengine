@@ -17,7 +17,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/anchor.h"
 #include "graph/attr_value.h"
 #include "graph/debug/ge_attr_define.h"

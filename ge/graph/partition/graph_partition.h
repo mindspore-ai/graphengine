@@ -70,6 +70,8 @@ class GraphPartitioner {
   // Return all subgraphs
   const Graph2SubGraphInfoList &GetSubGraphMap();
 
+  const Graph2InputNodesSubGraphInfo &GetSubGraphInfoMap() {return graph_2_input_subgraph_; }
+
  private:
   Status MergeSubGraph(ge::ComputeGraphPtr &output_merged_compute_graph,
                        const ge::ComputeGraphPtr &original_compute_graph);

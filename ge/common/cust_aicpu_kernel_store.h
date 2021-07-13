@@ -21,7 +21,7 @@
 
 namespace ge {
 
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY CustAICPUKernelStore : public KernelStore {
+class CustAICPUKernelStore : public KernelStore {
  public:
   CustAICPUKernelStore();
   ~CustAICPUKernelStore() {}

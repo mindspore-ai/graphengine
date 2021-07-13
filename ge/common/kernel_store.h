@@ -48,7 +48,7 @@ struct KernelStoreItemHead {
   uint32_t bin_len;
 };
 
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY KernelStore {
+class KernelStore {
  public:
   KernelStore() = default;
   virtual ~KernelStore() = default;

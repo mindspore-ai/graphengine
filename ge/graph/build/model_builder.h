@@ -32,7 +32,7 @@
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/model.h"
 #include "graph/node.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "framework/omg/omg_inner_types.h"
 
 namespace ge {

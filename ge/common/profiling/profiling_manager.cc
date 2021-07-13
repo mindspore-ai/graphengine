@@ -77,12 +77,12 @@ ProfilingManager::ProfilingManager()
 
 ProfilingManager::~ProfilingManager() {}
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ProfilingManager &ProfilingManager::Instance() {
+ProfilingManager &ProfilingManager::Instance() {
   static ProfilingManager profiling_manager;
   return profiling_manager;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ge::Status ProfilingManager::Init(const Options &options) {
+ge::Status ProfilingManager::Init(const Options &options) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   vector<int32_t>().swap(device_id_);
   subscribe_count_ = 0;
@@ -221,7 +221,7 @@ ge::Status ProfilingManager::ParseOptions(const std::string &options) {
   return ge::SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProfiling() {
+void ProfilingManager::StopProfiling() {
 #ifdef DAVINCI_SUPPORT_PROFILING
   uint64_t module = GetProfilingModule();
   // The following if case will not be executed in normal case, inc case of ProfStopProfiling is abnormal
@@ -259,8 +259,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::StopProf
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingOpInputOutInfo(
-    const TaskDescInfo &task, Json &task_json) {
+void ProfilingManager::ProfilingOpInputOutInfo(const TaskDescInfo &task, Json &task_json) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   for (size_t i = 0; i < task.input_format.size(); i++) {
     Json tmp_input;
@@ -286,8 +285,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ProfilingTaskDescInfo(
-  uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info, const int32_t &device_id) {
+void ProfilingManager::ProfilingTaskDescInfo(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info,
+                                             const int32_t &device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   for (const auto &task : task_desc_info) {
     Json task_info;
@@ -324,8 +323,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::Profilin
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfileStepInfo(
-  uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream, int32_t device_id) {
+Status ProfilingManager::ProfileStepInfo(uint64_t index_id, uint64_t model_id, uint16_t tag_id, rtStream_t stream,
+                                         int32_t device_id) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   if (!is_load_profiling_ && subscribe_count_ == 0) {
     GELOGD("Profiling is not turned on, no need to profile step info.");
@@ -385,8 +384,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Profil
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportData(
-    const int32_t &device_id, const string &data, const string &tag_name) {
+void ProfilingManager::ReportData(const int32_t &device_id, const string &data, const string &tag_name) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   ReporterData reporter_data{};
   int ret = -1;
@@ -426,8 +424,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportDa
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportProfilingData(
-    uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info) {
+void ProfilingManager::ReportProfilingData(uint32_t model_id, const std::vector<TaskDescInfo> &task_desc_info) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   int32_t logic_device_id = 0;
   rtError_t rt_ret = rtGetDevice(&logic_device_id);
@@ -443,7 +440,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::ReportPr
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint64_t ProfilingManager::GetProfilingModule() {
+uint64_t ProfilingManager::GetProfilingModule() {
   uint64_t module = PROF_MODEL_EXECUTE_MASK |
                     PROF_RUNTIME_API_MASK |
                     PROF_RUNTIME_TRACE_MASK |
@@ -485,8 +482,7 @@ void ProfilingManager::UpdateSubscribeDeviceModuleMap(std::string prof_type, uin
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfModelSubscribe(
-    uint64_t module, void *model) {
+Status ProfilingManager::ProfModelSubscribe(uint64_t module, void *model) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
   uint64_t model_load_mask = module & PROF_MODEL_LOAD_MASK;
@@ -526,8 +522,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfModelUnsubscribe(
-    void *model) {
+Status ProfilingManager::ProfModelUnsubscribe(void *model) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
   if (subscribe_count_ == 0) {
@@ -568,7 +563,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfMo
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfInit(uint64_t module) {
+Status ProfilingManager::ProfInit(uint64_t module) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
   uint64_t model_load_mask = module & PROF_MODEL_LOAD_MASK;
@@ -602,7 +597,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfIn
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfFinalize() {
+Status ProfilingManager::ProfFinalize() {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
   is_load_profiling_ = false;
@@ -697,8 +692,8 @@ Status ProfilingManager::ProfParseDeviceId(const std::map<std::string, std::stri
   return SUCCESS;
 }
 
-Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string> &config_para,
-                                        int32_t &device_num, vector<int32_t> &device_list) {
+Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string> &config_para, int32_t &device_num,
+                                        vector<int32_t> &device_list) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   // device num
   auto iter = config_para.find(kConfigNumsdev);
@@ -747,8 +742,7 @@ Status ProfilingManager::ProfParseParam(const std::map<std::string, std::string>
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfStartProfiling(
-    uint64_t module, const std::map<std::string, std::string> &config_para) {
+Status ProfilingManager::ProfStartProfiling(uint64_t module, const std::map<std::string, std::string> &config_para) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
   uint64_t training_trace_mask = module & PROF_TRAINING_TRACE_MASK;
@@ -803,8 +797,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfStopProfiling(uint64_t module,
-    const std::map<std::string, std::string> &config_para) {
+Status ProfilingManager::ProfStopProfiling(uint64_t module, const std::map<std::string, std::string> &config_para) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   std::lock_guard<std::mutex> lock(mutex_);
   int32_t device_num = 0;
@@ -855,8 +848,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::ProfSt
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::UpdateDeviceIdModuleMap(string prof_type,
-    uint64_t module, const vector<int32_t> &device_list) {
+void ProfilingManager::UpdateDeviceIdModuleMap(string prof_type, uint64_t module, const vector<int32_t> &device_list) {
 #ifdef DAVINCI_SUPPORT_PROFILING
   if (prof_type == kProfStart) {
     for (uint32_t i = 0; i < device_list.size(); i++) {
@@ -886,7 +878,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::UpdateDe
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::ProfilingModelExecuteOn() const {
+bool ProfilingManager::ProfilingModelExecuteOn() const {
   int32_t logic_device_id = 0;
   rtError_t rt_ret = rtGetDevice(&logic_device_id);
   if (rt_ret != RT_ERROR_NONE) {
@@ -904,7 +896,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool ProfilingManager::Profilin
   return  execute_model_prof_on;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::PluginInit() {
+Status ProfilingManager::PluginInit() {
   if (prof_cb_.msprofReporterCallback == nullptr) {
     GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
     REPORT_INNER_ERROR("E19999", "MsprofReporterCallback callback is nullptr");
@@ -933,7 +925,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::Plugin
  return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUnInit() const {
+void ProfilingManager::PluginUnInit() const {
 #ifdef DAVINCI_SUPPORT_PROFILING
   if (prof_cb_.msprofReporterCallback == nullptr) {
     GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
@@ -950,8 +942,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::PluginUn
 #endif
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ProfilingManager::CallMsprofReport(
-    ReporterData &reporter_data) const {
+Status ProfilingManager::CallMsprofReport(ReporterData &reporter_data) const {
   if (prof_cb_.msprofReporterCallback == nullptr) {
     GELOGE(ge::PARAM_INVALID, "[Check][Param]MsprofReporterCallback callback is nullptr");
     REPORT_INNER_ERROR("E19999", "MsprofReporterCallback callback is nullptr");
@@ -1007,14 +998,12 @@ void ProfilingManager::GetOpOutputInfo(const OpDescPtr &op, TaskDescInfo &task_d
   task_desc_info.output_data_type = output_data_type.empty() ? data_type_default : output_data_type;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetOpInputOutputInfo(
-    const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
+void ProfilingManager::GetOpInputOutputInfo(const OpDescPtr &op, TaskDescInfo &task_desc_info) const {
   GetOpInputInfo(op, task_desc_info);
   GetOpOutputInfo(op, task_desc_info);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpPoint(
-    std::string &fp_point, std::string &bp_point) {
+void ProfilingManager::GetFpBpPoint(std::string &fp_point, std::string &bp_point) {
   // Env or options mode, fp_point_/bp_point_ have initiliazed on profiling init
   if (!fp_point_.empty() && !bp_point_.empty()) {
     fp_point = fp_point_;
@@ -1025,7 +1014,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void ProfilingManager::GetFpBpP
   }
   // ProfApi mode and training trace is set
   // Parse options first
-  char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = { 0x00 };
+  char env_profiling_options[MSPROF_OPTIONS_DEF_LEN_MAX] = {0x00};
   bool is_profiling_valid = false;
   std::string profiling_options;
   if (ge::GetContext().GetOption(OPTION_EXEC_PROFILING_OPTIONS, profiling_options) == SUCCESS &&

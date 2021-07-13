@@ -42,7 +42,7 @@ const int kBaseInt = 10;
 std::map<string, string> TBEPluginManager::options_ = {};
 
 // Get Singleton Instance
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY TBEPluginManager &TBEPluginManager::Instance() {
+TBEPluginManager &TBEPluginManager::Instance() {
   static TBEPluginManager instance_ptr_;
   return instance_ptr_;
 }
@@ -61,7 +61,7 @@ Status TBEPluginManager::ClearHandles_() {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status TBEPluginManager::Finalize() {
+Status TBEPluginManager::Finalize() {
   Status ret = ClearHandles_();
   return ret;
 }
@@ -207,7 +207,6 @@ void TBEPluginManager::LoadCustomOpLib() {
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
 void TBEPluginManager::LoadPluginSo(const std::map<string, string> &options) {
   vector<string> file_list;
   string caffe_parser_path;
@@ -246,7 +245,6 @@ void TBEPluginManager::LoadPluginSo(const std::map<string, string> &options) {
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY
 void TBEPluginManager::InitPreparation(const std::map<string, string> &options) {
   options_.insert(options.begin(), options.end());
   // Load TBE plugin

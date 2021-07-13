@@ -39,7 +39,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "proto/insert_op.pb.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 #define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                       \
   do {                                                                                       \

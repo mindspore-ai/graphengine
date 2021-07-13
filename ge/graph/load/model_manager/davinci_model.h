@@ -49,7 +49,7 @@
 #include "mmpa/mmpa_api.h"
 #include "proto/task.pb.h"
 #include "graph/load/model_manager/task_info/task_info.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 using std::mutex;
 using std::thread;

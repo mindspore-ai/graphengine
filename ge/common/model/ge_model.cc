@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include <utility>
 #include "framework/common/debug/log.h"
 #include "graph/debug/ge_attr_define.h"

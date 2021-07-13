@@ -80,7 +80,7 @@ ANALYZER_SRC_FILES:= \
 OMG_HOST_SRC_FILES := \
     model/ge_model.cc \
     model/ge_root_model.cc \
-    graph/common/transop_util.cc \
+    common/transop_util.cc \
     graph/passes/pass_manager.cc \
     graph/passes/resource_pair_add_control_pass.cc \
     graph/passes/resource_pair_remove_control_pass.cc \
@@ -115,9 +115,9 @@ OMG_HOST_SRC_FILES := \
     graph/passes/mark_graph_unknown_status_pass.cc \
     graph/passes/mark_node_unknown_shape_pass.cc \
     graph/passes/mark_agnostic_pass.cc \
-    graph/common/omg_util.cc \
-    graph/common/bcast.cc \
-    graph/common/local_context.cc \
+    common/omg_util.cc \
+    common/bcast.cc \
+    common/local_context.cc \
     graph/passes/dimension_compute_pass.cc \
     graph/passes/dimension_adjust_pass.cc \
     graph/passes/get_original_format_pass.cc \

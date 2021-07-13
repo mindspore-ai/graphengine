@@ -27,7 +27,7 @@
 #include "common/ge/ge_util.h"
 #include "framework/common/op/ge_op_utils.h"
 #include "framework/common/types.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"
 #include "graph/manager/graph_var_manager.h"

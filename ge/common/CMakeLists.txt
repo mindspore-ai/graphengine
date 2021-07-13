@@ -2,16 +2,23 @@ set(SRC_LIST
     "context/ctx.cc"
     "model_saver.cc"
     "ge/datatype_util.cc"
+    "ge/plugin_manager.cc"
+    "ge/op_tiling_manager.cc"
     "helper/om_file_helper.cc"
     "helper/model_helper.cc"
-    "../model/ge_model.cc"
-    "../model/ge_root_model.cc"
+    "model/ge_model.cc"
+    "model/ge_root_model.cc"
+    "bcast.cc"
+    "local_context.cc"
+    "omg_util.cc"
+    "transop_util.cc"
     "auth/file_saver.cc"
     "fp16_t.cc"
     "math/fp16_math.cc"
     "debug/memory_dumper.cc"
     "formats/utils/formats_trans_utils.cc"
     "dump/dump_properties.cc"
+    "dump/dump_manager.cc"
     "formats/format_transfers/datatype_transfer.cc"
     "formats/format_transfers/format_transfer_transpose.cc"
     "formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
@@ -63,7 +70,7 @@ target_compile_definitions(ge_common PRIVATE
 )
 
 target_compile_options(ge_common PRIVATE
-    -fvisibility=hidden
+    -fvisibility=default
     -O2
     -Werror
     -Wno-deprecated-declarations
@@ -183,7 +190,7 @@ target_compile_definitions(ge_common PRIVATE
 )
 
 target_compile_options(ge_common PRIVATE
-    -fvisibility=hidden
+    -fvisibility=default
     -O2
     -Werror
     -Wno-deprecated-declarations

@@ -38,7 +38,7 @@
 #include "graph/partition/graph_partition.h"
 #include "graph/preprocess/graph_preprocess.h"
 #include "graph/tuning_utils.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "common/executor.h"
 
 namespace ge {

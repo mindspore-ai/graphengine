@@ -31,7 +31,7 @@
 
 namespace ge {
 const uint32_t INVALID_MODEL_ID = 0xFFFFFFFFUL;
-class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder {
+class GeModel : public AttrHolder {
  public:
   GeModel();
   ~GeModel() = default;
@@ -82,13 +82,13 @@ class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY GeModel : public AttrHolder
  private:
   void Init();
 
-  ProtoAttrMapHelper attrs_;
+  ProtoAttrMapHelper attrs_;  /*lint !e148*/
 
   Graph graph_;
-  std::shared_ptr<domi::ModelTaskDef> task_;
-  TBEKernelStore tbe_kernal_store_;
-  CustAICPUKernelStore cust_aicpu_kernal_store_;
-  Buffer weights_buffer_;
+  std::shared_ptr<domi::ModelTaskDef> task_;  /*lint !e148*/
+  TBEKernelStore tbe_kernal_store_;  /*lint !e148*/
+  CustAICPUKernelStore cust_aicpu_kernal_store_;  /*lint !e148*/
+  Buffer weights_buffer_;  /*lint !e148*/
 
   std::string name_;
   uint32_t version_ = {0};

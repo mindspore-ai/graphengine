@@ -21,11 +21,11 @@
 #include <functional>
 #include <vector>
 
-#include "framework/common/debug/log.h"
-#include "framework/common/types.h"
+#include "common/debug/log.h"
+#include "common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "external/graph/attr_value.h"
+#include "graph/attr_value.h"
 #include "graph/ge_tensor.h"
 #include "graph/utils/tensor_adapter.h"
 

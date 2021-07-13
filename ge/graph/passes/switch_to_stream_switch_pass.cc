@@ -18,7 +18,7 @@
 #include <stack>
 #include "common/ge/ge_util.h"
 #include "external/ge/ge_api_types.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/ge_context.h"
 #include "graph/utils/type_utils.h"
 

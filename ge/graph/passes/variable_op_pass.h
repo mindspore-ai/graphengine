@@ -18,7 +18,7 @@
 #define GE_GRAPH_PASSES_VARIABLE_OP_PASS_H_
 #include <map>
 #include <set>
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "external/graph/graph.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/util/variable_accelerate_ctrl.h"

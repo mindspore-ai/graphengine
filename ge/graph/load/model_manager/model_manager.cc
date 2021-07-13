@@ -23,9 +23,9 @@
 #include "common/dump/dump_manager.h"
 #include "framework/common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 #include "common/formats/utils/formats_trans_utils.h"
 
 namespace ge {

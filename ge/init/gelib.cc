@@ -34,7 +34,7 @@
 #include "analyzer/analyzer.h"
 #include "external/ge/ge_api_types.h"
 #include "ge_local_engine/engine/host_cpu_engine.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/manager/graph_mem_manager.h"

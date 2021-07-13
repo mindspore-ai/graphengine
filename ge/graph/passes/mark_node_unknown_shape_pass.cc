@@ -17,7 +17,7 @@
 #include "graph/passes/mark_node_unknown_shape_pass.h"
 #include "graph/utils/node_utils.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 namespace ge {
 namespace {

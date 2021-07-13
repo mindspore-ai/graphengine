@@ -29,8 +29,7 @@
 namespace ge {
 const uint32_t kInteval = 2;
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelSaver::SaveJsonToFile(const char *file_path,
-                                                                                   const Json &model) {
+Status ModelSaver::SaveJsonToFile(const char *file_path, const Json &model) {
   Status ret = SUCCESS;
   if (file_path == nullptr || SUCCESS != CheckPath(file_path)) {
     GELOGE(FAILED, "[Check][OutputFile]Failed, file %s", file_path);

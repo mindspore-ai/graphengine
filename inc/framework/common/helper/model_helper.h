@@ -22,10 +22,10 @@
 
 #include "common/fmk_types.h"
 #include "common/helper/om_file_helper.h"
+#include "common/model/ge_model.h"
+#include "common/model/ge_root_model.h"
 #include "common/types.h"
 #include "graph/model.h"
-#include "model/ge_model.h"
-#include "model/ge_root_model.h"
 
 namespace ge {
 class GE_FUNC_VISIBILITY ModelHelper {
@@ -42,13 +42,21 @@ class GE_FUNC_VISIBILITY ModelHelper {
   Status LoadRootModel(const ge::ModelData &model_data);
   Status GetModelBufferData(ge::ModelBufferData &model);
 
-  const ModelFileHeader *GetFileHeader() const { return file_header_; }
+  const ModelFileHeader *GetFileHeader() const {
+    return file_header_;
+  }
 
   GeModelPtr GetGeModel();
   GeRootModelPtr GetGeRootModel();
-  void SetSaveMode(bool val) { is_offline_ = val; }
-  bool GetSaveMode(void) const { return is_offline_; }
-  bool GetModelType() const { return is_unknown_shape_model_; };
+  void SetSaveMode(bool val) {
+    is_offline_ = val;
+  }
+  bool GetSaveMode(void) const {
+    return is_offline_;
+  }
+  bool GetModelType() const {
+    return is_unknown_shape_model_;
+  };
 
   Status GetBaseNameFromFileName(const std::string &file_name, std::string &base_name);
   Status GetModelNameFromMergedGraphName(const std::string &graph_name, std::string &model_name);

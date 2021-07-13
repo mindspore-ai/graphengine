@@ -20,7 +20,7 @@
 #include <memory>
 #include "external/ge/ge_api_error_codes.h"
 #include "graph/load/model_manager/data_inputer.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 
 namespace ge {
 namespace hybrid {

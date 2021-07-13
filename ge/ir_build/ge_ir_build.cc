@@ -33,7 +33,7 @@
 #include "graph/ge_global_options.h"
 #include "init/gelib.h"
 #include "ir_build/option_utils.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "graph/shape_refiner.h"
 #include "graph/opsproto_manager.h"
 #include "inc/pass_manager.h"

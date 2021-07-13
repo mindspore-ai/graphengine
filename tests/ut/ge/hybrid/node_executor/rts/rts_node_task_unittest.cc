@@ -22,7 +22,7 @@
 #define protected public
 #include "hybrid/executor/subgraph_context.h"
 #include "hybrid/node_executor/rts/rts_node_executor.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 
 using namespace std;
 using namespace testing;

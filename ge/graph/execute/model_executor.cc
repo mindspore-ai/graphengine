@@ -47,6 +47,13 @@ Status ModelExecutor::Initialize(const map<string, string> &options, uint64_t se
     return MEMALLOC_FAILED;
   }
 
+  const auto model_manager = ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  Status status = model_manager->EnableExceptionDump(options);
+  if (status != SUCCESS) {
+    return status;
+  }
+
   session_id_ = session_id;
   train_graph_flag_ = ParseTrainGraphFlag();
   thread_run_flag_.store(true);

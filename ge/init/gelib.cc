@@ -37,7 +37,6 @@
 #include "graph/common/ge_call_wrapper.h"
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
-#include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/host_mem_manager.h"
 #include "graph/manager/graph_var_manager.h"
@@ -196,12 +195,6 @@ Status GELib::SystemInitialize(const map<string, string> &options) {
 
   // In train and infer, profiling is always needed.
   InitProfiling(this->options_);
-  auto model_manager = ModelManager::GetInstance();
-  GE_CHECK_NOTNULL(model_manager);
-  GE_IF_BOOL_EXEC(model_manager->EnableExceptionDump(options) != SUCCESS,
-                  REPORT_CALL_ERROR("E19999", "ModelManager EnableExceptionDump failed.");
-                  GELOGE(FAILED, "[Enable][ExceptionDump] failed.");
-                  return FAILED);
   // 1.`is_train_mode_` means case: train
   // 2.`(!is_train_mode_) && (options_.device_id != kDefaultDeviceIdForInfer)` means case: online infer
   // these two case with logical device id

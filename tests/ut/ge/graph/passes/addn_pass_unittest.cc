@@ -72,7 +72,7 @@ TEST(UtestGraphPassesAddnPass, null_pass) {
   AddNPass *addn_pass = nullptr;
   NamesToPass names_to_pass;
   names_to_pass.emplace_back("Test", addn_pass);
-  EXPECT_EQ(pass.Run(names_to_pass), SUCCESS);
+  EXPECT_EQ(pass.Run(names_to_pass), INTERNAL_ERROR);
 }
 
 TEST(UtestGraphPassesAddnPass, null_graph) {

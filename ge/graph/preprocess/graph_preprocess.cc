@@ -1999,6 +1999,22 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
 
 Status GraphPrepare::InferShapeForPreprocess() {
   GELOGI("Start infershape for preprocess.");
+  // Prepare dummy_shape for v1 control_flow op before infershape
+  for (const auto &node : compute_graph_->GetAllNodes()) {
+    string type;
+    GetOriginalType(node, type);
+    if (type == MERGE || type == REFMERGE) {
+      for (size_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
+        GELOGD("Prepare for infershape: update %s input_shape as dummy.", node->GetName().c_str());
+        NodeUtils::UpdateInputShape(*node, i, GeShape(DUMMY_SHAPE));
+      }
+    } else if (type == WHILE) {
+      for (size_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
+        GELOGD("Prepare for infershape: update %s output_shape as dummy.", node->GetName().c_str());
+        NodeUtils::UpdateOutputShape(*node, i, GeShape(DUMMY_SHAPE));
+      }
+    }
+  }
   GEPass ge_passes(compute_graph_);
   NamesToPass names_to_passes;
   AssertPass assert_pass;

@@ -17,7 +17,6 @@
 #include <iostream>
 #include <map>
 #include <set>
-#include <string>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -26,8 +25,6 @@
 #include "graph/passes/base_pass.h"
 #undef protected
 
-#include "external/graph/ge_error_codes.h"
-#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/types.h"
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
@@ -67,6 +64,54 @@ class UtestTestPass : public BaseNodePass {
         names_to_add_repass_.erase(iter);
       }
     }
+
+    iter = names_to_add_repass_immediate_.find(node->GetName());
+    if (iter != names_to_add_repass_immediate_.end()) {
+      auto all_nodes = node->GetOwnerComputeGraph()->GetAllNodes();
+      for (const auto &node_name : iter->second) {
+        for (auto &node_re_pass : all_nodes) {
+          if (node_re_pass->GetName() == node_name) {
+            AddImmediateRePassNode(node_re_pass);
+            break;
+          }
+        }
+      }
+      if (!dead_loop_) {
+        names_to_add_repass_immediate_.erase(iter);
+      }
+    }
+
+    iter = names_to_add_suspend_.find(node->GetName());
+    if (iter != names_to_add_suspend_.end()) {
+      auto all_nodes = node->GetOwnerComputeGraph()->GetAllNodes();
+      for (const auto &node_name : iter->second) {
+        for (auto &node_re_pass : all_nodes) {
+          if (node_re_pass->GetName() == node_name) {
+            AddNodeSuspend(node_re_pass);
+            break;
+          }
+        }
+      }
+      if (!dead_loop_) {
+        names_to_add_suspend_.erase(iter);
+      }
+    }
+
+    iter = names_to_add_resume_.find(node->GetName());
+    if (iter != names_to_add_resume_.end()) {
+      auto all_nodes = node->GetOwnerComputeGraph()->GetAllNodes();
+      for (const auto &node_name : iter->second) {
+        for (auto &node_re_pass : all_nodes) {
+          if (node_re_pass->GetName() == node_name) {
+            AddNodeResume(node_re_pass);
+            break;
+          }
+        }
+      }
+      if (!dead_loop_) {
+        names_to_add_resume_.erase(iter);
+      }
+    }
     // simulate infershape pass
     if(node->GetType() == WHILE){
       bool need_repass = false;
@@ -85,6 +130,20 @@ class UtestTestPass : public BaseNodePass {
     }
     return SUCCESS;
   }
+
+  Status OnSuspendNodesLeaked() override {
+    // resume all node remain in suspend_nodes when leaked
+    auto compute_graph = (iter_nodes_.size() > 0) ? iter_nodes_[0]->GetOwnerComputeGraph() : nullptr;
+    if (compute_graph == nullptr) {
+      return SUCCESS;
+    }
+
+    for (const auto &node_name : names_to_add_resume_onleaked_) {
+      auto node_to_resume = compute_graph->FindNode(node_name);
+      AddNodeResume(node_to_resume);
+    }
+    return SUCCESS;
+  }
   void clear() { iter_nodes_.clear(); }
   std::vector<NodePtr> GetIterNodes() { return iter_nodes_; }
 
@@ -94,12 +153,31 @@ class UtestTestPass : public BaseNodePass {
   void AddDelNodeName(const std::string &iter_node, const std::string &del_node) {
     names_to_add_del_[iter_node].insert(del_node);
   }
+  void AddRePassImmediateNodeName(const std::string &iter_node, const std::string &re_pass_node) {
+    names_to_add_repass_immediate_[iter_node].insert(re_pass_node);
+  }
+
+  void AddSuspendNodeName(const std::string &iter_node, const std::string &suspend_node) {
+    names_to_add_suspend_[iter_node].insert(suspend_node);
+  }
+  void AddResumeNodeName(const std::string &iter_node, const std::string &resume_node) {
+    names_to_add_resume_[iter_node].insert(resume_node);
+  }
+  void AddResumeNodeNameOnLeaked(const std::string &resume_node) {
+    names_to_add_resume_onleaked_.insert(resume_node);
+  }
+
   unsigned int GetRunTimes() { return run_times_; }
 
  private:
   std::vector<NodePtr> iter_nodes_;
   std::map<std::string, std::unordered_set<std::string>> names_to_add_del_;
   std::map<std::string, std::unordered_set<std::string>> names_to_add_repass_;
+  std::map<std::string, std::unordered_set<std::string>> names_to_add_repass_immediate_;
+  std::map<std::string, std::unordered_set<std::string>> names_to_add_suspend_;
+  std::map<std::string, std::unordered_set<std::string>> names_to_add_resume_;
+  std::unordered_set<std::string> names_to_add_resume_onleaked_;
+
   bool dead_loop_;
   unsigned int run_times_;
 };
@@ -197,6 +275,26 @@ ComputeGraphPtr BuildGraph3() {
   builder.AddControlEdge(merge1, next1);
   builder.AddControlEdge(next1, merge1);
 
+  return builder.GetGraph();
+}
+
+///          cast1--shape1
+///        /
+///  data1
+///       \
+///        transdata1--shape2
+ComputeGraphPtr BuildGraph4() {
+  auto builder = ut::GraphBuilder("g1");
+  auto data1 = builder.AddNode("data1", DATA, 0, 1);
+  auto cast1 = builder.AddNode("cast1", CAST, 1, 1);
+  auto shape1 = builder.AddNode("shape1", SHAPE, 1, 1);
+  auto transdata1 = builder.AddNode("transdata1", TRANSDATA, 1, 1);
+  auto shape2 = builder.AddNode("shape2", SHAPE, 1, 1);
+
+  builder.AddDataEdge(data1, 0, cast1, 0);
+  builder.AddDataEdge(data1, 0, transdata1, 0);
+  builder.AddDataEdge(cast1, 0, shape1, 0);
+  builder.AddDataEdge(transdata1, 0, shape2, 0);
   return builder.GetGraph();
 }
 
@@ -400,7 +498,7 @@ TEST_F(UTESTGraphPassesBasePass, del_self_and_after) {
   auto graph = BuildGraph2();
   auto ge_pass = GEPass(graph);
   EXPECT_EQ(ge_pass.Run(names_to_pass), SUCCESS);
-  EXPECT_EQ(test_pass.GetIterNodes().size(), 4);
+  EXPECT_EQ(test_pass.GetIterNodes().size(), 6);
 }
 
 TEST_F(UTESTGraphPassesBasePass, del_before) {
@@ -509,15 +607,297 @@ ComputeGraphPtr BuildWhileGraph1() {
 }
 
 TEST_F(UTESTGraphPassesBasePass, while_infershape) {
-NamesToPass names_to_pass;
-auto test_pass = UtestTestPass();
-names_to_pass.push_back(std::make_pair("test", &test_pass));
+  NamesToPass names_to_pass;
+  auto test_pass = UtestTestPass();
+  names_to_pass.push_back(std::make_pair("test", &test_pass));
 
-auto graph = BuildWhileGraph1();
-auto ge_pass = GEPass(graph);
-auto while_node = graph->FindNode("while");
-EXPECT_EQ(while_node->GetOpDesc()->GetSubgraphInstanceNames().size(),1);
-EXPECT_EQ(ge_pass.Run(names_to_pass), SUCCESS);
+  auto graph = BuildWhileGraph1();
+  auto ge_pass = GEPass(graph);
+  auto while_node = graph->FindNode("while");
+  EXPECT_EQ(while_node->GetOpDesc()->GetSubgraphInstanceNames().size(),1);
+  EXPECT_EQ(ge_pass.Run(names_to_pass), SUCCESS);
 }
 
+TEST_F(UTESTGraphPassesBasePass, re_pass_pre_node_immediately) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // repass pre_node immediately
+  test_pass->AddRePassImmediateNodeName("reshape1", "add1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 9);// todo
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "add1", "sum1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+TEST_F(UTESTGraphPassesBasePass, re_pass_cur_node_immediately) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // repass cur_node immediately
+  test_pass->AddRePassImmediateNodeName("reshape1", "reshape1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 9);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1"});
+  layers.push_back({"reshape1", "sum1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+TEST_F(UTESTGraphPassesBasePass, re_pass_next_node_immediately) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // repass next_node immediately
+  test_pass->AddRePassImmediateNodeName("reshape1", "sum1");
+  // repass node after next_node immediately
+  test_pass->AddRePassImmediateNodeName("add1", "sum1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 8);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "sum1"});
+  CheckIterOrder(test_pass, layers);
+}
+/**
+ * A->B->C
+ * if node B suspend its pre_node A, and C resume A,  it is a useless operation, so iter_order should follow normal order
+ * when C resuem A, A will pass again.
+ */
+TEST_F(UTESTGraphPassesBasePass, B_suspend_pre_node_A_then_C_resume_A) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // add1->reshape1->sum1
+  test_pass->AddSuspendNodeName("reshape1", "add1");
+  test_pass->AddResumeNodeName("sum1", "add1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 9);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "sum1"});
+  layers.push_back({"add1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+/**
+ * A->B->C
+ * if node B suspend its pre_node A, and B resume A,  it is a useless operation, so iter_order should follow normal order
+ * when B resuem A, A will pass again.
+ */
+TEST_F(UTESTGraphPassesBasePass, B_suspend_pre_node_A_then_B_resume_A) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // add1->reshape1->sum1
+  test_pass->AddSuspendNodeName("reshape1", "add1");
+  test_pass->AddResumeNodeName("reshape1", "add1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 9);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "sum1", "add1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+/**
+ * A->B->C
+ * if node B resume C(which is not suspended),  it is a useless operation, C will not pass.
+ */
+TEST_F(UTESTGraphPassesBasePass, B_resume_node_not_suspended) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // add1->reshape1->sum1
+  test_pass->AddResumeNodeName("reshape1", "sum1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 8);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "sum1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+/**
+ * A->B->C
+ * if node B suspend its pre_node A, it is a useless operation, so iter_order should follow normal order
+ * because nobody resume it ,which means A is a leaked node, so return fail
+ */
+TEST_F(UTESTGraphPassesBasePass, suspend_pre_node_nobody_resume_it_return_failed) {
+  NamesToPass names_to_pass;
+  auto test_pass = UtestTestPass();
+  names_to_pass.push_back(std::make_pair("test", &test_pass));
+  // suspend pre_node immediately
+  test_pass.AddSuspendNodeName("reshape1", "add1");
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  EXPECT_EQ(ge_pass.Run(names_to_pass), INTERNAL_ERROR);
+}
+
+/**
+ * A->B->C
+ * if node B suspend its pre_node A, it is a useless operation,
+ * so iter_order should follow normal order
+ * resume A on leaked, which means A will pass again
+ */
+TEST_F(UTESTGraphPassesBasePass, suspend_pre_node_resume_it_onleaked) {
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // suspend pre_node immediately
+  test_pass->AddSuspendNodeName("reshape1", "add1");
+  test_pass->AddResumeNodeNameOnLeaked("add1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "sum1"});
+  layers.push_back({"add1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+
+///          cast1--shape1
+///        /
+///  data1
+///       \
+///        transdata1--shape2
+/**
+ * suspend cur node
+ * cast1 suspend itself, shape2 resume cast1
+ * iter order follows : data1; cast1,transdata1; shape2; cast1 ; shape1
+ */
+TEST_F(UTESTGraphPassesBasePass, cast1_suspend_cur_node_shape2_resume_cast1) {
+  auto graph = BuildGraph4();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // suspend pre_node immediately
+  test_pass->AddSuspendNodeName("cast1", "cast1");
+  test_pass->AddResumeNodeName("shape2", "cast1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 6);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1"});
+  layers.push_back({"cast1","transdata1"});
+  layers.push_back({"shape2"});
+  layers.push_back({"cast1", "shape1"});
+  CheckIterOrder(test_pass, layers);
+}
+/**
+ * suspend cur node
+ * cast1 suspend itself, then resume cast1
+ * iter order follows : data1; cast1,cast1,transdata1; shape2; shape1.
+ */
+TEST_F(UTESTGraphPassesBasePass, cast1_suspend_itslef_then_resume_itself) {
+  auto graph = BuildGraph4();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // suspend pre_node immediately
+  test_pass->AddSuspendNodeName("cast1", "cast1");
+  test_pass->AddResumeNodeName("cast1", "cast1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 6);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1"});
+  layers.push_back({"cast1","transdata1","cast1","shape1", "shape2"});
+  CheckIterOrder(test_pass, layers);
+}
+/**
+ * suspend cur node
+ * cast1 suspend itself, then resume cast1 on leaked
+ * iter order follows : data1; cast1,cast1,transdata1; shape2; shape1.
+ */
+TEST_F(UTESTGraphPassesBasePass, cast1_suspend_itslef_then_resume_onleaked) {
+  auto graph = BuildGraph4();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // suspend pre_node immediately
+  test_pass->AddSuspendNodeName("cast1", "cast1");
+  test_pass->AddResumeNodeNameOnLeaked("cast1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 6);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1"});
+  layers.push_back({"cast1","transdata1", "shape2"});
+  layers.push_back({"cast1","shape1"});
+  CheckIterOrder(test_pass, layers);
+}
+/**
+ * suspend next node
+ * data1 suspend cast1, then resume cast1 on leaked
+ * iter order follows : data1; transdata1, shape2; cast1, shape1.
+ */
+TEST_F(UTESTGraphPassesBasePass, data1_suspend_cast1_resume_cast1_onleaked) {
+  auto graph = BuildGraph4();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // suspend pre_node immediately
+  test_pass->AddSuspendNodeName("data1", "cast1");
+  test_pass->AddResumeNodeNameOnLeaked("cast1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), SUCCESS);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 5);
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1"});
+  layers.push_back({"transdata1", "shape2"});
+  layers.push_back({"cast1","shape1"});
+  CheckIterOrder(test_pass, layers);
+}
+
+/**
+ * suspend next node
+ * data1 suspend cast1, nobody resume it
+ * iter order follows : data1; transdata1, shape2;
+ * run ret is failed ,because node leaked
+ */
+TEST_F(UTESTGraphPassesBasePass, data1_suspend_cast1_nobody_resume) {
+  auto graph = BuildGraph4();
+  auto ge_pass = GEPass(graph);
+  auto *test_pass = dynamic_cast<UtestTestPass *>(names_to_pass_[0].second);
+  // suspend pre_node immediately
+  test_pass->AddSuspendNodeName("data1", "cast1");
+  EXPECT_EQ(ge_pass.Run(names_to_pass_), INTERNAL_ERROR);
+  EXPECT_EQ(test_pass->GetIterNodes().size(), 3);
+}
+
+/*
+TEST_F(UTESTGraphPassesBasePass, suspend_pre_node) {
+  NamesToPass names_to_pass;
+  auto test_pass = UtestTestPass();
+  names_to_pass.push_back(std::make_pair("test", &test_pass));
+
+  // repass next_node immediately
+  test_pass.AddRePassNodeName("reshape1", "sum1");
+  // repass node after next_node immediately
+  test_pass.AddRePassNodeName("add1", "sum1");
+
+  auto graph = BuildGraph2();
+  auto ge_pass = GEPass(graph);
+  EXPECT_EQ(ge_pass.Run(names_to_pass), SUCCESS);
+  EXPECT_EQ(test_pass.GetIterNodes().size(), 8);// todo
+  std::vector<std::unordered_set<std::string>> layers;
+  layers.push_back({"data1", "const1", "const2"});
+  layers.push_back({"shape1"});
+  layers.push_back({"add1", "addn1"});
+  layers.push_back({"reshape1", "sum1"});
+  CheckIterOrder(&test_pass, layers);
+}*/
 }  // namespace ge

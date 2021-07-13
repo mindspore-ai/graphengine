@@ -27,11 +27,10 @@
 #include "graph/node.h"
 
 namespace ge {
-namespace {
-const int64_t kBufferPoolMemAlignSize = 512;
-const uint32_t kBufferPoolNodeOutIndex = 0;
-const uint32_t kEventReuseThreshold = 65500;
-} // namespace
+static constexpr int64_t kBufferPoolMemAlignSize = 512;
+static constexpr uint32_t kBufferPoolNodeOutIndex = 0;
+static constexpr uint32_t kEventReuseThreshold = 65500;
+
 ///
 /// @brief get the Original Type of FrameworkOp
 /// @param [in] node

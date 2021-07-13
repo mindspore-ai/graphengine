@@ -29,7 +29,7 @@
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "init/gelib.h"
 #include "graph/ge_local_context.h"
 #include "external/ge/ge_api_types.h"

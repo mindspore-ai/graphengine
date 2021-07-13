@@ -18,9 +18,7 @@
 #include "common/formats/formats.h"
 
 namespace ge {
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status GeFormatUtil::TransShape(const TensorDesc &src_desc,
-                                                                               Format dst_format,
-                                                                               std::vector<int64_t> &dst_shape) {
+Status GeFormatUtil::TransShape(const TensorDesc &src_desc, Format dst_format, std::vector<int64_t> &dst_shape) {
   return formats::TransShape(src_desc.GetFormat(), src_desc.GetShape().GetDims(), src_desc.GetDataType(), dst_format,
                              dst_shape);
 }

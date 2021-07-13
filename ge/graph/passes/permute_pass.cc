@@ -24,7 +24,7 @@
 #include "inc/kernel.h"
 #include "inc/kernel_factory.h"
 #include "framework/omg/omg_inner_types.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_NHWC;

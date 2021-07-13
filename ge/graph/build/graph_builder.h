@@ -38,7 +38,7 @@
 #include "graph/partition/graph_partition.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 
 namespace ge {
 class GraphBuilder {

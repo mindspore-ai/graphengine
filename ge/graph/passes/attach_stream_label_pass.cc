@@ -16,7 +16,7 @@
 
 #include "graph/passes/attach_stream_label_pass.h"
 #include "external/ge/ge_api_types.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 using std::string;
 

@@ -22,7 +22,7 @@
 #include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/common/bcast.h"
+#include "common/bcast.h"
 #include "graph/passes/pass_utils.h"
 #include "inc/kernel_factory.h"
 

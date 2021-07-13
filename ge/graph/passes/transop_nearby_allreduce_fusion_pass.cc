@@ -19,7 +19,7 @@
 #include "framework/common/debug/log.h"
 #include "framework/common/types.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 
 namespace ge {
 Status TransOpNearbyAllreduceFusionPass::Run(NodePtr &node) {

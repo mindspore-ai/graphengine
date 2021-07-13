@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 
 #include "common/debug/log.h"
 #include "common/types.h"

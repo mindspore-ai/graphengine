@@ -17,7 +17,7 @@
 #include <vector>
 #include "graph/debug/ge_attr_define.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 namespace ge {
   namespace {
   const std::string CFG_PRE_OPTYPE = "OpType::";

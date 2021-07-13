@@ -17,7 +17,7 @@
 #include "graph/passes/mark_force_unknown_for_cond_pass.h"
 
 #include "graph/utils/node_utils.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 namespace ge {
 namespace {

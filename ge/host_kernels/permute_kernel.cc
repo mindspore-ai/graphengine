@@ -24,7 +24,7 @@
 #include "framework/common/op/ge_op_utils.h"
 #include "framework/common/types.h"
 #include "framework/common/util.h"
-#include "graph/common/bcast.h"
+#include "common/bcast.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 #include "common/formats/formats.h"

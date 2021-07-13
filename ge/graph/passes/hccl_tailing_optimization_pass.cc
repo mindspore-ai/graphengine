@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "graph/passes/hccl_tailing_optimization_pass.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 
 namespace ge {
 Status HcclTailingOptimizationPass::Run(ComputeGraphPtr graph) {

@@ -29,7 +29,7 @@
 #include "graph/opsproto_manager.h"
 #include "graph/utils/type_utils.h"
 #include "graph/manager/util/rt_context_util.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "register/op_registry.h"
 #include "common/ge/tbe_plugin_manager.h"
 #include "common/util/error_manager/error_manager.h"

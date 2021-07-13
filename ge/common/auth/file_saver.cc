@@ -238,7 +238,7 @@ Status FileSaver::SaveToBuffWithFileHeader(const ModelFileHeader &file_header,
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::CheckPath(const std::string &file_path) {
+Status FileSaver::CheckPath(const std::string &file_path) {
   // Determine file path length
   if (file_path.size() >= MMPA_MAX_PATH) {
     GELOGE(FAILED, "[Check][FilePath]Failed, file path's length:%zu > mmpa_max_path:%d",
@@ -271,8 +271,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::CheckPath(con
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-FileSaver::SaveToFile(const string &file_path, const ge::ModelData &model, const ModelFileHeader *model_file_header) {
+Status FileSaver::SaveToFile(const string &file_path, const ge::ModelData &model,
+                             const ModelFileHeader *model_file_header) {
   if (file_path.empty() || model.model_data == nullptr || model.model_len == 0) {
     GELOGE(FAILED, "[Save][File]Incorrect input param, "
            "file_path is empty or model_data is nullptr or model_len is 0");
@@ -301,19 +301,18 @@ FileSaver::SaveToFile(const string &file_path, const ge::ModelData &model, const
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header, ModelPartitionTable &model_partition_table,
-                      const std::vector<ModelPartition> &partition_datas) {
+Status FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header,
+                             ModelPartitionTable &model_partition_table,
+                             const std::vector<ModelPartition> &partition_datas) {
   const Status ret = SaveWithFileHeader(file_path, file_header, model_partition_table, partition_datas);
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "save file failed, file_path:%s, file header len:%u.",
                          file_path.c_str(), file_header.length);
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header,
-                      vector<ModelPartitionTable *> &model_partition_tables,
-                      const vector<vector<ModelPartition>> &all_partition_datas) {
+Status FileSaver::SaveToFile(const string &file_path, ModelFileHeader &file_header,
+                             vector<ModelPartitionTable *> &model_partition_tables,
+                             const vector<vector<ModelPartition>> &all_partition_datas) {
   const Status ret = SaveWithFileHeader(file_path, file_header, model_partition_tables, all_partition_datas);
   GE_CHK_BOOL_RET_STATUS(ret == SUCCESS, FAILED, "save file failed, file_path:%s, file header len:%u.",
                          file_path.c_str(), file_header.length);
@@ -372,8 +371,7 @@ Status FileSaver::SaveWithFileHeader(const std::string &file_path, const ModelFi
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status FileSaver::SaveToFile(const string &file_path, const void *data,
-                                                                              int len) {
+Status FileSaver::SaveToFile(const string &file_path, const void *data, int len) {
   if (data == nullptr || len <= 0) {
     GELOGE(FAILED, "[Check][Param]Failed, model_data is null or the "
            "length[%d] is less than 1.", len);

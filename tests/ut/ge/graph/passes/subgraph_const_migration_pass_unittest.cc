@@ -20,7 +20,7 @@
 #include <string>
 
 #include "framework/omg/omg_inner_types.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/passes/subgraph_const_migration_pass.h"
 #include "inc/pass_manager.h"
 #include "register/op_registry.h"

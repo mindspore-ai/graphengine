@@ -18,7 +18,7 @@
 
 using ge::OmgContext;
 namespace domi {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY OmgContext &GetContext() {
+OmgContext &GetContext() {
   static OmgContext context;
   return context;
 }

@@ -15,7 +15,7 @@
  */
 
 #include "graph/build/memory/buffer_pool_mem_assigner.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/utils/tensor_utils.h"
 #include "framework/common/util.h"
 #include "graph/compute_graph.h"

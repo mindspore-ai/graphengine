@@ -17,6 +17,7 @@
 #include "common/formats/formats.h"
 
 #include <securec.h>
+
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -32,7 +33,7 @@
 
 namespace ge {
 namespace formats {
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArgs &args, TransResult &result) {
+Status TransFormat(const TransArgs &args, TransResult &result) {
   auto transfer = BuildFormatTransfer(args);
   if (transfer == nullptr) {
     std::string error = "Failed to trans data from format " +
@@ -56,11 +57,8 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransFormat(const TransArg
   return transfer->TransFormat(args, result);
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_format,
-                                                                 const std::vector<int64_t> &src_shape,
-                                                                 DataType data_type,
-                                                                 Format dst_format,
-                                                                 std::vector<int64_t> &dst_shape) {
+Status TransShape(Format src_format, const std::vector<int64_t> &src_shape, DataType data_type, Format dst_format,
+                  std::vector<int64_t> &dst_shape) {
   formats::TransArgs args;
   args.src_format = src_format;
   args.dst_format = dst_format;
@@ -76,7 +74,7 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransShape(Format src_form
   return transfer->TransShape(src_format, src_shape, data_type, dst_format, dst_shape);
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransDataType(const CastArgs &args, TransResult &result) {
+Status TransDataType(const CastArgs &args, TransResult &result) {
   auto transfer = BuildDataTypeTransfer(args);
   if (transfer == nullptr) {
     std::string error = "Failed to trans data from datatype " +
@@ -95,11 +93,11 @@ GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY Status TransDataType(const CastAr
   return transfer->TransDataType(args, result);
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransFormatSupport(const TransArgs &args) {
+bool IsTransFormatSupport(const TransArgs &args) {
   return FormatTransferExists(args);
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY bool IsTransDataTypeSupport(const CastArgs &args) {
+bool IsTransDataTypeSupport(const CastArgs &args) {
   return DataTypeTransferExists(args);
 }
 }  // namespace formats

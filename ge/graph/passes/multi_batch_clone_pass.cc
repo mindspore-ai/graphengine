@@ -18,14 +18,14 @@
 
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/ge/ge_util.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/preprocess/multi_batch_options.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "register/op_registry.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 namespace ge {
 namespace {

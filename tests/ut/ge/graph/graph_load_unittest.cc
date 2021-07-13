@@ -36,7 +36,7 @@
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_manager_utils.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #undef private
 #undef protected
 

@@ -21,7 +21,7 @@
 #include "graph/ge_context.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/load/model_manager/model_utils.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/manager/graph_var_manager.h"

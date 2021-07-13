@@ -17,7 +17,7 @@
 #include "graph/passes/next_iteration_pass.h"
 
 #include "common/ge/ge_util.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/utils/node_utils.h"
 
 using std::string;

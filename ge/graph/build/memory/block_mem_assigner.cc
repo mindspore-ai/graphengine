@@ -34,7 +34,7 @@
 
 #include "graph/debug/ge_attr_define.h"
 
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/optimize/common/params.h"
 #include "framework/omg/omg_inner_types.h"
 #include "runtime/mem.h"

@@ -21,7 +21,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/types.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"

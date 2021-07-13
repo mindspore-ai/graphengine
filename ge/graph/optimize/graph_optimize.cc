@@ -17,7 +17,7 @@
 #include "graph/optimize/graph_optimize.h"
 
 #include "graph/ge_context.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/passes/dimension_adjust_pass.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"

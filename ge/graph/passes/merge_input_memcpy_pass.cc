@@ -18,7 +18,7 @@
 
 #include "common/ge/ge_util.h"
 #include "external/ge/ge_api_types.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 namespace ge {
 Status MergeInputMemcpyPass::Run(ComputeGraphPtr graph) {

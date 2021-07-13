@@ -17,7 +17,7 @@
 #include "graph/passes/control_trigger_pass.h"
 #include <stack>
 #include "common/ge/ge_util.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/utils/type_utils.h"
 
 namespace ge {

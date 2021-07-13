@@ -18,7 +18,7 @@
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"

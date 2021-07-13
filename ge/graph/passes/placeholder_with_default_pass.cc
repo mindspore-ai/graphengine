@@ -18,7 +18,7 @@
 #include <string>
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 namespace ge {
 Status PlaceholderWithDefaultPass::Run(NodePtr &node) {

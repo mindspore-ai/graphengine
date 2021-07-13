@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
@@ -59,8 +59,8 @@ Status SetStreamLabel(const ge::NodePtr &node, const std::string &label) {
   if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_STREAM_LABEL, label)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_STREAM_LABEL.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_STREAM_LABEL.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_STREAM_LABEL.c_str(), node->GetName().c_str(),
+           node->GetType().c_str());
     return FAILED;
   }
 
@@ -100,8 +100,8 @@ Status SetActiveLabelList(const ge::NodePtr &node, const std::vector<std::string
   if (!AttrUtils::SetListStr(tmp_desc, ge::ATTR_NAME_ACTIVE_LABEL_LIST, active_label_list)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ACTIVE_LABEL_LIST.c_str(), node->GetName().c_str(),
+           node->GetType().c_str());
     return FAILED;
   }
 
@@ -163,8 +163,8 @@ Status SetOriginalNodeName(const ge::NodePtr &node, const std::string &orig_name
   if (!AttrUtils::SetStr(tmp_desc, ge::ATTR_NAME_ORIG_NODE_NAME, orig_name)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_ORIG_NODE_NAME.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ORIG_NODE_NAME.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_ORIG_NODE_NAME.c_str(), node->GetName().c_str(),
+           node->GetType().c_str());
     return FAILED;
   }
 
@@ -207,8 +207,8 @@ Status SetNextIteration(const NodePtr &node, const NodePtr &next) {
     if (!AttrUtils::SetStr(op_desc, ATTR_NAME_NEXT_ITERATION, name)) {
       REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
                          op_desc->GetName().c_str(), op_desc->GetType().c_str());
-      GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(),
-             op_desc->GetName().c_str(), op_desc->GetType().c_str());
+      GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_NEXT_ITERATION.c_str(), op_desc->GetName().c_str(),
+             op_desc->GetType().c_str());
       return FAILED;
     }
     return SUCCESS;
@@ -290,8 +290,8 @@ void SetControlFlowGroup(const NodePtr &node, int64_t group) {
   if (!AttrUtils::SetInt(op_desc, ATTR_NAME_CONTROL_FLOW_GROUP, group)) {
     REPORT_INNER_ERROR("E19999", "Set Attr:%s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
                        node->GetName().c_str(), node->GetType().c_str());
-    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(),
-           node->GetName().c_str(), node->GetType().c_str());
+    GELOGE(FAILED, "[Set][Attr] %s fail for op:%s(%s)", ATTR_NAME_CONTROL_FLOW_GROUP.c_str(), node->GetName().c_str(),
+           node->GetType().c_str());
   }
 }
 }  // namespace ge

@@ -1180,20 +1180,40 @@ fp16_t &fp16_t::operator=(const double &d_val) {
 }
 
 // convert
-fp16_t::operator float() const { return Fp16ToFloat(val); }
-fp16_t::operator double() const { return Fp16ToDouble(val); }
-fp16_t::operator int8_t() const { return Fp16ToInt8(val); }
-fp16_t::operator uint8_t() const { return Fp16ToUInt8(val); }
-fp16_t::operator int16_t() const { return Fp16ToInt16(val); }
-fp16_t::operator uint16_t() const { return Fp16ToUInt16(val); }
-fp16_t::operator int32_t() const { return Fp16ToInt32(val); }
-fp16_t::operator uint32_t() const { return Fp16ToUInt32(val); }
+fp16_t::operator float() const {
+  return Fp16ToFloat(val);
+}
+fp16_t::operator double() const {
+  return Fp16ToDouble(val);
+}
+fp16_t::operator int8_t() const {
+  return Fp16ToInt8(val);
+}
+fp16_t::operator uint8_t() const {
+  return Fp16ToUInt8(val);
+}
+fp16_t::operator int16_t() const {
+  return Fp16ToInt16(val);
+}
+fp16_t::operator uint16_t() const {
+  return Fp16ToUInt16(val);
+}
+fp16_t::operator int32_t() const {
+  return Fp16ToInt32(val);
+}
+fp16_t::operator uint32_t() const {
+  return Fp16ToUInt32(val);
+}
 // Cannot be used, just in order to solve the compile error
-fp16_t::operator int64_t() const { return 0; }
+fp16_t::operator int64_t() const {
+  return 0;
+}
 // Cannot be used, just in order to solve the compile error
-fp16_t::operator uint64_t() const { return 0; }
+fp16_t::operator uint64_t() const {
+  return 0;
+}
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int fp16_t::IsInf() {
+int fp16_t::IsInf() {
   if ((val & kFp16AbsMax) == kFp16ExpMask) {
     if (val & kFp16SignMask) {
       return -1;
@@ -1205,12 +1225,28 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int fp16_t::IsInf() {
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY float fp16_t::ToFloat() const { return Fp16ToFloat(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY double fp16_t::ToDouble() const { return Fp16ToDouble(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int8_t fp16_t::ToInt8() const { return Fp16ToInt8(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint8_t fp16_t::ToUInt8() const { return Fp16ToUInt8(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int16_t fp16_t::ToInt16() const { return Fp16ToInt16(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint16_t fp16_t::ToUInt16() const { return Fp16ToUInt16(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY int32_t fp16_t::ToInt32() const { return Fp16ToInt32(val); }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY uint32_t fp16_t::ToUInt32() const { return Fp16ToUInt32(val); }
+float fp16_t::ToFloat() const {
+  return Fp16ToFloat(val);
+}
+double fp16_t::ToDouble() const {
+  return Fp16ToDouble(val);
+}
+int8_t fp16_t::ToInt8() const {
+  return Fp16ToInt8(val);
+}
+uint8_t fp16_t::ToUInt8() const {
+  return Fp16ToUInt8(val);
+}
+int16_t fp16_t::ToInt16() const {
+  return Fp16ToInt16(val);
+}
+uint16_t fp16_t::ToUInt16() const {
+  return Fp16ToUInt16(val);
+}
+int32_t fp16_t::ToInt32() const {
+  return Fp16ToInt32(val);
+}
+uint32_t fp16_t::ToUInt32() const {
+  return Fp16ToUInt32(val);
+}
 }  // namespace ge

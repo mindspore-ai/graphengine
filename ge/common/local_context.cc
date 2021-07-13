@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 #include "framework/common/debug/ge_log.h"
 

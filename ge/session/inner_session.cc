@@ -29,7 +29,7 @@
 #include "graph/ge_context.h"
 #include "graph/ge_global_options.h"
 #include "graph/ge_local_context.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/manager/graph_mem_manager.h"
 #include "graph/utils/tensor_adapter.h"

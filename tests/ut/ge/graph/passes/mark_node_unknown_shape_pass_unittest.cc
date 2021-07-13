@@ -24,7 +24,7 @@
 
 #include "common/ge_inner_error_codes.h"
 #include "inc/pass_manager.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #undef private
 
 namespace ge {

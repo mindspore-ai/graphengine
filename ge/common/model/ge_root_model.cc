@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 #include "graph/debug/ge_attr_define.h"
+
 namespace ge {
 void GeRootModel::SetSubgraphInstanceNameToModel(string instance_name, GeModelPtr ge_model) {
   subgraph_instance_name_to_model_.insert(std::pair<string, GeModelPtr>(instance_name, ge_model));

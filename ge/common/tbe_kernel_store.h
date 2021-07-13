@@ -21,7 +21,7 @@
 
 namespace ge {
 
-class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY TBEKernelStore : public KernelStore {
+class TBEKernelStore : public KernelStore {
  public:
   TBEKernelStore();
   ~TBEKernelStore() {}

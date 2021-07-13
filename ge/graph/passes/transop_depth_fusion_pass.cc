@@ -23,7 +23,7 @@
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "graph/utils/node_utils.h"
 
 namespace ge {

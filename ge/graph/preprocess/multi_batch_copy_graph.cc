@@ -38,8 +38,8 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
-#include "graph/common/local_context.h"
-#include "graph/common/omg_util.h"
+#include "common/local_context.h"
+#include "common/omg_util.h"
 
 using std::set;
 using std::string;

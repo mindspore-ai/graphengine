@@ -36,7 +36,7 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "analyzer/analyzer.h"
 
 using std::map;

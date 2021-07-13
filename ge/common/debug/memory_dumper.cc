@@ -30,13 +30,12 @@ const int kInvalidFd = (-1);
 }  // namespace
 
 namespace ge {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY MemoryDumper::MemoryDumper() : fd_(kInvalidFd) {}
+MemoryDumper::MemoryDumper() : fd_(kInvalidFd) {}
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY MemoryDumper::~MemoryDumper() { Close(); }
+MemoryDumper::~MemoryDumper() { Close(); }
 
 // Dump the data to the file
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile(const char *filename, void *data,
-                                                                                 int64_t len) {
+Status MemoryDumper::DumpToFile(const char *filename, void *data, int64_t len) {
 #ifdef FMK_SUPPORT_DUMP
   GE_CHECK_NOTNULL(filename);
   GE_CHECK_NOTNULL(data);
@@ -81,7 +80,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::DumpToFile
 }
 
 // Open file
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Open(const char *filename) {
+Status MemoryDumper::Open(const char *filename) {
   GE_CHK_BOOL_RET_STATUS(filename != nullptr, FAILED, "Incorrect parameter. filename is nullptr");
 
   // Try to remove file first for reduce the close time by overwriting way
@@ -104,7 +103,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Open(const
 }
 
 // Dump the data to file
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status MemoryDumper::Dump(void *data, uint32_t len) const {
+Status MemoryDumper::Dump(void *data, uint32_t len) const {
   GE_CHK_BOOL_RET_STATUS(data != nullptr, FAILED, "Incorrect parameter. data is nullptr");
 
 #ifdef FMK_SUPPORT_DUMP

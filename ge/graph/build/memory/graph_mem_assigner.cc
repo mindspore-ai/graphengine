@@ -24,7 +24,7 @@
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/build/memory/block_mem_assigner.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
 #include "graph/manager/graph_var_manager.h"

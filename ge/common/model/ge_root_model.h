@@ -15,7 +15,7 @@
  */
 #include <map>
 #include "graph/compute_graph.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 
 #ifndef GE_MODEL_GE_ROOT_MODEL_H_
 #define GE_MODEL_GE_ROOT_MODEL_H_

@@ -24,7 +24,7 @@
 #include "inc/framework/common/types.h"
 #include "utils/graph_utils.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 namespace ge {
 namespace {

@@ -106,6 +106,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   // 1. Copy context from kernelExDef.private to workspace
   uint32_t op_index = kernel_ex_def.op_index();
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
+  op_desc_ = op_desc;
   if (op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u", op_index);
     GELOGE(INTERNAL_ERROR, "[Get][Op] by index failed, index:%u is out of range!", op_index);
@@ -422,7 +423,7 @@ Status KernelExTaskInfo::Distribute() {
   if (topic_type_flag_ > 0) {
     dump_flag_ = dump_flag_ | static_cast<uint32_t>(topic_type_flag_);
   }
-  rtError_t rt_ret = rtKernelLaunchEx(kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
+  rtError_t rt_ret = rtKernelLaunchFwk(op_desc_->GetName().c_str(), kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtKernelLaunchEx failed, ret:0x%X", rt_ret);
     GELOGE(RT_FAILED, "[Call][RtKernelLaunchEx] failed, ret:0x%X", rt_ret);

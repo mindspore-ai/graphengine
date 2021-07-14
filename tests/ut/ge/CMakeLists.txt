@@ -736,6 +736,7 @@ set(HYBRID_TEST_FILES
     "hybrid/node_executor/host_cpu/host_cpu_node_task_unittest.cc"
     "hybrid/node_executor/ge_local/ge_local_node_executor_unittest.cc"
     "hybrid/node_executor/hccl/hccl_node_executor_unittest.cc"
+    "hybrid/node_executor/aicpu/aicpu_node_executor_unittest.cc"
     "hybrid/executor/hybrid_model_async_executor_unittest.cc"
     "hybrid/executor/hybrid_model_pipeline_executor_unittest.cc"
     "hybrid/node_executor/aicore/aicore_task_compiler_unittest.cc"

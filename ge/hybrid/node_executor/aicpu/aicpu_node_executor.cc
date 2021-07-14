@@ -477,7 +477,7 @@ Status AicpuTfNodeTask::CopyDataToHbm(TaskContext &context,
   GE_CHK_STATUS_RET_NOLOG(PrepareCopyInputs(context, out_shape_hbm));
 
   RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[LaunchCopy] Start");
-  GE_CHK_RT_RET(rtKernelLaunchEx(copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL),
+  GE_CHK_RT_RET(rtKernelLaunchFwk(node_name_.c_str(), copy_task_args_buf_->GetData(), sizeof(STR_FWK_OP_KERNEL),
                                  RT_KERNEL_DEFAULT, context.GetStream()));
   RECORD_CALLBACK_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[LaunchCopy] End");
 
@@ -638,7 +638,8 @@ Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
   GELOGD("Node[%s] launch task start, unknown_type=%d.", node_name_.c_str(), unknown_type_);
   uint32_t flag = RT_KERNEL_DEFAULT;
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] Start");
-  GE_CHK_RT_RET(rtKernelLaunchEx(kernel_buf_->GetData(), kernel_buf_->GetSize(), flag, context.GetStream()));
+  GE_CHK_RT_RET(rtKernelLaunchFwk(node_name_.c_str(), kernel_buf_->GetData(),
+                                  kernel_buf_->GetSize(), flag, context.GetStream()));
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] End");
   GELOGD("Node[%s] launch end.", node_name_.c_str());
   if (need_sync_) {
@@ -819,11 +820,11 @@ Status AicpuNodeTask::LaunchTask(TaskContext &context) {
   if (kernel_type == ccKernelType::CUST_AI_CPU) {
     flag |= static_cast<uint32_t>(RT_KERNEL_CUSTOM_AICPU);
   }
-  auto rt_ret = rtCpuKernelLaunchWithFlag(reinterpret_cast<const void *>(so_name.c_str()),
-                                          reinterpret_cast<const void *>(kernel_name.c_str()),
-                                          1, // default core dim is 1
-                                          args_.get(), args_size_,
-                                          nullptr, context.GetStream(), flag);
+  rtKernelLaunchNames_t launch_name = {so_name.c_str(), kernel_name.c_str(), node_name_.c_str()};
+  auto rt_ret = rtAicpuKernelLaunchWithFlag(&launch_name,
+                                            1, // default core dim is 1
+                                            args_.get(), args_size_,
+                                            nullptr, context.GetStream(), flag);
   GE_CHK_RT_RET(rt_ret);
   GELOGD("Node[%s] launch task end.", node_name_.c_str());
   return SUCCESS;

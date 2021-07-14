@@ -70,6 +70,7 @@ class KernelExTaskInfo : public TaskInfo {
   uint32_t dump_flag_;
   uint32_t kernel_buf_size_;
   DavinciModel *davinci_model_;
+  OpDescPtr op_desc_;
   void *kernel_buf_;
   void *input_output_addr_;
   void *ext_info_addr_;

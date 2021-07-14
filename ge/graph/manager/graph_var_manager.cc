@@ -795,18 +795,15 @@ Status VarManager::GetTotalMemorySize(size_t &total_mem_size) {
 
 Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
   size_t total_mem_size = 0;
-  Status ret = VarManager::GetTotalMemorySize(total_mem_size);
-  if (ret != SUCCESS) {
-    return ret;
-  }
+  GE_CHK_STATUS_RET_NOLOG(VarManager::GetTotalMemorySize(total_mem_size));
   GEEVENT("Total memory size is %zu", total_mem_size);
 
   graph_mem_max_size_ = floor(total_mem_size * kGraphMemoryManagerMallocRatio);
   var_mem_max_size_ = floor(total_mem_size * kVarMemoryManagerMallocRatio);
 
-  auto it = options.find(GRAPH_MEMORY_MAX_SIZE);
-  if (it != options.end()) {
-    string graph_memory_manager_malloc_max_size = it->second;
+  auto it1 = options.find(GRAPH_MEMORY_MAX_SIZE);
+  if (it1 != options.end()) {
+    string graph_memory_manager_malloc_max_size = it1->second;
     ge::Status ret = ParseMemoryMallocSize(graph_memory_manager_malloc_max_size, graph_mem_max_size_);
     if (ret != SUCCESS) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
@@ -814,9 +811,9 @@ Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
     }
   }
 
-  it = options.find(VARIABLE_MEMORY_MAX_SIZE);
-  if (it != options.end()) {
-    string memory_var_manager_malloc_size = it->second;
+  auto it2 = options.find(VARIABLE_MEMORY_MAX_SIZE);
+  if (it2 != options.end()) {
+    string memory_var_manager_malloc_size = it2->second;
     ge::Status ret = ParseMemoryMallocSize(memory_var_manager_malloc_size, var_mem_max_size_);
     if (ret != SUCCESS) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);

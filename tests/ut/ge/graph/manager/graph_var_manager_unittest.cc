@@ -46,7 +46,7 @@ TEST_F(UtestGraphVarManagerTest, test_set_memory_malloc_size_no_related_option) 
 }
 
 TEST_F(UtestGraphVarManagerTest, test_set_memory_malloc_size_with_user_specify_graph_mem_max_size) {
-  const map<string, string> options{{"ge.graphMemoryMaxSize", 1024UL * 1024UL * 1024UL / 2}};
+  const map<string, string> options{{"ge.graphMemoryMaxSize", "536870912"}};
   Status ret = VarManager::Instance(0)->SetMemoryMallocSize(options);
   EXPECT_EQ(VarManager::Instance(0)->graph_mem_max_size_, floor(1024UL * 1024UL * 1024UL / 2));
   EXPECT_EQ(VarManager::Instance(0)->var_mem_max_size_, floor(1024UL * 1024UL * 1024UL * (5.0f / 32.0f)));
@@ -54,7 +54,7 @@ TEST_F(UtestGraphVarManagerTest, test_set_memory_malloc_size_with_user_specify_g
 }
 
 TEST_F(UtestGraphVarManagerTest, test_set_memory_malloc_size_with_user_specify_var_mem_max_size) {
-  const map<string, string> options{{"ge.variableMemoryMaxSize", 1024UL * 1024UL * 1024UL / 2}};
+  const map<string, string> options{{"ge.variableMemoryMaxSize", "536870912"}};
   Status ret = VarManager::Instance(0)->SetMemoryMallocSize(options);
   EXPECT_EQ(VarManager::Instance(0)->graph_mem_max_size_, floor(1024UL * 1024UL * 1024UL * (26.0f / 32.0f)));
   EXPECT_EQ(VarManager::Instance(0)->var_mem_max_size_, floor(1024UL * 1024UL * 1024UL / 2));

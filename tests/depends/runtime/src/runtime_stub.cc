@@ -193,6 +193,12 @@ rtError_t rtMemGetInfo(size_t *free, size_t *total) {
   return RT_ERROR_NONE;
 }
 
+rtError_t rtMemGetInfoEx(rtMemInfoType_t memInfoType, size_t *free, size_t *total) {
+  *free = 512UL * 1024UL * 1024UL;
+  *total = 1024UL * 1024UL * 1024UL;
+  return RT_ERROR_NONE;
+}
+
 rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag) { return RT_ERROR_NONE; }
 
 rtError_t rtMemFreeManaged(void *ptr) { return RT_ERROR_NONE; }

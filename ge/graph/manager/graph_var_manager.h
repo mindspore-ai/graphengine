@@ -43,6 +43,8 @@ const size_t kMaxMemorySize = 256UL * 1024UL * 1024UL * 1024UL;
 const char kEnvGeuseStaticMemory[] = "GE_USE_STATIC_MEMORY";
 const uint64_t kSessionMemAlignSize = 512;
 const size_t kSessionMemAlignUnit = 2;
+const double kGraphMemoryManagerMallocRatio = 26.0 / 32.0;
+const double kVarMemoryManagerMallocRatio = 5.0 / 32.0;
 
 enum MemStatus {
   NORMAL = 0,
@@ -301,6 +303,7 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
   mutable std::recursive_mutex mutex_;
 
   Status ParseMemoryMallocSize(std::string &memory_size, size_t &my_size);
+  Status GetTotalMemorySize(size_t &total_mem_size);
 };
 
 class VarManagerPool {

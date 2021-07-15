@@ -20,6 +20,7 @@
 #include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/ge_context.h"
 
 using std::map;
 using std::string;
@@ -767,31 +768,60 @@ Status VarManager::GetChangedGraphId(const std::string &var_name, uint32_t &grap
   return var_resource_->GetChangedGraphId(var_name, graph_id);
 }
 
+Status VarManager::GetTotalMemorySize(size_t &total_mem_size) {
+  rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtSetDevice] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
+    return RT_FAILED;
+  }
+  size_t free_mem = 0;
+  rt_ret = rtMemGetInfoEx(RT_MEMORYINFO_HBM, &free_mem, &total_mem_size);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemGetInfo failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtMemGetInfo] failed, ret:0x%X", rt_ret);
+    return RT_FAILED;
+  }
+  rt_ret = rtDeviceReset(GetContext().DeviceId());
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
+    return RT_FAILED;
+  }
+  return SUCCESS;
+}
+
 Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
-  auto it = options.find(GRAPH_MEMORY_MAX_SIZE);
-  if (it == options.end()) {
-    graph_mem_max_size_ = kGraphMemoryManagerMallocMaxSize;
-  } else {
-    string graph_memory_manager_malloc_max_size = it->second;
+  size_t total_mem_size = 0;
+  GE_CHK_STATUS_RET_NOLOG(VarManager::GetTotalMemorySize(total_mem_size));
+  GEEVENT("Total memory size is %zu", total_mem_size);
+
+  graph_mem_max_size_ = floor(total_mem_size * kGraphMemoryManagerMallocRatio);
+  var_mem_max_size_ = floor(total_mem_size * kVarMemoryManagerMallocRatio);
+
+  auto it1 = options.find(GRAPH_MEMORY_MAX_SIZE);
+  if (it1 != options.end()) {
+    string graph_memory_manager_malloc_max_size = it1->second;
     ge::Status ret = ParseMemoryMallocSize(graph_memory_manager_malloc_max_size, graph_mem_max_size_);
     if (ret != SUCCESS) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
-    GELOGI("The max size for graph mem is set to %zu", graph_mem_max_size_);
   }
 
-  it = options.find(VARIABLE_MEMORY_MAX_SIZE);
-  if (it == options.end()) {
-    var_mem_max_size_ = kMemoryVarManagerMallocSize;
-  } else {
-    string memory_var_manager_malloc_size = it->second;
+  auto it2 = options.find(VARIABLE_MEMORY_MAX_SIZE);
+  if (it2 != options.end()) {
+    string memory_var_manager_malloc_size = it2->second;
     ge::Status ret = ParseMemoryMallocSize(memory_var_manager_malloc_size, var_mem_max_size_);
     if (ret != SUCCESS) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
   }
+
+  GEEVENT("The graph_mem_max_size is %zu and the var_mem_max_size is %zu", graph_mem_max_size_, var_mem_max_size_);
 
   var_mem_logic_base_ = graph_mem_max_size_ + kGraphMemoryBuffer;
   if (var_mem_logic_base_ > kMaxMemorySize) {

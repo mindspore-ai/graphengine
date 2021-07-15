@@ -445,6 +445,7 @@ Status AllToAllNodeTask::ExecuteAsync(TaskContext &context, std::function<void()
       return FAILED;
     }
     HcomAllToAllVParams params;
+    params.group = nullptr;
     GE_CHK_STATUS_RET(BuildAllToAllVparams(context, params));
     HcclResult hccl_ret = HcomExecEnqueueAllToAllV(params, callback);
     if (hccl_ret != HCCL_SUCCESS) {

@@ -810,6 +810,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/manager/run_graph_unittest.cc"
     "graph/partition/dynamic_shape_partition_unittest.cc"
     "graph/manager/graph_manager_unittest.cc"
+    "graph/manager/graph_var_manager_unittest.cc"
     "graph/optimize/mem_rw_conflict_optimize_unittest.cc"
     "graph/optimize/graph_optimize_unittest.cc"
     "session/omg_omg_unittest.cc"

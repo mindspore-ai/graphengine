@@ -593,7 +593,6 @@ target_compile_definitions(ge_compiler PRIVATE
     REUSE_MEMORY=1
     FMK_SUPPORT_DUMP
     FMK_HOST_INFER
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     FUNC_VISIBILITY
     $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
@@ -655,8 +654,7 @@ target_link_libraries(ge_compiler PRIVATE
     c_sec
     error_manager
     slog
-    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime>>
-    $<$<BOOL:${ENABLE_OPEN_SRC}>:$<BUILD_INTERFACE:runtime_compile>>
+    runtime
     opt_feature
     -Wl,--as-needed
     json

@@ -22,7 +22,6 @@ target_compile_options(atc_atc.bin PRIVATE
 
 target_compile_definitions(atc_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
     FUNC_VISIBILITY
@@ -48,6 +47,7 @@ target_include_directories(atc_atc.bin PRIVATE
 
 target_link_options(atc_atc.bin PRIVATE
     -Wl,-Bsymbolic
+    -Wl,-rpath-link,${ASCEND_ATC_DIR}/stub
 )
 
 target_link_libraries(atc_atc.bin PRIVATE
@@ -62,8 +62,7 @@ target_link_libraries(atc_atc.bin PRIVATE
     parser_common
     gflags
     json
-    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime>>
-    $<$<BOOL:${ENABLE_OPEN_SRC}>:$<BUILD_INTERFACE:runtime_compile>>
+    runtime
     slog
     static_mmpa
     -lrt
@@ -92,7 +91,6 @@ target_compile_options(fwk_atc.bin PRIVATE
 
 target_compile_definitions(fwk_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
     FUNC_VISIBILITY

@@ -27,7 +27,6 @@
 
 #include "common/blocking_queue.h"
 #include "framework/common/ge_inner_error_codes.h"
-#include "common/helper/model_cache_helper.h"
 #include "external/graph/types.h"
 #include "external/ge/ge_api_types.h"
 #include "graph/build/graph_builder.h"
@@ -339,14 +338,6 @@ class GraphManager {
 
   bool IsGraphNeedBuild(const GraphNodePtr &graph_node);
 
-  Status LoadFromCache(const GraphNodePtr &graph_node, const ModelCacheHelperPtr &cache_helper, GeModelPtr &ge_model);
-  Status SaveCacheBeforeBuild(uint32_t graph_id, const ModelCacheHelperPtr &cache_helper);
-  Status SaveCacheAfterBuild(uint32_t graph_id, ComputeGraphPtr graph, GeModelPtr &ge_model);
-  void AddModelCacheHelperToMap(const GraphId &graph_id, uint64_t session_id, ComputeGraphPtr &compute_graph);
-  Status IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_model);
-  void RemoveModelCacheHelper(const GraphId &graph_id);
-  ModelCacheHelperPtr FindModelCacheHelper(GraphId graph_id);
-
   void SetRunContext(const GraphNodePtr &graph_node);
   void PushGraph(const RunArgs &args);
 
@@ -411,7 +402,6 @@ class GraphManager {
   std::thread prerun_thread_;
   ComputeGraphPtr compute_graph_;
   std::map<GraphId, GraphNodePtr> graph_map_;
-  std::map<GraphId, ModelCacheHelperPtr> cache_helper_map_;
 
   // summary and checkpoint callback function list for ME, key is summary or checkpoint
   std::map<std::string, std::function<Status(uint32_t, const std::map<std::string, ge::Tensor> &)>> me_callback_map_;

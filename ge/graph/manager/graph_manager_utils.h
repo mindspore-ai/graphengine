@@ -86,8 +86,6 @@ class SubGraphInfo {
   void SetGeModelPtr(const GeModelPtr &ge_model_ptr) { ge_model_ptr_ = ge_model_ptr; }
   bool GeModelIsValid() const { return ge_model_ptr_ != nullptr; }
 
-  Status FreeInOutBuffer();
-
   void SetOutputContext(const std::string &output) { output_names_ = output; }
   std::string GetOutputContext() const { return output_names_; }
 

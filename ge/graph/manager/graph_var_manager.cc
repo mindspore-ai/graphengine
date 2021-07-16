@@ -429,10 +429,6 @@ ge::Status VarManager::GetVarAddr(const std::string &var_name, const ge::GeTenso
   return GetVarAddr(var_name, tensor_desc, dev_ptr, memory_type);
 }
 
-void VarManager::GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map) {
-  var_resource_->GetAllVarAddrMgr(var_addr_mgr_map);
-}
-
 int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   MemResource *mem_resource = nullptr;
@@ -451,36 +447,6 @@ int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
     return 0;
   }
   return mem_resource->GetVarMemSize();
-}
-
-Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  MemResource *mem_resource = nullptr;
-  auto iter = mem_resource_map_.find(memory_type);
-  if (iter == mem_resource_map_.end()) {
-    mem_resource = MemResource::BuildMemResourceFromType(memory_type);
-    if (mem_resource == nullptr) {
-      REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu",
-                        memory_type, session_id_);
-      GELOGE(ge::INTERNAL_ERROR, "[Alloc][MemResource] failed, memory_type:%u, session_id:%lu",
-             memory_type, session_id_);
-      return ge::INTERNAL_ERROR;
-    } else {
-      mem_resource_map_[memory_type] = mem_resource;
-    }
-  } else {
-    mem_resource = iter->second;
-  }
-
-  if (mem_resource == nullptr) {
-    REPORT_INNER_ERROR("E19999", "MemResource is invalid, memory_type:%d, session_id:%lu",
-                       memory_type, session_id_);
-    GELOGE(ge::INTERNAL_ERROR, "[Check][Param] MemResource is invalid, memory_type:%u, session_id:%lu",
-           memory_type, session_id_);
-    return FAILED;
-  }
-  mem_resource->UpdateVarMemSize(mem_size);
-  return SUCCESS;
 }
 
 ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTensorDesc &tensor_desc,
@@ -636,16 +602,6 @@ ge::Status VarManager::SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastIn
   }
   var_resource_->SaveBroadCastInfo(graph_id, broad_cast_info);
   return SUCCESS;
-}
-
-ge::Status VarManager::GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-
-  if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
-  }
-  return var_resource_->GetBroadCastInfo(graph_id, var_name, broad_cast_info);
 }
 
 ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPtr op_desc) {

@@ -223,13 +223,9 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr,
                         rtMemType_t &memory_type);
 
-  void GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map);
-
   ge::Status GetVarAddr(const std::string &var_name, const ge::GeTensorDesc &tensor_desc, uint8_t **dev_ptr);
 
   ge::Status SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastInfo &broad_cast_info);
-
-  ge::Status GetBroadCastInfo(uint32_t graph_id,  const string &var_name, VarBroadCastInfo &broad_cast_info);
 
   ge::Status GetCurVarDesc(const std::string &var_name, ge::GeTensorDesc &tensor_desc);
 
@@ -272,8 +268,6 @@ class FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY VarManager {
   const uint64_t &JobId() const;
 
   int64_t GetVarMemSize(rtMemType_t memory_type);
-
-  Status UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size);
 
   bool IsVarExist(const std::string &var_name, const ge::GeTensorDesc &tensor_desc);
 

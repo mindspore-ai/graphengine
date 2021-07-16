@@ -30,9 +30,6 @@
 #define protected public
 #define private public
 #include "graph/manager/graph_manager.h"
-#define const
-#include "common/helper/model_cache_helper.h"
-#undef const
 #include "init/gelib.h"
 
 #include "common/math/math_util.h"

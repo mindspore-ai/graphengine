@@ -140,7 +140,6 @@ set(COMMON_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/optimize/graph_optimize.cc"
     "${GE_CODE_DIR}/ge/graph/build/graph_builder.cc"
     "${GE_CODE_DIR}/ge/graph/partition/graph_partition.cc"
-    "${GE_CODE_DIR}/ge/common/helper/model_cache_helper.cc"
     "${GE_CODE_DIR}/ge/ir_build/ge_ir_build.cc"
     "${GE_CODE_DIR}/ge/ir_build/attr_options/utils.cc"
     "${GE_CODE_DIR}/ge/ir_build/attr_options/keep_dtype_option.cc"
@@ -248,7 +247,6 @@ set(GRAPH_DAVINCI_MODEL_SRC_FILES
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/super_kernel/super_kernel.cc"
     "${GE_CODE_DIR}/ge/graph/load/model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "${GE_CODE_DIR}/ge/hybrid/node_executor/aicpu/aicpu_ext_info.cc"
-    "${GE_CODE_DIR}/ge/graph/manager/model_manager/event_manager.cc"
 )
 
 set(GRAPH_EXECUTE_COMMON_SRC_FILES
@@ -520,13 +518,9 @@ set(COMMON_TEST_FILES
 
 set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/data_dumper_unittest.cc"
-    #"graph/load/new_model_manager_data_inputer_unittest.cc"
-    #"graph/load/new_model_manager_davinci_model_unittest.cc"
     "graph/load/model_manager_unittest.cc"
     "graph/load/new_model_manager_model_manager_aicpu_unittest.cc"
     "graph/load/end_graph_task_unittest.cc"
-    "graph/load/new_model_manager_event_manager_unittest.cc"
-    #"graph/load/output_net_output_unittest.cc"
     "graph/load/davinci_model_unittest.cc"
     "graph/load/tbe_handle_store_unittest.cc"
     "graph/load/hccl_task_info_unittest.cc"
@@ -536,7 +530,6 @@ set(DISTINCT_GRAPH_LOAD_TEST_FILES
     "graph/load/memcpy_addr_async_task_info_unittest.cc"
     "graph/load/memcpy_async_task_info_unittest.cc"
     "graph/load/cpu_queue_schedule_unittest.cc"
-    #"graph/graph_load_unittest.cc"
     "graph/ge_executor_unittest.cc"
     "graph/load/model_helper_unittest.cc"
     "graph/load/model_utils_unittest.cc"

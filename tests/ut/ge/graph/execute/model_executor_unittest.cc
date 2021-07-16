@@ -20,6 +20,7 @@
 #define private public
 #include "graph/execute/model_executor.h"
 #include "graph/manager/graph_manager.h"
+#include "graph/manager/graph_var_manager.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
 

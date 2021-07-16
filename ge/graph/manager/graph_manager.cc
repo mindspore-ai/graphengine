@@ -248,7 +248,6 @@ Status GraphManager::Finalize() {
     Analyzer::GetInstance()->DestroyGraphJsonObject(session_id, graph_id);
   }
   graph_map_.clear();
-  cache_helper_map_.clear();
   graph_count_.clear();
 
   // graph context
@@ -1005,13 +1004,6 @@ Status GraphManager::PreRun(const GraphNodePtr &graph_node, const std::vector<Ge
     }
   }
 
-  ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
-  // when set incre build, save om model and var manager
-  GeModelPtr ge_model = nullptr;
-  auto save_ret = SaveCacheAfterBuild(graph_node->GetGraphId(), compute_graph, ge_model);
-  if (save_ret != SUCCESS) {
-    GELOGW("Fail to save cache.");
-  }
   GEEVENT("[GEPERFTRACE] GE PreRun End");
   return SUCCESS;
 }
@@ -1063,18 +1055,15 @@ Status GraphManager::StartForRunGraph(const GraphNodePtr &graph_node, const std:
              graph_node->GetGraphId());
       return PARAM_INVALID;
     }
-    GeModelPtr ge_model = nullptr;
-    // check need incre build.
-    ret = IncreBuild(graph_node, ge_model);
+
+    ret = PreRun(graph_node, inputs, ge_root_model, session_id);
+    // release rts generate context
+    RtContextUtil::GetInstance().DestroyRtContexts(session_id, graph_node->GetGraphId());
     if (ret != SUCCESS) {
-      ret = PreRun(graph_node, inputs, ge_root_model, session_id);
-      // release rts generate context
-      RtContextUtil::GetInstance().DestroyRtContexts(session_id, graph_node->GetGraphId());
-      if (ret != SUCCESS) {
-        GELOGE(ret, "[Call][PreRun] Failed, graph_id:%u, session_id:%lu.", graph_node->GetGraphId(), session_id);
-        return ret;
-      }
+      GELOGE(ret, "[Call][PreRun] Failed, graph_id:%u, session_id:%lu.", graph_node->GetGraphId(), session_id);
+      return ret;
     }
+
     ret = LoadGraph(ge_root_model, graph_node);
     if (ret != SUCCESS) {
       GELOGE(ret, "[Load][Graph] Failed, graph_id:%u.", graph_node->GetGraphId());
@@ -1102,91 +1091,6 @@ Status GraphManager::LoadGraph(const GeRootModelPtr &ge_root_model, const GraphN
   ErrorManager::GetInstance().SetStage(error_message::kModelLoad, error_message::kModelLoad);
   GE_CHECK_NOTNULL(executor_);
   return executor_->LoadGraph(ge_root_model, graph_node);
-}
-
-Status GraphManager::LoadFromCache(const GraphNodePtr &graph_node, const ModelCacheHelperPtr &cache_helper,
-                                   GeModelPtr &ge_model) {
-  auto graph_id = graph_node->GetGraphId();
-  auto ret = cache_helper->LoadOmModelFromCache(ge_model);
-  if (ret != SUCCESS) {
-    GELOGW("Fail to load om model from cache.");
-    if (cache_helper->ClearCache(graph_id) != SUCCESS) {
-      GELOGW("Fail to clear cache of graph %u.", graph_id);
-    }
-    return FAILED;
-  }
-  ret = cache_helper->RecoverVarManagerFromCache();
-  if (ret != SUCCESS) {
-    GELOGW("Fail to recover VarManager from cache.");
-    if (cache_helper->ClearCache(graph_id) != SUCCESS) {
-      GELOGW("Fail to clear cache of graph %u.", graph_id);
-    }
-    return FAILED;
-  }
-  ComputeGraphPtr compute_graph_in_model = GraphUtils::GetComputeGraph(ge_model->GetGraph());
-  if (compute_graph_in_model == nullptr) {
-    GELOGW("Error occurred when get compute graph from om, abandon.");
-    return FAILED;
-  } else {
-    graph_node->SetComputeGraph(compute_graph_in_model);
-    graph_node->SetGeModel(ge_model);
-    GELOGI("Load model and graph form cache om file.");
-  }
-  return SUCCESS;
-}
-
-Status GraphManager::SaveCacheBeforeBuild(uint32_t graph_id, const ModelCacheHelperPtr &cache_helper) {
-  auto ret = cache_helper->SaveCacheInfoToCache();
-  if (ret != SUCCESS) {
-    GELOGW("Fail to save cache info of graph[%d] to cache.", graph_id);
-    return FAILED;
-  }
-  ret = cache_helper->SaveVarManagerToCache(true);
-  if (ret != SUCCESS) {
-    GELOGW("Fail to save var manager to cache.");
-    cache_helper->ClearCache(graph_id);
-    return FAILED;
-  }
-  GELOGI("Cache files have been saved.");
-  return SUCCESS;
-}
-
-Status GraphManager::SaveCacheAfterBuild(uint32_t graph_id, ge::ComputeGraphPtr graph, GeModelPtr &ge_model) {
-  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
-  if ((instance_ptr == nullptr) || !instance_ptr->InitFlag()) {
-    GELOGW("GELib not initialized.");
-    return FAILED;
-  }
-
-  if (instance_ptr->IsIncreBuild()) {
-    std::lock_guard<std::mutex> lock(member_mutex_);
-    auto iter = cache_helper_map_.find(graph_id);
-    if (iter == cache_helper_map_.end()) {
-      GELOGW("Can not find ModelCacheHelper of graph[%u]", graph_id);
-      return FAILED;
-    } else {
-      ModelCacheHelperPtr cache_helper = iter->second;
-      auto ret = cache_helper->RefreshComputeGraph(graph);
-      if (ret != SUCCESS) {
-        cache_helper->ClearCache(graph_id);
-        GELOGW("Fail to refresh cache helper's compute graph");
-        return FAILED;
-      }
-      ret = cache_helper->SaveVarManagerToCache(false);
-      if (ret != SUCCESS) {
-        cache_helper->ClearCache(graph_id);
-        GELOGW("Fail to save VarManager to cache");
-        return FAILED;
-      }
-      ret = cache_helper->SaveOmModelToCache(ge_model);
-      if (ret != SUCCESS) {
-        cache_helper->ClearCache(graph_id);
-        GELOGW("Fail to save om model to cache");
-        return FAILED;
-      }
-    }
-  }
-  return SUCCESS;
 }
 
 Status GraphManager::InnerRunGraph(GraphNodePtr &graph_node, const GraphId &graph_id,
@@ -1239,8 +1143,6 @@ Status GraphManager::RunGraphWithStreamAsync(const GraphId &graph_id, rtStream_t
   graph_node->SetIsSpecificStream(true);
   ComputeGraphPtr compute_graph_tmp = GraphUtils::GetComputeGraph(*(graph_node->GetGraph()));
 
-  // when set incre build, add cache helper map
-  AddModelCacheHelperToMap(graph_id, session_id, compute_graph_tmp);
   if (options_.local_fmk_op_flag) {
     GetCompilerStages(graph_id).optimizer.TranFrameOp(compute_graph_tmp);
   }
@@ -1298,9 +1200,6 @@ Status GraphManager::RunGraph(const GraphId &graph_id, const std::vector<GeTenso
                                   GELOGE(GE_GRAPH_GRAPH_NODE_NULL, "[Get][ComputeGraph] failed, "
                                          "compute_graph_tmp is NULL, graph id = %u.", graph_id);
                                   return GE_GRAPH_GRAPH_NODE_NULL;))
-
-  // when set incre build, add cache helper map
-  AddModelCacheHelperToMap(graph_id, session_id, compute_graph_tmp);
 
   if (options_.local_fmk_op_flag) {
     GetCompilerStages(graph_id).optimizer.TranFrameOp(compute_graph_tmp);
@@ -1518,16 +1417,6 @@ Status GraphManager::SaveParams(ge::GeModel &model, const std::string &type, con
   return SUCCESS;
 }
 
-void GraphManager::RemoveModelCacheHelper(const GraphId &graph_id) {
-  std::lock_guard<std::mutex> lock(member_mutex_);
-  auto iter = cache_helper_map_.find(graph_id);
-  if (iter != cache_helper_map_.end()) {
-    cache_helper_map_.erase(iter);
-  } else {
-    GELOGW("[GraphManager] cache helper does not exist, graph_id = %u", graph_id);
-  }
-}
-
 bool GraphManager::CheckModelLoad(const GeRootModelPtr &ge_root_model, bool load_flag) {
   return ((ge_root_model != nullptr) && (ge_root_model->GetModelId() != INVALID_MODEL_ID) && load_flag);
 }
@@ -1555,7 +1444,6 @@ Status GraphManager::RemoveGraph(const GraphId &graph_id) {
 
   var_acc_ctrl_.RemoveGraph(graph_id);
   RemoveGraphNode(graph_id);
-  RemoveModelCacheHelper(graph_id);
 
   auto ge_root_model = graph_node->GetGeRootModel();
   if (CheckModelLoad(ge_root_model, graph_node->GetLoadFlag())) {
@@ -2727,61 +2615,6 @@ Status GraphManager::RunGraphAsync(const GraphId &graph_id, const std::vector<ge
   return SUCCESS;
 }
 
-void GraphManager::AddModelCacheHelperToMap(const GraphId &graph_id, uint64_t session_id,
-                                            ComputeGraphPtr &compute_graph) {
-  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
-  if (instance_ptr != nullptr && instance_ptr->IsIncreBuild()) {
-    std::lock_guard<std::mutex> lock(member_mutex_);
-    auto iter = cache_helper_map_.find(graph_id);
-    if (iter == cache_helper_map_.end()) {
-      ModelCacheHelperPtr cache_helper = MakeShared<ge::ModelCacheHelper>(session_id, graph_id, compute_graph);
-      if (cache_helper != nullptr) {
-        cache_helper_map_.emplace(std::make_pair(graph_id, cache_helper));
-      } else {
-        GELOGW("Cache helper make shared failed, graph_id = %u.", graph_id);
-      }
-    }
-  }
-}
-
-ModelCacheHelperPtr GraphManager::FindModelCacheHelper(GraphId graph_id) {
-  std::lock_guard<std::mutex> lock(member_mutex_);
-  auto iter = cache_helper_map_.find(graph_id);
-  if (iter != cache_helper_map_.end()) {
-    return iter->second;
-  }
-
-  return nullptr;
-}
-
-Status GraphManager::IncreBuild(const GraphNodePtr &graph_node, GeModelPtr &ge_model) {
-  std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
-  if (instance_ptr == nullptr || !instance_ptr->IsIncreBuild()) {
-    return FAILED;
-  }
-  const uint32_t graph_id = graph_node->GetGraphId();
-  ModelCacheHelperPtr cache_helper = FindModelCacheHelper(graph_id);
-  if (cache_helper == nullptr) {
-    GELOGW("Can not find ModelCacheHelper of graph[%u]", graph_id);
-    return FAILED;
-  }
-  if (cache_helper->IsModelCacheHit()) {
-    GEEVENT("Model cache hit.");
-    Status ret = LoadFromCache(graph_node, cache_helper, ge_model);
-    if (ret == SUCCESS) {
-      return SUCCESS;
-    } else {
-      GELOGW("Error occurred when load from cache, abandon.");
-    }
-  } else {
-    GEEVENT("Model cache miss.");
-  }
-  if (SaveCacheBeforeBuild(graph_node->GetGraphId(), cache_helper) != SUCCESS) {
-    GELOGW("Error occurred when save cache.");
-  }
-  return FAILED;
-}
-
 Status GraphManager::CheckIncreBuildAndPreRun(const PreRunArgs &args,
                                               GraphNodePtr &graph_node, GeRootModelPtr &ge_root_model) {
   if (!IsGraphNeedBuild(graph_node)) {
@@ -2796,20 +2629,18 @@ Status GraphManager::CheckIncreBuildAndPreRun(const PreRunArgs &args,
     return PARAM_INVALID;
   }
   // check need incre build.
-  GeModelPtr ge_model = nullptr;
-  if (IncreBuild(graph_node, ge_model) != SUCCESS) {
-    std::vector<GeTensor> ge_inputs;
-    for (const auto &item: args.input_tensor) {
-      ge_inputs.emplace_back(TensorAdapter::AsGeTensor(item));
-    }
-    Status ret = PreRun(graph_node, ge_inputs, ge_root_model, args.session_id);
-    // release rts generate context
-    RtContextUtil::GetInstance().DestroyRtContexts(args.session_id, graph_node->GetGraphId());
-    if (ret != SUCCESS) {
-      ReturnError(args.callback, ret, "PreRun Failed.");
-      return ret;
-    }
+  std::vector<GeTensor> ge_inputs;
+  for (const auto &item: args.input_tensor) {
+    ge_inputs.emplace_back(TensorAdapter::AsGeTensor(item));
   }
+  Status ret = PreRun(graph_node, ge_inputs, ge_root_model, args.session_id);
+  // release rts generate context
+  RtContextUtil::GetInstance().DestroyRtContexts(args.session_id, graph_node->GetGraphId());
+  if (ret != SUCCESS) {
+    ReturnError(args.callback, ret, "PreRun Failed.");
+    return ret;
+  }
+
   graph_node->SetBuildFlag(true);
   var_acc_ctrl_.SetGraphBuildEnd(graph_node->GetGraphId());
   return SUCCESS;
@@ -2878,10 +2709,6 @@ void GraphManager::PreRunThread() {
       graph_node->Unlock();
       return;
     }
-    // when set incre build, save cache helper.
-    AddModelCacheHelperToMap(args.graph_id, args.session_id, compute_graph_tmp);
-
-    std::vector<GeModelPtr> ge_models;
 
     if (options_.local_fmk_op_flag) {
       GetCompilerStages(graph_node->GetGraphId()).optimizer.TranFrameOp(compute_graph_tmp);

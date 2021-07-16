@@ -34,6 +34,7 @@
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/max_block_mem_assigner.h"
 #include "graph/manager/graph_var_manager.h"
+#include "graph/manager/graph_mem_manager.h"
 #undef protected
 #undef private
 
@@ -42,7 +43,7 @@ using namespace testing;
 using namespace ge;
 using domi::GetContext;
 
-class UtestTaskGeneratorTest : public testing::Test {
+class UtestGraphMemAssigner : public testing::Test {
  public:
     ge::ComputeGraphPtr BuildGraphWithVar(int64_t session_id) {
       // init
@@ -75,11 +76,15 @@ protected:
     void TearDown() {}
 };
 
-TEST_F(UtestMemoryAssignerTest, graph_memory_assign_continuous_input) {
+TEST_F(UtestGraphMemAssigner, graph_memory_assign_fail_case) {
   ge::ComputeGraphPtr compute_graph = make_shared<ge::ComputeGraph>("");
   GraphMemoryAssigner graph_mem_assigner(compute_graph);
+  MemoryOffset mem_offset(2, 10000);
+  graph_mem_assigner.memory_offset_.insert({2, mem_offset});
+  VarManager::Instance(0)->graph_mem_max_size_ = 0;
+
   map<uint64_t, size_t> mem_type_to_offset = {};
-  Status ret = ReAssignMemory(false, mem_type_to_offset);
-  EXPECT_EQ(ret, ge::FAILED);
+  Status ret = graph_mem_assigner.ReAssignMemory(false, mem_type_to_offset);
+  EXPECT_EQ(ret, ACL_ERROR_GE_MEMORY_ALLOCATION);
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2021 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,22 +17,40 @@
 #ifndef GE_GRAPH_PASSES_INFERSHAPE_PASS_H_
 #define GE_GRAPH_PASSES_INFERSHAPE_PASS_H_
 
-#include "graph/passes/base_pass.h"
+#include "graph/passes/infer_base_pass.h"
+#include <stack>
 
 namespace ge {
-class InferShapePass : public BaseNodePass {
+class InferShapePass : public InferBasePass {
  public:
-  ///
-  /// Entry of the InferShapePass optimizer
-  /// @param [in] graph: Input ComputeGraph
-  /// @return SUCCESS: Execution succeed
-  /// @return OTHERS:  Execution failed
-  /// @author
-  ///
-  Status Run(ge::NodePtr &node) override;
+  std::string SerialTensorInfo(const GeTensorDescPtr &tensor_desc) const override;
+  graphStatus Infer(NodePtr &node) override;
+
+  graphStatus UpdateTensorDesc(const GeTensorDescPtr &src, GeTensorDescPtr &dst, bool &changed) override;
+  graphStatus UpdateOutputFromSubgraphs(const std::vector<GeTensorDescPtr> &src, GeTensorDescPtr &dst) override;
+  graphStatus UpdateOutputFromSubgraphsForMultiDims(const std::vector<GeTensorDescPtr> &src,
+                                                            GeTensorDescPtr &dst) override;
+
+  Status OnSuspendNodesLeaked() override;
 
  private:
-  Status RePassLoopNode(const NodePtr &node);
+  graphStatus InferShapeAndType(NodePtr &node);
+  graphStatus CallInferShapeFunc(NodePtr &node, Operator &op);
+  bool SameTensorDesc(const GeTensorDescPtr &src, const GeTensorDescPtr &dst);
+  void UpdateCurNodeOutputDesc(NodePtr &node);
+  Status SuspendV1LoopExitNodes(const NodePtr &node);
+  struct SuspendNodes {
+    std::stack<NodePtr> nodes;
+    std::unordered_set<NodePtr> nodes_set;
+
+    NodePtr PopSuspendedNode() {
+      auto top_node = nodes.top();
+      nodes.pop();
+      nodes_set.erase(top_node);
+      return top_node;
+    }
+  };
+  std::map<std::string, SuspendNodes> graphs_2_suspend_nodes_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_PASSES_INFERSHAPE_PASS_H_

@@ -30,7 +30,7 @@
 #define protected public
 #define private public
 #include "graph/build/memory/binary_block_mem_assigner.h"
-#include "graph/build/memory/graph_mem_assigner_unittest.h"
+#include "graph/build/memory/graph_mem_assigner.h"
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/max_block_mem_assigner.h"
 #include "graph/manager/graph_var_manager.h"

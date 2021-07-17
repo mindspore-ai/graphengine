@@ -57,6 +57,7 @@ const uint64_t kProfilingArEndLogid = 4;
 const uint64_t kProfilingIterEndLogid = 65535;
 const int64_t kHashFactor = 100000;
 const int64_t kInvalidGroupId = -1;
+const char *const kKernelInfoNameHccl = "ops_kernel_info_hccl";
 }  // namespace
 namespace ge {
 TaskGenerator::TaskGenerator(uint8_t *var_mem_base, uint64_t var_mem_size) {
@@ -348,14 +349,15 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     }
 
     // Reset stream id to ge stream id, as graph load must use ge stream to reassign stream
-    void *ops_kernel_info_store_ptr = kernel_info_store.get();
     for (size_t idx = task_list_size_before; idx < task_list_size_after; ++idx) {
       task_def_list[idx].set_stream_id(static_cast<uint32_t>(stream_id));
       op_name_map[idx] = name;
-      // Set opsKernelInfoStorePtr and op_index, the two fields be use in DistributeTask and InitTaskInfo
       TaskDef *task_def_ptr = &task_def_list[idx];
       GE_CHECK_NOTNULL(task_def_ptr);
-      task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(ops_kernel_info_store_ptr));
+      // Set opsKernelInfoStorePtr for hccl which will be use in DistributeTask and InitTaskInfo
+      if (op_kernel_lib_name == kKernelInfoNameHccl) {
+        task_def_ptr->set_ops_kernel_store_ptr(reinterpret_cast<uintptr_t>(kernel_info_store.get()));
+      }
     }
     GELOGD("Call %s to generate node[name:%s(%s), id:%ld, stream_id:%ld] task finished, generate %zu task(s).",
            op_kernel_lib_name.c_str(), name.c_str(), type.c_str(), op_id, stream_id,

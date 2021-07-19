@@ -105,10 +105,7 @@ class SubGraphInfo {
   std::vector<bool> output_flag_;
   ModelIdInfo model_id_info_;
   GeModelPtr ge_model_ptr_;
-  bool malloc_flag_;
-  std::vector<void *> buffer_addr_;
   std::string output_names_;
-  std::vector<uint32_t> buffer_size_;
   std::string stream_label_;
   std::unordered_map<ge::NodePtr, ge::NodePtr> end_to_pld_;
   std::unordered_map<ge::NodePtr, ge::NodePtr> pld_to_end_;

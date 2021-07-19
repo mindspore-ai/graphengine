@@ -23,15 +23,20 @@
 
 #include "graph/load/model_manager/task_info/kernel_ex_task_info.h"
 #include "cce/aicpu_engine_struct.h"
+#include "tests/depends/runtime/src/runtime_stub.h"
 
 namespace ge {
 extern OpDescPtr CreateOpDesc(string name, string type);
 
 class UtestKernelExTaskInfo : public testing::Test {
  protected:
-  void SetUp() {}
+  void SetUp() {
+    RTS_STUB_SETUP();
+  }
 
-  void TearDown() {}
+  void TearDown() {
+    RTS_STUB_TEARDOWN();
+  }
 };
 
 // test kernel_ex_task_Release
@@ -209,4 +214,136 @@ TEST_F(UtestKernelExTaskInfo, parse_topic_type_failed_2) {
   KernelExTaskInfo kernel_ex_task_info;
   EXPECT_NE(kernel_ex_task_info.InitTaskExtInfo(ext_info, op_desc), SUCCESS);
 }
+
+TEST_F(UtestKernelExTaskInfo, blocking_aicpu_op) {
+  int len = sizeof(hybrid::AicpuExtInfo) + sizeof(hybrid::AsyncWaitInfo);
+  vector<char> aicpu_ext_info(len, 0);
+  char *buf = aicpu_ext_info.data();
+  int offset = 0;
+  hybrid::AicpuExtInfo *ext_info = reinterpret_cast<hybrid::AicpuExtInfo*>(buf + offset);
+  ext_info->infoType = aicpu::FWKAdapter::FWK_ADPT_EXT_ASYNCWAIT;
+  ext_info->infoLen = sizeof(hybrid::AsyncWaitInfo);
+  offset += sizeof(hybrid::AicpuExtInfo);
+  hybrid::AsyncWaitInfo *async_wait_info = reinterpret_cast<hybrid::AsyncWaitInfo*>(buf + offset);
+  async_wait_info->waitType = 0;
+  async_wait_info->waitId = 0;
+  async_wait_info->timeOut = 0;
+  async_wait_info->reserved = 0;
+
+  domi::TaskDef task_def;
+  domi::KernelExDef kernel_ex_def;
+  kernel_ex_def.set_kernel_ext_info(buf, len);
+  kernel_ex_def.set_kernel_ext_info_size(len);
+  domi::KernelExDef *kernel_ex_def_tmp = task_def.mutable_kernel_ex();
+  *kernel_ex_def_tmp = kernel_ex_def;
+
+  const OpDescPtr op_desc = CreateOpDesc("deque", "Deque");
+  ge::AttrUtils::SetBool(op_desc, ATTR_NAME_IS_BLOCKING_OP, true);
+
+  KernelExTaskInfo kernel_ex_task_info;
+  kernel_ex_task_info.op_desc_ = op_desc;
+  DavinciModel davinci_model(0, nullptr);
+  kernel_ex_task_info.davinci_model_ = &davinci_model;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), SUCCESS);
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), SUCCESS);
+  kernel_ex_task_info.op_desc_ = op_desc;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), SUCCESS);
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), SUCCESS);
+}
+
+TEST_F(UtestKernelExTaskInfo, blocking_aicpu_op_fail_01) {
+  int len = sizeof(hybrid::AicpuExtInfo) + sizeof(hybrid::AsyncWaitInfo);
+  vector<char> aicpu_ext_info(len, 0);
+  char *buf = aicpu_ext_info.data();
+  int offset = 0;
+  hybrid::AicpuExtInfo *ext_info = reinterpret_cast<hybrid::AicpuExtInfo*>(buf + offset);
+  ext_info->infoType = aicpu::FWKAdapter::FWK_ADPT_EXT_ASYNCWAIT;
+  ext_info->infoLen = sizeof(hybrid::AsyncWaitInfo);
+  offset += sizeof(hybrid::AicpuExtInfo);
+  hybrid::AsyncWaitInfo *async_wait_info = reinterpret_cast<hybrid::AsyncWaitInfo*>(buf + offset);
+  async_wait_info->waitType = 0;
+  async_wait_info->waitId = 0;
+  async_wait_info->timeOut = 0;
+  async_wait_info->reserved = 0;
+
+  domi::TaskDef task_def;
+  domi::KernelExDef kernel_ex_def;
+  kernel_ex_def.set_kernel_ext_info(buf, len);
+  kernel_ex_def.set_kernel_ext_info_size(len);
+  domi::KernelExDef *kernel_ex_def_tmp = task_def.mutable_kernel_ex();
+  *kernel_ex_def_tmp = kernel_ex_def;
+
+  const OpDescPtr op_desc = CreateOpDesc("deque", "Deque");
+
+  KernelExTaskInfo kernel_ex_task_info;
+  kernel_ex_task_info.op_desc_ = op_desc;
+  DavinciModel davinci_model(0, nullptr);
+  kernel_ex_task_info.davinci_model_ = &davinci_model;
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), SUCCESS);
+
+  kernel_ex_task_info.is_blocking_aicpu_op_ = true;
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), FAILED);
+}
+
+TEST_F(UtestKernelExTaskInfo, blocking_aicpu_op_fail_02) {
+  int len = sizeof(hybrid::AicpuExtInfo) + sizeof(hybrid::AsyncWaitInfo);
+  vector<char> aicpu_ext_info(len, 0);
+  char *buf = aicpu_ext_info.data();
+  int offset = 0;
+  hybrid::AicpuExtInfo *ext_info = reinterpret_cast<hybrid::AicpuExtInfo*>(buf + offset);
+  ext_info->infoType = aicpu::FWKAdapter::FWK_ADPT_EXT_ASYNCWAIT;
+  ext_info->infoLen = sizeof(hybrid::AsyncWaitInfo);
+  offset += sizeof(hybrid::AicpuExtInfo);
+  hybrid::AsyncWaitInfo *async_wait_info = reinterpret_cast<hybrid::AsyncWaitInfo*>(buf + offset);
+  async_wait_info->waitType = 0;
+  async_wait_info->waitId = 0;
+  async_wait_info->timeOut = 0;
+  async_wait_info->reserved = 0;
+
+  domi::TaskDef task_def;
+  domi::KernelExDef kernel_ex_def;
+  kernel_ex_def.set_kernel_ext_info(buf, len);
+  kernel_ex_def.set_kernel_ext_info_size(len);
+  domi::KernelExDef *kernel_ex_def_tmp = task_def.mutable_kernel_ex();
+  *kernel_ex_def_tmp = kernel_ex_def;
+
+  const OpDescPtr op_desc = CreateOpDesc("deque", "Deque");
+  ge::AttrUtils::SetBool(op_desc, ATTR_NAME_IS_BLOCKING_OP, true);
+  KernelExTaskInfo kernel_ex_task_info;
+  kernel_ex_task_info.op_desc_ = op_desc;
+  DavinciModel davinci_model(0, nullptr);
+  kernel_ex_task_info.davinci_model_ = &davinci_model;
+
+  RTS_STUB_RETURN_VALUE(rtGetDevice, rtError_t, 0x78000001);
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), FAILED);
+
+  RTS_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t, 0x78000001);
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), FAILED);
+
+  RTS_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t, 0x78000001);
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), FAILED);
+
+  RTS_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t, RT_ERROR_NONE);
+  RTS_STUB_OUTBOUND_VALUE(rtGetDeviceCapability, int32_t, value, RT_AICPU_BLOCKING_OP_SUPPORT + 1);
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), FAILED);
+
+  RTS_STUB_RETURN_VALUE(rtGetDevice, rtError_t, 0x78000001);
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), FAILED);
+
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), SUCCESS);
+  RTS_STUB_RETURN_VALUE(rtStreamWaitEvent, rtError_t, 0x78000001);
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), FAILED);
+
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), SUCCESS);
+  RTS_STUB_RETURN_VALUE(rtEventReset, rtError_t, 0x78000001);
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), FAILED);
+
+  RTS_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t, RT_ERROR_NONE);
+  RTS_STUB_OUTBOUND_VALUE(rtGetDeviceCapability, int32_t, value, RT_AICPU_BLOCKING_OP_NOT_SUPPORT);
+  EXPECT_EQ(kernel_ex_task_info.InitTaskExtInfo(kernel_ex_def.kernel_ext_info(), op_desc), SUCCESS);
+  RTS_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t, RT_ERROR_NONE);
+  RTS_STUB_OUTBOUND_VALUE(rtGetDeviceCapability, int32_t, value, RT_AICPU_BLOCKING_OP_NOT_SUPPORT);
+  EXPECT_EQ(kernel_ex_task_info.Distribute(), SUCCESS);
+}
+
 }  // namespace ge

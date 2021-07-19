@@ -24,6 +24,8 @@
 
 #include "graph/load/model_manager/task_info/task_info.h"
 #include "graph/op_desc.h"
+#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
+
 namespace ge {
 class KernelTaskInfo : public TaskInfo {
  public:
@@ -148,6 +150,11 @@ class KernelTaskInfo : public TaskInfo {
   bool DoubleCallSKTSaveCheck();
   void SetArgs();
 
+  // for blocking aicpu op
+  Status DistributeWaitTaskForAicpuBlockingOp();
+  Status CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support);
+  Status UpdateEventIdForAicpuBlockingOp(std::shared_ptr<ge::hybrid::AicpuExtInfoHandler> &ext_handle);
+
   void *stub_func_;
   void *args_;
   void *sm_desc_;
@@ -187,6 +194,7 @@ class KernelTaskInfo : public TaskInfo {
   uint32_t skt_dump_flag_ = RT_KERNEL_DEFAULT;
   void *superkernel_device_args_addr_ = nullptr;
   void *superkernel_dev_nav_table_ = nullptr;
+  bool is_blocking_aicpu_op_ = false;
 
   struct AICPUCustomInfo {
     void *input_descs = nullptr;

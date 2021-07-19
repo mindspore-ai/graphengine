@@ -387,13 +387,7 @@ Status TaskGenerator::GenerateTask(RunContext &run_context, ComputeGraphPtr &gra
     GE_CHK_BOOL_EXEC_INFO(!op_kernel_lib_name.empty(), continue,
                           "Node[name:%s, type:%s] does not need to generate task.", name.c_str(), type.c_str());
     auto kernel_info_store = ops_kernel_manager.GetOpsKernelInfoStore(op_kernel_lib_name);
-    if (kernel_info_store == nullptr) {
-      REPORT_INNER_ERROR("E19999", "Get ops kernel info store failed for op:%s(%s), op_kernel_name:%s",
-                         node->GetName().c_str(), node->GetType().c_str(), op_kernel_lib_name.c_str());
-      GELOGE(INTERNAL_ERROR, "[Call][GetOpsKernelInfoStore] No ops kernel store or ops kernel builder found. "
-             "node:%s(%s), op_kernel_lib_name=%s.", name.c_str(), type.c_str(), op_kernel_lib_name.c_str());
-      return INTERNAL_ERROR;
-    }
+    GE_CHECK_NOTNULL(kernel_info_store);
     GE_CHK_STATUS_RET(UpdateAnchorStatus(node), "[Call][UpdateAnchorStatus] node:%s(%s) failed", name.c_str(),
                       type.c_str());
     if (node->GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH)) {

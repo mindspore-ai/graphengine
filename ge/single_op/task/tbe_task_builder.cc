@@ -425,7 +425,7 @@ Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
     GELOGD("[%s] Done allocating tiling buffer, size=%ld.", op_desc_->GetName().c_str(), max_size);
   }
 
-  GE_CHK_STATUS_RET_NOLOG(task.EnableDynamicSupport(node_, tiling_buffer, static_cast<uint32_t>(max_size)));
+  task.EnableDynamicSupport(node_, tiling_buffer, static_cast<uint32_t>(max_size));
   return SUCCESS;
 }
 

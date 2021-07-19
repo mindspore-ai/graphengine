@@ -97,7 +97,7 @@ class TbeOpTask : public OpTask {
   const void *GetArgs() const;
   size_t GetArgSize() const;
   const std::string &GetStubName() const;
-  virtual Status EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size);
+  Status EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size);
   const std::string &GetTaskType() const override;
   void SetHandle(void *handle);
 
@@ -149,7 +149,6 @@ class TbeOpTask : public OpTask {
 class AtomicAddrCleanOpTask : public TbeOpTask {
  public:
   Status InitAtomicAddrCleanIndices();
-  Status EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size) override;
 
  private:
   Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
@@ -157,8 +156,8 @@ class AtomicAddrCleanOpTask : public TbeOpTask {
   Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) override;
   Status UpdateTilingArgs(rtStream_t stream) override;
   Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info) override;
-
   std::vector<int> atomic_output_indices_;
+
 };
 
 class AiCpuBaseTask : public OpTask {

@@ -433,11 +433,13 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   if (!inputs_size.empty()) {
     StreamResource *stream_resource  = SingleOpManager::GetInstance().GetResource(resource_id_, stream_);
     GE_CHK_STATUS_RET_NOLOG(UpdateInputsBufferAddr(stream_resource, stream_, inputs_size, update_buffers));
-    GE_CHK_STATUS_RET_NOLOG(SetHostTensorValue(input_desc, input_buffers));
   }
 
   if (hybrid_model_executor_ != nullptr) {
     GELOGD("Execute multi-task dynamic single op by hybrid model executor");
+    if (!inputs_size.empty()) {
+      GE_CHK_STATUS_RET_NOLOG(SetHostTensorValue(input_desc, input_buffers));
+    }
     hybrid::HybridModelExecutor::ExecuteArgs args;
     GE_CHK_STATUS_RET_NOLOG(InitHybridModelArgs(update_buffers, output_buffers, input_desc, args));
 

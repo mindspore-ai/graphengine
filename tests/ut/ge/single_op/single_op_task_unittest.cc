@@ -237,3 +237,27 @@ TEST_F(UtestSingleOpTask, test_aicpu_task_update_io_addr) {
     ASSERT_EQ(ret, PARAM_INVALID);
   }
 }
+
+TEST_F(UtestSingleOpTask, test_dynamic_support) {
+  auto graph = make_shared<ComputeGraph>("graph");
+  auto op_desc = make_shared<OpDesc>("Add", "Add");
+  auto node = graph->AddNode(op_desc);
+  AtomicAddrCleanOpTask atomic_task;
+  TbeOpTask tbe_task;
+
+  tbe_task.arg_size_ = sizeof(void *) * 1;
+  tbe_task.args_.reset(new (std::nothrow) uint8_t[tbe_task.arg_size_]);
+  atomic_task.arg_size_ = sizeof(void *) * 1;
+  atomic_task.args_.reset(new (std::nothrow) uint8_t[atomic_task.arg_size_]);
+  ASSERT_EQ(tbe_task.EnableDynamicSupport(node, (void *)0x0001, 1), ACL_ERROR_GE_INTERNAL_ERROR);
+  ASSERT_EQ(atomic_task.EnableDynamicSupport(node, (void *)0x0001, 1), ACL_ERROR_GE_INTERNAL_ERROR);
+
+  tbe_task.arg_size_ = sizeof(void *) * 2;
+  tbe_task.args_.reset(new (std::nothrow) uint8_t[tbe_task.arg_size_]);
+  atomic_task.arg_size_ = sizeof(void *) * 2;
+  atomic_task.args_.reset(new (std::nothrow) uint8_t[atomic_task.arg_size_]);
+  ASSERT_EQ(tbe_task.EnableDynamicSupport(node, (void *)0x0001, 1), SUCCESS);
+  ASSERT_EQ(atomic_task.EnableDynamicSupport(node, (void *)0x0001, 1), SUCCESS);
+  tbe_task.tiling_buffer_ = nullptr;
+  atomic_task.tiling_buffer_ = nullptr;
+}

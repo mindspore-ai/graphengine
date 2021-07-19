@@ -293,9 +293,6 @@ Status TbeOpTask::UpdateNodeByShape(const vector<GeTensorDesc> &input_desc, cons
 }
 
 Status TbeOpTask::EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size) {
-  node_ = node;
-  tiling_buffer_ = tiling_buffer;
-  max_tiling_size_ = max_tiling_size;
   if (tiling_buffer != nullptr) {
     uintptr_t *arg_base = nullptr;
     size_t arg_num = 0;
@@ -313,6 +310,9 @@ Status TbeOpTask::EnableDynamicSupport(const NodePtr &node, void *tiling_buffer,
     }
     arg_base[tiling_index] = reinterpret_cast<uintptr_t>(tiling_buffer);
   }
+  node_ = node;
+  tiling_buffer_ = tiling_buffer;
+  max_tiling_size_ = max_tiling_size;
   return SUCCESS;
 }
 
@@ -479,25 +479,6 @@ void TbeOpTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   if (tiling_buffer_ != nullptr) {
     --arg_count;
   }
-}
-
-Status AtomicAddrCleanOpTask::EnableDynamicSupport(const NodePtr &node, void *tiling_buffer, uint32_t max_tiling_size) {
-  node_ = node;
-  tiling_buffer_ = tiling_buffer;
-  max_tiling_size_ = max_tiling_size;
-  if (tiling_buffer != nullptr) {
-    uintptr_t *arg_base = nullptr;
-    size_t arg_num = 0;
-    GetIoAddr(arg_base, arg_num);
-    uint32_t tiling_index = atomic_output_indices_.size();
-    if (arg_num == 0 || arg_num < tiling_index) {
-      GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Size]Tiling index %u, arg number %zu is invalid.",
-             tiling_index, arg_num);
-      return ACL_ERROR_GE_INTERNAL_ERROR;
-    }
-    arg_base[tiling_index] = reinterpret_cast<uintptr_t>(tiling_buffer);
-  }
-  return SUCCESS;
 }
 
 Status AtomicAddrCleanOpTask::UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,

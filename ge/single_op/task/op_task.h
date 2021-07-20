@@ -178,6 +178,10 @@ class AiCpuBaseTask : public OpTask {
                        rtStream_t stream);
   Status UpdateOutputShape(vector<GeTensorDesc> &output_desc);
   Status UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensorDesc &output_desc);
+  // for blocking aicpu op
+  Status DistributeWaitTaskForAicpuBlockingOp(rtStream_t stream);
+  Status UpdateEventIdForBlockingAicpuOp();
+  Status CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support);
 
  protected:
   size_t num_inputs_ = 0;
@@ -186,6 +190,9 @@ class AiCpuBaseTask : public OpTask {
   std::unique_ptr<ge::hybrid::AicpuExtInfoHandler> aicpu_ext_handle_;
   void *ext_info_addr_dev_ = nullptr;
   vector<bool> input_is_const_;
+  // for blocking aicpu op
+  bool is_blocking_aicpu_op_ = false;
+  rtEvent_t rt_event_ = nullptr;
 };
 
 class AiCpuTask : public AiCpuBaseTask {

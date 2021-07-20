@@ -22,6 +22,7 @@
 #include "graph/utils/node_utils.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/model/hybrid_model.h"
+#include "runtime/rt.h"
 
 namespace ge {
 namespace hybrid {
@@ -32,6 +33,12 @@ const char *const kAicpuAllshape = "_AllShape";
 }
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_TF, AiCpuNodeExecutor);
 REGISTER_NODE_EXECUTOR_BUILDER(NodeExecutorManager::ExecutorType::AICPU_CUSTOM, AiCpuNodeExecutor);
+
+AicpuNodeTaskBase::~AicpuNodeTaskBase() {
+  if (rt_event_ != nullptr) {
+    (void)rtEventDestroy(rt_event_);
+  }
+}
 
 Status AicpuNodeTaskBase::AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuffer> &tensor_buffer) {
   auto allocator = NpuMemoryAllocator::GetAllocator();
@@ -63,6 +70,13 @@ Status AicpuNodeTaskBase::InitExtInfo(const std::string &kernel_ext_info, int64_
   GELOGD("To update aicpu_task ext_info session_info session_id to %ld", session_id);
   GE_CHK_STATUS_RET(aicpu_ext_handle_.UpdateSessionInfoSessionId(session_id),
                     "[Update][SessionInfoSessionId] failed, session_id:%ld.", session_id);
+
+  if (is_blocking_aicpu_op_) {
+    if (UpdateEventIdForBlockingAicpuOp() != SUCCESS) {
+      GELOGE(FAILED, "[Call][UpdateEventIdForBlockingAicpuOp] Call UpdateEventIdForBlockingAicpuOp failed");
+      return FAILED;
+    }
+  }
 
   // copy task args buf
   GE_CHK_STATUS_RET(AllocTensorBuffer(aicpu_ext_handle_.GetExtInfoLen(), ext_info_addr_dev_),
@@ -230,6 +244,96 @@ Status AicpuNodeTaskBase::ExecuteAsync(TaskContext &context, std::function<void(
   return SUCCESS;
 }
 
+Status AicpuNodeTaskBase::UpdateEventIdForBlockingAicpuOp() {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process");
+    return SUCCESS;
+  }
+  uint32_t event_id = 0;
+  auto rt_ret = rtEventCreateWithFlag(&rt_event_, RT_EVENT_WITH_FLAG);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventCreateWithFlag failed for node:%s, ret:0x%X", node_name_.c_str(),
+                      rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtEventCreateWithFlag] failed for node:%s, ret:0x%X", node_name_.c_str(), rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtGetEventID(rt_event_, &event_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed for node:%s, ret:0x%X", node_name_.c_str(), rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetEventID] failed for node:%s, ret:0x%X", node_name_.c_str(), rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (aicpu_ext_handle_.UpdateEventId(event_id) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update event id failed for node:%s.", node_name_.c_str());
+    GELOGE(FAILED, "[Update][EventId] Update event id failed for node:%s", node_name_.c_str());
+    return FAILED;
+  }
+  GELOGI("Update event_id=%u success", event_id);
+  return SUCCESS;
+}
+
+Status AicpuNodeTaskBase::CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support) {
+  int32_t device_id = 0;
+  auto rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDevice] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  int32_t value = 0;
+  rt_ret = rtGetDeviceCapability(device_id, FEATURE_TYPE_BLOCKING_OPERATOR, RT_MODULE_TYPE_AICPU, &value);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDeviceCapability failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDeviceCapability] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (value != RT_AICPU_BLOCKING_OP_NOT_SUPPORT && value != RT_AICPU_BLOCKING_OP_SUPPORT) {
+    REPORT_INNER_ERROR("E19999", "Value should be %d or %d but %d",
+                       RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    GELOGE(FAILED, "[Check][Value] Value should be %d or %d but %d",
+           RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    return FAILED;
+  }
+  is_support = (value == RT_AICPU_BLOCKING_OP_SUPPORT ? true : false);
+  return SUCCESS;
+}
+
+Status AicpuNodeTaskBase::DistributeWaitTaskForAicpuBlockingOp(rtStream_t stream) {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process.");
+    return SUCCESS;
+  }
+  GELOGD("Distribute queue task begin");
+  if (rt_event_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "rt_event_ is nullptr");
+    GELOGE(FAILED, "[Check][rt_event_] rt_event_ is nullptr");
+    return FAILED;
+  }
+  auto rt_ret = rtStreamWaitEvent(stream, rt_event_);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamWaitEvent failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtEventReset(rt_event_, stream);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventReset failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  return SUCCESS;
+}
+
 Status AicpuTfNodeTask::InitForDependComputeTask() {
   if ((unknown_type_ != DEPEND_COMPUTE) || (node_item_->num_outputs == 0)) {
     GELOGD("Node[%s] type[%s] unknown_type is %d, output num is %d.",
@@ -325,6 +429,9 @@ Status AicpuTfNodeTask::Init(const HybridModel &model) {
 
   // init ext info
   uint64_t ext_session_id = model.GetSessionId();
+  const OpDescPtr op_desc = node_item_->GetOpDesc();
+  AttrUtils::GetBool(op_desc, ATTR_NAME_IS_BLOCKING_OP, is_blocking_aicpu_op_);
+  GELOGD("Get op:%s attribute(is_blocking_op), value:%d", op_desc->GetName().c_str(), is_blocking_aicpu_op_);
   GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info, ext_session_id), "[Init][ExtInfo] failed for Node[%s].",
                     node_name_.c_str());
   GE_CHK_STATUS_RET(InitForDependComputeTask(), "[Init][DependComputeTask] failed for Node[%s].", node_name_.c_str());
@@ -642,6 +749,12 @@ Status AicpuTfNodeTask::LaunchTask(TaskContext &context) {
                                   kernel_buf_->GetSize(), flag, context.GetStream()));
   RECORD_EXECUTION_EVENT(context.GetExecutionContext(), node_name_.c_str(), "[AicpuTfNodertKernelLaunchEx] End");
   GELOGD("Node[%s] launch end.", node_name_.c_str());
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp(context.GetStream()) != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
   if (need_sync_) {
     GELOGD("[%s] Task needs sync", node_name_.c_str());
     GE_CHK_STATUS_RET_NOLOG(context.Synchronize());
@@ -760,6 +873,8 @@ Status AicpuNodeTask::Init(const HybridModel &model) {
                   return FAILED;);
 
   uint64_t ext_session_id = model.GetSessionId();
+  AttrUtils::GetBool(op_desc, ATTR_NAME_IS_BLOCKING_OP, is_blocking_aicpu_op_);
+  GELOGD("Get op:%s attribute(is_blocking_op), value:%d", op_desc->GetName().c_str(), is_blocking_aicpu_op_);
   GE_CHK_STATUS_RET(InitExtInfo(kernel_ext_info, ext_session_id),
                     "[Init][ExtInfo] failed for Node[%s].", node_name.c_str());
 
@@ -826,6 +941,12 @@ Status AicpuNodeTask::LaunchTask(TaskContext &context) {
                                             args_.get(), args_size_,
                                             nullptr, context.GetStream(), flag);
   GE_CHK_RT_RET(rt_ret);
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp(context.GetStream()) != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
   GELOGD("Node[%s] launch task end.", node_name_.c_str());
   return SUCCESS;
 }

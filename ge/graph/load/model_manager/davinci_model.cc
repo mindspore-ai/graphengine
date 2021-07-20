@@ -238,6 +238,12 @@ DavinciModel::~DavinciModel() {
         GE_LOGW_IF(rtEventDestroy(event_list_[i]) != RT_ERROR_NONE, "Destroy event failed, index: %zu", i);
       }
 
+      for (const auto &it : stream_2_event_) {
+        if (rtEventDestroy(it.second) != RT_ERROR_NONE) {
+          GELOGW("Destroy event failed");
+        }
+      }
+
       FreeWeightsMem();
 
       FreeFeatureMapMem();
@@ -4646,6 +4652,52 @@ Status DavinciModel::GetTotalMemSizeExcludeZeroCopy(int64_t &total_useful_size) 
     return FAILED;
   }
   total_useful_size = runtime_param_.mem_size - runtime_param_.zero_copy_size;
+  return SUCCESS;
+}
+
+Status DavinciModel::GetEventIdForBlockingAicpuOp(const OpDescPtr &op_desc, rtStream_t stream, uint32_t &event_id) {
+  GELOGI("Get event id for aicpu blocking op:%s", op_desc->GetName().c_str());
+  auto it = stream_2_event_.find(stream);
+  if (it != stream_2_event_.end()) {
+    auto rt_ret = rtGetEventID(it->second, &event_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed for op:%s(%s), ret:0x%X",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      GELOGE(RT_FAILED, "[Call][rtGetEventID] failed for op:%s(%s), ret:0x%X",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+  } else {
+    rtEvent_t rt_event = nullptr;
+    auto rt_ret = rtEventCreateWithFlag(&rt_event, RT_EVENT_WITH_FLAG);
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtEventCreateWithFlag failed for op:%s(%s), ret:0x%X",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      GELOGE(RT_FAILED, "[Call][rtEventCreateWithFlag] failed for op:%s(%s), ret:0x%X",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    rt_ret = rtGetEventID(rt_event, &event_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed for op:%s(%s), ret:0x%X",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      GELOGE(RT_FAILED, "[Call][rtGetEventID] failed for op:%s(%s), ret:0x%X",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    stream_2_event_.emplace(stream, rt_event);
+  }
+  return SUCCESS;
+}
+
+Status DavinciModel::GetEventByStream(const rtStream_t &stream, rtEvent_t &rt_event) {
+  auto it = stream_2_event_.find(stream);
+  if (it == stream_2_event_.end()) {
+    REPORT_INNER_ERROR("E19999", "Get event failed");
+    GELOGE(FAILED, "[Get][Event] Get event failed");
+    return FAILED;
+  }
+  rt_event = it->second;
   return SUCCESS;
 }
 }  // namespace ge

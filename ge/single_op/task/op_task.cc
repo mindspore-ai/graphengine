@@ -564,6 +564,41 @@ AiCpuBaseTask::~AiCpuBaseTask() {
   if (ext_info_addr_dev_ != nullptr) {
     (void)rtFree(ext_info_addr_dev_);
   }
+  if (rt_event_ != nullptr) {
+    (void)rtEventDestroy(rt_event_);
+  }
+}
+
+Status AiCpuBaseTask::UpdateEventIdForBlockingAicpuOp() {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process");
+    return SUCCESS;
+  }
+  uint32_t event_id = 0;
+  auto rt_ret = rtEventCreateWithFlag(&rt_event_, RT_EVENT_WITH_FLAG);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventCreateWithFlag failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtEventCreateWithFlag] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtGetEventID(rt_event_, &event_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetEventID] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (aicpu_ext_handle_->UpdateEventId(event_id) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update event id=%u failed.", event_id);
+    GELOGE(FAILED, "[Update][EventId] Update event id failed", event_id);
+    return FAILED;
+  }
+  GELOGI("Update event_id=%u success", event_id);
+  return SUCCESS;
 }
 
 Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint64_t kernel_id) {
@@ -576,6 +611,9 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   (void) AttrUtils::GetInt(op_desc_, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
   GELOGD("Get unknown_type is %d.", unknown_shape_type_val);
   unknown_type_ = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+
+  AttrUtils::GetBool(op_desc_, ATTR_NAME_IS_BLOCKING_OP, is_blocking_aicpu_op_);
+  GELOGD("Get op:%s attribute(is_blocking_op), value:%d", op_desc_->GetName().c_str(), is_blocking_aicpu_op_);
 
   aicpu_ext_handle_.reset(new(std::nothrow) ::ge::hybrid::AicpuExtInfoHandler(op_desc_->GetName(),
                                                                               num_inputs_,
@@ -594,6 +632,13 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
 
   GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateSessionInfo(ULLONG_MAX, kernel_id, false),
                     "[Update][SessionInfo] failed.");
+
+  if (is_blocking_aicpu_op_) {
+    if (UpdateEventIdForBlockingAicpuOp() != SUCCESS) {
+      GELOGE(FAILED, "[Call][UpdateEventIdForBlockingAicpuOp] Call UpdateEventIdForBlockingAicpuOp failed");
+      return FAILED;
+    }
+  }
 
   GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), RT_MEMORY_HBM));
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(),
@@ -770,6 +815,63 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
   return SUCCESS;
 }
 
+Status AiCpuBaseTask::CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support) {
+  int32_t device_id = 0;
+  auto rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDevice] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  int32_t value = 0;
+  rt_ret = rtGetDeviceCapability(device_id, FEATURE_TYPE_BLOCKING_OPERATOR, RT_MODULE_TYPE_AICPU, &value);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDeviceCapability failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDeviceCapability] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (value != RT_AICPU_BLOCKING_OP_NOT_SUPPORT && value != RT_AICPU_BLOCKING_OP_SUPPORT) {
+    REPORT_INNER_ERROR("E19999", "Value should be %d or %d but %d",
+                       RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    GELOGE(FAILED, "[Check][Value] Value should be %d or %d but %d",
+           RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    return FAILED;
+  }
+  is_support = (value == RT_AICPU_BLOCKING_OP_SUPPORT ? true : false);
+  return SUCCESS;
+}
+
+Status AiCpuBaseTask::DistributeWaitTaskForAicpuBlockingOp(rtStream_t stream) {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process.");
+    return SUCCESS;
+  }
+  GELOGI("Distribute queue task begin");
+  if (rt_event_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "rt_event_ is nullptr");
+    GELOGE(FAILED, "[Check][rt_event_] rt_event_ is nullptr");
+    return FAILED;
+  }
+  auto rt_ret = rtStreamWaitEvent(stream, rt_event_);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamWaitEvent failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtEventReset(rt_event_, stream);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventReset failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  return SUCCESS;
+}
+
 AiCpuTask::~AiCpuTask() {
   FreeHbm(args_);
   FreeHbm(io_addr_);
@@ -813,6 +915,14 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
 
   GELOGD("Done launch kernel successfully. task = %s", this->op_type_.c_str());
+
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp(stream) != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
+
   return SUCCESS;
 }
 
@@ -1089,6 +1199,13 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
+
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp(stream) != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
   return SUCCESS;
 }
 

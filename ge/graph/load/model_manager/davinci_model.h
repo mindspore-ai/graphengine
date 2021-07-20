@@ -582,6 +582,10 @@ class DavinciModel {
   void SetRunningFlag(bool flag) { running_flg_ = flag; }
   Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
 
+  // for blocking aicpu op
+  Status GetEventByStream(const rtStream_t &stream, rtEvent_t &rt_event);
+  Status GetEventIdForBlockingAicpuOp(const OpDescPtr &op_desc, rtStream_t stream, uint32_t &event_id);
+
  private:
   // memory address of weights
   uint8_t *weights_mem_base_;
@@ -1107,6 +1111,8 @@ class DavinciModel {
 
   // op name to attrs mapping
   std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;
+
+  std::map<rtStream_t, rtEvent_t> stream_2_event_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

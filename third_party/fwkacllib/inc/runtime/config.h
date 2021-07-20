@@ -52,6 +52,14 @@ typedef enum tagRtAicpuScheType {
     SCHEDULE_HARDWARE, /* HWTS Schedule */
 } rtAicpuScheType;
 
+typedef enum tagRtDeviceCapabilityType {
+  RT_SCHEDULE_SOFTWARE = 0, // SoftWare Schedule
+  RT_SCHEDULE_SOFTWARE_OPT,
+  RT_SCHEDULE_HARDWARE, // HWTS Schedule
+  RT_AICPU_BLOCKING_OP_NOT_SUPPORT,
+  RT_AICPU_BLOCKING_OP_SUPPORT, // 1910/1980/1951 ts support AICPU blocking operation
+} rtDeviceCapabilityType;
+
 typedef enum tagRtVersion {
     VER_BEGIN = 0,
     VER_NA = VER_BEGIN,

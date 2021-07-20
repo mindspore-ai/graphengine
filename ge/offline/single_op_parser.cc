@@ -89,7 +89,8 @@ map<string, DataType> kDataTypeDict = {
     {"float", DT_FLOAT},
     {"float32", DT_FLOAT},
     {"double", DT_DOUBLE},
-    {"complex64", DT_COMPLEX64}
+    {"complex64", DT_COMPLEX64},
+    {"complex128", DT_COMPLEX128}
 };
 
 map<string, Format> kFormatDict = {

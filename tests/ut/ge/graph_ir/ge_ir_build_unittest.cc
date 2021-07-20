@@ -367,7 +367,7 @@ TEST(UtestIrBuild, check_data_op_attr_index_valid) {
   };
   ModelBufferData model;
   graphStatus ret = aclgrphBuildModel(graph, build_options, model);
-  EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+  EXPECT_EQ(ret, ge::FAILED);
 }
 
 // set attr index invalid, when not set input shape range
@@ -377,7 +377,7 @@ TEST(UtestIrBuild, check_data_attr_index_succ_no_input_range) {
   const map<string, string> build_options;
   ModelBufferData model;
   graphStatus ret = aclgrphBuildModel(graph, build_options, model);
-  EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+  EXPECT_EQ(ret, ge::FAILED);
 }
 
 TEST(UtestIrBuild, check_modify_mixlist_param) {

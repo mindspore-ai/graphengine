@@ -1381,8 +1381,8 @@ Status GraphManager::BuildGraph(const GraphId &graph_id, const std::vector<GeTen
   ret = StartForRunGraph(graph_node, inputs, ge_root_model, session_id);
   graph_node->SetRunFlag(false);
   if (ret != SUCCESS) {
-    GELOGE(GE_GRAPH_PRERUN_FAILED, "[Call][StartForRunGraph] failed! graph_id:%u.", graph_id);
-    return GE_GRAPH_PRERUN_FAILED;
+    GELOGE(ret, "[Call][StartForRunGraph] failed! graph_id:%u.", graph_id);
+    return ret;
   }
 
   GELOGI("[BuildGraph] build graph success, graph_id=%u.", graph_id);

@@ -29,9 +29,10 @@ Status MemoryAssigner::AssignMemory(bool is_loop_graph, map<uint64_t, size_t> &m
   }
 
   // Reassign memory for special nodes
-  if (graph_mem_assigner.ReAssignMemory(is_loop_graph, mem_offset) != ge::SUCCESS) {
+  Status ret = graph_mem_assigner.ReAssignMemory(is_loop_graph, mem_offset);
+  if (ret != ge::SUCCESS) {
     GELOGE(ge::FAILED, "[ReAssign][Memory] failed, graph:%s", compute_graph_->GetName().c_str());
-    return ge::FAILED;
+    return ret;
   }
 
   // Assign memory (block and offset) for zero copy nodes

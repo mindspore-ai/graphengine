@@ -1158,7 +1158,6 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "build graph failed, graph id:%u, ret:%d", graph_id, ret);
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "[Build][Graph] fail, graph id: %u", graph_id);
-    ret = GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
 
   RtContextUtil::GetInstance().DestroyRtContexts(session_id);

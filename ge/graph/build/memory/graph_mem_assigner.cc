@@ -275,7 +275,7 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<uint64_t, siz
         "E19022", std::vector<std::string>({"size", "item", "maxsize"}),
         std::vector<std::string>({std::to_string(total_mem_offset), "featuremap",
                                  std::to_string(VarManager::Instance(session_id)->GetGraphMemoryMaxSize())}));
-    return ge::FAILED;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   return SUCCESS;
 }

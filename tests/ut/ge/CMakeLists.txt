@@ -670,6 +670,7 @@ set(MULTI_PARTS_TEST_FILES
     "graph/build/stream_allocator_unittest.cc"
     "graph/build/model_builder_unittest.cc"
     "graph/build/mem_assigner_unittest.cc"
+    "graph/build/graph_mem_assigner_unittest.cc"
     "graph/build/task_generator_unittest.cc"
     "graph/build/buffer_pool_mem_assigner_unittest.cc"
     "graph/execute/graph_execute_unittest.cc"

@@ -807,7 +807,7 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
   return SUCCESS;
 }
 
-Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc) {
+Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc, Graph &graph) {
   GE_CHECK_NOTNULL(op_desc);
   if (OperatorFactoryImpl::GetInferFormatFunc(op_desc->GetType()) != nullptr) {
     auto node_op = ge::OperatorFactoryImpl::CreateOperator("node_op", op_desc->GetType());
@@ -831,7 +831,11 @@ Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc) {
     }
     node_op.BreakConnect();
   }
-  auto op = OpDescUtils::CreateOperatorFromOpDesc(op_desc);
+  auto comp_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(comp_graph);
+  auto node = comp_graph->FindNode(op_desc->GetName());
+  GE_CHECK_NOTNULL(node);
+  auto op = OpDescUtils::CreateOperatorFromNode(node);
   auto ret = op_desc->CallInferFormatFunc(op);
   if (ret != GRAPH_SUCCESS) {
     REPORT_INNER_ERROR("E19999", "call InferFormatFunc for single op:%s fail",
@@ -878,7 +882,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   Graph graph;
   GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph),
                 "[Build][Graph] for single op:%s fail.", op_desc->GetName().c_str());
-  GE_CHK_STATUS_RET_NOLOG(InferFormatForSingleOp(op_desc));
+  GE_CHK_STATUS_RET_NOLOG(InferFormatForSingleOp(op_desc, graph));
 
   // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {

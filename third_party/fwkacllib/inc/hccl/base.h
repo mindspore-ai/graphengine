@@ -124,27 +124,27 @@ struct HcomRemoteAccessAddrInfo {
 };
 
 struct HcomAllToAllVParams {
-  void *sendbuf;
-  void *sendcounts;
-  void *sdispls;
-  HcclDataType sendtype;
-  void *recvbuf;
-  void *recvcounts;
-  void *rdispls;
-  HcclDataType recvtype;
-  const char *group;
+    void *sendbuf;  // device mem
+    void *sendcounts;  // device mem;  Type: uint_64
+    void *sdispls;  // device mem;  Type: uint_64
+    HcclDataType sendtype;
+    void *recvbuf;  // device mem
+    void *recvcounts;  // device mem;  Type: uint_64 
+    void *rdispls;  // device mem;  Type: uint_64
+    HcclDataType recvtype;
+    const char *group;  // not used now
 };
 
 struct HcomGatherAllToAllVParams {
- void *addrInfo;
- void *addrInfoCountPerRank;
- void *recvbuf;
- void *recvcounts;
- void *rdispls;
- void *gatheredbuf;
- s32 addrLength;
- HcclDataType recvtype;
- const char *group;
+    void *addrInfo;  // device mem;  contains host VA[uint_64]:  [addr, length, addr, length, addr, length, ...]
+    void *addrInfoCountPerRank;  // device mem;  length: ranksize;  contains addrInfoCounts for every rank
+    void *recvbuf;  // device mem
+    void *recvcounts;  // device mem;  Type: uint_64
+    void *rdispls;  // device mem;  Type: uint_64
+    void *gatheredbuf;  // device mem
+    s32 addrLength;
+    HcclDataType recvtype;
+    const char *group;  // not used now
 };
 
 #ifdef __cplusplus

@@ -21,8 +21,9 @@
 #include <string>
 #include <vector>
 #include "framework/common/ge_types.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/manager/graph_manager.h"
+#include "graph/execute/model_executor.h"
 
 namespace ge {
 class InnerSession {
@@ -82,10 +83,14 @@ class InnerSession {
   void SetRtSocVersion();
 
  private:
+  Status InnerInitialize();
+  Status InnerFinalize();
+
   bool init_flag_;
   uint64_t session_id_;
   std::map<string, string> options_;
   GraphManager graph_manager_;
+  ModelExecutor model_executor_;
   std::mutex resource_mutex_;  // AddGraph, RemoveGraph and Finalize use
   void UpdateThreadContext(const std::map<std::string, std::string> &options);
   void UpdateThreadContext(uint32_t graph_id);

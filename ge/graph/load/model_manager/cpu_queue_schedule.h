@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/load/model_manager/task_info/task_info.h"
 #include "graph/load/model_manager/zero_copy_offset.h"
 #include "runtime/kernel.h"

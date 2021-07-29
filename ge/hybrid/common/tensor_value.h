@@ -20,7 +20,7 @@
 #include <atomic>
 #include <cstddef>
 #include <memory>
-#include "memory/memory_api.h"
+#include "framework/memory/memory_api.h"
 #include "framework/common/util.h"
 
 namespace ge {
@@ -95,7 +95,8 @@ class TensorValue {
     name_ = name;
   }
   
-  MemStorageType GetMemType() const {
+  Status GetMemType(MemStorageType &mem_type) const {
+    GE_CHECK_NOTNULL(buffer_);
     return buffer_->GetMemType();
   }
 

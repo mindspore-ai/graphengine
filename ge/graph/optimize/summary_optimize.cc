@@ -21,7 +21,7 @@
 #include "graph/optimize/graph_optimize.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace {
 const char *const kSummary = "Summary";

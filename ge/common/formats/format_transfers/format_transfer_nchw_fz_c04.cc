@@ -23,7 +23,7 @@
 
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/type_utils.h"
 

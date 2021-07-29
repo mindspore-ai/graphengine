@@ -25,6 +25,7 @@ namespace ge {
 namespace {
 // limit available device mem size  1M
 const uint32_t kFuzzDeviceBufferSize = 1 * 1024 * 1024;
+constexpr int kDefaultThreadNum = 4;
 }
 
 StreamResource::StreamResource(uintptr_t resource_id) : resource_id_(resource_id) {
@@ -216,6 +217,16 @@ Status StreamResource::BuildOperator(const ModelData &model_data, SingleOp **sin
 
   *single_op = new_op.get();
   op_map_[model_id] = std::move(new_op);
+  return SUCCESS;
+}
+
+Status StreamResource::GetThreadPool(ThreadPool **thread_pool) {
+  GE_CHECK_NOTNULL(thread_pool);
+  if (thread_pool_ == nullptr) {
+    thread_pool_.reset(new (std::nothrow) ThreadPool(kDefaultThreadNum));
+    GE_CHECK_NOTNULL(thread_pool_);
+  }
+  *thread_pool = thread_pool_.get();
   return SUCCESS;
 }
 

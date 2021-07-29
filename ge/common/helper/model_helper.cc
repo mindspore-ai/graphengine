@@ -33,7 +33,7 @@ const uint32_t kStatiOmFileModelNum = 1;
 
 
 namespace ge {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ModelHelper::~ModelHelper() { (void)ReleaseLocalModelData(); }
+ModelHelper::~ModelHelper() { (void)ReleaseLocalModelData(); }
 
 Status ModelHelper::SaveModelPartition(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, ModelPartitionType type,
                                        const uint8_t *data, size_t size, size_t model_index) {
@@ -108,8 +108,8 @@ Status ModelHelper::SaveSizeToModelDef(const GeModelPtr &ge_model) {
   return SUCCESS;
 }
 
-Status ModelHelper::SaveModelDef(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                                 const GeModelPtr &ge_model, ge::Buffer &model_buffer, size_t model_index) {
+Status ModelHelper::SaveModelDef(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                                 ge::Buffer &model_buffer, size_t model_index) {
   ModelPtr model_tmp = ge::MakeShared<ge::Model>(ge_model->GetName(), ge_model->GetPlatformVersion());
   if (model_tmp == nullptr) {
     GELOGE(FAILED, "[Creat][Model]Failed, Model %s Ptr", ge_model->GetName().c_str());
@@ -143,8 +143,8 @@ Status ModelHelper::SaveModelDef(std::shared_ptr<OmFileSaveHelper> &om_file_save
   return SUCCESS;
 }
 
-Status ModelHelper::SaveModelWeights(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                                     const GeModelPtr &ge_model, size_t model_index) {
+Status ModelHelper::SaveModelWeights(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                                     size_t model_index) {
   auto ge_model_weight = ge_model->GetWeight();
   GELOGD("WEIGHTS_DATA size is %zu, %p", ge_model_weight.GetSize(), ge_model_weight.GetData());
   // weight is not necessary
@@ -187,8 +187,8 @@ Status ModelHelper::SaveModelCustAICPU(std::shared_ptr<OmFileSaveHelper> &om_fil
   return SUCCESS;
 }
 
-Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                                     const GeModelPtr &ge_model, ge::Buffer &task_buffer, size_t model_index) {
+Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                                     ge::Buffer &task_buffer, size_t model_index) {
   std::shared_ptr<ModelTaskDef> model_task_def = ge_model->GetModelTaskDefPtr();
   if (model_task_def == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Creat][ModelTaskDef]Failed, it is nullptr, "
@@ -231,8 +231,8 @@ Status ModelHelper::SaveModelTaskDef(std::shared_ptr<OmFileSaveHelper> &om_file_
   return SUCCESS;
 }
 
-Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
-                                    const GeModelPtr &ge_model, size_t model_num) {
+Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper, const GeModelPtr &ge_model,
+                                    size_t model_num) {
   // Save target/version to model_header
   ModelFileHeader &model_header = om_file_save_helper->GetModelFileHeader();
   model_header.platform_type = ge_model->GetPlatformType();
@@ -246,8 +246,10 @@ Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_s
   if (err != EOK) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION,
            "[Save][Model]Failed while allocating memory for platform_version %s, model %s, "
-           "errno %d", platform_version.c_str(), ge_model->GetName().c_str(), err);
-    REPORT_CALL_ERROR("E19999", "ModelHelper save model %s failed while "
+           "errno %d",
+           platform_version.c_str(), ge_model->GetName().c_str(), err);
+    REPORT_CALL_ERROR("E19999",
+                      "ModelHelper save model %s failed while "
                       "allocating memory for platform_version %s, errno %d",
                       ge_model->GetName().c_str(), platform_version.c_str(), err);
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
@@ -271,9 +273,9 @@ Status ModelHelper::SaveModelHeader(std::shared_ptr<OmFileSaveHelper> &om_file_s
   return SUCCESS;
 }
 
-Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_file_save_helper,
-                                         const GeModelPtr &ge_model, ge::Buffer &model_buffer,
-                                         ge::Buffer &task_buffer, size_t model_index) {
+Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper> &om_file_save_helper,
+                                         const GeModelPtr &ge_model, ge::Buffer &model_buffer, ge::Buffer &task_buffer,
+                                         size_t model_index) {
   if (SaveModelDef(om_file_save_helper, ge_model, model_buffer, model_index) != SUCCESS) {
     GELOGE(FAILED, "[Save][ModelDef]Failed, model %s, model index %zu",
            ge_model->GetName().c_str(), model_index);
@@ -316,10 +318,8 @@ Status ModelHelper::SaveAllModelPartiton(std::shared_ptr<OmFileSaveHelper>& om_f
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model,
-                                                                                   const SaveParam &save_param,
-                                                                                   const std::string &output_file,
-                                                                                   ModelBufferData& model) {
+Status ModelHelper::SaveToOmModel(const GeModelPtr &ge_model, const SaveParam &save_param,
+                                  const std::string &output_file, ModelBufferData &model) {
   if (output_file.empty()) {
     GELOGE(FAILED, "[Save][Model]GraphBuilder SaveModel received invalid file name prefix, "
            "model %s", ge_model->GetName().c_str());
@@ -367,13 +367,8 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmMod
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRootModel(
-    const GeRootModelPtr &ge_root_model,
-    const SaveParam &save_param,
-    const std::string &output_file,
-    ModelBufferData& model,
-    bool is_unknown_shape) {
-
+Status ModelHelper::SaveToOmRootModel(const GeRootModelPtr &ge_root_model, const SaveParam &save_param,
+                                      const std::string &output_file, ModelBufferData &model, bool is_unknown_shape) {
   GE_CHECK_NOTNULL(ge_root_model);
   GE_IF_BOOL_EXEC(ge_root_model == nullptr,
                   GELOGE(FAILED, "[Check][GERootModel]Ge_root_model is nullptr");
@@ -466,8 +461,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::SaveToOmRoo
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status
-ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) {
+Status ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::string &output_file) {
   if (output_file.empty()) {
     GELOGE(FAILED, "[Save][Model]Received invalid file name prefix, output_file %s", output_file.c_str());
     REPORT_INNER_ERROR("E19999", "Save model received invalid file name prefix, output_file %s", output_file.c_str());
@@ -545,7 +539,7 @@ ModelHelper::SaveOriginalGraphToOmModel(const ge::Graph &graph, const std::strin
   return (ret == SUCCESS ? SUCCESS : FAILED);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
+Status ModelHelper::LoadModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID,
            "[Load][Model]Model_data is nullptr or model_data_size is 0");
@@ -597,7 +591,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadModel(c
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadRootModel(const ge::ModelData &model_data) {
+Status ModelHelper::LoadRootModel(const ge::ModelData &model_data) {
   if (model_data.model_data == nullptr || model_data.model_len == 0) {
     GELOGE(ACL_ERROR_GE_EXEC_MODEL_DATA_SIZE_INVALID, "[Load][RootModel] "
            "Model_data is nullptr or model data is empty.");
@@ -783,7 +777,6 @@ Status ModelHelper::LoadModelData(OmFileLoadHelper &om_load_helper, GeModelPtr &
   return SUCCESS;
 }
 
-
 Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper) {
   ModelPartition partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::WEIGHTS_DATA, partition) != SUCCESS) {
@@ -814,7 +807,7 @@ Status ModelHelper::LoadWeights(OmFileLoadHelper &om_load_helper, GeModelPtr &cu
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(OmFileLoadHelper &om_load_helper) {
+Status ModelHelper::LoadTask(OmFileLoadHelper &om_load_helper) {
   ModelPartition task_partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition) != SUCCESS) {
     GELOGE(FAILED, "[Get][ModelTaskPartition]Failed, task_partition size:%u", task_partition.size);
@@ -838,9 +831,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(Om
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::LoadTask(OmFileLoadHelper &om_load_helper,
-                                                                              GeModelPtr &cur_model,
-                                                                              size_t mode_index) {
+Status ModelHelper::LoadTask(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model, size_t mode_index) {
   ModelPartition task_partition;
   if (om_load_helper.GetModelPartition(ModelPartitionType::TASK_INFO, task_partition, mode_index) != SUCCESS) {
     GELOGE(FAILED, "Get task model partition failed.");
@@ -915,8 +906,8 @@ Status ModelHelper::LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper) {
   return SUCCESS;
 }
 
-Status ModelHelper::LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper,
-                                             GeModelPtr &cur_model, size_t mode_index) {
+Status ModelHelper::LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper, GeModelPtr &cur_model,
+                                             size_t mode_index) {
   // Load cust aicpu kernels
   ModelPartition partition_kernel_def;
   CustAICPUKernelStore kernel_store;
@@ -933,7 +924,7 @@ Status ModelHelper::LoadCustAICPUKernelStore(OmFileLoadHelper &om_load_helper,
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY GeModelPtr ModelHelper::GetGeModel() {
+GeModelPtr ModelHelper::GetGeModel() {
   if (model_ != nullptr) {
     return model_;
   }
@@ -946,7 +937,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY GeModelPtr ModelHelper::GetGeMo
   return out_model;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY GeRootModelPtr ModelHelper::GetGeRootModel() {
+GeRootModelPtr ModelHelper::GetGeRootModel() {
   if (root_model_ != nullptr) {
     return root_model_;
   }
@@ -958,7 +949,6 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY GeRootModelPtr ModelHelper::Get
   }
   return out_model;
 }
-
 
 Status ModelHelper::ReleaseLocalModelData() noexcept {
   Status result = SUCCESS;
@@ -976,8 +966,7 @@ Status ModelHelper::ReleaseLocalModelData() noexcept {
   return result;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetBaseNameFromFileName(
-    const string &file_name, string &base_name) {
+Status ModelHelper::GetBaseNameFromFileName(const string &file_name, string &base_name) {
   GELOGD("Get base_name from file, file_name:%s", file_name.c_str());
   GE_CHK_BOOL_EXEC_WARN(!file_name.empty(), return FAILED, "File path may not valid, check params --output");
   size_t start_position = 0;
@@ -992,8 +981,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetBaseName
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status ModelHelper::GetModelNameFromMergedGraphName(
-    const string &graph_name, string &model_name) {
+Status ModelHelper::GetModelNameFromMergedGraphName(const string &graph_name, string &model_name) {
   GELOGD("Get model_name from graph_name, graph_name:%s", graph_name.c_str());
   // this can only be used after merged graph(graph name will be append with "_x", x is index);
   GE_CHK_BOOL_EXEC_WARN(!graph_name.empty(), return FAILED, "File path may not valid, check params --output");
@@ -1035,8 +1023,7 @@ Status ModelTool::GetModelInfoFromOm(const char *model_file, ge::proto::ModelDef
     ErrorManager::GetInstance().ATCReportErrMessage("E10003",
       {"parameter", "value", "reason"}, {"om", model_file, "invalid om file, can't be parsed"});
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Parse][ModelContent]Failed because of invalid om file %s, please check om param",
-           model_file);
+           "[Parse][ModelContent]Failed because of invalid om file %s, please check om param", model_file);
     return ret;
   }
 

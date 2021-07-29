@@ -23,11 +23,11 @@
 #include "common/properties_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/fmk_error_codes.h"
-#include "graph/attr_value.h"
+#include "external/graph/attr_value.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "graph/load/model_manager/model_manager.h"
-#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
 #include "framework/common/debug/log.h"
+#include "runtime/rt.h"
 
 namespace {
 const char *const kAicpuAllshape = "_AllShape";
@@ -43,7 +43,7 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
   UnknowShapeOpType unknown_type = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
   uint32_t num_inputs = op_desc->GetInputsSize();
   uint32_t num_outputs = op_desc->GetOutputsSize();
-  std::unique_ptr<ge::hybrid::AicpuExtInfoHandler> ext_handle(
+  std::shared_ptr<ge::hybrid::AicpuExtInfoHandler> ext_handle(
           new(std::nothrow) ::ge::hybrid::AicpuExtInfoHandler(op_desc->GetName(),
                                                               num_inputs,
                                                               num_outputs,
@@ -76,6 +76,16 @@ Status KernelExTaskInfo::InitTaskExtInfo(const std::string &ext_info, const OpDe
       }
     }
   }
+
+  AttrUtils::GetBool(op_desc, ATTR_NAME_IS_BLOCKING_OP, is_blocking_aicpu_op_);
+  GELOGD("Get op:%s attribute(is_blocking_op), value:%d", op_desc->GetName().c_str(), is_blocking_aicpu_op_);
+
+  if (UpdateEventIdForAicpuBlockingOp(op_desc, ext_handle) != SUCCESS) {
+    GELOGE(FAILED, "[Call][UpdateEventIdForAicpuBlockingOp] failed for op:%s(%s)",
+           op_desc->GetName().c_str(), op_desc->GetType().c_str());
+    return FAILED;
+  }
+
   auto rt_ret = rtMalloc(&ext_info_addr_, ext_handle->GetExtInfoLen(), RT_MEMORY_HBM);
   GE_IF_BOOL_EXEC(rt_ret != RT_ERROR_NONE,
                   REPORT_CALL_ERROR("E19999", "Call rtMalloc failed, size:%zu, ret:0x%X", ext_info.size(), rt_ret);
@@ -106,6 +116,7 @@ Status KernelExTaskInfo::Init(const domi::TaskDef &task_def, DavinciModel *davin
   // 1. Copy context from kernelExDef.private to workspace
   uint32_t op_index = kernel_ex_def.op_index();
   OpDescPtr op_desc = davinci_model_->GetOpByIndex(op_index);
+  op_desc_ = op_desc;
   if (op_desc == nullptr) {
     REPORT_INNER_ERROR("E19999", "Can't get op_desc from davinci_model by index:%u", op_index);
     GELOGE(INTERNAL_ERROR, "[Get][Op] by index failed, index:%u is out of range!", op_index);
@@ -420,9 +431,9 @@ Status KernelExTaskInfo::Distribute() {
   // xxxxxxxx xxxxxxxx xxxxxxxx xx10xxxx: HOST_ONLY
   // xxxxxxxx xxxxxxxx xxxxxxxx xx11xxxx: HOST_FIRST
   if (topic_type_flag_ > 0) {
-    dump_flag_ = dump_flag_ | topic_type_flag_;
+    dump_flag_ = dump_flag_ | static_cast<uint32_t>(topic_type_flag_);
   }
-  rtError_t rt_ret = rtKernelLaunchEx(kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
+  rtError_t rt_ret = rtKernelLaunchFwk(op_desc_->GetName().c_str(), kernel_buf_, kernel_buf_size_, dump_flag_, stream_);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtKernelLaunchEx failed, ret:0x%X", rt_ret);
     GELOGE(RT_FAILED, "[Call][RtKernelLaunchEx] failed, ret:0x%X", rt_ret);
@@ -447,6 +458,101 @@ Status KernelExTaskInfo::Distribute() {
   stream_id_ = stream_id;
 
   GELOGI("KernelExTaskInfo Distribute Success. task id: %u, stream id: %u", task_id_, stream_id_);
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp() != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
+  return SUCCESS;
+}
+
+Status KernelExTaskInfo::CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support) {
+  int32_t device_id = 0;
+  auto rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDevice] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  int32_t value = 0;
+  rt_ret = rtGetDeviceCapability(device_id, FEATURE_TYPE_BLOCKING_OPERATOR, RT_MODULE_TYPE_AICPU, &value);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDeviceCapability failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDeviceCapability] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (value != RT_AICPU_BLOCKING_OP_NOT_SUPPORT && value != RT_AICPU_BLOCKING_OP_SUPPORT) {
+    REPORT_INNER_ERROR("E19999", "Value should be %d or %d but %d",
+                       RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    GELOGE(FAILED, "[Check][Value] Value should be %d or %d but %d",
+           RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    return FAILED;
+  }
+  is_support = (value == RT_AICPU_BLOCKING_OP_SUPPORT ? true : false);
+  return SUCCESS;
+}
+
+Status KernelExTaskInfo::UpdateEventIdForAicpuBlockingOp(const OpDescPtr &op_desc,
+    std::shared_ptr<ge::hybrid::AicpuExtInfoHandler> &ext_handle) {
+  if (is_blocking_aicpu_op_) {
+    bool is_support = false;
+    if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+      GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+      return FAILED;
+    }
+    if (!is_support) {
+      GELOGD("Device not support blocking aicpu op process");
+      return SUCCESS;
+    }
+    uint32_t event_id = 0;
+    if (davinci_model_->GetEventIdForBlockingAicpuOp(op_desc, stream_, event_id) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Get event id failed for op:%s(%s).", op_desc->GetName().c_str(),
+                        op_desc->GetType().c_str());
+      GELOGE(FAILED, "[Get][EventId] Get event id failed for op:%s(%s)", op_desc->GetName().c_str(),
+             op_desc->GetType().c_str());
+      return FAILED;
+    }
+    if (ext_handle->UpdateEventId(event_id) != SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update event id failed for op:%s(%s).", op_desc->GetName().c_str(),
+                        op_desc->GetType().c_str());
+      GELOGE(FAILED, "[Update][EventId] Update event id failed for op:%s(%s)", op_desc->GetName().c_str(),
+             op_desc->GetType().c_str());
+      return FAILED;
+    }
+    GELOGI("Update event_id=%u success", event_id);
+  }
+  return SUCCESS;
+}
+
+Status KernelExTaskInfo::DistributeWaitTaskForAicpuBlockingOp() {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process.");
+    return SUCCESS;
+  }
+  GELOGD("Distribute wait task begin");
+  rtEvent_t rt_event = nullptr;
+  if (davinci_model_->GetEventByStream(stream_, rt_event) != SUCCESS) {
+    GELOGE(FAILED, "[Call][GetEventByStream] Call GetEventByStream failed");
+    return FAILED;
+  }
+  auto rt_ret = rtStreamWaitEvent(stream_, rt_event);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamWaitEvent failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtEventReset(rt_event, stream_);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventReset failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
   return SUCCESS;
 }
 

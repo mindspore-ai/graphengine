@@ -22,9 +22,14 @@
 #include <vector>
 #include "engine_manager/dnnengine_manager.h"
 #include "opskernel_manager/ops_kernel_manager.h"
-#include "session/session_manager.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
+#include "graph/tuning_utils.h"
+#include "graph/operator_factory.h"
+#include "graph/ge_local_context.h"
+#include "graph/debug/ge_attr_define.h"
+#include "graph/utils/graph_utils.h"
+#include "graph/utils/anchor_utils.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 
 using std::string;
 using std::map;
@@ -53,20 +58,11 @@ class GE_FUNC_VISIBILITY GELib {
   // get OpsKernelManager object
   OpsKernelManager &OpsKernelManagerObj() { return opsManager_; }
 
-  // get SessionManager object
-  SessionManager &SessionManagerObj() { return sessionManager_; }
-
   // get Initial flag
   bool InitFlag() const { return init_flag_; }
 
   // get TrainMode flag
-  bool isTrainMode() { return is_train_mode_; }
-
-  // get incre build flag
-  bool IsIncreBuild() const { return is_incre_build_; }
-
-  // get incre build cache path
-  const std::string &GetIncreBuildCachePath() const { return incre_build_cache_path_; }
+  bool IsTrainMode() { return is_train_mode_; }
 
   void InitProfiling(Options &options);
   void ShutDownProfiling();
@@ -90,7 +86,6 @@ class GE_FUNC_VISIBILITY GELib {
 
   DNNEngineManager engineManager_;
   OpsKernelManager opsManager_;
-  SessionManager sessionManager_;
   std::mutex status_mutex_;
   bool init_flag_ = false;
   Options options_;
@@ -98,8 +93,6 @@ class GE_FUNC_VISIBILITY GELib {
   bool is_system_inited = false;
   bool is_shutdown = false;
   bool is_use_hcom = false;
-  bool is_incre_build_ = false;
-  std::string incre_build_cache_path_;
 };
 }  // namespace ge
 

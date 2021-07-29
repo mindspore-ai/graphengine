@@ -55,6 +55,17 @@ struct ReporterData {
 };
 
 /**
+ * @name  HashData
+ * @brief struct of data to hash
+ */
+struct HashData {
+    int deviceId;                             // the index of device
+    size_t dataLen;                           // the length of data
+    unsigned char *data;                      // the data content
+    uint64_t hashId;                          // the id of hashed data
+};
+
+/**
  * @name  MsprofReporterModuleId
  * @brief module id of data to report
  */
@@ -75,6 +86,7 @@ enum MsprofReporterCallbackType {
     MSPROF_REPORTER_INIT,                 // init reporter
     MSPROF_REPORTER_UNINIT,               // uninit reporter
     MSPROF_REPORTER_DATA_MAX_LEN,         // data max length for calling report callback
+    MSPROF_REPORTER_HASH                  // hash data to id
 };
 
 /**
@@ -110,7 +122,8 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
     MSPROF_CTRL_FINALIZE,                   // stop profiling
     MSPROF_CTRL_REPORT_FUN_P,               // for report callback
-    MSPROF_CTRL_PROF_SWITCH                 // for prof switch
+    MSPROF_CTRL_PROF_SWITCH_ON,             // for prof switch on
+    MSPROF_CTRL_PROF_SWITCH_OFF             // for prof switch off
 };
 
 #define MSPROF_MAX_DEV_NUM (64)

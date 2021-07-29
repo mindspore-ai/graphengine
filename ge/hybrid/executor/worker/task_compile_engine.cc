@@ -21,10 +21,17 @@
 namespace ge {
 namespace hybrid {
 Status TaskCompileEngine::Compile(NodeState &node_state, GraphExecutionContext *context) {
-  const auto &node_item = *node_state.GetNodeItem();
   GE_CHECK_NOTNULL(context);
+  rtContext_t rt_gen_context = nullptr;
+  GE_CHK_RT_RET(rtCtxCreate(&rt_gen_context, RT_CTX_GEN_MODE, 0));
+  std::function<void()> callback = [&]() {
+    (void) rtCtxDestroy(rt_gen_context);
+    GE_CHK_RT(rtCtxSetCurrent(context->rt_context));
+  };
+  GE_MAKE_GUARD(rt_gen_context, callback);
+
+  const auto &node_item = *node_state.GetNodeItem();
   RECORD_COMPILE_EVENT(context, node_item.NodeName().c_str(), "[Compile] Start");
-  GE_CHK_RT_RET(rtCtxSetCurrent(context->rt_gen_context));
 
   if (context->ge_context != nullptr) {
     GetThreadLocalContext() = *context->ge_context;

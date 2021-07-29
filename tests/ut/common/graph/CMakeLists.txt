@@ -61,52 +61,21 @@ set(UT_FILES
     "testcase/ge_graph/ge_model_unittest.cc"
 )
 
-set(SRC_FILES
-    "${GE_CODE_DIR}/metadef/graph/option/ge_local_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/option/ge_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/anchor.cc"
-    "${GE_CODE_DIR}/metadef/graph/ge_attr_value.cc"
-    "${GE_CODE_DIR}/metadef/graph/attr_value.cc"
-    "${GE_CODE_DIR}/metadef/graph/buffer.cc"
-    "${GE_CODE_DIR}/metadef/graph/aligned_ptr.cc"
-    "${GE_CODE_DIR}/metadef/graph/compute_graph.cc"
-    "${GE_CODE_DIR}/metadef/graph/ge_attr_define.cc"
-    "${GE_CODE_DIR}/metadef/graph/graph.cc"
-    "${GE_CODE_DIR}/metadef/graph/gnode.cc"
-    "${GE_CODE_DIR}/metadef/graph/ascend_string.cc"
-    "${GE_CODE_DIR}/metadef/graph/model.cc"
-    "${GE_CODE_DIR}/metadef/graph/model_serialize.cc"
-    "${GE_CODE_DIR}/metadef/graph/node.cc"
-    "${GE_CODE_DIR}/metadef/graph/op_desc.cc"
-    "${GE_CODE_DIR}/metadef/graph/operator.cc"
-    "${GE_CODE_DIR}/metadef/graph/operator_factory.cc"
-    "${GE_CODE_DIR}/metadef/graph/operator_factory_impl.cc"
-    "${GE_CODE_DIR}/metadef/graph/tensor.cc"
-    "${GE_CODE_DIR}/metadef/graph/types.cc"
-    "${GE_CODE_DIR}/metadef/graph/ge_tensor.cc"
-    "${GE_CODE_DIR}/metadef/graph/shape_refiner.cc"
-    "${GE_CODE_DIR}/metadef/graph/format_refiner.cc"
-    "${GE_CODE_DIR}/metadef/graph/inference_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/detail/attributes_holder.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/anchor_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/graph_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/node_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/op_desc_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/type_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/ge_ir_utils.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/tensor_utils.cc"
-    "${GE_CODE_DIR}/metadef/ops/op_imp.cpp"
-    "${GE_CODE_DIR}/metadef/graph/opsproto/opsproto_manager.cc"
-    "${GE_CODE_DIR}/metadef/graph/runtime_inference_context.cc"
-    "${GE_CODE_DIR}/metadef/graph/ref_relation.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/transfer_shape_according_to_format.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/axis_util.cc"
-    "${GE_CODE_DIR}/metadef/third_party/transformer/src/expand_dimension.cc"
-    "${GE_CODE_DIR}/metadef/graph/utils/transformer_utils.cc"
-)
+FILE(GLOB_RECURSE GRAPH_SRC_FILES_DEPTH0 ${GE_CODE_DIR}/metadef/graph/*.cc)
+FILE(GLOB_RECURSE GRAPH_SRC_FILES_DEPTH1 ${GE_CODE_DIR}/metadef/graph/*/*.cc)
+FILE(GLOB_RECURSE GRAPH_SRC_FILES_DEPTH2 ${GE_CODE_DIR}/metadef/graph/*/*/*.cc)
 
-#add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
-add_executable(ut_libgraph ${UT_FILES} ${SRC_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/ops GRAPH_OPS_SRC_FILES)
+AUX_SOURCE_DIRECTORY(${GE_CODE_DIR}/metadef/third_party/transformer/src TRANSFORMER_SRC_FILES)
+
+add_executable(ut_libgraph ${UT_FILES}
+    ${GRAPH_SRC_FILES_DEPTH0}
+    ${GRAPH_SRC_FILES_DEPTH1}
+    ${GRAPH_SRC_FILES_DEPTH2}
+    ${GRAPH_OPS_SRC_FILES}
+    ${TRANSFORMER_SRC_FILES}
+    ${PROTO_SRCS} ${PROTO_HDRS}
+)
 
 target_compile_options(ut_libgraph PRIVATE
     -g --coverage -fprofile-arcs -ftest-coverage

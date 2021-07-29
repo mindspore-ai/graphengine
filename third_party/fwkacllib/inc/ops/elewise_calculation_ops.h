@@ -624,9 +624,9 @@ REG_OP(Log1p)
 
 *@attention Constraints:
 *@li x2: The input data does not support 0
-*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the 
+*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the
 *requirement of double thousandths in the mini form
-*@li Due to different architectures, the calculation results of this operator 
+*@li Due to different architectures, the calculation results of this operator
 *on NPU and CPU may be inconsistent
 *@li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
 
@@ -2066,9 +2066,9 @@ REG_OP(FloorDiv)
 
 *@attention Constraints:
 *@li x2: The input data does not support 0
-*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the 
+*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the
 *requirement of double thousandths in the mini form
-*@li Due to different architectures, the calculation results of this operator 
+*@li Due to different architectures, the calculation results of this operator
 *on NPU and CPU may be inconsistent
 *@li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
 
@@ -2200,9 +2200,9 @@ REG_OP(Tan)
 
 *@attention Constraints:
 *@li x2: The input data does not support 0
-*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the 
+*@li When NUM exceeds 2048 , the accuracy of operator cannot guarantee the
 *requirement of double thousandths in the mini form
-*@li Due to different architectures, the calculation results of this operator 
+*@li Due to different architectures, the calculation results of this operator
 *on NPU and CPU may be inconsistent
 *@li If shape is expressed as (D1,D2... ,Dn), then D1*D2... *DN<=1000000,n<=8
 
@@ -2467,11 +2467,11 @@ REG_OP(Eltwise)
 
  *@par Inputs:
  *One inputs, including:
- * @li input_x: A tensor. Must be one of the following types:
+ * input_x: A tensor. Must be one of the following types:
  *     float16, float32. \n
 
  *@par Outputs:
- *y: A Tensor with the same type and shape of input_x's. \n
+ *output_y: A Tensor with the same type and shape of input_x's. \n
 
  *@par Third-party framework compatibility
  *Compatible with the Pytorch operator Erfinv. \n
@@ -3154,13 +3154,13 @@ REG_OP(FusedMulAddNL2loss)
 *@brief Tests whether the input exceeds a threshold. \n
 
 *@par Inputs:
-*@li x: A Tensor with any format. Must be one of the following types: float16, float32. \n
+* x: A Tensor with any format. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
-*@li threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
+* threshold: A required float32. Defaults to "0.0". "x" is compared with "threshold", outputs "1" for inputs above threshold; "0" otherwise. \n
 
 *@par Outputs:
-*@li y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
+* y: A Tensor with any format. Has the same type as the input. Must be one of the following types: float16, float32.
 *@par Third-party framework compatibility
 * Compatible with the Caffe operator Threshold.
 */
@@ -3175,7 +3175,7 @@ REG_OP(FusedMulAddNL2loss)
 *@brief Returns the index number corresponding to the maximum value entered. \n
 
 *@par Inputs:
-*@li x: A tensor. Must be one of the following types: float16, float32. \n
+*x: A tensor. Must be one of the following types: float16, float32. \n
 
 *@par Attributes:
 *@li axis: An optional int. Specify the axis to be cut at the input tensor. If this parameter is not provided, find the topk for each batch. Defaults to 10000
@@ -3203,12 +3203,11 @@ REG_OP(ArgMaxWithK)
 *@brief Multiply tensor with scale. \n
 
 *@par Inputs:
-*Five inputs, including:
-* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float. \n
+*One input, including:
+*x: A Tensor. Must be one of the following types:int32,int16, float16, float32.
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1". \n
+*y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator muls.
@@ -3223,12 +3222,11 @@ REG_OP(Muls)
 *@brief Fill tensor with scale. \n
 
 *@par Inputs:
-*Five inputs, including:
-* @li x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
-* @li x2: A scale. Must be float. \n
+*One input, including:
+*x1: A Tensor. Must be one of the following types:int32,int16, float16, float32.
 
 *@par Outputs:
-*@li y: A Tensor. Has the same type and shape as "x1". \n
+*y: A Tensor. Has the same type and shape as "x1". \n
 
 *@par Third-party framework compatibility:
 * Compatible with the Pytorch operator fills.
@@ -3378,7 +3376,7 @@ REG_OP(TensorMove)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
+*x: A Tensor. Must be one of the following types: float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64. \n
 
 *@par Outputs:
 *output_x: A Tensor. Has the same type as "x". \n
@@ -3397,7 +3395,7 @@ REG_OP(TensorRedirect)
 * multiply the result by the scalar value and add it to tensor x1
 
 * @par Inputs:
-* Three inputs, including:
+* Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
 *     float16, float32.
 * @li x1: A mutable input Tensor of the same type as x1.
@@ -3406,7 +3404,7 @@ REG_OP(TensorRedirect)
 *     float16, float32, int32. \n
 
 * @par Outputs:
-* @li y: A mutable Tensor. Has the same type as "x1". \n
+* y: A mutable Tensor. Has the same type as "x1". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Addcdiv.
@@ -3420,12 +3418,12 @@ REG_OP(Addcdiv)
     .OP_END_FACTORY_REG(Addcdiv)
 
 /**
-* @brief Performs the element-wise multiplication of tensor x2 by tensor x3, 
-* multiply the result by the scalar value and add it to tensor input_data 
+* @brief Performs the element-wise multiplication of tensor x2 by tensor x3,
+* multiply the result by the scalar value and add it to tensor input_data
 
 
 * @par Inputs:
-* Three inputs, including:
+* Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
 *     float16, float32, int8, int32, uint8.
 * @li x1: A mutable input Tensor of the same type as x1.
@@ -3433,7 +3431,7 @@ REG_OP(Addcdiv)
 * @li value: A tensor which includes only one element of the same type as x1. \n
 
 * @par Outputs:
-* @li y: A mutable output Tensor. Has the same type as "x1". \n
+* y: A mutable output Tensor. Has the same type as "x1". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Addcmul.
@@ -3455,7 +3453,7 @@ REG_OP(Addcmul)
 * @li alpha: A scalar tensor of type float16, float32. \n
 
 * @par Outputs:
-* @li y: An ND tensor tensor with the same shape and type as "x1". \n
+* y: An ND tensor tensor with the same shape and type as "x1". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Axpy.
@@ -3466,25 +3464,6 @@ REG_OP(AxpyV2)
     .INPUT(alpha, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OP_END_FACTORY_REG(AxpyV2)
-
-/**
-* @brief Computes the result of x1 - x2.
-
-* @par Inputs:
-* @li x1: An ND tensor of type float16, float, int32.
-* @li x2: An ND tensor of type float16, float, int32. \n
-
-* @par Outputs:
-* @li y: An ND tensor tensor with the same type as "x1". \n
-
-* @par Third-party framework compatibility
-* Compatible with the Pytorch operator Sub.
-*/
-REG_OP(PtSub)
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OP_END_FACTORY_REG(PtSub)
 
 /**
 * @brief Add the partial values of two tensors in format NC1HWC0.
@@ -3502,7 +3481,7 @@ REG_OP(PtSub)
 * the difference between C1 and offset in "x1" and "x2". \n
 
 * @par Outputs:
-* @li y:  A Tensor of the same type as "x1", and the same shape as "x1",
+* y:  A Tensor of the same type as "x1", and the same shape as "x1",
 * except for the C1 value. Record the result after adding. \n
 */
 REG_OP(StrideAdd)
@@ -3523,7 +3502,7 @@ REG_OP(StrideAdd)
 * @li input_y: A Tensor. the second tensor. \n
 
 * @par Outputs:
-* @li output_z: A Tensor. Bool type, compare result of the two inputs. \n
+*output_z: A Tensor. Bool type, compare result of the two inputs. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch equal operator. \n
@@ -3535,21 +3514,21 @@ REG_OP(TensorEqual)
     .OP_END_FACTORY_REG(TensorEqual)
 
 /**
- * @brief Element-wise min of each of the input tensors (with Numpy-style broadcasting support). 
- * All inputs and outputs must have the same data type. This operator supports multidirectional 
+ * @brief Element-wise min of each of the input tensors (with Numpy-style broadcasting support).
+ * All inputs and outputs must have the same data type. This operator supports multidirectional
  * (i.e., Numpy-style) broadcasting
- * 
- * @par inputs
+ *
+ * @par Inputs:
  * one input including:
- * @li x: dynamic input A Tensor. Must be one of the following types: float32, float16, double, int32, int64
- * 
- * @par output
+ * x: dynamic input A Tensor. Must be one of the following types: float32, float16, double, int32, int64
+ *
+ * @par Outputs:
  * one output including:
- * @li y:A Tensor of the same type as x
- * 
+ * y:A Tensor of the same type as x
+ *
  */
 REG_OP(MaxN)
-    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64})) 
+    .DYNAMIC_INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_FLOAT64, DT_INT32, DT_INT64}))
     .OP_END_FACTORY_REG(MaxN)
 
@@ -3634,16 +3613,16 @@ REG_OP(DataCompare)
 *which Hardmax will be performed.The output tensor has the same shape and contains the Hardmax values of the
 *corresponding input.
 *
-*@par inputs
+*@par Inputs:
 *one input including:
-*@li x: input A Tensor.Must be one of the following types:float32,float16
+*x: input A Tensor.Must be one of the following types:float32,float16
 *
 *@par Attributes:
-*@li axis:A required int attribute that decides which dimension will be used to cal the hard_max
+*axis:A required int attribute that decides which dimension will be used to cal the hard_max
 *
-*@par output:
+*@par Outputs:
 *one output including:
-*@li y:A Tensor of the same type as x
+*y:A Tensor of the same type as x
 *
 */
 REG_OP(HardMax)
@@ -3661,7 +3640,7 @@ REG_OP(HardMax)
 * @li input_y: A Tensor. the second tensor must be 1d. \n
 
 * @par Outputs:
-* @li output: A Tensor. Result of the two inputs, must be 1d. \n
+* output: A Tensor. Result of the two inputs, must be 1d. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch dot operator. \n
@@ -3671,7 +3650,7 @@ REG_OP(Dot)
     .INPUT(input_y, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
     .OUTPUT(output, TensorType({DT_FLOAT, DT_FLOAT16, DT_UINT8, DT_INT8, DT_INT32}))
     .OP_END_FACTORY_REG(Dot)
-	
+
 /**
 *@brief Returns a new tensor with boolean elements representing \n
 *if each element of input is “close” to the corresponding element of other \n
@@ -3719,7 +3698,7 @@ REG_OP(IsClose)
 *
 *@attention Constraints:
 *@li indices: only support int32,and shape same to "updates"
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". 
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
 *@li y:A Tensor, the type and shape is same to "var" \n
 
 *@par Third-party framework compatibility
@@ -3754,7 +3733,7 @@ REG_OP(ArgMaxGrad)
 
 *@attention Constraints:
 *@li indices: only support int32,and shape same to "updates"
-*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x". 
+*@li The value range of "dimension" is [-dims, dims - 1]. "dims" is the dimension length of "x".
 *@li y:A Tensor, the type and shape is same to "var" \n
 
 *@par Third-party framework compatibility
@@ -3805,15 +3784,15 @@ REG_OP(AddMatMatElements)
 
 *@par Inputs:
 *Two inputs, including:
-* @li input_x1: A tensor. Must be the following types:
-*     float32. \n
+* @li input_x1: A tensor. Must be the following types: float32.
+* @li input_x2: A tensor. Must of the following types: float32. \n
 
-*@par Inputs:
-*@li input_x2: A tensor. Must of the following types:
-*     float32. \n
+* @par Attributes:
+* @li dim:The type is Int and the default value is 1.
+* @li eps:The type is Float and the default value is 1e-8. \n
 
 *@par Outputs:
-*@li output_y: A Tensor with the same type of input_x's. \n
+* output_y: A Tensor with the same type of input_x's. \n
 
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator CosineSimilarity. \n
@@ -3826,6 +3805,45 @@ REG_OP(CosineSimilarity)
     .ATTR(eps, Float, 1e-8)
     .OP_END_FACTORY_REG(CosineSimilarity)
 
+/**
+*@brief count adam result. \n
+
+*@par Inputs:
+*eleven inputs, including:
+* @li var: A Tensor. Support float16/float32.\n
+* @li m: A Tensor. Datatype and shape are same as exp_avg.\n
+* @li v: A Tensor. Datatype and shape are same as exp_avg.\n
+* @li lr: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li beta1: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li beta2: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li epsilon: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li grad: A Tensor. Datatype and shape are same as exp_avg.\n
+* @li max_grad_norm: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li global_grad_norm: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+* @li weight_decay: A Tensor. Datatype is same as exp_avg. Shape (1, ).\n
+
+*@par Outputs:
+*three inputs, including:
+* @li var: A Tensor. Datatype and shape are same as exp_avg.\n
+* @li m: A Tensor. Datatype and shape are same as exp_avg.\n
+* @li v: A Tensor. Datatype and shape are same as exp_avg.\n
+*/
+REG_OP(ApplyAdamV2)
+    .INPUT(var, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(m, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(v, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(lr, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(beta1, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(beta2, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(epsilon, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(grad, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(max_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(global_grad_norm, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .INPUT(weight_decay, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(var, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(m, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OUTPUT(v, TensorType({ DT_FLOAT, DT_FLOAT16 }))
+    .OP_END_FACTORY_REG(ApplyAdamV2)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ELEWISE_CALCULATION_OPS_H_

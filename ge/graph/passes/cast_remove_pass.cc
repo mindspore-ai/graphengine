@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 #include "framework/common/debug/ge_log.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/type_utils.h"
 

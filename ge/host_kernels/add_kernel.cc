@@ -19,7 +19,7 @@
 #include <cfloat>
 
 #include "common/math/math_util.h"
-#include "graph/common/bcast.h"
+#include "common/bcast.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 

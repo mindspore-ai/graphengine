@@ -24,7 +24,7 @@
 #include "graph/build/memory/hybrid_mem_assigner.h"
 #include "graph/build/memory/var_mem_assign_util.h"
 #include "graph/build/memory/block_mem_assigner.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
 #include "graph/manager/graph_var_manager.h"
@@ -275,7 +275,7 @@ Status GraphMemoryAssigner::ReAssignMemory(bool is_loop_graph, map<uint64_t, siz
         "E19022", std::vector<std::string>({"size", "item", "maxsize"}),
         std::vector<std::string>({std::to_string(total_mem_offset), "featuremap",
                                  std::to_string(VarManager::Instance(session_id)->GetGraphMemoryMaxSize())}));
-    return ge::FAILED;
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   return SUCCESS;
 }

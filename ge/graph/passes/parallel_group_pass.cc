@@ -15,7 +15,7 @@
  */
 
 #include "graph/passes/parallel_group_pass.h"
-
+#include <queue>
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "framework/common/ge_inner_error_codes.h"
@@ -299,24 +299,19 @@ Status ParallelGroupPass::ReplaceWithSwitchAndMerge(NodePtr pre_node, NodePtr cu
       for (const auto &switch_node : cur_itr->second.first) {
         int64_t pre_id = pre_node->GetOpDesc()->GetId();
         int64_t switch_id = switch_node->GetOpDesc()->GetId();
-        // avoid ring
-        if (pre_id > switch_id) {
-          auto merge_node = cur_itr->second.second;
-          if (AddCtrlEdge(merge_node, pre_node) != SUCCESS) {
-            GELOGE(FAILED, "[AddEdge][Node]Add edge for nodes: %s->%s failed.",
-                   pre_node->GetName().c_str(), switch_node->GetName().c_str());
-            REPORT_CALL_ERROR("E19999", "[AddEdge][Node]Add edge for nodes: %s->%s failed.",
-                              pre_node->GetName().c_str(), switch_node->GetName().c_str());
-            return FAILED;
-          }
-        } else {
-          if (AddCtrlEdge(pre_node, switch_node) != SUCCESS) {
-            GELOGE(FAILED, "[AddEdge][Node]Add edge for nodes: %s->%s failed.",
-                   pre_node->GetName().c_str(), switch_node->GetName().c_str());
-            REPORT_CALL_ERROR("E19999", "[AddEdge][Node]Add edge for nodes: %s->%s failed.",
-                              pre_node->GetName().c_str(), switch_node->GetName().c_str());
-            return FAILED;
-          }
+        NodePtr first_node = pre_node;
+        NodePtr second_node = switch_node;
+        if (pre_id > switch_id && IsIndirectConnect(switch_node, pre_node)) {
+          // avoid ring, merge->pre_node
+          first_node = cur_itr->second.second;
+          second_node = pre_node;
+        }
+        if (AddCtrlEdge(first_node, second_node) != SUCCESS) {
+          GELOGE(FAILED, "[AddEdge][Node]Add edge for nodes: %s->%s failed.",
+                 first_node->GetName().c_str(), second_node->GetName().c_str());
+          REPORT_CALL_ERROR("E19999", "[AddEdge][Node]Add edge for nodes: %s->%s failed.",
+                            first_node->GetName().c_str(), second_node->GetName().c_str());
+          return FAILED;
         }
       }
     } else {
@@ -344,5 +339,30 @@ bool ParallelGroupPass::IsWhileStreamSwitch(OpDescPtr switch_op_desc) {
   int64_t stream_switch_type = -1;
   return (AttrUtils::GetInt(switch_op_desc, ATTR_NAME_STREAM_SWITCH_TYPE, stream_switch_type) &&
     stream_switch_type == kLoopType);
+}
+
+bool ParallelGroupPass::IsIndirectConnect(const NodePtr &node_a, const NodePtr &node_b) {
+  if (node_a == nullptr || node_b == nullptr) {
+    GELOGW("node_a or node_b is nullptr.");
+    return false;
+  }
+  int64_t end_id = node_b->GetOpDesc()->GetId();
+  std::queue<NodePtr> nodes;
+  nodes.push(node_a);
+  while (!nodes.empty()) {
+    NodePtr tmp_node = nodes.front();
+    nodes.pop();
+    if (tmp_node == nullptr || tmp_node->GetOpDesc() == nullptr ||
+        tmp_node->GetOpDesc()->GetId() > end_id) {
+      continue;
+    }
+    if (tmp_node == node_b) {
+      return true;
+    }
+    for (const auto &out_node : tmp_node->GetOutAllNodes()) {
+      nodes.push(out_node);
+    }
+  }
+  return false;
 }
 } // namespace ge

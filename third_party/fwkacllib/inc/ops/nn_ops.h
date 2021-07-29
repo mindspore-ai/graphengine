@@ -106,16 +106,16 @@ REG_OP(FusedBatchNormV2)
     .OP_END_FACTORY_REG(FusedBatchNormV2)
 
 /**
- * @brief: Large amount of data sort.First operator of TopK.
+ * @brief Large amount of data sort.First operator of TopK.
  * @par Inputs:
  * two input, including:
  * @li input_data: A Tensor. Data to be sorted. Support float16
  * @li input_index: A Tensor. Range(0, 2048). Datatype and format is same as input_data.
  * @par Attributes:
- * @li k_num: Int.Number to be sorted.
+ * k_num: Int.Number to be sorted.
  * @par Outputs:
- * 1 output, including:
- * @li output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
+ * One output, including:
+ * output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
  */
 REG_OP(SegmentSort)
     .INPUT(input_data, TensorType({DT_FLOAT16}))
@@ -127,13 +127,13 @@ REG_OP(SegmentSort)
 /**
  * @brief: Large amount of data sort.Second operator of TopK.
  * @par Inputs:
- * two input, including:
- * @li input_proposal: A Tensor. Proposal sorted for each channel. Support float16
+ * One input, including:
+ * input_proposal: A Tensor. Proposal sorted for each channel. Support float16
  * @par Attributes:
- * @li k_num: Int.Number to be sorted.
+ * k_num: Int.Number to be sorted.
  * @par Outputs:
- * 1 output, including:
- * @li output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
+ * One output, including:
+ * output_proposal: A Tensor. Datatype and format is same as input_data. Proposal sorted for each channel.
  */
 REG_OP(MultiMerge)
     .INPUT(input_proposal, TensorType({DT_FLOAT16}))
@@ -142,14 +142,14 @@ REG_OP(MultiMerge)
     .OP_END_FACTORY_REG(MultiMerge)
 
 /**
- * @brief: Large amount of data sort.Third operator of TopK.
+ * @brief Large amount of data sort.Third operator of TopK.
  * @par Inputs:
- * two input, including:
- * @li input_proposal: A Tensor. Proposal sorted for each channel. Support float16
+ * One input, including:
+ * input_proposal: A Tensor. Proposal sorted for each channel. Support float16
  * @par Attributes:
- * @li k_num: Int.Number to be sorted.
+ * k_num: Int.Number to be sorted.
  * @par Outputs:
- * 2 output, including:
+ * Two output, including:
  * @li output_data: A Tensor. Datatype and format is same as input_data. Data sorted.
  * @li output_index: A Tensor. int32. Data index.
  */

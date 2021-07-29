@@ -21,7 +21,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
 
 namespace ge {
@@ -111,6 +111,8 @@ class DynamicShapePartitioner {
 
   Status Partition();
 
+  using OrderedFilter = std::function<bool(const std::shared_ptr<Cluster> &cluster)>;
+
  private:
   Status PartitionImpl();
   // Collect nodes that satisfy the unknowshape rules:
@@ -138,7 +140,7 @@ class DynamicShapePartitioner {
   // Merge clusters step3
   void MergeClustersInputData();
   // Topological sort clusters after merge unknown shape clusters.
-  Status TopologicalSortClusters();
+  Status TopologicalSortClusters(const OrderedFilter &ordered_filter);
   // Deduplicate merged clusters
   void PruneUniqueClusters();
   // Establish the input-output anchors for each partition of the cluster and record links to other clusters
@@ -161,7 +163,7 @@ class DynamicShapePartitioner {
   ge::ComputeGraphPtr root_graph_;                                        // The original graph to partition
   std::unordered_map<NodePtr, std::shared_ptr<Cluster>> node_2_cluster_;  // Record nodes and the cluster it belongs to
   // V1 control flow cluster, need merge to one Graph.
-  std::unordered_map<int64_t, std::vector<std::shared_ptr<Cluster>>> control_clusters_;
+  std::map<int64_t, std::vector<std::shared_ptr<Cluster>>> control_clusters_;
   // topological sorted clusters, this field will change with the splitting.
   // When partitioning UNKNOWN_SHAPE cluster, it is a collection of all topological sorted UNKNOWN_SHAPE clusters
   // When partitioning KNOWN_SHAPE cluster, it is a collection of all topological sorted KNOWN_SHAPE clusters

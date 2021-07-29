@@ -27,6 +27,7 @@ namespace ge {
 namespace hybrid {
 using AicpuShapeAndType = aicpu::FWKAdapter::ShapeAndType;
 using AicpuExtInfo = aicpu::FWKAdapter::ExtInfo;
+using AsyncWaitInfo = aicpu::FWKAdapter::AsyncWait;
 using AicpuSessionInfo = SessionInfo;
 
 class AicpuExtInfoHandler {
@@ -59,6 +60,8 @@ class AicpuExtInfoHandler {
 
   Status UpdateExecuteMode(bool flag);
 
+  Status UpdateEventId(uint32_t event_id);
+
   Status GetOutputShapeAndType(uint32_t output_index, GeShape &shape, DataType &data_type);
 
   bool IsNeedRefreshIOAddr();
@@ -73,6 +76,7 @@ class AicpuExtInfoHandler {
   Status ParseExtBitMap(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtUpdateAddr(AicpuExtInfo *aicpu_ext_info);
   Status ParseExtTopicType(AicpuExtInfo *aicpu_ext_info);
+  Status ParseExtAsyncWait(AicpuExtInfo *aicpu_ext_info);
 
   static Status UpdateShapeAndType(const GeShape &shape,
                                    DataType data_type,
@@ -90,6 +94,7 @@ class AicpuExtInfoHandler {
   const uint32_t output_num_;
   UnknowShapeOpType unknown_type_;
   AicpuSessionInfo *session_info_ = nullptr;
+  AsyncWaitInfo *async_wait_ = nullptr;
   uint64_t *bit_map_ = nullptr;
   uint32_t *update_addr_ = nullptr;
   int32_t topic_type_flag_ = -1;

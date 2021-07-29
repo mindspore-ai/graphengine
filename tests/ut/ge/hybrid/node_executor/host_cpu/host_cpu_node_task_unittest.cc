@@ -22,7 +22,7 @@
 #define protected public
 #include "hybrid/executor/subgraph_context.h"
 #include "hybrid/node_executor/host_cpu/host_cpu_node_executor.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 #include "graph/passes/graph_builder_utils.h"
 #include "aicpu/common/aicpu_task_struct.h"
 #include "graph/manager/graph_mem_manager.h"

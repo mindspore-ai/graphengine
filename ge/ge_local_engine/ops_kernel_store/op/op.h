@@ -20,7 +20,7 @@
 #include <climits>
 #include <string>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 
 namespace ge {

@@ -23,7 +23,7 @@
 #include <memory>
 
 #include "common/blocking_queue.h"
-#include "ge/ge_api_error_codes.h"
+#include "external/ge/ge_api_error_codes.h"
 #include "runtime/rt.h"
 
 namespace ge {

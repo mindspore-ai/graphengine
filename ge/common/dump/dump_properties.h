@@ -23,6 +23,7 @@
 #include <vector>
 
 namespace ge {
+using Status = uint32_t;
 class DumpProperties {
  public:
   DumpProperties() = default;
@@ -33,7 +34,7 @@ class DumpProperties {
 
   DumpProperties &operator=(const DumpProperties &dump);
 
-  void InitByOptions();
+  Status InitByOptions();
 
   void AddPropertyValue(const std::string &model, const std::set<std::string> &layers);
 
@@ -95,7 +96,20 @@ class DumpProperties {
  private:
   void CopyFrom(const DumpProperties &other);
 
-  void SetDumpDebugOptions();
+  Status SetDumpDebugOptions();
+
+  Status SetDumpOptions();
+
+  void Split(const std::string &s, std::vector<std::string> &result, const char *delchar);
+
+  Status CheckDumpStep(const std::string &dump_step);
+
+  Status CheckDumpMode(const std::string &dump_mode);
+
+  Status CheckDumpPath(const std::string &input);
+
+  Status CheckEnableDump(const std::string &input);
+
   std::string enable_dump_;
   std::string enable_dump_debug_;
 

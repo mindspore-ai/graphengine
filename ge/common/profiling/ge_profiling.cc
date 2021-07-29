@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-#include "common/profiling/ge_profiling.h"
+#include "framework/common/profiling/ge_profiling.h"
 #include "runtime/base.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "graph/load/graph_loader.h"
+#include "graph/ge_context.h"
 #include "init/gelib.h"
 #include "framework/common/ge_inner_error_codes.h"
+#include "common/model/ge_model.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace {
 const uint32_t kDeviceListIndex = 3;
@@ -34,6 +37,7 @@ const std::string kProfilingStop = "prof_stop";
 const std::string kProfModelSubscribe = "prof_model_subscribe";
 const std::string kProfModelUnsubscribe = "prof_model_cancel_subscribe";
 const std::string kRtSetDeviceRegName = "profiling";
+const std::string kPofilingModelId = "modelId";
 
 const std::map<ProfCommandHandleType, std::string> kProfCommandTypeMap = {
     {kProfCommandhandleInit, kProfilingInit},
@@ -42,6 +46,26 @@ const std::map<ProfCommandHandleType, std::string> kProfCommandTypeMap = {
     {kProfCommandhandleFinalize, kProfilingFinalize},
     {kProfCommandhandleModelSubscribe, kProfModelSubscribe},
     {kProfCommandhandleModelUnsubscribe, kProfModelUnsubscribe}};
+
+const uint64_t kModelId = ge::INVALID_MODEL_ID;
+const uint16_t kStepStart = 0;
+const uint16_t kStepEnd = 1;
+
+ge::Status NeedUnsubscribe(ProfCommandHandleType type, bool is_subscribe,
+                           uint32_t graph_id, vector<string> &prof_params) {
+  if (type == kProfCommandhandleModelUnsubscribe && is_subscribe) {
+    prof_params.clear();
+    prof_params.emplace_back(kPofilingModelId);
+    uint32_t model_id = 0;
+    auto ret = ge::ProfilingManager::Instance().GetModelIdFromGraph(graph_id, model_id);
+    if (ret != ge::SUCCESS) {
+      GELOGE(ret, "graph_id:%u not not found", graph_id);
+      return ret;
+    }
+    prof_params.emplace_back(std::to_string(model_id));
+  }
+  return ge::SUCCESS;
+}
 }  // namespace
 
 bool TransProfConfigToParam(const ProfCommandHandleData &profCommand, vector<string> &prof_config_params) {
@@ -190,6 +214,24 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
       return ge::PARAM_INVALID;
     }
   }
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  auto is_train = domi::GetContext().train_flag;
+  if (type == kProfCommandhandleModelSubscribe && is_train) {
+    profiling_manager.SetSubscribeInfo(prof_config_param->profSwitch, prof_config_param->modelId, true);
+    return ge::SUCCESS;
+  }
+  auto is_subscribe = profiling_manager.GetSubscribeInfo().is_subscribe;
+  // GraphId is actually stored in prof_config_param
+  auto graph_id = prof_config_param->modelId;
+  ge::Status ret = NeedUnsubscribe(type, is_subscribe, graph_id, prof_params);
+  if (ret != ge::SUCCESS) {
+    GELOGE(ret, "graph_id:%u not not found", graph_id);
+    REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"value", "parameter", "reason"}),
+                       std::vector<std::string>({std::to_string(graph_id),
+                                                 "GraphToModelMap",
+                                                 "graph_id does not exist!"}));
+    return ge::FAILED;
+  }
   ge::GraphLoader graph_loader;
   ge::Command command;
   command.cmd_params.clear();
@@ -203,7 +245,7 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   if (type == kProfCommandhandleStart || type == kProfCommandhandleStop) {
     GELOGI("Profiling device nums:%s , deviceID:[%s]", prof_params[0].c_str(), prof_params[kDeviceListIndex].c_str());
   }
-  ge::Status ret = graph_loader.CommandHandle(command);
+  ret = graph_loader.CommandHandle(command);
   if (ret != ge::SUCCESS) {
     GELOGE(ret, "[Handle][Command]Handle profiling command failed, command type %s, error_code %u",
            iter->second.c_str(), ret);
@@ -216,6 +258,34 @@ ge::Status ProfCommandHandle(ProfCommandHandleType type, void *data, uint32_t le
   return ge::SUCCESS;
 }
 
-GE_FUNC_VISIBILITY ge::Status ProfSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream) {
-  return ge::SUCCESS;
+ge::Status ProfSetStepInfo(uint64_t index_id, uint16_t tag_id, rtStream_t stream) {
+  static bool is_first_run = true;
+  int32_t device_id = 0;
+  rtError_t rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    GELOGE(rt_ret, "[Get][LogicDeviceId]Failed, ret 0x%X", rt_ret);
+    REPORT_CALL_ERROR("E19999", "Get logic device id failed, ret 0x%X", rt_ret);
+    return ge::FAILED;
+  }
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  profiling_manager.SetStepInfoIndex(index_id);
+  if (is_first_run && tag_id == kStepStart) {
+    GE_CHK_STATUS_RET_NOLOG(profiling_manager.ProfileStepInfo(index_id, kModelId, tag_id, stream, device_id));
+    is_first_run = false;
+    return ge::SUCCESS;
+  }
+  if (!is_first_run && tag_id == kStepEnd) {
+    GE_CHK_STATUS_RET_NOLOG(profiling_manager.ProfileStepInfo(index_id, kModelId, tag_id, stream, device_id));
+    is_first_run = true;
+    return ge::SUCCESS;
+  }
+  GELOGE(ge::FAILED, "Param tag_id:%u invalid when is_first_run is %d", tag_id, is_first_run);
+  REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"value", "parameter", "reason"}),
+                     std::vector<std::string>({std::to_string(tag_id), "tag_id",
+                                               "tag id must be 0 when first run, must be 1 when second run"}));
+  return ge::FAILED;
+}
+
+ge::Status ProfGetDeviceFormGraphId(uint32_t graph_id, uint32_t &device_id) {
+  return ge::ProfilingManager::Instance().GetDeviceIdFromGraph(graph_id, device_id);
 }

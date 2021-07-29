@@ -21,13 +21,13 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/model_parser/model_parser.h"
 #include "common/properties_manager.h"
-#include "common/string_util.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/manager/util/variable_accelerate_ctrl.h"
@@ -35,7 +35,7 @@
 #include "graph/node.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 #include "runtime/context.h"
 
 namespace ge {
@@ -63,7 +63,8 @@ class GraphPrepare {
   Status CheckRefOp();
   Status SetRtContext(rtContext_t rt_context, rtCtxMode_t mode);
   Status AdjustDataOpOutput(const NodePtr &node);
-  Status CheckInternalFormat(const NodePtr &input_node, const GeTensorDesc &desc, bool tune_flag);
+  Status CheckInternalFormat(const NodePtr &input_node, const GeTensorDesc &desc);
+  Status UpdateDataInputOutputDesc(GeAttrValue::INT index, OpDescPtr &op, GeTensorDesc &desc);
   Status UpdateInput(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option);
   Status CheckAndUpdateInput(const std::vector<GeTensor> &user_input, const std::map<string, string> &graph_option);
   Status CheckConstOp();

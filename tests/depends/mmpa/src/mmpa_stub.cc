@@ -220,6 +220,13 @@ VOID mmScandirFree(mmDirent **entryList, INT32 count)
 
 INT32 mmAccess2(const CHAR *pathName, INT32 mode)
 {
+  if (pathName == NULL) {
+    return EN_INVALID_PARAM;
+  }
+  INT32 ret = access(pathName, mode);
+  if (ret != EN_OK) {
+    return EN_ERROR;
+  }
   return 0;
 }
 
@@ -338,6 +345,10 @@ INT32 mmIsDir(const CHAR *fileName)
 
 INT32 mmGetEnv(const CHAR *name, CHAR *value, UINT32 len)
 {
+  const char *env = getenv(name);
+  if (env != nullptr) {
+    strcpy(value, env);
+  }
   return 0;
 }
 
@@ -369,4 +380,9 @@ VOID *mmDlsym(VOID *handle, const CHAR *funcName)
 INT32 mmGetPid()
 {
   return (INT32)getpid();
+}
+
+INT32 mmSetCurrentThreadName(const CHAR *name)
+{
+  return EN_OK;
 }

@@ -28,20 +28,30 @@ constexpr int kDefaultQueueSize = 16;
 constexpr int kDataInputIndex = 0;
 }
 
-SubgraphExecutor::SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape)
+SubgraphExecutor::SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape,
+                                   ThreadPool *pre_run_pool)
     : graph_item_(graph_item),
       context_(context),
       force_infer_shape_(force_infer_shape),
-      pre_run_pool_(kDefaultThreadNum),
+      pre_run_pool_(pre_run_pool),
+      own_thread_pool_(false),
       ready_queue_(kDefaultQueueSize) {
 }
 
 SubgraphExecutor::~SubgraphExecutor() {
+  if (own_thread_pool_ && pre_run_pool_ != nullptr) {
+    delete pre_run_pool_;
+  }
   GELOGD("[%s] SubgraphExecutor destroyed.", graph_item_->GetName().c_str());
 }
 
 Status SubgraphExecutor::Init(const std::vector<TensorValue> &inputs,
                               const std::vector<ConstGeTensorDescPtr> &input_desc) {
+  if (pre_run_pool_ == nullptr) {
+    pre_run_pool_ = new (std::nothrow) ThreadPool(kDefaultThreadNum);
+    GE_CHECK_NOTNULL(pre_run_pool_);
+    own_thread_pool_ = true;
+  }
   subgraph_context_.reset(new(std::nothrow)SubgraphContext(graph_item_, context_));
   GE_CHECK_NOTNULL(subgraph_context_);
   GE_CHK_STATUS_RET(subgraph_context_->Init(),
@@ -103,6 +113,13 @@ Status SubgraphExecutor::InitInputsForUnknownShape(const std::vector<TensorValue
       auto node_state = subgraph_context_->GetOrCreateNodeState(input_node);
       GE_CHECK_NOTNULL(node_state);
       node_state->GetShapeInferenceState().UpdateInputShape(0, *tensor_desc);
+      auto op_desc = input_node->GetOpDesc();
+      GE_CHECK_NOTNULL(op_desc);
+      auto output_desc = op_desc->MutableOutputDesc(kDataInputIndex);
+      GE_CHECK_NOTNULL(output_desc);
+      output_desc->SetShape(tensor_desc->GetShape());
+      output_desc->SetOriginShape(tensor_desc->GetOriginShape());
+      node_state->SetSkipInferShape(true);
     }
   }
 
@@ -175,16 +192,12 @@ Status SubgraphExecutor::ExecuteAsyncForKnownShape(const std::vector<TensorValue
   GE_CHECK_NOTNULL(node_state);
   node_state->SetKernelTask(node_item->kernel_task);
 
-  known_shape_task_context_ = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
-  GE_CHECK_NOTNULL(known_shape_task_context_);
-  node_state->SetTaskContext(known_shape_task_context_);
-
   std::function<void()> callback;
   GE_CHK_STATUS_RET_NOLOG(InitCallback(node_state.get(), callback));
-  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, known_shape_task_context_, *context_, callback),
+  HYBRID_CHK_STATUS_RET(ExecutionEngine::ExecuteAsync(*node_state, node_state->GetTaskContext(), *context_, callback),
                         "[%s] Failed to execute node [%s] for known subgraph.",
                         graph_item_->GetName().c_str(),
-                        known_shape_task_context_->GetNodeName());
+                        node_state->GetName().c_str());
 
   GELOGD("[%s] Done execute non-dynamic subgraph successfully.", graph_item_->GetName().c_str());
   return SUCCESS;
@@ -251,7 +264,8 @@ Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
 
   // only do shape inference and compilation for nodes with dynamic shapes.
   if (node_item.is_dynamic) {
-    auto prepare_future = pre_run_pool_.commit([this, p_node_state]() -> Status {
+    GE_CHECK_NOTNULL(pre_run_pool_);
+    auto prepare_future = pre_run_pool_->commit([this, p_node_state]() -> Status {
       GetContext().SetSessionId(context_->session_id);
       GetContext().SetContextId(context_->context_id);
       GE_CHK_STATUS_RET_NOLOG(InferShape(shape_inference_engine_.get(), *p_node_state));
@@ -271,16 +285,12 @@ Status SubgraphExecutor::PrepareNode(const NodeItem &node_item, int group) {
     } else {
       node_state->SetKernelTask(node_item.kernel_task);
     }
-    auto unique_task_context = TaskContext::Create(node_state.get(), context_, subgraph_context_.get());
-    GE_CHECK_NOTNULL(unique_task_context);
     const auto &task = node_state->GetKernelTask();
     if (task == nullptr) {
       GELOGE(INTERNAL_ERROR, "[Get][KernelTask] failed for[%s], NodeTask is null.", node_state->GetName().c_str());
       REPORT_CALL_ERROR("E19999", "GetKernelTask failed for %s, nodetask is null.", node_state->GetName().c_str());
       return INTERNAL_ERROR;
     }
-    auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-    node_state->SetTaskContext(shared_task_context);
     GE_CHK_STATUS_RET_NOLOG(NodeEnqueue(p_node_state));
     return AfterPrepared(p_node_state);
   }
@@ -350,7 +360,8 @@ Status SubgraphExecutor::NodeScheduled(NodeState *node_state) {
          node_state->GetNodeItem()->data_send_.size(), node_state->GetNodeItem()->ctrl_send_.size(),
          node_state->GetSwitchIndex(), node_state->GetMergeIndex());
 
-  auto future = pre_run_pool_.commit([this, node_state]() -> Status {
+  GE_CHECK_NOTNULL(pre_run_pool_);
+  auto future = pre_run_pool_->commit([this, node_state]() -> Status {
     RECORD_CALLBACK_EVENT(context_, node_state->GetName().c_str(), "[NodeScheduled] Start");
     std::function<void(const NodeItem *)> callback = [&](const NodeItem *node_item) {
       const auto &node_name = node_item->node_name;
@@ -480,19 +491,15 @@ Status SubgraphExecutor::PrepareForExecution(GraphExecutionContext *ctx, NodeSta
   } else {
     node_state.SetKernelTask(node_item.kernel_task);
   }
-  auto unique_task_context = TaskContext::Create(&node_state, context_, subgraph_context_.get());
-  GE_CHECK_NOTNULL(unique_task_context);
   const auto &task = node_state.GetKernelTask();
   if (task == nullptr) {
     GELOGE(INTERNAL_ERROR, "[Invoke][GetKernelTask] failed for[%s], NodeTask is null.", node_state.GetName().c_str());
     REPORT_CALL_ERROR("E19999", "invoke GetKernelTask failed for %s, NodeTask is null.", node_state.GetName().c_str());
     return INTERNAL_ERROR;
   }
-  auto shared_task_context = std::shared_ptr<TaskContext>(unique_task_context.release());
-  node_state.SetTaskContext(shared_task_context);
   GE_CHK_RT_RET(rtCtxSetCurrent(ctx->rt_context));
   RECORD_COMPILE_EVENT(ctx, node_item.NodeName().c_str(), "[UpdateTilingData] start");
-  GE_CHK_STATUS_RET_NOLOG(task->UpdateTilingData(*shared_task_context)); // update op_desc before alloc ws
+  GE_CHK_STATUS_RET_NOLOG(task->UpdateTilingData(*node_state.GetTaskContext())); // update op_desc before alloc ws
   RECORD_COMPILE_EVENT(ctx, node_item.NodeName().c_str(), "[UpdateTilingData] end");
   return SUCCESS;
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hybrid_profiler.h"
+#include "hybrid/executor/hybrid_profiler.h"
 #include <iomanip>
 #include <iostream>
 #include <cstdarg>

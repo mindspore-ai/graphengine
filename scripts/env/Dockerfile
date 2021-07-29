@@ -38,5 +38,20 @@ RUN wget https://github.com/ccup/lcov/archive/refs/tags/add_lcov.tar.gz -O add_l
 
 ENV PROJECT_HOME=/code/Turing/graphEngine
 
+RUN mkdir /var/run/sshd
+RUN echo "root:root" | chpasswd
+RUN sed -i 's/\#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
+
+EXPOSE 22 7777
+
+RUN useradd -ms /bin/bash debugger
+RUN echo "debugger:ge123" | chpasswd
+
+CMD ["/usr/sbin/sshd" "-D" "&"]
+
 RUN echo "alias ge=/code/Turing/graphEngine/scripts/ge.sh">>~/.bashrc
 

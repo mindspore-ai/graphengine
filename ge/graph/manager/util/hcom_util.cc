@@ -16,10 +16,10 @@
 
 #include "graph/manager/util/hcom_util.h"
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/math/math_util.h"
-#include "common/op/attr_value_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/attr_value_util.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 
@@ -109,8 +109,7 @@ Status HcomOmeUtil::GetHcomCount(const ge::ConstOpDescPtr &op_desc, HcclDataType
       GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(*op_desc->GetInputDescPtr(i), input_size),
                         "[Get][Size] from TensorDesc failed, op:%s, input index:%zu", op_desc->GetName().c_str(), i);
       // dynamic shape hccl op get size from output tensor desc
-      if (op_desc->HasAttr(ATTR_NAME_IS_UNKNOWN_SHAPE)) {
-        GE_CHECK_NOTNULL(op_desc->GetOutputDescPtr(i));
+      if (op_desc->HasAttr(ATTR_NAME_IS_UNKNOWN_SHAPE) && (op_desc->GetOutputDescPtr(i) != nullptr)) {
         GE_CHK_STATUS_RET(ge::TensorUtils::GetSize(*op_desc->GetOutputDescPtr(i), input_size),
                           "[Get][Size] from TensorDesc failed, op:%s, input index:%zu", op_desc->GetName().c_str(), i);
       }

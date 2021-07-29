@@ -20,7 +20,7 @@
 #include "external/graph/types.h"
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/node_executor/node_executor.h"
-#include "aicpu_ext_info.h"
+#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
 
 namespace ge {
 namespace hybrid {
@@ -35,7 +35,7 @@ class AicpuNodeTaskBase : public NodeTask {
                           node_item->num_outputs,
                           node_item->shape_inference_type) {}
 
-  ~AicpuNodeTaskBase() override = default;
+  ~AicpuNodeTaskBase() override;
 
   using NodeTask::Init;
 
@@ -61,6 +61,10 @@ class AicpuNodeTaskBase : public NodeTask {
 
   static Status AllocTensorBuffer(size_t size, std::unique_ptr<TensorBuffer> &tensor_buffer);
 
+  Status DistributeWaitTaskForAicpuBlockingOp(rtStream_t stream);
+  Status CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support);
+  Status UpdateEventIdForBlockingAicpuOp();
+
  protected:
   const NodeItem *node_item_;
   // just reference.
@@ -78,6 +82,10 @@ class AicpuNodeTaskBase : public NodeTask {
 
   // ext info addr, device mem
   std::unique_ptr<TensorBuffer> ext_info_addr_dev_;
+
+  // for blocking aicpu op
+  bool is_blocking_aicpu_op_ = false;
+  rtEvent_t rt_event_ = nullptr;
 };
 
 class AicpuTfNodeTask : public AicpuNodeTaskBase {

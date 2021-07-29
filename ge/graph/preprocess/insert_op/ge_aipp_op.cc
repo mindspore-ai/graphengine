@@ -20,10 +20,10 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "base_insert_op.h"
+#include "graph/preprocess/insert_op/base_insert_op.h"
 #include "common/dynamic_aipp.h"
 #include "common/ge/ge_util.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "external/graph/operator_factory.h"
 #include "framework/common/debug/ge_log.h"
@@ -39,7 +39,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "proto/insert_op.pb.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 #define SAVE_AIPP_ATTR(KEY, SAVE_TYPE)                                                       \
   do {                                                                                       \
@@ -114,7 +114,7 @@ Status GetDataDimN(const ge::NodePtr &data_node, ge::Format format, int64_t &bat
                            std::vector<std::string>({
                                data_node->GetName() + " format",
                                TypeUtils::FormatToSerialString(format),
-                               "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and "+
+                               "only format " + TypeUtils::FormatToSerialString(FORMAT_NCHW) + " and " +
                                TypeUtils::FormatToSerialString(FORMAT_NHWC) +
                                " supported which dynamic aipp is linked"}));
         GELOGE(PARAM_INVALID, "[Check][Param] Not support data format:%s, node:%s",

@@ -16,6 +16,7 @@
 
 #include "ge_runtime/task/hccl_task.h"
 #include <algorithm>
+#include "framework/common/util.h"
 #include "ge_runtime/task/task_factory.h"
 #include "common/opskernel/ops_kernel_info_store.h"
 #include "common/opskernel/ge_task_info.h"

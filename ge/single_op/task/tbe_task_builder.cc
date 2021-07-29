@@ -29,15 +29,8 @@ namespace ge {
 namespace {
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 constexpr char const *kAttrOpParamSize = "op_para_size";
+constexpr char const *kAttrAtomicOpParamSize = "atomic_op_para_size";
 std::mutex g_reg_mutex;
-
-inline void GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) {
-  (void)AttrUtils::GetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name);
-}
-
-inline TBEKernelPtr GetTbeKernel(const OpDescPtr &op_desc) {
-  return op_desc->TryGetExtAttr(ge::OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
-}
 }  // namespace
 
 KernelHolder::KernelHolder(const char *stub_func, std::shared_ptr<ge::OpKernelBin> kernel_bin)
@@ -96,7 +89,15 @@ TbeTaskBuilder::TbeTaskBuilder(const std::string &model_name, const NodePtr &nod
       task_def_(task_def),
       kernel_def_(task_def.kernel()),
       kernel_def_with_handle_(task_def.kernel_with_handle()),
-      stub_name_(model_name + "/" + node->GetName() + "_tvmbin") {}
+      model_name_(model_name) {}
+
+TBEKernelPtr TbeTaskBuilder::GetTbeKernel(const OpDescPtr &op_desc) const {
+  return op_desc->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
+}
+
+void TbeTaskBuilder::GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) const {
+  (void)AttrUtils::GetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name);
+}
 
 Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bin_handle,
                                         const SingleOpModelParam &param) const {
@@ -104,7 +105,7 @@ Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bi
   binary.version = 0;
   binary.data = kernel_bin.GetBinData();
   binary.length = kernel_bin.GetBinDataSize();
-  binary.magic = param.core_type == 0 ? RT_DEV_BINARY_MAGIC_ELF : RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+  GE_CHK_STATUS_RET_NOLOG(GetMagic(binary.magic));
   Status ret = 0;
   if (task_def_.type() == RT_MODEL_TASK_ALL_KERNEL) {
     ret = rtRegisterAllKernel(&binary, bin_handle);
@@ -124,7 +125,7 @@ Status TbeTaskBuilder::DoRegisterBinary(const OpKernelBin &kernel_bin, void **bi
 
 Status TbeTaskBuilder::DoRegisterMeta(void *bin_handle) {
   std::string meta_data;
-  (void)AttrUtils::GetStr(op_desc_, TVM_ATTR_NAME_METADATA, meta_data);
+  (void)AttrUtils::GetStr(op_desc_, GetKeyForTvmMetaData(), meta_data);
   GELOGI("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
   if (!meta_data.empty()) {
     auto rt_ret = rtMetadataRegister(bin_handle, meta_data.c_str());
@@ -307,6 +308,15 @@ Status TbeTaskBuilder::GetSmDesc(void **sm_desc, const SingleOpModelParam &param
   return SUCCESS;
 }
 
+Status TbeTaskBuilder::InitKernelArgs(void *arg_addr, size_t arg_size, const SingleOpModelParam &param) {
+  // copy args
+  std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
+  void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
+  uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
+  GE_CHK_RT_RET(rtMemcpy(arg_addr, arg_size, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST));
+  return SUCCESS;
+}
+
 Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &param, const OpDescPtr &op_desc) {
   auto task_type = static_cast<rtModelTaskType_t>(task_def_.type());
   bool is_task_all_kernel = (task_type == RT_MODEL_TASK_ALL_KERNEL);
@@ -331,12 +341,7 @@ Status TbeTaskBuilder::SetKernelArgs(TbeOpTask &task, const SingleOpModelParam &
                                        kernel_def_with_handle_.context() : kernel_def_.context();
   const auto *args_offset_tmp = reinterpret_cast<const uint16_t *>(context.args_offset().data());
   uint16_t offset = *args_offset_tmp;
-
-  // copy args
-  std::vector<void *> tensor_device_addr_vec = BuildTaskUtils::GetKernelArgs(op_desc_, param);
-  void *src_addr = reinterpret_cast<void *>(tensor_device_addr_vec.data());
-  uint64_t src_len = sizeof(void *) * tensor_device_addr_vec.size();
-  GE_CHK_RT_RET(rtMemcpy(args.get() + offset, arg_size - offset, src_addr, src_len, RT_MEMCPY_HOST_TO_HOST));
+  GE_CHK_STATUS_RET_NOLOG(InitKernelArgs(args.get() + offset, arg_size - offset, param));
 
   if (is_task_all_kernel) {
     task.SetKernelWithHandleArgs(std::move(args), arg_size, kernel_def_with_handle_.block_dim(), op_desc,
@@ -367,8 +372,15 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
   }
 
   auto task_type = static_cast<rtModelTaskType_t>(task_def_.type());
-  ret = task_type == RT_MODEL_TASK_ALL_KERNEL ? RegisterKernelWithHandle(task, param) :
-                                                RegisterKernel(task, param);
+  if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
+    stub_name_ = model_name_ + "/" + node_->GetName() + "_tvmbin";
+    ret = RegisterKernelWithHandle(task, param);
+  } else {
+    const domi::KernelDef &kernel_def = task_def_.kernel();
+    stub_name_ = model_name_ + "/" + kernel_def.stub_func() + "_tvmbin";
+    ret = RegisterKernel(task, param);
+  }
+
   task.SetHandle(handle_);
   if (ret != SUCCESS) {
     return ret;
@@ -387,6 +399,9 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
     }
     task.SetStubFunc(stub_name_, stub_func);
   }
+  GE_CHK_STATUS_RET(task.SetArgIndex(), "[Set][ArgTable] failed.");
+  task.input_num_ = op_desc_->GetInputsSize();
+  task.output_num_ = op_desc_->GetOutputsSize();
 
   return SUCCESS;
 }
@@ -394,8 +409,8 @@ Status TbeTaskBuilder::BuildTask(TbeOpTask &task, const SingleOpModelParam &para
 Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
   GELOGD("Start alloc tiling data of node %s.", op_desc_->GetName().c_str());
   int64_t max_size = -1;
-  (void)AttrUtils::GetInt(op_desc_, kAttrOpParamSize, max_size);
-  GELOGD("Got op param size by key: %s, ret = %ld", kAttrOpParamSize, max_size);
+  (void)AttrUtils::GetInt(op_desc_, GetKeyForOpParamSize(), max_size);
+  GELOGD("Got op param size by key: %s, ret = %ld", GetKeyForOpParamSize().c_str(), max_size);
   if (max_size < 0) {
     GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Get][Int] %s Invalid op_param_size: %ld.", 
         op_desc_->GetName().c_str(), max_size);
@@ -413,4 +428,55 @@ Status TbeTaskBuilder::InitTilingInfo(TbeOpTask &task) {
   task.EnableDynamicSupport(node_, tiling_buffer, static_cast<uint32_t>(max_size));
   return SUCCESS;
 }
+
+Status TbeTaskBuilder::GetMagic(uint32_t &magic) const {
+  std::string json_string;
+  GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc_, TVM_ATTR_NAME_MAGIC, json_string),
+                  GELOGD("Get original type of session_graph_id."));
+  if (json_string == "RT_DEV_BINARY_MAGIC_ELF") {
+    magic = RT_DEV_BINARY_MAGIC_ELF;
+  } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
+    magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
+  } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICUBE") {
+    magic = RT_DEV_BINARY_MAGIC_ELF_AICUBE;
+  } else {
+    REPORT_INNER_ERROR("E19999", "Attr:%s in op:%s(%s), value:%s check invalid",
+                       TVM_ATTR_NAME_MAGIC.c_str(), op_desc_->GetName().c_str(),
+                       op_desc_->GetType().c_str(), json_string.c_str());
+    GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s in op:%s(%s), value:%s check invalid",
+           TVM_ATTR_NAME_MAGIC.c_str(), op_desc_->GetName().c_str(),
+           op_desc_->GetType().c_str(), json_string.c_str());
+    return PARAM_INVALID;
+  }
+  return SUCCESS;
+}
+
+std::string TbeTaskBuilder::GetKeyForOpParamSize() const {
+  return kAttrOpParamSize;
+}
+
+std::string TbeTaskBuilder::GetKeyForTvmMetaData() const {
+  return TVM_ATTR_NAME_METADATA;
+}
+
+Status AtomicAddrCleanTaskBuilder::InitKernelArgs(void *args_addr, size_t arg_size, const SingleOpModelParam &param) {
+  return SUCCESS;
+}
+
+std::string AtomicAddrCleanTaskBuilder::GetKeyForOpParamSize() const {
+  return kAttrAtomicOpParamSize;
+}
+
+std::string AtomicAddrCleanTaskBuilder::GetKeyForTvmMetaData() const {
+  return ATOMIC_ATTR_TVM_METADATA;
+}
+
+void AtomicAddrCleanTaskBuilder::GetKernelName(const OpDescPtr &op_desc, std::string &kernel_name) const {
+  (void)AttrUtils::GetStr(op_desc, op_desc->GetName() + "_atomic_kernelname", kernel_name);
+}
+
+TBEKernelPtr AtomicAddrCleanTaskBuilder::GetTbeKernel(const OpDescPtr &op_desc)  const {
+  return op_desc->TryGetExtAttr(EXT_ATTR_ATOMIC_TBE_KERNEL, TBEKernelPtr());
+}
+
 }  // namespace ge

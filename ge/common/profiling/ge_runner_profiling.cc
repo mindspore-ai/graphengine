@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/profiling/ge_runner_profiling.h"
+#include "framework/common/profiling/ge_runner_profiling.h"
 #include "init/gelib.h"
 
 bool IsInitialize() {

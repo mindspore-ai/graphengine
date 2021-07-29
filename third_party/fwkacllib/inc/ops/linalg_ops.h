@@ -347,6 +347,9 @@ REG_OP(SelfAdjointEig)
     .OP_END_FACTORY_REG(SelfAdjointEig)
 
 /**
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+
 *@brief Computes the sign and the log of the absolute value of the determinant
 of one or more square matrices . \n
 
@@ -382,9 +385,10 @@ REG_OP(Slogdet)
 *x:Tensor of shape [..., M, N]. Let P be the minimum of M and N . \n
 
 *@par Attributes:
-*compute_uv:If True then left and right singular vectors will be computed and
+*@li compute_uv:If True then left and right singular vectors will be computed and
 returned in u and v, respectively. Otherwise, only the singular values will
-be computed, which can be significantly faster . \n
+be computed, which can be significantly faster .
+*@li full_matrices:the param effect u,v.  \n
 
 *@par Outputs:
 *@li sigma:Singular values. Shape is [..., P]. The values are sorted in
@@ -427,6 +431,9 @@ denotes the lower triangular factor `L` with unit diagonal.
 *@li p: upper triangular part denotes the upper triangular factor `U`.Permutation
 of the rows encoded as a list of indices in `0..M-1`. Shape is `[..., M]` . \n
 
+*@par Attributes:
+*output_idx_type: An optional DType from: int32, int64.
+
 *@par Third-party framework compatibility
 * Compatible with TensorFlow Lu operator.
 */
@@ -466,6 +473,12 @@ left-hand side . \n
 
 *@par Outputs:
 y: Tensor of shape `[..., M, K]` containing the solutions \n
+
+*@par Attributes:
+*partial_pivoting: Whether to perform partial pivoting. `True` by default.
+Partial pivoting makes the procedure more stable, but slower. Partial
+pivoting is unnecessary in some cases, including diagonally dominant and
+symmetric positive definite matrices
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow TridiagonalSolve operator.

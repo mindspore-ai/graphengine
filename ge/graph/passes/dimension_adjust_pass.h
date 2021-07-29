@@ -17,11 +17,11 @@
 #ifndef GE_GRAPH_PASSES_DIMENSION_ADJUST_PASS_H_
 #define GE_GRAPH_PASSES_DIMENSION_ADJUST_PASS_H_
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
-#include "graph/common/omg_util.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
+#include "common/omg_util.h"
 #include "graph/passes/base_pass.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"

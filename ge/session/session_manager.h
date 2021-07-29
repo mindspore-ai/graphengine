@@ -22,8 +22,8 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
-#include "ge/ge_api_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "external/ge/ge_api_types.h"
 #include "session/inner_session.h"
 #include "runtime/base.h"
 
@@ -31,9 +31,26 @@ namespace ge {
 using SessionPtr = std::shared_ptr<InnerSession>;
 
 class SessionManager {
-  friend class GELib;
-
  public:
+  SessionManager() = default;
+
+  ~SessionManager() = default;
+
+  ///
+  /// @ingroup ge_session
+  /// @brief initialize session manager
+  /// @param [in] options session manager config options
+  /// @return Status result of function
+  ///
+  Status Initialize(const std::map<std::string, std::string> &options);
+
+  ///
+  /// @ingroup ge_session
+  /// @brief finalize session manager
+  /// @return Status result of function
+  ///
+  Status Finalize();
+
   ///
   /// @ingroup ge_session
   /// @brief create session
@@ -181,25 +198,6 @@ class SessionManager {
   bool IsGraphNeedRebuild(SessionId session_id, uint32_t graph_id);
 
  private:
-  SessionManager() = default;
-
-  ~SessionManager() = default;
-
-  ///
-  /// @ingroup ge_session
-  /// @brief initialize session manager
-  /// @param [in] options session manager config options
-  /// @return Status result of function
-  ///
-  Status Initialize(const std::map<std::string, std::string> &options);
-
-  ///
-  /// @ingroup ge_session
-  /// @brief finalize session manager
-  /// @return Status result of function
-  ///
-  Status Finalize();
-
   bool HasSession(SessionId session_id);
 
   Status GetNextSessionId(SessionId &next_session_id);

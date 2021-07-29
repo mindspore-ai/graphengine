@@ -21,7 +21,7 @@
 #include <fstream>
 
 #include "common/ge/ge_util.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_types.h"
@@ -35,13 +35,13 @@ PropertiesManager::PropertiesManager() : is_inited_(false), delimiter("=") {}
 PropertiesManager::~PropertiesManager() {}
 
 // singleton
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY PropertiesManager &PropertiesManager::Instance() {
+PropertiesManager &PropertiesManager::Instance() {
   static PropertiesManager instance;
   return instance;
 }
 
 // Initialize property configuration
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY bool PropertiesManager::Init(const std::string &file_path) {
+bool PropertiesManager::Init(const std::string &file_path) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (is_inited_) {
     GELOGW("Already inited, will be initialized again");
@@ -139,8 +139,7 @@ std::string PropertiesManager::Trim(const std::string &str) {
 }
 
 // Get property value, if not found, return ""
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::GetPropertyValue(
-    const std::string &map_key) {
+std::string PropertiesManager::GetPropertyValue(const std::string &map_key) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = properties_map_.find(map_key);
   if (properties_map_.end() != iter) {
@@ -151,21 +150,19 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string PropertiesManager::
 }
 
 // Set property value
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetPropertyValue(const std::string &map_key,
-                                                                                          const std::string &value) {
+void PropertiesManager::SetPropertyValue(const std::string &map_key, const std::string &value) {
   std::lock_guard<std::mutex> lock(mutex_);
   properties_map_[map_key] = value;
 }
 
 // return properties_map_
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::map<std::string, std::string>
-PropertiesManager::GetPropertyMap() {
+std::map<std::string, std::string> PropertiesManager::GetPropertyMap() {
   std::lock_guard<std::mutex> lock(mutex_);
   return properties_map_;
 }
 
 // Set separator
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void PropertiesManager::SetPropertyDelimiter(const std::string &de) {
+void PropertiesManager::SetPropertyDelimiter(const std::string &de) {
   std::lock_guard<std::mutex> lock(mutex_);
   delimiter = de;
 }

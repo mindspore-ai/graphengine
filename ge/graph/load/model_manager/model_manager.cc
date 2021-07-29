@@ -21,11 +21,11 @@
 #include "aicpu/aicpu_schedule/aicpu_op_type_list.h"
 #include "common/model_parser/model_parser.h"
 #include "common/dump/dump_manager.h"
-#include "common/l2_cache_optimize.h"
+#include "framework/common/l2_cache_optimize.h"
 #include "common/profiling/profiling_manager.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "graph/load/model_manager/davinci_model.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 #include "common/formats/utils/formats_trans_utils.h"
 
 namespace ge {
@@ -368,7 +368,17 @@ Status ModelManager::LoadModelOnline(uint32_t &model_id, const shared_ptr<ge::Ge
 
     GELOGI("Parse model %u success.", model_id);
   } while (0);
-
+  auto &profiling_manager = ProfilingManager::Instance();
+  const auto &subcribe_info = profiling_manager.GetSubscribeInfo();
+  if (subcribe_info.is_subscribe) {
+    auto graph_id = davinci_model->GetRuntimeParam().graph_id;
+    if (subcribe_info.graph_id == graph_id) {
+      profiling_manager.SetGraphIdToModelMap(graph_id, model_id);
+    }
+    else {
+      GELOGW("graph_id:%u is not in subcribe info.", graph_id);
+    }
+  }
   return ret;
 }
 
@@ -513,8 +523,7 @@ Status ModelManager::GetCurDynamicDims(const vector<vector<int64_t>> &user_real_
   }
   GELOGD("Cur dynamic dims is %s.", formats::JoinToString(cur_dynamic_dims).c_str());
   bool cur_dynamic_dims_valid = false;
-  std::vector<std::string> shape_strs = ge::StringUtils::Split(GetLocalOmgContext().dynamic_dims, ';');
-  for (auto dynamic_dim : shape_strs) {
+  for (auto dynamic_dim : GetLocalOmeContext().dynamic_shape_dims) {
     if (dynamic_dim == formats::JoinToString(cur_dynamic_dims)) {
       cur_dynamic_dims_valid = true;
       break;
@@ -556,10 +565,10 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Te
     input_data.shapes.emplace_back(tensor_desc.GetShape().GetDims());
     input_data.blobs.push_back(data);
   }
-  if (!GetLocalOmgContext().user_input_dims.empty() && GetLocalOmgContext().need_multi_batch) {
+  if (!GetLocalOmeContext().user_input_dims.empty() && GetLocalOmeContext().need_multi_batch) {
     std::vector<int32_t> cur_dynamic_dims;
-    if (!GetLocalOmgContext().user_real_input_dims.empty()) {
-      if (GetCurDynamicDims(GetLocalOmgContext().user_real_input_dims, GetLocalOmgContext().user_input_dims,
+    if (!GetLocalOmeContext().user_real_input_dims.empty()) {
+      if (GetCurDynamicDims(GetLocalOmeContext().user_real_input_dims, GetLocalOmeContext().user_input_dims,
                             cur_dynamic_dims) != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "[Get][CurDynamicDims] [Train_Dynamic] Failed to Parse real_dynamic_dims.");
         return INTERNAL_ERROR;
@@ -570,6 +579,7 @@ Status ModelManager::DataInputTensor(uint32_t model_id, const std::vector<ge::Te
       uint32_t length = static_cast<uint32_t>(cur_dynamic_dims.size() * sizeof(int32_t));
       GE_CHK_BOOL_EXEC(memcpy_s(data.data, length, cur_dynamic_dims.data(), length) == EOK,
                        REPORT_CALL_ERROR("E19999", "memcpy data failed, size:%u", length);
+                       delete[] reinterpret_cast<int32_t *>(data.data);
                        return INTERNAL_ERROR, "[Memcpy][Data] failed, size:%u.", length);
       data.length = length;
       input_data.blobs.push_back(data);
@@ -758,12 +768,15 @@ Status ModelManager::HandleProfModelUnsubscribeCommand(const Command &command) {
   if (ret != SUCCESS) {
     return ret;
   }
-
-  if (ProfilingManager::Instance().ProfModelUnsubscribe(static_cast<void *>(davinci_model.get())) != SUCCESS) {
+  auto &profiling_manager = ProfilingManager::Instance();
+  if (profiling_manager.ProfModelUnsubscribe(static_cast<void *>(davinci_model.get())) != SUCCESS) {
     GELOGE(FAILED, "[Handle][ProfModelUnsubscribe] failed.");
     return FAILED;
   }
-
+  auto is_subscribe = profiling_manager.GetSubscribeInfo().is_subscribe;
+  if (is_subscribe) {
+    profiling_manager.CleanSubscribeInfo();
+  }
   return SUCCESS;
 }
 
@@ -1378,7 +1391,9 @@ Status ModelManager::LoadCustAicpuSo(const OpDescPtr &op_desc, const string &so_
 Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
   GELOGD("Aicpu kernel launch task in, kernel name %s.", kernel_name.c_str());
   std::lock_guard<std::mutex> lock(cust_aicpu_mutex_);
-  if (cust_aicpu_so_.size() == 0) return SUCCESS;
+  if (cust_aicpu_so_.empty()) {
+    return SUCCESS;
+  }
   // get current context
   rtContext_t rt_cur_ctx = nullptr;
   auto rt_error = rtCtxGetCurrent(&rt_cur_ctx);
@@ -1394,9 +1409,19 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
     return SUCCESS;
   }
 
-  vector<void *> allocated_mem;
-  rtError_t status;
   rtStream_t stream = nullptr;
+  vector<void *> allocated_mem;
+  std::function<void()> callback = [&]() {
+    for (auto mem : allocated_mem) {
+      GE_CHK_RT(rtFree(mem));
+    }
+    if (stream != nullptr) {
+      GE_CHK_RT(rtStreamDestroy(stream));
+    }
+  };
+  GE_MAKE_GUARD(release, callback);
+
+  rtError_t status;
   vector<CustAicpuSoBuf> v_cust_so;
   void *args = nullptr;
 
@@ -1471,13 +1496,6 @@ Status ModelManager::LaunchKernelCustAicpuSo(const string &kernel_name) {
     GELOGE(RT_FAILED, "[Call][RtStreamSynchronize] fail, ret = 0x%X", status);
     return RT_ERROR_TO_GE_STATUS(status);
   }
-  std::function<void()> callback = [&]() {
-    for (auto mem : allocated_mem) {
-      GE_CHK_RT(rtFree(mem));
-    }
-    GE_CHK_RT(rtStreamDestroy(stream));
-  };
-  GE_MAKE_GUARD(release, callback);
   GELOGI("Cpu kernel launch task success.");
   return SUCCESS;
 }
@@ -1786,7 +1804,8 @@ Status ModelManager::LaunchKernelCheckAicpuOp(std::vector<std::string> &aicpu_op
       std::vector<char> op_name;
       op_name.clear();
       op_name.resize(kOpNameMaxSize);
-      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen, reinterpret_cast<void *>(aicpu_info.opType),
+      GE_CHK_RT(rtMemcpy(op_name.data(), aicpu_info.opLen,
+                         reinterpret_cast<void *>(static_cast<uintptr_t>(aicpu_info.opType)),
                          aicpu_info.opLen, RT_MEMCPY_DEVICE_TO_HOST));
       std::string kernel_type =
           (static_cast<OpKernelType>(aicpu_info.kernelsType) == TF_KERNEL) ? "TF_KERNEL" : "CPU_KERNEL";
@@ -1820,5 +1839,4 @@ Status ModelManager::CheckAicpuOpList(GeModelPtr ge_model) {
                     "[Call][LaunchKernelCheckAicpuOp] failed.");
   return SUCCESS;
 }
-
 }  // namespace ge

@@ -16,7 +16,7 @@
 
 #include "graph/passes/for_pass.h"
 #include "common/ge/ge_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 #include "framework/common/ge_inner_error_codes.h"

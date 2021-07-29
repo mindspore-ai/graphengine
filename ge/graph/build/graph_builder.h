@@ -22,23 +22,23 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/properties_manager.h"
-#include "common/string_util.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/build/model_builder.h"
 #include "graph/build/task_generator.h"
 #include "graph/compute_graph.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/model.h"
 #include "graph/node.h"
 #include "graph/partition/graph_partition.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 
 namespace ge {
 class GraphBuilder {

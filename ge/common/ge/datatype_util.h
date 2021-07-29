@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 
-#include "graph/types.h"
+#include "external/graph/types.h"
 
 namespace ge {
 static const int32_t kGeSizeFloat = sizeof(float);
@@ -42,7 +42,7 @@ static std::map<ge::DataType, int32_t> CONST_OPDATA_TYPE_SIZE_MAP = {
     {ge::DT_UINT8, kGeSizeUint8},   {ge::DT_UINT16, kGeSizeUint16},     {ge::DT_UINT32, kGeSizeUint32},
     {ge::DT_UINT64, kGeSizeUint64}, {ge::DT_DOUBLE, kGeSizeDouble},     {ge::DT_BOOL, kGeSizeBool}};
 
-class GE_FUNC_HOST_VISIBILITY GE_FUNC_DEV_VISIBILITY DataTypeUtil {
+class DataTypeUtil {
  public:
   static bool DataTypeTranslatable(const ge::DataType &src_out_data_type, const ge::DataType &dst_in_data_type);
   static const std::vector<ge::DataType> &GetTranslatableDataTypesBySrc(const ge::DataType &src_out_data_type);

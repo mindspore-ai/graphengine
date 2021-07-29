@@ -17,7 +17,7 @@
 #ifndef GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_MANAGER_H_
 #define GE_GRAPH_LOAD_NEW_MODEL_MANAGER_MODEL_MANAGER_H_
 
-#include <model/ge_root_model.h>
+#include <common/model/ge_root_model.h>
 #include <stdint.h>
 #include <algorithm>
 #include <map>
@@ -26,13 +26,13 @@
 #include <string>
 #include <vector>
 #include "cce/aicpu_engine_struct.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
-#include "common/helper/model_helper.h"
-#include "common/helper/om_file_helper.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/helper/model_helper.h"
+#include "framework/common/helper/om_file_helper.h"
 #include "common/properties_manager.h"
-#include "common/types.h"
-#include "ge/ge_api_types.h"
+#include "framework/common/types.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/ge_context.h"
 #include "graph/model.h"
 #include "hybrid/hybrid_davinci_model.h"

@@ -22,20 +22,19 @@
 #include "common/dump/dump_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
-#include "graph/attr_value.h"
+#include "external/graph/attr_value.h"
 #include "graph/buffer.h"
 #include "graph/build/stream_allocator.h"
-#include "graph/common/omg_util.h"
-#include "graph/common/ge_call_wrapper.h"
-#include "graph/common/local_context.h"
+#include "common/omg_util.h"
+#include "common/ge_call_wrapper.h"
+#include "common/local_context.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_attr_value.h"
 #include "graph/ge_context.h"
-#include "graph/ge_error_codes.h"
-#include "graph/manager/graph_mem_allocator.h"
+#include "external/graph/ge_error_codes.h"
 #include "graph/manager/graph_var_manager.h"
 #include "graph/optimize/common/params.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
@@ -43,8 +42,8 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
-#include "memory/memory_assigner.h"
-#include "omg/version.h"
+#include "framework/memory/memory_assigner.h"
+#include "framework/omg/version.h"
 #include "register/op_registry.h"
 #include "graph/passes/set_input_output_offset_pass.h"
 #include "graph/build/memory/block_mem_assigner.h"
@@ -707,7 +706,7 @@ Status ModelBuilder::SaveDataToModel(ge::Model &model, ge::GeModel &ge_model) {
       if (!kernel_name.empty() && (kernel_buffer.GetSize() > 0)) {
         GE_CHECK_NOTNULL(kernel_buffer.GetData());
         std::vector<char> data(kernel_buffer.GetData(), kernel_buffer.GetData() + kernel_buffer.GetSize());
-        tbe_kernel = std::make_shared<OpKernelBin>(kernel_name, std::move(data));
+        tbe_kernel = MakeShared<OpKernelBin>(kernel_name, std::move(data));
         GE_CHECK_NOTNULL(tbe_kernel);
         GELOGI("Node [%s][%s] start recovery extra attr %s from %s", node_op_desc->GetName().c_str(),
                node_op_desc->GetType().c_str(), ge::OP_EXTATTR_NAME_TBE_KERNEL, ATTR_NAME_TBE_KERNEL_NAME.c_str());

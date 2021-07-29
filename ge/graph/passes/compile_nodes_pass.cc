@@ -19,10 +19,10 @@
 #include <vector>
 
 #include "common/ge/ge_util.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/debug/ge_attr_define.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "graph/op_desc.h"
 
 using domi::ImplyType;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "graph/passes/cond_remove_pass.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"

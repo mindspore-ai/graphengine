@@ -15,12 +15,12 @@
  */
 
 #include "inc/pass_manager.h"
-#include "common/debug/log.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/utils/node_utils.h"
-#include "graph/common/ge_call_wrapper.h"
-#include "omg/omg_inner_types.h"
+#include "common/ge_call_wrapper.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 const vector<std::pair<std::string, GraphPass *>>& PassManager::GraphPasses() const { return names_to_graph_passes_; }

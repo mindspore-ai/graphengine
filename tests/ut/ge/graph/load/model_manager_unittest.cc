@@ -26,6 +26,7 @@
 #include "graph/load/graph_loader.h"
 #include "graph/load/model_manager/davinci_model.h"
 #include "graph/ops_stub.h"
+#include "common/profiling/profiling_manager.h"
 
 using namespace std;
 using namespace testing;
@@ -54,31 +55,13 @@ class UtestModelManagerModelManager : public testing::Test {
   }
 
   void SetUp() {}
-
   void TearDown() {}
-
-  void CreateGraph(Graph &graph) {
-    TensorDesc desc(ge::Shape({1, 3, 224, 224}));
-    uint32_t size = desc.GetShape().GetShapeSize();
-    desc.SetSize(size);
-    auto data = op::Data("Data").set_attr_index(0);
-    data.update_input_desc_data(desc);
-    data.update_output_desc_out(desc);
-
-    auto flatten = op::Flatten("Flatten").set_input_x(data, data.name_out_out());
-
-    std::vector<Operator> inputs{data};
-    std::vector<Operator> outputs{flatten};
-    std::vector<Operator> targets{flatten};
-    // Graph graph("test_graph");
-    graph.SetInputs(inputs).SetOutputs(outputs).SetTargets(targets);
-  }
 
   void GenUnencryptModelData(ModelData &data) {
     const int model_len = 10;
     data.model_len = sizeof(ModelFileHeader) + model_len;
     data.model_data = new uint8_t[data.model_len];
-    memset((uint8_t *)data.model_data + sizeof(ModelFileHeader), 10, model_len);
+    memset(data.model_data, 0, data.model_len);
 
     ModelFileHeader *header = (ModelFileHeader *)data.model_data;
     header->magic = MODEL_FILE_MAGIC_NUM;
@@ -86,19 +69,6 @@ class UtestModelManagerModelManager : public testing::Test {
     header->is_encrypt = ModelEncryptType::UNENCRYPTED;
     header->length = model_len;
     header->is_checksum = ModelCheckType::CHECK;
-  }
-
-  void GenEncryptModelData(ModelData &data) {
-    const int model_len = 10;
-    data.key = ENC_KEY;
-    data.model_data = new uint8_t[data.model_len];
-    uint8_t data_ori[model_len];
-    memset(data_ori, 10, model_len);
-    ModelFileHeader *header = (ModelFileHeader *)data.model_data;
-    header->magic = MODEL_FILE_MAGIC_NUM;
-    header->version = MODEL_VERSION;
-    header->is_encrypt = ModelEncryptType::ENCRYPTED;
-    header->length = 10;  // encrypt_len;
   }
 
   void LoadStandardModelData(ModelData &data) {
@@ -166,7 +136,8 @@ class UtestModelManagerModelManager : public testing::Test {
 class DModelListener : public ModelListener {
  public:
   DModelListener(){};
-  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t resultCode) { return 0; }
+  uint32_t OnComputeDone(uint32_t model_id, uint32_t data_index,
+                         uint32_t resultCode, std::vector<ge::Tensor> &outputs) { return 0; }
 };
 
 TEST_F(UtestModelManagerModelManager, case_is_need_hybrid_load) {
@@ -224,6 +195,7 @@ TEST_F(UtestModelManagerModelManager, case_load_model_encypt_type_unsupported) {
   ModelFileHeader *header = (ModelFileHeader *)data.model_data;
   header->is_encrypt = 255;
   uint32_t model_id = 1;
+  // Error for: LoadModelPartitionTable: Invalid partition_table->num:0
   EXPECT_EQ(mm.LoadModelOffline(model_id, data, nullptr, nullptr), ACL_ERROR_GE_PARAM_INVALID);
   delete[](uint8_t *) data.model_data;
 }
@@ -437,5 +409,49 @@ TEST_F(UtestModelManagerModelManager, test_data_input_tensor) {
   inputs.emplace_back(input_tensor);
   auto ret = mm.DataInputTensor(model_id,inputs);
   EXPECT_EQ(PARAM_INVALID, ret);    // HybridDavinciModel::impl_ is null.
+}
+
+TEST_F(UtestModelManagerModelManager, test_launch_kernel_cust_aicpu) {
+  ModelManager mm;
+
+  // cust_aicpu_so_ is empty.
+  EXPECT_EQ(mm.LaunchKernelCustAicpuSo("empty_cust_aicpu"), SUCCESS);
+
+  // deleteCustOp after Launch will deleted.
+  uintptr_t resource_id = 1;    // for rtCtxGetCurrent stub
+  std::vector<char> kernel_bin(256);
+  auto &cust_resource_001 = mm.cust_aicpu_so_[resource_id];
+  auto tbe_kernel  = std::shared_ptr<OpKernelBin>(new OpKernelBin("deleteCustOp", std::move(kernel_bin)));
+  auto &cust_opkernel_001 = cust_resource_001["deleteCustOp"] = tbe_kernel;
+
+  EXPECT_FALSE(mm.cust_aicpu_so_.empty());
+  EXPECT_EQ(mm.LaunchKernelCustAicpuSo("deleteCustOp"), SUCCESS);
+  EXPECT_TRUE(mm.cust_aicpu_so_.empty());
+}
+
+shared_ptr<ModelListener> listerner(new DModelListener());
+TEST_F(UtestModelManagerModelManager, test_load_model_online) {
+  ModelManager mm;
+  uint32_t model_id = 1;
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  GeRootModelPtr ge_root_model = make_shared<GeRootModel>(graph);
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, model_id, true);
+  Status ret = mm.LoadModelOnline(model_id, ge_root_model, listerner);
+  profiling_manager.CleanSubscribeInfo();
+}
+
+TEST_F(UtestModelManagerModelManager, command_profiling) {
+  ModelManager manager;
+  uint32_t model_id = 1;
+  Command cmd;
+  auto model = std::make_shared<DavinciModel>(1, listerner);
+  model->SetId(model_id);
+  cmd.cmd_params.push_back("modelId");
+  cmd.cmd_params.push_back(to_string(model_id));
+  auto &profiling_manager = ge::ProfilingManager::Instance();
+  profiling_manager.SetSubscribeInfo(0, model_id, true);
+  Status ret = manager.HandleProfModelUnsubscribeCommand(cmd);
+  profiling_manager.CleanSubscribeInfo();
 }
 }  // namespace ge

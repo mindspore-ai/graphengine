@@ -21,6 +21,7 @@
 
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/davinci_model.h"
+#include "common/profiling/profiling_manager.h"
 
 namespace ge {
 using Uint32Pair = pair<uint32_t, uint32_t>;
@@ -31,7 +32,6 @@ GraphExecutor::GraphExecutor()
       sync_run_mutex_(nullptr),
       condition_(nullptr),
       graph_run_listener_(nullptr),
-      graph_context_(nullptr),
       last_graph_id_(UINT32_MAX),
       malloc_flag_(false) {}
 
@@ -76,16 +76,6 @@ Status GraphExecutor::SetCondition(std::mutex *mutex, std::condition_variable *c
 
   init_flag_ = true;
 
-  return SUCCESS;
-}
-
-Status GraphExecutor::SetGraphContext(GraphContextPtr graph_context_ptr) {
-  if (graph_context_ptr == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Check param graph_context_ptr nullptr");
-    GELOGE(GE_GRAPH_PARAM_NULLPTR, "[Check][Param] input param graph_context_ptr is nullptr");
-    return GE_GRAPH_PARAM_NULLPTR;
-  }
-  graph_context_ = graph_context_ptr;
   return SUCCESS;
 }
 
@@ -376,7 +366,11 @@ Status GraphExecutor::ExecuteGraph(GraphId graph_id, const GeRootModelPtr &ge_ro
     GELOGE(GE_GRAPH_SYNC_MODEL_FAILED, "[SyncExecute][Model] Error! graph id:%u", graph_id);
     return GE_GRAPH_SYNC_MODEL_FAILED;
   }
-
+  ret = ModelSubscribe(graph_id);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Call][ModelSubscribe] failed, graph_id:%u", graph_id);
+    return ret;
+  }
   return SUCCESS;
 }
 
@@ -784,6 +778,43 @@ Status GraphExecutor::GetOpDescInfo(uint32_t device_id, uint32_t stream_id, uint
     GELOGE(ret, "[Get][OpDescInfo] failed, device_id:%u, stream_id:%u, task_id:%u.",
            device_id, stream_id, task_id);
     return ret;
+  }
+  return SUCCESS;
+}
+
+Status GraphExecutor::GetModelByID(uint32_t model_id, std::shared_ptr<DavinciModel> &davinci_model) {
+  auto model_manager = ge::ModelManager::GetInstance();
+  GE_CHECK_NOTNULL(model_manager);
+  davinci_model = model_manager->GetModel(static_cast<uint32_t>(model_id));
+  if (davinci_model == nullptr) {
+    REPORT_INNER_ERROR("E19999", "GetModel from model_manager fail, model_id:%u", model_id);
+    GELOGE(ge::FAILED, "[Get][Model] failed, Model id:%d is invaild or model is not loaded.", model_id);
+    return ge::FAILED;
+  }
+  return ge::SUCCESS;
+}
+
+Status GraphExecutor::ModelSubscribe(uint32_t graph_id) {
+  auto &profiling_manager = ProfilingManager::Instance();
+  const auto &subcribe_info = profiling_manager.GetSubscribeInfo();
+  if (subcribe_info.is_subscribe) {
+    std::shared_ptr<DavinciModel> davinci_model = nullptr;
+    uint32_t model_id = 0;
+    Status ret = profiling_manager.GetModelIdFromGraph(graph_id, model_id);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "[Call][GetModelIdFromGraph] failed, graph_id:%u", graph_id);
+      return ret;
+    }
+    ret = GetModelByID(model_id, davinci_model);
+    if (ret != SUCCESS) {
+      GELOGE(ret, "[Call][GetModelByID] failed, model_id:%u", model_id);
+      return ret;
+    }
+    ret = profiling_manager.ProfModelSubscribe(subcribe_info.prof_switch, davinci_model.get());
+    if (ret != SUCCESS) {
+      GELOGE(ret, "[Call][ProfModelSubscribe] failed");
+      return ret;
+    }
   }
   return SUCCESS;
 }

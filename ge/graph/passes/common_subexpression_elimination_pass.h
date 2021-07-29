@@ -16,7 +16,7 @@
 #ifndef GE_COMMON_SUBEXPRESSION_ELIMINATION_H_
 #define GE_COMMON_SUBEXPRESSION_ELIMINATION_H_
 
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

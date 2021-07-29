@@ -26,9 +26,9 @@
 #include "nlohmann/json.hpp"
 
 #include "common/ge/plugin_manager.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_types.h"
-#include "engine/dnnengine.h"
+#include "framework/engine/dnnengine.h"
 #include "graph/op_desc.h"
 #include "graph/node.h"
 

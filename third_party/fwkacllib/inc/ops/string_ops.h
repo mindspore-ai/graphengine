@@ -295,7 +295,7 @@ REG_OP(StringSplit)
 
 *@par Inputs:
 include:
-*@li input:A Tensor of type string. The text to be processed. \n
+*input:A Tensor of type string. The text to be processed. \n
 
 *@par Attributes:
 *@li pattern:A string. The regular expression to match the input.
@@ -303,8 +303,8 @@ include:
 *@li replace_global:An optional bool. Defaults to True. If True, the replacement is global,
 otherwise the replacement is done only on the first match.
 
-*@par output:
-*@li output::A Tensor of type string.
+*@par Outputs:
+*output::A Tensor of type string.
 */
 REG_OP(StaticRegexReplace)
     .INPUT(input, TensorType({DT_STRING}))
@@ -322,13 +322,13 @@ REG_OP(StaticRegexReplace)
 
 *@par Inputs:
 include:
-*@li input:A Tensor of type string. The text to be processed. \n
+*input:A Tensor of type string. The text to be processed. \n
 
 *@par Attributes:
-*@li pattern:A string. The regular expression to match the input.
+*pattern:A string. The regular expression to match the input.
 
-*@par output:
-*@li output::A bool tensor with the same shape as `input`.
+*@par Outputs:
+*output::A bool tensor with the same shape as `input`.
 */
 REG_OP(StaticRegexFullMatch)
     .INPUT(input, TensorType({DT_STRING}))
@@ -347,10 +347,10 @@ include:
 *@li num_segments:A Tensor. Must be one of the following types: int32, int64. A scalar. 
 
 *@par Attributes:
-*@li separator:An optional string. Defaults to "". The separator to use when joining.
+*separator:An optional string. Defaults to "". The separator to use when joining.
 
-*@par output:
-*@li output::A Tensor of type string..
+*@par Outputs:
+*output::A Tensor of type string..
 */
 REG_OP(UnsortedSegmentJoin)
     .INPUT(input, TensorType({DT_STRING}))
@@ -366,13 +366,13 @@ REG_OP(UnsortedSegmentJoin)
 
 *@par Inputs:
 include:
-*@li input:A Tensor of type string. The text to be processed. 
+*input:A Tensor of type string. The text to be processed. 
 
 *@par Attributes:
-*@li encoding:An optional string. Defaults to "". 
+*encoding:An optional string. Defaults to "". 
 
-*@par output:
-*@li output::A Tensor of type string..
+*@par Outputs:
+*output::A Tensor of type string..
 */
 REG_OP(StringLower)
     .INPUT(input, TensorType({DT_STRING}))
@@ -386,13 +386,13 @@ REG_OP(StringLower)
 
 *@par Inputs:
 include:
-*@li input:A Tensor of type string. The text to be processed. 
+*input:A Tensor of type string. The text to be processed. 
 
 *@par Attributes:
-*@li encoding:An optional string. Defaults to "". 
+*encoding:An optional string. Defaults to "". 
 
-*@par output:
-*@li output::A Tensor of type string..
+*@par Outputs:
+*output::A Tensor of type string..
 */
 REG_OP(StringUpper)
     .INPUT(input, TensorType({DT_STRING}))
@@ -901,10 +901,10 @@ REG_OP(DecodeBase64)
 *@brief StringNormalization performs string operations for basic cleaning . \n
 
 *@par Inputs:
-*@li input: only accepts [C] or [1, C] UTF-8 strings tensor . \n
+*input: only accepts [C] or [1, C] UTF-8 strings tensor . \n
 
 *@par Outputs:
-*@li output: UTF-8 strings tensor after cleaning . \n
+*output: UTF-8 strings tensor after cleaning . \n
 
 *@par Attributes:
 *@li stopwords : list of strings (default is empty).
@@ -919,13 +919,13 @@ case-sensitive. Default is false.
 *string enum that cases output to be lowercased/uppercases/unchanged. Valid
 values are "LOWER", "UPPER", "NONE". Default is "NONE".
 
-*@li local : string (default is "en_US").
+*@li locale : string (default is "C").
 *Environment dependent string that denotes the locale according to which output
-strings needs to be upper/lowercased.Default en_US or platform specific equivalent
-as decided by the implementation . \n
+strings needs to be upper/lowercased.Default C or platform specific equivalent
+as decided by the implementation. \n
 
 *@attention Constraints:
-*@li input can be either a 1-D or 2-D tensor, the shape of 2-D tensor must be [1, C].
+*input can be either a 1-D or 2-D tensor, the shape of 2-D tensor must be [1, C].
 */
 REG_OP(StringNormalizer)
     .INPUT(input, TensorType({DT_STRING}))
@@ -933,7 +933,7 @@ REG_OP(StringNormalizer)
     .ATTR(stopwords, ListString, {})
     .ATTR(is_case_sensitive, Bool, false)
     .ATTR(case_change_action, String, "NONE")
-    .ATTR(local, String, "en_US")
+    .ATTR(locale, String, "C")
     .OP_END_FACTORY_REG(StringNormalizer)
 }  // namespace ge
 

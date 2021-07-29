@@ -19,7 +19,7 @@
 
 #include <mutex>
 #include "opskernel_manager/ops_kernel_manager.h"
-#include "aicore_node_executor.h"
+#include "hybrid/node_executor/aicore/aicore_node_executor.h"
 
 namespace ge {
 namespace hybrid {

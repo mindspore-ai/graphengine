@@ -18,8 +18,8 @@
 
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"

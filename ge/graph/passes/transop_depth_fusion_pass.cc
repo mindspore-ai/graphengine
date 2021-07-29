@@ -17,13 +17,13 @@
 #include "graph/passes/transop_depth_fusion_pass.h"
 
 #include <algorithm>
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
 #include "graph/compute_graph.h"
 #include "graph/ge_tensor.h"
 #include "graph/op_desc.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "graph/utils/node_utils.h"
 
 namespace ge {

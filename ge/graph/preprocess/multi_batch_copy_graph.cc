@@ -38,8 +38,8 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
-#include "graph/common/local_context.h"
-#include "graph/common/omg_util.h"
+#include "common/local_context.h"
+#include "common/omg_util.h"
 
 using std::set;
 using std::string;
@@ -1206,7 +1206,7 @@ Status MultiBatchGraphCopyer::CheckCopyResult(const std::vector<NodePtr> &start_
     auto dims = NodeUtils::GetOutputDesc(*node, kDataOutIndex).GetShape().GetDims();
     if (!IsAllDimsPositive(dims)) {
       REPORT_CALL_ERROR("E19999", "Failed to copy multi batch graph, the node %s still has unknown shape %s",
-             node->GetName().c_str(), formats::ShapeToString(dims).c_str());
+                        node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       GELOGE(INTERNAL_ERROR, "[Check][Param] Failed to copy multi batch graph, the node %s still has unknown shape %s",
              node->GetName().c_str(), formats::ShapeToString(dims).c_str());
       return INTERNAL_ERROR;

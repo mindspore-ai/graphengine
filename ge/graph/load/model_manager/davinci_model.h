@@ -24,14 +24,14 @@
 #include <thread>
 #include <vector>
 
-#include "common/ge_types.h"
-#include "common/helper/model_helper.h"
-#include "common/helper/om_file_helper.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/helper/model_helper.h"
+#include "framework/common/helper/om_file_helper.h"
 #include "common/opskernel/ge_task_info.h"
 #include "common/properties_manager.h"
 #include "common/dump/exception_dumper.h"
 #include "common/dump/opdebug_register.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "framework/common/util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/load/model_manager/aipp_utils.h"
@@ -43,13 +43,13 @@
 #include "graph/model.h"
 #include "graph/node.h"
 #include "graph/op_desc.h"
-#include "graph/operator.h"
+#include "external/graph/operator.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "mmpa/mmpa_api.h"
 #include "proto/task.pb.h"
-#include "task_info/task_info.h"
-#include "graph/common/local_context.h"
+#include "graph/load/model_manager/task_info/task_info.h"
+#include "common/local_context.h"
 
 using std::mutex;
 using std::thread;
@@ -300,6 +300,7 @@ class DavinciModel {
     return op_list_.at(index);
   }
 
+  void SetGlobalStep(void *global_step, uint64_t global_step_size);
   void *GetGlobalStep() const { return global_step_addr_; }
 
   // get task info for profiling
@@ -498,10 +499,6 @@ class DavinciModel {
     return exception_dumper_.DumpExceptionInfo(exception_infos);
   }
 
-  void SetKnownShapeGlobalStep(void *global_step) {
-    known_shape_global_step_ = global_step;
-  }
-
   void DumperShrink() {
     data_dumper_.DumpShrink();
   }
@@ -584,6 +581,10 @@ class DavinciModel {
   bool GetRunningFlag() const { return running_flg_; }
   void SetRunningFlag(bool flag) { running_flg_ = flag; }
   Status SetRunAsyncListenerCallback(const RunAsyncCallback &callback);
+
+  // for blocking aicpu op
+  Status GetEventByStream(const rtStream_t &stream, rtEvent_t &rt_event);
+  Status GetEventIdForBlockingAicpuOp(const OpDescPtr &op_desc, rtStream_t stream, uint32_t &event_id);
 
  private:
   // memory address of weights
@@ -771,6 +772,12 @@ class DavinciModel {
   /// @return Status
   ///
   Status InitTbeHandle(const OpDescPtr &op_desc);
+  Status InitTbeHandleWithFfts(const OpDescPtr &op_desc);
+  Status FunctionRegister(const OpDescPtr &op_desc, string &bin_file, OpKernelBinPtr &tbe_kernel, bool is_ffts,
+                          size_t thread_index = 0);
+  Status InitBinaryMagic(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, rtDevBinary_t &binary);
+  Status InitMetaData(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, void *bin_handle);
+  Status InitKernelName(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, string &kernel_name);
 
   void StoreTbeHandle(const string &handle_key);
   void CleanTbeHandle();
@@ -1102,11 +1109,10 @@ class DavinciModel {
   vector<InputOutputDescInfo> output_descs_;
   vector<uint32_t> output_formats_;
 
-  // known shape node for dump
-  void *known_shape_global_step_;
-
   // op name to attrs mapping
   std::map<std::string, std::map<std::string, std::vector<std::string>>> op_name_to_attrs_;
+
+  std::map<rtStream_t, rtEvent_t> stream_2_event_;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_DAVINCI_MODEL_H_

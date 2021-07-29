@@ -158,6 +158,20 @@ enum acldvppJpegFormat {
   ACL_JPEG_CSS_UNKNOWN = 1000
 };
 
+enum acldvppChannelDescParamType { ACL_DVPP_CSC_MATRIX_UINT32 = 0 };
+
+enum aclvdecChannelDescParamType { ACL_VDEC_CSC_MATRIX_UINT32 = 0 };
+
+// Csc Matrix can be used both for acldvppChannelDescParamType and aclvdecChannelDescParamType
+enum acldvppCscMatrix {
+  ACL_DVPP_CSC_MATRIX_BT601_WIDE = 0,
+  ACL_DVPP_CSC_MATRIX_BT601_NARROW,
+  ACL_DVPP_CSC_MATRIX_BT709_WIDE,
+  ACL_DVPP_CSC_MATRIX_BT709_NARROW,
+  ACL_DVPP_CSC_MATRIX_BT2020_WIDE,
+  ACL_DVPP_CSC_MATRIX_BT2020_NARROW
+};
+
 /**
  * @ingroup AscendCL
  * @brief alloc device memory for dvpp.
@@ -1910,9 +1924,9 @@ ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropAndPasteAsync(acldvppChannelDesc
  * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig | acldvppCreateResizeConfig
  */
 ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropResizePasteAsync(
-  acldvppChannelDesc *channelDesc, acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums, uint32_t size,
-  acldvppBatchPicDesc *dstBatchPicDescs, acldvppRoiConfig *cropAreas[], acldvppRoiConfig *pasteAreas[],
-  acldvppResizeConfig *resizeConfig, aclrtStream stream);
+    acldvppChannelDesc *channelDesc, acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums, uint32_t size,
+    acldvppBatchPicDesc *dstBatchPicDescs, acldvppRoiConfig *cropAreas[], acldvppRoiConfig *pasteAreas[],
+    acldvppResizeConfig *resizeConfig, aclrtStream stream);
 
 /**
  * @ingroup AscendCL
@@ -2557,10 +2571,93 @@ ACL_FUNC_VISIBILITY aclError acldvppClearHist(acldvppHist *hist);
  * @see acldvppCreateChannel | acldvppCreateBatchPicDesc | acldvppCreateRoiConfig | acldvppCreateResizeConfig
  */
 ACL_FUNC_VISIBILITY aclError acldvppVpcBatchCropResizeMakeBorderAsync(
-  acldvppChannelDesc *channelDesc, acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums, uint32_t size,
-  acldvppBatchPicDesc *dstBatchPicDescs, acldvppRoiConfig *cropAreas[], acldvppBorderConfig *borderCfgs[],
-  acldvppResizeConfig *resizeConfig, aclrtStream stream);
+    acldvppChannelDesc *channelDesc, acldvppBatchPicDesc *srcBatchPicDescs, uint32_t *roiNums, uint32_t size,
+    acldvppBatchPicDesc *dstBatchPicDescs, acldvppRoiConfig *cropAreas[], acldvppBorderConfig *borderCfgs[],
+    acldvppResizeConfig *resizeConfig, aclrtStream stream);
+/**
+ * @ingroup AscendCL
+ * @brief set param for dvpp channel desc
+ *
+ * @par Function
+ * set attribution in dvpp channelDesc for specified type
+ *
+ * @param channelDesc [OUT]             the channel destruction
+ * @param paramType [IN]                specified param type
+ * @param length [IN]                   mem length of param
+ * @param param [IN]                    pointer to param
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acldvppGetChannelDescParam | acldvppCreateChannelDesc | acldvppDestroyChannelDesc
+ */
+ACL_FUNC_VISIBILITY aclError acldvppSetChannelDescParam(acldvppChannelDesc *channelDesc,
+                                                        acldvppChannelDescParamType paramType, size_t length,
+                                                        const void *param);
 
+/**
+ * @ingroup AscendCL
+ * @brief get param of dvpp channel desc
+ *
+ * @par Function
+ * get attribution value in dvpp channelDesc for specified type
+ *
+ * @param channelDesc [IN]              the channel destruction
+ * @param paramType [IN]                specified param type
+ * @param length [IN]                   mem length allocated for output param
+ * @param paramRetSize [OUT]            mem length of output param
+ * @param param [OUT]                   pointer to output param
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see acldvppSetChannelDescParam | acldvppCreateChannelDesc | acldvppDestroyChannelDesc
+ */
+ACL_FUNC_VISIBILITY aclError acldvppGetChannelDescParam(const acldvppChannelDesc *channelDesc,
+                                                        acldvppChannelDescParamType paramType, size_t length,
+                                                        size_t *paramRetSize, void *param);
+/**
+ * @ingroup AscendCL
+ * @brief set param for vdec channel desc
+ *
+ * @par Function
+ * set attribution in channelDesc for specified type
+ *
+ * @param channelDesc [OUT]             the vdec channel destruction
+ * @param paramType [IN]                specified param type
+ * @param length [IN]                   mem length of param
+ * @param param [IN]                    pointer to param
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see aclvdecGetChannelDescParam | aclvdecCreateChannelDesc | aclvdecDestroyChannelDesc
+ */
+ACL_FUNC_VISIBILITY aclError aclvdecSetChannelDescParam(aclvdecChannelDesc *channelDesc,
+                                                        aclvdecChannelDescParamType paramType, size_t length,
+                                                        const void *param);
+
+/**
+ * @ingroup AscendCL
+ * @brief get param of vdec channel desc
+ *
+ * @par Function
+ * get attribution value in channelDesc for specified type
+ *
+ * @param channelDesc [IN]              the vdec channel destruction
+ * @param paramType [IN]                specified param type
+ * @param length [IN]                   mem length allocated for output param
+ * @param paramRetSize [OUT]            mem length of output param
+ * @param param [OUT]                   pointer to output param
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ *
+ * @see aclvdecSetChannelDescParam | aclvdecCreateChannelDesc | aclvdecDestroyChannelDesc
+ */
+ACL_FUNC_VISIBILITY aclError aclvdecGetChannelDescParam(const aclvdecChannelDesc *channelDesc,
+                                                        aclvdecChannelDescParamType paramType, size_t length,
+                                                        size_t *paramRetSize, void *param);
 #ifdef __cplusplus
 }
 #endif

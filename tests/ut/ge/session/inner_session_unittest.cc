@@ -19,21 +19,18 @@
 #define private public
 #define protected public
 #include "session/inner_session.h"
-#undef private
-#undef protected
-
 
 using namespace std;
 
 namespace ge {
-class Utest_Inner_session : public testing::Test {
+class UtestInnerSession : public testing::Test {
  protected:
   void SetUp() override {}
 
   void TearDown() override {}
 };
 
-TEST_F(Utest_Inner_session, build_graph_success) {
+TEST_F(UtestInnerSession, build_graph_success) {
   std::map <string, string> options;
   uint64_t session_id = 1;
   InnerSession inner_seesion(session_id, options);
@@ -44,9 +41,17 @@ TEST_F(Utest_Inner_session, build_graph_success) {
   EXPECT_NE(ret, ge::SUCCESS);
 }
 
-TEST_F(Utest_Inner_session, initialize) {
+TEST_F(UtestInnerSession, initialize) {
+  std::map<std::string, std::string> options = {};
+  uint64_t session_id = 1;
+  InnerSession inner_session(session_id, options);
+  EXPECT_EQ(inner_session.Initialize(), SUCCESS);
+  EXPECT_EQ(inner_session.Finalize(), SUCCESS);
+}
+
+TEST_F(UtestInnerSession, check_op_precision_mode) {
   std::map<std::string, std::string> options = {
-    {ge::MODIFY_MIXLIST, "/modify.json"}
+    {ge::OP_PRECISION_MODE, "./op_precision_mode.ini"}
   };
   uint64_t session_id = 1;
   InnerSession inner_session(session_id, options);

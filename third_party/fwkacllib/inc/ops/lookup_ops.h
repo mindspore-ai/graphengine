@@ -77,8 +77,8 @@ REG_OP(LookupTableInsert)
 *handle: A Tensor of type resource. Handle to the table . \n
 
 *@par Attributes:
-*@li Tkeys: A DType.
-*@li Tvalues: A DType . \n
+*@li Tkeys: A DType of keys.
+*@li Tvalues: A DType of values.
 
 *@par Outputs:
 *@li keys: A Tensor of type Tkeys.

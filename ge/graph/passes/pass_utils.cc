@@ -23,11 +23,11 @@
 #include <vector>
 
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/ge/ge_util.h"
-#include "common/op/ge_op_utils.h"
-#include "common/types.h"
-#include "graph/common/omg_util.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/types.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"
 #include "graph/manager/graph_var_manager.h"
@@ -35,7 +35,7 @@
 #include "graph/utils/op_desc_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "utils/node_utils.h"
+#include "graph/utils/node_utils.h"
 #include "common/formats/utils/formats_trans_utils.h"
 
 namespace ge {

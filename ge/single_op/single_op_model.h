@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "single_op/single_op.h"
 #include "single_op/stream_resource.h"
 #include "single_op/task/op_task.h"
@@ -69,17 +69,18 @@ class SingleOpModel {
   Status BuildTaskList(StreamResource *stream_resource, SingleOp &single_op);
   Status BuildTaskListForDynamicOp(StreamResource *stream_resource, DynamicSingleOp &dynamic_single_op);
   Status BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask **task);
-  Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                           bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id);
+  Status BuildAtomicTask(const domi::TaskDef &task_def, AtomicAddrCleanOpTask **task);
+  Status BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, uint64_t kernel_id);
   Status BuildCpuKernelTask(const domi::KernelDef &kernel_def, OpTask **task, uint64_t kernel_id);
-  Status BuildModelTaskKernel(StreamResource *stream_resource, const domi::TaskDef &task_def,
-                              DynamicSingleOp &single_op);
 
   static void ParseOpModelParams(ModelHelper &model_helper, SingleOpModelParam &param);
   void ParseArgTable(OpTask *task, SingleOp &op);
   Status InitHybridModelExecutor(const StreamResource &resource, const GeModelPtr &ge_model, SingleOp &single_op);
   Status SetHostMemTensor(DynamicSingleOp &single_op);
+  Status NeedHybridModel(GeModelPtr &ge_model, bool &flag);
+  Status ParseTasks();
 
+  std::map<NodePtr, std::vector<domi::TaskDef>> node_tasks_;
   std::string model_name_;
   uint32_t model_id_ = 0;
   const void *ori_model_data_;

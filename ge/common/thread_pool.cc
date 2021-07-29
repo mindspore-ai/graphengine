@@ -23,10 +23,10 @@
 #include <utility>
 #include <vector>
 
-#include "register/register_types.h"
+#include "external/register/register_types.h"
 
 namespace ge {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ThreadPool::ThreadPool(uint32_t size) : is_stoped_(false) {
+ThreadPool::ThreadPool(uint32_t size) : is_stoped_(false) {
   idle_thrd_num_ = size < 1 ? 1 : size;
 
   for (uint32_t i = 0; i < idle_thrd_num_; ++i) {
@@ -34,7 +34,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ThreadPool::ThreadPool(uint32_t
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY ThreadPool::~ThreadPool() {
+ThreadPool::~ThreadPool() {
   is_stoped_.store(true);
   {
     std::unique_lock<std::mutex> lock{m_lock_};

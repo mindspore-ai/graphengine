@@ -1201,6 +1201,8 @@ REG_OP(TensorArraySize)
 *@brief A queue implementation that dequeues elements in a random order. \n
 
 *@par Attributes:
+*@li component_types:A list of fully-defined Tensortype objects with
+the same length as shapes, or None.
 *@li shapes: (Optional.) A list of fully-defined TensorShape objects with
 the same length as dtypes, or None.
 *@li capacity: An integer. The upper bound on the number of elements that may
@@ -1281,6 +1283,7 @@ The length of this attr must be either 0 or the same as the length of
 elements are not constrained, and only one element may be dequeued at a time.
 *@li container: An optional string. Defaults to "". If non-empty, this queue
 is placed in the given container. Otherwise, a default container is used.
+*@li capacity:An integer. The upper bound on the number of elements that may be stored in this queue.
 *@li shared_name: An optional string. Defaults to "". If non-empty, this
 queue will be shared under the given name across multiple sessions. \n
 
@@ -1435,7 +1438,7 @@ REG_OP(OrderedMapClear)
 
 *@par Inputs:
 *Including:
-* @li resource: A Tensor of type DT_RESOURCE.
+* resource: A Tensor of type DT_RESOURCE.
 
 *@par Outputs:
 *handle: A Tensor of type DT_STRING ref. \n
@@ -1526,7 +1529,7 @@ REG_OP(OrderedMapPeek)
 
 *@par Inputs:
 *Including:
-* @li indices: A Tensor of type DT_INT32. \n
+* indices: A Tensor of type DT_INT32. \n
 
 *@par Attributes:
 *@li capacity: An optional int that is >= 0. Defaults to "0".
@@ -2330,6 +2333,40 @@ REG_OP(CacheAllIndexToLocal)
   .OUTPUT(local_idx, TensorType({DT_INT64, DT_INT32, DT_UINT64, DT_UINT32}))
   .REQUIRED_ATTR(dtype, Type)
   .OP_END_FACTORY_REG(CacheAllIndexToLocal)
+
+/**
+*@brief LRUCacheV2, aicore LRUCache.
+*@par Inputs:
+*index_list: exchange index list
+*data: host data
+*cache: gm cache
+*tag: cache's tag
+*is_last_call: if is last call write all cache to data
+*@par Outputs:
+*data: output data
+*cache: gm cache
+*tag: cache's tag
+*index_offset_list: index_offset_list
+*not_in_cache_index_list: output not in cache's index_list
+*not_in_cache_number: scalar
+*@par Attributes:
+*pre_route_count: types of all outputs
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(LRUCacheV2)
+    .INPUT(index_list, TensorType::BasicType())
+    .INPUT(data, TensorType::BasicType())
+    .INPUT(cache, TensorType::BasicType())
+    .INPUT(tag, TensorType::BasicType())
+    .INPUT(is_last_call, TensorType::BasicType())
+    .OUTPUT(data, TensorType::BasicType())
+    .OUTPUT(cache, TensorType::BasicType())
+    .OUTPUT(tag, TensorType::BasicType())
+    .OUTPUT(index_offset_list, TensorType::BasicType())
+    .OUTPUT(not_in_cache_index_list, TensorType::BasicType())
+    .OUTPUT(not_in_cache_number, TensorType::BasicType())
+    .REQUIRED_ATTR(pre_route_count, Int)
+    .OP_END_FACTORY_REG(LRUCacheV2)
 
 /**
 *@brief DynamicGetNext, dynamic get next data

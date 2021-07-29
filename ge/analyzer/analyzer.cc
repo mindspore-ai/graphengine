@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "analyzer.h"
+#include "analyzer/analyzer.h"
 
 #include <cstdlib>
 #include <cstdio>

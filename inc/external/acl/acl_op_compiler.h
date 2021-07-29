@@ -86,9 +86,9 @@ ACL_FUNC_VISIBILITY aclError aclopCompile(const char *opType, int numInputs, con
  * @retval OtherValues Failure
  */
 ACL_FUNC_VISIBILITY aclError aclopCompileAndExecute(
-  const char *opType, int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
-  int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[], const aclopAttr *attr,
-  aclopEngineType engineType, aclopCompileType compileFlag, const char *opPath, aclrtStream stream);
+    const char *opType, int numInputs, const aclTensorDesc *const inputDesc[], const aclDataBuffer *const inputs[],
+    int numOutputs, const aclTensorDesc *const outputDesc[], aclDataBuffer *const outputs[], const aclopAttr *attr,
+    aclopEngineType engineType, aclopCompileType compileFlag, const char *opPath, aclrtStream stream);
 
 /**
  * @ingroup AscendCL

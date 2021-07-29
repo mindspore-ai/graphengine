@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "common/ge/ge_util.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/optimize/graph_optimize.h"
 #include "graph/utils/graph_utils.h"

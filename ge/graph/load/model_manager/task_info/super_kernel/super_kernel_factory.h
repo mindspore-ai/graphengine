@@ -18,7 +18,7 @@
 #define SUPER_KERNEL_FACTORY_H
 
 #include <vector>
-#include "super_kernel.h"
+#include "graph/load/model_manager/task_info/super_kernel/super_kernel.h"
 #include "framework/common/debug/log.h"
 
 namespace ge {

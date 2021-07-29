@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "runtime/stream.h"
 #include "single_op/single_op.h"
 
@@ -54,6 +54,8 @@ class StreamResource {
     return device_buffer_;
   }
 
+  Status GetThreadPool(ThreadPool **thread_pool);
+
  private:
   uint8_t *DoMallocMemory(const std::string &purpose,
                           size_t size,
@@ -66,6 +68,7 @@ class StreamResource {
   std::vector<uint8_t *> weight_list_;
   std::unordered_map<uint64_t, std::unique_ptr<SingleOp>> op_map_;
   std::unordered_map<uint64_t, std::unique_ptr<DynamicSingleOp>> dynamic_op_map_;
+  std::unique_ptr<ThreadPool> thread_pool_;
   rtStream_t stream_ = nullptr;
   std::mutex mu_;
   std::mutex stream_mu_;

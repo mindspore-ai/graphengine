@@ -25,13 +25,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
 #include "common/optimizer/graph_optimizer.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_context.h"
 #include "graph/manager/graph_manager_utils.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 
 namespace ge {
 using ComputeGraphPtr = std::shared_ptr<ge::ComputeGraph>;

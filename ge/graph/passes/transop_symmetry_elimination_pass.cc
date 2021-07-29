@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "transop_symmetry_elimination_pass.h"
+#include "graph/passes/transop_symmetry_elimination_pass.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
-#include "types.h"
+#include "framework/common/types.h"
 
 namespace {
 const std::set<std::string> white_list_op{ge::TRANSPOSED, ge::RESHAPE, ge::REFORMAT, ge::CAST, ge::TRANSDATA};

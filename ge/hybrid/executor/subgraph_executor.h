@@ -33,13 +33,16 @@ namespace hybrid {
 // Executor for executing a subgraph
 class SubgraphExecutor {
  public:
-  SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape = false);
+  SubgraphExecutor(const GraphItem *graph_item, GraphExecutionContext *context, bool force_infer_shape = false,
+                   ThreadPool *pre_run_pool = nullptr);
   ~SubgraphExecutor();
 
   Status InitForPartialExecution(const std::vector<TensorValue> &inputs,
                                  const std::vector<ConstGeTensorDescPtr> &input_desc);
 
   Status PartialExecuteAsync(int task_group);
+
+  void ReleaseContext() { subgraph_context_.reset(nullptr); }
 
   /**
    * Execute subgraph async, output tensor address(not data) and output tensor descriptions are
@@ -122,10 +125,10 @@ class SubgraphExecutor {
   GraphExecutionContext *context_;
   std::unique_ptr<SubgraphContext> subgraph_context_;
   bool force_infer_shape_;
-  ThreadPool pre_run_pool_;
+  ThreadPool *pre_run_pool_;
+  bool own_thread_pool_;
   BlockingQueue<NodeState *> ready_queue_;
   std::unique_ptr<ShapeInferenceEngine> shape_inference_engine_;
-  std::shared_ptr<TaskContext> known_shape_task_context_;
 
   std::mutex mu_; // Guard for prepare_queues_.
   std::map<int, BlockingQueue<const NodeItem *>> prepare_queues_;

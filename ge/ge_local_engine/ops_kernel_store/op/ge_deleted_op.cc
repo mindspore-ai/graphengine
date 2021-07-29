@@ -16,7 +16,7 @@
 
 #include "ge_local_engine/ops_kernel_store/op/ge_deleted_op.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "ge_local_engine/ops_kernel_store/op/op_factory.h"
 
 namespace ge {

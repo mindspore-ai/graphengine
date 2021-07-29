@@ -20,7 +20,7 @@
 #include <string>
 
 #include "common/singleton.h"
-#include "common/types.h"
+#include "framework/common/types.h"
 
 namespace ge {
 class Params : public Singleton<Params> {

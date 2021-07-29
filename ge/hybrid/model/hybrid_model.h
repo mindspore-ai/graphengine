@@ -27,7 +27,7 @@
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/model/node_item.h"
 #include "hybrid/model/graph_item.h"
-#include "model/ge_root_model.h"
+#include "common/model/ge_root_model.h"
 
 namespace ge {
 namespace hybrid {
@@ -147,6 +147,7 @@ class HybridModel {
   GeRootModelPtr ge_root_model_;
   std::map<uint32_t, NodeItem *> input_nodes_;
   ComputeGraphPtr root_graph_;
+  ComputeGraphPtr orig_root_graph_;
   std::map<std::string, NodePtr> device_variable_nodes_; //lint !e148
   std::map<std::string, NodePtr> host_variable_nodes_; //lint !e148
   std::map<std::string, std::unique_ptr<TensorValue>> variable_tensors_;

@@ -22,7 +22,6 @@ target_compile_options(atc_atc.bin PRIVATE
 
 target_compile_definitions(atc_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
     FUNC_VISIBILITY
@@ -30,25 +29,17 @@ target_compile_definitions(atc_atc.bin PRIVATE
 
 target_include_directories(atc_atc.bin PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/inc/external
-    ${GE_CODE_DIR}/common/inc/external
-    ${GE_CODE_DIR}/common/inc/external/graph
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/graph
-    ${METADEF_DIR}/inc/register
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/external/register
     ${PARSER_DIR}
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/common
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
@@ -56,6 +47,7 @@ target_include_directories(atc_atc.bin PRIVATE
 
 target_link_options(atc_atc.bin PRIVATE
     -Wl,-Bsymbolic
+    -Wl,-rpath-link,${ASCEND_ATC_DIR}/stub
 )
 
 target_link_libraries(atc_atc.bin PRIVATE
@@ -70,7 +62,7 @@ target_link_libraries(atc_atc.bin PRIVATE
     parser_common
     gflags
     json
-    runtime_compile
+    runtime
     slog
     static_mmpa
     -lrt
@@ -99,7 +91,6 @@ target_compile_options(fwk_atc.bin PRIVATE
 
 target_compile_definitions(fwk_atc.bin PRIVATE
     PROTOBUF_INLINE_NOT_IN_HEADERS=0
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     LOG_CPP
     FUNC_VISIBILITY
@@ -107,25 +98,17 @@ target_compile_definitions(fwk_atc.bin PRIVATE
 
 target_include_directories(fwk_atc.bin PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/inc/external
-    ${GE_CODE_DIR}/common/inc/external
-    ${GE_CODE_DIR}/common/inc/external/graph
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/graph
-    ${METADEF_DIR}/inc/register
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/external/register
     ${PARSER_DIR}
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/common
     #### blue zone ####
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
     ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain

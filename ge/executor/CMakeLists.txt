@@ -1,13 +1,9 @@
 set(SRC_LIST
     "ge_executor.cc"
     "../common/profiling/profiling_manager.cc"
-    "../common/ge/plugin_manager.cc"
-    "../common/ge/op_tiling_manager.cc"
-    "../common/dump/dump_properties.cc"
-    "../common/dump/exception_dumper.cc"
-    "../common/dump/dump_manager.cc"
     "../common/dump/dump_op.cc"
     "../common/dump/opdebug_register.cc"
+    "../common/dump/exception_dumper.cc"
     "../common/profiling/ge_profiling.cc"
     "../graph/load/graph_loader.cc"
     "../graph/execute/graph_execute.cc"
@@ -22,8 +18,6 @@ set(SRC_LIST
     "../graph/manager/rdma_pool_allocator.cc"
     "../graph/manager/host_mem_allocator.cc"
     "../hybrid/node_executor/aicpu/aicpu_ext_info.cc"
-    "../model/ge_model.cc"
-    "../model/ge_root_model.cc"
     "../graph/load/model_manager/davinci_model.cc"
     "../graph/load/model_manager/model_manager.cc"
     "../graph/load/model_manager/tbe_handle_store.cc"
@@ -37,6 +31,7 @@ set(SRC_LIST
     "../graph/load/model_manager/task_info/task_info.cc"
     "../graph/load/model_manager/task_info/event_record_task_info.cc"
     "../graph/load/model_manager/task_info/event_wait_task_info.cc"
+    "../graph/load/model_manager/task_info/ffts_task_info.cc"
     "../graph/load/model_manager/task_info/fusion_start_task_info.cc"
     "../graph/load/model_manager/task_info/fusion_stop_task_info.cc"
     "../graph/load/model_manager/task_info/kernel_ex_task_info.cc"
@@ -54,7 +49,6 @@ set(SRC_LIST
     "../graph/load/model_manager/task_info/model_exit_task_info.cc"
     "../graph/load/model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "../graph/load/model_manager/task_info/super_kernel/super_kernel.cc"
-    "../graph/common/local_context.cc"
     "../opskernel_manager/ops_kernel_builder_manager.cc"
     "../single_op/single_op_manager.cc"
     "../single_op/single_op_model.cc"
@@ -101,7 +95,6 @@ set(SRC_LIST
     "../hybrid/node_executor/task_context.cc"
     "../hybrid/hybrid_davinci_model.cc"
     "../ge_local_engine/engine/host_cpu_engine.cc"
-    "../graph/common/omg_util.cc"
     "../graph/manager/host_mem_manager.cc"
     "../graph/build/memory/var_mem_assign_util.cc"
     "../host_kernels/transpose_kernel.cc"
@@ -143,10 +136,6 @@ set(SRC_LIST
     "../host_kernels/transdata_kernel.cc"
     "../host_kernels/unpack_kernel.cc"
     "../graph/passes/pass_utils.cc"
-    "../graph/common/bcast.cc"
-    "../common/fp16_t.cc"
-    "../common/formats/format_transfers/format_transfer_transpose.cc"
-    "../common/formats/utils/formats_trans_utils.cc"
 )
 
 ######## libge_executor.a ########
@@ -181,20 +170,22 @@ target_include_directories(ge_executor SYSTEM PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/cce
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:runtime_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:cce_headers,INTERFACE_INCLUDE_DIRECTORIES>>
     #### blue zone ####
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
 )
 
 target_link_libraries(ge_executor PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
     json
     ascend_protobuf_static
     c_sec
@@ -232,15 +223,12 @@ target_include_directories(ge_executor_shared PRIVATE
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/cce
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
     #### blue zone ####
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
 )
 
 target_link_options(ge_executor_shared PRIVATE
@@ -250,6 +238,11 @@ target_link_options(ge_executor_shared PRIVATE
 
 target_link_libraries(ge_executor_shared PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
     -Wl,--no-as-needed
     ge_common
     runtime

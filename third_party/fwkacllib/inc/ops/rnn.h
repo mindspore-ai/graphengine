@@ -127,9 +127,7 @@ REG_OP(DynamicLSTM)
 *@li cell_clip:An float identifying the cell clip in the op. Default to -1.
 *@li num_proj:An integer identifying the num projection in the op. Default to 0.
 *@li time_major:An bool identifying the time major in the op. Default to false.
-*@li activation:An string identifying the type of activation function in the op. Default to "tanh". Only tanh is currently supported.
 *@li forget_bias:An float identifying the forget bias in the op. Default to 0.
-*@li is_training:An bool identifying is training in the op. Default to true.
 
 *@par Outputs:
 *eight outputs: \n
@@ -491,7 +489,6 @@ REG_OP(DynamicLSTMV2)
 *ten inputs: \n
 *@li w:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li init_c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
-*@li h:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li c:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dy:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dh:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
@@ -504,10 +501,11 @@ REG_OP(DynamicLSTMV2)
 
 
 *@par Outputs:
-*eight outputs: \n
+*four outputs: \n
 *@li dx:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dh_prev:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
 *@li dc_prev:A 4D Tensor. Must be one of the following types: float16, float32. The format must be FRACTAL_NZ.
+*@li dgate:A 4D Tensor. Must be one of the following types: float16. The format must be FRACTAL_NZ.
 */
 REG_OP(LSTMInputGrad)
     .INPUT(w, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -571,13 +569,13 @@ REG_OP(DynamicLSTMGradCell)
   .INPUT(f, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(o, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(tanhct, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .INPUT(mask, TensorType({DT_FLOAT16, DT_FLOAT}))
   .INPUT(t_state, TensorType({DT_INT32, DT_INT32}))
+  .INPUT(mask, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(dgate, TensorType({DT_FLOAT16, DT_FLOAT}))
   .OUTPUT(dct_1, TensorType({DT_FLOAT16, DT_FLOAT}))
-  .ATTR(forget_bias, Float, 1)
-  .ATTR(activation, String, "")
-  .ATTR(direction, String, "Forward")
+  .ATTR(forget_bias, Float, 1.0)
+  .ATTR(activation, String, "tanh")
+  .ATTR(direction, String, "UNIDIRECTIONAL")
   .ATTR(gate_order, String, "ijfo")
   .OP_END_FACTORY_REG(DynamicLSTMGradCell)
 
@@ -1070,7 +1068,7 @@ REG_OP(GRUV2HiddenGradCell)
 *     If "False", "grad_weight" will not be scale by word_frequency. \n
 
 * @par Outputs:
-* @li grad_weight: A mutable output Tensor of new word grad has the same type as "grads". \n
+* y: A mutable output Tensor of new word grad has the same type as "grads". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator EmbeddingDenseGrad.
@@ -1222,7 +1220,7 @@ REG_OP(CommonGRU)
 *     is equivalent to the size of indices. This matches the CSR format.. \n
 
 * @par Outputs:
-* @li grad_weight: A mutable output Tensor of new word grad has the same type as "grads". \n
+* y: A mutable output Tensor of new word grad has the same type as "grads". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator EmbeddingBag.

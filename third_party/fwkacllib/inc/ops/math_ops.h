@@ -227,10 +227,10 @@ REG_OP(Bucketize)
 
 *@par Inputs:
 *One inputs, including:
-*   @li input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
+*input_x: A tensor. Must be one of the following types: float16, float32, int8, uint8, int32. \n
 
 *@par Outputs:
-*y: A tensor with the same type and shape of input_x \n
+*output_y: A tensor with the same type and shape of input_x \n
 
 *@par Third-party framework compatibility
 *Compatible with the Pytorch operator Trunc. \n
@@ -298,7 +298,7 @@ REG_OP(SparseSegmentMean)
 
 *@par Inputs:
 *The input grad must have be type float or double. Inputs include:
-*@li grad: A Tensor. Must be one of the following types: float, double.
+*@li x: A Tensor. Must be one of the following types: float, double.
 gradient propagated to the SparseSegmentMean op.
 *@li indices: A Tensor. Must be one of the following types: int32, int64.
 indices passed to the corresponding SparseSegmentMean op.
@@ -365,6 +365,7 @@ REG_OP(InitData)
 component of an element of this dataset.
 *@li output_shapes: A nested structure of TensorShape objects corresponding
 to each component of an element of this dataset.
+*@li output_num:output of nums.
 *@li channel_name: A string. Default "" . \n
 
 *@par Outputs:
@@ -538,11 +539,11 @@ REG_OP(NextAfter)
 
 *@par Inputs:
 *One inputs, including:
-* @li input_x: A tensor. Must be one of the following types:
+* input_x: A tensor. Must be one of the following types:
 *     float16, float32. \n
 
 *@par Attributes:
-*@li  p: An optional float.Defaults to 2. \n
+*p: An optional float.Defaults to 2. \n
 
 *@par Outputs:
 *y: A Tensor with the same type and shape of input_x's. \n
@@ -560,10 +561,10 @@ REG_OP(Pdist)
  *@brief Compute element-wise finiteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor.
+ *x:A Tensor of type float16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x.
+ *y:A Tensor. Returns which elements of x are finite
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsFinite operator.
@@ -577,10 +578,10 @@ REG_OP(IsFinite)
  *@brief Compute element-wise infiniteness, return a boolean tensor.
 
  *@par Inputs:
- *x:A Tensor.
+ *x:A Tensor of type float16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x.
+ *y:A Tensor. Has the same shape as x. Returns which elements of x are isinf.
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsInf operator.
@@ -594,7 +595,11 @@ REG_OP(IsInf)
  *@brief Computes the complex absolute value of a tensor.
 
  *@par Inputs:
- *x:A Tensor.
+ *x: x of complex numbers, this operation returns a tensor of type 
+ float or double that is the absolute value of each element in x .
+
+* @par Attributes:
+* Tout: representing the output of type. 
 
  *@par Outputs:
  *y:A tensor of type `float` or `double` that is the absolute value of each element in `x`.
@@ -612,10 +617,10 @@ REG_OP(ComplexAbs)
  *@brief Returns which elements of x are NaN.
 
  *@par Inputs:
- *x:A Tensor.
+ *x:A Tensor of type float16, float32, double.
 
  *@par Outputs:
- *y:A Tensor. Has the same shape as x.
+ *y:A Tensor. Has the same shape as x. Returns which elements of x are isnan
 
  *@par Third-party framework compatibility.
  *Compatible with tensorflow IsNan operator.
@@ -629,7 +634,10 @@ REG_OP(IsNan)
  *@brief Returns the real part of a complex number.
 
  *@par Inputs:
- *input:A Tensor.
+ *input:A Tensor. Must have numeric type.
+
+ *@par Attributes:
+ *Tout: Type of outputs. \n
 
  *@par Outputs:
  *output:A Tensor. Has the same shape as input.
@@ -670,7 +678,8 @@ REG_OP(Conj)
 *@li weight: A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *@li y: A Tensor dtype of float32.
@@ -700,7 +709,8 @@ REG_OP(NLLLoss)
 *@li total_weight:A Tensor dtype of float32 . \n
 
 *@par Attributes:
-*reduction: An optional attribute. Defaults to "mean" . \n
+*@li reduction: An optional attribute. Defaults to "mean" .
+*@li ignore_index:An optional attribute.Defaults to -100 . \n
 
 *@par Outputs:
 *x_grad: A Tensor. Must be the following type: float32 . \n
@@ -720,24 +730,24 @@ REG_OP(NLLLossGrad)
     .OP_END_FACTORY_REG(NLLLossGrad)
 
 /**
-*@brief The ifmr . \n
+*@brief IFMR(Input Feature Map Reconstruction). \n
 
 *@par Inputs:
-*@li data:A Tensor of feature map
-*@li data_min:A Tensor of min value of feature map.
-*@li data_max:A Tensor of max value of feature map.
-*@li cumsum:A Tensor of cumsum bin of data . \n
+*@li data: A Tensor of feature map.
+*@li data_min: A Tensor of min value of feature map.
+*@li data_max: A Tensor of max value of feature map.
+*@li cumsum: A Tensor of cumsum bin of data . \n
 
 *@par Attributes:
-*min_percentile: min init percentile.
-*max_percentile: max init percentile.
-*search_range: search range.
-*search_step: step size of searching.
-*with_offset: whether using offset . \n
+*@li min_percentile: min init percentile.
+*@li max_percentile: max init percentile.
+*@li search_range: search range.
+*@li search_step: step size of searching.
+*@li with_offset: whether using offset . \n
 
 *@par Outputs:
-*scale: optimal scale.
-*offset: optimal offset . \n
+*@li scale: optimal scale.
+*@li offset: optimal offset . \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
@@ -758,16 +768,16 @@ REG_OP(IFMR)
   .OP_END_FACTORY_REG(IFMR)
 
 /**
-*@brief weights adaptive range quantization. \n
+*@brief Weights Adaptive Range Quantization. \n
 
 *@par Inputs:
-*@li w:A Tensor of weights. \n
-*@li w_min:A Tensor of weights reduce_min. \n
-*@li w_max:A Tensor of weights reduce_max. \n
+*@li w: A Tensor of weights. \n
+*@li w_min: A Tensor of weights reduce_min. \n
+*@li w_max: A Tensor of weights reduce_max. \n
 
 *@par Attributes:
-*num_bits: the bits num used for quantize.
-*offset_flag: whether using offset. \n
+*@li num_bits: the bits num used for quantize.
+*@li offset_flag: whether using offset. \n
 
 *@par Outputs:
 *y: fake quantized weights. \n
@@ -789,22 +799,22 @@ REG_OP(WtsARQ)
   .OP_END_FACTORY_REG(WtsARQ)
 
 /**
-*@brief The acts_ulq. \n
+*@brief Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li x:A Tensor of feature map
-*@li clamp _min:A Tensor of min clamp value of feature map.
-*@li clamp _max:A Tensor of max clamp value of feature map.
+*@li x: A Tensor of feature map.
+*@li clamp _min: A Tensor of min clamp value of feature map.
+*@li clamp _max: A Tensor of max clamp value of feature map.
 
 *@par Attributes:
-*fixed_min: fix min to zero.
-*num_bits: quant bits. \n
+*@li fixed_min: fix min to zero.
+*@li num_bits: quant bits. \n
 
 *@par Outputs:
-*y: output fake quant feature map.
-*clamp_min_mask: where x > clamp_min
-*clamp_min_mask: where x < clamp_max
-*x_clamped_loss: clamp loss. \n
+*@li y: output fake quant feature map.
+*@li clamp_min_mask: where x > clamp_min.
+*@li clamp_min_mask: where x < clamp_max.
+*@li x_clamped_loss: clamp loss. \n
 
 *@par Third-party framework compatibility
 *Compatible with mindspore
@@ -826,12 +836,12 @@ REG_OP(ActsULQ)
   .OP_END_FACTORY_REG(ActsULQ)
 
 /**
-*@brief The acts_ulq_input_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
-*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'
-*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'
+*@li y_grad: A Tensor of gradient.
+*@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
+*@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed'.
 
 *@par Outputs:
 *x_grapd: The gradient of inpust. \n
@@ -851,10 +861,10 @@ REG_OP(ActsULQInputGrad)
   .OP_END_FACTORY_REG(ActsULQInputGrad)
 
 /**
-*@brief The act_ulq_clamp_max_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp max. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_max_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -876,10 +886,10 @@ REG_OP(ActULQClampMaxGrad)
   .OP_END_FACTORY_REG(ActULQClampMaxGrad)
 
 /**
-*@brief The act_ulq_clamp_min_grad. \n
+*@brief The gradient of Activations Universal Linear Quantization clamp min. \n
 
 *@par Inputs:
-*@li y_grad: A Tensor of gradient
+*@li y_grad: A Tensor of gradient.
 *@li clamp_min_mask: A Tensor of boolean mask indicating whether an additional one is needed.
 *@li x_clamped_loss: A Tensor of gradient. \n
 
@@ -904,7 +914,7 @@ REG_OP(ActULQClampMinGrad)
 * @brief Computes Lp norm.
 
 * @par Inputs:
-* @li x: An ND tensor of type float16, float32. \n
+* x: An ND tensor of type float16, float32. \n
 *
 * @par Attributes:
 * @li p: Int, "inf" or "-inf", default value is 2.
@@ -913,7 +923,7 @@ REG_OP(ActULQClampMinGrad)
 * @li epsilon: Float, default is 1e-12. \n
 
 * @par Outputs:
-* @li y: An ND tensor of type float16, float32. The shape of y is depending
+* y: An ND tensor of type float16, float32. The shape of y is depending
 * on axes and keepdim. \n
 
 * @par Third-party framework compatibility
@@ -932,11 +942,13 @@ REG_OP(LpNorm)
 * @brief get complex.
 
 * @par Inputs:
-* @li real: An ND tensor of type  float32. double
-* @li imag: An ND tensor of type  float32. double \n
+* @li real: An ND tensor of type  float32 double, representing the real part of a complex number.
+* @li imag: An ND tensor of type  float32 double, representing the imaginary part of a complex number. \n
 *
+* @par Attributes:
+* Tout: representing the output of type. 
 * @par Outputs:
-* @li out: An ND tensor of type complex64, complex128 \n
+* out: An ND tensor of type complex64, complex128 \n
 */
 REG_OP(Complex)
     .INPUT(real, TensorType({DT_FLOAT, DT_DOUBLE}))
@@ -949,10 +961,13 @@ REG_OP(Complex)
 * @brief  deal complex.
 
 * @par Inputs:
-* @li input: An ND tensor of type complex64, complex128 \n
-*
+* input: An ND tensor of type complex64, complex128 \n
+
+* @par Attributes:
+* Tout: representing the output of type. 
+
 * @par Outputs:
-* @li output: An ND tensor of type float32. double \n
+* output: An ND tensor of type float32. double \n
 */
 REG_OP(Imag)
     .INPUT(input, TensorType({DT_COMPLEX64, DT_COMPLEX128}))
@@ -988,7 +1003,7 @@ REG_OP(Angle)
 *     float16, float32. \n
 
 *@par Attributes:
-* @li reduction: Specifies the reduction to apply to the output:
+* reduction: Specifies the reduction to apply to the output:
 *     'none' | 'mean' | 'sum'. Default: 'mean'. \n
 
 *@par Outputs:

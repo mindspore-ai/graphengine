@@ -21,9 +21,9 @@
 #include <set>
 #include <string>
 #include "framework/common/debug/ge_log.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_adapter.h"
 

@@ -2,7 +2,6 @@ if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
     add_subdirectory(common)
     add_subdirectory(plugin/engine)
     add_subdirectory(ge_local_engine)
-    add_subdirectory(executor)
     add_subdirectory(offline)
 elseif (ENABLE_D)
     add_subdirectory(common)
@@ -109,81 +108,42 @@ target_link_libraries(ge_proto_client PRIVATE
 endif ()
 
 ##################################################################
-set(TRAIN_SRC_LIST
-    "common/formats/format_transfers/datatype_transfer.cc"
-    "common/formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
-    "common/formats/format_transfers/format_transfer_dhwcn_fracz3D.cc"
-    "common/formats/format_transfers/format_transfer_dhwnc_fracz3D_transpose.cc"
-    "common/formats/format_transfers/format_transfer_fractal_nz.cc"
-    "common/formats/format_transfers/format_transfer_fractal_z.cc"
-    "common/formats/format_transfers/format_transfer_fractal_zz.cc"
-    "common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
-    "common/formats/format_transfers/format_transfer_fracz_nchw.cc"
-    "common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
-    "common/formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
-    "common/formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
-    "common/formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
-    "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
-    "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
-    "common/formats/format_transfers/format_transfer_transpose.cc"
-    "common/formats/formats.cc"
-    "common/formats/utils/formats_trans_utils.cc"
-    "common/fp16_t.cc"
-    "common/ge/plugin_manager.cc"
-    "common/ge/op_tiling_manager.cc"
-    "common/helper/model_cache_helper.cc"
-    "common/profiling/profiling_manager.cc"
-    "common/dump/dump_manager.cc"
-    "common/dump/exception_dumper.cc"
-    "common/dump/dump_properties.cc"
-    "common/dump/opdebug_register.cc"
+set(EXECUTOR_SRC_LIST
     "common/dump/dump_op.cc"
+    "common/dump/exception_dumper.cc"
+    "common/dump/opdebug_register.cc"
+    "common/ge/op_tiling_manager.cc"
+    "common/ge/plugin_manager.cc"
     "common/profiling/ge_profiling.cc"
-    "common/profiling/ge_runner_profiling.cc"
-    "engine_manager/dnnengine_manager.cc"
+    "common/profiling/profiling_manager.cc"
+    "executor/ge_executor.cc"
     "ge_local_engine/engine/host_cpu_engine.cc"
-    "generator/ge_generator.cc"
-    "generator/generator_api.cc"
-    "graph/build/graph_builder.cc"
-    "graph/build/label_allocator.cc"
-    "graph/build/logical_stream_allocator.cc"
-    "graph/build/model_builder.cc"
-    "graph/build/run_context.cc"
-    "graph/build/stream_allocator.cc"
-    "graph/build/stream_graph_optimizer.cc"
-    "graph/build/task_generator.cc"
-    "graph/common/bcast.cc"
-    "graph/common/local_context.cc"
-    "graph/common/omg_util.cc"
-    "graph/common/transop_util.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
     "graph/execute/graph_execute.cc"
-    "graph/label/case_label_maker.cc"
-    "graph/label/if_label_maker.cc"
-    "graph/label/label_maker.cc"
-    "graph/label/partitioned_call_label_maker.cc"
-    "graph/label/while_label_maker.cc"
+    "graph/execute/model_executor.cc"
     "graph/load/graph_loader.cc"
+    "graph/load/model_manager/aipp_utils.cc"
     "graph/load/model_manager/cpu_queue_schedule.cc"
     "graph/load/model_manager/data_dumper.cc"
     "graph/load/model_manager/data_inputer.cc"
     "graph/load/model_manager/davinci_model.cc"
     "graph/load/model_manager/model_manager.cc"
     "graph/load/model_manager/model_utils.cc"
-    "graph/load/model_manager/aipp_utils.cc"
     "graph/load/model_manager/task_info/end_graph_task_info.cc"
-    "graph/load/model_manager/task_info/model_exit_task_info.cc"
     "graph/load/model_manager/task_info/event_record_task_info.cc"
     "graph/load/model_manager/task_info/event_wait_task_info.cc"
+    "graph/load/model_manager/task_info/ffts_task_info.cc"
     "graph/load/model_manager/task_info/fusion_start_task_info.cc"
     "graph/load/model_manager/task_info/fusion_stop_task_info.cc"
-    "graph/load/model_manager/task_info/hccl_task_info.cc"
+    #"graph/load/model_manager/task_info/hccl_task_info.cc"         # Just for runner.
     "graph/load/model_manager/task_info/kernel_ex_task_info.cc"
     "graph/load/model_manager/task_info/kernel_task_info.cc"
+    "graph/load/model_manager/task_info/label_goto_ex_task_info.cc"
     "graph/load/model_manager/task_info/label_set_task_info.cc"
     "graph/load/model_manager/task_info/label_switch_by_index_task_info.cc"
-    "graph/load/model_manager/task_info/label_goto_ex_task_info.cc"
     "graph/load/model_manager/task_info/memcpy_addr_async_task_info.cc"
     "graph/load/model_manager/task_info/memcpy_async_task_info.cc"
+    "graph/load/model_manager/task_info/model_exit_task_info.cc"
     "graph/load/model_manager/task_info/profiler_trace_task_info.cc"
     "graph/load/model_manager/task_info/stream_active_task_info.cc"
     "graph/load/model_manager/task_info/stream_switch_task_info.cc"
@@ -192,66 +152,22 @@ set(TRAIN_SRC_LIST
     "graph/load/model_manager/task_info/super_kernel/super_kernel_factory.cc"
     "graph/load/model_manager/task_info/task_info.cc"
     "graph/load/model_manager/tbe_handle_store.cc"
-    "graph/load/model_manager/zero_copy_task.cc"
     "graph/load/model_manager/zero_copy_offset.cc"
-    "graph/manager/graph_context.cc"
-    "graph/manager/graph_manager.cc"
+    "graph/load/model_manager/zero_copy_task.cc"
+    "graph/manager/graph_caching_allocator.cc"
     "graph/manager/graph_manager_utils.cc"
     "graph/manager/graph_mem_allocator.cc"
-    "graph/manager/graph_caching_allocator.cc"
-    "graph/manager/session_scope_mem_allocator.cc"
-    "graph/manager/graph_var_manager.cc"
-    "graph/manager/host_mem_manager.cc"
-    "graph/manager/rdma_pool_allocator.cc"
-    "graph/manager/host_mem_allocator.cc"
     "graph/manager/graph_mem_manager.cc"
-    "graph/manager/memory_api.cc"
-    "graph/manager/model_manager/event_manager.cc"
+    "graph/manager/graph_var_manager.cc"
+    "graph/manager/host_mem_allocator.cc"
+    "graph/manager/host_mem_manager.cc"
+    #"graph/manager/memory_api.cc"                   # Just for runner.
+    "graph/manager/rdma_pool_allocator.cc"
+    "graph/manager/session_scope_mem_allocator.cc"
     "graph/manager/trans_var_data_utils.cc"
     "graph/manager/util/debug.cc"
-    "graph/manager/util/hcom_util.cc"
-    "graph/manager/util/rt_context_util.cc"
-    "graph/manager/util/variable_accelerate_ctrl.cc"
-    "graph/optimize/graph_optimize.cc"
-    "graph/optimize/mem_rw_conflict_optimize.cc"
-    "graph/optimize/summary_optimize.cc"
-    "graph/partition/engine_place.cc"
-    "graph/partition/graph_partition.cc"
-    "graph/passes/addn_pass.cc"
-    "graph/passes/aicpu_constant_folding_pass.cc"
-    "graph/passes/assert_pass.cc"
-    "graph/passes/input_output_connection_identify_pass.cc"
-    "graph/passes/atomic_addr_clean_pass.cc"
-    "graph/passes/mark_same_addr_pass.cc"
-    "graph/passes/mark_graph_unknown_status_pass.cc"
-    "graph/passes/mark_node_unknown_shape_pass.cc"
-    "graph/passes/mark_agnostic_pass.cc"
-    "graph/partition/dynamic_shape_partition.cc"
-    "graph/partition/stage_partition.cc"
-    "graph/passes/base_pass.cc"
-    "graph/passes/bitcast_pass.cc"
-    "graph/passes/cast_remove_pass.cc"
-    "graph/passes/cast_translate_pass.cc"
-    "graph/passes/common_subexpression_elimination_pass.cc"
-    "graph/passes/transop_symmetry_elimination_pass.cc"
-    "graph/passes/compile_nodes_pass.cc"
-    "graph/passes/constant_folding_pass.cc"
-    "graph/passes/constant_fuse_same_pass.cc"
-    "graph/passes/fuse_data_nodes_with_common_input_pass.cc"
-    "graph/passes/remove_same_const_pass.cc"
-    "graph/passes/useless_control_out_remove_pass.cc"
-    "graph/passes/control_trigger_pass.cc"
-    "graph/passes/dimension_adjust_pass.cc"
-    "graph/passes/dimension_compute_pass.cc"
-    "graph/passes/dropout_pass.cc"
-    "graph/passes/hccl_group_pass.cc"
-    "graph/passes/hccl_tailing_optimization_pass.cc"
-    "graph/passes/enter_pass.cc"
-    "graph/passes/assign_remove_pass.cc"
-    "graph/passes/inplace_support_check_pass.cc"
-    "graph/passes/flow_ctrl_pass.cc"
-    "graph/passes/global_step_insert_pass.cc"
-    "host_kernels/transpose_kernel.cc"
+    #"graph/manager/util/hcom_util.cc"              # Just for runner.
+    "graph/passes/pass_utils.cc"
     "host_kernels/add_kernel.cc"
     "host_kernels/broadcast_args_kernel.cc"
     "host_kernels/broadcast_gradient_args_kernel.cc"
@@ -259,7 +175,6 @@ set(TRAIN_SRC_LIST
     "host_kernels/concat_offset_kernel.cc"
     "host_kernels/concat_v2_kernel.cc"
     "host_kernels/dynamic_stitch_kernel.cc"
-    "host_kernels/identity_kernel.cc"
     "host_kernels/empty_kernel.cc"
     "host_kernels/expanddims_kernel.cc"
     "host_kernels/fill_kernel.cc"
@@ -267,6 +182,7 @@ set(TRAIN_SRC_LIST
     "host_kernels/floormod_kernel.cc"
     "host_kernels/gather_v2_kernel.cc"
     "host_kernels/greater_kernel.cc"
+    "host_kernels/identity_kernel.cc"
     "host_kernels/kernel_utils.cc"
     "host_kernels/maximum_kernel.cc"
     "host_kernels/mul_kernel.cc"
@@ -275,6 +191,7 @@ set(TRAIN_SRC_LIST
     "host_kernels/range_kernel.cc"
     "host_kernels/rank_kernel.cc"
     "host_kernels/reduce_prod_kernel.cc"
+    "host_kernels/reformat_kernel.cc"
     "host_kernels/reshape_kernel.cc"
     "host_kernels/rsqrt_kernel.cc"
     "host_kernels/shape_kernel.cc"
@@ -283,439 +200,294 @@ set(TRAIN_SRC_LIST
     "host_kernels/slice_d_kernel.cc"
     "host_kernels/slice_kernel.cc"
     "host_kernels/squeeze_kernel.cc"
-    "host_kernels/unsqueeze_kernel.cc"
     "host_kernels/ssd_prior_box_kernel.cc"
     "host_kernels/strided_slice_kernel.cc"
     "host_kernels/sub_kernel.cc"
     "host_kernels/transdata_kernel.cc"
+    "host_kernels/transpose_kernel.cc"
     "host_kernels/unpack_kernel.cc"
-    "host_kernels/reformat_kernel.cc"
-    "graph/passes/folding_pass.cc"
-    "graph/passes/get_original_format_pass.cc"
-    "graph/passes/guarantee_const_pass.cc"
-    "graph/passes/hccl_memcpy_pass.cc"
-    "graph/passes/hccl_continuous_memcpy_pass.cc"
-    "graph/passes/identity_pass.cc"
-    "graph/passes/ref_identity_delete_op_pass.cc"
-    "graph/passes/infershape_pass.cc"
-    "graph/passes/iterator_op_pass.cc"
-    "graph/passes/link_gen_mask_nodes_pass.cc"
-    "graph/passes/merge_pass.cc"
-    "graph/passes/multi_batch_pass.cc"
-    "graph/passes/multi_batch_clone_pass.cc"
-    "graph/passes/subexpression_migration_pass.cc"
-    "graph/passes/subgraph_const_migration_pass.cc"
-    "graph/passes/unused_args_clean_pass.cc"
-    "graph/passes/net_output_pass.cc"
-    "graph/passes/next_iteration_pass.cc"
-    "graph/passes/no_use_reshape_remove_pass.cc"
-    "graph/passes/pass_manager.cc"
-    "graph/passes/pass_utils.cc"
-    "graph/passes/permute_pass.cc"
-    "graph/passes/placeholder_with_default_pass.cc"
-    "graph/passes/prevent_gradient_pass.cc"
-    "graph/passes/print_op_pass.cc"
-    "graph/passes/prune_pass.cc"
-    "graph/passes/ctrl_edge_transfer_pass.cc"
-    "graph/passes/replace_with_empty_const_pass.cc"
-    "graph/passes/reshape_remove_pass.cc"
-    "graph/passes/reshape_recovery_pass.cc"
-    "graph/passes/resource_pair_add_control_pass.cc"
-    "graph/passes/resource_pair_remove_control_pass.cc"
-    "graph/passes/same_transdata_breadth_fusion_pass.cc"
-    "graph/passes/save_pass.cc"
-    "graph/passes/shape_operate_op_remove_pass.cc"
-    "graph/passes/snapshot_pass.cc"
-    "graph/passes/stop_gradient_pass.cc"
-    "graph/passes/subgraph_pass.cc"
-    "graph/passes/data_pass.cc"
-    "graph/passes/switch_data_edges_bypass.cc"
-    "graph/passes/switch_logic_remove_pass.cc"
-    "graph/passes/merge_to_stream_merge_pass.cc"
-    "graph/passes/merge_input_memcpy_pass.cc"
-    "graph/passes/switch_to_stream_switch_pass.cc"
-    "graph/passes/mark_force_unknown_for_cond_pass.cc"
-    "graph/passes/attach_stream_label_pass.cc"
-    "graph/passes/switch_dead_branch_elimination.cc"
-    "graph/passes/replace_transshape_pass.cc"
-    "graph/passes/transop_breadth_fusion_pass.cc"
-    "graph/passes/transop_depth_fusion_pass.cc"
-    "graph/passes/transop_nearby_allreduce_fusion_pass.cc"
-    "graph/passes/transop_without_reshape_fusion_pass.cc"
-    "graph/passes/transpose_transdata_pass.cc"
-    "graph/passes/unused_const_pass.cc"
-    "graph/passes/var_is_initialized_op_pass.cc"
-    "graph/passes/parallel_concat_start_op_pass.cc"
-    "graph/passes/cond_pass.cc"
-    "graph/passes/cond_remove_pass.cc"
-    "graph/passes/for_pass.cc"
-    "graph/passes/variable_op_pass.cc"
-    "graph/passes/variable_prepare_op_pass.cc"
-    "graph/passes/variable_ref_delete_op_pass.cc"
-    "graph/passes/variable_ref_useless_control_out_delete_pass.cc"
-    "graph/passes/end_of_sequence_add_control_pass.cc"
-    "graph/passes/memcpy_addr_async_pass.cc"
-    "graph/passes/parallel_group_pass.cc"
-    "graph/passes/set_input_output_offset_pass.cc"
-    "graph/passes/buffer_pool_memory_pass.cc"
-    "graph/preprocess/graph_preprocess.cc"
-    "graph/preprocess/insert_op/ge_aipp_op.cc"
-    "graph/preprocess/insert_op/util_insert_aipp_op.cc"
-    "graph/preprocess/multi_batch_options.cc"
-    "graph/preprocess/multi_batch_copy_graph.cc"
-    "init/gelib.cc"
-    "model/ge_model.cc"
-    "model/ge_root_model.cc"
-    "opskernel_manager/ops_kernel_manager.cc"
+    "host_kernels/unsqueeze_kernel.cc"
+    "hybrid/common/npu_memory_allocator.cc"
+    "hybrid/common/tensor_value.cc"
+    "hybrid/executor/hybrid_execution_context.cc"
+    "hybrid/executor/hybrid_model_async_executor.cc"
+    "hybrid/executor/hybrid_model_executor.cc"
+    "hybrid/executor/hybrid_model_pipeline_executor.cc"
+    "hybrid/executor/hybrid_profiler.cc"
+    "hybrid/executor/node_done_manager.cc"
+    "hybrid/executor/node_state.cc"
+    "hybrid/executor/rt_callback_manager.cc"
+    "hybrid/executor/subgraph_context.cc"
+    "hybrid/executor/subgraph_executor.cc"
+    "hybrid/executor/worker/execution_engine.cc"
+    "hybrid/executor/worker/shape_inference_engine.cc"
+    "hybrid/executor/worker/task_compile_engine.cc"
+    "hybrid/hybrid_davinci_model.cc"
+    "hybrid/model/graph_item.cc"
+    "hybrid/model/hybrid_model.cc"
+    "hybrid/model/hybrid_model_builder.cc"
+    "hybrid/model/node_item.cc"
+    "hybrid/node_executor/aicore/aicore_node_executor.cc"
+    "hybrid/node_executor/aicore/aicore_op_task.cc"
+    "hybrid/node_executor/aicore/aicore_task_builder.cc"
+    "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
+    "hybrid/node_executor/aicpu/aicpu_node_executor.cc"
+    "hybrid/node_executor/compiledsubgraph/known_node_executor.cc"
+    "hybrid/node_executor/controlop/control_op_executor.cc"
+    "hybrid/node_executor/ge_local/ge_local_node_executor.cc"
+    #"hybrid/node_executor/hccl/hccl_node_executor.cc"           # Just for runner.
+    "hybrid/node_executor/host_cpu/host_cpu_node_executor.cc"
+    "hybrid/node_executor/node_executor.cc"
+    "hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
+    "hybrid/node_executor/rts/rts_node_executor.cc"
+    "hybrid/node_executor/rts/rts_node_task.cc"
+    "hybrid/node_executor/rts/rts_task_factory.cc"
+    "hybrid/node_executor/task_context.cc"
     "opskernel_manager/ops_kernel_builder_manager.cc"
-    "session/inner_session.cc"
-    "session/session_manager.cc"
     "single_op/single_op.cc"
     "single_op/single_op_manager.cc"
     "single_op/single_op_model.cc"
     "single_op/stream_resource.cc"
+    "single_op/task/aicpu_kernel_task_builder.cc"
+    "single_op/task/aicpu_task_builder.cc"
     "single_op/task/build_task_utils.cc"
     "single_op/task/op_task.cc"
-    "single_op/task/tbe_task_builder.cc"
-    "single_op/task/aicpu_task_builder.cc"
-    "single_op/task/aicpu_kernel_task_builder.cc"
     "single_op/task/rts_kernel_task_builder.cc"
-    "hybrid/common/tensor_value.cc"
-    "hybrid/common/npu_memory_allocator.cc"
-    "hybrid/executor/rt_callback_manager.cc"
-    "hybrid/executor/node_state.cc"
-    "hybrid/executor/node_done_manager.cc"
-    "hybrid/executor/hybrid_profiler.cc"
-    "hybrid/executor/hybrid_model_executor.cc"
-    "hybrid/executor/hybrid_model_pipeline_executor.cc"
-    "hybrid/executor/hybrid_model_async_executor.cc"
-    "hybrid/executor/hybrid_execution_context.cc"
-    "hybrid/executor/subgraph_context.cc"
-    "hybrid/executor/subgraph_executor.cc"
-    "hybrid/executor/worker/task_compile_engine.cc"
-    "hybrid/executor/worker/shape_inference_engine.cc"
-    "hybrid/executor/worker/execution_engine.cc"
-    "hybrid/model/hybrid_model.cc"
-    "hybrid/model/hybrid_model_builder.cc"
-    "hybrid/model/node_item.cc"
-    "hybrid/model/graph_item.cc"
-    "hybrid/node_executor/aicore/aicore_node_executor.cc"
-    "hybrid/node_executor/aicore/aicore_op_task.cc"
-    "hybrid/node_executor/aicore/aicore_task_builder.cc"
-    "hybrid/node_executor/aicore/aicore_task_compiler.cc"
-    "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
-    "hybrid/node_executor/aicpu/aicpu_node_executor.cc"
-    "hybrid/node_executor/compiledsubgraph/known_node_executor.cc"
-    "hybrid/node_executor/ge_local/ge_local_node_executor.cc"
-    "hybrid/node_executor/host_cpu/host_cpu_node_executor.cc"
-    "hybrid/node_executor/controlop/control_op_executor.cc"
-    "hybrid/node_executor/partitioned_call/partitioned_call_node_executor.cc"
-    "hybrid/node_executor/hccl/hccl_node_executor.cc"
-    "hybrid/node_executor/rts/rts_node_executor.cc"
-    "hybrid/node_executor/rts/rts_node_task.cc"
-    "hybrid/node_executor/rts/rts_task_factory.cc"
-    "hybrid/node_executor/node_executor.cc"
-    "hybrid/node_executor/task_context.cc"
-    "hybrid/hybrid_davinci_model.cc"
-    "executor/ge_executor.cc"
-    "client/ge_api.cc"
-    "analyzer/analyzer.cc"
-    "ir_build/ge_ir_build.cc"
-    "ir_build/attr_options/utils.cc"
-    "ir_build/attr_options/keep_dtype_option.cc"
-    "ir_build/attr_options/weight_compress_option.cc"
-    "ir_build/option_utils.cc"
-    "graph/build/memory/memory_assigner.cc"
-    "graph/build/memory/graph_mem_assigner.cc"
-    "graph/build/memory/binary_block_mem_assigner.cc"
-    "graph/build/memory/block_mem_assigner.cc"
-    "graph/build/memory/hybrid_mem_assigner.cc"
-    "graph/build/memory/max_block_mem_assigner.cc"
-    "graph/build/memory/var_mem_assign_util.cc"
-    "graph/build/memory/buffer_pool_mem_assigner.cc"
+    "single_op/task/tbe_task_builder.cc"
 )
 
-set(INFER_SRC_LIST
-    "graph/manager/trans_var_data_utils.cc"
-    "common/fp16_t.cc"
-    "common/formats/utils/formats_trans_utils.cc"
-    "common/formats/format_transfers/datatype_transfer.cc"
-    "common/formats/format_transfers/format_transfer_transpose.cc"
-    "common/formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
-    "common/formats/format_transfers/format_transfer_fractal_z.cc"
-    "common/formats/format_transfers/format_transfer_fractal_nz.cc"
-    "common/formats/format_transfers/format_transfer_fractal_zz.cc"
-    "common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
-    "common/formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
-    "common/formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
-    "common/formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
-    "common/formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
-    "common/formats/format_transfers/format_transfer_fracz_nchw.cc"
-    "common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
-    "common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
-    "common/formats/format_transfers/format_transfer_dhwcn_fracz3D.cc"
-    "common/formats/format_transfers/format_transfer_dhwnc_fracz3D_transpose.cc"
-    "common/formats/format_transfers/format_transfer_nchw_fz_c04.cc"
-    "common/formats/formats.cc"
-    "common/profiling/profiling_manager.cc"
-    "common/dump/dump_properties.cc"
-    "common/dump/exception_dumper.cc"
-    "common/dump/dump_manager.cc"
+##################################################################
+set(COMPILER_SRC_LIST
+    "analyzer/analyzer.cc"
     "common/dump/dump_op.cc"
-    "common/dump/opdebug_register.cc"
-    "common/dump/dump_server.cc"
-    "common/helper/model_cache_helper.cc"
-    "ge_local_engine/engine/host_cpu_engine.cc"
-    "common/ge/plugin_manager.cc"
     "common/ge/op_tiling_manager.cc"
-    "init/gelib.cc"
-    "session/inner_session.cc"
-    "session/session_manager.cc"
+    "common/ge/plugin_manager.cc"
+    "common/profiling/profiling_manager.cc"
     "engine_manager/dnnengine_manager.cc"
-    "opskernel_manager/ops_kernel_manager.cc"
-    "opskernel_manager/ops_kernel_builder_manager.cc"
+    "ge_local_engine/engine/host_cpu_engine.cc"
+    "ge_opt_info/ge_opt_info.cc"
+    "generator/ge_generator.cc"
+    "generator/generator_api.cc"
+    "graph/build/graph_builder.cc"
+    "graph/build/label_allocator.cc"
+    "graph/build/logical_stream_allocator.cc"
+    "graph/build/memory/binary_block_mem_assigner.cc"
+    "graph/build/memory/block_mem_assigner.cc"
+    "graph/build/memory/buffer_pool_mem_assigner.cc"
+    "graph/build/memory/graph_mem_assigner.cc"
+    "graph/build/memory/hybrid_mem_assigner.cc"
+    "graph/build/memory/max_block_mem_assigner.cc"
+    "graph/build/memory/memory_assigner.cc"
+    "graph/build/memory/var_mem_assign_util.cc"
+    "graph/build/model_builder.cc"
+    "graph/build/run_context.cc"
+    "graph/build/stream_allocator.cc"
+    "graph/build/stream_graph_optimizer.cc"
+    "graph/build/task_generator.cc"
+    "graph/label/case_label_maker.cc"
+    "graph/label/if_label_maker.cc"
+    "graph/label/label_maker.cc"
+    "graph/label/partitioned_call_label_maker.cc"
+    "graph/label/while_label_maker.cc"
+    "graph/load/model_manager/model_utils.cc"
+    "graph/manager/graph_caching_allocator.cc"
+    "graph/manager/graph_context.cc"
     "graph/manager/graph_manager.cc"
     "graph/manager/graph_manager_utils.cc"
-    "graph/manager/graph_context.cc"
-    "graph/preprocess/graph_preprocess.cc"
-    "graph/preprocess/multi_batch_options.cc"
-    "graph/preprocess/multi_batch_copy_graph.cc"
-    "graph/execute/graph_execute.cc"
-    "graph/load/graph_loader.cc"
+    "graph/manager/graph_mem_allocator.cc"
+    "graph/manager/graph_mem_manager.cc"
+    "graph/manager/graph_var_manager.cc"
+    "graph/manager/host_mem_allocator.cc"
+    "graph/manager/host_mem_manager.cc"
+    "graph/manager/rdma_pool_allocator.cc"
+    "graph/manager/session_scope_mem_allocator.cc"
+    "graph/manager/trans_var_data_utils.cc"
+    "graph/manager/util/debug.cc"
+    "graph/manager/util/rt_context_util.cc"
+    "graph/manager/util/variable_accelerate_ctrl.cc"
     "graph/optimize/graph_optimize.cc"
     "graph/optimize/mem_rw_conflict_optimize.cc"
     "graph/optimize/summary_optimize.cc"
-    "graph/build/graph_builder.cc"
+    "graph/partition/dynamic_shape_partition.cc"
     "graph/partition/engine_place.cc"
     "graph/partition/graph_partition.cc"
-    "graph/partition/dynamic_shape_partition.cc"
     "graph/partition/stage_partition.cc"
-    "generator/ge_generator.cc"
-    "generator/generator_api.cc"
-    "graph/manager/graph_var_manager.cc"
-    "graph/manager/host_mem_manager.cc"
-    "graph/manager/rdma_pool_allocator.cc"
-    "graph/manager/host_mem_allocator.cc"
-    "graph/manager/graph_mem_allocator.cc"
-    "graph/manager/graph_caching_allocator.cc"
-    "graph/manager/session_scope_mem_allocator.cc"
-    "graph/manager/graph_mem_manager.cc"
-    "model/ge_model.cc"
-    "model/ge_root_model.cc"
-    "graph/common/transop_util.cc"
-    "graph/passes/pass_manager.cc"
-    "graph/passes/resource_pair_add_control_pass.cc"
-    "graph/passes/resource_pair_remove_control_pass.cc"
-    "graph/passes/pass_utils.cc"
+    "graph/passes/addn_pass.cc"
+    "graph/passes/aicpu_constant_folding_pass.cc"
+    "graph/passes/assert_pass.cc"
+    "graph/passes/assign_remove_pass.cc"
+    "graph/passes/atomic_addr_clean_pass.cc"
+    "graph/passes/attach_stream_label_pass.cc"
     "graph/passes/base_pass.cc"
     "graph/passes/bitcast_pass.cc"
+    "graph/passes/buffer_pool_memory_pass.cc"
+    "graph/passes/cast_remove_pass.cc"
+    "graph/passes/cast_translate_pass.cc"
+    "graph/passes/common_subexpression_elimination_pass.cc"
+    "graph/passes/compile_nodes_pass.cc"
+    "graph/passes/cond_pass.cc"
+    "graph/passes/cond_remove_pass.cc"
     "graph/passes/constant_folding_pass.cc"
-    "graph/passes/aicpu_constant_folding_pass.cc"
-    "graph/passes/reshape_remove_pass.cc"
+    "graph/passes/constant_fuse_same_pass.cc"
+    "graph/passes/control_trigger_pass.cc"
+    "graph/passes/ctrl_edge_transfer_pass.cc"
+    "graph/passes/data_pass.cc"
+    "graph/passes/dimension_adjust_pass.cc"
+    "graph/passes/dimension_compute_pass.cc"
+    "graph/passes/dropout_pass.cc"
+    "graph/passes/end_of_sequence_add_control_pass.cc"
+    "graph/passes/enter_pass.cc"
+    "graph/passes/flow_ctrl_pass.cc"
+    "graph/passes/folding_pass.cc"
+    "graph/passes/for_pass.cc"
+    "graph/passes/fuse_data_nodes_with_common_input_pass.cc"
+    "graph/passes/get_original_format_pass.cc"
+    "graph/passes/global_step_insert_pass.cc"
+    "graph/passes/guarantee_const_pass.cc"
+    "graph/passes/hccl_continuous_memcpy_pass.cc"
+    "graph/passes/hccl_group_pass.cc"
+    "graph/passes/hccl_memcpy_pass.cc"
+    "graph/passes/hccl_tailing_optimization_pass.cc"
+    "graph/passes/identity_pass.cc"
+    "graph/passes/infer_base_pass.cc"
+    "graph/passes/infer_value_range_pass.cc"
+    "graph/passes/infershape_pass.cc"
+    "graph/passes/inplace_support_check_pass.cc"
+    "graph/passes/input_output_connection_identify_pass.cc"
+    "graph/passes/iterator_op_pass.cc"
+    "graph/passes/link_gen_mask_nodes_pass.cc"
+    "graph/passes/mark_agnostic_pass.cc"
+    "graph/passes/mark_force_unknown_for_cond_pass.cc"
+    "graph/passes/mark_graph_unknown_status_pass.cc"
+    "graph/passes/mark_node_unknown_shape_pass.cc"
+    "graph/passes/mark_same_addr_pass.cc"
+    "graph/passes/memcpy_addr_async_pass.cc"
+    "graph/passes/merge_input_memcpy_pass.cc"
+    "graph/passes/merge_pass.cc"
+    "graph/passes/merge_to_stream_merge_pass.cc"
+    "graph/passes/multi_batch_clone_pass.cc"
+    "graph/passes/multi_batch_pass.cc"
+    "graph/passes/net_output_pass.cc"
+    "graph/passes/next_iteration_pass.cc"
+    "graph/passes/no_use_reshape_remove_pass.cc"
+    "graph/passes/parallel_concat_start_op_pass.cc"
+    "graph/passes/parallel_group_pass.cc"
+    "graph/passes/pass_manager.cc"
+    "graph/passes/pass_utils.cc"
+    "graph/passes/permute_pass.cc"
+    "graph/passes/placeholder_with_default_pass.cc"
+    "graph/passes/prevent_gradient_pass.cc"
+    "graph/passes/print_op_pass.cc"
+    "graph/passes/prune_pass.cc"
+    "graph/passes/ref_identity_delete_op_pass.cc"
+    "graph/passes/remove_same_const_pass.cc"
+    "graph/passes/replace_transshape_pass.cc"
+    "graph/passes/replace_with_empty_const_pass.cc"
     "graph/passes/reshape_recovery_pass.cc"
+    "graph/passes/reshape_remove_pass.cc"
+    "graph/passes/resource_pair_add_control_pass.cc"
+    "graph/passes/resource_pair_remove_control_pass.cc"
+    "graph/passes/same_transdata_breadth_fusion_pass.cc"
+    "graph/passes/save_pass.cc"
+    "graph/passes/set_input_output_offset_pass.cc"
+    "graph/passes/shape_operate_op_remove_pass.cc"
+    "graph/passes/snapshot_pass.cc"
+    "graph/passes/stop_gradient_pass.cc"
+    "graph/passes/subexpression_migration_pass.cc"
+    "graph/passes/subgraph_const_migration_pass.cc"
+    "graph/passes/subgraph_pass.cc"
+    "graph/passes/switch_data_edges_bypass.cc"
+    "graph/passes/switch_dead_branch_elimination.cc"
+    "graph/passes/switch_logic_remove_pass.cc"
+    "graph/passes/switch_to_stream_switch_pass.cc"
     "graph/passes/transop_breadth_fusion_pass.cc"
     "graph/passes/transop_depth_fusion_pass.cc"
     "graph/passes/transop_nearby_allreduce_fusion_pass.cc"
-    "graph/passes/same_transdata_breadth_fusion_pass.cc"
+    "graph/passes/transop_symmetry_elimination_pass.cc"
     "graph/passes/transop_without_reshape_fusion_pass.cc"
-    "graph/passes/compile_nodes_pass.cc"
+    "graph/passes/transpose_transdata_pass.cc"
+    "graph/passes/unused_args_clean_pass.cc"
+    "graph/passes/unused_const_pass.cc"
+    "graph/passes/useless_control_out_remove_pass.cc"
+    "graph/passes/var_is_initialized_op_pass.cc"
+    "graph/passes/variable_op_pass.cc"
     "graph/passes/variable_prepare_op_pass.cc"
     "graph/passes/variable_ref_delete_op_pass.cc"
     "graph/passes/variable_ref_useless_control_out_delete_pass.cc"
-    "graph/passes/subgraph_pass.cc"
-    "graph/passes/data_pass.cc"
-    "graph/passes/net_output_pass.cc"
-    "graph/passes/replace_transshape_pass.cc"
-    "graph/passes/constant_fuse_same_pass.cc"
-    "graph/passes/fuse_data_nodes_with_common_input_pass.cc"
-    "graph/passes/print_op_pass.cc"
-    "graph/passes/no_use_reshape_remove_pass.cc"
-    "graph/passes/iterator_op_pass.cc"
-    "graph/passes/input_output_connection_identify_pass.cc"
-    "graph/passes/atomic_addr_clean_pass.cc"
-    "graph/passes/mark_same_addr_pass.cc"
-    "graph/passes/mark_graph_unknown_status_pass.cc"
-    "graph/passes/mark_node_unknown_shape_pass.cc"
-    "graph/passes/mark_agnostic_pass.cc"
-    "graph/common/omg_util.cc"
-    "graph/common/bcast.cc"
-    "graph/common/local_context.cc"
-    "graph/passes/dimension_compute_pass.cc"
-    "graph/passes/dimension_adjust_pass.cc"
-    "graph/passes/get_original_format_pass.cc"
-    "graph/passes/shape_operate_op_remove_pass.cc"
-    "graph/passes/assert_pass.cc"
-    "graph/passes/dropout_pass.cc"
-    "graph/passes/infershape_pass.cc"
-    "graph/passes/unused_const_pass.cc"
-    "graph/passes/permute_pass.cc"
-    "graph/passes/ctrl_edge_transfer_pass.cc"
-    "graph/passes/end_of_sequence_add_control_pass.cc"
-    "host_kernels/broadcast_gradient_args_kernel.cc"
-    "host_kernels/greater_kernel.cc"
-    "host_kernels/gather_v2_kernel.cc"
-    "host_kernels/maximum_kernel.cc"
-    "host_kernels/floormod_kernel.cc"
-    "host_kernels/floordiv_kernel.cc"
-    "host_kernels/range_kernel.cc"
-    "host_kernels/shape_kernel.cc"
-    "host_kernels/size_kernel.cc"
-    "host_kernels/shape_n_kernel.cc"
-    "host_kernels/rank_kernel.cc"
-    "host_kernels/broadcast_args_kernel.cc"
-    "host_kernels/fill_kernel.cc"
-    "host_kernels/empty_kernel.cc"
-    "host_kernels/expanddims_kernel.cc"
-    "host_kernels/reshape_kernel.cc"
-    "host_kernels/squeeze_kernel.cc"
-    "host_kernels/unsqueeze_kernel.cc"
-    "host_kernels/kernel_utils.cc"
-    "host_kernels/cast_kernel.cc"
-    "host_kernels/transdata_kernel.cc"
-    "host_kernels/unpack_kernel.cc"
-    "host_kernels/transpose_kernel.cc"
-    "host_kernels/permute_kernel.cc"
-    "host_kernels/pack_kernel.cc"
-    "host_kernels/concat_v2_kernel.cc"
-    "host_kernels/concat_offset_kernel.cc"
-    "host_kernels/strided_slice_kernel.cc"
-    "host_kernels/ssd_prior_box_kernel.cc"
-    "host_kernels/add_kernel.cc"
-    "host_kernels/sub_kernel.cc"
-    "host_kernels/mul_kernel.cc"
-    "host_kernels/reduce_prod_kernel.cc"
-    "host_kernels/rsqrt_kernel.cc"
-    "host_kernels/slice_kernel.cc"
-    "host_kernels/slice_d_kernel.cc"
-    "host_kernels/dynamic_stitch_kernel.cc"
-    "host_kernels/identity_kernel.cc"
-    "host_kernels/reformat_kernel.cc"
-    "graph/passes/stop_gradient_pass.cc"
-    "graph/passes/prevent_gradient_pass.cc"
-    "graph/passes/identity_pass.cc"
-    "graph/passes/ref_identity_delete_op_pass.cc"
-    "graph/passes/placeholder_with_default_pass.cc"
-    "graph/passes/snapshot_pass.cc"
-    "graph/passes/guarantee_const_pass.cc"
-    "graph/passes/var_is_initialized_op_pass.cc"
-    "graph/passes/parallel_concat_start_op_pass.cc"
-    "graph/passes/folding_pass.cc"
-    "graph/passes/cast_translate_pass.cc"
-    "graph/passes/prune_pass.cc"
-    "graph/passes/merge_to_stream_merge_pass.cc"
-    "graph/passes/merge_input_memcpy_pass.cc"
-    "graph/passes/switch_to_stream_switch_pass.cc"
-    "graph/passes/mark_force_unknown_for_cond_pass.cc"
-    "graph/passes/attach_stream_label_pass.cc"
-    "graph/passes/multi_batch_pass.cc"
-    "graph/passes/multi_batch_clone_pass.cc"
-    "graph/passes/subexpression_migration_pass.cc"
-    "graph/passes/subgraph_const_migration_pass.cc"
-    "graph/passes/unused_args_clean_pass.cc"
-    "graph/passes/next_iteration_pass.cc"
-    "graph/passes/control_trigger_pass.cc"
-    "graph/passes/cond_pass.cc"
-    "graph/passes/cond_remove_pass.cc"
-    "graph/passes/for_pass.cc"
-    "graph/passes/enter_pass.cc"
-    "graph/passes/assign_remove_pass.cc"
-    "graph/passes/inplace_support_check_pass.cc"
-    "graph/passes/addn_pass.cc"
-    "graph/passes/common_subexpression_elimination_pass.cc"
-    "graph/passes/remove_same_const_pass.cc"
-    "graph/passes/useless_control_out_remove_pass.cc"
-    "graph/passes/transop_symmetry_elimination_pass.cc"
-    "graph/passes/save_pass.cc"
-    "graph/passes/switch_dead_branch_elimination.cc"
-    "graph/passes/switch_logic_remove_pass.cc"
-    "graph/passes/switch_data_edges_bypass.cc"
-    "graph/passes/merge_pass.cc"
-    "graph/passes/variable_op_pass.cc"
-    "graph/passes/cast_remove_pass.cc"
-    "graph/passes/transpose_transdata_pass.cc"
-    "graph/passes/hccl_memcpy_pass.cc"
-    "graph/passes/hccl_continuous_memcpy_pass.cc"
-    "graph/passes/flow_ctrl_pass.cc"
-    "graph/passes/global_step_insert_pass.cc"
-    "graph/passes/link_gen_mask_nodes_pass.cc"
-    "graph/passes/replace_with_empty_const_pass.cc"
-    "graph/passes/hccl_group_pass.cc"
-    "graph/passes/hccl_tailing_optimization_pass.cc"
-    "graph/passes/memcpy_addr_async_pass.cc"
-    "graph/passes/set_input_output_offset_pass.cc"
-    "graph/passes/parallel_group_pass.cc"
-    "graph/passes/buffer_pool_memory_pass.cc"
-    "graph/manager/model_manager/event_manager.cc"
-    "graph/manager/util/rt_context_util.cc"
-    "graph/manager/util/variable_accelerate_ctrl.cc"
-    "graph/manager/util/debug.cc"
-    "graph/load/model_manager/model_manager.cc"
-    "graph/load/model_manager/data_inputer.cc"
-    "graph/load/model_manager/davinci_model.cc"
-    "graph/load/model_manager/model_utils.cc"
-    "graph/load/model_manager/aipp_utils.cc"
-    "graph/load/model_manager/tbe_handle_store.cc"
-    "graph/load/model_manager/cpu_queue_schedule.cc"
-    "graph/load/model_manager/zero_copy_task.cc"
-    "graph/load/model_manager/zero_copy_offset.cc"
-    "graph/load/model_manager/data_dumper.cc"
-    "graph/load/model_manager/task_info/task_info.cc"
-    "graph/load/model_manager/task_info/event_record_task_info.cc"
-    "graph/load/model_manager/task_info/event_wait_task_info.cc"
-    "graph/load/model_manager/task_info/fusion_start_task_info.cc"
-    "graph/load/model_manager/task_info/fusion_stop_task_info.cc"
-    "graph/load/model_manager/task_info/kernel_ex_task_info.cc"
-    "graph/load/model_manager/task_info/kernel_task_info.cc"
-    "graph/load/model_manager/task_info/label_set_task_info.cc"
-    "graph/load/model_manager/task_info/label_switch_by_index_task_info.cc"
-    "graph/load/model_manager/task_info/label_goto_ex_task_info.cc"
-    "graph/load/model_manager/task_info/memcpy_async_task_info.cc"
-    "graph/load/model_manager/task_info/memcpy_addr_async_task_info.cc"
-    "graph/load/model_manager/task_info/profiler_trace_task_info.cc"
-    "graph/load/model_manager/task_info/stream_active_task_info.cc"
-    "graph/load/model_manager/task_info/stream_switch_task_info.cc"
-    "graph/load/model_manager/task_info/stream_switchn_task_info.cc"
-    "graph/load/model_manager/task_info/end_graph_task_info.cc"
-    "graph/load/model_manager/task_info/model_exit_task_info.cc"
-    "graph/load/model_manager/task_info/super_kernel/super_kernel_factory.cc"
-    "graph/load/model_manager/task_info/super_kernel/super_kernel.cc"
-    "hybrid/hybrid_davinci_model_stub.cc"
-    "ir_build/ge_ir_build.cc"
-    "ir_build/attr_options/utils.cc"
-    "ir_build/attr_options/keep_dtype_option.cc"
-    "ir_build/attr_options/weight_compress_option.cc"
-    "ir_build/option_utils.cc"
+    "graph/preprocess/graph_preprocess.cc"
     "graph/preprocess/insert_op/ge_aipp_op.cc"
     "graph/preprocess/insert_op/util_insert_aipp_op.cc"
+    "graph/preprocess/multi_batch_copy_graph.cc"
+    "graph/preprocess/multi_batch_options.cc"
+    "host_kernels/add_kernel.cc"
+    "host_kernels/broadcast_args_kernel.cc"
+    "host_kernels/broadcast_gradient_args_kernel.cc"
+    "host_kernels/cast_kernel.cc"
+    "host_kernels/concat_offset_kernel.cc"
+    "host_kernels/concat_v2_kernel.cc"
+    "host_kernels/dynamic_stitch_kernel.cc"
+    "host_kernels/empty_kernel.cc"
+    "host_kernels/expanddims_kernel.cc"
+    "host_kernels/fill_kernel.cc"
+    "host_kernels/floordiv_kernel.cc"
+    "host_kernels/floormod_kernel.cc"
+    "host_kernels/gather_v2_kernel.cc"
+    "host_kernels/greater_kernel.cc"
+    "host_kernels/identity_kernel.cc"
+    "host_kernels/kernel_utils.cc"
+    "host_kernels/maximum_kernel.cc"
+    "host_kernels/mul_kernel.cc"
+    "host_kernels/pack_kernel.cc"
+    "host_kernels/permute_kernel.cc"
+    "host_kernels/range_kernel.cc"
+    "host_kernels/rank_kernel.cc"
+    "host_kernels/reduce_prod_kernel.cc"
+    "host_kernels/reformat_kernel.cc"
+    "host_kernels/reshape_kernel.cc"
+    "host_kernels/rsqrt_kernel.cc"
+    "host_kernels/shape_kernel.cc"
+    "host_kernels/shape_n_kernel.cc"
+    "host_kernels/size_kernel.cc"
+    "host_kernels/slice_d_kernel.cc"
+    "host_kernels/slice_kernel.cc"
+    "host_kernels/squeeze_kernel.cc"
+    "host_kernels/ssd_prior_box_kernel.cc"
+    "host_kernels/strided_slice_kernel.cc"
+    "host_kernels/sub_kernel.cc"
+    "host_kernels/transdata_kernel.cc"
+    "host_kernels/transpose_kernel.cc"
+    "host_kernels/unpack_kernel.cc"
+    "host_kernels/unsqueeze_kernel.cc"
     "hybrid/node_executor/aicpu/aicpu_ext_info.cc"
-    "graph/build/model_builder.cc"
-    "graph/build/task_generator.cc"
-    "graph/build/stream_allocator.cc"
-    "graph/build/logical_stream_allocator.cc"
-    "graph/build/stream_graph_optimizer.cc"
-    "graph/build/run_context.cc"
-    "graph/build/label_allocator.cc"
-    "graph/label/label_maker.cc"
-    "graph/label/if_label_maker.cc"
-    "graph/label/case_label_maker.cc"
-    "graph/label/while_label_maker.cc"
-    "graph/label/partitioned_call_label_maker.cc"
-    "analyzer/analyzer.cc"
-    "graph/build/memory/memory_assigner.cc"
-    "graph/build/memory/graph_mem_assigner.cc"
-    "graph/build/memory/binary_block_mem_assigner.cc"
-    "graph/build/memory/block_mem_assigner.cc"
-    "graph/build/memory/hybrid_mem_assigner.cc"
-    "graph/build/memory/max_block_mem_assigner.cc"
-    "graph/build/memory/var_mem_assign_util.cc"
-    "graph/build/memory/buffer_pool_mem_assigner.cc"
+    "init/gelib.cc"
+    "ir_build/attr_options/keep_dtype_option.cc"
+    "ir_build/attr_options/utils.cc"
+    "ir_build/attr_options/weight_compress_option.cc"
+    "ir_build/ge_ir_build.cc"
+    "ir_build/option_utils.cc"
+    "opskernel_manager/ops_kernel_builder_manager.cc"
+    "opskernel_manager/ops_kernel_manager.cc"
+)
+
+set(RUNNER_SRC_LIST
+    "client/ge_api.cc"
+    "session/inner_session.cc"
+    "session/session_manager.cc"
+    "common/profiling/ge_runner_profiling.cc"
+    "graph/manager/memory_api.cc"
+    "graph/manager/util/hcom_util.cc"
+    "graph/load/model_manager/task_info/hccl_task_info.cc"
+    "hybrid/node_executor/hccl/hccl_node_executor.cc"
+    "hybrid/node_executor/aicore/aicore_task_compiler.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL AND NOT ENABLE_MS_TESTCASES)
 message("CMAKE_CXX_COMPILER_VERSION = ${CMAKE_CXX_COMPILER_VERSION}")
 ############ libge_runner.so ############
 add_library(ge_runner SHARED
-    ${TRAIN_SRC_LIST}
+    ${EXECUTOR_SRC_LIST}
+    ${COMPILER_SRC_LIST}
+    ${RUNNER_SRC_LIST}
     $<TARGET_OBJECTS:$<IF:$<TARGET_EXISTS:msprofiler_fwk>,msprofiler_fwk,msprofiler_fwk_object>>
 )
 
@@ -752,29 +524,29 @@ target_compile_options(ge_runner PRIVATE
 
 target_include_directories(ge_runner SYSTEM PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${METADEF_DIR}
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/external
-    ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
-    #### blue zone
+    ${GE_CODE_DIR}/../abl/licctrl
+    ${GE_CODE_DIR}/../ace/comop/inc
+    ${GE_CODE_DIR}/../ace/comop/inc/external
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:runtime_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:cce_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info>
 )
 
 target_link_options(ge_runner PRIVATE
@@ -783,6 +555,11 @@ target_link_options(ge_runner PRIVATE
 
 target_link_libraries(ge_runner PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
     adump_server
     static_mmpa
     ge_proto_common
@@ -797,6 +574,7 @@ target_link_libraries(ge_runner PRIVATE
     runtime
     error_manager
     ascend_hal_stub
+    opt_feature
     -Wl,--as-needed
     json
     -lrt
@@ -805,7 +583,7 @@ target_link_libraries(ge_runner PRIVATE
 
 ############ libge_compiler.so ############
 add_library(ge_compiler SHARED
-    ${INFER_SRC_LIST}
+    ${COMPILER_SRC_LIST}
 )
 
 add_dependencies(ge_compiler
@@ -817,7 +595,6 @@ target_compile_definitions(ge_compiler PRIVATE
     REUSE_MEMORY=1
     FMK_SUPPORT_DUMP
     FMK_HOST_INFER
-    COMPILE_OMG_PACKAGE
     google=ascend_private
     FUNC_VISIBILITY
     $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
@@ -833,29 +610,29 @@ target_compile_options(ge_compiler PRIVATE
 
 target_include_directories(ge_compiler SYSTEM PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${METADEF_DIR}
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
     ${GE_CODE_DIR}/../inc
-    ${GE_CODE_DIR}/../inc/external
-    ${GE_CODE_DIR}/../inc/cce
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
+    ${GE_CODE_DIR}/../abl/licctrl
+    ${GE_CODE_DIR}/../ace/comop/inc
+    ${GE_CODE_DIR}/../ace/comop/inc/external
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:runtime_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:cce_headers,INTERFACE_INCLUDE_DIRECTORIES>>
     #### blue zone ####
     ${ASCEND_DIR}/driver/include
     ${ASCEND_DIR}/fwkacllib/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/opt_info>
 )
 
 target_link_options(ge_compiler PRIVATE
@@ -864,6 +641,11 @@ target_link_options(ge_compiler PRIVATE
 
 target_link_libraries(ge_compiler PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
     static_mmpa
     ge_proto_common
     -Wl,--no-as-needed
@@ -874,11 +656,144 @@ target_link_libraries(ge_compiler PRIVATE
     c_sec
     error_manager
     slog
-    runtime_compile
+    runtime
+    opt_feature
     -Wl,--as-needed
     json
     -lrt
     -ldl
+)
+
+######## libge_executor.a ########
+add_library(ge_executor STATIC
+    ${EXECUTOR_SRC_LIST}
+)
+
+add_dependencies(ge_executor
+    graphengine_protos
+)
+
+target_compile_options(ge_executor PRIVATE
+    $<$<OR:$<STREQUAL:${TARGET_SYSTEM_NAME},Linux>,$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-fvisibility=hidden -O2 -Werror -Wno-deprecated-declarations -fno-common>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Debug>>:/MTd>
+    $<$<AND:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,$<STREQUAL:${CMAKE_CONFIGURATION_TYPES},Release>>:/MT>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-variable>
+    $<$<STREQUAL:${CMAKE_CXX_COMPILER_VERSION},7.3.0>:-Werror=unused-const-variable -Werror=format>
+)
+
+target_compile_definitions(ge_executor PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    DAVINCI_SUPPORT_PROFILING
+    google=ascend_private
+    $<IF:$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>,OS_TYPE=WIN,OS_TYPE=0>
+    $<$<STREQUAL:${TARGET_SYSTEM_NAME},Windows>:SECUREC_USING_STD_SECURE_LIB=0 NOMINMAX>
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
+    LOG_CPP
+)
+
+target_include_directories(ge_executor SYSTEM PRIVATE
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../ace/comop/inc
+    ${GE_CODE_DIR}/../ace/comop/inc/external
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:runtime_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<TARGET_PROPERTY:cce_headers,INTERFACE_INCLUDE_DIRECTORIES>>
+    #### blue zone ####
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
+)
+
+target_link_libraries(ge_executor PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    json
+    ascend_protobuf_static
+    c_sec
+    $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
+    -ldl
+)
+
+######## libge_executor.so ########
+add_library(ge_executor_shared SHARED
+    ${EXECUTOR_SRC_LIST}
+)
+
+add_dependencies(ge_executor_shared
+    graphengine_protos
+)
+
+target_compile_options(ge_executor_shared PRIVATE
+    -fno-common
+    -Werror
+    -O2
+    -Wno-deprecated-declarations
+    -fvisibility=hidden
+)
+
+target_compile_definitions(ge_executor_shared PRIVATE
+    PROTOBUF_INLINE_NOT_IN_HEADERS=0
+    DAVINCI_SUPPORT_PROFILING
+    google=ascend_private
+    FUNC_VISIBILITY
+    $<$<STREQUAL:${ENABLE_OPEN_SRC},True>:ONLY_COMPILE_OPEN_SRC>
+)
+
+target_include_directories(ge_executor_shared PRIVATE
+    ${GE_CODE_DIR}/ge
+    ${GE_CODE_DIR}/inc
+    ${GE_CODE_DIR}/inc/external
+    ${GE_CODE_DIR}/inc/framework
+    ${METADEF_DIR}/inc
+    ${METADEF_DIR}/inc/external
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/proto/graphengine_protos
+    #### yellow zone ####
+    ${GE_CODE_DIR}/../ace/comop/inc
+    ${GE_CODE_DIR}/../ace/comop/inc/external
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
+    #### blue zone ####
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+)
+
+target_link_options(ge_executor_shared PRIVATE
+    -Wl,-Bsymbolic
+    -Wl,--exclude-libs,ALL
+)
+
+target_link_libraries(ge_executor_shared PRIVATE
+    $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:cce_headers>>
+    -Wl,--no-as-needed
+    ge_common
+    runtime
+    slog
+    graph
+    register
+    error_manager
+    ascend_protobuf
+    c_sec
+    -Wl,--as-needed
+    json
+    $<$<NOT:$<STREQUAL:${TARGET_SYSTEM_NAME},Android>>:-lrt>
+    -ldl
+)
+
+set_target_properties(ge_executor_shared PROPERTIES
+    OUTPUT_NAME ge_executor
 )
 
 ############ libascendcl.so ############
@@ -998,18 +913,14 @@ set_target_properties(atc_stub_ge_compiler PROPERTIES
 )
 
 target_include_directories(atc_stub_ge_compiler PRIVATE
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
     ${GE_CODE_DIR}/inc/external
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
+    ${METADEF_DIR}/inc
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc/cce
+    ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
@@ -1039,18 +950,14 @@ set_target_properties(fwk_stub_ge_runner PROPERTIES
 )
 
 target_include_directories(fwk_stub_ge_runner PRIVATE
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/analyzer
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
+    ${METADEF_DIR}/inc
     #### yellow zone ####
-    ${GE_CODE_DIR}/../inc/cce
+    ${GE_CODE_DIR}/../inc
     ${GE_CODE_DIR}/../toolchain/ide/ide-daemon/external
     ${GE_CODE_DIR}/../abl/adump/external
     #### blue zone ####
@@ -1084,7 +991,7 @@ add_custom_command(
 set(INSTALL_BASE_DIR "")
 set(INSTALL_LIBRARY_DIR lib)
 
-install(TARGETS ge_runner ge_compiler opensrc_ascendcl OPTIONAL
+install(TARGETS ge_runner ge_compiler ge_executor_shared opensrc_ascendcl OPTIONAL
     LIBRARY DESTINATION ${INSTALL_LIBRARY_DIR}
 )
 

@@ -35,21 +35,13 @@ target_compile_definitions(ge_runtime PRIVATE
 
 target_include_directories(ge_runtime PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
-    ${GE_CODE_DIR}
     ${GE_CODE_DIR}/ge
     ${GE_CODE_DIR}/inc
-    ${GE_CODE_DIR}/inc/graph
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
-    ${GE_CODE_DIR}/inc/framework/common
-    ${GE_CODE_DIR}/inc/framework/ge_runtime
-    ${GE_CODE_DIR}/inc/cce
     ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${METADEF_DIR}
     ${METADEF_DIR}/inc
-    ${METADEF_DIR}/inc/external/graph
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/ge
 )

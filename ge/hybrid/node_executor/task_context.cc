@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "task_context.h"
+#include "hybrid/node_executor/task_context.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/log.h"
 #include "graph/utils/tensor_utils.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/executor/subgraph_executor.h"
@@ -43,6 +43,7 @@ TaskContext::~TaskContext() {
       output_tensor->Destroy();
     }
   }
+  ReleaseWorkspace();
 }
 
 void TaskContext::ReleaseWorkspace() {
@@ -50,11 +51,10 @@ void TaskContext::ReleaseWorkspace() {
   for (auto ws_addr : workspaces_) {
     execution_context_->allocator->Deallocate(ws_addr);
   }
+  workspaces_.clear();
 }
 
-std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
-                                                 GraphExecutionContext *execution_context,
-                                                 SubgraphContext *subgraph_context) {
+std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state, SubgraphContext *subgraph_context) {
   const NodeItem &node_item = *node_state->GetNodeItem();
   GELOGI("[%s] To create task context, input start = %d, num_inputs = %d, output start = %d, num_outputs = %d.",
          node_item.NodeName().c_str(),
@@ -75,7 +75,7 @@ std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
   }
 
   auto task_context = std::unique_ptr<TaskContext>(
-      new(std::nothrow)TaskContext(execution_context, node_state, subgraph_context));
+      new(std::nothrow)TaskContext(subgraph_context->execution_context_, node_state, subgraph_context));
   if (task_context == nullptr) {
     REPORT_CALL_ERROR("E19999", "Create TaskContext failed for [%s].", node_item.NodeName().c_str());
     GELOGE(MEMALLOC_FAILED, "[Create][TaskContext] failed for [%s].", node_item.NodeName().c_str());
@@ -85,7 +85,7 @@ std::unique_ptr<TaskContext> TaskContext::Create(NodeState *node_state,
   task_context->node_item_ = &node_item;
   task_context->inputs_start_ = subgraph_context->all_inputs_.data() + node_item.input_start;
   task_context->outputs_start_ = subgraph_context->all_outputs_.data() + node_item.output_start;
-  task_context->iteration_ = execution_context->iteration;
+  task_context->iteration_ = subgraph_context->execution_context_->iteration;
   return task_context;
 }
 
@@ -489,13 +489,9 @@ void TaskContext::ReleaseInputsAndOutputs() {
 }
 
 void TaskContext::ReleaseInput(int index) {
-  if (node_item_->enter_inside_.count(index) > 0) {
-    GELOGD("[%s] Tensor of input[%d] is enter, keep it", GetNodeName(), index);
-    return;
-  }
-
   auto input_tensor = MutableInput(index);
   if (input_tensor != nullptr) {
+    node_state_->SavePersistTensor(index, *input_tensor);
     input_tensor->Destroy();
     GELOGD("[%s] Tensor of input[%d] released", GetNodeName(), index);
   }
@@ -575,8 +571,8 @@ Status TaskContext::Synchronize() {
   return execution_context_->Synchronize(GetStream());
 }
 
-Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id,
-                                              const std::string &task_type, uint32_t block_dim) {
+Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream_id, const std::string &task_type,
+                                              uint32_t block_dim, const std::string &op_type) {
   if (ProfilingManager::Instance().ProfilingModelLoadOn()) {
     const NodeItem &node_item = GetNodeItem();
     auto op_desc = node_item.GetOpDesc();
@@ -590,7 +586,7 @@ Status TaskContext::SaveProfilingTaskDescInfo(uint32_t task_id, uint32_t  stream
     TaskDescInfo tmp_task_desc_info;
     tmp_task_desc_info.model_name = dynamic_model_name;
     tmp_task_desc_info.op_name = op_desc->GetName();
-    tmp_task_desc_info.op_type = op_desc->GetType();
+    tmp_task_desc_info.op_type = op_type;
     tmp_task_desc_info.block_dim = block_dim;
     tmp_task_desc_info.task_type = task_type;
     tmp_task_desc_info.task_id = task_id;

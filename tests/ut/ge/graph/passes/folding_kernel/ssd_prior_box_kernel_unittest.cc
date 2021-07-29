@@ -46,7 +46,7 @@ class UtestGraphPassesFoldingKernelSsdPriorboxKernel : public testing::Test {
 ///  convolution   data
 ///        |     /
 ///       ssdpriorbox
-///          \
+///          \.
 ///        reshape
 class NodeBuilder {
  public:

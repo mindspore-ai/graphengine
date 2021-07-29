@@ -17,14 +17,16 @@
 #include "graph/passes/next_iteration_pass.h"
 
 #include "common/ge/ge_util.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/utils/node_utils.h"
 
 using std::string;
 
 namespace ge {
 namespace {
-const int64_t kLoopType = 1;
+constexpr int64_t kLoopType = 1;
+constexpr uint8_t kMaxTransOp = 3;
+constexpr uint8_t kTransOpIoSize = 1;
 }
 
 Status NextIterationPass::Run(ComputeGraphPtr graph) {
@@ -284,13 +286,28 @@ Status NextIterationPass::HandleWhileGroup(ComputeGraphPtr &graph) {
 /// @return void
 ///
 void NextIterationPass::HandleSwitchExitNodes(const LoopCondGroup &loop_group, int64_t group_index) {
+  std::string node_type;
   for (const auto &switch_node : loop_group.switch_nodes) {
     SetControlFlowGroup(switch_node, group_index);
-    for (const auto &node : switch_node->GetOutDataNodes()) {
-      std::string node_type;
-      (void)GetOriginalType(node, node_type);
-      if (kExitOpTypes.count(node_type) > 0) {
-        SetControlFlowGroup(node, group_index);
+    for (auto node : switch_node->GetOutDataNodes()) {
+      // Switch --> Exit
+      // Switch --> Cast --> Exit
+      // Switch --> TransData --> Cast --> Exit
+      for (uint8_t i  = 0; i < kMaxTransOp; ++i) {
+        if (node->GetInDataNodes().size() != kTransOpIoSize || node->GetAllOutDataAnchorsSize() != kTransOpIoSize) {
+          break;
+        }
+
+        if (kExitOpTypes.count(NodeUtils::GetNodeType(node)) > 0) {
+          SetControlFlowGroup(node, group_index);
+          break;
+        }
+
+        const auto &all_nodes = node->GetOutAllNodes();
+        if (all_nodes.size() != kTransOpIoSize) {
+          break;
+        }
+        node = all_nodes.at(0);
       }
     }
   }

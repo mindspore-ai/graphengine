@@ -20,8 +20,8 @@
 #include "common/dynamic_aipp.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/ge/ge_util.h"
-#include "common/op/ge_op_utils.h"
-#include "common/util.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "framework/common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
@@ -568,6 +568,7 @@ Status InsertNewOpUtil::GetDataRelatedNode(NodePtr &node, std::map<NodePtr, std:
   }
 
   std::unique_ptr<domi::AippOpParams> aipp_params(new (std::nothrow) domi::AippOpParams());
+  GE_CHECK_NOTNULL(aipp_params);
   ge::GeAttrValue::NAMED_ATTRS aipp_attr;
   GE_CHK_BOOL_RET_STATUS(AttrUtils::GetNamedAttrs(data_op, ATTR_NAME_AIPP, aipp_attr), ACL_ERROR_GE_AIPP_NOT_EXIST,
                          "[Get][Attr] %s from op:%s failed", ATTR_NAME_AIPP.c_str(), data_op->GetName().c_str());

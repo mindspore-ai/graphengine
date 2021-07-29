@@ -289,7 +289,8 @@ REG_OP(SparseApplyAdagradV2D)
 *     Should be from a Variable().
 *@li lr: A scalar. Has the same type as "var".
 *@li grad: A tensor for the gradient. Has the same type as "var".
-*
+*@li momentum: Momentum. Must be a scalar.
+
 *@par Attributes:
 *@li use_nesterov: An optional bool. Defaults to "False".
 *     If "True", the tensor passed to compute grad will be
@@ -701,7 +702,7 @@ REG_OP(ApplyPowerSignD)
 /**
 *@brief Updates "var" as FOBOS algorithm with fixed learning rate.
 *  prox_v = var - alpha * delta
-*  var = sign(prox_v)/(1+alpha*l2) * max{|prox_v|-alpha*l1,0}
+*  var = sign(prox_v)/(1+alpha * l2) * max{|prox_v|-alpha * l1,0}
 *
 *@attention Constraints:
 *  the input tensors must have the same shape.
@@ -2128,10 +2129,12 @@ REG_OP(FusedMulApplyMomentumExtern)
 *    otherwise the behavior is undefined, but may exhibit less contention.
 *
 *@par Outputs:
-* var: A mutable tensor. Has the same type as input "var".
+* @li var: A mutable tensor. Has the same type as input "var".
+* @li accum: A mutable tensor. Has the same type as input "accum".
 *
 *@attention Constraints:
-* The input tensors must have the same shape.
+* @li var: A mutable tensor. Has the same type as input "var".
+* @li accum: A mutable tensor. Has the same type as input "accum".
 *
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator ResourceApplyKerasMomentum.

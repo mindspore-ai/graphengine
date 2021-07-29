@@ -21,9 +21,9 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
-#include "ge_runtime/task_info.h"
+#include "framework/ge_runtime/task_info.h"
 
 namespace ge {
 namespace model_runner {

@@ -576,7 +576,7 @@ REG_OP(ReduceAll)
 *@li axis: A mutable Tensor. The dimensions to reduce . \n
 
 *@par Attributes:
-*@li keep_dims: A bool. If true, retains reduced dimensions with length 1. Defaults to "False" . \n
+*keep_dims: A bool. If true, retains reduced dimensions with length 1. Defaults to "False" . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type and format as input "x" . \n
@@ -967,9 +967,9 @@ REG_OP(EuclideanNormD)
 Defaults to "0.00001" . \n
 
 *@par Outputs:
-*y: A Tensor of type float16 or float32 for the normalized "x".
-*batch_mean: A Tensor of type float32 for the result mean.
-*batch_ variance: A Tensor of type float32 for the result variance . \n
+*@li y: A Tensor of type float16 or float32 for the normalized "x".
+*@li batch_mean: A Tensor of type float32 for the result mean.
+*@li batch_ variance: A Tensor of type float32 for the result variance . \n
 
 *@attention Constraints:
 *For Ascend 310, the result accuracy fails to reach 0.001 due to the square root instruction.
@@ -987,7 +987,7 @@ REG_OP(INInferV2)
     .OP_END_FACTORY_REG(INInferV2)
 
 /**
-*@brief Performs reduced instance normalization . \n
+*@brief Performs reduce instance normalization. \n
 
 *@par Inputs:
 *x: A Tensor of type float16 or float32. \n
@@ -1008,32 +1008,31 @@ REG_OP(INTrainingReduceV2)
 
 
 /**
-*@brief Performs update instance normalization . \n
+*@brief Performs update instance normalization. \n
 
 *@par Inputs:
-* Seven inputs, including: (NC1HWC0supported)
+* Seven inputs, including:
 *@li x: A Tensor of type float16 or float32.
 *@li sum: A Tensor of type float32 for the output of operator INTrainingReduceV2.
 *@li square_sum: A Tensor of type float32 for the output of operator INTrainingReduceV2.
 *@li gamma: A Tensor of type float32, for the scaling gamma.
 *@li beta: A Tensor of type float32, for the scaling beta.
 *@li mean: A Tensor of type float32, for the updated mean.
-*@li variance: A Tensor of type float32, for the updated variance . \n
+*@li variance: A Tensor of type float32, for the updated variance. \n
 
 *@par Attributes:
 *@li momentum: A required float32, specifying the momentum to update mean and var.
-*@li epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero . \n
+*@li epsilon: A required float32, specifying the small value added to variance to avoid dividing by zero. \n
 
 *@par Outputs:
 * Three outputs
 *@li y: A Tensor of type float16 or float32, for normalized "x".
 *@li batch_mean: A Tensor of type float32, for the updated mean.
-*@li batch_variance: A Tensor of type float32, for the updated variance . \n
+*@li batch_variance: A Tensor of type float32, for the updated variance. \n
 
 *@attention Constraints:
-*@li This operator is a InstanceNorm fusion operator for updating the moving averages for training.
+* This operator is a InstanceNorm fusion operator for updating the moving averages for training.
 * This operator is used in conjunction with INTrainingReduceV2.
-*@li For Ascend 310, the result accuracy fails to reach 1‰ due to the square root instruction.
 */
 REG_OP(INTrainingUpdateV2)
     .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
@@ -1052,6 +1051,80 @@ REG_OP(INTrainingUpdateV2)
 
 
 /**
+*@brief Performs the backpropagation of InstanceNorm. \n
+
+*@par Inputs:
+* Seven inputs, including:
+*@li dy: A Tensor of type float16 or float32.
+*@li x: A Tensor of type float16 or float32.
+*@li variance: A Tensor of type float32, for the variance of "x".
+*@li mean: A Tensor of type float32, for the mean of "x".
+*@li res_gamma: A Tensor of type float32.
+*@li res_beta: A Tensor of type float32.
+*@li gamma: A Tensor of type float32. \n
+
+*@par Outputs:
+*pd_x: A Tensor of type float16 or float32, for the offset of "x". \n
+
+*@attention Constraints:
+* The preceding layer of this operator must be INTrainingUpdateGrad. \n
+*/
+REG_OP(INTrainingReduceGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(variance, TensorType({DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT}))
+    .INPUT(res_gamma, TensorType({DT_FLOAT}))
+    .INPUT(res_beta, TensorType({DT_FLOAT}))
+    .INPUT(gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(pd_x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .OP_END_FACTORY_REG(INTrainingReduceGrad)
+
+/**
+*@brief Performs the backpropagation of InstanceNorm. \n
+
+*@par Inputs:
+* Four inputs, including:
+*@li dy: A Tensor of type float16 or float32, for the gradient.
+*@li x: A Tensor of type float16 or float32.
+*@li variance: A Tensor of type float32, for the variance of "x".
+*@li mean: A Tensor of type float32, for the mean of "x". \n
+
+*@par Outputs:
+*@li res_gamma: A Tensor of type float32.
+*@li res_beta: A Tensor of type float32. \n
+
+*/
+REG_OP(INTrainingUpdateGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16,DT_FLOAT}))
+    .INPUT(variance, TensorType({DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT}))
+    .OUTPUT(res_gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(res_beta, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(INTrainingUpdateGrad)
+
+/**
+*@brief Performs the backpropagation of InstanceNorm. \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li res_gamma: A Tensor of type float32.
+*@li res_beta: A Tensor of type float32. \n
+
+*@par Outputs:
+*@li pd_gamma: A Tensor of type float32.
+*@li pd_beta: A Tensor of type float32. \n
+
+*/
+REG_OP(INTrainingUpdateGradGammaBeta)
+    .INPUT(res_gamma, TensorType({DT_FLOAT}))
+    .INPUT(res_beta, TensorType({DT_FLOAT}))
+    .OUTPUT(pd_gamma, TensorType({DT_FLOAT}))
+    .OUTPUT(pd_beta, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(INTrainingUpdateGradGammaBeta)
+
+/**
 *@brief Performs reduced group normalization . \n
 
 *@par Inputs:
@@ -1063,7 +1136,7 @@ REG_OP(INTrainingUpdateV2)
 
 
 *@par Attributes:
-*@li num_groups: Int, specifying the num of groups. required, same to GNTrainingUpdate . \n
+*num_groups: Int, specifying the num of groups. required, same to GNTrainingUpdate . \n
 
 *@attention Constraints:
 * This operator is a GroupNorm fusion operator for updating the moving averages for training.
@@ -1081,7 +1154,7 @@ REG_OP(GNTrainingReduce)
 *@brief Performs update group normalization . \n
 
 *@par Inputs:
-* Eight inputs, including: (NCHW NHWC supported)
+* Seven inputs, including: (NCHW NHWC supported)
 *@li x: A Tensor of type float16 or float32.
 *@li sum: A 5D Tensor of type float32,
 shape is [N, G, 1, 1, 1] for NCHW, [N, 1, 1, G, 1] for NHWC
@@ -1145,8 +1218,8 @@ include:
 *@li keep_dims:A bool, An optional bool. Defaults to False. If True, retain reduced dimensions with length 1..
 *@li separator:string.
 
-*@par output:
-*@li output::A Tensor of type string..
+*@par Outputs:
+*output:A Tensor of type string.
 */
 REG_OP(ReduceJoin)
     .INPUT(input, TensorType({DT_STRING}))
@@ -1160,7 +1233,7 @@ REG_OP(ReduceJoin)
 * @brief Calculates the standard deviation and average value of Tensors.
 
 * @par Inputs:
-* @li x: A Tensor. Must be one of the following types:
+* x: A Tensor. Must be one of the following types:
 *     float16, float32. \n
 
 * @par Attributes:

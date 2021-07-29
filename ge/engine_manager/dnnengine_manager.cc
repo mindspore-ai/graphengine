@@ -16,13 +16,12 @@
 
 #include "engine_manager/dnnengine_manager.h"
 
-#include <unistd.h>
 #include <cstdio>
 #include <fstream>
 #include <map>
 #include <utility>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/ge/ge_util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
@@ -240,6 +239,10 @@ std::string DNNEngineManager::GetDNNEngineName(const ge::NodePtr &node_ptr) {
         op_desc->SetOpEngineName(it.engine);
         op_desc->SetOpKernelLibName(kernel_name);
         // set attrs for taking information when load txt to graph object
+        if (it.flagAsync) {
+          GELOGD("Set aicpu blocking op:%s attribute(is_blocking_op):true", op_desc->GetName().c_str());
+          (void)AttrUtils::SetBool(op_desc, ATTR_NAME_IS_BLOCKING_OP, true);
+        }
         (void) AttrUtils::SetStr(op_desc, ATTR_NAME_ENGINE_NAME_FOR_LX, it.engine);
         (void) AttrUtils::SetStr(op_desc, ATTR_NAME_KKERNEL_LIB_NAME_FOR_LX, kernel_name);
         GELOGD("DNNEngineManager:Set OpKernelLibName %s and engine name %s to op_desc %s", kernel_name.c_str(),

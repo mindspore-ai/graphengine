@@ -20,9 +20,9 @@
 #include <string>
 #include <atomic>
 #include "common/ge/ge_util.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
-#include "graph/common/transop_util.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
+#include "common/transop_util.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_tensor.h"

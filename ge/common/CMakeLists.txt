@@ -1,48 +1,55 @@
 set(SRC_LIST
-    "context/ctx.cc"
-    "model_saver.cc"
-    "ge/datatype_util.cc"
-    "helper/om_file_helper.cc"
-    "helper/model_helper.cc"
-    "../model/ge_model.cc"
-    "../model/ge_root_model.cc"
-    "auth/file_saver.cc"
-    "fp16_t.cc"
-    "math/fp16_math.cc"
-    "debug/memory_dumper.cc"
-    "formats/utils/formats_trans_utils.cc"
-    "dump/dump_properties.cc"
-    "formats/format_transfers/datatype_transfer.cc"
-    "formats/format_transfers/format_transfer_transpose.cc"
-    "formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
-    "formats/format_transfers/format_transfer_fractal_z.cc"
-    "formats/format_transfers/format_transfer_fractal_nz.cc"
-    "formats/format_transfers/format_transfer_fractal_zz.cc"
-    "formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
-    "formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
-    "formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
-    "formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
-    "formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
-    "formats/format_transfers/format_transfer_fracz_nchw.cc"
-    "formats/format_transfers/format_transfer_fracz_nhwc.cc"
-    "formats/format_transfers/format_transfer_fracz_hwcn.cc"
-    "formats/format_transfers/format_transfer_dhwcn_fracz3D.cc"
-    "formats/format_transfers/format_transfer_dhwnc_fracz3D_transpose.cc"
-    "formats/format_transfers/format_transfer_nchw_fz_c04.cc"
-    "formats/formats.cc"
-    "ge_format_util.cc"
-    "fmk_error_codes.cc"
-    "util.cc"
-    "properties_manager.cc"
-    "types.cc"
-    "model_parser/model_parser.cc"
-    "kernel_store.cc"
-    "tbe_kernel_store.cc"
-    "cust_aicpu_kernel_store.cc"
-    "op/attr_value_util.cc"
-    "op/ge_op_utils.cc"
-    "thread_pool.cc"
-    "ge/tbe_plugin_manager.cc"
+    "${GE_CODE_DIR}/ge/common/auth/file_saver.cc"
+    "${GE_CODE_DIR}/ge/common/bcast.cc"
+    "${GE_CODE_DIR}/ge/common/context/ctx.cc"
+    "${GE_CODE_DIR}/ge/common/cust_aicpu_kernel_store.cc"
+    "${GE_CODE_DIR}/ge/common/debug/memory_dumper.cc"
+    "${GE_CODE_DIR}/ge/common/dump/dump_manager.cc"
+    "${GE_CODE_DIR}/ge/common/dump/dump_properties.cc"
+    "${GE_CODE_DIR}/ge/common/fmk_error_codes.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/datatype_transfer.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_c1hwncoc0_hwcn.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_dhwcn_fracz3D.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_dhwnc_fracz3D_transpose.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fractal_nz.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fractal_z.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fractal_zz.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_hwcn.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nchw.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_fracz_nhwc.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_hwcn_c1hwncoc0.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_nc1hwc0_nchw.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_nc1hwc0_nhwc.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_nchw_fz_c04.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_nchw_nc1hwc0.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_nhwc_nc1hwc0.cc"
+    "${GE_CODE_DIR}/ge/common/formats/format_transfers/format_transfer_transpose.cc"
+    "${GE_CODE_DIR}/ge/common/formats/formats.cc"
+    "${GE_CODE_DIR}/ge/common/formats/utils/formats_trans_utils.cc"
+    "${GE_CODE_DIR}/ge/common/fp16_t.cc"
+    "${GE_CODE_DIR}/ge/common/ge/datatype_util.cc"
+    "${GE_CODE_DIR}/ge/common/ge/op_tiling_manager.cc"
+    "${GE_CODE_DIR}/ge/common/ge/plugin_manager.cc"
+    "${GE_CODE_DIR}/ge/common/ge/tbe_plugin_manager.cc"
+    "${GE_CODE_DIR}/ge/common/ge_format_util.cc"
+    "${GE_CODE_DIR}/ge/common/helper/model_helper.cc"
+    "${GE_CODE_DIR}/ge/common/helper/om_file_helper.cc"
+    "${GE_CODE_DIR}/ge/common/kernel_store.cc"
+    "${GE_CODE_DIR}/ge/common/local_context.cc"
+    "${GE_CODE_DIR}/ge/common/math/fp16_math.cc"
+    "${GE_CODE_DIR}/ge/common/model/ge_model.cc"
+    "${GE_CODE_DIR}/ge/common/model/ge_root_model.cc"
+    "${GE_CODE_DIR}/ge/common/model_parser/model_parser.cc"
+    "${GE_CODE_DIR}/ge/common/model_saver.cc"
+    "${GE_CODE_DIR}/ge/common/omg_util.cc"
+    "${GE_CODE_DIR}/ge/common/op/attr_value_util.cc"
+    "${GE_CODE_DIR}/ge/common/op/ge_op_utils.cc"
+    "${GE_CODE_DIR}/ge/common/properties_manager.cc"
+    "${GE_CODE_DIR}/ge/common/tbe_kernel_store.cc"
+    "${GE_CODE_DIR}/ge/common/thread_pool.cc"
+    "${GE_CODE_DIR}/ge/common/transop_util.cc"
+    "${GE_CODE_DIR}/ge/common/types.cc"
+    "${GE_CODE_DIR}/ge/common/util.cc"
 )
 
 if (NOT ENABLE_D AND NOT ENABLE_ACL)
@@ -63,7 +70,7 @@ target_compile_definitions(ge_common PRIVATE
 )
 
 target_compile_options(ge_common PRIVATE
-    -fvisibility=hidden
+    -fvisibility=default
     -O2
     -Werror
     -Wno-deprecated-declarations
@@ -72,24 +79,18 @@ target_compile_options(ge_common PRIVATE
 
 target_include_directories(ge_common PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/common
-    ${GE_CODE_DIR}/ge/common/op
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
-    ${GE_DEPEND_DIR}/inc
-    ${GE_DEPEND_DIR}/inc/cce
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
     #### blue zone ####
-    #${GE_DEPEND_DIR}/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
 )
 
 target_link_options(ge_common PRIVATE
@@ -98,6 +99,10 @@ target_link_options(ge_common PRIVATE
 
 target_link_libraries(ge_common PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
     static_mmpa
     -Wl,--no-as-needed
     graph
@@ -139,28 +144,26 @@ target_compile_options(ge_common_static PRIVATE
 
 target_include_directories(ge_common_static PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/common
-    ${GE_CODE_DIR}/ge/common/op
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     #### yellow zone ####
-    ${GE_DEPEND_DIR}/inc
-    ${GE_DEPEND_DIR}/inc/cce
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:${GE_DEPEND_DIR}/inc>
     #### blue zone ####
-    #${GE_DEPEND_DIR}/include
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc
-    ${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc>
+    $<$<BOOL:${ENABLE_OPEN_SRC}>:${GE_CODE_DIR}/third_party/fwkacllib/inc/toolchain>
 )
 
 target_link_libraries(ge_common_static PRIVATE
     $<BUILD_INTERFACE:intf_pub>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:slog_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:msprof_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:mmpa_headers>>
+    $<$<NOT:$<BOOL:${ENABLE_OPEN_SRC}>>:$<BUILD_INTERFACE:runtime_headers>>
     ascend_protobuf_static
     json
     c_sec
@@ -187,7 +190,7 @@ target_compile_definitions(ge_common PRIVATE
 )
 
 target_compile_options(ge_common PRIVATE
-    -fvisibility=hidden
+    -fvisibility=default
     -O2
     -Werror
     -Wno-deprecated-declarations
@@ -196,15 +199,11 @@ target_compile_options(ge_common PRIVATE
 
 target_include_directories(ge_common PRIVATE
     ${GE_CODE_DIR}/ge
-    ${GE_CODE_DIR}/ge/common
-    ${GE_CODE_DIR}/ge/common/op
     ${GE_CODE_DIR}/inc/external
     ${GE_CODE_DIR}/inc
     ${GE_CODE_DIR}/inc/framework
     ${METADEF_DIR}/inc
     ${METADEF_DIR}/inc/external
-    ${METADEF_DIR}/inc/external/graph
-    ${METADEF_DIR}/inc/graph
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/proto/graphengine_protos
     ${GE_CODE_DIR}/third_party/fwkacllib/inc

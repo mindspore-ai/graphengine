@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "stream_graph_optimizer.h"
+#include "graph/build/stream_graph_optimizer.h"
 
 #include <securec.h>
 
-#include "common/util.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"

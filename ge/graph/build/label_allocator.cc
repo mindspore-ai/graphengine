@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "label_allocator.h"
+#include "graph/build/label_allocator.h"
 
 #include "framework/common/types.h"
-#include "common/util.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/util.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/label/label_maker.h"
@@ -80,10 +80,14 @@ bool LabelAllocator::CollectFunctionalNode(ComputeGraphPtr &graph, std::set<Node
 
   NodePtr func_node = graph->GetParentNode();
   if (func_node == nullptr) {
-    REPORT_INNER_ERROR("E19999", "Parent node not set in node:%s(%s), graph:%s",
-                       func_node->GetName().c_str(), func_node->GetType().c_str(), graph->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "Parent node not set, graph:%s", graph->GetName().c_str());
     GELOGE(INTERNAL_ERROR, "[Get][Node] Parent functional node not set: %s.", graph->GetName().c_str());
     return false;
+  }
+
+  if (func_node->GetOpDesc() != nullptr && func_node->GetOpDesc()->HasAttr(ATTR_NAME_FFTS_SUB_GRAPH)) {
+    GELOGD("Graph[%s] is ffts subgraph, skip label allocator.", graph->GetName().c_str());
+    return true;
   }
 
   ComputeGraphPtr owner_graph = func_node->GetOwnerComputeGraph();

@@ -20,8 +20,8 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"

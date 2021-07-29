@@ -20,10 +20,10 @@
 #include <cmath>
 #include <memory>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
-#include "graph/common/bcast.h"
+#include "framework/common/op/ge_op_utils.h"
+#include "common/bcast.h"
 #include "graph/utils/type_utils.h"
 #include "inc/kernel_factory.h"
 

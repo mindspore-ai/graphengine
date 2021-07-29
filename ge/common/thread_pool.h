@@ -31,13 +31,13 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "external/ge/ge_api_error_codes.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "common/ge/ge_util.h"
 
 namespace ge {
 using ThreadTask = std::function<void()>;
 
-class GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY ThreadPool {
+class ThreadPool {
  public:
   explicit ThreadPool(uint32_t size = 4);
   ~ThreadPool();

@@ -15,7 +15,7 @@
  */
 
 #include <memory>
-#include "hybrid_davinci_model.h"
+#include "hybrid/hybrid_davinci_model.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/executor/hybrid_model_async_executor.h"
 #include "hybrid/node_executor/node_executor.h"

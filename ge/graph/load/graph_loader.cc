@@ -19,7 +19,7 @@
 #include <string>
 #include <vector>
 
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "common/model_parser/model_parser.h"
 #include "graph/ge_context.h"
 #include "graph/load/model_manager/model_manager.h"

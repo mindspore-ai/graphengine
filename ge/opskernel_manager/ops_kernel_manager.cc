@@ -16,17 +16,7 @@
 
 #include "opskernel_manager/ops_kernel_manager.h"
 
-#include <dlfcn.h>
-#include <algorithm>
-#include <iostream>
-#include <utility>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
-#include <google/protobuf/text_format.h>
-#include "../init/gelib.h"
-#include "framework/common/debug/ge_log.h"
-#include "ge/ge_api.h"
+#include "init/gelib.h"
 #include "proto/optimizer_priority.pb.h"
 
 namespace {
@@ -279,7 +269,7 @@ void OpsKernelManager::InitOpsKernelInfo() {
     if (it.second.empty()) {
       continue;
     }
-    auto comp_func = [this, &instance_ptr](const OpInfo &op_a, const OpInfo &op_b) -> bool {
+    auto comp_func = [&instance_ptr](const OpInfo &op_a, const OpInfo &op_b) -> bool {
       const string &a = op_a.engine;
       const string &b = op_b.engine;
       // check if a or b is registered

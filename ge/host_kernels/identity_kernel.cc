@@ -14,7 +14,7 @@
  * limitations under the License.
 */
 
-#include "identity_kernel.h"
+#include "host_kernels/identity_kernel.h"
 #include "inc/kernel_factory.h"
 #include "framework/common/types.h"
 

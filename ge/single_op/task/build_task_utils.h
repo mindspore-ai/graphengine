@@ -23,6 +23,7 @@
 #include "graph/op_desc.h"
 #include "single_op/single_op.h"
 #include "single_op/single_op_model.h"
+#include "hybrid/node_executor/task_context.h"
 
 namespace ge {
 class BuildTaskUtils {
@@ -35,7 +36,14 @@ class BuildTaskUtils {
                                                        bool keep_workspace = true);
   static std::vector<void *> JoinAddresses(const std::vector<std::vector<void *>> &addresses);
   static std::vector<void *> GetKernelArgs(const OpDescPtr &op_desc, const SingleOpModelParam &param);
+  static std::string InnerGetTaskInfo(const OpDescPtr &op_desc,
+                                      const std::vector<const void *> &input_addrs,
+                                      const std::vector<const void *> &output_addrs);
   static std::string GetTaskInfo(const OpDescPtr &op_desc);
+  static std::string GetTaskInfo(const OpDescPtr &op_desc,
+                                 const std::vector<DataBuffer> &inputs,
+                                 const std::vector<DataBuffer> &outputs);
+  static std::string GetTaskInfo(const hybrid::TaskContext& task_context);
   template<typename T>
   static std::string VectorToString(const std::vector<T> &values) {
     std::stringstream ss;

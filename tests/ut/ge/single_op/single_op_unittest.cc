@@ -23,6 +23,7 @@
 #define private public
 #include "single_op/single_op.h"
 #include "single_op/single_op_manager.h"
+#include "single_op/task/build_task_utils.h"
 #undef private
 #undef protected
 
@@ -103,7 +104,7 @@ TEST_F(UtestSingleOp, test_dynamic_singleop_execute_async1) {
   EXPECT_EQ(desc_ptr->AddInputDesc("x", GeTensorDesc(GeShape({2}), FORMAT_NCHW)), GRAPH_SUCCESS);
   dynamic_single_op.op_task_->op_desc_ = desc_ptr;
   // UpdateRunInfo failed
-  EXPECT_EQ(dynamic_single_op.ExecuteAsync(input_desc, input_buffers, output_desc, output_buffers), PARAM_INVALID);
+  EXPECT_EQ(dynamic_single_op.ExecuteAsync(input_desc, input_buffers, output_desc, output_buffers), ACL_ERROR_GE_PARAM_INVALID);
 }
 
 
@@ -126,9 +127,19 @@ TEST_F(UtestSingleOp, test_singleop_execute_async1) {
   SingleOpModelParam model_params;
   single_op.running_param_.reset(new (std::nothrow)SingleOpModelParam(model_params));
   single_op.args_.resize(1);
+
+  auto *tbe_task = new (std::nothrow) TbeOpTask();
+  ge::OpDescPtr op_desc = std::make_shared<OpDesc>("Mul", MATMUL);
+  EXPECT_EQ(op_desc->AddInputDesc("x", GeTensorDesc(GeShape({2}), FORMAT_NCHW)), GRAPH_SUCCESS);
+  EXPECT_EQ(op_desc->AddOutputDesc("x", GeTensorDesc(GeShape({2}), FORMAT_NCHW)), GRAPH_SUCCESS);
+  EXPECT_NE(BuildTaskUtils::GetTaskInfo(op_desc), "");
+  ge::ComputeGraphPtr graph = std::make_shared<ge::ComputeGraph>("default");
+  ge::NodePtr node = graph->AddNode(op_desc);
+  tbe_task->node_ = node;
+  tbe_task->op_desc_ = op_desc;
+  single_op.tasks_.push_back(tbe_task);
   EXPECT_EQ(single_op.hybrid_model_executor_, nullptr);
   EXPECT_EQ(single_op.running_param_->mem_base, nullptr);
-  EXPECT_EQ(single_op.tasks_.size(), 0);
   EXPECT_EQ(single_op.ExecuteAsync(input_buffers, output_buffers), SUCCESS);
 }
 

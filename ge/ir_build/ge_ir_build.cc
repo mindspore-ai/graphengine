@@ -25,15 +25,15 @@
 #include "framework/common/util.h"
 #include "framework/omg/omg_inner_types.h"
 #include "framework/omg/omg_inner_types.h"
-#include "ge/ge_api_types.h"
-#include "generator/ge_generator.h"
+#include "external/ge/ge_api_types.h"
+#include "framework/generator/ge_generator.h"
 #include "graph/compute_graph.h"
 #include "graph/ge_tensor.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_global_options.h"
 #include "init/gelib.h"
 #include "ir_build/option_utils.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "graph/shape_refiner.h"
 #include "graph/opsproto_manager.h"
 #include "inc/pass_manager.h"
@@ -263,6 +263,7 @@ class Impl {
     omg_context_.user_attr_index_valid = false;
   };
   ~Impl() { (void)generator_.Finalize(); };
+  graphStatus CheckBuildModeAndBuildStep();
   graphStatus GetSupportedOptions(const std::map<std::string, std::string> &in,
                                   std::map<std::string, std::string> &out);
   graphStatus CheckOptions(const std::map<std::string, std::string> &options);
@@ -451,6 +452,37 @@ graphStatus Impl::UpdateDataOpAttr(const Graph &graph) {
   return GRAPH_SUCCESS;
 }
 
+graphStatus Impl::CheckBuildModeAndBuildStep() {
+  std::string build_mode;
+  auto it = options_.find(BUILD_MODE);
+  if (it != options_.end() && !(it->second.empty())) {
+    if (build_mode_options.find(it->second) == build_mode_options.end()) {
+      REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
+          std::vector<std::string>({BUILD_MODE, it->second, "value is unsupported. Please check!"}));
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildMode]:%s is unsupported. Please check!", it->second.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
+    build_mode = it->second;
+  }
+  it = options_.find(BUILD_STEP);
+  if (it != options_.end() && !(it->second.empty())) {
+    if (build_step_options.find(it->second) == build_step_options.end()) {
+      REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
+          std::vector<std::string>({BUILD_STEP, it->second, "value is unsupported. Please check!"}));
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildStep]:%s is unsupported. Please check!", it->second.c_str());
+      return GRAPH_PARAM_INVALID;
+    }
+  } else {
+    if (build_mode == BUILD_MODE_TUNING) {
+      REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
+          std::vector<std::string>({BUILD_MODE, it->second, "tuning must specify build step. Please check!"}));
+      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildMode] tuning must specify build step. Please check!");
+      return GRAPH_PARAM_INVALID;
+    }
+  }
+  return GRAPH_SUCCESS;
+}
+
 graphStatus Impl::GetSupportedOptions(const std::map<std::string, std::string> &in,
                                       std::map<std::string, std::string> &out) {
   for (auto &ele : in) {
@@ -475,35 +507,30 @@ graphStatus Impl::CheckOptions(const std::map<std::string, std::string> &options
   }
 
   // Check options build_mode and build_step.
-  std::string build_mode;
-  auto it = options_.find(BUILD_MODE);
-  if (it != options_.end() && !(it->second.empty())) {
-    if (build_mode_options.find(it->second) == build_mode_options.end()) {
-      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildMode]:%s is unsupported. Please check!", it->second.c_str());
-      return GRAPH_PARAM_INVALID;
-    }
-    build_mode = it->second;
-  }
-  it = options_.find(BUILD_STEP);
-  if (it != options_.end() && !(it->second.empty())) {
-    if (build_step_options.find(it->second) == build_step_options.end()) {
-      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildStep]:%s is unsupported. Please check!", it->second.c_str());
-      return GRAPH_PARAM_INVALID;
-    }
-  } else {
-    if (build_mode == BUILD_MODE_TUNING) {
-      GELOGE(GRAPH_PARAM_INVALID, "[Check][BuildMode] tuning must specify build step. Please check!");
-      return GRAPH_PARAM_INVALID;
-    }
+  ret = CheckBuildModeAndBuildStep();
+  if (ret != GRAPH_SUCCESS) {
+    return ret;
   }
   // Check option EXEC_DISABLE_REUSED_MEMORY
-  it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
+  auto it = options_.find(ge::ir_option::EXEC_DISABLE_REUSED_MEMORY);
   if (it != options_.end() && (CheckDisableReuseMemoryParamValid(it->second) != GRAPH_SUCCESS)) {
     return GRAPH_PARAM_INVALID;
   }
   // Check option modify_mixlist
   if (ge::CheckModifyMixlistParamValid(options_) != GRAPH_SUCCESS) {
     return GRAPH_PARAM_INVALID;
+  }
+  // Check option OP_PRECISION_MODE
+  it = options_.find(ge::ir_option::OP_PRECISION_MODE);
+  if (it != options_.end() && !it->second.empty() && !ge::CheckInputPathValid(it->second)) {
+    REPORT_INPUT_ERROR("E10001", std::vector<std::string>({"parameter", "value", "reason"}),
+        std::vector<std::string>({ge::ir_option::OP_PRECISION_MODE, it->second, "path is not found"}));
+    GELOGE(GRAPH_PARAM_INVALID, "[Check][OP_PRECISION_MODE] %s not found", it->second.c_str());
+    return GRAPH_PARAM_INVALID;
+  }
+  if (it != options_.end()) {
+    GELOGI("Option set successfully, option_key=%s, option_value=%s",
+           ge::ir_option::OP_PRECISION_MODE, it->second.c_str());
   }
   // Check Input Format
   if (options_.find(kInputFormat) != options_.end()) {
@@ -559,8 +586,8 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   std::string output_type = GetParam(ge::ir_option::OUTPUT_TYPE);
   GE_CHK_BOOL_EXEC(ge::CheckOutputTypeParamValid(output_type) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "[Check][OutputType] failed!");
-  // check insert_op_conf
 
+  // check insert_op_conf
   std::string insert_op_conf = GetParam(ge::ir_option::INSERT_OP_FILE);
   GE_CHK_BOOL_EXEC(ge::CheckInsertOpConfParamValid(std::string(insert_op_conf)) == ge::SUCCESS,
       return ge::GRAPH_PARAM_INVALID, "[Check][InsertOpConf] failed!");
@@ -574,6 +601,7 @@ graphStatus Impl::Init(const Graph &graph, const std::map<std::string, std::stri
   options_.insert(std::pair<string, string>(string(ge::RUN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::TRAIN_FLAG), to_string(0)));
   options_.insert(std::pair<string, string>(string(ge::SAVE_ORIGINAL_MODEL), to_string(0)));
+  options_.insert(std::pair<string, string>(string(ge::OPTION_GRAPH_RUN_MODE), to_string(0)));
   // print ge option map
   ge::PrintOptionMap(options_, "ge option");
 
@@ -839,6 +867,7 @@ graphStatus aclgrphDumpGraph(const ge::Graph &graph, const char *file, const siz
 graphStatus aclgrphGenerateForOp(const AscendString &op_type, const vector<TensorDesc> &inputs,
                                  const vector<TensorDesc> &outputs, Graph &graph) {
   ErrorManager::GetInstance().SetStage(error_message::kModelCompile, error_message::kOther);
+  GE_CHECK_NOTNULL(op_type.GetString());
   auto op_type_str = std::string(op_type.GetString());
   auto op_name = op_type_str + "_" + std::to_string(ge::GetCurrentTimestamp());
   auto op_desc = ge::MakeShared<ge::OpDesc>(op_name, op_type_str);

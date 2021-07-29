@@ -33,8 +33,8 @@ namespace ge {
 
 *@li value: A 0D scalar. Specifies the value to fill the returned tensor.
 *    Must be one of the following types:
-*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
+*    float16, float32, double, int32, uint8, int16, int8, complex64, int64, bool, 
+*    qint8, quint8, qint32, qint16, quint16, uint16, complex128, uint32, uint64, .
 *
 *@par Outputs:
 * y: A tensor. Has the same type as "value".
@@ -46,8 +46,14 @@ namespace ge {
 */
 REG_OP(Fill)
     .INPUT(dims, TensorType::IndexNumberType())
-    .INPUT(value, TensorType::BasicType())
-    .OUTPUT(y, TensorType::BasicType())
+    .INPUT(value, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_UINT8, DT_INT16,
+                              DT_INT8, DT_COMPLEX64, DT_INT64, DT_BOOL, DT_QINT8,
+                              DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16, DT_UINT16,
+                              DT_COMPLEX128, DT_FLOAT16, DT_UINT32, DT_UINT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_DOUBLE, DT_INT32, DT_UINT8, DT_INT16,
+                              DT_INT8, DT_COMPLEX64, DT_INT64, DT_BOOL, DT_QINT8,
+                              DT_QUINT8, DT_QINT32, DT_QINT16, DT_QUINT16, DT_UINT16,
+                              DT_COMPLEX128, DT_FLOAT16, DT_UINT32, DT_UINT64}))
     .OP_END_FACTORY_REG(Fill)
 
 /**
@@ -213,11 +219,11 @@ REG_OP(PadV2)
 *@brief Pads a tensor . \n
 
 *@par Inputs:
-*x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
-*constant_values: A Tensor. Must have the same type as input.
+*@li x: A Tensor. Must be one of the following types: float16, float32, int32 . \n
+*@li constant_values: A Tensor. Must have the same type as input.
 
 *@par Attributes:
-*paddings: An optional "vector<vector<int>>". Defaults to "{}".
+*paddings: A required Attribute.
 *     For each dimension D of input, paddings[D, 0] indicates how many
 *     values to add before the contents of tensor in that dimension,
 *     and paddings[D, 1] indicates how many values to add after the
@@ -461,7 +467,7 @@ REG_OP(FillV2)
 * @li dims: An required listInt to specify the shape that the value to fill.
 
 * @par Outputs:
-* @li y: A Tensor. Has the shape specify by attr shape, and full of the value specify by attr value.
+* y: A Tensor. Has the shape specify by attr shape, and full of the value specify by attr value.
 
 * @par Third-party framework compatibility
 * Compatible with the ONNX operator ConstantOfShape.

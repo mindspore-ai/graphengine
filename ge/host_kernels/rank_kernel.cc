@@ -19,12 +19,12 @@
 #include <memory>
 #include <vector>
 
-#include "graph/types.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/op/ge_op_utils.h"
+#include "external/graph/types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "framework/common/debug/ge_log.h"
 #include "inc/kernel_factory.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 #include "framework/common/types.h"
 
 namespace {

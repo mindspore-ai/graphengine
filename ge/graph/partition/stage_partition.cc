@@ -21,8 +21,8 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/op_desc_utils.h"
-#include "common/util.h"
-#include "common/types.h"
+#include "framework/common/util.h"
+#include "framework/common/types.h"
 
 namespace ge {
 namespace {

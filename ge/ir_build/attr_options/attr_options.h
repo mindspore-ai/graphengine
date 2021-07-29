@@ -22,7 +22,8 @@
 
 namespace ge {
 bool IsOriginalOpFind(OpDescPtr &op_desc, const std::string &op_name);
-
+bool IsOpTypeEqual(const ge::NodePtr &node, const std::string &op_type);
+bool IsContainOpType(const std::string &cfg_line, std::string &op_type);
 graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path);
 graphStatus WeightCompressFunc(ComputeGraphPtr &graph, const std::string &cfg_path);
 }  // namespace

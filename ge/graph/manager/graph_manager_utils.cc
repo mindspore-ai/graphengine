@@ -21,12 +21,12 @@
 
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
-#include "common/string_util.h"
+#include "framework/common/string_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/compute_graph.h"
 #include "graph/op_desc.h"
 #include "graph/optimize/common/params.h"
-#include "omg/omg_inner_types.h"
+#include "framework/omg/omg_inner_types.h"
 #include "runtime/mem.h"
 
 namespace ge {
@@ -70,45 +70,9 @@ void GraphNode::IncreaseLoadCount() {
   ++load_count_;
 }
 
-SubGraphInfo::SubGraphInfo() : subgraph_ptr_(nullptr), ge_model_ptr_(nullptr), malloc_flag_(false) {}
+SubGraphInfo::SubGraphInfo() : subgraph_ptr_(nullptr), ge_model_ptr_(nullptr) {}
 
 SubGraphInfo::~SubGraphInfo() {
-  if (malloc_flag_) {
-    for (auto &buffer_addr : buffer_addr_) {
-      if (buffer_addr == nullptr) {
-        continue;
-      }
-      rtError_t rt_ret;
-      rt_ret = rtFreeHost(buffer_addr);
-      buffer_addr = nullptr;
-      if (rt_ret != RT_ERROR_NONE) {
-        GELOGE(rt_ret, "[Call][RtFreeHost] subgraph free buffer failed, modelId = %u",
-               model_id_info_.model_id);
-      }
-    }
-  }
-}
-
-Status SubGraphInfo::FreeInOutBuffer() {
-  if (malloc_flag_) {
-    for (auto iter = buffer_addr_.begin(); iter != buffer_addr_.end(); ++iter) {
-      rtError_t rt_ret;
-      rt_ret = rtFreeHost(*iter);
-      if (rt_ret != RT_ERROR_NONE) {
-        REPORT_CALL_ERROR("E19999", "Call rtFreeHost fail, ret:%d", rt_ret);
-        GELOGE(rt_ret, "[Call][RtFreeHost] subgraph free buffer failed, modelId = %u", model_id_info_.model_id);
-        buffer_addr_.erase(buffer_addr_.begin(), iter);
-        return GE_GRAPH_FREE_FAILED;
-      }
-    }
-    buffer_addr_.clear();
-
-    malloc_flag_ = false;
-    return SUCCESS;
-  } else {
-    GELOGI("[GraphManager] not malloc buffer, modelId = %u", model_id_info_.model_id);
-    return SUCCESS;
-  }
 }
 
 GraphModelListener::GraphModelListener(std::mutex &mutex, std::condition_variable &cond)

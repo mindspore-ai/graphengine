@@ -21,7 +21,7 @@
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/passes/pass_utils.h"
-#include "common/util.h"
+#include "framework/common/util.h"
 
 namespace ge {
 namespace {

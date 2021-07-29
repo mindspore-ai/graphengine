@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <stdio.h>
 #include <gtest/gtest.h>
 #include "ir_build/option_utils.h"
 #include "graph/testcase/ge_graph/graph_builder_utils.h"
@@ -21,7 +21,7 @@
 #include "graph/utils/graph_utils.h"
 #include "ge/ge_ir_build.h"
 #include "graph/ops_stub.h"
-
+#include "ge/ir_build/attr_options/attr_options.h"
 #define protected public
 #define private public
 
@@ -70,6 +70,22 @@ static ComputeGraphPtr BuildComputeGraph() {
   return builder.GetGraph();
 }
 
+static ComputeGraphPtr BuildComputeGraph1() {
+  auto builder = ut::GraphBuilder("test");
+  auto data1 = builder.AddNode("input1", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {1, 2, 3});
+  auto data2 = builder.AddNode("input2", DATA, 1, 1, FORMAT_NCHW, DT_FLOAT, {4, 10});
+  auto addn1 = builder.AddNode("addn1", AddNYes, 2, 1);
+  auto node1 = builder.AddNode("addd", "Mul", 2, 1);
+  auto node2 = builder.AddNode("ffm", "FrameworkOp", 2, 1);
+  auto netoutput = builder.AddNode("netoutput", NETOUTPUT, 1, 0);
+
+  builder.AddDataEdge(data1, 0, addn1, 0);
+  builder.AddDataEdge(data2, 0, addn1, 1);
+  builder.AddDataEdge(addn1, 0,netoutput, 0);
+
+  return builder.GetGraph();
+}
+
 // data not set attr index;
 // but becasue of op proto, register attr index. so all data index is zero;
 static Graph BuildIrGraph() {
@@ -89,10 +105,12 @@ static Graph BuildIrGraph1() {
   auto data1 = op::Data("data1").set_attr_index(0);
   auto data2 = op::Data("data2").set_attr_index(1);
   auto data3 = op::Data("data3");
-  std::vector<Operator> inputs {data1, data2, data3};
+  auto data4 = op::Data("Test");
+  std::vector<Operator> inputs {data1, data2, data3, data4};
   std::vector<Operator> outputs;
 
   Graph graph("test_graph");
+  graph.AddNodeByOp(Operator("gg", "Mul"));
   graph.SetInputs(inputs).SetOutputs(outputs);
   return graph;
 }
@@ -349,7 +367,7 @@ TEST(UtestIrBuild, check_data_op_attr_index_valid) {
   };
   ModelBufferData model;
   graphStatus ret = aclgrphBuildModel(graph, build_options, model);
-  EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+  EXPECT_EQ(ret, ge::FAILED);
 }
 
 // set attr index invalid, when not set input shape range
@@ -359,7 +377,7 @@ TEST(UtestIrBuild, check_data_attr_index_succ_no_input_range) {
   const map<string, string> build_options;
   ModelBufferData model;
   graphStatus ret = aclgrphBuildModel(graph, build_options, model);
-  EXPECT_EQ(ret, GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED);
+  EXPECT_EQ(ret, ge::FAILED);
 }
 
 TEST(UtestIrBuild, check_modify_mixlist_param) {
@@ -368,7 +386,58 @@ TEST(UtestIrBuild, check_modify_mixlist_param) {
     {"ge.exec.modify_mixlist", "/modify.json"}
   };
   ModelBufferData model;
-  
+
   auto ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
+}
+
+TEST(UtestIrBuild, check_op_precision_mode_param) {
+  Graph graph = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options = {
+    {"ge.exec.op_precision_mode", "./op_precision_mode.ini"}
+  };
+  ModelBufferData model;
+
+  auto ret = aclgrphBuildModel(graph, build_options, model);
+  EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
+}
+
+TEST(UtestIrBuild, check_build_model_and_build_step) {
+  Graph graph_1 = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options_1 = {
+    {"ge.buildMode", "xxx"}
+  };
+  ModelBufferData model_1;
+  auto ret_1 = aclgrphBuildModel(graph_1, build_options_1, model_1);
+  EXPECT_NE(ret_1, GRAPH_SUCCESS);
+
+  Graph graph_2 = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options_2 = {
+    {"ge.buildStep", "xxx"}
+  };
+  ModelBufferData model_2;
+  auto ret_2 = aclgrphBuildModel(graph_2, build_options_2, model_2);
+  EXPECT_NE(ret_2, GRAPH_SUCCESS);
+
+  Graph graph_3 = BuildIrGraph1();
+  const std::map<std::string, std::string> build_options_3 = {
+    {"ge.buildMode", "tuning"}
+  };
+  ModelBufferData model_3;
+  auto ret_3 = aclgrphBuildModel(graph_3, build_options_3, model_3);
+  EXPECT_NE(ret_3, GRAPH_SUCCESS);
+}
+
+TEST(UtestIrBuild, atc_cfg_optype_param) {
+  ComputeGraphPtr graph = BuildComputeGraph1();
+  FILE *fp = fopen("./keep.txt", "w+");
+  if (fp) {
+    fprintf(fp, "Test\n");
+    fprintf(fp, "OpType::Mul\n");
+    fprintf(fp, "Optype::Sub\n");
+    fclose(fp);
+  }
+  auto ret = KeepDtypeFunc(graph, "./keep.txt");
+  (void)remove("./keep.txt");
   EXPECT_EQ(ret, GRAPH_PARAM_INVALID);
 }

@@ -16,14 +16,14 @@
 
 #include "graph/build/memory/var_mem_assign_util.h"
 #include <vector>
-#include "common/types.h"
+#include "framework/common/types.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_mem_allocator.h"
 #include "graph/manager/graph_var_manager.h"
-#include "graph/tensor.h"
-#include "graph/types.h"
+#include "external/graph/tensor.h"
+#include "external/graph/types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"

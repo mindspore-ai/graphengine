@@ -66,7 +66,7 @@ namespace {
 ///     transdata2
 ///         |
 ///       assign1
-///      /     \
+///      /     \.
 /// transdata1  |
 ///     |       |
 ///  var1     const1

@@ -15,8 +15,8 @@
  */
 
 #include "ge_runtime/output.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/util.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 
 namespace ge {

@@ -21,7 +21,7 @@ MOUNT_PROJECT_HOME=$(cd $PROJECT_HOME || return; pwd)
 
 DOCKER_BUILD_ENV_NAME=${MOUNT_PROJECT_HOME#*/}
 DOCKER_BUILD_ENV_NAME=${DOCKER_BUILD_ENV_NAME//\//\_}
-DOCKER_IMAGE_TAG=ge_build_env.1.0.6
+DOCKER_IMAGE_TAG=ge_build_env.1.0.9
 DOCKER_IAMGE_NAME=joycode2art/turing
 DOCKER_FULL_IMAGE_NAME=${DOCKER_IAMGE_NAME}:${DOCKER_IMAGE_TAG}
 
@@ -61,7 +61,7 @@ function enter_docker_env(){
     if test -z "$(docker images |grep ${DOCKER_IAMGE_NAME} | grep ${DOCKER_IMAGE_TAG})"; then
         echo "please run  'ge env --pull'  to download images first!"
     elif test -z "$(docker ps -a |grep ${DOCKER_BUILD_ENV_NAME})"; then
-        $docker_cmd run -it -v ${MOUNT_PROJECT_HOME}:/code/Turing/graphEngine --workdir ${docker_work_dir} --name ${DOCKER_BUILD_ENV_NAME} ${DOCKER_FULL_IMAGE_NAME} ${docker_bash_dir}
+        $docker_cmd run -p 7002:22 -p 7003:7777 --privileged=true -it -v ${MOUNT_PROJECT_HOME}:/code/Turing/graphEngine --workdir ${docker_work_dir} --name ${DOCKER_BUILD_ENV_NAME} ${DOCKER_FULL_IMAGE_NAME} ${docker_bash_dir}
     elif test -z "$(docker ps |grep ${DOCKER_BUILD_ENV_NAME})"; then
         $docker_cmd start ${DOCKER_BUILD_ENV_NAME}
         $docker_cmd exec -w ${docker_work_dir} -it ${DOCKER_BUILD_ENV_NAME} ${docker_bash_dir}

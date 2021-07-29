@@ -456,19 +456,19 @@ TEST_F(UtestGraphPassesTransOpDepthFusionPass, test_transop_with_multi_out_edge)
   ///                     -->transpose1               -->transpose3-->sinh2
   ///                    |            \             /
   ///                    |             -->transpose2
-  ///                    |                          \
+  ///                    |                          \.
   ///                   /                            -->cast3-->cast4-->sinh3
   ///                  /
   ///                 /               -->transpose4-->transpose5-->sinh4
   ///                /               /
   ///  Node4D-->Cast1-->Cast2-->Cast5 -->reshape2-->sinh5
-  ///                \               \
+  ///                \               \.
   ///                 \               -->sinh6
-  ///                  \
+  ///                  \.
   ///                   \            -->transpose6-->transpose7-->sinh9
   ///                    \          /
   ///                     -->reshape-->cast6-->cast7-->sinh8
-  ///                              \
+  ///                              \.
   ///                                -->sinh7
 
   ///     after optimized graph
@@ -479,15 +479,15 @@ TEST_F(UtestGraphPassesTransOpDepthFusionPass, test_transop_with_multi_out_edge)
   ///          /       /-->transpose3-->sinh2
   ///          -->Cast1
   ///         /        \-->sinh7
-  ///        /          \
+  ///        /          \.
   ///       /            -->sinh9
   ///  Node4D
   ///       \         -->sinh4
   ///        \       /
   ///         -->Cast5-->sinh5
-  ///         \      \
+  ///         \      \.
   ///          \      -->sinh6
-  ///           \
+  ///           \.
   ///            -->Cast7-->sinh8
   ge::ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
 

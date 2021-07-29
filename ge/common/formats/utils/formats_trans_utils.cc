@@ -41,12 +41,30 @@ int64_t GetCubeSizeByDataType(DataType data_type) {
   }
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY std::string ShapeToString(const GeShape &shape) {
+std::string ShapeToString(const GeShape &shape) {
   return ShapeToString(shape.GetDims());
 }
 
-GE_FUNC_DEV_VISIBILITY GE_FUNC_HOST_VISIBILITY std::string ShapeToString(const std::vector<int64_t> &shape) {
+std::string ShapeToString(const std::vector<int64_t> &shape) {
   return JoinToString(shape);
+}
+
+std::string RangeToString(const std::vector<std::pair<int64_t, int64_t>> &ranges) {
+  bool first = true;
+  std::stringstream ss;
+  ss << "[";
+  for (const auto &range : ranges) {
+    if (first) {
+      first = false;
+    } else {
+      ss << ",";
+    }
+    ss << "{";
+    ss << range.first << "," << range.second;
+    ss << "}";
+  }
+  ss << "]";
+  return ss.str();
 }
 
 int64_t GetItemNumByShape(const std::vector<int64_t> &shape) {

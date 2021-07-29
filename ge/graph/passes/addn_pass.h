@@ -17,10 +17,10 @@
 #ifndef GE_GRAPH_PASSES_ADDN_PASS_H_
 #define GE_GRAPH_PASSES_ADDN_PASS_H_
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/types.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/passes/base_pass.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"

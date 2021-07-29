@@ -18,8 +18,8 @@
 #define GE_COMMON_DUMP_OPDEBUG_REGISTER_H_
 
 #include <map>
-#include "common/debug/ge_log.h"
-#include "common/debug/log.h"
+#include "framework/common/debug/ge_log.h"
+#include "framework/common/debug/log.h"
 #include "graph/load/model_manager/data_dumper.h"
 
 namespace ge {

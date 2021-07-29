@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/opskernel/ops_kernel_info_types.h"
 #include "framework/common/types.h"
 #include "graph/compute_graph.h"
@@ -80,6 +80,7 @@ class TaskGenerator {
   Status FindProfilingNodeIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                                 std::vector<uint32_t> &all_reduce_nodes);
  private:
+  Status UpdateAnchorStatusForFfts(const NodePtr &node);
   Status UpdateAnchorStatus(const NodePtr &node);
 
   Status UpdateOpIsVarAttr(const OpDescPtr &op_desc, uint64_t session_id);
@@ -115,7 +116,7 @@ class TaskGenerator {
   Status AutoFindFpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point) const;
   Status AutoFindBpOpIndex(const ComputeGraphPtr &graph, ProfilingPoint &profiling_point,
                            vector<uint32_t> &all_reduce_nodes) const;
-  uint32_t FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node) const;
+  Status FindLastBpFromBpNode(const ComputeGraphPtr &graph, const NodePtr &bp_node, uint32_t &bp_index) const;
 
   Status FindFpOfEnv(const ComputeGraphPtr &graph, const std::string &fp_point_str,
                      ProfilingPoint &profiling_point) const;

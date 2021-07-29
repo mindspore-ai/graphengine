@@ -28,12 +28,12 @@ namespace ge {
 * iou_threshold with higher scoring box according to their
 * intersection-over-union (IoU) . \n
 
-*@par Input:
-* @li box_scores: 2-D tensor with shape of [N, 8], including proposal boxes and
+* @par Inputs:
+* box_scores: 2-D tensor with shape of [N, 8], including proposal boxes and
 * corresponding confidence scores . \n
 
 * @par Attributes:
-* @li iou_threshold: An optional float. The threshold for deciding whether boxes
+* iou_threshold: An optional float. The threshold for deciding whether boxes
 * overlap too much with respect to IOU . \n
 
 * @par Outputs:

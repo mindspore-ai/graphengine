@@ -17,14 +17,14 @@
 #include "graph/passes/permute_pass.h"
 #include <queue>
 #include <vector>
-#include "common/debug/log.h"
-#include "common/types.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/types.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/op_desc_utils.h"
 #include "inc/kernel.h"
 #include "inc/kernel_factory.h"
 #include "framework/omg/omg_inner_types.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 
 using domi::DOMI_TENSOR_ND;
 using domi::DOMI_TENSOR_NHWC;

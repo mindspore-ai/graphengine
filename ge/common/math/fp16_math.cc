@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "fp16_math.h"
+#include "common/math/fp16_math.h"
 #include "external/register/register_types.h"
 
 namespace ge {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t sqrt(fp16_t fp) {
+fp16_t sqrt(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -29,7 +29,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t sqrt(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t rsqrt(fp16_t fp) {
+fp16_t rsqrt(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -40,7 +40,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t rsqrt(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t rcp(fp16_t fp) {
+fp16_t rcp(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -51,7 +51,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t rcp(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t exp(fp16_t fp) {
+fp16_t exp(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -63,7 +63,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t exp(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t pow2(fp16_t fp) {
+fp16_t pow2(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -75,7 +75,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t pow2(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t pow10(fp16_t fp) {
+fp16_t pow10(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -87,7 +87,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t pow10(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t ln(fp16_t fp) {
+fp16_t ln(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -99,7 +99,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t ln(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t log2(fp16_t fp) {
+fp16_t log2(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -111,7 +111,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t log2(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t log10(fp16_t fp) {
+fp16_t log10(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -123,7 +123,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t log10(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t cos(fp16_t fp) {
+fp16_t cos(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -135,7 +135,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t cos(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t sin(fp16_t fp) {
+fp16_t sin(fp16_t fp) {
   fp16_t ret;
   // Convert half precision float number to double
   double dVal = fp;
@@ -147,13 +147,13 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t sin(fp16_t fp) {
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t abs(fp16_t fp) {
+fp16_t abs(fp16_t fp) {
   fp16_t ret;
   ret.val = (fp.val & kFp16AbsMax);
   return ret;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t max(fp16_t fp1, fp16_t fp2) {
+fp16_t max(fp16_t fp1, fp16_t fp2) {
   if (fp1 >= fp2) {
     return fp1;
   } else {
@@ -161,7 +161,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t max(fp16_t fp1, fp16_t f
   }
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY fp16_t min(fp16_t fp1, fp16_t fp2) {
+fp16_t min(fp16_t fp1, fp16_t fp2) {
   if (fp1 <= fp2) {
     return fp1;
   } else {

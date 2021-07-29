@@ -17,19 +17,18 @@
 #include "framework/common/fmk_error_codes.h"
 
 namespace domi {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY StatusFactory *StatusFactory::Instance() {
+StatusFactory *StatusFactory::Instance() {
   static StatusFactory instance;
   return &instance;
 }
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void StatusFactory::RegisterErrorNo(uint32_t err,
-                                                                                     const std::string &desc) {
+void StatusFactory::RegisterErrorNo(uint32_t err, const std::string &desc) {
   if (err_desc_.find(err) != err_desc_.end()) {
     return;
   }
   err_desc_[err] = desc;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY std::string StatusFactory::GetErrDesc(uint32_t err) {
+std::string StatusFactory::GetErrDesc(uint32_t err) {
   auto iter_find = err_desc_.find(err);
   if (iter_find == err_desc_.end()) {
     return "";

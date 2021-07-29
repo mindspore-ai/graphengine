@@ -32,14 +32,14 @@ using namespace ge;
 namespace {
 const char *const kVectorCore = "VectorCore";
 const char *const kAicoreEngine = "AIcoreEngine";
-string CreateEngineConfigJson() {
+void CreateEngineConfigJson(string &dir_path, string &file_path) {
   GELOGI("Begin to create engine config json file.");
   string base_path = PluginManager::GetPath();
   GELOGI("Base path is %s.", base_path.c_str());
-  string dir_path = base_path.substr(0, base_path.rfind('/') + 1) + "plugin/nnengine/ge_config";
+  dir_path = base_path.substr(0, base_path.rfind('/') + 1) + "plugin/nnengine/ge_config";
   string cmd = "mkdir -p " + dir_path;
   system(cmd.c_str());
-  string file_path = dir_path + "/engine_conf.json";
+  file_path = dir_path + "/engine_conf.json";
   GELOGI("Begin to write into the config file: %s.", file_path.c_str());
   ofstream ofs(file_path, ios::out);
   EXPECT_EQ(!ofs, false);
@@ -56,7 +56,6 @@ string CreateEngineConfigJson() {
          "}";
   ofs.close();
   GELOGI("Json config file %s has been written.", file_path.c_str());
-  return file_path;
 }
 
 void DeleteFile(const string &file_name) {
@@ -69,14 +68,16 @@ void DeleteFile(const string &file_name) {
 class UtestGraphOptimizeTest : public testing::Test {
  protected:
   void SetUp() {
-    config_file_ = CreateEngineConfigJson();
+    CreateEngineConfigJson(config_dir_, config_file_);
   }
 
   void TearDown() {
     DeleteFile(config_file_);
+    DeleteFile(config_dir_);
   }
 
  private:
+  string config_dir_;
   string config_file_;
 };
 

@@ -16,11 +16,93 @@
 
 #include <cce/dnn.h>
 #include <securec.h>
+#include "runtime_stub.h"
+#include "runtime/rt.h"
+
+#define ADD_STUB_RETURN_VALUE(FUNC, TYPE) std::vector<TYPE> g_Stub_##FUNC##_RETURN
+
+#define GET_STUB_RETURN_VALUE(FUNC, TYPE, DEFAULT) ({   \
+  TYPE result = DEFAULT;                                \
+  if (!g_Stub_##FUNC##_RETURN.empty()) {                \
+    result = g_Stub_##FUNC##_RETURN.back();             \
+    g_Stub_##FUNC##_RETURN.pop_back();                  \
+  }                                                     \
+  result;                                               \
+})
+
+#define DEL_STUB_RETURN_VALUE(FUNC, TYPE)           \
+do {                                                \
+  extern std::vector<TYPE> g_Stub_##FUNC##_RETURN;  \
+  g_Stub_##FUNC##_RETURN.clear();                   \
+} while (0)
+
+
+#define ADD_STUB_OUTBOUND_VALUE(FUNC, TYPE, NAME) std::vector<TYPE> g_Stub_##FUNC##_OUT_##NAME
+
+#define GET_STUB_OUTBOUND_VALUE(FUNC, TYPE, NAME, DEFAULT) ({ \
+  TYPE value;                                                 \
+  if (!g_Stub_##FUNC##_OUT_##NAME.empty()) {                  \
+    value = g_Stub_##FUNC##_OUT_##NAME.back();                \
+    g_Stub_##FUNC##_OUT_##NAME.pop_back();                    \
+  } else {                                                    \
+    value = DEFAULT;                                          \
+  }                                                           \
+  value;                                                      \
+})
+
+#define DEL_STUB_OUTBOUND_VALUE(FUNC, TYPE, NAME)       \
+do {                                                    \
+  extern std::vector<TYPE> g_Stub_##FUNC##_OUT_##NAME;  \
+  g_Stub_##FUNC##_OUT_##NAME.clear();                   \
+} while (0)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 #define EVENT_LENTH 10
+
+void rtStubTearDown() {
+  DEL_STUB_RETURN_VALUE(rtGetDevice, rtError_t);
+  DEL_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t);
+  DEL_STUB_RETURN_VALUE(rtStreamWaitEvent, rtError_t);
+  DEL_STUB_RETURN_VALUE(rtEventReset, rtError_t);
+  DEL_STUB_RETURN_VALUE(rtEventCreate, rtError_t);
+  DEL_STUB_RETURN_VALUE(rtGetEventID, rtError_t);
+}
+
+ADD_STUB_RETURN_VALUE(rtGetDevice, rtError_t);
+rtError_t rtGetDevice(int32_t *device) {
+  return GET_STUB_RETURN_VALUE(rtGetDevice, rtError_t, RT_ERROR_NONE);
+}
+
+ADD_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t);
+ADD_STUB_OUTBOUND_VALUE(rtGetDeviceCapability, int32_t, value);
+rtError_t rtGetDeviceCapability(int32_t device, int32_t moduleType, int32_t featureType, int32_t *value) {
+  *value = GET_STUB_OUTBOUND_VALUE(rtGetDeviceCapability, int32_t, value, RT_AICPU_BLOCKING_OP_SUPPORT);
+  return GET_STUB_RETURN_VALUE(rtGetDeviceCapability, rtError_t, RT_ERROR_NONE);
+}
+
+ADD_STUB_RETURN_VALUE(rtStreamWaitEvent, rtError_t);
+rtError_t rtStreamWaitEvent(rtStream_t stream, rtEvent_t event) {
+  return GET_STUB_RETURN_VALUE(rtStreamWaitEvent, rtError_t, RT_ERROR_NONE);
+}
+
+ADD_STUB_RETURN_VALUE(rtEventReset, rtError_t);
+rtError_t rtEventReset(rtEvent_t event, rtStream_t stream) {
+  return GET_STUB_RETURN_VALUE(rtEventReset, rtError_t, RT_ERROR_NONE);
+}
+
+ADD_STUB_RETURN_VALUE(rtEventCreate, rtError_t);
+rtError_t rtEventCreate(rtEvent_t *event) {
+  *event = new int[EVENT_LENTH];
+  return GET_STUB_RETURN_VALUE(rtEventCreate, rtError_t, RT_ERROR_NONE);
+}
+
+ADD_STUB_RETURN_VALUE(rtGetEventID, rtError_t);
+rtError_t rtGetEventID(rtEvent_t event, uint32_t *event_id) {
+  *event_id = 0;
+  return GET_STUB_RETURN_VALUE(rtEventCreate, rtError_t, RT_ERROR_NONE);
+}
 
 rtError_t rtCtxSetCurrent(rtContext_t ctx) { return RT_ERROR_NONE; }
 
@@ -39,11 +121,6 @@ rtError_t rtCtxSetDryRun(rtContext_t ctx, rtDryRunFlag_t enable, uint32_t flag) 
 
 rtError_t rtEventGetTimeStamp(uint64_t *time, rtEvent_t event) {
   *time = 12345;
-  return RT_ERROR_NONE;
-}
-
-rtError_t rtEventCreate(rtEvent_t *event) {
-  *event = new int[EVENT_LENTH];
   return RT_ERROR_NONE;
 }
 
@@ -111,8 +188,6 @@ rtError_t rtMemcpyAsync(void *dst, uint64_t dest_max, const void *src, uint64_t 
   }
   return RT_ERROR_NONE;
 }
-
-rtError_t rtStreamWaitEvent(rtStream_t stream, rtEvent_t event) { return RT_ERROR_NONE; }
 
 rtError_t rtSetTSDevice(uint32_t tsId) {
   return RT_ERROR_NONE;
@@ -188,6 +263,12 @@ rtError_t rtKernelFusionStart(rtStream_t stream) { return RT_ERROR_NONE; }
 /// @return RT_ERROR_NONE for ok, errno for failed
 rtError_t rtKernelFusionEnd(rtStream_t stream) { return RT_ERROR_NONE; }
 rtError_t rtMemGetInfo(size_t *free, size_t *total) {
+  *free = 512UL * 1024UL * 1024UL;
+  *total = 1024UL * 1024UL * 1024UL;
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtMemGetInfoEx(rtMemInfoType_t memInfoType, size_t *free, size_t *total) {
   *free = 512UL * 1024UL * 1024UL;
   *total = 1024UL * 1024UL * 1024UL;
   return RT_ERROR_NONE;
@@ -341,10 +422,6 @@ rtError_t rtStreamSwitchEx(void *ptr, rtCondition_t condition, void *value_ptr, 
 
 rtError_t rtStreamActive(rtStream_t active_stream, rtStream_t stream) { return RT_ERROR_NONE; }
 
-rtError_t rtEventReset(rtEvent_t event, rtStream_t stream) { return RT_ERROR_NONE; }
-
-rtError_t rtGetDevice(int32_t *device) { return RT_ERROR_NONE; }
-
 rtError_t rtDatadumpInfoLoad(const void *dump_info, uint32_t length) { return RT_ERROR_NONE; }
 
 rtError_t rtKernelLaunchWithFlag(const void *stub_func, uint32_t block_dim, void *args, uint32_t args_size,
@@ -456,6 +533,25 @@ rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, const void 
 rtError_t rtDebugUnRegisterForStream(rtStream_t stream) {
   return RT_ERROR_NONE;
 }
+
+rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtKernelLaunchFwk(const char *opName, void *args, uint32_t argSize, uint32_t flags, rtStream_t rtStream) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim, const void *args,
+                                      uint32_t argSize, rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags) {
+  return RT_ERROR_NONE;
+}
+
+rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim, const void *args,
+                              uint32_t argSize, rtSmDesc_t *smDesc, rtStream_t stream) {
+  return RT_ERROR_NONE;
+}
+
 #ifdef __cplusplus
 }
 #endif

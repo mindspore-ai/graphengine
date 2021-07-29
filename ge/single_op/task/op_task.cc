@@ -27,9 +27,8 @@
 #include "common/formats/formats.h"
 #include "common/math/math_util.h"
 #include "framework/common/debug/log.h"
-#include "register/op_tiling.h"
 #include "runtime/rt.h"
-#include "build_task_utils.h"
+#include "single_op/task/build_task_utils.h"
 
 namespace ge {
 namespace {
@@ -89,6 +88,7 @@ Status OpTask::OpenDump(rtStream_t stream) {
 void TbeOpTask::SetStubFunc(const std::string &name, const void *stub_func) {
   this->stub_name_ = name;
   this->stub_func_ = stub_func;
+  this->task_name_ = name;
 }
 
 void TbeOpTask::SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
@@ -221,21 +221,27 @@ Status TbeOpTask::LaunchKernel(rtStream_t stream) {
   return SUCCESS;
 }
 
-Status TbeOpTask::UpdateRunInfo() {
-  // invoke OpParaCalculate
-  GELOGD("Start to invoke OpParaCalculate.");
-  optiling::OpRunInfo run_info;
-  run_info.block_dim = 0;
-  auto ret = optiling::OpParaCalculate(*node_, run_info);
+Status TbeOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
+  auto ret = optiling::OpParaCalculateV2(*node_, run_info);
   if (ret != GRAPH_SUCCESS) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Invoke][OpParaCalculate] failed, ret = %u.", ret);
     REPORT_INNER_ERROR("E19999", "invoke OpParaCalculate failed, ret = %u.", ret);
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
-  block_dim_ = run_info.block_dim;
-  tiling_data_ = run_info.tiling_data.str();
-  tiling_key_ = run_info.tiling_key;
-  run_info_workspaces_ = run_info.workspaces;
+  return SUCCESS;
+}
+
+Status TbeOpTask::UpdateRunInfo() {
+  // invoke OpParaCalculate
+  GELOGD("Start to invoke OpParaCalculate.");
+  optiling::utils::OpRunInfo run_info(0, true, 0);
+  GE_CHK_STATUS_RET(CalcTilingInfo(run_info), "[Calc][TilingInfo]failed.");
+
+  block_dim_ = run_info.GetBlockDim();
+  tiling_data_ = run_info.GetAllTilingData().str();
+  tiling_key_ = run_info.GetTilingKey();
+  clear_atomic_ = run_info.GetClearAtomic();
+  run_info.GetAllWorkspaces(run_info_workspaces_);
   GELOGD("Done invoking OpParaCalculate successfully. block_dim = %u, tiling size = %zu, tiling_key = %u", block_dim_,
          tiling_data_.size(), tiling_key_);
   return SUCCESS;
@@ -262,7 +268,6 @@ Status TbeOpTask::UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc 
     dst_tensor.SetShape(GeShape(std::move(storage_shape)));
     dst_tensor.SetOriginShape(src_tensor.GetShape());
   }
-
   return SUCCESS;
 }
 
@@ -346,48 +351,107 @@ Status TbeOpTask::AllocateWorkspaces(const vector<int64_t> &workspace_sizes) {
   return SUCCESS;
 }
 
-Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
-                               const vector<DataBuffer> &input_buffers,
-                               vector<GeTensorDesc> &output_desc,
-                               vector<DataBuffer> &output_buffers,
-                               rtStream_t stream) {
-  GELOGD("[%s] Start to launch kernel", node_->GetName().c_str());
-  GE_CHK_STATUS_RET_NOLOG(UpdateNodeByShape(input_desc, output_desc));
-  GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo());
-  GE_CHK_STATUS_RET(AllocateWorkspaces(run_info_workspaces_), "[Allocate][Workspaces] failed.");
-  std::vector<void *> args;
-  for (auto &buffer : input_buffers) {
-    args.emplace_back(buffer.data);
+Status TbeOpTask::CheckAndExecuteAtomic(const vector<GeTensorDesc> &input_desc,
+                                        const vector<DataBuffer> &input_buffers,
+                                        vector<GeTensorDesc> &output_desc,
+                                        vector<DataBuffer> &output_buffers,
+                                        rtStream_t stream) {
+  if (clear_atomic_ && atomic_task_ != nullptr) {
+    return atomic_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream);
   }
-  for (auto &buffer : output_buffers) {
-    args.emplace_back(buffer.data);
+  return SUCCESS;
+}
+
+Status TbeOpTask::UpdateTilingArgs(rtStream_t stream) {
+  size_t args_size = input_num_ + output_num_ + workspaces_.size();
+  if (tiling_buffer_ != nullptr) {
+    args_size++;
   }
-  for (auto &buffer : workspaces_) {
-    args.emplace_back(buffer);
+  size_t temp_size = args_size * sizeof(void *);
+  if (arg_size_ < temp_size) {
+    GELOGD("Need to reset size of args_ from %zu to %zu.", arg_size_, temp_size);
+    std::unique_ptr<uint8_t[]> args(new (std::nothrow) uint8_t[temp_size]());
+    GE_CHECK_NOTNULL(args);
+    if (memcpy_s(args.get(), temp_size, args_.get(), arg_size_) != EOK) {
+      GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][KernelArgs] failed for [%s].", node_->GetName().c_str());
+      REPORT_INNER_ERROR("E19999", "update kernel args failed for %s.", node_->GetName().c_str());
+      return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
+    }
+
+    args_ = std::move(args);
+    arg_size_ = temp_size;
+  }
+
+  uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  size_t arg_index = input_num_ + output_num_;
+  for (size_t i = 0; i < workspaces_.size(); ++i) {
+    arg_base[arg_index++] = reinterpret_cast<uintptr_t>(workspaces_[i]);
   }
 
   if (tiling_buffer_ != nullptr) {
     GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
     GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_, max_tiling_size_, tiling_data_.data(), tiling_data_.size(),
                                 RT_MEMCPY_HOST_TO_DEVICE_EX, stream));
-
-    args.emplace_back(tiling_buffer_);
+    arg_base[arg_index] = reinterpret_cast<uintptr_t>(tiling_buffer_);
   }
 
-  GELOGD("Dst size is %zu, src size is %zu.", arg_size_, args.size() * sizeof(void *));
-  // node with workspace: build can not get size of workspace, need to update arg_size_ when execute
-  if (arg_size_ < (args.size() * sizeof(void *))) {
-    size_t temp_size = args.size() * sizeof(void *);
-    GELOGD("Need to reset size of args_ from %zu to %zu.", arg_size_, temp_size);
-    args_.reset(new(std::nothrow) uint8_t[temp_size]());
-    GE_CHECK_NOTNULL(args_);
-    arg_size_ = temp_size;
+  return SUCCESS;
+}
+
+Status TbeOpTask::SetArgIndex() {
+  const vector<bool> v_is_input_const = op_desc_->GetIsInputConst();
+  size_t input_index = 0;
+  for (size_t i = 0; i < op_desc_->GetAllInputsSize(); ++i) {
+    const GeTensorDescPtr tensor_desc = op_desc_->MutableInputDesc(static_cast<uint32_t>(i));
+    if (tensor_desc == nullptr) {
+      GELOGD("SingleOp: %s, Index: %zu, has no input", op_desc_->GetName().c_str(), i);
+      continue;
+    }
+    if (i < v_is_input_const.size() && v_is_input_const[i]) {
+      GELOGD("SingleOp: %s, Index: %zu, input is const", op_desc_->GetName().c_str(), i);
+      input_index++;
+      continue;
+    }
+    arg_index_.emplace_back(input_index);
+    input_index++;
   }
-  if (memcpy_s(args_.get(), arg_size_, args.data(), args.size() * sizeof(void *)) != EOK) {
-    GELOGE(ACL_ERROR_GE_MEMORY_OPERATE_FAILED, "[Update][KernelArgs] failed for [%s].", node_->GetName().c_str());
-    REPORT_INNER_ERROR("E19999", "update kernel args failed for %s.", node_->GetName().c_str());
-    return ACL_ERROR_GE_MEMORY_OPERATE_FAILED;
+  return SUCCESS;
+}
+
+Status TbeOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+  if (arg_index_.size() != inputs.size()) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size] Args size is %zu, but get input size is %zu.",
+           arg_index_.size(), inputs.size());
+    REPORT_INNER_ERROR("E19999", "[Check][Size] Args size is %zu, but get input size is %zu.",
+                       arg_index_.size(), inputs.size());
+    return ACL_ERROR_GE_PARAM_INVALID;
   }
+
+  uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  for (size_t i = 0; i < arg_index_.size(); ++i) {
+    arg_base[arg_index_[i]] = reinterpret_cast<uintptr_t>(inputs[i].data);
+  }
+
+  for (size_t i = 0; i < op_desc_->GetOutputsSize(); ++i) {
+    arg_base[input_num_ + i] = reinterpret_cast<uintptr_t>(outputs[i].data);
+  }
+
+  return SUCCESS;
+}
+
+Status TbeOpTask::LaunchKernel(const vector<GeTensorDesc> &input_desc,
+                               const vector<DataBuffer> &input_buffers,
+                               vector<GeTensorDesc> &output_desc,
+                               vector<DataBuffer> &output_buffers,
+                               rtStream_t stream) {
+  GELOGD("[%s] Start to launch kernel", node_->GetName().c_str());
+  GE_CHK_STATUS_RET(UpdateIoAddr(input_buffers, output_buffers), "[Update][IoAddr] failed.");
+  GE_CHK_STATUS_RET_NOLOG(UpdateNodeByShape(input_desc, output_desc));
+  GE_CHK_STATUS_RET_NOLOG(UpdateRunInfo());
+  GE_CHK_STATUS_RET(AllocateWorkspaces(run_info_workspaces_), "[Allocate][Workspaces] failed.");
+  GE_CHK_STATUS_RET(CheckAndExecuteAtomic(input_desc, input_buffers, output_desc, output_buffers, stream),
+                    "[Execute][AtomicTask] failed.");
+  GE_CHK_STATUS_RET(UpdateTilingArgs(stream), "[Update][TilingArgs] failed.");
 
   GELOGD("[%s] Start to invoke rtKernelLaunch", node_->GetName().c_str());
   GE_CHK_STATUS_RET(DoLaunchKernel(stream), "Failed to do launch kernel.");
@@ -417,10 +481,124 @@ void TbeOpTask::GetIoAddr(uintptr_t *&arg_base, size_t &arg_count) {
   }
 }
 
+Status AtomicAddrCleanOpTask::UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                                                const vector<GeTensorDesc> &output_desc) {
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) {
+  uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+  for (auto atomic_output_index : atomic_output_indices_) {
+    if (atomic_output_index >= static_cast<int>(outputs.size())) {
+      GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Update][Args] failed, atomic index must smaller then data size.");
+      REPORT_INNER_ERROR("E19999", "[Update][Args] failed, atomic index must smaller then data size.");
+      return ACL_ERROR_GE_PARAM_INVALID;
+    }
+    auto &output_buffer = outputs[atomic_output_index];
+    *arg_base++ = reinterpret_cast<uintptr_t>(output_buffer.data);
+
+    auto tensor_desc = op_desc_->MutableOutputDesc(atomic_output_index);
+    int64_t size = 0;
+    graphStatus graph_status = TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, size);
+    if (graph_status != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Get tensor size in bytes failed!");
+      GELOGE(graph_status, "[Get][TensorMemorySize] In Bytes failed!");
+      return FAILED;
+    }
+    TensorUtils::SetSize(*tensor_desc, size);
+  }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::UpdateTilingArgs(rtStream_t stream) {
+  if (tiling_buffer_ != nullptr) {
+    GELOGD("[%s] Start to copy tiling info. size = %zu", node_->GetName().c_str(), tiling_data_.size());
+    GE_CHK_RT_RET(rtMemcpyAsync(tiling_buffer_, max_tiling_size_, tiling_data_.data(), tiling_data_.size(),
+                                RT_MEMCPY_HOST_TO_DEVICE_EX, stream));
+    uintptr_t *arg_base = reinterpret_cast<uintptr_t *>(args_.get());
+    size_t idx = atomic_output_indices_.size();
+    arg_base[idx] = reinterpret_cast<uintptr_t>(tiling_buffer_);
+  }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::CalcTilingInfo(optiling::utils::OpRunInfo &run_info) {
+  auto ret = optiling::OpAtomicCalculateV2(*node_, run_info);
+  if (ret != GRAPH_SUCCESS) {
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Invoke][OpAtomicCalculate] failed, ret = %u.", ret);
+    REPORT_INNER_ERROR("E19999", "invoke OpAtomicCalculate failed, ret = %u.", ret);
+    return ACL_ERROR_GE_INTERNAL_ERROR;
+  }
+  return SUCCESS;
+}
+
+Status AtomicAddrCleanOpTask::InitAtomicAddrCleanIndices() {
+  GELOGD("[%s] Start to setup AtomicAddrClean task.", op_desc_->GetName().c_str());
+  std::vector<int64_t> atomic_output_indices;
+  (void) ge::AttrUtils::GetListInt(op_desc_, ATOMIC_ATTR_OUTPUT_INDEX, atomic_output_indices);
+  if (atomic_output_indices.empty()) {
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] atomic_output_indices must not be empty.", op_desc_->GetName().c_str());
+    REPORT_INNER_ERROR("E19999", "[%s] atomic_output_indices must not be empty.", op_desc_->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+
+  size_t max_arg_size = tiling_buffer_ == nullptr ? arg_size_ : arg_size_ - 1;
+  if (atomic_output_indices.size() > max_arg_size) {
+    GELOGE(INTERNAL_ERROR, "[Check][Size][%s] atomic_output_indices invalid. atomic_output_indices size is %zu,"
+           "arg size is %zu.", op_desc_->GetName().c_str(), atomic_output_indices.size(), arg_size_);
+    REPORT_INNER_ERROR("E19999", "[%s] atomic_output_indices invalid. atomic_output_indices size is %zu,"
+                       "arg size is %zu.", op_desc_->GetName().c_str(), atomic_output_indices.size(), arg_size_);
+    return INTERNAL_ERROR;
+  }
+
+  for (auto output_index : atomic_output_indices) {
+    GELOGD("[%s] Adding output index [%ld]", op_desc_->GetName().c_str(), output_index);
+    GE_CHECK_GE(output_index, 0);
+    GE_CHECK_LE(output_index, INT32_MAX);
+    atomic_output_indices_.emplace_back(static_cast<int>(output_index));
+  }
+  return SUCCESS;
+}
+
 AiCpuBaseTask::~AiCpuBaseTask() {
   if (ext_info_addr_dev_ != nullptr) {
     (void)rtFree(ext_info_addr_dev_);
   }
+  if (rt_event_ != nullptr) {
+    (void)rtEventDestroy(rt_event_);
+  }
+}
+
+Status AiCpuBaseTask::UpdateEventIdForBlockingAicpuOp() {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process");
+    return SUCCESS;
+  }
+  uint32_t event_id = 0;
+  auto rt_ret = rtEventCreateWithFlag(&rt_event_, RT_EVENT_WITH_FLAG);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventCreateWithFlag failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtEventCreateWithFlag] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtGetEventID(rt_event_, &event_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetEventID] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (aicpu_ext_handle_->UpdateEventId(event_id) != SUCCESS) {
+    REPORT_CALL_ERROR("E19999", "Update event id=%u failed.", event_id);
+    GELOGE(FAILED, "[Update][EventId] Update event id failed", event_id);
+    return FAILED;
+  }
+  GELOGI("Update event_id=%u success", event_id);
+  return SUCCESS;
 }
 
 Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint64_t kernel_id) {
@@ -433,6 +611,9 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
   (void) AttrUtils::GetInt(op_desc_, ::ge::ATTR_NAME_UNKNOWN_SHAPE_TYPE, unknown_shape_type_val);
   GELOGD("Get unknown_type is %d.", unknown_shape_type_val);
   unknown_type_ = static_cast<UnknowShapeOpType>(unknown_shape_type_val);
+
+  AttrUtils::GetBool(op_desc_, ATTR_NAME_IS_BLOCKING_OP, is_blocking_aicpu_op_);
+  GELOGD("Get op:%s attribute(is_blocking_op), value:%d", op_desc_->GetName().c_str(), is_blocking_aicpu_op_);
 
   aicpu_ext_handle_.reset(new(std::nothrow) ::ge::hybrid::AicpuExtInfoHandler(op_desc_->GetName(),
                                                                               num_inputs_,
@@ -451,7 +632,13 @@ Status AiCpuBaseTask::SetExtInfoAndType(const std::string &kernel_ext_info, uint
 
   GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateSessionInfo(ULLONG_MAX, kernel_id, false),
                     "[Update][SessionInfo] failed.");
-  GE_CHK_STATUS_RET(aicpu_ext_handle_->UpdateExecuteMode(true), "[Update][ExecuteMode] failed.");
+
+  if (is_blocking_aicpu_op_) {
+    if (UpdateEventIdForBlockingAicpuOp() != SUCCESS) {
+      GELOGE(FAILED, "[Call][UpdateEventIdForBlockingAicpuOp] Call UpdateEventIdForBlockingAicpuOp failed");
+      return FAILED;
+    }
+  }
 
   GE_CHK_RT_RET(rtMalloc(&ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(), RT_MEMORY_HBM));
   GE_CHK_RT_RET(rtMemcpy(ext_info_addr_dev_, aicpu_ext_handle_->GetExtInfoLen(),
@@ -604,28 +791,91 @@ Status AiCpuBaseTask::UpdateIoAddr(const vector<DataBuffer> &inputs, const vecto
     GE_CHK_BOOL_RET_STATUS(non_const_index < inputs.size(), ACL_ERROR_GE_PARAM_INVALID,
         "[Check][Size] Input size is %zu, but get non_const_index is %zu", inputs.size(), non_const_index);
     auto addr = inputs[non_const_index].data;
-    GE_CHECK_NOTNULL(addr);
-    GELOGD("AICpuTask input[%zu] addr = %p", input_index, addr);
+    uint64_t length = inputs[non_const_index].length;
+    if (length != 0 && addr == nullptr) {
+      GELOGE(PARAM_INVALID, "[Check][Addr]AiCpuTask input[%zu] addr is nullptr, length = %lu", input_index, length);
+      return PARAM_INVALID;
+    }
+    GELOGD("AICpuTask input[%zu] addr = %p, length = %lu.", input_index, addr, length);
     *arg_base++ = reinterpret_cast<uintptr_t>(addr);
     non_const_index++;
   }
 
   for (size_t i = 0; i < outputs.size(); ++i) {
     auto addr = outputs[i].data;
-    GE_CHECK_NOTNULL(addr);
-    GELOGD("AICpuTask output[%zu] addr = %p", i, addr);
+    uint64_t length = outputs[i].length;
+    if (length != 0 && addr == nullptr) {
+      GELOGE(PARAM_INVALID, "[Check][Addr]AiCpuTask output[%zu] addr is nullptr, length = %lu", i, length);
+      return PARAM_INVALID;
+    }
+    GELOGD("AICpuTask output[%zu] addr = %p, length = %lu.", i, addr, length);
     *arg_base++ = reinterpret_cast<uintptr_t>(addr);
   }
 
   return SUCCESS;
 }
 
+Status AiCpuBaseTask::CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support) {
+  int32_t device_id = 0;
+  auto rt_ret = rtGetDevice(&device_id);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDevice failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDevice] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  int32_t value = 0;
+  rt_ret = rtGetDeviceCapability(device_id, FEATURE_TYPE_BLOCKING_OPERATOR, RT_MODULE_TYPE_AICPU, &value);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtGetDeviceCapability failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][rtGetDeviceCapability] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  if (value != RT_AICPU_BLOCKING_OP_NOT_SUPPORT && value != RT_AICPU_BLOCKING_OP_SUPPORT) {
+    REPORT_INNER_ERROR("E19999", "Value should be %d or %d but %d",
+                       RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    GELOGE(FAILED, "[Check][Value] Value should be %d or %d but %d",
+           RT_AICPU_BLOCKING_OP_NOT_SUPPORT, RT_AICPU_BLOCKING_OP_SUPPORT, value);
+    return FAILED;
+  }
+  is_support = (value == RT_AICPU_BLOCKING_OP_SUPPORT ? true : false);
+  return SUCCESS;
+}
+
+Status AiCpuBaseTask::DistributeWaitTaskForAicpuBlockingOp(rtStream_t stream) {
+  bool is_support = false;
+  if (CheckDeviceSupportBlockingAicpuOpProcess(is_support) != SUCCESS) {
+    GELOGE(FAILED, "[Call][CheckDeviceSupportBlockingAicpuOpProcess] Call CheckDeviceSupportBlockingAicpuOpProcess failed");
+    return FAILED;
+  }
+  if (!is_support) {
+    GELOGD("Device not support blocking aicpu op process.");
+    return SUCCESS;
+  }
+  GELOGI("Distribute queue task begin");
+  if (rt_event_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "rt_event_ is nullptr");
+    GELOGE(FAILED, "[Check][rt_event_] rt_event_ is nullptr");
+    return FAILED;
+  }
+  auto rt_ret = rtStreamWaitEvent(stream, rt_event_);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtStreamWaitEvent failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  rt_ret = rtEventReset(rt_event_, stream);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtEventReset failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtApi] failed, ret:0x%X", rt_ret);
+    return RT_ERROR_TO_GE_STATUS(rt_ret);
+  }
+  return SUCCESS;
+}
+
 AiCpuTask::~AiCpuTask() {
   FreeHbm(args_);
   FreeHbm(io_addr_);
-  if (dynamic_flag_) {
-    FreeHbm(workspace_addr_);
-  }
+  FreeHbm(workspace_addr_);
   FreeHbm(copy_workspace_buf_);
   FreeHbm(copy_ioaddr_dev_);
   FreeHbm(copy_input_release_flag_dev_);
@@ -665,6 +915,14 @@ Status AiCpuTask::LaunchKernel(rtStream_t stream) {
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
 
   GELOGD("Done launch kernel successfully. task = %s", this->op_type_.c_str());
+
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp(stream) != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
+
   return SUCCESS;
 }
 
@@ -941,6 +1199,13 @@ Status AiCpuCCTask::LaunchKernel(rtStream_t stream) {
   }
   GELOGI("[TASK_INFO] %lu/%s", kernel_id_, op_type_.c_str());
   GELOGD("Invoke rtCpuKernelLaunch succeeded");
+
+  if (is_blocking_aicpu_op_) {
+    if (DistributeWaitTaskForAicpuBlockingOp(stream) != SUCCESS) {
+      GELOGE(FAILED, "[Call][DistributeWaitTaskForAicpuBlockingOp] Call DistributeWaitTaskForAicpuBlockingOp failed");
+      return FAILED;
+    }
+  }
   return SUCCESS;
 }
 

@@ -16,8 +16,8 @@
 
 #include "single_op/single_op.h"
 
-#include "common/fmk_types.h"
-#include "common/ge_types.h"
+#include "framework/common/fmk_types.h"
+#include "framework/common/ge_types.h"
 #include "common/math/math_util.h"
 #include "common/profiling/profiling_manager.h"
 #include "framework/common/debug/ge_log.h"
@@ -58,7 +58,7 @@ Status ProfilingTaskInfo(OpTask *op_task, const string &shape_type) {
          tmp_task_desc_info.op_name.c_str(), tmp_task_desc_info.model_name.c_str());
 
   tmp_task_desc_info.shape_type = shape_type;
-  tmp_task_desc_info.cur_iter_num = 0;
+  tmp_task_desc_info.cur_iter_num = ProfilingManager::Instance().GetStepInfoIndex();
   tmp_task_desc_info.task_type = op_task->GetTaskType();
 
   std::vector<TaskDescInfo> task_desc_info;
@@ -297,6 +297,9 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status SingleOp::ExecuteAsync(c
 
   for (auto &task : tasks_) {
     ret = task->LaunchKernel(stream_);
+    GELOGD("[DEBUG_TASK_INFO : Static Task] %s %s",
+           task->GetTaskName().c_str(),
+           BuildTaskUtils::GetTaskInfo(task->GetOpdesc(), inputs, outputs).c_str());
     if (ret != SUCCESS) {
       return ret;
     }
@@ -447,6 +450,8 @@ Status DynamicSingleOp::ExecuteAsync(const vector<GeTensorDesc> &input_desc,
   } else {
     GE_CHK_STATUS_RET_NOLOG(op_task_->LaunchKernel(input_desc, input_buffers, output_desc, output_buffers, stream_));
   }
+  GELOGD("[DEBUG_TASK_INFO : Dynamic Task] %s",
+         BuildTaskUtils::GetTaskInfo(op_task_->GetOpdesc(), input_buffers, output_buffers).c_str());
   GE_CHK_STATUS_RET_NOLOG(op_task_->OpenDump(stream_));
   GE_CHK_STATUS_RET_NOLOG(ProfilingTaskInfo(op_task_.get(), kShapeTypeDynamic));
   return SUCCESS;

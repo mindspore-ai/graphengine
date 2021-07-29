@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#include "node_item.h"
-#include <sstream>
-#include "common/debug/log.h"
-#include "graph/common/omg_util.h"
+#include "hybrid/model/node_item.h"
+
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "hybrid/executor/worker/shape_inference_engine.h"
@@ -26,6 +24,8 @@
 namespace ge {
 namespace hybrid {
 namespace {
+const uint8_t kMaxTransCount = 3;
+const uint8_t kTransOpIoSize = 1;
 const char *const kAttrNameOriginalFusionGraph = "_original_fusion_graph";
 const char *const kNodeTypeRetVal = "_RetVal";
 const std::set<std::string> kControlOpTypes{
@@ -40,6 +40,25 @@ const std::set<std::string> kControlFlowOpTypes{
 const std::set<std::string> kMergeOpTypes{
     MERGE, REFMERGE, STREAMMERGE
 };
+
+bool IsEnterFeedNode(NodePtr node) {
+  // For: Enter -> node
+  // For: Enter -> Cast -> node
+  // For: Enter -> TransData -> Cast -> node
+  for (uint8_t i = 0; i < kMaxTransCount; ++i) {
+    if (kEnterOpTypes.count(NodeUtils::GetNodeType(node)) > 0) {
+      GELOGD("Node[%s] is Enter feed node.", node->GetName().c_str());
+      return true;
+    }
+
+    const auto all_nodes = node->GetInDataNodes();
+    if (all_nodes.size() != kTransOpIoSize || node->GetAllInDataAnchorsSize() != kTransOpIoSize) {
+      return false;
+    }
+    node = all_nodes.at(0);
+  }
+  return false;
+}
 
 Status ParseInputMapping(Node &node, OpDesc &op_desc, FusedSubgraph &fused_subgraph) {
   uint32_t parent_index = 0;
@@ -98,8 +117,7 @@ Status ParseFusedSubgraph(NodeItem &node_item) {
     GE_CHECK_NOTNULL(node);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
-    std::string node_type;
-    GE_CHK_STATUS_RET(GetOriginalType(node, node_type));
+    const std::string node_type = NodeUtils::GetNodeType(node);
     if (node_type == DATA) {
       GE_CHK_GRAPH_STATUS_RET(ParseInputMapping(*node, *op_desc, *fused_subgraph));
     } else if (node_type == kNodeTypeRetVal) {
@@ -398,20 +416,21 @@ void NodeItem::SetDataSend(NodeItem *node_item, int anchor_index) {
   data_send_.emplace(node_item);
   node_item->data_recv_[this] = anchor_index;
   if (is_root_node_) {
-    node_item->root_data_.emplace(this);
+    auto &data_anchors = node_item->root_data_[this];
+    data_anchors.emplace(anchor_index);
   }
   // If Enter feed Not Merge, take as root Node.
-  if (IsEnterOp() && (node_item->node_type != STREAMMERGE)) {
-    node_item->enter_data_.emplace(this);
-    node_item->enter_inside_.emplace(anchor_index);
+  if (IsEnterFeedNode(node) && (node_item->node_type != STREAMMERGE)) {
+    auto &data_anchors = node_item->enter_data_[this];
+    data_anchors.emplace(anchor_index);
   }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
 }
 
 void NodeItem::SetCtrlSend(NodeItem *node_item, uint32_t switch_index) {
   if (switch_index < switch_groups_.size()) {
-    std::vector<const NodeItem *> &switch_group = switch_groups_[switch_index];
-    switch_group.emplace_back(node_item);
+    auto &switch_group = switch_groups_[switch_index];
+    switch_group.emplace(node_item);
   } else {
     ctrl_send_.insert(node_item);
   }
@@ -421,7 +440,7 @@ void NodeItem::SetCtrlSend(NodeItem *node_item, uint32_t switch_index) {
     node_item->root_ctrl_.emplace(this);
   }
   // If Enter feed control signal, take as root Node.
-  if (IsEnterOp() && (node_item->node_type != STREAMMERGE && node_item->node_type != STREAMACTIVE)) {
+  if (IsEnterFeedNode(node) && (node_item->node_type != STREAMMERGE && node_item->node_type != STREAMACTIVE)) {
     node_item->enter_ctrl_.emplace(this);
   }
   GELOGI("Node[%s] will control node[%s]", NodeName().c_str(), node_item->NodeName().c_str());
@@ -434,8 +453,8 @@ void NodeItem::SetMergeCtrl(NodeItem *node_item, uint32_t merge_index) {
   }
 
   // this is StreamMerge node, node_item is StreamActive node.
-  std::vector<const NodeItem *> &switch_group = switch_groups_[merge_index];
-  switch_group.emplace_back(node_item);
+  auto &switch_group = switch_groups_[merge_index];
+  switch_group.emplace(node_item);
 
   node_item->ctrl_send_.emplace(this);
   GELOGI("Node[%s] will control node[%s]", node_item->NodeName().c_str(), NodeName().c_str());

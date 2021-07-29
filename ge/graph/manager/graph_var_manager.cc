@@ -20,6 +20,7 @@
 #include "graph/manager/graph_mem_manager.h"
 #include "graph/manager/trans_var_data_utils.h"
 #include "graph/utils/type_utils.h"
+#include "graph/ge_context.h"
 
 using std::map;
 using std::string;
@@ -192,35 +193,6 @@ ge::Status VarResource::GetBroadCastInfo(uint32_t graph_id, const string &var_na
   }
   broad_cast_info = var_broad_cast_info_[graph_id][var_name];
   return SUCCESS;
-}
-
-ge::Status VarResource::SyncVarData2BroadCast(uint32_t graph_id, const std::string &var_name,
-                                              const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  GE_CHECK_NOTNULL(base_ptr);
-  GELOGI("SyncVarData2BroadCast graph_id: %u, var_name: %s.", graph_id, var_name.c_str());
-
-  VarBroadCastInfo var_broadcast_info = var_broad_cast_info_[graph_id][var_name];
-  uint8_t *dst_addr = base_ptr + var_broadcast_info.input_offset;
-
-  return ge::TransVarDataUtils::SyncVarData2BroadCast(var_name, var_tensor_desc, dst_addr,
-                                                      var_broadcast_info.input_size, session_id_);
-}
-
-ge::Status VarResource::SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                              const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  GELOGI("SyncBroadCastData2Var var_name: %s", var_name.c_str());
-
-  VarBroadCastInfo var_broadcast_info = var_broad_cast_info_[graph_id][var_name];
-  // subgraph base_ptr could be nullptr, task it as base 0
-  uint8_t *dst_addr = base_ptr + var_broadcast_info.output_offset;
-
-  return ge::TransVarDataUtils::SyncBroadCastData2Var(dst_addr, var_broadcast_info.output_size, var_name,
-                                                      var_tensor_desc, session_id_);
-}
-
-ge::Status VarResource::SyncVarData(uint32_t graph_id, const std::string &var_name,
-                                    const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  return SyncVarData2BroadCast(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
 bool VarResource::IsVarAddr(const int64_t &offset) { return var_offset_map_.count(offset) > 0; }
@@ -457,10 +429,6 @@ ge::Status VarManager::GetVarAddr(const std::string &var_name, const ge::GeTenso
   return GetVarAddr(var_name, tensor_desc, dev_ptr, memory_type);
 }
 
-void VarManager::GetAllVarAddrMgr(std::unordered_map<std::string, VarAddrMgr> &var_addr_mgr_map) {
-  var_resource_->GetAllVarAddrMgr(var_addr_mgr_map);
-}
-
 int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   MemResource *mem_resource = nullptr;
@@ -479,36 +447,6 @@ int64_t VarManager::GetVarMemSize(rtMemType_t memory_type) {
     return 0;
   }
   return mem_resource->GetVarMemSize();
-}
-
-Status VarManager::UpdateVarMemSize(rtMemType_t memory_type, int64_t mem_size) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  MemResource *mem_resource = nullptr;
-  auto iter = mem_resource_map_.find(memory_type);
-  if (iter == mem_resource_map_.end()) {
-    mem_resource = MemResource::BuildMemResourceFromType(memory_type);
-    if (mem_resource == nullptr) {
-      REPORT_CALL_ERROR("E19999", "memory_type:%d invalid or New MemResource fail, session_id:%lu",
-                        memory_type, session_id_);
-      GELOGE(ge::INTERNAL_ERROR, "[Alloc][MemResource] failed, memory_type:%u, session_id:%lu",
-             memory_type, session_id_);
-      return ge::INTERNAL_ERROR;
-    } else {
-      mem_resource_map_[memory_type] = mem_resource;
-    }
-  } else {
-    mem_resource = iter->second;
-  }
-
-  if (mem_resource == nullptr) {
-    REPORT_INNER_ERROR("E19999", "MemResource is invalid, memory_type:%d, session_id:%lu",
-                       memory_type, session_id_);
-    GELOGE(ge::INTERNAL_ERROR, "[Check][Param] MemResource is invalid, memory_type:%u, session_id:%lu",
-           memory_type, session_id_);
-    return FAILED;
-  }
-  mem_resource->UpdateVarMemSize(mem_size);
-  return SUCCESS;
 }
 
 ge::Status VarManager::AssignVarMem(const std::string &var_name, const ge::GeTensorDesc &tensor_desc,
@@ -638,16 +576,6 @@ bool VarManager::IsVarExist(const std::string &var_name) {
   return var_resource_->IsVarExist(var_name);
 }
 
-ge::Status VarManager::SyncVarData(uint32_t graph_id, const std::string &var_name, const GeTensorDesc &var_tensor_desc,
-                                   uint8_t *base_ptr) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
-  }
-  return var_resource_->SyncVarData(graph_id, var_name, var_tensor_desc, base_ptr);
-}
-
 ge::Status VarManager::GetCurVarDesc(const std::string &var_name, ge::GeTensorDesc &tensor_desc) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   GELOGI("VarManager::GetCurVarDesc var_name = %s.", var_name.c_str());
@@ -676,16 +604,6 @@ ge::Status VarManager::SaveBroadCastInfo(uint32_t graph_id, const VarBroadCastIn
   return SUCCESS;
 }
 
-ge::Status VarManager::GetBroadCastInfo(uint32_t graph_id, const string &var_name, VarBroadCastInfo &broad_cast_info) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-
-  if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
-  }
-  return var_resource_->GetBroadCastInfo(graph_id, var_name, broad_cast_info);
-}
-
 ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPtr op_desc) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   GELOGD("VarManager::RenewCurVarDesc var_name = %s.", var_name.c_str());
@@ -699,16 +617,6 @@ ge::Status VarManager::RenewCurVarDesc(const std::string &var_name, ge::OpDescPt
     return ge::INTERNAL_ERROR;
   }
   return var_resource_->RenewCurVarDesc(var_name, std::move(op_desc));
-}
-
-ge::Status VarManager::SyncBroadCastData2Var(uint32_t graph_id, const std::string &var_name,
-                                             const GeTensorDesc &var_tensor_desc, uint8_t *base_ptr) {
-  std::lock_guard<std::recursive_mutex> lock(mutex_);
-  if (var_resource_ == nullptr) {
-    GELOGW("VarManager has not been init.");
-    return ge::INTERNAL_ERROR;
-  }
-  return var_resource_->SyncBroadCastData2Var(graph_id, var_name, var_tensor_desc, base_ptr);
 }
 
 bool VarManager::IsVarAddr(const int64_t &offset) {
@@ -816,31 +724,60 @@ Status VarManager::GetChangedGraphId(const std::string &var_name, uint32_t &grap
   return var_resource_->GetChangedGraphId(var_name, graph_id);
 }
 
+Status VarManager::GetTotalMemorySize(size_t &total_mem_size) {
+  rtError_t rt_ret = rtSetDevice(GetContext().DeviceId());
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtSetDevice failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtSetDevice] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
+    return RT_FAILED;
+  }
+  size_t free_mem = 0;
+  rt_ret = rtMemGetInfoEx(RT_MEMORYINFO_HBM, &free_mem, &total_mem_size);
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtMemGetInfo failed, ret:0x%X", rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtMemGetInfo] failed, ret:0x%X", rt_ret);
+    return RT_FAILED;
+  }
+  rt_ret = rtDeviceReset(GetContext().DeviceId());
+  if (rt_ret != RT_ERROR_NONE) {
+    REPORT_CALL_ERROR("E19999", "Call rtDeviceReset failed, device_id:%u, ret:0x%X",
+                      GetContext().DeviceId(), rt_ret);
+    GELOGE(RT_FAILED, "[Call][RtDeviceReset] failed, device_id:%u, ret:0x%X", GetContext().DeviceId(), rt_ret);
+    return RT_FAILED;
+  }
+  return SUCCESS;
+}
+
 Status VarManager::SetMemoryMallocSize(const map<string, string> &options) {
-  auto it = options.find(GRAPH_MEMORY_MAX_SIZE);
-  if (it == options.end()) {
-    graph_mem_max_size_ = kGraphMemoryManagerMallocMaxSize;
-  } else {
-    string graph_memory_manager_malloc_max_size = it->second;
+  size_t total_mem_size = 0;
+  GE_CHK_STATUS_RET_NOLOG(VarManager::GetTotalMemorySize(total_mem_size));
+  GEEVENT("Total memory size is %zu", total_mem_size);
+
+  graph_mem_max_size_ = floor(total_mem_size * kGraphMemoryManagerMallocRatio);
+  var_mem_max_size_ = floor(total_mem_size * kVarMemoryManagerMallocRatio);
+
+  auto it1 = options.find(GRAPH_MEMORY_MAX_SIZE);
+  if (it1 != options.end()) {
+    string graph_memory_manager_malloc_max_size = it1->second;
     ge::Status ret = ParseMemoryMallocSize(graph_memory_manager_malloc_max_size, graph_mem_max_size_);
     if (ret != SUCCESS) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
-    GELOGI("The max size for graph mem is set to %zu", graph_mem_max_size_);
   }
 
-  it = options.find(VARIABLE_MEMORY_MAX_SIZE);
-  if (it == options.end()) {
-    var_mem_max_size_ = kMemoryVarManagerMallocSize;
-  } else {
-    string memory_var_manager_malloc_size = it->second;
+  auto it2 = options.find(VARIABLE_MEMORY_MAX_SIZE);
+  if (it2 != options.end()) {
+    string memory_var_manager_malloc_size = it2->second;
     ge::Status ret = ParseMemoryMallocSize(memory_var_manager_malloc_size, var_mem_max_size_);
     if (ret != SUCCESS) {
       GELOGE(ge::GE_GRAPH_OPTIONS_INVALID, "[Call][ParseMemoryMallocSize] failed, session id:%lu.", session_id_);
       return ge::GE_GRAPH_OPTIONS_INVALID;
     }
   }
+
+  GEEVENT("The graph_mem_max_size is %zu and the var_mem_max_size is %zu", graph_mem_max_size_, var_mem_max_size_);
 
   var_mem_logic_base_ = graph_mem_max_size_ + kGraphMemoryBuffer;
   if (var_mem_logic_base_ > kMaxMemorySize) {

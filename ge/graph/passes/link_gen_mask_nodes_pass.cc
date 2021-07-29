@@ -18,7 +18,7 @@
 
 #include <set>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/types.h"
 #include "init/gelib.h"

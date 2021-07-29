@@ -161,14 +161,11 @@ REG_OP(SplitVD)
 /**
 *@brief Concatenates a list of N tensors along the first dimension.
 *@par Inputs:
-* Two inputs, including:
-* @li values: A list of Tensors. Must be one of the following types: int8, int16, int32,
+* One input, including:
+* values: A list of Tensors. Must be one of the following types: int8, int16, int32,
 *     int64, uint8, uint16, uint32, uint64, float16, float32.
 *     Tensors to be concatenated. All must have size 1 in the first dimension and same shape.
-*     It's a dynamic input.
-* @li shape: A Tensor of the same type as "x".
-* The final shape of the result. Should be equal to the shapes of any input
-* but with the number of input values in the first dimension . \n
+*     It's a dynamic input. \n
 
 *@par Attributes:
 * @li shape: A required list of ints.

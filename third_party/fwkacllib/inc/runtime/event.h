@@ -19,16 +19,22 @@
 
 #include "base.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
+
+typedef enum rtEventWaitStatus {
+    EVENT_STATUS_COMPLETE = 0,
+    EVENT_STATUS_NOT_READY = 1,
+    EVENT_STATUS_MAX = 2,
+} rtEventWaitStatus_t;
 
 /**
  * @ingroup event_flags
  * @brief event op bit flags
  */
-#define RT_EVENT_DEFAULT (0x00)
-#define RT_EVENT_WITH_FLAG (0x01)
+#define RT_EVENT_DEFAULT (0x0E)
+#define RT_EVENT_WITH_FLAG (0x0B)
 
 #define RT_EVENT_DDSYNC_NS    0x01U
 #define RT_EVENT_STREAM_MARK  0x02U
@@ -108,6 +114,16 @@ RTS_API rtError_t rtEventSynchronize(rtEvent_t event);
  * @return RT_ERROR_EVENT_NOT_COMPLETE for not complete
  */
 RTS_API rtError_t rtEventQuery(rtEvent_t event);
+
+/**
+ * @ingroup dvrt_event
+ * @brief Queries an event's wait status
+ * @param [in] event   event to query
+ * @param [in out] EVENT_WAIT_STATUS status
+ * @return EVENT_STATUS_COMPLETE for complete
+ * @return EVENT_STATUS_NOT_READY for not complete
+ */
+RTS_API rtError_t rtEventQueryWaitStatus(rtEvent_t event, rtEventWaitStatus_t *status);
 
 /**
  * @ingroup dvrt_event
@@ -256,7 +272,7 @@ RTS_API rtError_t rtNotifyGetAddrOffset(rtNotify_t notify, uint64_t *devAddrOffs
  */
 RTS_API rtError_t rtSetIpcNotifyPid(const char *name, int32_t pid[], int num);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

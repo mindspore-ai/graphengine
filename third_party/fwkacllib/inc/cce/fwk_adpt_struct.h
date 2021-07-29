@@ -62,6 +62,7 @@ enum FWKTaskExtInfoType {
   FWK_ADPT_EXT_SESSION_INFO,
   FWK_ADPT_EXT_BITMAP,
   FWK_ADPT_EXT_TOPIC_TYPE,
+  FWK_ADPT_EXT_ASYNCWAIT,
   FWK_ADPT_EXT_INVALID
 };
 
@@ -78,6 +79,12 @@ enum FWKExtUpdateAddrType {
   FWK_ADPT_UPDATE_INPUT,
   FWK_ADPT_UPDATE_OUTPUT,
   FWK_ADPT_UPDATE_INPUT_OUTPUT
+};
+
+enum FWKExtWaitType {
+  FWK_ADPT_WAIT_TYPE_NULL = 0,
+  FWK_ADPT_WAIT_TYPE_EVENT,
+  FWK_ADPT_WAIT_TYPE_INVALID
 };
 
 #pragma pack(push, 1)
@@ -131,6 +138,15 @@ struct ResultSummary {
   uint64_t shape_data_size;  // num of dims
   uint64_t raw_data_ptr;     // raw data addr,  need convert to void*
   uint64_t raw_data_size;    // size of raw data
+};
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+struct AsyncWait {
+  uint8_t waitType; // wait type, FWK_ADPT_WAIT_TYPE_EVENT: event wait
+  uint32_t waitId; // wait id, GE refresh
+  uint32_t timeOut; // reserved
+  uint64_t reserved;
 };
 #pragma pack(pop)
 }  // end  namespace FWKAdapter

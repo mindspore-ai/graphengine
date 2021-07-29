@@ -19,7 +19,7 @@
 #include <stack>
 #include <unordered_set>
 #include "common/ge/ge_util.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/utils/type_utils.h"
 #include "common/formats/utils/formats_trans_utils.h"
 

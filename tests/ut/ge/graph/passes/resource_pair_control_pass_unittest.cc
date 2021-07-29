@@ -34,7 +34,7 @@ class UtestResourcePairControlPass : public testing::Test {
 
 namespace {
 /// netoutput1
-///    |     \
+///    |     \.
 /// StackPush  StackPop
 ///    |      |
 ///   var1   const1

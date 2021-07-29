@@ -20,8 +20,8 @@
 #include <algorithm>
 #include <string>
 
-#include "debug/ge_log.h"
-#include "ge_error_codes.h"
+#include "framework/common/debug/ge_log.h"
+#include "external/ge/ge_error_codes.h"
 
 namespace ge {
 namespace {

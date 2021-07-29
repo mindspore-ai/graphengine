@@ -19,7 +19,7 @@
 
 #include <string>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "common/properties_manager.h"
 #include "proto/op_mapping.pb.h"
 #include "runtime/stream.h"

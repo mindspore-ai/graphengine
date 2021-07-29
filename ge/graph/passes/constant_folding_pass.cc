@@ -17,20 +17,26 @@
 #include "graph/passes/constant_folding_pass.h"
 
 #include <vector>
-#include "graph/operator_factory.h"
+#include "external/graph/operator_factory.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/type_utils.h"
+#include "ge_local_engine/engine/host_cpu_engine.h"
 #include "init/gelib.h"
 
 namespace ge {
 const int64_t kStartCallNum = 1;
 const std::string kKernelLibName = "aicpu_tf_kernel";
-// tf_kernel.json opsFlag config
 const std::string kOpsFlagClose = "0";
 
-Status RunOpKernelWithCheck(NodePtr &node,
-                            const vector<ConstGeTensorPtr> &inputs,
-                            std::vector<GeTensorPtr> &outputs) {
+const map<string, pair<uint64_t, uint64_t>> &ConstantFoldingPass::GetGeConstantFoldingPerfStatistic() const {
+  return statistic_of_ge_constant_folding_;
+}
+const map<string, pair<uint64_t, uint64_t>> &ConstantFoldingPass::GetOpConstantFoldingPerfStatistic() const {
+  return statistic_of_op_constant_folding_;
+}
+
+Status ConstantFoldingPass::RunOpKernelWithCheck(NodePtr &node, const vector<ConstGeTensorPtr> &inputs,
+                                                 std::vector<GeTensorPtr> &outputs) {
   std::shared_ptr<GELib> instance_ptr = ge::GELib::GetInstance();
   if ((instance_ptr == nullptr) || (!instance_ptr->InitFlag())) {
     GELOGE(GE_CLI_GE_NOT_INITIALIZED, "[Check][Param] GE is not initialized or is finalized.");
@@ -47,15 +53,13 @@ Status RunOpKernelWithCheck(NodePtr &node,
   if (ops_flag == kOpsFlagClose) {
     return UNSUPPORTED;
   }
-  return FoldingPass::RunOpKernel(node, inputs, outputs);
+  return RunOpKernel(node, inputs, outputs);
 }
 
-const map<string, pair<uint64_t, uint64_t>> &ConstantFoldingPass::GetGeConstantFoldingPerfStatistic() const {
-  return statistic_of_ge_constant_folding_;
-}
-
-const map<string, pair<uint64_t, uint64_t>> &ConstantFoldingPass::GetOpConstantFoldingPerfStatistic() const {
-  return statistic_of_op_constant_folding_;
+Status ConstantFoldingPass::RunOpKernel(NodePtr &node,
+                                        const vector<ConstGeTensorPtr> &inputs,
+                                        std::vector<GeTensorPtr> &outputs) {
+  return HostCpuEngine::GetInstance().Run(node, inputs, outputs);
 }
 
 Status ConstantFoldingPass::Run(ge::NodePtr &node) {

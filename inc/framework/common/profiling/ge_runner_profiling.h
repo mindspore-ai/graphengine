@@ -17,7 +17,7 @@
 #ifndef INC_FRAMEWORK_COMMON_GE_RUNNER_PROFILING_H_
 #define INC_FRAMEWORK_COMMON_GE_RUNNER_PROFILING_H_
 
-#include "profiling/ge_profiling.h"
+#include "framework/common/profiling/ge_profiling.h"
 
 GE_FUNC_VISIBILITY bool IsInitialize();
 

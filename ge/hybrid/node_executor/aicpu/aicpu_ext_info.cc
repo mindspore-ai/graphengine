@@ -81,6 +81,9 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
       case aicpu::FWKAdapter::FWK_ADPT_EXT_TOPIC_TYPE:
         GE_CHK_STATUS_RET(ParseExtTopicType(aicpu_ext_info), "[Parse][ExtTopicType] failed.");
         break;
+      case aicpu::FWKAdapter::FWK_ADPT_EXT_ASYNCWAIT:
+        GE_CHK_STATUS_RET(ParseExtAsyncWait(aicpu_ext_info), "[Parse][ExtAsyncWait] failed.");
+        break;
       default:
         GELOGD("Node[%s] ignore infoType=%d, infoLen=%u.",
                node_name_.c_str(), aicpu_ext_info->infoType, aicpu_ext_info->infoLen);
@@ -98,6 +101,22 @@ Status AicpuExtInfoHandler::Parse(const std::string &ext_info) {
                          node_name_.c_str(), offset, ext_info_len_);
                   return ACL_ERROR_GE_PARAM_INVALID;);
   GELOGI("Node[%s] parse ext info end.", node_name_.c_str());
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::ParseExtAsyncWait(AicpuExtInfo *aicpu_ext_info) {
+  if (aicpu_ext_info->infoLen != sizeof(AsyncWaitInfo)) {
+    REPORT_INNER_ERROR("E19999",
+                       "Node[%s] parse ext async wait info failed as infoLen must be %zu but %u.",
+                       node_name_.c_str(), sizeof(AsyncWaitInfo), aicpu_ext_info->infoLen);
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID,
+           "[Check][DataLen]Node[%s] parse ext async wait info failed as infoLen must be %zu but %u.",
+           node_name_.c_str(), sizeof(AsyncWaitInfo), aicpu_ext_info->infoLen);
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+
+  async_wait_ = reinterpret_cast<AsyncWaitInfo *>(aicpu_ext_info->infoMsg);
+  GELOGI("Node[%s] parse async wait info success infoLen=%u.", node_name_.c_str(), aicpu_ext_info->infoLen);
   return SUCCESS;
 }
 
@@ -277,6 +296,17 @@ Status AicpuExtInfoHandler::UpdateSessionInfo(uint64_t session_id, uint64_t kern
   session_info_->sessionId = session_id;
   session_info_->kernelId = kernel_id;
   session_info_->sessFlag = sess_flag;
+  return SUCCESS;
+}
+
+Status AicpuExtInfoHandler::UpdateEventId(uint32_t event_id) {
+  if (async_wait_ == nullptr) {
+    REPORT_INNER_ERROR("E19999", "async_wait_ is nullptr.");
+    GELOGE(FAILED, "[Check][async_wait_] async_wait_ is nullptr.");
+    return FAILED;
+  }
+  async_wait_->waitType = 1;
+  async_wait_->waitId = event_id;
   return SUCCESS;
 }
 

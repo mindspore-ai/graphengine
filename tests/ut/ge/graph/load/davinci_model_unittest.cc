@@ -1035,6 +1035,9 @@ TEST_F(UtestDavinciModel, NnExecute) {
   ProfilingManager::Instance().device_id_.emplace_back(0);
   model.task_list_.resize(1);
   EXPECT_EQ(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
+
+  input_data.blobs[0].length = 128;
+  EXPECT_NE(model.NnExecute(stream, false, input_data, output_data), SUCCESS);
 }
 TEST_F(UtestDavinciModel, update_io_addr_success) {
   DavinciModel model(0, nullptr);
@@ -1058,5 +1061,145 @@ TEST_F(UtestDavinciModel, get_total_memsize_exclude_zero_copy) {
   model.runtime_param_.zero_copy_size = 512;
   EXPECT_EQ(model.GetTotalMemSizeExcludeZeroCopy(total_useful_size), SUCCESS);
   EXPECT_EQ(total_useful_size, 512);
+}
+
+// test InitTbeHandle
+TEST_F(UtestDavinciModel, init_tbe_handle) {
+  DavinciModel model(0, nullptr);
+  OpDescPtr op_desc = CreateOpDesc("data", DATA);
+  model.ge_model_ = make_shared<GeModel>();
+  // without kernel
+  EXPECT_EQ(model.InitTbeHandle(op_desc), INTERNAL_ERROR);
+  vector<char> buffer;
+  string key = op_desc->GetName();
+  TBEKernelPtr tbe_kernel_ptr = std::make_shared<ge::OpKernelBin>(key, std::move(buffer));
+  op_desc->SetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, tbe_kernel_ptr);
+  string attr_kernel_name = op_desc->GetName() + "_kernelname";
+  string kernel_name = "kernel_name";
+  AttrUtils::SetStr(op_desc, attr_kernel_name, kernel_name);
+  EXPECT_EQ(model.InitTbeHandle(op_desc), SUCCESS);
+  // rtQueryFunctionRegistered(bin_file_key) failed
+  EXPECT_EQ(model.used_tbe_handle_map_.size(), 0);
+}
+
+// test InitTbeHandleWithFfts
+TEST_F(UtestDavinciModel, init_tbe_handle_with_ffts) {
+  DavinciModel model(0, nullptr);
+  OpDescPtr op_desc = CreateOpDesc("data", DATA);
+  model.ge_model_ = make_shared<GeModel>();
+  // without tbe_kernel
+  EXPECT_EQ(model.InitTbeHandleWithFfts(op_desc), INTERNAL_ERROR);
+
+  std::vector<OpKernelBinPtr> tbe_kernel;
+  vector<char> buffer;
+  string key = op_desc->GetName();
+  OpKernelBinPtr tbe_kernel_ptr0 = std::make_shared<ge::OpKernelBin>(key, std::move(buffer));
+  OpKernelBinPtr tbe_kernel_ptr1 = std::make_shared<ge::OpKernelBin>(key, std::move(buffer));
+  tbe_kernel.push_back(tbe_kernel_ptr0);
+  tbe_kernel.push_back(tbe_kernel_ptr1);
+  op_desc->SetExtAttr(OP_EXTATTR_NAME_THREAD_TBE_KERNEL, tbe_kernel);
+  // without _register_stub_func
+  EXPECT_EQ(model.InitTbeHandleWithFfts(op_desc), INTERNAL_ERROR);
+
+  vector<string> bin_file_keys;
+  bin_file_keys.emplace_back(op_desc->GetName() + "_0");
+  bin_file_keys.emplace_back(op_desc->GetName() + "_1");
+  AttrUtils::SetListStr(op_desc, "_register_stub_func", bin_file_keys);
+
+  EXPECT_EQ(model.InitTbeHandleWithFfts(op_desc), SUCCESS);
+  // rtQueryFunctionRegistered(bin_file_key) failed
+  EXPECT_EQ(model.used_tbe_handle_map_.size(), 0);
+}
+
+// test InitBinaryMagic
+TEST_F(UtestDavinciModel, init_binary_magic) {
+  DavinciModel model(0, nullptr);
+  rtDevBinary_t binary;
+  OpDescPtr op_desc = CreateOpDesc("data", DATA);
+  bool is_ffts = true;
+  vector<string> json_list;
+  AttrUtils::SetListStr(op_desc, TVM_ATTR_NAME_THREAD_MAGIC, json_list);
+  // without tvm_magic
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 0, binary), INTERNAL_ERROR);
+  json_list.emplace_back("RT_DEV_BINARY_MAGIC_ELF_AICPU");
+  json_list.emplace_back("RT_DEV_BINARY_MAGIC_ELF");
+  op_desc->DelAttr(TVM_ATTR_NAME_THREAD_MAGIC);
+  AttrUtils::SetListStr(op_desc, TVM_ATTR_NAME_THREAD_MAGIC, json_list);
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 0, binary), SUCCESS);
+  EXPECT_EQ(binary.magic, RT_DEV_BINARY_MAGIC_ELF_AICPU);
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 1, binary), SUCCESS);
+  EXPECT_EQ(binary.magic, RT_DEV_BINARY_MAGIC_ELF);
+
+  json_list.clear();
+  json_list.emplace_back("RT_DEV_BINARY_MAGIC_ELF_AIVEC");
+  json_list.emplace_back("RT_DEV_BINARY_MAGIC_ELF_AICUBE");
+  op_desc->DelAttr(TVM_ATTR_NAME_THREAD_MAGIC);
+  AttrUtils::SetListStr(op_desc, TVM_ATTR_NAME_THREAD_MAGIC, json_list);
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 0, binary), SUCCESS);
+  EXPECT_EQ(binary.magic, RT_DEV_BINARY_MAGIC_ELF_AIVEC);
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 1, binary), SUCCESS);
+  EXPECT_EQ(binary.magic, RT_DEV_BINARY_MAGIC_ELF_AICUBE);
+
+  // with invalid json type
+  json_list.clear();
+  json_list.emplace_back("RT_DEV_BINARY_MAGIC_ELF_INVALID");
+  json_list.emplace_back("RT_DEV_BINARY_MAGIC_ELF_INVALID");
+  op_desc->DelAttr(TVM_ATTR_NAME_THREAD_MAGIC);
+  AttrUtils::SetListStr(op_desc, TVM_ATTR_NAME_THREAD_MAGIC, json_list);
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 0, binary), PARAM_INVALID);
+
+  // test unffts
+  is_ffts = false;
+  string json_string = "RT_DEV_BINARY_MAGIC_ELF_AIVEC";
+  AttrUtils::SetStr(op_desc, TVM_ATTR_NAME_MAGIC, json_string);
+  EXPECT_EQ(model.InitBinaryMagic(op_desc, is_ffts, 0, binary), SUCCESS);
+  EXPECT_EQ(binary.magic, RT_DEV_BINARY_MAGIC_ELF_AIVEC);
+}
+
+// test InitMetaData
+TEST_F(UtestDavinciModel, init_meta_data) {
+  DavinciModel model(0, nullptr);
+  void *bin_handle;
+  OpDescPtr op_desc = CreateOpDesc("data", DATA);
+  bool is_ffts = true;
+  vector<string> meta_data_list;
+  // with empty meta_data
+  EXPECT_EQ(model.InitMetaData(op_desc, is_ffts, 0, bin_handle), INTERNAL_ERROR);
+  meta_data_list.emplace_back("meta_data_0");
+  meta_data_list.emplace_back("meta_data_1");
+  AttrUtils::SetListStr(op_desc, TVM_ATTR_NAME_THREAD_METADATA, meta_data_list);
+  EXPECT_EQ(model.InitMetaData(op_desc, is_ffts, 0, bin_handle), SUCCESS);
+
+  is_ffts = false;
+  string meta_data = "meta_data";
+  AttrUtils::SetStr(op_desc, TVM_ATTR_NAME_METADATA, meta_data);
+  EXPECT_EQ(model.InitMetaData(op_desc, is_ffts, 0, bin_handle), SUCCESS);
+}
+
+// test InitKernelName
+TEST_F(UtestDavinciModel, init_kernel_name) {
+  DavinciModel model(0, nullptr);
+  string kernel_name;
+  OpDescPtr op_desc = CreateOpDesc("data", DATA);
+  bool is_ffts = true;
+  // failed when name is invalid
+  EXPECT_EQ(model.InitKernelName(op_desc, is_ffts, 0, kernel_name), INTERNAL_ERROR);
+  OpDescPtr op_desc1 = CreateOpDesc("sgt_graph_nodes/loss_scale", SCALE);
+  string attr_kernel_name = "loss_scale_thread_kernelname";
+  vector<string> kernel_name_list;
+  AttrUtils::SetListStr(op_desc, attr_kernel_name, kernel_name_list);
+  // failed without kernel_name
+  EXPECT_EQ(model.InitKernelName(op_desc, is_ffts, 0, kernel_name), INTERNAL_ERROR);
+  kernel_name_list.emplace_back("kernel_name_0");
+  kernel_name_list.emplace_back("kernel_name_1");
+  AttrUtils::SetListStr(op_desc1, attr_kernel_name, kernel_name_list);
+  EXPECT_EQ(model.InitKernelName(op_desc1, is_ffts, 0, kernel_name), SUCCESS);
+
+  // without ffts
+  is_ffts = false;
+  attr_kernel_name = "data_kernelname";
+  kernel_name = "kernel_name";
+  AttrUtils::SetStr(op_desc, attr_kernel_name, kernel_name);
+  EXPECT_EQ(model.InitKernelName(op_desc, is_ffts, 0, kernel_name), SUCCESS);
 }
 }  // namespace ge

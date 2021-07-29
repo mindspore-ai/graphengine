@@ -25,7 +25,7 @@
 #include "graph/node.h"
 #include "hybrid/model/hybrid_model.h"
 #include "hybrid/model/node_item.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 
 namespace ge {
 class VarManager;
@@ -56,7 +56,9 @@ class HybridModelBuilder {
   Status BuildOutputMapping(GraphItem &partitioned_call, const NodeItem &node_item, bool is_root_graph);
   Status ValidateParams();
   Status LoadGraph();
+  Status CopyGraph();
   Status LoadGeModel(ComputeGraph &graph, const GeModelPtr &ge_model);
+  static Status InitHcclExecutorOnDemand(const GeModelPtr &ge_model);
   Status LoadTask(NodeItem &node_item);
   Status LoadTasks();
   Status IdentifyVariableOutputs(NodeItem &node_item, const ComputeGraphPtr &subgraph);

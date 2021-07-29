@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-#include "omg/omg.h"
+#include "framework/omg/omg.h"
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include "common/auth/file_saver.h"
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
 #include "common/ge/ge_util.h"
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "common/model_parser/model_parser.h"
 #include "common/model_saver.h"
 #include "common/properties_manager.h"
-#include "common/string_util.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/parser/parser_inner_ctx.h"
@@ -39,10 +39,10 @@
 #include "graph/optimize/common/params.h"
 #include "graph/utils/type_utils.h"
 #include "ir_build/option_utils.h"
-#include "omg/omg_inner_types.h"
-#include "omg/parser/model_parser.h"
-#include "omg/parser/parser_factory.h"
-#include "omg/parser/weights_parser.h"
+#include "framework/omg/omg_inner_types.h"
+#include "framework/omg/parser/model_parser.h"
+#include "framework/omg/parser/parser_factory.h"
+#include "framework/omg/parser/weights_parser.h"
 #include "parser/common/pre_checker.h"
 #include "parser/common/convert/pb2json.h"
 #include "proto/ge_ir.pb.h"

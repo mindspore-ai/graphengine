@@ -19,6 +19,7 @@
 
 #include "graph/load/model_manager/task_info/task_info.h"
 #include "graph/op_desc.h"
+#include "hybrid/node_executor/aicpu/aicpu_ext_info.h"
 
 namespace ge {
 class KernelExTaskInfo : public TaskInfo {
@@ -65,11 +66,18 @@ class KernelExTaskInfo : public TaskInfo {
   void InitDumpArgs(void *addr, const OpDescPtr &op_desc);
   Status InitTaskExtInfo(const std::string &ext_info, const OpDescPtr &op_desc);
 
+  // for blocking aicpu op
+  Status DistributeWaitTaskForAicpuBlockingOp();
+  Status CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support);
+  Status UpdateEventIdForAicpuBlockingOp(const OpDescPtr &op_desc,
+                                         std::shared_ptr<ge::hybrid::AicpuExtInfoHandler> &ext_handle);
+
   uint32_t task_id_;
   uint32_t stream_id_;
   uint32_t dump_flag_;
   uint32_t kernel_buf_size_;
   DavinciModel *davinci_model_;
+  OpDescPtr op_desc_;
   void *kernel_buf_;
   void *input_output_addr_;
   void *ext_info_addr_;
@@ -78,6 +86,7 @@ class KernelExTaskInfo : public TaskInfo {
   uint32_t args_offset_ = 0;
   int64_t fixed_addr_offset_ = 0;
   int32_t topic_type_flag_ = -1;
+  bool is_blocking_aicpu_op_ = false;
 };
 }  // namespace ge
 #endif  // GE_GRAPH_LOAD_NEW_MODEL_MANAGER_TASK_INFO_KERNEL_EX_TASK_INFO_H_

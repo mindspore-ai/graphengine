@@ -145,6 +145,33 @@ extern HcclResult HcclGetRankId(HcclComm comm, uint32_t *rank);
 extern HcclResult HcclBarrier(HcclComm comm, aclrtStream stream);
 
 /**
+ * @brief AllGather operator.
+ *
+ * @param sendBuff A pointer identifying the input data address of the operator.
+ * @param count An integer(u64) identifying the number of the send data.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param destRank An integer identifying the destination rank.
+ * @param comm A pointer identifying the communication resource based on.
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult
+ */
+extern HcclResult HcclSend(void *sendBuf, uint64_t count, HcclDataType dataType, uint32_t destRank, HcclComm comm,
+                           aclrtStream stream);
+/**
+ * @brief AllGather operator.
+ *
+ * @param recvBuff A pointer identifying the output data address of the operator.
+ * @param count An integer(u64) identifying the number of the receive data.
+ * @param dataType The data type of the operator, must be one of the following types: int8, int32, float16, float32.
+ * @param srcRank An integer identifying the source rank.
+ * @param comm A pointer identifying the communication resource based on.
+ * @param stream A pointer identifying the stream information.
+ * @return HcclResult
+ */
+extern HcclResult HcclRecv(void *recvBuf, uint64_t count, HcclDataType dataType, uint32_t srcRank, HcclComm comm,
+                           aclrtStream stream);
+
+/**
  * @brief Destroy HCCL comm
  *
  * @param comm A pointer identifying the communication resource targetting

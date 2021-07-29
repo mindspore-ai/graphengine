@@ -37,17 +37,13 @@ class GraphDslTest : public testing::Test {
   EG_NS::GraphEasyExecutor executor;
 
  protected:
-  void SetUp() {
-    EG_NS::GraphLayout::GetInstance().Config(executor, nullptr);
-  }
+  void SetUp() { EG_NS::GraphLayout::GetInstance().Config(executor, nullptr); }
 
   void TearDown() {}
 };
 
 TEST_F(GraphDslTest, test_build_graph_from_optype_with_name) {
-  DEF_GRAPH(g1) {
-    CHAIN(NODE("data1", DATA)->NODE("add", ADD));
-  });
+  DEF_GRAPH(g1) { CHAIN(NODE("data1", DATA)->NODE("add", ADD)); };
 
   auto geGraph = ToGeGraph(g1);
   auto computeGraph = ToComputeGraph(g1);
@@ -57,9 +53,7 @@ TEST_F(GraphDslTest, test_build_graph_from_optype_with_name) {
 }
 
 TEST_F(GraphDslTest, test_build_graph_with_name) {
-  DEF_GRAPH(g1, "sample_graph") {
-    CHAIN(NODE("data1", DATA)->NODE("add", ADD));
-  });
+  DEF_GRAPH(g1, "sample_graph") { CHAIN(NODE("data1", DATA)->NODE("add", ADD)); };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -72,7 +66,7 @@ TEST_F(GraphDslTest, test_build_from_from_op_desc_ptr) {
     auto data = std::make_shared<OpDesc>("data1", DATA);
     auto add = std::make_shared<OpDesc>("Add", ADD);
     CHAIN(NODE(data)->NODE(add));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -84,7 +78,7 @@ TEST_F(GraphDslTest, test_build_from_op_desc_cfg) {
     auto datCfg = OP_CFG(DATA).InCnt(1).OutCnt(1);
     auto addCfg = OP_CFG(DATA).InCnt(1).OutCnt(1);
     CHAIN(NODE("data1", datCfg)->NODE("add", addCfg));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -92,9 +86,7 @@ TEST_F(GraphDslTest, test_build_from_op_desc_cfg) {
 }
 
 TEST_F(GraphDslTest, test_build_from_op_desc_cfg_inline) {
-  DEF_GRAPH(g1) {
-    CHAIN(NODE("data1", OP_CFG(DATA).InCnt(1).OutCnt(1))->NODE("add", OP_CFG(ADD).InCnt(2).OutCnt(1)));
-  });
+  DEF_GRAPH(g1) { CHAIN(NODE("data1", OP_CFG(DATA).InCnt(1).OutCnt(1))->NODE("add", OP_CFG(ADD).InCnt(2).OutCnt(1))); };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -102,9 +94,7 @@ TEST_F(GraphDslTest, test_build_from_op_desc_cfg_inline) {
 }
 
 TEST_F(GraphDslTest, test_build_from_control_chain) {
-  DEF_GRAPH(g1) {
-    CTRL_CHAIN(NODE("data1", DATA)->NODE("add", ADD));
-  });
+  DEF_GRAPH(g1) { CTRL_CHAIN(NODE("data1", DATA)->NODE("add", ADD)); };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -112,9 +102,7 @@ TEST_F(GraphDslTest, test_build_from_control_chain) {
 }
 
 TEST_F(GraphDslTest, test_build_from_data_chain) {
-  DEF_GRAPH(g1) {
-    DATA_CHAIN(NODE("data1", DATA)->NODE("add", ADD));
-  });
+  DEF_GRAPH(g1) { DATA_CHAIN(NODE("data1", DATA)->NODE("add", ADD)); };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -125,7 +113,7 @@ TEST_F(GraphDslTest, test_build_from_data_chain_with_edge) {
   DEF_GRAPH(g1) {
     CTRL_CHAIN(NODE("data1", DATA)->NODE("add", ADD));
     CHAIN(NODE("data1", DATA)->EDGE(2, 2)->NODE("add"));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -136,7 +124,7 @@ TEST_F(GraphDslTest, test_build_graph_reused_before_node) {
   DEF_GRAPH(g1) {
     CTRL_CHAIN(NODE("data1", DATA)->NODE("add", ADD));
     CHAIN(NODE("data1")->EDGE(2, 2)->NODE("add"));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -147,7 +135,7 @@ TEST_F(GraphDslTest, test_build_graph_with_constant_folding) {
   DEF_GRAPH(g1) {
     CHAIN(NODE("data1", DATA)->NODE("add", ADD));
     CHAIN(NODE("data2", DATA)->NODE("add"));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -168,7 +156,7 @@ TEST_F(GraphDslTest, test_build_complex_normal_graph_build_suggested) {
               ->NODE("Add4")
               ->NODE("Add5")
               ->NODE("net_output", NETOUTPUT));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -187,7 +175,7 @@ TEST_F(GraphDslTest, test_build_complex_mult_normal_graph_build) {
     CHAIN(NODE("add2")->NODE("net_output"));
     CHAIN(NODE("add3")->NODE("net_output"));
     CTRL_CHAIN(NODE("add1")->NODE("add2")->NODE("add3"));
-  });
+  };
 
   auto geGraph = ToGeGraph(g1);
 
@@ -198,17 +186,17 @@ TEST_F(GraphDslTest, test_build_graph_with_sub_graph) {
   DEF_GRAPH(sub_1) {
     CHAIN(NODE("data_i", DATA)->NODE("less", LESS)->NODE("netoutput", NETOUTPUT));
     CHAIN(NODE("const_5", CONSTANTOP)->NODE("less"));
-  });
+  };
 
   DEF_GRAPH(sub_2) {
     CHAIN(NODE("data_a", DATA)->NODE("mul", MUL)->NODE("netoutput", NETOUTPUT));
     CHAIN(NODE("const_2", CONSTANTOP)->NODE("mul"));
-  });
+  };
 
   DEF_GRAPH(g1) {
     CHAIN(NODE("data_a", DATA)->NODE("while", WHILE, sub_1, sub_2)->NODE("netoutput", NETOUTPUT));
     CHAIN(NODE("data_i", DATA)->NODE("while"));
-  });
+  };
 
   sub_1.Layout();
   sub_2.Layout();

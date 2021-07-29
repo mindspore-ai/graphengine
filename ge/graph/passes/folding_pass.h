@@ -34,8 +34,6 @@ bool IsNoNeedConstantFolding(const NodePtr &node);
 using IndexsToAnchors = std::map<int, std::vector<InDataAnchorPtr>>;
 
 class FoldingPass : public BaseNodePass {
- public:
-  static Status RunOpKernel(NodePtr &node, const vector<ConstGeTensorPtr> &inputs, vector<GeTensorPtr> &outputs);
  protected:
   Status Folding(NodePtr &node, vector<GeTensorPtr> &outputs);
  private:

@@ -31,10 +31,10 @@ namespace ge {
 inner-most dimension of `x`. \n
 
 *@par Inputs:
-*@li x: A Tensor. Must be the following types: complex64, complex128. \n
+*x: A Tensor. Must be the following types: complex64, complex128. \n
 
 *@par Outputs:
-*@li y: A complex tensor of the same rank as `x`. \n
+*y: A complex tensor of the same rank as `x`. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow IFFT operator.
@@ -52,7 +52,7 @@ REG_OP(IFFT)
 *@li fft_length: An int32 tensor of shape [1]. The FFT length . \n
 
 *@par Outputs:
-*@li y: A complex64 tensor of the same rank as `input`. The inner-most
+*y: A complex64 tensor of the same rank as `input`. The inner-most
 dimension of `input` is replaced with the `fft_length / 2 + 1` unique
 frequency components of its 1D Fourier transform . \n
 
@@ -73,7 +73,7 @@ REG_OP(RFFT)
 *@li fft_length: An int32 tensor of shape [1]. The FFT length. \n
 
 *@par Outputs:
-*@li y: A float32 tensor of the same rank as `input`. The inner-most
+* y: A float32 tensor of the same rank as `input`. The inner-most
   dimension of `input` is replaced with the `fft_length` samples of its inverse
   1D Fourier transform. \n
 
@@ -91,10 +91,10 @@ REG_OP(IRFFT)
 *@brief 2D fast Fourier transform. \n
 
 *@par Inputs:
-*@li x: A complex64 tensor.
+*x: A complex64 tensor.
 
 *@par Outputs:
-*@li y: A complex64 tensor of the same shape as `input`. The inner-most 2
+*y: A complex64 tensor of the same shape as `input`. The inner-most 2
   dimensions of `input` are replaced with their 2D Fourier transform. \n
 
 *@par Third-party framework compatibility
@@ -110,10 +110,10 @@ REG_OP(FFT2D)
 innermost dimension of the input. \n
 
 *@par Inputs:
-*@li x: A Tensor. Must be the following types: complex64, complex128. \n
+*x: A Tensor. Must be the following types: complex64, complex128. \n
 
 *@par Outputs:
-*@li y: A complex tensor with the same shape as input. The innermost dimension
+*y: A complex tensor with the same shape as input. The innermost dimension
 of the input is replaced by its 1-dimensional Fourier transform. \n
 
 *@par Third-party framework compatibility
@@ -129,10 +129,10 @@ REG_OP(FFT)
 innermost dimension of the input. \n
 
 *@par Inputs:
-*@li x: A Tensor. Must be the following types: complex64, complex128. \n
+*x: A Tensor. Must be the following types: complex64, complex128. \n
 
 *@par Outputs:
-*@li y: A complex tensor with the same shape as input. The innermost dimension
+*y: A complex tensor with the same shape as input. The innermost dimension
 of the input is replaced by its inverse two-dimensional Fourier transform. \n
 
 *@par Third-party framework compatibility

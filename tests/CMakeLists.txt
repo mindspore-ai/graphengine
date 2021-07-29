@@ -15,13 +15,14 @@
 
 project(tests CXX C)
 find_package(Threads)
-add_subdirectory(depends/cce)
+
 add_subdirectory(depends/slog)
 add_subdirectory(depends/mmpa)
 add_subdirectory(depends/runtime)
 add_subdirectory(depends/hccl)
 add_subdirectory(depends/profiler)
 add_subdirectory(depends/error_manager)
+add_subdirectory(depends/opt_info)
 
 if (ENABLE_GE_COV OR ENABLE_GE_UT)
     add_subdirectory(ut)

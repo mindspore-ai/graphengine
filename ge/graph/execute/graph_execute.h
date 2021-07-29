@@ -24,20 +24,21 @@
 #include <memory>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/debug/memory_dumper.h"
-#include "common/ge_types.h"
+#include "framework/common/ge_types.h"
 #include "common/properties_manager.h"
-#include "common/string_util.h"
-#include "common/types.h"
-#include "common/util.h"
-#include "ge/ge_api_types.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_context.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/model.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
+#include "graph/load/model_manager/davinci_model.h"
 
 namespace ge {
 class GraphExecutor {
@@ -59,8 +60,6 @@ class GraphExecutor {
                                 std::vector<GeTensor> &output_tensor);
 
   Status SetCondition(std::mutex *mutex, std::condition_variable *cond, std::shared_ptr<GraphModelListener> listener);
-
-  Status SetGraphContext(GraphContextPtr graph_context_ptr);
 
   static Status SetDynamicSize(uint32_t model_id, const std::vector<uint64_t> &batch_num, int32_t dynamic_type);
 
@@ -150,6 +149,10 @@ class GraphExecutor {
   static Status SetCallback(uint32_t model_id, const GeRootModelPtr &ge_root_model,
                             const RunAsyncCallback &callback);
 
+  Status ModelSubscribe(uint32_t graph_id);
+
+  Status GetModelByID(uint32_t model_id, std::shared_ptr<DavinciModel> &davinci_model);
+
   bool init_flag_;
 
   bool train_graph_flag_;
@@ -159,8 +162,6 @@ class GraphExecutor {
 
   // Run graph asynchronous call back listener
   std::shared_ptr<GraphModelListener> graph_run_listener_;
-
-  GraphContextPtr graph_context_;
 
   std::vector<InputOutputDescInfo> outputs_desc_;
   GraphId last_graph_id_;

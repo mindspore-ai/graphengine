@@ -22,7 +22,7 @@
 #include "framework/common/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 
 using std::map;
 using std::set;
@@ -474,6 +474,11 @@ Status UpdateForSkippedEnginePass::Run(ComputeGraphPtr graph, const vector<Subgr
   for (ge::NodePtr &node : graph->GetDirectNode()) {
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
+    if (op_desc->HasAttr(ATTR_NAME_THREAD_SCOPE_ID)) {
+      op_desc->SetStreamId(kInvalidStream);
+      GELOGI("Ffts node %s of type %s reassign to invalid stream.", node->GetName().c_str(), node->GetType().c_str());
+      continue;
+    }
     int64_t stream_id = op_desc->GetStreamId();
     if (ops_without_label.find(op_desc) != ops_without_label.end()) {
       if (AreAllPredStreamsInvalid(node) && op_desc->GetSubgraphInstanceNames().empty()) {

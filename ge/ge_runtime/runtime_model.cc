@@ -16,16 +16,15 @@
 
 #include "ge_runtime/runtime_model.h"
 #include <set>
-#include "./model_context.h"
-#include "./task/task.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/types.h"
-#include "common/util.h"
-#include "common/math/math_util.h"
+#include "ge_runtime/model_context.h"
+#include "ge_runtime/task/task.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/op/op_parser_util.h"
-#include "graph/types.h"
-#include "task/task_factory.h"
+#include "external/graph/types.h"
+#include "ge_runtime/task/task_factory.h"
 #include "ge/common/math/math_util.h"
 
 namespace ge {

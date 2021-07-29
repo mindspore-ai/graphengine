@@ -24,13 +24,13 @@
 #include "common/formats/format_transfers/format_transfer_transpose.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/util/error_manager/error_manager.h"
-#include "common/helper/model_helper.h"
+#include "framework/common/helper/model_helper.h"
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "ir_build/option_utils.h"
-#include "graph/common/ge_call_wrapper.h"
-#include "graph/common/local_context.h"
-#include "graph/common/transop_util.h"
+#include "common/ge_call_wrapper.h"
+#include "common/local_context.h"
+#include "common/transop_util.h"
 #include "graph/ge_context.h"
 #include "graph/shape_refiner.h"
 #include "graph/manager/graph_var_manager.h"
@@ -39,7 +39,7 @@
 #include "graph/passes/addn_pass.h"
 #include "graph/passes/aicpu_constant_folding_pass.h"
 #include "graph/passes/assert_pass.h"
-#include "ge/ge_api_types.h"
+#include "external/ge/ge_api_types.h"
 #include "graph/passes/common_subexpression_elimination_pass.h"
 #include "graph/passes/cond_pass.h"
 #include "graph/passes/cond_remove_pass.h"
@@ -54,6 +54,7 @@
 #include "graph/passes/hccl_group_pass.h"
 #include "graph/passes/identity_pass.h"
 #include "graph/passes/infershape_pass.h"
+#include "graph/passes/infer_value_range_pass.h"
 #include "graph/passes/merge_pass.h"
 #include "graph/passes/net_output_pass.h"
 #include "graph/passes/no_use_reshape_remove_pass.h"
@@ -79,7 +80,7 @@
 #include "graph/utils/type_utils.h"
 #include "inc/pass_manager.h"
 #include "init/gelib.h"
-#include "multi_batch_copy_graph.h"
+#include "graph/preprocess/multi_batch_copy_graph.h"
 
 #include "graph/passes/data_pass.h"
 #include "graph/passes/mark_agnostic_pass.h"
@@ -414,16 +415,16 @@ Status UpdateVarFormats(const NodePtr &var, const GeTensorDesc &tensor_desc) {
 
 Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
   GE_CHECK_NOTNULL(var);
-  int index = 0;
+  static std::atomic_int index(0);
   NodePtr last_node = var;
   for (auto iter = road.rbegin(); iter != road.rend(); ++iter) {
     auto trans_name = var->GetName() + "_trans_" + std::to_string(index++);
     auto ret = RecoverOneTransNodeForVar(trans_name, *iter, last_node, last_node);
     if (ret != SUCCESS) {
-      REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %d, type %s",
-                        var->GetName().c_str(), index, iter->node_type.c_str());
-      GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s, index %d, type %s", var->GetName().c_str(),
-             index, iter->node_type.c_str());
+      REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %s, type %s",
+                        var->GetName().c_str(), std::to_string(index).c_str(), iter->node_type.c_str());
+      GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s, index %s, type %s", var->GetName().c_str(),
+             std::to_string(index).c_str(), iter->node_type.c_str());
       return INTERNAL_ERROR;
     }
     // set stream_label
@@ -459,17 +460,17 @@ Status RecoverTransRoadForVar(const NodePtr &var, const VarTransRoad &road) {
 Status RecoverTransRoadForVarRef(const std::set<NodePtr> &nodes, const VarTransRoad &road) {
   for (auto &var : nodes) {
     GE_CHECK_NOTNULL(var);
-    int index = 0;
+    static std::atomic_int index(0);
     NodePtr last_node = var;
     GELOGI("Recover trans nodes for variable ref %s", var->GetName().c_str());
     for (auto iter = road.rbegin(); iter != road.rend(); ++iter) {
       auto trans_name = var->GetName() + "_trans_" + std::to_string(index++);
       auto ret = RecoverOneTransNodeForVarRef(trans_name, *iter, last_node, last_node);
       if (ret != SUCCESS) {
-        REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %d, type %s",
-                          var->GetName().c_str(), index, iter->node_type.c_str());
-        GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s failed, index %d, type %s",
-               var->GetName().c_str(), index, iter->node_type.c_str());
+        REPORT_CALL_ERROR("E19999", "Failed to recover trans node for variable %s, index %s, type %s",
+                          var->GetName().c_str(), std::to_string(index).c_str(), iter->node_type.c_str());
+        GELOGE(INTERNAL_ERROR, "[Recover][TransNode] for variable %s failed, index %s, type %s",
+               var->GetName().c_str(), std::to_string(index).c_str(), iter->node_type.c_str());
         return INTERNAL_ERROR;
       }
       // set stream_label
@@ -1420,9 +1421,10 @@ Status GraphPrepare::AdjustDataOpOutput(const NodePtr &node) {
   return SUCCESS;
 }
 
-Status GraphPrepare::CheckInternalFormat(const NodePtr &input_node, const GeTensorDesc &desc, bool tune_flag) {
+Status GraphPrepare::CheckInternalFormat(const NodePtr &input_node, const GeTensorDesc &desc) {
   auto format = desc.GetFormat();
   auto origin_format = desc.GetOriginFormat();
+  auto tune_flag = (options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_BUILDER);
   bool need_check_internal_format = (!IsTansDataOpData(input_node)) && (!options_.is_single_op) && (!tune_flag);
   if (need_check_internal_format) {
     bool is_internal = TypeUtils::IsInternalFormat(format) || TypeUtils::IsInternalFormat(origin_format);
@@ -1436,6 +1438,63 @@ Status GraphPrepare::CheckInternalFormat(const NodePtr &input_node, const GeTens
       return FAILED;
     }
   }
+  return SUCCESS;
+}
+
+Status GraphPrepare::UpdateDataInputOutputDesc(GeAttrValue::INT index, OpDescPtr &op, GeTensorDesc &desc) {
+  auto data_type = desc.GetDataType();
+  uint32_t length = 1;
+  bool type_ret = TypeUtils::GetDataTypeLength(data_type, length);
+  if (!type_ret) {
+    std::string reason = "Input datatype[" + TypeUtils::DataTypeToSerialString(data_type) + "] of index:" +
+                         std::to_string(index) + " input tensor is not support";
+    REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"reason"}), std::vector<std::string>({reason}));
+    GELOGE(PARAM_INVALID, "[Check][Param] Input datatype %s is not support.",
+           TypeUtils::DataTypeToSerialString(data_type).c_str());
+    return FAILED;
+  }
+  int64_t desc_shape = desc.GetShape().GetShapeSize();
+  FMK_INT64_UINT32_MULCHECK(desc_shape, length);
+  int64_t shape_size = desc_shape * length;
+  GE_IF_BOOL_EXEC(shape_size == 0 && desc.GetShape().GetDimNum() == 0, shape_size = static_cast<int64_t>(length));
+  int64_t size = 0;
+  GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc, size) != GRAPH_SUCCESS,
+                  REPORT_CALL_ERROR("E19999", "Get size of user input tensor failed, index:%ld", index);
+                  GELOGE(INTERNAL_ERROR, "[Get][Size] of user input tensor failed, index:%ld", index); return FAILED);
+  bool size_check = (size != 0 && shape_size != size);
+  if (size_check) {
+    std::string reason = "input tensor[index:" + std::to_string(index) + "]'s data size[" + std::to_string(size) +
+                         "] != shape_size[" + std::to_string(size) + "], check invalid";
+    REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"reason"}), std::vector<std::string>({reason}));
+    GELOGE(PARAM_INVALID, "[Check][Param] input data size = %ld, shape_size = %ld.", size, shape_size);
+    return FAILED;
+  }
+  ge::TensorUtils::SetSize(desc, shape_size);
+
+  auto tune_flag = (options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_BUILDER);
+  if (!tune_flag) {
+    graphStatus graph_ret = op->UpdateInputDesc(0, desc);
+    if (graph_ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update input desc of op:%s(%s) failed, index:0",
+                        op->GetName().c_str(), op->GetType().c_str());
+      GELOGE(graph_ret, "[Update][InputDesc] of op:%s(%s) failed, index:0",
+             op->GetName().c_str(), op->GetType().c_str());
+      return graph_ret;
+    }
+    // Size will be recalculated in the build stage
+    ge::TensorUtils::SetSize(desc, 0);
+    graph_ret = op->UpdateOutputDesc(0, desc);
+    if (graph_ret != GRAPH_SUCCESS) {
+      REPORT_CALL_ERROR("E19999", "Update output desc of op:%s(%s) failed, index:0",
+                        op->GetName().c_str(), op->GetType().c_str());
+      GELOGE(graph_ret, "[Update][OutputDesc] of op:%s(%s) failed, index:0",
+             op->GetName().c_str(), op->GetType().c_str());
+      return graph_ret;
+    }
+  } else {
+    GELOGI("data %s skip update info in tune mode", op->GetName().c_str());
+  }
+
   return SUCCESS;
 }
 
@@ -1471,63 +1530,18 @@ Status GraphPrepare::UpdateInput(const std::vector<GeTensor> &user_input,
       }
       GeTensorDesc desc(user_input[index].GetTensorDesc());
       // data maybe internal format [FRACTAL_NZ] at singleop process such as GEMM.
-      auto tune_flag = (options_.build_mode == BUILD_MODE_TUNING) && (options_.build_step == BUILD_STEP_AFTER_BUILDER);
-      ret = CheckInternalFormat(input_node, desc, tune_flag);
+      ret = CheckInternalFormat(input_node, desc);
       if (ret != SUCCESS) {
         GELOGE(INTERNAL_ERROR, "[Check][InternalFormat] on %s failed", op->GetName().c_str());
         return ret;
       }
-      auto data_type = desc.GetDataType();
-      uint32_t length = 1;
-      bool type_ret = TypeUtils::GetDataTypeLength(data_type, length);
-      if (!type_ret) {
-        std::string reason = "Input datatype[" + TypeUtils::DataTypeToSerialString(data_type) + "] of index:" +
-                             std::to_string(index) + " input tensor is not support";
-        REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"reason"}), std::vector<std::string>({reason}));
-        GELOGE(PARAM_INVALID, "[Check][Param] Input datatype %s is not support.",
-               TypeUtils::DataTypeToSerialString(data_type).c_str());
-        return FAILED;
+
+      ret = UpdateDataInputOutputDesc(index, op, desc);
+      if (ret != SUCCESS) {
+        GELOGE(FAILED, "[Update][DataInputOutputDesc] on %s failed", op->GetName().c_str());
+        return ret;
       }
-      int64_t desc_shape = desc.GetShape().GetShapeSize();
-      FMK_INT64_UINT32_MULCHECK(desc_shape, length);
-      int64_t shape_size = desc_shape * length;
-      GE_IF_BOOL_EXEC(shape_size == 0 && desc.GetShape().GetDimNum() == 0, shape_size = static_cast<int64_t>(length));
-      int64_t size = 0;
-      GE_IF_BOOL_EXEC(ge::TensorUtils::GetSize(desc, size) != GRAPH_SUCCESS,
-                      REPORT_CALL_ERROR("E19999", "Get size of user input tensor failed, index:%ld", index);
-                      GELOGE(INTERNAL_ERROR, "[Get][Size] of user input tensor failed, index:%ld", index);
-                      return FAILED);
-      bool size_check = (size != 0 && shape_size != size);
-      if (size_check) {
-        std::string reason = "input tensor[index:" + std::to_string(index) + "]'s data size[" + std::to_string(size) +
-            "] != shape_size[" + std::to_string(size) + "], check invalid";
-        REPORT_INPUT_ERROR("E19025", std::vector<std::string>({"reason"}), std::vector<std::string>({reason}));
-        GELOGE(PARAM_INVALID, "[Check][Param] input data size = %ld, shape_size = %ld.", size, shape_size);
-        return FAILED;
-      }
-      ge::TensorUtils::SetSize(desc, shape_size);
-      if (!tune_flag) {
-        graphStatus graph_ret = op->UpdateInputDesc(0, desc);
-        if (graph_ret != GRAPH_SUCCESS) {
-          REPORT_CALL_ERROR("E19999", "Update input desc of op:%s(%s) failed, index:0",
-                            op->GetName().c_str(), op->GetType().c_str());
-          GELOGE(graph_ret, "[Update][InputDesc] of op:%s(%s) failed, index:0",
-                 op->GetName().c_str(), op->GetType().c_str());
-          return graph_ret;
-        }
-        // Size will be recalculated in the build stage
-        ge::TensorUtils::SetSize(desc, 0);
-        graph_ret = op->UpdateOutputDesc(0, desc);
-        if (graph_ret != GRAPH_SUCCESS) {
-          REPORT_CALL_ERROR("E19999", "Update output desc of op:%s(%s) failed, index:0",
-                            op->GetName().c_str(), op->GetType().c_str());
-          GELOGE(graph_ret, "[Update][OutputDesc] of op:%s(%s) failed, index:0",
-                 op->GetName().c_str(), op->GetType().c_str());
-          return graph_ret;
-        }
-      } else {
-        GELOGI("data %s skip update info in tune mode", op->GetName().c_str());
-      }
+
       if (!dynamic_shape_range_vec.empty()) {
         ret = UpdateDynamicInputShapeRange(index, dynamic_shape_range_vec, op, desc);
         GE_CHK_STATUS_RET(ret, "[Update][DynamicInputShapeRange] on %s failed.", op->GetName().c_str());
@@ -1742,8 +1756,8 @@ Status GraphPrepare::CtrlFlowPreProcess() {
   PassManager graph_pass;
 
   // After InferShape Mark v1 control flow for unknown shape.
-  auto mark_force_unknown_pass = new (std::nothrow) MarkForceUnknownForCondPass;
-  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::MarkForceUnknownForCondPass", mark_force_unknown_pass));
+  GE_CHK_STATUS_RET(graph_pass.AddPass("PreRun::MarkForceUnknownForCondPass",
+                                       new (std::nothrow) MarkForceUnknownForCondPass));
 
   GE_CHK_STATUS_RET(graph_pass.Run(compute_graph_));
   return SUCCESS;
@@ -1985,6 +1999,22 @@ Status GraphPrepare::CheckUserInput(const std::vector<GeTensor> &user_input) {
 
 Status GraphPrepare::InferShapeForPreprocess() {
   GELOGI("Start infershape for preprocess.");
+  // Prepare dummy_shape for v1 control_flow op before infershape
+  for (const auto &node : compute_graph_->GetAllNodes()) {
+    string type;
+    GetOriginalType(node, type);
+    if (type == MERGE || type == REFMERGE) {
+      for (size_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
+        GELOGD("Prepare for infershape: update %s input_shape as dummy.", node->GetName().c_str());
+        NodeUtils::UpdateInputShape(*node, i, GeShape(DUMMY_SHAPE));
+      }
+    } else if (type == WHILE) {
+      for (size_t i = 0; i < node->GetAllInDataAnchorsSize(); ++i) {
+        GELOGD("Prepare for infershape: update %s output_shape as dummy.", node->GetName().c_str());
+        NodeUtils::UpdateOutputShape(*node, i, GeShape(DUMMY_SHAPE));
+      }
+    }
+  }
   GEPass ge_passes(compute_graph_);
   NamesToPass names_to_passes;
   AssertPass assert_pass;
@@ -2003,6 +2033,8 @@ Status GraphPrepare::InferShapeForPreprocess() {
   names_to_passes.emplace_back("DimensionComputePass", &dimension_compute_pass);
   ConstantFoldingPass constant_folding_pass;
   names_to_passes.emplace_back("ConstantFoldingPass", &constant_folding_pass);
+  InferValueRangePass infer_value_pass;
+  names_to_passes.emplace_back("InferValuePass", &infer_value_pass);
 
   int32_t dev_count = 0;
   AicpuConstantFoldingPass aicpu_constant_folding_pass;

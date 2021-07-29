@@ -16,9 +16,14 @@
 
 #include "easy_graph/layout/graph_layout.h"
 #include "easy_graph/layout/layout_executor.h"
+#include "easy_graph/layout/engines/graph_easy/graph_easy_executor.h"
 #include "easy_graph/graph/graph.h"
 
 EG_NS_BEGIN
+
+namespace {
+GraphEasyExecutor default_executor;
+}
 
 void GraphLayout::Config(LayoutExecutor &executor, const LayoutOption *opts) {
   this->executor_ = &executor;
@@ -27,8 +32,7 @@ void GraphLayout::Config(LayoutExecutor &executor, const LayoutOption *opts) {
 
 Status GraphLayout::Layout(const Graph &graph, const LayoutOption *opts) {
   const LayoutOption *options = opts ? opts : this->options_;
-  if (!executor_)
-    return EG_UNIMPLEMENTED;
+  if (!executor_) return static_cast<LayoutExecutor &>(default_executor).Layout(graph, options);
   return executor_->Layout(graph, options);
 }
 

@@ -63,7 +63,7 @@ local_ge_executor_src_files :=  \
     ../single_op/task/aicpu_task_builder.cc \
     ../single_op/task/aicpu_kernel_task_builder.cc \
     ../hybrid/node_executor/aicpu/aicpu_ext_info.cc \
-    ../graph/common/local_context.cc \
+    ../common/local_context.cc \
     ../hybrid/common/tensor_value.cc                                        \
     ../hybrid/common/npu_memory_allocator.cc                                \
     ../hybrid/executor/rt_callback_manager.cc                               \
@@ -102,7 +102,7 @@ local_ge_executor_src_files :=  \
     ../hybrid/node_executor/task_context.cc                                 \
     ../hybrid/hybrid_davinci_model.cc                                       \
     ../ge_local_engine/engine/host_cpu_engine.cc \
-    ../graph/common/omg_util.cc \
+    ../common/omg_util.cc \
     ../graph/manager/host_mem_manager.cc \
     ../graph/build/memory/var_mem_assign_util.cc \
     ../host_kernels/transpose_kernel.cc \
@@ -144,7 +144,7 @@ local_ge_executor_src_files :=  \
     ../host_kernels/transdata_kernel.cc \
     ../host_kernels/unpack_kernel.cc \
     ../graph/passes/pass_utils.cc \
-    ../graph/common/bcast.cc \
+    ../common/bcast.cc \
     ../common/fp16_t.cc \
     ../common/formats/format_transfers/format_transfer_transpose.cc \
     ../common/formats/utils/formats_trans_utils.cc \

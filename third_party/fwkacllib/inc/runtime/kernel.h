@@ -20,7 +20,7 @@
 #include "base.h"
 #include "stream.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -110,6 +110,16 @@ typedef struct rtKernelInfo {
     void *module_addr;  // module::baseaddr_
     uint32_t module_size;
 } *rtKernelInfo_t;
+
+/**
+ * @ingroup rt_kernel
+ * @brief op name
+ */
+typedef struct rtKernelLaunchNames {
+    const char *soName;      // defined for so name
+    const char *kernelName;  // defined for kernel type name
+    const char *opName;      // defined for operator name
+} rtKernelLaunchNames_t;
 
 /**
  * @ingroup rt_KernelConfigDump
@@ -365,7 +375,7 @@ RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim
                                          rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
 
 /**
- * @ingroup rt_kernel
+ * @ingroup rt_kernel(abandoned)
  * @brief launch kernel to device
  * @param [in] args       argments address for kernel function
  * @param [in] argsSize   argements size
@@ -377,7 +387,21 @@ RTS_API rtError_t rtKernelLaunchWithFlag(const void *stubFunc, uint32_t blockDim
 RTS_API rtError_t rtKernelLaunchEx(void *args, uint32_t argsSize, uint32_t flags, rtStream_t stream);
 
 /**
- * @ingroup rt_kernel
+ * @ingroup rt_kernel(in use)
+ * @brief launch kernel to device
+ * @param [in] opName     opkernel name
+ * @param [in] args       argments address for kernel function
+ * @param [in] argsSize   argements size
+ * @param [in] flags      launch flags
+ * @param [in] stream     associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtKernelLaunchFwk(const char *opName, void *args, uint32_t argsSize, uint32_t flags,
+                                    rtStream_t rtStream);
+
+/**
+ * @ingroup rt_kernel(abandoned)
  * @brief launch cpu kernel to device
  * @param [in] soName        so name
  * @param [in] kernelName    kernel name
@@ -393,7 +417,22 @@ RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, 
                                     uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream);
 
 /**
- * @ingroup rt_kernel
+ * @ingroup rt_kernel(in use)
+ * @brief launch cpu kernel to device
+ * @param [in] launchNames   names for kernel launch
+ * @param [in] blockDim      block dimentions
+ * @param [in] args          argments address for kernel function
+ * @param [in] argsSize      argments size
+ * @param [in] smDesc        shared memory description
+ * @param [in] stream        associated stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunch(const rtKernelLaunchNames_t *launchNames,
+    uint32_t blockDim, const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream);
+
+/**
+ * @ingroup rt_kernel(abandoned)
  * @brief launch cpu kernel to device  with dump identifier
  * @param [in] soName        so name
  * @param [in] kernelName    kernel name
@@ -409,6 +448,22 @@ RTS_API rtError_t rtCpuKernelLaunch(const void *soName, const void *kernelName, 
 RTS_API rtError_t rtCpuKernelLaunchWithFlag(const void *soName, const void *kernelName, uint32_t blockDim,
                                             const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream,
                                             uint32_t flags);
+
+/**
+ * @ingroup rt_kernel(in use)
+ * @brief launch cpu kernel to device  with dump identifier
+ * @param [in] launchNames   names for kernel launch
+ * @param [in] blockDim      block dimentions
+ * @param [in] args          argments address for kernel function
+ * @param [in] argsSize      argments size
+ * @param [in] smDesc        shared memory description
+ * @param [in] stream        associated stream
+ * @param [in] flag          dump flag or others function flag
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtAicpuKernelLaunchWithFlag(const rtKernelLaunchNames_t *launchNames, uint32_t blockDim,
+    const void *args, uint32_t argsSize, rtSmDesc_t *smDesc, rtStream_t stream, uint32_t flags);
 
 /**
  * @ingroup rt_kernel
@@ -592,7 +647,7 @@ RTS_API rtError_t rtStartMDCProfiler(void **addr, uint32_t length);
  */
 RTS_API rtError_t rtStopMDCProfiler(void *addr);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

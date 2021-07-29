@@ -24,7 +24,7 @@
 #include "config.h"
 #include "stream.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -547,7 +547,7 @@ RTS_API rtError_t rtSetIpcMemPid(const char *name, int32_t pid[], int num);
  */
 RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t stream);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

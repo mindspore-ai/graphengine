@@ -63,7 +63,7 @@ namespace ge {
     return SUCCESS;
   }
 
-  Status AiCpuTaskBuilder::InitWorkspaceAndIO(AiCpuTask &task, const SingleOpModelParam &param, bool dynamic_flag) {
+  Status AiCpuTaskBuilder::InitWorkspaceAndIO(AiCpuTask &task, const SingleOpModelParam &param) {
     if (kernel_def_.args_size() > sizeof(STR_FWK_OP_KERNEL)) {
       GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]sizeof STR_FWK_OP_KERNEL is: %lu, but args_size is: %d",
           sizeof(STR_FWK_OP_KERNEL), kernel_def_.args_size());
@@ -83,9 +83,8 @@ namespace ge {
     return SUCCESS;
   }
 
-  Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam &param,
-                                     bool dynamic_flag, uint64_t kernel_id) {
-    GE_CHK_STATUS_RET_NOLOG(InitWorkspaceAndIO(task, param, dynamic_flag));
+  Status AiCpuTaskBuilder::BuildTask(ge::AiCpuTask &task, const SingleOpModelParam &param, uint64_t kernel_id) {
+    GE_CHK_STATUS_RET_NOLOG(InitWorkspaceAndIO(task, param));
 
     STR_FWK_OP_KERNEL fwk_op_kernel = {0};
     auto ret = SetFmkOpKernel(task.io_addr_, task.workspace_addr_, fwk_op_kernel);
@@ -124,7 +123,6 @@ namespace ge {
     task.arg_size_ = sizeof(STR_FWK_OP_KERNEL);
     task.op_type_ = op_desc_->GetName();
     task.task_info_ = kernel_def_.task_info();
-    task.dynamic_flag_ = dynamic_flag;
     task.kernel_id_ = kernel_id;
 
     auto debug_info = BuildTaskUtils::GetTaskInfo(op_desc_);

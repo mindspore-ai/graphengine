@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "hybrid_execution_context.h"
+#include "hybrid/executor/hybrid_execution_context.h"
 #include <atomic>
 
 namespace ge {

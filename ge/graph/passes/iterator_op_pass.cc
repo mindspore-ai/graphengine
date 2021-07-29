@@ -21,13 +21,13 @@
 #include <string>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "framework/common/debug/ge_log.h"
 #include "common/ge/ge_util.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/anchor.h"
-#include "graph/common/omg_util.h"
-#include "graph/graph.h"
+#include "common/omg_util.h"
+#include "external/graph/graph.h"
 #include "graph/node.h"
 #include "graph/passes/pass_utils.h"
 #include "graph/utils/graph_utils.h"

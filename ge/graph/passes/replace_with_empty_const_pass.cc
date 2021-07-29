@@ -21,7 +21,23 @@
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/utils/graph_utils.h"
+#include "graph/utils/node_utils.h"
 
+namespace {
+const std::unordered_set<std::string> kControlFlowOps = {
+  ge::SWITCH,
+  ge::REFSWITCH,
+  ge::MERGE,
+  ge::REFMERGE,
+  ge::ENTER,
+  ge::REFENTER,
+  ge::NEXTITERATION,
+  ge::REFNEXTITERATION,
+  ge::EXIT,
+  ge::REFEXIT,
+  ge::LOOPCOND
+};
+}
 namespace ge {
 Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
   GELOGD("ReplaceWithEmptyConstPass in.");
@@ -39,6 +55,10 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
     GELOGI("Node %s is const. Ignore current pass.", node->GetName().c_str());
     return SUCCESS;
   }
+  if (kControlFlowOps.count(NodeUtils::GetNodeType(node)) != 0) {
+    GELOGI("Node %s is control flow op. Ignore current pass.", node->GetName().c_str());
+    return SUCCESS;
+  }
   // Node like no op, it has no output
   if (node->GetOpDesc()->GetAllOutputsDescPtr().empty()) {
     GELOGI("Node %s has no output desc. Ignore current pass.", node->GetName().c_str());
@@ -51,7 +71,7 @@ Status ReplaceWithEmptyConstPass::Run(NodePtr &node) {
       GELOGI("Node %s Got empty output_desc_ptr, ignore current pass.", node->GetName().c_str());
       return SUCCESS;
     }
-    if (!IsEmptyTenor(output_desc_ptr->GetShape())) {
+    if (!IsKnownEmptyTenor(output_desc_ptr->GetShape())) {
       is_all_output_empty = false;
       break;
     }
@@ -87,12 +107,16 @@ Status ReplaceWithEmptyConstPass::GetOutputsOfCurrNode(const NodePtr &node_to_re
   return SUCCESS;
 }
 
-bool ReplaceWithEmptyConstPass::IsEmptyTenor(const GeShape &shape) const {
+bool ReplaceWithEmptyConstPass::IsKnownEmptyTenor(const GeShape &shape) const {
+  bool is_known_empty_tensor = false;
   for (auto dim : shape.GetDims()) {
-    if (dim == 0) {
-      return true;
+    if (dim < 0) {
+      // current dim is unknown dim, skip replace
+      return false;
+    } else if (dim == 0) {
+      is_known_empty_tensor = true;
     }
   }
-  return false;
+  return is_known_empty_tensor;
 }
 }  // namespace ge

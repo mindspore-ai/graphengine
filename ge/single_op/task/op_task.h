@@ -23,7 +23,7 @@
 
 #include "common/dump/dump_op.h"
 #include "common/dump/dump_properties.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/op_kernel_bin.h"
 #include "runtime/stream.h"
 #include "graph/node.h"
@@ -33,6 +33,10 @@
 #include "register/op_tiling.h"
 
 namespace ge {
+namespace {
+const int kAddressNum = 2;
+}  // namespace
+
 class StreamResource;
 struct SingleOpModelParam;
 class OpTask {
@@ -44,6 +48,7 @@ class OpTask {
   virtual Status UpdateArgTable(const SingleOpModelParam &param);
   void SetModelArgs(std::string model_name, uint32_t model_id);
   Status GetProfilingArgs(TaskDescInfo &task_desc_info, uint32_t &model_id);
+  const std::string &GetTaskName() const {return task_name_;}
   void SetOpDesc(const OpDescPtr &op_desc) {
     op_desc_ = op_desc;
   }
@@ -66,6 +71,7 @@ class OpTask {
   std::string model_name_;
   uint32_t model_id_ = 0;
   uint32_t block_dim_ = 1;
+  std::string task_name_;
 };
 
 class TbeOpTask : public OpTask {
@@ -83,8 +89,10 @@ class TbeOpTask : public OpTask {
   void SetKernelArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim, const OpDescPtr &op_desc);
   void SetKernelWithHandleArgs(std::unique_ptr<uint8_t[]> &&args, size_t arg_size, uint32_t block_dim,
                                const OpDescPtr &op_desc, const domi::KernelDefWithHandle& kernel_def_with_handle);
+  void SetAtomicAddrCleanTask(OpTask *task) { atomic_task_.reset(task); }
 
   Status UpdateRunInfo() override;
+  Status SetArgIndex();
 
   const void *GetArgs() const;
   size_t GetArgSize() const;
@@ -93,33 +101,63 @@ class TbeOpTask : public OpTask {
   const std::string &GetTaskType() const override;
   void SetHandle(void *handle);
 
+ protected:
+  NodePtr node_;
+  std::unique_ptr<uint8_t[]> args_;
+  size_t arg_size_ = 0;
+  void *tiling_buffer_ = nullptr;
+  uint32_t max_tiling_size_ = 0;
+  std::string tiling_data_;
+  size_t input_num_; // include const input
+  size_t output_num_;
+
  private:
   friend class SingleOpModel;
   friend class TbeTaskBuilder;
   static Status UpdateTensorDesc(const GeTensorDesc &src_tensor, GeTensorDesc &dst_tensor);
-  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
-                           const vector<GeTensorDesc> &output_desc);
   Status AllocateWorkspaces(const std::vector<int64_t> &workspace_sizes);
   Status DoLaunchKernel(rtStream_t stream);
+  Status CheckAndExecuteAtomic(const vector<GeTensorDesc> &input_desc,
+                               const vector<DataBuffer> &input_buffers,
+                               vector<GeTensorDesc> &output_desc,
+                               vector<DataBuffer> &output_buffers,
+                               rtStream_t stream);
+  virtual Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                                   const vector<GeTensorDesc> &output_desc);
+  virtual Status UpdateTilingArgs(rtStream_t stream);
+  virtual Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs);
+  virtual Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info);
 
   const void *stub_func_ = nullptr;
-  std::unique_ptr<uint8_t[]> args_;
-  size_t arg_size_ = 0;
   void *sm_desc_ = nullptr;
   std::string stub_name_;
-
   StreamResource *stream_resource_ = nullptr;
-  void *tiling_buffer_ = nullptr;
-  uint32_t max_tiling_size_ = 0;
-  std::string tiling_data_;
+
   std::vector<int64_t> run_info_workspaces_;
   std::vector<void *> workspaces_;
-  NodePtr node_;
 
   uint32_t tiling_key_ = 0;
+  bool clear_atomic_ = false;
   void* handle_ = nullptr;
   std::string original_kernel_key_;
   std::string node_info_;
+  std::vector<size_t> arg_index_; // data index in args
+
+  std::unique_ptr<OpTask> atomic_task_;
+};
+
+class AtomicAddrCleanOpTask : public TbeOpTask {
+ public:
+  Status InitAtomicAddrCleanIndices();
+
+ private:
+  Status UpdateNodeByShape(const vector<GeTensorDesc> &input_desc,
+                           const vector<GeTensorDesc> &output_desc) override;
+  Status UpdateIoAddr(const vector<DataBuffer> &inputs, const vector<DataBuffer> &outputs) override;
+  Status UpdateTilingArgs(rtStream_t stream) override;
+  Status CalcTilingInfo(optiling::utils::OpRunInfo &run_info) override;
+  std::vector<int> atomic_output_indices_;
+
 };
 
 class AiCpuBaseTask : public OpTask {
@@ -140,6 +178,10 @@ class AiCpuBaseTask : public OpTask {
                        rtStream_t stream);
   Status UpdateOutputShape(vector<GeTensorDesc> &output_desc);
   Status UpdateShapeToOutputDesc(const GeShape &shape_new, GeTensorDesc &output_desc);
+  // for blocking aicpu op
+  Status DistributeWaitTaskForAicpuBlockingOp(rtStream_t stream);
+  Status UpdateEventIdForBlockingAicpuOp();
+  Status CheckDeviceSupportBlockingAicpuOpProcess(bool &is_support);
 
  protected:
   size_t num_inputs_ = 0;
@@ -148,6 +190,9 @@ class AiCpuBaseTask : public OpTask {
   std::unique_ptr<ge::hybrid::AicpuExtInfoHandler> aicpu_ext_handle_;
   void *ext_info_addr_dev_ = nullptr;
   vector<bool> input_is_const_;
+  // for blocking aicpu op
+  bool is_blocking_aicpu_op_ = false;
+  rtEvent_t rt_event_ = nullptr;
 };
 
 class AiCpuTask : public AiCpuBaseTask {
@@ -192,7 +237,6 @@ class AiCpuTask : public AiCpuBaseTask {
   // host addr
   std::vector<void *> io_addr_host_;
 
-  bool dynamic_flag_ = false;
   // for copy task
   void *copy_task_args_buf_ = nullptr;
   void *copy_workspace_buf_ = nullptr;
@@ -257,7 +301,7 @@ class MemcpyAsyncTask : public OpTask {
   friend class SingleOpModel;
   friend class RtsKernelTaskBuilder;
 
-  uintptr_t addresses_[2];
+  uintptr_t addresses_[kAddressNum] = {0};
   size_t dst_max_;
   size_t count_;
   rtMemcpyKind_t kind_;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "attr_options.h"
+#include "ir_build/attr_options/attr_options.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -32,18 +32,24 @@ void KeepDtypeReportError(const std::vector<std::string> &invalid_list, const st
   size_t list_size = invalid_list.size();
   err_msg << "config file contains " << list_size;
   if (list_size == 1) {
-    err_msg << " operator not in the graph, op name:";
+    err_msg << " operator not in the graph, ";
   } else {
-    err_msg << " operators not in the graph, op names:";
+    err_msg << " operators not in the graph, ";
   }
-
+  std::string cft_type;
   for (size_t i = 0; i < list_size; i++) {
     if (i == kMaxOpsNum) {
       err_msg << "..";
       break;
     }
-    err_msg << invalid_list[i];
-    if (i != list_size - 1) {
+    bool istype = IsContainOpType(invalid_list[i], cft_type);
+    if (!istype) {
+      err_msg << "op name:";
+    } else {
+      err_msg << "op type:";
+    }
+    err_msg << cft_type;
+    if (i != (list_size - 1)) {
       err_msg << " ";
     }
   }
@@ -72,7 +78,7 @@ graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path) {
     return GRAPH_FAILED;
   }
 
-  std::string op_name;
+  std::string op_name, op_type;
   std::vector<std::string> invalid_list;
   while (std::getline(ifs, op_name)) {
     if (op_name.empty()) {
@@ -80,13 +86,20 @@ graphStatus KeepDtypeFunc(ComputeGraphPtr &graph, const std::string &cfg_path) {
     }
     op_name = StringUtils::Trim(op_name);
     bool is_find = false;
-    for (auto &node_ptr : graph->GetDirectNode()) {
+    bool is_type = IsContainOpType(op_name, op_type);
+    for (auto &node_ptr : graph->GetAllNodes()) {
       auto op_desc = node_ptr->GetOpDesc();
       GE_CHECK_NOTNULL(op_desc);
-
-      if ((op_desc->GetName() == op_name) || IsOriginalOpFind(op_desc, op_name)) {
-        is_find = true;
-        (void)AttrUtils::SetInt(op_desc, ATTR_NAME_KEEP_DTYPE, 1);
+      if (is_type) {
+        if (IsOpTypeEqual(node_ptr, op_type)) {
+          is_find = true;
+          (void)AttrUtils::SetInt(op_desc, ATTR_NAME_KEEP_DTYPE, 1);
+        }
+      } else {
+        if (op_desc->GetName() == op_name || IsOriginalOpFind(op_desc, op_name)) {
+          is_find = true;
+          (void)AttrUtils::SetInt(op_desc, ATTR_NAME_KEEP_DTYPE, 1);
+        }
       }
     }
     if (!is_find) {

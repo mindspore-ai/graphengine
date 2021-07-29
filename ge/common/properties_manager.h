@@ -25,7 +25,7 @@
 
 #include "common/dump/dump_properties.h"
 #include "graph/op_desc.h"
-#include "common/ge_compiler_options.h"
+#include "framework/common/ge_compiler_options.h"
 
 namespace ge {
 // Configuration property management

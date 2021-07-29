@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "multi_batch_options.h"
+#include "graph/preprocess/multi_batch_options.h"
 
 #include "framework/common/debug/ge_log.h"
 #include "framework/omg/omg_inner_types.h"
@@ -25,11 +25,11 @@
 #include "graph/debug/ge_attr_define.h"
 #include "graph/utils/node_utils.h"
 #include "graph/ge_context.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "framework/common/types.h"
 #include "graph/compute_graph.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 
 namespace ge {
 namespace multibatch {

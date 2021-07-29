@@ -22,7 +22,7 @@
 
 #include "inc/pass_manager.h"
 #include "graph/utils/tensor_utils.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "graph/passes/multi_batch_pass.h"
 #include "graph/preprocess/multi_batch_copy_graph.h"
 #include "graph/preprocess/insert_op/util_insert_aipp_op.h"
@@ -45,7 +45,7 @@ protected:
   }
 
 public:
-  NodePtr MakeNode(const ComputeGraphPtr &graph, uint32_t in_num, uint32_t out_num, string name, string type) {
+  NodePtr MakeNode(const ComputeGraphPtr &graph, int in_num, int out_num, string name, string type) {
     GeTensorDesc test_desc(GeShape(), FORMAT_NCHW, DT_FLOAT);
     auto op_desc = std::make_shared<OpDesc>(name, type);
     for (auto i = 0; i < in_num; ++i) {

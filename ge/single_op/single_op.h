@@ -23,10 +23,10 @@
 #include <string>
 #include <vector>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/executor/ge_executor.h"
 #include "runtime/stream.h"
-#include "task/op_task.h"
+#include "single_op/task/op_task.h"
 #include "cce/aicpu_engine_struct.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 

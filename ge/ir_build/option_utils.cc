@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "option_utils.h"
+#include "ir_build/option_utils.h"
 #include "common/util/error_manager/error_manager.h"
 #include "external/ge/ge_api_types.h"
 #include "framework/common/string_util.h"
@@ -50,6 +50,8 @@ const std::set<std::string> kBufferOptimizeSupportOption = {"l1_optimize", "l2_o
 const char *const kBufferOptimizeSupport = "only support l2_optimize, off_optimize";
 const char *const IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT = "high_performance";
 const char *const IR_OPTION_OP_SELECT_IMPLMODE_PRECISON = "high_precision";
+const char *const IR_OPTION_OP_SELECT_IMPLMODE_HIGH_PRECISION_FOR_ALL = "high_precision_for_all";
+const char *const IR_OPTION_OP_SELECT_IMPLMODE_HIGH_PERFORMANCE_FOR_ALL = "high_performance_for_all";
 const char *const kInputShapeSample1 = "\"input_name1:n1,c1,h1,w1\"";
 const char *const kInputShapeSample2 = "\"input_name1:1,3,224,224\"";
 const char *const kSplitError1 = "size not equal to 2 split by \":\"";
@@ -57,7 +59,8 @@ const char *const kEmptyError = "can not be empty";
 const char *const kFloatNumError = "exist float number";
 const char *const kDigitError = "is not digit";
 const char *const kCompressWeightError = "it must be appointed when appoint parameter[--optypelist_for_implmode]";
-const char *const kSelectImplmodeError = "only support high_performance, high_precision";
+const char *const kSelectImplmodeError = "only support high_performance, high_precision, "
+                                         "high_precision_for_all, high_performance_for_all";
 const char *const kDynamicBatchSizeError = "It can only contains digit, \",\", \" \"";
 const char *const kDynamicImageSizeError = "It can only contains digit, \",\", \" \" and \";\"";
 const char *const kKeepDtypeError = "file not found";
@@ -204,7 +207,7 @@ bool CheckDynamicImagesizeInputShapeValid(map<string, vector<int64_t>> shape_map
   if (!input_format.empty() && !ge::TypeUtils::IsFormatValid(input_format.c_str())) {
     GELOGE(ge::PARAM_INVALID,
         "[Check][DynamicImagesizeInputShape] input_format [%s] invalid, can not support now.", input_format.c_str());
-    REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter","value","reason"}),
+    REPORT_INPUT_ERROR("E10003", std::vector<std::string>({"parameter", "value", "reason"}),
                        std::vector<std::string>({"input_format", input_format, "this format is not support"}));
     return false;
   }
@@ -782,7 +785,9 @@ Status CheckImplmodeParamValid(const std::string &optypelist_for_implmode, std::
     op_select_implmode = IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT;
   } else {
     if (op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_DEFAULT &&
-      op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_PRECISON) {
+      op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_PRECISON &&
+      op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_HIGH_PRECISION_FOR_ALL &&
+      op_select_implmode != IR_OPTION_OP_SELECT_IMPLMODE_HIGH_PERFORMANCE_FOR_ALL) {
       ErrorManager::GetInstance().ATCReportErrMessage("E10001", {"parameter", "value", "reason"},
                                                       {"--op_select_implmode", op_select_implmode.c_str(),
                                                        kSelectImplmodeError});

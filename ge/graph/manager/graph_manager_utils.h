@@ -27,17 +27,18 @@
 #include <vector>
 
 #include "common/blocking_queue.h"
-#include "common/ge_types.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/ge_inner_error_codes.h"
 #include "graph/compute_graph.h"
-#include "graph/graph.h"
+#include "common/local_context.h"
+#include "external/graph/graph.h"
 #include "graph/model.h"
-#include "model/ge_model.h"
-#include "model/ge_root_model.h"
-#include "register/register_fmk_types.h"
+#include "common/model/ge_model.h"
+#include "common/model/ge_root_model.h"
+#include "external/register/register_fmk_types.h"
 #include "external/ge/ge_api_types.h"
 
 namespace ge {
@@ -85,8 +86,6 @@ class SubGraphInfo {
   void SetGeModelPtr(const GeModelPtr &ge_model_ptr) { ge_model_ptr_ = ge_model_ptr; }
   bool GeModelIsValid() const { return ge_model_ptr_ != nullptr; }
 
-  Status FreeInOutBuffer();
-
   void SetOutputContext(const std::string &output) { output_names_ = output; }
   std::string GetOutputContext() const { return output_names_; }
 
@@ -106,10 +105,7 @@ class SubGraphInfo {
   std::vector<bool> output_flag_;
   ModelIdInfo model_id_info_;
   GeModelPtr ge_model_ptr_;
-  bool malloc_flag_;
-  std::vector<void *> buffer_addr_;
   std::string output_names_;
-  std::vector<uint32_t> buffer_size_;
   std::string stream_label_;
   std::unordered_map<ge::NodePtr, ge::NodePtr> end_to_pld_;
   std::unordered_map<ge::NodePtr, ge::NodePtr> pld_to_end_;
@@ -154,6 +150,9 @@ class GraphNode {
   bool GetRunFlag() const { return run_flag_; }
   void SetRunFlag(bool flag) { run_flag_ = flag; }
 
+  void SetOmeContext(const OmeContext &context) { context_ = context; }
+  OmeContext &GetOmeContext() { return context_; }
+
   bool IsAsync() const { return async_; }
   void SetAsync(bool flag) { async_ = flag; }
 
@@ -195,6 +194,8 @@ class GraphNode {
   std::map<std::string, std::string> options_;
   bool run_flag_;
   std::vector<SubGraphInfoPtr> subgraph_ptr_list_;
+
+  OmeContext context_;
 
   GraphPtr graph_;
   ComputeGraphPtr compute_graph_;

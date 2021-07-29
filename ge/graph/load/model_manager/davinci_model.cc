@@ -21,22 +21,22 @@
 #include <map>
 #include <utility>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/formats/formats.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "common/math/math_util.h"
-#include "common/op/ge_op_utils.h"
+#include "framework/common/op/ge_op_utils.h"
 #include "common/profiling/profiling_manager.h"
 #include "common/properties_manager.h"
-#include "common/scope_guard.h"
+#include "framework/common/scope_guard.h"
 #include "common/thread_pool.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/util.h"
-#include "graph/common/ge_call_wrapper.h"
+#include "common/ge_call_wrapper.h"
 #include "graph/compute_graph.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
-#include "graph/graph.h"
+#include "external/graph/graph.h"
 #include "graph/load/model_manager/cpu_queue_schedule.h"
 #include "graph/load/model_manager/model_manager.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
@@ -57,11 +57,12 @@
 #include "runtime/rt_model.h"
 #include "runtime/stream.h"
 #include "securec.h"
-#include "graph/common/local_context.h"
+#include "common/local_context.h"
 #include "common/formats/utils/formats_trans_utils.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/build/memory/block_mem_assigner.h"
 #include "graph/manager/session_scope_mem_allocator.h"
+#include "framework/omg/omg_inner_types.h"
 
 // create std::thread, catch exceptions using try/catch
 #define CREATE_STD_THREAD(thread_id, func, args)                                                  \
@@ -99,6 +100,9 @@ const uint32_t kEndOfSequenceNew = 507005;
 const int32_t kModelAbortNormal = 0x0704000e;
 const int32_t kModelAbortNormalNew = 507024;
 const uint32_t kInteval = 2;
+const uint32_t kFftsTbeHandleElementSize = 2;
+const uint32_t kNonTailBlock = 0;
+const uint32_t kTailBlock = 1;
 const char *const kModelName = "model_name";
 const char *const kModeleId = "model_id";
 const char *const kLoadStartTime = "load_start_time";
@@ -116,14 +120,15 @@ const char *const kWorkSpaceSize = "workspace_size";
 const char *const kTotalSize = "total_size";
 const char *const kTaskCount = "task_count";
 const char *const kTaskId = "task_id";
-const char* const kRequestId = "request_id";
-const char* const kThreadId = "thread_id";
-const char* const kInputBeginTime = "input_begin_time";
-const char* const kInputEndTime = "input_end_time";
-const char* const kInferBeginTime = "infer_begin_time";
-const char* const kInferEndTime = "infer_end_time";
-const char* const kOutputBeginTime = "output_start_time";
-const char* const kOutputEndTime = "output_end_time";
+const char *const kRequestId = "request_id";
+const char *const kThreadId = "thread_id";
+const char *const kInputBeginTime = "input_begin_time";
+const char *const kInputEndTime = "input_end_time";
+const char *const kInferBeginTime = "infer_begin_time";
+const char *const kInferEndTime = "infer_end_time";
+const char *const kOutputBeginTime = "output_start_time";
+const char *const kOutputEndTime = "output_end_time";
+const char *const kStubFuncName = "_register_stub_func";
 const uint32_t kStringHeadElems = 2;
 const uint32_t kPlacementHostData = 0;
 const size_t kAlignment = 64;
@@ -231,6 +236,12 @@ DavinciModel::~DavinciModel() {
 
       for (size_t i = 0; i < event_list_.size(); ++i) {
         GE_LOGW_IF(rtEventDestroy(event_list_[i]) != RT_ERROR_NONE, "Destroy event failed, index: %zu", i);
+      }
+
+      for (const auto &it : stream_2_event_) {
+        if (rtEventDestroy(it.second) != RT_ERROR_NONE) {
+          GELOGW("Destroy event failed");
+        }
       }
 
       FreeWeightsMem();
@@ -383,8 +394,8 @@ Status DavinciModel::InitWeightMem(void *dev_ptr, void *weight_ptr, size_t weigh
 
 Status DavinciModel::InitFeatureMapAndP2PMem(void *dev_ptr, size_t mem_size) {
   if (is_feature_map_mem_has_inited_) {
-    REPORT_INNER_ERROR("E19999", "Call InitFeatureMapMem more than once, model_id:%u, check invalid", model_id_);
-    GELOGE(PARAM_INVALID, "[Check][Param] call InitFeatureMapMem more than once, model_id:%u", model_id_);
+    REPORT_INNER_ERROR("E19999", "InitFeatureMapMem is called more than once, model_id:%u, check invalid", model_id_);
+    GELOGE(PARAM_INVALID, "[Check][Param] InitFeatureMapMem is called more than once, model_id:%u", model_id_);
     return PARAM_INVALID;
   }
   is_feature_map_mem_has_inited_ = true;
@@ -452,8 +463,7 @@ Status DavinciModel::InitVariableMem() {
 
 void DavinciModel::InitRuntimeParams() {
   int64_t value = 0;
-  bool ret;
-  ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_MEMORY_SIZE, value);
+  bool ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_MEMORY_SIZE, value);
   runtime_param_.mem_size = ret ? (uint64_t)value : 0;
   ret = ge::AttrUtils::GetInt(ge_model_, ATTR_MODEL_WEIGHT_SIZE, value);
   runtime_param_.weight_size = ret ? (uint64_t)value : 0;
@@ -760,8 +770,16 @@ void DavinciModel::SaveSpecifyAttrValues(const OpDescPtr &op_desc) {
 }
 
 Status DavinciModel::ReportProfilingData() {
-  ProfilingManager::Instance().ReportProfilingData(model_id_, GetTaskDescInfo());
-  GE_CHK_STATUS(SinkModelProfile(), "[Sink][ModelProfile] failed, model_id:%u.", model_id_);
+  bool is_train = domi::GetContext().train_flag;
+  auto model_id = model_id_;
+  auto &profiling_manager = ProfilingManager::Instance();
+  auto graph_id = runtime_param_.graph_id;
+  if (is_train) {
+    GELOGD("Replace model_id:%u with graph_id:%u, when training.", model_id, graph_id);
+    model_id = graph_id;
+  }
+  profiling_manager.ReportProfilingData(model_id, GetTaskDescInfo());
+  GE_CHK_STATUS(SinkModelProfile(), "[Sink][ModelProfile] failed, model_id:%u.", model_id);
 
   return SUCCESS;
 }
@@ -902,10 +920,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
     SetLabelForDynamic(node);
     auto it = op_desc_handle.find(op_desc->GetType());
     if (it != op_desc_handle.end()) {
-      if ((this->*it->second)(op_desc) != SUCCESS) {
-        GELOGE(PARAM_INVALID, "[Init][Node] failed, Name:%s", op_desc->GetName().c_str());
-        return PARAM_INVALID;
-      }
+      GE_CHK_BOOL_TRUE_EXEC_WITH_LOG((this->*it->second)(op_desc) != SUCCESS, return PARAM_INVALID,
+                                     "[Init][Node] failed, Name:%s", op_desc->GetName().c_str());
       continue;
     }
 
@@ -935,7 +951,8 @@ Status DavinciModel::InitNodes(const ComputeGraphPtr &compute_graph) {
 
     GE_TIMESTAMP_RESTART(InitTbeHandle);
     if (IsTbeTask(op_desc)) {
-      Status status = InitTbeHandle(op_desc);
+      Status status =
+          op_desc->HasAttr(ATTR_NAME_THREAD_SCOPE_ID) ? InitTbeHandleWithFfts(op_desc) : InitTbeHandle(op_desc);
       if (status != SUCCESS) {
         GELOGE(status, "[Init][TbeHandle] failed. op:%s", op_desc->GetName().c_str());
         return status;
@@ -980,7 +997,7 @@ Status DavinciModel::InitDataOp(const ComputeGraphPtr &graph, const NodePtr &nod
   // op_desc Checked by Init: Data, valid.
   auto op_desc = node->GetOpDesc();
   if (node->GetOwnerComputeGraph() != graph) {
-    GELOGI("Skip subgraph Data node: %s.", op_desc->GetName().c_str());
+    GELOGI("Skip Data node: %s in subgraph.", op_desc->GetName().c_str());
     return SUCCESS;
   }
 
@@ -1153,7 +1170,6 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
   }
 
   size_t num = output_data_info_.size();
-  bool fusion_flag = false;
 
   size_t input_count = input_size_list.size();
   is_getnext_sink_dynamic_ = false;
@@ -1163,6 +1179,7 @@ Status DavinciModel::InitNetOutput(const ComputeGraphPtr &graph, const NodePtr &
   }
   for (size_t idx = 0; idx < input_count; ++idx) {
     ZeroCopyOffset zero_copy_offset;
+    bool fusion_flag = false;
     Status ret = zero_copy_offset.InitOutputDataInfo(input_size_list, virtual_addr_list, op_desc, idx, fusion_flag);
     GE_IF_BOOL_EXEC(ret != SUCCESS,
                     GELOGE(PARAM_INVALID, "[Init][DataInfo] of input_info %s failed.", op_desc->GetName().c_str());
@@ -1192,7 +1209,7 @@ Status DavinciModel::InitRealSizeAndShapeInfo(const ComputeGraphPtr &compute_gra
     GELOGD("No need to get size and shape of netoutput in subgraph.");
     return SUCCESS;
   }
-  GELOGD("Start init real size and shape info of %s.", node->GetName().c_str());
+  GELOGD("Start to initialize real size and shape info of %s.", node->GetName().c_str());
   GetAllGearsInfo(node);
   if (is_getnext_sink_dynamic_) {
     GE_IF_BOOL_EXEC(GetGetDynamicDimsNodeInfo(node) != SUCCESS,
@@ -1235,7 +1252,7 @@ void DavinciModel::GetAllGearsInfo(const NodePtr &node) {
       }
       if (!gear_info.empty()) {
         all_gears_info_.emplace_back(gear_info);
-        GELOGD("Init all gears info from %s, gaer info is %s", node->GetName().c_str(),
+        GELOGD("Init all gears info from %s, gear info is %s", node->GetName().c_str(),
                formats::JoinToString(gear_info).c_str());
       }
     }
@@ -1315,7 +1332,7 @@ Status DavinciModel::GetGearAndRealOutSizeInfo(const ComputeGraphPtr &graph, con
 
 Status DavinciModel::GetRealOutputSizeOfCase(const ComputeGraphPtr &graph, size_t input_index,
                                              const NodePtr &case_node) {
-  GELOGD("Start get output size of %s, which is %zu input to netoutput", case_node->GetName().c_str(), input_index);
+  GELOGD("Start to get output size of %s, which is %zu input to netoutput", case_node->GetName().c_str(), input_index);
   const auto &func_desc = case_node->GetOpDesc();
   GE_CHECK_NOTNULL(func_desc);
   std::map<vector<int32_t>, int64_t> gear_and_real_out_size_info;
@@ -1477,6 +1494,11 @@ Status DavinciModel::GetLabelGotoAddr(uint32_t label_index, rtMemType_t mem_type
   return SUCCESS;
 }
 
+void DavinciModel::SetGlobalStep(void *global_step, uint64_t global_step_size) {
+  global_step_addr_ = global_step;
+  global_step_size_ = global_step_size;
+}
+
 /// @ingroup ge
 /// @brief LabelSet Op Initialize.
 /// @param [in] op_desc: LabelSet Op descriptor.
@@ -1539,14 +1561,16 @@ Status DavinciModel::InitLabelSet(const OpDescPtr &op_desc) {
 }
 
 Status DavinciModel::InitVariable(const OpDescPtr &op_desc, map<string, OpDescPtr> &variable_by_name) {
-  if (op_desc->GetName() == NODE_NAME_GLOBAL_STEP) {
-    const auto output_sizes = ModelUtils::GetOutputSize(op_desc);
-    if (!output_sizes.empty()) {
-      global_step_size_ = output_sizes[0];
-    }
-    const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
-    if (!output_addrs.empty()) {
-      global_step_addr_ = output_addrs[0];
+  if (!known_node_) {
+    if (op_desc->GetName() == NODE_NAME_GLOBAL_STEP) {
+      const auto output_sizes = ModelUtils::GetOutputSize(op_desc);
+      if (!output_sizes.empty()) {
+        global_step_size_ = output_sizes[0];
+      }
+      const auto output_addrs = ModelUtils::GetOutputDataAddrs(runtime_param_, op_desc);
+      if (!output_addrs.empty()) {
+        global_step_addr_ = output_addrs[0];
+      }
     }
   }
 
@@ -2217,10 +2241,10 @@ void DavinciModel::CreateOutput(uint32_t index, const OpDescPtr &op_desc, InputO
       dims[i] = shape.GetDim(i);
     }
   } else {                                                                    // FOR FORMAT_NHWC or FORMAT_NCHW
-    dims[0] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_N : NCHW_DIM_N);  // 0: first dim
-    dims[1] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_C : NCHW_DIM_C);  // 1: second dim
-    dims[2] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_H : NCHW_DIM_H);  // 2: third dim
-    dims[3] = shape.GetDim(format == FORMAT_NHWC ? NHWC_DIM_W : NCHW_DIM_W);  // 3: forth dim
+    dims[0] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_N : NCHW_DIM_N);  // 0: first dim
+    dims[1] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_C : NCHW_DIM_C);  // 1: second dim
+    dims[2] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_H : NCHW_DIM_H);  // 2: third dim
+    dims[3] = shape.GetDim((format == FORMAT_NHWC) ? NHWC_DIM_W : NCHW_DIM_W);  // 3: forth dim
   }
   output.shape_info.num = dims[0];      // 0: first dim
   output.shape_info.channel = dims[1];  // 1: second dim
@@ -2731,7 +2755,7 @@ Status DavinciModel::ReturnResult(uint32_t data_id, const bool rslt_flg, const b
   }
 
   if (!has_output_node_) {
-    GELOGW("Output tensor list is empty, model id: %u", model_id_);
+    GELOGW("The tensor list of output is empty, model id: %u", model_id_);
     GE_CHK_STATUS(listener_->OnComputeDone(model_id_, data_id, INTERNAL_ERROR, outputs),
                   "[Call][OnComputeDone] failed, model_id:%u, data_id:%u.", model_id_, data_id);
     return INTERNAL_ERROR;
@@ -3061,7 +3085,7 @@ Status DavinciModel::CreateKnownZeroCopyMap(const vector<void *> &inputs, const 
     GELOGI("output %zu, v addr %p, r addr %p, p addr %p", i, addr_list[i], addr, outputs[i]);
   }
 
-  GELOGI("success, known input data info size: %zu, known output data info size: %zu",
+  GELOGI("create map for zero copy success, known input data info size: %zu, known output data info size: %zu",
          known_input_data_info_.size(), known_output_data_info_.size());
   return SUCCESS;
 }
@@ -3096,12 +3120,12 @@ Status DavinciModel::UpdateKnownZeroCopyAddr(vector<void *> &total_io_addrs, boo
       total_io_addrs[i] = known_output_data_info_.at(total_io_addrs[i]);
     }
   }
-  GELOGI("success, total io addrs size: %zu", total_io_addrs.size());
+  GELOGI("update known zero copy addr success, total io addrs size: %zu", total_io_addrs.size());
   return SUCCESS;
 }
 
 Status DavinciModel::UpdateKnownNodeArgs(const vector<void *> &inputs, const vector<void *> &outputs) {
-  GELOGI("DavinciModel::UpdateKnownNodeArgs in");
+  GELOGI("DavinciModel::UpdateKnownNodeArgs begin");
   GE_CHK_STATUS_RET(CreateKnownZeroCopyMap(inputs, outputs),
                     "[Call][CreateKnownZeroCopyMap] failed, model_id:%u.", model_id_);
   total_io_addrs_.clear();
@@ -3463,11 +3487,11 @@ bool DavinciModel::CheckUserAndModelSize(const int64_t &size, const int64_t &op_
   }
   // The input and model input size can not be exactly equal because user input is not definite.
   if ((size + kDataMemAlignSizeCompare) < op_size) {
-    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u, "
+    REPORT_INNER_ERROR("E19999", "%s size:%ld from user add align:%u < op_size:%ld in model, model_id:%u, "
                        "check invalid",
                        input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     GELOGE(ACL_ERROR_GE_PARAM_INVALID,
-           "[Check][Param] %s size:%ld from user add align:%u < input_op_size:%ld in model, model_id:%u",
+           "[Check][Param] %s size:%ld from user add align:%u < op_size:%ld in model, model_id:%u",
            input_or_output.c_str(), size, kDataMemAlignSizeCompare, op_size, model_id_);
     return false;
   }
@@ -3673,6 +3697,7 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
       elem_num = 1;
     }
     uint64_t *buff = reinterpret_cast<uint64_t *>(tensor->MutableData().data());
+    GE_CHECK_NOTNULL(buff);
     if (ge::CheckInt64Uint32MulOverflow(elem_num, kBytes * kStringHeadElems) != SUCCESS) {
       GELOGE(FAILED, "[Call][CheckInt64Uint32MulOverflow] Shape size:%ld is invalid", elem_num);
       return FAILED;
@@ -3700,6 +3725,7 @@ Status DavinciModel::InitConstant(const OpDescPtr &op_desc) {
 /// @return Status
 ///
 Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
+  string bin_file = op_desc->GetName();
   auto kernel = ge_model_->GetTBEKernelStore().FindKernel(op_desc->GetName());
   auto tbe_kernel = (kernel != nullptr) ? kernel : op_desc->TryGetExtAttr(OP_EXTATTR_NAME_TBE_KERNEL, TBEKernelPtr());
   if (tbe_kernel == nullptr) {
@@ -3708,12 +3734,61 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
     GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: %s can't find tvm bin file!", op_desc->GetName().c_str());
     return INTERNAL_ERROR;
   }
+  GE_CHK_STATUS_RET(FunctionRegister(op_desc, bin_file, tbe_kernel, false), "Function register of bin file: %s failed",
+                    bin_file.c_str());
+  return SUCCESS;
+}
 
-  std::string session_graph_model_id;
-  GetUniqueId(op_desc, session_graph_model_id);
-  const char *bin_file_key = GetRegisterStub(op_desc->GetName(), session_graph_model_id);  // from set, always valid.
+Status DavinciModel::InitTbeHandleWithFfts(const OpDescPtr &op_desc) {
+  std::vector<OpKernelBinPtr> tbe_kernel;
+  tbe_kernel = op_desc->TryGetExtAttr(OP_EXTATTR_NAME_THREAD_TBE_KERNEL, tbe_kernel);
+  GELOGD("Kernel bin ptr vec size is %zu.", tbe_kernel.size());
+  if (tbe_kernel.size() != kFftsTbeHandleElementSize) {
+    REPORT_INNER_ERROR("E19999", "Get tbe_kernel for op:%s(%s) fail, model_id:%u",
+                       op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
+    GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: %s can't find tvm bin file, size is %zu when ffts",
+           op_desc->GetName().c_str(), tbe_kernel.size());
+    return INTERNAL_ERROR;
+  }
+  if (tbe_kernel[0] == nullptr || tbe_kernel[1] == nullptr) {
+    REPORT_INNER_ERROR("E19999", "Tbe kernel for op:%s is nullptr.", op_desc->GetName().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: tvm bin file of %s is nullptr when ffts.", op_desc->GetName().c_str());
+    return INTERNAL_ERROR;
+  }
+  vector<string> bin_file_keys;
+  (void)AttrUtils::GetListStr(op_desc, kStubFuncName, bin_file_keys);
+  if (bin_file_keys.size() != kFftsTbeHandleElementSize) {
+    REPORT_INNER_ERROR("E19999", "Get bin_file for op:%s(%s) fail.", op_desc->GetName().c_str(),
+                       op_desc->GetType().c_str());
+    GELOGE(INTERNAL_ERROR, "[Check][Param] TBE: %s can't find bin file keys, size is %zu when ffts",
+           op_desc->GetName().c_str(), bin_file_keys.size());
+    return INTERNAL_ERROR;
+  }
+  GE_CHK_STATUS_RET(FunctionRegister(op_desc, bin_file_keys[kNonTailBlock], tbe_kernel[kNonTailBlock], true,
+                                     kNonTailBlock),
+                    "Function register of first bin file %s failed.", bin_file_keys[kNonTailBlock].c_str());
+  GE_CHK_STATUS_RET(FunctionRegister(op_desc, bin_file_keys[kTailBlock], tbe_kernel[kTailBlock], true, kTailBlock),
+                    "Function register of second bin file %s failed.", bin_file_keys[kTailBlock].c_str());
+  return SUCCESS;
+}
+
+Status DavinciModel::FunctionRegister(const OpDescPtr &op_desc, string &bin_file, OpKernelBinPtr &tbe_kernel,
+                                      bool is_ffts, size_t thread_index) {
+  if (thread_index > 1) {
+    GELOGE(INTERNAL_ERROR, "[Check][Param] failed. Thread index: %zu should less than 1.", thread_index);
+    return INTERNAL_ERROR;
+  }
+  const char *bin_file_key;
+  if (is_ffts) {
+    bin_file_key = GetRegisterStub(bin_file, "");
+    GELOGI("Node:%s inherit func name:%s directly.", op_desc->GetName().c_str(), bin_file_key);
+  } else {
+    std::string session_graph_model_id;
+    GetUniqueId(op_desc, session_graph_model_id);
+    bin_file_key = GetRegisterStub(bin_file, session_graph_model_id);  // from set, always valid.
+  }
+
   TBEHandleStore &kernel_store = TBEHandleStore::GetInstance();
-
   std::lock_guard<std::mutex> lock(tvm_bin_mutex_);
   if (rtQueryFunctionRegistered(bin_file_key) != RT_ERROR_NONE) {
     void *bin_handle = nullptr;
@@ -3721,56 +3796,112 @@ Status DavinciModel::InitTbeHandle(const OpDescPtr &op_desc) {
       GELOGD("TBE: can't find the kernel_name[%s] in HandleMap", bin_file_key);
 
       rtDevBinary_t binary;
-      std::string json_string;
-      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc, TVM_ATTR_NAME_MAGIC, json_string),
-                      GELOGD("Get original type of session_graph_id."));
-      if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICPU") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICPU;
-      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF;
-      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AIVEC") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AIVEC;
-      } else if (json_string == "RT_DEV_BINARY_MAGIC_ELF_AICUBE") {
-        binary.magic = RT_DEV_BINARY_MAGIC_ELF_AICUBE;
-      } else {
-        REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
-                           TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
-                           op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
-        GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
-               TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
-               op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
-        return PARAM_INVALID;
-      }
-
+      GE_CHK_STATUS_RET(InitBinaryMagic(op_desc, is_ffts, thread_index, binary), "Init binary magic of %s failed.",
+                        op_desc->GetName().c_str());
       binary.version = 0;
       binary.data = tbe_kernel->GetBinData();
       binary.length = tbe_kernel->GetBinDataSize();
-
       GELOGD("TBE: binary.length: %lu", binary.length);
       GE_CHK_RT_RET(rtDevBinaryRegister(&binary, &bin_handle));
 
-      std::string meta_data;
-      GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc, TVM_ATTR_NAME_METADATA, meta_data),
-                      GELOGI("Get original type of json_string"));
-      GELOGD("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
-      GE_IF_BOOL_EXEC(!meta_data.empty(), GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str())));
-
+      GE_CHK_STATUS_RET(InitMetaData(op_desc, is_ffts, thread_index, bin_handle), "Init tvm meta data of %s failed.",
+                        op_desc->GetName().c_str());
       kernel_store.StoreTBEHandle(bin_file_key, bin_handle, tbe_kernel);
     } else {
       GELOGI("TBE: find the kernel_name[%s] in HandleMap", bin_file_key);
       kernel_store.ReferTBEHandle(bin_file_key);
     }
-
     std::string kernel_name;
-    GE_IF_BOOL_EXEC(AttrUtils::GetStr(op_desc, op_desc->GetName() + "_kernelname", kernel_name),
-                    GELOGD("Get original type of kernel_name"));
+    GE_CHK_STATUS_RET(InitKernelName(op_desc, is_ffts, thread_index, kernel_name), "Init kernel name of %s failed.",
+                      op_desc->GetName().c_str());
     GE_CHK_RT_RET(rtFunctionRegister(bin_handle, bin_file_key, bin_file_key, kernel_name.c_str(), 0));
     used_tbe_handle_map_[bin_file_key] = 1;  // Init used num to 1.
     return SUCCESS;
   }
-
   // Kernel registed, Increase used num in store.
   StoreTbeHandle(bin_file_key);
+  return SUCCESS;
+}
+
+Status DavinciModel::InitBinaryMagic(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index,
+                                     rtDevBinary_t &binary) {
+  string json_string;
+  const string &tvm_magic = is_ffts ? TVM_ATTR_NAME_THREAD_MAGIC : TVM_ATTR_NAME_MAGIC;
+  const static std::map<std::string, uint32_t> binary_magics = {
+    {"RT_DEV_BINARY_MAGIC_ELF_AICPU", RT_DEV_BINARY_MAGIC_ELF_AICPU},
+    {"RT_DEV_BINARY_MAGIC_ELF", RT_DEV_BINARY_MAGIC_ELF},
+    {"RT_DEV_BINARY_MAGIC_ELF_AIVEC", RT_DEV_BINARY_MAGIC_ELF_AIVEC},
+    {"RT_DEV_BINARY_MAGIC_ELF_AICUBE", RT_DEV_BINARY_MAGIC_ELF_AICUBE}
+  };
+  if (is_ffts) {
+    vector<string> json_list;
+    (void)AttrUtils::GetListStr(op_desc, tvm_magic, json_list);
+    if (json_list.size() != kFftsTbeHandleElementSize) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed. Attr is %s, thread index is %zu, json list size is %zu.",
+             tvm_magic.c_str(), thread_index, json_list.size());
+      return INTERNAL_ERROR;
+    }
+    json_string = json_list[thread_index];
+  } else {
+    (void)AttrUtils::GetStr(op_desc, tvm_magic, json_string);
+  }
+  auto iter = binary_magics.find(json_string);
+  if (iter == binary_magics.end()) {
+    REPORT_INNER_ERROR("E19999", "Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
+                       tvm_magic.c_str(), json_string.c_str(), op_desc->GetName().c_str(),
+                       op_desc->GetType().c_str(), model_id_);
+    GELOGE(PARAM_INVALID, "[Check][Param] Attr:%s value:%s in op:%s(%s), model_id:%u, check invalid",
+           TVM_ATTR_NAME_MAGIC.c_str(), json_string.c_str(),
+           op_desc->GetName().c_str(), op_desc->GetType().c_str(), model_id_);
+    return PARAM_INVALID;
+  }
+  binary.magic = iter->second;
+  return SUCCESS;
+}
+
+Status DavinciModel::InitMetaData(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, void *bin_handle) {
+  string meta_data;
+  const string &tvm_metadata = is_ffts ? TVM_ATTR_NAME_THREAD_METADATA : TVM_ATTR_NAME_METADATA;
+  if (is_ffts) {
+    vector<string> meta_data_list;
+    (void)AttrUtils::GetListStr(op_desc, tvm_metadata, meta_data_list);
+    if (meta_data_list.size() != kFftsTbeHandleElementSize) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed, attr is %s, thread index is %zu, meta data list size is %zu.",
+             tvm_metadata.c_str(), thread_index, meta_data_list.size());
+      return INTERNAL_ERROR;
+    }
+    meta_data = meta_data_list[thread_index];
+  } else {
+    (void)AttrUtils::GetStr(op_desc, tvm_metadata, meta_data);
+  }
+  GELOGD("TBE: meta data: %s", meta_data.empty() ? "null" : meta_data.c_str());
+  if (!meta_data.empty()) {
+    GE_CHK_RT_RET(rtMetadataRegister(bin_handle, meta_data.c_str()));
+  }
+  return SUCCESS;
+}
+
+Status DavinciModel::InitKernelName(const OpDescPtr &op_desc, bool is_ffts, size_t thread_index, string &kernel_name) {
+  if (is_ffts) {
+    // delete prefix, eg: *sgt_graph_nodes*/loss_scale/gradient/fp32_vals/Mean_grad/Tile
+    vector<string> kernel_name_list;
+    auto pos = op_desc->GetName().find("/");
+    if (pos == std::string::npos) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed, subgraph node name: %s.", op_desc->GetName().c_str());
+      return INTERNAL_ERROR;
+    }
+    string attr_kernel_name = op_desc->GetName().substr(pos + 1) + "_thread_kernelname";
+    (void)AttrUtils::GetListStr(op_desc, attr_kernel_name, kernel_name_list);
+    if (kernel_name_list.size() != kFftsTbeHandleElementSize) {
+      GELOGE(INTERNAL_ERROR, "[Check][Param] failed, attr is %s, thread index is %zu, kernel name list size is %zu.",
+             attr_kernel_name.c_str(), thread_index, kernel_name_list.size());
+      return INTERNAL_ERROR;
+    }
+    kernel_name = kernel_name_list[thread_index];
+  } else {
+    string attr_kernel_name = op_desc->GetName() + "_kernelname";
+    (void)AttrUtils::GetStr(op_desc, attr_kernel_name, kernel_name);
+  }
   return SUCCESS;
 }
 
@@ -4256,7 +4387,7 @@ void DavinciModel::SetDataDumperArgs(const ComputeGraphPtr &graph, const map<str
   data_dumper_.SetDeviceId(device_id);
 
   if (known_node_) {
-    data_dumper_.SetLoopAddr(known_shape_global_step_, nullptr, nullptr);
+    data_dumper_.SetLoopAddr(global_step_addr_, nullptr, nullptr);
   } else {
     // set loop count addr
     auto get_var_addr = [&](const string &name) -> void *{
@@ -4521,6 +4652,52 @@ Status DavinciModel::GetTotalMemSizeExcludeZeroCopy(int64_t &total_useful_size) 
     return FAILED;
   }
   total_useful_size = runtime_param_.mem_size - runtime_param_.zero_copy_size;
+  return SUCCESS;
+}
+
+Status DavinciModel::GetEventIdForBlockingAicpuOp(const OpDescPtr &op_desc, rtStream_t stream, uint32_t &event_id) {
+  GELOGI("Get event id for aicpu blocking op:%s", op_desc->GetName().c_str());
+  auto it = stream_2_event_.find(stream);
+  if (it != stream_2_event_.end()) {
+    auto rt_ret = rtGetEventID(it->second, &event_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed for op:%s(%s), ret:0x%X",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      GELOGE(RT_FAILED, "[Call][rtGetEventID] failed for op:%s(%s), ret:0x%X",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+  } else {
+    rtEvent_t rt_event = nullptr;
+    auto rt_ret = rtEventCreateWithFlag(&rt_event, RT_EVENT_WITH_FLAG);
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtEventCreateWithFlag failed for op:%s(%s), ret:0x%X",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      GELOGE(RT_FAILED, "[Call][rtEventCreateWithFlag] failed for op:%s(%s), ret:0x%X",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    rt_ret = rtGetEventID(rt_event, &event_id);
+    if (rt_ret != RT_ERROR_NONE) {
+      REPORT_CALL_ERROR("E19999", "Call rtGetEventID failed for op:%s(%s), ret:0x%X",
+                        op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      GELOGE(RT_FAILED, "[Call][rtGetEventID] failed for op:%s(%s), ret:0x%X",
+             op_desc->GetName().c_str(), op_desc->GetType().c_str(), rt_ret);
+      return RT_ERROR_TO_GE_STATUS(rt_ret);
+    }
+    stream_2_event_.emplace(stream, rt_event);
+  }
+  return SUCCESS;
+}
+
+Status DavinciModel::GetEventByStream(const rtStream_t &stream, rtEvent_t &rt_event) {
+  auto it = stream_2_event_.find(stream);
+  if (it == stream_2_event_.end()) {
+    REPORT_INNER_ERROR("E19999", "Get event failed");
+    GELOGE(FAILED, "[Get][Event] Get event failed");
+    return FAILED;
+  }
+  rt_event = it->second;
   return SUCCESS;
 }
 }  // namespace ge

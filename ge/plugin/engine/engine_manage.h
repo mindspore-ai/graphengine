@@ -36,7 +36,7 @@
 #include <string>
 #include <vector>
 
-#include "engine/dnnengine.h"
+#include "framework/engine/dnnengine.h"
 
 namespace ge {
 using DNNEnginePtr = std::shared_ptr<DNNEngine>;

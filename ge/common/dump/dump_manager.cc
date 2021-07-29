@@ -15,6 +15,7 @@
  */
 
 #include "common/dump/dump_manager.h"
+
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
 
@@ -26,14 +27,14 @@ const uint64_t kInferSessionId = 0;
 const uint32_t kAllOverflow = 3;
 }  // namespace
 namespace ge {
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY DumpManager &DumpManager::GetInstance() {
+DumpManager &DumpManager::GetInstance() {
   static DumpManager instance;
   return instance;
 }
 
 bool DumpManager::NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump_properties) {
   if (dump_config.dump_status.empty() && dump_config.dump_debug.empty()) {
-    dump_properties_map_.emplace(kInferSessionId, dump_properties);
+    dump_properties_map_[kInferSessionId] = dump_properties;
     GELOGI("Dump does not open");
     return false;
   }
@@ -41,7 +42,7 @@ bool DumpManager::NeedDoDump(const DumpConfig &dump_config, DumpProperties &dump
   if ((dump_config.dump_status == kDumpoff || dump_config.dump_status == kDumpOFF) &&
        dump_config.dump_debug == kDumpoff) {
     dump_properties.ClearDumpPropertyValue();
-    dump_properties_map_.emplace(kInferSessionId, dump_properties);
+    dump_properties_map_[kInferSessionId] = dump_properties;
     return false;
   }
   if (dump_config.dump_status == kDumpOn && dump_config.dump_debug == kDumpOn) {
@@ -74,7 +75,7 @@ void DumpManager::SetDumpList(const DumpConfig &dump_config, DumpProperties &dum
 
 Status DumpManager::SetNormalDumpConf(const DumpConfig &dump_config, DumpProperties &dump_properties) {
   if (dump_config.dump_status == kDumpOn) {
-    GELOGI("Only do normal dump process, dump status is %s.", dump_config.dump_status.c_str());
+    GELOGI("Only do normal dump process, dump status is %s", dump_config.dump_status.c_str());
     dump_properties.SetDumpStatus(dump_config.dump_status);
     std::string dump_op_switch = dump_config.dump_op_switch;
     dump_properties.SetDumpOpSwitch(dump_op_switch);
@@ -104,8 +105,8 @@ Status DumpManager::SetNormalDumpConf(const DumpConfig &dump_config, DumpPropert
 Status DumpManager::SetDumpPath(const DumpConfig &dump_config, DumpProperties &dump_properties) {
   std::string dump_path = dump_config.dump_path;
   if (dump_path.empty()) {
-    GELOGE(PARAM_INVALID, "[Check][DumpPath]It is empty");
-    REPORT_INNER_ERROR("E19999", "Dump path check is empty");
+    GELOGE(PARAM_INVALID, "[Check][DumpPath]It is empty.");
+    REPORT_INNER_ERROR("E19999", "Dump path check is empty.");
     return PARAM_INVALID;
   }
   if (dump_path[dump_path.size() - 1] != '/') {
@@ -117,7 +118,7 @@ Status DumpManager::SetDumpPath(const DumpConfig &dump_config, DumpProperties &d
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf(const DumpConfig &dump_config) {
+Status DumpManager::SetDumpConf(const DumpConfig &dump_config) {
   DumpProperties dump_properties;
   if (!NeedDoDump(dump_config, dump_properties)) {
     GELOGD("No need do dump process.");
@@ -131,8 +132,7 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY Status DumpManager::SetDumpConf
   return SUCCESS;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const DumpProperties &DumpManager::GetDumpProperties(
-  uint64_t session_id) {
+const DumpProperties &DumpManager::GetDumpProperties(uint64_t session_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = dump_properties_map_.find(session_id);
   if (iter != dump_properties_map_.end()) {
@@ -142,13 +142,12 @@ FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY const DumpProperties &DumpManag
   return default_properties;
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpManager::AddDumpProperties(
-  uint64_t session_id, const DumpProperties &dump_properties) {
+void DumpManager::AddDumpProperties(uint64_t session_id, const DumpProperties &dump_properties) {
   std::lock_guard<std::mutex> lock(mutex_);
   dump_properties_map_.emplace(session_id, dump_properties);
 }
 
-FMK_FUNC_HOST_VISIBILITY FMK_FUNC_DEV_VISIBILITY void DumpManager::RemoveDumpProperties(uint64_t session_id) {
+void DumpManager::RemoveDumpProperties(uint64_t session_id) {
   std::lock_guard<std::mutex> lock(mutex_);
   auto iter = dump_properties_map_.find(session_id);
   if (iter != dump_properties_map_.end()) {

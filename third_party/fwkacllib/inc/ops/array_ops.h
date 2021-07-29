@@ -35,7 +35,7 @@ namespace ge {
 * @li values:A `Tensor`. Must have the same type as `sorted_x`. \n
 
 *@par Attributes:
-*@li out_type:An optional `DType` from: `int32, int64`.
+*out_type:An optional `DType` from: `int32, int64`.
 Defaults to `int32`. \n
 
 *@par Outputs:
@@ -504,7 +504,7 @@ REG_OP(Constant)
 *x: A tensor. \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A copy of input tensor. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Snapshot.
@@ -684,7 +684,9 @@ REG_OP(ExpandDims)
 
 *@par Inputs:
 *@li x: Original tensor.
-*@li axis: List of ints. \n
+
+*@par Attributes:
+*@li axes: List of ints indicating the dimensions to be inserted. \n
 
 *@par Outputs:
 *y: Reshape tensor with same data as input. \n
@@ -755,10 +757,10 @@ REG_OP(Squeeze)
 *@brief Returns an integer representing the rank of input tensor. The rank of a tensor is the number of indices required to uniquely select each element of the tensor, that is, the dimension size of the tensor. \n
 
 *@par Inputs:
-*x: A tensor. \n
+*x: A Tensor of type float32, float16, int8, int16, uint16, uint8, int32, int64, uint32, uint64, bool, double. \n
 
 *@par Outputs:
-*y: A tensor. The rank of input tensor. \n
+*y: A tensor. The rank of input tensor. Type is int32. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator Rank.
@@ -848,7 +850,6 @@ REG_OP(PlaceHolder)
 *x: A tensor. \n
 
 *@par Attributes:
-*@li dtype: data type of tensor.
 *@li shape: tensor shape. \n
 
 *@par Outputs:
@@ -867,13 +868,13 @@ REG_OP(PlaceholderWithDefault)
 *@brief Reads and returns the value of the input variable tensor. \n
 
 *@par Inputs:
-*x: A tensor. \n
+*x: A tensor must have numeric type. \n
 
 *@par Attributes:
 *dtype: An optional int32 or int64. The output data type. Defaults to int32. \n
 
 *@par Outputs:
-*y: A tensor. \n
+*y: A tensor must have numeric type. \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator ReadVariableOp.
@@ -1134,10 +1135,10 @@ This is an M-length vector.
 This is an R-length vector
 
 *@par Attributes:
-*@li normalize: boolean (if true, edit distances are normalized by length of truth). \n
+*normalize: boolean (if true, edit distances are normalized by length of truth). \n
 
 *@par Outputs:
-*@li output: A dense float tensor with rank R - 1. \n
+*output: A dense float tensor with rank R - 1. \n
 
 *@par Third-party framework compatibility
 * Compatible with TensorFlow EditDistance operator.
@@ -1154,18 +1155,17 @@ REG_OP(EditDistance)
     .OP_END_FACTORY_REG(EditDistance)
 
 /**
-* @brief sort_v2.
+* @brief sort the input tensor without returning the value of index.
 
 * @par Inputs:
-* @li x: An ND tensor of type float16.
+* x: An ND tensor of type float16.
 
 * @par Attributes:
-
 * @li axis: An optional int. The dimension to sort along. This value defaults to -1.
 * @li descending: An optional bool. Controls the sorting order (ascending or descending). This value defaults to False.
 
 * @par Outputs:
-* @li y: An ND tensor of type float16.
+* y: An ND tensor of type float16.
 
 * @attention Constraints:
 * @li Axis should select the last dim.
@@ -1206,7 +1206,7 @@ REG_OP(Expand)
 *@Returns a tensor containing the indices of all non-zero elements of input. \n
 
 *@par Inputs:
-*@li x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+*x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
 
 *@par Attributes:
 * transpose: the output tensor will be transposed if true. \n
@@ -1230,15 +1230,15 @@ REG_OP(NonZero)
 
 * @par Inputs:
 * One inputs, including:
-* @li x: A Tensor. Must be one of the following types:
+* x: A Tensor. Must be one of the following types:
 *     float16, float32, int32, int8 ,uint8. \n
 
 * @par Attributes:
-* @li shape: A required listInt to specify the shape that the input tensor expanded to. \n
+* shape: A required listInt to specify the shape that the input tensor expanded to. \n
 
 
 * @par Outputs:
-* @li y: A Tensor. Has the same type as "x", and the shape specified by input and attr shape \n
+* y: A Tensor. Has the same type as "x", and the shape specified by input and attr shape \n
 
 * @par Third-party framework compatibility
 * Compatible with the ONNX operator Expand.
@@ -1249,6 +1249,38 @@ REG_OP(ExpandD)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(ExpandD)
+
+/**
+*@brief Finds unique elements in a 1D tensor. \n
+
+*@par Inputs:
+*x: 1D tensor. Must be one of the following types:
+*     float16, float32, double, int64, int32, int16, uint16, int8 ,uint8. \n
+
+*@par Attributes:
+*@li return_inverse: Whether to also return the indices for where elements in the original 
+*                input ended up in the returned unique list.
+*@li return_inverse: Whether to also return the counts for each unique element.
+
+*@par Outputs:
+*@li y1: The output list of unique scalar elements. Has the same type as "x".
+*@li y2: Representing the indices for where elements in the original input map to in the output.
+*@li y3: Representing the number of occurrences for each unique value or tensor. \n
+
+* @par Third-party framework compatibility
+* Compatible with the troch operator _unique2.
+*/
+
+REG_OP(UniqueWithCountsAndSorting)
+    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
+           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .OUTPUT(y1, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
+           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
+    .OUTPUT(y2, TensorType({ DT_INT32, DT_INT64 }))
+    .OUTPUT(y3, TensorType({ DT_INT32, DT_INT64 }))
+    .ATTR(return_inverse, Bool, false)
+    .ATTR(return_counts, Bool, false)
+    .OP_END_FACTORY_REG(UniqueWithCountsAndSorting)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

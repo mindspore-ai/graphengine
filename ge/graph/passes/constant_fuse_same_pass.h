@@ -22,7 +22,7 @@
 #include <utility>
 #include <vector>
 #include "graph/aligned_ptr.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "inc/graph_pass.h"
 
 namespace ge {

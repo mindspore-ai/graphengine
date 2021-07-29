@@ -14,29 +14,30 @@
  * limitations under the License.
  */
 
-#include "generator/ge_generator.h"
+#include "framework/generator/ge_generator.h"
 
 #include <atomic>
 
 #include "common/ge/ge_util.h"
 #include "common/ge/plugin_manager.h"
-#include "common/helper/model_helper.h"
-#include "common/helper/om_file_helper.h"
-#include "common/util.h"
+#include "framework/common/helper/model_helper.h"
+#include "framework/common/helper/om_file_helper.h"
+#include "framework/common/util.h"
 #include "common/util/error_manager/error_manager.h"
 #include "framework/common/debug/ge_log.h"
 #include "framework/common/debug/log.h"
-#include "ge/ge_api.h"
+#include "external/ge/ge_api.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/ge_context.h"
 #include "graph/manager/graph_manager.h"
+#include "graph/manager/graph_var_manager.h"
 #include "graph/manager/util/rt_context_util.h"
 #include "graph/operator_factory_impl.h"
 #include "graph/opsproto_manager.h"
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/type_utils.h"
 #include "init/gelib.h"
-#include "model/ge_model.h"
+#include "common/model/ge_model.h"
 #include "analyzer/analyzer.h"
 
 using std::map;
@@ -205,6 +206,7 @@ static Status AddInputs(const ComputeGraphPtr &graph, const NodePtr &node, const
   }
 
   (void)AttrUtils::SetBool(data_op, "_is_single_op", true);
+  (void)AttrUtils::SetBool(data_op, ATTR_NAME_IS_ORIGINAL_INPUT, true);
 
   GE_CHK_BOOL_EXEC(data_op->AddInputDesc(tensor) == GRAPH_SUCCESS,
                    REPORT_CALL_ERROR("E19999", "AddInputDesc failed for node:%s", data_op->GetName().c_str());
@@ -674,6 +676,12 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     GELOGD("Current ctx is null.");
     ctx = nullptr;
   }
+  std::function<void()> callback = [&]() {
+    if (ctx != nullptr) {
+      (void)rtCtxSetCurrent(ctx);
+    }
+  };
+  GE_MAKE_GUARD(restore, callback);
 
   GeRootModelPtr ge_root_model = nullptr;
   GE_CHECK_NOTNULL_EXEC(impl_, return PARAM_INVALID);
@@ -712,11 +720,6 @@ Status GeGenerator::GenerateModel(const Graph &graph, const string &file_name_pr
     }
     return ret;
   }
-
-  if (ctx != nullptr) {
-    (void)rtCtxSetCurrent(ctx);
-  }
-
   return SUCCESS;
 }
 
@@ -806,7 +809,7 @@ Status GeGenerator::CheckForSingleOp(OpDescPtr &op_desc, const vector<GeTensor> 
   return SUCCESS;
 }
 
-Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc) {
+Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc, Graph &graph) {
   GE_CHECK_NOTNULL(op_desc);
   if (OperatorFactoryImpl::GetInferFormatFunc(op_desc->GetType()) != nullptr) {
     auto node_op = ge::OperatorFactoryImpl::CreateOperator("node_op", op_desc->GetType());
@@ -830,7 +833,11 @@ Status GeGenerator::InferFormatForSingleOp(OpDescPtr &op_desc) {
     }
     node_op.BreakConnect();
   }
-  auto op = OpDescUtils::CreateOperatorFromOpDesc(op_desc);
+  auto comp_graph = GraphUtils::GetComputeGraph(graph);
+  GE_CHECK_NOTNULL(comp_graph);
+  auto node = comp_graph->FindNode(op_desc->GetName());
+  GE_CHECK_NOTNULL(node);
+  auto op = OpDescUtils::CreateOperatorFromNode(node);
   auto ret = op_desc->CallInferFormatFunc(op);
   if (ret != GRAPH_SUCCESS) {
     REPORT_INNER_ERROR("E19999", "call InferFormatFunc for single op:%s fail",
@@ -877,7 +884,7 @@ Status GeGenerator::BuildSingleOp(OpDescPtr &op_desc, const vector<GeTensor> &in
   Graph graph;
   GE_CHK_STATUS(BuildSingleOpGraph(op_desc, inputs, outputs, name, graph),
                 "[Build][Graph] for single op:%s fail.", op_desc->GetName().c_str());
-  GE_CHK_STATUS_RET_NOLOG(InferFormatForSingleOp(op_desc));
+  GE_CHK_STATUS_RET_NOLOG(InferFormatForSingleOp(op_desc, graph));
 
   // 2. check engine type when compile online
   if (model_file_name == kFileNameSuffix) {
@@ -1151,7 +1158,6 @@ Status GeGenerator::Impl::BuildModel(const Graph &graph, const vector<GeTensor> 
   if (ret != SUCCESS) {
     REPORT_CALL_ERROR("E19999", "build graph failed, graph id:%u, ret:%d", graph_id, ret);
     GELOGE(GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED, "[Build][Graph] fail, graph id: %u", graph_id);
-    ret = GE_GENERATOR_GRAPH_MANAGER_BUILD_GRAPH_FAILED;
   }
 
   RtContextUtil::GetInstance().DestroyRtContexts(session_id);

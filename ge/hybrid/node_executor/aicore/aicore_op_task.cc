@@ -21,11 +21,11 @@
 #include "hybrid/executor/hybrid_execution_context.h"
 #include "hybrid/node_executor/aicore/aicore_task_builder.h"
 #include "graph/load/model_manager/tbe_handle_store.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "single_op/task/build_task_utils.h"
 #include "single_op/task/tbe_task_builder.h"
 
-using optiling::OpRunInfo;
+using optiling::utils::OpRunInfo;
 
 namespace ge {
 namespace hybrid {
@@ -33,6 +33,7 @@ namespace {
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
 constexpr char const *kAttrOpParamSize = "op_para_size";
 constexpr char const *kAttrAtomicOpParamSize = "atomic_op_para_size";
+const string kAtomicOpType = "DynamicAtomicAddrClean";
 std::atomic<std::uint64_t> log_id(0);
 }  // namespace
 
@@ -51,6 +52,7 @@ bool TbeHandleRegistry::AddHandle(std::unique_ptr<TbeHandleHolder> &&holder) {
 }
 
 Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) {
+  op_type_ = op_desc.GetType();
   log_name_ = op_desc.GetName() + "_tvmbin";
   log_id_ = log_id++;
   auto op_desc_ptr = MakeShared<OpDesc>(op_desc);
@@ -81,7 +83,7 @@ Status AiCoreOpTask::Init(const OpDesc &op_desc, const domi::TaskDef &task_def) 
 
 Status AiCoreOpTask::RegisterTbeHandle(const OpDesc &op_desc) {
   rtError_t rt_ret = rtQueryFunctionRegistered(stub_name_.c_str());
-  if (rt_ret != RT_ERROR_NONE || is_single_op_) {
+  if (rt_ret != RT_ERROR_NONE) {
     auto op_desc_ptr = MakeShared<OpDesc>(op_desc);
     GE_CHECK_NOTNULL(op_desc_ptr);
     auto tbe_kernel = op_desc_ptr->TryGetExtAttr(GetKeyForTbeKernel(), TBEKernelPtr());
@@ -194,7 +196,7 @@ Status AiCoreOpTask::RegisterKernelHandle(const OpDesc &op_desc) {
 Status AiCoreOpTask::InitWithKernelDef(const OpDesc &op_desc, const domi::TaskDef &task_def) {
   const domi::KernelDef &kernel_def = task_def.kernel();
   const domi::KernelContext &context = kernel_def.context();
-  stub_name_ = kernel_def.stub_func();
+  stub_name_ = is_single_op_ ? to_string(log_id_) + kernel_def.stub_func() : kernel_def.stub_func();
   GE_CHK_STATUS_RET(RegisterTbeHandle(op_desc));
   GE_CHK_RT_RET(rtGetFunctionByName(stub_name_.c_str(), &stub_func_));
   args_size_ = kernel_def.args_size();
@@ -359,9 +361,7 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   GE_CHECK_NOTNULL(op_desc);
 
   GELOGD("[%s] Start to update tiling info for task: [%s]", node->GetName().c_str(), stub_name_.c_str());
-  OpRunInfo tiling_info;
-  tiling_info.block_dim = -1; // codex: Using uninitialized value
-  tiling_info.clear_atomic = true;
+  OpRunInfo tiling_info(-1, true, 0);
 
   auto execution_context = context.GetExecutionContext();
 
@@ -370,12 +370,11 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
   RECORD_EXECUTION_EVENT(execution_context, context.GetNodeName(), "[CalcTilingInfo] End");
 
   // update op args by tiling info
-  block_dim_ = static_cast<uint32_t>(tiling_info.block_dim);
-  op_desc->SetWorkspaceBytes(tiling_info.workspaces);
-  clear_atomic_ = tiling_info.clear_atomic;
+  block_dim_ = tiling_info.GetBlockDim();
+  clear_atomic_ = tiling_info.GetClearAtomic();
 
-  tiling_data_ = tiling_info.tiling_data.str();
-  tiling_key_ = tiling_info.tiling_key;
+  tiling_data_ = tiling_info.GetAllTilingData().str();
+  tiling_key_ = tiling_info.GetTilingKey();
   GELOGD("Successfully getting [tiling_key] : %u", tiling_key_);
   if (tiling_data_.empty()) {
     GELOGD("[%s] Tiling data is empty.", op_desc->GetName().c_str());
@@ -412,9 +411,14 @@ Status AiCoreOpTask::UpdateTilingInfo(TaskContext &context) {
 
 Status AiCoreOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpParaCalculate.", node->GetName().c_str());
-  GE_CHK_STATUS_RET(OpParaCalculate(*node, tiling_info),
+  GE_CHK_STATUS_RET(optiling::OpParaCalculateV2(*node, tiling_info),
                     "[Invoke][OpParaCalculate]Failed calc tiling data of node %s.",
                     node->GetName().c_str());
+  // Only non atomic task need update workspace
+  auto op_desc = node->GetOpDesc();
+  std::vector<int64_t> workspaces;
+  tiling_info.GetAllWorkspaces(workspaces);
+  op_desc->SetWorkspaceBytes(workspaces);
   GELOGD("[%s] Done invoking OpParaCalculate successfully.", node->GetName().c_str());
   return SUCCESS;
 }
@@ -538,6 +542,10 @@ const std::string &AiCoreOpTask::GetName() const {
   return stub_name_;
 }
 
+const std::string &AiCoreOpTask::GetOpType() const {
+  return op_type_;
+}
+
 std::string AiCoreOpTask::GetKeyForOpParamSize() const {
   return kAttrOpParamSize;
 }
@@ -631,9 +639,13 @@ std::string AtomicAddrCleanOpTask::GetKeyForKernelName(const OpDesc &op_desc) co
   return op_desc.GetName() + "_atomic_kernelname";
 }
 
+const std::string &AtomicAddrCleanOpTask::GetOpType() const {
+  return kAtomicOpType;
+}
+
 Status AtomicAddrCleanOpTask::CalcTilingInfo(const NodePtr &node, OpRunInfo &tiling_info) {
   GELOGD("[%s] Start to invoke OpAtomicCalculate.", node->GetName().c_str());
-  GE_CHK_STATUS_RET(OpAtomicCalculate(*node, tiling_info),
+  GE_CHK_STATUS_RET(optiling::OpAtomicCalculateV2(*node, tiling_info),
                     "[Invoke][OpAtomicCalculate]Failed calc tiling data of node %s.",
                     node->GetName().c_str());
   GELOGD("[%s] Done invoking OpAtomicCalculate successfully.", node->GetName().c_str());

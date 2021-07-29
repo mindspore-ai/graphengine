@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tbe_handle_store.h"
+#include "graph/load/model_manager/tbe_handle_store.h"
 
 #include <limits>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "runtime/kernel.h"
 

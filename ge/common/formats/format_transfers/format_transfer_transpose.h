@@ -33,7 +33,6 @@ Status TransposeWithShapeCheck(const uint8_t *src, const std::vector<int64_t> &s
 
 Status GetPermByForamt(Format src_format, Format dst_format, std::vector<int64_t> &perm);
 
-
 class FormatTransferTranspose : public FormatTransfer {
  public:
   Status TransFormat(const TransArgs &args, TransResult &result) override;

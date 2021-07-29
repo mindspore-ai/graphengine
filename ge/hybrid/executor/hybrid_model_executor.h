@@ -39,7 +39,7 @@ class HybridModelExecutor {
 
   ~HybridModelExecutor();
 
-  Status Init();
+  Status Init(ThreadPool *thread_pool = nullptr);
 
   const GraphExecutionContext* GetContext() const {
     return &context_;
@@ -48,7 +48,7 @@ class HybridModelExecutor {
   Status Execute(ExecuteArgs &args);
 
  private:
-  Status ExecuteGraphInternal(SubgraphExecutor &executor, ExecuteArgs &args);
+  Status ExecuteGraphInternal(ExecuteArgs &args);
   Status Cleanup();
   Status InitExecutionContext();
   static Status ResetExecutionContext(GraphExecutionContext &context);
@@ -58,6 +58,7 @@ class HybridModelExecutor {
   uint32_t device_id_;
   rtStream_t stream_;
   GraphExecutionContext context_;
+  std::unique_ptr<SubgraphExecutor> root_graph_executor_;
 };
 }  // namespace hybrid
 }  // namespace ge

@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
-#include "common/debug/log.h"
-#include "common/fmk_types.h"
-#include "common/ge_types.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/fmk_types.h"
+#include "framework/common/ge_types.h"
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
 #include "graph/model.h"

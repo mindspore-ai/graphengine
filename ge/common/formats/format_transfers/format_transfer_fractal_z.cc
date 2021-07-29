@@ -19,7 +19,7 @@
 #include <securec.h>
 #include <memory>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/formats/utils/formats_definitions.h"
 #include "common/formats/utils/formats_trans_utils.h"
 #include "framework/common/debug/ge_log.h"
@@ -226,6 +226,7 @@ Status TransFormatFromNchwToFz(const TransArgs &args, TransResult &result) {
           auto protected_size = dst_size - offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                     ? dst_size - offset
                                     : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+          GE_CHECK_GE(protected_size, 0);
           errno_t ret = EOK;
           if (need_pad_zero) {
             ret = memset_s(dst.get() + offset, static_cast<size_t>(protected_size), 0, static_cast<size_t>(size));
@@ -390,6 +391,7 @@ Status TransFormatHwcnToFz(const TransArgs &args, TransResult &result) {
             auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                       ? dst_size - dst_offset
                                       : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+            GE_CHECK_GE(protected_size, 0);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
             errno_t ret = EOK;
             if (pad_zero) {
@@ -474,6 +476,7 @@ Status TransFormatNhwcToFz(const TransArgs &args, TransResult &result) {
             auto protected_size = dst_size - dst_offset < static_cast<int64_t>(SECUREC_MEM_MAX_LEN)
                                       ? dst_size - dst_offset
                                       : static_cast<int64_t>(SECUREC_MEM_MAX_LEN);
+            GE_CHECK_GE(protected_size, 0);
             auto pad_zero = ((c1i * c0 + c0i) >= c) || (n1n0i >= n);
             errno_t ret = EOK;
             if (pad_zero) {

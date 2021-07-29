@@ -29,7 +29,7 @@
 #include "graph/utils/attr_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "runtime/mem.h"
-#include "task_info/task_info.h"
+#include "graph/load/model_manager/task_info/task_info.h"
 
 using std::map;
 using std::set;

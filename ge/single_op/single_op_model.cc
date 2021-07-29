@@ -28,10 +28,10 @@
 #include "graph/utils/graph_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "runtime/rt.h"
-#include "task/aicpu_task_builder.h"
-#include "task/aicpu_kernel_task_builder.h"
-#include "task/rts_kernel_task_builder.h"
-#include "task/tbe_task_builder.h"
+#include "single_op/task/aicpu_task_builder.h"
+#include "single_op/task/aicpu_kernel_task_builder.h"
+#include "single_op/task/rts_kernel_task_builder.h"
+#include "single_op/task/tbe_task_builder.h"
 #include "hybrid/executor/hybrid_model_executor.h"
 #include "hybrid/node_executor/node_executor.h"
 
@@ -44,48 +44,58 @@ using std::vector;
 namespace ge {
 namespace {
 const size_t kDataOutputNum = 1;
+const uint32_t kInputIndexOfData = 0;
 const uint32_t kOutputIndexOfData = 0;
+const size_t kNumTaskWithAtomicAddrCleanTask = 2;
+const size_t kNumTaskWithMemCpyTask = 2;
 constexpr char const *kAttrSupportDynamicShape = "support_dynamicshape";
+const char *const kEngineNameAiCore = "AIcoreEngine";
+const char *const kEngineNameAiCpu = "aicpu_ascend_kernel";
+const char *const kEngineNameAiCpuTf = "aicpu_tf_kernel";
 
-Status IfInferDepend(GeModelPtr &ge_model, bool &flag) {
+Status CheckHostMem(const std::vector<string> &dependencies, const NodePtr &node, bool &is_host_mem) {
+  auto op_desc = node->GetOpDesc();
+  for (const auto &input_name : dependencies) {
+    int input_index = op_desc->GetInputIndexByName(input_name);
+    if (input_index < 0) {
+      GELOGE(INTERNAL_ERROR, "[Get][InputIndex]failed, node:[%s] inputname: %s.",
+             node->GetName().c_str(), input_name.c_str());
+      REPORT_CALL_ERROR("E19999", "GetInputIndexByName failed, node:[%s] inputname: %s.",
+                        node->GetName().c_str(), input_name.c_str());
+      return INTERNAL_ERROR;
+    }
+
+    const auto &src_node = NodeUtils::GetInDataNodeByIndex(*node, input_index);
+    GE_CHECK_NOTNULL(src_node);
+    auto src_op_desc = src_node->GetOpDesc();
+    GE_CHECK_NOTNULL(src_op_desc);
+    if (src_op_desc->GetType() == DATA) {
+      auto tensor = src_op_desc->MutableInputDesc(kInputIndexOfData);
+      if (AttrUtils::HasAttr(tensor, ATTR_NAME_VALUE)) {
+        GELOGD("Get hostmem from node %s, inputname: %s.", src_node->GetName().c_str(), input_name.c_str());
+        continue;
+      }
+    }
+    is_host_mem = false;
+    return SUCCESS;
+  }
+  is_host_mem = true;
+  return SUCCESS;
+}
+
+Status CheckInferDepend(GeModelPtr &ge_model, bool &is_infer_depend, bool &is_host_mem) {
   auto comp_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
   GE_CHECK_NOTNULL(comp_graph);
   for (const auto &node : comp_graph->GetAllNodes()) {
+    GE_CHECK_NOTNULL(node);
     auto op_desc = node->GetOpDesc();
     GE_CHECK_NOTNULL(op_desc);
     const auto &depends = op_desc->GetOpInferDepends();
     bool support_dynamic_shape = false;
     (void)AttrUtils::GetBool(op_desc, kAttrSupportDynamicShape, support_dynamic_shape);
     if (!depends.empty() && support_dynamic_shape) {
-      flag = true;
-      return SUCCESS;
-    }
-  }
-  return SUCCESS;
-}
-
-Status NeedHybridModel(GeModelPtr &ge_model, bool &flag) {
-  bool infer_depend_flag = false;
-  GE_CHK_STATUS_RET(IfInferDepend(ge_model, infer_depend_flag), "[Check][InferDepend] failed.");
-  auto tasks = ge_model->GetModelTaskDefPtr()->task();
-  int32_t kernel_task_num = 0;
-  for (int i = 0; i < tasks.size(); ++i) {
-    auto task_type = static_cast<rtModelTaskType_t>(tasks[i].type());
-    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
-      const auto &context = task_type == RT_MODEL_TASK_KERNEL ? tasks[i].kernel().context() :
-                                                                tasks[i].kernel_with_handle().context();
-      auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
-      if (kernel_type == ccKernelType::TE) {
-        if (infer_depend_flag) {
-          flag = true;
-          return SUCCESS;
-        }
-        kernel_task_num++;
-        if (kernel_task_num > 1) {
-          flag = true;
-          return SUCCESS;
-        }
-      }
+      is_infer_depend = true;
+      return CheckHostMem(depends, node, is_host_mem);
     }
   }
   return SUCCESS;
@@ -342,11 +352,10 @@ Status SingleOpModel::BuildTaskList(StreamResource *stream_resource, SingleOp &s
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
       GELOGD("Building AICPU_TF task");
       AiCpuTask *aicpu_task = nullptr;
-      bool depend_compute_flag = false;
       uint64_t singleop_kernel_id = aicpu_kernel_id++;
       GELOGI("Build singleOp TfTask, kernel_id = %lu", singleop_kernel_id);
       GE_CHK_STATUS_RET_NOLOG(
-          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, false, depend_compute_flag, singleop_kernel_id));
+          BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, singleop_kernel_id));
       aicpu_task->SetModelArgs(model_name_, model_id_);
       ParseArgTable(aicpu_task, single_op);
       single_op.tasks_.emplace_back(aicpu_task);
@@ -391,7 +400,7 @@ void SingleOpModel::ParseArgTable(OpTask *task, SingleOp &op) {
     }
   }
 }
-
+ 
 Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask **task) {
   GE_CHECK_NOTNULL(task);
   auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
@@ -404,7 +413,7 @@ Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask *
     return ACL_ERROR_GE_INTERNAL_ERROR;
   }
 
-  auto *tbe_task = new (std::nothrow) TbeOpTask();
+  std::unique_ptr<TbeOpTask> tbe_task(new (std::nothrow) TbeOpTask());
   if (tbe_task == nullptr) {
     GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Create][TbeOpTask]failed.");
     REPORT_INNER_ERROR("E19999", "BuildKernelTask fail for new TbeOpTask.");
@@ -414,17 +423,45 @@ Status SingleOpModel::BuildKernelTask(const domi::TaskDef &task_def, TbeOpTask *
   auto builder = TbeTaskBuilder(model_name_, iter->second, task_def);
   auto ret = builder.BuildTask(*tbe_task, model_params_);
   if (ret != SUCCESS) {
-    delete tbe_task;
-    tbe_task = nullptr;
+    GELOGE(ret, "[Build][TbeOpTask]failed.");
+    REPORT_INNER_ERROR("E19999", "[Build][TbeOpTask]failed.");
     return ret;
   }
 
-  *task = tbe_task;
+  *task = tbe_task.release();
   return SUCCESS;
 }
 
-Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task,
-                                        bool dynamic_flag, bool& depend_compute_flag, uint64_t kernel_id) {
+Status SingleOpModel::BuildAtomicTask(const domi::TaskDef &task_def, AtomicAddrCleanOpTask **task) {
+  GE_CHECK_NOTNULL(task);
+  const auto &context = task_def.kernel().context();
+  auto iter = op_list_.find(context.op_index());
+  if (iter == op_list_.end()) {
+    GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, "[Check][Param:TaskDef]op desc not found. op index = %u", context.op_index());
+    REPORT_INNER_ERROR("E19999", "BuildKernelTask fail for op desc not found. op index = %u", context.op_index());
+    return ACL_ERROR_GE_INTERNAL_ERROR;
+  }
+
+  std::unique_ptr<AtomicAddrCleanOpTask> atomic_task(new (std::nothrow) AtomicAddrCleanOpTask());
+  if (atomic_task == nullptr) {
+    GELOGE(ACL_ERROR_GE_MEMORY_ALLOCATION, "[Create][AtomicAddrCleanOpTask]failed.");
+    REPORT_INNER_ERROR("E19999", "BuildKernelTask fail for new AtomicAddrCleanOpTask.");
+    return ACL_ERROR_GE_MEMORY_ALLOCATION;
+  }
+
+  auto builder = AtomicAddrCleanTaskBuilder(model_name_, iter->second, task_def);
+  auto ret = builder.BuildTask(*atomic_task, model_params_);
+  if (ret != SUCCESS) {
+    GELOGE(ret, "[Build][AtomicAddrCleanOpTask]failed.");
+    REPORT_INNER_ERROR("E19999", "[Build][AtomicAddrCleanOpTask]failed.");
+    return ret;
+  }
+
+  *task = atomic_task.release();
+  return SUCCESS;
+}
+
+Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiCpuTask **task, uint64_t kernel_id) {
   auto iter = op_list_.find(kernel_def.op_index());
   if (iter == op_list_.end()) {
     GELOGE(ACL_ERROR_GE_INTERNAL_ERROR, 
@@ -442,12 +479,11 @@ Status SingleOpModel::BuildKernelExTask(const domi::KernelExDef &kernel_def, AiC
     return ACL_ERROR_GE_MEMORY_ALLOCATION;
   }
   auto builder = AiCpuTaskBuilder(iter->second->GetOpDesc(), kernel_def);
-  auto ret = builder.BuildTask(*aicpu_task, model_params_, dynamic_flag, kernel_id);
+  auto ret = builder.BuildTask(*aicpu_task, model_params_, kernel_id);
   if (ret != SUCCESS) {
     GELOGE(ret, "[Build][Task] failed, kernel_id:%lu.", kernel_id);
     return ret;
   }
-  depend_compute_flag = (aicpu_task->GetUnknownType() == DEPEND_COMPUTE);
 
   *task = aicpu_task.release();
   return SUCCESS;
@@ -517,50 +553,14 @@ Status SingleOpModel::BuildOp(StreamResource &resource, SingleOp &single_op) {
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
   bool infer_depend_flag = false;
-  GE_CHK_STATUS_RET(IfInferDepend(ge_model, infer_depend_flag), "[Check][InferDepend] failed.");
+  bool is_host_mem = false;
+  GE_CHK_STATUS_RET(CheckInferDepend(ge_model, infer_depend_flag, is_host_mem), "[Check][InferDepend] failed.");
   if (infer_depend_flag) {
     // construct single_op, do single op with HybridModelExecutor
     GELOGD("Init hybrid model params of single op, and will do execute with hybrid model executor.");
     return InitHybridModelExecutor(resource, ge_model, single_op);
   }
   return BuildTaskList(&resource, single_op);
-}
-
-Status SingleOpModel::BuildModelTaskKernel(StreamResource *stream_resource, const TaskDef &task_def,
-                                           DynamicSingleOp &single_op) {
-  auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-  const auto &context = task_type == RT_MODEL_TASK_KERNEL ? task_def.kernel().context() :
-                                                            task_def.kernel_with_handle().context();
-
-  auto kernel_type = static_cast<ccKernelType>(context.kernel_type());
-  if (kernel_type == ccKernelType::TE) {
-    GELOGD("Building TBE task.");
-    TbeOpTask *tbe_task = nullptr;
-    GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def, &tbe_task));
-    tbe_task->SetModelArgs(model_name_, model_id_);
-    if (tbe_task->tiling_buffer_ != nullptr) {
-      GELOGD("tiling buffer is not nullptr.");
-      tbe_task->stream_resource_ = stream_resource;
-    }
-    single_op.op_task_.reset(tbe_task);
-  } else if (kernel_type == ccKernelType::AI_CPU || kernel_type == ccKernelType::CUST_AI_CPU) {
-    GELOGD("Building AICPU_CC task");
-    OpTask *task = nullptr;
-    uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
-    GELOGI("Build dynamic singleOp CCTask, kernel_id = %lu", dynamic_singleop_kernel_id);
-    GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task, dynamic_singleop_kernel_id));
-    task->SetModelArgs(model_name_, model_id_);
-    single_op.op_task_.reset(task);
-  } else {
-    GELOGE(ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID,
-        "[Check][Param:TaskDef]Only TBE, AI_CPU, CUST_AI_CPU kernel are supported, but got %u", 
-        context.kernel_type());
-    REPORT_INNER_ERROR("E19999", 
-        "BuildModelTaskKernel fail for got:%u not supported, Only TBE, AI_CPU, CUST_AI_CPU kernel are supported.",
-        context.kernel_type());
-    return ACL_ERROR_GE_OP_KERNEL_TYPE_INVALID;
-  }
-  return SUCCESS;
 }
 
 Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource, DynamicSingleOp &single_op) {
@@ -570,50 +570,116 @@ Status SingleOpModel::BuildTaskListForDynamicOp(StreamResource *stream_resource,
   auto compute_graph = GraphUtils::GetComputeGraph(ge_model->GetGraph());
   GE_CHECK_NOTNULL(compute_graph);
   single_op.compute_graph_ = compute_graph;
+
+  if (node_tasks_.size() != 1) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+    REPORT_INNER_ERROR("E19999", "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+
+  auto iter = node_tasks_.begin();
+  auto node = iter->first;
+  const auto &task_defs = iter->second;
+  if (task_defs.size() <= 0 || task_defs.size() > kNumTaskWithAtomicAddrCleanTask) {
+    GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Size]Node size must be 1, but get %zu.", node_tasks_.size());
+    REPORT_INNER_ERROR("E19999", "[Check][Size]task_defs size must be 1 or 2, but get %zu.", task_defs.size());
+    return ACL_ERROR_GE_PARAM_INVALID;
+  }
+      
+  GE_CHECK_NOTNULL(node);
+  auto op_desc = node->GetOpDesc();
+  GE_CHECK_NOTNULL(op_desc);
+  const auto &lib_name = op_desc->GetOpKernelLibName();
+  if (lib_name == kEngineNameAiCore) {
+    GELOGD("Building TBE task.");
+    const auto &task_def = task_defs.back();
+    TbeOpTask *tbe_task = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(BuildKernelTask(task_def, &tbe_task));
+    tbe_task->SetModelArgs(model_name_, model_id_);
+    if (tbe_task->tiling_buffer_ != nullptr) {
+      GELOGD("tiling buffer is not nullptr.");
+      tbe_task->stream_resource_ = stream_resource;
+    }
+    if (task_defs.size() == kNumTaskWithAtomicAddrCleanTask) {
+      const auto &atomic_task_def = task_defs.front();
+      AtomicAddrCleanOpTask *atomic_task = nullptr;
+      GE_CHK_STATUS_RET_NOLOG(BuildAtomicTask(atomic_task_def, &atomic_task));
+      GE_CHK_STATUS_RET_NOLOG(atomic_task->InitAtomicAddrCleanIndices());
+      tbe_task->SetAtomicAddrCleanTask(atomic_task);
+    }
+    single_op.op_task_.reset(tbe_task);
+  } else if (lib_name == kEngineNameAiCpu) {
+    const auto &task_def = task_defs[0];
+    GELOGD("Building AICPU_CC task");
+    OpTask *task = nullptr;
+    uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
+    GELOGI("Build dynamic singleOp CCTask, kernel_id = %lu", dynamic_singleop_kernel_id);
+    GE_CHK_STATUS_RET_NOLOG(BuildCpuKernelTask(task_def.kernel(), &task, dynamic_singleop_kernel_id));
+    task->SetModelArgs(model_name_, model_id_);
+    single_op.op_task_.reset(task);
+  } else if (lib_name == kEngineNameAiCpuTf) {
+    const auto &task_def = task_defs[0];
+    GELOGD("Building AICPU_TF task");
+    AiCpuTask *aicpu_task = nullptr;
+    uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
+    GELOGI("Build dynamic singleOp TfTask, kernel_id = %lu", dynamic_singleop_kernel_id);
+    GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, dynamic_singleop_kernel_id));
+    if (aicpu_task->GetUnknownType() == DEPEND_COMPUTE) {
+      if (task_defs.size() < kNumTaskWithMemCpyTask) {
+        GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Task]The copy task of the fourth operator was not found.");
+        REPORT_INNER_ERROR("E19999", "The copy task of the fourth operator was not found.");
+        return ACL_ERROR_GE_PARAM_INVALID;
+      }
+      const TaskDef &copy_task_def = task_defs[1];
+      GE_CHK_STATUS_RET_NOLOG(aicpu_task->SetMemCopyTask(copy_task_def.kernel_ex()));
+    }
+    aicpu_task->SetModelArgs(model_name_, model_id_);
+    single_op.op_task_.reset(aicpu_task);
+  }
+
+  return SUCCESS;
+}
+
+Status SingleOpModel::NeedHybridModel(GeModelPtr &ge_model, bool &need_hybrid_model) {
+  bool is_infer_depend = false;
+  bool is_host_mem = false;
+  GE_CHK_STATUS_RET(CheckInferDepend(ge_model, is_infer_depend, is_host_mem), "[Check][InferDepend] failed.");
+  bool need_d2h_cpy = is_infer_depend && !is_host_mem;
+  need_hybrid_model = need_d2h_cpy || node_tasks_.size() > 1;
+  return SUCCESS;
+}
+
+Status SingleOpModel::ParseTasks() {
+  auto ge_model = model_helper_.GetGeModel();
+  GE_CHECK_NOTNULL(ge_model);
+
   auto tasks = ge_model->GetModelTaskDefPtr()->task();
   for (int i = 0; i < tasks.size(); ++i) {
-    const TaskDef &task_def = tasks[i];
+    TaskDef &task_def = tasks[i];
     GELOGI("[%s] Task[%d], type = [%u], DebugString = [%s]", model_name_.c_str(), i, task_def.type(),
            task_def.DebugString().c_str());
     auto task_type = static_cast<rtModelTaskType_t>(task_def.type());
-    if (task_type == RT_MODEL_TASK_KERNEL || task_type == RT_MODEL_TASK_ALL_KERNEL) {
-      if (single_op.op_task_ != nullptr) {
-        GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID, "[Check][TaskType]Do not support dynamic op with multiple tasks.");
-        REPORT_INNER_ERROR("E19999", 
-            "BuildTaskListForDynamicOp fail for Do not support dynamic op with multiple tasks.");
-        return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;
-      }
-      GE_CHK_STATUS_RET_NOLOG(BuildModelTaskKernel(stream_resource, task_def, single_op));
+    uint32_t op_index = 0;
+    if (task_type == RT_MODEL_TASK_KERNEL) {
+      op_index = task_def.kernel().context().op_index();
     } else if (task_type == RT_MODEL_TASK_KERNEL_EX) {
-      if (single_op.op_task_ != nullptr) {
-        GELOGE(ACL_ERROR_GE_OP_TASK_TYPE_INVALID, "[Check][TaskType]Do not support dynamic op with multiple tasks.");
-        REPORT_INNER_ERROR("E19999", 
-            "BuildTaskListForDynamicOp fail for Do not support dynamic op with multiple tasks.");
-        return ACL_ERROR_GE_OP_TASK_TYPE_INVALID;
-      }
-      GELOGD("Building AICPU_TF task");
-      AiCpuTask *aicpu_task = nullptr;
-      bool depend_compute_flag = false;
-      uint64_t dynamic_singleop_kernel_id = aicpu_kernel_id++;
-      GELOGI("Build dynamic singleOp TfTask, kernel_id = %lu", dynamic_singleop_kernel_id);
-      GE_CHK_STATUS_RET_NOLOG(BuildKernelExTask(task_def.kernel_ex(), &aicpu_task, true,
-                                                depend_compute_flag, dynamic_singleop_kernel_id));
-      if (depend_compute_flag) {
-        if (i >= tasks.size() - 1) {
-          GELOGE(ACL_ERROR_GE_PARAM_INVALID, "[Check][Task]The copy task of the fourth operator was not found.");
-          REPORT_INNER_ERROR("E19999", "The copy task of the fourth operator was not found.");
-          return ACL_ERROR_GE_PARAM_INVALID;
-        }
-        ++i;
-        const TaskDef &copy_task_def = tasks[i];
-        GE_CHK_STATUS_RET_NOLOG(aicpu_task->SetMemCopyTask(copy_task_def.kernel_ex()));
-      }
-      aicpu_task->SetModelArgs(model_name_, model_id_);
-      single_op.op_task_.reset(aicpu_task);
+      op_index = task_def.kernel_ex().op_index();
+    } else if (task_type == RT_MODEL_TASK_ALL_KERNEL) {
+      op_index = task_def.kernel_with_handle().context().op_index();
     } else {
-      // skip
       GELOGD("Skip task type: %d", static_cast<int>(task_type));
+      continue;
     }
+    GELOGD("op_index = %u, task_type = %d", op_index, task_type);
+
+    auto iter = op_list_.find(op_index);
+    if (iter == op_list_.end()) {
+      GELOGE(INTERNAL_ERROR, "[Find][Node]Failed to get node by op_index = %u", op_index);
+      REPORT_INNER_ERROR("E19999", "Failed to get node by op_index = %u.", op_index);
+      return INTERNAL_ERROR;
+    }
+    auto &node = iter->second;
+    node_tasks_[node].emplace_back(task_def);
   }
   return SUCCESS;
 }
@@ -624,6 +690,7 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
   GE_CHK_STATUS_RET_NOLOG(InitModelMem(resource));
   model_params_.memory_size = UINT64_MAX;
   model_params_.graph_is_dynamic = true;
+  GE_CHK_STATUS_RET(ParseTasks(), "[Parse][Tasks] failed.");
 
   auto ge_model = model_helper_.GetGeModel();
   GE_CHECK_NOTNULL(ge_model);
@@ -646,7 +713,9 @@ Status SingleOpModel::BuildDynamicOp(StreamResource &resource, DynamicSingleOp &
                                                                                          device_id,
                                                                                          resource.GetStream()));
     GE_CHECK_NOTNULL(single_op.hybrid_model_executor_);
-    GE_CHK_STATUS_RET(single_op.hybrid_model_executor_->Init(), "[Init][HybridModelExecutor]Failed.");
+    ThreadPool *thread_pool = nullptr;
+    GE_CHK_STATUS_RET_NOLOG(resource.GetThreadPool(&thread_pool));
+    GE_CHK_STATUS_RET(single_op.hybrid_model_executor_->Init(thread_pool), "[Init][HybridModelExecutor]Failed.");
     return SUCCESS;
   }
   return BuildTaskListForDynamicOp(&resource, single_op);

@@ -21,7 +21,7 @@
 #include "common/ge/ge_util.h"
 #include "external/graph/graph.h"
 #include "framework/common/debug/ge_log.h"
-#include "graph/common/omg_util.h"
+#include "common/omg_util.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/node.h"
 #include "graph/utils/tensor_utils.h"

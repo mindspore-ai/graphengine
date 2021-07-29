@@ -20,7 +20,7 @@
 #include "external/ge/ge_api_error_codes.h"
 #include "common/opskernel/ops_kernel_builder.h"
 #include "graph/node.h"
-#include "task_context.h"
+#include "hybrid/node_executor/task_context.h"
 
 namespace ge {
 const uint32_t MEMORY_ALIGN_RATIO = 2;
@@ -179,8 +179,6 @@ class NodeExecutorManager {
    */
   Status EnsureInitialized();
 
-  Status InitializeExecutors();
-
   void FinalizeExecutors();
 
   /**
@@ -196,7 +194,7 @@ class NodeExecutorManager {
    * @param executor        executor
    * @return SUCCESS on success, error code otherwise
    */
-  Status GetExecutor(Node &node, const NodeExecutor **executor) const;
+  Status GetExecutor(Node &node, const NodeExecutor **executor);
 
   /**
    * Resolve executor type by node
@@ -205,13 +203,16 @@ class NodeExecutorManager {
    */
   ExecutorType ResolveExecutorType(Node &node) const;
 
+  Status GetOrCreateExecutor(ExecutorType executor_type, const NodeExecutor **executor);
+
+  bool IsExecutorInitialized(ExecutorType executor_type);
+
  private:
   std::map<ExecutorType, std::unique_ptr<NodeExecutor>> executors_;
   std::map<ExecutorType, std::function<NodeExecutor *()>> builders_;
   std::map<std::string, NodeExecutorManager::ExecutorType> engine_mapping_;
   std::mutex mu_;
   bool initialized_ = false;
-  bool executor_initialized_ = false;
   int ref_count_ = 0;
 };
 

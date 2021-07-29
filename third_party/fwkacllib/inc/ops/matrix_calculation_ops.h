@@ -61,21 +61,28 @@ REG_OP(MatMul)
 *@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
 
 *@par Inputs:
-*Two inputs, including:
-* @li x1: A matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
-* @li x2: A matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC, FRACTAL_NZ].
-* @li bias: A 1D Tensor. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC] . \n
+*Four inputs, including:
+* @li x1: A matrix Tensor. 2D. Must be one of the following types: float32,
+ float16, int32, int8. Has format [ND, NHWC, FRACTAL_NZ].
+* @li x2: A matrix Tensor. 2D. Must be one of the following types: float32,
+ float16, int32, int8. Has format [ND, NHWC, FRACTAL_NZ].
+* @li bias: A 1D Tensor. Must be one of the following types: float32,
+ float16, int32. Has format [ND, NHWC].
+* @li offset_w: A Optional 1D Tensor for quantized inference. Type is int8.
+ Reserved. \n
 
 *@par Attributes:
-*@li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
-*@li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
+* @li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
+ [M, K].
+* @li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
+[K, N].
+* @li offset_x: An optional integer for quantized MatMulV2.
+* The negative offset added to the input x1 for int8 type. Ensure offset_x
+ within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
-*y: The result matrix Tensor. 2D. Must be one of the following types: float16,
-* float32, int32. Has format [ND, NHWC, FRACTAL_NZ] . \n
+*y: The result matrix Tensor. 2D. Must be one of the following types: float32,
+ float16, int32. Has format [ND, NHWC, FRACTAL_NZ]. \n
 
 *@par Third-party framework compatibility
 * Compatible with the TensorFlow operator BatchMatmul.
@@ -95,19 +102,27 @@ REG_OP(MatMulV2)
 *@brief Multiplies matrix "a" by matrix "b", producing "a * b" . \n
 
 *@par Inputs:
-*Two inputs, including:
+*Five inputs, including:
 * @li x1: A matrix Tensor. 2D. Must be one of the following types: int8.
 * @li x2: A matrix Tensor. 2D. Must be one of the following types: int8.
 * @li compress_index: A compress index matrix of type int8.
-* @li bias: A 1D Tensor. Must be one of the following types: int32, float16.
+* @li bias: An optional Tensor. 1D. Must be one of the following types: int32,
+ float16.
+* @li offset_w: An optional matrix Tensor. 2D. Must be one of the following
+ types: int8. \n
 
 *@par Attributes:
-*@li transpose_x1: A bool. If True, changes the shape of "x1" from [M, K] to [K, M].
-*@li transpose_x2: A bool. If True, changes the shape of "x2" from [M, K] to [K, M] . \n
+*@li transpose_x1: A bool. If True, changes the shape of "x1" from [K, M] to
+ [M, K].
+*@li transpose_x2: A bool. If True, changes the shape of "x2" from [N, K] to
+ [K, N].
+*@li offset_x: An optional integer for quantized MatMulV2Compress.
+*The negative offset added to the input x1 for int8 type. Ensure offset_x
+ within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
-*y: The result matrix Tensor. 2D. Must be one of the following types: float16,
-* int32. \n
+*y: The result matrix Tensor. 2D. Must be one of the following types: int32,
+* float16. \n
 
 */
 REG_OP(MatMulV2Compress)
@@ -488,13 +503,13 @@ REG_OP(ScatterElements)
 
 *@par Inputs:
 * Three inputs, including:
-*@li var: An ND Tensor . \n
+*@li var: An ND Tensor .
 
 *Must be one of the following types: float16, float32, int32, int8, uint8
 *@li indices: An ND Tensor of type int32 or int64
 
 
-*@li updates: An Tensor. format:NCHW, NHWC . \n
+*@li updates: An Tensor. format:NCHW, NHWC .
 
 *Must be one of the following types: float16, float32, int32, int8, uint8
 
@@ -517,6 +532,61 @@ REG_OP(ScatterAdd)
     .OP_END_FACTORY_REG(ScatterAdd)
 
 /**
+*@brief  Use a scalar to modify the tensor. \n
+
+*@par Inputs:
+*inputs, including:
+*@li index: An ND Tensor . \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Attributes:
+* dim : the axis along which to index .
+* value : the source element(s) to scatter . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "index" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator ScatterScalar.
+*/
+REG_OP(ScatterScalar)
+    .INPUT(index, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .REQUIRED_ATTR(dim, Int)
+    .REQUIRED_ATTR(value, Float)
+    .OP_END_FACTORY_REG(ScatterScalar)
+
+/**
+*@brief Use a tensor to modify the tensor . \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li index: An ND Tensor . \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@li src: An ND Tensor . \n
+
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Attributes:
+* dim : the axis along which to index . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type and format as input "index" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator ScatterTensor.
+*/
+REG_OP(ScatterTensor)
+    .INPUT(index, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(src, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .REQUIRED_ATTR(dim, Int)
+    .OP_END_FACTORY_REG(ScatterTensor)
+
+/**
 *@brief Divides a variable reference by sparse updates . \n
 
 *@par Inputs:
@@ -530,7 +600,7 @@ REG_OP(ScatterAdd)
 *Must be one of the following types: float16, float, int32, int8, uint8
 
 *@par Attributes:
-*@li use_locking: An optional bool. Defaults to "False". If "True",
+*use_locking: An optional bool. Defaults to "False". If "True",
 * the operation will be protected by a lock . \n
 
 *@par Outputs:
@@ -752,10 +822,12 @@ REG_OP(DiagPart)
 
 *@par Attributes:
 *@li num_output: Reserved.
-*@li transpose: A bool, specifying weight whether to transpose, either "true" or "false". Defaults to "false".
+*@li transpose: A bool, specifying weight whether to transpose input w, either "true" or "false". Defaults to "false".
 *@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K" starts from. Defaults to 1.
 * The product of the subsequent dimensions starting form first dimension or the second dimension is "K".
-*@li offset_x: Reserved . \n
+*@li offset_x: An optional integer for quantized FullyConnection.
+*The negative offset added to the input image for int8 type. Ensure offset_x within the
+*effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
 *y: The result tensor of type float16, int32, float32 . \n
@@ -779,27 +851,34 @@ REG_OP(FullyConnection)
     .OP_END_FACTORY_REG(FullyConnection)
 
 /**
-*@brief Also known as a "fully-connected-compress" layer, computes an inner product with a set of learned weights, and (optionally) adds biases . \n
+*@brief Also known as a "fully-connected-compress" layer, computes an inner
+product with a set of learned weights, and (optionally) adds biases . \n
 
 *@par Inputs:
-* Four inputs, including:
+* Five inputs, including:
 *@li x: A Tensor of type uint8, int8.
-*@li w: A weight matrix of type int8, int8.
-*@li w: A compress index matrix of type int8, int8.
-*@li b: A Tensor of type float16, int32, int32.
-*@li offset_w: A Tensor of type int8.i
+*@li w: A weight matrix of type int8.
+*@li compress_index: A compress index matrix of type int8.
+*@li b: A Tensor of type int32.
+*@li offset_w: A Tensor of type int8.
 
 *@par Attributes:
-*@li num_output: Reserved.
-*@li transpose: A bool, specifying whether to transpose, either "true" or "false". Defaults to "false".
-*@li axis: Reserved.
-*@li offset_x: Reserved . \n
+*@li num_output: A int, specifying the number of outputs.
+*@li transpose: A bool, specifying whether to transpose input w, either "true"
+ or "false". Defaults to "false".
+*@li axis: Optional. A int, 1 or 2, specifying which dimension the input "K"
+starts from. Defaults to "1".
+* The product of the subsequent dimensions starting form first dimension or the
+second dimension is "K".
+*@li offset_x: An optional integer for quantized FullyConnectionCompress.
+*The negative offset added to the input image for int8 type. Ensure offset_x
+within the effective range of int8 [-128, 127]. Defaults to "0". \n
 
 *@par Outputs:
-*y: The result tensor of type int32 . \n
+*y: The result tensor of type int32. \n
 
 *@par Third-party framework compatibility
-* Compatible with the Caffe operator InnerProduct . \n
+* Compatible with the Caffe operator InnerProduct. \n
 
 *@par Quantization supported or not
 * Yes
@@ -925,13 +1004,13 @@ REG_OP(ScatterMin)
 
 *@par Inputs:
 * Three inputs, including:
-*@li var: An ND Tensor . \n
+*@li var: An ND Tensor .
 
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An NCHW, NHWC, or ND Tensor . \n
 
 *Must be one of the following types: int32 or int64
-*@li updates: An NCHW, NHWC, or ND Tensor . \n
+*@li updates: An NCHW, NHWC, or ND Tensor .
 
 *Must be one of the following types: float16, float, int32, int8, uint8
 
@@ -958,13 +1037,13 @@ REG_OP(ScatterMax)
 
 *@par Inputs:
 * Three inputs, including:
-*@li var: An ND Tensor . \n
+*@li var: An ND Tensor .
 
 *Must be one of the following types: float16, float, int32, int8, uint8
 *@li indices: An ND Tensor . \n
 
 *Must be one of the following types: int32 or int64
-*@li updates: An ND Tensor . \n
+*@li updates: An ND Tensor .
 
 *Must be one of the following types: float16, float, int32, int8, uint8
 
@@ -1113,14 +1192,46 @@ REG_OP(IndexAdd)
     .OP_END_FACTORY_REG(IndexAdd)
 
 /**
+* @brief According to the index number of indexes, replace the value
+*corresponding to X1 with the value in x2.
+
+* @par Inputs:
+* Three inputs, including:
+* @li x1: A Tensor. Must be one of the following types:
+*     float16, float32, int32, int8, uint8.
+* @li x2: A Tensor of the same type as "x1".
+* @li indices: A Tensor of the indices, type should be int32.
+
+* @par Attributes:
+* @li accumulate: Does it support self accumulation.Defaults to 0.
+
+* @par Outputs:
+* @li y: A Tensor. Same as input "x1".
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator index_put.
+
+* @par Restrictions:
+* Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(IndexPut)
+    .INPUT(x1, TensorType({DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(x2, TensorType({DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(indices, TensorType({DT_INT64, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .ATTR(accumulate, Int, 0)
+    .OP_END_FACTORY_REG(IndexPut)
+
+/**
 *@brief: Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input \n
 
 *@par Inputs:
-* Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
-*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
-*@li diagonal:(int, optional) – the diagonal to consider。\n
+*x: A Tensor. Must be one of the following types:
+*float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
+
+*@par Attributes:
+*diagonal: An optional attribute indicates the diagonal to consider. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
@@ -1138,11 +1249,12 @@ REG_OP(Triu)
 *@brief: Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input \n
 
 *@par Inputs:
-* Two inputs, including:
-*@li x: A Tensor. Must be one of the following types:
-*    float16, float32, double, int32, uint8, int16, int8, complex64, int64,
-*    qint8, quint8, qint32, uint16, complex128, uint32, uint64.
-*@li diagonal:(int, optional) – the diagonal to consider。\n
+*x: A Tensor. Must be one of the following types:
+*float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
+
+*@par Attributes:
+*diagonal: An optional attribute indicates the diagonal to consider. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as "x" . \n
@@ -1212,6 +1324,30 @@ REG_OP(Eye)
     .ATTR(batch_shape, ListInt, {})
     .ATTR(dtype, Int, 0)
     .OP_END_FACTORY_REG(Eye)
+
+/**
+*@brief: Fill diagonal of at least 2 dimension tensors with value . \n
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types:
+*    float32, int32, int64 . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x" . \n
+
+*@par Attributes:
+*fill_value:The value to fill in
+*wrap: An optional bool. Defaults to "False". If "True", Use recursive fill. \n
+
+*@par Third-party framework compatibility
+* Compatible with the Pytorch operator FillDiagonal.
+*/
+REG_OP(FillDiagonal)
+    .INPUT(x, TensorType({DT_FLOAT, DT_INT32, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_INT32, DT_INT64}))
+    .REQUIRED_ATTR(fill_value, Float)
+    .ATTR(wrap, Bool, false)
+    .OP_END_FACTORY_REG(FillDiagonal)
 
 }  // namespace ge
 

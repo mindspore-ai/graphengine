@@ -19,7 +19,7 @@
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
 #include "graph/ge_context.h"
-#include "graph/types.h"
+#include "external/graph/types.h"
 #include "graph/debug/ge_attr_define.h"
 #include "graph/manager/graph_caching_allocator.h"
 #include "graph/manager/graph_mem_allocator.h"
@@ -78,8 +78,6 @@ Status HybridModelAsyncExecutor::Start(const std::shared_ptr<ModelListener> &lis
     GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     GetContext().SetSessionId(executor_->GetContext()->session_id);
     GetContext().SetContextId(executor_->GetContext()->context_id);
-    GE_CHECK_NOTNULL(executor_->GetContext()->ge_context);
-    GetThreadLocalContext() = *executor_->GetContext()->ge_context;
     return RunInternal();
   });
 
@@ -297,13 +295,15 @@ Status HybridModelAsyncExecutor::PrepareInputs(const InputData &current_data, Hy
         }
       }
       tensor_desc->SetShape(shape);
-      args.input_desc[input_index] = tensor_desc;
-      GELOGD("Update shape of input[%zu] to [%s]", input_index, tensor_desc->MutableShape().ToString().c_str());
+      GELOGD("Update shape[%s] of input[%zu] to [%s]",
+             shape.ToString().c_str(), input_index, tensor_desc->MutableShape().ToString().c_str());
       GE_CHK_GRAPH_STATUS_RET(TensorUtils::GetTensorMemorySizeInBytes(*tensor_desc, tensor_size),
                               "[Invoke][GetTensorMemorySizeInBytes]Failed to calc tensor size,"
                               "index = %zu, shape = [%s], model_id = %u.",
                               input_index, tensor_desc->GetShape().ToString().c_str(), model_id_);
-      GELOGD("Input tensor[%zu] size = %zu", input_index, tensor_size);
+      GELOGD("Input tensor[%zu] size = %ld", input_index, tensor_size);
+      TensorUtils::SetSize(*tensor_desc, tensor_size);
+      args.input_desc[input_index] = tensor_desc;
     }
 
     GE_CHECK_GE(tensor_size, 0);
@@ -460,7 +460,8 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
         auto tensor = TensorAdapter::AsTensor(ge_tensor);
         outputs.emplace_back(std::move(tensor));
       } else {
-        BuildDeviceTensor(output_tensor, ge_tensor_desc, output_size, outputs);
+        GE_CHK_STATUS_RET(BuildDeviceTensor(output_tensor, ge_tensor_desc, output_size, outputs),
+                          "Build device tensor failed");
         output_data->blobs.emplace_back(output_tensor.Release(), static_cast<uint32_t>(output_size), false,
                                         static_cast<uint32_t>(kPlacementDevice));
       }
@@ -480,13 +481,15 @@ Status HybridModelAsyncExecutor::CopyOutputs(HybridModelExecutor::ExecuteArgs &a
   return SUCCESS;
 }
 
-void HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeTensorDesc &ge_tensor_desc,
-                                                 int64_t output_size, std::vector<ge::Tensor> &outputs) {
+Status HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeTensorDesc &ge_tensor_desc,
+                                                   int64_t output_size, std::vector<ge::Tensor> &outputs) {
   GELOGD("Start to build device tensor");
-  auto mem_type = output_tensor.GetMemType();
+  MemStorageType mem_type = HBM;
+  GE_CHK_STATUS_RET(output_tensor.GetMemType(mem_type), "[Build][DeviceTensor] Get mem type failed");
   GELOGD("Mem type is %d", static_cast<uint32_t>(mem_type));
   auto deleter = [=](uint8_t *device_data) {
     if (device_data != nullptr) {
+      GELOGD("Free device addr is %p", device_data);
       if (mem_type == RDMA_HBM) {
         MemManager::Instance().RdmaPoolInstance(RT_MEMORY_HBM).Free(device_data, device_id_);
       } else if (mem_type == HOST_DDR) {
@@ -501,6 +504,7 @@ void HybridModelAsyncExecutor::BuildDeviceTensor(TensorValue &output_tensor, GeT
   auto tensor = TensorAdapter::AsTensor(ge_tensor);
   tensor.SetData(reinterpret_cast<uint8_t *>(output_tensor.Release()), static_cast<size_t>(output_size), deleter);
   outputs.emplace_back(std::move(tensor));
+  return SUCCESS;
 }
 
 Status HybridModelAsyncExecutor::Execute(const std::vector<DataBuffer> &inputs,

@@ -28,7 +28,7 @@
 #include <vector>
 #include "graph/compute_graph.h"
 #include "graph/manager/graph_manager_utils.h"
-#include "graph/operator_reg.h"
+#include "external/graph/operator_reg.h"
 #include "graph/partition/engine_place.h"
 
 namespace ge {
@@ -69,6 +69,8 @@ class GraphPartitioner {
                                         const ComputeGraphPtr &original_compute_graph);
   // Return all subgraphs
   const Graph2SubGraphInfoList &GetSubGraphMap();
+
+  const Graph2InputNodesSubGraphInfo &GetSubGraphInfoMap() {return graph_2_input_subgraph_; }
 
  private:
   Status MergeSubGraph(ge::ComputeGraphPtr &output_merged_compute_graph,

@@ -16,10 +16,10 @@
 
 #include "graph/passes/transop_nearby_allreduce_fusion_pass.h"
 #include "framework/common/debug/ge_log.h"
-#include "common/debug/log.h"
-#include "common/types.h"
+#include "framework/common/debug/log.h"
+#include "framework/common/types.h"
 #include "graph/utils/graph_utils.h"
-#include "graph/common/transop_util.h"
+#include "common/transop_util.h"
 
 namespace ge {
 Status TransOpNearbyAllreduceFusionPass::Run(NodePtr &node) {

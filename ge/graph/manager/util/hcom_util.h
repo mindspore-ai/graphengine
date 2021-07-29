@@ -21,11 +21,11 @@
 #include <string>
 #include <vector>
 
-#include "common/debug/log.h"
+#include "framework/common/debug/log.h"
 #include "common/opskernel/ge_task_info.h"
-#include "common/string_util.h"
-#include "common/types.h"
-#include "common/util.h"
+#include "framework/common/string_util.h"
+#include "framework/common/types.h"
+#include "framework/common/util.h"
 #include "graph/op_desc.h"
 #include "hccl/hcom.h"
 #include "proto/task.pb.h"

@@ -94,4 +94,15 @@ TEST_F(UtestHcomUtil, test_GetHcomCount_succ) {
   auto ret = hcom_ome_util.GetHcomCount(op_desc, HCCL_DATA_TYPE_FP32, true, count);
   EXPECT_EQ(ret, 0);
 }
+
+TEST_F(UtestHcomUtil, test_GetHcomCount_succ_2) {
+  ComputeGraphPtr graph = std::make_shared<ComputeGraph>("test");
+  NodePtr node = NodeBuilder("node", HCOMSEND).AddInputDesc({1, 1, 224, 224}).Build(graph);
+  auto op_desc = node->GetOpDesc();
+  HcomOmeUtil hcom_util;
+  int count = 0;
+  auto ret = hcom_util.GetHcomCount(op_desc, HCCL_DATA_TYPE_FP32, true, count);
+  EXPECT_EQ(ret, SUCCESS);
+  EXPECT_EQ(count, 224 * 224);
+}
 }  // namespace ge

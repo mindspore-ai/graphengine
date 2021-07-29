@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <vector>
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "runtime/stream.h"
 #include "hybrid/common/tensor_value.h"
 #include "hybrid/node_executor/task_context.h"
@@ -72,11 +72,15 @@ class AiCoreOpTask {
 
   const std::string& GetName() const;
 
+  const std::string& GetLogName() const {return log_name_;}
+
   bool GetClearAtomic() const {return clear_atomic_;}
 
   uint32_t GetBlockDim() const {return block_dim_;}
 
   void SetSingleOp(bool is_single_op) {is_single_op_ = is_single_op;};
+
+  virtual const std::string& GetOpType() const;
 
  protected:
   Status UpdateTilingInfo(TaskContext &context);
@@ -85,7 +89,7 @@ class AiCoreOpTask {
   virtual std::string GetKeyForTvmMagic() const;
   virtual std::string GetKeyForTvmMetaData() const;
   virtual std::string GetKeyForKernelName(const OpDesc &op_desc) const;
-  virtual Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info);
+  virtual Status CalcTilingInfo(const NodePtr &node, optiling::utils::OpRunInfo &tiling_info);
 
   std::unique_ptr<TensorBuffer> tiling_buffer_ = nullptr;
   std::string tiling_data_;
@@ -117,12 +121,14 @@ class AiCoreOpTask {
   uint64_t log_id_ = 0;
   std::string log_name_;
   uint32_t offset_ = 0;
+  std::string op_type_;
 };
 
 class AtomicAddrCleanOpTask : public AiCoreOpTask {
  public:
   Status Init(const OpDesc &op_desc, const domi::TaskDef &task_def) override;
   Status UpdateArgs(TaskContext &task_context) override;
+  const std::string& GetOpType() const override;
 
  protected:
   std::string GetKeyForOpParamSize() const override;
@@ -130,7 +136,7 @@ class AtomicAddrCleanOpTask : public AiCoreOpTask {
   std::string GetKeyForTvmMagic() const override;
   std::string GetKeyForTvmMetaData() const override;
   std::string GetKeyForKernelName(const OpDesc &op_desc) const override;
-  Status CalcTilingInfo(const NodePtr &node, optiling::OpRunInfo &tiling_info) override;
+  Status CalcTilingInfo(const NodePtr &node, optiling::utils::OpRunInfo &tiling_info) override;
 
  private:
   Status InitAtomicAddrCleanIndices(const OpDesc &op_desc);

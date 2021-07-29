@@ -23,6 +23,7 @@
 #include "graph/passes/graph_builder_utils.h"
 #include "graph/utils/attr_utils.h"
 #include "graph/debug/ge_attr_define.h"
+#include "graph/manager/graph_var_manager.h"
 
 #define private public
 #define protected public
@@ -179,6 +180,21 @@ TEST_F(UtestGraphPreproces, test_dynamic_input_shape_parse) {
   EXPECT_EQ(intput2_result_shape_range.size(), 0);
 }
 
+TEST_F(UtestGraphPreproces, test_update_input_fail) {
+  ge::GraphPrepare graph_prepare;
+  graph_prepare.compute_graph_ = BuildGraph1();
+
+  ge::GeTensorDesc tensor1;
+  tensor1.SetFormat(ge::FORMAT_NCHW);
+  tensor1.SetShape(ge::GeShape({3, 12, 5, 5}));
+  tensor1.SetDataType(ge::DT_UNDEFINED);
+  GeTensor input1(tensor1);
+  std::vector<GeTensor> user_input = {input1};
+  std::map<string,string> graph_option;
+  auto ret = graph_prepare.UpdateInput(user_input, graph_option);
+  EXPECT_EQ(ret, ge::FAILED);
+}
+
 TEST_F(UtestGraphPreproces, test_check_user_input) {
   ge::GraphPrepare graph_prepare;
   graph_prepare.compute_graph_ = BuildGraph1();
@@ -269,5 +285,27 @@ TEST_F(UtestGraphPreproces, test_prepare_dyn_shape) {
   std::vector<GeTensor> user_input;
   GraphPrepare graph_prepare;
   EXPECT_EQ(graph_prepare.PrepareDynShape(graph_node, user_input, compute_graph, 0), SUCCESS);
+}
+
+TEST_F(UtestGraphPreproces, test_updar_variable_formats) {
+  auto builder = ut::GraphBuilder("g1");
+  auto var = builder.AddNode("var", VARIABLE, 1, 1);
+  auto g1 = builder.GetGraph();
+  g1->SetSessionID(0);
+  TransNodeInfo trans_node_info;
+  VarTransRoad fusion_road;
+  fusion_road.emplace_back(trans_node_info);
+  VarManager::Instance(g1->GetSessionID())->SetTransRoad(var->GetName(), fusion_road);
+  GraphPrepare graph_prepare;
+  EXPECT_EQ(graph_prepare.UpdateVariableFormats(g1), INTERNAL_ERROR);
+
+  auto builder1 = ut::GraphBuilder("g2");
+  auto var1 = builder1.AddNode("var1", VARIABLE, 1, 1);
+  auto g2 = builder1.GetGraph();
+  g2->SetSessionID(0);
+  VarTransRoad fusion_road1;
+  VarManager::Instance(g2->GetSessionID())->SetTransRoad(var1->GetName(), fusion_road1);
+  AttrUtils::SetStr(var1->GetOpDesc(), REF_VAR_SRC_VAR_NAME, "var1");
+  EXPECT_EQ(graph_prepare.UpdateVariableFormats(g2), SUCCESS);
 }
 }

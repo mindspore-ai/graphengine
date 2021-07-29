@@ -16,14 +16,14 @@
 
 #include "ge_local_engine/ops_kernel_store/ge_local_ops_kernel_info.h"
 #include <memory>
-#include "common/constant/constant.h"
+#include "ge_local_engine/common/constant/constant.h"
 #include "common/ge/ge_util.h"
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "framework/common/debug/ge_log.h"
 #include "graph/utils/node_utils.h"
 #include "graph/utils/tensor_utils.h"
 #include "graph/utils/type_utils.h"
-#include "op/op_factory.h"
+#include "ge_local_engine/ops_kernel_store/op/op_factory.h"
 #include "proto/task.pb.h"
 
 namespace ge {

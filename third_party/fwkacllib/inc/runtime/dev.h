@@ -19,7 +19,7 @@
 
 #include "base.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -65,6 +65,7 @@ typedef enum tagRtFeatureType {
 
 typedef enum tagRtDeviceFeatureType {
   FEATURE_TYPE_SCHE,
+  FEATURE_TYPE_BLOCKING_OPERATOR,
   FEATURE_TYPE_END,
 } rtDeviceFeatureType_t;
 
@@ -77,6 +78,17 @@ typedef enum tagMemoryInfo {
     MEMORY_INFO_TS_4G_LIMITED = 0,
     MEMORY_INFO_RSV
 } rtMemoryInfo_t;
+
+typedef enum tagRtDeviceModuleType {
+    RT_MODULE_TYPE_SYSTEM = 0,  /**< system info*/
+    RT_MODULE_TYPE_AICPU,       /** < aicpu info*/
+    RT_MODULE_TYPE_CCPU,        /**< ccpu_info*/
+    RT_MODULE_TYPE_DCPU,        /**< dcpu info*/
+    RT_MODULE_TYPE_AICORE,      /**< AI CORE info*/
+    RT_MODULE_TYPE_TSCPU,       /**< tscpu info*/
+    RT_MODULE_TYPE_PCIE,        /**< PCIE info*/
+    RT_MODULE_TYPE_VECTOR_CORE, /**< VECTOR CORE info*/
+} rtDeviceModuleType_t;
 
 /**
  * @ingroup dvrt_dev
@@ -368,7 +380,7 @@ RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t device);
  */
 RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t device);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

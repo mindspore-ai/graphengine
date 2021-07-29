@@ -54,15 +54,16 @@ REG_OP(LogSoftmaxGrad)
 *@par Inputs:
 *Two inputs, including:
 * @li features: A Tensor. Must be one of the following types: half, float32, double.
-*    A "batch_size * num_classes" matrix.
+*A "batch_size * num_classes" matrix.
 * @li labels: A Tensor. Must be one of the following types: 'int32', 'int64'.
-*             batch_size vector with values in [0, num_classes).
-*             This is the label for the given minibatch entry.
+*batch_size vector with values in [0, num_classes).
+*This is the label for the given minibatch entry. \n
 
 
 *@par Outputs:
-*loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
-*backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). Has the same type as "features" . \n
+*@li loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
+*@li backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). 
+Has the same type as "features" . \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator SparseSoftmaxCrossEntropyWithLogits.
@@ -84,8 +85,8 @@ REG_OP(SparseSoftmaxCrossEntropyWithLogits)
 * @li labels: A Tensor of the same type as "features". A "batch_size * num_classes" matrix . \n
 
 *@par Outputs:
-*loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
-*backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). Has the same type as "features" . \n
+* @li loss: A Tensor for per example loss (a "batch_size" vector). Has the same type as "features".
+* @li backprop: A Tensor for the backpropagated gradients (a batch_size * num_classes matrix). Has the same type as "features" . \n
 
 *@par Third-party framework compatibility
 *Compatible with the TensorFlow operator SoftmaxCrossEntropyWithLogits.
@@ -127,12 +128,13 @@ REG_OP(SoftmaxGrad)
 *@brief Computes the sigmoid cross entropy loss of "predict" and "target" . \n
 
 *@par Inputs:
-* Two inputs, including:
+* Three inputs, including:
 *@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value . \n
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value .
+*@li dout:A multi-dimensional Tensor of float16 or float32,specifying the gradient transferred from the upper layer. \n
 
 *@par Outputs:
-*loss: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
+*gradient: Sigmoid cross entropy between the predictive value and target value. Has the same dimensions as "predict" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SigmoidCrossEntropyWithLogitsGrad.
@@ -148,13 +150,12 @@ REG_OP(SigmoidCrossEntropyWithLogitsGrad)
 *@brief Performs the backpropagation of SigmoidCrossEntropyWithLogits for training scenarios . \n
 
 *@par Inputs:
-* Three inputs, including:
+* Two inputs, including:
 *@li predict: A multi-dimensional Tensor of type float16 or float32, specifying the predictive value.
-*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value.
-*@li dout: A multi-dimensional Tensor of float16 or float32, specifying the gradient transferred from the upper layer . \n
+*@li target: A multi-dimensional Tensor of type float16 or float32, specifying the target value. \n
 
 *@par Outputs:
-*gradient: Return gradient. Has the same dimensions and type as "predict" . \n
+*loss: Return loss. Has the same dimensions and type as "predict" . \n
 
 *@par Third-party framework compatibility
 * Compatible with the scenario where "reduction" is set to "none"of PyTorch operator SigmoidCrossEntropyWithLogits.
@@ -572,7 +573,7 @@ REG_OP(LayerNorm)
 
 *@par Inputs:
 *One input, including:
-* @li x: A Tensor. Must be one of the following types: float16, float32 . \n
+* x: A Tensor. Must be one of the following types: float16, float32 . \n
 
 *@par Attributes:
 * @li p: Specify L_p norm, the type is float. 
@@ -581,7 +582,7 @@ REG_OP(LayerNorm)
 
 *@par Outputs:
 *One outputs, including:
-* @li y: shape and dtype of output, should be same shape and type as input.
+* y: shape and dtype of output, should be same shape and type as input.
 */
 REG_OP(Renorm)
     .INPUT(x, TensorType::BasicType())
@@ -811,7 +812,7 @@ REG_OP(LayerNormBetaGammaBackpropV2)
 *     shape of "keep_prob" should be (1,) or [1,].
 *     Has the same type as "x" . \n
 
-*@par Output:
+*@par Outputs:
 *y: A mutable Tensor. Has the same type as "x".
 */
 REG_OP(DropOutDoMask)
@@ -839,7 +840,7 @@ REG_OP(DropOutDoMask)
 *     shape of "keep_prob" should be (1,) or [1,].
 *     Has the same type as "x" . \n
 
-*@par Output:
+*@par Outputs:
 *y: A mutable Tensor. Has the same type as "x".
 *@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
@@ -1010,7 +1011,7 @@ REG_OP(LRNGrad)
  *@li grads: A Tensor. Has the same type as acts.
 
  *@par Attributes:
- *@li blank_label: An optional attribute. Defaults to 0.
+ *blank_label: An optional attribute. Defaults to 0.
 
  *@par Third-party framework compatibility
  * Compatible with TensorFlow RNNTLoss operator.
@@ -1198,13 +1199,11 @@ REG_OP(INInferV2D)
 * @li epsilon: An attribute of type Float. \n
 
 * @par Outputs:
-*Three outputs, including:
+* Three outputs, including:
 * @li y: A Tensor. Has the same type as "x". \n
 * @li mean: A Tensor. Has the same type as "x". \n
 * @li variance: A Tensor. Has the same type as "x". \n
 
-* @par Third-party framework compatibility
-* Can be used by onnx InstanceNormalization
 */
 REG_OP(InstanceNorm)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1218,24 +1217,22 @@ REG_OP(InstanceNorm)
     .OP_END_FACTORY_REG(InstanceNorm)
 
 /**
-*@brief InstanceNormGrad operator interface implementation.
+* @brief InstanceNormGrad operator interface implementation.
 
-*@par Inputs:
-*Five inputs, including:
+* @par Inputs:
+* Five inputs, including:
 * @li dy: A Tensor. Must be one of the following types: float16, float32.
 * @li x: A Tensor. Must be one of the following types: float16, float32.
 * @li variance: A Tensor. Must be one of the following types: float16, float32.
 * @li mean: A Tensor. Must be one of the following types: float16, float32.
 * @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
 
-*@par Outputs:
-*Three outputs, including:
+* @par Outputs:
+* Three outputs, including:
 * @li pd_x: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
 * @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
 
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
 */
 REG_OP(InstanceNormGrad)
     .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1247,58 +1244,6 @@ REG_OP(InstanceNormGrad)
     .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
     .OP_END_FACTORY_REG(InstanceNormGrad)
-
-/**
-*@brief InstanceNormXBackprop operator interface implementation.
-
-*@par Inputs:
-*Five inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li x: A Tensor. Must be one of the following types: float16, float32.
-* @li variance: A Tensor. Must be one of the following types: float16, float32.
-* @li mean: A Tensor. Must be one of the following types: float16, float32.
-* @li gamma: A Tensor. Must be one of the following types: float16, float32 . \n
-
-*@par Outputs:
-*Two outputs, including:
-* @li pd_x: A Tensor. Must be one of the following types: float16, float32.
-* @li res_for_gamma: A Tensor. Must be one of the following types: float32.
-
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
-*/
-REG_OP(InstanceNormXBackprop)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(variance, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(mean, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_x, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(res_for_gamma, TensorType({DT_FLOAT}))
-    .OP_END_FACTORY_REG(InstanceNormXBackprop)
-
-/**
-*@brief InstanceNormBetaGammaBackprop operator interface implementation.
-
-*@par Inputs:
-*Two inputs, including:
-* @li dy: A Tensor. Must be one of the following types: float16, float32.
-* @li res_for_gamma: A Tensor. Must be one of the following types: float32.\n
-
-*@par Outputs:
-*Two outputs, including:
-* @li pd_gamma: A Tensor. Must be one of the following types: float16, float32.
-* @li pd_beta: A Tensor. Must be one of the following types: float16, float32.
-
-*@par Restrictions:
-*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
-*/
-REG_OP(InstanceNormBetaGammaBackprop)
-    .INPUT(dy, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .INPUT(res_for_gamma, TensorType({DT_FLOAT}))
-    .OUTPUT(pd_gamma, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OUTPUT(pd_beta, TensorType({DT_FLOAT, DT_FLOAT16}))
-    .OP_END_FACTORY_REG(InstanceNormBetaGammaBackprop)
 
 /**
 * @brief Computes Kl_div_loss_grad or Kl_div_loss_backward. \n
@@ -1340,10 +1285,10 @@ REG_OP(KlDivLossGrad)
 * @li label: A Tensor. Has the same type as "grads". Required. \n
 
 * @par Attributes:
-* @li reduction: An optional attribute of type String. Defaults to "mean". \n
+* reduction: An optional attribute of type String. Defaults to "mean". \n
 
 * @par Outputs:
-* @li y: A Tensor. Has the same type as "x". \n
+* y: A Tensor. Has the same type as "x". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator L1LossGrad.
@@ -1368,7 +1313,7 @@ REG_OP(L1LossGrad)
 * @li reduction: An optional string.Defaults to "mean". \n
 
 * @par Outputs:
-* @li y: An ND tensor tensor with the same shape and type as "predict". \n
+*  y: An ND tensor tensor with the same shape and type as "predict". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator LpLoss.
@@ -1390,10 +1335,10 @@ REG_OP(LpLoss)
 * @li dout: An ND tensor of type float16, float32. \n
 
 * @par Attributes:
-* @li reduction: An optional string.Defaults to "mean". \n
+* reduction: An optional string.Defaults to "mean". \n
 
 * @par Outputs:
-* @li y: An ND tensor tensor with the same shape and type as "predict". \n
+* y: An ND tensor tensor with the same shape and type as "predict". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator MseLossGrad.
@@ -1414,10 +1359,10 @@ REG_OP(MseLossGrad)
 *  @li label: An ND Tensor of dtype float16 or float32.\n
 *
 * @par Attributes:
-*  @li reduction:An optional str from sum, none, mean, Defaults to "mean".\n
+* reduction:An optional str from sum, none, mean, Defaults to "mean".\n
 *
 * @par Outputs:
-*  @li y: when reduction=sum/mean, y is scale. when reduction=none, y has
+* y: when reduction=sum/mean, y is scale. when reduction=none, y has
 *    same type and shape as "predict".\n
 */
 REG_OP(MseLoss)
@@ -1445,7 +1390,7 @@ REG_OP(MseLoss)
 *    Must be one of the following: "none", "mean", "sum". \n
 
 * @par Outputs:
-* @li gradient: A Tensor. Has the same type as "predict". \n
+*  gradient: A Tensor. Has the same type as "predict". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator SmoothL1LossBackward.
@@ -1480,7 +1425,7 @@ REG_OP(SmoothL1LossGradV2)
 * the output,'sum': the output will be summed. Default: 'mean'. \n
 
 * @par Outputs:
-* @li loss: Indicates the loss between the predictive value and target value.
+* loss: Indicates the loss between the predictive value and target value.
 * Has the same dimensions as "predict". \n
 
 * @par Third-party framework compatibility
@@ -1498,12 +1443,12 @@ REG_OP(SmoothL1LossV2)
 * @brief Computes Centralization. result = x - mean(x, axes)
 
 * @par Inputs:
-* @li x: An ND tensor of type float16, float32.
+*  x: An ND tensor of type float16, float32.
 * @par Attributes:
-* @li axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
+* axes: The dimensions to reduce. Must be one of the following types: int, list, tuple, NoneType.
 * Must be in the range [-rank(x), rank(x)).
 * @par Outputs:
-* @li y: A Tensor. Has the same type as "x". \n
+* y: A Tensor. Has the same type as "x". \n
 
 * @par Third-party framework compatibility
 * custom operator \n
@@ -1521,7 +1466,7 @@ REG_OP(Centralization)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A tensor . Must be one of the following types:
+* x: A tensor . Must be one of the following types:
 *     float16, float32, int32, uint32, int8, uint8. \n
 
 *@par Attributes:
@@ -1546,14 +1491,14 @@ REG_OP(Roll)
  logistic loss between input_x and input_y (containing 1 or -1). \n
 
  *@par Inputs:
- *One inputs, including:
+ *Tow inputs, including:
  * @li input_x: A tensor. Must be one of the following types:
  *     float16, float32. \n
  * @li input_y: A tensor. Must be one of the following types:
  *     float16, float32. \n
 
  *@par Attributes:
- *@li lambd: An optional string.Defaults to "mean". \n
+ *reduction: An optional string.Defaults to "mean". \n
 
  *@par Outputs:
  *output_z: while reduction == "none", A Tensor with the same type and shape of input_x's. \n
@@ -1580,10 +1525,10 @@ REG_OP(SoftMarginLoss)
 * @li pos_weight: An optional ND tensor of type float16, float32. \n
 
 * @par Attributes:
-* @li reduction: An optional string.Defaults to "mean". \n
+* reduction: An optional string.Defaults to "mean". \n
 
 * @par Outputs:
-* @li gradient: An ND tensor tensor with the same shape and type as "predict". \n
+* gradient: An ND tensor tensor with the same shape and type as "predict". \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator SigmoidCrossEntropyWithLogitsGrad.
@@ -1603,24 +1548,14 @@ REG_OP(SigmoidCrossEntropyWithLogitsGradV2)
 
  * @par Inputs:
  * Two inputs, including:
- * @li input_x: A tensor. Must be one of the following types:
- *     float16, float32. \n
- * 
- * @par Inputs:
- * @li target: A tensor. Must be one of the following types:
- *     float16, float32. \n
+ * @li input_x: A tensor. Must be one of the following types: float16, float32.
+ * @li target: A tensor. Must be one of the following types: float16, float32. \n
 
  * @par Attributes:
  * four Attributes, including:
- * @li log_input: An optional bool. Defaults to "True" \n
- * 
- *  @par Attributes:
- * @li full: An optional bool. Defaults to "False" \n
- * 
- *  @par Attributes:
- * @li eps: An optional float. Defaults to "1e-8" \n
- * 
- *  @par Attributes:
+ * @li log_input: An optional bool. Defaults to "True"
+ * @li full: An optional bool. Defaults to "False"
+ * @li eps: An optional float. Defaults to "1e-8"
  * @li reduction: An optional string. Defaults to "mean" \n
 
  * @par Outputs:
@@ -1641,14 +1576,14 @@ REG_OP(PoissonNllLoss)
 /**
  *@brief rnn_gen_mask
  * @par Inputs:
- * @li seq_length: A ND Tensor of type int32. Recoed the current length of each batch.\n
+ * seq_length: A ND Tensor of type int32. Recoed the current length of each batch.\n
  *
  * @par Attributes:
  * @li num_step: A required int.\n
  * @li hidden_size: A required int. \n
  *
  * 
- * @par Output:
+ * @par Ouputs:
  * y: A mutable Tensor of type float16, with the shape of [num_step, batch_size, hidden_size]. \n
  *
  */
@@ -1666,18 +1601,16 @@ REG_OP(RnnGenMask)
 * @par Inputs:
 * Two inputs, including:
 * @li x: A tensor. Must be one of the following types:
-*     float16, float32. \n
-* 
-* @par Inputs:
+*     float16, float32.
 * @li target: A tensor. Must be the following types:
 *     int32. \n
 
 * @par Attributes:
-* @li reduction: An optional string. Defaults to "mean" \n
+* reduction: An optional string. Defaults to "mean" \n
 
 * @par Outputs:
-* y: A Tensor has same element type as input x. \n
-* is_target: A Tensor has same element type as input target. \n
+* @li y: A Tensor has same element type as input x. \n
+* @li is_target: A Tensor has same element type as input target. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator MultiLabelMarginLoss. \n

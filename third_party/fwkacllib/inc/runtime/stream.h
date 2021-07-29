@@ -20,7 +20,7 @@
 #include "base.h"
 #include "event.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -211,7 +211,7 @@ RTS_API rtError_t rtDebugRegisterForStream(rtStream_t stream, uint32_t flag, con
  */
 RTS_API rtError_t rtDebugUnRegisterForStream(rtStream_t stream);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

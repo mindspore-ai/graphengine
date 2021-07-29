@@ -19,7 +19,7 @@
 
 #include "base.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -490,7 +490,7 @@ RTS_API rtError_t rtDebugRegister(rtModel_t model, uint32_t flag, const void *ad
  */
 RTS_API rtError_t rtDebugUnRegister(rtModel_t model);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

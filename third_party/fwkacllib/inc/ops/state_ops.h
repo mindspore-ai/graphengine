@@ -104,7 +104,7 @@ REG_OP(DestroyTemporaryVariable)
 *@brief Checks whether a tensor has been initialized. Outputs boolean scalar indicating whether the tensor has been initialized . \n
 
 *@par Inputs:
-*x: A tensor . \n
+*x: A Tensor of type float16, float32, double, bool, int8, uint8, uint16, int16, int32, uint32, uint64, int64. 
 
 *@par Outputs:
 *y: A tensor, indicating whether "x" has been initialized . \n

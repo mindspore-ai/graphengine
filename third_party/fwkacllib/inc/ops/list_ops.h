@@ -35,10 +35,10 @@ namespace ge {
 *@li max_num_elements: The maximum number of elements. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li handle: An empty tensor list . \n
+*handle: An empty tensor list . \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow EmptyTensorList operator.
@@ -59,10 +59,10 @@ and the other elements of the given list in `input_handle`. \n
 *@li tensor: The tensor to put on the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handle:A list with the elements of old list followed by tensor. \n
+*output_handle:A list with the elements of old list followed by tensor. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListPushBack operator.
@@ -86,7 +86,7 @@ list with all but that element. \n
 *@li element_shape: A shape compatible with that of elements in the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
 *@li output_handle:A list with the elements of the old list followed by tensor.
@@ -110,10 +110,10 @@ REG_OP(TensorListPopBack)
 *@brief The number of tensors in the input tensor list. \n
 
 *@par Inputs:
-*@li input_handle: The input list. \n
+*input_handle: The input list. \n
 
 *@par Outputs:
-*@li length:The number of tensors in the list. \n
+*length:The number of tensors in the list. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListLength operator.
@@ -127,13 +127,13 @@ REG_OP(TensorListLength)
 *@brief The shape of elements in the input tensor list. \n
 
 *@par Inputs:
-*@li input_handle: The input list. \n
+*input_handle: The input list. \n
 
 *@par Attributes:
-*@li shape_type: The type of shape in the list. \n
+*shape_type: The type of shape in the list. \n
 
 *@par Outputs:
-*@li element_shape:A shape compatible with that of elements in the list. \n
+*element_shape:A shape compatible with that of elements in the list. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListElementShape operator.
@@ -156,7 +156,7 @@ REG_OP(TensorListElementShape)
 *@li shape_type: The type of shape in the list. \n
 
 *@par Outputs:
-*@li handle: An output tensor list . \n
+*handle: An output tensor list . \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListReserve operator.
@@ -178,10 +178,10 @@ REG_OP(TensorListReserve)
 *@li element_shape: A shape compatible with that of elements in the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li item: An output tensor value of index position . \n
+*item: An output tensor value of index position . \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListGetItem operator.
@@ -206,10 +206,10 @@ REG_OP(TensorListGetItem)
 *@li item: The element to be assigned to that position. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handle: An output tensor list . \n
+*output_handle: An output tensor list . \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListSetItem operator.
@@ -233,10 +233,10 @@ REG_OP(TensorListSetItem)
 *@li tensor: The tensor push into tensor list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handles: The output tensor lists. \n
+*output_handles: The output tensor lists. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListPushBackBatch operator.
@@ -263,7 +263,7 @@ REG_OP(TensorListPushBackBatch)
 *@li num_elements: The number of elements in the list. \n
 
 *@par Outputs:
-*@li tensor: The tensor of list. \n
+*tensor: The tensor of list. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListStack operator.
@@ -293,7 +293,7 @@ the leading dim of input_handle.element_shape or the element_shape input arg
 is not already set. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
 *@li tensor: The concated result.
@@ -324,10 +324,10 @@ REG_OP(TensorListConcatV2)
 *@li lengths: Vector of sizes of the 0th dimension of tensors in the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handle: The list. \n
+*output_handle: The list. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListSplit operator.
@@ -351,10 +351,10 @@ REG_OP(TensorListSplit)
 *@li element_shape: The shape of elements in the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handle: An output tensor list . \n
+*output_handle: An output tensor list . \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListFromTensor operator.
@@ -377,7 +377,7 @@ REG_OP(TensorListFromTensor)
 *@li size: size of the output list. \n
 
 *@par Outputs:
-*@li output_handle: The output tensor list. \n
+*output_handle: The output tensor list. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListResize operator.
@@ -397,10 +397,10 @@ REG_OP(TensorListResize)
 *@li element_shape: The shape of elements in the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li values: The tensor. \n
+*values: The tensor. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListGather operator.
@@ -429,10 +429,10 @@ the largest index in indices. If -1, the list is just large enough to include
 the largest index in indices. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handle: The TensorList. \n
+*output_handle: The TensorList. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListScatterV2 operator.
@@ -458,10 +458,10 @@ REG_OP(TensorListScatterV2)
 *@li indices: The indices used to index into the list. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output_handle: The TensorList. \n
+*output_handle: The TensorList. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListScatterIntoExistingList operator.
@@ -485,10 +485,10 @@ REG_OP(TensorListScatterIntoExistingList)
 *@li input_b: The input tensor list B. \n
 
 *@par Attributes:
-*@li element_dtype: The type of elements in the list. \n
+*element_dtype: The type of elements in the list. \n
 
 *@par Outputs:
-*@li output: The output list. \n
+*output: The output list. \n
 
 *@par Third-party framework compatibility.
 *Compatible with tensorflow TensorListConcatLists operator.

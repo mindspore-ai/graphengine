@@ -137,6 +137,34 @@ ACL_FUNC_VISIBILITY aclError aclopSetAttrString(aclopAttr *attr, const char *att
 
 /**
  * @ingroup AscendCL
+ * @brief set an attribute. the type of the attribute is aclDataType
+ *
+ * @param attr [OUT]       pointer to the instance of aclopAttr
+ * @param attrName [IN]    attribute name
+ * @param attrValue [IN]   attribute value
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclopSetAttrDataType(aclopAttr *attr, const char *attrName, aclDataType attrValue);
+
+/**
+ * @ingroup AscendCL
+ * @brief set an attribute. the type of the attribute is list of aclDataType
+ *
+ * @param attr [OUT]       pointer to the instance of aclopAttr
+ * @param attrName [IN]    attribute name
+ * @param numValues [IN]   number of values. false if attrValue is 0, true otherwise.
+ * @param values [IN]      pointer to values
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclopSetAttrListDataType(aclopAttr *attr, const char *attrName, int numValues,
+                                                      const aclDataType values[]);
+
+/**
+ * @ingroup AscendCL
  * @brief set an attribute. the type of the attribute is list of bools
  *
  * @param attr [OUT]       pointer to the instance of aclopAttr

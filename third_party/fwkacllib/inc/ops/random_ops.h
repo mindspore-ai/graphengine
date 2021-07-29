@@ -148,6 +148,32 @@ REG_OP(RandomGamma)
     .OP_END_FACTORY_REG(RandomGamma)
 
 /**
+*@brief Returns the random permutation of integers from 0 to n-1. \n
+
+*@par Attributes:
+*@li n: An required int.
+*@li dtype: An optional str. Defaults to int64 .
+*@li layout: An optional int. Defaults to 0 . \n
+
+*@par Outputs:
+*out: A required Tensor. Must be one of the following types:
+         float16, float32, float32, int8, uint8, int16, int32, int64. \n
+
+*@attention Constraints:
+*The implementation for Randperm on Ascend uses AICPU, with bad performance.
+
+*@par Third-party framework compatibility
+*@li compatible with Pytorch Randperm operator.
+*/
+REG_OP(Randperm)
+    .OUTPUT(out, TensorType({DT_INT64, DT_INT32, DT_INT16,
+        DT_UINT8, DT_INT8, DT_FLOAT16, DT_FLOAT32, DT_DOUBLE}))
+    .REQUIRED_ATTR(n, Int)
+    .ATTR(layout, Int, 0)
+    .ATTR(dtype, Type, DT_INT64)
+    .OP_END_FACTORY_REG(Randperm)
+
+/**
 *@brief Outputs random values from the Poisson distribution(s) described by rate . \n
 
 *@par Inputs:
@@ -157,11 +183,12 @@ REG_OP(RandomGamma)
 
 *@par Attributes:
 *@li dtype: An optional type from: half, float32, float64, int32, int64. Defaults to int64.
-*@li seed: An optional int. Defaults to 0.
-*@li seed2: An optional int. Defaults to 0 . \n
+*@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
+the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
 
 *@par Outputs:
-*y: A Tensor of type dtype . \n
+*y: A Tensor of type dtype float16, float, double, int32, int64. \n
 
 *@attention Constraints:
 *The implementation for RandomPoisson on Ascend uses AICPU, with bad performance.
@@ -188,11 +215,13 @@ REG_OP(RandomPoisson)
 *x: A Tensor. The tensor to be shuffled . \n
 
 *@par Attributes:
-*@li seed: An optional int. Defaults to 0.
-*@li seed2: An optional int. Defaults to 0 . \n
+*@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
+the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
 
 *@par Outputs:
-*y: A Tensor. Has the same type as x . \n
+*y: A Tensor. Has the same type as x . A Tensor of type float16, float, 
+*double, int32, int64, int16, uint16, int8, uint8, int32,int64. \n
 
 *@attention Constraints:
 *The implementation for RandomShuffle on Ascend uses AICPU, with bad performance.
@@ -220,11 +249,12 @@ REG_OP(RandomShuffle)
 
 *@par Attributes:
 *@li dtype: A type from: half, float16, float32, float64. The type of the output.
-*@li seed: An optional int. Defaults to 0.
-*@li seed2: An optional int. Defaults to 0 . \n
+*@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
+the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
 
 *@par Outputs:
-*y: A Tensor of type dtype . \n
+*y: A Tensor of type float32, float16, double. \n
 
 *@attention Constraints:
 *The implementation for RandomStandardNormal on Ascend uses AICPU, with bad performance.
@@ -241,6 +271,28 @@ REG_OP(RandomStandardNormal)
     .OP_END_FACTORY_REG(RandomStandardNormal)
 
 /**
+*@brief Output random value from  separate normal distribution. \n
+
+*@par Inputs:
+*Inputs include:
+*mean: The mean is a tensor with the mean of each output element’s normal distribution . 
+*std: The std is a tensor with the standard deviation of each output element’s normal distribution. \n
+*@par Outputs:
+*y: A Tensor of type dtype . \n
+
+*@attention Constraints:
+*The implementation for Normal on Ascend uses AICPU, with bad performance.
+
+*@par Third-party framework compatibility
+*@li compatible with Pytorch Normal operator.
+*/
+REG_OP(Normal)
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(std, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OP_END_FACTORY_REG(Normal)
+
+/**
 *@brief Outputs random integers from a uniform distribution . \n
 
 *@par Inputs:
@@ -250,8 +302,9 @@ REG_OP(RandomStandardNormal)
 * @li max: A Tensor. Must have the same type as minval. 0-D . \n
 
 *@par Attributes:
-*@li seed: An optional int. Defaults to 0.
-*@li seed2: An optional int. Defaults to 0 . \n
+*@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
+the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as min . \n
@@ -280,8 +333,9 @@ REG_OP(RandomUniformInt)
 
 *@par Attributes:
 *@li dtype: A type from: half, float16, float32, float64. The type of the output.
-*@li seed: An optional int. Defaults to 0.
-*@li seed2: An optional int. Defaults to 0 . \n
+*@li seed: An optional int. Defaults to 0. If either seed or seed2 are set to be non-zero, 
+the random number generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
+*@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
 
 *@par Outputs:
 *y: A Tensor of type dtype . \n
@@ -308,11 +362,14 @@ REG_OP(RandomUniform)
 *shape: A Tensor. Must be one of the following types: int32, int64 . \n
 
 *@par Attributes:
-*@li seed: An optional int. Defaults to 0.
-*@li seed2: An optional int. Defaults to 0 . \n
+*@li seed: An optional int. Defaults to 0.If either `seed` or `seed2` 
+are set to be non-zero, the random number generator is seeded by the given 
+seed. Otherwise, it is seeded by a random seed.
+*@li seed2: An optional int. Defaults to 0 . A second seed to avoid seed collision. \n
 
 *@par Outputs:
-*size: A Tensor of types: float16, float32, double . \n
+*y: A Tensor of types: float16, float32, double . A tensor of the specified shape
+filled with random truncated normal values. \n
 
 *@attention Constraints:
 *The implementation for TruncatedNormal on Ascend uses AICPU, with bad performance.
@@ -505,15 +562,15 @@ REG_OP(RandomChoiceWithMask)
 
 *@par Inputs:
 *Inputs including:
-* @li x: A required Tensor. Must be one of the following types:
-         float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
+* x: A required Tensor. Must be one of the following types:
+     float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
 
 *@par Attributes:
-*@li group: A required int32, specifying the number of groups to split the channel dimension into. Defaults to "1" . \n
+* group: A required int32, specifying the number of groups to split the channel dimension into. Defaults to "1" . \n
 
 *@par Outputs:
-*y: A required Tensor. Has same type and shape as "x". Must be one of the following types:
-    float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
+* y: A required Tensor. Has same type and shape as "x". Must be one of the following types:
+     float16, float32, int8, uint8, int16, uint16, int32, uint32, int64, uint64 . \n
 
 *@attention Constraints:
 *@li "group" must be greater than 0 and must evenly divide the channel dimension size.
@@ -584,6 +641,50 @@ REG_OP(DropoutV2)
     .OUTPUT(seed, TensorType({ DT_FLOAT }))
     .REQUIRED_ATTR(p, Float)
     .OP_END_FACTORY_REG(DropoutV2)
+
+/**
+* @brief The Bernoulli distribution with probability . \n
+
+* @par Inputs:
+* @li x: A ND Tensor. Must be one of the following data types: 
+         int8, uint8, int16, int32, int64, bool, float32, float64 . 
+* @li p: A ND Tensor. The probability of an element to be zeroed. 
+        Must be one of the following data types: float32, float64. \n
+
+* @par Attributes:
+* seed: An Integer, the seed of the random generator. Default value -1 
+    to use current timestamp, otherwise it should be a positive integer.
+
+* @par Outputs:
+* y: A tensor with the same shape and type as "x".
+*/
+
+REG_OP(Bernoulli)
+    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(p, TensorType({ DT_FLOAT, DT_DOUBLE }))
+    .OUTPUT(y, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_INT32, DT_INT64, DT_BOOL, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(seed, Int, -1)
+    .OP_END_FACTORY_REG(Bernoulli)
+
+/**
+ * @brief: Fill the input tensor with values drawn from the uniform distribution U(from, to). \n
+ 
+ * @par Inputs:
+ * x: A Tensor. Must be one of the following types: float16, float, double. \n
+
+ * @par Attributes:
+ * @li from: The lower bound of the uniform. Defaults: 0.0
+ * @li to: The upper bound of the uniform. Defaults: 1.0  \n
+
+ * @par Outputs:
+ * y: A Tensor has the same type as x. \n
+ */
+REG_OP(Uniform)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(from, Float, 0.0)
+    .ATTR(to, Float, 1.0)
+    .OP_END_FACTORY_REG(Uniform)
 }   // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

@@ -32,7 +32,10 @@ namespace ge {
 *@par Inputs:
 *This op may use some OS-provided source of non-determinism (e.g. an RNG),
 *so each execution will give different results. Inputs included:
-*@li shape: The shape of the output tensor . \n
+*shape: The shape of the output tensor . \n
+
+*@par Attributes:
+*dtype: required, type. \n
 
 *@par Outputs:
 *y:A Returns Non-deterministic integer values with specified shape . \n
@@ -54,12 +57,9 @@ REG_OP(NonDeterministicInts)
 *counter is an unspecified implementation detail . \n
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li delta: The amount of advancement . \n
-
-*@par Outputs:
-*y:A Returns the created operation . \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow RngSkip operator.
@@ -81,11 +81,16 @@ power of two.  The bias is small for values of `maxval - minval` significantly
 smaller than the range of the output (either `2^32` or `2^64`) . \n
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor.
-*@li minval: Minimum value (inclusive, scalar).
-*@li maxval: Maximum value (exclusive, scalar) . \n
+*@li counts: A 0/1-D Tensor or Python value. The counts of the binomial
+distribution.  Must be broadcastable with the leftmost dimension defined by `shape`.
+*@li probs: A 0/1-D Tensor or Python value. The probability of success for the
+binomial distribution.  Must be broadcastable with the leftmost dimension defined by `shape`.\n
+
+*@par Attributes:
+*dtype: required, type. \n
 
 *@par Outputs:
 *y:A Returns Random values with specified shape . \n
@@ -109,7 +114,7 @@ REG_OP(StatefulRandomBinomial)
 *The generated values will have mean 0 and standard deviation 1 . \n
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor . \n
 
@@ -134,7 +139,7 @@ REG_OP(StatefulStandardNormalV2)
 *deviations from the mean are dropped and re-picked . \n
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor . \n
 
@@ -158,7 +163,7 @@ The generated values follow a uniform distribution in the range `[0, 1)`. The
 lower bound 0 is included in the range, while the upper bound 1 is excluded.
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor . \n
 
@@ -181,7 +186,7 @@ REG_OP(StatefulUniform)
 The generated values are uniform integers covering the whole range of `dtype` . \n
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor . \n
 
@@ -209,7 +214,7 @@ power of two.  The bias is small for values of `maxval - minval` significantly
 smaller than the range of the output (either `2^32` or `2^64`) . \n
 
 *@par Inputs:
-*@li resource: The handle of the resource variable that stores the state of the RNG.
+*@li x: The handle of the resource variable that stores the state of the RNG.
 *@li algorithm: The RNG algorithm.
 *@li shape: The shape of the output tensor.
 *@li minval: Minimum value (inclusive, scalar).

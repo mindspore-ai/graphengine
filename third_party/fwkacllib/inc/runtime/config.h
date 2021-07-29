@@ -19,7 +19,7 @@
 
 #include "base.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -43,6 +43,7 @@ typedef enum tagRtChipType {
     CHIP_LHISI,
     CHIP_DC,
     CHIP_CLOUD_V2,
+    CHIP_NO_DEVICE,
     CHIP_END,
 } rtChipType_t;
 
@@ -53,11 +54,11 @@ typedef enum tagRtAicpuScheType {
 } rtAicpuScheType;
 
 typedef enum tagRtDeviceCapabilityType {
-  RT_SCHEDULE_SOFTWARE = 0, // SoftWare Schedule
-  RT_SCHEDULE_SOFTWARE_OPT,
-  RT_SCHEDULE_HARDWARE, // HWTS Schedule
-  RT_AICPU_BLOCKING_OP_NOT_SUPPORT,
-  RT_AICPU_BLOCKING_OP_SUPPORT, // 1910/1980/1951 ts support AICPU blocking operation
+    RT_SCHEDULE_SOFTWARE = 0, // Software Schedule
+    RT_SCHEDULE_SOFTWARE_OPT,
+    RT_SCHEDULE_HARDWARE, // HWTS Schedule
+    RT_AICPU_BLOCKING_OP_NOT_SUPPORT,
+    RT_AICPU_BLOCKING_OP_SUPPORT, // 1910/1980/1951 ts support AICPU blocking operation
 } rtDeviceCapabilityType;
 
 typedef enum tagRtVersion {
@@ -235,7 +236,7 @@ RTS_API rtError_t rtSetOpWaitTimeOut(uint32_t timeout);
  */
 RTS_API rtError_t rtSetOpExecuteTimeOut(uint32_t timeout);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

@@ -153,6 +153,42 @@ REG_OP(Iou)
     .OP_END_FACTORY_REG(Iou)
 
 /**
+*@brief First calculate the minimum closure area of the two boxes, IoU,
+* the proportion of the closed area that does not belong to the two boxes in the closure area,
+* and finally subtract this proportion from IoU to get GIoU . \n
+
+*@par Inputs:
+* Two inputs, including:
+*@li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* shape (N, 4). "N" indicates the number of bounding boxes, and the value
+* "4" refers to [x1, y1, x2, y2] or [x, y, w, h].
+*@li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* with shape (M, 4). "M" indicates the number of ground truth boxes, and
+* the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] . \n
+
+*@par Attributes:
+*@li trans: An optional bool, true for 'xywh', false for 'xyxy'.
+*@li is_cross: An optional bool, control whether the output shape is [M, N] or [1, N]
+*@li mode: Computation mode, a character string with the value range of [iou, iof] . \n
+
+*@par Outputs:
+* overlap: A 2D Tensor of type float16 or float32 with shape [M, N] or [1, N],
+* specifying the IoU or IoF ratio . \n
+
+*@attention Constraints:
+* Only computation of float16 data is supported. To avoid overflow, the input
+* length and width are scaled by 0.2 internally.
+*/
+REG_OP(GIoU)
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(overlap, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(is_cross, Bool, true)
+    .ATTR(mode, String, "iou")
+    .OP_END_FACTORY_REG(GIoU)
+
+/**
 *@brief Performs the backpropagation of ROIAlign for training scenarios . \n
 
 *@par Inputs:
@@ -417,7 +453,7 @@ REG_OP(PSROIPooling)
 *@brief Returns detection result . \n
 
 *@par Inputs:
-* Four inputs, including:
+* Five inputs, including:
 *@li rois: An NCHW tensor of type floa16 or float32, output from operator proposal_d at the preceding layer, used as the input of operator FSRDetectionOutput.
 *@li bbox_delta: An NCHWC0 tensor of type floa16 or float32, specifying the prediction offset, used to update the coordinates [x1, y1, x2, y2] of each ROI.
 *@li score: An NCHWC0 tensor of type floa16 or float32, specifying the probability of each class. Class 0 is the background class.
@@ -459,7 +495,7 @@ REG_OP(FSRDetectionOutput)
 *@brief Returns detection result . \n
 
 *@par Inputs:
-* Four inputs, including:
+* Three inputs, including:
 *@li bbox_delta: An ND tensor of type floa16 or float32, specifying the box loc predictions, used as the input of operator SSDDetectionOutput.
 *@li score: An ND tensor of type floa16 or float32, specifying the box confidences data, used as the input of operator SSDDetectionOutput.
 *@li anchors: An ND tensor of type floa16 or float32, output from operator PriorBoxD, used as the input of operator SSDDetectionOutput.
@@ -474,7 +510,6 @@ REG_OP(FSRDetectionOutput)
 *@li code_type: An optional int32, specify the code type. Defaults to 1(only supports 2). The corner is 1, center_size is 2, corner_size is 3
 *@li keep_top_k: An optional int32, specify the topk value after nms. Defaults to -1
 *@li confidence_threshold: An optional float32, specify the topk filter threshold. Only consider detections with confidence greater than the threshold
-*@li kernel_name: An optional string, specifying the operator name. Defaults to "ssd_detection_output".
 *@par Outputs:
 *@li out_boxnum: A tensor of type int32, specifying the number of output boxes.
 *@li y: A tensor of type float16 or float32 with shape [batch,keep_top_k, 8], describing the information of each output box.
@@ -989,26 +1024,26 @@ REG_OP(SPP)
 * feature map . \n
 
 *@attention Constraints:
-*@li For the feature map input:
-(1) If pooled_h = pooled_w = 2, the feature map size must not exceed 50.
-(2) If pooled_h = pooled_w = 3, the feature map size must not exceed 60.
-(3) If pooled_h = pooled_w = 4, the feature map size must not exceed 70.
-(4) If pooled_h = pooled_w = 5, the feature map size must not exceed 70.
-(5) If pooled_h = pooled_w = 6, the feature map size must not exceed 80.
-(6) If pooled_h = pooled_w = 7, the feature map size must not exceed 80.
-(7) If pooled_h = pooled_w = 8, the feature map size must not exceed 80.
-(8) If pooled_h = pooled_w = 9, the feature map size must not exceed 70.
-(9) If pooled_h = pooled_w = 10, the feature map size must not exceed 70.
-(10) If pooled_h = pooled_w = 11, the feature map size must not exceed 70.
-(11) If pooled_h = pooled_w = 12, the feature map size must not exceed 70.
-(12) If pooled_h = pooled_w = 13, the feature map size must not exceed 70.
-(13) If pooled_h = pooled_w = 14, the feature map size must not exceed 70.
-(14) If pooled_h = pooled_w = 15, the feature map size must not exceed 70.
-(15) If pooled_h = pooled_w = 16, the feature map size must not exceed 70.
-(16) If pooled_h = pooled_w = 17, the feature map size must not exceed 50.
-(17) If pooled_h = pooled_w = 18, the feature map size must not exceed 40.
-(18) If pooled_h = pooled_w = 19, the feature map size must not exceed 40.
-(19) If pooled_h = pooled_w = 20, the feature map size must not exceed 40.
+* For the feature map input:
+*@li If pooled_h = pooled_w = 2, the feature map size must not exceed 50.
+*@li If pooled_h = pooled_w = 3, the feature map size must not exceed 60.
+*@li If pooled_h = pooled_w = 4, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 5, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 6, the feature map size must not exceed 80.
+*@li If pooled_h = pooled_w = 7, the feature map size must not exceed 80.
+*@li If pooled_h = pooled_w = 8, the feature map size must not exceed 80.
+*@li If pooled_h = pooled_w = 9, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 10, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 11, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 12, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 13, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 14, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 15, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 16, the feature map size must not exceed 70.
+*@li If pooled_h = pooled_w = 17, the feature map size must not exceed 50.
+*@li If pooled_h = pooled_w = 18, the feature map size must not exceed 40.
+*@li If pooled_h = pooled_w = 19, the feature map size must not exceed 40.
+*@li If pooled_h = pooled_w = 20, the feature map size must not exceed 40.
 *@par Third-party framework compatibility
 * It is a custom operator. It has no corresponding operator in Caffe.
 */
@@ -1222,9 +1257,7 @@ REG_OP(RpnProposalsD)
 * @li box_filter: bool, mark of box_filter. Defaults to "true"
 * @li core_max_num: int, max number of core. Defaults to "8"
 *@par Outputs:
-* @li sorted_rois: A Tensor. Must be float16. N-D with shape [N, 4].
-* @li sorted_scores: A Tensor. Must be float16. N-D with shape [N, 1].
-* @li sorted_classes: A Tensor. Must be float16. N-D with shape [N, 1].
+*sorted_box: A Tensor. Must be float16. N-D with shape [N, 1].
 */
 REG_OP(RpnProposalPostProcessing)
     .INPUT(sorted_proposal, TensorType({DT_FLOAT16}))
@@ -1382,7 +1415,7 @@ REG_OP(BatchMultiClassNonMaxSuppression)
 * @li shape_hw: A 1D Tensor of type int32 . \n
 
 * @par Attributes:
-* @li reversed_box: An optional bool, specifying the last two dims is "4,num" or
+* reversed_box: An optional bool, specifying the last two dims is "4,num" or
 * "num,4", "true" for "4,num", "false" for "num,4". Defaults to "false" . \n
 
 * @par Outputs:
@@ -1429,9 +1462,9 @@ REG_OP(NormalizeBBox)
 * @li anchors: A Tensor. Must be int32.
 *
 *@par Attributes:
-* @li scales: optional, listfloat, .
+* @li scales: optional, listfloat.
 * @li decode_clip: optional, float, threahold of decode process.
-* @li reversed_boxes: optional, bool,.
+* @li reversed_boxes: optional, bool.
 *
 *@par Outputs:
 * y: A Tensor. Must have the same type as box_predictions.
@@ -1446,16 +1479,16 @@ REG_OP(DecodeBboxV2)
     .OP_END_FACTORY_REG(DecodeBboxV2)
 
 /**
-*@brief Computes sort function.
+*@brief sort the input tensor and return the value of index.
 *
 *@par Inputs:
 *Inputs include:
-* x: A Tensor. Dtype support: flaot16, flaot, int16, int8,
+* x: A Tensor. Dtype support: float16, float, int16, int8,
                           uint8, int32, int64.
-*
+
 *@par Attributes:
-* @li axis: optional, int.
-* @li descending: optional,bool.
+* @li axis: An optional attribute indicates the sorting axis.
+* @li descending: An optional attribute indicates desending sort or not.
 *
 *@par Outputs:
 * @li y1: A Tensor. Must have the same type as x.
@@ -1568,16 +1601,18 @@ deciding when to remove boxes based on score . \n
 the last dim representing (batch_id,class_id,index_id)  . \n
 
 *@par Attributes:
-*center_point_box:Integer indicate the format of the box data. 
+*@li center_point_box:Integer indicate the format of the box data. 
 The default is 0. 0 - the box data is supplied as [y1, x1, y2, x2] 
 where (y1, x1) and (y2, x2) are the coordinates of any diagonal pair 
 of box corners and the coordinates can be provided as normalized 
 (i.e., lying in the interval [0, 1]) or absolute.Mostly used for TF models.
 1 - the box data is supplied as [x_center, y_center, width, height].
  Mostly used for Pytorch models. \n
+*@li max_boxes_size: An optional attribute integer representing the real maximum 
+*number of boxes to be selected by non max suppression . \n
 
 *@par Outputs:
-*@li selected_indices: A 2-D integer tensor of shape [M] representing the
+*selected_indices: A 2-D integer tensor of shape [M] representing the
 selected indices from the boxes tensor, where M <= max_output_size. \n
 
 *@attention Constraints:
@@ -1603,7 +1638,7 @@ REG_OP(NonMaxSuppressionV7)
 *@brief Obtains the ROI feature matrix from the feature map list. It is a customized fused operator for mmdetection. \n
 
 *@par Inputs:
-* Three inputs, including:
+* Two inputs, including:
 *@li features: A 5HD Tensor list of type float32 or float16.
 *@li rois: ROI position. A 2D Tensor of float32 or float16 with shape (N, 5). "N" indicates the number of ROIs,
 * the value "5" indicates the indexes of images where the ROIs are located, "x0", "y0", "x1", and "y1".
@@ -1760,7 +1795,7 @@ REG_OP(AnchorResponseFlags)
 * "N" indicates the number of ROIs. \n
 
 *@par Attributes:
-*@li performance_mode: select performance mode, "high_precision" or "high_performance".
+*performance_mode: select performance mode, "high_precision" or "high_performance".
 * select "high_precision" when input type is float32, the output tensor precision
 * will be smaller than 0.0001, select "high_performance" when input type is float32,
 * the ops will be best performance, but precision will be only smaller than 0.005.
@@ -1795,12 +1830,12 @@ REG_OP(YoloBoxesEncode)
 *@li num_gts: A Tensor. Support int32. real k. shape (1, )
 
 *@par Attributes:
-*@li output_dim: float. IOU threshold for positive bboxes.
-*@li group_size: float. minimum iou for a bbox to be considered as a positive bbox
-*@li spatial_scale: bool. whether to assign all bboxes with the same highest overlap with some gt to that gt.
+*@li pos_iou_thr: float. IOU threshold for positive bboxes.
+*@li min_pos_iou: float. minimum iou for a bbox to be considered as a positive bbox
+*@li gt_max_assign_all: bool. whether to assign all bboxes with the same highest overlap with some gt to that gt.
 
 *@par Outputs:
-*@li assigned_gt_inds_pos: A Tensor. Support float16/float32. shape (n, ).
+* assigned_gt_inds_pos: A Tensor. Support float16/float32. shape (n, ).
 */
 REG_OP(GridAssignPositive)
     .INPUT(assigned_gt_inds, TensorType({ DT_FLOAT, DT_FLOAT16 }))
@@ -1816,6 +1851,40 @@ REG_OP(GridAssignPositive)
     .REQUIRED_ATTR(min_pos_iou, Float)
     .REQUIRED_ATTR(gt_max_assign_all, Bool)
     .OP_END_FACTORY_REG(GridAssignPositive)
+
+/**
+*@brief GIoUGrad . \n
+
+*@par Inputs:
+*@li dy : data of grad increment, a 1D Tensor of type float16 or float32 with
+* shape (N,).
+*@li bboxes: Bounding boxes, a 2D Tensor of type float16 or float32 with
+* shape (4, N). "N" indicates the number of bounding boxes, and the value
+* "4" refers to [x1, y1, x2, y2] or [x, y, w, h].
+*@li gtboxes: Ground-truth boxes, a 2D Tensor of type float16 or float32
+* with shape (4, M). "M" indicates the number of ground truth boxes, and
+* the value "4" refers to [x1, y1, x2, y2] or [x, y, w, h] . \n
+
+*@par Attributes:
+*@li trans: An optional attr, true for 'xywh', false for 'xyxy', only support true now.
+*@li is_cross: An optional attr, if false M equals N, only support false now.
+*@li mode: An optional attr, a character string with the value range of ['iou', 'iof'],
+*          only support 'iou' now. \n
+
+*@par Outputs:
+*@li dbboxes: A 2D Tensor of type float16 or float32 with shape [4, N].
+*@li dgtboxes: A 2D Tensor of type float16 or float32 with shape [4, M].
+*/
+REG_OP(GIoUGrad)
+    .INPUT(dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(bboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(gtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dbboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(dgtboxes, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(trans, Bool, false)
+    .ATTR(is_cross, Bool, true)
+    .ATTR(mode, String, "iou")
+    .OP_END_FACTORY_REG(GIoUGrad)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_DETECT_OPS_H_

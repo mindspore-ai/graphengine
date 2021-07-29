@@ -163,9 +163,6 @@ REG_OP(Case)
  *          if it is not a scalar, non-empty means True and empty means False.
  *@li body: A subgraph takes 'input' and returns a another list of tensors .  \n
 
- *@par Attributes:
- *parallel_iterations: An optional int, default as 10 . \n
-
  *@par Outputs:
  *output: The output tensors returned by "body". Has the same type as "input" . \n
 

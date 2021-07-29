@@ -29,15 +29,15 @@ namespace ge {
 
 *@par Inputs:
 *The input handle must have the resource type. Inputs include:
-*@li x:A list of Tensor objects. One or more tensors from which
+*x:A list of Tensor objects. One or more tensors from which
 the enqueued tensors should be taken . \n
 
 *@par Outputs:
-*@li y:A list of Tensor objects. One or more tensors from which
+*y:A list of Tensor objects. One or more tensors from which
 the enqueued tensors should be taken . \n
 
 *@par Attributes:
-*@li type: An optional ge::DataType. It refers to the target data type of outputs . \n
+*type: An optional ge::DataType. It refers to the target data type of outputs . \n
 
 *@par Third-party framework compatibility
 *Compatible with tensorflow QueueIsClosed operator.
@@ -723,11 +723,12 @@ REG_OP(CompressFcOp)
 *@brief Performs Col2im for each batch entry. \n
 
 *@par Inputs:
-*@li input_x: The Col Tensor. 5-D, shape: `(n, c1, kernel_h*kernel_w, ho*wo, c0)`. 
-where ho/wo is do = (output_d + 2*padding_d - dilation_d*(kernel_d - 1) - 1)//stride_d + 1     \n
+*@li x: The Col Tensor. 4-D, shape: `(n, c, kernel_h*kernel_w, ho*wo)`. 
+where ho/wo is do = (output_d + 2*padding_d - dilation_d*(kernel_d - 1) - 1)//stride_d + 1.
+*@li output_size: The img shape Tensor. 1-D, shape:`(2)`, value: (output_h, output_w).  \n
 
 *@par Outputs:
-*@li output_y: The img Tensor. 5-D, shape: `(n, c1, output_h, output_w, c0)`. \n
+*y: The img Tensor. 4-D, shape: `(n, c, output_h, output_w)`. \n
 
 *@par Attributes:
 *@li kernel_shape: ListInt, value: `(kernel_h, kernel_w)`, the shape of kernel in convolution.
@@ -909,7 +910,7 @@ output shape would be [max(ngram_indexes) + 1]. If input shape is [N, C], this o
 *@li either pool_strings or pool_int64s attributes must be present but not both.
 */
 
-REG_OP(TfidVectorizer)
+REG_OP(TfIdfVectorizer)
     .INPUT(input, TensorType({DT_INT32, DT_INT64, DT_STRING}))
     .OUTPUT(output, TensorType({DT_FLOAT}))
     .REQUIRED_ATTR(max_gram_length, Int)
@@ -921,7 +922,7 @@ REG_OP(TfidVectorizer)
     .ATTR(pool_int64s, ListInt, {})
     .ATTR(pool_strings, ListString, {})
     .ATTR(weights, ListFloat, {})
-    .OP_END_FACTORY_REG(TfidVectorizer)
+    .OP_END_FACTORY_REG(TfIdfVectorizer)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_TRANSFORMATION_OPS_H_

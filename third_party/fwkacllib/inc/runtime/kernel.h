@@ -20,7 +20,7 @@
 #include "base.h"
 #include "stream.h"
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -647,7 +647,7 @@ RTS_API rtError_t rtStartMDCProfiler(void **addr, uint32_t length);
  */
 RTS_API rtError_t rtStopMDCProfiler(void *addr);
 
-#if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
+#if defined(__cplusplus)
 }
 #endif
 

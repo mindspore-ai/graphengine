@@ -28,7 +28,7 @@ namespace ge {
 *@brief Decode the frame(s) of a GIF-encoded image to a uint8 tensor . \n
 
 *@par Inputs:
-*@li contents:A Tensor of type string. 0-D. The GIF-encoded image. \n
+*contents:A Tensor of type string. 0-D. The GIF-encoded image. \n
 
 *@par Outputs:
 *image:A Tensor of type uint8. \n
@@ -128,8 +128,8 @@ crops from the input image tensor and resizes them using bilinear sampling or
 nearest neighbor sampling to a common output size specified by crop_size . \n
 
 *@par Inputs:
-*Input images must be a 4-D tensor. Inputs include:
-*@li images:A Tensor. Must be one of the following types:uint8, uint16, int8,
+*Input x must be a 4-D tensor. Inputs include:
+*@li x:A Tensor. Must be one of the following types:uint8, uint16, int8,
 int16, int32, int64, float16, float, double. A 4-D tensor of shape
 [batch, image_height, image_width, depth]. The format must be NHWC.
 *@li boxes: A Tensor of type float. A 2-D tensor of shape [num_boxes, 4].
@@ -266,8 +266,9 @@ depth] containing the original image size. Both image_height and image_width
 need to be positive . \n
 
 *@par Attributes:
-method: A string specifying the interpolation method. Only 'bilinear' is
-supported for now . \n
+*@li method: A string specifying the interpolation method. Only 'bilinear' is
+supported for now .
+*@li T: output of type  \n
 
 *@par Outputs:
 *y:A 4-D tensor of shape [batch, image_height, image_width, depth]. The format
@@ -585,9 +586,11 @@ REG_OP(ResizeNearestNeighborV2GradD)
 channels], The image tensor that was resized . \n
 
 *@par Attributes:
-*align_corners: An optional bool. Defaults to False. If true, the centers of
+*@li align_corners: An optional bool. Defaults to False. If true, the centers of
 the 4 corner pixels of the input and grad tensors are aligned. Defaults to
-false . \n
+false .
+*@li half_pixel_centers: indicates if the offset coordinates are normalized. Defaults
+to false . \n
 
 *@par Outputs:
 *y: A Tensor. Has the same type as original_image . \n
@@ -617,9 +620,10 @@ REG_OP(ResizeBilinearV2Grad)
 size for the images . \n
 
 *@par Attributes:
-*align_corners: If true, the centers of the 4 corner pixels of the input and
+* @li align_corners: If true, the centers of the 4 corner pixels of the input and
 output tensors are aligned, preserving the values at the corner pixels.
-Defaults to false . \n
+Defaults to false .
+* @li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
 *y: 4-D with shape [batch, new_height, new_width, channels] . \n
@@ -684,6 +688,9 @@ be non-negative. In the case of 0, the cropped area does not need to overlap
 any of the bounding boxes supplied .
 *@li aspect_ratio_range: The cropped area of the image must have an aspect
 ratio = width / height within this range.
+*@li area_range: An optional list of `floats`. Defaults to `[0.05, 1]`. The
+cropped area of the image must contain a fraction of the supplied image
+within this range.
 *@li max_attempts: Number of attempts at generating a cropped region of the
 image of the specified constraints. After max_attempts failures, return the
 entire image.
@@ -740,6 +747,9 @@ generator is seeded by the given seed. Otherwise, it is seeded by a random seed.
 *@li seed2: A second seed to avoid seed collision.
 *@li aspect_ratio_range: The cropped area of the image must have an aspect
 ratio = width / height within this range.
+*@li area_range: An optional list of `floats`. Defaults to `[0.05, 1]`. The
+cropped area of the image must contain a fraction of the supplied image
+within this range.
 *@li max_attempts: Number of attempts at generating a cropped region of the
 image of the specified constraints. After max_attempts failures, return the
 entire image.
@@ -787,9 +797,10 @@ REG_OP(SampleDistortedBoundingBoxExt2)
 The new size for the images . \n
 
 *@par Attributes:
-*align_corners: If true, the centers of the 4 corner pixels of the input and
+*@li align_corners: If true, the centers of the 4 corner pixels of the input and
 output tensors are aligned, preserving the values at the corner pixels.
 Defaults to false . \n
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
 *y: 4-D with shape [batch, new_height, new_width, channels] . \n
@@ -999,10 +1010,6 @@ deciding whether boxes overlap too.
 *@li score_threshold: A 0-D float tensor representing the threshold for
 deciding when to remove boxes based on score . \n
 
-*@par Attributes:
-*pad_to_max_output_size: If true, the output selected_indices is padded
-to be of length max_output_size. Defaults to false . \n
-
 *@par Outputs:
 *selected_indices: A 1-D integer tensor of shape [M] representing the
 selected indices from the boxes tensor, where M <= max_output_size . \n
@@ -1094,8 +1101,8 @@ REG_OP(EncodePng)
 *contents: 0-D. PNG-decoded image .
 
 *@par Attributes:
-*channels: graph channels \n
-*dtype: type of image
+*@li channels: graph channels \n
+*@li dtype: type of image
 
 *@par Outputs:
 *image: is a 3-D uint8 or uint16 Tensor of shape [height, width, channels]
@@ -1116,10 +1123,10 @@ REG_OP(DecodePng)
 *@brief Bmp-decode an image. \n
 
 *@par Inputs:
-*@li contents: A Tensor of type string. 0-D. The BMP-encoded image. \n
+*contents: A Tensor of type string. 0-D. The BMP-encoded image. \n
 
 *@par Attributes:
-*@li channels: Decode the desired number of color channels of the image. \n
+*channels: Decode the desired number of color channels of the image. \n
 
 *@par Outputs:
 *image: A Tensor dtype of uint8.
@@ -1253,6 +1260,7 @@ REG_OP(KeepRatioResizeBilinear)
 No default value.
 *@li align_corners: An optional bool. If "true", the centers of the corner
 pixels of the input and output tensors are aligned. Defaults to "false" . \n
+*@li half_pixel_centers: An optional bool. Defaults to False . \n
 
 *@par Outputs:
 *y: A Tensor with the same type and format as input "images" . \n
@@ -1381,6 +1389,7 @@ REG_OP(NonMaxSuppressionV5)
 *@li scale: A `Tensor` of type `float32`.
 *@li translation: A `Tensor` of type `float32` . \n
 
+*@par Attributes:
 *@li kernel_type: type is string, default  lanczos3
 *@li antialias: type is bool, default true \n
 
@@ -1411,6 +1420,7 @@ REG_OP(ScaleAndTranslate)
 *@li scale: A `Tensor` of type `float32`.
 *@li translation: A `Tensor` of type `float32` . \n
 
+*@par Attributes:
 *@li kernel_type: type is string, default  lanczos3
 *@li antialias: type is bool, default true
 
@@ -1460,9 +1470,10 @@ if they fall beyond [0, 1]. If false, do not do clipping and output the box
 coordinates as it is. If not specified, defaults to true . \n
 
 *@par Outputs:
-*nmsed_boxes:type is float
-*nmsed_scores:type is float
-*nmsed_classes:type is float  \n
+*@li nmsed_boxes:type is float
+*@li nmsed_scores:type is float
+*@li nmsed_classes:type is float  
+*@li valid_detections:type is INT32 \n
 
 *@par Third-party framework compatibility
 * Compatible with tensorflow CombinedNonMaxSuppression operator.
@@ -1508,6 +1519,9 @@ REG_OP(IMGWarp)
 
 *@par Outputs:
 *map_img: A Tensor after resize. \n
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(Remap)
     .INPUT(img, TensorType({DT_UINT8, DT_FLOAT16, DT_FLOAT32}))
@@ -1524,7 +1538,7 @@ and 4 mean input[(h_top, w_left), (h_top, w_right), (h_bottom, w_left),  (h_bott
 *@li warp_index: the resize offset A 4-D float tensor of shape `[n, 2, h, w]`, 2 means (x, y) for resize point.
 
 *@par Outputs:
-*remap_img: A Tensor after ResizeBilinear, A 4-D tensor of shape `[n, c, h, w]`. \n
+*warp_img: A Tensor after ResizeBilinear, A 4-D tensor of shape `[n, c, h, w]`. \n
 */
 REG_OP(IMGWarpResize)
     .INPUT(img, TensorType({DT_FLOAT32}))
@@ -1557,6 +1571,39 @@ REG_OP(SpatialTransformerD)
     .ATTR(align_corners, Bool, false)
     .ATTR(use_default_theta, ListBool, {})
     .OP_END_FACTORY_REG(SpatialTransformerD)
+
+/**
+*@brief Function spatial transformer . \n
+
+*@par Inputs:
+*@li x: A Tensor dtype of float16, float32, double, uint8, int8, uint16, int16, int32, uint32, uint64, int64.
+*@li theta: A Tensor dtype of float16, float32, double, uint8, int8, uint16, int16, int32, uint32, uint64, int64, 
+     auxiliary coefficients . \n
+
+*@par Attributes:
+*@li output_size: A tuple output size.
+*@li default_theta: A tuple default theta
+*@li use_default_theta: List use default theta
+
+*@par Outputs:
+*y: A Tensor dtype of float16, float32, double, uint8, int8, uint16, int16, int32, uint32, uint64, int64, 
+    should be same shape and type as x.
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(SpatialTransformer)
+    .INPUT(x, TensorType({DT_FLOAT,DT_FLOAT16,DT_DOUBLE,DT_UINT8,DT_INT8,DT_UINT16,
+                          DT_INT16,DT_INT32,DT_UINT32,DT_UINT64,DT_INT64}))
+    .OPTIONAL_INPUT(theta, TensorType({DT_FLOAT,DT_FLOAT16,DT_DOUBLE,DT_UINT8,DT_INT8,
+                                       DT_UINT16,DT_INT16,DT_INT32,DT_UINT32,DT_UINT64,DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT,DT_FLOAT16,DT_DOUBLE,DT_UINT8,DT_INT8,DT_UINT16,
+                           DT_INT16,DT_INT32,DT_UINT32,DT_UINT64,DT_INT64}))
+    .ATTR(output_size, ListInt, {-1, -1})
+    .ATTR(default_theta, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .ATTR(use_default_theta, ListInt, {})
+    .OP_END_FACTORY_REG(SpatialTransformer)
 
 /**
 * @brief Resize the input tensor. \n
@@ -1623,7 +1670,7 @@ REG_OP(Resize)
 *@brief Function parse image from string to int. \n
 
 *@par Inputs:
-*@li contents: A Tensor of type string. 0-D. The JPEG-encoded image. \n
+* contents: A Tensor of type string. 0-D. The JPEG-encoded image. \n
 
 *@par Attributes:
 *@li channels: An optional int. Defaults to 0. Number of color channels for the decoded image.
@@ -1668,7 +1715,7 @@ REG_OP(DenseImageWarp)
 
 *@par Inputs:
 *One inputs, including:
-* @li x: A tensor. Must be one of the following types:
+* x: A tensor. Must be one of the following types:
 *     float16, float32. \n
 
 *@par Attributes:
@@ -1713,7 +1760,7 @@ REG_OP(ResizeD)
 
 *@par Inputs:
 *One inputs, including:
-* @li grads: A tensor. Must be one of the following types:
+* grads: A tensor. Must be one of the following types:
 *     float16, float32. \n
 
 *@par Attributes:
@@ -1762,8 +1809,8 @@ REG_OP(ResizeGradD)
 *@li flow: 4-D Tensor with shape `[batch, height, width, 2]`. \n
 
 *@par Outputs:
-*grad_image: Returns 4-D with the same shape and dtype as `image`.
-*grad_flow: Returns 4-D with the same shape and dtype as `flow`. \n
+*@li grad_image: Returns 4-D with the same shape and dtype as `image`.
+*@li grad_flow: Returns 4-D with the same shape and dtype as `flow`. \n
 */
 REG_OP(DenseImageWarpGrad)
     .INPUT(grad, TensorType({DT_FLOAT, DT_FLOAT16}))
@@ -1817,12 +1864,12 @@ REG_OP(GridSampler2D)
 *@li assist: Assist matrix, a 4-D tensor of type float16.
 
 *@par Attributes:
-*@li align_corners: An optional bool. If "true", the centers of the corner
+*align_corners: An optional bool. If "true", the centers of the corner
  pixels of the input and output tensors are aligned. Defaults to "false" .
 
 *@par Outputs:
-*diff: Returns 4-D Tensor with the same shape and dtype as `grid`.
-*position: Returns 4-D Tensor with the same shape as `grid`.
+*@li diff: Returns 4-D Tensor with the same shape and dtype as `grid`.
+*@li position: Returns 4-D Tensor with the same shape as `grid`.
 */
 REG_OP(GridUnnormal)
     .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1840,10 +1887,13 @@ REG_OP(GridUnnormal)
 *@li position: 4-D Tensor with shape `[batch, output_height, output_width, 2]`.
 
 *@par Attributes:
-*@li padding_mode: An optional string specifying the pad method. Only 'zeros' is supported for now .
+*padding_mode: An optional string specifying the pad method. Only 'zeros' is supported for now .
 
 *@par Outputs:
 *y: Returns 4-D Tensor with the same dtype as `x`.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(ImageUnfold)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
@@ -1936,5 +1986,204 @@ REG_OP(GridSampler3DGrad)
     .ATTR(align_corners, Bool, false)
     .OP_END_FACTORY_REG(GridSampler3DGrad)
 
+/**
+*@brief Upsample the 3-D data with the nearest neighbor ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+*x: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float16, float32, float64. \n
+
+*@par Attributes:
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: output_depth, output_height, output_width. The number of elements of 'output_size'
+    should be the same as the rank of input 'x'. Only one of 'scales' and 'output_size' can be specified. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width. 
+    The number of elements of 'scales' should be the same as the rank of input 'x'. One of 'scales' and
+    'output_size' MUST be specified and it is an error if both are specified. \n
+
+*@par Outputs:
+*y: A 5-D tensor. Has the same type as input x, shape depends on x and output_size/scales. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+
+REG_OP(UpsampleNearest3d)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .OP_END_FACTORY_REG(UpsampleNearest3d)
+
+/**
+*@brief Upsample the 3-D data with the trilinear ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+*x: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float16, float32, float64. \n
+
+*@par Attributes:
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: output_depth, output_height, output_width. The number of elements of 'output_size' should
+    be the same as the rank of input 'x'. Only one of 'scales' and 'output_size' can be specified. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width.
+    The number of elements of 'scales' should be the same as the rank of input 'x'.
+    One of 'scales' and 'output_size' MUST be specified and it is an error if both are specified. \n
+*@li align_corners: An optional bool. Defaults to false.
+    If true, the input and output tensors are aligned by the center points of their corner pixels, preserving the
+    values at the corner pixels. If false, the input and output tensors are aligned by the corner points of their
+    corner pixels, and the interpolation use edge value padding for out of boundary values. \n
+
+*@par Outputs:
+*y: A 5-D tensor. Has the same type as input x, shape depends on x and output_size/scales. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+
+REG_OP(UpsampleTrilinear3d)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(UpsampleTrilinear3d)
+
+/**
+*@brief Upsample the 3-D gradient data  with the nearest neighbor ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+*grad_output: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float16, float32, float64. \n
+
+*@par Attributes:
+*@li input_size: An required listInt.
+    contain 5 elements: [min_batch, channels, depth, height, width]. Must:
+      input_size[0] == grad_output_tensor_size[0]
+      input_size[1] == grad_output_tensor_size[1]. \n
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: depth, height, width. The number of elements of 'output_size' should
+    be the same as the rank of input 'grad_output'. Only one of 'scales' and 'output_size' can be specified. Must:
+      grad_output_tensor_size[2] == floor(input_size[2] * scales[0]) == output_size[0]
+      grad_output_tensor_size[3] == floor(input_size[3] * scales[1]) == output_size[1]
+      grad_output_tensor_size[4] == floor(input_size[4] * scales[2]) == output_size[2]. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width. 
+    The number of elements of 'scales' should be the same as the rank of input 'grad_output'.
+    One of 'scales' and 'output_size' MUST be specified and it is an error if both are specified. \n
+
+*@par Outputs:
+*y: A 5-D tensor. Has the same type as input grad_output, shape depends on Attributes:input_size. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(UpsampleNearest3dGrad)
+    .INPUT(grad_output, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .OP_END_FACTORY_REG(UpsampleNearest3dGrad)
+
+/**
+*@brief Upsample the 3-D gradient data  trilinear ​interpolation algorithm. \n
+
+*@par Inputs:
+*One inputs, including:
+*grad_output: A 5-D input tensor [N, C, D, H, W]. Must be one of the following types:
+*     float16, float32, float64. \n
+
+*@par Attributes:
+*@li input_size: An required listInt.
+    contain 5 elements: [min_batch, channels, depth, height, width]. Must:
+      input_size[0] == grad_output_tensor_size[0]
+      input_size[1] == grad_output_tensor_size[1]. \n
+*@li output_size: An optional listInt. Defaults to none.
+    contain 3 elements: depth, height, width. The number of elements of 'output_size' should
+    be the same as the rank of input 'grad_output'. Only one of 'scales' and 'output_size' can be specified. Must:
+      grad_output_tensor_size[2] == floor(input_size[2] * scales[0]) == output_size[0]
+      grad_output_tensor_size[3] == floor(input_size[3] * scales[1]) == output_size[1]
+      grad_output_tensor_size[4] == floor(input_size[4] * scales[2]) == output_size[2]. \n
+*@li scales: An optional listFloat. Defaults to none.
+    The scale array along each dimension, contain 3 elements: scale_depth, scale_height, scale_width. 
+    The number of elements of 'scales' should be the same as the rank of input 'grad_output'.
+    One of 'scales' and 'output_size' MUST be specified and it is an error if both are specified. \n
+
+*@par Outputs:
+*y: A Tensor with shape depends on intput_size and output_size/scales. Must be one of the following
+    types: float16, float32, float64. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(UpsampleTrilinear3dGrad)
+    .INPUT(grad_output, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .ATTR(output_size, ListInt, {})
+    .ATTR(scales, ListFloat, {})
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(UpsampleTrilinear3dGrad)
+
+
+/**
+*@brief Upsample the 1-D data with the nearest neighbor ​interpolation algorithm. \n
+
+*@par Inputs:
+*x: A 1-D input tensor [N, C, W]. Must be one of the following types:
+*     float16, float32, float64. \n
+
+*@par Attributes:
+*@li output_size: An required listInt contains output_width.
+*@li scales: An optional listFloat contains scale_width. Defaults to be zero. \n
+
+*@par Outputs:
+*y: A 3-D tensor. Has the same type as input x, shape depends on x and output_size/scales. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+
+REG_OP(UpsampleNearest1d)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(output_size, ListInt)
+    .ATTR(scales, ListFloat, {})
+    .OP_END_FACTORY_REG(UpsampleNearest1d)
+
+/**
+*@brief Upsample the 1-D gradient data  with the nearest neighbor ​interpolation algorithm. \n
+
+*@par Inputs:
+*grad_output: A 3-D input tensor [N, C, W]. Must be one of the following types:
+*     float16, float32, float64. \n
+
+*@par Attributes:
+*@li output_size: An required listInt contains output_width.
+*@li scales: An optional listFloat contains scale_width. Defaults to be zero.
+*@li input_size: An required listInt contains output_width. \n
+
+*@par Outputs:
+*y: A 3-D tensor. Has the same type as input grad_output, shape depends on Attributes:input_size. \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use. \n
+*/
+
+REG_OP(UpsampleNearest1dGrad)
+    .INPUT(grad_output, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .REQUIRED_ATTR(input_size, ListInt)
+    .REQUIRED_ATTR(output_size, ListInt)
+    .ATTR(scales, ListFloat, {})
+    .OP_END_FACTORY_REG(UpsampleNearest1dGrad)
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_IMAGE_OPS_H_

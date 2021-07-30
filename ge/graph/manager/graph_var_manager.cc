@@ -826,7 +826,7 @@ Status VarManager::GetTotalMemorySize(size_t &total_mem_size) {
     return RT_FAILED;
   }
   size_t free_mem = 0;
-  rt_ret = rtMemGetInfoEx(RT_MEMORYINFO_HBM, &free_mem, &total_mem_size);
+  rt_ret = rtMemGetInfo(&free_mem, &total_mem_size);
   if (rt_ret != RT_ERROR_NONE) {
     REPORT_CALL_ERROR("E19999", "Call rtMemGetInfo failed, ret:0x%X", rt_ret);
     GELOGE(RT_FAILED, "[Call][RtMemGetInfo] failed, ret:0x%X", rt_ret);

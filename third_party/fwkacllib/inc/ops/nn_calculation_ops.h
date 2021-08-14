@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -869,59 +869,60 @@ REG_OP(Conv2D)
 /**
 *@brief Computes a 2D convolution given 4D "x" and "filter_compress" tensors.
 *@par Inputs:
-* @li x: A 4D tensor of input images.
-* @li filter_compress: A 4D tensor of compressed filters.
-* @li compress_index: A 1D Tensor dtype of int8.
-* @li bias: An optional 1D tensor.
-* @li offset_w: An optional 1D tensor for quantized convolution. Reserved.
+*@li x: A 4D tensor of input images.
+*@li filter_compress: A 4D tensor of compressed filter data blocks.
+*@li compress_index: A 1D tensor of index for decompression.
+*@li bias: An optional 1D tensor of additive biases to the filter outputs.
+* The data is stored in the order of: [out_channels].
+*@li offset_w: Reserved.
+*\n
+*\n
+* The following are the supported data types and data formats:
+*\n
+*\n
+| Tensor    | x       | filter_compress  | compress_index | bias    | y       |\n
+| :-------: | :-----: | :--------------: | :------------: | :-----: | :-----: |\n
+| Data Type |  int8   |       int8       |     int8       |  int32  |  int32  |\n
+| Format    |  NCHW   |       NCHW       |      ND        |  ND     |  NCHW   |\n
+|           |  NHWC   |       HWCN       |                |         |  NHWC   |\n
+*\n
+* For float32 type, the actual calculation on the chip is based on
+* float16.
+*\n
 *
-* The input and output tensor attributes are listed as follows:
-* @verbatim
-    |Tensor    | x       | filter_compress  | bias    | offset_w | y
-    -----------|---------|---------|---------|----------|--------
-    |Data Type | float16 | float16 | float16 | _        | float16
-    |          |---------|---------|---------|----------|--------
-    |          | float32 | float32 | float32 | _        | float32
-    |          |---------|---------|---------|----------|--------
-    |          | int8    | int8    | int32   | int8     | int32
-    -----------|---------|---------|---------|----------|--------
-    |Format    | NCHW    | NCHW    | ND      | ND       | NCHW
-    |          | NHWC    | NHWC    |         |          | NHWC
-    |          |         | HWCN    |         |          |
-@endverbatim
-* It should be noted that the data types must correspond to each other, but the
-* format does not need to . \n
-
 *@par Attributes:
-* @li strides: A list of 4 integers. Specifying the strides of the
-* convolution along the height and width. The dimension order is determined
-* by the data format of "x". By default the N and C dimensions are set to 1.
-* @li pads: A list of 4 integers. Specifying the top, bottom, left and right
-* padding.
-* @li dilations: A list of 4 integers. Specifying the dilation rate to use
-* for dilated convolution. Has the same dimension order and value as "strides".
-* @li groups: Number of blocked connections from input channels to output
-* channels. Input channels and output channels must both be divisible by
-* "groups".Type is int32.
-* @li offset_x: An optional integer for quantized convolution. Type is int32.
-* Defaults to "0".
-* @li data_format: An optional string from: "NHWC", "NCHW". Specifying the
-* data format of the input and output images. Type is string.
-* Defaults to "NHWC". Reserved . \n
-
+*@li strides: Required. A list of 4 integers. The stride of the sliding window
+* for each dimension of input. The dimension order is determined by the data
+* format of "x". The N and C dimensions must be set to 1.
+*@li pads: Required. A list of 4 integers. The number of pixels to add to each
+* (top, bottom, left, right) side of the input.
+*@li dilations: Optional. A list of 4 integers. The dilation factor for each
+* dimension of input. The dimension order is determined by the data format of
+* "x". The N and C dimensions must be set to 1. Defaults to [1, 1, 1, 1].
+*@li groups: Optional. An integer of type int32. The number of blocked
+* connections from input channels to output channels. In_channels and
+* out_channels must both be divisible by "groups". Only support 1.
+*@li offset_x: Optional. An integer of type int32. The negative offset added
+* to the input image for int8 type. Ensure that the output is within the
+* effective range. Defaults to 0.
+*@li data_format: Reserved.
+*
 *@par Outputs:
-* @li y: A 4D Tensor of output images . \n
-
+* y: A 4D Tensor of output feature map. Has the same type as "x". With the
+* format "NHWC", the data is stored in the order of: [batch, out_height,
+* out_width, out_channels].
+*\n
+*
 *@par Restrictions:
-*Warning: THIS FUNCTION IS DEPRECATED.
+*Warning: THIS FUNCTION IS EXPERIMENTAL.
 */
 REG_OP(Conv2DCompress)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
-    .INPUT(filter_compress, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(x, TensorType({DT_INT8}))
+    .INPUT(filter_compress, TensorType({DT_INT8}))
     .INPUT(compress_index, TensorType({DT_INT8}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_INT32}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})

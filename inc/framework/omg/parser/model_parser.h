@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ using Status = domi::Status;
 
 namespace domi {
 using GetGraphCallback = std::function<std::unique_ptr<google::protobuf::Message>(
-  const google::protobuf::Message *root_proto, const std::string &graph)>;
+    const google::protobuf::Message *root_proto, const std::string &graph)>;
 
 using GetGraphCallbackV2 = std::function<std::string(const std::string &subgraph_name)>;
 
@@ -109,7 +109,9 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ToJson(const char *model_file, const char *json_file) { return domi::SUCCESS; }
+  virtual Status ToJson(const char *model_file, const char *json_file) {
+    return domi::SUCCESS;
+  }
 
   /*
    * @ingroup domi_omg
@@ -129,7 +131,9 @@ class GE_FUNC_VISIBILITY ModelParser {
    * @return SUCCESS
    * @return Others failed
    */
-  virtual Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) { return UNSUPPORTED; }
+  virtual Status ParseProto(const std::string &serialized_proto, ge::ComputeGraphPtr &graph) {
+    return UNSUPPORTED;
+  }
 
   /**
    * @ingroup domi_omg

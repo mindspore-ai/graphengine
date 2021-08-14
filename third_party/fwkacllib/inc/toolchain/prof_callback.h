@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @file prof_callback.h
- * @brief declaraion of profiling callbacks
  */
 
 #ifndef MSPROFILER_PROF_CALLBACK_H_
@@ -55,10 +52,10 @@ struct ReporterData {
 };
 
 /**
- * @name  HashData
+ * @name  MsprofHashData
  * @brief struct of data to hash
  */
-struct HashData {
+struct MsprofHashData {
     int deviceId;                             // the index of device
     size_t dataLen;                           // the length of data
     unsigned char *data;                      // the data content
@@ -125,6 +122,13 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_PROF_SWITCH_ON,             // for prof switch on
     MSPROF_CTRL_PROF_SWITCH_OFF             // for prof switch off
 };
+
+#define    PROF_COMMANDHANDLE_TYPE_INIT              (0)
+#define    PROF_COMMANDHANDLE_TYPE_START             (1)
+#define    PROF_COMMANDHANDLE_TYPE_STOP              (2)
+#define    PROF_COMMANDHANDLE_TYPE_FINALIZE          (3)
+#define    PROF_COMMANDHANDLE_TYPE_MODEL_SUBSCRIBE   (4)
+#define    PROF_COMMANDHANDLE_TYPE_MODEL_UNSUBSCRIBE (5)
 
 #define MSPROF_MAX_DEV_NUM (64)
 

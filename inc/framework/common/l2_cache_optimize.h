@@ -104,7 +104,7 @@ class GE_FUNC_VISIBILITY L2CacheOptimize {
 
   // maximum common divisor
   uint32_t Measure(uint32_t x, uint32_t y) {
-    if (x == 0 || y == 0) return RC_VALUE_DEFAULT;
+    if ((x == 0) || (y == 0)) return RC_VALUE_DEFAULT;
     uint32_t z = y;
     while (x % y != 0) {
       z = x % y;

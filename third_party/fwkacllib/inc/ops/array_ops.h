@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1249,38 +1249,6 @@ REG_OP(ExpandD)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(ExpandD)
-
-/**
-*@brief Finds unique elements in a 1D tensor. \n
-
-*@par Inputs:
-*x: 1D tensor. Must be one of the following types:
-*     float16, float32, double, int64, int32, int16, uint16, int8 ,uint8. \n
-
-*@par Attributes:
-*@li return_inverse: Whether to also return the indices for where elements in the original 
-*                input ended up in the returned unique list.
-*@li return_inverse: Whether to also return the counts for each unique element.
-
-*@par Outputs:
-*@li y1: The output list of unique scalar elements. Has the same type as "x".
-*@li y2: Representing the indices for where elements in the original input map to in the output.
-*@li y3: Representing the number of occurrences for each unique value or tensor. \n
-
-* @par Third-party framework compatibility
-* Compatible with the troch operator _unique2.
-*/
-
-REG_OP(UniqueWithCountsAndSorting)
-    .INPUT(x, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
-    .OUTPUT(y1, TensorType({ DT_INT8, DT_UINT8, DT_INT16, DT_UINT16, \
-           DT_INT32, DT_INT64, DT_FLOAT16, DT_FLOAT, DT_DOUBLE }))
-    .OUTPUT(y2, TensorType({ DT_INT32, DT_INT64 }))
-    .OUTPUT(y3, TensorType({ DT_INT32, DT_INT64 }))
-    .ATTR(return_inverse, Bool, false)
-    .ATTR(return_counts, Bool, false)
-    .OP_END_FACTORY_REG(UniqueWithCountsAndSorting)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

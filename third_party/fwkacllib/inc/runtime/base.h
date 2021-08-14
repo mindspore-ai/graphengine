@@ -1,18 +1,18 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #ifndef __CCE_RUNTIME_BASE_H__
 #define __CCE_RUNTIME_BASE_H__
@@ -95,6 +95,14 @@ typedef void (*rtTaskFailCallback)(rtExceptionInfo *exceptionInfo);
 typedef void (*rtDeviceStateCallback)(uint32_t devId, bool isOpen);
 
 /**
+ * @ingroup profiling_base
+ * @brief dataType: rtProfCtrlType_t
+ * @brief data: data swtich or reporter function
+ * @brief dataLen: length of data
+ */
+typedef rtError_t (*rtProfCtrlHandle)(uint32_t dataType, void *data, uint32_t dataLen);
+
+/**
  * @ingroup dvrt_base
  * @brief stream handle.
  */
@@ -117,6 +125,32 @@ typedef void *rtLabel_t;
  * @brief model handle.
  */
 typedef void *rtModel_t;
+
+#define RT_PROF_MAX_DEV_NUM 64
+
+/**
+ * @ingroup profiling_base
+ * @brief profiling command info
+ */
+typedef struct rtProfCommandHandle {
+    uint64_t profSwitch;
+    uint64_t profSwitchHi;
+    uint32_t devNums;
+    uint32_t devIdList[RT_PROF_MAX_DEV_NUM];
+    uint32_t modelId;
+    uint32_t type;
+} rtProfCommandHandle_t;
+
+/**
+ * @ingroup profiling_base
+ * @brief type of app register profiling switch or reporter callback
+ */
+typedef enum {
+    RT_PROF_CTRL_INVALID = 0,
+    RT_PROF_CTRL_SWITCH,
+    RT_PROF_CTRL_REPORTER,
+    RT_PROF_CTRL_BUTT
+} rtProfCtrlType_t;
 
 /**
  * @ingroup profiling_base
@@ -165,6 +199,57 @@ RTS_API rtError_t rtProfilerTraceEx(uint64_t id, uint64_t modelId, uint16_t tagI
  * @brief ts set profiling reporter callback.
  */
 RTS_API rtError_t rtSetMsprofReporterCallback(MsprofReporterCallback callback);
+
+/**
+ * @ingroup profiling_base
+ * @brief add the map of deviceId and GE model index, called by ge
+ * @param [in] geModelIdx  The index of GE model
+ * @param [in] deviceId    The id of device
+ * @return RT_ERROR_NONE for ok
+ * @return ACL_ERROR_RT_PARAM_INVALID for error input
+ */
+RTS_API rtError_t rtSetDeviceIdByGeModelIdx(uint32_t geModelIdx, uint32_t deviceId);
+
+/**
+ * @ingroup profiling_base
+ * @brief del the map of deviceId and GE model index, called by ge
+ * @param [in] geModelIdx  The index of GE model
+ * @param [in] deviceId    The id of device
+ * @return RT_ERROR_NONE for ok
+ * @return ACL_ERROR_RT_PARAM_INVALID for error input
+ */
+RTS_API rtError_t rtUnsetDeviceIdByGeModelIdx(uint32_t geModelIdx, uint32_t deviceId);
+
+/**
+ * @ingroup profiling_base
+ * @brief find deviceId by GE model index, called by profiling
+ * @param [in]  geModelIdx  The index of GE model
+ * @param [out] deviceId    The id of device
+ * @return RT_ERROR_NONE for ok
+ * @return ACL_ERROR_RT_PARAM_INVALID for error input
+ * @return ACL_ERROR_RT_INTERNAL_ERROR for can't find deviceId by geModelIdx
+ */
+RTS_API rtError_t rtGetDeviceIdByGeModelIdx(uint32_t geModelIdx, uint32_t *deviceId);
+
+/**
+ * @ingroup profiling_base
+ * @brief set profling switch, called by profiling
+ * @param [in]  data  rtProfCommandHandle
+ * @param [out] len   length of data
+ * @return RT_ERROR_NONE for ok
+ * @return ACL_ERROR_RT_PARAM_INVALID for error input
+ */
+RTS_API rtError_t rtProfSetProSwitch(void *data, uint32_t len);
+
+/**
+ * @ingroup profiling_base
+ * @brief register callback of upper app, called by ge or acl
+ * @param [in]  moduleId of APP
+ * @param [in]  callback function when switch or reporter change
+ * @return RT_ERROR_NONE for ok
+ * @return ACL_ERROR_RT_PARAM_INVALID for error input
+ */
+RTS_API rtError_t rtProfRegisterCtrlCallback(uint32_t moduleId, rtProfCtrlHandle callback);
 
 /**
  * @ingroup dvrt_base
@@ -356,7 +441,6 @@ RTS_API rtError_t rtLabelCreateExV2(rtLabel_t *label, rtModel_t model, rtStream_
  * @return RT_ERROR_INVALID_VALUE for input null ptr
  */
 RTS_API rtError_t rtGetTaskIdAndStreamID(uint32_t *taskId, uint32_t *streamId);
-
 #if defined(__cplusplus)
 }
 #endif

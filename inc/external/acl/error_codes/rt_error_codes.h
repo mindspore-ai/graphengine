@@ -44,7 +44,6 @@ static const int32_t ACL_ERROR_RT_STREAM_NO_CB_REG = 107015;          // callbac
 static const int32_t ACL_ERROR_RT_INVALID_MEMORY_TYPE = 107016;       // invalid memory type
 static const int32_t ACL_ERROR_RT_INVALID_HANDLE = 107017;            // invalid handle
 static const int32_t ACL_ERROR_RT_INVALID_MALLOC_TYPE = 107018;       // invalid malloc type
-static const int32_t ACL_ERROR_RT_WAIT_TIMEOUT = 107019;              // wait timeout
 
 static const int32_t ACL_ERROR_RT_FEATURE_NOT_SUPPORT = 207000;  // feature not support
 static const int32_t ACL_ERROR_RT_MEMORY_ALLOCATION = 207001;    // memory allocation error
@@ -57,7 +56,6 @@ static const int32_t ACL_ERROR_RT_NO_EVENT_RESOURCE = 207007;    // no event res
 static const int32_t ACL_ERROR_RT_NO_STREAM_RESOURCE = 207008;   // no stream resource
 static const int32_t ACL_ERROR_RT_NO_NOTIFY_RESOURCE = 207009;   // no notify resource
 static const int32_t ACL_ERROR_RT_NO_MODEL_RESOURCE = 207010;    // no model resource
-static const int32_t ACL_ERROR_RT_NO_CDQ_RESOURCE = 207011;      // no cdq resource
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR = 507000;              // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR = 507001;                    // ts internel error
@@ -96,7 +94,6 @@ static const int32_t ACL_ERROR_RT_DEV_SETUP_ERROR = 507033;             // devic
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_TIMEOUT = 507034;         // vector core timeout
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_EXCEPTION = 507035;       // vector core exception
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_EXCEPTION = 507036;  // vector core trap exception
-static const int32_t ACL_ERROR_RT_CDQ_BATCH_ABNORMAL = 507037;          // cdq alloc batch abnormal
 
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR = 507899;    // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR = 507900;  // aicpu internal error

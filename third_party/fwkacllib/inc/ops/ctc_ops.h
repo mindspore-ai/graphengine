@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,7 +164,7 @@ REG_OP(CTCBeamSearchDecoder)
 * Compatible with Pytorch CTCLoss operator.
 
 *@par Restrictions:
-*The length of Label should in [4, 1000].
+*The limit of Label’s length is 1K.
 */
 REG_OP(CTCLossV2)
     .INPUT(log_probs, TensorType({DT_FLOAT, DT_DOUBLE}))

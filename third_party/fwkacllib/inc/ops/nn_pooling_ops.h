@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1402,6 +1402,7 @@ REG_OP(MaxPoolGradWithArgmaxV2)
 * @li pads:A required list of int8, int16, int32, or int64 values,
 * a data to caculate when padding_mode is "CALCULATED".
 * @li data_format: An optional string. Defaults to "NHWC" .
+* If data_format = "NC1HWC0", ori_format must be "NCHW".
 * @li global_pooling bool, Whether to use the global pooling.
 * If global_pooling = true, kernel size and paddings will be ignored.
 * Default False
@@ -1785,6 +1786,31 @@ REG_OP(SubSampleLabels)
     .REQUIRED_ATTR(batch_size_per_images, Int)
     .REQUIRED_ATTR(positive_fraction, Float)
     .OP_END_FACTORY_REG(SubSampleLabels)
+
+/**
+*@brief Computes GlobalLpPool, GlobalLpPool consumes an input tensor X and applies lp pool pooling across the
+values in the same channel. \n
+
+*@par Inputs:
+* x: A Tensor of type float16 or float32 . \n
+
+*@par Attributes:
+*@li p: Optional. Must be one of the following types: float32. Defaults to 2.0. \n
+
+*@par Outputs:
+* y: A Tensor. Has the same type as "x", when shape of x is [N,C,H,W], shape of y is [N,C,1,1].
+*@par Third-party framework compatibility
+* Compatible with the onnx operator GlobalLpPool.
+*@par Restrictions:
+*Warning: THIS FUNCTION IS DEPRECATED.
+*Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+
+REG_OP(GlobalLpPool)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Float, 2.0)
+    .OP_END_FACTORY_REG(GlobalLpPool);
 
 }  // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_POOLING_OPS_H

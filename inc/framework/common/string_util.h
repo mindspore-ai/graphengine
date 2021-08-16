@@ -45,16 +45,16 @@ class GE_FUNC_VISIBILITY StringUtils {
  public:
   static std::string &Ltrim(std::string &s) {
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return !std::isspace(c); }));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return std::isspace(c) == 0; }));
 #else
     (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
 #endif
     return s;
   }
   // lint -esym(551,*)
-  static std::string &Rtrim(std::string &s) {  /*lint !e618*/
+  static std::string &Rtrim(std::string &s) { /*lint !e618*/
 #if __cplusplus >= 201103L
-    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return !std::isspace(c); }));
+    (void)s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) { return std::isspace(c) == 0; }));
 #else
     (void)s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
 #endif
@@ -67,7 +67,9 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] string to be trimmed
   ///  @return string after trim
   ///
-  static std::string &Trim(std::string &s) { return Ltrim(Rtrim(s)); }
+  static std::string &Trim(std::string &s) {
+    return Ltrim(Rtrim(s));
+  }
 
   ///
   ///  @ingroup domi_common
@@ -92,7 +94,7 @@ class GE_FUNC_VISIBILITY StringUtils {
     }
 
     auto str_size = str.size();
-    if (str_size > 0 && str[str_size - 1] == delim) {
+    if ((str_size > 0) && (str[str_size - 1] == delim)) {
       elems.emplace_back("");
     }
 

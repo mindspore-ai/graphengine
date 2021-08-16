@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,11 +88,11 @@ REG_OP(MatMul)
 * Compatible with the TensorFlow operator BatchMatmul.
 */
 REG_OP(MatMulV2)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8 DT_INT4}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
     .ATTR(offset_x, Int, 0)
@@ -180,12 +180,12 @@ REG_OP(MatMulV2Compress)
 */
 
 REG_OP(GEMM)
-    .INPUT(a, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(b, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(c, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(a, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(b, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(c, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(alpha, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .INPUT(beta, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT8, DT_INT32}))
     .ATTR(transpose_a, Bool, false)
     .ATTR(transpose_b, Bool, false)
     .OP_END_FACTORY_REG(GEMM)
@@ -246,10 +246,10 @@ REG_OP(BatchMatMul)
 */
 
 REG_OP(BatchMatMulV2)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
     .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
     .ATTR(adj_x1, Bool, false)
     .ATTR(adj_x2, Bool, false)
@@ -532,61 +532,6 @@ REG_OP(ScatterAdd)
     .OP_END_FACTORY_REG(ScatterAdd)
 
 /**
-*@brief  Use a scalar to modify the tensor. \n
-
-*@par Inputs:
-*inputs, including:
-*@li index: An ND Tensor . \n
-
-*Must be one of the following types: float16, float32, int32, int8, uint8
-
-*@par Attributes:
-* dim : the axis along which to index .
-* value : the source element(s) to scatter . \n
-
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "index" . \n
-
-*@par Third-party framework compatibility
-* Compatible with the Pytorch operator ScatterScalar.
-*/
-REG_OP(ScatterScalar)
-    .INPUT(index, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .REQUIRED_ATTR(dim, Int)
-    .REQUIRED_ATTR(value, Float)
-    .OP_END_FACTORY_REG(ScatterScalar)
-
-/**
-*@brief Use a tensor to modify the tensor . \n
-
-*@par Inputs:
-* Two inputs, including:
-*@li index: An ND Tensor . \n
-
-*Must be one of the following types: float16, float32, int32, int8, uint8
-
-*@li src: An ND Tensor . \n
-
-*Must be one of the following types: float16, float32, int32, int8, uint8
-
-*@par Attributes:
-* dim : the axis along which to index . \n
-
-*@par Outputs:
-*y: A Tensor. Has the same type and format as input "index" . \n
-
-*@par Third-party framework compatibility
-* Compatible with the Pytorch operator ScatterTensor.
-*/
-REG_OP(ScatterTensor)
-    .INPUT(index, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .INPUT(src, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
-    .REQUIRED_ATTR(dim, Int)
-    .OP_END_FACTORY_REG(ScatterTensor)
-
-/**
 *@brief Divides a variable reference by sparse updates . \n
 
 *@par Inputs:
@@ -839,10 +784,10 @@ REG_OP(DiagPart)
 * Yes
 */
 REG_OP(FullyConnection)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(w, TensorType({DT_FLOAT16, DT_INT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
+    .INPUT(w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
     .OPTIONAL_INPUT(b, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32}))
-    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32,DT_FLOAT32}))
     .REQUIRED_ATTR(num_output, Int)
     .ATTR(transpose, Bool, false)
@@ -1197,10 +1142,12 @@ REG_OP(IndexAdd)
 
 * @par Inputs:
 * Three inputs, including:
-* @li x1: A Tensor. Must be one of the following types:
-*     float16, float32, int32, int8, uint8.
+* @li x1:  A Tensor. Must be one of the following types:
+*float16, float32, double, int32, uint8, int16, int8, complex64, int64,
+*qint8, quint8, qint32, uint16, complex128, uint32, uint64. \n
+
 * @li x2: A Tensor of the same type as "x1".
-* @li indices: A Tensor of the indices, type should be int32.
+* @li indices: A Tensor of the indices, 
 
 * @par Attributes:
 * @li accumulate: Does it support self accumulation.Defaults to 0.
@@ -1215,10 +1162,10 @@ REG_OP(IndexAdd)
 * Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(IndexPut)
-    .INPUT(x1, TensorType({DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
-    .INPUT(x2, TensorType({DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
-    .INPUT(indices, TensorType({DT_INT64, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_INT64, DT_INT32, DT_INT8, DT_UINT8, DT_FLOAT32, DT_FLOAT16}))
+    .INPUT(x1, TensorType::BasicType())
+    .INPUT(x2, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .REQUIRED_ATTR(indices, ListInt)
     .ATTR(accumulate, Int, 0)
     .OP_END_FACTORY_REG(IndexPut)
 

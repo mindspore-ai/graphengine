@@ -20,14 +20,18 @@
 #if defined(_MSC_VER)
 #ifdef FUNC_VISIBILITY
 #define GE_FUNC_VISIBILITY _declspec(dllexport)
+#define GE_OBJECT_VISIBILITY
 #else
 #define GE_FUNC_VISIBILITY
+#define GE_OBJECT_VISIBILITY
 #endif
 #else
 #ifdef FUNC_VISIBILITY
 #define GE_FUNC_VISIBILITY __attribute__((visibility("default")))
+#define GE_OBJECT_VISIBILITY
 #else
 #define GE_FUNC_VISIBILITY
+#define GE_OBJECT_VISIBILITY __attribute__((visibility("hidden")))
 #endif
 #endif
 
@@ -70,7 +74,9 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
 class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
-  ErrorNoRegisterar(uint32_t err, const std::string &desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
+  ErrorNoRegisterar(uint32_t err, const std::string &desc) {
+    StatusFactory::Instance()->RegisterErrorNo(err, desc);
+  }
   ~ErrorNoRegisterar() {}
 };
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1002,9 +1002,12 @@ REG_OP(SPP)
 *@par Inputs:
 * Three inputs, including:
 *@li x: An NC1HWC0 tensor of type float16 or float32, describing the feature
-* map.
+* map. The data of x must be greater than or equal to "0.0".
 *@li rois: A tensor of type float16 or float32, with 3D shape
-* [batch, 5, roi_max_num], describing the RIOs.
+* [batch, 5, roi_max_num], describing the RIOs. Each ROI consists of five
+* elements: "batch_id", "x1", "y1", "x2", and "y2", which "batch_id" indicates
+* the index of the input feature map, "x1", "y1", "x2", or "y2" must be
+* greater than or equal to "0.0".
 * roi_max_num must be less than or equal to 6000 and must be divided by 16.
 *@li roi_actual_num: A  optional tensor of type int32, with shape [batch, 8], specifying
 * the number of ROIs per batch . \n

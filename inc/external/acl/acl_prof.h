@@ -40,20 +40,13 @@ typedef enum {
   ACL_AICORE_MEMORY_BANDWIDTH = 2,
   ACL_AICORE_L0B_AND_WIDTH = 3,
   ACL_AICORE_RESOURCE_CONFLICT_RATIO = 4,
-  ACL_AICORE_MEMORY_UB = 5,
   ACL_AICORE_NONE = 0xFF
 } aclprofAicoreMetrics;
-
-typedef enum {
-  ACL_STEP_START = 0,  // step  start
-  ACL_STEP_END = 1     // step  end
-} aclprofStepTag;
 
 typedef struct aclprofConfig aclprofConfig;
 typedef struct aclprofStopConfig aclprofStopConfig;
 typedef struct aclprofAicoreEvents aclprofAicoreEvents;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig;
-typedef struct aclprofStepInfo aclprofStepInfo;
 
 /**
  * @ingroup AscendCL
@@ -328,36 +321,6 @@ ACL_FUNC_VISIBILITY uint64_t aclprofGetOpDuration(const void *opInfo, size_t opI
  * @retval 0 for failed
  */
 ACL_FUNC_VISIBILITY size_t aclprofGetModelId(const void *opInfo, size_t opInfoLen, uint32_t index);
-
-/**
- * @ingroup AscendCL
- * @brief
- *
- * @param  stepInfo [IN]     pointer to stepInfo data
- * @param  aclprofstepTag [IN] start or end flag
- * @param  stream [IN] steam info
- *
- * @retval 0 for failed
- */
-ACL_FUNC_VISIBILITY aclError aclprofGetStepTimestamp(aclprofStepInfo *stepInfo, aclprofStepTag tag, aclrtStream stream);
-
-/**
- * @ingroup AscendCL
- * @brief create pointer to aclprofStepInfo data
- *
- *
- * @retval aclprofStepInfo pointer
- */
-ACL_FUNC_VISIBILITY aclprofStepInfo *aclprofCreateStepInfo();
-
-/**
- * @ingroup AscendCL
- * @brief destroy aclprofStepInfo pointer
- *
- *
- * @retval void
- */
-ACL_FUNC_VISIBILITY void aclprofDestroyStepInfo(aclprofStepInfo *stepinfo);
 
 #ifdef __cplusplus
 }

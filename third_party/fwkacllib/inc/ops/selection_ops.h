@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1896,6 +1896,33 @@ REG_OP(Cummin)
     .OP_END_FACTORY_REG(Cummin)
 
 /**
+*@brief Returns a namedtuple (values, indices) where values is the cumulative 
+* the cumulative maximum of elements of input in the dimension dim. 
+* And indices is the index location of each maximum value found in the dimension dim. \n
+
+*@par Inputs:
+*One inputs, including:
+* x: A tensor . Must be one of the following types:
+*     float16, float32, int32, uint32, int8, uint8. \n
+
+*@par Attributes:
+* dim: Axis along which to cummax. \n
+
+*@par Outputs:
+* @li y: A Tensor with the same type and shape of x's.
+* @li indices: A Tensor with the int32/int64 type and the same shape of x's. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Pytorch operator Cummax. \n
+*/
+REG_OP(Cummax)
+    .INPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OUTPUT(indices, TensorType::BasicType())
+    .REQUIRED_ATTR(dim, Int)
+    .OP_END_FACTORY_REG(Cummax)
+
+/**
 *@brief Extends the input with copies of data along a specified dimension. For example:
 *(1) If x = [[[1, 2], [3, 4], [5, 6]], [[7, 8], [9, 10], [11, 12]]], with shape (2, 3, 2);
 *(2) axis = 1;
@@ -2129,24 +2156,6 @@ REG_OP(MaskedSelectV2)
     .INPUT(mask, TensorType({DT_BOOL}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(MaskedSelectV2)
-    
-/**
-* @brief Choose the value of X with value according to mask.
-
-* @par Inputs:
-* two inputs, including:
-*  @li x: A Tensor of dtype is float16 or float32 or float64 or int64 or int32 or int16 or int8 or uint8.
-*  @li mask: A Tensor of dtype is bool. \n
-
-* @par Outputs:
-*  @li y: A tensor with the same type as x. \n
-
-*/
-REG_OP(MaskedSelect)
-    .INPUT(x, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8,  DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
-    .INPUT(mask, TensorType({DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_DOUBLE, DT_UINT8, DT_INT8, DT_INT16, DT_INT32, DT_INT64}))
-    .OP_END_FACTORY_REG(MaskedSelect)
 
 /**
 * @brief update the value of X with value according to mask.
@@ -2364,6 +2373,35 @@ REG_OP(InplaceTopKDistance)
     .INPUT(pq_ivf, TensorType({DT_INT32}))
     .ATTR(order, String, "asc")
     .OP_END_FACTORY_REG(InplaceTopKDistance)
+
+/**
+* @brief After a set of sorted data and a new set of data are re-sorted, get the first k data. \n
+*
+* @par Inputs:
+* @li sorted_distance: A sorted Tensor, Will be updated after calculation. Must be one of the following types: float16. 
+* @li pq_ivf: A Tensor of type int32, index corresponding to sorted_distance.
+* @li pq_index: A Tensor of type int32 , the bucket number corresponding to sorted_distance. \n
+*
+*@par Outputs:
+* @li topk_distance: A Tensor of type float16, the new data set will be reordered with sorted_distance and updated to topk_distance.
+* @li topk_ivf: A Tensor of type int32, index corresponding to topk_distance. 
+* @li topk_index: A scalar of type int32 , the bucket number corresponding to topk_distance. \n
+*
+* @par Attributes:
+* k: get the first k data of sorted_distance. \n
+*
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(TopKPQDistanceMerge)
+    .INPUT(sorted_distance, TensorType({DT_FLOAT16}))
+    .INPUT(pq_ivf, TensorType({DT_INT32}))
+    .INPUT(pq_index, TensorType({DT_INT32}))
+    .OUTPUT(topk_distance, TensorType({DT_FLOAT16}))
+    .OUTPUT(topk_ivf, TensorType({DT_INT32}))
+    .OUTPUT(topk_index, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(k, Int)
+    .OP_END_FACTORY_REG(TopKPQDistanceMerge)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

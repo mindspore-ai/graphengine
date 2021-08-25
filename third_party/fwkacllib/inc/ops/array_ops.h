@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1221,8 +1221,9 @@ REG_OP(Expand)
 REG_OP(NonZero)
     .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
               DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
-    .OUTPUT(y, TensorType({DT_INT64}))
+    .OUTPUT(y, TensorType({DT_INT64, DT_INT32}))
     .ATTR(transpose, Bool, false)
+    .ATTR(dtype, Type, DT_INT64)
     .OP_END_FACTORY_REG(NonZero)
 
 /**
@@ -1249,6 +1250,32 @@ REG_OP(ExpandD)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
     .REQUIRED_ATTR(shape, ListInt)
     .OP_END_FACTORY_REG(ExpandD)
+
+/**
+* @brief Calculate buckets limit and offset. \n
+
+* @par Inputs:
+* Three inputs, including:
+* @li bucket_list: A 1-D tensor of type int32 with the value of ivf_counts and ivf_offset index. \n
+* @li ivf_counts: A 1-D tensor of type int32 with the value of ivf counts. \n
+* @li ivf_offset: A 1-D tensor of type int32 with the value of ivf offset. \n
+
+* @par Attributes:
+* total_limit: A int64 type maximum value of the sum of ivf_counts corresponding to bucket_list. \n
+
+* @par Outputs:
+* @li buckets_limit: A 1-D tensor of type int32 with the sum <= total_limit. \n
+* @li buckets_offset: A 1-D tensor of type int32 with the value of ivf_offset corresponding to bucket_list. \n
+*/
+REG_OP(CalcBucketsLimitAndOffset)
+    .INPUT(bucket_list, TensorType({DT_INT32}))
+    .INPUT(ivf_counts, TensorType({DT_INT32}))
+    .INPUT(ivf_offset, TensorType({DT_INT32}))
+    .OUTPUT(buckets_limit, TensorType({DT_INT32}))
+    .OUTPUT(buckets_offset, TensorType({DT_INT32}))
+    .REQUIRED_ATTR(total_limit, Int)
+    .OP_END_FACTORY_REG(CalcBucketsLimitAndOffset)
+
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

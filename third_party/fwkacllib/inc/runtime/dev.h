@@ -1,18 +1,18 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef __CCE_RUNTIME_DEVICE_H__
 #define __CCE_RUNTIME_DEVICE_H__
@@ -149,6 +149,34 @@ RTS_API rtError_t rtGetDeviceInfo(uint32_t deviceId, int32_t moduleType, int32_t
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtSetDevice(int32_t device);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief set target device for current thread
+ * @param [int] device   the device id
+ * @param [int] deviceMode   the device mode
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetDeviceV2(int32_t device, rtDeviceMode deviceMode);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief set target die for current thread
+ * @param [int] die   the die id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtSetDie(int32_t die);
+
+/**
+ * @ingroup dvrt_dev
+ * @brief get target die of current thread
+ * @param [in|out] die   the die id
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetDie(int32_t *die);
 
 /**
  * @ingroup dvrt_dev

@@ -97,6 +97,10 @@ static const int32_t ACL_ERROR_RT_VECTOR_CORE_TIMEOUT = 507034;         // vecto
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_EXCEPTION = 507035;       // vector core exception
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_EXCEPTION = 507036;  // vector core trap exception
 static const int32_t ACL_ERROR_RT_CDQ_BATCH_ABNORMAL = 507037;          // cdq alloc batch abnormal
+static const int32_t ACL_ERROR_RT_DIE_MODE_CHANGE_ERROR = 507038;       // can not change die mode
+static const int32_t ACL_ERROR_RT_DIE_SET_ERROR = 507039;               // single die mode can not set die
+static const int32_t ACL_ERROR_RT_INVALID_DIEID = 507040;               // invalid die id
+static const int32_t ACL_ERROR_RT_DIE_MODE_NOT_SET = 507041;            // die mode not set
 
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR = 507899;    // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR = 507900;  // aicpu internal error

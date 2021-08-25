@@ -1,18 +1,18 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef __CCE_RUNTIME_CONTEXT_H__
 #define __CCE_RUNTIME_CONTEXT_H__
@@ -59,6 +59,17 @@ typedef struct tagRtGroupInfo {
  * @return RT_ERROR_NONE for ok
  */
 RTS_API rtError_t rtCtxCreate(rtContext_t *ctx, uint32_t flags, int32_t device);
+
+/**
+ * @ingroup rt_context
+ * @brief create context and associates it with the calling thread
+ * @param [out] ctx   created context
+ * @param [in] flags   context creation flag. set to 0.
+ * @param [in] device    device to create context on
+ * @param [in] deviceMode    the device mode
+ * @return RT_ERROR_NONE for ok
+ */
+RTS_API rtError_t rtCtxCreateV2(rtContext_t *ctx, uint32_t flags, int32_t device, rtDeviceMode deviceMode);
 
 /**
  * @ingroup rt_context

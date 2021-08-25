@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -178,7 +178,7 @@ REG_OP(GatherNd)
     .OP_END_FACTORY_REG(GatherNd)
 
 /**
-*@brief Gather slices from "x" according to "indices" by corresponding axis . \n
+*@brief Gather slices from "x" according to "indices" by corresponding axis .
 
 *@par Inputs:
 *Three inputs, including:
@@ -187,16 +187,19 @@ REG_OP(GatherNd)
 *     uint16, complex128, float16, uint32, uint64, complex64, complex128.
 * @li indices: A Tensor of type int32 or int64.
 * @li axis: A Tensor of type as int32 or int64,
-*     Must be in the range [-rank(input_tensor), rank(input_tensor)) . \n
+*     Must be in the range [-rank(input_tensor), rank(input_tensor)) .
+
+*@par Attributes:
+* batch_dims: An optional int. Defaults to 0.
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+*y: A Tensor. Has the same type as "x" .
 
 *@attention Constraints:
 *Value in indices must be in range [0, x.shape[axis])
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator GatherV2 . \n
+* Compatible with the TensorFlow operator GatherV2 .
 
 */
 REG_OP(GatherV2)
@@ -204,6 +207,7 @@ REG_OP(GatherV2)
     .INPUT(indices, TensorType::IndexNumberType())
     .INPUT(axis, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
+    .ATTR(batch_dims, Int, 0)
     .OP_END_FACTORY_REG(GatherV2)
 
 /**
@@ -1216,19 +1220,20 @@ REG_OP(StridedSliceAssignD)
 * @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
 *     int64, qint8, quint8, qint32, qint16, quint16, uint16,
 *     float16, uint32, uint64, complex64, complex128.
-* @li indices: A Tensor of type int32 or int64 . \n
+* @li indices: A Tensor of type int32 or int64 .
 
 *@par Attributes:
-*validate_indices: A bool specifying whether to verify the argument of "indice" . \n
+* @li validate_indices: A bool specifying whether to verify the argument of "indice" .
+* @li batch_dims: An optional int. Defaults to 0.
 
 *@par Outputs:
-*y: A Tensor. Has the same type as "x" . \n
+*y: A Tensor. Has the same type as "x" .
 
 *@attention Constraints:
-* "indices" is in the range [0, x.shape[0]) . \n
+* "indices" is in the range [0, x.shape[0]) .
 
 *@par Third-party framework compatibility
-* Compatible with the TensorFlow operator Gather . \n
+* Compatible with the TensorFlow operator Gather .
 
 */
 REG_OP(Gather)
@@ -1236,6 +1241,7 @@ REG_OP(Gather)
     .INPUT(indices, TensorType::IndexNumberType())
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(validate_indices, Bool, true)
+    .ATTR(batch_dims, Int, 0)
     .OP_END_FACTORY_REG(Gather)
 
 /**

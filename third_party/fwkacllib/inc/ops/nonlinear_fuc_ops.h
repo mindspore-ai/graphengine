@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,45 @@ REG_OP(Gelu)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(Gelu)
+
+/**
+* @brief Compute hard_swish of "x" element-wise . \n
+
+*@par Inputs:
+*One input, including:
+*x: A Tensor. Must be one of the following types: float16, float32
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+*@par Third-party framework compatibility
+* Compatible with the Torch operator HardSwish.
+*/
+REG_OP(HardSwish)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(HardSwish)
+
+/**
+*@brief Computes the for the Swish of "x" . \n
+
+*@par Inputs:
+*One input, including:
+*x: A Tensor. Must be one of the following types: float16, float32
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x".
+
+*@par Attributes:
+*scale: scalar parameter, default value = 1.0
+
+*@par Third-party framework compatibility
+*Compatible with the Torch operator Swish
+*/
+REG_OP(Swish)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(scale, Float, 1.0)
+    .OP_END_FACTORY_REG(Swish)
 
 /**
 *@brief Computes the gradient for the gelu of "x" . \n
@@ -97,23 +136,6 @@ REG_OP(FastGeluGrad)
     .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OUTPUT(z, TensorType({DT_FLOAT16, DT_FLOAT}))
     .OP_END_FACTORY_REG(FastGeluGrad)
-
-/**
-* @brief Compute hardswish of "x" element-wise . \n
-
-*@par Inputs:
-*One input, including:
-*x: A Tensor. Must be one of the following types: float16, float32
-
-*@par Outputs:
-*y: A Tensor. Has the same type as "x".
-*@par Third-party framework compatibility
-* Compatible with the Torch operator Hardswish.
-*/
-REG_OP(Hardswish)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OP_END_FACTORY_REG(Hardswish)
 
 /**
 *@brief Computes the gradient for the tanh of "x" . \n

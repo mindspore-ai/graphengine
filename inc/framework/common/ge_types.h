@@ -41,7 +41,7 @@ enum FrameworkType {
 };
 
 const std::map<std::string, std::string> kFwkTypeToStr = {
-  {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
+    {"0", "Caffe"}, {"1", "MindSpore"}, {"3", "TensorFlow"}, {"4", "Android_NN"}, {"5", "Onnx"}};
 
 enum OpEngineType {
   ENGINE_SYS = 0,  // default engine
@@ -230,6 +230,14 @@ class GE_FUNC_VISIBILITY ModelListener {
   ///
   virtual Status OnComputeDone(uint32_t model_id, uint32_t data_index, uint32_t result_code,
                                std::vector<ge::Tensor> &outputs) = 0;
+
+  virtual uint32_t GetResultCode() {
+    return 0;
+  };
+
+  virtual Status ResetResult() {
+    return SUCCESS;
+  };
 };
 
 // OMM configuration item

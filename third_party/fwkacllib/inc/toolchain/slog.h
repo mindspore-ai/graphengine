@@ -204,6 +204,7 @@ enum {
   FV,
   MDCMAP,
   TUNE,
+  HSS, /**< helper */
   INVLID_MOUDLE_ID
 };
 

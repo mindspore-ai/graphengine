@@ -115,7 +115,7 @@ typedef struct aclprofSubscribeConfig aclprofSubscribeConfig1;
 /// @param [in] profSubscribeConfig: pointer to config of model subscribe
 /// @return Status result of function
 ///
-Status aclgrphProfGraphSubscribe(const uint32_t graphId,
+MSVP_PROF_API Status aclgrphProfGraphSubscribe(const uint32_t graphId,
     const aclprofSubscribeConfig1 *profSubscribeConfig);
 
 ///
@@ -124,7 +124,7 @@ Status aclgrphProfGraphSubscribe(const uint32_t graphId,
 /// @param [in] graphId: the graph id subscribed
 /// @return Status result of function
 ///
-Status aclgrphProfGraphUnSubscribe(const uint32_t graphId);
+MSVP_PROF_API Status aclgrphProfGraphUnSubscribe(const uint32_t graphId);
 
 /**
  * @ingroup AscendCL
@@ -136,7 +136,7 @@ Status aclgrphProfGraphUnSubscribe(const uint32_t graphId);
  * @retval graph id of subscription data
  * @retval 0 for failed
  */
-size_t aclprofGetGraphId(const void *opInfo, size_t opInfoLen, uint32_t index);
+MSVP_PROF_API size_t aclprofGetGraphId(const void *opInfo, size_t opInfoLen, uint32_t index);
 #ifdef __cplusplus
 }
 #endif

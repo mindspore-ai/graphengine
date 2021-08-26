@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,8 +101,8 @@ GE_FUNC_VISIBILITY Status SetOutputNodeInfo(ge::Graph &graph, const std::string 
 GE_FUNC_VISIBILITY Status GetOutputLeaf(ge::NodePtr node,
                                         std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info);
 
-GE_FUNC_VISIBILITY void GetOutputNodesNameAndIndex(std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
-                                                   std::vector<std::string> &output_nodes_name);
+GE_FUNC_VISIBILITY void CreateOutputNodesInfo(std::vector<std::pair<ge::NodePtr, int32_t>> &output_nodes_info,
+                                              std::vector<std::string> &output_nodes_name);
 
 GE_FUNC_VISIBILITY void UpdateOmgCtxWithParserCtx();
 

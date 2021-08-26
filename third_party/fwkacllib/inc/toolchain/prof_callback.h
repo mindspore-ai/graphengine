@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright 2020-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * @file prof_callback.h
+ * @brief declaraion of profiling callbacks
  */
 
 #ifndef MSPROFILER_PROF_CALLBACK_H_
@@ -21,6 +24,11 @@
 extern "C" {
 #endif // __cplusplus
 
+#if (OS_TYPE != LINUX)
+#define MSVP_PROF_API __declspec(dllexport)
+#else
+#define MSVP_PROF_API __attribute__((visibility("default")))
+#endif
 
 #include "stddef.h"
 #include "stdint.h"
@@ -97,7 +105,6 @@ enum MsprofReporterCallbackType {
  */
 typedef int32_t (*MsprofReporterCallback)(uint32_t moduleId, uint32_t type, void *data, uint32_t len);
 
-
 #define MSPROF_OPTIONS_DEF_LEN_MAX (2048)
 
 /**
@@ -118,25 +125,16 @@ enum MsprofCtrlCallbackType {
     MSPROF_CTRL_INIT_ACL_JSON,              // start profiling with acl.json
     MSPROF_CTRL_INIT_GE_OPTIONS,            // start profiling with ge env and options
     MSPROF_CTRL_FINALIZE,                   // stop profiling
-    MSPROF_CTRL_REPORT_FUN_P,               // for report callback
-    MSPROF_CTRL_PROF_SWITCH_ON,             // for prof switch on
-    MSPROF_CTRL_PROF_SWITCH_OFF             // for prof switch off
+    MSPROF_CTRL_INIT_DYNA = 0xFF,           // start profiling for dynamic profiling
 };
 
-#define    PROF_COMMANDHANDLE_TYPE_INIT              (0)
-#define    PROF_COMMANDHANDLE_TYPE_START             (1)
-#define    PROF_COMMANDHANDLE_TYPE_STOP              (2)
-#define    PROF_COMMANDHANDLE_TYPE_FINALIZE          (3)
-#define    PROF_COMMANDHANDLE_TYPE_MODEL_SUBSCRIBE   (4)
-#define    PROF_COMMANDHANDLE_TYPE_MODEL_UNSUBSCRIBE (5)
-
-#define MSPROF_MAX_DEV_NUM (64)
-
-struct MsprofCommandHandle {
-    uint64_t profSwitch;
-    uint32_t devNums; // length of device id list
-    uint32_t devIdList[MSPROF_MAX_DEV_NUM];
-    uint32_t modelId;
+enum MsprofCommandHandleType {
+    PROF_COMMANDHANDLE_TYPE_INIT = 0,
+    PROF_COMMANDHANDLE_TYPE_START,
+    PROF_COMMANDHANDLE_TYPE_STOP,
+    PROF_COMMANDHANDLE_TYPE_FINALIZE,
+    PROF_COMMANDHANDLE_TYPE_MODEL_SUBSCRIBE,
+    PROF_COMMANDHANDLE_TYPE_MODEL_UNSUBSCRIBE
 };
 
 /**
@@ -165,7 +163,7 @@ typedef void (*MsprofSetDeviceCallback)(uint32_t devId, bool isOpenDevice);
  * @param [in] dataLen: Length of data
  * @return 0:SUCCESS, >0:FAILED
  */
-int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
+MSVP_PROF_API int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
 
 /*
  * @name AscendCL
@@ -173,7 +171,7 @@ int32_t MsprofInit(uint32_t dataType, void *data, uint32_t dataLen);
  * @param NULL
  * @return 0:SUCCESS, >0:FAILED
  */
-int32_t MsprofFinalize();
+MSVP_PROF_API int32_t MsprofFinalize();
 #ifdef __cplusplus
 }
 #endif

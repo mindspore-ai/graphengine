@@ -1,18 +1,18 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
+ * Copyright 2020 Huawei Technologies Co., Ltd
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 #ifndef __CCE_RUNTIME_BASE_H__
 #define __CCE_RUNTIME_BASE_H__
@@ -35,6 +35,16 @@ extern "C" {
 
 typedef int32_t rtError_t;
 static const int32_t RT_ERROR_NONE = 0; // success
+
+/**
+ * @ingroup dvrt_base
+ * @brief device mode.
+ */
+typedef enum tagRtDeviceMode {
+    RT_DEVICE_MODE_SINGLE_DIE = 0,
+    RT_DEVICE_MODE_MULTI_DIE = 1,
+    RT_DEVICE_MODE_RESERVED
+} rtDeviceMode;
 
 /**
  * @ingroup dvrt_base
@@ -169,18 +179,6 @@ RTS_API rtError_t rtProfilerInit(const char *profDir, const char *address, const
  * @brief config rts profiler.
  */
 RTS_API rtError_t rtProfilerConfig(uint16_t type);
-
-/**
- * @ingroup profiling_base
- * @brief start rts profiler.
- */
-RTS_API rtError_t rtProfilerStart(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList);
-
-/**
- * @ingroup profiling_base
- * @brief stop rts profiler.
- */
-RTS_API rtError_t rtProfilerStop(uint64_t profConfig, int32_t numsDev, uint32_t *deviceList);
 
 /**
  * @ingroup profiling_base

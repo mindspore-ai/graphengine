@@ -3,8 +3,8 @@
  * Description: ffts plus interface
  */
 
-#ifndef __CCE_RUNTIME_FFTS_PLUS_H
-#define __CCE_RUNTIME_FFTS_PLUS_H
+#ifndef CCE_RUNTIME_RT_FFTS_PLUS_H
+#define CCE_RUNTIME_RT_FFTS_PLUS_H
 
 #include "base.h"
 #include "rt_ffts_plus_define.h"
@@ -26,9 +26,13 @@ typedef struct tagFftsPlusTaskInfo {
 #pragma pack(pop)
 
 RTS_API rtError_t rtGetAddrAndPrefCntWithHandle(void *handle, const void *devFunc, void **addr, uint32_t *prefetchCnt);
+
 RTS_API rtError_t rtFftsPlusTaskLaunch(rtFftsPlusTaskInfo_t *fftsPlusTaskInfo, rtStream_t stream);
+
+RTS_API rtError_t rtFftsPlusTaskLaunchWithFlag(rtFftsPlusTaskInfo_t *fftsPlusTaskInfo, rtStream_t stream,
+                                               uint32_t flag);
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
-#endif // __CCE_RUNTIME_FFTS_H
+#endif // CCE_RUNTIME_RT_FFTS_PLUS_H

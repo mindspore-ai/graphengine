@@ -541,7 +541,7 @@ ACL_FUNC_VISIBILITY aclError aclrtSynchronizeEvent(aclrtEvent event);
  *
  * @see aclrtCreateEvent | aclrtRecordEvent | aclrtSynchronizeStream
  */
-ACL_FUNC_VISIBILITY aclError aclrtEventElapsedTime(float *ms, aclrtEvent start, aclrtEvent end);
+ACL_FUNC_VISIBILITY aclError aclrtEventElapsedTime(float *ms, aclrtEvent startEvent, aclrtEvent endEvent);
 
 /**
  * @ingroup AscendCL
@@ -730,6 +730,43 @@ ACL_FUNC_VISIBILITY aclError aclrtMemset(void *devPtr, size_t maxCount, int32_t 
  */
 ACL_FUNC_VISIBILITY aclError aclrtMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count,
                                               aclrtMemcpyKind kind, aclrtStream stream);
+
+/**
+ * @ingroup AscendCL
+ * @brief synchronous memory replication of two-dimensional matrix between host and device
+ *
+ * @param dst [IN]       destination address pointer
+ * @param dpitch [IN]    pitch of destination memory
+ * @param src [IN]       source address pointer
+ * @param spitch [IN]    pitch of source memory
+ * @param width [IN]     width of matrix transfer
+ * @param height [IN]    height of matrix transfer
+ * @param kind [IN]      memcpy type
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMemcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width,
+                                           size_t height, aclrtMemcpyKind kind);
+
+/**
+ * @ingroup AscendCL
+ * @brief asynchronous memory replication of two-dimensional matrix between host and device
+ *
+ * @param dst [IN]       destination address pointer
+ * @param dpitch [IN]    pitch of destination memory
+ * @param src [IN]       source address pointer
+ * @param spitch [IN]    pitch of source memory
+ * @param width [IN]     width of matrix transfer
+ * @param height [IN]    height of matrix transfer
+ * @param kind [IN]      memcpy type
+ * @param stream [IN]    asynchronized task stream
+ *
+ * @retval ACL_SUCCESS The function is successfully executed.
+ * @retval OtherValues Failure
+ */
+ACL_FUNC_VISIBILITY aclError aclrtMemcpy2dAsync(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width,
+                                                size_t height, aclrtMemcpyKind kind, aclrtStream stream);
 
 /**
  * @ingroup AscendCL

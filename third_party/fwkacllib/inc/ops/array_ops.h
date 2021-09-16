@@ -1258,21 +1258,21 @@ REG_OP(ExpandD)
 * Three inputs, including:
 * @li bucket_list: A 1-D tensor of type int32 with the value of ivf_counts and ivf_offset index. \n
 * @li ivf_counts: A 1-D tensor of type int32 with the value of ivf counts. \n
-* @li ivf_offset: A 1-D tensor of type int32 with the value of ivf offset. \n
+* @li ivf_offset: A 1-D tensor of type int32 or int64 with the value of ivf offset. \n
 
 * @par Attributes:
 * total_limit: A int64 type maximum value of the sum of ivf_counts corresponding to bucket_list. \n
 
 * @par Outputs:
 * @li buckets_limit: A 1-D tensor of type int32 with the sum <= total_limit. \n
-* @li buckets_offset: A 1-D tensor of type int32 with the value of ivf_offset corresponding to bucket_list. \n
+* @li buckets_offset: A 1-D tensor of type int32 or int64 with the value of ivf_offset corresponding to bucket_list. \n
 */
 REG_OP(CalcBucketsLimitAndOffset)
     .INPUT(bucket_list, TensorType({DT_INT32}))
     .INPUT(ivf_counts, TensorType({DT_INT32}))
-    .INPUT(ivf_offset, TensorType({DT_INT32}))
+    .INPUT(ivf_offset, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(buckets_limit, TensorType({DT_INT32}))
-    .OUTPUT(buckets_offset, TensorType({DT_INT32}))
+    .OUTPUT(buckets_offset, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(total_limit, Int)
     .OP_END_FACTORY_REG(CalcBucketsLimitAndOffset)
 

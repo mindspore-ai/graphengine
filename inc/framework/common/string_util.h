@@ -78,8 +78,8 @@ class GE_FUNC_VISIBILITY StringUtils {
   ///  @param [in] delim  separator
   ///  @return string array after segmentation
   ///
-  static std::vector<std::string> Split(const std::string &str, char delim) {
-    std::vector<std::string> elems;
+  static std::vector<std::string, std::allocator<std::string>> Split(const std::string &str, char delim) {
+    std::vector<std::string, std::allocator<std::string>> elems;
 
     if (str.empty()) {
       elems.emplace_back("");

@@ -33,7 +33,7 @@ class GE_FUNC_VISIBILITY PlatformVersionManager {
   ~PlatformVersionManager() = delete;
   static Status GetPlatformVersion(std::string &ver) {
     ver = "1.11.z";
-    std::vector<std::string> version_splits = StringUtils::Split(ver, '.');
+    const std::vector<std::string> version_splits = StringUtils::Split(ver, '.');
     GE_IF_BOOL_EXEC(version_splits.size() < 3, GELOGW("Read platform version error!"); return FAILED;);
 
     GELOGI("Read current platform version: %s.", ver.c_str());

@@ -3,8 +3,8 @@
  * Description: the definition of stars
  */
 
-#ifndef __CCE_RUNTIME_STARS_DEFINE__H
-#define __CCE_RUNTIME_STARS_DEFINE__H
+#ifndef CCE_RUNTIME_RT_STARS_DEFINE_H
+#define CCE_RUNTIME_RT_STARS_DEFINE_H
 
 #include "base.h"
 
@@ -88,4 +88,4 @@ typedef struct tagFftsPlusSqe {
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
-#endif // __CCE_RUNTIME_STARS_DEFINE__H
+#endif // CCE_RUNTIME_RT_STARS_DEFINE_H

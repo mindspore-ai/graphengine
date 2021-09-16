@@ -368,8 +368,9 @@ REG_OP(SpaceToDepth)
 *     complex128, uint32, uint64
 
 *@par Attributes:
-*Two attributes, including:
+*Three attributes, including:
 * @li block_size: An int >= 2, specifying the size of the spatial block.
+* @li mode: An optional string, specifying the mode. Defaults to "DCR".
 * @li data_format: An optional string, specifying the data format. Defaults to "NHWC" . \n
 
 *@par Outputs:
@@ -382,6 +383,7 @@ REG_OP(DepthToSpace)
   .INPUT(x, TensorType::BasicType())
   .OUTPUT(y, TensorType::BasicType())
   .REQUIRED_ATTR(block_size, Int)
+  .ATTR(mode, String, "DCR")
   .ATTR(data_format, String, "NHWC")
   .OP_END_FACTORY_REG(DepthToSpace)
 

@@ -59,6 +59,25 @@ REG_OP(HardSwish)
     .OP_END_FACTORY_REG(HardSwish)
 
 /**
+*@brief Computes the gradient for the hard_swish of "x" . \n
+
+* @par Inputs:
+*Two inputs, including:
+* @li grad: A Tensor. Must be one of the following types: float16, float32
+* @li x: A Tensor of the same type as "grad" . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "grad".
+* @par Third-party framework compatibility
+* Compatible with the Torch operator HardSwishGrad.
+*/
+REG_OP(HardSwishGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(HardSwishGrad)
+
+/**
 *@brief Computes the for the Swish of "x" . \n
 
 *@par Inputs:
@@ -79,6 +98,29 @@ REG_OP(Swish)
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
     .ATTR(scale, Float, 1.0)
     .OP_END_FACTORY_REG(Swish)
+
+/**
+*@brief Computes the gradient for the Swish of "x" . \n
+
+*@par Inputs:
+*Three inputs, including:
+* @li grad: A Tensor. Must be one of the following types: float16, float32
+* @li x: A Tensor of the same type as "grad".
+* @li y: A Tensor of the same type as "grad" . \n
+* @par Attributes:
+* scale: A optional scalar. The data type is float . \n
+*@par Outputs:
+*grad_x: A Tensor. Has the same type as "grad".
+*@par Third-party framework compatibility
+*Compatible with the Torch operator SwishGrad
+*/
+REG_OP(SwishGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(grad_x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(scale, Float, 1.0)
+    .OP_END_FACTORY_REG(SwishGrad)
 
 /**
 *@brief Computes the gradient for the gelu of "x" . \n

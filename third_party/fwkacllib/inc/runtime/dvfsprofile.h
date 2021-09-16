@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef __CCE_RUNTIME_DVFSPROFILE_H__
-#define __CCE_RUNTIME_DVFSPROFILE_H__
+#ifndef CCE_RUNTIME_DVFSPROFILE_H
+#define CCE_RUNTIME_DVFSPROFILE_H
 
 #include "base.h"
 
@@ -60,4 +60,4 @@ RTS_API rtError_t rtGetDvfsProfile(DvfsProfileMode *pmode);
 }
 #endif
 
-#endif  // __CCE_RUNTIME_PROFILE_H__
+#endif  // CCE_RUNTIME_DVFSPROFILE_H

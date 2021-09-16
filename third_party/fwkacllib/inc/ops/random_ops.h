@@ -685,6 +685,24 @@ REG_OP(Uniform)
     .ATTR(from, Float, 0.0)
     .ATTR(to, Float, 1.0)
     .OP_END_FACTORY_REG(Uniform)
-}   // namespace ge
 
+/**
+*@brief Outputs integers consisting of 0 and 1, used for lstm etc. \n
+*@par Inputs
+* @li time_step: A tensor with data type int64. 0-D.
+* @li batch_size: A tensor with data type int64. 0-D.
+
+*@par Outputs:
+*y: A Tensor. Has the  type float16 or float, 2-D, [time_step,batch_size]. \n
+
+*@attention Constraints:
+* Compatible with the Caffe operator ContinuationIndicator.
+*/
+
+REG_OP(ContinuationIndicator)
+    .REQUIRED_ATTR(time_step, Int)
+    .REQUIRED_ATTR(batch_size, Int)
+    .OUTPUT(y, TensorType({DT_FLOAT}))
+    .OP_END_FACTORY_REG(ContinuationIndicator)
+}   // namespace ge
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_RANDOM_OPS_H_

@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef __CCE_RUNTIME_CONFIG_H__
-#define __CCE_RUNTIME_CONFIG_H__
+#ifndef CCE_RUNTIME_CONFIG_H
+#define CCE_RUNTIME_CONFIG_H
 
 #include "base.h"
 
@@ -23,28 +23,28 @@
 extern "C" {
 #endif
 
-#define PLAT_COMBINE(arch, chip, ver) ((arch << 16) | (chip << 8) | (ver))
-#define PLAT_GET_ARCH(type)           ((type >> 16) & 0xffff)
-#define PLAT_GET_CHIP(type)           ((type >> 8) & 0xff)
-#define PLAT_GET_VER(type)            (type & 0xff)
+#define PLAT_COMBINE(arch, chip, ver) (((arch) << 16U) | ((chip) << 8U) | (ver))
+#define PLAT_GET_ARCH(type)           (((type) >> 16U) & 0xffffU)
+#define PLAT_GET_CHIP(type)           (((type) >> 8U) & 0xffU)
+#define PLAT_GET_VER(type)            ((type) & 0xffU)
 
 typedef enum tagRtArchType {
     ARCH_BEGIN = 0,
     ARCH_V100 = ARCH_BEGIN,
-    ARCH_V200,
-    ARCH_END,
+    ARCH_V200 = 1,
+    ARCH_END = 2,
 } rtArchType_t;
 
 typedef enum tagRtChipType {
     CHIP_BEGIN = 0,
     CHIP_MINI = CHIP_BEGIN,
-    CHIP_CLOUD,
-    CHIP_MDC,
-    CHIP_LHISI,
-    CHIP_DC,
-    CHIP_CLOUD_V2,
-    CHIP_NO_DEVICE,
-    CHIP_END,
+    CHIP_CLOUD = 1,
+    CHIP_MDC = 2,
+    CHIP_LHISI = 3,
+    CHIP_DC = 4,
+    CHIP_CLOUD_V2 = 5,
+    CHIP_NO_DEVICE = 6,
+    CHIP_END = 7,
 } rtChipType_t;
 
 typedef enum tagRtAicpuScheType {
@@ -59,29 +59,32 @@ typedef enum tagRtDeviceCapabilityType {
     RT_SCHEDULE_HARDWARE, // HWTS Schedule
     RT_AICPU_BLOCKING_OP_NOT_SUPPORT,
     RT_AICPU_BLOCKING_OP_SUPPORT, // 1910/1980/1951 ts support AICPU blocking operation
+    RT_MODE_NO_FFTS, // no ffts
+    RT_MODE_FFTS, // 1981 get ffts work mode, ffts
+    RT_MODE_FFTS_PLUS, // 1981 get ffts work mode, ffts plus
 } rtDeviceCapabilityType;
 
 typedef enum tagRtVersion {
     VER_BEGIN = 0,
     VER_NA = VER_BEGIN,
-    VER_ES,
-    VER_CS,
-    VER_SD3403,
-    VER_END,
+    VER_ES = 1,
+    VER_CS = 2,
+    VER_SD3403 = 3,
+    VER_END = 4,
 } rtVersion_t;
 
 /* match rtChipType_t */
 typedef enum tagRtPlatformType {
     PLATFORM_BEGIN = 0,
     PLATFORM_MINI_V1 = PLATFORM_BEGIN,
-    PLATFORM_CLOUD_V1,
-    PLATFORM_MINI_V2,
-    PLATFORM_LHISI_ES,
-    PLATFORM_LHISI_CS,
-    PLATFORM_DC,
-    PLATFORM_CLOUD_V2,
-    PLATFORM_LHISI_SD3403,
-    PLATFORM_END,
+    PLATFORM_CLOUD_V1 = 1,
+    PLATFORM_MINI_V2 = 2,
+    PLATFORM_LHISI_ES = 3,
+    PLATFORM_LHISI_CS = 4,
+    PLATFORM_DC = 5,
+    PLATFORM_CLOUD_V2 = 6,
+    PLATFORM_LHISI_SD3403 = 7,
+    PLATFORM_END = 8,
 } rtPlatformType_t;
 
 typedef enum tagRtCubeFracMKNFp16 {
@@ -240,4 +243,4 @@ RTS_API rtError_t rtSetOpExecuteTimeOut(uint32_t timeout);
 }
 #endif
 
-#endif // __CCE_RUNTIME_STREAM_H__
+#endif // CCE_RUNTIME_CONFIG_H

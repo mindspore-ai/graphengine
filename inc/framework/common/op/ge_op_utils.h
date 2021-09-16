@@ -95,7 +95,7 @@ class GE_FUNC_VISIBILITY OpUtils {
   /// @param [out] aipp_params aipp parameters
   /// @return enum of tagCCAippInputFormat
   ///
-  static Status ConvertAippParams(const GeAttrValue::NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params);
+  static Status ConvertAippParams(const NamedAttrs &aipp_attr, domi::AippOpParams *aipp_params);
   static Status TransferDim(const std::vector<int64_t> &dim, std::vector<int64_t> &dim_vector);
   template <typename T>
   static void SliceData(const std::vector<char *> &input, int64_t chunk_size, std::vector<char *> &output,

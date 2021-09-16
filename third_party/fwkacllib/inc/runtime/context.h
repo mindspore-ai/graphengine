@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef __CCE_RUNTIME_CONTEXT_H__
-#define __CCE_RUNTIME_CONTEXT_H__
+#ifndef CCE_RUNTIME_CONTEXT_H
+#define CCE_RUNTIME_CONTEXT_H
 
 #include "base.h"
 
@@ -173,4 +173,4 @@ RTS_API rtError_t rtSetCtxINFMode(bool mode);
 #endif
 
 
-#endif  // __CCE_RUNTIME_CONTEXT_H__
+#endif  // CCE_RUNTIME_CONTEXT_H

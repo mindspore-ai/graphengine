@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-#define GE_MODULE_NAME static_cast<int>(GE)
+#define GE_MODULE_NAME static_cast<int32_t>(GE)
 
 // trace status of log
 enum TraceStatus { TRACE_INIT = 0, TRACE_RUNNING, TRACE_WAITING, TRACE_STOP };
@@ -51,43 +51,61 @@ class GE_FUNC_VISIBILITY GeLog {
 };
 
 inline bool IsLogEnable(int module_name, int log_level) {
-  int32_t enable = CheckLogLevel(module_name, log_level);
+  const int32_t enable = CheckLogLevel(module_name, log_level);
   // 1:enable, 0:disable
   return (enable == 1);
 }
 
-#define GELOGE(ERROR_CODE, fmt, ...)                                                                         \
-  dlog_error(GE_MODULE_NAME, "%lu %s: ErrorNo: %d(%s) %s" fmt, GeLog::GetTid(), __FUNCTION__, ERROR_CODE,    \
-             ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(), \
-             ##__VA_ARGS__)
-#define GELOGW(fmt, ...)                      \
-  if (IsLogEnable(GE_MODULE_NAME, DLOG_WARN)) \
-  dlog_warn(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), __FUNCTION__, ##__VA_ARGS__)
-#define GELOGI(fmt, ...)                      \
-  if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) \
-  dlog_info(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), __FUNCTION__, ##__VA_ARGS__)
-#define GELOGD(fmt, ...)                       \
-  if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) \
-  dlog_debug(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), __FUNCTION__, ##__VA_ARGS__)
+#define GELOGE(ERROR_CODE, fmt, ...)                                                                            \
+  do {                                                                                                          \
+    dlog_error(GE_MODULE_NAME, "%lu %s: ErrorNo: %u(%s) %s" fmt, GeLog::GetTid(), &__FUNCTION__[0], ERROR_CODE, \
+               ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(),  \
+               ##__VA_ARGS__);                                                                                  \
+  } while (false)
 
-#define GEEVENT(fmt, ...) dlog_event(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), __FUNCTION__, ##__VA_ARGS__)
+#define GELOGW(fmt, ...)                                                                          \
+  do {                                                                                            \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_WARN)) {                                                 \
+      dlog_warn(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+    }                                                                                             \
+  } while (false)
 
-#define GELOGT(VALUE, fmt, ...)                                                                                    \
-  do {                                                                                                             \
-    TraceStatus stat = VALUE;                                                                                      \
-    const char *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                                     \
-    int idx = static_cast<int>(stat);                                                                              \
-    char *k = const_cast<char *>("status");                                                                        \
-    char *v = const_cast<char *>(TraceStatStr[idx]);                                                               \
-    KeyValue kv = {k, v};                                                                                          \
-    DlogWithKV(static_cast<int>(GE_MODULE_NAME), DLOG_TRACE, &kv, 1, "%lu %s:" fmt, GeLog::GetTid(), __FUNCTION__, \
-               ##__VA_ARGS__);                                                                                     \
-  } while (0)
+#define GELOGI(fmt, ...)                                                                          \
+  do {                                                                                            \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_INFO)) {                                                 \
+      dlog_info(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+    }                                                                                             \
+  } while (false)
 
-#define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                                         \
-  dlog_error(MOD_NAME, "%lu %s: ErrorNo: %d(%s) %s" fmt, GeLog::GetTid(), __FUNCTION__, ERROR_CODE,          \
-             ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(), \
-             ##__VA_ARGS__)
+#define GELOGD(fmt, ...)                                                                           \
+  do {                                                                                             \
+    if (IsLogEnable(GE_MODULE_NAME, DLOG_DEBUG)) {                                                 \
+      dlog_debug(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+    }                                                                                              \
+  } while (false)
+
+#define GEEVENT(fmt, ...)                                                                        \
+  do {                                                                                           \
+    dlog_event(GE_MODULE_NAME, "%lu %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+  } while (false)
+
+#define GELOGT(VALUE, fmt, ...)                                                                                      \
+  do {                                                                                                               \
+    TraceStatus stat = VALUE;                                                                                        \
+    const char *const TraceStatStr[] = {"INIT", "RUNNING", "WAITING", "STOP"};                                       \
+    const int32_t idx = static_cast<int32_t>(stat);                                                                  \
+    char *k = const_cast<char *>("status");                                                                          \
+    char *v = const_cast<char *>(TraceStatStr[idx]);                                                                 \
+    KeyValue kv = {k, v};                                                                                            \
+    DlogWithKV(GE_MODULE_NAME, DLOG_TRACE, &kv, 1, "%lu %s:" fmt, GeLog::GetTid(), &__FUNCTION__[0], ##__VA_ARGS__); \
+  } while (false)
+
+#define GE_LOG_ERROR(MOD_NAME, ERROR_CODE, fmt, ...)                                                           \
+  do {                                                                                                         \
+    dlog_error(MOD_NAME, "%lu %s: ErrorNo: %u(%s) %s" fmt, GeLog::GetTid(), &__FUNCTION__[0], ERROR_CODE,      \
+               ((GE_GET_ERRORNO_STR(ERROR_CODE)).c_str()), ErrorManager::GetInstance().GetLogHeader().c_str(), \
+               ##__VA_ARGS__);                                                                                 \
+  } while (false)
 
 // print memory when it is greater than 1KB.
 #define GE_PRINT_DYNAMIC_MEMORY(FUNC, PURPOSE, SIZE)                                                        \
@@ -95,7 +113,7 @@ inline bool IsLogEnable(int module_name, int log_level) {
     if ((SIZE) > 1024) {                                                                                    \
       GELOGI("MallocMemory, func=%s, size=%zu, purpose=%s", (#FUNC), static_cast<size_t>(SIZE), (PURPOSE)); \
     }                                                                                                       \
-  } while (0);
+  } while (false)
 #ifdef __cplusplus
 }
 #endif

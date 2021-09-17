@@ -49,10 +49,10 @@ namespace ge {
 * Compatible with the TensorFlow operator BatchMatmul.
 */
 REG_OP(MatMul)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
     .OP_END_FACTORY_REG(MatMul)
@@ -88,10 +88,10 @@ REG_OP(MatMul)
 * Compatible with the TensorFlow operator BatchMatmul.
 */
 REG_OP(MatMulV2)
-    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4}))
-    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8 DT_INT4}))
-    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32}))
+    .INPUT(x1, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
+    .INPUT(x2, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_INT8, DT_INT4, DT_BF16}))
+    .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT, DT_FLOAT16, DT_INT32, DT_BF16}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8, DT_INT4}))
     .ATTR(transpose_x1, Bool, false)
     .ATTR(transpose_x2, Bool, false)
@@ -1065,6 +1065,40 @@ REG_OP(MatrixSetDiagV2)
     .INPUT(k, TensorType({DT_INT32}))
     .OUTPUT(output, TensorType::BasicType())
     .OP_END_FACTORY_REG(MatrixSetDiagV2)
+
+/**
+*@brief Returns a batched matrix tensor with new batched diagonal values . \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li input: "Rank `r+1`, where `r >= 1`. \n
+
+*@li diagonal: Rank `r` when `k` is an integer or `k[0] == k[1]`. Otherwise, it has rank `r+1`. \n
+
+*@li k:
+*Diagonal offset(s). Positive value means superdiagonal, 0 refers to the main \n
+*diagonal, and negative value means subdiagonals. `k` can be a single integer \n
+*(for a single diagonal) or a pair of integers specifying the low and high ends \n
+*of a matrix band. `k[0]` must not be larger than `k[1]`. \n
+
+*@par Attributes:
+*@li align: An optional string. Defaults to RIGHT_LEFT. It is a string specifying \n
+*how superdiagonals and subdiagonals should be aligned, respectively. \n
+*other optional: LEFT_RIGHT, LEFT_LEFT, and RIGHT_RIGHT.\n
+
+*@par Outputs:
+*output: Rank `r+1`, with `output.shape = input.shape` . \n
+
+*@par Third-party framework compatibility
+* Compatible with the TensorFlow operator ScatterUpdate.
+*/
+REG_OP(MatrixSetDiagV3)
+    .INPUT(input, TensorType::BasicType())
+    .INPUT(diagonal, TensorType::BasicType())
+    .INPUT(k, TensorType({DT_INT32}))
+    .OUTPUT(output, TensorType::BasicType())
+    .ATTR(align, String, "RIGHT_LEFT")
+    .OP_END_FACTORY_REG(MatrixSetDiagV3)
 
 /**
 *@brief Returns a batched diagonal tensor with given batched diagonal values . \n

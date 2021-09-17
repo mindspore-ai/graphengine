@@ -410,10 +410,10 @@ form square matrices.  \n
 */
 
 REG_OP(Svd)
-    .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT }))
-    .OUTPUT(sigma, TensorType({ DT_DOUBLE, DT_FLOAT }))
-    .OUTPUT(u, TensorType({ DT_DOUBLE, DT_FLOAT }))
-    .OUTPUT(v, TensorType({ DT_DOUBLE, DT_FLOAT }))
+    .INPUT(x, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(sigma, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(u, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
+    .OUTPUT(v, TensorType({ DT_DOUBLE, DT_FLOAT, DT_COMPLEX64, DT_COMPLEX128 }))
     .ATTR(compute_uv, Bool, true)
     .ATTR(full_matrices, Bool, false)
     .OP_END_FACTORY_REG(Svd)

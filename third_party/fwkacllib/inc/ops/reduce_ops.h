@@ -1275,7 +1275,7 @@ REG_OP(ReduceStd)
 
 
 * @par Attributes:
-* Three Attributes, including:
+* Five Attributes, including:
 * @li dim: An optional listint, Defaults to "None". \n
 * @li unbiased: An optional bool. Defaults to "True".
 *     If "True", Use Bessel Correction.
@@ -1283,9 +1283,14 @@ REG_OP(ReduceStd)
 * @li keepdim: An optional bool. Defaults to "False".
 *     If "True", Keep the original tensor dimension.
 *     If "False", Do not keep the original tensor dimension. \n
+* @li invert: An optional bool, Defaults to "False".
+*     If "True", the output is inverse of variance.
+*     If "False", the output is variance.
+* @li epsilon: An optional floar, Defaults to 0.001.
+*     Prevent division by 0.
 
 * @par Outputs:
-* @li y: A Tensor. It's the std of X. Has the same type as "x".
+* @li y: A Tensor. It's the variance of X or reciprocal of vaiance of X. Has the same type as "x".
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator ReduceStdWithMean.
@@ -1297,6 +1302,8 @@ REG_OP(ReduceStdWithMean)
     .ATTR(dim, ListInt, {})
     .ATTR(unbiased, Bool, true)
     .ATTR(keepdim, Bool, false)
+    .ATTR(invert, Bool, false)
+    .ATTR(epsilon, Float, 0.001)
     .OP_END_FACTORY_REG(ReduceStdWithMean)
 } //namespace ge
 

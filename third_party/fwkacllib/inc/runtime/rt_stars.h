@@ -1,10 +1,10 @@
 /*
  * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- * Description:
+ * Description: the definition of stars
  */
 
-#ifndef __CCE_RUNTIME_STARS_H
-#define __CCE_RUNTIME_STARS_H
+#ifndef CCE_RUNTIME_RT_STARS_H
+#define CCE_RUNTIME_RT_STARS_H
 
 #include "base.h"
 
@@ -84,4 +84,4 @@ RTS_API rtError_t rtCdqEnQueuePtrMode(const char *queName, uint32_t cdqeIndex, c
 
 }
 #endif
-#endif // __CCE_RUNTIME_STARS_H
+#endif // CCE_RUNTIME_RT_STARS_H

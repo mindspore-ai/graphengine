@@ -34,13 +34,16 @@ namespace ge {
 class GeRootModel;
 class GE_FUNC_VISIBILITY GeGenerator {
  public:
+  using InOutTensorRef = std::pair<const vector<ge::GeTensor> &, const vector<ge::GeTensor> &>;
   static GeGenerator &GetInstance() {
     static GeGenerator Instance;
     return Instance;
   }
   GeGenerator() = default;
 
-  ~GeGenerator() { (void)Finalize(); }
+  ~GeGenerator() {
+    (void)Finalize();
+  }
 
   GeGenerator(const GeGenerator &) = delete;
 
@@ -94,8 +97,8 @@ class GE_FUNC_VISIBILITY GeGenerator {
   /// @param [in] graph_name: graph name.
   /// @param [out] graph: graph of single op.
   /// @return SUCCESS or FAILED
-  Status BuildSingleOpGraph(OpDescPtr &op_desc, const vector<GeTensor> &inputs, const vector<GeTensor> &outputs,
-                            std::string graph_name, Graph &graph);
+  Status BuildSingleOpGraph(OpDescPtr &op_desc, const InOutTensorRef &inputs_outputs, std::string graph_name,
+                            Graph &graph, std::vector<std::pair<std::string, std::string>> &inputs_name_type);
 
  private:
   Status GenerateModel(const Graph &graph, const string &file_name_prefix, const vector<GeTensor> &inputs,
@@ -110,6 +113,10 @@ class GE_FUNC_VISIBILITY GeGenerator {
 
   using GeRootModelPtr = std::shared_ptr<ge::GeRootModel>;
   Status SetModelNameForDump(const GeRootModelPtr &ge_root_model);
+  Status CreateGeneralizedBuildAttrs(const GeRootModelPtr &ge_root_model, const std::vector<GeTensor> &inputs,
+                                     const std::vector<GeTensor> &outputs,
+                                     const std::vector<std::pair<std::string, std::string>> &inputs_name_type,
+                                     std::vector<ge::NamedAttrs> &generalized_build_attrs);
 
   class Impl;
 

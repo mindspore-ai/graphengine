@@ -1,18 +1,12 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+* @file rt_error_codes.h
+*
+* Copyright (C) Huawei Technologies Co., Ltd. 2019-2020. All Rights Reserved.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+*/
 
 #ifndef __INC_EXTERNEL_RT_ERROR_CODES_H__
 #define __INC_EXTERNEL_RT_ERROR_CODES_H__
@@ -58,6 +52,9 @@ static const int32_t ACL_ERROR_RT_NO_STREAM_RESOURCE         = 207008; // no str
 static const int32_t ACL_ERROR_RT_NO_NOTIFY_RESOURCE         = 207009; // no notify resource
 static const int32_t ACL_ERROR_RT_NO_MODEL_RESOURCE          = 207010; // no model resource
 static const int32_t ACL_ERROR_RT_NO_CDQ_RESOURCE            = 207011; // no cdq resource
+static const int32_t ACL_ERROR_RT_OVER_LIMIT                 = 207012; // over limit
+static const int32_t ACL_ERROR_RT_QUEUE_EMPTY                = 207013; // queue is empty
+static const int32_t ACL_ERROR_RT_QUEUE_FULL                 = 207014; // queue is full
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR             = 507000; // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR                   = 507001; // ts internel error
@@ -97,6 +94,10 @@ static const int32_t ACL_ERROR_RT_VECTOR_CORE_TIMEOUT        = 507034; // vector
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_EXCEPTION      = 507035; // vector core exception
 static const int32_t ACL_ERROR_RT_VECTOR_CORE_TRAP_EXCEPTION = 507036; // vector core trap exception
 static const int32_t ACL_ERROR_RT_CDQ_BATCH_ABNORMAL         = 507037; // cdq alloc batch abnormal
+static const int32_t ACL_ERROR_RT_DIE_MODE_CHANGE_ERROR      = 507038; // can not change die mode
+static const int32_t ACL_ERROR_RT_DIE_SET_ERROR              = 507039; // single die mode can not set die
+static const int32_t ACL_ERROR_RT_INVALID_DIEID              = 507040; // invalid die id
+static const int32_t ACL_ERROR_RT_DIE_MODE_NOT_SET           = 507041; // die mode not set
 
 static const int32_t ACL_ERROR_RT_DRV_INTERNAL_ERROR         = 507899; // drv internal error
 static const int32_t ACL_ERROR_RT_AICPU_INTERNAL_ERROR       = 507900; // aicpu internal error

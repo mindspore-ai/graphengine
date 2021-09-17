@@ -274,6 +274,38 @@ REG_OP(PadV3)
     .ATTR(mode, String, "constant")
     .ATTR(paddings_contiguous, Bool, true)
     .OP_END_FACTORY_REG(PadV3)
+	
+ /**
+*@brief Cal the grad of Pads.
+
+*@par Inputs:
+*Two inputs, including:
+* @li x: A Tensor. Must be one of the following types: float16, float32, double, int32,
+*     uint8, int16, int8, complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, uint32, uint64.
+* @li paddings: A Tensor of type int32 or int64.
+
+*@par Attributes:
+* @li mode: An optional string, Defaults to "reflect", indicates paddings mode,
+*     support "reflect", "edge"
+* @li paddings_contiguous: An optional bool value, Defaults to true.
+*     If true, paddings is arranged as [[begin0, end0], [begin1, end1], ...]
+*     If false, paddings is arranged as [[begin0, begin1], ..., [end0, end1], ...]
+
+*@par Outputs:
+*y: A Tensor of the same type as "x".
+
+*@par Third-party framework compatibility:
+* Compatible with ONNX operator PadGrad.
+*/
+
+REG_OP(PadV3Grad)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(paddings, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::BasicType())
+    .ATTR(mode, String, "reflect")
+    .ATTR(paddings_contiguous, Bool, true)
+    .OP_END_FACTORY_REG(PadV3Grad)
 
   /**
   *@brief Pads a tensor.

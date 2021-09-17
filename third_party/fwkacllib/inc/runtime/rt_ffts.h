@@ -3,8 +3,8 @@
  * Description: ffts interface
  */
 
-#ifndef __CCE_RUNTIME_FFTS_H
-#define __CCE_RUNTIME_FFTS_H
+#ifndef CCE_RUNTIME_RT_FFTS_H
+#define CCE_RUNTIME_RT_FFTS_H
 
 #include "base.h"
 
@@ -33,7 +33,7 @@ typedef enum tagFftsSubTaskType {
     RT_FFTS_SUB_TASK_TYPE_MIX_AIC = 6,
     RT_FFTS_SUB_TASK_TYPE_MIX_AIV = 7,
     RT_FFTS_SUB_TASK_TYPE_SDMA = 8,
-    RT_FFTS_SUB_TASK_TYPE_RESERVED,
+    RT_FFTS_SUB_TASK_TYPE_RESERVED = 9,
 } rtFftsSubTaskType_t;
 
 typedef struct tagManualThreadDmuInfo {
@@ -178,7 +178,9 @@ typedef struct tagFftsTaskInfo {
 
 RTS_API rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream);
 
+RTS_API rtError_t rtFftsTaskLaunchWithFlag(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream, uint32_t flag);
+
 #if defined(__cplusplus)
 }
 #endif
-#endif // __CCE_RUNTIME_FFTS_H
+#endif // CCE_RUNTIME_RT_FFTS_H

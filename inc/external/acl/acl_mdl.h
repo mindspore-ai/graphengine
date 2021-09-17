@@ -869,7 +869,7 @@ ACL_FUNC_VISIBILITY aclError aclmdlSetAIPPInputFormat(aclmdlAIPP *aippParmsSet, 
  *
  * @see aclmdlCreateAIPP
  */
-ACL_FUNC_VISIBILITY aclError aclmdlSetAIPPCscParams(aclmdlAIPP *aippParmsSet, int8_t csc_switch, int16_t cscMatrixR0C0,
+ACL_FUNC_VISIBILITY aclError aclmdlSetAIPPCscParams(aclmdlAIPP *aippParmsSet, int8_t cscSwitch, int16_t cscMatrixR0C0,
                                                     int16_t cscMatrixR0C1, int16_t cscMatrixR0C2, int16_t cscMatrixR1C0,
                                                     int16_t cscMatrixR1C1, int16_t cscMatrixR1C2, int16_t cscMatrixR2C0,
                                                     int16_t cscMatrixR2C1, int16_t cscMatrixR2C2,
@@ -1106,7 +1106,7 @@ ACL_FUNC_VISIBILITY aclError aclmdlGetAippType(uint32_t modelId, size_t index, a
  *
  * @param modelId [IN]        model id
  * @param index [IN]          index of tensor
- * @param aippinfo [OUT]      Pointer for static aipp info
+ * @param aippInfo [OUT]      Pointer for static aipp info
  *
  * @retval ACL_SUCCESS The function is successfully executed.
  * @retval ACL_ERROR_MODEL_AIPP_NOT_EXIST The tensor of index is not configured with aipp
@@ -1115,7 +1115,7 @@ ACL_FUNC_VISIBILITY aclError aclmdlGetAippType(uint32_t modelId, size_t index, a
  * @see aclmdlLoadFromFile | aclmdlLoadFromMem | aclmdlLoadFromFileWithMem |
  * aclmdlLoadFromMemWithMem | aclmdlGetInputIndexByName
  */
-ACL_FUNC_VISIBILITY aclError aclmdlGetFirstAippInfo(uint32_t modelId, size_t index, aclAippInfo *aippinfo);
+ACL_FUNC_VISIBILITY aclError aclmdlGetFirstAippInfo(uint32_t modelId, size_t index, aclAippInfo *aippInfo);
 
 /**
  * @ingroup AscendCL

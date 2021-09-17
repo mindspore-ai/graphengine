@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef __CCE_RUNTIME_RT_H__
-#define __CCE_RUNTIME_RT_H__
+#ifndef CCE_RUNTIME_RT_H
+#define CCE_RUNTIME_RT_H
 
 #include "base.h"
 #include "config.h"
@@ -32,4 +32,4 @@
 #include "rt_ffts_plus.h"
 #include "rt_dfx.h"
 
-#endif  // __CCE_RUNTIME_RT_H__
+#endif  // CCE_RUNTIME_RT_H

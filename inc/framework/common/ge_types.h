@@ -279,10 +279,19 @@ struct TaskDescInfo {
 };
 
 struct OpDescInfo {
-  std::string op_name;
-  std::string op_type;
-  uint32_t task_id;
-  uint32_t stream_id;
+  std::string op_name = "";
+  std::string op_type = "";
+  uint32_t task_id = 0;
+  uint32_t stream_id = 0;
+  uint32_t imply_type = 0;
+  uint32_t block_dim = 0;
+  std::string op_file_path = "";
+  std::string dev_func = "";
+  std::string tvm_magic = "";
+  uint32_t tiling_key = 0;
+  std::string tiling_data = "";
+  std::string node_info = "";
+  std::vector<int64_t> workspace_bytes;
   std::vector<Format> input_format;
   std::vector<std::vector<int64_t>> input_shape;
   std::vector<DataType> input_data_type;

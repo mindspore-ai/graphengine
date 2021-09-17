@@ -3,8 +3,8 @@
  * Description: the definition of ffts plus
  */
 
-#ifndef __CCE_RUNTIME_FFTS_PLUS_DEFINE_H
-#define __CCE_RUNTIME_FFTS_PLUS_DEFINE_H
+#ifndef CCE_RUNTIME_RT_FFTS_PLUS_DEFINE_H
+#define CCE_RUNTIME_RT_FFTS_PLUS_DEFINE_H
 
 #include "base.h"
 
@@ -30,7 +30,7 @@ typedef enum tagFftsPlusHwType {
     RT_HW_CTX_TYPE_WRITEBACK_DATA = 11,
     RT_HW_CTX_TYPE_AICPU = 12,
     RT_HW_CTX_TYPE_LOAD = 13,
-    RT_HW_CTX_TYPE_MAX,
+    RT_HW_CTX_TYPE_MAX = 14,
 } rtFftsPlusHwType_t;
 
 // hardware context type
@@ -40,7 +40,7 @@ typedef enum tagFftsPlusSoftType {
     RT_SOFT_CTX_TYPE_AT_START = 3,
     RT_SOFT_CTX_TYPE_AT_END = 4,
     RT_SOFT_CTX_TYPE_LABEL = 5,
-    RT_SOFT_CTX_TYPE_MAX,
+    RT_SOFT_CTX_TYPE_MAX = 6,
 } rtFftsPlusSoftType_t;
 
 typedef enum tagFftsPlusContextType {
@@ -71,7 +71,7 @@ typedef enum tagFftsPlusCondType {
     RT_COND_TYPE_GREATER_OR_EQUAL = 3,
     RT_COND_TYPE_LESS = 4,
     RT_COND_TYPE_LESS_OR_EQUAL = 5,
-    RT_COND_TYPE_MAX,
+    RT_COND_TYPE_MAX = 6,
 } rtFftsPlusCondType_t;
 
 // the definition of ffts plus context
@@ -505,7 +505,7 @@ typedef struct tagFftsPlusAtStartCtx {
     uint16_t threadIdInit;
     uint16_t threadWindowSize;
     // 80-127
-    uint16_t res9[12];
+    uint32_t res9[12];
 } rtFftsPlusAtStartCtx_t;
 
 // at end context
@@ -712,4 +712,4 @@ typedef struct tagFftsPlusCondSwitchCtx {
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
-#endif // __CCE_RUNTIME_FFTS_PLUS_DEFINE_H
+#endif // CCE_RUNTIME_RT_FFTS_PLUS_DEFINE_H

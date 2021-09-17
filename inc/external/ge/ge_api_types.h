@@ -67,6 +67,7 @@ const char *const OPTION_EXEC_ENABLE_TAILING_OPTIMIZATION = "ge.exec.isTailingOp
 const char *const OPTION_EXEC_DYNAMIC_INPUT = "ge.exec.dynamicInput";
 const char *const OPTION_EXEC_DYNAMIC_EXECUTE_MODE = "ge.exec.dynamicGraphExecuteMode";
 const char *const OPTION_EXEC_DATA_INPUTS_SHAPE_RANGE = "ge.exec.dataInputsShapeRange";
+const char *const OPTION_EXEC_ENABLE_COPY_OUTPUT_ADDR = "ge.exec.enableCopyOutputAddr";
 
 // Option key: memory init
 const char *const GRAPH_MEMORY_MAX_SIZE = "ge.graphMemoryMaxSize";

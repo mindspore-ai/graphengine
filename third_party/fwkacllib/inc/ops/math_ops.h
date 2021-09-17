@@ -939,6 +939,57 @@ REG_OP(LpNorm)
     .OP_END_FACTORY_REG(LpNorm)
 
 /**
+* @brief Computes LpNormReduce.
+
+* @par Inputs:
+* x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li axes: ListInt, {} means all axes will be computed.
+* @li keepdim: Bool, default is false.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, float32. The shape of y is depending
+* on axes and keepdim. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNormReduce.
+*/
+REG_OP(LpNormReduce)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(axes, ListInt, {})
+    .ATTR(keepdim, Bool, false)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormReduce)
+
+/**
+* @brief Computes LpNormUpdate.
+
+* @par Inputs:
+* x: An ND tensor of type float16, float32. \n
+*
+* @par Attributes:
+* @li p: Int, "inf" or "-inf", default value is 2.
+* @li epsilon: Float, default is 1e-12. \n
+
+* @par Outputs:
+* y: An ND tensor of type float16, float32. \n
+
+* @par Third-party framework compatibility
+* Compatible with the Pytorch operator LpNormUpdate.
+*/
+REG_OP(LpNormUpdate)
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .ATTR(p, Int, 2)
+    .ATTR(epsilon, Float, 1e-12)
+    .OP_END_FACTORY_REG(LpNormUpdate)
+
+/**
 * @brief get complex.
 
 * @par Inputs:

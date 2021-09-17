@@ -72,17 +72,23 @@ class GE_FUNC_VISIBILITY StatusFactory {
 
 class GE_FUNC_VISIBILITY ErrorNoRegisterar {
  public:
-  ErrorNoRegisterar(uint32_t err, const std::string &desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
-  ErrorNoRegisterar(uint32_t err, const char *desc) { StatusFactory::Instance()->RegisterErrorNo(err, desc); }
+  ErrorNoRegisterar(uint32_t err, const std::string &desc) {
+    StatusFactory::Instance()->RegisterErrorNo(err, desc);
+  }
+  ErrorNoRegisterar(uint32_t err, const char *desc) {
+    StatusFactory::Instance()->RegisterErrorNo(err, desc);
+  }
   ~ErrorNoRegisterar() {}
 };
 
 // Code compose(4 byte), runtime: 2 bit,  type: 2 bit,   level: 3 bit,  sysid: 8 bit, modid: 5 bit, value: 12 bit
-#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                              \
-  constexpr ge::Status name =                                                                          \
-    ((0xFF & (static_cast<uint8_t>(runtime))) << 30) | ((0xFF & (static_cast<uint8_t>(type))) << 28) | \
-    ((0xFF & (static_cast<uint8_t>(level))) << 25) | ((0xFF & (static_cast<uint8_t>(sysid))) << 17) |  \
-    ((0xFF & (static_cast<uint8_t>(modid))) << 12) | (0x0FFF & (static_cast<uint16_t>(value)));        \
+#define GE_ERRORNO(runtime, type, level, sysid, modid, name, value, desc)                               \
+  constexpr ge::Status name = (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(runtime))) << 30) | \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(type))) << 28) |    \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(level))) << 25) |   \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(sysid))) << 17) |   \
+                              (static_cast<uint32_t>(0xFFU & (static_cast<uint32_t>(modid))) << 12) |   \
+                              (static_cast<uint32_t>(0x0FFFU) & (static_cast<uint32_t>(value)));        \
   const ErrorNoRegisterar g_##name##_errorno(name, desc);
 
 #define GE_ERRORNO_EXTERNAL(name, desc) const ErrorNoRegisterar g_##name##_errorno(name, desc);

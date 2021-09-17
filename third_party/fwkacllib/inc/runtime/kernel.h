@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef __CCE_RUNTIME_KERNEL_H__
-#define __CCE_RUNTIME_KERNEL_H__
+#ifndef CCE_RUNTIME_KERNEL_H
+#define CCE_RUNTIME_KERNEL_H
 
 #include "base.h"
 #include "stream.h"
@@ -131,7 +131,10 @@ typedef struct tagRtArgsWithTiling {
     uint32_t argsSizeWithoutTiling; // input + output + tiling addr size
     uint16_t tilingAddrOffset;      // tiling addr offset
     uint16_t tilingDataOffset;      // tiling data offset
-    uint16_t reserved[2];
+    uint16_t hostInputAddrOffset;   // index of host_memory input in inputs_addrs list
+    uint16_t hostInputDataOffset;   // host_mem input data offset
+    bool hasHostMemInput;           // has host_memory input data in args or not: ture or false
+    uint8_t reserved[7];
 } rtArgsWithTiling_t;
 
 /**
@@ -141,7 +144,7 @@ typedef struct tagRtArgsWithTiling {
 typedef enum tagRtDumpKind {
     RT_DATA_DUMP_KIND_INVALID = -1,
     RT_DATA_DUMP_KIND_DUMP = 0,
-    RT_DATA_DUMP_KIND_RESERVED
+    RT_DATA_DUMP_KIND_RESERVED = 1,
 } rtDumpKind_t;
 
 /**
@@ -160,72 +163,72 @@ typedef void (*rtCallback_t)(void *fnData);
  * @ingroup rt_kernel
  * @brief magic number of plain binary for aicore
  */
-#define RT_DEV_BINARY_MAGIC_PLAIN 0xabceed50
+#define RT_DEV_BINARY_MAGIC_PLAIN 0xabceed50U
 
 /**
  * @ingroup rt_kernel
  * @brief magic number of plain binary for aicpu
  */
-#define RT_DEV_BINARY_MAGIC_PLAIN_AICPU 0xabceed51
+#define RT_DEV_BINARY_MAGIC_PLAIN_AICPU 0xabceed51U
 
 /**
  * @ingroup rt_kernel
  * @brief magic number of plain binary for aivector
  */
-#define RT_DEV_BINARY_MAGIC_PLAIN_AIVEC 0xabceed52
+#define RT_DEV_BINARY_MAGIC_PLAIN_AIVEC 0xabceed52U
 
 /**
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aicore
  */
-#define RT_DEV_BINARY_MAGIC_ELF 0x43554245
+#define RT_DEV_BINARY_MAGIC_ELF 0x43554245U
 
 /**
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aicpu
  */
-#define RT_DEV_BINARY_MAGIC_ELF_AICPU 0x41415243
+#define RT_DEV_BINARY_MAGIC_ELF_AICPU 0x41415243U
 
 /**
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aivector
  */
-#define RT_DEV_BINARY_MAGIC_ELF_AIVEC 0x41415246
+#define RT_DEV_BINARY_MAGIC_ELF_AIVEC 0x41415246U
 
 /**
  * @ingroup rt_kernel
  * @brief magic number of elf binary for aicube
  */
-#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41494343
+#define RT_DEV_BINARY_MAGIC_ELF_AICUBE 0x41494343U
 
 /**
  * @ingroup rt_kernel_flags
  * @brief kernel op bit flags
  */
-#define RT_KERNEL_DEFAULT (0x00)
-#define RT_KERNEL_CONVERT (0x01)
-#define RT_KERNEL_DUMPFLAG (0x02)
-#define RT_FUSION_KERNEL_DUMPFLAG (0x04)
-#define RT_KERNEL_CUSTOM_AICPU (0x08)
+#define RT_KERNEL_DEFAULT (0x00U)
+#define RT_KERNEL_CONVERT (0x01U)
+#define RT_KERNEL_DUMPFLAG (0x02U)
+#define RT_FUSION_KERNEL_DUMPFLAG (0x04U)
+#define RT_KERNEL_CUSTOM_AICPU (0x08U)
 
 // STARS topic scheduler sqe : topic_type
-#define RT_KERNEL_DEVICE_FIRST (0x10)
-#define RT_KERNEL_HOST_ONLY (0x20)
-#define RT_KERNEL_HOST_FIRST (0x40)
+#define RT_KERNEL_DEVICE_FIRST (0x10U)
+#define RT_KERNEL_HOST_ONLY (0x20U)
+#define RT_KERNEL_HOST_FIRST (0x40U)
 
 /**
  * @ingroup rt_kernel
  * @brief kernel mode
 **/
-#define RT_DEFAULT_KERNEL_MODE (0x00)
-#define RT_NORMAL_KERNEL_MODE (0x01)
-#define RT_ALL_KERNEL_MODE (0x02)
+#define RT_DEFAULT_KERNEL_MODE (0x00U)
+#define RT_NORMAL_KERNEL_MODE (0x01U)
+#define RT_ALL_KERNEL_MODE (0x02U)
 
 /**
  * @ingroup rt_kernel
  * @brief kernel L1 Fusion Dump bit flags
  */
-#define RT_DDR_ADDR (0x0)
+#define RT_DDR_ADDR (0x0U)
 
 /**
  * @ingroup rt_kernel
@@ -672,7 +675,7 @@ RTS_API rtError_t rtStopMDCProfiler(void *addr);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithTiling(const void *stubFunc, uint32_t blockDim,
-    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stream_);
+    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stream);
 
 /**
  * @ingroup rt_kernel
@@ -688,11 +691,11 @@ RTS_API rtError_t rtKernelLaunchWithTiling(const void *stubFunc, uint32_t blockD
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtKernelLaunchWithHandleAndTiling(void *handle, const void *devFunc, uint32_t blockDim,
-    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stream_, const void* kernelInfo);
+    rtArgsWithTiling_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stream, const void* kernelInfo);
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif  // __CCE_RUNTIME_KERNEL_H__
+#endif  // CCE_RUNTIME_KERNEL_H
 

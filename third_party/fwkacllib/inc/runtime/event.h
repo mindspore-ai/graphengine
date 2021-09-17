@@ -14,8 +14,8 @@
  * limitations under the License.
 */
 
-#ifndef __CCE_RUNTIME_EVENT_H__
-#define __CCE_RUNTIME_EVENT_H__
+#ifndef CCE_RUNTIME_EVENT_H
+#define CCE_RUNTIME_EVENT_H
 
 #include "base.h"
 
@@ -33,8 +33,8 @@ typedef enum rtEventWaitStatus {
  * @ingroup event_flags
  * @brief event op bit flags
  */
-#define RT_EVENT_DEFAULT (0x0E)
-#define RT_EVENT_WITH_FLAG (0x0B)
+#define RT_EVENT_DEFAULT (0x0EU)
+#define RT_EVENT_WITH_FLAG (0x0BU)
 
 #define RT_EVENT_DDSYNC_NS    0x01U
 #define RT_EVENT_STREAM_MARK  0x02U
@@ -200,14 +200,14 @@ RTS_API rtError_t rtNotifyWait(rtNotify_t notify, rtStream_t stream);
 /**
  * @ingroup dvrt_event
  * @brief Wait for a notify with time out
- * @param [in] notify_ notify to be wait
- * @param [in] stream_  input stream
+ * @param [in] notify notify to be wait
+ * @param [in] stream  input stream
  * @param [in] timeOut  input timeOut
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
  */
-RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify_, rtStream_t stream_, uint32_t timeOut);
+RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify, rtStream_t stream, uint32_t timeOut);
 
 /**
  * @ingroup dvrt_event
@@ -270,10 +270,10 @@ RTS_API rtError_t rtNotifyGetAddrOffset(rtNotify_t notify, uint64_t *devAddrOffs
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtSetIpcNotifyPid(const char *name, int32_t pid[], int num);
+RTS_API rtError_t rtSetIpcNotifyPid(const char *name, int32_t pid[], int32_t num);
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif  // __CCE_RUNTIME_EVENT_H__
+#endif  // CCE_RUNTIME_EVENT_H

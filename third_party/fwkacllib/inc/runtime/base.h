@@ -42,7 +42,7 @@ static const int32_t RT_ERROR_NONE = 0; // success
  */
 typedef enum tagRtDeviceMode {
     RT_DEVICE_MODE_SINGLE_DIE = 0,
-    RT_DEVICE_MODE_MULTI_DIE = 1,
+    RT_DEVICE_MODE_MULTI_DIE,
     RT_DEVICE_MODE_RESERVED
 } rtDeviceMode;
 
@@ -178,7 +178,7 @@ RTS_API rtError_t rtProfilerInit(const char *profDir, const char *address, const
  * @ingroup profiling_base
  * @brief config rts profiler.
  */
-RTS_API rtError_t rtProfilerConfig(uint16_t type);
+RTS_API rtError_t rtProfilerConfig(uint16_t profConfig);
 
 /**
  * @ingroup profiling_base
@@ -248,18 +248,6 @@ RTS_API rtError_t rtProfSetProSwitch(void *data, uint32_t len);
  * @return ACL_ERROR_RT_PARAM_INVALID for error input
  */
 RTS_API rtError_t rtProfRegisterCtrlCallback(uint32_t moduleId, rtProfCtrlHandle callback);
-
-/**
- * @ingroup dvrt_base
- * @brief Returns the last error from a runtime call.
- */
-RTS_API rtError_t rtGetLastError();
-
-/**
- * @ingroup dvrt_base
- * @brief Returns the last error from a runtime call.
- */
-RTS_API rtError_t rtPeekAtLastError();
 
 /**
  * @ingroup dvrt_base

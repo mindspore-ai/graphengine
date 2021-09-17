@@ -205,7 +205,8 @@ the value "5" indicates the indexes of images where the ROIs are located, "x0", 
 *@li spatial_scale: A required attribute of type float, specifying the scaling ratio of "features" to the original image.
 *@li sample_num: An optional attribute of type int, specifying the horizontal and vertical
 sampling frequency of each output. If this attribute is set to "0", the sampling frequency is
-equal to the rounded up value of "rois", which is a floating point number. Defaults to "2" . \n
+equal to the rounded up value of "rois", which is a floating point number. Defaults to "2" .
+*@li roi_end_mode: An optional attribute of type int, specifying the align mode .\n
 
 *@par Outputs:
 *xdiff: Gradient added to input "features". Has the same 5HD shape as input "features".
@@ -220,6 +221,7 @@ REG_OP(ROIAlignGrad)
     .REQUIRED_ATTR(pooled_height, Int)
     .REQUIRED_ATTR(spatial_scale, Float)
     .ATTR(sample_num, Int, 2)
+    .ATTR(roi_end_mode, Int, 1)
     .OP_END_FACTORY_REG(ROIAlignGrad)
 
 /**

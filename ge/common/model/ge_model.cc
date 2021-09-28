@@ -34,7 +34,6 @@ void GeModel::Init() {
 }
 
 GeModel::GeModel() {
-  attrs_.InitDefault();
   Init();
 }
 
@@ -78,12 +77,12 @@ void GeModel::SetPlatformVersion(const std::string &platform_version) { this->pl
 
 void GeModel::SetPlatformType(uint8_t platform_type) { this->platform_type_ = platform_type; }
 
-void GeModel::SetAttr(const ProtoAttrMapHelper &attrs) { attrs_ = attrs; }
+void GeModel::SetAttr(const ProtoAttrMap &attrs) { attrs_ = attrs; }
 
-ProtoAttrMapHelper GeModel::MutableAttrMap() { return attrs_; }
+ProtoAttrMap &GeModel::MutableAttrMap() { return attrs_; }
 
-ConstProtoAttrMapHelper GeModel::GetAttrMap() const {
-  return ConstProtoAttrMapHelper(attrs_.GetProtoOwner(), attrs_.GetProtoMsg());
+ConstProtoAttrMap &GeModel::GetAttrMap() const {
+  return attrs_;
 }
 
 Status GeModel::GetSessionId(uint32_t model_id, uint64_t &session_id) const {

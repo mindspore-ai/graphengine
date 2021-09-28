@@ -17,10 +17,12 @@
 #ifndef GE_MODEL_GE_MODEL_H_
 #define GE_MODEL_GE_MODEL_H_
 
-#include <securec.h>
 #include <map>
 #include <memory>
 #include <string>
+
+#include "securec.h"
+#include "runtime/rt.h"
 #include "common/tbe_kernel_store.h"
 #include "common/cust_aicpu_kernel_store.h"
 #include "framework/common/debug/log.h"
@@ -60,9 +62,9 @@ class GeModel : public AttrHolder {
   void SetPlatformVersion(const std::string &platform_version);
   void SetPlatformType(uint8_t platform_type);
 
-  void SetAttr(const ProtoAttrMapHelper &attrs);
+  void SetAttr(const ProtoAttrMap &attrs);
 
-  ProtoAttrMapHelper MutableAttrMap() override;
+  ProtoAttrMap &MutableAttrMap() override;
 
   using AttrHolder::SetAttr;
   using AttrHolder::GetAllAttrs;
@@ -77,12 +79,12 @@ class GeModel : public AttrHolder {
   }
 
  protected:
-  ConstProtoAttrMapHelper GetAttrMap() const override;
+  ConstProtoAttrMap &GetAttrMap() const override;
 
  private:
   void Init();
 
-  ProtoAttrMapHelper attrs_;  /*lint !e148*/
+  ProtoAttrMap attrs_;  /*lint !e148*/
 
   Graph graph_;
   std::shared_ptr<domi::ModelTaskDef> task_;  /*lint !e148*/

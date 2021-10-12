@@ -480,7 +480,7 @@ REG_OP(HistogramFixedWidth)
     .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .INPUT(nbins, TensorType({DT_INT32}))
     .OUTPUT(y, TensorType({DT_INT32}))
-    .ATTR(dtype, String, "int32")
+    .ATTR(dtype, Int, 3)
     .OP_END_FACTORY_REG(HistogramFixedWidth)
 
 /**
@@ -511,7 +511,7 @@ REG_OP(HistogramFixedWidthD)
     .INPUT(range, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT64}))
     .OUTPUT(y, TensorType({DT_INT32}))
     .REQUIRED_ATTR(nbins, Int)
-    .ATTR(dtype, String, "int32")
+    .ATTR(dtype, Int, 3)
     .OP_END_FACTORY_REG(HistogramFixedWidthD)
 
 /**

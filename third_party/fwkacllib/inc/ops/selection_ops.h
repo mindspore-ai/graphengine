@@ -1381,7 +1381,7 @@ REG_OP(InplaceUpdate)
     .INPUT(x, TensorType::BasicType())
     .INPUT(indices, TensorType({DT_INT32}))
     .INPUT(v, TensorType::BasicType())
-    .OUTPUT(x, TensorType::BasicType())
+    .OUTPUT(y, TensorType::BasicType())
     .OP_END_FACTORY_REG(InplaceUpdate)
 
 /**

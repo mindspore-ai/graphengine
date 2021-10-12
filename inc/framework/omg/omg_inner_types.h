@@ -128,6 +128,7 @@ struct OmgContext {
   bool fuzz_compile_flag = false;
   std::string atc_cmdline;
   bool user_attr_index_valid = false;
+  bool is_online_model = false;
 };
 }  // namespace ge
 

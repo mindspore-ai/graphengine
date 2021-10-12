@@ -52,9 +52,6 @@ static const int32_t ACL_ERROR_RT_NO_STREAM_RESOURCE         = 207008; // no str
 static const int32_t ACL_ERROR_RT_NO_NOTIFY_RESOURCE         = 207009; // no notify resource
 static const int32_t ACL_ERROR_RT_NO_MODEL_RESOURCE          = 207010; // no model resource
 static const int32_t ACL_ERROR_RT_NO_CDQ_RESOURCE            = 207011; // no cdq resource
-static const int32_t ACL_ERROR_RT_OVER_LIMIT                 = 207012; // over limit
-static const int32_t ACL_ERROR_RT_QUEUE_EMPTY                = 207013; // queue is empty
-static const int32_t ACL_ERROR_RT_QUEUE_FULL                 = 207014; // queue is full
 
 static const int32_t ACL_ERROR_RT_INTERNAL_ERROR             = 507000; // runtime internal error
 static const int32_t ACL_ERROR_RT_TS_ERROR                   = 507001; // ts internel error

@@ -532,6 +532,36 @@ REG_OP(ScatterAdd)
     .OP_END_FACTORY_REG(ScatterAdd)
 
 /**
+*@brief Adds sparse "updates" to a variable reference . \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li var: An ND Tensor .
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@li indices: An ND Tensor of type int32 or int64
+
+*@li updates: An ND Tensor .
+*Must be one of the following types: float16, float32, int32, int8, uint8
+
+*@par Attributes:
+* axis: An required int. The axis along which to index. \n
+
+*@par Outputs:
+*var: A Tensor. Has the same type and format as input "var" . \n
+
+*@par Third-party framework compatibility
+* Compatible with the pytorch operator ScatterAdd.
+*/
+REG_OP(ScatterAddWithAxis)
+    .INPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .INPUT(indices, TensorType::IndexNumberType())
+    .INPUT(updates, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .OUTPUT(var, TensorType({DT_FLOAT16,DT_FLOAT,DT_INT32,DT_INT8,DT_UINT8}))
+    .REQUIRED_ATTR(axis, Int)
+    .OP_END_FACTORY_REG(ScatterAddWithAxis)
+
+/**
 *@brief Divides a variable reference by sparse updates . \n
 
 *@par Inputs:

@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2645,6 +2645,19 @@ REG_OP(SparseApplyAdadeltaD)
 REG_OP(AtomicAddrClean)
     .ATTR(automic_add_mem_size, ListInt, {})
     .OP_END_FACTORY_REG(AtomicAddrClean)
+
+/**
+*@brief Clean memory of workspace list . \n
+
+*@par Attributes:
+* @li workspace_size: sizes of workspaces . \n
+
+*@par Restrictions:
+*Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(DynamicAtomicAddrClean)
+    .ATTR(automic_add_mem_size, ListInt, {})
+    .OP_END_FACTORY_REG(DynamicAtomicAddrClean)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_NN_TRAINING_OPS_H_

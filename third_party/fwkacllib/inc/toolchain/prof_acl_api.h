@@ -77,18 +77,14 @@
 
 #define PROF_MODEL_LOAD_MASK             0x8000000000000000
 
-#ifndef OS_TYPE
-#define OS_TYPE 0
-#endif // OS_TYPE
-
-#if (OS_TYPE != LINUX)
+#if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
 
 #include <cstdint>
-#include <stddef.h>
+#include <cstddef>
 
 namespace Msprofiler {
 namespace Api {

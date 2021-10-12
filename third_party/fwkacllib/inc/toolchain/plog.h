@@ -44,14 +44,14 @@ extern "C" {
  * @brief DlogReportInitialize: init log in service process before all device setting.
  * @return: 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogReportInitialize();
+DLL_EXPORT int DlogReportInitialize(void);
 
 /**
  * @ingroup plog
  * @brief DlogReportFinalize: release log resource in service process after all device reset.
  * @return: 0: SUCCEED, others: FAILED
  */
-DLL_EXPORT int DlogReportFinalize();
+DLL_EXPORT int DlogReportFinalize(void);
 
 #ifdef __cplusplus
 }

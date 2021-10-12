@@ -142,6 +142,29 @@ REG_OP(BatchNorm)
     .OP_END_FACTORY_REG(BatchNorm)
 
 /**
+*@brief part of SyncBatchNormBackward . \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li sum_dy: A Tensor. Must be one of the following types: float16, float32 .
+*@li sum_dy_dx_pad: A Tensor. Must be one of the following types: float16, float32 .
+*@li mean: A Tensor. Must be one of the following types: float16, float32 .
+*@li invert_std: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Outputs:
+*@li sum_dy_xmu: A Tensor. Has the same type and format as input "sum_dy"
+*@li y: A Tensor. Has the same type and format as input "sum_dy" . \n
+*/
+REG_OP(SyncBatchNormBackwardReduce)
+    .INPUT(sum_dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(sum_dy_dx_pad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(invert_std, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(sum_dy_xmu, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(SyncBatchNormBackwardReduce)
+    
+/**
 *@brief Performs batch normalization . \n
 
 *@par Inputs:

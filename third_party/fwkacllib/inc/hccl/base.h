@@ -86,6 +86,47 @@ enum OriginalGraphShapeType {
     SHAPE_RESERVED  /**< reserved */
 };
 
+enum HcclEventType {
+    HCCL_EVENT_SEND_COMPLETION = 0,
+    HCCL_EVENT_RECV_REQUEST,
+    HCCL_EVENT_RECV_COMPLETION,
+    HCCL_EVENT_CONGESTION_RELIEF,
+    HCCL_EVENT_RESERVED /**< reserved */
+};
+
+const u32 TAG_MAX_LEN = 127; // ×î´óµÄtag ³¤¶È
+using TagAttr = struct TagAttrDef {
+    char name[TAG_MAX_LEN + 1]; // tag±êÊ¶
+    // tag±êÊ¶µÄ½ÓÊÕÊý¾Ý£¬µ÷ÓÃÕßÊÇ·ñ»áÖ÷¶¯µ÷ÓÃ½ÓÊÕ½Ó¿Ú£¬0 = ·ñ, 1 = »á(Ô¤Áô£¬ÔÝ²»Ö§³Ö)¡£
+    // ¶ÔÓÚactiveRecv = 0£¬µ±½ÓÊÕ²àÊÕµ½Êý¾Ý»òÕß·¢ËÍÇëÇóÊ±£¬Ö÷¶¯Í¨Öªµ÷ÓÃÕß¡£
+    uint32_t activeRecv;
+    uint32_t sendCredit; // ÅäÖÃ¸ÃtagÔÊÐíinflightµÄsend¸öÊý
+    uint32_t eventId;
+};
+
+using HcclEventMsg = struct HcclEventMsgDef {
+    HcclComm comm;
+    u32 peerRank;
+    u32 tag;
+    // 0:HCCL_SEND_COMPLETION; 1:HCCL_RECV_COMPLETION; 2:HCCL_RECV_REQUEST; 3:HCCL_CONGESTION_RELIEF
+    u32 hcclEventType;
+    union {
+        struct {
+            u32 reserver;
+        } sendCompletionItem;
+        struct {
+            u32 reserver;
+        } recvRequestItem;
+        struct {
+            u32 reserver;
+        } recvCompletionItem;
+        struct CongestionReliefItem {
+            u32 reserver;
+        } congestionReliefItem;
+    } desc;
+};
+
+
 /**
 * @brief stream handle.
 */

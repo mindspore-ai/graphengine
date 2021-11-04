@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -2336,12 +2336,14 @@ REG_OP(CacheAllIndexToLocal)
 
 /**
 *@brief LRUCacheV2, aicore LRUCache.
+
 *@par Inputs:
 *index_list: exchange index list
 *data: host data
 *cache: gm cache
 *tag: cache's tag
 *is_last_call: if is last call write all cache to data
+
 *@par Outputs:
 *data: output data
 *cache: gm cache
@@ -2349,8 +2351,11 @@ REG_OP(CacheAllIndexToLocal)
 *index_offset_list: index_offset_list
 *not_in_cache_index_list: output not in cache's index_list
 *not_in_cache_number: scalar
+
 *@par Attributes:
 *pre_route_count: types of all outputs
+
+*@par Restrictions:
 *Warning: THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(LRUCacheV2)

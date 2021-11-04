@@ -22,18 +22,7 @@
 #define PROF_TASK_TIME              0x00000002
 #define PROF_AICORE_METRICS         0x00000004
 #define PROF_AICPU_TRACE            0x00000008
-#define PROF_MODEL_EXECUTE          0x00000010
-#define PROF_RUNTIME_API            0x00000020
-#define PROF_RUNTIME_TRACE          0x00000040
-#define PROF_SCHEDULE_TIMELINE      0x00000080
-#define PROF_SCHEDULE_TRACE         0x00000100
-#define PROF_AIVECTORCORE_METRICS   0x00000200
-#define PROF_SUBTASK_TIME           0x00000400
-
-#define PROF_TRAINING_TRACE         0x00000800
-#define PROF_HCCL_TRACE             0x00001000
-
-#define PROF_TASK_TRACE             0x00001852
+#define PROF_L2CACHE                0x00000010
 
 // system profilinig switch
 #define PROF_CPU                    0x00010000
@@ -44,6 +33,19 @@
 #define PROF_SYS_AICORE_SAMPLE      0x00200000
 #define PROF_AIVECTORCORE_SAMPLE    0x00400000
 
+#define PROF_MODEL_EXECUTE          0x0000001000000
+#define PROF_RUNTIME_API            0x0000002000000
+#define PROF_RUNTIME_TRACE          0x0000004000000
+#define PROF_SCHEDULE_TIMELINE      0x0000008000000
+#define PROF_SCHEDULE_TRACE         0x0000010000000
+#define PROF_AIVECTORCORE_METRICS   0x0000020000000
+#define PROF_SUBTASK_TIME           0x0000040000000
+
+#define PROF_TRAINING_TRACE         0x0000080000000
+#define PROF_HCCL_TRACE             0x0000100000000
+
+#define PROF_TASK_TRACE             0x0000185000002
+
 #define PROF_MODEL_LOAD             0x8000000000000000
 
 // DataTypeConfig MASK
@@ -51,16 +53,7 @@
 #define PROF_TASK_TIME_MASK              0x00000002
 #define PROF_AICORE_METRICS_MASK         0x00000004
 #define PROF_AICPU_TRACE_MASK            0x00000008
-#define PROF_MODEL_EXECUTE_MASK          0x00000010
-#define PROF_RUNTIME_API_MASK            0x00000020
-#define PROF_RUNTIME_TRACE_MASK          0x00000040
-#define PROF_SCHEDULE_TIMELINE_MASK      0x00000080
-#define PROF_SCHEDULE_TRACE_MASK         0x00000100
-#define PROF_AIVECTORCORE_METRICS_MASK   0x00000200
-#define PROF_SUBTASK_TIME_MASK           0x00000400
-
-#define PROF_TRAINING_TRACE_MASK         0x00000800
-#define PROF_HCCL_TRACE_MASK             0x00001000
+#define PROF_L2CACHE_MASK                0x00000010
 
 // system profilinig mask
 #define PROF_CPU_MASK                    0x00010000
@@ -71,20 +64,27 @@
 #define PROF_SYS_AICORE_SAMPLE_MASK      0x00200000
 #define PROF_AIVECTORCORE_SAMPLE_MASK    0x00400000
 
+#define PROF_MODEL_EXECUTE_MASK          0x0000001000000
+#define PROF_RUNTIME_API_MASK            0x0000002000000
+#define PROF_RUNTIME_TRACE_MASK          0x0000004000000
+#define PROF_SCHEDULE_TIMELINE_MASK      0x0000008000000
+#define PROF_SCHEDULE_TRACE_MASK         0x0000010000000
+#define PROF_AIVECTORCORE_METRICS_MASK   0x0000020000000
+#define PROF_SUBTASK_TIME_MASK           0x0000040000000
+
+#define PROF_TRAINING_TRACE_MASK         0x0000080000000
+#define PROF_HCCL_TRACE_MASK             0x0000100000000
+
 #define PROF_MODEL_LOAD_MASK             0x8000000000000000
 
-#ifndef OS_TYPE
-#define OS_TYPE 0
-#endif // OS_TYPE
-
-#if (OS_TYPE != LINUX)
+#if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))
 #endif
 
 #include <cstdint>
-#include <stddef.h>
+#include <cstddef>
 
 namespace Msprofiler {
 namespace Api {
@@ -106,7 +106,7 @@ extern "C" {
 
 MSVP_PROF_API uint64_t ProfGetOpExecutionTime(const void *data, uint32_t len, uint32_t index);
 
-typedef uint32_t Status;
+typedef int32_t Status;
 typedef struct aclprofSubscribeConfig aclprofSubscribeConfig1;
 ///
 /// @ingroup AscendCL

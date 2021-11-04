@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1848,13 +1848,50 @@ REG_OP(DenseImageWarpGrad)
 *Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
 */
 REG_OP(GridSampler2D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
     .ATTR(interpolation_mode, String, "bilinear")
     .ATTR(padding_mode, String, "zeros")
     .ATTR(align_corners, Bool, false)
     .OP_END_FACTORY_REG(GridSampler2D)
+
+/**
+*@brief Computes the gradients of GridSampler2D.
+
+*@par Inputs:
+*@li grad: A 4-D Tensor with shape `[batch, channels, height, width]`.
+*@li x: A 4-D Tensor with shape `[batch, channels, height, width]`.
+*@li grid: flow field grid, 4-D Tensor with shape `[batch, height, width, 2]`.
+
+*@par Attributes:
+*@li interpolation_mode: An optional string specifying the interpolation method.
+ Defaults to "bilinear".
+*@li padding_mode: An optional string specifying the pad method.
+ Defaults to "zeros".
+*@li align_corners: An optional bool. If "true", the centers of the corner
+ pixels of the input and output tensors are aligned. Defaults to false.
+
+*@par Outputs:
+*dx: Returns 4-D Tensor with the same dtype and shape as `x`.
+*dgrid: Returns 4-D Tensor with the same dtype and shape as `grid`.
+
+*@par Third-party framework compatibility
+*Compatible with pytorch GridSampler2DGrad operator.
+
+*@par Restrictions:
+*Warning:THIS FUNCTION IS EXPERIMENTAL. Please do not use.
+*/
+REG_OP(GridSampler2DGrad)
+    .INPUT(grad, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .INPUT(grid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(dx, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .OUTPUT(dgrid, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE}))
+    .ATTR(interpolation_mode, String, "bilinear")
+    .ATTR(padding_mode, String, "zeros")
+    .ATTR(align_corners, Bool, false)
+    .OP_END_FACTORY_REG(GridSampler2DGrad)
 
 /**
 *@brief This operation unnormalize input Grid, which is usually gennerated by affine_grid.

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,8 @@ Must be 5D if input "x" is with format NC1HWC0. Specifies the variance of "x".
 *@li reserve_space_1: An optional Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW.
 Must be 5D if input "x" is with format NC1HWC0. Specifies the mean of "x" for gradient computation. Pass "None" to skip this output.
 *@li reserve_space_2: An optional Tensor of type float32. Must be 1D if input "x" is with format NHWC or NCHW.
-Must be 5D if input "x" is with format NC1HWC0. Specifies the variance of "x" for gradient computation. Pass "None" to skip this output . \n
+Must be 5D if input "x" is with format NC1HWC0. Specifies the variance of "x" for gradient computation. Pass "None" to skip this output .
+*@li reserve_space_3: An optional Tensor of type float32. For compatibility with tensorflow, only has one useless element. \n
 
 *@attention Constraints:
 *@li If the operation is used for inference and outputs "reserve_space_1" and "reserve_space_2" are available,
@@ -136,10 +137,34 @@ REG_OP(BatchNorm)
     .OUTPUT(batch_variance, TensorType({DT_FLOAT}))
     .OUTPUT(reserve_space_1, TensorType({DT_FLOAT}))
     .OUTPUT(reserve_space_2, TensorType({DT_FLOAT}))
+    .OUTPUT(reserve_space_3, TensorType({DT_FLOAT}))
     .ATTR(epsilon, Float, 0.0001)
     .ATTR(data_format, String, "NHWC")
     .ATTR(is_training, Bool, true)
     .OP_END_FACTORY_REG(BatchNorm)
+
+/**
+*@brief part of SyncBatchNormBackward . \n
+
+*@par Inputs:
+* Three inputs, including:
+*@li sum_dy: A Tensor. Must be one of the following types: float16, float32 .
+*@li sum_dy_dx_pad: A Tensor. Must be one of the following types: float16, float32 .
+*@li mean: A Tensor. Must be one of the following types: float16, float32 .
+*@li invert_std: A Tensor. Must be one of the following types: float16, float32 . \n
+
+*@par Outputs:
+*@li sum_dy_xmu: A Tensor. Has the same type and format as input "sum_dy"
+*@li y: A Tensor. Has the same type and format as input "sum_dy" . \n
+*/
+REG_OP(SyncBatchNormBackwardReduce)
+    .INPUT(sum_dy, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(sum_dy_dx_pad, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(mean, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(invert_std, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(sum_dy_xmu, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .OP_END_FACTORY_REG(SyncBatchNormBackwardReduce)
 
 /**
 *@brief Performs batch normalization . \n
@@ -260,7 +285,8 @@ REG_OP(BatchNormExt2)
 *@li x: A 4D or 5D Tensor of type float16 or float32, with format NHWC, NCHW, or NC1HWC0.
 *@li scale: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0.
 *@li reserve_space_1: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0. It is an output of BatchNorm.
-*@li reserve_space_2: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0. It is an output of BatchNorm . \n
+*@li reserve_space_2: A 4D or 5D Tensor of type float32, with format NHWC, NCHW, or NC1HWC0. It is an output of BatchNorm .
+*@li reserve_space_3: A 1D optional Tensor of type float32. It is an output of BatchNorm . \n
 
 *@par Attributes:
 *@li epsilon: An optional float32. Defaults to "0.0001". A small float number added to the variance of "x".
@@ -287,6 +313,7 @@ REG_OP(BatchNormGrad)
     .INPUT(scale, TensorType({DT_FLOAT}))
     .INPUT(reserve_space_1, TensorType({DT_FLOAT}))
     .INPUT(reserve_space_2, TensorType({DT_FLOAT}))
+    .OPTIONAL_INPUT(reserve_space_3, TensorType({DT_FLOAT}))
     .OUTPUT(x_backprop, TensorType({DT_FLOAT16,DT_FLOAT}))
     .OUTPUT(scale_backprop, TensorType({DT_FLOAT}))
     .OUTPUT(offset_backprop, TensorType({DT_FLOAT}))

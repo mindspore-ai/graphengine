@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -368,8 +368,9 @@ REG_OP(SpaceToDepth)
 *     complex128, uint32, uint64
 
 *@par Attributes:
-*Two attributes, including:
+*Three attributes, including:
 * @li block_size: An int >= 2, specifying the size of the spatial block.
+* @li mode: An optional string, specifying the mode. Defaults to "DCR".
 * @li data_format: An optional string, specifying the data format. Defaults to "NHWC" . \n
 
 *@par Outputs:
@@ -382,6 +383,7 @@ REG_OP(DepthToSpace)
   .INPUT(x, TensorType::BasicType())
   .OUTPUT(y, TensorType::BasicType())
   .REQUIRED_ATTR(block_size, Int)
+  .ATTR(mode, String, "DCR")
   .ATTR(data_format, String, "NHWC")
   .OP_END_FACTORY_REG(DepthToSpace)
 
@@ -845,7 +847,11 @@ with the same setting for this option. Default: False \n
 selected indices from the boxes tensor, where M <= max_output_size. \n
 
 *@attention Constraints:
-*Input theta must be float16 or float, output_size must be int32 type . \n
+*Input theta must be float16 or float, output_size must be int32 type .
+The current implementation of AffineGrid operator AiCore adopts 
+BatchMatMul's FP16 fusion operator scheme, and the accuracy will 
+decrease when the theta range exceeds [-10,10].If the model requires 
+high accuracy of AffineGrid, it is recommended to use AICPU. \n
 
 *@par Third-party framework compatibility
 *Compatible with Pytorch affine_grid operator.

@@ -17,6 +17,7 @@
 #ifndef AICPU_OP_TYPE_LIST_H_
 #define AICPU_OP_TYPE_LIST_H_
 
+extern "C" {
 enum OpKernelType {
     TF_KERNEL,
     CPU_KERNEL
@@ -36,12 +37,6 @@ struct SysOpInfo {
     OpKernelType kernelsType;
 };
 
-struct OpParamInfo {
-    uint64_t num;
-    uint64_t dtypeList;
-    uint64_t formatList;
-};
-
 struct SysOpCheckInfo {
     uint64_t opListNum;
     uint64_t offSetLen;
@@ -57,4 +52,6 @@ struct SysOpCheckResp {
     uint64_t opParamInfoList;
 };
 #pragma pack(pop)
+}
+
 #endif  // AICPU_OP_TYPE_LIST_H_

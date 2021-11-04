@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -702,6 +702,31 @@ REG_OP(Unsqueeze)
     .OP_END_FACTORY_REG(Unsqueeze)
 
 /**
+*@brief Inserts a dimension of 1 into a tensor's shape. Only the tensor shape is changed, without changing the data. \n
+
+*@par Inputs:
+*@li x: Original tensor.
+
+*@par Attributes:
+*@li axes: List of ints indicating the dimensions to be inserted. \n
+
+*@par Outputs:
+*y: Reshape tensor with same data as input. \n
+
+*@par Third-party framework compatibility
+*Compatible with the Onnx operator Unsqueeze.
+
+*@par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Unsqueeze instead.
+*/
+
+REG_OP(UnsqueezeV2)
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
+    .ATTR(axis, ListInt, {})
+    .OP_END_FACTORY_REG(UnsqueezeV2)
+
+/**
 *@brief Reshapes a tensor. Only the tensor shape is changed, without changing the data. \n
 
 *@par Inputs:
@@ -752,6 +777,30 @@ REG_OP(Squeeze)
     .OUTPUT(y, TensorType::ALL())
     .ATTR(axis, ListInt, {})
     .OP_END_FACTORY_REG(Squeeze)
+
+/**
+*@brief Removes dimensions of size 1 from the shape of a tensor. \n
+
+*@par Inputs:
+*x: A tensor. \n
+
+*@par Attributes:
+*axis: An optional list of int32 or int64. If not specified, squeezes all dimensions of size 1.   If specified, only squeezes the dimensions listed. It is an error to squeeze a dimension that is not 1. \n
+
+*@par Outputs:
+*y: A tensor. \n
+
+*@par Third-party framework compatibility
+*Compatible with the TensorFlow operator Squeeze.
+
+*@par Restrictions:
+* Warning: THIS FUNCTION IS DEPRECATED. Please use Squeeze instead.
+*/
+REG_OP(SqueezeV2)
+    .INPUT(x, TensorType::ALL())
+    .OUTPUT(y, TensorType::ALL())
+    .ATTR(axis, ListInt, {})
+    .OP_END_FACTORY_REG(SqueezeV2)
 
 /**
 *@brief Returns an integer representing the rank of input tensor. The rank of a tensor is the number of indices required to uniquely select each element of the tensor, that is, the dimension size of the tensor. \n
@@ -1227,6 +1276,35 @@ REG_OP(NonZero)
     .OP_END_FACTORY_REG(NonZero)
 
 /**
+*@Returns a tensor containing the indices of all non-zero elements of input. \n
+
+*@par Inputs:
+*x: A Tensor. Must be one of the following types: float16, float32, int32, int64.
+
+*@par Attributes:
+* transpose: the output tensor will be transposed if true. \n
+
+*@par Outputs:
+* value: A Tensor. Has the same type as "x" . \n
+* index: A Tensor. The type is INT32, means index for input. \n
+* count: A Scalar. The type is INT32, means count for non_zero ele in input. \n
+
+*@par Third-party framework compatibility
+*Compatible with the PyTorch operator NonZeroWithValue.
+*/
+
+REG_OP(NonZeroWithValue)
+    .INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+           DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(value, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+            DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(index, TensorType({DT_INT32}))
+    .OUTPUT(count, TensorType({DT_INT32}))
+    .ATTR(transpose, Bool, false)
+    .ATTR(dtype, Type, DT_INT32)
+    .OP_END_FACTORY_REG(NonZeroWithValue)
+
+/**
 * @brief Expand the input tensor to a compatible shape. \n
 
 * @par Inputs:
@@ -1258,24 +1336,53 @@ REG_OP(ExpandD)
 * Three inputs, including:
 * @li bucket_list: A 1-D tensor of type int32 with the value of ivf_counts and ivf_offset index. \n
 * @li ivf_counts: A 1-D tensor of type int32 with the value of ivf counts. \n
-* @li ivf_offset: A 1-D tensor of type int32 with the value of ivf offset. \n
+* @li ivf_offset: A 1-D tensor of type int32 or int64 with the value of ivf offset. \n
 
 * @par Attributes:
 * total_limit: A int64 type maximum value of the sum of ivf_counts corresponding to bucket_list. \n
 
 * @par Outputs:
 * @li buckets_limit: A 1-D tensor of type int32 with the sum <= total_limit. \n
-* @li buckets_offset: A 1-D tensor of type int32 with the value of ivf_offset corresponding to bucket_list. \n
+* @li buckets_offset: A 1-D tensor of type int32 or int64 with the value of ivf_offset corresponding to bucket_list. \n
 */
 REG_OP(CalcBucketsLimitAndOffset)
     .INPUT(bucket_list, TensorType({DT_INT32}))
     .INPUT(ivf_counts, TensorType({DT_INT32}))
-    .INPUT(ivf_offset, TensorType({DT_INT32}))
+    .INPUT(ivf_offset, TensorType({DT_INT32, DT_INT64}))
     .OUTPUT(buckets_limit, TensorType({DT_INT32}))
-    .OUTPUT(buckets_offset, TensorType({DT_INT32}))
+    .OUTPUT(buckets_offset, TensorType({DT_INT32, DT_INT64}))
     .REQUIRED_ATTR(total_limit, Int)
     .OP_END_FACTORY_REG(CalcBucketsLimitAndOffset)
 
+/**
+*@brief Get dim number in tensordesc. \n
+
+*@par Inputs:
+*x: A Tensor. \n
+
+*@par Outputs:
+*y: A 1D tensor. The data type must be int32. \n
+*/
+REG_OP(GetShape)
+    .DYNAMIC_INPUT(x, TensorType({DT_DOUBLE, DT_FLOAT, DT_FLOAT16, DT_INT8, DT_UINT8, DT_INT16, \
+        DT_UINT16, DT_INT32, DT_UINT32, DT_INT64, DT_UINT64, DT_BOOL}))
+    .OUTPUT(y, TensorType({DT_INT32}))
+    .OP_END_FACTORY_REG(GetShape)
+
+/**
+*@brief Update the tensor_desc of the output. \n
+
+* @par attributes:
+* @li shape: A listInt contains the data to update. \n
+
+*@par outputs:
+* y: a tensor_desc, type is int.\n
+*/
+REG_OP(UpdateTensorDesc)
+    .OUTPUT(y, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
+                           DT_INT64, DT_UINT64, DT_INT16, DT_UINT16, DT_DOUBLE}))
+    .REQUIRED_ATTR(shape, ListInt)
+    .OP_END_FACTORY_REG(UpdateTensorDesc)
 }  // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_ARRAY_OPS_H_

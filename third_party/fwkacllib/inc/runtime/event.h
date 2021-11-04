@@ -1,21 +1,21 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
-#ifndef __CCE_RUNTIME_EVENT_H__
-#define __CCE_RUNTIME_EVENT_H__
+#ifndef CCE_RUNTIME_EVENT_H
+#define CCE_RUNTIME_EVENT_H
 
 #include "base.h"
 
@@ -33,8 +33,8 @@ typedef enum rtEventWaitStatus {
  * @ingroup event_flags
  * @brief event op bit flags
  */
-#define RT_EVENT_DEFAULT (0x0E)
-#define RT_EVENT_WITH_FLAG (0x0B)
+#define RT_EVENT_DEFAULT (0x0EU)
+#define RT_EVENT_WITH_FLAG (0x0BU)
 
 #define RT_EVENT_DDSYNC_NS    0x01U
 #define RT_EVENT_STREAM_MARK  0x02U
@@ -133,7 +133,7 @@ RTS_API rtError_t rtEventQueryWaitStatus(rtEvent_t event, rtEventWaitStatus_t *s
  * @param [in] end  ending event
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtEventElapsedTime(float *time, rtEvent_t start, rtEvent_t end);
+RTS_API rtError_t rtEventElapsedTime(float32_t *time, rtEvent_t start, rtEvent_t end);
 
 /**
  * @ingroup dvrt_event
@@ -153,7 +153,7 @@ RTS_API rtError_t rtEventGetTimeStamp(uint64_t *time, rtEvent_t event);
  * @return RT_ERROR_INVALID_VALUE for error input of event, name
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtNameEvent(rtEvent_t event, const char *name);
+RTS_API rtError_t rtNameEvent(rtEvent_t event, const char_t *name);
 
 /**
  * @ingroup dvrt_event
@@ -200,14 +200,14 @@ RTS_API rtError_t rtNotifyWait(rtNotify_t notify, rtStream_t stream);
 /**
  * @ingroup dvrt_event
  * @brief Wait for a notify with time out
- * @param [in] notify_ notify to be wait
- * @param [in] stream_  input stream
+ * @param [in] notify notify to be wait
+ * @param [in] stream  input stream
  * @param [in] timeOut  input timeOut
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_STREAM_CONTEXT for stream is not in current ctx
  */
-RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify_, rtStream_t stream_, uint32_t timeOut);
+RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify, rtStream_t stream, uint32_t timeOut);
 
 /**
  * @ingroup dvrt_event
@@ -217,7 +217,7 @@ RTS_API rtError_t rtNotifyWaitWithTimeOut(rtNotify_t notify_, rtStream_t stream_
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNameNotify(rtNotify_t notify, const char *name);
+RTS_API rtError_t rtNameNotify(rtNotify_t notify, const char_t *name);
 
 /**
  * @ingroup dvrt_event
@@ -237,7 +237,7 @@ RTS_API rtError_t rtGetNotifyID(rtNotify_t notify, uint32_t *notifyId);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input of
  */
-RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char *name, uint32_t len);
+RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char_t *name, uint32_t len);
 
 /**
  * @ingroup dvrt_event
@@ -247,7 +247,7 @@ RTS_API rtError_t rtIpcSetNotifyName(rtNotify_t notify, char *name, uint32_t len
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtIpcOpenNotify(rtNotify_t *notify, const char *name);
+RTS_API rtError_t rtIpcOpenNotify(rtNotify_t *notify, const char_t *name);
 
 /**
  * @ingroup dvrt_event
@@ -270,10 +270,10 @@ RTS_API rtError_t rtNotifyGetAddrOffset(rtNotify_t notify, uint64_t *devAddrOffs
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtSetIpcNotifyPid(const char *name, int32_t pid[], int num);
+RTS_API rtError_t rtSetIpcNotifyPid(const char_t *name, int32_t pid[], int32_t num);
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif  // __CCE_RUNTIME_EVENT_H__
+#endif  // CCE_RUNTIME_EVENT_H

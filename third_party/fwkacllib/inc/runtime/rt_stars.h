@@ -1,10 +1,21 @@
-/*
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- * Description:
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-#ifndef __CCE_RUNTIME_STARS_H
-#define __CCE_RUNTIME_STARS_H
+#ifndef CCE_RUNTIME_RT_STARS_H
+#define CCE_RUNTIME_RT_STARS_H
 
 #include "base.h"
 
@@ -32,7 +43,7 @@ RTS_API rtError_t rtStarsTaskLaunch(const void *taskSqe, uint32_t sqeLen, rtStre
  * @param [in] queName      cdq name
  * @return RT_ERROR_NONE for ok, ACL_ERROR_RT_NO_CDQ_RESOURCE for no cdq resources
  */
-RTS_API rtError_t rtCdqCreate(uint32_t batchNum, uint32_t batchSize, const char *queName);
+RTS_API rtError_t rtCdqCreate(uint32_t batchNum, uint32_t batchSize, const char_t *queName);
 
 /**
  * @ingroup rt_stars
@@ -40,7 +51,7 @@ RTS_API rtError_t rtCdqCreate(uint32_t batchNum, uint32_t batchSize, const char 
  * @param [in] queName      cdq name
  * @return RT_ERROR_NONE for ok, others failed
  */
-RTS_API rtError_t rtCdqDestroy(const char *queName);
+RTS_API rtError_t rtCdqDestroy(const char_t *queName);
 
 /**
  * @ingroup rt_stars
@@ -50,7 +61,7 @@ RTS_API rtError_t rtCdqDestroy(const char *queName);
  * @param [out] batchId     batch index
  * @return RT_ERROR_NONE for ok, ACL_ERROR_RT_WAIT_TIMEOUT for timeout
  */
-RTS_API rtError_t rtCdqAllocBatch(const char *queName, int32_t timeout, uint32_t *batchId);
+RTS_API rtError_t rtCdqAllocBatch(const char_t *queName, int32_t timeout, uint32_t *batchId);
 
 /**
  * @ingroup rt_stars
@@ -63,7 +74,7 @@ RTS_API rtError_t rtCdqAllocBatch(const char *queName, int32_t timeout, uint32_t
  * @param [in] stream       launch task on the stream
  * @return RT_ERROR_NONE for ok, others failed
  */
-RTS_API rtError_t rtCdqEnQueue(const char *queName, uint32_t cdqeIndex, void *data, uint32_t dataSize,
+RTS_API rtError_t rtCdqEnQueue(const char_t *queName, uint32_t cdqeIndex, void *data, uint32_t dataSize,
     rtStream_t stream);
 
 /**
@@ -77,11 +88,11 @@ RTS_API rtError_t rtCdqEnQueue(const char *queName, uint32_t cdqeIndex, void *da
  * @param [in] stream       launch task on the stream
  * @return RT_ERROR_NONE for ok, others failed
  */
-RTS_API rtError_t rtCdqEnQueuePtrMode(const char *queName, uint32_t cdqeIndex, const void *ptrAddr,
+RTS_API rtError_t rtCdqEnQueuePtrMode(const char_t *queName, uint32_t cdqeIndex, const void *ptrAddr,
     rtStream_t stream);
 
 #if defined(__cplusplus)
 
 }
 #endif
-#endif // __CCE_RUNTIME_STARS_H
+#endif // CCE_RUNTIME_RT_STARS_H

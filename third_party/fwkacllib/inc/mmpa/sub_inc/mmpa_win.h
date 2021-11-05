@@ -368,8 +368,8 @@ MMPA_FUNC_VISIBILITY INT32 mmCondDestroy(mmCond *cond);
 MMPA_FUNC_VISIBILITY INT32 mmGetPid(VOID);
 MMPA_FUNC_VISIBILITY INT32 mmGetTid(VOID);
 MMPA_FUNC_VISIBILITY INT32 mmGetPidHandle(mmProcess *processHandle);
-MMPA_FUNC_VISIBILITY INT32 mmGetLocalTime(mmSystemTime_t *sysTime);
-MMPA_FUNC_VISIBILITY INT32 mmGetSystemTime(mmSystemTime_t *sysTime);
+MMPA_FUNC_VISIBILITY INT32 mmGetLocalTime(mmSystemTime_t *sysTimePtr);
+MMPA_FUNC_VISIBILITY INT32 mmGetSystemTime(mmSystemTime_t *sysTimePtr);
 MMPA_FUNC_VISIBILITY INT32 mmSemInit(mmSem_t *sem, UINT32 value);
 MMPA_FUNC_VISIBILITY INT32 mmSemWait(mmSem_t *sem);
 MMPA_FUNC_VISIBILITY INT32 mmSemPost(mmSem_t *sem);
@@ -431,7 +431,7 @@ MMPA_FUNC_VISIBILITY mmSsize_t mmWritev(mmSockHandle fd, mmIovSegment *iov, INT3
 MMPA_FUNC_VISIBILITY VOID mmMb();
 MMPA_FUNC_VISIBILITY INT32 mmInetAton(const CHAR *addrStr, mmInAddr *addr);
 
-MMPA_FUNC_VISIBILITY mmProcess mmOpenFile(const CHAR *fileName, UINT32 access, mmCreateFlag fileFlag);
+MMPA_FUNC_VISIBILITY mmProcess mmOpenFile(const CHAR *fileName, UINT32 accessFlag, mmCreateFlag fileFlag);
 MMPA_FUNC_VISIBILITY mmSsize_t mmReadFile(mmProcess fileId, VOID *buffer, INT32 len);
 MMPA_FUNC_VISIBILITY mmSsize_t mmWriteFile(mmProcess fileId, VOID *buffer, INT32 len);
 MMPA_FUNC_VISIBILITY INT32 mmCloseFile(mmProcess fileId);
@@ -444,13 +444,13 @@ MMPA_FUNC_VISIBILITY mmAtomicType64 mmValueInc64(mmAtomicType64 *ptr, mmAtomicTy
 MMPA_FUNC_VISIBILITY mmAtomicType64 mmValueSub64(mmAtomicType64 *ptr, mmAtomicType64 value);
 MMPA_FUNC_VISIBILITY INT32 mmCreateTaskWithDetach(mmThread *threadHandle, mmUserBlock_t *funcBlock);
 
-MMPA_FUNC_VISIBILITY INT32 mmCreateNamedPipe(mmPipeHandle pipe[], CHAR *pipeName[], INT32 waitMode);
-MMPA_FUNC_VISIBILITY INT32 mmOpenNamePipe(mmPipeHandle pipe[], CHAR *pipeName[], INT32 waitMode);
+MMPA_FUNC_VISIBILITY INT32 mmCreateNamedPipe(mmPipeHandle pipeHandle[], CHAR *pipeName[], INT32 waitMode);
+MMPA_FUNC_VISIBILITY INT32 mmOpenNamePipe(mmPipeHandle pipeHandle[], CHAR *pipeName[], INT32 waitMode);
 MMPA_FUNC_VISIBILITY VOID mmCloseNamedPipe(mmPipeHandle namedPipe[]);
 
-MMPA_FUNC_VISIBILITY INT32 mmCreatePipe(mmPipeHandle pipe[], CHAR *pipeName[], UINT32 pipeCount, INT32 waitMode);
-MMPA_FUNC_VISIBILITY INT32 mmOpenPipe(mmPipeHandle pipe[], CHAR *pipeName[], UINT32 pipeCount, INT32 waitMode);
-MMPA_FUNC_VISIBILITY VOID mmClosePipe(mmPipeHandle pipe[], UINT32 pipeCount);
+MMPA_FUNC_VISIBILITY INT32 mmCreatePipe(mmPipeHandle pipeHandle[], CHAR *pipeName[], UINT32 pipeCount, INT32 waitMode);
+MMPA_FUNC_VISIBILITY INT32 mmOpenPipe(mmPipeHandle pipeHandle[], CHAR *pipeName[], UINT32 pipeCount, INT32 waitMode);
+MMPA_FUNC_VISIBILITY VOID mmClosePipe(mmPipeHandle pipeHandle[], UINT32 pipeCount);
 
 MMPA_FUNC_VISIBILITY mmCompletionHandle mmCreateCompletionPort();
 MMPA_FUNC_VISIBILITY VOID mmCloseCompletionPort(mmCompletionHandle handle);

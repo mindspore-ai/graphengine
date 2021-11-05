@@ -1,10 +1,21 @@
-/*
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- * Description: the definition of ffts plus
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-#ifndef __CCE_RUNTIME_FFTS_PLUS_DEFINE_H
-#define __CCE_RUNTIME_FFTS_PLUS_DEFINE_H
+#ifndef CCE_RUNTIME_RT_FFTS_PLUS_DEFINE_H
+#define CCE_RUNTIME_RT_FFTS_PLUS_DEFINE_H
 
 #include "base.h"
 
@@ -30,7 +41,7 @@ typedef enum tagFftsPlusHwType {
     RT_HW_CTX_TYPE_WRITEBACK_DATA = 11,
     RT_HW_CTX_TYPE_AICPU = 12,
     RT_HW_CTX_TYPE_LOAD = 13,
-    RT_HW_CTX_TYPE_MAX,
+    RT_HW_CTX_TYPE_MAX = 14,
 } rtFftsPlusHwType_t;
 
 // hardware context type
@@ -40,7 +51,8 @@ typedef enum tagFftsPlusSoftType {
     RT_SOFT_CTX_TYPE_AT_START = 3,
     RT_SOFT_CTX_TYPE_AT_END = 4,
     RT_SOFT_CTX_TYPE_LABEL = 5,
-    RT_SOFT_CTX_TYPE_MAX,
+    RT_SOFT_CTX_PERSISTENT_CACHE = 6,
+    RT_SOFT_CTX_TYPE_MAX = 7,
 } rtFftsPlusSoftType_t;
 
 typedef enum tagFftsPlusContextType {
@@ -61,6 +73,7 @@ typedef enum tagFftsPlusContextType {
     RT_CTX_TYPE_AT_START = 0x0300,
     RT_CTX_TYPE_AT_END = 0x0400,
     RT_CTX_TYPE_LABEL = 0x0500,
+    RT_CTX_TYPE_PERSISTENT_CACHE = 0x0600,
 }rtFftsPlusContextType_t;
 
 // condition type
@@ -71,7 +84,7 @@ typedef enum tagFftsPlusCondType {
     RT_COND_TYPE_GREATER_OR_EQUAL = 3,
     RT_COND_TYPE_LESS = 4,
     RT_COND_TYPE_LESS_OR_EQUAL = 5,
-    RT_COND_TYPE_MAX,
+    RT_COND_TYPE_MAX = 6,
 } rtFftsPlusCondType_t;
 
 // the definition of ffts plus context
@@ -505,7 +518,7 @@ typedef struct tagFftsPlusAtStartCtx {
     uint16_t threadIdInit;
     uint16_t threadWindowSize;
     // 80-127
-    uint16_t res9[12];
+    uint32_t res9[12];
 } rtFftsPlusAtStartCtx_t;
 
 // at end context
@@ -707,9 +720,35 @@ typedef struct tagFftsPlusCondSwitchCtx {
     uint32_t cmpValue2;
 } rtFftsPlusCondSwitchCtx_t;
 
+// ffts plus persistent cache context
+typedef struct tagFftsPlusPersistentCacheCtx {
+    // 0- 3bytes
+    uint16_t contextType;
+    uint8_t successorNum;
+    uint8_t res1 : 7;
+    uint8_t aten : 1;
+    // 4-7
+    uint8_t res2[2];
+    uint8_t predCntInit;
+    uint8_t predCnt;
+    // 8-11
+    uint8_t res3[4];
+    // 12-63
+    uint16_t successorList[RT_CTX_SUCCESSOR_NUM];
+    // 64-67
+    uint8_t persistentEnable : 1;
+    uint8_t res4 : 7;
+    uint8_t res5;
+    uint16_t persistentSize;
+    // 68-71
+    uint32_t persistentId;
+    // 72-127
+    uint32_t res6[14];
+} rtFftsPlusPersistentCacheCtx_t;
+
 #pragma pack(pop)
 
 #if defined(__cplusplus) && !defined(COMPILE_OMG_PACKAGE)
 }
 #endif
-#endif // __CCE_RUNTIME_FFTS_PLUS_DEFINE_H
+#endif // CCE_RUNTIME_RT_FFTS_PLUS_DEFINE_H

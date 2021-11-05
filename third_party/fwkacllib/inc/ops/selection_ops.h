@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -904,8 +904,10 @@ REG_OP(SliceDV2)
 * @li indices: A Tensor of type int32, specifying the indices of sorted data . \n
 
 * @attention Constraints:
-* @li k =< 5120
+* @li k =< 4096
 * @li Size of the last dimension =< 1458176
+* @li k =< 2048 under lhisi version
+* @li Size of the last dimension =< 1040000 under lhisi version
 * @li sorted = true
 * @li It's unstable sorted indices on the platform of Ascend310
 
@@ -1306,8 +1308,7 @@ REG_OP(CumprodD)
 
 *@par Inputs:
 * Two inputs, including:
-*@li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
-* complex64, int64, qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
+*@li x: A Tensor. Must be one of the following types: float32, int32, uint8, int8, float16.
 *@li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)). Defaults to "0".
 *
 *@par Attributes:
@@ -1333,8 +1334,7 @@ REG_OP(Cumsum)
 *
 *@par Inputs:
 * One input:
-*x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
-* complex64, int64, qint8, quint8, qint32, uint16, complex128, float16, uint32, uint64.
+*x: A Tensor. Must be one of the following types: float32, int32, uint8, int8, float16.
 *
 *@par Attributes:
 *@li axis A Tensor of type int32 or int64. Range is [-rank(x),rank(x)). Defaults to "0".
@@ -2408,6 +2408,40 @@ REG_OP(TopKPQDistanceMerge)
     .OUTPUT(topk_index, TensorType({DT_INT32}))
     .REQUIRED_ATTR(k, Int)
     .OP_END_FACTORY_REG(TopKPQDistanceMerge)
+
+/**
+*@brief Extracts a strided slice of a tensor. Roughly speaking, this op
+    extracts a slice of size (end-begin)/stride from the given input tensor.
+    Starting at the location specified by begin the slice continues by
+    adding stride to the index until all dimensions are not less than end.
+
+*@par Inputs:
+*Four inputs, including:
+* @li x: A Tensor. Must be one of the following types: float32, float64, int32, uint8, int16, int8,
+*     complex64, int64, qint8, quint8, qint32, qint16, quint16, uint16,
+*     complex128, float16, uint32, uint64.
+* @li begin: A Tensor of type int32 or int64, for the index of the first value to select . \n
+
+* @li end: A Tensor of type int32 or int64, for the index of the last value to select . \n
+
+* @li strides: A Tensor of type int32 or int64, for the increment . \n
+
+* @li axes: A Tensor of type int32 or int64, for the increment . \n
+
+*@par Outputs:
+*y: A Tensor. Has the same type as "x" . \n
+
+* @par Restrictions:
+* Warning: THIS FUNCTION IS EXPERIMENTAL.  Please do not use.
+*/
+REG_OP(StridedSliceV3)
+    .INPUT(x, TensorType::BasicType())
+    .INPUT(begin, TensorType::IndexNumberType())
+    .INPUT(end, TensorType::IndexNumberType())
+    .OPTIONAL_INPUT(axes, TensorType::IndexNumberType())
+    .OPTIONAL_INPUT(strides, TensorType::IndexNumberType())
+    .OUTPUT(y, TensorType::BasicType())
+    .OP_END_FACTORY_REG(StridedSliceV3)
 } // namespace ge
 
 #endif  // OPS_BUILT_IN_OP_PROTO_INC_SELECTION_OPS_H_

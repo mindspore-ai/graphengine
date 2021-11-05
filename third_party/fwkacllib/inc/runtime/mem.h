@@ -1,25 +1,23 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
-#ifndef __CCE_RUNTIME_MEM_H__
-#define __CCE_RUNTIME_MEM_H__
+#ifndef CCE_RUNTIME_MEM_H
+#define CCE_RUNTIME_MEM_H
 
-/*lint -e7*/
 #include <stddef.h>
-/*lint +e7*/
 #include "base.h"
 #include "config.h"
 #include "stream.h"
@@ -32,43 +30,43 @@ extern "C" {
  * @ingroup dvrt_mem
  * @brief memory type
  */
-#define RT_MEMORY_DEFAULT ((uint32_t)0x0)   // default memory on device
-#define RT_MEMORY_HBM ((uint32_t)0x2)       // HBM memory on device
-#define RT_MEMORY_RDMA_HBM ((uint32_t)0x3)  // RDMA-HBM memory on device
-#define RT_MEMORY_DDR ((uint32_t)0x4)       // DDR memory on device
-#define RT_MEMORY_SPM ((uint32_t)0x8)       // shared physical memory on device
-#define RT_MEMORY_P2P_HBM ((uint32_t)0x10)  // HBM memory on other 4P device
-#define RT_MEMORY_P2P_DDR ((uint32_t)0x11)  // DDR memory on other device
-#define RT_MEMORY_DDR_NC ((uint32_t)0x20)   // DDR memory of non-cache
-#define RT_MEMORY_TS_4G ((uint32_t)0x40)
-#define RT_MEMORY_TS ((uint32_t)0x80)
-#define RT_MEMORY_RESERVED ((uint32_t)0x100)
+#define RT_MEMORY_DEFAULT (0x0U)   // default memory on device
+#define RT_MEMORY_HBM (0x2U)       // HBM memory on device
+#define RT_MEMORY_RDMA_HBM (0x3U)  // RDMA-HBM memory on device
+#define RT_MEMORY_DDR (0x4U)       // DDR memory on device
+#define RT_MEMORY_SPM (0x8U)       // shared physical memory on device
+#define RT_MEMORY_P2P_HBM (0x10U)  // HBM memory on other 4P device
+#define RT_MEMORY_P2P_DDR (0x11U)  // DDR memory on other device
+#define RT_MEMORY_DDR_NC (0x20U)   // DDR memory of non-cache
+#define RT_MEMORY_TS (0x40U)       // Used for Ts memory
+#define RT_MEMORY_TS_4G (0x40U)    // Used for Ts memory(only 1951)
+#define RT_MEMORY_RESERVED (0x100U)
 
-#define RT_MEMORY_L1 ((uint32_t)0x1<<16)
-#define RT_MEMORY_L2 ((uint32_t)0x1<<17)
+#define RT_MEMORY_L1 (0x1U << 16U)
+#define RT_MEMORY_L2 (0x1U << 17U)
 
 /**
  * @ingroup dvrt_mem
  * @brief memory info type
  */
-#define RT_MEM_INFO_TYPE_DDR_SIZE          ((uint32_t)0x1)
-#define RT_MEM_INFO_TYPE_HBM_SIZE          ((uint32_t)0x2)
-#define RT_MEM_INFO_TYPE_DDR_P2P_SIZE      ((uint32_t)0x3)
-#define RT_MEM_INFO_TYPE_HBM_P2P_SIZE      ((uint32_t)0x4)
+#define RT_MEM_INFO_TYPE_DDR_SIZE          (0x1U)
+#define RT_MEM_INFO_TYPE_HBM_SIZE          (0x2U)
+#define RT_MEM_INFO_TYPE_DDR_P2P_SIZE      (0x3U)
+#define RT_MEM_INFO_TYPE_HBM_P2P_SIZE      (0x4U)
 
 /**
  * @ingroup dvrt_mem
  * @brief memory Policy
  */
-#define RT_MEMORY_POLICY_NONE ((uint32_t)0x0)                     // Malloc mem prior hage page, then default page
-#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST ((uint32_t)0x1 << 10)    // Malloc mem prior hage page, then default page
-#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY ((uint32_t)0x1 << 11)     // Malloc mem only use hage page
-#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY ((uint32_t)0x1 << 12)  // Malloc mem only use default page
-#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST_P2P ((uint32_t)0x1 << 13)    // Malloc mem prior hage page, then default page, use for p2p
-#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY_P2P ((uint32_t)0x1 << 14)     // Malloc mem only use hage page, use for p2p
-#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY_P2P ((uint32_t)0x1 << 15)  // Malloc mem only use default page, use for p2p
+#define RT_MEMORY_POLICY_NONE (0x0U)                     // Malloc mem prior huge page, then default page
+#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST (0x1U << 10U)    // Malloc mem prior huge page, then default page
+#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY (0x1U << 11U)     // Malloc mem only use huge page
+#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY (0x1U << 12U)  // Malloc mem only use default page
+#define RT_MEMORY_POLICY_HUGE_PAGE_FIRST_P2P (0x1U << 13U) // Malloc mem prior huge page, then default page, for p2p
+#define RT_MEMORY_POLICY_HUGE_PAGE_ONLY_P2P (0x1U << 14U)     // Malloc mem only use huge page, use for p2p
+#define RT_MEMORY_POLICY_DEFAULT_PAGE_ONLY_P2P (0x1U << 15U)  // Malloc mem only use default page, use for p2p
 
-#define MEM_ALLOC_TYPE_BIT ((uint32_t)0x3FF)  // mem type bit in <0, 9>
+#define MEM_ALLOC_TYPE_BIT (0x3FFU)  // mem type bit in <0, 9>
 
 /**
  * @ingroup dvrt_mem
@@ -80,10 +78,10 @@ typedef uint32_t rtMemType_t;
  * @ingroup dvrt_mem
  * @brief memory advise type
  */
-#define RT_MEMORY_ADVISE_EXE (0x02)
-#define RT_MEMORY_ADVISE_THP (0x04)
-#define RT_MEMORY_ADVISE_PLE (0x08)
-#define RT_MEMORY_ADVISE_PIN (0x16)
+#define RT_MEMORY_ADVISE_EXE (0x02U)
+#define RT_MEMORY_ADVISE_THP (0x04U)
+#define RT_MEMORY_ADVISE_PLE (0x08U)
+#define RT_MEMORY_ADVISE_PIN (0x16U)
 
 /**
  * @ingroup dvrt_mem
@@ -119,7 +117,7 @@ typedef enum tagRtRecudeKind {
     RT_MEMCPY_SDMA_AUTOMATIC_MAX = 11,
     RT_MEMCPY_SDMA_AUTOMATIC_MIN = 12,
     RT_MEMCPY_SDMA_AUTOMATIC_EQUAL = 13,
-    RT_RECUDE_KIND_END
+    RT_RECUDE_KIND_END = 14,
 } rtRecudeKind_t;
 
 typedef enum tagRtDataType {
@@ -134,7 +132,7 @@ typedef enum tagRtDataType {
     RT_DATA_TYPE_UINT8 = 8, // uint8
     RT_DATA_TYPE_UINT16= 9, // uint16
     RT_DATA_TYPE_UINT32= 10,// uint32
-    RT_DATA_TYPE_END
+    RT_DATA_TYPE_END = 11,
 } rtDataType_t;
 
 /**
@@ -191,21 +189,21 @@ typedef struct tagRtPointerAttributes {
 
 
 typedef struct rtMallocHostSharedMemoryIn {
-    const char *name;
+    const char_t *name;
     const uint64_t size;
     uint32_t flag;
 } rtMallocHostSharedMemoryIn;
 
 typedef struct rtMallocHostSharedMemoryOut {
-    int fd;
+    int32_t fd;
     void *ptr;
     void *devPtr;
 } rtMallocHostSharedMemoryOut;
 
 typedef struct rtFreeHostSharedMemoryIn {
-    const char *name;
+    const char_t *name;
     const uint64_t size;
-    int fd;
+    int32_t fd;
     void *ptr;
     void *devPtr;
 } rtFreeHostSharedMemoryIn;
@@ -310,6 +308,18 @@ RTS_API rtError_t rtMemAllocManaged(void **ptr, uint64_t size, uint32_t flag);
  * @return RT_ERROR_INVALID_VALUE for error input
  */
 RTS_API rtError_t rtMemFreeManaged(void *ptr);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief Specifies how memory is use
+ * @param [in] devPtr   memory pointer
+ * @param [in] size     memory size
+ * @param [in] advise   reserved, set to 1
+ * @return RT_ERROR_NONE for ok
+ * @return others for error
+ */
+RTS_API rtError_t rtMemAdvise(void *devPtr, uint64_t size, uint32_t advise);
+
 /**
  * @ingroup dvrt_mem
  * @brief alloc cached device memory
@@ -384,6 +394,39 @@ RTS_API rtError_t rtReduceAsync(void *dst, uint64_t destMax, const void *src, ui
 
 /**
  * @ingroup dvrt_mem
+ * @brief synchronized memcpy2D
+ * @param [in] dst      destination address pointer
+ * @param [in] dstPitch pitch of destination memory
+ * @param [in] src      source address pointer
+ * @param [in] srcPitch pitch of source memory
+ * @param [in] width    width of matrix transfer
+ * @param [in] height   height of matrix transfer
+ * @param [in] kind     memcpy type
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtMemcpy2d(void *dst, uint64_t dstPitch, const void *src, uint64_t srcPitch, uint64_t width,
+                             uint64_t height, rtMemcpyKind_t kind);
+
+/**
+ * @ingroup dvrt_mem
+ * @brief asynchronized memcpy2D
+ * @param [in] dst      destination address pointer
+ * @param [in] dstPitch length of destination address memory
+ * @param [in] src      source address pointer
+ * @param [in] srcPitch length of destination address memory
+ * @param [in] width    width of matrix transfer
+ * @param [in] height   height of matrix transfer
+ * @param [in] kind     memcpy type
+ * @param [in] stream   asynchronized task stream
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtMemcpy2dAsync(void *dst, uint64_t dstPitch, const void *src, uint64_t srcPitch, uint64_t width,
+                                  uint64_t height, rtMemcpyKind_t kind, rtStream_t stream);
+
+/**
+ * @ingroup dvrt_mem
  * @brief query memory size
  * @param [in] aiCoreMemorySize
  * @return RT_ERROR_NONE for ok, errno for failed
@@ -429,22 +472,22 @@ RTS_API rtError_t rtMemsetAsync(void *ptr, uint64_t destMax, uint32_t value, uin
 /**
  * @ingroup dvrt_mem
  * @brief get current device memory total and free
- * @param [out] free
- * @param [out] total
+ * @param [out] freeSize
+ * @param [out] totalSize
  * @return RT_ERROR_NONE for ok, errno for failed
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtMemGetInfo(size_t *free, size_t *total);
+RTS_API rtError_t rtMemGetInfo(size_t *freeSize, size_t *totalSize);
 
 /**
  * @ingroup dvrt_mem
  * @brief get current device memory total and free
  * @param [in] memInfoType
- * @param [out] free
- * @param [out] total
+ * @param [out] freeSize
+ * @param [out] totalSize
  * @return RT_ERROR_NONE for ok, errno for failed
  */
-RTS_API rtError_t rtMemGetInfoEx(rtMemInfoType_t memInfoType, size_t *free, size_t *total);
+RTS_API rtError_t rtMemGetInfoEx(rtMemInfoType_t memInfoType, size_t *freeSize, size_t *totalSize);
 
 /**
  * @ingroup dvrt_mem
@@ -477,7 +520,7 @@ RTS_API rtError_t rtPointerGetAttributes(rtPointerAttributes_t *attributes, cons
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *name, uint32_t len);
+RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char_t *name, uint32_t len);
 
 /**
  * @ingroup dvrt_mem
@@ -487,7 +530,7 @@ RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtIpcDestroyMemoryName(const char *name);
+RTS_API rtError_t rtIpcDestroyMemoryName(const char_t *name);
 
 /**
  * @ingroup dvrt_mem
@@ -498,7 +541,7 @@ RTS_API rtError_t rtIpcDestroyMemoryName(const char *name);
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtIpcOpenMemory(void **ptr, const char *name);
+RTS_API rtError_t rtIpcOpenMemory(void **ptr, const char_t *name);
 
 /**
  * @ingroup dvrt_mem
@@ -533,7 +576,7 @@ RTS_API rtError_t rtRDMASend(uint32_t index, uint32_t wqeIndex, rtStream_t strea
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtSetIpcMemPid(const char *name, int32_t pid[], int num);
+RTS_API rtError_t rtSetIpcMemPid(const char_t *name, int32_t pid[], int num);
 
 /**
  * @ingroup dvrt_mem
@@ -551,4 +594,4 @@ RTS_API rtError_t rtRDMADBSend(uint32_t dbIndex, uint64_t dbInfo, rtStream_t str
 }
 #endif
 
-#endif  // __CCE_RUNTIME_MEM_H__
+#endif  // CCE_RUNTIME_MEM_H

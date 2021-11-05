@@ -125,7 +125,7 @@ enum acldvppPixelFormat {
 enum acldvppStreamFormat { H265_MAIN_LEVEL = 0, H264_BASELINE_LEVEL, H264_MAIN_LEVEL, H264_HIGH_LEVEL };
 
 // Supported Channel Mode
-enum acldvppChannelMode { DVPP_CHNMODE_VPC = 1, DVPP_CHNMODE_JPEGD = 2, DVPP_CHNMODE_JPEGE = 4 };
+enum acldvppChannelMode { DVPP_CHNMODE_VPC = 1, DVPP_CHNMODE_JPEGD = 2, DVPP_CHNMODE_JPEGE = 4, DVPP_CHNMODE_PNGD = 8 };
 
 // Supported Border Type
 enum acldvppBorderType { BORDER_CONSTANT = 0, BORDER_REPLICATE, BORDER_REFLECT, BORDER_REFLECT_101 };

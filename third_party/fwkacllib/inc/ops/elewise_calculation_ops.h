@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +132,7 @@ REG_OP(MinimumGrad)
 *dst_type: An required attribute of type int32, specifying the dst data type. \n
 
 *@par Outputs:
-*y:A Tensor. Has the same type as x.
+*y:A Tensor with same shape as x, and data type is specified by dst_type.
 */
 REG_OP(Cast)
     .INPUT(x, TensorType({DT_BOOL, DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT32, DT_UINT8,
@@ -3391,57 +3391,57 @@ REG_OP(TensorRedirect)
     .OP_END_FACTORY_REG(TensorRedirect)
 
 /**
-* @brief Performs the element-wise division of tensor x2 by tensor x3,
-* multiply the result by the scalar value and add it to tensor x1
+* @brief Performs the element-wise division of tensor x1 by tensor x2,
+* multiply the result by the scalar value and add it to tensor input_data.
 
 * @par Inputs:
 * Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
-*     float16, float32.
-* @li x1: A mutable input Tensor of the same type as x1.
-* @li x2: A mutable input Tensor of the same type as x1.
+*     float16, float32, double, int64.
+* @li x1: A mutable input Tensor of the same type as input_data.
+* @li x2: A mutable input Tensor of the same type as input_data.
 * @li value: A mutable input Tensor. Must be one of the following types:
-*     float16, float32, int32. \n
+*     float16, float32, double, int64, int32. \n
+
 
 * @par Outputs:
-* y: A mutable Tensor. Has the same type as "x1". \n
+* y: A mutable Tensor. Has the same type as input_data. \n
 
 * @par Third-party framework compatibility
-* Compatible with the Pytorch operator Addcdiv.
+* Compatible with the Pytorch operator Addcdiv(version-1.5.0).
 */
 REG_OP(Addcdiv)
-    .INPUT(input_data, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT}))
-    .INPUT(value, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT32}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT}))
+    .INPUT(input_data, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
+    .INPUT(value, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT32, DT_DOUBLE, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64}))
     .OP_END_FACTORY_REG(Addcdiv)
 
 /**
-* @brief Performs the element-wise multiplication of tensor x2 by tensor x3,
+* @brief Performs the element-wise multiplication of tensor x1 by tensor x2,
 * multiply the result by the scalar value and add it to tensor input_data
-
 
 * @par Inputs:
 * Four inputs, including:
 * @li input_data: A mutable input Tensor. Must be one of the following types:
-*     float16, float32, int8, int32, uint8.
-* @li x1: A mutable input Tensor of the same type as x1.
-* @li x2: A mutable input Tensor of the same type as x1.
-* @li value: A tensor which includes only one element of the same type as x1. \n
+*     float16, float32, double, int64, int8, int32, uint8.
+* @li x1: A mutable input Tensor of the same type as input_data.
+* @li x2: A mutable input Tensor of the same type as input_data.
+* @li value: A tensor which includes only one element of the same type as input_data. \n
 
 * @par Outputs:
-* y: A mutable output Tensor. Has the same type as "x1". \n
+* y: A mutable output Tensor. Has the same type as input_data. \n
 
 * @par Third-party framework compatibility
 * Compatible with the Pytorch operator Addcmul.
 */
 REG_OP(Addcmul)
-    .INPUT(input_data, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8 }))
-    .INPUT(x1, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8 }))
-    .INPUT(x2, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8 }))
-    .INPUT(value, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8 }))
-    .OUTPUT(y, TensorType({ DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8 }))
+    .INPUT(input_data, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(x1, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(x2, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .INPUT(value, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_INT32, DT_UINT8, DT_DOUBLE, DT_INT64}))
     .OP_END_FACTORY_REG(Addcmul)
 
 /**
@@ -3508,8 +3508,8 @@ REG_OP(StrideAdd)
 * Compatible with the Pytorch equal operator. \n
 */
 REG_OP(TensorEqual)
-    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
-    .INPUT(input_y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_INT8, DT_UINT8}))
+    .INPUT(input_x, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_INT8, DT_UINT8}))
+    .INPUT(input_y, TensorType({DT_FLOAT16, DT_FLOAT, DT_DOUBLE, DT_INT64, DT_INT32, DT_INT8, DT_UINT8}))
     .OUTPUT(output_z, TensorType({DT_BOOL}))
     .OP_END_FACTORY_REG(TensorEqual)
 

@@ -1,18 +1,18 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 #ifndef __CCE_RUNTIME_BASE_H__
 #define __CCE_RUNTIME_BASE_H__
@@ -36,13 +36,25 @@ extern "C" {
 typedef int32_t rtError_t;
 static const int32_t RT_ERROR_NONE = 0; // success
 
+#ifndef char_t
+typedef char char_t;
+#endif
+
+#ifndef float32_t
+typedef float float32_t;
+#endif
+
+#ifndef float64_t
+typedef double float64_t;
+#endif
+
 /**
  * @ingroup dvrt_base
  * @brief device mode.
  */
 typedef enum tagRtDeviceMode {
     RT_DEVICE_MODE_SINGLE_DIE = 0,
-    RT_DEVICE_MODE_MULTI_DIE = 1,
+    RT_DEVICE_MODE_MULTI_DIE,
     RT_DEVICE_MODE_RESERVED
 } rtDeviceMode;
 
@@ -166,19 +178,19 @@ typedef enum {
  * @ingroup profiling_base
  * @brief runtime handle.
  */
-RTS_API rtError_t rtSetProfDirEx(const char *profDir, const char *address, const char *jobCtx);
+RTS_API rtError_t rtSetProfDirEx(const char_t *profDir, const char_t *address, const char_t *jobCtx);
 
 /**
  * @ingroup profiling_base
  * @brief init profiler object.
  */
-RTS_API rtError_t rtProfilerInit(const char *profDir, const char *address, const char *jobCtx);
+RTS_API rtError_t rtProfilerInit(const char_t *profDir, const char_t *address, const char_t *jobCtx);
 
 /**
  * @ingroup profiling_base
  * @brief config rts profiler.
  */
-RTS_API rtError_t rtProfilerConfig(uint16_t type);
+RTS_API rtError_t rtProfilerConfig(uint16_t profConfig);
 
 /**
  * @ingroup profiling_base
@@ -251,18 +263,6 @@ RTS_API rtError_t rtProfRegisterCtrlCallback(uint32_t moduleId, rtProfCtrlHandle
 
 /**
  * @ingroup dvrt_base
- * @brief Returns the last error from a runtime call.
- */
-RTS_API rtError_t rtGetLastError();
-
-/**
- * @ingroup dvrt_base
- * @brief Returns the last error from a runtime call.
- */
-RTS_API rtError_t rtPeekAtLastError();
-
-/**
- * @ingroup dvrt_base
  * @brief register callback for error code
  * @param [out] NA
  * @return RT_ERROR_NONE for ok
@@ -285,7 +285,7 @@ RTS_API rtError_t rtSetTaskFailCallback(rtTaskFailCallback callback);
  * @param [out] NA
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCallback callback);
+RTS_API rtError_t rtRegDeviceStateCallback(const char_t *regName, rtDeviceStateCallback callback);
 
 /**
  * @ingroup dvrt_base
@@ -295,7 +295,7 @@ RTS_API rtError_t rtRegDeviceStateCallback(const char *regName, rtDeviceStateCal
  * @param [out] NA
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtRegTaskFailCallbackByModule(const char *moduleName, rtTaskFailCallback callback);
+RTS_API rtError_t rtRegTaskFailCallbackByModule(const char_t *moduleName, rtTaskFailCallback callback);
 
 /**
  * @ingroup dvrt_base
@@ -373,7 +373,7 @@ RTS_API rtError_t rtLabelGoto(rtLabel_t label, rtStream_t stream);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtNameLabel(rtLabel_t label, const char *name);
+RTS_API rtError_t rtNameLabel(rtLabel_t label, const char_t *name);
 
 /**
  * @ingroup dvrt_base

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -269,10 +269,10 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 
 *@par Inputs:
 *Two required inputs and two optional inputs, including: \n
-* @li x: A 4D tensor of type float16 or int8, with shape [N, C, H, W] or [N, H, W, C]
-* @li filter: A 4D tensor of type float16 or int8, with shape [H, W, C, K]
+* @li x: A 4D tensor of type float16 or int8 or int4, with shape [N, C, H, W] or [N, H, W, C]
+* @li filter: A 4D tensor of type float16 or int8 or int4, with shape [H, W, C, K]
 * @li bias: An optional tensor of type float16 or int32
-* @li offset_w: An optional float16 or int8, used for quantized inference
+* @li offset_w: An optional float16 or int8 or int4, used for quantized inference
 
 * @par Attributes:
 * @li strides: A required list or tuple. The stride of the sliding window for
@@ -312,10 +312,10 @@ REG_OP(DepthwiseConv2DBackpropInputD)
 * @li Compatible with the Caffe operator DepthwiseConv2D.
 */
 REG_OP(DepthwiseConv2D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_INT32}))
-    .OPTIONAL_INPUT(offset_w, TensorType({DT_FLOAT16, DT_INT8}))
+    .OPTIONAL_INPUT(offset_w, TensorType({DT_FLOAT16, DT_INT8, DT_INT4}))
     .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32}))
     .REQUIRED_ATTR(strides, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -369,16 +369,14 @@ REG_OP(BiasAddGrad)
  *\n
  * The following are the supported data types and data formats:\n
  *\n
-    | Tensor    | out_bckprop | filter  | y\n
-    ------------|-------------|---------|--------\n
-    | Data Type | float16     | float16 | float16\n
-    |           |-------------|---------|--------\n
-    |           | float32     | float32 | float32\n
-    |           |-------------|---------|--------\n
-    |           | float64     | float64 | float64\n
-    ------------|-------------|---------|--------\n
-    | Format    | NCHW        | NCHW    | NCHW\n
-    |           | NHWC        | HWCN    | NHWC\n
+ *\n
+    | Tensor    | out_bckprop | filter  | y      |\n
+    |-----------|-------------|---------|--------|\n
+    | Data Type | float16     | float16 | float16|\n
+    |           | float32     | float32 | float32|\n
+    |           | float64     | float64 | float64|\n
+    | Format    | NCHW        | NCHW    | NCHW   |\n
+    |           | NHWC        | HWCN    | NHWC   |\n
  *\n
  * For float32 and float64 type, the actual calculation on the chip is based on
  * float16.
@@ -400,30 +398,25 @@ REG_OP(BiasAddGrad)
  *\n
  * The following value range restrictions must be met:\n
  *\n
-    | Name             | Field    | Scope\n
-    -------------------|----------|--------------\n
-    | input_size       | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Filter           | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
-    -------------------|----------|--------------\n
-    | out_backprop     | H*strideH| [1, 200000]\n
-    |                  | W*strideW| [1, 4096]\n
-    -------------------|----------|--------------\n
-    | y(fmap)          | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Stride           | H        | [1, 63]\n
-    |                  | W        | [1, 63]\n
-    -------------------|----------|--------------\n
-    | Padding          | Top      | [0, 255]\n
-    |                  | Bottom   | [0, 255]\n
-    |                  | Left     | [0, 255]\n
-    |                  | Right    | [0, 255]\n
-    -------------------|----------|--------------\n
-    | Dilation         | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
+ *\n
+    | Name             | Field    | Scope        |\n
+    |------------------|----------|--------------|\n
+    | input_size       | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | Filter           | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
+    | out_backprop     | H*strideH| [1, 200000]  |\n
+    |                  | W*strideW| [1, 4096]    |\n
+    | y(fmap)          | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | Stride           | H        | [1, 63]      |\n
+    |                  | W        | [1, 63]      |\n
+    | Padding          | Top      | [0, 255]     |\n
+    |                  | Bottom   | [0, 255]     |\n
+    |                  | Left     | [0, 255]     |\n
+    |                  | Right    | [0, 255]     |\n
+    | Dilation         | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
  *\n
 
  * In Ascend910, fmap or out_backprop's H and W not support 1 when
@@ -495,9 +488,9 @@ REG_OP(Conv2DBackpropInput)
  * Warning: THIS FUNCTION IS DEPRECATED. Please use Conv2DBackpropInput instead.
 */
 REG_OP(Conv2DBackpropInputD)
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8}))
-    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT32}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
+    .INPUT(out_backprop, TensorType({DT_FLOAT16, DT_INT8, DT_BF16}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_INT32, DT_FLOAT32, DT_BF16}))
     .REQUIRED_ATTR(input_size, ListInt)
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
@@ -523,13 +516,12 @@ REG_OP(Conv2DBackpropInputD)
  *\n
  * The following are the supported data types and data formats:\n
  *\n
-    | Tensor    | x       | filter  | bias    | y\n
-    ------------|---------|---------|---------|--------\n
-    | Data Type | float16 | float16 | float16 | float16\n
-    |           |---------|---------|---------|--------\n
-    |           | int8    | int8    | int32   | int32\n
-    ------------|---------|---------|---------|--------\n
-    | Format    | NCHW    | NCHW    | ND      | NCHW\n
+ *\n
+    | Tensor    | x       | filter  | bias    | y      |\n
+    |-----------|---------|---------|---------|--------|\n
+    | Data Type | float16 | float16 | float16 | float16|\n
+    |           | int8    | int8    | int32   | int32  |\n
+    | Format    | NCHW    | NCHW    | ND      | NCHW   |\n
  *\n
  * For int8, a dequant or requant operator must be followed.
  *\n
@@ -553,29 +545,24 @@ REG_OP(Conv2DBackpropInputD)
  *\n
  * The following value range restrictions must be met:\n
  *\n
-    | Name             | Field    | Scope\n
-    -------------------|----------|--------------\n
-    | x (out_backprop) | H*strideH| [1, 200000]\n
-    |                  | W*strideW| [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Filter           | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
-    -------------------|----------|--------------\n
-    | y (fmap)         | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Stride           | H        | [1, 63]\n
-    |                  | W        | [1, 63]\n
-    -------------------|----------|--------------\n
-    | Padding          | Top      | [0, 255]\n
-    |                  | Bottom   | [0, 255]\n
-    |                  | Left     | [0, 255]\n
-    |                  | Right    | [0, 255]\n
-    -------------------|----------|--------------\n
-    | Dilation         | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
-    -------------------|----------|--------------\n
-    | Offset_x         |          | [-128, 127]\n
+ *\n
+    | Name             | Field    | Scope        |\n
+    |------------------|----------|--------------|\n
+    | x (out_backprop) | H*strideH| [1, 200000]  |\n
+    |                  | W*strideW| [1, 4096]    |\n
+    | Filter           | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
+    | y (fmap)         | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | Stride           | H        | [1, 63]      |\n
+    |                  | W        | [1, 63]      |\n
+    | Padding          | Top      | [0, 255]     |\n
+    |                  | Bottom   | [0, 255]     |\n
+    |                  | Left     | [0, 255]     |\n
+    |                  | Right    | [0, 255]     |\n
+    | Dilation         | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
+    | Offset_x         |          | [-128, 127]  |\n
  *\n
  * In Ascend910, fmap or out_backprop's H and W not support 1 when
  * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1
@@ -631,16 +618,14 @@ REG_OP(Deconvolution)
  *\n
  * The following are the supported data types and data formats:\n
  *\n
-    | Tensor    | x       | out_backprop | y\n
-    ------------|---------|--------------|---------\n
-    | Data Type | float16 |    float16   | float16\n
-    |           |---------|--------------|---------\n
-    |           | float32 |    float32   | float32\n
-    |           |---------|--------------|---------\n
-    |           | float64 |    float64   | float64\n
-    |-----------|---------|--------------|---------\n
-    | Format    | NCHW    |     NCHW     | NCHW\n
-    |           | NHWC    |     NHWC     | HWCN\n
+ *\n
+    | Tensor    | x       | out_backprop | y       |\n
+    |-----------|---------|--------------|---------|\n
+    | Data Type | float16 |    float16   | float16 |\n
+    |           | float32 |    float32   | float32 |\n
+    |           | float64 |    float64   | float64 |\n
+    | Format    | NCHW    |     NCHW     | NCHW    |\n
+    |           | NHWC    |     NHWC     | HWCN    |\n
  *\n
  * For float32 and float64 type of x and outbackprop, the actual calculation on the chip
  * is based on float16.
@@ -662,30 +647,25 @@ REG_OP(Deconvolution)
  *\n
  * The following value range restrictions must be met:\n
  *\n
-    | Name             | Field    | Scope\n
-    -------------------|----------|--------------\n
-    | x(fmap)          | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Filter Size      | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
-    -------------------|----------|--------------\n
-    | out_backprop     | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | y                | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Stride           | H        | [1, 63]\n
-    |                  | W        | [1, 63]\n
-    -------------------|----------|--------------\n
-    | Padding          | Top      | [0, 255]\n
-    |                  | Bottom   | [0, 255]\n
-    |                  | Left     | [0, 255]\n
-    |                  | Right    | [0, 255]\n
-    -------------------|----------|--------------\n
-    | Dilation         | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
+ *\n
+    | Name             | Field    | Scope        |\n
+    |------------------|----------|--------------|\n
+    | x(fmap)          | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | Filter Size      | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
+    | out_backprop     | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | y                | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | Stride           | H        | [1, 63]      |\n
+    |                  | W        | [1, 63]      |\n
+    | Padding          | Top      | [0, 255]     |\n
+    |                  | Bottom   | [0, 255]     |\n
+    |                  | Left     | [0, 255]     |\n
+    |                  | Right    | [0, 255]     |\n
+    | Dilation         | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
  *\n
 *@par Outputs:
  * y: A Tensor. Has the same type as x, has the same format as filter_size.
@@ -853,11 +833,11 @@ REG_OP(Conv2DBackpropFilterD)
 *@li Compatible with the Caffe operator 2D "Convolution".
 */
 REG_OP(Conv2D)
-    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
-    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8}))
+    .INPUT(x, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_BF16}))
+    .INPUT(filter, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT8, DT_BF16}))
     .OPTIONAL_INPUT(bias, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
     .OPTIONAL_INPUT(offset_w, TensorType({DT_INT8}))
-    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32}))
+    .OUTPUT(y, TensorType({DT_FLOAT16, DT_FLOAT, DT_INT32, DT_BF16}))
     .REQUIRED_ATTR(strides, ListInt)
     .REQUIRED_ATTR(pads, ListInt)
     .ATTR(dilations, ListInt, {1, 1, 1, 1})
@@ -1441,14 +1421,13 @@ REG_OP(Conv3DTransposeD)
  *\n
  * The following are the supported data types and data formats:\n
  *\n
-    | Tensor    | x       | filter  | bias    | y\n
-    ------------|---------|---------|---------|--------\n
-    | Data Type | float16 | float16 | float16 | float16\n
-    |           |---------|---------|---------|--------\n
-    |           | int8    | int8    | int32   | int32\n
-    ------------|---------|---------|---------|--------\n
-    | Format    | NCHW    | NCHW    | ND      | NCHW\n
-    |           | NHWC    | HWCN    |         | NHWC\n
+ *\n
+    | Tensor    | x       | filter  | bias    | y      |\n
+    |-----------|---------|---------|---------|--------|\n
+    | Data Type | float16 | float16 | float16 | float16|\n
+    |           | int8    | int8    | int32   | int32  |\n
+    | Format    | NCHW    | NCHW    | ND      | NCHW   |\n
+    |           | NHWC    | HWCN    |         | NHWC   |\n
  *\n
  * For int8, a dequant or requant operator must be followed.
  *\n
@@ -1476,32 +1455,26 @@ REG_OP(Conv3DTransposeD)
  *\n
  * The following value range restrictions must be met:\n
  *\n
-    | Name             | Field    | Scope\n
-    -------------------|----------|--------------\n
-    | input_size       | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | x (out_backprop) | H*strideH| [1, 200000]\n
-    |                  | W*strideW| [1, 4096]\n
-    -------------------|----------|--------------\n
-    | filter           | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
-    -------------------|----------|--------------\n
-    | y (fmap)         | H        | [1, 200000]\n
-    |                  | W        | [1, 4096]\n
-    -------------------|----------|--------------\n
-    | Stride           | H        | [1, 63]\n
-    |                  | W        | [1, 63]\n
-    -------------------|----------|--------------\n
-    | Padding          | Top      | [0, 255]\n
-    |                  | Bottom   | [0, 255]\n
-    |                  | Left     | [0, 255]\n
-    |                  | Right    | [0, 255]\n
-    -------------------|----------|--------------\n
-    | Dilation         | H        | [1, 255]\n
-    |                  | W        | [1, 255]\n
-    -------------------|----------|--------------\n
-    | Offset_x         |          | [-128, 127]\n
+ *\n
+    | Name             | Field    | Scope        |\n
+    |------------------|----------|--------------|\n
+    | input_size       | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | x (out_backprop) | H*strideH| [1, 200000]  |\n
+    |                  | W*strideW| [1, 4096]    |\n
+    | filter           | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
+    | y (fmap)         | H        | [1, 200000]  |\n
+    |                  | W        | [1, 4096]    |\n
+    | Stride           | H        | [1, 63]      |\n
+    |                  | W        | [1, 63]      |\n
+    | Padding          | Top      | [0, 255]     |\n
+    |                  | Bottom   | [0, 255]     |\n
+    |                  | Left     | [0, 255]     |\n
+    |                  | Right    | [0, 255]     |\n
+    | Dilation         | H        | [1, 255]     |\n
+    |                  | W        | [1, 255]     |\n
+    | Offset_x         |          | [-128, 127]  |\n
  *\n
  * In Ascend910, fmap or out_backprop's H and W not support 1 when
  * fmap_h + pad_top + pad_bottom != (filter_height - 1) * dilation_h + 1

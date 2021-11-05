@@ -103,7 +103,7 @@ GE_FUNC_VISIBILITY graphStatus aclgrphBuildModel(const ge::Graph &graph,
  * @retval OtherValues Failure
  */
 ATTRIBUTED_DEPRECATED(GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *, const ModelBufferData &))
-GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const string &output_file, const ModelBufferData &model);
+GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const std::string &output_file, const ModelBufferData &model);
 
 GE_FUNC_VISIBILITY graphStatus aclgrphSaveModel(const char *output_file, const ModelBufferData &model);
 

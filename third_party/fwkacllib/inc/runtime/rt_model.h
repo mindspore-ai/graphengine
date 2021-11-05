@@ -1,21 +1,21 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
-#ifndef __CCE_RUNTIME_MODEL_H__
-#define __CCE_RUNTIME_MODEL_H__
+#ifndef CCE_RUNTIME_RT_MODEL_H
+#define CCE_RUNTIME_RT_MODEL_H
 
 #include "base.h"
 
@@ -42,7 +42,7 @@ typedef enum tagModelTaskType {
     RT_MODEL_TASK_NOTIFY_WAIT,
     RT_MODEL_TASK_REDUCE_ASYNC,
     RT_MODEL_TASK_RDMA_SEND,
-    RT_MODEL_TASK_EVENT_RESET = 18,
+    RT_MODEL_TASK_EVENT_RESET,
     RT_MODEL_TASK_MODEL_END_GRAPH,
     RT_MODEL_TASK_STREAM_SWITCH_N,
     RT_MODEL_TASK_RDMA_DB_SEND,
@@ -66,16 +66,16 @@ typedef enum tagModelQueueFlag {
     RT_MODEL_OUTPUT_QUEUE = 1
 } rtModelQueueFlag_t;
 
-#define EXECUTOR_NONE ((uint32_t)0x0)
-#define EXECUTOR_TS ((uint32_t)0x01)
-#define EXECUTOR_AICPU ((uint32_t)0x02)
+#define EXECUTOR_NONE (0x0U)
+#define EXECUTOR_TS (0x01U)
+#define EXECUTOR_AICPU (0x02U)
 
 /*
  * @ingroup rt_model
  * @brief debug flag for kernel exception dump
  */
-#define RT_DEBUG_FLAG_AICORE_OVERFLOW (0x1 << 0)
-#define RT_DEBUG_FLAG_ATOMIC_ADD_OVERFLOW (0x1 << 1)
+#define RT_DEBUG_FLAG_AICORE_OVERFLOW (0x1U << 0U)
+#define RT_DEBUG_FLAG_ATOMIC_ADD_OVERFLOW (0x1U << 1U)
 
 /**
  * @ingroup
@@ -125,7 +125,7 @@ typedef struct tagKernelTaskInfo {
     uint16_t argsCount;
     uint16_t argsSize;
     uint16_t reserved;
-    char *stubFunc;
+    char_t *stubFunc;
     uint8_t *smDesc;
     uint8_t *args;
     uint16_t *argsOffset;
@@ -392,12 +392,12 @@ RTS_API rtError_t rtModelExecute(rtModel_t model, rtStream_t stream, uint32_t fl
  * @ingroup rt_model
  * @brief get model the last persist task id
  * @param [in] model   model to execute
- * @param [out] taskid last task id of the model
- * @param [out] streamid last steam id of the model
+ * @param [out] taskId last task id of the model
+ * @param [out] streamId last steam id of the model
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtModelGetTaskId(rtModel_t model, uint32_t *taskid, uint32_t *streamid);
+RTS_API rtError_t rtModelGetTaskId(rtModel_t model, uint32_t *taskId, uint32_t *streamId);
 
 /**
  * @ingroup rt_model
@@ -495,4 +495,4 @@ RTS_API rtError_t rtDebugUnRegister(rtModel_t model);
 }
 #endif
 
-#endif  // __CCE_RUNTIME_MODEL_H__
+#endif  // CCE_RUNTIME_RT_MODEL_H

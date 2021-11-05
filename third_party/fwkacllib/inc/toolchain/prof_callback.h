@@ -1,5 +1,5 @@
 /**
- * Copyright 2020-2020 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * @file prof_callback.h
- * @brief declaraion of profiling callbacks
  */
 
 #ifndef MSPROFILER_PROF_CALLBACK_H_
@@ -24,7 +21,7 @@
 extern "C" {
 #endif // __cplusplus
 
-#if (OS_TYPE != LINUX)
+#if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))

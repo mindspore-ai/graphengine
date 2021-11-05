@@ -1,21 +1,21 @@
 /**
- * Copyright 2020 Huawei Technologies Co., Ltd
-
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
-
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
-
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
-#ifndef __CCE_RUNTIME_DEVICE_H__
-#define __CCE_RUNTIME_DEVICE_H__
+#ifndef CCE_RUNTIME_DEVICE_H
+#define CCE_RUNTIME_DEVICE_H
 
 #include "base.h"
 
@@ -23,8 +23,9 @@
 extern "C" {
 #endif
 
-#define RT_CAPABILITY_SUPPORT     (0x1)
-#define RT_CAPABILITY_NOT_SUPPORT (0x0)
+#define RT_CAPABILITY_SUPPORT     (0x1U)
+#define RT_CAPABILITY_NOT_SUPPORT (0x0U)
+#define MEMORY_INFO_TS_4G_LIMITED (0x0) // for compatibility
 
 typedef struct tagRTDeviceInfo {
     uint8_t env_type;  // 0: FPGA  1: EMU 2: ESL
@@ -45,27 +46,28 @@ typedef struct tagRTDeviceInfo {
 
 typedef enum tagRtRunMode {
     RT_RUN_MODE_OFFLINE = 0,
-    RT_RUN_MODE_ONLINE = 1,
-    RT_RUN_MODE_AICPU_SCHED = 2,
+    RT_RUN_MODE_ONLINE,
+    RT_RUN_MODE_AICPU_SCHED,
     RT_RUN_MODE_RESERVED
 } rtRunMode;
 
 typedef enum tagRtAicpuDeployType {
     AICPU_DEPLOY_CROSS_OS = 0x0,
-    AICPU_DEPLOY_CROSS_PROCESS = 0x1,
-    AICPU_DEPLOY_CROSS_THREAD = 0x2,
+    AICPU_DEPLOY_CROSS_PROCESS,
+    AICPU_DEPLOY_CROSS_THREAD,
     AICPU_DEPLOY_RESERVED
 } rtAicpuDeployType_t;
 
 typedef enum tagRtFeatureType {
     FEATURE_TYPE_MEMCPY = 0,
-    FEATURE_TYPE_MEMORY = 1,
+    FEATURE_TYPE_MEMORY,
     FEATURE_TYPE_RSV
 } rtFeatureType_t;
 
 typedef enum tagRtDeviceFeatureType {
   FEATURE_TYPE_SCHE,
   FEATURE_TYPE_BLOCKING_OPERATOR,
+  FEATURE_TYPE_FFTS_MODE,
   FEATURE_TYPE_END,
 } rtDeviceFeatureType_t;
 
@@ -75,7 +77,7 @@ typedef enum tagMemcpyInfo {
 } rtMemcpyInfo_t;
 
 typedef enum tagMemoryInfo {
-    MEMORY_INFO_TS_4G_LIMITED = 0,
+    MEMORY_INFO_TS_LIMITED = 0,
     MEMORY_INFO_RSV
 } rtMemoryInfo_t;
 
@@ -89,6 +91,15 @@ typedef enum tagRtDeviceModuleType {
     RT_MODULE_TYPE_PCIE,        /**< PCIE info*/
     RT_MODULE_TYPE_VECTOR_CORE, /**< VECTOR CORE info*/
 } rtDeviceModuleType_t;
+
+// used for rtGetDevMsg callback function
+typedef void (*rtGetMsgCallback)(const char_t *msg, uint32_t len);
+
+typedef enum tagGetDevMsgType {
+    RT_GET_DEV_ERROR_MSG = 0,
+    RT_GET_DEV_RUNNING_STREAM_SNAPSHOT_MSG,
+    RT_GET_DEV_MSG_RESERVE
+} rtGetDevMsgType_t;
 
 /**
  * @ingroup dvrt_dev
@@ -353,14 +364,14 @@ RTS_API rtError_t rtGetAicpuDeploy(rtAicpuDeployType_t *deployType);
  * @brief set chipType
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtSetSocVersion(const char *version);
+RTS_API rtError_t rtSetSocVersion(const char_t *version);
 
 /**
  * @ingroup dvrt_dev
  * @brief get chipType
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtGetSocVersion(char *version, const uint32_t maxLen);
+RTS_API rtError_t rtGetSocVersion(char_t *version, const uint32_t maxLen);
 
 /**
  * @ingroup dvrt_dev
@@ -408,8 +419,17 @@ RTS_API rtError_t rtSetDeviceWithoutTsd(int32_t device);
  */
 RTS_API rtError_t rtDeviceResetWithoutTsd(int32_t device);
 
+/**
+ * @ingroup dvrt_dev
+ * @brief get device message
+ * @param [in] rtGetDevMsgType_t getMsgType:msg type
+ * @param [in] GetMsgCallback callback:acl callback function
+ * @return RT_ERROR_NONE for ok
+ * @return RT_ERROR_INVALID_VALUE for error input
+ */
+RTS_API rtError_t rtGetDevMsg(rtGetDevMsgType_t getMsgType, rtGetMsgCallback callback);
 #if defined(__cplusplus)
 }
 #endif
 
-#endif  // __CCE_RUNTIME_DEVICE_H__
+#endif  // CCE_RUNTIME_DEVICE_H

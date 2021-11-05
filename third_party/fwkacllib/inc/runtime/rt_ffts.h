@@ -1,10 +1,21 @@
-/*
- * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
- * Description: ffts interface
+/**
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-#ifndef __CCE_RUNTIME_FFTS_H
-#define __CCE_RUNTIME_FFTS_H
+#ifndef CCE_RUNTIME_RT_FFTS_H
+#define CCE_RUNTIME_RT_FFTS_H
 
 #include "base.h"
 
@@ -33,7 +44,7 @@ typedef enum tagFftsSubTaskType {
     RT_FFTS_SUB_TASK_TYPE_MIX_AIC = 6,
     RT_FFTS_SUB_TASK_TYPE_MIX_AIV = 7,
     RT_FFTS_SUB_TASK_TYPE_SDMA = 8,
-    RT_FFTS_SUB_TASK_TYPE_RESERVED,
+    RT_FFTS_SUB_TASK_TYPE_RESERVED = 9,
 } rtFftsSubTaskType_t;
 
 typedef struct tagManualThreadDmuInfo {
@@ -64,7 +75,7 @@ typedef struct tagManualThreadAicAivInfo {
     // num： thread0_prefetch_dmu_descriptor_index – prefetch_once_dmu_descriptor_index
     uint16_t threadPrefetchDmuIdx[RT_FFTS_MAX_MANUAL_THREAD_NUM]; // max valid is threadDim
     uint16_t threadBlkDim[RT_FFTS_MAX_MANUAL_THREAD_NUM];
-    const char *threadTaskFuncStub[RT_FFTS_MAX_MANUAL_THREAD_NUM];
+    const char_t *threadTaskFuncStub[RT_FFTS_MAX_MANUAL_THREAD_NUM];
 
     rtManualThreadDmuInfo_t *prefetchList; // dmu desc 0-64k, length is the last threadPrefetchDmuIdx[threadDim-1]
     rtManualThreadDependency_t srcDepTbl[RT_FFTS_MAX_TICKET_CACHE_PER_SUBTASK];
@@ -91,8 +102,8 @@ typedef struct tagAutoThreadAicAivInfo {
     uint16_t tailBlkDim;
     uint16_t nonTailBlkDim;
 
-    const char *nonTailTaskFuncStub;
-    const char *tailTaskFuncStub;
+    const char_t *nonTailTaskFuncStub;
+    const char_t *tailTaskFuncStub;
 
     // for prefetch, valid num is prefetchEnableBitmap bit count.
     // if prefetchEnableBitmap='00010011', need prefetch number is 3, srcPrefetch is only 0, 1, 2 is valid
@@ -177,8 +188,11 @@ typedef struct tagFftsTaskInfo {
 } rtFftsTaskInfo_t;
 
 RTS_API rtError_t rtFftsTaskLaunch(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream);
+RTS_API rtError_t rtGetC2cCtrlAddr(uint64_t *addr, uint32_t *len);
+
+RTS_API rtError_t rtFftsTaskLaunchWithFlag(rtFftsTaskInfo_t *fftsTaskInfo, rtStream_t stream, uint32_t flag);
 
 #if defined(__cplusplus)
 }
 #endif
-#endif // __CCE_RUNTIME_FFTS_H
+#endif // CCE_RUNTIME_RT_FFTS_H

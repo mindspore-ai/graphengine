@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 Huawei Technologies Co., Ltd
+ * Copyright 2019-2020 Huawei Technologies Co., Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -298,8 +298,8 @@ REG_OP(ConcatD)
 * Compatible with the TensorFlow operator Concat.
 */
 REG_OP(Concat)
-    .DYNAMIC_INPUT(x, TensorType::BasicType())
     .INPUT(concat_dim, TensorType::IndexNumberType())
+    .DYNAMIC_INPUT(x, TensorType::BasicType())
     .OUTPUT(y, TensorType::BasicType())
     .ATTR(N, Int, 1)
     .OP_END_FACTORY_REG(Concat)

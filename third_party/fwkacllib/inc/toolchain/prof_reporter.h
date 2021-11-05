@@ -16,11 +16,8 @@
 
 #ifndef MSPROF_ENGINE_PROF_REPORTER_H_
 #define MSPROF_ENGINE_PROF_REPORTER_H_
-#ifndef OS_TYPE
-#define OS_TYPE 0
-#endif // OS_TYPE
 
-#if (OS_TYPE != LINUX)
+#if (defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER))
 #define MSVP_PROF_API __declspec(dllexport)
 #else
 #define MSVP_PROF_API __attribute__((visibility("default")))

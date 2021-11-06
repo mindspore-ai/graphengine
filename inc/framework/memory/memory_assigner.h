@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 
 #include <utility>
 
-#include "common/ge_inner_error_codes.h"
+#include "framework/common/ge_inner_error_codes.h"
 #include "graph/node.h"
 
 namespace ge {
@@ -33,7 +33,7 @@ class GE_FUNC_VISIBILITY MemoryAssigner {
 
   MemoryAssigner &operator=(const MemoryAssigner &) = delete;
 
-  Status AssignMemory(bool is_loop_graph, map<uint64_t, size_t> &mem_offset, size_t &zero_copy_mem_size);
+  Status AssignMemory(bool is_loop_graph, std::map<uint64_t, size_t> &mem_offset, size_t &zero_copy_mem_size);
 
  private:
   ge::ComputeGraphPtr compute_graph_;

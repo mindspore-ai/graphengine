@@ -1,5 +1,5 @@
 /**
- * Copyright 2019-2020 Huawei Technologies Co., Ltd
+ * Copyright (c) Huawei Technologies Co., Ltd. 2021. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@
 #include <vector>
 
 #include "common/dynamic_aipp.h"
-#include "common/ge_inner_error_codes.h"
-#include "common/ge_types.h"
-#include "common/types.h"
+#include "framework/common/ge_inner_error_codes.h"
+#include "framework/common/ge_types.h"
+#include "framework/common/types.h"
 #include "graph/tensor.h"
 #include "graph/ge_tensor.h"
 #include "runtime/base.h"
